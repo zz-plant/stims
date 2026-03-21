@@ -617,6 +617,34 @@ comp_shader=float3 tintScale = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, 
     expect(compiled.ir.post.shaderControls.tint.b).toBeCloseTo(0.4, 6);
   });
 
+  test('keeps valid richer shader statements out of unsupported inventory', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Richer Inventory
+warp_shader=float2 drift = float2(0.03, -0.02); drift.x = drift.x + if(bass_att > 0.5 && !(beat_pulse < 0.1), mod(time, 1.0), 0.0); uv += drift
+comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).rgb * wash; return ret
+      `.trim(),
+      { id: 'shader-richer-inventory' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.shaderText.warpAst).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'drift' }),
+        expect.objectContaining({ target: 'drift.x' }),
+        expect.objectContaining({ target: 'uv' }),
+      ]),
+    );
+    expect(compiled.ir.shaderText.compAst).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ target: 'wash' }),
+        expect.objectContaining({ target: 'ret' }),
+        expect.objectContaining({ target: 'return' }),
+      ]),
+    );
+  });
+
   test('extracts tex3D and texture3D shader sampler aliases as volume lookups', () => {
     for (const sampleCall of ['tex3D', 'texture3D'] as const) {
       const compiled = compileMilkdropPresetSource(
