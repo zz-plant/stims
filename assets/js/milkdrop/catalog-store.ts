@@ -24,8 +24,6 @@ type BundledCatalogDocument =
   | {
       certification?: 'bundled' | 'certified' | 'exploratory';
       corpusTier?: 'bundled' | 'certified' | 'exploratory';
-      expectedFidelityClass?: MilkdropBundledCatalogEntry['expectedFidelityClass'];
-      visualEvidenceTier?: MilkdropBundledCatalogEntry['visualEvidenceTier'];
       presets?: Array<
         MilkdropBundledCatalogEntry & {
           order?: number;
@@ -190,6 +188,63 @@ function supportsFromCompiled(compiled: MilkdropCompiledPreset): {
   };
 }
 
+function supportFlagMatchesCompiled(
+  status: MilkdropBackendSupport['status'],
+  flag: boolean | undefined,
+) {
+  if (typeof flag !== 'boolean') {
+    return true;
+  }
+
+  return flag ? status === 'supported' : status !== 'supported';
+}
+
+function getValidatedCatalogOverrides(
+  entry: MilkdropBundledCatalogEntry,
+  compiled: MilkdropCompiledPreset,
+): {
+  expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
+  visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];
+} {
+  const overrides: {
+    expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
+    visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];
+  } = {};
+
+  if (
+    entry.expectedFidelityClass ===
+    compiled.ir.compatibility.parity.fidelityClass
+  ) {
+    overrides.expectedFidelityClass = entry.expectedFidelityClass;
+  }
+
+  if (
+    entry.visualEvidenceTier ===
+    compiled.ir.compatibility.parity.visualEvidenceTier
+  ) {
+    overrides.visualEvidenceTier = entry.visualEvidenceTier;
+  }
+
+  const catalogSupports = entry.supports;
+  if (catalogSupports) {
+    const compiledSupports = supportsFromCompiled(compiled);
+    const webglMatches = supportFlagMatchesCompiled(
+      compiledSupports.webgl.status,
+      catalogSupports.webgl,
+    );
+    const webgpuMatches = supportFlagMatchesCompiled(
+      compiledSupports.webgpu.status,
+      catalogSupports.webgpu,
+    );
+
+    if (!webglMatches || !webgpuMatches) {
+      return overrides;
+    }
+  }
+
+  return overrides;
+}
+
 function toCatalogEntry(
   source: MilkdropPresetSource,
   compiled: MilkdropCompiledPreset,
@@ -270,8 +325,6 @@ export function createMilkdropCatalogStore({
           }
           const defaultCertification = document.certification ?? 'bundled';
           const defaultCorpusTier = document.corpusTier ?? 'bundled';
-          const defaultFidelityClass = document.expectedFidelityClass;
-          const defaultVisualEvidenceTier = document.visualEvidenceTier;
           return (document.presets ?? []).map((entry) => ({
             id: entry.id,
             title: entry.title,
@@ -281,10 +334,8 @@ export function createMilkdropCatalogStore({
             curatedRank: entry.curatedRank ?? entry.order,
             certification: entry.certification ?? defaultCertification,
             corpusTier: entry.corpusTier ?? defaultCorpusTier,
-            expectedFidelityClass:
-              entry.expectedFidelityClass ?? defaultFidelityClass,
-            visualEvidenceTier:
-              entry.visualEvidenceTier ?? defaultVisualEvidenceTier,
+            expectedFidelityClass: entry.expectedFidelityClass,
+            visualEvidenceTier: entry.visualEvidenceTier,
             supports: entry.supports ?? entry.compatibility,
           }));
         })
@@ -363,6 +414,10 @@ export function createMilkdropCatalogStore({
           try {
             const source = await loadBundledSource(entry);
             const compiled = getCompiled(source);
+            const validatedOverrides = getValidatedCatalogOverrides(
+              entry,
+              compiled,
+            );
             return toCatalogEntry(
               source,
               compiled,
@@ -374,8 +429,7 @@ export function createMilkdropCatalogStore({
                 historyIndex: history.indexOf(entry.id),
                 certification: entry.certification ?? 'bundled',
                 corpusTier: entry.corpusTier ?? 'bundled',
-                expectedFidelityClass: entry.expectedFidelityClass,
-                visualEvidenceTier: entry.visualEvidenceTier,
+                ...validatedOverrides,
               },
             );
           } catch {
@@ -395,18 +449,14 @@ export function createMilkdropCatalogStore({
               warnings: ['Bundled preset could not be analyzed.'],
               supports: {
                 webgl: {
-                  status:
-                    entry.supports?.webgl === false ? 'unsupported' : 'partial',
+                  status: 'partial',
                   reasons: ['Bundled preset could not be analyzed.'],
                   evidence: [],
                   requiredFeatures: [],
                   unsupportedFeatures: [],
                 },
                 webgpu: {
-                  status:
-                    entry.supports?.webgpu === false
-                      ? 'unsupported'
-                      : 'partial',
+                  status: 'partial',
                   reasons: ['Bundled preset could not be analyzed.'],
                   evidence: [],
                   requiredFeatures: [],
@@ -414,8 +464,8 @@ export function createMilkdropCatalogStore({
                   recommendedFallback: 'webgl',
                 },
               },
-              fidelityClass: entry.expectedFidelityClass ?? 'fallback',
-              visualEvidenceTier: entry.visualEvidenceTier ?? 'none',
+              fidelityClass: 'fallback',
+              visualEvidenceTier: 'none',
               evidence: {
                 compile: 'issues',
                 runtime: 'not-run',
@@ -440,13 +490,13 @@ export function createMilkdropCatalogStore({
                     blocking: true,
                   },
                 ],
-                fidelityClass: entry.expectedFidelityClass ?? 'fallback',
+                fidelityClass: 'fallback',
                 evidence: {
                   compile: 'issues',
                   runtime: 'not-run',
                   visual: 'not-captured',
                 },
-                visualEvidenceTier: entry.visualEvidenceTier ?? 'none',
+                visualEvidenceTier: 'none',
               },
               bundledFile: entry.file,
             } satisfies MilkdropCatalogEntry;
