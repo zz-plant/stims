@@ -316,7 +316,7 @@ ib_border=1
     );
 
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(
       compiled.ir.compatibility.featureAnalysis.unsupportedShaderText,
     ).toBe(false);
@@ -327,12 +327,7 @@ ib_border=1
     expect(compiled.ir.post.innerBorderStyle).toBe(true);
     expect(compiled.ir.post.shaderControls.hueShift).toBeCloseTo(0.35, 6);
     expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.25, 6);
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
-      expect.arrayContaining([
-        'status:webgl=supported,webgpu=partial',
-        'webgpu:supported-shader-text-gap',
-      ]),
-    );
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
   });
 
   test('supports shader transform controls in the subset', () => {
@@ -444,7 +439,7 @@ comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
     expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );
@@ -675,6 +670,54 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
     );
   });
 
+  test('keeps richer legacy shader programs executable without downgrading them to unsupported shader text', () => {
+    const fixturePath = join(
+      process.cwd(),
+      'tests',
+      'fixtures',
+      'milkdrop',
+      'legacy',
+      'legacy-unsupported-full-shader-code.milk',
+    );
+    const compiled = compileMilkdropPresetSource(
+      readFileSync(fixturePath, 'utf8'),
+      {
+        id: 'legacy-unsupported-full-shader-code',
+        title: 'Legacy Unsupported Full Shader Code',
+        fileName: 'legacy-unsupported-full-shader-code.milk',
+        path: fixturePath,
+        origin: 'user',
+      },
+    );
+
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.unsupportedShaderText,
+    ).toBe(false);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.featuresUsed,
+    ).not.toContain('unsupported-shader-text');
+    expect(compiled.ir.shaderText.warp).toBe(
+      'shader_body=tex2d(sampler_main,uv).rgb;',
+    );
+    expect(compiled.ir.shaderText.comp).toBe(
+      'ret=tex2d(sampler_main,uv).rgb*1.2;',
+    );
+    expect(compiled.ir.post.shaderControls.colorScale).toEqual({
+      r: 1.2,
+      g: 1.2,
+      b: 1.2,
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:video-echo-gap:video-echo',
+    ]);
+  });
+
   test('extracts tex3D and texture3D shader sampler aliases as volume lookups', () => {
     for (const sampleCall of ['tex3D', 'texture3D'] as const) {
       const compiled = compileMilkdropPresetSource(
@@ -697,11 +740,11 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
       expect(compiled.diagnostics).toEqual([]);
-      expect(compiled.ir.compatibility.warnings).toEqual([
-        'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
-      ]);
+      expect(compiled.ir.compatibility.warnings).toEqual([]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'supported',
+      );
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
       );
@@ -819,10 +862,8 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
       '3d',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.warnings).toEqual([
-      'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
-    ]);
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
   });
 
   test('downgrades tex3D extraction for aux samplers without volume atlases', () => {
@@ -851,7 +892,6 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
     ]);
     expect(compiled.ir.compatibility.warnings).toEqual([
       'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
-      'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
     ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
@@ -1273,81 +1313,34 @@ warp_shader=unsupported(shader)
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
   });
 
-  test('marks allowlisted blocked constructs as visible but non-regressive', () => {
+  test('does not keep richer parity shader programs on the allowlisted-gap path', () => {
     const compiled = compileMilkdropPresetSource(
-      `
-title=Parity Allowlisted Shader Gap
-warp_shader=unsupported(shader)
-      `.trim(),
+      readFileSync(
+        join(
+          process.cwd(),
+          'tests',
+          'fixtures',
+          'milkdrop',
+          'parity-corpus',
+          'parity-allowlisted-shader-gap.milk',
+        ),
+        'utf8',
+      ),
       { id: 'parity-allowlisted-shader-gap' },
     );
 
-    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
-      'shader:unsupported(shader)',
-    ]);
-    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
-      {
-        kind: 'shader',
-        value: 'unsupported(shader)',
-        system: 'shader-text',
-        allowlisted: true,
-      },
-    ]);
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([]);
+    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual(
+      [],
+    );
     expect(
       compiled.ir.compatibility.parity.degradationReasons.map(
         (reason) => reason.code,
       ),
-    ).toContain('allowlisted-gap');
-    expect(
-      compiled.ir.compatibility.parity.degradationReasons.some(
-        (reason) => reason.code === 'allowlisted-gap' && reason.blocking,
-      ),
-    ).toBe(false);
+    ).not.toContain('allowlisted-gap');
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
-  });
-
-  test('keeps non-allowlisted regressions blocking inside allowlisted presets', () => {
-    const compiled = compileMilkdropPresetSource(
-      `
-title=Parity Allowlisted Shader Gap
-warp_shader=unsupported(shader)
-unknown_field=2
-      `.trim(),
-      { id: 'parity-allowlisted-shader-gap' },
-    );
-
-    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
-      'field:unknown_field',
-      'shader:unsupported(shader)',
-    ]);
-    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
-      expect.objectContaining({
-        kind: 'field',
-        value: 'unknown_field',
-        system: 'preset-field',
-        allowlisted: false,
-        classification: 'soft-unknown',
-      }),
-      expect.objectContaining({
-        kind: 'shader',
-        value: 'unsupported(shader)',
-        system: 'shader-text',
-        allowlisted: true,
-      }),
-    ]);
-    expect(compiled.ir.compatibility.parity.degradationReasons).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'unknown-field',
-          blocking: true,
-        }),
-        expect.objectContaining({
-          code: 'allowlisted-gap',
-          blocking: false,
-        }),
-      ]),
-    );
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
   });
 
   test('lists missing aliases and functions from parsed expressions', () => {

@@ -1,11 +1,4 @@
 {
   "version": 1,
-  "entries": [
-    {
-      "id": "parity-allowlisted-shader-gap",
-      "reason": "This fixture intentionally exercises the current shader-text approximation path until direct shader execution lands.",
-      "category": "unsupported-shader",
-      "constructSignatures": ["shader:unsupported(shader)"]
-    }
-  ]
+  "entries": []
 }
