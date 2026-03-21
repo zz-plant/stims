@@ -174,11 +174,11 @@ describe('milkdrop shader sampler aliases', () => {
         compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
       ).not.toBeNull();
       expect(compiled.diagnostics).toEqual([]);
-      expect(compiled.ir.compatibility.warnings).toEqual([
-        'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
-      ]);
+      expect(compiled.ir.compatibility.warnings).toEqual([]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'supported',
+      );
     }
   });
 });

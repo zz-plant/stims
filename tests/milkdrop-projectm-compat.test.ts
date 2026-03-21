@@ -81,36 +81,6 @@ const FULL_SUPPORT_EXPECTATION = {
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
-const WEBGPU_SHADER_TRANSLATION_EXPECTATION = {
-  diagnostics: [],
-  webgl: 'supported',
-  webgpu: 'partial',
-  divergence: [
-    'status:webgl=supported,webgpu=partial',
-    'webgpu:supported-shader-text-gap',
-  ],
-  warnings: [
-    'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
-  ],
-  blockedConstructs: [],
-  unsupportedKeys: [],
-} as const satisfies ProjectMFixtureExpectation;
-
-const VOLUME_SHADER_SUPPORT_EXPECTATION = {
-  diagnostics: [],
-  webgl: 'supported',
-  webgpu: 'partial',
-  divergence: [
-    'status:webgl=supported,webgpu=partial',
-    'webgpu:supported-shader-text-gap',
-  ],
-  warnings: [
-    'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
-  ],
-  blockedConstructs: [],
-  unsupportedKeys: [],
-} as const satisfies ProjectMFixtureExpectation;
-
 const PROJECTM_FIXTURE_EXPECTATIONS = {
   '000-empty.milk': FULL_SUPPORT_EXPECTATION,
   '001-line.milk': FULL_SUPPORT_EXPECTATION,
@@ -146,8 +116,8 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '250-wavecode.milk': FULL_SUPPORT_EXPECTATION,
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
-  '260-compshader-noise_lq.milk': WEBGPU_SHADER_TRANSLATION_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': VOLUME_SHADER_SUPPORT_EXPECTATION,
+  '260-compshader-noise_lq.milk': FULL_SUPPORT_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': FULL_SUPPORT_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],
