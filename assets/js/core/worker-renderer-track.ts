@@ -10,6 +10,7 @@ import {
   RENDERER_WORKER_MESSAGE_TYPES,
   type RendererWorkerFramePayload,
   type RendererWorkerPresetPayload,
+  type RendererWorkerRequestMessage,
   type RendererWorkerResponseMessage,
 } from './renderer-worker-protocol.ts';
 
@@ -127,10 +128,46 @@ export function createExperimentalWorkerRendererTrack({
 
   const worker = workerFactory();
   const offscreenCanvas = canvas.transferControlToOffscreen();
+  const queuedMessages: RendererWorkerRequestMessage[] = [];
+  let isReady = false;
+  let isDisposed = false;
+
+  const postWhenReady = (message: RendererWorkerRequestMessage) => {
+    if (isDisposed) {
+      return;
+    }
+
+    if (!isReady && message.type !== RENDERER_WORKER_MESSAGE_TYPES.dispose) {
+      queuedMessages.push(message);
+      return;
+    }
+
+    worker.postMessage(message);
+  };
+
+  const flushQueuedMessages = () => {
+    if (!isReady || isDisposed || queuedMessages.length === 0) {
+      return;
+    }
+
+    while (queuedMessages.length > 0) {
+      const message = queuedMessages.shift();
+      if (message) {
+        worker.postMessage(message);
+      }
+    }
+  };
+
   const handleMessage = (event: MessageEvent<unknown>) => {
     if (!isRendererWorkerResponseMessage(event.data)) {
       return;
     }
+
+    if (event.data.type === RENDERER_WORKER_MESSAGE_TYPES.ready) {
+      isReady = true;
+      flushQueuedMessages();
+    }
+
     onMessage?.(event.data);
   };
   worker.addEventListener('message', handleMessage as EventListener);
@@ -158,7 +195,7 @@ export function createExperimentalWorkerRendererTrack({
       height: nextHeight,
       devicePixelRatio: nextDevicePixelRatio = globalThis.devicePixelRatio || 1,
     }) => {
-      worker.postMessage({
+      postWhenReady({
         type: RENDERER_WORKER_MESSAGE_TYPES.resize,
         payload: {
           width: nextWidth,
@@ -168,7 +205,7 @@ export function createExperimentalWorkerRendererTrack({
       });
     },
     postQualityUpdate: ({ runtimeControls, options: nextOptions }) => {
-      worker.postMessage({
+      postWhenReady({
         type: RENDERER_WORKER_MESSAGE_TYPES.quality,
         payload: {
           runtimeControls,
@@ -177,18 +214,24 @@ export function createExperimentalWorkerRendererTrack({
       });
     },
     postPreset: (payload) => {
-      worker.postMessage({
+      postWhenReady({
         type: RENDERER_WORKER_MESSAGE_TYPES.preset,
         payload,
       });
     },
     postFrame: (payload) => {
-      worker.postMessage({
+      postWhenReady({
         type: RENDERER_WORKER_MESSAGE_TYPES.frame,
         payload,
       });
     },
     dispose: () => {
+      if (isDisposed) {
+        return;
+      }
+
+      isDisposed = true;
+      queuedMessages.length = 0;
       worker.postMessage({
         type: RENDERER_WORKER_MESSAGE_TYPES.dispose,
       });
