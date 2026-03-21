@@ -1020,9 +1020,10 @@ wave_a=0.7
         (positions[4] ?? 0) - (positions[1] ?? 0),
       ]),
     );
-    expect(controlArray?.slice(0, 2)).toEqual(
+    expect(controlArray?.slice(0, 3)).toEqual(
       Float32Array.from([
         positions[2] ?? 0.24,
+        positions[5] ?? 0.24,
         0.0025 * Math.max(1, frameState.mainWave.thickness) * 0.5,
       ]),
     );
@@ -1032,6 +1033,64 @@ wave_a=0.7
         frameState.mainWave.color.g,
         frameState.mainWave.color.b,
         frameState.mainWave.alpha,
+      ]),
+    );
+  });
+
+  test('preserves per-point depth across compact WebGPU wave uploads', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Compact Wave Depth
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.7
+      `.trim(),
+      { id: 'compact-wave-depth' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const positions = frameState.mainWave.positions;
+    const segmentIndex = Array.from(
+      { length: Math.max(0, positions.length / 3 - 1) },
+      (_, index) => index,
+    ).find((index) => {
+      const startZ = positions[index * 3 + 2] ?? 0;
+      const endZ = positions[index * 3 + 5] ?? 0;
+      return Math.abs(endZ - startZ) > 1e-6;
+    });
+
+    expect(segmentIndex).toBeDefined();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) ===
+          frameState.mainWave.positions.length / 3,
+    );
+    const controlArray = getFloat32AttributeArray(waveMesh, 'instanceControl');
+    const controlOffset = (segmentIndex ?? 0) * 3;
+
+    expect(controlArray?.slice(controlOffset, controlOffset + 3)).toEqual(
+      Float32Array.from([
+        positions[(segmentIndex ?? 0) * 3 + 2] ?? 0.24,
+        positions[(segmentIndex ?? 0) * 3 + 5] ?? 0.24,
+        0.0025 * Math.max(1, frameState.mainWave.thickness) * 0.5,
       ]),
     );
   });
