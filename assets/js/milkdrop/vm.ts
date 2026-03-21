@@ -669,11 +669,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
     const drawMode = (this.state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
     const useProcedural = this.supportsProceduralWave(drawMode);
-    const positions = useProcedural ? [] : new Array<number>(samples * 3);
-    const proceduralSamples = useProcedural ? new Array<number>(samples) : null;
-    const proceduralVelocities = useProcedural
-      ? new Array<number>(samples)
-      : null;
+    const positions = new Array<number>(samples * 3);
 
     for (let index = 0; index < samples; index += 1) {
       const t = index / Math.max(1, samples - 1);
@@ -778,12 +774,6 @@ class MilkdropPresetVM implements MilkdropVM {
             velocity * 0.12;
       }
 
-      if (useProcedural && proceduralSamples && proceduralVelocities) {
-        proceduralSamples[index] = sampleValue;
-        proceduralVelocities[index] = velocity;
-        continue;
-      }
-
       const writeIndex = index * 3;
       positions[writeIndex] = x;
       positions[writeIndex + 1] = y;
@@ -813,8 +803,8 @@ class MilkdropPresetVM implements MilkdropVM {
 
     const procedural = useProcedural
       ? ({
-          samples: proceduralSamples ?? [],
-          velocities: proceduralVelocities ?? [],
+          sampleCount: samples,
+          sampleSource: 'waveform',
           mode,
           centerX,
           centerY,
@@ -884,10 +874,7 @@ class MilkdropPresetVM implements MilkdropVM {
       );
       const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
       const useProcedural = this.supportsProceduralCustomWave(wave, drawMode);
-      const positions = useProcedural ? [] : new Array<number>(sampleCount * 3);
-      const proceduralSamples = useProcedural
-        ? new Array<number>(sampleCount)
-        : null;
+      const positions = new Array<number>(sampleCount * 3);
       const pointLocals: MutableState = { ...frameLocals };
 
       for (let point = 0; point < sampleCount; point += 1) {
@@ -900,11 +887,6 @@ class MilkdropPresetVM implements MilkdropVM {
             0.55 *
             scaling *
             (1 + (frameLocals.mystery ?? 0) * 0.25);
-
-        if (useProcedural && proceduralSamples) {
-          proceduralSamples[point] = spectrumValue;
-          continue;
-        }
 
         Object.assign(pointLocals, frameLocals, {
           ...waveChannels,
@@ -948,7 +930,9 @@ class MilkdropPresetVM implements MilkdropVM {
 
       if (useProcedural) {
         proceduralWaves.push({
-          samples: proceduralSamples ?? [],
+          sampleCount,
+          sampleSource:
+            (frameLocals.spectrum ?? 0) >= 0.5 ? 'spectrum' : 'waveform',
           spectrum: (frameLocals.spectrum ?? 0) >= 0.5,
           centerX,
           centerY,

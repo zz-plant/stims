@@ -169,6 +169,7 @@ shapecode_0_thickoutline=1
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -218,6 +219,7 @@ shapecode_1_sides=6
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -261,6 +263,7 @@ ob_size=0.03
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     const firstFrame = createMilkdropVM(preset).step(makeSignals());
@@ -306,6 +309,7 @@ shapecode_0_thickoutline=1
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     const firstFrame = createMilkdropVM(preset).step(makeSignals());
@@ -413,6 +417,7 @@ per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -459,6 +464,7 @@ warpanimspeed=1.4
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -508,6 +514,7 @@ warpanimspeed=1.25
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -739,6 +746,7 @@ mesh_density=16
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -763,9 +771,13 @@ mesh_density=16
 
     expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
     expect(secondFrame.gpuGeometry.trailWaves.length).toBeGreaterThan(0);
-    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(mainWaveGroup.children[0]?.material).toMatchObject({
+      isNodeMaterial: true,
+    });
     expect(trailGroup.children.length).toBeGreaterThan(0);
-    expect(trailGroup.children[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(trailGroup.children[0]?.material).toMatchObject({
+      isNodeMaterial: true,
+    });
   });
 
   test('renders custom waves directly on webgpu-safe custom waves', () => {
@@ -798,6 +810,7 @@ wavecode_0_a=0.35
       scene,
       camera,
       backend: 'webgpu',
+      preset,
     });
 
     adapter.attach();
@@ -814,9 +827,9 @@ wavecode_0_a=0.35
     };
 
     expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
-    expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
-      ShaderMaterial,
-    );
+    expect(customWaveGroup.children[0]?.material).toMatchObject({
+      isNodeMaterial: true,
+    });
   });
 
   test('keeps WebGL fallback on CPU geometry for descriptors that WebGPU synthesizes procedurally', () => {

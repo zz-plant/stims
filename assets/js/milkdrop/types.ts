@@ -642,9 +642,11 @@ export type MilkdropProceduralMeshFieldVisual =
     density: number;
   };
 
+export type MilkdropProceduralAudioSource = 'waveform' | 'spectrum';
+
 export type MilkdropProceduralWaveVisual = {
-  samples: number[];
-  velocities: number[];
+  sampleCount: number;
+  sampleSource: MilkdropProceduralAudioSource;
   mode: number;
   centerX: number;
   centerY: number;
@@ -660,7 +662,8 @@ export type MilkdropProceduralWaveVisual = {
 };
 
 export type MilkdropProceduralCustomWaveVisual = {
-  samples: number[];
+  sampleCount: number;
+  sampleSource: MilkdropProceduralAudioSource;
   spectrum: boolean;
   centerX: number;
   centerY: number;

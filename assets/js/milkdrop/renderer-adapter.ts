@@ -39,6 +39,7 @@ import type {
   MilkdropProceduralWaveVisual,
   MilkdropRendererAdapter,
   MilkdropRenderPayload,
+  MilkdropRuntimeSignals,
   MilkdropShapeVisual,
   MilkdropWaveVisual,
   MilkdropWebGpuDescriptorPlan,
@@ -54,6 +55,18 @@ type RendererSetRenderTarget = {
   bivarianceHack: MilkdropFeedbackSetRenderTarget;
 }['bivarianceHack'];
 
+type ProceduralWaveSync = (
+  object: Line | undefined,
+  wave: MilkdropProceduralWaveVisual,
+  signals: MilkdropRuntimeSignals,
+) => Line;
+
+type ProceduralCustomWaveSync = (
+  object: Line | undefined,
+  wave: MilkdropProceduralCustomWaveVisual,
+  signals: MilkdropRuntimeSignals,
+) => Line;
+
 export type MilkdropRendererAdapterConfig = {
   scene: Scene;
   camera: Camera;
@@ -62,6 +75,8 @@ export type MilkdropRendererAdapterConfig = {
   preset?: MilkdropCompiledPreset | null;
   behavior?: MilkdropBackendBehavior;
   createFeedbackManager?: MilkdropFeedbackManagerFactory;
+  syncWebGPUProceduralWaveObject?: ProceduralWaveSync;
+  syncWebGPUProceduralCustomWaveObject?: ProceduralCustomWaveSync;
 };
 
 export type FeedbackBackendProfile = {
@@ -914,7 +929,7 @@ function syncProceduralWaveObject(
   const next =
     object ??
     new Line(
-      createProceduralWaveObjectGeometry(wave.samples.length),
+      createProceduralWaveObjectGeometry(wave.sampleCount),
       createProceduralWaveMaterial(),
     );
   if (!(next.material instanceof ShaderMaterial)) {
@@ -928,43 +943,13 @@ function syncProceduralWaveObject(
   if (
     !(
       sampleTAttribute instanceof Float32BufferAttribute &&
-      sampleTAttribute.array.length === wave.samples.length
+      sampleTAttribute.array.length === wave.sampleCount
     )
   ) {
     if (!isSharedGeometry(next.geometry)) {
       disposeGeometry(next.geometry);
     }
-    next.geometry = createProceduralWaveObjectGeometry(wave.samples.length);
-  }
-
-  const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
-  if (
-    !(
-      sampleValueAttribute instanceof Float32BufferAttribute &&
-      sampleValueAttribute.array.length === wave.samples.length
-    )
-  ) {
-    const attribute = new Float32BufferAttribute(wave.samples, 1);
-    attribute.setUsage(DynamicDrawUsage);
-    next.geometry.setAttribute('sampleValue', attribute);
-  } else {
-    sampleValueAttribute.array.set(wave.samples);
-    sampleValueAttribute.needsUpdate = true;
-  }
-
-  const sampleVelocityAttribute = next.geometry.getAttribute('sampleVelocity');
-  if (
-    !(
-      sampleVelocityAttribute instanceof Float32BufferAttribute &&
-      sampleVelocityAttribute.array.length === wave.velocities.length
-    )
-  ) {
-    const attribute = new Float32BufferAttribute(wave.velocities, 1);
-    attribute.setUsage(DynamicDrawUsage);
-    next.geometry.setAttribute('sampleVelocity', attribute);
-  } else {
-    sampleVelocityAttribute.array.set(wave.velocities);
-    sampleVelocityAttribute.needsUpdate = true;
+    next.geometry = createProceduralWaveObjectGeometry(wave.sampleCount);
   }
 
   const material = next.material as ShaderMaterial;
@@ -989,7 +974,7 @@ function syncProceduralCustomWaveObject(
   const next =
     object ??
     new Line(
-      createProceduralWaveObjectGeometry(wave.samples.length),
+      createProceduralWaveObjectGeometry(wave.sampleCount),
       createProceduralCustomWaveMaterial(),
     );
   if (!(next.material instanceof ShaderMaterial)) {
@@ -1003,28 +988,13 @@ function syncProceduralCustomWaveObject(
   if (
     !(
       sampleTAttribute instanceof Float32BufferAttribute &&
-      sampleTAttribute.array.length === wave.samples.length
+      sampleTAttribute.array.length === wave.sampleCount
     )
   ) {
     if (!isSharedGeometry(next.geometry)) {
       disposeGeometry(next.geometry);
     }
-    next.geometry = createProceduralWaveObjectGeometry(wave.samples.length);
-  }
-
-  const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
-  if (
-    !(
-      sampleValueAttribute instanceof Float32BufferAttribute &&
-      sampleValueAttribute.array.length === wave.samples.length
-    )
-  ) {
-    const attribute = new Float32BufferAttribute(wave.samples, 1);
-    attribute.setUsage(DynamicDrawUsage);
-    next.geometry.setAttribute('sampleValue', attribute);
-  } else {
-    sampleValueAttribute.array.set(wave.samples);
-    sampleValueAttribute.needsUpdate = true;
+    next.geometry = createProceduralWaveObjectGeometry(wave.sampleCount);
   }
 
   const material = next.material as ShaderMaterial;
@@ -1815,6 +1785,8 @@ function syncBorderObject(
 }
 
 class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
+  private readonly syncWebGPUProceduralWaveObject: ProceduralWaveSync | null;
+  private readonly syncWebGPUProceduralCustomWaveObject: ProceduralCustomWaveSync | null;
   readonly backend: 'webgl' | 'webgpu';
   private readonly behavior: MilkdropBackendBehavior;
   private readonly createFeedbackManager: MilkdropFeedbackManagerFactory | null;
@@ -1882,6 +1854,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     backend,
     behavior,
     createFeedbackManager,
+    syncWebGPUProceduralWaveObject,
+    syncWebGPUProceduralCustomWaveObject,
   }: {
     scene: Scene;
     camera: Camera;
@@ -1889,6 +1863,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     backend: 'webgl' | 'webgpu';
     behavior: MilkdropBackendBehavior;
     createFeedbackManager: MilkdropFeedbackManagerFactory | null;
+    syncWebGPUProceduralWaveObject: ProceduralWaveSync | null;
+    syncWebGPUProceduralCustomWaveObject: ProceduralCustomWaveSync | null;
   }) {
     this.scene = scene;
     this.camera = camera;
@@ -1896,6 +1872,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.backend = backend;
     this.behavior = behavior;
     this.createFeedbackManager = createFeedbackManager;
+    this.syncWebGPUProceduralWaveObject = syncWebGPUProceduralWaveObject;
+    this.syncWebGPUProceduralCustomWaveObject =
+      syncWebGPUProceduralCustomWaveObject;
     this.root.frustumCulled = false;
 
     this.background.position.z = -1.2;
@@ -1987,11 +1966,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private renderProceduralWaveGroup(
     group: Group,
     waves: MilkdropProceduralWaveVisual[],
+    signals: MilkdropRuntimeSignals,
   ) {
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralWaveVisual;
       const existing = group.children[index] as Line | undefined;
-      const synced = syncProceduralWaveObject(existing, wave);
+      const synced =
+        this.backend === 'webgpu' && this.syncWebGPUProceduralWaveObject
+          ? this.syncWebGPUProceduralWaveObject(existing, wave, signals)
+          : syncProceduralWaveObject(existing, wave);
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -2005,11 +1988,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private renderProceduralCustomWaveGroup(
     group: Group,
     waves: MilkdropProceduralCustomWaveVisual[],
+    signals: MilkdropRuntimeSignals,
   ) {
     for (let index = 0; index < waves.length; index += 1) {
       const wave = waves[index] as MilkdropProceduralCustomWaveVisual;
       const existing = group.children[index] as Line | undefined;
-      const synced = syncProceduralCustomWaveObject(existing, wave);
+      const synced =
+        this.backend === 'webgpu' && this.syncWebGPUProceduralCustomWaveObject
+          ? this.syncWebGPUProceduralCustomWaveObject(existing, wave, signals)
+          : syncProceduralCustomWaveObject(existing, wave);
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -2342,9 +2329,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       proceduralWavePlans.some((plan) => plan.target === 'trail-waves');
 
     if (canUseProceduralMainWave && payload.frameState.gpuGeometry.mainWave) {
-      this.renderProceduralWaveGroup(this.mainWaveGroup, [
-        payload.frameState.gpuGeometry.mainWave,
-      ]);
+      this.renderProceduralWaveGroup(
+        this.mainWaveGroup,
+        [payload.frameState.gpuGeometry.mainWave],
+        payload.frameState.signals,
+      );
     } else {
       this.renderWaveGroup(this.mainWaveGroup, [payload.frameState.mainWave]);
     }
@@ -2355,6 +2344,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.renderProceduralCustomWaveGroup(
         this.customWaveGroup,
         payload.frameState.gpuGeometry.customWaves,
+        payload.frameState.signals,
       );
     } else {
       this.renderWaveGroup(
@@ -2369,6 +2359,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.renderProceduralWaveGroup(
         this.trailGroup,
         payload.frameState.gpuGeometry.trailWaves,
+        payload.frameState.signals,
       );
     } else {
       this.renderLineVisualGroup(this.trailGroup, payload.frameState.trails);
@@ -2443,15 +2434,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 }
 
-export function createMilkdropRendererAdapterCore({
-  scene,
-  camera,
-  renderer,
-  backend,
-  preset,
-  behavior,
-  createFeedbackManager,
-}: MilkdropRendererAdapterConfig) {
+export function createMilkdropRendererAdapterCore(
+  config: MilkdropRendererAdapterConfig,
+) {
+  const {
+    scene,
+    camera,
+    renderer,
+    backend,
+    preset,
+    behavior,
+    createFeedbackManager,
+  } = config;
   const adapter = new ThreeMilkdropAdapter({
     scene,
     camera,
@@ -2463,6 +2457,10 @@ export function createMilkdropRendererAdapterCore({
         ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR
         : WEBGL_MILKDROP_BACKEND_BEHAVIOR),
     createFeedbackManager: createFeedbackManager ?? null,
+    syncWebGPUProceduralWaveObject:
+      config.syncWebGPUProceduralWaveObject ?? null,
+    syncWebGPUProceduralCustomWaveObject:
+      config.syncWebGPUProceduralCustomWaveObject ?? null,
   });
   if (preset) {
     adapter.setPreset(preset);
