@@ -30,6 +30,7 @@ import type {
   MilkdropDiagnostic,
   MilkdropDiagnosticSeverity,
   MilkdropExpressionNode,
+  MilkdropExtractedShaderSampleMetadata,
   MilkdropFeatureAnalysis,
   MilkdropFeatureKey,
   MilkdropFidelityClass,
@@ -43,6 +44,7 @@ import type {
   MilkdropShaderControlExpressions,
   MilkdropShaderControls,
   MilkdropShaderExpressionNode,
+  MilkdropShaderSampleDimension,
   MilkdropShaderStatement,
   MilkdropShaderTextureBlendMode,
   MilkdropShaderTextureSampler,
@@ -912,19 +914,23 @@ function createDefaultShaderControls(): MilkdropShaderControls {
     textureLayer: {
       source: 'none',
       mode: 'none',
+      sampleDimension: '2d',
       amount: 0,
       scaleX: 1,
       scaleY: 1,
       offsetX: 0,
       offsetY: 0,
+      volumeSliceZ: null,
     },
     warpTexture: {
       source: 'none',
+      sampleDimension: '2d',
       amount: 0,
       scaleX: 1,
       scaleY: 1,
       offsetX: 0,
       offsetY: 0,
+      volumeSliceZ: null,
     },
   };
 }
@@ -946,18 +952,22 @@ function createDefaultShaderControlExpressions(): MilkdropShaderControlExpressio
     solarizeBoost: null,
     tint: { r: null, g: null, b: null },
     textureLayer: {
+      sampleDimension: '2d',
       amount: null,
       scaleX: null,
       scaleY: null,
       offsetX: null,
       offsetY: null,
+      volumeSliceZ: null,
     },
     warpTexture: {
+      sampleDimension: '2d',
       amount: null,
       scaleX: null,
       scaleY: null,
       offsetX: null,
       offsetY: null,
+      volumeSliceZ: null,
     },
   };
 }
@@ -1562,27 +1572,80 @@ function isShaderSampleRgbExpression(
     node.type === 'member' &&
     ['rgb', 'xyz'].includes(node.property.toLowerCase()) &&
     node.object.type === 'call' &&
-    normalizeShaderCallName(node.object.name) === 'tex2d' &&
+    ['tex2d', 'tex3d'].includes(normalizeShaderCallName(node.object.name)) &&
     node.object.args.length >= 2
   );
 }
 
-function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
-  source: string;
+function splitShaderSampleCoordinate(
+  name: 'tex2d' | 'tex3d',
+  coordinate: MilkdropShaderExpressionNode,
+): {
+  dimension: MilkdropShaderSampleDimension;
   uv: MilkdropShaderExpressionNode;
+  z: MilkdropShaderExpressionNode | null;
 } | null {
+  if (name === 'tex2d') {
+    return {
+      dimension: '2d',
+      uv: coordinate,
+      z: null,
+    };
+  }
+
+  if (
+    coordinate.type === 'call' &&
+    normalizeShaderCallName(coordinate.name) === 'vec3'
+  ) {
+    if (coordinate.args.length >= 2) {
+      return {
+        dimension: '3d',
+        uv: coordinate.args[0] as MilkdropShaderExpressionNode,
+        z: coordinate.args[1] as MilkdropShaderExpressionNode,
+      };
+    }
+
+    if (coordinate.args.length >= 3) {
+      const [x, y, z] = coordinate.args;
+      if (x && y && z) {
+        return {
+          dimension: '3d',
+          uv: {
+            type: 'call',
+            name: 'vec2',
+            args: [x, y],
+          },
+          z,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function getShaderSampleInfo(
+  node: MilkdropShaderExpressionNode,
+): MilkdropExtractedShaderSampleMetadata | null {
   if (
     node.type !== 'member' ||
     !['rgb', 'xyz'].includes(node.property.toLowerCase()) ||
     node.object.type !== 'call' ||
-    normalizeShaderCallName(node.object.name) !== 'tex2d' ||
+    !['tex2d', 'tex3d'].includes(normalizeShaderCallName(node.object.name)) ||
     node.object.args.length < 2
   ) {
     return null;
   }
   const samplerArg = node.object.args[0];
-  const uvArg = node.object.args[1];
-  if (!samplerArg || !uvArg) {
+  const coordinateArg = node.object.args[1];
+  if (!samplerArg || !coordinateArg) {
+    return null;
+  }
+  const callName = normalizeShaderCallName(node.object.name) as
+    | 'tex2d'
+    | 'tex3d';
+  const coordinate = splitShaderSampleCoordinate(callName, coordinateArg);
+  if (!coordinate) {
     return null;
   }
   const source =
@@ -1594,7 +1657,9 @@ function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
   }
   return {
     source,
-    uv: uvArg,
+    sampleDimension: coordinate.dimension,
+    uv: coordinate.uv,
+    volumeSliceZ: coordinate.z,
   };
 }
 
@@ -1612,10 +1677,7 @@ function extractScaledShaderSampleExpression(
 ): {
   amountExpression: MilkdropExpressionNode | null;
   amountValue: number;
-  sample: {
-    source: string;
-    uv: MilkdropShaderExpressionNode;
-  };
+  sample: MilkdropExtractedShaderSampleMetadata;
 } | null {
   const directSample = getShaderSampleInfo(node);
   if (
@@ -1829,6 +1891,61 @@ function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
   return null;
 }
 
+function analyzeShaderVolumeSlice(node: MilkdropShaderExpressionNode | null): {
+  value: number | null;
+  expression: MilkdropExpressionNode | null;
+} {
+  if (!node) {
+    return {
+      value: null,
+      expression: null,
+    };
+  }
+
+  const scalar = evaluateShaderScalarResult(
+    node,
+    { uv: { kind: 'vec2', value: [0, 0] } },
+    DEFAULT_MILKDROP_STATE,
+    {},
+  );
+  return {
+    value: scalar?.value ?? null,
+    expression: scalar?.expression ?? null,
+  };
+}
+
+function analyzeShaderSampleCoordinate(
+  sample: MilkdropExtractedShaderSampleMetadata,
+) {
+  return {
+    uv: analyzeShaderUvTransform(sample.uv),
+    volumeSlice: analyzeShaderVolumeSlice(sample.volumeSliceZ),
+  };
+}
+
+function applyTextureLayerSample(
+  controls: MilkdropShaderControls,
+  expressions: MilkdropShaderControlExpressions,
+  sample: MilkdropExtractedShaderSampleMetadata,
+) {
+  const coordinate = analyzeShaderSampleCoordinate(sample);
+  controls.textureLayer.source = sample.source as MilkdropShaderTextureSampler;
+  controls.textureLayer.sampleDimension = sample.sampleDimension;
+  controls.textureLayer.volumeSliceZ = coordinate.volumeSlice.value;
+  expressions.textureLayer.sampleDimension = sample.sampleDimension;
+  expressions.textureLayer.volumeSliceZ = coordinate.volumeSlice.expression;
+  if (coordinate.uv) {
+    controls.textureLayer.scaleX = coordinate.uv.scaleX;
+    controls.textureLayer.scaleY = coordinate.uv.scaleY;
+    controls.textureLayer.offsetX = coordinate.uv.offsetX;
+    controls.textureLayer.offsetY = coordinate.uv.offsetY;
+    expressions.textureLayer.scaleX = coordinate.uv.expressions.scaleX;
+    expressions.textureLayer.scaleY = coordinate.uv.expressions.scaleY;
+    expressions.textureLayer.offsetX = coordinate.uv.expressions.offsetX;
+    expressions.textureLayer.offsetY = coordinate.uv.expressions.offsetY;
+  }
+}
+
 function isShaderUvIdentifier(node: MilkdropShaderExpressionNode) {
   return node.type === 'identifier' && node.name.toLowerCase() === 'uv';
 }
@@ -1840,7 +1957,7 @@ function isShaderInvertSampleExpression(
     node.type === 'binary' &&
     node.operator === '-' &&
     isShaderLiteralNumber(node.left, 1) &&
-    isShaderSampleRgbExpression(node.right)
+    isShaderMainSampleExpression(node.right)
   );
 }
 
@@ -1868,7 +1985,7 @@ function isShaderSolarizeSampleExpression(
   }
   const right = arg.right;
   const centeredSample =
-    isShaderSampleRgbExpression(arg.left) &&
+    isShaderMainSampleExpression(arg.left) &&
     (isShaderLiteralNumber(right, 0.5) ||
       (right?.type === 'call' &&
         normalizeShaderCallName(right.name) === 'vec3' &&
@@ -2238,24 +2355,13 @@ function applyShaderAstStatement({
       directSample.source !== 'main' &&
       directSample.source !== 'none'
     ) {
-      const uvTransform = analyzeShaderUvTransform(directSample.uv);
       if (!isAuxShaderSamplerName(directSample.source)) {
         return false;
       }
-      controls.textureLayer.source = directSample.source;
       controls.textureLayer.mode = 'replace';
       controls.textureLayer.amount = 1;
       expressions.textureLayer.amount = createLiteralExpression(1);
-      if (uvTransform) {
-        controls.textureLayer.scaleX = uvTransform.scaleX;
-        controls.textureLayer.scaleY = uvTransform.scaleY;
-        controls.textureLayer.offsetX = uvTransform.offsetX;
-        controls.textureLayer.offsetY = uvTransform.offsetY;
-        expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-        expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-        expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-        expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-      }
+      applyTextureLayerSample(controls, expressions, directSample);
       return true;
     }
 
@@ -2362,24 +2468,13 @@ function applyShaderAstStatement({
           auxSample.source !== 'main' &&
           auxSample.source !== 'none'
         ) {
-          const uvTransform = analyzeShaderUvTransform(auxSample.uv);
           if (!isAuxShaderSamplerName(auxSample.source)) {
             return false;
           }
-          controls.textureLayer.source = auxSample.source;
           controls.textureLayer.mode = 'mix';
           controls.textureLayer.amount = amount.value;
           expressions.textureLayer.amount = amount.expression;
-          if (uvTransform) {
-            controls.textureLayer.scaleX = uvTransform.scaleX;
-            controls.textureLayer.scaleY = uvTransform.scaleY;
-            controls.textureLayer.offsetX = uvTransform.offsetX;
-            controls.textureLayer.offsetY = uvTransform.offsetY;
-            expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-            expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-            expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-            expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-          }
+          applyTextureLayerSample(controls, expressions, auxSample);
           return true;
         }
         if (isShaderInvertSampleExpression(targetNode)) {
@@ -2475,24 +2570,13 @@ function applyShaderAstStatement({
         : resolvedExpression.left;
       const auxSample = extractScaledShaderSampleExpression(auxNode);
       if (auxSample) {
-        const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
         if (!isAuxShaderSamplerName(auxSample.sample.source)) {
           return false;
         }
-        controls.textureLayer.source = auxSample.sample.source;
         controls.textureLayer.mode = 'add';
         controls.textureLayer.amount = auxSample.amountValue;
         expressions.textureLayer.amount = auxSample.amountExpression;
-        if (uvTransform) {
-          controls.textureLayer.scaleX = uvTransform.scaleX;
-          controls.textureLayer.scaleY = uvTransform.scaleY;
-          controls.textureLayer.offsetX = uvTransform.offsetX;
-          controls.textureLayer.offsetY = uvTransform.offsetY;
-          expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-          expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-          expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-          expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-        }
+        applyTextureLayerSample(controls, expressions, auxSample.sample);
         return true;
       }
     }
@@ -2508,24 +2592,13 @@ function applyShaderAstStatement({
         : resolvedExpression.left;
       const auxSample = extractScaledShaderSampleExpression(auxNode);
       if (auxSample) {
-        const uvTransform = analyzeShaderUvTransform(auxSample.sample.uv);
         if (!isAuxShaderSamplerName(auxSample.sample.source)) {
           return false;
         }
-        controls.textureLayer.source = auxSample.sample.source;
         controls.textureLayer.mode = 'multiply';
         controls.textureLayer.amount = auxSample.amountValue;
         expressions.textureLayer.amount = auxSample.amountExpression;
-        if (uvTransform) {
-          controls.textureLayer.scaleX = uvTransform.scaleX;
-          controls.textureLayer.scaleY = uvTransform.scaleY;
-          controls.textureLayer.offsetX = uvTransform.offsetX;
-          controls.textureLayer.offsetY = uvTransform.offsetY;
-          expressions.textureLayer.scaleX = uvTransform.expressions.scaleX;
-          expressions.textureLayer.scaleY = uvTransform.expressions.scaleY;
-          expressions.textureLayer.offsetX = uvTransform.expressions.offsetX;
-          expressions.textureLayer.offsetY = uvTransform.expressions.offsetY;
-        }
+        applyTextureLayerSample(controls, expressions, auxSample.sample);
         return true;
       }
     }
@@ -4047,6 +4120,10 @@ function mergeShaderControlAnalysis(
     warpAnalysis.expressions.textureLayer.offsetY,
     0,
   );
+  const textureLayerSample =
+    compAnalysis.controls.textureLayer.mode !== 'none'
+      ? compAnalysis
+      : warpAnalysis;
   const warpTextureAmount = pickShaderScalar(
     warpAnalysis.controls.warpTexture.amount,
     warpAnalysis.expressions.warpTexture.amount,
@@ -4082,6 +4159,10 @@ function mergeShaderControlAnalysis(
     compAnalysis.expressions.warpTexture.offsetY,
     0,
   );
+  const warpTextureSample =
+    warpAnalysis.controls.warpTexture.source !== 'none'
+      ? warpAnalysis
+      : compAnalysis;
 
   return {
     controls: {
@@ -4116,22 +4197,27 @@ function mergeShaderControlAnalysis(
           compAnalysis.controls.textureLayer.mode !== 'none'
             ? compAnalysis.controls.textureLayer.mode
             : warpAnalysis.controls.textureLayer.mode,
+        sampleDimension:
+          textureLayerSample.controls.textureLayer.sampleDimension,
         amount: textureLayerAmount.value,
         scaleX: textureLayerScaleX.value,
         scaleY: textureLayerScaleY.value,
         offsetX: textureLayerOffsetX.value,
         offsetY: textureLayerOffsetY.value,
+        volumeSliceZ: textureLayerSample.controls.textureLayer.volumeSliceZ,
       },
       warpTexture: {
         source:
           warpAnalysis.controls.warpTexture.source !== 'none'
             ? warpAnalysis.controls.warpTexture.source
             : compAnalysis.controls.warpTexture.source,
+        sampleDimension: warpTextureSample.controls.warpTexture.sampleDimension,
         amount: warpTextureAmount.value,
         scaleX: warpTextureScaleX.value,
         scaleY: warpTextureScaleY.value,
         offsetX: warpTextureOffsetX.value,
         offsetY: warpTextureOffsetY.value,
+        volumeSliceZ: warpTextureSample.controls.warpTexture.volumeSliceZ,
       },
     },
     expressions: {
@@ -4158,18 +4244,24 @@ function mergeShaderControlAnalysis(
         b: tint.b.expression,
       },
       textureLayer: {
+        sampleDimension:
+          textureLayerSample.expressions.textureLayer.sampleDimension,
         amount: textureLayerAmount.expression,
         scaleX: textureLayerScaleX.expression,
         scaleY: textureLayerScaleY.expression,
         offsetX: textureLayerOffsetX.expression,
         offsetY: textureLayerOffsetY.expression,
+        volumeSliceZ: textureLayerSample.expressions.textureLayer.volumeSliceZ,
       },
       warpTexture: {
+        sampleDimension:
+          warpTextureSample.expressions.warpTexture.sampleDimension,
         amount: warpTextureAmount.expression,
         scaleX: warpTextureScaleX.expression,
         scaleY: warpTextureScaleY.expression,
         offsetX: warpTextureOffsetX.expression,
         offsetY: warpTextureOffsetY.expression,
+        volumeSliceZ: warpTextureSample.expressions.warpTexture.volumeSliceZ,
       },
     },
   };

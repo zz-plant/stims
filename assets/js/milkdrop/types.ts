@@ -276,39 +276,62 @@ export type MilkdropShaderTextureBlendMode =
   | 'add'
   | 'multiply';
 
+export type MilkdropShaderSampleDimension = '2d' | '3d';
+
+export type MilkdropShaderSampleValue = {
+  dimension: MilkdropShaderSampleDimension;
+  uv: MilkdropShaderExpressionNode;
+  z: MilkdropShaderExpressionNode | null;
+};
+
+export type MilkdropExtractedShaderSampleMetadata = {
+  source: string;
+  sampleDimension: MilkdropShaderSampleDimension;
+  uv: MilkdropShaderExpressionNode;
+  volumeSliceZ: MilkdropShaderExpressionNode | null;
+};
+
 export type MilkdropShaderTextureLayerControls = {
   source: MilkdropShaderTextureSampler;
   mode: MilkdropShaderTextureBlendMode;
+  sampleDimension: MilkdropShaderSampleDimension;
   amount: number;
   scaleX: number;
   scaleY: number;
   offsetX: number;
   offsetY: number;
+  volumeSliceZ: number | null;
 };
 
 export type MilkdropShaderTextureWarpControls = {
   source: MilkdropShaderTextureSampler;
+  sampleDimension: MilkdropShaderSampleDimension;
   amount: number;
   scaleX: number;
   scaleY: number;
   offsetX: number;
   offsetY: number;
+  volumeSliceZ: number | null;
 };
 
 export type MilkdropShaderTextureLayerExpressions = {
+  sampleDimension: MilkdropShaderSampleDimension;
   amount: MilkdropExpressionNode | null;
   scaleX: MilkdropExpressionNode | null;
   scaleY: MilkdropExpressionNode | null;
   offsetX: MilkdropExpressionNode | null;
   offsetY: MilkdropExpressionNode | null;
+  volumeSliceZ: MilkdropExpressionNode | null;
 };
 
 export type MilkdropShaderTextureWarpExpressions = {
+  sampleDimension: MilkdropShaderSampleDimension;
   amount: MilkdropExpressionNode | null;
   scaleX: MilkdropExpressionNode | null;
   scaleY: MilkdropExpressionNode | null;
   offsetX: MilkdropExpressionNode | null;
   offsetY: MilkdropExpressionNode | null;
+  volumeSliceZ: MilkdropExpressionNode | null;
 };
 
 export type MilkdropShaderExpressionNode =
