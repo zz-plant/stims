@@ -215,6 +215,7 @@ body {
 }
 
 .active-toy-status__content {
+  contain: layout style;
   background: linear-gradient(
     165deg,
     rgba(12, 20, 24, 0.94),
@@ -417,6 +418,22 @@ body {
 
 .shell-panel {
   pointer-events: auto;
+  contain: layout style;
+  isolation: isolate;
+}
+
+@supports selector(:has(*)) {
+  .shell-panels:has(.shell-panel:not(:empty)) {
+    align-content: end;
+  }
+
+  .shell-panel:has(
+      > .control-panel,
+      > [data-audio-controls]:not(:empty),
+      > [data-settings-panel]:not(:empty)
+    ) {
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
+  }
 }
 
 .shell-panel[data-audio-controls]:empty,
@@ -427,6 +444,8 @@ body {
 }
 
 .active-toy-nav {
+  contain: layout style;
+  isolation: isolate;
   position: fixed;
   top: max(8px, env(safe-area-inset-top));
   left: 50%;
