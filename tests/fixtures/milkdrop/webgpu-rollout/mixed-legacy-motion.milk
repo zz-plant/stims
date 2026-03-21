@@ -1,0 +1,9 @@
+title=Mixed Legacy Motion Rollout
+mesh_density=18
+motion_vectors=1
+motion_vectors_x=7
+motion_vectors_y=5
+mv_l=0.4
+wavecode_0_enabled=1
+wavecode_0_samples=32
+wavecode_0_spectrum=1
