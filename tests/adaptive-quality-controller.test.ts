@@ -14,6 +14,15 @@ describe('createAdaptiveQualityController', () => {
           offscreenCanvas: true,
           transferControlToOffscreen: true,
         },
+        optimization: {
+          timestampQuery: false,
+          shaderF16: false,
+          subgroups: false,
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+          workerOffscreenPipeline: true,
+        },
         features: {
           bgra8unormStorage: false,
           float32Blendable: false,
@@ -51,6 +60,15 @@ describe('createAdaptiveQualityController', () => {
           workers: true,
           offscreenCanvas: true,
           transferControlToOffscreen: true,
+        },
+        optimization: {
+          timestampQuery: true,
+          shaderF16: true,
+          subgroups: true,
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+          workerOffscreenPipeline: true,
         },
         features: {
           bgra8unormStorage: true,

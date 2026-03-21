@@ -73,6 +73,45 @@ describe('applyRendererSettings', () => {
     expect(pixelRatio).toBeGreaterThan(0);
   });
 
+  test('reapplies the backend max pixel-ratio cap for later settings updates', () => {
+    const originalDevicePixelRatio = window.devicePixelRatio;
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: 2,
+    });
+
+    const pixelRatios: number[] = [];
+    const renderer = {
+      setPixelRatio: (value: number) => {
+        pixelRatios.push(value);
+      },
+      setSize: () => {},
+      toneMappingExposure: 1,
+    };
+    const info = {
+      renderer: renderer as never,
+      backend: 'webgl' as const,
+      maxPixelRatio: 2,
+      renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 1,
+      adaptiveRenderScaleMultiplier: 1,
+      adaptiveDensityMultiplier: 1,
+      exposure: 1,
+    };
+
+    applyRendererSettings(renderer as never, info, {
+      maxPixelRatio: 1.75,
+      renderScale: 1,
+    });
+
+    expect(pixelRatios[pixelRatios.length - 1]).toBeCloseTo(1.35, 6);
+
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: originalDevicePixelRatio,
+    });
+  });
+
   test('applies adaptive multipliers without overwriting the stored base settings', () => {
     const pixelRatios: number[] = [];
     const renderer = {
