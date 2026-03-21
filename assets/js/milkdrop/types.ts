@@ -261,6 +261,7 @@ export type MilkdropShaderColorControls = {
 export type MilkdropShaderTextureSampler =
   | 'none'
   | 'noise'
+  | 'noisevol'
   | 'perlin'
   | 'simplex'
   | 'voronoi'
@@ -337,7 +338,7 @@ export type MilkdropShaderExpressionNode =
     };
 
 export type MilkdropShaderStatement = {
-  declaration: 'const' | 'float' | 'vec2' | 'vec3' | null;
+  declaration: 'const' | 'float' | 'vec2' | 'vec3' | 'float3' | null;
   target: string;
   operator: '=' | '+=' | '-=' | '*=' | '/=';
   rawValue: string;

@@ -910,4 +910,28 @@ per_frame_1=zoom = missing_alias + unsupported_fn(bass_att)
       'unsupported_fn',
     ]);
   });
+
+  test('translates canonical volume-noise shader samples into supported texture controls', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Volume Noise
+comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz
+      `.trim(),
+      { id: 'volume-noise' },
+    );
+
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+      [],
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
+      'noisevol',
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+    expect(compiled.ir.post.shaderControls.textureLayer.amount).toBeCloseTo(
+      1,
+      6,
+    );
+  });
 });

@@ -52,6 +52,7 @@ const SHADER_TEXTURE_SAMPLERS = new Set([
   'main',
   'none',
   'noise',
+  'noisevol',
   'perlin',
   'simplex',
   'voronoi',
@@ -74,8 +75,12 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
 > = {
   fw_noise_lq: 'noise',
   fw_noise_hq: 'noise',
+  fw_noisevol_lq: 'noisevol',
+  fw_noisevol_hq: 'noisevol',
   noise_lq: 'noise',
   noise_hq: 'noise',
+  noisevol_lq: 'noisevol',
+  noisevol_hq: 'noisevol',
 };
 
 function createDefaultShapeSlot(index: number): Record<string, number> {
@@ -1515,9 +1520,37 @@ function isShaderSampleRgbExpression(
     node.type === 'member' &&
     ['rgb', 'xyz'].includes(node.property.toLowerCase()) &&
     node.object.type === 'call' &&
-    ['tex2d', 'texture'].includes(node.object.name.toLowerCase()) &&
+    ['tex2d', 'texture', 'tex3d', 'texture3d'].includes(
+      node.object.name.toLowerCase(),
+    ) &&
     node.object.args.length >= 2
   );
+}
+
+function extractShaderSampleUvCoordinate(
+  node: MilkdropShaderExpressionNode,
+): MilkdropShaderExpressionNode | null {
+  if (
+    node.type === 'call' &&
+    ['vec3', 'float3'].includes(node.name.toLowerCase()) &&
+    node.args.length >= 2
+  ) {
+    const firstArg = node.args[0];
+    if (!firstArg) {
+      return null;
+    }
+    if (isShaderUvIdentifier(firstArg)) {
+      return firstArg;
+    }
+    if (
+      firstArg.type === 'call' &&
+      firstArg.name.toLowerCase() === 'vec2' &&
+      firstArg.args.length >= 2
+    ) {
+      return firstArg;
+    }
+  }
+  return node;
 }
 
 function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
@@ -1528,7 +1561,9 @@ function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
     node.type !== 'member' ||
     !['rgb', 'xyz'].includes(node.property.toLowerCase()) ||
     node.object.type !== 'call' ||
-    !['tex2d', 'texture'].includes(node.object.name.toLowerCase()) ||
+    !['tex2d', 'texture', 'tex3d', 'texture3d'].includes(
+      node.object.name.toLowerCase(),
+    ) ||
     node.object.args.length < 2
   ) {
     return null;
@@ -1545,9 +1580,13 @@ function getShaderSampleInfo(node: MilkdropShaderExpressionNode): {
   if (!source) {
     return null;
   }
+  const uv = extractShaderSampleUvCoordinate(uvArg);
+  if (!uv) {
+    return null;
+  }
   return {
     source,
-    uv: uvArg,
+    uv,
   };
 }
 
@@ -1902,7 +1941,9 @@ function applyShaderAstStatement({
     );
 
   if (
-    (statement.declaration === 'vec2' || statement.declaration === 'vec3') &&
+    (statement.declaration === 'vec2' ||
+      statement.declaration === 'vec3' ||
+      statement.declaration === 'float3') &&
     key !== 'uv' &&
     key !== 'tint' &&
     key !== 'ret' &&
@@ -4916,7 +4957,6 @@ function createIR(
     MilkdropProgramBlock,
     { sourceLine: string; line: number }
   >();
-  const unsupportedKeys = new Set<string>();
   let unsupportedShaderText = false;
   let supportedShaderText = false;
   let warpShaderText: string | null = null;

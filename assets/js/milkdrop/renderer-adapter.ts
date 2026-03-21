@@ -442,6 +442,8 @@ function getShaderTextureSourceId(source: string) {
     case 'noise':
     case 'perlin':
       return 1;
+    case 'noisevol':
+      return 8;
     case 'simplex':
       return 2;
     case 'voronoi':

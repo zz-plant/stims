@@ -179,6 +179,33 @@ function createSampleAuxTextureNode(
   return Fn(([source, sampleUv]: [any, any]) => {
     const wrappedUv = fract(sampleUv);
     const flat = vec4(0.5, 0.5, 0.5, 1);
+    const volumeNoise = Fn(() => {
+      const animatedUv = wrappedUv.add(
+        vec2(_uniforms.signalTime.mul(0.021), _uniforms.signalTime.mul(-0.017)),
+      );
+      const slice = _uniforms.signalTime
+        .mul(0.1)
+        .add(dot(wrappedUv, vec2(0.31, 0.27)));
+      const slicePhase = fract(slice);
+      const sliceOffsetA = vec2(slice.mul(0.071), slice.mul(-0.053));
+      const sliceOffsetB = vec2(slice.mul(-0.041), slice.mul(0.067));
+      const simplexA = simplexTexNode.sample(
+        fract(animatedUv.add(sliceOffsetA)),
+      ).rgb;
+      const simplexB = simplexTexNode.sample(
+        fract(animatedUv.mul(1.37).add(sliceOffsetB)),
+      ).rgb;
+      const noiseA = noiseTexNode.sample(
+        fract(animatedUv.mul(1.91).add(vec2(sliceOffsetB.y, sliceOffsetB.x))),
+      ).rgb;
+      const noiseB = noiseTexNode.sample(
+        fract(animatedUv.mul(0.83).add(vec2(sliceOffsetA.y, sliceOffsetA.x))),
+      ).rgb;
+      return vec4(
+        mix(mix(simplexA, noiseA, 0.5), mix(simplexB, noiseB, 0.5), slicePhase),
+        1,
+      );
+    });
     return select(
       source.lessThan(0.5),
       flat,
@@ -200,7 +227,11 @@ function createSampleAuxTextureNode(
                 select(
                   source.lessThan(6.5),
                   patternTexNode.sample(wrappedUv),
-                  fractalTexNode.sample(wrappedUv),
+                  select(
+                    source.lessThan(7.5),
+                    fractalTexNode.sample(wrappedUv),
+                    volumeNoise(),
+                  ),
                 ),
               ),
             ),

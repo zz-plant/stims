@@ -18,7 +18,7 @@ type ShaderValue =
   | { kind: 'scalar'; value: number }
   | { kind: 'vec2'; value: [number, number] }
   | { kind: 'vec3'; value: [number, number, number] }
-  | { kind: 'sample'; source: string; uv: ShaderValue };
+  | { kind: 'sample'; source: string; coord: ShaderValue; dimension: 2 | 3 };
 
 function normalizeShaderSamplerName(value: string) {
   const normalized = value.trim().toLowerCase();
@@ -282,7 +282,7 @@ export function parseMilkdropShaderStatement(
   line: string,
 ): MilkdropShaderStatement | null {
   const assignment = line.match(
-    /^(?:(const|float|vec2|vec3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
+    /^(?:(const|float|vec2|vec3|float3)\s+)?([a-z_][a-z0-9_]*)\s*(=|\+=|-=|\*=|\/=)\s*(.+)$/iu,
   );
   if (!assignment) {
     return null;
@@ -302,6 +302,7 @@ export function parseMilkdropShaderStatement(
         | 'float'
         | 'vec2'
         | 'vec3'
+        | 'float3'
         | undefined) ?? null,
     target: assignment[2]?.toLowerCase() ?? '',
     operator: (assignment[3] ?? '=') as '=' | '+=' | '-=' | '*=' | '/=',
@@ -439,8 +440,11 @@ function toScalarMilkdropExpression(
       if (
         name === 'vec2' ||
         name === 'vec3' ||
+        name === 'float3' ||
         name === 'tex2d' ||
-        name === 'texture'
+        name === 'texture' ||
+        name === 'tex3d' ||
+        name === 'texture3d'
       ) {
         return null;
       }
@@ -532,13 +536,38 @@ export function evaluateMilkdropShaderExpression(
       ) {
         return vec3(args[0].value, args[1].value, args[2].value);
       }
+      if (
+        name === 'float3' &&
+        args.length >= 2 &&
+        isVec2(args[0]) &&
+        isScalar(args[1])
+      ) {
+        return vec3(args[0].value[0], args[0].value[1], args[1].value);
+      }
+      if (
+        name === 'float3' &&
+        args.length >= 3 &&
+        isScalar(args[0]) &&
+        isScalar(args[1]) &&
+        isScalar(args[2])
+      ) {
+        return vec3(args[0].value, args[1].value, args[2].value);
+      }
       if ((name === 'tex2d' || name === 'texture') && args.length >= 2) {
         const samplerArg = node.args[0];
         const source =
           samplerArg?.type === 'identifier'
             ? normalizeShaderSamplerName(samplerArg.name)
             : 'main';
-        return { kind: 'sample', source, uv: args[1] };
+        return { kind: 'sample', source, coord: args[1], dimension: 2 };
+      }
+      if ((name === 'tex3d' || name === 'texture3d') && args.length >= 2) {
+        const samplerArg = node.args[0];
+        const source =
+          samplerArg?.type === 'identifier'
+            ? normalizeShaderSamplerName(samplerArg.name)
+            : 'main';
+        return { kind: 'sample', source, coord: args[1], dimension: 3 };
       }
       if (name === 'mix' && args.length >= 3 && isScalar(args[2])) {
         const blend = args[2].value;
@@ -605,7 +634,7 @@ export function evaluateMilkdropShaderExpression(
         return null;
       }
       const property = node.property.toLowerCase();
-      if (object.kind === 'sample' && property === 'rgb') {
+      if (object.kind === 'sample' && ['rgb', 'xyz'].includes(property)) {
         return vec3(1, 1, 1);
       }
       if (isVec2(object)) {

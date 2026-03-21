@@ -323,6 +323,19 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
         }
 
+        vec4 sampleVolumeNoise(vec2 uv, float slice) {
+          vec2 wrappedUv = fract(uv);
+          float slicePhase = fract(slice);
+          vec2 sliceOffsetA = vec2(slice * 0.071, -slice * 0.053);
+          vec2 sliceOffsetB = vec2(-slice * 0.041, slice * 0.067);
+          vec3 simplexA = texture2D(simplexTex, fract(wrappedUv + sliceOffsetA)).rgb;
+          vec3 simplexB = texture2D(simplexTex, fract(wrappedUv * 1.37 + sliceOffsetB)).rgb;
+          vec3 noiseA = texture2D(noiseTex, fract(wrappedUv * 1.91 + sliceOffsetB.yx)).rgb;
+          vec3 noiseB = texture2D(noiseTex, fract(wrappedUv * 0.83 + sliceOffsetA.yx)).rgb;
+          vec3 blended = mix(mix(simplexA, noiseA, 0.5), mix(simplexB, noiseB, 0.5), slicePhase);
+          return vec4(blended, 1.0);
+        }
+
         vec4 sampleAuxTexture(float source, vec2 uv) {
           vec2 wrappedUv = fract(uv);
           if (source < 0.5) {
@@ -346,7 +359,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           if (source < 6.5) {
             return texture2D(patternTex, wrappedUv);
           }
-          return texture2D(fractalTex, wrappedUv);
+          if (source < 7.5) {
+            return texture2D(fractalTex, wrappedUv);
+          }
+          return sampleVolumeNoise(
+            wrappedUv + vec2(signalTime * 0.021, -signalTime * 0.017),
+            signalTime * 0.1 + dot(wrappedUv, vec2(0.31, 0.27)),
+          );
         }
 
         vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
