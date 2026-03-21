@@ -2033,6 +2033,53 @@ function syncInterpolatedProceduralCustomWaveObject(
   return next;
 }
 
+function lerpColor(
+  previousColor: MilkdropColor,
+  currentColor: MilkdropColor,
+  mix: number,
+): MilkdropColor {
+  return {
+    r: lerpNumber(previousColor.r, currentColor.r, mix),
+    g: lerpNumber(previousColor.g, currentColor.g, mix),
+    b: lerpNumber(previousColor.b, currentColor.b, mix),
+    ...(previousColor.a !== undefined || currentColor.a !== undefined
+      ? {
+          a: lerpNumber(previousColor.a ?? 0, currentColor.a ?? 0, mix),
+        }
+      : {}),
+  };
+}
+
+function interpolateShapeVisual(
+  previousShape: MilkdropShapeVisual,
+  currentShape: MilkdropShapeVisual,
+  mix: number,
+): MilkdropShapeVisual {
+  return {
+    ...currentShape,
+    x: lerpNumber(previousShape.x, currentShape.x, mix),
+    y: lerpNumber(previousShape.y, currentShape.y, mix),
+    radius: lerpNumber(previousShape.radius, currentShape.radius, mix),
+    rotation: lerpNumber(previousShape.rotation, currentShape.rotation, mix),
+    color: lerpColor(previousShape.color, currentShape.color, mix),
+    secondaryColor:
+      previousShape.secondaryColor || currentShape.secondaryColor
+        ? lerpColor(
+            previousShape.secondaryColor ?? previousShape.color,
+            currentShape.secondaryColor ?? currentShape.color,
+            mix,
+          )
+        : null,
+    borderColor: lerpColor(
+      previousShape.borderColor,
+      currentShape.borderColor,
+      mix,
+    ),
+    additive: previousShape.additive || currentShape.additive,
+    thickOutline: previousShape.thickOutline || currentShape.thickOutline,
+  };
+}
+
 function isFeedbackCapableRenderer(
   renderer: RendererLike | null,
 ): renderer is RendererLike & {
@@ -3061,6 +3108,74 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     trimGroupChildren(group, waves.length);
   }
 
+  private renderInterpolatedProceduralWaveGroup(
+    group: Group,
+    waves: Array<{
+      previous: MilkdropProceduralWaveVisual;
+      current: MilkdropProceduralWaveVisual;
+    }>,
+    mix: number,
+    alphaMultiplier: number,
+    interaction?: MilkdropGpuInteractionTransform | null,
+  ) {
+    for (let index = 0; index < waves.length; index += 1) {
+      const wave = waves[index] as {
+        previous: MilkdropProceduralWaveVisual;
+        current: MilkdropProceduralWaveVisual;
+      };
+      const existing = group.children[index] as Line | undefined;
+      const synced = syncInterpolatedProceduralWaveObject(
+        existing,
+        wave.previous,
+        wave.current,
+        mix,
+        alphaMultiplier,
+        interaction,
+      );
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    }
+    trimGroupChildren(group, waves.length);
+  }
+
+  private renderInterpolatedProceduralCustomWaveGroup(
+    group: Group,
+    waves: Array<{
+      previous: MilkdropProceduralCustomWaveVisual;
+      current: MilkdropProceduralCustomWaveVisual;
+    }>,
+    mix: number,
+    alphaMultiplier: number,
+    interaction?: MilkdropGpuInteractionTransform | null,
+  ) {
+    for (let index = 0; index < waves.length; index += 1) {
+      const wave = waves[index] as {
+        previous: MilkdropProceduralCustomWaveVisual;
+        current: MilkdropProceduralCustomWaveVisual;
+      };
+      const existing = group.children[index] as Line | undefined;
+      const synced = syncInterpolatedProceduralCustomWaveObject(
+        existing,
+        wave.previous,
+        wave.current,
+        mix,
+        alphaMultiplier,
+        interaction,
+      );
+      if (!existing) {
+        group.add(synced);
+      } else if (synced !== existing) {
+        group.remove(existing);
+        group.add(synced);
+      }
+    }
+    trimGroupChildren(group, waves.length);
+  }
+
   private renderShapeGroup(
     target: 'shapes' | 'blend-shapes',
     group: Group,
@@ -3121,6 +3236,27 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       }
     }
     trimGroupChildren(group, borders.length);
+  }
+
+  private renderInterpolatedShapeGroup(
+    group: Group,
+    previousShapes: MilkdropShapeVisual[],
+    currentShapes: MilkdropShapeVisual[],
+    mix: number,
+    alphaMultiplier = 1,
+  ) {
+    const interpolatedShapes = currentShapes.map((shape, index) => {
+      const previousShape = previousShapes[index];
+      return previousShape
+        ? interpolateShapeVisual(previousShape, shape, mix)
+        : shape;
+    });
+    this.renderShapeGroup(
+      'blend-shapes',
+      group,
+      interpolatedShapes,
+      alphaMultiplier,
+    );
   }
 
   private renderLineVisualGroup(
@@ -3554,6 +3690,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         );
       } else {
         this.renderWaveGroup(
+          'blend-main-wave',
           this.blendWaveGroup,
           [previousFrame.mainWave],
           blend.alpha,
@@ -3605,6 +3742,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         );
       } else {
         this.renderWaveGroup(
+          'blend-custom-wave',
           this.blendCustomWaveGroup,
           previousFrame.customWaves,
           blend.alpha,
@@ -3618,6 +3756,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         blend.alpha,
       );
       this.renderBorderGroup(
+        'blend-borders',
         this.blendBorderGroup,
         previousFrame.borders,
         blend.alpha,
@@ -3638,63 +3777,37 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       }
     } else {
       this.renderWaveGroup(
+        'blend-main-wave',
         this.blendWaveGroup,
         blend?.mode === 'cpu' ? [blend.mainWave] : [],
         blend?.alpha ?? 0,
       );
       this.renderWaveGroup(
+        'blend-custom-wave',
         this.blendCustomWaveGroup,
         blend?.mode === 'cpu' ? blend.customWaves : [],
         blend?.alpha ?? 0,
       );
       this.renderShapeGroup(
+        'blend-shapes',
         this.blendShapeGroup,
         blend?.mode === 'cpu' ? blend.shapes : [],
         blend?.alpha ?? 0,
       );
       this.renderBorderGroup(
+        'blend-borders',
         this.blendBorderGroup,
         blend?.mode === 'cpu' ? blend.borders : [],
         blend?.alpha ?? 0,
       );
       this.blendProceduralMotionVectors.visible = false;
       this.renderLineVisualGroup(
+        'blend-motion-vectors',
         this.blendMotionVectorCpuGroup,
         blend?.mode === 'cpu' ? blend.motionVectors : [],
         blend?.alpha ?? 0,
       );
     }
-    const cpuBlend = blend?.mode === 'cpu' ? blend : null;
-    this.renderWaveGroup(
-      'blend-main-wave',
-      this.blendWaveGroup,
-      cpuBlend ? [cpuBlend.mainWave] : [],
-      blend?.alpha ?? 0,
-    );
-    this.renderWaveGroup(
-      'blend-custom-wave',
-      this.blendCustomWaveGroup,
-      cpuBlend?.customWaves ?? [],
-      blend?.alpha ?? 0,
-    );
-    this.renderShapeGroup(
-      'blend-shapes',
-      this.blendShapeGroup,
-      cpuBlend?.shapes ?? [],
-      blend?.alpha ?? 0,
-    );
-    this.renderBorderGroup(
-      'blend-borders',
-      this.blendBorderGroup,
-      cpuBlend?.borders ?? [],
-      blend?.alpha ?? 0,
-    );
-    this.renderLineVisualGroup(
-      'blend-motion-vectors',
-      this.blendMotionVectorGroup,
-      cpuBlend?.motionVectors ?? [],
-      blend?.alpha ?? 0,
-    );
 
     if (
       !isFeedbackCapableRenderer(this.renderer) ||
