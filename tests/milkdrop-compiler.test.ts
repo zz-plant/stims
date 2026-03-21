@@ -98,6 +98,36 @@ wavecode_0_a=1
     });
   });
 
+  test('normalizes legacy projectm shapecode booleans onto canonical shape fields', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_bAdditive=1
+shapecode_0_bThickOutline=1
+      `.trim(),
+      { id: 'legacy-projectm-shapecode' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.shape_1_additive).toBe(1);
+    expect(compiled.ir.numericFields.shape_1_thickoutline).toBe(1);
+    expect(compiled.ir.customShapes[0]?.fields).toMatchObject({
+      enabled: 1,
+      sides: 5,
+      additive: 1,
+      thickoutline: 1,
+    });
+    expect(compiled.ir.customShapes[0]).toMatchObject({
+      index: 1,
+      fields: expect.objectContaining({
+        additive: 1,
+        thickoutline: 1,
+      }),
+    });
+  });
+
   test('keeps zoom and fZoomExponent distinct in compiled numeric fields', () => {
     const compiled = compileMilkdropPresetSource(
       `
