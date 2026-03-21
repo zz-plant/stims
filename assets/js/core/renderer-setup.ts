@@ -28,6 +28,9 @@ export type RendererInitResult = {
   device?: GPUDevice | null;
   maxPixelRatio: number;
   renderScale: number;
+  adaptiveMaxPixelRatioMultiplier: number;
+  adaptiveRenderScaleMultiplier: number;
+  adaptiveDensityMultiplier: number;
   exposure: number;
 };
 
@@ -37,6 +40,9 @@ export type RendererInitConfig = {
   maxPixelRatio?: number;
   alpha?: boolean;
   renderScale?: number;
+  adaptiveMaxPixelRatioMultiplier?: number;
+  adaptiveRenderScaleMultiplier?: number;
+  adaptiveDensityMultiplier?: number;
 };
 
 async function loadWebGPURenderer() {
@@ -66,6 +72,9 @@ export async function initRenderer(
     maxPixelRatio = isMobileUserAgent ? 1.1 : 1.5,
     alpha = false,
     renderScale = 1,
+    adaptiveMaxPixelRatioMultiplier = 1,
+    adaptiveRenderScaleMultiplier = 1,
+    adaptiveDensityMultiplier = 1,
   } = config;
 
   const finalize = (
@@ -96,6 +105,9 @@ export async function initRenderer(
       device,
       maxPixelRatio,
       renderScale,
+      adaptiveMaxPixelRatioMultiplier,
+      adaptiveRenderScaleMultiplier,
+      adaptiveDensityMultiplier,
       exposure,
     };
   };
