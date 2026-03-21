@@ -1,3 +1,4 @@
+import { resolveMilkdropIdentifier } from './field-normalization';
 import type {
   MilkdropCompiledStatement,
   MilkdropDiagnostic,
@@ -453,7 +454,7 @@ export function evaluateMilkdropExpression(
       const normalized = node.name.toLowerCase();
       if (normalized === 'pi') return Math.PI;
       if (normalized === 'e') return Math.E;
-      return env[node.name] ?? env[normalized] ?? 0;
+      return resolveMilkdropIdentifier(env, node.name) ?? 0;
     }
     case 'unary': {
       const value = evaluateMilkdropExpression(node.operand, env, helpers);
