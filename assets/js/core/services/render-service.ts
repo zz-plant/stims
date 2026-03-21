@@ -116,15 +116,33 @@ async function createRendererHandle(
     throw new Error('Unable to initialize renderer.');
   }
 
+  let activeOptions = options;
+  let activeViewport: RendererViewport | undefined;
+
   const handle: RendererHandle = {
     renderer: initResult.renderer,
     backend: initResult.backend,
     info: initResult,
     canvas,
     getRuntimeControls: () => activeRuntimeControls,
-    applySettings: (nextOptions, viewport) =>
-      applyPoolSettings(initResult.renderer, initResult, nextOptions, viewport),
-    release: () => {},
+    applySettings: (nextOptions, viewport) => {
+      if (nextOptions) {
+        activeOptions = nextOptions;
+      }
+      if (viewport) {
+        activeViewport = viewport;
+      }
+      applyPoolSettings(
+        initResult.renderer,
+        initResult,
+        activeOptions,
+        activeViewport,
+      );
+    },
+    release: () => {
+      activeOptions = {};
+      activeViewport = undefined;
+    },
   };
 
   return handle;
@@ -176,7 +194,9 @@ export async function requestRenderer({
     inUse: true,
   };
 
+  const releaseHandle = handle.release;
   handle.release = () => {
+    releaseHandle();
     handle.renderer.setAnimationLoop?.(null);
     poolEntry.inUse = false;
     detachCanvas(handle.canvas);

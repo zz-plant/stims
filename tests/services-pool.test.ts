@@ -127,6 +127,35 @@ describe('render-service pooling', () => {
 
     expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.25);
   });
+
+  test('preserves active renderer overrides when runtime controls reapply', async () => {
+    const initRendererImpl = mock(async () => ({
+      renderer: fakeRenderer,
+      backend: 'webgl' as const,
+      adapter: null,
+      device: null,
+      maxPixelRatio: 2,
+      renderScale: 1,
+      exposure: 1,
+    }));
+
+    const handle = await requestRenderer({
+      initRendererImpl,
+      options: { maxPixelRatio: 0.75, renderScale: 0.6 },
+    });
+
+    setPixelRatioMock.mockClear();
+    setRendererRuntimeControls({ renderScale: 0.25 });
+
+    expect(handle.getRuntimeControls()).toEqual({
+      renderScale: 0.25,
+      feedbackScale: 1,
+      meshDensityMultiplier: 1,
+      waveSampleMultiplier: 1,
+      motionVectorDensityMultiplier: 1,
+    });
+    expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.6);
+  });
 });
 
 describe('audio-service pooling', () => {
