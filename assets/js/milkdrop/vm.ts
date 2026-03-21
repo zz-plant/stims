@@ -1279,6 +1279,7 @@ class MilkdropPresetVM implements MilkdropVM {
       shaderPrograms: this.preset.ir.post.shaderPrograms,
       brighten: (this.state.brighten ?? 0) > 0.5,
       darken: (this.state.darken ?? 0) > 0.5,
+      darkenCenter: (this.state.darken_center ?? 0) > 0.5,
       solarize: (this.state.solarize ?? 0) > 0.5,
       invert: (this.state.invert ?? 0) > 0.5,
       gammaAdj: clamp(this.state.gammaadj ?? 1, 0.25, 4),
