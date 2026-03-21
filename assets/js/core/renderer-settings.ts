@@ -99,13 +99,13 @@ export function resolveRendererSettings(
   return {
     maxPixelRatio:
       options.maxPixelRatio ??
-      info?.maxPixelRatio ??
       defaults.maxPixelRatio ??
+      info?.maxPixelRatio ??
       BASE_RENDERER_SETTINGS.maxPixelRatio,
     renderScale:
       options.renderScale ??
-      info?.renderScale ??
       defaults.renderScale ??
+      info?.renderScale ??
       BASE_RENDERER_SETTINGS.renderScale,
     adaptiveMaxPixelRatioMultiplier:
       options.adaptiveMaxPixelRatioMultiplier ??
@@ -124,8 +124,8 @@ export function resolveRendererSettings(
       BASE_RENDERER_SETTINGS.adaptiveDensityMultiplier,
     exposure:
       options.exposure ??
-      info?.exposure ??
       defaults.exposure ??
+      info?.exposure ??
       BASE_RENDERER_SETTINGS.exposure,
     antialias:
       options.antialias ??

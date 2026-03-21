@@ -65,7 +65,8 @@ function getRenderDefaults(): Partial<RendererInitConfig> {
     maxPixelRatio:
       activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
     renderScale:
-      activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
+      activeRuntimeControls.renderScale *
+      (activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1),
   };
 }
 
@@ -196,6 +197,7 @@ export function setRendererRuntimeControls(
     overrides,
     activeRuntimeControls,
   );
+  forEachActiveRenderer((entry) => entry.handle.applySettings());
   runtimeControlSubscribers.forEach((subscriber) =>
     subscriber(activeRuntimeControls),
   );
@@ -204,6 +206,7 @@ export function setRendererRuntimeControls(
 
 export function resetRendererRuntimeControls() {
   activeRuntimeControls = DEFAULT_RENDERER_RUNTIME_CONTROLS;
+  forEachActiveRenderer((entry) => entry.handle.applySettings());
   runtimeControlSubscribers.forEach((subscriber) =>
     subscriber(activeRuntimeControls),
   );
