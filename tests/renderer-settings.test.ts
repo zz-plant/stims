@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import {
   applyRendererSettings,
+  DEFAULT_RENDERER_RUNTIME_CONTROLS,
   getRendererBackendMaxPixelRatioCap,
+  resolveRendererRuntimeControls,
 } from '../assets/js/core/renderer-settings';
 
 describe('applyRendererSettings', () => {
@@ -62,5 +64,27 @@ describe('applyRendererSettings', () => {
 
     expect(calls).toEqual([[640, 360, false]]);
     expect(renderer.toneMappingExposure).toBe(1.2);
+  });
+
+  test('resolves shared runtime quality controls with safe defaults', () => {
+    expect(resolveRendererRuntimeControls()).toEqual(
+      DEFAULT_RENDERER_RUNTIME_CONTROLS,
+    );
+
+    expect(
+      resolveRendererRuntimeControls({
+        renderScale: 0.8,
+        feedbackScale: 0.75,
+        meshDensityMultiplier: 1.2,
+        waveSampleMultiplier: Number.NaN,
+        motionVectorDensityMultiplier: -1,
+      }),
+    ).toEqual({
+      renderScale: 0.8,
+      feedbackScale: 0.75,
+      meshDensityMultiplier: 1.2,
+      waveSampleMultiplier: 1,
+      motionVectorDensityMultiplier: 1,
+    });
   });
 });

@@ -24,6 +24,17 @@ export type RendererViewport = {
   height: number;
 };
 
+export type RendererRuntimeControls = {
+  renderScale: number;
+  feedbackScale: number;
+  meshDensityMultiplier: number;
+  waveSampleMultiplier: number;
+  motionVectorDensityMultiplier: number;
+};
+
+export type RendererRuntimeControlOverrides =
+  Partial<RendererRuntimeControls> | null;
+
 const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   maxPixelRatio: 1.5,
   renderScale: 1,
@@ -31,6 +42,51 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   antialias: true,
   alpha: false,
 };
+
+export const DEFAULT_RENDERER_RUNTIME_CONTROLS: RendererRuntimeControls = {
+  renderScale: 1,
+  feedbackScale: 1,
+  meshDensityMultiplier: 1,
+  waveSampleMultiplier: 1,
+  motionVectorDensityMultiplier: 1,
+};
+
+function normalizeRuntimeControlValue(
+  value: number | undefined,
+  fallback: number,
+) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
+}
+
+export function resolveRendererRuntimeControls(
+  overrides: RendererRuntimeControlOverrides = null,
+  defaults: RendererRuntimeControls = DEFAULT_RENDERER_RUNTIME_CONTROLS,
+): RendererRuntimeControls {
+  return {
+    renderScale: normalizeRuntimeControlValue(
+      overrides?.renderScale,
+      defaults.renderScale,
+    ),
+    feedbackScale: normalizeRuntimeControlValue(
+      overrides?.feedbackScale,
+      defaults.feedbackScale,
+    ),
+    meshDensityMultiplier: normalizeRuntimeControlValue(
+      overrides?.meshDensityMultiplier,
+      defaults.meshDensityMultiplier,
+    ),
+    waveSampleMultiplier: normalizeRuntimeControlValue(
+      overrides?.waveSampleMultiplier,
+      defaults.waveSampleMultiplier,
+    ),
+    motionVectorDensityMultiplier: normalizeRuntimeControlValue(
+      overrides?.motionVectorDensityMultiplier,
+      defaults.motionVectorDensityMultiplier,
+    ),
+  };
+}
 
 export function resolveRendererSettings(
   options: Partial<RendererInitConfig> = {},

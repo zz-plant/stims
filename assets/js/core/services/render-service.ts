@@ -12,7 +12,11 @@ import {
 } from '../renderer-capabilities.ts';
 import {
   applyRendererSettings,
+  DEFAULT_RENDERER_RUNTIME_CONTROLS,
+  type RendererRuntimeControlOverrides,
+  type RendererRuntimeControls,
   type RendererViewport,
+  resolveRendererRuntimeControls,
   resolveRendererSettings,
 } from '../renderer-settings.ts';
 import {
@@ -32,6 +36,7 @@ export type RendererHandle = {
   backend: RendererBackend;
   info: RendererInitResult;
   canvas: HTMLCanvasElement;
+  getRuntimeControls: () => RendererRuntimeControls;
   applySettings: (
     options?: Partial<RendererInitConfig>,
     viewport?: RendererViewport,
@@ -47,6 +52,11 @@ type RendererPoolEntry = {
 const rendererPool: RendererPoolEntry[] = [];
 let activeQuality: QualityPreset = getActiveQualityPreset();
 let activeRenderPreferences = getActiveRenderPreferences();
+let activeRuntimeControls: RendererRuntimeControls =
+  DEFAULT_RENDERER_RUNTIME_CONTROLS;
+const runtimeControlSubscribers = new Set<
+  (controls: RendererRuntimeControls) => void
+>();
 const rendererCapabilitiesInitializer =
   createSharedInitializer<RendererCapabilities>(getRendererCapabilities);
 
@@ -110,6 +120,7 @@ async function createRendererHandle(
     backend: initResult.backend,
     info: initResult,
     canvas,
+    getRuntimeControls: () => activeRuntimeControls,
     applySettings: (nextOptions, viewport) =>
       applyPoolSettings(initResult.renderer, initResult, nextOptions, viewport),
     release: () => {},
@@ -174,6 +185,39 @@ export async function requestRenderer({
   return handle;
 }
 
+export function getRendererRuntimeControls() {
+  return activeRuntimeControls;
+}
+
+export function setRendererRuntimeControls(
+  overrides: RendererRuntimeControlOverrides,
+) {
+  activeRuntimeControls = resolveRendererRuntimeControls(
+    overrides,
+    activeRuntimeControls,
+  );
+  runtimeControlSubscribers.forEach((subscriber) =>
+    subscriber(activeRuntimeControls),
+  );
+  return activeRuntimeControls;
+}
+
+export function resetRendererRuntimeControls() {
+  activeRuntimeControls = DEFAULT_RENDERER_RUNTIME_CONTROLS;
+  runtimeControlSubscribers.forEach((subscriber) =>
+    subscriber(activeRuntimeControls),
+  );
+  return activeRuntimeControls;
+}
+
+export function subscribeToRendererRuntimeControls(
+  subscriber: (controls: RendererRuntimeControls) => void,
+) {
+  runtimeControlSubscribers.add(subscriber);
+  subscriber(activeRuntimeControls);
+  return () => runtimeControlSubscribers.delete(subscriber);
+}
+
 export async function prewarmRendererCapabilities() {
   return rendererCapabilitiesInitializer.run();
 }
@@ -194,5 +238,7 @@ export function resetRendererPool({
   if (dispose) {
     rendererPool.splice(0, rendererPool.length);
   }
+  resetRendererRuntimeControls();
+  runtimeControlSubscribers.clear();
   rendererCapabilitiesInitializer.reset();
 }
