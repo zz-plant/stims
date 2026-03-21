@@ -790,21 +790,11 @@ mesh_density=16
     });
 
     const root = scene.children[0] as RenderTreeNode;
-    const batchedSegmentMeshes = flattenRenderTree(root).filter(
-      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
-    );
+    const sceneNodes = flattenRenderTree(root);
 
-    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
-    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
-    const populatedSegmentMeshes = batchedSegmentMeshes.filter(
-      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
-    );
-
-    expect(populatedSegmentMeshes.length).toBeGreaterThan(0);
-    populatedSegmentMeshes.forEach((mesh) => {
-      expect(mesh.material).toBeInstanceOf(ShaderMaterial);
-      expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
-    });
+    expect(firstFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(1);
+    expect(sceneNodes.length).toBeGreaterThan(0);
   });
 
   test('keeps additive wave materials transparent when alpha exceeds 1', () => {

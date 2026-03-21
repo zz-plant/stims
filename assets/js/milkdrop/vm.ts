@@ -604,8 +604,8 @@ class MilkdropPresetVM implements MilkdropVM {
     return quantizedX * 4096 + quantizedY;
   }
 
-  private supportsProceduralWave(_drawMode: 'line' | 'dots') {
-    return false;
+  private supportsProceduralWave(drawMode: 'line' | 'dots') {
+    return this.renderBackend === 'webgpu' && drawMode === 'line';
   }
 
   private supportsProceduralCustomWave(
@@ -733,10 +733,6 @@ class MilkdropPresetVM implements MilkdropVM {
     const drawMode = (this.state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
     const useProcedural = this.supportsProceduralWave(drawMode);
     const positions = useProcedural ? [] : new Array<number>(samples * 3);
-    const proceduralSamples = useProcedural ? new Array<number>(samples) : null;
-    const proceduralVelocities = useProcedural
-      ? new Array<number>(samples)
-      : null;
 
     for (let index = 0; index < samples; index += 1) {
       const t = index / Math.max(1, samples - 1);
@@ -859,9 +855,7 @@ class MilkdropPresetVM implements MilkdropVM {
           y = centerY + sampleValue * scale * 1.7 + velocity * 0.12;
       }
 
-      if (useProcedural && proceduralSamples && proceduralVelocities) {
-        proceduralSamples[index] = sampleValue;
-        proceduralVelocities[index] = momentum;
+      if (useProcedural) {
         continue;
       }
 
@@ -904,20 +898,16 @@ class MilkdropPresetVM implements MilkdropVM {
 
     const procedural = useProcedural
       ? ({
-          samples: proceduralSamples ?? [],
-          velocities: proceduralVelocities ?? [],
           mode,
+          sampleCount: samples,
           centerX,
           centerY,
           scale,
           mystery,
-          time: signals.time,
-          beatPulse: signals.beatPulse,
-          trebleAtt: signals.trebleAtt,
+          audioSource: 'waveform',
           color: finalWaveColor,
           alpha,
           additive,
-          thickness,
         } satisfies MilkdropProceduralWaveVisual)
       : null;
 
@@ -977,9 +967,6 @@ class MilkdropPresetVM implements MilkdropVM {
       const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
       const useProcedural = this.supportsProceduralCustomWave(wave, drawMode);
       const positions = useProcedural ? [] : new Array<number>(sampleCount * 3);
-      const proceduralSamples = useProcedural
-        ? new Array<number>(sampleCount)
-        : null;
       const pointLocals: MutableState = { ...frameLocals };
 
       for (let point = 0; point < sampleCount; point += 1) {
@@ -993,8 +980,7 @@ class MilkdropPresetVM implements MilkdropVM {
             scaling *
             (1 + (frameLocals.mystery ?? 0) * 0.25);
 
-        if (useProcedural && proceduralSamples) {
-          proceduralSamples[point] = spectrumValue;
+        if (useProcedural) {
           continue;
         }
 
@@ -1040,13 +1026,13 @@ class MilkdropPresetVM implements MilkdropVM {
 
       if (useProcedural) {
         proceduralWaves.push({
-          samples: proceduralSamples ?? [],
-          spectrum: (frameLocals.spectrum ?? 0) >= 0.5,
+          sampleCount,
           centerX,
           centerY,
-          scaling,
+          scale: scaling,
           mystery: frameLocals.mystery ?? 0,
-          time: signals.time,
+          audioSource:
+            (frameLocals.spectrum ?? 0) >= 0.5 ? 'spectrum' : 'waveform',
           color: waveColor,
           alpha: waveAlpha,
           additive,

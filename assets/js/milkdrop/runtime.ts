@@ -262,7 +262,7 @@ function enhanceGpuGeometry(
       ...wave,
       centerX: nudgeCenter(wave.centerX, offsetX),
       centerY: nudgeCenter(wave.centerY, -offsetY),
-      scaling: clamp(wave.scaling * scale, 0.45, 2.4),
+      scale: clamp(wave.scale * scale, 0.45, 2.4),
     })),
     meshField: gpuGeometry.meshField
       ? {

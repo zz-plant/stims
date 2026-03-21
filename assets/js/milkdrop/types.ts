@@ -643,31 +643,28 @@ export type MilkdropProceduralMeshFieldVisual =
     density: number;
   };
 
+export type MilkdropProceduralAudioSource = 'waveform' | 'spectrum';
+
 export type MilkdropProceduralWaveVisual = {
-  samples: number[];
-  velocities: number[];
   mode: number;
+  sampleCount: number;
   centerX: number;
   centerY: number;
   scale: number;
   mystery: number;
-  time: number;
-  beatPulse: number;
-  trebleAtt: number;
+  audioSource: MilkdropProceduralAudioSource;
   color: MilkdropColor;
   alpha: number;
   additive: boolean;
-  thickness: number;
 };
 
 export type MilkdropProceduralCustomWaveVisual = {
-  samples: number[];
-  spectrum: boolean;
+  sampleCount: number;
   centerX: number;
   centerY: number;
-  scaling: number;
+  scale: number;
   mystery: number;
-  time: number;
+  audioSource: MilkdropProceduralAudioSource;
   color: MilkdropColor;
   alpha: number;
   additive: boolean;

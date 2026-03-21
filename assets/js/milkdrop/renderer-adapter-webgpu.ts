@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -7,10 +8,14 @@ import {
   Group,
   InstancedBufferAttribute,
   InstancedBufferGeometry,
+  Line,
   Mesh,
   NormalBlending,
   ShaderMaterial,
 } from 'three';
+// @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
+// biome-ignore format: keep this import on one line so the TS suppression applies to the module specifier.
+import { LineBasicNodeMaterial, StorageBufferAttribute, TSL } from 'three/webgpu';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
 import type {
@@ -24,8 +29,11 @@ import {
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
+  MilkdropGpuInteractionTransform,
+  MilkdropProceduralAudioSource,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
+  MilkdropRuntimeSignals,
   MilkdropShapeVisual,
   MilkdropWaveVisual,
 } from './types';
@@ -75,6 +83,482 @@ const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
 const polygonFillGeometryCache = new Map<number, BufferGeometry>();
 const polygonRingGeometryCache = new Map<number, InstancedBufferGeometry>();
+
+const {
+  Fn,
+  If,
+  abs,
+  attribute,
+  clamp,
+  cos,
+  float,
+  floor,
+  int,
+  max,
+  min,
+  mix,
+  select,
+  sin,
+  storage,
+  uniform,
+  vec2,
+  vec3,
+  vec4,
+  vertexIndex,
+} = TSL;
+
+const proceduralWaveGeometryCache = new Map<number, BufferGeometry>();
+
+function sampleProceduralAudioSource(
+  signals: MilkdropRuntimeSignals,
+  source: MilkdropProceduralAudioSource,
+  sampleT: number,
+) {
+  const waveformData = signals.waveformData ?? signals.frequencyData;
+  const data = source === 'spectrum' ? signals.frequencyData : waveformData;
+  if (data.length === 0) {
+    return source === 'spectrum' ? 0 : 0.5;
+  }
+  const scaledIndex =
+    Math.max(0, Math.min(1, sampleT)) * Math.max(0, data.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+  const blend = scaledIndex - lowerIndex;
+  const lower = (data[lowerIndex] ?? (source === 'spectrum' ? 0 : 128)) / 255;
+  const upper = (data[upperIndex] ?? (source === 'spectrum' ? 0 : 128)) / 255;
+  return lower + (upper - lower) * blend;
+}
+
+function getProceduralWaveLineGeometry(sampleCount: number) {
+  const safeCount = Math.max(2, Math.round(sampleCount));
+  const cached = proceduralWaveGeometryCache.get(safeCount);
+  if (cached) {
+    return cached;
+  }
+  const positions = new Float32Array(safeCount * 3);
+  const sampleT = Array.from(
+    { length: safeCount },
+    (_, index) => index / Math.max(1, safeCount - 1),
+  );
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('sampleT', new Float32BufferAttribute(sampleT, 1));
+  proceduralWaveGeometryCache.set(safeCount, geometry);
+  return geometry;
+}
+
+function createProceduralAudioBuffer(sampleCount: number) {
+  return new StorageBufferAttribute(Math.max(2, Math.round(sampleCount)), 2);
+}
+
+function updateProceduralAudioBuffer(
+  buffer: StorageBufferAttribute,
+  sampleCount: number,
+  source: MilkdropProceduralAudioSource,
+  signals: MilkdropRuntimeSignals,
+) {
+  const safeCount = Math.max(2, Math.round(sampleCount));
+  const array = buffer.array as Float32Array;
+  for (let index = 0; index < safeCount; index += 1) {
+    const offset = index * 2;
+    const nextValue = sampleProceduralAudioSource(
+      signals,
+      source,
+      index / Math.max(1, safeCount - 1),
+    );
+    const previousValue = array[offset] ?? nextValue;
+    array[offset] = nextValue;
+    array[offset + 1] = previousValue;
+  }
+  buffer.needsUpdate = true;
+}
+
+type ProceduralNodeUniforms = {
+  mode?: any;
+  centerX: any;
+  centerY: any;
+  scale: any;
+  mystery: any;
+  audioIsSpectrum: any;
+  colorR: any;
+  colorG: any;
+  colorB: any;
+  alpha: any;
+  interactionOffsetX: any;
+  interactionOffsetY: any;
+  interactionRotation: any;
+  interactionScale: any;
+  interactionAlpha: any;
+};
+
+function applyInteractionNode(point: any, uniforms: ProceduralNodeUniforms) {
+  return Fn(() => {
+    const scaled = point.mul(uniforms.interactionScale).toVar();
+    const cosRot = cos(uniforms.interactionRotation);
+    const sinRot = sin(uniforms.interactionRotation);
+    return vec2(
+      scaled.x
+        .mul(cosRot)
+        .sub(scaled.y.mul(sinRot))
+        .add(uniforms.interactionOffsetX),
+      scaled.x
+        .mul(sinRot)
+        .add(scaled.y.mul(cosRot))
+        .add(uniforms.interactionOffsetY),
+    );
+  })();
+}
+
+function createProceduralNodeUniforms(includeMode: boolean) {
+  return {
+    ...(includeMode ? { mode: uniform(0) } : {}),
+    centerX: uniform(0),
+    centerY: uniform(0),
+    scale: uniform(1),
+    mystery: uniform(0),
+    audioIsSpectrum: uniform(0),
+    colorR: uniform(1),
+    colorG: uniform(1),
+    colorB: uniform(1),
+    alpha: uniform(1),
+    interactionOffsetX: uniform(0),
+    interactionOffsetY: uniform(0),
+    interactionRotation: uniform(0),
+    interactionScale: uniform(1),
+    interactionAlpha: uniform(1),
+  } satisfies ProceduralNodeUniforms;
+}
+
+function createProceduralWaveNodeMaterial(audioBuffer: StorageBufferAttribute) {
+  const uniforms = createProceduralNodeUniforms(true);
+  const sampleNode = storage(
+    audioBuffer,
+    'vec2',
+    audioBuffer.count,
+  ).toReadOnly();
+  const material = new LineBasicNodeMaterial({
+    transparent: true,
+    depthWrite: false,
+  });
+  material.positionNode = Fn(() => {
+    const mode = uniforms.mode ?? uniform(0);
+    const sampleT = attribute('sampleT', 'float').toVar();
+    const sampleIndex = int(vertexIndex).toVar();
+    const lastIndex = int(audioBuffer.count - 1);
+    const previousIndex = max(sampleIndex.sub(int(1)), int(0));
+    const nextIndex = min(sampleIndex.add(int(1)), lastIndex);
+    const samplePair = sampleNode.element(sampleIndex).toVar();
+    const prevPair = sampleNode.element(previousIndex).toVar();
+    const nextPair = sampleNode.element(nextIndex).toVar();
+    const smoothing = float(0.38).add(uniforms.mystery.mul(0.18)).toVar();
+    const sampleValue = mix(samplePair.y, samplePair.x, smoothing).toVar();
+    const previousSample = mix(samplePair.y, samplePair.y, smoothing).toVar();
+    const previousValue = mix(prevPair.y, prevPair.x, smoothing).toVar();
+    const nextValue = mix(nextPair.y, nextPair.x, smoothing).toVar();
+    const velocity = sampleValue.sub(previousSample).toVar();
+    const slope = nextValue.sub(previousValue).mul(0.5).toVar();
+    const momentum = mix(velocity, slope, float(0.55)).toVar();
+    const centeredSample = sampleValue.sub(0.5).toVar();
+    const mysteryPhase = uniforms.mystery.mul(Math.PI).toVar();
+    const angle = sampleT.mul(Math.PI * 2).toVar();
+    const x = float(0).toVar();
+    const y = float(0).toVar();
+
+    If(mode.lessThan(0.5), () => {
+      x.assign(sampleT.mul(2.2).sub(1.1));
+      y.assign(
+        uniforms.centerY
+          .add(
+            sin(
+              angle.mul(1.0 + uniforms.mystery.mul(2.0)).add(mysteryPhase),
+            ).mul(0.06),
+          )
+          .add(centeredSample.mul(uniforms.scale).mul(1.7))
+          .add(momentum.mul(0.12)),
+      );
+    })
+      .ElseIf(mode.lessThan(1.5), () => {
+        const circleAngle = angle
+          .add(centeredSample.mul(0.8))
+          .add(momentum.mul(2.5))
+          .toVar();
+        const radius = float(0.22)
+          .add(sampleValue.mul(uniforms.scale))
+          .add(sin(angle.mul(2.0).add(mysteryPhase)).mul(0.02))
+          .toVar();
+        x.assign(uniforms.centerX.add(cos(circleAngle).mul(radius)));
+        y.assign(uniforms.centerY.add(sin(circleAngle).mul(radius)));
+      })
+      .ElseIf(mode.lessThan(2.5), () => {
+        const spiralAngle = angle
+          .mul(2.5 + uniforms.mystery.mul(1.5))
+          .add(centeredSample.mul(0.65))
+          .toVar();
+        const radius = float(0.08)
+          .add(sampleT.mul(0.6))
+          .add(sampleValue.mul(uniforms.scale).mul(0.6))
+          .add(momentum.mul(0.12))
+          .toVar();
+        x.assign(uniforms.centerX.add(cos(spiralAngle).mul(radius)));
+        y.assign(uniforms.centerY.add(sin(spiralAngle).mul(radius)));
+      })
+      .ElseIf(mode.lessThan(3.5), () => {
+        const spoke = float(0.2)
+          .add(sampleValue.mul(uniforms.scale).mul(1.05))
+          .add(sin(angle.mul(6.0).add(mysteryPhase)).mul(0.05))
+          .add(momentum.mul(0.09))
+          .toVar();
+        const pinch = float(0.55)
+          .add(cos(angle.mul(3.0).add(mysteryPhase)).mul(0.2))
+          .toVar();
+        x.assign(uniforms.centerX.add(cos(angle).mul(spoke)));
+        y.assign(uniforms.centerY.add(sin(angle).mul(spoke).mul(pinch)));
+      })
+      .ElseIf(mode.lessThan(4.5), () => {
+        x.assign(
+          uniforms.centerX
+            .add(centeredSample.mul(uniforms.scale).mul(1.85))
+            .add(sin(angle.mul(5.0).add(mysteryPhase)).mul(0.04)),
+        );
+        y.assign(float(1.08).sub(sampleT.mul(2.16)).add(momentum.mul(0.22)));
+      })
+      .ElseIf(mode.lessThan(5.5), () => {
+        const xAmp = float(0.26)
+          .add(sampleValue.mul(uniforms.scale).mul(0.75))
+          .toVar();
+        const yAmp = float(0.18).add(sampleValue.mul(uniforms.scale)).toVar();
+        x.assign(
+          uniforms.centerX
+            .add(sin(angle.mul(2.0 + uniforms.mystery.mul(0.6))).mul(xAmp))
+            .add(cos(angle.mul(4.0).add(mysteryPhase)).mul(0.04))
+            .add(momentum.mul(0.16)),
+        );
+        y.assign(
+          uniforms.centerY.add(
+            sin(
+              angle.mul(3.0 + uniforms.mystery.mul(0.5)).add(Math.PI / 2),
+            ).mul(yAmp),
+          ),
+        );
+      })
+      .ElseIf(mode.lessThan(6.5), () => {
+        const band = centeredSample.mul(uniforms.scale).mul(1.4).toVar();
+        const direction = select(
+          sampleIndex.mod(int(2)).equal(int(0)),
+          float(1),
+          float(-1),
+        );
+        x.assign(sampleT.mul(2.1).sub(1.05));
+        y.assign(
+          uniforms.centerY
+            .add(direction.mul(band))
+            .add(sin(angle.mul(4.0).add(mysteryPhase)).mul(0.03))
+            .add(momentum.mul(0.18)),
+        );
+      })
+      .Else(() => {
+        const petalCount = float(3)
+          .add(floor(clamp(uniforms.mystery.mul(3.0), 0.0, 3.0).add(0.5)))
+          .toVar();
+        const radius = float(0.12)
+          .add(
+            float(0.2)
+              .add(sampleValue.mul(uniforms.scale).mul(0.9))
+              .mul(cos(petalCount.mul(angle).add(mysteryPhase))),
+          )
+          .add(momentum.mul(0.14))
+          .toVar();
+        x.assign(uniforms.centerX.add(cos(angle).mul(radius)));
+        y.assign(uniforms.centerY.add(sin(angle).mul(radius)));
+      });
+
+    const point = applyInteractionNode(vec2(x, y), uniforms);
+    return vec3(point, float(0.24).add(abs(momentum).mul(0.04)));
+  })();
+  material.colorNode = vec4(
+    uniforms.colorR,
+    uniforms.colorG,
+    uniforms.colorB,
+    uniforms.alpha.mul(uniforms.interactionAlpha),
+  );
+  return { material, uniforms };
+}
+
+function createProceduralCustomWaveNodeMaterial(
+  audioBuffer: StorageBufferAttribute,
+) {
+  const uniforms = createProceduralNodeUniforms(false);
+  const sampleNode = storage(
+    audioBuffer,
+    'vec2',
+    audioBuffer.count,
+  ).toReadOnly();
+  const material = new LineBasicNodeMaterial({
+    transparent: true,
+    depthWrite: false,
+  });
+  material.positionNode = Fn(() => {
+    const sampleT = attribute('sampleT', 'float').toVar();
+    const sampleIndex = int(vertexIndex).toVar();
+    const lastIndex = int(audioBuffer.count - 1);
+    const previousIndex = max(sampleIndex.sub(int(1)), int(0));
+    const nextIndex = min(sampleIndex.add(int(1)), lastIndex);
+    const samplePair = sampleNode.element(sampleIndex).toVar();
+    const prevPair = sampleNode.element(previousIndex).toVar();
+    const nextPair = sampleNode.element(nextIndex).toVar();
+    const smoothing = float(0.42).add(uniforms.mystery.mul(0.16)).toVar();
+    const sampleValue = mix(samplePair.y, samplePair.x, smoothing).toVar();
+    const previousValue = samplePair.y.toVar();
+    const neighborSlope = nextPair.x.sub(prevPair.x).mul(0.5).toVar();
+    const velocity = sampleValue.sub(previousValue).toVar();
+    const x = uniforms.centerX.add(sampleT.mul(2).sub(1).mul(0.85)).toVar();
+    const baseY = uniforms.centerY
+      .add(
+        sampleValue
+          .sub(0.5)
+          .mul(0.55)
+          .mul(uniforms.scale)
+          .mul(float(1).add(uniforms.mystery.mul(0.25))),
+      )
+      .toVar();
+    const orbitalY = uniforms.centerY
+      .add(sampleValue.sub(0.5).mul(0.4).mul(uniforms.scale))
+      .add(
+        sin(
+          sampleT
+            .mul(Math.PI * 2)
+            .mul(float(1).add(uniforms.mystery))
+            .add(uniforms.mystery.mul(Math.PI)),
+        )
+          .mul(0.18)
+          .mul(uniforms.scale),
+      )
+      .add(mix(velocity, neighborSlope, float(0.5)).mul(0.12))
+      .toVar();
+    const y = mix(orbitalY, baseY, uniforms.audioIsSpectrum).toVar();
+    const point = applyInteractionNode(vec2(x, y), uniforms);
+    return vec3(point, 0.28);
+  })();
+  material.colorNode = vec4(
+    uniforms.colorR,
+    uniforms.colorG,
+    uniforms.colorB,
+    uniforms.alpha.mul(uniforms.interactionAlpha),
+  );
+  return { material, uniforms };
+}
+
+class ProceduralWaveLineObject {
+  readonly line: Line;
+  readonly sampleCount: number;
+  readonly audioBuffer: StorageBufferAttribute;
+  readonly uniforms: ProceduralNodeUniforms;
+
+  constructor(sampleCount: number, custom = false) {
+    this.sampleCount = Math.max(2, Math.round(sampleCount));
+    this.audioBuffer = createProceduralAudioBuffer(this.sampleCount);
+    const built = custom
+      ? createProceduralCustomWaveNodeMaterial(this.audioBuffer)
+      : createProceduralWaveNodeMaterial(this.audioBuffer);
+    this.uniforms = built.uniforms;
+    this.line = new Line(
+      getProceduralWaveLineGeometry(this.sampleCount).clone(),
+      built.material,
+    );
+    this.line.frustumCulled = false;
+  }
+
+  syncCommon(
+    wave: MilkdropProceduralWaveVisual | MilkdropProceduralCustomWaveVisual,
+    signals: MilkdropRuntimeSignals,
+    interaction?: MilkdropGpuInteractionTransform | null,
+  ) {
+    updateProceduralAudioBuffer(
+      this.audioBuffer,
+      wave.sampleCount,
+      wave.audioSource,
+      signals,
+    );
+    this.uniforms.centerX.value = wave.centerX;
+    this.uniforms.centerY.value = wave.centerY;
+    this.uniforms.scale.value = wave.scale;
+    this.uniforms.mystery.value = wave.mystery;
+    this.uniforms.audioIsSpectrum.value =
+      wave.audioSource === 'spectrum' ? 1 : 0;
+    this.uniforms.colorR.value = wave.color.r;
+    this.uniforms.colorG.value = wave.color.g;
+    this.uniforms.colorB.value = wave.color.b;
+    this.uniforms.alpha.value = wave.alpha;
+    this.uniforms.interactionOffsetX.value = interaction?.offsetX ?? 0;
+    this.uniforms.interactionOffsetY.value = interaction?.offsetY ?? 0;
+    this.uniforms.interactionRotation.value = interaction?.rotation ?? 0;
+    this.uniforms.interactionScale.value = interaction?.scale ?? 1;
+    this.uniforms.interactionAlpha.value = interaction?.alphaMultiplier ?? 1;
+    (this.line.material as LineBasicNodeMaterial).blending = wave.additive
+      ? AdditiveBlending
+      : NormalBlending;
+  }
+
+  dispose() {
+    disposeGeometry(this.line.geometry);
+    disposeMaterial(this.line.material);
+  }
+}
+
+class ProceduralWaveTarget {
+  readonly group = new Group();
+  private readonly custom: boolean;
+  private readonly objects: ProceduralWaveLineObject[] = [];
+
+  constructor(custom = false) {
+    this.custom = custom;
+  }
+
+  sync(
+    waves: Array<
+      MilkdropProceduralWaveVisual | MilkdropProceduralCustomWaveVisual
+    >,
+    signals: MilkdropRuntimeSignals,
+    interaction?: MilkdropGpuInteractionTransform | null,
+  ) {
+    for (let index = 0; index < waves.length; index += 1) {
+      const wave = waves[index];
+      if (!wave) {
+        continue;
+      }
+      let target = this.objects[index];
+      if (!target || target.sampleCount !== wave.sampleCount) {
+        target?.dispose();
+        if (target) {
+          this.group.remove(target.line);
+        }
+        target = new ProceduralWaveLineObject(wave.sampleCount, this.custom);
+        this.objects[index] = target;
+        this.group.add(target.line);
+      }
+      if ('mode' in wave && target.uniforms.mode) {
+        target.uniforms.mode.value = wave.mode;
+      }
+      target.syncCommon(wave, signals, interaction);
+    }
+    while (this.objects.length > waves.length) {
+      const target = this.objects.pop();
+      if (!target) {
+        continue;
+      }
+      this.group.remove(target.line);
+      target.dispose();
+    }
+  }
+
+  dispose() {
+    for (const target of this.objects) {
+      target.dispose();
+    }
+    this.objects.length = 0;
+    this.group.removeFromParent();
+  }
+}
 
 function createSegmentQuadGeometry() {
   const geometry = new InstancedBufferGeometry();
@@ -280,169 +764,6 @@ function appendPolylineSegments(
       alpha,
       width,
     });
-  }
-}
-
-function buildProceduralWavePoint(
-  wave: MilkdropProceduralWaveVisual,
-  sampleT: number,
-  sampleValue: number,
-  velocity: number,
-) {
-  const centeredSample = sampleValue - 0.5;
-  const mysteryPhase = wave.mystery * Math.PI;
-  let x = 0;
-  let y = 0;
-
-  if (wave.mode < 0.5) {
-    x = -1.1 + sampleT * 2.2;
-    y =
-      wave.centerY +
-      Math.sin(sampleT * Math.PI * 2 + wave.time * (0.55 + wave.mystery)) *
-        (0.06 + wave.trebleAtt * 0.08) +
-      centeredSample * wave.scale * 1.7 +
-      velocity * 0.12;
-  } else if (wave.mode < 1.5) {
-    const angle =
-      sampleT * Math.PI * 2 +
-      wave.time * 0.32 +
-      centeredSample * 0.8 +
-      velocity * 2.5;
-    const radius =
-      0.22 +
-      sampleValue * wave.scale +
-      wave.beatPulse * 0.08 +
-      Math.sin(sampleT * Math.PI * 4 + wave.time) * 0.015;
-    x = wave.centerX + Math.cos(angle) * radius;
-    y = wave.centerY + Math.sin(angle) * radius;
-  } else if (wave.mode < 2.5) {
-    const angle =
-      sampleT * Math.PI * 5 +
-      wave.time * (0.4 + wave.mystery * 0.2) +
-      centeredSample * 0.65;
-    const radius =
-      0.08 + sampleT * 0.6 + sampleValue * wave.scale * 0.6 + velocity * 0.12;
-    x = wave.centerX + Math.cos(angle) * radius;
-    y = wave.centerY + Math.sin(angle) * radius;
-  } else if (wave.mode < 3.5) {
-    const angle = sampleT * Math.PI * 2 + wave.time * 0.22;
-    const spoke =
-      0.2 +
-      sampleValue * wave.scale * 1.05 +
-      Math.sin(sampleT * Math.PI * 12 + mysteryPhase) * 0.05 +
-      velocity * 0.09;
-    const pinch = 0.55 + Math.cos(sampleT * Math.PI * 6 + wave.time) * 0.2;
-    x = wave.centerX + Math.cos(angle) * spoke;
-    y = wave.centerY + Math.sin(angle) * spoke * pinch;
-  } else if (wave.mode < 4.5) {
-    x =
-      wave.centerX +
-      (sampleValue - 0.5) * wave.scale * 1.85 +
-      Math.sin(sampleT * Math.PI * 10 + wave.time * 0.5) * 0.04;
-    y = 1.08 - sampleT * 2.16 + velocity * 0.22;
-  } else if (wave.mode < 5.5) {
-    const angle = sampleT * Math.PI * 2 + wave.time * 0.18;
-    const xAmp = 0.26 + sampleValue * wave.scale * 0.75;
-    const yAmp = 0.18 + sampleValue * wave.scale;
-    x =
-      wave.centerX +
-      Math.sin(angle * (2 + wave.mystery * 0.6)) * xAmp +
-      Math.cos(angle * 4 + mysteryPhase) * 0.04 +
-      velocity * 0.16;
-    y =
-      wave.centerY +
-      Math.sin(angle * (3 + wave.mystery * 0.5) + Math.PI / 2) * yAmp;
-  } else if (wave.mode < 6.5) {
-    const band = (sampleValue - 0.5) * wave.scale * 1.4;
-    x = -1.05 + sampleT * 2.1;
-    y =
-      wave.centerY +
-      (Math.floor(sampleT * 512) % 2 === 0 ? 1 : -1) * band +
-      Math.sin(sampleT * Math.PI * 8 + wave.time * 0.55) * 0.03 +
-      velocity * 0.18;
-  } else {
-    const angle =
-      sampleT * Math.PI * 2 + wave.time * (0.24 + wave.mystery * 0.1);
-    const petals =
-      3 + Math.floor(Math.min(Math.max(wave.mystery * 3, 0), 3) + 0.5);
-    const radius =
-      0.12 +
-      (0.2 + sampleValue * wave.scale * 0.9) *
-        Math.cos(petals * angle + mysteryPhase) +
-      velocity * 0.14;
-    x = wave.centerX + Math.cos(angle) * radius;
-    y = wave.centerY + Math.sin(angle) * radius;
-  }
-
-  return { x, y };
-}
-
-function appendProceduralWaveSegments(
-  target: SegmentInstance[],
-  wave: MilkdropProceduralWaveVisual,
-) {
-  let previous: { x: number; y: number } | null = null;
-  const width = 0.0025 * Math.max(1, wave.thickness);
-  for (let index = 0; index < wave.samples.length; index += 1) {
-    const sampleT = index / Math.max(1, wave.samples.length - 1);
-    const point = buildProceduralWavePoint(
-      wave,
-      sampleT,
-      wave.samples[index] ?? 0,
-      wave.velocities[index] ?? 0,
-    );
-    if (previous) {
-      target.push({
-        startX: previous.x,
-        startY: previous.y,
-        startZ: 0.24,
-        endX: point.x,
-        endY: point.y,
-        endZ: 0.24,
-        color: wave.color,
-        alpha: wave.alpha,
-        width,
-      });
-    }
-    previous = point;
-  }
-}
-
-function appendProceduralCustomWaveSegments(
-  target: SegmentInstance[],
-  wave: MilkdropProceduralCustomWaveVisual,
-) {
-  let previous: { x: number; y: number } | null = null;
-  for (let index = 0; index < wave.samples.length; index += 1) {
-    const sampleT = index / Math.max(1, wave.samples.length - 1);
-    const sampleValue = wave.samples[index] ?? 0;
-    const x = wave.centerX + (-1 + sampleT * 2) * 0.85;
-    const baseY =
-      wave.centerY +
-      (sampleValue - 0.5) * 0.55 * wave.scaling * (1 + wave.mystery * 0.25);
-    const orbitalY =
-      wave.centerY +
-      Math.sin(sampleT * Math.PI * 2 * (1 + wave.mystery) + wave.time) *
-        0.18 *
-        wave.scaling;
-    const point = {
-      x,
-      y: wave.spectrum ? baseY : orbitalY,
-    };
-    if (previous) {
-      target.push({
-        startX: previous.x,
-        startY: previous.y,
-        startZ: 0.28,
-        endX: point.x,
-        endY: point.y,
-        endZ: 0.28,
-        color: wave.color,
-        alpha: wave.alpha,
-        width: 0.003,
-      });
-    }
-    previous = point;
   }
 }
 
@@ -987,6 +1308,10 @@ class ShapeBatchTarget {
 class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private readonly root = new Group();
   private readonly waveTargets = new Map<string, InstancedSegmentBatch>();
+  private readonly proceduralWaveTargets = new Map<
+    string,
+    ProceduralWaveTarget
+  >();
   private readonly shapeTargets = new Map<string, ShapeBatchTarget>();
   private readonly borderTargets = new Map<string, InstancedBorderBatch>();
 
@@ -999,6 +1324,16 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     if (!target) {
       target = new InstancedSegmentBatch();
       this.waveTargets.set(key, target);
+      this.root.add(target.group);
+    }
+    return target;
+  }
+
+  private getProceduralWaveTarget(key: string, custom = false) {
+    let target = this.proceduralWaveTargets.get(key);
+    if (!target) {
+      target = new ProceduralWaveTarget(custom);
+      this.proceduralWaveTargets.set(key, target);
       this.root.add(target.group);
     }
     return target;
@@ -1050,32 +1385,31 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   }
 
   renderProceduralWaveGroup(
-    target: string,
+    target: 'main-wave' | 'trail-waves',
     _group: Group,
     waves: MilkdropProceduralWaveVisual[],
+    signals: MilkdropRuntimeSignals,
+    interaction?: MilkdropGpuInteractionTransform | null,
   ) {
-    const normal: SegmentInstance[] = [];
-    const additive: SegmentInstance[] = [];
-    for (const wave of waves) {
-      appendProceduralWaveSegments(wave.additive ? additive : normal, wave);
-    }
-    this.getWaveTarget(`procedural-wave:${target}`).syncSplit(normal, additive);
+    this.getProceduralWaveTarget(`procedural-wave:${target}`).sync(
+      waves,
+      signals,
+      interaction,
+    );
     return true;
   }
 
   renderProceduralCustomWaveGroup(
     _group: Group,
     waves: MilkdropProceduralCustomWaveVisual[],
+    signals: MilkdropRuntimeSignals,
+    interaction?: MilkdropGpuInteractionTransform | null,
   ) {
-    const normal: SegmentInstance[] = [];
-    const additive: SegmentInstance[] = [];
-    for (const wave of waves) {
-      appendProceduralCustomWaveSegments(
-        wave.additive ? additive : normal,
-        wave,
-      );
-    }
-    this.getWaveTarget('procedural-custom-wave').syncSplit(normal, additive);
+    this.getProceduralWaveTarget('procedural-custom-wave', true).sync(
+      waves,
+      signals,
+      interaction,
+    );
     return true;
   }
 
@@ -1129,6 +1463,9 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     for (const target of this.waveTargets.values()) {
       target.dispose();
     }
+    for (const target of this.proceduralWaveTargets.values()) {
+      target.dispose();
+    }
     for (const target of this.shapeTargets.values()) {
       target.dispose();
     }
@@ -1136,6 +1473,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
       target.dispose();
     }
     this.waveTargets.clear();
+    this.proceduralWaveTargets.clear();
     this.shapeTargets.clear();
     this.borderTargets.clear();
     this.root.removeFromParent();
