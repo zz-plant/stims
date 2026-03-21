@@ -96,13 +96,15 @@ const WEBGPU_SHADER_TRANSLATION_EXPECTATION = {
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
-const VOLUME_SHADER_APPROXIMATION_EXPECTATION = {
-  diagnostics: ['preset_shader_volume_approximation'],
-  webgl: 'partial',
+const VOLUME_SHADER_SUPPORT_EXPECTATION = {
+  diagnostics: [],
+  webgl: 'supported',
   webgpu: 'partial',
-  divergence: ['webgpu:supported-shader-text-gap'],
+  divergence: [
+    'status:webgl=supported,webgpu=partial',
+    'webgpu:supported-shader-text-gap',
+  ],
   warnings: [
-    'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
     'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
   ],
   blockedConstructs: [],
@@ -145,7 +147,7 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
   '260-compshader-noise_lq.milk': WEBGPU_SHADER_TRANSLATION_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': VOLUME_SHADER_APPROXIMATION_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': VOLUME_SHADER_SUPPORT_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],
@@ -464,6 +466,24 @@ describe('milkdrop vendored projectM fixture corpus', () => {
 
     expect(compiled.ir.numericFields.zoom).toBeCloseTo(1, 6);
     expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(0.75, 6);
+  });
+
+  test('supports projectM custom-wave value aliases in the regression fixtures', () => {
+    const corpus = loadProjectMPresetCorpus();
+    const fixtures = new Map(
+      corpus.map(({ file, compiled }) => [file, compiled]),
+    );
+
+    for (const fixture of [
+      '250-wavecode.milk',
+      '252-wavecode-spectrum2.milk',
+      '300-beatdetect-bassmidtreb.milk',
+    ] as const) {
+      expect(
+        fixtures.get(fixture)?.ir.compatibility.parity
+          .missingAliasesOrFunctions,
+      ).toEqual([]);
+    }
   });
 
   test('keeps compiled compatibility metadata and normalized program sources stable', () => {

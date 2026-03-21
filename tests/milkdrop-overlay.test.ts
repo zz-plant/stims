@@ -182,7 +182,7 @@ describe('milkdrop overlay quality controls', () => {
     expect(select).not.toBeNull();
     expect(select?.value).toBe('balanced');
     expect(document.body.textContent).toContain(
-      'Saved on this device for this toy profile.',
+      'What changes: pixel ratio up to 1.50x, render scale 1.00x, particle density 1.00x.',
     );
 
     if (select) {
@@ -192,7 +192,7 @@ describe('milkdrop overlay quality controls', () => {
 
     expect(onSelectQualityPreset).toHaveBeenCalledWith('tv');
     expect(document.body.textContent).toContain(
-      'Comfortable 10-foot visuals with softer density and steadier frame pacing.',
+      'What changes: pixel ratio up to 1.10x, render scale 0.85x, particle density 0.70x.',
     );
 
     overlay.dispose();
@@ -343,6 +343,151 @@ describe('milkdrop overlay browse rendering', () => {
 
     expect(browse.textContent).toContain('Signal Bloom');
     expect(browse.textContent).not.toContain('Aurora Drift');
+
+    overlay.dispose();
+  });
+
+  test('keeps featured browse focused on recovery and recommendations', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const recentFavorite = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    recentFavorite.historyIndex = 0;
+    recentFavorite.isFavorite = true;
+    recentFavorite.tags = ['collection:classic-milkdrop'];
+
+    const recentOnly = createCatalogEntry('aurora-drift', 'Aurora Drift');
+    recentOnly.historyIndex = 1;
+    recentOnly.tags = ['collection:feedback-lab'];
+
+    const favoriteOnly = createCatalogEntry('night-drive', 'Night Drive');
+    favoriteOnly.isFavorite = true;
+    favoriteOnly.tags = ['collection:low-motion'];
+
+    const discoveryOne = createCatalogEntry('prism-burst', 'Prism Burst');
+    discoveryOne.tags = ['collection:classic-milkdrop'];
+
+    const discoveryTwo = createCatalogEntry('echo-grid', 'Echo Grid');
+    discoveryTwo.tags = ['collection:feedback-lab'];
+
+    overlay.setCatalog(
+      [recentFavorite, recentOnly, favoriteOnly, discoveryOne, discoveryTwo],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const sections = [
+      ...document.querySelectorAll('.milkdrop-overlay__browse-section'),
+    ] as HTMLElement[];
+    const headings = sections.map((section) =>
+      (
+        section.querySelector('.milkdrop-overlay__browse-heading')
+          ?.childNodes[0]?.textContent ?? ''
+      ).trim(),
+    );
+
+    expect(sections).toHaveLength(2);
+    expect(headings).toEqual(['Continue listening', 'Recommended']);
+    expect(headings).not.toContain('Classic MilkDrop');
+    expect(headings).not.toContain('Feedback Lab');
+    expect(headings).not.toContain('Low Motion');
+
+    expect(sections[0]?.textContent).toContain('Signal Bloom');
+    expect(sections[0]?.textContent).toContain('Aurora Drift');
+    expect(sections[0]?.textContent).toContain('Night Drive');
+    expect(sections[1]?.textContent).toContain('Prism Burst');
+    expect(sections[1]?.textContent).toContain('Echo Grid');
+
+    overlay.dispose();
+  });
+
+  test('keeps preset rows focused on launch metadata and compact secondary actions', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const activePreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    activePreset.historyIndex = 0;
+    activePreset.isFavorite = true;
+    activePreset.rating = 4;
+    activePreset.tags = ['collection:classic-milkdrop', 'slow-burn'];
+
+    const partialPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
+    partialPreset.author = 'Guest';
+    partialPreset.supports.webgl.status = 'partial';
+    partialPreset.supports.webgl.reasons = [
+      'Wave mesh falls back to a simpler path.',
+    ];
+    partialPreset.fidelityClass = 'partial';
+    partialPreset.parity.degradationReasons = [
+      {
+        code: 'backend-partial',
+        category: 'backend-degradation',
+        message: 'Wave mesh falls back to a simpler path.',
+        system: 'runtime',
+        blocking: false,
+      },
+    ];
+
+    overlay.setCatalog([activePreset, partialPreset], 'signal-bloom', 'webgl');
+
+    const rows = [
+      ...document.querySelectorAll('.milkdrop-overlay__preset'),
+    ] as HTMLElement[];
+    expect(rows).toHaveLength(2);
+
+    const activeRow = rows[0];
+    const activeMeta = activeRow?.querySelector(
+      '.milkdrop-overlay__preset-meta',
+    );
+    const activeBadges = [
+      ...((activeRow?.querySelectorAll(
+        '.milkdrop-overlay__preset-badges > *',
+      ) ?? []) as NodeListOf<HTMLElement>),
+    ].map((badge) => badge.textContent?.trim());
+    const activeFavorite = activeRow?.querySelector(
+      '.milkdrop-overlay__favorite',
+    ) as HTMLButtonElement | null;
+    const activeRating = activeRow?.querySelector(
+      '.milkdrop-overlay__rating-select',
+    ) as HTMLSelectElement | null;
+
+    expect(activeMeta?.textContent).toBe('Stims · Recent');
+    expect(activeBadges).toEqual(['Live', 'Exact']);
+    expect(activeFavorite?.textContent).toBe('★');
+    expect(activeFavorite?.getAttribute('aria-label')).toBe(
+      'Remove saved preset',
+    );
+    expect(activeRating?.value).toBe('4');
+    expect(
+      activeRow?.querySelector('.milkdrop-overlay__preset-warning'),
+    ).toBeNull();
+    expect(activeRow?.textContent).not.toContain('slow-burn');
+    expect(activeRow?.textContent).not.toContain('bundled');
+
+    const partialRow = rows[1];
+    const partialMeta = partialRow?.querySelector(
+      '.milkdrop-overlay__preset-meta',
+    );
+    const partialWarning = partialRow?.querySelector(
+      '.milkdrop-overlay__preset-warning',
+    );
+
+    expect(partialMeta?.textContent).toBe('Guest');
+    expect(partialWarning?.textContent).toBe(
+      'Backend degradation: Wave mesh falls back to a simpler path.',
+    );
 
     overlay.dispose();
   });

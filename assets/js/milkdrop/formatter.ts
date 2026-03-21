@@ -61,6 +61,7 @@ const postOrder = [
   'video_echo_enabled',
   'video_echo_alpha',
   'video_echo_zoom',
+  'video_echo_orientation',
 ] as const;
 
 const customWaveFieldOrder = [

@@ -193,6 +193,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         fractalTex: { value: this.auxTextures.fractal },
         mixAlpha: { value: 0.18 },
         zoom: { value: 1.02 },
+        videoEchoOrientation: { value: 0 },
         brighten: { value: 0 },
         darken: { value: 0 },
         solarize: { value: 0 },
@@ -260,6 +261,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform sampler2D fractalTex;
         uniform float mixAlpha;
         uniform float zoom;
+        uniform float videoEchoOrientation;
         uniform float brighten;
         uniform float darken;
         uniform float solarize;
@@ -394,6 +396,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           return vec2(cos(angle), sin(angle)) * radius + 0.5;
         }
 
+        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
+          float flipU = step(0.5, mod(orientation, 2.0));
+          float flipV = step(1.5, mod(orientation, 4.0));
+          return vec2(
+            mix(uv.x, 1.0 - uv.x, flipU),
+            mix(uv.y, 1.0 - uv.y, flipV)
+          );
+        }
+
         void main() {
           vec2 centeredUv = vUv - 0.5;
           float rotSin = sin(rotation);
@@ -425,6 +436,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             currentUv += warpVector * warpTextureAmount * 0.12;
             prevUv += warpVector * warpTextureAmount * 0.08;
           }
+          prevUv = applyVideoEchoOrientationTransform(
+            prevUv,
+            videoEchoOrientation
+          );
           vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
           vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
           vec3 previousColor = previous.rgb;
@@ -523,6 +538,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.previousTex.value = this.readTarget.texture;
     uniforms.mixAlpha.value = state.mixAlpha;
     uniforms.zoom.value = state.zoom;
+    uniforms.videoEchoOrientation.value = state.videoEchoOrientation;
     uniforms.brighten.value = state.brighten;
     uniforms.darken.value = state.darken;
     uniforms.solarize.value = state.solarize;
