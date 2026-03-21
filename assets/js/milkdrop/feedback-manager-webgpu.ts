@@ -25,6 +25,9 @@ import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './renderer-adapter.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
+  MilkdropShaderExpressionNode,
+  MilkdropShaderProgramPayload,
+  MilkdropShaderStatement,
 } from './types';
 
 const {
@@ -327,7 +330,639 @@ function createCompositeUniforms(
   } satisfies CompositeUniformBag;
 }
 
-function createCompositeOutputNode(uniforms: CompositeUniformBag) {
+type ShaderNodeValue = {
+  kind: 'scalar' | 'vec2' | 'vec3';
+  node: any;
+};
+
+type ShaderBinaryOperator =
+  | '+'
+  | '-'
+  | '*'
+  | '/'
+  | '%'
+  | '<'
+  | '<='
+  | '>'
+  | '>='
+  | '=='
+  | '!='
+  | '&&'
+  | '||';
+
+type ShaderNodeEnv = {
+  values: Map<string, ShaderNodeValue>;
+  uniforms: CompositeUniformBag;
+  sampleUvNode: ReturnType<typeof createSampleUvNode>;
+  sampleAuxTextureNode: ReturnType<typeof createSampleAuxTextureNode>;
+};
+
+function makeShaderValue(
+  kind: ShaderNodeValue['kind'],
+  node: any,
+): ShaderNodeValue {
+  return { kind, node };
+}
+
+function shaderFloat(value: any) {
+  return makeShaderValue(
+    'scalar',
+    typeof value === 'number' ? float(value) : value,
+  );
+}
+
+function shaderVec2(x: any, y: any) {
+  return makeShaderValue('vec2', vec2(x, y));
+}
+
+function shaderVec3(x: any, y: any, z: any) {
+  return makeShaderValue('vec3', vec3(x, y, z));
+}
+
+function shaderValueFromNode(node: any, kind: ShaderNodeValue['kind']) {
+  if (kind === 'scalar') {
+    return shaderFloat(node);
+  }
+  if (kind === 'vec2') {
+    return makeShaderValue('vec2', node);
+  }
+  return makeShaderValue('vec3', node);
+}
+
+function coerceShaderValue(
+  value: ShaderNodeValue,
+  target: ShaderNodeValue['kind'],
+): ShaderNodeValue {
+  if (value.kind === target) {
+    return value;
+  }
+  if (target === 'scalar') {
+    return shaderFloat(value.node);
+  }
+  if (target === 'vec2') {
+    if (value.kind === 'scalar') {
+      return makeShaderValue('vec2', vec2(value.node, value.node));
+    }
+    return makeShaderValue('vec2', vec2(value.node.x, value.node.y));
+  }
+  if (value.kind === 'scalar') {
+    return makeShaderValue('vec3', vec3(value.node, value.node, value.node));
+  }
+  return makeShaderValue('vec3', vec3(value.node.x, value.node.y, 0));
+}
+
+function getShaderResultKind(
+  left: ShaderNodeValue,
+  right: ShaderNodeValue,
+): ShaderNodeValue['kind'] {
+  if (left.kind === 'vec3' || right.kind === 'vec3') {
+    return 'vec3';
+  }
+  if (left.kind === 'vec2' || right.kind === 'vec2') {
+    return 'vec2';
+  }
+  return 'scalar';
+}
+
+function toShaderBool(value: ShaderNodeValue) {
+  const scalarValue = coerceShaderValue(value, 'scalar');
+  return step(0.0001, abs(scalarValue.node));
+}
+
+function createModNode(left: any, right: any) {
+  return left.sub(floor(left.div(max(abs(right), 0.000001))).mul(right));
+}
+
+function createComparisonNode(operator: string, left: any, right: any) {
+  switch (operator) {
+    case '<':
+      return select(left.lessThan(right), float(1), float(0));
+    case '<=':
+      return select(left.lessThanEqual(right), float(1), float(0));
+    case '>':
+      return select(left.greaterThan(right), float(1), float(0));
+    case '>=':
+      return select(left.greaterThanEqual(right), float(1), float(0));
+    case '==':
+      return select(abs(left.sub(right)).lessThan(0.0001), float(1), float(0));
+    case '!=':
+      return select(abs(left.sub(right)).lessThan(0.0001), float(0), float(1));
+    default:
+      return float(0);
+  }
+}
+
+function applyShaderBinaryNode(
+  operator: ShaderBinaryOperator,
+  left: ShaderNodeValue,
+  right: ShaderNodeValue,
+): ShaderNodeValue {
+  if (operator === '&&' || operator === '||') {
+    const leftBool = toShaderBool(left);
+    const rightBool = toShaderBool(right);
+    return shaderFloat(
+      operator === '&&'
+        ? leftBool.mul(rightBool)
+        : min(float(1), leftBool.add(rightBool)),
+    );
+  }
+
+  const kind = getShaderResultKind(left, right);
+  const lhs = coerceShaderValue(left, kind).node;
+  const rhs = coerceShaderValue(right, kind).node;
+
+  switch (operator) {
+    case '+':
+      return shaderValueFromNode(lhs.add(rhs), kind);
+    case '-':
+      return shaderValueFromNode(lhs.sub(rhs), kind);
+    case '*':
+      return shaderValueFromNode(lhs.mul(rhs), kind);
+    case '/':
+      return shaderValueFromNode(lhs.div(max(abs(rhs), 0.000001)), kind);
+    case '%':
+      return shaderValueFromNode(createModNode(lhs, rhs), kind);
+    case '<':
+    case '<=':
+    case '>':
+    case '>=':
+    case '==':
+    case '!=':
+      return shaderFloat(createComparisonNode(operator, lhs, rhs));
+    default:
+      return left;
+  }
+}
+
+function setShaderEnvValue(
+  env: ShaderNodeEnv,
+  key: string,
+  value: ShaderNodeValue,
+) {
+  env.values.set(key.toLowerCase(), value);
+}
+
+function getShaderEnvValue(
+  env: ShaderNodeEnv,
+  key: string,
+): ShaderNodeValue | null {
+  const normalized = key.toLowerCase();
+  const existing = env.values.get(normalized);
+  if (existing) {
+    return existing;
+  }
+
+  const uniformMap: Record<string, () => ShaderNodeValue> = {
+    time: () => shaderFloat(env.uniforms.signalTime),
+    bass: () => shaderFloat(env.uniforms.signalBass),
+    bass_att: () => shaderFloat(env.uniforms.signalBass),
+    mid: () => shaderFloat(env.uniforms.signalMid),
+    mids: () => shaderFloat(env.uniforms.signalMid),
+    mid_att: () => shaderFloat(env.uniforms.signalMid),
+    mids_att: () => shaderFloat(env.uniforms.signalMid),
+    treb: () => shaderFloat(env.uniforms.signalTreb),
+    treb_att: () => shaderFloat(env.uniforms.signalTreb),
+    treble: () => shaderFloat(env.uniforms.signalTreb),
+    treble_att: () => shaderFloat(env.uniforms.signalTreb),
+    beat: () => shaderFloat(env.uniforms.signalBeat),
+    beat_pulse: () => shaderFloat(env.uniforms.signalBeat),
+    progress: () => shaderFloat(env.uniforms.signalTime),
+    vol: () => shaderFloat(env.uniforms.signalEnergy),
+    rms: () => shaderFloat(env.uniforms.signalEnergy),
+    music: () => shaderFloat(env.uniforms.signalEnergy),
+    weighted_energy: () => shaderFloat(env.uniforms.signalEnergy),
+    pi: () => shaderFloat(Math.PI),
+    e: () => shaderFloat(Math.E),
+  };
+
+  const resolved = uniformMap[normalized]?.() ?? null;
+  if (resolved) {
+    env.values.set(normalized, resolved);
+  }
+  return resolved;
+}
+
+function compileShaderExpressionNode(
+  node: MilkdropShaderExpressionNode,
+  env: ShaderNodeEnv,
+): ShaderNodeValue | null {
+  switch (node.type) {
+    case 'literal':
+      return shaderFloat(node.value);
+    case 'identifier':
+      return getShaderEnvValue(env, node.name);
+    case 'unary': {
+      const operand = compileShaderExpressionNode(node.operand, env);
+      if (!operand) {
+        return null;
+      }
+      if (node.operator === '+') {
+        return operand;
+      }
+      if (node.operator === '-') {
+        return shaderValueFromNode(
+          coerceShaderValue(operand, operand.kind).node.mul(-1),
+          operand.kind,
+        );
+      }
+      return shaderFloat(float(1).sub(toShaderBool(operand)));
+    }
+    case 'binary': {
+      const left = compileShaderExpressionNode(node.left, env);
+      const right = compileShaderExpressionNode(node.right, env);
+      if (!left || !right) {
+        return null;
+      }
+      return applyShaderBinaryNode(node.operator, left, right);
+    }
+    case 'member': {
+      const object = compileShaderExpressionNode(node.object, env);
+      if (!object) {
+        return null;
+      }
+      const property = node.property.toLowerCase();
+      if (object.kind === 'vec2') {
+        if (property === 'x' || property === 'r') {
+          return shaderFloat(object.node.x);
+        }
+        if (property === 'y' || property === 'g') {
+          return shaderFloat(object.node.y);
+        }
+        if (property === 'xy' || property === 'rg') {
+          return makeShaderValue('vec2', object.node.xy);
+        }
+      }
+      if (object.kind === 'vec3') {
+        if (property === 'x' || property === 'r') {
+          return shaderFloat(object.node.x);
+        }
+        if (property === 'y' || property === 'g') {
+          return shaderFloat(object.node.y);
+        }
+        if (property === 'z' || property === 'b') {
+          return shaderFloat(object.node.z);
+        }
+        if (property === 'xy' || property === 'rg') {
+          return makeShaderValue('vec2', object.node.xy);
+        }
+        if (property === 'rgb' || property === 'xyz') {
+          return makeShaderValue('vec3', object.node.xyz);
+        }
+      }
+      return null;
+    }
+    case 'call': {
+      const name = node.name.toLowerCase();
+      const args = node.args
+        .map((arg) => compileShaderExpressionNode(arg, env))
+        .filter((value): value is ShaderNodeValue => value !== null);
+      if (args.length !== node.args.length) {
+        return null;
+      }
+      if (name === 'vec2' && args.length >= 2) {
+        return shaderVec2(
+          coerceShaderValue(args[0], 'scalar').node,
+          coerceShaderValue(args[1], 'scalar').node,
+        );
+      }
+      if (name === 'float2' && args.length >= 2) {
+        return shaderVec2(
+          coerceShaderValue(args[0], 'scalar').node,
+          coerceShaderValue(args[1], 'scalar').node,
+        );
+      }
+      if (name === 'vec3' || name === 'float3') {
+        if (args.length >= 3) {
+          return shaderVec3(
+            coerceShaderValue(args[0], 'scalar').node,
+            coerceShaderValue(args[1], 'scalar').node,
+            coerceShaderValue(args[2], 'scalar').node,
+          );
+        }
+        if (args.length >= 2 && args[0]?.kind === 'vec2') {
+          return shaderVec3(
+            args[0].node.x,
+            args[0].node.y,
+            coerceShaderValue(args[1], 'scalar').node,
+          );
+        }
+        if (args.length >= 2 && args[1]?.kind === 'vec2') {
+          return shaderVec3(
+            coerceShaderValue(args[0], 'scalar').node,
+            args[1].node.x,
+            args[1].node.y,
+          );
+        }
+      }
+      if (
+        (name === 'tex2d' ||
+          name === 'tex3d' ||
+          name === 'texture' ||
+          name === 'texture2d' ||
+          name === 'texture3d') &&
+        node.args.length >= 2
+      ) {
+        const samplerArg = node.args[0];
+        const sourceName =
+          samplerArg?.type === 'identifier'
+            ? samplerArg.name.toLowerCase()
+            : 'sampler_main';
+        const coordinate = args[1];
+        if (!coordinate) {
+          return null;
+        }
+        const sampleDimension =
+          name === 'tex3d' || name === 'texture3d' ? float(1) : float(0);
+        const sampleUv =
+          coordinate.kind === 'vec3'
+            ? vec2(coordinate.node.x, coordinate.node.y)
+            : coerceShaderValue(coordinate, 'vec2').node;
+        const sampleZ =
+          coordinate.kind === 'vec3' ? coordinate.node.z : float(0);
+        const sourceId =
+          sourceName === 'sampler_main'
+            ? float(0)
+            : sourceName.includes('noise')
+              ? float(1)
+              : sourceName.includes('simplex')
+                ? float(2)
+                : sourceName.includes('voronoi')
+                  ? float(3)
+                  : sourceName.includes('aura')
+                    ? float(4)
+                    : sourceName.includes('caustics')
+                      ? float(5)
+                      : sourceName.includes('pattern')
+                        ? float(6)
+                        : float(7);
+        if (sourceName === 'sampler_main') {
+          return makeShaderValue(
+            'vec3',
+            env.uniforms.currentTex.sample(
+              env.sampleUvNode(sampleUv, env.uniforms.textureWrap),
+            ).rgb,
+          );
+        }
+        return makeShaderValue(
+          'vec3',
+          env.sampleAuxTextureNode(sourceId, sampleDimension, sampleUv, sampleZ)
+            .rgb,
+        );
+      }
+      if ((name === 'mix' || name === 'lerp') && args.length >= 3) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        const left = coerceShaderValue(args[0], resultKind).node;
+        const right = coerceShaderValue(args[1], resultKind).node;
+        const amount = coerceShaderValue(args[2], 'scalar').node;
+        return shaderValueFromNode(mix(left, right, amount), resultKind);
+      }
+      if (name === 'if' && args.length >= 3) {
+        const condition = toShaderBool(args[0]);
+        const resultKind = getShaderResultKind(args[1], args[2]);
+        const whenTrue = coerceShaderValue(args[1], resultKind).node;
+        const whenFalse = coerceShaderValue(args[2], resultKind).node;
+        return shaderValueFromNode(
+          mix(whenFalse, whenTrue, condition),
+          resultKind,
+        );
+      }
+      if (name === 'step' && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        const edge = coerceShaderValue(args[0], resultKind).node;
+        const value = coerceShaderValue(args[1], resultKind).node;
+        return shaderValueFromNode(step(edge, value), resultKind);
+      }
+      if (name === 'smoothstep' && args.length >= 3) {
+        const resultKind = getShaderResultKind(args[0], args[2]);
+        return shaderValueFromNode(
+          smoothstep(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+            coerceShaderValue(args[2], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'sigmoid' && args.length >= 1) {
+        const resultKind = args[0]?.kind ?? 'scalar';
+        const value = coerceShaderValue(args[0], resultKind).node;
+        const slope = coerceShaderValue(
+          args[1] ?? shaderFloat(1),
+          resultKind,
+        ).node;
+        return shaderValueFromNode(
+          float(1).div(
+            float(1).add(pow(float(Math.E), value.mul(slope).mul(-1))),
+          ),
+          resultKind,
+        );
+      }
+      if ((name === 'mod' || name === 'fmod') && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          createModNode(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'abs' && args.length >= 1) {
+        return shaderValueFromNode(abs(args[0].node), args[0].kind);
+      }
+      if (name === 'pow' && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          pow(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'sqrt' && args.length >= 1) {
+        return shaderValueFromNode(pow(args[0].node, 0.5), args[0].kind);
+      }
+      if (name === 'sin' && args.length >= 1) {
+        return shaderValueFromNode(sin(args[0].node), args[0].kind);
+      }
+      if (name === 'cos' && args.length >= 1) {
+        return shaderValueFromNode(cos(args[0].node), args[0].kind);
+      }
+      if (name === 'fract' && args.length >= 1) {
+        return shaderValueFromNode(fract(args[0].node), args[0].kind);
+      }
+      if (name === 'floor' && args.length >= 1) {
+        return shaderValueFromNode(floor(args[0].node), args[0].kind);
+      }
+      if (name === 'min' && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          min(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'max' && args.length >= 2) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          max(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'clamp' && args.length >= 3) {
+        const resultKind = getShaderResultKind(args[0], args[1]);
+        return shaderValueFromNode(
+          clamp(
+            coerceShaderValue(args[0], resultKind).node,
+            coerceShaderValue(args[1], resultKind).node,
+            coerceShaderValue(args[2], resultKind).node,
+          ),
+          resultKind,
+        );
+      }
+      if (name === 'length' && args.length >= 1) {
+        return shaderFloat(length(args[0].node));
+      }
+      if (name === 'dot' && args.length >= 2) {
+        return shaderFloat(dot(args[0].node, args[1].node));
+      }
+      if (name === 'above' && args.length >= 2) {
+        return shaderFloat(
+          createComparisonNode('>', args[0].node, args[1].node),
+        );
+      }
+      if (name === 'below' && args.length >= 2) {
+        return shaderFloat(
+          createComparisonNode('<', args[0].node, args[1].node),
+        );
+      }
+      return null;
+    }
+  }
+}
+
+function assignShaderTarget(
+  env: ShaderNodeEnv,
+  statement: MilkdropShaderStatement,
+  value: ShaderNodeValue,
+) {
+  const target = statement.target.toLowerCase();
+  const segments = target.split('.');
+  const baseKey = segments[0] ?? target;
+  const baseValue = getShaderEnvValue(env, baseKey);
+  const nextValue =
+    statement.operator === '=' || !baseValue
+      ? value
+      : applyShaderBinaryNode(
+          statement.operator.slice(0, -1) as '+' | '-' | '*' | '/',
+          baseValue,
+          value,
+        );
+
+  if (segments.length === 1) {
+    setShaderEnvValue(env, baseKey, nextValue);
+    return;
+  }
+
+  if (!baseValue) {
+    return;
+  }
+
+  const property = segments[1]?.toLowerCase();
+  if (!property) {
+    return;
+  }
+
+  const parent =
+    baseValue.kind === 'vec3'
+      ? coerceShaderValue(baseValue, 'vec3').node.toVar()
+      : coerceShaderValue(baseValue, 'vec2').node.toVar();
+  const scalarNode = coerceShaderValue(nextValue, 'scalar').node;
+  if (property === 'x' || property === 'r') {
+    parent.x.assign(scalarNode);
+  } else if (property === 'y' || property === 'g') {
+    parent.y.assign(scalarNode);
+  } else if (property === 'z' || property === 'b') {
+    parent.z.assign(scalarNode);
+  }
+  setShaderEnvValue(env, baseKey, shaderValueFromNode(parent, baseValue.kind));
+}
+
+function runShaderProgram(
+  statements: MilkdropShaderStatement[],
+  env: ShaderNodeEnv,
+) {
+  statements.forEach((statement) => {
+    const value = compileShaderExpressionNode(statement.expression, env);
+    if (!value) {
+      return;
+    }
+    assignShaderTarget(env, statement, value);
+  });
+}
+
+function applyDirectWarpProgram(
+  program: MilkdropShaderProgramPayload | null,
+  env: ShaderNodeEnv,
+  currentUv: any,
+) {
+  if (!program) {
+    return currentUv;
+  }
+  const stageEnv: ShaderNodeEnv = {
+    ...env,
+    values: new Map(env.values),
+  };
+  setShaderEnvValue(stageEnv, 'uv', makeShaderValue('vec2', currentUv.toVar()));
+  runShaderProgram(program.statements, stageEnv);
+  return coerceShaderValue(
+    getShaderEnvValue(stageEnv, 'uv') ?? makeShaderValue('vec2', currentUv),
+    'vec2',
+  ).node;
+}
+
+function applyDirectCompProgram(
+  program: MilkdropShaderProgramPayload | null,
+  env: ShaderNodeEnv,
+  currentUv: any,
+  currentColor: any,
+) {
+  if (!program) {
+    return currentColor;
+  }
+  const stageEnv: ShaderNodeEnv = {
+    ...env,
+    values: new Map(env.values),
+  };
+  setShaderEnvValue(stageEnv, 'uv', makeShaderValue('vec2', currentUv));
+  setShaderEnvValue(
+    stageEnv,
+    'ret',
+    makeShaderValue('vec3', currentColor.toVar()),
+  );
+  runShaderProgram(program.statements, stageEnv);
+  return coerceShaderValue(
+    getShaderEnvValue(stageEnv, 'ret') ?? makeShaderValue('vec3', currentColor),
+    'vec3',
+  ).node;
+}
+
+function createCompositeOutputNode(
+  uniforms: CompositeUniformBag,
+  shaderPrograms: {
+    warp: MilkdropShaderProgramPayload | null;
+    comp: MilkdropShaderProgramPayload | null;
+  } = {
+    warp: null,
+    comp: null,
+  },
+) {
   const sampleUvNode = createSampleUvNode();
   const applyFeedbackWarpNode = createApplyFeedbackWarpNode();
   const applyVideoEchoOrientationNode = Fn(
@@ -358,6 +993,12 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
   );
 
   return Fn(() => {
+    const shaderEnv: ShaderNodeEnv = {
+      values: new Map<string, ShaderNodeValue>(),
+      uniforms,
+      sampleUvNode,
+      sampleAuxTextureNode,
+    };
     const baseUv = uv();
     const centeredUv = baseUv.sub(0.5);
     const rotationSin = sin(uniforms.rotation);
@@ -370,8 +1011,13 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
       .div(max(uniforms.zoomMul, 0.0001))
       .add(vec2(uniforms.offsetX, uniforms.offsetY));
 
-    const currentUv = applyFeedbackWarpNode(
+    const programWarpUv = applyDirectWarpProgram(
+      shaderPrograms.warp,
+      shaderEnv,
       transformedUv.add(0.5),
+    );
+    const currentUv = applyFeedbackWarpNode(
+      programWarpUv,
       uniforms.warpScale,
       uniforms.rotation,
     ).toVar();
@@ -486,13 +1132,19 @@ function createCompositeOutputNode(uniforms: CompositeUniformBag) {
       );
     });
 
-    const color = mix(
+    const directCurrentColor = applyDirectCompProgram(
+      shaderPrograms.comp,
+      shaderEnv,
+      currentUv,
       current.rgb,
+    );
+    const color = mix(
+      directCurrentColor,
       previousColor,
       clamp(uniforms.mixAlpha.add(uniforms.feedbackTexture.mul(0.2)), 0, 1),
     ).toVar();
     color.assign(
-      mix(color, current.rgb, clamp(uniforms.currentFrameBoost, 0, 0.4)),
+      mix(color, directCurrentColor, clamp(uniforms.currentFrameBoost, 0, 0.4)),
     );
 
     const brightenMask = max(
@@ -649,10 +1301,16 @@ class WebGPUMilkdropFeedbackManager {
   readonly sceneResolutionScale = this.profile.sceneResolutionScale;
   readonly feedbackResolutionScale = this.profile.feedbackResolutionScale;
   readonly auxTextures: Record<string, Texture>;
+  currentCompositeKey = '';
+  currentFeedbackResolutionScale = this.feedbackResolutionScale;
+  viewportWidth: number;
+  viewportHeight: number;
   private index = 0;
 
   constructor(width: number, height: number) {
     this.camera.position.z = 1;
+    this.viewportWidth = width;
+    this.viewportHeight = height;
     this.auxTextures = {
       noise: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.noise),
       simplex: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex),
@@ -720,6 +1378,44 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
+    const nextCompositeKey = JSON.stringify({
+      shaderExecution: state.shaderExecution,
+      warp: state.shaderPrograms.warp?.source ?? null,
+      comp: state.shaderPrograms.comp?.source ?? null,
+    });
+    if (nextCompositeKey !== this.currentCompositeKey) {
+      this.currentCompositeKey = nextCompositeKey;
+      this.compositeMaterial.outputNode = createCompositeOutputNode(
+        this.compositeMaterial.uniforms,
+        state.shaderExecution === 'direct'
+          ? state.shaderPrograms
+          : { warp: null, comp: null },
+      );
+      this.compositeMaterial.needsUpdate = true;
+    }
+
+    const needsSceneResolution =
+      state.shaderExecution === 'direct' ||
+      Math.abs(state.zoom - 1) > 0.0001 ||
+      state.videoEchoOrientation !== 0 ||
+      state.feedbackTexture > 0.5 ||
+      state.brighten > 0.5 ||
+      state.darken > 0.5 ||
+      state.darkenCenter > 0.5 ||
+      state.solarize > 0.5 ||
+      state.invert > 0.5 ||
+      Math.abs(state.gammaAdj - 1) > 0.0001;
+    const nextResolutionScale = needsSceneResolution
+      ? this.sceneResolutionScale
+      : this.feedbackResolutionScale;
+    if (
+      Math.abs(nextResolutionScale - this.currentFeedbackResolutionScale) >
+      0.0001
+    ) {
+      this.currentFeedbackResolutionScale = nextResolutionScale;
+      this.resize(this.viewportWidth, this.viewportHeight);
+    }
+
     this.compositeMaterial.uniforms.mixAlpha.value = state.mixAlpha;
     this.compositeMaterial.uniforms.zoom.value = state.zoom;
     this.compositeMaterial.uniforms.videoEchoOrientation.value =
@@ -813,6 +1509,8 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   resize(width: number, height: number) {
+    this.viewportWidth = width;
+    this.viewportHeight = height;
     const sceneWidth = Math.max(
       1,
       Math.round(width * this.sceneResolutionScale),
@@ -823,11 +1521,11 @@ class WebGPUMilkdropFeedbackManager {
     );
     const feedbackWidth = Math.max(
       1,
-      Math.round(width * this.feedbackResolutionScale),
+      Math.round(width * this.currentFeedbackResolutionScale),
     );
     const feedbackHeight = Math.max(
       1,
-      Math.round(height * this.feedbackResolutionScale),
+      Math.round(height * this.currentFeedbackResolutionScale),
     );
     this.sceneTarget.setSize(sceneWidth, sceneHeight);
     this.targets.forEach((target) =>
