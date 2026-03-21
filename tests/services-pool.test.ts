@@ -36,6 +36,10 @@ describe('render-service pooling', () => {
     document.body.innerHTML = '';
     resetRendererPool({ dispose: true });
     window.localStorage.clear();
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: 1,
+    });
   });
 
   test('reuses renderer handle between toys', async () => {
@@ -103,6 +107,9 @@ describe('render-service pooling', () => {
       device: null,
       maxPixelRatio: 2,
       renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 1,
+      adaptiveRenderScaleMultiplier: 1,
+      adaptiveDensityMultiplier: 1,
       exposure: 1,
     }));
 
@@ -110,10 +117,10 @@ describe('render-service pooling', () => {
 
     const first = await requestRenderer({ initRendererImpl });
 
-    expect(initRendererImpl).toHaveBeenCalledWith(
-      first.canvas,
-      expect.objectContaining({ renderScale: 0.5 }),
-    );
+    expect(initRendererImpl.mock.calls[0]?.[0]).toBe(first.canvas);
+    expect(initRendererImpl.mock.calls[0]?.[1]).toMatchObject({
+      renderScale: 0.5,
+    });
 
     first.release();
     setPixelRatioMock.mockClear();
@@ -125,10 +132,15 @@ describe('render-service pooling', () => {
 
     setRendererRuntimeControls({ renderScale: 0.25 });
 
-    expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.25);
+    expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.4);
   });
 
   test('preserves active renderer overrides when runtime controls reapply', async () => {
+    Object.defineProperty(window, 'devicePixelRatio', {
+      configurable: true,
+      value: 2,
+    });
+
     const initRendererImpl = mock(async () => ({
       renderer: fakeRenderer,
       backend: 'webgl' as const,
@@ -136,25 +148,28 @@ describe('render-service pooling', () => {
       device: null,
       maxPixelRatio: 2,
       renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 1,
+      adaptiveRenderScaleMultiplier: 1,
+      adaptiveDensityMultiplier: 1,
       exposure: 1,
     }));
 
     const handle = await requestRenderer({
       initRendererImpl,
-      options: { maxPixelRatio: 0.75, renderScale: 0.6 },
+      options: { maxPixelRatio: 1.75, renderScale: 1 },
     });
 
     setPixelRatioMock.mockClear();
-    setRendererRuntimeControls({ renderScale: 0.25 });
+    setRendererRuntimeControls({ renderScale: 0.9 });
 
     expect(handle.getRuntimeControls()).toEqual({
-      renderScale: 0.25,
+      renderScale: 0.9,
       feedbackScale: 1,
       meshDensityMultiplier: 1,
       waveSampleMultiplier: 1,
       motionVectorDensityMultiplier: 1,
     });
-    expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.6);
+    expect(setPixelRatioMock).toHaveBeenLastCalledWith(1.35);
   });
 });
 

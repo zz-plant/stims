@@ -1,9 +1,12 @@
 import type * as THREE from 'three';
+import { isMobileDevice } from '../utils/device-detect';
 import type {
   RendererInitConfig,
   RendererInitResult,
 } from './renderer-setup.ts';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
+
+const isMobileUserAgent = isMobileDevice();
 
 export function getRendererBackendMaxPixelRatioCap({
   backend,
@@ -147,9 +150,17 @@ export function applyRendererSettings(
     0.4,
     (merged.renderScale ?? 1) * (merged.adaptiveRenderScaleMultiplier ?? 1),
   );
+  const backendPixelRatioCap = getRendererBackendMaxPixelRatioCap({
+    backend: info.backend,
+    isMobile: isMobileUserAgent,
+  });
   const effectiveMaxPixelRatio = Math.max(
     0.5,
-    (merged.maxPixelRatio ?? 2) * (merged.adaptiveMaxPixelRatioMultiplier ?? 1),
+    Math.min(
+      (merged.maxPixelRatio ?? 2) *
+        (merged.adaptiveMaxPixelRatioMultiplier ?? 1),
+      backendPixelRatioCap,
+    ),
   );
   const effectivePixelRatio = Math.min(
     (window.devicePixelRatio || 1) * effectiveRenderScale,
