@@ -35,18 +35,6 @@ export type MilkdropWebGPURendererAdapterConfig = Omit<
   'backend'
 >;
 
-type SegmentInstance = {
-  startX: number;
-  startY: number;
-  startZ: number;
-  endX: number;
-  endY: number;
-  endZ: number;
-  color: MilkdropColor;
-  alpha: number;
-  width: number;
-};
-
 type ShapeFillInstance = {
   x: number;
   y: number;
@@ -261,42 +249,176 @@ function getShapeFillFallbackColor(shape: MilkdropShapeVisual) {
   };
 }
 
-function appendPolylineSegments(
-  target: SegmentInstance[],
-  positions: number[],
-  color: MilkdropColor,
-  alpha: number,
-  width: number,
-  closeLoop = false,
-) {
-  for (let index = 0; index + 5 < positions.length; index += 3) {
-    target.push({
-      startX: positions[index] ?? 0,
-      startY: positions[index + 1] ?? 0,
-      startZ: positions[index + 2] ?? 0.24,
-      endX: positions[index + 3] ?? 0,
-      endY: positions[index + 4] ?? 0,
-      endZ: positions[index + 5] ?? 0.24,
+class CompactSegmentUploadBuffer {
+  private lineData: Float32Array<ArrayBufferLike> = new Float32Array(0);
+  private styleData: Float32Array<ArrayBufferLike> = new Float32Array(0);
+  private controlData: Float32Array<ArrayBufferLike> = new Float32Array(0);
+  count = 0;
+
+  reset() {
+    this.count = 0;
+  }
+
+  getLineData() {
+    return this.lineData.subarray(0, this.count * 4);
+  }
+
+  getStyleData() {
+    return this.styleData.subarray(0, this.count * 4);
+  }
+
+  getControlData() {
+    return this.controlData.subarray(0, this.count * 2);
+  }
+
+  appendSegment(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    z: number,
+    color: MilkdropColor,
+    alpha: number,
+    width: number,
+  ) {
+    this.ensureCapacity(this.count + 1);
+    const lineOffset = this.count * 4;
+    this.lineData[lineOffset] = startX;
+    this.lineData[lineOffset + 1] = startY;
+    this.lineData[lineOffset + 2] = endX - startX;
+    this.lineData[lineOffset + 3] = endY - startY;
+
+    const styleOffset = this.count * 4;
+    this.styleData[styleOffset] = color.r;
+    this.styleData[styleOffset + 1] = color.g;
+    this.styleData[styleOffset + 2] = color.b;
+    this.styleData[styleOffset + 3] = alpha;
+
+    const controlOffset = this.count * 2;
+    this.controlData[controlOffset] = z;
+    this.controlData[controlOffset + 1] = width * 0.5;
+    this.count += 1;
+  }
+
+  appendPolyline(
+    positions: number[],
+    color: MilkdropColor,
+    alpha: number,
+    width: number,
+    closeLoop = false,
+  ) {
+    for (let index = 0; index + 5 < positions.length; index += 3) {
+      this.appendSegment(
+        positions[index] ?? 0,
+        positions[index + 1] ?? 0,
+        positions[index + 3] ?? 0,
+        positions[index + 4] ?? 0,
+        positions[index + 2] ?? 0.24,
+        color,
+        alpha,
+        width,
+      );
+    }
+    if (!closeLoop || positions.length < 6) {
+      return;
+    }
+    const lastPointIndex = positions.length - 3;
+    this.appendSegment(
+      positions[lastPointIndex] ?? 0,
+      positions[lastPointIndex + 1] ?? 0,
+      positions[0] ?? 0,
+      positions[1] ?? 0,
+      positions[lastPointIndex + 2] ?? 0.24,
       color,
       alpha,
       width,
-    });
+    );
   }
-  if (!closeLoop || positions.length < 6) {
-    return;
+
+  appendProceduralWave(wave: MilkdropProceduralWaveVisual) {
+    let previousX = 0;
+    let previousY = 0;
+    let hasPrevious = false;
+    const width = 0.0025 * Math.max(1, wave.thickness);
+    for (let index = 0; index < wave.samples.length; index += 1) {
+      const sampleT = index / Math.max(1, wave.samples.length - 1);
+      const point = buildProceduralWavePoint(
+        wave,
+        sampleT,
+        wave.samples[index] ?? 0,
+        wave.velocities[index] ?? 0,
+      );
+      if (hasPrevious) {
+        this.appendSegment(
+          previousX,
+          previousY,
+          point.x,
+          point.y,
+          0.24,
+          wave.color,
+          wave.alpha,
+          width,
+        );
+      }
+      previousX = point.x;
+      previousY = point.y;
+      hasPrevious = true;
+    }
   }
-  const lastPointIndex = positions.length - 3;
-  target.push({
-    startX: positions[lastPointIndex] ?? 0,
-    startY: positions[lastPointIndex + 1] ?? 0,
-    startZ: positions[lastPointIndex + 2] ?? 0.24,
-    endX: positions[0] ?? 0,
-    endY: positions[1] ?? 0,
-    endZ: positions[2] ?? 0.24,
-    color,
-    alpha,
-    width,
-  });
+
+  appendProceduralCustomWave(wave: MilkdropProceduralCustomWaveVisual) {
+    let previousX = 0;
+    let previousY = 0;
+    let hasPrevious = false;
+    for (let index = 0; index < wave.samples.length; index += 1) {
+      const sampleT = index / Math.max(1, wave.samples.length - 1);
+      const sampleValue = wave.samples[index] ?? 0;
+      const x = wave.centerX + (-1 + sampleT * 2) * 0.85;
+      const baseY =
+        wave.centerY +
+        (sampleValue - 0.5) * 0.55 * wave.scaling * (1 + wave.mystery * 0.25);
+      const orbitalY =
+        wave.centerY +
+        Math.sin(sampleT * Math.PI * 2 * (1 + wave.mystery) + wave.time) *
+          0.18 *
+          wave.scaling;
+      const pointY = wave.spectrum ? baseY : orbitalY;
+      if (hasPrevious) {
+        this.appendSegment(
+          previousX,
+          previousY,
+          x,
+          pointY,
+          0.28,
+          wave.color,
+          wave.alpha,
+          0.003,
+        );
+      }
+      previousX = x;
+      previousY = pointY;
+      hasPrevious = true;
+    }
+  }
+
+  private ensureCapacity(count: number) {
+    this.lineData = ensureFloat32Capacity(this.lineData, count * 4);
+    this.styleData = ensureFloat32Capacity(this.styleData, count * 4);
+    this.controlData = ensureFloat32Capacity(this.controlData, count * 2);
+  }
+}
+
+function ensureFloat32Capacity(
+  source: Float32Array<ArrayBufferLike>,
+  requiredLength: number,
+) {
+  if (source.length >= requiredLength) {
+    return source;
+  }
+  const nextLength = Math.max(requiredLength, Math.max(4, source.length * 2));
+  const resized = new Float32Array(nextLength);
+  resized.set(source);
+  return resized;
 }
 
 function buildProceduralWavePoint(
@@ -393,75 +515,6 @@ function buildProceduralWavePoint(
   return { x, y };
 }
 
-function appendProceduralWaveSegments(
-  target: SegmentInstance[],
-  wave: MilkdropProceduralWaveVisual,
-) {
-  let previous: { x: number; y: number } | null = null;
-  const width = 0.0025 * Math.max(1, wave.thickness);
-  for (let index = 0; index < wave.samples.length; index += 1) {
-    const sampleT = index / Math.max(1, wave.samples.length - 1);
-    const point = buildProceduralWavePoint(
-      wave,
-      sampleT,
-      wave.samples[index] ?? 0,
-      wave.velocities[index] ?? 0,
-    );
-    if (previous) {
-      target.push({
-        startX: previous.x,
-        startY: previous.y,
-        startZ: 0.24,
-        endX: point.x,
-        endY: point.y,
-        endZ: 0.24,
-        color: wave.color,
-        alpha: wave.alpha,
-        width,
-      });
-    }
-    previous = point;
-  }
-}
-
-function appendProceduralCustomWaveSegments(
-  target: SegmentInstance[],
-  wave: MilkdropProceduralCustomWaveVisual,
-) {
-  let previous: { x: number; y: number } | null = null;
-  for (let index = 0; index < wave.samples.length; index += 1) {
-    const sampleT = index / Math.max(1, wave.samples.length - 1);
-    const sampleValue = wave.samples[index] ?? 0;
-    const x = wave.centerX + (-1 + sampleT * 2) * 0.85;
-    const baseY =
-      wave.centerY +
-      (sampleValue - 0.5) * 0.55 * wave.scaling * (1 + wave.mystery * 0.25);
-    const orbitalY =
-      wave.centerY +
-      Math.sin(sampleT * Math.PI * 2 * (1 + wave.mystery) + wave.time) *
-        0.18 *
-        wave.scaling;
-    const point = {
-      x,
-      y: wave.spectrum ? baseY : orbitalY,
-    };
-    if (previous) {
-      target.push({
-        startX: previous.x,
-        startY: previous.y,
-        startZ: 0.28,
-        endX: point.x,
-        endY: point.y,
-        endZ: 0.28,
-        color: wave.color,
-        alpha: wave.alpha,
-        width: 0.003,
-      });
-    }
-    previous = point;
-  }
-}
-
 class InstancedSegmentBatch {
   readonly group = new Group();
   private readonly normalMesh = this.createMesh(NormalBlending);
@@ -484,20 +537,19 @@ class InstancedSegmentBatch {
         blending,
         vertexShader: `
           attribute vec2 segmentCoord;
-          attribute vec3 instanceStart;
-          attribute vec3 instanceEnd;
+          attribute vec4 instanceLine;
           attribute vec4 instanceColorAlpha;
-          attribute float instanceHalfWidth;
+          attribute vec2 instanceControl;
           varying vec4 vColor;
 
           void main() {
-            vec2 delta = instanceEnd.xy - instanceStart.xy;
+            vec2 delta = instanceLine.zw;
             float lengthDelta = length(delta);
             vec2 direction = lengthDelta > 0.000001 ? delta / lengthDelta : vec2(1.0, 0.0);
             vec2 normal = vec2(-direction.y, direction.x);
-            vec2 base = mix(instanceStart.xy, instanceEnd.xy, segmentCoord.x);
-            vec2 point = base + normal * segmentCoord.y * instanceHalfWidth;
-            float z = mix(instanceStart.z, instanceEnd.z, segmentCoord.x);
+            vec2 base = instanceLine.xy + delta * segmentCoord.x;
+            vec2 point = base + normal * segmentCoord.y * instanceControl.y;
+            float z = instanceControl.x;
             vColor = instanceColorAlpha;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(point, z, 1.0);
           }
@@ -513,59 +565,41 @@ class InstancedSegmentBatch {
   }
 
   syncSplit(
-    normalInstances: SegmentInstance[],
-    additiveInstances: SegmentInstance[],
+    normalInstances: CompactSegmentUploadBuffer,
+    additiveInstances: CompactSegmentUploadBuffer,
   ) {
     this.syncMesh(this.normalMesh, normalInstances);
     this.syncMesh(this.additiveMesh, additiveInstances);
   }
 
-  private syncMesh(mesh: Mesh, instances: SegmentInstance[]) {
+  private syncMesh(mesh: Mesh, instances: CompactSegmentUploadBuffer) {
     const geometry = mesh.geometry as InstancedBufferGeometry;
-    geometry.instanceCount = instances.length;
-    mesh.visible = instances.length > 0;
-    const start = ensureInstancedAttribute(
+    geometry.instanceCount = instances.count;
+    mesh.visible = instances.count > 0;
+    const line = ensureInstancedAttribute(
       geometry,
-      'instanceStart',
-      3,
-      instances.length,
-    );
-    const end = ensureInstancedAttribute(
-      geometry,
-      'instanceEnd',
-      3,
-      instances.length,
+      'instanceLine',
+      4,
+      instances.count,
     );
     const colorAlpha = ensureInstancedAttribute(
       geometry,
       'instanceColorAlpha',
       4,
-      instances.length,
+      instances.count,
     );
-    const halfWidth = ensureInstancedAttribute(
+    const control = ensureInstancedAttribute(
       geometry,
-      'instanceHalfWidth',
-      1,
-      instances.length,
+      'instanceControl',
+      2,
+      instances.count,
     );
-
-    for (let index = 0; index < instances.length; index += 1) {
-      const instance = instances[index] as SegmentInstance;
-      start.setXYZ(index, instance.startX, instance.startY, instance.startZ);
-      end.setXYZ(index, instance.endX, instance.endY, instance.endZ);
-      colorAlpha.setXYZW(
-        index,
-        instance.color.r,
-        instance.color.g,
-        instance.color.b,
-        instance.alpha,
-      );
-      halfWidth.setX(index, instance.width * 0.5);
-    }
-    start.needsUpdate = true;
-    end.needsUpdate = true;
+    (line.array as Float32Array).set(instances.getLineData());
+    (colorAlpha.array as Float32Array).set(instances.getStyleData());
+    (control.array as Float32Array).set(instances.getControlData());
+    line.needsUpdate = true;
     colorAlpha.needsUpdate = true;
-    halfWidth.needsUpdate = true;
+    control.needsUpdate = true;
   }
 
   dispose() {
@@ -1005,6 +1039,13 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private readonly waveTargets = new Map<string, InstancedSegmentBatch>();
   private readonly shapeTargets = new Map<string, ShapeBatchTarget>();
   private readonly borderTargets = new Map<string, InstancedBorderBatch>();
+  private readonly normalSegmentUploads = new CompactSegmentUploadBuffer();
+  private readonly additiveSegmentUploads = new CompactSegmentUploadBuffer();
+
+  private resetSegmentUploads() {
+    this.normalSegmentUploads.reset();
+    this.additiveSegmentUploads.reset();
+  }
 
   attach(root: Group) {
     root.add(this.root);
@@ -1049,12 +1090,12 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     if (waves.some((wave) => wave.drawMode === 'dots')) {
       return false;
     }
-    const normal: SegmentInstance[] = [];
-    const additive: SegmentInstance[] = [];
+    this.resetSegmentUploads();
     for (const wave of waves) {
-      const destination = wave.additive ? additive : normal;
-      appendPolylineSegments(
-        destination,
+      const destination = wave.additive
+        ? this.additiveSegmentUploads
+        : this.normalSegmentUploads;
+      destination.appendPolyline(
         wave.positions,
         wave.color,
         wave.alpha * alphaMultiplier,
@@ -1062,7 +1103,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
         wave.closed,
       );
     }
-    this.getWaveTarget(`wave:${target}`).syncSplit(normal, additive);
+    this.getWaveTarget(`wave:${target}`).syncSplit(
+      this.normalSegmentUploads,
+      this.additiveSegmentUploads,
+    );
     return true;
   }
 
@@ -1071,12 +1115,17 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     _group: Group,
     waves: MilkdropProceduralWaveVisual[],
   ) {
-    const normal: SegmentInstance[] = [];
-    const additive: SegmentInstance[] = [];
+    this.resetSegmentUploads();
     for (const wave of waves) {
-      appendProceduralWaveSegments(wave.additive ? additive : normal, wave);
+      (wave.additive
+        ? this.additiveSegmentUploads
+        : this.normalSegmentUploads
+      ).appendProceduralWave(wave);
     }
-    this.getWaveTarget(`procedural-wave:${target}`).syncSplit(normal, additive);
+    this.getWaveTarget(`procedural-wave:${target}`).syncSplit(
+      this.normalSegmentUploads,
+      this.additiveSegmentUploads,
+    );
     return true;
   }
 
@@ -1084,15 +1133,17 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     _group: Group,
     waves: MilkdropProceduralCustomWaveVisual[],
   ) {
-    const normal: SegmentInstance[] = [];
-    const additive: SegmentInstance[] = [];
+    this.resetSegmentUploads();
     for (const wave of waves) {
-      appendProceduralCustomWaveSegments(
-        wave.additive ? additive : normal,
-        wave,
-      );
+      (wave.additive
+        ? this.additiveSegmentUploads
+        : this.normalSegmentUploads
+      ).appendProceduralCustomWave(wave);
     }
-    this.getWaveTarget('procedural-custom-wave').syncSplit(normal, additive);
+    this.getWaveTarget('procedural-custom-wave').syncSplit(
+      this.normalSegmentUploads,
+      this.additiveSegmentUploads,
+    );
     return true;
   }
 
@@ -1127,18 +1178,22 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     }>,
     alphaMultiplier: number,
   ) {
-    const normal: SegmentInstance[] = [];
-    const additive: SegmentInstance[] = [];
+    this.resetSegmentUploads();
     for (const line of lines) {
-      appendPolylineSegments(
-        (line.additive ?? false) ? additive : normal,
+      ((line.additive ?? false)
+        ? this.additiveSegmentUploads
+        : this.normalSegmentUploads
+      ).appendPolyline(
         line.positions,
         line.color,
         line.alpha * alphaMultiplier,
         0.0025,
       );
     }
-    this.getWaveTarget(`line:${target}`).syncSplit(normal, additive);
+    this.getWaveTarget(`line:${target}`).syncSplit(
+      this.normalSegmentUploads,
+      this.additiveSegmentUploads,
+    );
     return true;
   }
 
