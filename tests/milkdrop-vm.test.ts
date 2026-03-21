@@ -183,6 +183,27 @@ fGammaAdj=1.75
     expect(frameState.post.gammaAdj).toBeCloseTo(1.75, 6);
   });
 
+  test.each([
+    ['init', 'init_1=echo_orient=3;'],
+    ['per-frame', 'per_frame_1=echo_orient=3;'],
+  ])('applies echo_orient program aliases to runtime post state in %s programs', (_label, programLine) => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Echo Orientation VM Alias
+video_echo=1
+${programLine}
+        `.trim(),
+      { id: 'echo-orientation-vm-alias' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.post.videoEchoEnabled).toBe(true);
+    expect(frameState.post.videoEchoOrientation).toBe(3);
+    expect(frameState.variables.video_echo_orientation).toBeCloseTo(3, 6);
+    expect(frameState.variables.echo_orient).toBeUndefined();
+  });
+
   test('builds motion vector overlays from per-pixel transforms', () => {
     const preset = compileMilkdropPresetSource(
       `
