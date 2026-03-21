@@ -388,6 +388,8 @@ const BACKEND_SHADER_TEXT_GAPS: Record<
       'This preset includes custom shader text outside the fully supported subset and will be approximated.',
   },
   webgpu: {
+    supportedSubset:
+      'WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution.',
     unsupportedSubset:
       'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
   },
@@ -2582,7 +2584,7 @@ function applyShaderAstStatement({
           controls.textureLayer.amount = amount.value;
           expressions.textureLayer.amount = amount.expression;
           applyTextureLayerSample(controls, expressions, invertedSample);
-          return false;
+          return true;
         }
         if (isShaderSolarizeSampleExpression(targetNode)) {
           const next = applyShaderControlValue(
@@ -3471,7 +3473,11 @@ function isUnsupportedParsedShaderStatement({
   }
 
   const invertedSample = extractShaderInvertedSampleExpression(targetNode);
-  return invertedSample !== null && invertedSample !== 'main';
+  if (!invertedSample || invertedSample === 'main') {
+    return false;
+  }
+
+  return !isAuxShaderSamplerName(invertedSample.source);
 }
 
 function extractShaderControls(
