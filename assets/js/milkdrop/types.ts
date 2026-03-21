@@ -160,6 +160,7 @@ export type MilkdropBackendSupportEvidenceCode =
   | 'unsupported-hard-feature'
   | 'supported-shader-text-gap'
   | 'unsupported-shader-text-gap'
+  | 'volume-sampler-gap'
   | 'video-echo-gap'
   | 'post-effects-gap';
 

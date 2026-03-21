@@ -18,4 +18,21 @@ describe('milkdrop expression', () => {
     }
     expect(evaluateMilkdropExpression(parsed.value, {})).toBeCloseTo(22.25, 6);
   });
+
+  test('resolves legacy aliases against canonical environment keys', () => {
+    const parsed = parseMilkdropExpression('echo_orient + fGammaAdj', 1);
+
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.value).not.toBeNull();
+    if (!parsed.value) {
+      throw new Error('Expected expression to parse.');
+    }
+
+    expect(
+      evaluateMilkdropExpression(parsed.value, {
+        video_echo_orientation: 3,
+        gammaadj: 1.25,
+      }),
+    ).toBeCloseTo(4.25, 6);
+  });
 });
