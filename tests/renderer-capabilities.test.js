@@ -5,9 +5,12 @@ const freshImport = async () =>
   import(`${capabilitiesModule}?t=${Date.now()}-${Math.random()}`);
 
 let getRendererCapabilities;
+let getRendererOptimizationSupport;
 let getRenderingSupport;
+let recordRendererOptimizationTelemetry;
 let rememberRendererFallback;
 let resetRendererCapabilities;
+let summarizeRendererOptimizationSupport;
 
 const originalNavigator = global.navigator;
 
@@ -36,9 +39,12 @@ beforeEach(async () => {
   mock.restore();
   ({
     getRendererCapabilities,
+    getRendererOptimizationSupport,
     getRenderingSupport,
+    recordRendererOptimizationTelemetry,
     rememberRendererFallback,
     resetRendererCapabilities,
+    summarizeRendererOptimizationSupport,
   } = await freshImport());
 });
 
@@ -182,11 +188,76 @@ describe('renderer capabilities', () => {
       performanceTier: 'high-end',
       recommendedQualityPreset: 'hi-fi',
       preferredCanvasFormat: 'bgra8unorm',
+      optimization: {
+        shaderF16: true,
+        subgroups: true,
+        timestampQuery: true,
+        workerOffscreenPipeline: false,
+      },
       features: {
         shaderF16: true,
         subgroups: true,
         timestampQuery: true,
       },
     });
+  });
+
+  test('provides a stable optimization support snapshot without reprobe helpers', () => {
+    const optimization = summarizeRendererOptimizationSupport({
+      features: {
+        shaderF16: true,
+        subgroups: false,
+        timestampQuery: true,
+      },
+      workers: {
+        workers: true,
+        offscreenCanvas: true,
+        transferControlToOffscreen: true,
+      },
+    });
+
+    expect(optimization).toEqual({
+      shaderF16: true,
+      subgroups: false,
+      timestampQuery: true,
+      workers: true,
+      offscreenCanvas: true,
+      transferControlToOffscreen: true,
+      workerOffscreenPipeline: true,
+    });
+    expect(getRendererOptimizationSupport({ webgpu: { optimization } })).toBe(
+      optimization,
+    );
+    expect(getRendererOptimizationSupport(null)).toEqual({
+      shaderF16: false,
+      subgroups: false,
+      timestampQuery: false,
+      workers: false,
+      offscreenCanvas: false,
+      transferControlToOffscreen: false,
+      workerOffscreenPipeline: false,
+    });
+  });
+
+  test('dispatches optimization telemetry events for opt-in counters', () => {
+    const dispatchEvent = mock();
+    const originalDispatchEvent = window.dispatchEvent;
+    window.dispatchEvent = dispatchEvent;
+
+    recordRendererOptimizationTelemetry({
+      counter: 'shaderF16Usage',
+      amount: 2,
+    });
+
+    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(dispatchEvent.mock.calls[0][0].type).toBe(
+      'stims:renderer-optimization-telemetry',
+    );
+    expect(dispatchEvent.mock.calls[0][0].detail).toEqual({
+      counter: 'shaderF16Usage',
+      amount: 2,
+    });
+
+    window.dispatchEvent = originalDispatchEvent;
   });
 });
