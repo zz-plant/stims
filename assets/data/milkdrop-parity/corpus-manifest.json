@@ -718,8 +718,8 @@
       "id": "parity-allowlisted-shader-gap",
       "title": "Parity Allowlisted Shader Gap",
       "file": "parity-allowlisted-shader-gap.milk",
-      "strata": ["shader-gap", "allowlisted"],
-      "allowlisted": true
+      "strata": ["shader-supported", "video-echo"],
+      "allowlisted": false
     }
   ],
   "canonicalVisualSuite": [
