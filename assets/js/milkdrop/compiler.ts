@@ -376,12 +376,7 @@ const BACKEND_PARTIAL_FEATURE_GAPS: Record<
   Partial<Record<MilkdropFeatureKey, string>>
 > = {
   webgl: {},
-  webgpu: {
-    'video-echo':
-      'WebGPU still composites and presents video echo through the lower-resolution feedback ping-pong target, so echo-heavy presets remain visibly softer than WebGL.',
-    'post-effects':
-      'WebGPU still applies post effects through the lower-resolution feedback ping-pong target, so gamma, brighten/invert, and related post-processing remain visibly softer than WebGL.',
-  },
+  webgpu: {},
 };
 const BACKEND_SHADER_TEXT_GAPS: Record<
   MilkdropRenderBackend,
@@ -396,7 +391,7 @@ const BACKEND_SHADER_TEXT_GAPS: Record<
   },
   webgpu: {
     supportedSubset:
-      'WebGPU now applies the extracted shader controls through the richer feedback composite path, but still uses translated shader text instead of direct shader-program execution.',
+      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
     unsupportedSubset:
       'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
   },
@@ -5450,6 +5445,12 @@ function buildWebGpuDescriptorPlan({
     post.shaderPrograms.warp !== null || post.shaderPrograms.comp !== null;
   const feedbackUsesPostEffects =
     post.brighten || post.darken || post.solarize || post.invert;
+  const shaderExecution =
+    featureAnalysis.shaderTextExecution.webgpu === 'direct'
+      ? 'direct'
+      : featureAnalysis.shaderTextExecution.webgpu === 'none'
+        ? 'none'
+        : 'controls';
   const feedback: MilkdropFeedbackPostEffectDescriptorPlan | null =
     post.videoEchoEnabled ||
     post.feedbackTexture ||
@@ -5457,15 +5458,17 @@ function buildWebGpuDescriptorPlan({
     feedbackUsesPostEffects
       ? {
           kind: 'feedback-post-effect',
-          shaderExecution:
-            featureAnalysis.shaderTextExecution.webgpu === 'direct'
-              ? 'direct'
-              : featureAnalysis.shaderTextExecution.webgpu === 'none'
-                ? 'none'
-                : 'controls',
+          shaderExecution,
           usesFeedbackTexture: post.feedbackTexture,
           usesVideoEcho: post.videoEchoEnabled,
           usesPostEffects: feedbackUsesPostEffects,
+          targetResolution:
+            shaderExecution === 'direct' ||
+            post.videoEchoEnabled ||
+            post.feedbackTexture ||
+            feedbackUsesPostEffects
+              ? 'scene'
+              : 'adaptive',
           fallbackToLegacyFeedback: webgpu.evidence.some(
             (entry) =>
               entry.code === 'video-echo-gap' ||
