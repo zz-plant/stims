@@ -729,6 +729,53 @@ definitely_not_a_real_field=1
     ).toBe(true);
   });
 
+  test('classifies hard-unsupported fields as backend blockers', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Blocked Import
+video_echo_orientation=2
+      `.trim(),
+      { id: 'blocked-import', origin: 'imported' },
+    );
+
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([
+      'video_echo_orientation',
+    ]);
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([
+      'video_echo_orientation',
+    ]);
+    expect(compiled.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'preset_unsupported_field',
+          field: 'video_echo_orientation',
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('unsupported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unsupported-hard-feature',
+          feature: 'video-echo-orientation',
+          status: 'unsupported',
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.parity.degradationReasons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unsupported-hard-feature',
+          blocking: true,
+          message: expect.stringContaining('video-echo-orientation'),
+        }),
+      ]),
+    );
+  });
+
   test('keeps shader approximation as a partial backend support path', () => {
     const compiled = compileMilkdropPresetSource(
       `
@@ -805,18 +852,19 @@ unknown_field=2
       'shader:unsupported(shader)',
     ]);
     expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
-      {
+      expect.objectContaining({
         kind: 'field',
         value: 'unknown_field',
         system: 'preset-field',
         allowlisted: false,
-      },
-      {
+        classification: 'soft-unknown',
+      }),
+      expect.objectContaining({
         kind: 'shader',
         value: 'unsupported(shader)',
         system: 'shader-text',
         allowlisted: true,
-      },
+      }),
     ]);
     expect(compiled.ir.compatibility.parity.degradationReasons).toEqual(
       expect.arrayContaining([
