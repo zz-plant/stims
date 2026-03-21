@@ -766,8 +766,13 @@ warpanimspeed=1.25
       }>;
     };
 
-    expect(frameState.motionVectors.length).toBeGreaterThan(0);
-    expect(motionVectorGroup.children[0]).toBeDefined();
+    const matchingMotionVectorMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) === frameState.motionVectors.length,
+    );
+
+    expect(matchingMotionVectorMesh).toBeDefined();
     expect(motionVectorGroup.children[1]?.visible).toBe(false);
   });
 
