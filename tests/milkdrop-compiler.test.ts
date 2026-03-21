@@ -1419,7 +1419,11 @@ motion_vectors_y=5
       proceduralMesh: {
         kind: 'procedural-mesh',
         requiresPerPixelProgram: false,
-        supportsMotionVectors: true,
+        fieldProgram: null,
+      },
+      proceduralMotionVectors: {
+        kind: 'procedural-motion-vectors',
+        requiresPerPixelProgram: false,
         fieldProgram: null,
       },
       feedback: null,
@@ -1431,6 +1435,9 @@ motion_vectors_y=5
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Per Pixel
+motion_vectors=1
+motion_vectors_x=5
+motion_vectors_y=3
 per_pixel_1=q1=sin(time*0.5+x*2);
 per_pixel_2=x=x+q1*0.05;
 per_pixel_3=zoom=zoom+abs(y)*0.1;
@@ -1443,7 +1450,18 @@ per_pixel_3=zoom=zoom+abs(y)*0.1;
     ).toMatchObject({
       kind: 'procedural-mesh',
       requiresPerPixelProgram: true,
-      supportsMotionVectors: false,
+      fieldProgram: {
+        kind: 'gpu-field-program',
+        temporaries: ['q1'],
+        statements: [{ target: 'q1' }, { target: 'x' }, { target: 'zoom' }],
+      },
+    });
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu
+        .proceduralMotionVectors,
+    ).toMatchObject({
+      kind: 'procedural-motion-vectors',
+      requiresPerPixelProgram: true,
       fieldProgram: {
         kind: 'gpu-field-program',
         temporaries: ['q1'],
@@ -1465,6 +1483,7 @@ warp_shader=unsupported(shader)
       routing: 'fallback-webgl',
       proceduralWaves: [],
       proceduralMesh: null,
+      proceduralMotionVectors: null,
       feedback: null,
       unsupported: [
         {
@@ -1476,5 +1495,31 @@ warp_shader=unsupported(shader)
         },
       ],
     });
+  });
+
+  test('keeps legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Descriptor Plan Legacy Motion Vectors
+motion_vectors=1
+motion_vectors_x=7
+motion_vectors_y=5
+mv_l=0.4
+      `.trim(),
+      { id: 'descriptor-plan-legacy-motion-vectors' },
+    );
+
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
+      expect.objectContaining({
+        routing: 'descriptor-plan',
+        proceduralMesh: {
+          kind: 'procedural-mesh',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
+        proceduralMotionVectors: null,
+        unsupported: [],
+      }),
+    );
   });
 });

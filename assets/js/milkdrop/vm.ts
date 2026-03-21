@@ -302,6 +302,19 @@ type MeshField = {
   signals: MilkdropGpuFieldSignalInputs | null;
 };
 
+type MotionVectorHistoryPoint = {
+  sourceX: number;
+  sourceY: number;
+  x: number;
+  y: number;
+};
+
+type MotionVectorFieldHistory = {
+  countX: number;
+  countY: number;
+  points: MotionVectorHistoryPoint[];
+};
+
 type MotionVectorDescriptorContext = {
   legacyControls: boolean;
   countX: number;
@@ -330,7 +343,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private customWaveState: MutableState[] = [];
   private proceduralTrailWaves: MilkdropProceduralWaveVisual[] = [];
   private customShapeState: MutableState[] = [];
-  private lastMeshField: MeshField | null = null;
+  private lastMotionVectorField: MotionVectorFieldHistory | null = null;
   private readonly waveBuffers: WaveFrameBuffers = {
     liveSamples: [],
     previousSamples: [],
@@ -383,7 +396,7 @@ class MilkdropPresetVM implements MilkdropVM {
       this.seedCustomShapeState(shape),
     );
     this.proceduralTrailWaves = [];
-    this.lastMeshField = null;
+    this.lastMotionVectorField = null;
     this.waveBuffers.liveSamples.length = 0;
     this.waveBuffers.previousSamples.length = 0;
     this.waveBuffers.smoothedSamples.length = 0;
@@ -626,6 +639,13 @@ class MilkdropPresetVM implements MilkdropVM {
   private getProceduralMeshDescriptorPlan() {
     return this.renderBackend === 'webgpu'
       ? this.preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
+      : null;
+  }
+
+  private getProceduralMotionVectorDescriptorPlan() {
+    return this.renderBackend === 'webgpu'
+      ? this.preset.ir.compatibility.gpuDescriptorPlans.webgpu
+          .proceduralMotionVectors
       : null;
   }
 
@@ -1267,7 +1287,9 @@ class MilkdropPresetVM implements MilkdropVM {
   private getProceduralMotionVectorFieldVisual(
     meshField: MeshField,
   ): MilkdropProceduralMotionVectorFieldVisual | null {
-    if (!meshField.signals) {
+    const proceduralMotionVectorPlan =
+      this.getProceduralMotionVectorDescriptorPlan();
+    if (!meshField.signals || !proceduralMotionVectorPlan) {
       return null;
     }
 
@@ -1295,7 +1317,7 @@ class MilkdropPresetVM implements MilkdropVM {
       explicitLength:
         legacyLength <= 1 ? legacyLength : legacyLength * legacyCellScale,
       legacyControls: motionVectorContext.legacyControls,
-      program: meshField.program,
+      program: proceduralMotionVectorPlan.fieldProgram,
       signals: meshField.signals,
       ...this.buildProceduralFieldTransform(),
     };
@@ -1319,10 +1341,12 @@ class MilkdropPresetVM implements MilkdropVM {
   ): MilkdropMotionVectorVisual[] {
     const motionVectorContext = this.getMotionVectorDescriptorContext();
     if (!motionVectorContext) {
+      this.lastMotionVectorField = null;
       return [];
     }
 
-    if (meshField.signals) {
+    if (this.getProceduralMotionVectorDescriptorPlan() && meshField.signals) {
+      this.lastMotionVectorField = null;
       return [];
     }
 
@@ -1343,8 +1367,10 @@ class MilkdropPresetVM implements MilkdropVM {
       1,
     );
     const vectors: MilkdropMotionVectorVisual[] = [];
-    const previousField = this.lastMeshField;
-    const density = meshField.density;
+    const nextHistoryPoints = new Array<MotionVectorHistoryPoint>(
+      countX * countY,
+    );
+    const previousField = this.lastMotionVectorField;
     const hasPerPixelPrograms =
       this.preset.ir.programs.perPixel.statements.length > 0;
     const legacyOffsetX = clamp(this.state.mv_dx ?? 0, -1, 1);
@@ -1365,10 +1391,14 @@ class MilkdropPresetVM implements MilkdropVM {
         const sourceY = hasLegacyMotionVectorControls
           ? clamp(sourceBaseY + legacyOffsetY, -1, 1)
           : sourceBaseY;
-        const fieldCol = Math.round((sourceX + 1) * 0.5 * (density - 1));
-        const fieldRow = Math.round((sourceY + 1) * 0.5 * (density - 1));
-        const index = fieldRow * density + fieldCol;
+        const index = row * countX + col;
         const currentPoint = this.transformMeshPoint(signals, sourceX, sourceY);
+        nextHistoryPoints[index] = {
+          sourceX,
+          sourceY,
+          x: currentPoint.x,
+          y: currentPoint.y,
+        };
         const previous = previousField?.points[index] ?? {
           sourceX,
           sourceY,
@@ -1424,6 +1454,11 @@ class MilkdropPresetVM implements MilkdropVM {
       }
     }
 
+    this.lastMotionVectorField = {
+      countX,
+      countY,
+      points: nextHistoryPoints,
+    };
     return vectors;
   }
 
@@ -1632,7 +1667,6 @@ class MilkdropPresetVM implements MilkdropVM {
     const customWaves = this.buildCustomWaves(signals);
     const mesh = this.buildMesh(meshField);
     const motionVectors = this.buildMotionVectors(signals, meshField);
-    this.lastMeshField = meshField;
 
     const frameState: MilkdropFrameState = {
       presetId: this.preset.source.id,

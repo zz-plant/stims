@@ -32,9 +32,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -50,11 +50,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -91,9 +91,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -109,11 +109,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -150,9 +150,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -168,11 +168,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -209,9 +209,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -227,11 +227,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -272,9 +272,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -290,11 +290,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -335,9 +335,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -353,11 +353,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -394,9 +394,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -412,11 +412,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -453,9 +453,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -471,11 +471,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -521,7 +521,6 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": true,
-          "supportsMotionVectors": false,
           "fieldProgram": {
             "kind": "gpu-field-program",
             "statements": [
@@ -553,6 +552,7 @@
             "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"zoom\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":0.9615},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"rad\"},\"right\":{\"type\":\"literal\",\"value\":0.1}}}}]}"
           }
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -568,11 +568,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -609,9 +609,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -627,11 +627,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -668,9 +668,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -686,11 +686,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -727,9 +727,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -745,11 +745,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -786,9 +786,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -804,11 +804,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -845,9 +845,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -863,11 +863,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -904,9 +904,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -922,11 +922,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -963,9 +963,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -981,11 +981,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1022,9 +1022,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1040,11 +1040,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1081,9 +1081,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1099,11 +1099,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1140,9 +1140,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1158,11 +1158,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1199,9 +1199,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1217,11 +1217,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1258,9 +1258,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1276,11 +1276,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1317,9 +1317,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1335,11 +1335,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1376,9 +1376,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1394,11 +1394,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1435,9 +1435,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1453,11 +1453,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1494,9 +1494,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1512,11 +1512,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1560,9 +1560,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1578,11 +1578,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1626,9 +1626,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1644,11 +1644,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1692,9 +1692,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1710,11 +1710,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1758,9 +1758,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1776,11 +1776,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1824,9 +1824,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1842,11 +1842,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1890,9 +1890,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1908,11 +1908,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -1956,9 +1956,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1974,11 +1974,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -2028,9 +2028,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2046,11 +2046,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -2115,9 +2115,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2133,11 +2133,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -2176,9 +2176,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2191,24 +2191,24 @@
           "status": "partial",
           "evidence": [
             {
+              "scope": "backend",
               "status": "partial",
               "code": "supported-shader-text-gap",
-              "feature": null,
-              "scope": "backend"
+              "feature": null
             }
           ]
         }
       },
       "parity": {
         "fidelityClass": "near-exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [
           "status:webgl=supported,webgpu=partial",
           "webgpu:supported-shader-text-gap"
         ],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -2247,9 +2247,9 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": false,
-          "supportsMotionVectors": false,
           "fieldProgram": null
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2262,24 +2262,24 @@
           "status": "partial",
           "evidence": [
             {
+              "scope": "backend",
               "status": "partial",
               "code": "supported-shader-text-gap",
-              "feature": null,
-              "scope": "backend"
+              "feature": null
             }
           ]
         }
       },
       "parity": {
         "fidelityClass": "near-exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [
           "status:webgl=supported,webgpu=partial",
           "webgpu:supported-shader-text-gap"
         ],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   },
@@ -2335,7 +2335,6 @@
         "proceduralMesh": {
           "kind": "procedural-mesh",
           "requiresPerPixelProgram": true,
-          "supportsMotionVectors": false,
           "fieldProgram": {
             "kind": "gpu-field-program",
             "statements": [
@@ -2351,6 +2350,7 @@
             "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"cx\",\"expression\":{\"type\":\"identifier\",\"name\":\"x\"}}]}"
           }
         },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2366,11 +2366,11 @@
       },
       "parity": {
         "fidelityClass": "exact",
-        "blockedConstructs": [],
-        "ignoredFields": [],
-        "missingAliasesOrFunctions": [],
         "backendDivergence": [],
-        "approximatedShaderLines": []
+        "ignoredFields": [],
+        "blockedConstructs": [],
+        "approximatedShaderLines": [],
+        "missingAliasesOrFunctions": []
       }
     }
   }
