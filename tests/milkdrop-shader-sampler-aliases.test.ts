@@ -161,7 +161,23 @@ describe('milkdrop shader sampler aliases', () => {
       expect(
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(
+        compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
+      ).not.toBeNull();
+      expect(compiled.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'preset_shader_volume_approximation',
+            severity: 'warning',
+          }),
+        ]),
+      );
+      expect(compiled.ir.compatibility.warnings).toEqual(
+        expect.arrayContaining([
+          'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
+        ]),
+      );
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     }
   });

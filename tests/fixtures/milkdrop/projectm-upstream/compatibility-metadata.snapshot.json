@@ -1310,7 +1310,13 @@
   },
   {
     "file": "261-compshader-noisevol_lq.milk",
-    "diagnostics": [],
+    "diagnostics": [
+      {
+        "severity": "warning",
+        "code": "preset_shader_volume_approximation",
+        "field": null
+      }
+    ],
     "normalizedPrograms": {
       "init": [],
       "perFrame": [],
@@ -1321,12 +1327,13 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [
+        "Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.",
         "WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL."
       ],
       "featuresUsed": ["base-globals"],
       "backends": {
         "webgl": {
-          "status": "supported",
+          "status": "partial",
           "evidence": []
         },
         "webgpu": {
@@ -1343,10 +1350,7 @@
       },
       "parity": {
         "fidelityClass": "near-exact",
-        "backendDivergence": [
-          "status:webgl=supported,webgpu=partial",
-          "webgpu:supported-shader-text-gap"
-        ],
+        "backendDivergence": ["webgpu:supported-shader-text-gap"],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
