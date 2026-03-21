@@ -1,23 +1,97 @@
 {
   "version": 2,
-  "generatedAt": "2026-03-16",
+  "generatedAt": "2026-03-21",
   "certification": "bundled",
   "corpusTier": "bundled",
   "expectedFidelityClass": "exact",
   "visualEvidenceTier": "visual",
   "presets": [
     {
-      "id": "3dtoy",
-      "title": "3D Toy",
-      "author": "Stims Alias Pack",
+      "id": "aurora-feedback-core",
+      "title": "Aurora Feedback Core",
+      "author": "Stims Curated",
+      "order": 1,
+      "file": "/milkdrop-presets/aurora-feedback-core.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "feedback",
+        "warp",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "author": "Eo.S.",
+      "order": 2,
+      "file": "/milkdrop-presets/eos-glowsticks-v2-03-music.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "popular",
+        "glowsticks",
+        "original-pack",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "author": "Rovastar",
+      "order": 3,
+      "file": "/milkdrop-presets/rovastar-parallel-universe.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "popular",
+        "lasers",
+        "cream-of-the-crop",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "author": "Eo.S. + Phat",
+      "order": 4,
+      "file": "/milkdrop-presets/eos-phat-cubetrace-v2.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "popular",
+        "geometry",
+        "cream-of-the-crop",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "prism-drum-tunnel",
+      "title": "Prism Drum Tunnel",
+      "author": "Stims Curated",
       "order": 5,
-      "file": "/milkdrop-presets/3dtoy.milk",
-      "preview": false,
+      "file": "/milkdrop-presets/prism-drum-tunnel.milk",
+      "preview": true,
       "tags": [
         "collection:classic-milkdrop",
         "tunnel",
-        "3d",
-        "legacy",
+        "drums",
         "preset"
       ],
       "compatibility": {
@@ -26,53 +100,34 @@
       }
     },
     {
-      "id": "clay",
-      "title": "Pottery Wheel Sculptor",
-      "author": "Stims Alias Pack",
+      "id": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "author": "Krash & Rovastar",
+      "order": 6,
+      "file": "/milkdrop-presets/krash-rovastar-cerebral-demons-stars.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "popular",
+        "comets",
+        "cream-of-the-crop",
+        "preset"
+      ],
+      "compatibility": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "kinetic-grid-pulse",
+      "title": "Kinetic Grid Pulse",
+      "author": "Stims Curated",
       "order": 7,
-      "file": "/milkdrop-presets/clay.milk",
-      "preview": false,
+      "file": "/milkdrop-presets/kinetic-grid-pulse.milk",
+      "preview": true,
       "tags": [
-        "sculpting",
-        "pottery",
-        "3d",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "evol",
-      "title": "Evolutionary Weirdcore",
-      "author": "Stims Alias Pack",
-      "order": 8,
-      "file": "/milkdrop-presets/evol.milk",
-      "preview": false,
-      "tags": [
-        "collection:classic-milkdrop",
-        "fractal",
-        "glitch",
-        "evolutionary",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "geom",
-      "title": "Microphone Geometry Visualizer",
-      "author": "Stims Alias Pack",
-      "order": 9,
-      "file": "/milkdrop-presets/geom.milk",
-      "preview": false,
-      "tags": [
-        "collection:classic-milkdrop",
-        "geometry",
-        "microphone",
+        "collection:feedback-lab",
+        "grid",
         "reactive",
         "preset"
       ],
@@ -82,129 +137,16 @@
       }
     },
     {
-      "id": "holy",
-      "title": "Halo Visualizer",
-      "author": "Stims Alias Pack",
-      "order": 10,
-      "file": "/milkdrop-presets/holy.milk",
+      "id": "low-motion-halo-drift",
+      "title": "Low Motion Halo Drift",
+      "author": "Stims Curated",
+      "order": 8,
+      "file": "/milkdrop-presets/low-motion-halo-drift.milk",
       "preview": false,
       "tags": [
         "collection:low-motion",
+        "ambient",
         "halos",
-        "particles",
-        "ambient",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "multi",
-      "title": "Multi-Capability Visualizer",
-      "author": "Stims Alias Pack",
-      "order": 11,
-      "file": "/milkdrop-presets/multi.milk",
-      "preview": false,
-      "tags": [
-        "collection:feedback-lab",
-        "motion",
-        "hybrid",
-        "immersive",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "seary",
-      "title": "Synesthetic Visualizer",
-      "author": "Stims Alias Pack",
-      "order": 12,
-      "file": "/milkdrop-presets/seary.milk",
-      "preview": false,
-      "tags": [
-        "synesthetic",
-        "patterns",
-        "audio-mapped",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "legible",
-      "title": "Terminal Word Grid",
-      "author": "Stims Alias Pack",
-      "order": 13,
-      "file": "/milkdrop-presets/legible.milk",
-      "preview": false,
-      "tags": [
-        "collection:classic-milkdrop",
-        "text",
-        "retro",
-        "grid",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "symph",
-      "title": "Spectrograph",
-      "author": "Stims Alias Pack",
-      "order": 14,
-      "file": "/milkdrop-presets/symph.milk",
-      "preview": false,
-      "tags": [
-        "collection:classic-milkdrop",
-        "spectrograph",
-        "ambient",
-        "calming",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "bubble-harmonics",
-      "title": "Bubble Harmonics",
-      "author": "Stims Alias Pack",
-      "order": 16,
-      "file": "/milkdrop-presets/bubble-harmonics.milk",
-      "preview": true,
-      "tags": [
-        "bubbles",
-        "harmonics",
-        "reactive",
-        "preset"
-      ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
-      }
-    },
-    {
-      "id": "lights",
-      "title": "Audio Light Show",
-      "author": "Stims Alias Pack",
-      "order": 23,
-      "file": "/milkdrop-presets/lights.milk",
-      "preview": false,
-      "tags": [
-        "collection:feedback-lab",
-        "lights",
-        "shader",
-        "palette",
         "preset"
       ],
       "compatibility": {
