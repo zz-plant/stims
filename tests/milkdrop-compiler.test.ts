@@ -316,7 +316,7 @@ ib_border=1
     );
 
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(
       compiled.ir.compatibility.featureAnalysis.unsupportedShaderText,
     ).toBe(false);
@@ -327,7 +327,10 @@ ib_border=1
     expect(compiled.ir.post.innerBorderStyle).toBe(true);
     expect(compiled.ir.post.shaderControls.hueShift).toBeCloseTo(0.35, 6);
     expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.25, 6);
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:supported-shader-text-gap',
+    ]);
   });
 
   test('supports shader transform controls in the subset', () => {
@@ -439,7 +442,14 @@ comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
     expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'supported-shader-text-gap',
+        }),
+      ]),
+    );
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );
@@ -563,6 +573,9 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
       expect.arrayContaining([
         expect.objectContaining({
           code: 'supported-shader-text-gap',
+          status: 'partial',
+          message:
+            'WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution.',
         }),
       ]),
     );
@@ -714,6 +727,7 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
       'status:webgl=supported,webgpu=partial',
+      'webgpu:supported-shader-text-gap',
       'webgpu:video-echo-gap:video-echo',
     ]);
   });
@@ -740,11 +754,11 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
       expect(compiled.diagnostics).toEqual([]);
-      expect(compiled.ir.compatibility.warnings).toEqual([]);
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        'WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution.',
+      ]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-        'supported',
-      );
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
       );
@@ -776,17 +790,12 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
       compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
     ).not.toBeNull();
     expect(compiled.diagnostics).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution.',
+    ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.shaderText.compProgram).toEqual(
-      expect.objectContaining({
-        stage: 'comp',
-        execution: expect.objectContaining({
-          supportedBackends: ['webgl', 'webgpu'],
-        }),
-      }),
-    );
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.shaderText.compProgram).toBeNull();
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );
@@ -862,8 +871,10 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
       '3d',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution.',
+    ]);
   });
 
   test('downgrades tex3D extraction for aux samplers without volume atlases', () => {
@@ -892,6 +903,7 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
     ]);
     expect(compiled.ir.compatibility.warnings).toEqual([
       'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
+      'WebGPU supports the extracted shader controls here, but still uses translated shader text instead of direct shader-program execution.',
     ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
