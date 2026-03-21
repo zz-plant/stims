@@ -6,6 +6,7 @@ import {
   ClampToEdgeWrapping,
   Color,
   DirectionalLight,
+  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   IcosahedronGeometry,
@@ -238,6 +239,7 @@ export function createLibraryThreeEffects() {
   let backgroundShards: InstancedMesh | null = null;
   let backgroundShardStates: AmbientShardState[] = [];
   let ambientBackdrop: Mesh | null = null;
+  const shardMatrixHelper = new Object3D();
   let backgroundComposer: EffectComposer | null = null;
   let animationFrame = 0;
   let pulse = 0;
@@ -493,8 +495,8 @@ export function createLibraryThreeEffects() {
       }),
       count,
     );
-    const dummy = new Object3D();
     const states: AmbientShardState[] = [];
+    mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     for (let index = 0; index < count; index += 1) {
       const state: AmbientShardState = {
         drift: 0.4 + Math.random() * 0.9,
@@ -512,11 +514,15 @@ export function createLibraryThreeEffects() {
         scale: 0.4 + Math.random() * 1.3,
       };
       states.push(state);
-      dummy.position.copy(state.position);
-      dummy.rotation.set(state.rotation.x, state.rotation.y, state.rotation.z);
-      dummy.scale.setScalar(state.scale);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(index, dummy.matrix);
+      shardMatrixHelper.position.copy(state.position);
+      shardMatrixHelper.rotation.set(
+        state.rotation.x,
+        state.rotation.y,
+        state.rotation.z,
+      );
+      shardMatrixHelper.scale.setScalar(state.scale);
+      shardMatrixHelper.updateMatrix();
+      mesh.setMatrixAt(index, shardMatrixHelper.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
     return { mesh, states };
@@ -554,9 +560,8 @@ export function createLibraryThreeEffects() {
       }
       if (backgroundShards) {
         const shards = backgroundShards;
-        const dummy = new Object3D();
         backgroundShardStates.forEach((state, index) => {
-          dummy.position.set(
+          shardMatrixHelper.position.set(
             state.position.x +
               Math.sin(time * state.drift + state.offset) * 0.6 +
               pointerState.currentX * 0.8,
@@ -567,18 +572,18 @@ export function createLibraryThreeEffects() {
               Math.sin(time * 0.7 + state.offset) * 0.35 +
               launchState.strength * 0.9,
           );
-          dummy.rotation.set(
+          shardMatrixHelper.rotation.set(
             state.rotation.x + time * 0.8 * state.drift,
             state.rotation.y + time * 0.6 * state.drift,
             state.rotation.z +
               time * 0.4 * state.drift +
               launchState.strength * 0.6,
           );
-          dummy.scale.setScalar(
+          shardMatrixHelper.scale.setScalar(
             state.scale * (1 + pulse * 0.35 + launchState.strength * 0.4),
           );
-          dummy.updateMatrix();
-          shards.setMatrixAt(index, dummy.matrix);
+          shardMatrixHelper.updateMatrix();
+          shards.setMatrixAt(index, shardMatrixHelper.matrix);
         });
         shards.instanceMatrix.needsUpdate = true;
         shards.rotation.y = pointerState.currentX * 0.1;
