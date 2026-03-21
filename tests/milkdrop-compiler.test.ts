@@ -792,6 +792,7 @@ definitely_not_a_real_field=1
     const compiled = compileMilkdropPresetSource(
       `
 title=Blocked Import
+video_echo=1
 video_echo_orientation=2
       `.trim(),
       { id: 'blocked-import', origin: 'imported' },
@@ -832,6 +833,32 @@ video_echo_orientation=2
           message: expect.stringContaining('video-echo-orientation'),
         }),
       ]),
+    );
+  });
+
+  test('ignores dormant video echo orientation blockers when echo is disabled', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Dormant Echo Orientation
+video_echo_orientation=2
+video_echo=0
+      `.trim(),
+      { id: 'dormant-echo-orientation', origin: 'imported' },
+    );
+
+    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+    expect(
+      compiled.diagnostics.some(
+        (entry) =>
+          entry.code === 'preset_unsupported_field' &&
+          entry.field === 'video_echo_orientation',
+      ),
+    ).toBe(false);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.recommendedFallback).toBe(
+      undefined,
     );
   });
 
