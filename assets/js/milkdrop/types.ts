@@ -690,6 +690,20 @@ export type MilkdropGpuGeometryHints = {
   motionVectorField: MilkdropProceduralMotionVectorFieldVisual | null;
 };
 
+export type MilkdropGpuInteractionTransform = {
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  scale: number;
+  alphaMultiplier: number;
+};
+
+export type MilkdropGpuInteractionPayload = {
+  waves: MilkdropGpuInteractionTransform;
+  mesh: MilkdropGpuInteractionTransform;
+  motionVectors: MilkdropGpuInteractionTransform;
+};
+
 export type MilkdropPostVisual = {
   shaderEnabled: boolean;
   textureWrap: boolean;
@@ -842,9 +856,11 @@ export type MilkdropFrameState = {
   variables: Record<string, number>;
   compatibility: MilkdropCompatibilityReport;
   gpuGeometry: MilkdropGpuGeometryHints;
+  interaction?: MilkdropGpuInteractionPayload | null;
 };
 
-export type MilkdropBlendState = {
+export type MilkdropCpuBlendState = {
+  mode: 'cpu';
   background: MilkdropColor;
   waveform: MilkdropWaveVisual;
   mainWave: MilkdropWaveVisual;
@@ -856,6 +872,14 @@ export type MilkdropBlendState = {
   post: MilkdropPostVisual;
   alpha: number;
 };
+
+export type MilkdropGpuBlendState = {
+  mode: 'gpu';
+  previousFrame: MilkdropFrameState;
+  alpha: number;
+};
+
+export type MilkdropBlendState = MilkdropCpuBlendState | MilkdropGpuBlendState;
 
 export type MilkdropRenderPayload = {
   frameState: MilkdropFrameState;
