@@ -516,6 +516,51 @@ comp_shader=vec3 scale = vec3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).rgb 
     expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(0.7, 6);
   });
 
+  test('supports float2 and float3 temp aliases in shader programs', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Float Aliases
+warp_shader=float2 drift = float2(0.03, -0.02); uv += drift;
+comp_shader=float3 tintScale = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).rgb * tintScale; float3 wash = float3(1.1, 0.6, 0.4); tint = wash;
+      `.trim(),
+      { id: 'shader-float-aliases' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.03, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.02, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.r).toBeCloseTo(1.2, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.g).toBeCloseTo(0.9, 6);
+    expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(0.7, 6);
+    expect(compiled.ir.post.shaderControls.tint.r).toBeCloseTo(1.1, 6);
+    expect(compiled.ir.post.shaderControls.tint.g).toBeCloseTo(0.6, 6);
+    expect(compiled.ir.post.shaderControls.tint.b).toBeCloseTo(0.4, 6);
+  });
+
+  test('supports tex3D and texture3D shader sampler aliases', () => {
+    for (const sampleCall of ['tex3D', 'texture3D'] as const) {
+      const compiled = compileMilkdropPresetSource(
+        `
+title=Shader Volume Alias
+comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz
+        `.trim(),
+        { id: `shader-volume-alias-${sampleCall.toLowerCase()}` },
+      );
+
+      expect(compiled.ir.shaderText.supported).toBe(true);
+      expect(compiled.ir.post.shaderControls.textureLayer.source).toBe(
+        'simplex',
+      );
+      expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+      expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+        [],
+      );
+    }
+  });
+
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
     const compiled = compileMilkdropPresetSource(
       `

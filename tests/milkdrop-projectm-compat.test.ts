@@ -96,21 +96,6 @@ const WEBGPU_SHADER_TRANSLATION_EXPECTATION = {
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
-const SHADER_FALLBACK_EXPECTATION = {
-  diagnostics: ['preset_unsupported_shader_text'],
-  webgl: 'partial',
-  webgpu: 'unsupported',
-  divergence: ['status:webgl=partial,webgpu=unsupported'],
-  warnings: [
-    'This preset includes custom shader text outside the fully supported subset and will be approximated.',
-    'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
-  ],
-  blockedConstructs: [
-    'shader:ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz',
-  ],
-  unsupportedKeys: [],
-} as const satisfies ProjectMFixtureExpectation;
-
 const PROJECTM_FIXTURE_EXPECTATIONS = {
   '000-empty.milk': FULL_SUPPORT_EXPECTATION,
   '001-line.milk': FULL_SUPPORT_EXPECTATION,
@@ -147,7 +132,7 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
   '260-compshader-noise_lq.milk': WEBGPU_SHADER_TRANSLATION_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': SHADER_FALLBACK_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': WEBGPU_SHADER_TRANSLATION_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],
