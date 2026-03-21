@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type { MilkdropVideoEchoOrientation } from '../assets/js/milkdrop/types.ts';
 
@@ -585,20 +587,11 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
       expect(
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
-      expect(compiled.diagnostics).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            code: 'preset_shader_volume_approximation',
-            severity: 'warning',
-          }),
-        ]),
-      );
-      expect(compiled.ir.compatibility.warnings).toEqual(
-        expect.arrayContaining([
-          'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
-        ]),
-      );
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+      expect(compiled.diagnostics).toEqual([]);
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
+      ]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
@@ -630,19 +623,16 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(
       compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
     ).not.toBeNull();
-    expect(compiled.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'preset_shader_volume_approximation',
-          severity: 'warning',
-        }),
-      ]),
-    );
-    expect(compiled.ir.compatibility.warnings).toEqual(
-      expect.arrayContaining([
-        'Volume shader sampling uses the compatibility approximation path and may diverge from native 3D lookups.',
-      ]),
-    );
+    expect(compiled.diagnostics).toEqual([
+      expect.objectContaining({
+        code: 'preset_unsupported_shader_text',
+        severity: 'warning',
+      }),
+    ]);
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'This preset includes custom shader text outside the fully supported subset and will be approximated.',
+      'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+    ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
       'unsupported',
@@ -693,6 +683,39 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(
       compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
     ).not.toBeNull();
+  });
+
+  test('classifies the projectM noisevol fixture as supported volume sampling', () => {
+    const fixturePath = join(
+      process.cwd(),
+      'tests',
+      'fixtures',
+      'milkdrop',
+      'projectm-upstream',
+      '261-compshader-noisevol_lq.milk',
+    );
+    const compiled = compileMilkdropPresetSource(
+      readFileSync(fixturePath, 'utf8'),
+      {
+        id: 'projectm-noisevol-fixture',
+        title: '261-compshader-noisevol_lq.milk',
+        fileName: '261-compshader-noisevol_lq.milk',
+        path: fixturePath,
+        origin: 'user',
+      },
+    );
+
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '3d',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'WebGPU applies supported shader-text controls through a compatibility translation path that may not exactly match WebGL.',
+    ]);
   });
 
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
