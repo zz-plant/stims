@@ -84,14 +84,18 @@ const REPRESENTATIVE_BACKEND_EXPECTATIONS = {
   },
   'parity-shader-01': {
     webgl: 'supported',
-    webgpu: 'supported',
-    divergence: [],
+    webgpu: 'partial',
+    divergence: [
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:supported-shader-text-gap',
+    ],
   },
   'parity-allowlisted-shader-gap': {
     webgl: 'supported',
     webgpu: 'partial',
     divergence: [
       'status:webgl=supported,webgpu=partial',
+      'webgpu:supported-shader-text-gap',
       'webgpu:video-echo-gap:video-echo',
     ],
   },
@@ -359,6 +363,7 @@ test('keeps former shader-gap parity fixtures out of the allowlist when only vid
   expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([]);
   expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
     'status:webgl=supported,webgpu=partial',
+    'webgpu:supported-shader-text-gap',
     'webgpu:video-echo-gap:video-echo',
   ]);
   expect(
