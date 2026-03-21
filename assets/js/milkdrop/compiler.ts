@@ -375,7 +375,12 @@ const BACKEND_PARTIAL_FEATURE_GAPS: Record<
   Partial<Record<MilkdropFeatureKey, string>>
 > = {
   webgl: {},
-  webgpu: {},
+  webgpu: {
+    'video-echo':
+      'WebGPU still composites and presents video echo through the lower-resolution feedback ping-pong target, so echo-heavy presets remain visibly softer than WebGL.',
+    'post-effects':
+      'WebGPU still applies post effects through the lower-resolution feedback ping-pong target, so gamma, brighten/invert, and related post-processing remain visibly softer than WebGL.',
+  },
 };
 const BACKEND_SHADER_TEXT_GAPS: Record<
   MilkdropRenderBackend,

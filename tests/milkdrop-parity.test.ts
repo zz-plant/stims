@@ -79,8 +79,11 @@ const VISUAL_BASELINES_PATH = join(
 const REPRESENTATIVE_BACKEND_EXPECTATIONS = {
   'parity-feedback-01': {
     webgl: 'supported',
-    webgpu: 'supported',
-    divergence: [],
+    webgpu: 'partial',
+    divergence: [
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:video-echo-gap:video-echo',
+    ],
   },
   'parity-shader-01': {
     webgl: 'supported',
@@ -96,6 +99,7 @@ const REPRESENTATIVE_BACKEND_EXPECTATIONS = {
     divergence: [
       'status:webgl=supported,webgpu=partial',
       'webgpu:supported-shader-text-gap',
+      'webgpu:video-echo-gap:video-echo',
     ],
   },
 } as const;
@@ -378,6 +382,7 @@ test('keeps former shader-gap parity fixtures out of the allowlist when only vid
   expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
     'status:webgl=supported,webgpu=partial',
     'webgpu:supported-shader-text-gap',
+    'webgpu:video-echo-gap:video-echo',
   ]);
   expect(
     compiled.ir.compatibility.parity.degradationReasons.map(
