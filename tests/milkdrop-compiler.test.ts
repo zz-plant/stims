@@ -153,12 +153,21 @@ video_echo=1
 
     expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'video-echo',
     );
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:video-echo-gap:video-echo',
+    ]);
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([
+      expect.objectContaining({
+        code: 'video-echo-gap',
+        feature: 'video-echo',
+        status: 'partial',
+      }),
+    ]);
   });
 
   test('maps gamma adjustment into post state and post-effect feature usage', () => {
@@ -176,7 +185,7 @@ fGammaAdj=1.75
       'post-effects',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
   });
 
   test('normalizes Rovastar feedback aliases into runtime post fields', () => {
@@ -738,6 +747,7 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
     expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
       'status:webgl=supported,webgpu=partial',
       'webgpu:supported-shader-text-gap',
+      'webgpu:video-echo-gap:video-echo',
     ]);
   });
 
@@ -1015,9 +1025,22 @@ video_echo=1
       compiled.ir.customWaves[0]?.programs.perPoint.statements.length,
     ).toBe(1);
     expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'WebGPU still composites and presents video echo through the lower-resolution feedback ping-pong target, so echo-heavy presets remain visibly softer than WebGL.',
+    ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
+      'status:webgl=supported,webgpu=partial',
+      'webgpu:video-echo-gap:video-echo',
+    ]);
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([
+      expect.objectContaining({
+        code: 'video-echo-gap',
+        feature: 'video-echo',
+        status: 'partial',
+      }),
+    ]);
   });
 
   test('supports legacy max-slot custom shape aliases without warnings', () => {
@@ -1241,7 +1264,7 @@ ${programLine}
     expect(compiled.ir.numericFields.video_echo_orientation).toBe(2);
     expect(compiled.ir.post.videoEchoOrientation).toBe(2);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
   });
 
   test.each([
@@ -1280,13 +1303,13 @@ video_echo_orientation=3
     expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
     expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(
       compiled.ir.compatibility.backends.webgl.unsupportedFeatures,
     ).toEqual([]);
     expect(
       compiled.ir.compatibility.backends.webgpu.unsupportedFeatures,
-    ).toEqual([]);
+    ).toEqual(['video-echo']);
     expect(compiled.ir.compatibility.backends.webgl.evidence).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
