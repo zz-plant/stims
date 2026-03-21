@@ -1,4 +1,7 @@
-import { setRendererTelemetryHandler } from './core/renderer-capabilities.ts';
+import {
+  type RendererOptimizationTelemetryDetail,
+  setRendererTelemetryHandler,
+} from './core/renderer-capabilities.ts';
 import { isSmartTvDevice } from './utils/device-detect.ts';
 
 type LoaderModule = typeof import('./loader.ts');
@@ -25,20 +28,25 @@ const recordRendererTelemetry = () => {
           Number(detail.webgpu?.recommendedQualityPreset === 'hi-fi'),
         timestampQuery:
           Number(existing.timestampQuery ?? 0) +
-          Number(detail.webgpu?.features.timestampQuery === true),
+          Number(detail.webgpu?.optimization.timestampQuery === true),
         shaderF16:
           Number(existing.shaderF16 ?? 0) +
-          Number(detail.webgpu?.features.shaderF16 === true),
+          Number(detail.webgpu?.optimization.shaderF16 === true),
+        subgroups:
+          Number(existing.subgroups ?? 0) +
+          Number(detail.webgpu?.optimization.subgroups === true),
         workerOffscreenReady:
           Number(existing.workerOffscreenReady ?? 0) +
-          Number(
-            detail.webgpu?.workers.workers === true &&
-              detail.webgpu?.workers.offscreenCanvas === true &&
-              detail.webgpu?.workers.transferControlToOffscreen === true,
-          ),
+          Number(detail.webgpu?.optimization.workerOffscreenPipeline === true),
         lastFallbackReason: detail.fallbackReason,
         lastPreferredCanvasFormat: detail.webgpu?.preferredCanvasFormat ?? null,
         lastPerformanceTier: detail.webgpu?.performanceTier ?? null,
+        lastOptimizationSupport: detail.webgpu?.optimization ?? null,
+        optimizationCounters:
+          existing.optimizationCounters &&
+          typeof existing.optimizationCounters === 'object'
+            ? existing.optimizationCounters
+            : {},
         lastUpdatedAt: new Date().toISOString(),
       };
       window.localStorage.setItem(key, JSON.stringify(stats));
@@ -48,8 +56,56 @@ const recordRendererTelemetry = () => {
   });
 };
 
+const recordOptimizationTelemetry = () => {
+  if (typeof window === 'undefined' || !window.addEventListener) {
+    return;
+  }
+
+  window.addEventListener(
+    'stims:renderer-optimization-telemetry',
+    (
+      event: Event & {
+        detail?: RendererOptimizationTelemetryDetail;
+      },
+    ) => {
+      try {
+        const detail = event.detail;
+        if (!detail?.counter) {
+          return;
+        }
+
+        const key = 'stims:renderer-support-stats';
+        const raw = window.localStorage.getItem(key);
+        const existing = raw ? JSON.parse(raw) : {};
+        const counters =
+          existing.optimizationCounters &&
+          typeof existing.optimizationCounters === 'object'
+            ? existing.optimizationCounters
+            : {};
+
+        counters[detail.counter] =
+          Number(counters[detail.counter] ?? 0) + Number(detail.amount ?? 1);
+
+        window.localStorage.setItem(
+          key,
+          JSON.stringify({
+            ...existing,
+            optimizationCounters: counters,
+            lastOptimizationCounter: detail.counter,
+            lastOptimizationCounterAmount: Number(detail.amount ?? 1),
+            lastUpdatedAt: new Date().toISOString(),
+          }),
+        );
+      } catch (_error) {
+        // Ignore telemetry persistence failures.
+      }
+    },
+  );
+};
+
 const startApp = async () => {
   recordRendererTelemetry();
+  recordOptimizationTelemetry();
 
   if (document.body) {
     document.body.classList.toggle('tv-mode', isSmartTvDevice());

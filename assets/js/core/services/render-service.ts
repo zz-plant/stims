@@ -12,7 +12,11 @@ import {
 } from '../renderer-capabilities.ts';
 import {
   applyRendererSettings,
+  DEFAULT_RENDERER_RUNTIME_CONTROLS,
+  type RendererRuntimeControlOverrides,
+  type RendererRuntimeControls,
   type RendererViewport,
+  resolveRendererRuntimeControls,
   resolveRendererSettings,
 } from '../renderer-settings.ts';
 import {
@@ -32,6 +36,7 @@ export type RendererHandle = {
   backend: RendererBackend;
   info: RendererInitResult;
   canvas: HTMLCanvasElement;
+  getRuntimeControls: () => RendererRuntimeControls;
   applySettings: (
     options?: Partial<RendererInitConfig>,
     viewport?: RendererViewport,
@@ -47,6 +52,11 @@ type RendererPoolEntry = {
 const rendererPool: RendererPoolEntry[] = [];
 let activeQuality: QualityPreset = getActiveQualityPreset();
 let activeRenderPreferences = getActiveRenderPreferences();
+let activeRuntimeControls: RendererRuntimeControls =
+  DEFAULT_RENDERER_RUNTIME_CONTROLS;
+const runtimeControlSubscribers = new Set<
+  (controls: RendererRuntimeControls) => void
+>();
 const rendererCapabilitiesInitializer =
   createSharedInitializer<RendererCapabilities>(getRendererCapabilities);
 
@@ -55,7 +65,8 @@ function getRenderDefaults(): Partial<RendererInitConfig> {
     maxPixelRatio:
       activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
     renderScale:
-      activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1,
+      activeRuntimeControls.renderScale *
+      (activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1),
   };
 }
 
@@ -105,14 +116,33 @@ async function createRendererHandle(
     throw new Error('Unable to initialize renderer.');
   }
 
+  let activeOptions = options;
+  let activeViewport: RendererViewport | undefined;
+
   const handle: RendererHandle = {
     renderer: initResult.renderer,
     backend: initResult.backend,
     info: initResult,
     canvas,
-    applySettings: (nextOptions, viewport) =>
-      applyPoolSettings(initResult.renderer, initResult, nextOptions, viewport),
-    release: () => {},
+    getRuntimeControls: () => activeRuntimeControls,
+    applySettings: (nextOptions, viewport) => {
+      if (nextOptions) {
+        activeOptions = nextOptions;
+      }
+      if (viewport) {
+        activeViewport = viewport;
+      }
+      applyPoolSettings(
+        initResult.renderer,
+        initResult,
+        activeOptions,
+        activeViewport,
+      );
+    },
+    release: () => {
+      activeOptions = {};
+      activeViewport = undefined;
+    },
   };
 
   return handle;
@@ -164,7 +194,9 @@ export async function requestRenderer({
     inUse: true,
   };
 
+  const releaseHandle = handle.release;
   handle.release = () => {
+    releaseHandle();
     handle.renderer.setAnimationLoop?.(null);
     poolEntry.inUse = false;
     detachCanvas(handle.canvas);
@@ -172,6 +204,41 @@ export async function requestRenderer({
 
   rendererPool.push(poolEntry);
   return handle;
+}
+
+export function getRendererRuntimeControls() {
+  return activeRuntimeControls;
+}
+
+export function setRendererRuntimeControls(
+  overrides: RendererRuntimeControlOverrides,
+) {
+  activeRuntimeControls = resolveRendererRuntimeControls(
+    overrides,
+    activeRuntimeControls,
+  );
+  forEachActiveRenderer((entry) => entry.handle.applySettings());
+  runtimeControlSubscribers.forEach((subscriber) =>
+    subscriber(activeRuntimeControls),
+  );
+  return activeRuntimeControls;
+}
+
+export function resetRendererRuntimeControls() {
+  activeRuntimeControls = DEFAULT_RENDERER_RUNTIME_CONTROLS;
+  forEachActiveRenderer((entry) => entry.handle.applySettings());
+  runtimeControlSubscribers.forEach((subscriber) =>
+    subscriber(activeRuntimeControls),
+  );
+  return activeRuntimeControls;
+}
+
+export function subscribeToRendererRuntimeControls(
+  subscriber: (controls: RendererRuntimeControls) => void,
+) {
+  runtimeControlSubscribers.add(subscriber);
+  subscriber(activeRuntimeControls);
+  return () => runtimeControlSubscribers.delete(subscriber);
 }
 
 export async function prewarmRendererCapabilities() {
@@ -194,5 +261,7 @@ export function resetRendererPool({
   if (dispose) {
     rendererPool.splice(0, rendererPool.length);
   }
+  resetRendererRuntimeControls();
+  runtimeControlSubscribers.clear();
   rendererCapabilitiesInitializer.reset();
 }

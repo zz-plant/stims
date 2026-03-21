@@ -3027,6 +3027,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.feedback?.resize(width, height);
   }
 
+  setAdaptiveQuality(
+    multipliers: Partial<{
+      feedbackResolutionMultiplier: number;
+    }>,
+  ) {
+    this.feedback?.setAdaptiveQuality?.(multipliers);
+  }
+
   private renderWaveGroup(
     target:
       | 'main-wave'
@@ -3391,7 +3399,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   ) {
     const proceduralField =
       this.backend === 'webgpu' &&
-      this.webgpuDescriptorPlan?.proceduralMesh?.supportsMotionVectors
+      this.webgpuDescriptorPlan?.proceduralMotionVectors !== null
         ? payload.gpuGeometry.motionVectorField
         : null;
     if (proceduralField) {

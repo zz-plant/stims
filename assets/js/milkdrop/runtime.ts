@@ -8,6 +8,12 @@ import {
   isCompatibilityModeEnabled,
   setCompatibilityMode,
 } from '../core/render-preferences';
+import { getCachedRendererCapabilities } from '../core/renderer-capabilities.ts';
+import {
+  type AdaptiveQualityController,
+  type AdaptiveQualityState,
+  createAdaptiveQualityController,
+} from '../core/services/adaptive-quality-controller.ts';
 import {
   type QualityPreset,
   setQualityPresetById,
@@ -571,16 +577,19 @@ function buildAgentMilkdropDebugSnapshot({
   compiledPreset,
   frameState,
   status,
+  adaptiveQuality,
 }: {
   activePresetId: string | null;
   compiledPreset: MilkdropCompiledPreset | null;
   frameState: MilkdropFrameState | null;
   status: string | null;
+  adaptiveQuality?: AdaptiveQualityState | null;
 }) {
   if (!frameState) {
     return {
       activePresetId,
       status,
+      adaptiveQuality,
       frameState: null,
       title: compiledPreset?.title ?? null,
     };
@@ -589,6 +598,7 @@ function buildAgentMilkdropDebugSnapshot({
   return {
     activePresetId,
     status,
+    adaptiveQuality,
     title: compiledPreset?.title ?? frameState.title,
     frameState: {
       presetId: frameState.presetId,
@@ -829,6 +839,9 @@ export function createMilkdropExperience({
   let catalogSyncPromise: Promise<void> | null = null;
   let catalogSyncFrameId: number | null = null;
   let lastInspectorOverlaySyncAt = 0;
+  let adaptiveQualityController: AdaptiveQualityController | null = null;
+  let adaptiveQualityState: AdaptiveQualityState | null = null;
+  let adaptiveQualityUnsubscribe: (() => void) | null = null;
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
     shaderEnabled: false,
@@ -846,6 +859,7 @@ export function createMilkdropExperience({
         compiledPreset: activeCompiled,
         frameState: currentFrameState,
         status: lastStatusMessage,
+        adaptiveQuality: adaptiveQualityState,
       }),
     );
   };
@@ -1510,6 +1524,33 @@ export function createMilkdropExperience({
           preset: activeCompiled,
         });
         adapter.attach();
+        adaptiveQualityUnsubscribe?.();
+        adaptiveQualityUnsubscribe = null;
+        adaptiveQualityController = createAdaptiveQualityController({
+          backend: activeBackend,
+          capabilities:
+            activeBackend === 'webgpu'
+              ? (getCachedRendererCapabilities()?.webgpu ?? null)
+              : null,
+        });
+        adaptiveQualityUnsubscribe = adaptiveQualityController.subscribe(
+          (state) => {
+            adaptiveQualityState = state;
+            if (activeBackend !== 'webgpu') {
+              updateAgentDebugSnapshot();
+              return;
+            }
+            nextRuntime.toy.updateRendererSettings({
+              adaptiveRenderScaleMultiplier: state.renderScaleMultiplier,
+              adaptiveMaxPixelRatioMultiplier: state.maxPixelRatioMultiplier,
+              adaptiveDensityMultiplier: state.densityMultiplier,
+            });
+            adapter?.setAdaptiveQuality?.({
+              feedbackResolutionMultiplier: state.feedbackResolutionMultiplier,
+            });
+            updateAgentDebugSnapshot();
+          },
+        );
         if (shouldFallbackToWebgl(activeCompiled)) {
           triggerWebglFallback({
             presetId: activeCompiled.source.id,
@@ -1532,6 +1573,7 @@ export function createMilkdropExperience({
       }
 
       const now = performance.now();
+      const frameStartAt = now;
 
       const detailScale = getMilkdropDetailScale({
         backend: activeBackend,
@@ -1539,7 +1581,11 @@ export function createMilkdropExperience({
         particleBudget: frame.performance.particleBudget,
         shaderQuality: frame.performance.shaderQuality,
       });
-      vm.setDetailScale(detailScale);
+      const adaptiveDensityMultiplier =
+        activeBackend === 'webgpu'
+          ? (runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1)
+          : 1;
+      vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
       const baseSignals = signalTracker.update({
         time: frame.time,
         deltaMs: frame.deltaMs,
@@ -1606,6 +1652,7 @@ export function createMilkdropExperience({
             }
           : currentFrameState;
 
+      const renderStartAt = performance.now();
       const adapterPresentedFrame = adapter.render({
         frameState: renderFrameState,
         blendState: activeBlendState,
@@ -1613,6 +1660,14 @@ export function createMilkdropExperience({
       if (!adapterPresentedFrame) {
         runtime.toy.render();
       }
+      const frameEndAt = performance.now();
+      adaptiveQualityController?.recordFrame({
+        frameMs: frameEndAt - frameStartAt,
+        phases: {
+          simulationMs: renderStartAt - frameStartAt,
+          renderMs: frameEndAt - renderStartAt,
+        },
+      });
       if (
         overlay.shouldRenderInspectorMetrics() &&
         now - lastInspectorOverlaySyncAt >= 180
@@ -1632,6 +1687,10 @@ export function createMilkdropExperience({
       session.dispose();
       adapter?.dispose();
       adapter = null;
+      adaptiveQualityUnsubscribe?.();
+      adaptiveQualityUnsubscribe = null;
+      adaptiveQualityController = null;
+      adaptiveQualityState = null;
       runtime = null;
       if (keyboardHandler) {
         document.removeEventListener('keydown', keyboardHandler);

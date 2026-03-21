@@ -49,6 +49,25 @@ function getGeometryInstanceCount(node: RenderTreeNode | undefined) {
   )?.instanceCount;
 }
 
+function isWebGPUSegmentBatchNode(node: RenderTreeNode) {
+  return node.geometry?.getAttribute?.('instanceLine') !== undefined;
+}
+
+function getFloat32AttributeArray(
+  node: RenderTreeNode | undefined,
+  name: string,
+): Float32Array | null {
+  const attribute = node?.geometry?.getAttribute?.(name) as
+    | {
+        array?: ArrayLike<number>;
+      }
+    | undefined;
+  if (!attribute?.array) {
+    return null;
+  }
+  return Float32Array.from(attribute.array);
+}
+
 function makeSignals(
   overrides: Partial<MilkdropRuntimeSignals> = {},
 ): MilkdropRuntimeSignals {
@@ -314,7 +333,7 @@ ob_size=0.03
 
     const root = scene.children[0] as RenderTreeNode;
     const firstWaveObject = flattenRenderTree(root).find(
-      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+      isWebGPUSegmentBatchNode,
     );
     const firstBorderObject = flattenRenderTree(root).find(
       (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
@@ -326,7 +345,7 @@ ob_size=0.03
     });
 
     const secondWaveObject = flattenRenderTree(root).find(
-      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+      isWebGPUSegmentBatchNode,
     );
     const secondBorderObject = flattenRenderTree(root).find(
       (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
@@ -366,10 +385,10 @@ shapecode_0_thickoutline=1
 
     const root = scene.children[0] as RenderTreeNode;
     const firstWaveMesh = flattenRenderTree(root).find(
-      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+      isWebGPUSegmentBatchNode,
     );
     const firstWaveAttribute =
-      firstWaveMesh?.geometry?.getAttribute?.('instanceStart');
+      firstWaveMesh?.geometry?.getAttribute?.('instanceLine');
     const firstShapeMesh = flattenRenderTree(root).find(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined,
@@ -381,10 +400,10 @@ shapecode_0_thickoutline=1
     });
 
     const secondWaveMesh = flattenRenderTree(root).find(
-      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+      isWebGPUSegmentBatchNode,
     );
     const secondWaveAttribute =
-      secondWaveMesh?.geometry?.getAttribute?.('instanceStart');
+      secondWaveMesh?.geometry?.getAttribute?.('instanceLine');
     const secondShapeMesh = flattenRenderTree(root).find(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined,
@@ -475,7 +494,7 @@ per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
     const root = scene.children[0] as RenderTreeNode;
     const matchingMotionVectorMesh = flattenRenderTree(root).find(
       (child) =>
-        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        isWebGPUSegmentBatchNode(child) &&
         getGeometryInstanceCount(child) === frameState.motionVectors.length,
     );
 
@@ -683,7 +702,7 @@ warpanimspeed=1.25
         children?: Array<{ type?: string; material?: unknown }>;
       }>;
     };
-    const motionVectorGroup = root.children[7] as {
+    const motionVectorGroup = root.children?.[7] as {
       children: Array<{
         type?: string;
         visible?: boolean;
@@ -699,6 +718,61 @@ warpanimspeed=1.25
     expect(cpuMotionVectors?.children).toHaveLength(0);
     expect(proceduralMotionVectors).toBeInstanceOf(LineSegments);
     expect(motionVectorGroup.children[1]?.material).toBeDefined();
+  });
+
+  test('falls back to CPU motion-vector overlays on webgpu for legacy controls', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Motion Vector Overlay
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_l=0.2
+zoom=1.05
+rot=0.12
+warp=0.26
+warpanimspeed=1.25
+      `.trim(),
+      { id: 'legacy-motion-vector-overlay' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const motionVectorGroup = root.children?.[7] as {
+      children: Array<{
+        type?: string;
+        visible?: boolean;
+      }>;
+    };
+
+    const matchingMotionVectorMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        getGeometryInstanceCount(child) === frameState.motionVectors.length,
+    );
+
+    expect(matchingMotionVectorMesh).toBeDefined();
+    expect(motionVectorGroup.children[1]?.visible).toBe(false);
   });
 
   test('passes semantic feedback state to the feedback manager', () => {
@@ -912,7 +986,7 @@ mesh_density=16
 
     const root = scene.children[0] as RenderTreeNode;
     const batchedSegmentMeshes = flattenRenderTree(root).filter(
-      (child) => child.geometry?.getAttribute?.('instanceStart') !== undefined,
+      isWebGPUSegmentBatchNode,
     );
 
     expect(firstFrame.gpuGeometry.mainWave).toBeNull();
@@ -961,14 +1035,133 @@ modwavealphaend=0.6
     const expectedSegmentCount = frameState.mainWave.positions.length / 3;
     const root = scene.children[0] as RenderTreeNode;
     const segmentCounts = flattenRenderTree(root)
-      .filter(
-        (child) =>
-          child.geometry?.getAttribute?.('instanceStart') !== undefined,
-      )
+      .filter(isWebGPUSegmentBatchNode)
       .map((child) => getGeometryInstanceCount(child) ?? 0);
 
     expect(frameState.mainWave.closed).toBe(true);
     expect(segmentCounts).toContain(expectedSegmentCount);
+  });
+
+  test('uploads compact line and control attributes for batched webgpu waves', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Compact Batched Wave Upload
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.7
+      `.trim(),
+      { id: 'compact-batched-wave-upload' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) ===
+          frameState.mainWave.positions.length / 3,
+    );
+    const lineArray = getFloat32AttributeArray(waveMesh, 'instanceLine');
+    const controlArray = getFloat32AttributeArray(waveMesh, 'instanceControl');
+    const colorArray = getFloat32AttributeArray(waveMesh, 'instanceColorAlpha');
+    const positions = frameState.mainWave.positions;
+
+    expect(lineArray?.slice(0, 4)).toEqual(
+      Float32Array.from([
+        positions[0] ?? 0,
+        positions[1] ?? 0,
+        (positions[3] ?? 0) - (positions[0] ?? 0),
+        (positions[4] ?? 0) - (positions[1] ?? 0),
+      ]),
+    );
+    expect(controlArray?.slice(0, 3)).toEqual(
+      Float32Array.from([
+        positions[2] ?? 0.24,
+        positions[5] ?? 0.24,
+        0.0025 * Math.max(1, frameState.mainWave.thickness) * 0.5,
+      ]),
+    );
+    expect(colorArray?.slice(0, 4)).toEqual(
+      Float32Array.from([
+        frameState.mainWave.color.r,
+        frameState.mainWave.color.g,
+        frameState.mainWave.color.b,
+        frameState.mainWave.alpha,
+      ]),
+    );
+  });
+
+  test('preserves per-point depth across compact WebGPU wave uploads', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Compact Wave Depth
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.7
+      `.trim(),
+      { id: 'compact-wave-depth' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const positions = frameState.mainWave.positions;
+    const segmentIndex = Array.from(
+      { length: Math.max(0, positions.length / 3 - 1) },
+      (_, index) => index,
+    ).find((index) => {
+      const startZ = positions[index * 3 + 2] ?? 0;
+      const endZ = positions[index * 3 + 5] ?? 0;
+      return Math.abs(endZ - startZ) > 1e-6;
+    });
+
+    expect(segmentIndex).toBeDefined();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) ===
+          frameState.mainWave.positions.length / 3,
+    );
+    const controlArray = getFloat32AttributeArray(waveMesh, 'instanceControl');
+    const controlOffset = (segmentIndex ?? 0) * 3;
+
+    expect(controlArray?.slice(controlOffset, controlOffset + 3)).toEqual(
+      Float32Array.from([
+        positions[(segmentIndex ?? 0) * 3 + 2] ?? 0.24,
+        positions[(segmentIndex ?? 0) * 3 + 5] ?? 0.24,
+        0.0025 * Math.max(1, frameState.mainWave.thickness) * 0.5,
+      ]),
+    );
   });
 
   test('keeps additive wave materials transparent when alpha exceeds 1', () => {
@@ -1004,7 +1197,7 @@ modwavealphaend=0.4
     const root = scene.children[0] as RenderTreeNode;
     const additiveWaveMesh = flattenRenderTree(root).find(
       (child) =>
-        child.geometry?.getAttribute?.('instanceStart') !== undefined &&
+        isWebGPUSegmentBatchNode(child) &&
         child.material instanceof ShaderMaterial &&
         child.material.blending === AdditiveBlending,
     );
