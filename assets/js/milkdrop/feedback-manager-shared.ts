@@ -249,6 +249,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         videoEchoOrientation: { value: 0 },
         brighten: { value: 0 },
         darken: { value: 0 },
+        darkenCenter: { value: 0 },
         solarize: { value: 0 },
         invert: { value: 0 },
         gammaAdj: { value: 1 },
@@ -272,6 +273,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         overlayTextureSource: { value: 0 },
         overlayTextureMode: { value: 0 },
         overlayTextureSampleDimension: { value: 0 },
+        overlayTextureInvert: { value: 0 },
         overlayTextureAmount: { value: 0 },
         overlayTextureScale: { value: new Vector2(1, 1) },
         overlayTextureOffset: { value: new Vector2(0, 0) },
@@ -317,6 +319,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float videoEchoOrientation;
         uniform float brighten;
         uniform float darken;
+        uniform float darkenCenter;
         uniform float solarize;
         uniform float invert;
         uniform float gammaAdj;
@@ -340,6 +343,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float overlayTextureSource;
         uniform float overlayTextureMode;
         uniform float overlayTextureSampleDimension;
+        uniform float overlayTextureInvert;
         uniform float overlayTextureAmount;
         uniform vec2 overlayTextureScale;
         uniform vec2 overlayTextureOffset;
@@ -525,6 +529,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           if (darken > 0.5) {
             color = color * 0.82;
           }
+          if (darkenCenter > 0.5) {
+            float centerMask = clamp(length(vUv - vec2(0.5)) * 400.0, 0.0, 1.0);
+            color *= 0.97 + 0.03 * centerMask;
+          }
           if (solarize > 0.01 || solarizeBoost > 0.01) {
             color = mix(color, abs(color - 0.5) * 1.5, clamp(max(solarize, solarizeBoost), 0.0, 1.0));
           }
@@ -544,6 +552,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
               overlayUv,
               overlayTextureVolumeSliceZ
             ).rgb;
+            if (overlayTextureInvert > 0.5) {
+              overlayColor = 1.0 - overlayColor;
+            }
             float amount = clamp(overlayTextureAmount, 0.0, 1.5);
             if (overlayTextureMode < 1.5) {
               color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
@@ -596,6 +607,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.videoEchoOrientation.value = state.videoEchoOrientation;
     uniforms.brighten.value = state.brighten;
     uniforms.darken.value = state.darken;
+    uniforms.darkenCenter.value = state.darkenCenter;
     uniforms.solarize.value = state.solarize;
     uniforms.invert.value = state.invert;
     uniforms.gammaAdj.value = state.gammaAdj;
@@ -622,6 +634,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.overlayTextureMode.value = state.overlayTextureMode;
     uniforms.overlayTextureSampleDimension.value =
       state.overlayTextureSampleDimension;
+    uniforms.overlayTextureInvert.value = state.overlayTextureInvert;
     uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
     uniforms.overlayTextureScale.value.set(
       state.overlayTextureScale.x,

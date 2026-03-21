@@ -607,6 +607,7 @@ video_echo=1
     frameState.post.shaderControls.textureLayer.source = 'simplex';
     frameState.post.shaderControls.textureLayer.mode = 'mix';
     frameState.post.shaderControls.textureLayer.sampleDimension = '3d';
+    frameState.post.shaderControls.textureLayer.inverted = true;
     frameState.post.shaderControls.textureLayer.volumeSliceZ = 0.25;
     frameState.post.shaderControls.warpTexture.source = 'aura';
     frameState.post.shaderControls.warpTexture.sampleDimension = '3d';
@@ -651,6 +652,7 @@ video_echo=1
 
     expect(compositeStates[0]).toMatchObject({
       overlayTextureSampleDimension: 1,
+      overlayTextureInvert: 1,
       overlayTextureVolumeSliceZ: 0.25,
       warpTextureSampleDimension: 1,
       warpTextureVolumeSliceZ: 0.75,

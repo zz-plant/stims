@@ -135,6 +135,10 @@ export function isPresetFirstToySession(toySlug: string | null) {
   return (toySlug ?? 'milkdrop') === 'milkdrop';
 }
 
+export function shouldCombineFocusedSessionPanels(toySlug: string | null) {
+  return isPresetFirstToySession(toySlug);
+}
+
 export function bootToyPage({
   router,
   loadFromQuery,
@@ -178,7 +182,7 @@ export function bootToyPage({
     }
     return null;
   })();
-  const shouldCollapseShellPanelsAfterAudio = isPresetFirstToySession(toySlug);
+  const shouldCombineLaunchPanels = shouldCombineFocusedSessionPanels(toySlug);
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
   document.title = `${toyTitle} · Stims`;
 
@@ -187,7 +191,7 @@ export function bootToyPage({
   }
 
   const collapseFocusedSessionPanels = () => {
-    if (!shouldCollapseShellPanelsAfterAudio) {
+    if (!shouldCombineLaunchPanels) {
       return;
     }
     if (audioControlsContainer) {
@@ -294,14 +298,33 @@ export function bootToyPage({
   };
 
   const setupSystemControls = (result: CapabilityPreflightResult | null) => {
-    if (!settingsContainer || settingsContainer.childElementCount > 0) return;
-    initSystemControls(settingsContainer, {
+    const host = shouldCombineLaunchPanels
+      ? audioControlsContainer
+      : settingsContainer;
+
+    if (!host) {
+      return;
+    }
+
+    const existingPanel = host.querySelector('.control-panel--embedded');
+    if (shouldCombineLaunchPanels && existingPanel) {
+      return;
+    }
+    if (!shouldCombineLaunchPanels && host.childElementCount > 0) {
+      return;
+    }
+
+    initSystemControls(host, {
       title: 'Tune',
       description: 'Keep the visualizer comfortable and responsive.',
       defaultPresetId:
         result?.performance.recommendedQualityPresetId ?? undefined,
-      variant: 'inline',
+      variant: shouldCombineLaunchPanels ? 'embedded' : 'inline',
     });
+
+    if (shouldCombineLaunchPanels && settingsContainer) {
+      settingsContainer.hidden = true;
+    }
   };
 
   const handlePreflightReady = (result: CapabilityPreflightResult) => {
