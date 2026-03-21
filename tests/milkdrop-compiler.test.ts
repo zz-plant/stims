@@ -271,6 +271,35 @@ wave_0_per_point2=y = value2;
     ).toMatchObject(['x = value + value1', 'y = value2']);
   });
 
+  test('ignores disabled shader text when grading backend support', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Disabled Direct Shader
+shader=0
+comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(0.1, 0.0, 0.0)
+      `.trim(),
+      { id: 'disabled-direct-shader' },
+    );
+
+    expect(compiled.ir.post.shaderEnabled).toBe(false);
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'none',
+      webgpu: 'none',
+    });
+    expect(
+      compiled.ir.compatibility.featureAnalysis.unsupportedShaderText,
+    ).toBe(false);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+      [],
+    );
+  });
+
   test('supports shader-text subset and feedback-style flags', () => {
     const compiled = compileMilkdropPresetSource(
       `

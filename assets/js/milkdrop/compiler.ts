@@ -5619,11 +5619,14 @@ function createIR(
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
-  const approximatedShaderLines = [
-    ...shaderWarpAnalysis.unsupportedLines,
-    ...shaderCompAnalysis.unsupportedLines,
-    ...directProgramLines,
-  ].map(normalizeBlockedConstructValue);
+  const shaderEnabled = (runtimeGlobals.shader ?? 1) > 0.5;
+  const approximatedShaderLines = shaderEnabled
+    ? [
+        ...shaderWarpAnalysis.unsupportedLines,
+        ...shaderCompAnalysis.unsupportedLines,
+        ...directProgramLines,
+      ].map(normalizeBlockedConstructValue)
+    : [];
   const blockingConstructDetails = buildBlockingConstructDetails({
     sourceId: source.id,
     ignoredFields,
@@ -5658,14 +5661,16 @@ function createIR(
     assignedTargets,
   );
   const hasShaderText = Boolean(warpShaderText || compShaderText);
+  const activeShaderText = hasShaderText && shaderEnabled;
   const hasDirectShaderPrograms =
     warpShaderProgram !== null || compShaderProgram !== null;
   const hasBlockingShaderApproximation = blockingConstructDetails.some(
     (construct) => construct.kind === 'shader' && !construct.allowlisted,
   );
   supportedShaderText =
-    shaderWarpAnalysis.supported || shaderCompAnalysis.supported;
-  unsupportedShaderText = hasBlockingShaderApproximation;
+    activeShaderText &&
+    (shaderWarpAnalysis.supported || shaderCompAnalysis.supported);
+  unsupportedShaderText = activeShaderText && hasBlockingShaderApproximation;
   if (unsupportedShaderText) {
     addDiagnostic(
       diagnostics,
@@ -5675,7 +5680,7 @@ function createIR(
     );
   }
   const shaderTextExecution: MilkdropFeatureAnalysis['shaderTextExecution'] =
-    hasShaderText
+    activeShaderText
       ? unsupportedShaderText
         ? { webgl: 'unsupported', webgpu: 'unsupported' }
         : {
@@ -5879,7 +5884,7 @@ function createIR(
       darken: (numericFields.darken ?? 0) > 0.5,
       solarize: (numericFields.solarize ?? 0) > 0.5,
       invert: (numericFields.invert ?? 0) > 0.5,
-      shaderEnabled: (numericFields.shader ?? 1) > 0.5,
+      shaderEnabled,
       textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
       feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
       outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
