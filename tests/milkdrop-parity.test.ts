@@ -84,18 +84,14 @@ const REPRESENTATIVE_BACKEND_EXPECTATIONS = {
   },
   'parity-shader-01': {
     webgl: 'supported',
-    webgpu: 'partial',
-    divergence: [
-      'status:webgl=supported,webgpu=partial',
-      'webgpu:supported-shader-text-gap',
-    ],
+    webgpu: 'supported',
+    divergence: [],
   },
   'parity-allowlisted-shader-gap': {
     webgl: 'supported',
     webgpu: 'partial',
     divergence: [
       'status:webgl=supported,webgpu=partial',
-      'webgpu:supported-shader-text-gap',
       'webgpu:video-echo-gap:video-echo',
     ],
   },
@@ -318,52 +314,38 @@ describe('milkdrop parity corpus harness', () => {
     });
   });
 
-  test('treats allowlisted parity gaps as visible but non-regressive', () => {
+  test('treats former shader-gap parity entries as supported richer shader programs', () => {
     const manifest = loadJson<ParityManifest>(PARITY_MANIFEST_PATH);
-    const allowlistedEntry = manifest.presets.find(
-      (entry) => entry.id === 'parity-allowlisted-shader-gap',
+    const entry = manifest.presets.find(
+      (candidate) => candidate.id === 'parity-allowlisted-shader-gap',
     );
 
-    expect(allowlistedEntry).toBeDefined();
-    if (!allowlistedEntry) {
-      throw new Error('Missing allowlisted parity fixture in manifest.');
+    expect(entry).toBeDefined();
+    if (!entry) {
+      throw new Error('Missing shader parity fixture in manifest.');
     }
 
-    const compiled = compileParityPreset(allowlistedEntry);
+    expect(entry.allowlisted).toBe(false);
+    const compiled = compileParityPreset(entry);
 
-    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
-      'shader:unsupported(shader)',
-    ]);
-    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
-      {
-        kind: 'shader',
-        value: 'unsupported(shader)',
-        system: 'shader-text',
-        allowlisted: true,
-      },
-    ]);
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([]);
     expect(
       compiled.ir.compatibility.parity.degradationReasons.map(
         (reason) => reason.code,
       ),
-    ).toContain('allowlisted-gap');
-    expect(
-      compiled.ir.compatibility.parity.degradationReasons.some(
-        (reason) =>
-          reason.code === 'allowlisted-gap' && reason.blocking === false,
-      ),
-    ).toBe(true);
+    ).not.toContain('allowlisted-gap');
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
   });
 });
 
-test('only waive the constructs explicitly named in the allowlist', () => {
+test('keeps former shader-gap parity fixtures out of the allowlist when only video echo still diverges', () => {
   const compiled = compileMilkdropPresetSource(
-    `
-title=Parity Allowlisted Shader Gap
-warp_shader=unsupported(shader)
-unknown_field=2
-      `.trim(),
+    readFileSync(
+      join(PARITY_CORPUS_DIR, 'parity-allowlisted-shader-gap.milk'),
+      'utf8',
+    ),
     {
       id: 'parity-allowlisted-shader-gap',
       title: 'Parity Allowlisted Shader Gap',
@@ -373,22 +355,20 @@ unknown_field=2
     },
   );
 
-  expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([
-    expect.objectContaining({
-      kind: 'field',
-      value: 'unknown_field',
-      system: 'preset-field',
-      allowlisted: false,
-      classification: 'soft-unknown',
-    }),
-    expect.objectContaining({
-      kind: 'shader',
-      value: 'unsupported(shader)',
-      system: 'shader-text',
-      allowlisted: true,
-    }),
+  expect(compiled.ir.shaderText.supported).toBe(true);
+  expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([]);
+  expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
+    'status:webgl=supported,webgpu=partial',
+    'webgpu:video-echo-gap:video-echo',
   ]);
-  expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
+  expect(
+    compiled.ir.compatibility.parity.degradationReasons.map(
+      (reason) => reason.code,
+    ),
+  ).not.toContain('allowlisted-gap');
+  expect(compiled.ir.compatibility.parity.visualFallbacks).toEqual([
+    'webgpu->webgl',
+  ]);
 });
 
 describe('milkdrop parity visual baselines', () => {
