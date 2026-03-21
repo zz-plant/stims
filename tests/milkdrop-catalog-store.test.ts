@@ -84,7 +84,7 @@ describe('milkdrop catalog store', () => {
     expect(imported?.isFavorite).toBe(true);
     expect(imported?.rating).toBe(5);
     expect(imported?.supports.webgl.status).toBe('partial');
-    expect(imported?.supports.webgpu.status).toBe('partial');
+    expect(imported?.supports.webgpu.status).toBe('unsupported');
     expect(imported?.fidelityClass).toBe('fallback');
     expect(imported?.certification).toBe('exploratory');
     expect(imported?.parity.approximatedShaderLines).toEqual(['unsupported']);

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import {
   COMPATIBILITY_MODE_KEY,
   MAX_PIXEL_RATIO_KEY,
@@ -6,7 +6,11 @@ import {
   resetRenderPreferencesState,
 } from '../assets/js/core/render-preferences.ts';
 import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
-import { initSystemControls } from '../assets/js/ui/system-controls.ts';
+
+const freshSystemControls = async () =>
+  import(
+    `../assets/js/ui/system-controls.ts?ts=${Date.now()}-${Math.random()}`
+  );
 
 type NavSnapshot = {
   userAgent: string;
@@ -28,6 +32,7 @@ const setUserAgent = (userAgent: string) => {
 
 describe('system controls tv defaults', () => {
   beforeEach(() => {
+    mock.restore();
     snapshot = {
       userAgent: navigator.userAgent,
     };
@@ -38,6 +43,7 @@ describe('system controls tv defaults', () => {
   });
 
   afterEach(() => {
+    mock.restore();
     setUserAgent(snapshot.userAgent);
     localStorage.clear();
     document.body.innerHTML = '';
@@ -45,11 +51,12 @@ describe('system controls tv defaults', () => {
     resetSettingsPanelState({ removePanel: true });
   });
 
-  test('applies tv defaults when no render preferences are stored', () => {
+  test('applies tv defaults when no render preferences are stored', async () => {
     setUserAgent(TV_UA);
     const host = document.createElement('div');
     document.body.appendChild(host);
 
+    const { initSystemControls } = await freshSystemControls();
     initSystemControls(host);
 
     const presetSelect = host.querySelector('select');
@@ -61,7 +68,7 @@ describe('system controls tv defaults', () => {
     expect(localStorage.getItem(RENDER_SCALE_KEY)).toBe('0.9');
   });
 
-  test('does not overwrite existing stored render preferences', () => {
+  test('does not overwrite existing stored render preferences', async () => {
     setUserAgent(TV_UA);
     localStorage.setItem(COMPATIBILITY_MODE_KEY, 'false');
     localStorage.setItem(MAX_PIXEL_RATIO_KEY, '2');
@@ -70,6 +77,7 @@ describe('system controls tv defaults', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
 
+    const { initSystemControls } = await freshSystemControls();
     initSystemControls(host);
 
     expect(localStorage.getItem(COMPATIBILITY_MODE_KEY)).toBe('false');
@@ -77,11 +85,12 @@ describe('system controls tv defaults', () => {
     expect(localStorage.getItem(RENDER_SCALE_KEY)).toBe('1');
   });
 
-  test('keeps non-tv defaults on desktop devices', () => {
+  test('keeps non-tv defaults on desktop devices', async () => {
     setUserAgent(DESKTOP_UA);
     const host = document.createElement('div');
     document.body.appendChild(host);
 
+    const { initSystemControls } = await freshSystemControls();
     initSystemControls(host);
 
     const presetSelect = host.querySelector(

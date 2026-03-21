@@ -325,7 +325,48 @@ const wavecodeFieldPattern = /^wavecode_(\d+)_(.+)$/u;
 const shapecodeFieldPattern = /^shapecode_(\d+)_(.+)$/u;
 const shaderFieldPattern =
   /^(?:warp_[0-9]+|comp_[0-9]+|warp_shader|comp_shader|shader_text|warp_code|comp_code)$/u;
-const hardUnsupportedKeys = new Set<string>([]);
+type MilkdropBackendName = 'webgl' | 'webgpu';
+
+type HardUnsupportedFieldPolicy = {
+  backends: MilkdropBackendName[];
+  message: string;
+};
+
+const hardUnsupportedKeys = new Map<string, HardUnsupportedFieldPolicy>([
+  [
+    'warp_code',
+    {
+      backends: ['webgpu'],
+      message:
+        'Legacy warp_code shader programs rely on the WebGL compatibility translator.',
+    },
+  ],
+  [
+    'comp_code',
+    {
+      backends: ['webgpu'],
+      message:
+        'Legacy comp_code shader programs rely on the WebGL compatibility translator.',
+    },
+  ],
+  [
+    'shader_text',
+    {
+      backends: ['webgpu'],
+      message:
+        'Combined shader_text programs rely on the WebGL compatibility translator.',
+    },
+  ],
+]);
+
+function getHardUnsupportedFieldPolicy(key: string) {
+  return hardUnsupportedKeys.get(key) ?? null;
+}
+
+function shaderApproximationBlocksBackend(backend: MilkdropBackendName) {
+  return backend === 'webgpu';
+}
+
 function normalizeBlockedConstructValue(value: string) {
   return value.trim().replace(/\s+/gu, ' ');
 }
@@ -382,13 +423,21 @@ function buildVisualFallbacks({
 
 function buildBlockingConstructDetails({
   ignoredFields,
+  unsupportedFields,
   approximatedShaderLines,
 }: {
   ignoredFields: string[];
+  unsupportedFields: string[];
   approximatedShaderLines: string[];
 }): MilkdropBlockingConstruct[] {
   return [
     ...ignoredFields.map((value) => ({
+      kind: 'field' as const,
+      value,
+      system: 'preset-field' as const,
+      allowlisted: false,
+    })),
+    ...unsupportedFields.map((value) => ({
       kind: 'field' as const,
       value,
       system: 'preset-field' as const,
@@ -405,6 +454,7 @@ function buildBlockingConstructDetails({
 
 function buildDegradationReasons({
   ignoredFields,
+  unsupportedFields,
   approximatedShaderLines,
   backendDivergence,
   visualFallbacks,
@@ -412,6 +462,7 @@ function buildDegradationReasons({
   webgpu,
 }: {
   ignoredFields: string[];
+  unsupportedFields: string[];
   approximatedShaderLines: string[];
   backendDivergence: string[];
   visualFallbacks: string[];
@@ -425,6 +476,16 @@ function buildDegradationReasons({
       code: 'unknown-field',
       category: 'unsupported-syntax',
       message: `Field "${field}" is outside the current runtime scope and was ignored.`,
+      system: 'compiler',
+      blocking: true,
+    });
+  });
+
+  unsupportedFields.forEach((field) => {
+    reasons.push({
+      code: 'unsupported-field',
+      category: 'unsupported-syntax',
+      message: `Field "${field}" is recognized but requires compatibility handling outside the native runtime path.`,
       system: 'compiler',
       blocking: true,
     });
@@ -4310,11 +4371,15 @@ function buildBackendSupport({
   featureAnalysis,
   warnings,
   unsupportedKeys,
+  unsupportedFields,
+  approximatedShaderLines,
 }: {
-  backend: 'webgl' | 'webgpu';
+  backend: MilkdropBackendName;
   featureAnalysis: MilkdropFeatureAnalysis;
   warnings: string[];
   unsupportedKeys: string[];
+  unsupportedFields: string[];
+  approximatedShaderLines: string[];
 }): MilkdropBackendSupport {
   const requiredFeatures = featureAnalysis.featuresUsed.filter(
     (feature) => feature !== 'unsupported-shader-text',
@@ -4329,7 +4394,28 @@ function buildBackendSupport({
     unsupportedFeatures.push('unsupported-shader-text');
   }
 
-  if (unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))) {
+  const backendBlockedByField = unsupportedFields.some((key) => {
+    const policy = getHardUnsupportedFieldPolicy(key);
+    return policy?.backends.includes(backend) ?? false;
+  });
+  const backendBlockedByShaderApproximation =
+    approximatedShaderLines.length > 0 &&
+    shaderApproximationBlocksBackend(backend);
+
+  unsupportedFields.forEach((key) => {
+    const policy = getHardUnsupportedFieldPolicy(key);
+    if (policy) {
+      reasons.push(policy.message);
+    }
+  });
+
+  if (backendBlockedByShaderApproximation) {
+    reasons.push(
+      'This backend cannot execute shader-text lines outside the supported subset and must fall back to WebGL compatibility mode.',
+    );
+  }
+
+  if (unsupportedKeys.some((key) => getHardUnsupportedFieldPolicy(key))) {
     reasons.push(
       'This preset depends on unsupported MilkDrop features that are outside the current runtime scope.',
     );
@@ -4338,7 +4424,7 @@ function buildBackendSupport({
   const uniqueReasons = [...new Set(reasons)];
   const uniqueUnsupported = [...new Set(unsupportedFeatures)];
 
-  if (unsupportedKeys.some((key) => hardUnsupportedKeys.has(key))) {
+  if (backendBlockedByField || backendBlockedByShaderApproximation) {
     return {
       status: 'unsupported',
       reasons: uniqueReasons,
@@ -4396,6 +4482,7 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   const customWaveMap = new Map<number, MilkdropWaveDefinition>();
   const customShapeMap = new Map<number, MilkdropShapeDefinition>();
   const unsupportedKeys = new Set<string>();
+  const unsupportedFields = new Set<string>();
   let unsupportedShaderText = false;
   let supportedShaderText = false;
   let warpShaderText: string | null = null;
@@ -4426,6 +4513,9 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
 
     if (shaderFieldPattern.test(normalizedKey)) {
       const rawValue = normalizeString(field.rawValue);
+      if (getHardUnsupportedFieldPolicy(normalizedKey)) {
+        unsupportedFields.add(normalizedKey);
+      }
       if (
         normalizedKey === 'warp_shader' ||
         normalizedKey === 'warp_code' ||
@@ -4589,33 +4679,46 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
     ...[...unsupportedKeys].map(
       (key) => `Unknown preset field "${key}" was ignored.`,
     ),
+    ...[...unsupportedFields].map((key) => {
+      const policy = getHardUnsupportedFieldPolicy(key);
+      return (
+        policy?.message ?? `Field "${key}" is outside the native runtime path.`
+      );
+    }),
     ...(featureAnalysis.unsupportedShaderText
       ? [
           'Shader-text sections include unsupported lines and are being approximated.',
         ]
       : []),
   ];
+  const approximatedShaderLines = [
+    ...shaderWarpAnalysis.unsupportedLines,
+    ...shaderCompAnalysis.unsupportedLines,
+  ].map(normalizeBlockedConstructValue);
+  const sortedUnsupportedKeys = [...unsupportedKeys].sort();
+  const sortedUnsupportedFields = [...unsupportedFields].sort();
   const backends = {
     webgl: buildBackendSupport({
       backend: 'webgl',
       featureAnalysis,
       warnings,
-      unsupportedKeys: [...unsupportedKeys],
+      unsupportedKeys: sortedUnsupportedKeys,
+      unsupportedFields: sortedUnsupportedFields,
+      approximatedShaderLines,
     }),
     webgpu: buildBackendSupport({
       backend: 'webgpu',
       featureAnalysis,
       warnings,
-      unsupportedKeys: [...unsupportedKeys],
+      unsupportedKeys: sortedUnsupportedKeys,
+      unsupportedFields: sortedUnsupportedFields,
+      approximatedShaderLines,
     }),
   };
-  const ignoredFields = [...unsupportedKeys].sort();
-  const approximatedShaderLines = [
-    ...shaderWarpAnalysis.unsupportedLines,
-    ...shaderCompAnalysis.unsupportedLines,
-  ].map(normalizeBlockedConstructValue);
+  const ignoredFields = sortedUnsupportedKeys;
   const blockedConstructs = [
     ...ignoredFields.map(toBlockedFieldConstruct),
+    ...sortedUnsupportedFields.map(toBlockedFieldConstruct),
     ...approximatedShaderLines.map(toBlockedShaderConstruct),
   ];
   const finalBackends = backends;
@@ -4627,10 +4730,12 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
   });
   const blockingConstructDetails = buildBlockingConstructDetails({
     ignoredFields,
+    unsupportedFields: sortedUnsupportedFields,
     approximatedShaderLines,
   });
   const degradationReasons = buildDegradationReasons({
     ignoredFields,
+    unsupportedFields: sortedUnsupportedFields,
     approximatedShaderLines,
     backendDivergence,
     visualFallbacks,
@@ -4687,7 +4792,9 @@ function createIR(ast: MilkdropPresetAST, diagnostics: MilkdropDiagnostic[]) {
       ),
     ],
     supportedFeatures: featureAnalysis.featuresUsed,
-    unsupportedKeys: [...unsupportedKeys],
+    unsupportedKeys: [
+      ...new Set([...sortedUnsupportedKeys, ...sortedUnsupportedFields]),
+    ],
     webgl: finalBackends.webgl.status === 'supported',
     webgpu: finalBackends.webgpu.status === 'supported',
   };

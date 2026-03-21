@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { getMilkdropDetailScale } from '../assets/js/milkdrop/runtime.ts';
+import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import {
+  getMilkdropDetailScale,
+  shouldFallbackPresetToWebgl,
+} from '../assets/js/milkdrop/runtime.ts';
 
 describe('milkdrop runtime detail scale', () => {
   test('boosts detail scale on webgpu for the same quality budget', () => {
@@ -60,5 +64,39 @@ describe('milkdrop runtime detail scale', () => {
         particleBudget: 2,
       }),
     ).toBe(2);
+  });
+});
+
+describe('milkdrop runtime compatibility fallback', () => {
+  test('routes unsupported webgpu presets through the webgl compatibility path', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Fallback Preset
+warp_code=shader_body=tex2d(sampler_main,uv).rgb;
+      `.trim(),
+      { id: 'fallback-preset' },
+    );
+
+    expect(
+      shouldFallbackPresetToWebgl({
+        activeBackend: 'webgpu',
+        compatibilityModeEnabled: false,
+        compiled,
+      }),
+    ).toBe(true);
+    expect(
+      shouldFallbackPresetToWebgl({
+        activeBackend: 'webgl',
+        compatibilityModeEnabled: false,
+        compiled,
+      }),
+    ).toBe(false);
+    expect(
+      shouldFallbackPresetToWebgl({
+        activeBackend: 'webgpu',
+        compatibilityModeEnabled: true,
+        compiled,
+      }),
+    ).toBe(false);
   });
 });

@@ -151,6 +151,22 @@ export function getMilkdropDetailScale({
   );
 }
 
+export function shouldFallbackPresetToWebgl({
+  activeBackend,
+  compatibilityModeEnabled,
+  compiled,
+}: {
+  activeBackend: 'webgl' | 'webgpu';
+  compatibilityModeEnabled: boolean;
+  compiled: MilkdropCompiledPreset;
+}) {
+  return (
+    activeBackend === 'webgpu' &&
+    compiled.ir.compatibility.backends.webgpu.status === 'unsupported' &&
+    !compatibilityModeEnabled
+  );
+}
+
 export function buildMilkdropInputSignalOverrides(
   input: UnifiedInputState | null,
   target: Partial<MilkdropRuntimeSignals> = {},
@@ -568,9 +584,11 @@ export function createMilkdropExperience({
     catalogEntries.find((entry) => entry.id === activePresetId) ?? null;
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
-    activeBackend === 'webgpu' &&
-    compiled.ir.compatibility.backends.webgpu.status === 'unsupported' &&
-    !isCompatibilityModeEnabled();
+    shouldFallbackPresetToWebgl({
+      activeBackend,
+      compatibilityModeEnabled: isCompatibilityModeEnabled(),
+      compiled,
+    });
 
   const triggerWebglFallback = ({
     presetId,

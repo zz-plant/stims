@@ -220,7 +220,7 @@ describe('milkdrop vendored projectM fixture corpus', () => {
     expect(files).toEqual([...PROJECTM_PRESET_FILES]);
   });
 
-  test('compiles the vendored upstream fixture corpus without errors and keeps both backends available', () => {
+  test('compiles the vendored upstream fixture corpus without errors and surfaces webgpu fallbacks', () => {
     const corpus = loadProjectMPresetCorpus();
 
     expect(corpus.length).toBe(PROJECTM_PRESET_FILES.length);
@@ -232,9 +232,11 @@ describe('milkdrop vendored projectM fixture corpus', () => {
       expect(compiled.ir.compatibility.backends.webgl.status).not.toBe(
         'unsupported',
       );
-      expect(compiled.ir.compatibility.backends.webgpu.status).not.toBe(
-        'unsupported',
-      );
+      if (compiled.ir.compatibility.backends.webgpu.status === 'unsupported') {
+        expect(
+          compiled.ir.compatibility.backends.webgpu.recommendedFallback,
+        ).toBe('webgl');
+      }
     });
   });
 

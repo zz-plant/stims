@@ -675,7 +675,39 @@ definitely_not_a_real_field=1
     ).toBe(true);
   });
 
-  test('keeps shader approximation as a partial backend support path', () => {
+  test('marks legacy shader program fields as unsupported on webgpu', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Legacy Warp Code
+warp_code=shader_body=tex2d(sampler_main,uv).rgb;
+      `.trim(),
+      { id: 'legacy-warp-code' },
+    );
+
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.unsupportedKeys).toContain('warp_code');
+    expect(compiled.ir.compatibility.parity.blockedConstructs).toContain(
+      'field:warp_code',
+    );
+    expect(compiled.ir.compatibility.parity.degradationReasons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'unsupported-field',
+          blocking: true,
+        }),
+        expect.objectContaining({
+          code: 'backend-unsupported',
+          blocking: true,
+        }),
+      ]),
+    );
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
+  });
+
+  test('marks shader approximation as unsupported on webgpu', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Parity Blocked Shader
@@ -685,7 +717,9 @@ warp_shader=unsupported(shader)
     );
 
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
       'unsupported(shader)',
     ]);
