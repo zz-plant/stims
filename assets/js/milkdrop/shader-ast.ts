@@ -3,6 +3,7 @@ import { normalizeMilkdropShaderSamplerName } from './shader-samplers';
 import type {
   MilkdropExpressionNode,
   MilkdropShaderExpressionNode,
+  MilkdropShaderSampleDimension,
   MilkdropShaderStatement,
   MilkdropShaderTextureSampler,
 } from './types';
@@ -22,8 +23,10 @@ type ShaderValue =
   | { kind: 'vec3'; value: [number, number, number] }
   | {
       kind: 'sample';
+      dimension: MilkdropShaderSampleDimension;
       source: MilkdropShaderTextureSampler | 'main' | null;
       uv: ShaderValue;
+      z: ShaderValue | null;
     };
 
 function normalizeShaderSamplerName(value: string) {
@@ -358,6 +361,29 @@ function vec3(r: number, g: number, b: number): ShaderValue {
   return { kind: 'vec3', value: [r, g, b] };
 }
 
+function splitShaderSampleCoordinate(
+  dimension: MilkdropShaderSampleDimension,
+  coordinate: ShaderValue,
+) {
+  if (dimension === '2d') {
+    return {
+      dimension,
+      uv: coordinate,
+      z: null,
+    };
+  }
+
+  if (isVec3(coordinate)) {
+    return {
+      dimension,
+      uv: vec2(coordinate.value[0], coordinate.value[1]),
+      z: scalar(coordinate.value[2]),
+    };
+  }
+
+  return null;
+}
+
 function isScalar(
   value: ShaderValue,
 ): value is { kind: 'scalar'; value: number } {
@@ -589,7 +615,18 @@ export function evaluateMilkdropShaderExpression(
           samplerArg?.type === 'identifier'
             ? normalizeShaderSamplerName(samplerArg.name)
             : 'main';
-        return { kind: 'sample', source, uv: args[1] };
+        const dimension = name === 'tex3d' ? '3d' : '2d';
+        const coordinate = splitShaderSampleCoordinate(dimension, args[1]);
+        if (!coordinate) {
+          return null;
+        }
+        return {
+          kind: 'sample',
+          source,
+          dimension: coordinate.dimension,
+          uv: coordinate.uv,
+          z: coordinate.z,
+        };
       }
       if (name === 'mix' && args.length >= 3 && isScalar(args[2])) {
         const blend = args[2].value;
