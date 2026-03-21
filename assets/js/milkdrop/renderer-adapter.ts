@@ -1188,7 +1188,6 @@ function syncShapeFillMaterial(
     material.uniforms.secondaryAlpha.value =
       (shape.secondaryColor?.a ?? 0) * alphaMultiplier;
     material.blending = shape.additive ? AdditiveBlending : NormalBlending;
-    material.needsUpdate = true;
     return;
   }
 
