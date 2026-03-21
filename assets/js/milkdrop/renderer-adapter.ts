@@ -47,6 +47,11 @@ import type {
   MilkdropWaveVisual,
   MilkdropWebGpuDescriptorPlan,
 } from './types';
+import {
+  applyMilkdropWebGpuOptimizationFlags,
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  type MilkdropWebGpuOptimizationFlags,
+} from './webgpu-optimization-flags';
 
 type RendererLike = {
   getSize?: (target: Vector2) => Vector2;
@@ -67,6 +72,7 @@ export type MilkdropRendererAdapterConfig = {
   behavior?: MilkdropBackendBehavior;
   createFeedbackManager?: MilkdropFeedbackManagerFactory;
   batcher?: MilkdropRendererBatcher | null;
+  webgpuOptimizationFlags?: MilkdropWebGpuOptimizationFlags;
 };
 
 export type MilkdropRendererBatcher = {
@@ -2941,6 +2947,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   );
   private readonly feedback: MilkdropFeedbackManager | null;
   private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
+  private readonly webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags;
 
   constructor({
     scene,
@@ -2950,6 +2957,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     behavior,
     createFeedbackManager,
     batcher,
+    webgpuOptimizationFlags = DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   }: {
     scene: Scene;
     camera: Camera;
@@ -2958,6 +2966,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     behavior: MilkdropBackendBehavior;
     createFeedbackManager: MilkdropFeedbackManagerFactory | null;
     batcher: MilkdropRendererBatcher | null;
+    webgpuOptimizationFlags?: MilkdropWebGpuOptimizationFlags;
   }) {
     this.scene = scene;
     this.camera = camera;
@@ -2966,6 +2975,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.behavior = behavior;
     this.createFeedbackManager = createFeedbackManager;
     this.batcher = batcher;
+    this.webgpuOptimizationFlags = { ...webgpuOptimizationFlags };
     this.root.frustumCulled = false;
 
     this.background.position.z = -1.2;
@@ -3015,7 +3025,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   setPreset(preset: MilkdropCompiledPreset) {
     this.webgpuDescriptorPlan =
       this.backend === 'webgpu'
-        ? preset.ir.compatibility.gpuDescriptorPlans.webgpu
+        ? applyMilkdropWebGpuOptimizationFlags(
+            preset.ir.compatibility.gpuDescriptorPlans.webgpu,
+            this.webgpuOptimizationFlags,
+          )
         : null;
   }
 
@@ -3478,21 +3491,30 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
     const controls = frameState.post.shaderControls;
+    const feedbackOptimizationEnabled =
+      this.backend !== 'webgpu' ||
+      this.webgpuOptimizationFlags.directFeedbackShaders;
     const shaderPrograms = {
-      warp: frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
-        this.backend,
-      )
-        ? frameState.post.shaderPrograms.warp
-        : null,
-      comp: frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
-        this.backend,
-      )
-        ? frameState.post.shaderPrograms.comp
-        : null,
+      warp:
+        feedbackOptimizationEnabled &&
+        frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
+          this.backend,
+        )
+          ? frameState.post.shaderPrograms.warp
+          : null,
+      comp:
+        feedbackOptimizationEnabled &&
+        frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
+          this.backend,
+        )
+          ? frameState.post.shaderPrograms.comp
+          : null,
     };
     const plannedShaderExecution =
       this.backend === 'webgpu'
-        ? this.webgpuDescriptorPlan?.feedback?.shaderExecution
+        ? feedbackOptimizationEnabled
+          ? this.webgpuDescriptorPlan?.feedback?.shaderExecution
+          : 'controls'
         : null;
     const usesDirectShaderPrograms =
       plannedShaderExecution === 'direct'
@@ -3878,6 +3900,7 @@ export function createMilkdropRendererAdapterCore({
   behavior,
   createFeedbackManager,
   batcher,
+  webgpuOptimizationFlags = DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
 }: MilkdropRendererAdapterConfig) {
   const adapter = new ThreeMilkdropAdapter({
     scene,
@@ -3891,6 +3914,7 @@ export function createMilkdropRendererAdapterCore({
         : WEBGL_MILKDROP_BACKEND_BEHAVIOR),
     createFeedbackManager: createFeedbackManager ?? null,
     batcher: batcher ?? null,
+    webgpuOptimizationFlags,
   });
   if (preset) {
     adapter.setPreset(preset);

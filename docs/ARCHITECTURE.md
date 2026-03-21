@@ -158,6 +158,22 @@ flowchart LR
 - **Quality presets**: `settings-panel.ts` broadcasts max pixel ratio, render scale, and exposure; `WebToy.updateRendererSettings` re-applies them without a reload.
 - **Renderer settings**: `renderer-settings.ts` merges quality presets, render preferences, and per-toy overrides so pooled renderers can be reconfigured on the fly.
 - **Experimental worker render track**: `worker-renderer-track.ts` and `renderer-worker.ts` define an opt-in OffscreenCanvas path for future WebGPU render submission off the main thread. The gate reuses `renderer-capabilities.ts` worker/offscreen checks plus an explicit opt-in flag (`?render-worker=1` or `localStorage['stims:experiments:render-worker']='enabled'`). The current track only owns renderer initialization, resize/quality propagation, preset messages, and per-frame signal/input submission; DOM-driven overlay, catalog, and editor flows remain on the main thread until parity is proven.
+- **MilkDrop WebGPU descriptor rollout guards**: `assets/js/milkdrop/webgpu-optimization-flags.ts` resolves per-path rollout flags from query params or `localStorage`, then `runtime.ts`, `vm.ts`, and `renderer-adapter.ts` apply the effective subset before enabling WebGPU-only descriptor work. Supported params/storage pairs are `milkdrop-webgpu-main-wave`/`stims:experiments:milkdrop-webgpu-main-wave`, `milkdrop-webgpu-trail-waves`/`stims:experiments:milkdrop-webgpu-trail-waves`, `milkdrop-webgpu-custom-waves`/`stims:experiments:milkdrop-webgpu-custom-waves`, `milkdrop-webgpu-mesh`/`stims:experiments:milkdrop-webgpu-mesh`, `milkdrop-webgpu-motion-vectors`/`stims:experiments:milkdrop-webgpu-motion-vectors`, `milkdrop-webgpu-feedback`/`stims:experiments:milkdrop-webgpu-feedback`, and the fallback guard `milkdrop-webgpu-fallback`/`stims:experiments:milkdrop-webgpu-fallback`. Disabled paths emit a concise overlay status message so validation runs can confirm which optimizations are still gated.
+
+### Incremental MilkDrop WebGPU rollout sequence
+
+Use the descriptor flags to land and validate each optimization independently:
+
+| Rollout step | Flag | Scope | Recommended enable order |
+| --- | --- | --- | --- |
+| 1 | `milkdrop-webgpu-main-wave` | Main waveform descriptor path | Enable first on supported presets. |
+| 2 | `milkdrop-webgpu-trail-waves` | Trail waveform descriptor path | Enable after main-wave parity is stable. |
+| 3 | `milkdrop-webgpu-custom-waves` | Custom-wave descriptor uploads | Enable once representative authored presets hold parity. |
+| 4 | `milkdrop-webgpu-mesh` | Per-pixel mesh-field descriptor execution | Enable after procedural wave coverage is stable. |
+| 5 | `milkdrop-webgpu-motion-vectors` | Motion-vector descriptor execution | Enable after mesh validation, especially on presets with legacy controls. |
+| 6 | `milkdrop-webgpu-feedback` | Direct feedback shader execution | Enable last among descriptor optimizations. |
+
+Keep `milkdrop-webgpu-fallback` enabled while validating each stage so unsupported presets still auto-switch to WebGL. Only consider relaxing that final backend guard after the representative unsupported fixture set and manual browser validation confirm the remaining WebGPU path is safe.
 
 ## WebToy Composition
 

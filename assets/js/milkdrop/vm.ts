@@ -27,6 +27,11 @@ import type {
   MilkdropWaveDefinition,
   MilkdropWaveVisual,
 } from './types';
+import {
+  applyMilkdropWebGpuOptimizationFlags,
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  type MilkdropWebGpuOptimizationFlags,
+} from './webgpu-optimization-flags';
 
 const MAX_TRAILS = 5;
 const MAX_CUSTOM_WAVE_SLOTS = 32;
@@ -335,6 +340,9 @@ class MilkdropPresetVM implements MilkdropVM {
   private randomState = 1;
   private detailScale = 1;
   private renderBackend: 'webgl' | 'webgpu' = 'webgl';
+  private webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = {
+    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  };
   private trails: MilkdropPolyline[] = [];
   private lastWaveform: MilkdropWaveVisual | null = null;
   private lastProceduralWave: MilkdropProceduralWaveVisual | null = null;
@@ -355,8 +363,12 @@ class MilkdropPresetVM implements MilkdropVM {
     { x: number; y: number }
   >();
 
-  constructor(preset: MilkdropCompiledPreset) {
+  constructor(
+    preset: MilkdropCompiledPreset,
+    webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  ) {
     this.preset = preset;
+    this.webgpuOptimizationFlags = { ...webgpuOptimizationFlags };
     this.reset();
   }
 
@@ -371,6 +383,15 @@ class MilkdropPresetVM implements MilkdropVM {
 
   setRenderBackend(backend: 'webgl' | 'webgpu') {
     this.renderBackend = backend;
+  }
+
+  private getEffectiveWebGpuDescriptorPlan() {
+    return this.renderBackend === 'webgpu'
+      ? applyMilkdropWebGpuOptimizationFlags(
+          this.preset.ir.compatibility.gpuDescriptorPlans.webgpu,
+          this.webgpuOptimizationFlags,
+        )
+      : null;
   }
 
   reset() {
@@ -621,32 +642,43 @@ class MilkdropPresetVM implements MilkdropVM {
     return quantizedX * 4096 + quantizedY;
   }
 
-  private supportsProceduralWave(_drawMode: 'line' | 'dots') {
-    return false;
+  private supportsProceduralWave(drawMode: 'line' | 'dots') {
+    const plan = this.getEffectiveWebGpuDescriptorPlan();
+    return (
+      this.renderBackend === 'webgpu' &&
+      drawMode === 'line' &&
+      Boolean(
+        plan?.proceduralWaves.some((entry) => entry.target === 'main-wave'),
+      )
+    );
   }
 
   private supportsProceduralCustomWave(
     wave: MilkdropWaveDefinition,
     drawMode: 'line' | 'dots',
   ) {
+    const plan = this.getEffectiveWebGpuDescriptorPlan();
     return (
       this.renderBackend === 'webgpu' &&
       drawMode === 'line' &&
-      wave.programs.perPoint.statements.length === 0
+      wave.programs.perPoint.statements.length === 0 &&
+      Boolean(
+        plan?.proceduralWaves.some(
+          (entry) =>
+            entry.target === 'custom-wave' && entry.slotIndex === wave.index,
+        ),
+      )
     );
   }
 
   private getProceduralMeshDescriptorPlan() {
-    return this.renderBackend === 'webgpu'
-      ? this.preset.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh
-      : null;
+    return this.getEffectiveWebGpuDescriptorPlan()?.proceduralMesh ?? null;
   }
 
   private getProceduralMotionVectorDescriptorPlan() {
-    return this.renderBackend === 'webgpu'
-      ? this.preset.ir.compatibility.gpuDescriptorPlans.webgpu
-          .proceduralMotionVectors
-      : null;
+    return (
+      this.getEffectiveWebGpuDescriptorPlan()?.proceduralMotionVectors ?? null
+    );
   }
 
   private buildProceduralFieldTransform() {
@@ -1697,6 +1729,9 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 }
 
-export function createMilkdropVM(preset: MilkdropCompiledPreset) {
-  return new MilkdropPresetVM(preset);
+export function createMilkdropVM(
+  preset: MilkdropCompiledPreset,
+  webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+) {
+  return new MilkdropPresetVM(preset, webgpuOptimizationFlags);
 }
