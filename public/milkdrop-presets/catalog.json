@@ -3,8 +3,6 @@
   "generatedAt": "2026-03-21",
   "certification": "bundled",
   "corpusTier": "bundled",
-  "expectedFidelityClass": "exact",
-  "visualEvidenceTier": "visual",
   "presets": [
     {
       "id": "aurora-feedback-core",
@@ -19,9 +17,11 @@
         "warp",
         "preset"
       ],
-      "compatibility": {
+      "expectedFidelityClass": "near-exact",
+      "visualEvidenceTier": "runtime",
+      "supports": {
         "webgl": true,
-        "webgpu": true
+        "webgpu": false
       }
     },
     {
@@ -38,9 +38,11 @@
         "original-pack",
         "preset"
       ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
+      "expectedFidelityClass": "fallback",
+      "visualEvidenceTier": "compile",
+      "supports": {
+        "webgl": false,
+        "webgpu": false
       }
     },
     {
@@ -57,9 +59,11 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
+      "expectedFidelityClass": "fallback",
+      "visualEvidenceTier": "compile",
+      "supports": {
+        "webgl": false,
+        "webgpu": false
       }
     },
     {
@@ -76,9 +80,11 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
+      "expectedFidelityClass": "fallback",
+      "visualEvidenceTier": "compile",
+      "supports": {
+        "webgl": false,
+        "webgpu": false
       }
     },
     {
@@ -94,9 +100,11 @@
         "drums",
         "preset"
       ],
-      "compatibility": {
+      "expectedFidelityClass": "near-exact",
+      "visualEvidenceTier": "runtime",
+      "supports": {
         "webgl": true,
-        "webgpu": true
+        "webgpu": false
       }
     },
     {
@@ -113,9 +121,11 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "compatibility": {
-        "webgl": true,
-        "webgpu": true
+      "expectedFidelityClass": "fallback",
+      "visualEvidenceTier": "compile",
+      "supports": {
+        "webgl": false,
+        "webgpu": false
       }
     },
     {
@@ -131,9 +141,11 @@
         "reactive",
         "preset"
       ],
-      "compatibility": {
+      "expectedFidelityClass": "near-exact",
+      "visualEvidenceTier": "runtime",
+      "supports": {
         "webgl": true,
-        "webgpu": true
+        "webgpu": false
       }
     },
     {
@@ -149,9 +161,11 @@
         "halos",
         "preset"
       ],
-      "compatibility": {
+      "expectedFidelityClass": "near-exact",
+      "visualEvidenceTier": "runtime",
+      "supports": {
         "webgl": true,
-        "webgpu": true
+        "webgpu": false
       }
     }
   ]
