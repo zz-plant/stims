@@ -29,6 +29,33 @@ export interface AudioControlsOptions {
   initialShortcut?: 'tab' | 'youtube';
 }
 
+const DEFAULT_TOUCH_GESTURE_HINTS = [
+  'Drag to bend the scene.',
+  'Pinch to swell or compress the depth.',
+  'Rotate with two fingers to twist the image.',
+];
+
+function normalizeHints(hints: string[] | undefined, limit = 3) {
+  return (hints ?? [])
+    .map((hint) => hint.trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+export function resolveTouchGestureHints(options: {
+  touchHints?: string[];
+  gestureHints?: string[];
+}) {
+  const explicitHints = normalizeHints(
+    options.touchHints ?? options.gestureHints,
+  );
+  if (explicitHints.length > 0) {
+    return explicitHints;
+  }
+
+  return DEFAULT_TOUCH_GESTURE_HINTS;
+}
+
 export function buildTryThisFirstRecommendation({
   recommendedCapability,
   starterPresetLabel,
@@ -46,6 +73,10 @@ export function buildTryThisFirstRecommendation({
     steps.push('Start with live mic for the most responsive visuals.');
   } else if (recommendedCapability === 'demoAudio') {
     steps.push('Start with demo audio for the quickest start.');
+  } else if (recommendedCapability === 'touch') {
+    steps.push(
+      'Start audio, then use touch gestures to bend, scale, and twist the scene.',
+    );
   }
 
   if (starterPresetLabel?.trim()) {
@@ -105,14 +136,7 @@ export function initAudioControls(
       window.matchMedia('(pointer: coarse)').matches) ||
     navigator.maxTouchPoints > 0;
   const firstRunHint = options.firstRunHint?.trim();
-  const touchHints = (
-    options.touchHints ??
-    options.gestureHints ??
-    options.starterTips ??
-    []
-  )
-    .filter((tip) => /touch|drag|pinch|swipe|gesture|tap|rotate/i.test(tip))
-    .slice(0, 2);
+  const touchHints = resolveTouchGestureHints(options);
   const desktopHints = (options.desktopHints ?? [])
     .map((tip) => tip.trim())
     .filter(Boolean)
@@ -682,7 +706,7 @@ function renderPostStartGuidance({
         <div class="control-panel__first-steps-header">
           <span class="control-panel__label">Desktop controls</span>
         </div>
-        <p class="control-panel__microcopy">On desktop, try these controls:</p>
+        <p class="control-panel__microcopy">On desktop, try these controls to steer the picture quickly:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${desktopHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>
@@ -698,7 +722,7 @@ function renderPostStartGuidance({
           <span class="control-panel__label">Touch gestures</span>
           <button type="button" class="control-panel__dismiss" data-dismiss-gesture-hints>Got it</button>
         </div>
-        <p class="control-panel__microcopy">Once audio starts, try these quick moves:</p>
+        <p class="control-panel__microcopy">Once audio starts, use these gestures to reshape the scene fast:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${touchHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>

@@ -12,6 +12,7 @@ const recommendedCapabilitySchema = z.enum([
   'microphone',
   'demoAudio',
   'motion',
+  'touch',
 ]);
 
 const starterPresetSchema = z.object({

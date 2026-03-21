@@ -11,11 +11,16 @@
     "moods": ["immersive", "psychedelic"],
     "tags": ["feedback", "warp", "visualizer", "retro", "presets", "editor"],
     "controls": [
-      "Preset browser + favorites/recent",
-      "Blend duration + autoplay/random",
-      "Live source editor + diagnostics",
-      "Import/export preset files",
-      "Quality presets"
+      "Browse, favorite, and revisit standout presets",
+      "Blend between looks with autoplay or random runs",
+      "Edit preset code and see the scene respond live",
+      "Import or export preset files",
+      "Tune quality for smoother or richer playback"
+    ],
+    "touchHints": [
+      "Drag to bend the scene and shove the feedback trail.",
+      "Pinch to swell or compress the depth and intensity.",
+      "Rotate with two fingers to twist the whole image."
     ],
     "firstRunHint": "Start with the curated preset browser, then toggle autoplay to hear smooth blend transitions.",
     "starterPreset": {
