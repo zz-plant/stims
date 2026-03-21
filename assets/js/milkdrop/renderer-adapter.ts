@@ -35,11 +35,13 @@ import type {
   MilkdropFeedbackSetRenderTarget,
   MilkdropGpuGeometryHints,
   MilkdropProceduralCustomWaveVisual,
+  MilkdropProceduralFieldTransformVisual,
   MilkdropProceduralWaveVisual,
   MilkdropRendererAdapter,
   MilkdropRenderPayload,
   MilkdropShapeVisual,
   MilkdropWaveVisual,
+  MilkdropWebGpuDescriptorPlan,
 } from './types';
 
 type RendererLike = {
@@ -57,6 +59,7 @@ export type MilkdropRendererAdapterConfig = {
   camera: Camera;
   renderer?: RendererLike | null;
   backend: 'webgl' | 'webgpu';
+  preset?: MilkdropCompiledPreset | null;
   behavior?: MilkdropBackendBehavior;
   createFeedbackManager?: MilkdropFeedbackManagerFactory;
 };
@@ -130,6 +133,12 @@ type ProceduralFieldUniformState = {
   rotation: { value: number };
   warp: { value: number };
   warpAnimSpeed: { value: number };
+  centerX: { value: number };
+  centerY: { value: number };
+  scaleX: { value: number };
+  scaleY: { value: number };
+  translateX: { value: number };
+  translateY: { value: number };
   time: { value: number };
   trebleAtt: { value: number };
   tint: { value: Color };
@@ -143,6 +152,12 @@ function createProceduralFieldUniformState() {
     rotation: { value: 0 },
     warp: { value: 0 },
     warpAnimSpeed: { value: 1 },
+    centerX: { value: 0 },
+    centerY: { value: 0 },
+    scaleX: { value: 1 },
+    scaleY: { value: 1 },
+    translateX: { value: 0 },
+    translateY: { value: 0 },
     time: { value: 0 },
     trebleAtt: { value: 0 },
     tint: { value: new Color(1, 1, 1) },
@@ -154,6 +169,8 @@ const PROCEDURAL_FIELD_SHADER_CHUNK = `
   vec2 milkdropTransformPoint(vec2 source) {
     float radius = length(source);
     float angle = atan(source.y, source.x) + rotation;
+    float transformedX = (source.x - centerX) * scaleX + centerX + translateX;
+    float transformedY = (source.y - centerY) * scaleY + centerY + translateY;
     float ripple = sin(
       radius * 12.0 +
       time * (0.6 + trebleAtt) * (0.35 + warpAnimSpeed)
@@ -164,8 +181,8 @@ const PROCEDURAL_FIELD_SHADER_CHUNK = `
       pow(max(zoomExponent, 0.0001), radiusNormalized * 2.0 - 1.0)
     );
     vec2 warped = vec2(
-      (source.x + cos(angle * 3.0) * ripple) * zoomScale,
-      (source.y + sin(angle * 4.0) * ripple) * zoomScale
+      (transformedX + cos(angle * 3.0) * ripple) * zoomScale,
+      (transformedY + sin(angle * 4.0) * ripple) * zoomScale
     );
     float cosRot = cos(rotation);
     float sinRot = sin(rotation);
@@ -213,7 +230,13 @@ function createProceduralMeshMaterial() {
 }
 
 function createProceduralMotionVectorMaterial() {
-  const uniforms = createProceduralFieldUniformState();
+  const uniforms = {
+    ...createProceduralFieldUniformState(),
+    sourceOffsetX: { value: 0 },
+    sourceOffsetY: { value: 0 },
+    explicitLength: { value: 0 },
+    legacyControls: { value: 0 },
+  };
   return new ShaderMaterial({
     uniforms,
     transparent: true,
@@ -225,22 +248,39 @@ function createProceduralMotionVectorMaterial() {
       uniform float rotation;
       uniform float warp;
       uniform float warpAnimSpeed;
+      uniform float centerX;
+      uniform float centerY;
+      uniform float scaleX;
+      uniform float scaleY;
+      uniform float translateX;
+      uniform float translateY;
       uniform float time;
       uniform float trebleAtt;
+      uniform float sourceOffsetX;
+      uniform float sourceOffsetY;
+      uniform float explicitLength;
       varying float vAlpha;
       ${PROCEDURAL_FIELD_SHADER_CHUNK}
 
       void main() {
-        vec2 source = sourcePosition.xy;
+        vec2 source = clamp(
+          sourcePosition.xy + vec2(sourceOffsetX, sourceOffsetY),
+          vec2(-1.0),
+          vec2(1.0)
+        );
         vec2 current = milkdropTransformPoint(source);
         vec2 delta = clamp((current - source) * 1.35, vec2(-0.24), vec2(0.24));
         float magnitude = length(delta);
+        if (explicitLength > 0.0001 && magnitude > 0.0001) {
+          delta = delta / magnitude * explicitLength;
+          magnitude = length(delta);
+        }
         vec2 renderPoint = mix(
           current - delta * 0.45,
           current + delta,
           endpointWeight
         );
-        vAlpha = alpha * clamp(0.75 + magnitude * 2.2, 0.02, 1.0) * step(0.002, magnitude);
+        vAlpha = alpha * clamp(0.75 + magnitude * 2.2, 0.0, 1.0) * step(0.002, magnitude);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(
           renderPoint.xy,
           sourcePosition.z,
@@ -747,6 +787,16 @@ function getProceduralWaveGeometry(sampleCount: number) {
   return geometry;
 }
 
+function createProceduralWaveObjectGeometry(sampleCount: number) {
+  const geometry = getProceduralWaveGeometry(sampleCount).clone();
+  setGeometryBoundingSphere(
+    geometry,
+    new Vector3(0, 0, 0),
+    PROCEDURAL_WAVE_BOUNDS_RADIUS,
+  );
+  return geometry;
+}
+
 function closeLinePositions(positions: number[]) {
   if (positions.length < 6) {
     return positions;
@@ -823,16 +873,17 @@ function syncProceduralFieldUniforms(
     rotation,
     warp,
     warpAnimSpeed,
+    centerX,
+    centerY,
+    scaleX,
+    scaleY,
+    translateX,
+    translateY,
     time,
     trebleAtt,
     tint,
     alpha,
-  }: {
-    zoom: number;
-    zoomExponent: number;
-    rotation: number;
-    warp: number;
-    warpAnimSpeed: number;
+  }: MilkdropProceduralFieldTransformVisual & {
     time: number;
     trebleAtt: number;
     tint: { r: number; g: number; b: number };
@@ -844,6 +895,12 @@ function syncProceduralFieldUniforms(
   material.uniforms.rotation.value = rotation;
   material.uniforms.warp.value = warp;
   material.uniforms.warpAnimSpeed.value = warpAnimSpeed;
+  material.uniforms.centerX.value = centerX;
+  material.uniforms.centerY.value = centerY;
+  material.uniforms.scaleX.value = scaleX;
+  material.uniforms.scaleY.value = scaleY;
+  material.uniforms.translateX.value = translateX;
+  material.uniforms.translateY.value = translateY;
   material.uniforms.time.value = time;
   material.uniforms.trebleAtt.value = trebleAtt;
   material.uniforms.tint.value.setRGB(tint.r, tint.g, tint.b);
@@ -857,7 +914,7 @@ function syncProceduralWaveObject(
   const next =
     object ??
     new Line(
-      getProceduralWaveGeometry(wave.samples.length),
+      createProceduralWaveObjectGeometry(wave.samples.length),
       createProceduralWaveMaterial(),
     );
   if (!(next.material instanceof ShaderMaterial)) {
@@ -867,8 +924,17 @@ function syncProceduralWaveObject(
     next.material = createProceduralWaveMaterial();
   }
 
-  if (next.geometry !== getProceduralWaveGeometry(wave.samples.length)) {
-    next.geometry = getProceduralWaveGeometry(wave.samples.length);
+  const sampleTAttribute = next.geometry.getAttribute('sampleT');
+  if (
+    !(
+      sampleTAttribute instanceof Float32BufferAttribute &&
+      sampleTAttribute.array.length === wave.samples.length
+    )
+  ) {
+    if (!isSharedGeometry(next.geometry)) {
+      disposeGeometry(next.geometry);
+    }
+    next.geometry = createProceduralWaveObjectGeometry(wave.samples.length);
   }
 
   const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
@@ -923,7 +989,7 @@ function syncProceduralCustomWaveObject(
   const next =
     object ??
     new Line(
-      getProceduralWaveGeometry(wave.samples.length),
+      createProceduralWaveObjectGeometry(wave.samples.length),
       createProceduralCustomWaveMaterial(),
     );
   if (!(next.material instanceof ShaderMaterial)) {
@@ -933,8 +999,17 @@ function syncProceduralCustomWaveObject(
     next.material = createProceduralCustomWaveMaterial();
   }
 
-  if (next.geometry !== getProceduralWaveGeometry(wave.samples.length)) {
-    next.geometry = getProceduralWaveGeometry(wave.samples.length);
+  const sampleTAttribute = next.geometry.getAttribute('sampleT');
+  if (
+    !(
+      sampleTAttribute instanceof Float32BufferAttribute &&
+      sampleTAttribute.array.length === wave.samples.length
+    )
+  ) {
+    if (!isSharedGeometry(next.geometry)) {
+      disposeGeometry(next.geometry);
+    }
+    next.geometry = createProceduralWaveObjectGeometry(wave.samples.length);
   }
 
   const sampleValueAttribute = next.geometry.getAttribute('sampleValue');
@@ -1798,6 +1873,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly blendBorderGroup = markAlwaysOnscreen(new Group());
   private readonly blendMotionVectorGroup = markAlwaysOnscreen(new Group());
   private readonly feedback: MilkdropFeedbackManager | null;
+  private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
 
   constructor({
     scene,
@@ -1862,7 +1938,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
   }
 
-  setPreset(_preset: MilkdropCompiledPreset) {}
+  setPreset(preset: MilkdropCompiledPreset) {
+    this.webgpuDescriptorPlan =
+      this.backend === 'webgpu'
+        ? preset.ir.compatibility.gpuDescriptorPlans.webgpu
+        : null;
+  }
 
   assessSupport(preset: MilkdropCompiledPreset) {
     return preset.ir.compatibility.backends[this.backend];
@@ -2031,7 +2112,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     signals: MilkdropRenderPayload['frameState']['signals'],
   ) {
     const proceduralMesh =
-      this.backend === 'webgpu' ? gpuGeometry.meshField : null;
+      this.backend === 'webgpu' &&
+      this.webgpuDescriptorPlan?.proceduralMesh !== null
+        ? gpuGeometry.meshField
+        : null;
     if (proceduralMesh) {
       if (!(this.meshLines.material instanceof ShaderMaterial)) {
         disposeMaterial(this.meshLines.material);
@@ -2041,11 +2125,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         proceduralMesh.density,
       );
       syncProceduralFieldUniforms(this.meshLines.material as ShaderMaterial, {
-        zoom: proceduralMesh.zoom,
-        zoomExponent: proceduralMesh.zoomExponent,
-        rotation: proceduralMesh.rotation,
-        warp: proceduralMesh.warp,
-        warpAnimSpeed: proceduralMesh.warpAnimSpeed,
+        ...proceduralMesh,
         time: signals.time,
         trebleAtt: signals.trebleAtt,
         tint: mesh.color,
@@ -2075,7 +2155,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     alphaMultiplier = 1,
   ) {
     const proceduralField =
-      this.backend === 'webgpu' ? payload.gpuGeometry.motionVectorField : null;
+      this.backend === 'webgpu' &&
+      this.webgpuDescriptorPlan?.proceduralMesh?.supportsMotionVectors
+        ? payload.gpuGeometry.motionVectorField
+        : null;
     if (proceduralField) {
       clearGroup(this.motionVectorCpuGroup);
       this.proceduralMotionVectors.visible = true;
@@ -2091,11 +2174,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       syncProceduralFieldUniforms(
         this.proceduralMotionVectors.material as ShaderMaterial,
         {
-          zoom: proceduralField.zoom,
-          zoomExponent: proceduralField.zoomExponent,
-          rotation: proceduralField.rotation,
-          warp: proceduralField.warp,
-          warpAnimSpeed: proceduralField.warpAnimSpeed,
+          ...proceduralField,
           time: payload.signals.time,
           trebleAtt: payload.signals.trebleAtt,
           tint: {
@@ -2104,10 +2183,25 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             b: Math.min(Math.max(payload.variables.mv_b ?? 1, 0), 1),
           },
           alpha:
-            Math.min(Math.max(payload.variables.mv_a ?? 0.35, 0.02), 1) *
-            alphaMultiplier,
+            Math.min(
+              Math.max(
+                payload.variables.mv_a ?? 0.35,
+                proceduralField.legacyControls ? 0 : 0.02,
+              ),
+              1,
+            ) * alphaMultiplier,
         },
       );
+      const proceduralMaterial = this.proceduralMotionVectors
+        .material as ShaderMaterial;
+      proceduralMaterial.uniforms.sourceOffsetX.value =
+        proceduralField.sourceOffsetX;
+      proceduralMaterial.uniforms.sourceOffsetY.value =
+        proceduralField.sourceOffsetY;
+      proceduralMaterial.uniforms.explicitLength.value =
+        proceduralField.explicitLength;
+      proceduralMaterial.uniforms.legacyControls.value =
+        proceduralField.legacyControls ? 1 : 0;
       return;
     }
 
@@ -2124,15 +2218,23 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   ): MilkdropFeedbackCompositeState {
     const controls = frameState.post.shaderControls;
     const shaderPrograms = frameState.post.shaderPrograms;
+    const plannedShaderExecution =
+      this.backend === 'webgpu'
+        ? this.webgpuDescriptorPlan?.feedback?.shaderExecution
+        : null;
     const usesDirectShaderPrograms =
-      (shaderPrograms.warp?.execution.supportedBackends.includes(
-        this.backend,
-      ) ??
-        false) ||
-      (shaderPrograms.comp?.execution.supportedBackends.includes(
-        this.backend,
-      ) ??
-        false);
+      plannedShaderExecution === 'direct'
+        ? true
+        : plannedShaderExecution === 'controls'
+          ? false
+          : (shaderPrograms.warp?.execution.supportedBackends.includes(
+              this.backend,
+            ) ??
+              false) ||
+            (shaderPrograms.comp?.execution.supportedBackends.includes(
+              this.backend,
+            ) ??
+              false);
     return {
       shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
       shaderPrograms,
@@ -2227,7 +2329,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.signals,
     );
 
-    if (this.backend === 'webgpu' && payload.frameState.gpuGeometry.mainWave) {
+    const proceduralWavePlans =
+      this.webgpuDescriptorPlan?.proceduralWaves ?? [];
+    const canUseProceduralMainWave =
+      this.backend === 'webgpu' &&
+      proceduralWavePlans.some((plan) => plan.target === 'main-wave');
+    const canUseProceduralCustomWaves =
+      this.backend === 'webgpu' &&
+      proceduralWavePlans.some((plan) => plan.target === 'custom-wave');
+    const canUseProceduralTrailWaves =
+      this.backend === 'webgpu' &&
+      proceduralWavePlans.some((plan) => plan.target === 'trail-waves');
+
+    if (canUseProceduralMainWave && payload.frameState.gpuGeometry.mainWave) {
       this.renderProceduralWaveGroup(this.mainWaveGroup, [
         payload.frameState.gpuGeometry.mainWave,
       ]);
@@ -2235,7 +2349,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.renderWaveGroup(this.mainWaveGroup, [payload.frameState.mainWave]);
     }
     if (
-      this.backend === 'webgpu' &&
+      canUseProceduralCustomWaves &&
       payload.frameState.gpuGeometry.customWaves.length > 0
     ) {
       this.renderProceduralCustomWaveGroup(
@@ -2249,7 +2363,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
     }
     if (
-      this.backend === 'webgpu' &&
+      canUseProceduralTrailWaves &&
       payload.frameState.gpuGeometry.trailWaves.length > 0
     ) {
       this.renderProceduralWaveGroup(
@@ -2334,10 +2448,11 @@ export function createMilkdropRendererAdapterCore({
   camera,
   renderer,
   backend,
+  preset,
   behavior,
   createFeedbackManager,
 }: MilkdropRendererAdapterConfig) {
-  return new ThreeMilkdropAdapter({
+  const adapter = new ThreeMilkdropAdapter({
     scene,
     camera,
     renderer: renderer ?? null,
@@ -2349,6 +2464,10 @@ export function createMilkdropRendererAdapterCore({
         : WEBGL_MILKDROP_BACKEND_BEHAVIOR),
     createFeedbackManager: createFeedbackManager ?? null,
   });
+  if (preset) {
+    adapter.setPreset(preset);
+  }
+  return adapter;
 }
 
 export const createMilkdropRendererAdapter = createMilkdropRendererAdapterCore;

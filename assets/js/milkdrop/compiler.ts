@@ -39,12 +39,16 @@ import type {
   MilkdropExtractedShaderSampleMetadata,
   MilkdropFeatureAnalysis,
   MilkdropFeatureKey,
+  MilkdropFeedbackPostEffectDescriptorPlan,
   MilkdropFidelityClass,
+  MilkdropGpuDescriptorUnsupportedMarker,
   MilkdropParityReport,
   MilkdropPresetAST,
   MilkdropPresetField,
   MilkdropPresetIR,
   MilkdropPresetSource,
+  MilkdropProceduralMeshDescriptorPlan,
+  MilkdropProceduralWaveDescriptorPlan,
   MilkdropProgramBlock,
   MilkdropRenderBackend,
   MilkdropShaderControlExpressions,
@@ -58,6 +62,7 @@ import type {
   MilkdropShaderTextureSampler,
   MilkdropShapeDefinition,
   MilkdropWaveDefinition,
+  MilkdropWebGpuDescriptorPlan,
 } from './types';
 
 const MAX_CUSTOM_WAVES = 32;
@@ -5345,6 +5350,141 @@ function buildBackendSupport({
   };
 }
 
+function buildWebGpuDescriptorPlan({
+  featureAnalysis,
+  webgpu,
+  programs,
+  customWaves,
+  post,
+}: {
+  featureAnalysis: MilkdropFeatureAnalysis;
+  webgpu: MilkdropBackendSupport;
+  programs: Pick<MilkdropPresetIR['programs'], 'perPixel'>;
+  customWaves: MilkdropWaveDefinition[];
+  post: Pick<
+    MilkdropPresetIR['post'],
+    | 'feedbackTexture'
+    | 'videoEchoEnabled'
+    | 'brighten'
+    | 'darken'
+    | 'solarize'
+    | 'invert'
+    | 'shaderPrograms'
+  >;
+}): MilkdropWebGpuDescriptorPlan {
+  const unsupported = webgpu.evidence
+    .filter(
+      (
+        entry,
+      ): entry is MilkdropBackendSupportEvidence & {
+        feature: MilkdropCompatibilityFeatureKey;
+      } => entry.status === 'unsupported' && Boolean(entry.feature),
+    )
+    .map(
+      (entry) =>
+        ({
+          kind: 'unsupported-feature',
+          feature: entry.feature,
+          reason: entry.message,
+          recommendedFallback: 'webgl',
+        }) satisfies MilkdropGpuDescriptorUnsupportedMarker,
+    )
+    .filter(
+      (entry, index, entries) =>
+        entries.findIndex(
+          (candidate) =>
+            candidate.feature === entry.feature &&
+            candidate.reason === entry.reason,
+        ) === index,
+    );
+
+  if (unsupported.length > 0) {
+    return {
+      routing: 'fallback-webgl',
+      proceduralWaves: [],
+      proceduralMesh: null,
+      feedback: null,
+      unsupported,
+    };
+  }
+
+  const proceduralWaves: MilkdropProceduralWaveDescriptorPlan[] = [
+    {
+      kind: 'procedural-wave',
+      target: 'main-wave',
+      slotIndex: null,
+      sampleSource: 'waveform',
+    },
+    {
+      kind: 'procedural-wave',
+      target: 'trail-waves',
+      slotIndex: null,
+      sampleSource: 'waveform',
+    },
+    ...customWaves
+      .filter((wave) => wave.programs.perPoint.statements.length === 0)
+      .map(
+        (wave) =>
+          ({
+            kind: 'procedural-wave',
+            target: 'custom-wave',
+            slotIndex: wave.index,
+            sampleSource:
+              (wave.fields.spectrum ?? 0) >= 0.5 ? 'spectrum' : 'waveform',
+          }) satisfies MilkdropProceduralWaveDescriptorPlan,
+      ),
+  ];
+
+  const proceduralMesh: MilkdropProceduralMeshDescriptorPlan | null =
+    programs.perPixel.statements.length === 0
+      ? {
+          kind: 'procedural-mesh',
+          requiresPerPixelProgram: false,
+          supportsMotionVectors:
+            featureAnalysis.featuresUsed.includes('motion-vectors'),
+        }
+      : null;
+
+  const feedbackUsesShaderPrograms =
+    post.shaderPrograms.warp !== null || post.shaderPrograms.comp !== null;
+  const feedbackUsesPostEffects =
+    post.brighten || post.darken || post.solarize || post.invert;
+  const feedback: MilkdropFeedbackPostEffectDescriptorPlan | null =
+    post.videoEchoEnabled ||
+    post.feedbackTexture ||
+    feedbackUsesShaderPrograms ||
+    feedbackUsesPostEffects
+      ? {
+          kind: 'feedback-post-effect',
+          shaderExecution:
+            featureAnalysis.shaderTextExecution.webgpu === 'direct'
+              ? 'direct'
+              : featureAnalysis.shaderTextExecution.webgpu === 'none'
+                ? 'none'
+                : 'controls',
+          usesFeedbackTexture: post.feedbackTexture,
+          usesVideoEcho: post.videoEchoEnabled,
+          usesPostEffects: feedbackUsesPostEffects,
+          fallbackToLegacyFeedback: webgpu.evidence.some(
+            (entry) =>
+              entry.code === 'video-echo-gap' ||
+              entry.code === 'post-effects-gap',
+          ),
+        }
+      : null;
+
+  return {
+    routing:
+      proceduralWaves.length > 0 || proceduralMesh || feedback
+        ? 'descriptor-plan'
+        : 'generic-frame-payload',
+    proceduralWaves,
+    proceduralMesh,
+    feedback,
+    unsupported: [],
+  };
+}
+
 function createPresetSource(
   source: Partial<MilkdropPresetSource>,
   raw: string,
@@ -5827,8 +5967,43 @@ function createIR(
   const author = stringFields.author;
   const description = stringFields.description;
 
+  const post = {
+    brighten: (numericFields.brighten ?? 0) > 0.5,
+    darken: (numericFields.darken ?? 0) > 0.5,
+    solarize: (numericFields.solarize ?? 0) > 0.5,
+    invert: (numericFields.invert ?? 0) > 0.5,
+    shaderEnabled: (numericFields.shader ?? 1) > 0.5,
+    textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
+    feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
+    outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
+    innerBorderStyle: (numericFields.ib_border ?? 0) > 0.5,
+    shaderControls: mergedShaderControls.controls,
+    shaderControlExpressions: mergedShaderControls.expressions,
+    shaderPrograms: {
+      warp: warpShaderProgram,
+      comp: compShaderProgram,
+    },
+    gammaAdj: numericFields.gammaadj ?? 1,
+    videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
+    videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
+    videoEchoZoom: numericFields.video_echo_zoom ?? 1,
+    videoEchoOrientation: normalizeVideoEchoOrientation(
+      numericFields.video_echo_orientation ?? 0,
+    ),
+  };
+  const gpuDescriptorPlans = {
+    webgpu: buildWebGpuDescriptorPlan({
+      featureAnalysis,
+      webgpu: finalBackends.webgpu,
+      programs,
+      customWaves,
+      post,
+    }),
+  };
+
   const compatibility = {
     backends: finalBackends,
+    gpuDescriptorPlans,
     parity,
     featureAnalysis,
     warnings: [

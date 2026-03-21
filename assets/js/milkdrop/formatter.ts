@@ -56,6 +56,7 @@ const borderOrder = [
 const postOrder = [
   'brighten',
   'darken',
+  'darken_center',
   'solarize',
   'invert',
   'video_echo_enabled',
@@ -126,6 +127,9 @@ function canonicalKey(key: string) {
   }
   if (key === 'darken') {
     return 'bDarken';
+  }
+  if (key === 'darken_center') {
+    return 'bDarkenCenter';
   }
   if (key === 'solarize') {
     return 'bSolarize';
