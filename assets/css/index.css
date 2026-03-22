@@ -5580,7 +5580,6 @@ body[data-page="home"] .content {
   align-content: start;
 }
 
-.home-proof-grid,
 .home-lineage__grid,
 .home-source__grid {
   display: grid;
@@ -5588,7 +5587,6 @@ body[data-page="home"] .content {
 }
 
 .home-hero__focus,
-.home-proof-card,
 .home-lineage__card,
 .home-source__card,
 .home-showcase__frame,
@@ -5614,7 +5612,6 @@ body[data-page="home"] .content {
 }
 
 .home-hero__focus,
-.home-proof-card,
 .home-lineage__card,
 .home-source__card,
 .home-showcase__frame,
@@ -5625,16 +5622,7 @@ body[data-page="home"] .content {
   contain: layout style;
 }
 
-.home-proof-card__eyebrow {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
 .home-hero__aside h2,
-.home-proof-card h3,
 .home-lineage__card h3,
 .home-source__card h3 {
   margin: 0;
@@ -5642,7 +5630,6 @@ body[data-page="home"] .content {
 
 .home-hero__focus p,
 .home-hero__aside p,
-.home-proof-card p,
 .home-lineage__card p,
 .home-source__card p {
   margin: 0;
@@ -5672,10 +5659,6 @@ body[data-page="home"] .content {
   letter-spacing: 0.16em;
   font-size: 0.72rem;
   color: var(--text-muted);
-}
-
-.home-proof-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .home-showcase__frame {
@@ -5837,7 +5820,6 @@ body[data-page="home"] .content {
 
 @media (max-width: 1080px) {
   .home-hero__grid,
-  .home-proof-grid,
   .launch-intro__grid,
   .shell-header--launch .shell-panels,
   .home-lineage__grid,
@@ -5869,7 +5851,6 @@ body[data-page="home"] .content {
   }
 
   .home-hero__focus,
-  .home-proof-card,
   .home-lineage__card,
   .home-source__card,
   .home-showcase__frame,
@@ -6025,7 +6006,6 @@ section.intro,
 .callout-card,
 .webtoy-card,
 .home-stat,
-.home-proof-card,
 .home-route-card,
 .home-lineage__card,
 .home-source__card,
@@ -6088,7 +6068,6 @@ section.intro,
 .control-panel__label,
 .eyebrow,
 .home-stat__label,
-.home-proof-card__eyebrow,
 .home-route-card__label,
 .launch-check__step {
   font-family: var(--label-font);
@@ -6117,7 +6096,6 @@ section.intro,
 
 .eyebrow,
 .home-stat__label,
-.home-proof-card__eyebrow,
 .home-route-card__label,
 .launch-check__step,
 .control-panel__eyebrow,
@@ -6598,7 +6576,6 @@ section.intro,
 .callout-card,
 .webtoy-card,
 .home-stat,
-.home-proof-card,
 .home-route-card,
 .home-lineage__card,
 .home-source__card,
@@ -6623,7 +6600,6 @@ section.intro,
 }
 
 .top-nav,
-.home-proof-card,
 .home-lineage__card,
 .home-showcase__frame,
 .home-footer,
@@ -6634,7 +6610,6 @@ section.intro,
 }
 
 .top-nav::before,
-.home-proof-card::before,
 .home-lineage__card::before,
 .home-showcase__frame::before,
 .home-footer::before,
@@ -6988,12 +6963,10 @@ section.intro,
   border: 1px solid rgba(155, 177, 225, 0.24);
 }
 
-.home-proof-grid,
 .home-lineage__grid {
   gap: 1.15rem;
 }
 
-.home-proof-card,
 .home-lineage__card,
 .home-hero__focus,
 .home-hero__aside,
@@ -7002,13 +6975,11 @@ section.intro,
   padding-top: 1.55rem;
 }
 
-.home-proof-card h3,
 .home-lineage__card h3,
 .home-hero__aside h2 {
   color: #f5f8ff;
 }
 
-.home-proof-card__eyebrow,
 .home-hero__aside-label {
   color: rgba(222, 233, 255, 0.72);
 }
@@ -7084,7 +7055,6 @@ section.intro,
 }
 
 .top-nav,
-.home-proof-card,
 .home-lineage__card,
 .home-showcase__frame,
 .home-footer,
@@ -7104,7 +7074,6 @@ section.intro,
 }
 
 .top-nav::before,
-.home-proof-card::before,
 .home-lineage__card::before,
 .home-showcase__frame::before,
 .home-footer::before,
@@ -7390,7 +7359,6 @@ section.intro,
   margin-left: 1.25rem;
 }
 
-.home-proof-card,
 .home-lineage__card,
 .home-hero__focus,
 .home-hero__aside,
