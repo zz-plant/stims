@@ -51,6 +51,21 @@ export function createMilkdropPresetNavigationController({
       activeBackend: getActiveBackend(),
     });
 
+  const isBackendSelectable = (id: string, backend = getActiveBackend()) => {
+    const entry = catalogCoordinator
+      .getCatalogEntries()
+      .find((candidate) => candidate.id === id);
+    if (!entry) {
+      return true;
+    }
+    return entry.supports[backend].status !== 'unsupported';
+  };
+
+  const getFirstSelectablePresetId = (backend = getActiveBackend()) =>
+    catalogCoordinator.getCatalogEntries().find((entry) => {
+      return entry.supports[backend].status !== 'unsupported';
+    })?.id ?? null;
+
   const selectPreset = async (
     id: string,
     options: { recordHistory?: boolean } = {},
@@ -106,15 +121,26 @@ export function createMilkdropPresetNavigationController({
     if (!catalogEntries.length) {
       return;
     }
+    const selectableEntries = catalogEntries.filter(
+      (entry) => entry.supports[getActiveBackend()].status !== 'unsupported',
+    );
+    const navigationPool = selectableEntries.length
+      ? selectableEntries
+      : catalogEntries;
     const currentIndex = catalogEntries.findIndex(
       (entry) => entry.id === getActivePresetId(),
     );
+    const navigationIndex = navigationPool.findIndex(
+      (entry) => entry.id === getActivePresetId(),
+    );
     const nextIndex =
-      currentIndex >= 0
-        ? (currentIndex + direction + catalogEntries.length) %
-          catalogEntries.length
-        : 0;
-    const next = catalogEntries[nextIndex];
+      navigationIndex >= 0
+        ? (navigationIndex + direction + navigationPool.length) %
+          navigationPool.length
+        : currentIndex >= 0
+          ? Math.min(currentIndex, navigationPool.length - 1)
+          : 0;
+    const next = navigationPool[nextIndex];
     if (next) {
       await selectPreset(next.id);
     }
@@ -166,6 +192,8 @@ export function createMilkdropPresetNavigationController({
   };
 
   return {
+    getFirstSelectablePresetId,
+    isBackendSelectable,
     selectPreset,
     selectAdjacentPreset,
     selectRandomPreset,
