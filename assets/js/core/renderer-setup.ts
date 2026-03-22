@@ -17,6 +17,10 @@ import {
   getRendererFallbackReasonMessage,
   RENDERER_FALLBACK_REASON_CODES,
 } from './renderer-fallback-reasons.ts';
+import {
+  DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  resolveWithTimeout,
+} from './renderer-init-timeout.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
 import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
@@ -46,39 +50,25 @@ export type RendererInitConfig = {
   webgpuInitTimeoutMs?: number;
 };
 
-export const DEFAULT_WEBGPU_INIT_TIMEOUT_MS = 4000;
-
-export async function resolveWithTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  message: string,
-): Promise<T> {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-    return promise;
-  }
-
-  let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
-  const timeoutPromise = new Promise<T>((_, reject) => {
-    timeoutId = globalThis.setTimeout(() => {
-      reject(new Error(message));
-    }, timeoutMs);
-  });
-
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timeoutId !== null) {
-      globalThis.clearTimeout(timeoutId);
-    }
-  }
-}
-
 async function loadWebGPURenderer() {
   const module = await import('./webgpu-renderer.ts');
   return module.WebGPURenderer;
 }
 
 const isMobileUserAgent = isMobileDevice();
+
+function disposeRenderer(renderer: Partial<WebGLRenderer | WebGPURenderer>) {
+  if (
+    'setAnimationLoop' in renderer &&
+    typeof renderer.setAnimationLoop === 'function'
+  ) {
+    renderer.setAnimationLoop(null);
+  }
+
+  if ('dispose' in renderer && typeof renderer.dispose === 'function') {
+    renderer.dispose();
+  }
+}
 
 export async function initRenderer(
   canvas: HTMLCanvasElement,
@@ -167,7 +157,9 @@ export async function initRenderer(
     return finalize(renderer, 'webgl', null, null);
   };
 
-  const capabilities = await getRendererCapabilities();
+  const capabilities = await getRendererCapabilities({
+    webgpuInitTimeoutMs,
+  });
   const plan = deriveRendererPlan({
     capabilities,
     hasWebGL: true,
@@ -207,13 +199,26 @@ export async function initRenderer(
         device,
       });
       if ('init' in renderer && typeof renderer.init === 'function') {
+        const initPromise = renderer.init();
+        let rendererDisposed = false;
+        const disposeTimedOutRenderer = () => {
+          if (rendererDisposed) {
+            return;
+          }
+
+          rendererDisposed = true;
+          disposeRenderer(renderer);
+        };
+
         try {
           await resolveWithTimeout(
-            renderer.init(),
+            initPromise,
             webgpuInitTimeoutMs,
             'WebGPU renderer initialization timed out.',
           );
         } catch (error) {
+          disposeTimedOutRenderer();
+          void initPromise.then(disposeTimedOutRenderer).catch(() => {});
           return fallbackToWebGL(
             getRendererFallbackReasonMessage(
               RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,

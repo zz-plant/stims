@@ -1,7 +1,6 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
 import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
-
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {
   getRendererFallbackReasonMessage,
@@ -9,6 +8,10 @@ import {
   RENDERER_FALLBACK_REASON_CODES,
   type RendererFallbackReasonCode,
 } from './renderer-fallback-reasons.ts';
+import {
+  DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  resolveWithTimeout,
+} from './renderer-init-timeout.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
 
@@ -387,7 +390,11 @@ export function getRenderingSupport(): RenderingSupport {
   };
 }
 
-async function probeRendererCapabilities(): Promise<RendererCapabilities> {
+async function probeRendererCapabilities({
+  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+}: {
+  webgpuInitTimeoutMs?: number;
+} = {}): Promise<RendererCapabilities> {
   if (typeof navigator === 'undefined') {
     return cacheResult(
       buildFallback(
@@ -437,7 +444,11 @@ async function probeRendererCapabilities(): Promise<RendererCapabilities> {
 
     let device: GPUDevice | null = null;
     try {
-      device = await adapter.requestDevice();
+      device = await resolveWithTimeout(
+        adapter.requestDevice(),
+        webgpuInitTimeoutMs,
+        'WebGPU device initialization timed out.',
+      );
     } catch (error) {
       console.warn(
         'WebGPU device request failed. Falling back to WebGL.',
@@ -533,7 +544,13 @@ export function rememberRendererFallback(
   return result;
 }
 
-export async function getRendererCapabilities({ forceRetry = false } = {}) {
+export async function getRendererCapabilities({
+  forceRetry = false,
+  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+}: {
+  forceRetry?: boolean;
+  webgpuInitTimeoutMs?: number;
+} = {}) {
   const environmentKey = getEnvironmentKey();
   const environmentChanged = environmentKey !== cachedEnvironmentKey;
 
@@ -544,7 +561,7 @@ export async function getRendererCapabilities({ forceRetry = false } = {}) {
   cachedEnvironmentKey = environmentKey;
 
   if (!capabilitiesPromise) {
-    capabilitiesPromise = probeRendererCapabilities();
+    capabilitiesPromise = probeRendererCapabilities({ webgpuInitTimeoutMs });
   }
 
   return capabilitiesPromise;
