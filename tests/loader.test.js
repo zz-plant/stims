@@ -299,6 +299,34 @@ describe('loadToy', () => {
     ).not.toBeNull();
   });
 
+  test('suppresses the floating audio prompt when shell audio startup is already in flight', async () => {
+    document.body.innerHTML = `
+      <div id="toy-list"></div>
+      <div data-audio-controls>
+        <button type="button" data-loading aria-busy="true">Starting…</button>
+      </div>
+    `;
+
+    const { loader } = await buildLoader({
+      toys: [
+        {
+          slug: 'audio-toy',
+          title: 'Audio Toy',
+          module: './__mocks__/fake-global-audio-module.js',
+          type: 'module',
+          requiresWebGPU: false,
+        },
+      ],
+      manifestPath: (modulePath) => modulePath,
+    });
+
+    await loader.loadToy('audio-toy');
+
+    expect(
+      document.querySelector('#active-toy-container .control-panel'),
+    ).toBeNull();
+  });
+
   test('keeps the current toy mounted while the next toy is loading', async () => {
     const { loader } = await buildLoader({
       toys: [
