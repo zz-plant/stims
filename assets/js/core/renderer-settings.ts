@@ -47,6 +47,7 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   exposure: 1,
   antialias: true,
   alpha: false,
+  webgpuInitTimeoutMs: 4000,
 };
 
 export const DEFAULT_RENDERER_RUNTIME_CONTROLS: RendererRuntimeControls = {
@@ -135,6 +136,10 @@ export function resolveRendererSettings(
       defaults.antialias ??
       BASE_RENDERER_SETTINGS.antialias,
     alpha: options.alpha ?? defaults.alpha ?? BASE_RENDERER_SETTINGS.alpha,
+    webgpuInitTimeoutMs:
+      options.webgpuInitTimeoutMs ??
+      defaults.webgpuInitTimeoutMs ??
+      BASE_RENDERER_SETTINGS.webgpuInitTimeoutMs,
   };
 }
 
