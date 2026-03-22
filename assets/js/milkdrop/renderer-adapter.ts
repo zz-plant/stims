@@ -26,6 +26,28 @@ import {
   Vector3,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import {
+  createBorderObject as createBorderObjectHelper,
+  renderBorderGroup as renderBorderGroupHelper,
+  syncBorderObject as syncBorderObjectHelper,
+  updateBorderFill as updateBorderFillHelper,
+  updateBorderLine as updateBorderLineHelper,
+} from './renderer-helpers/border-renderer';
+import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
+import { renderMotionVectors as renderMotionVectorsHelper } from './renderer-helpers/motion-vector-renderer';
+import {
+  createShapeObject as createShapeObjectHelper,
+  renderShapeGroup as renderShapeGroupHelper,
+  syncShapeFillMaterial as syncShapeFillMaterialHelper,
+  syncShapeObject as syncShapeObjectHelper,
+  syncShapeOutline as syncShapeOutlineHelper,
+} from './renderer-helpers/shape-renderer';
+import {
+  renderLineVisualGroup as renderLineVisualGroupHelper,
+  renderWaveGroup as renderWaveGroupHelper,
+  syncLineObject as syncLineObjectHelper,
+  syncWaveObject as syncWaveObjectHelper,
+} from './renderer-helpers/wave-renderer';
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
@@ -2452,7 +2474,7 @@ function syncShapeOutline(
   setMaterialColor(material, shape.borderColor, opacity * alphaMultiplier);
 }
 
-function syncShapeObject(
+function _syncShapeObject(
   existing: Group | undefined,
   shape: MilkdropShapeVisual,
   behavior: MilkdropBackendBehavior,
@@ -2667,7 +2689,7 @@ function updateWaveObject(
   object.position.z = 0.24;
 }
 
-function syncWaveObject(
+function _syncWaveObject(
   existing: Line | LineLoop | Points | undefined,
   wave: MilkdropWaveVisual,
   behavior: MilkdropBackendBehavior,
@@ -2716,7 +2738,7 @@ function createLineObject(
   return object;
 }
 
-function syncLineObject(
+function _syncLineObject(
   existing: Line | undefined,
   {
     positions,
@@ -2813,7 +2835,7 @@ function updateBorderFill(
   object.position.z = 0.285;
 }
 
-function syncBorderObject(
+function _syncBorderObject(
   existing: Group | undefined,
   border: MilkdropBorderVisual,
   behavior: MilkdropBackendBehavior,
@@ -3058,36 +3080,28 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     waves: MilkdropWaveVisual[],
     alphaMultiplier = 1,
   ) {
-    if (
-      this.batcher?.renderWaveGroup?.(target, group, waves, alphaMultiplier)
-    ) {
-      clearGroup(group);
-      return;
-    }
-    for (let index = 0; index < waves.length; index += 1) {
-      const wave = waves[index] as MilkdropWaveVisual;
-      const existing = group.children[index] as
-        | Line
-        | LineLoop
-        | Points
-        | undefined;
-      const synced = syncWaveObject(
-        existing,
-        wave,
-        this.behavior,
-        alphaMultiplier,
-      );
-      if (!synced) {
-        return;
-      }
-      if (!existing) {
-        group.add(synced);
-      } else if (synced !== existing) {
-        group.remove(existing);
-        group.add(synced);
-      }
-    }
-    trimGroupChildren(group, waves.length);
+    return renderWaveGroupHelper({
+      target,
+      group,
+      waves,
+      alphaMultiplier,
+      batcher: this.batcher,
+      clearGroup,
+      trimGroupChildren,
+      syncWaveObject: (existing, wave, nextAlphaMultiplier) =>
+        syncWaveObjectHelper(
+          existing,
+          wave,
+          this.behavior,
+          {
+            disposeObject,
+            ensureGeometryPositions,
+            getWaveLinePositions,
+            setMaterialColor,
+          },
+          nextAlphaMultiplier,
+        ),
+    });
   }
 
   private renderProceduralWaveGroup(
@@ -3215,29 +3229,68 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier = 1,
   ) {
-    if (
-      this.batcher?.renderShapeGroup?.(target, group, shapes, alphaMultiplier)
-    ) {
-      clearGroup(group);
-      return;
-    }
-    for (let index = 0; index < shapes.length; index += 1) {
-      const shape = shapes[index] as MilkdropShapeVisual;
-      const existing = group.children[index] as Group | undefined;
-      const synced = syncShapeObject(
-        existing,
-        shape,
-        this.behavior,
-        alphaMultiplier,
-      );
-      if (!existing) {
-        group.add(synced);
-      } else if (synced !== existing) {
-        group.remove(existing);
-        group.add(synced);
-      }
-    }
-    trimGroupChildren(group, shapes.length);
+    return renderShapeGroupHelper({
+      target,
+      group,
+      shapes,
+      alphaMultiplier,
+      batcher: this.batcher,
+      clearGroup,
+      trimGroupChildren,
+      syncShapeObject: (existing, shape, nextAlphaMultiplier) =>
+        syncShapeObjectHelper(
+          existing,
+          shape,
+          this.behavior,
+          {
+            disposeObject,
+            createShapeObject: (nextShape, createAlphaMultiplier) =>
+              createShapeObjectHelper(
+                nextShape,
+                this.behavior,
+                {
+                  getShapeFillFallbackColor,
+                  getUnitPolygonFillGeometry,
+                  getUnitPolygonOutlineGeometry,
+                  getUnitPolygonClosedLineGeometry,
+                },
+                createAlphaMultiplier,
+              ),
+            syncShapeFillMaterial: (mesh, nextShape, syncAlphaMultiplier) =>
+              syncShapeFillMaterialHelper(
+                mesh,
+                nextShape,
+                this.behavior,
+                {
+                  disposeMaterial,
+                  getShapeFillFallbackColor,
+                  setMaterialColor,
+                },
+                syncAlphaMultiplier,
+              ),
+            syncShapeOutline: (
+              object,
+              nextShape,
+              syncAlphaMultiplier,
+              opacity,
+            ) =>
+              syncShapeOutlineHelper(
+                object,
+                nextShape,
+                this.behavior,
+                {
+                  getUnitPolygonOutlineGeometry,
+                  getUnitPolygonClosedLineGeometry,
+                  setMaterialColor,
+                },
+                syncAlphaMultiplier,
+                opacity,
+              ),
+            getUnitPolygonFillGeometry,
+          },
+          nextAlphaMultiplier,
+        ),
+    });
   }
 
   private renderBorderGroup(
@@ -3246,29 +3299,59 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     borders: MilkdropBorderVisual[],
     alphaMultiplier = 1,
   ) {
-    if (
-      this.batcher?.renderBorderGroup?.(target, group, borders, alphaMultiplier)
-    ) {
-      clearGroup(group);
-      return;
-    }
-    for (let index = 0; index < borders.length; index += 1) {
-      const border = borders[index] as MilkdropBorderVisual;
-      const existing = group.children[index] as Group | undefined;
-      const synced = syncBorderObject(
-        existing,
-        border,
-        this.behavior,
-        alphaMultiplier,
-      );
-      if (!existing) {
-        group.add(synced);
-      } else if (synced !== existing) {
-        group.remove(existing);
-        group.add(synced);
-      }
-    }
-    trimGroupChildren(group, borders.length);
+    return renderBorderGroupHelper({
+      target,
+      group,
+      borders,
+      alphaMultiplier,
+      batcher: this.batcher,
+      clearGroup,
+      trimGroupChildren,
+      syncBorderObject: (existing, border, nextAlphaMultiplier) =>
+        syncBorderObjectHelper(
+          existing,
+          border,
+          this.behavior,
+          {
+            disposeObject,
+            createBorderObject: (nextBorder, createAlphaMultiplier) =>
+              createBorderObjectHelper(
+                nextBorder,
+                this.behavior,
+                {
+                  ensureGeometryPositions,
+                  getBorderLinePositions,
+                  markAlwaysOnscreen,
+                  setMaterialColor,
+                },
+                createAlphaMultiplier,
+              ),
+            updateBorderFill: (object, nextBorder, syncAlphaMultiplier) =>
+              updateBorderFillHelper(
+                object,
+                nextBorder,
+                {
+                  isSharedGeometry,
+                  setMaterialColor,
+                },
+                syncAlphaMultiplier,
+              ),
+            updateBorderLine: (object, nextBorder, syncAlphaMultiplier) =>
+              updateBorderLineHelper(
+                object,
+                nextBorder,
+                this.behavior,
+                {
+                  ensureGeometryPositions,
+                  getBorderLinePositions,
+                  setMaterialColor,
+                },
+                syncAlphaMultiplier,
+              ),
+          },
+          nextAlphaMultiplier,
+        ),
+    });
   }
 
   private renderInterpolatedShapeGroup(
@@ -3303,43 +3386,22 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }>,
     alphaMultiplier = 1,
   ) {
-    if (
-      this.batcher?.renderLineVisualGroup?.(
-        target,
-        group,
-        lines,
-        alphaMultiplier,
-      )
-    ) {
-      clearGroup(group);
-      return;
-    }
-    for (let index = 0; index < lines.length; index += 1) {
-      const line = lines[index] as {
-        positions: number[];
-        color: MilkdropColor;
-        alpha: number;
-        additive?: boolean;
-      };
-      const existing = group.children[index] as Line | undefined;
-      const synced = syncLineObject(
-        existing,
-        {
-          positions: line.positions,
-          color: line.color,
-          alpha: line.alpha,
-          additive: line.additive ?? false,
-        },
-        alphaMultiplier,
-      );
-      if (!existing) {
-        group.add(synced);
-      } else if (synced !== existing) {
-        group.remove(existing);
-        group.add(synced);
-      }
-    }
-    trimGroupChildren(group, lines.length);
+    return renderLineVisualGroupHelper({
+      target,
+      group,
+      lines,
+      alphaMultiplier,
+      batcher: this.batcher,
+      clearGroup,
+      trimGroupChildren,
+      syncLineObject: (existing, line, nextAlphaMultiplier) =>
+        syncLineObjectHelper(existing, line, nextAlphaMultiplier, {
+          disposeObject,
+          ensureGeometryPositions,
+          markAlwaysOnscreen,
+          setMaterialColor,
+        }),
+    });
   }
 
   private renderMesh(
@@ -3410,200 +3472,41 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       LineBasicMaterial | ShaderMaterial
     > = this.proceduralMotionVectors,
   ) {
-    const proceduralField =
-      this.backend === 'webgpu' &&
-      this.webgpuDescriptorPlan?.proceduralMotionVectors !== null
-        ? payload.gpuGeometry.motionVectorField
-        : null;
-    if (proceduralField) {
-      clearGroup(cpuGroup);
-      proceduralObject.visible = true;
-      const fieldProgramSignature =
-        proceduralField.program?.signature ?? 'default';
-      if (
-        !(proceduralObject.material instanceof ShaderMaterial) ||
-        proceduralObject.material.userData.fieldProgramSignature !==
-          fieldProgramSignature
-      ) {
-        disposeMaterial(proceduralObject.material);
-        proceduralObject.material = createProceduralMotionVectorMaterial(
-          proceduralField.program,
-        );
-      }
-      proceduralObject.geometry = getProceduralMotionVectorGeometry(
-        proceduralField.countX,
-        proceduralField.countY,
-      );
-      syncProceduralFieldUniforms(proceduralObject.material as ShaderMaterial, {
-        ...proceduralField,
-        time: payload.signals.time,
-        trebleAtt: payload.signals.trebleAtt,
-        tint: {
-          r: Math.min(Math.max(payload.variables.mv_r ?? 1, 0), 1),
-          g: Math.min(Math.max(payload.variables.mv_g ?? 1, 0), 1),
-          b: Math.min(Math.max(payload.variables.mv_b ?? 1, 0), 1),
-        },
-        alpha:
-          Math.min(
-            Math.max(
-              payload.variables.mv_a ?? 0.35,
-              proceduralField.legacyControls ? 0 : 0.02,
-            ),
-            1,
-          ) * alphaMultiplier,
-      });
-      const proceduralMaterial = proceduralObject.material as ShaderMaterial;
-      syncProceduralInteractionUniforms(
-        proceduralMaterial,
-        payload.interaction?.motionVectors,
-      );
-      proceduralMaterial.uniforms.sourceOffsetX.value =
-        proceduralField.sourceOffsetX;
-      proceduralMaterial.uniforms.sourceOffsetY.value =
-        proceduralField.sourceOffsetY;
-      proceduralMaterial.uniforms.explicitLength.value =
-        proceduralField.explicitLength;
-      proceduralMaterial.uniforms.legacyControls.value =
-        proceduralField.legacyControls ? 1 : 0;
-      const previousField =
-        previousFrame?.gpuGeometry.motionVectorField ?? proceduralField;
-      syncPreviousProceduralFieldUniforms(proceduralMaterial, previousField);
-      proceduralMaterial.uniforms.previousSourceOffsetX.value =
-        previousField.sourceOffsetX;
-      proceduralMaterial.uniforms.previousSourceOffsetY.value =
-        previousField.sourceOffsetY;
-      proceduralMaterial.uniforms.previousExplicitLength.value =
-        previousField.explicitLength;
-      proceduralMaterial.uniforms.blendMix.value = blendMix;
-      return;
-    }
-
-    proceduralObject.visible = false;
-    this.renderLineVisualGroup(
-      'motion-vectors',
-      this.motionVectorCpuGroup,
-      payload.motionVectors,
+    return renderMotionVectorsHelper({
+      backend: this.backend,
+      webgpuDescriptorPlanProceduralMotionVectors:
+        this.webgpuDescriptorPlan?.proceduralMotionVectors ?? null,
+      payload,
       alphaMultiplier,
-    );
+      previousFrame,
+      blendMix,
+      cpuGroup,
+      proceduralObject,
+      clearGroup,
+      disposeMaterial,
+      createProceduralMotionVectorMaterial,
+      getProceduralMotionVectorGeometry,
+      syncProceduralFieldUniforms,
+      syncProceduralInteractionUniforms,
+      syncPreviousProceduralFieldUniforms,
+      renderLineVisualGroup: (target, group, lines, nextAlphaMultiplier) =>
+        this.renderLineVisualGroup(target, group, lines, nextAlphaMultiplier),
+    });
   }
 
   private buildFeedbackCompositeState(
     frameState: MilkdropRenderPayload['frameState'],
   ): MilkdropFeedbackCompositeState {
-    const controls = frameState.post.shaderControls;
-    const feedbackOptimizationEnabled =
-      this.backend !== 'webgpu' ||
-      this.webgpuOptimizationFlags.directFeedbackShaders;
-    const shaderPrograms = {
-      warp:
-        feedbackOptimizationEnabled &&
-        frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
-          this.backend,
-        )
-          ? frameState.post.shaderPrograms.warp
-          : null,
-      comp:
-        feedbackOptimizationEnabled &&
-        frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
-          this.backend,
-        )
-          ? frameState.post.shaderPrograms.comp
-          : null,
-    };
-    const plannedShaderExecution =
-      this.backend === 'webgpu'
-        ? feedbackOptimizationEnabled
-          ? this.webgpuDescriptorPlan?.feedback?.shaderExecution
-          : 'controls'
-        : null;
-    const usesDirectShaderPrograms =
-      plannedShaderExecution === 'direct'
-        ? true
-        : plannedShaderExecution === 'controls'
-          ? false
-          : shaderPrograms.warp !== null || shaderPrograms.comp !== null;
-    return {
-      shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
-      shaderPrograms,
-      mixAlpha: frameState.post.videoEchoEnabled
-        ? frameState.post.videoEchoAlpha + controls.mixAlpha
-        : controls.mixAlpha,
-      zoom: frameState.post.videoEchoEnabled
-        ? frameState.post.videoEchoZoom + controls.warpScale * 0.04
-        : 1,
-      videoEchoOrientation: frameState.post.videoEchoEnabled
-        ? frameState.post.videoEchoOrientation
-        : 0,
-      brighten: frameState.post.brighten ? 1 : 0,
-      darken: frameState.post.darken ? 1 : 0,
-      darkenCenter: frameState.post.darkenCenter ? 1 : 0,
-      solarize: frameState.post.solarize ? 1 : 0,
-      invert: frameState.post.invert ? 1 : 0,
-      gammaAdj: frameState.post.gammaAdj,
-      textureWrap: frameState.post.textureWrap ? 1 : 0,
-      feedbackTexture: frameState.post.feedbackTexture ? 1 : 0,
-      warpScale: controls.warpScale,
-      offsetX: controls.offsetX,
-      offsetY: controls.offsetY,
-      rotation: controls.rotation,
-      zoomMul: controls.zoom,
-      saturation: controls.saturation,
-      contrast: controls.contrast,
-      colorScale: {
-        r: controls.colorScale.r,
-        g: controls.colorScale.g,
-        b: controls.colorScale.b,
-      },
-      hueShift: controls.hueShift,
-      brightenBoost: controls.brightenBoost,
-      invertBoost: controls.invertBoost,
-      solarizeBoost: controls.solarizeBoost,
-      tint: {
-        r: controls.tint.r,
-        g: controls.tint.g,
-        b: controls.tint.b,
-      },
-      overlayTextureSource: getShaderTextureSourceId(
-        controls.textureLayer.source,
-      ),
-      overlayTextureMode: getShaderTextureBlendModeId(
-        controls.textureLayer.mode,
-      ),
-      overlayTextureSampleDimension: getShaderSampleDimensionId(
-        controls.textureLayer.sampleDimension,
-      ),
-      overlayTextureInvert: controls.textureLayer.inverted ? 1 : 0,
-      overlayTextureAmount: controls.textureLayer.amount,
-      overlayTextureScale: {
-        x: controls.textureLayer.scaleX,
-        y: controls.textureLayer.scaleY,
-      },
-      overlayTextureOffset: {
-        x: controls.textureLayer.offsetX,
-        y: controls.textureLayer.offsetY,
-      },
-      overlayTextureVolumeSliceZ: controls.textureLayer.volumeSliceZ ?? 0,
-      warpTextureSource: getShaderTextureSourceId(controls.warpTexture.source),
-      warpTextureSampleDimension: getShaderSampleDimensionId(
-        controls.warpTexture.sampleDimension,
-      ),
-      warpTextureAmount: controls.warpTexture.amount,
-      warpTextureScale: {
-        x: controls.warpTexture.scaleX,
-        y: controls.warpTexture.scaleY,
-      },
-      warpTextureOffset: {
-        x: controls.warpTexture.offsetX,
-        y: controls.warpTexture.offsetY,
-      },
-      warpTextureVolumeSliceZ: controls.warpTexture.volumeSliceZ ?? 0,
-      signalBass: frameState.signals.bass,
-      signalMid: frameState.signals.mid,
-      signalTreb: frameState.signals.treb,
-      signalBeat: frameState.signals.beatPulse,
-      signalEnergy: frameState.signals.weightedEnergy,
-      signalTime: frameState.signals.time,
-    };
+    return buildFeedbackCompositeStateHelper({
+      frameState,
+      backend: this.backend,
+      directFeedbackShaders: this.webgpuOptimizationFlags.directFeedbackShaders,
+      webgpuFeedbackPlanShaderExecution:
+        this.webgpuDescriptorPlan?.feedback?.shaderExecution,
+      getShaderTextureSourceId,
+      getShaderTextureBlendModeId,
+      getShaderSampleDimensionId,
+    });
   }
 
   render(payload: MilkdropRenderPayload) {

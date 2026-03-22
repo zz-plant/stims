@@ -26,19 +26,27 @@ import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
 import { upsertMilkdropFields } from './formatter';
 import { MilkdropOverlay } from './overlay';
-import {
-  consumeRequestedMilkdropOverlayTab,
-  MILKDROP_OVERLAY_TAB_EVENT,
-  type MilkdropOverlayTab,
-} from './overlay-intent';
-import {
-  consumeRequestedMilkdropPresetSelection,
-  MILKDROP_PRESET_SELECTION_EVENT,
-} from './preset-selection';
+import { consumeRequestedMilkdropOverlayTab } from './overlay-intent';
+import { consumeRequestedMilkdropPresetSelection } from './preset-selection';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
+import {
+  downloadPresetFile,
+  readUiPrefs,
+  writeUiPrefs,
+} from './runtime/persistence';
+import {
+  cloneBlendState,
+  estimateFrameBlendWorkload,
+  isEditablePreset,
+} from './runtime/session';
+import {
+  createMilkdropOverlayCallbacks,
+  installMilkdropRuntimeKeybindings,
+  installRequestedOverlayTabListener,
+  installRequestedPresetListener,
+} from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
-  MilkdropBlendState,
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -54,16 +62,6 @@ import {
   resolveMilkdropWebGpuOptimizationFlags,
   shouldFallbackMilkdropPresetToWebgl,
 } from './webgpu-optimization-flags';
-
-const UI_PREFS_KEY = 'stims:milkdrop:ui';
-
-type UiPrefs = {
-  autoplay?: boolean;
-  blendDuration?: number;
-  transitionMode?: 'blend' | 'cut';
-  lastPresetId?: string;
-  fallbackNotice?: string;
-};
 
 const DEFAULT_PRESET_SOURCE = `title=Signal Bloom
 author=Stims
@@ -617,76 +615,6 @@ function buildAgentMilkdropDebugSnapshot({
   };
 }
 
-function readUiPrefs(): UiPrefs {
-  try {
-    const raw = localStorage.getItem(UI_PREFS_KEY);
-    return raw ? (JSON.parse(raw) as UiPrefs) : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeUiPrefs(update: Partial<UiPrefs>) {
-  const next = {
-    ...readUiPrefs(),
-    ...update,
-  };
-  try {
-    localStorage.setItem(UI_PREFS_KEY, JSON.stringify(next));
-  } catch {
-    return;
-  }
-}
-
-function downloadPresetFile(name: string, contents: string) {
-  const blob = new Blob([contents], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `${name}.milk`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-function cloneBlendState(
-  frameState: MilkdropFrameState | null,
-): MilkdropBlendState | null {
-  if (!frameState) {
-    return null;
-  }
-  return {
-    mode: 'gpu',
-    previousFrame: frameState,
-    alpha: 1,
-  };
-}
-
-function estimateFrameBlendWorkload(frameState: MilkdropFrameState | null) {
-  if (!frameState) {
-    return 0;
-  }
-
-  const customWavePoints = frameState.customWaves.reduce(
-    (total, wave) => total + Math.floor(wave.positions.length / 3),
-    0,
-  );
-  const motionVectorSegments = frameState.motionVectors.length;
-
-  return (
-    Math.floor(frameState.mainWave.positions.length / 3) +
-    customWavePoints +
-    Math.floor(frameState.mesh.positions.length / 6) * 0.5 +
-    motionVectorSegments * 2 +
-    frameState.shapes.length * 10 +
-    frameState.borders.length * 12 +
-    frameState.trails.length * 8
-  );
-}
-
-function isEditablePreset(entry: MilkdropCatalogEntry | undefined | null) {
-  return entry?.origin === 'imported' || entry?.origin === 'user';
-}
-
 export function createMilkdropExperience({
   container,
   quality,
@@ -719,7 +647,7 @@ export function createMilkdropExperience({
   });
   const overlay = new MilkdropOverlay({
     host: container ?? document.body,
-    callbacks: {
+    callbacks: createMilkdropOverlayCallbacks({
       onSelectPreset: (id) => {
         void selectPreset(id);
       },
@@ -749,12 +677,8 @@ export function createMilkdropExperience({
       onGoBackPreset: () => {
         void goBackPreset();
       },
-      onNextPreset: () => {
-        void selectAdjacentPreset(1);
-      },
-      onPreviousPreset: () => {
-        void selectAdjacentPreset(-1);
-      },
+      onNextPreset: () => selectAdjacentPreset(1),
+      onPreviousPreset: () => selectAdjacentPreset(-1),
       onRandomize: () => {
         void selectRandomPreset();
       },
@@ -783,7 +707,7 @@ export function createMilkdropExperience({
       onInspectorFieldChange: (key, value) => {
         void session.updateField(key, value);
       },
-    },
+    }),
   });
 
   let runtime: ToyRuntimeInstance | null = null;
@@ -804,9 +728,9 @@ export function createMilkdropExperience({
   let selectionCursor = -1;
   let fallbackTriggered = false;
   let lastStatusMessage: string | null = null;
-  let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
-  let requestedPresetListener: ((event: Event) => void) | null = null;
-  let requestedOverlayTabListener: ((event: Event) => void) | null = null;
+  let disposeKeyboardShortcuts: (() => void) | null = null;
+  let disposeRequestedPresetListener: (() => void) | null = null;
+  let disposeRequestedOverlayTabListener: (() => void) | null = null;
   let catalogSyncPromise: Promise<void> | null = null;
   let catalogSyncFrameId: number | null = null;
   let lastInspectorOverlaySyncAt = 0;
@@ -1159,267 +1083,6 @@ export function createMilkdropExperience({
     downloadPresetFile(compiled.source.id, compiled.formattedSource);
   };
 
-  const installKeyboardShortcuts = () => {
-    if (keyboardHandler) {
-      return;
-    }
-    keyboardHandler = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (
-        target instanceof HTMLElement &&
-        (target.closest('.cm-editor') ||
-          /^(INPUT|TEXTAREA|SELECT)$/u.test(target.tagName))
-      ) {
-        return;
-      }
-
-      if (event.key === 'm' || event.key === 'M') {
-        overlay.toggleOpen();
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'Escape' && overlay.isOpen()) {
-        overlay.toggleOpen(false);
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'n') {
-        void selectAdjacentPreset(1);
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'p') {
-        void selectAdjacentPreset(-1);
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'r') {
-        void selectRandomPreset();
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'b' || event.key === 'Backspace') {
-        void goBackPreset();
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'h' || event.key === 'H') {
-        const nextMode = transitionMode === 'blend' ? 'cut' : 'blend';
-        setTransitionMode(nextMode);
-        setOverlayStatus(
-          nextMode === 'cut'
-            ? 'Transition mode: hard cut.'
-            : `Transition mode: blend (${blendDuration.toFixed(2)}s).`,
-        );
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'w' || event.key === 'W') {
-        void cycleWaveMode(event.shiftKey ? -1 : 1);
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'i') {
-        void nudgeNumericField({
-          key: 'zoom',
-          delta: 0.02,
-          min: 0.5,
-          max: 2.5,
-          label: 'Zoom',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'I') {
-        void nudgeNumericField({
-          key: 'zoom',
-          delta: -0.02,
-          min: 0.5,
-          max: 2.5,
-          label: 'Zoom',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'o') {
-        void nudgeNumericField({
-          key: 'warp',
-          delta: -0.01,
-          min: 0,
-          max: 1,
-          label: 'Warp',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'O') {
-        void nudgeNumericField({
-          key: 'warp',
-          delta: 0.01,
-          min: 0,
-          max: 1,
-          label: 'Warp',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'j') {
-        void nudgeNumericField({
-          key: 'wave_scale',
-          delta: -0.03,
-          min: 0.25,
-          max: 3,
-          label: 'Wave scale',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'J') {
-        void nudgeNumericField({
-          key: 'wave_scale',
-          delta: 0.03,
-          min: 0.25,
-          max: 3,
-          label: 'Wave scale',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'e') {
-        void nudgeNumericField({
-          key: 'wave_a',
-          delta: -0.04,
-          min: 0,
-          max: 1,
-          label: 'Wave alpha',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'E') {
-        void nudgeNumericField({
-          key: 'wave_a',
-          delta: 0.04,
-          min: 0,
-          max: 1,
-          label: 'Wave alpha',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'q') {
-        void nudgeNumericField({
-          key: 'video_echo_zoom',
-          delta: -0.01,
-          min: 0.85,
-          max: 1.3,
-          label: 'Video echo zoom',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'Q') {
-        void nudgeNumericField({
-          key: 'video_echo_zoom',
-          delta: 0.01,
-          min: 0.85,
-          max: 1.3,
-          label: 'Video echo zoom',
-          digits: 3,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === '<') {
-        void nudgeNumericField({
-          key: 'rot',
-          delta: -0.003,
-          min: -1,
-          max: 1,
-          label: 'Rotation',
-          digits: 4,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === '>') {
-        void nudgeNumericField({
-          key: 'rot',
-          delta: 0.003,
-          min: -1,
-          max: 1,
-          label: 'Rotation',
-          digits: 4,
-        });
-        event.preventDefault();
-        return;
-      }
-      if (event.key === 'f' && activePresetId) {
-        const entry = getActiveCatalogEntry();
-        if (!entry) {
-          return;
-        }
-        void catalogStore
-          .setFavorite(activePresetId, !entry.isFavorite)
-          .then(syncCatalog);
-        event.preventDefault();
-        return;
-      }
-      if (/^[1-5]$/u.test(event.key) && activePresetId) {
-        void catalogStore
-          .setRating(activePresetId, Number.parseInt(event.key, 10))
-          .then(syncCatalog);
-      }
-    };
-    document.addEventListener('keydown', keyboardHandler);
-  };
-
-  const installRequestedPresetListener = () => {
-    if (requestedPresetListener || typeof window === 'undefined') {
-      return;
-    }
-    requestedPresetListener = (event: Event) => {
-      const presetId = (
-        event as CustomEvent<{ presetId?: string }>
-      ).detail?.presetId?.trim();
-      if (!presetId) {
-        return;
-      }
-      void selectPreset(presetId);
-    };
-    window.addEventListener(
-      MILKDROP_PRESET_SELECTION_EVENT,
-      requestedPresetListener,
-    );
-  };
-
-  const installRequestedOverlayTabListener = () => {
-    if (requestedOverlayTabListener || typeof window === 'undefined') {
-      return;
-    }
-    requestedOverlayTabListener = (event: Event) => {
-      const tab = (event as CustomEvent<{ tab?: MilkdropOverlayTab }>).detail
-        ?.tab;
-      if (!tab) {
-        return;
-      }
-      overlay.openTab(tab);
-    };
-    window.addEventListener(
-      MILKDROP_OVERLAY_TAB_EVENT,
-      requestedOverlayTabListener,
-    );
-  };
-
   session.subscribe((state) => {
     overlay.setSessionState(state);
     const nextCompiled = state.activeCompiled;
@@ -1443,8 +1106,16 @@ export function createMilkdropExperience({
     void scheduleCatalogSync();
   });
 
-  installRequestedPresetListener();
-  installRequestedOverlayTabListener();
+  disposeRequestedPresetListener = installRequestedPresetListener(
+    (presetId) => {
+      void selectPreset(presetId);
+    },
+  );
+  disposeRequestedOverlayTabListener = installRequestedOverlayTabListener(
+    (tab) => {
+      overlay.openTab(tab);
+    },
+  );
   void scheduleCatalogSync().then(async () => {
     const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
     if (requestedOverlayTab) {
@@ -1486,7 +1157,40 @@ export function createMilkdropExperience({
 
     attachRuntime(nextRuntime: ToyRuntimeInstance) {
       runtime = nextRuntime;
-      installKeyboardShortcuts();
+      if (!disposeKeyboardShortcuts) {
+        disposeKeyboardShortcuts = installMilkdropRuntimeKeybindings({
+          overlay,
+          getActivePresetId: () => activePresetId,
+          getActiveCatalogEntry,
+          getTransitionMode: () => transitionMode,
+          getBlendDuration: () => blendDuration,
+          selectAdjacentPreset: (direction) => {
+            void selectAdjacentPreset(direction);
+          },
+          selectRandomPreset: () => {
+            void selectRandomPreset();
+          },
+          goBackPreset: () => {
+            void goBackPreset();
+          },
+          setTransitionMode,
+          setOverlayStatus,
+          cycleWaveMode: (direction) => {
+            void cycleWaveMode(direction);
+          },
+          nudgeNumericField: (args) => {
+            void nudgeNumericField(args);
+          },
+          toggleFavorite: (id) => {
+            void catalogStore
+              .setFavorite(id, !(getActiveCatalogEntry()?.isFavorite ?? false))
+              .then(syncCatalog);
+          },
+          setRating: (id, rating) => {
+            void catalogStore.setRating(id, rating).then(syncCatalog);
+          },
+        });
+      }
       nextRuntime.toy.rendererReady.then((handle) => {
         activeBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
         vm.setRenderBackend(activeBackend);
@@ -1675,24 +1379,12 @@ export function createMilkdropExperience({
       adaptiveQualityController = null;
       adaptiveQualityState = null;
       runtime = null;
-      if (keyboardHandler) {
-        document.removeEventListener('keydown', keyboardHandler);
-        keyboardHandler = null;
-      }
-      if (requestedPresetListener) {
-        window.removeEventListener(
-          MILKDROP_PRESET_SELECTION_EVENT,
-          requestedPresetListener,
-        );
-        requestedPresetListener = null;
-      }
-      if (requestedOverlayTabListener) {
-        window.removeEventListener(
-          MILKDROP_OVERLAY_TAB_EVENT,
-          requestedOverlayTabListener,
-        );
-        requestedOverlayTabListener = null;
-      }
+      disposeKeyboardShortcuts?.();
+      disposeKeyboardShortcuts = null;
+      disposeRequestedPresetListener?.();
+      disposeRequestedPresetListener = null;
+      disposeRequestedOverlayTabListener?.();
+      disposeRequestedOverlayTabListener = null;
       if (catalogSyncFrameId !== null) {
         window.cancelAnimationFrame(catalogSyncFrameId);
         catalogSyncFrameId = null;
