@@ -59,4 +59,59 @@ describe('toy audio prompt controller', () => {
     expect(options.preferDemoAudio).toBe(true);
     expect(options.starterTips).toEqual(['Try demo first']);
   });
+
+  test('suppresses the floating prompt while shell-managed audio startup is already pending', () => {
+    document.body.innerHTML = `
+      <div id="active-toy-container"></div>
+      <div data-audio-controls>
+        <button type="button" data-loading aria-busy="true">Starting…</button>
+      </div>
+    `;
+
+    const showAudioPrompt = mock();
+    const controller = createToyAudioPromptController({
+      view: { showAudioPrompt },
+    });
+
+    controller.maybeShowPrompt({
+      launchResult: {
+        instance: {},
+        audioStarterAvailable: true,
+        supportedSources: ['microphone', 'demo'],
+        startAudio: async () => {},
+      },
+      preferDemoAudio: false,
+      container: document.getElementById('active-toy-container'),
+      starterTips: ['Try mic first'],
+    });
+
+    expect(showAudioPrompt).not.toHaveBeenCalled();
+  });
+
+  test('hides the floating prompt when audio becomes active through shell-managed startup', async () => {
+    const showAudioPrompt = mock();
+    const controller = createToyAudioPromptController({
+      view: { showAudioPrompt },
+    });
+
+    controller.maybeShowPrompt({
+      launchResult: {
+        instance: {},
+        audioStarterAvailable: true,
+        supportedSources: ['microphone', 'demo'],
+        startAudio: async () => {},
+      },
+      preferDemoAudio: false,
+      container: document.getElementById('active-toy-container'),
+      starterTips: ['Try mic first'],
+    });
+
+    expect(showAudioPrompt).toHaveBeenCalledTimes(1);
+
+    document.body.dataset.audioActive = 'true';
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    expect(showAudioPrompt).toHaveBeenCalledTimes(2);
+    expect(showAudioPrompt.mock.calls[1]).toEqual([false]);
+  });
 });
