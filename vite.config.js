@@ -13,7 +13,6 @@ const toyEntries = Array.isArray(toysData) ? toysData : [];
 const htmlInputs = {
   index: path.resolve(rootDir, 'index.html'),
   milkdrop: path.resolve(rootDir, 'milkdrop/index.html'),
-  toy: path.resolve(rootDir, 'toy.html'),
 };
 const moduleInputs = Object.fromEntries(
   toyEntries
@@ -45,7 +44,7 @@ export default defineConfig({
     // without custom paths.
     manifest: true,
     rollupOptions: {
-      // Keep the toy entry exports intact so dynamic imports from the homepage
+      // Keep the visualizer entry exports intact so dynamic imports from the homepage
       // can find the `start` functions even when they look unused at build time.
       preserveEntrySignatures: 'strict',
       input: rollupInputs,

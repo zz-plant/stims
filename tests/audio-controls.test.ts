@@ -422,7 +422,7 @@ describe('audio controls primary emphasis', () => {
     ).toEqual({
       summary: 'Start with demo audio for the quickest start.',
       detail:
-        'Try Aurora starter once the toy opens. Then explore Q/E mood cycling.',
+        'Try Aurora starter once the visualizer opens. Then explore Q/E mood cycling.',
     });
   });
 

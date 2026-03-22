@@ -110,7 +110,7 @@ describe('quality preset subscriptions', () => {
     });
 
     expect(panel.getElement().textContent).toContain(
-      'Saved on this device and shared across toys.',
+      'Saved on this device and shared across Stims sessions.',
     );
     expect(panel.getElement().textContent).toContain(
       'What changes: pixel ratio',
@@ -128,7 +128,7 @@ describe('quality preset subscriptions', () => {
     });
 
     expect(panel.getElement().textContent).not.toContain(
-      'Saved on this device and shared across toys.',
+      'Saved on this device and shared across Stims sessions.',
     );
     expect(panel.getElement().textContent).not.toContain(
       'What changes: pixel ratio',
@@ -182,7 +182,7 @@ describe('quality preset subscriptions', () => {
     });
 
     expect(panel.getElement().textContent).toContain(
-      'Saved on this device for this toy profile.',
+      'Saved on this device for this visualizer profile.',
     );
   });
 

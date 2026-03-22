@@ -26,7 +26,9 @@ function createWindowStub(href = 'http://example.com/library') {
 describe('router utilities', () => {
   test('returns canonical hrefs for mapped toy routes', () => {
     expect(getToyRouteHref('milkdrop')).toBe('/milkdrop/');
-    expect(getToyRouteHref('custom-slug')).toBe('toy.html?toy=custom-slug');
+    expect(getToyRouteHref('custom-slug')).toBe(
+      '/milkdrop/?experience=custom-slug',
+    );
   });
 
   test('pushes toy state and resets to library', () => {
@@ -35,7 +37,7 @@ describe('router utilities', () => {
     );
     const router = createRouter({
       windowRef: () => windowStub,
-      queryParam: 'toy',
+      queryParam: 'experience',
     });
 
     router.pushToyState('milkdrop');
@@ -54,7 +56,7 @@ describe('router utilities', () => {
     const originalHref = location.href;
     const router = createRouter({
       windowRef: () => windowStub,
-      queryParam: 'toy',
+      queryParam: 'experience',
     });
 
     let observedRoute = null;
@@ -65,7 +67,7 @@ describe('router utilities', () => {
     windowStub.history.pushState({}, '', 'http://example.com/milkdrop/');
     listeners.get('popstate')?.();
 
-    expect(observedRoute).toEqual({ view: 'toy', slug: 'milkdrop' });
+    expect(observedRoute).toEqual({ view: 'experience', slug: 'milkdrop' });
     expect(router.getCurrentSlug()).toBe('milkdrop');
 
     windowStub.history.pushState({}, '', originalHref);

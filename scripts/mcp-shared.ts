@@ -511,7 +511,7 @@ function registerTools(server: McpServer) {
         );
       }
 
-      const url = `http://localhost:${port}/toy.html?toy=${encodeURIComponent(slug)}`;
+      const url = `http://localhost:${port}/milkdrop/?experience=${encodeURIComponent(slug)}`;
 
       const instructions = [
         `# Launching ${toy.title}`,
@@ -775,7 +775,7 @@ function normalizeToys(data: unknown): ToyMetadata[] {
         module,
         type,
         allowWebGLFallback,
-        url: `toy.html?toy=${encodeURIComponent(slug)}`,
+        url: `milkdrop/?experience=${encodeURIComponent(slug)}`,
       };
     })
     .filter((entry): entry is ToyMetadata => Boolean(entry));
