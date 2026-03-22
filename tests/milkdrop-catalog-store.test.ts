@@ -15,7 +15,7 @@ describe('milkdrop catalog store', () => {
     mock.restore();
   });
 
-  test('ignores optimistic catalog metadata when compiled analysis is weaker', async () => {
+  test('ignores catalog fidelity metadata when support flags do not match compiled analysis', async () => {
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/milkdrop-presets/catalog.json')) {
@@ -24,26 +24,26 @@ describe('milkdrop catalog store', () => {
           json: async () => ({
             presets: [
               {
-                id: 'optimistic-pack',
-                title: 'Optimistic Pack',
+                id: 'mismatch-pack',
+                title: 'Mismatch Pack',
                 author: 'Curated',
-                file: '/milkdrop-presets/optimistic-pack.milk',
+                file: '/milkdrop-presets/mismatch-pack.milk',
                 tags: ['curated'],
                 order: 1,
-                expectedFidelityClass: 'exact',
-                visualEvidenceTier: 'visual',
-                supports: { webgl: true, webgpu: true },
+                expectedFidelityClass: 'fallback',
+                visualEvidenceTier: 'compile',
+                supports: { webgl: true, webgpu: false },
               },
             ],
           }),
         };
       }
 
-      if (url.endsWith('/milkdrop-presets/optimistic-pack.milk')) {
+      if (url.endsWith('/milkdrop-presets/mismatch-pack.milk')) {
         return {
           ok: true,
           text: async () =>
-            'title=Optimistic Pack\nvideo_echo=1\nwavecode_0_enabled=1\n',
+            'title=Mismatch Pack\nvideo_echo=1\nwavecode_0_enabled=1\n',
         };
       }
 
@@ -51,12 +51,12 @@ describe('milkdrop catalog store', () => {
     }) as unknown as typeof fetch;
 
     const store = createMilkdropCatalogStore({
-      dbName: 'milkdrop-catalog-store-optimistic-test',
+      dbName: 'milkdrop-catalog-store-support-mismatch-test',
       catalogUrl: '/milkdrop-presets/catalog.json',
     });
 
     const entries = await store.listPresets();
-    const bundled = entries.find((entry) => entry.id === 'optimistic-pack');
+    const bundled = entries.find((entry) => entry.id === 'mismatch-pack');
 
     expect(bundled).toBeDefined();
     expect(bundled?.supports.webgl.status).toBe('supported');
@@ -154,6 +154,38 @@ describe('milkdrop catalog store', () => {
     expect(history[0]).toBe('local-shader');
   });
 
+  test('falls back to memory storage when indexedDB is unavailable', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return {
+          ok: true,
+          json: async () => ({ presets: [] }),
+        };
+      }
+
+      return { ok: false };
+    }) as unknown as typeof fetch;
+
+    const store = createMilkdropCatalogStore({
+      dbName: 'milkdrop-catalog-store-memory-test',
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+
+    await store.savePreset({
+      id: 'memory-only',
+      title: 'Memory Only',
+      raw: 'title=Memory Only\n',
+      origin: 'user',
+    });
+
+    const saved = await store.getPresetSource('memory-only');
+    expect(saved?.id).toBe('memory-only');
+
+    const entries = await store.listPresets();
+    expect(entries.map((entry) => entry.id)).toContain('memory-only');
+  });
+
   test('falls back to memory storage when indexedDB open stalls', async () => {
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -183,13 +215,27 @@ describe('milkdrop catalog store', () => {
     expect(Date.now() - startedAt).toBeLessThan(2000);
 
     await store.savePreset({
-      id: 'memory-only',
-      title: 'Memory Only',
-      raw: 'title=Memory Only\n',
+      id: 'memory-only-stalled',
+      title: 'Memory Only Stalled',
+      raw: 'title=Memory Only Stalled\n',
       origin: 'user',
     });
 
-    const saved = await store.getPresetSource('memory-only');
-    expect(saved?.id).toBe('memory-only');
+    const saved = await store.getPresetSource('memory-only-stalled');
+    expect(saved?.id).toBe('memory-only-stalled');
+  });
+
+  test('returns an empty bundled catalog when the catalog fetch fails', async () => {
+    globalThis.fetch = mock(async () => {
+      throw new Error('network down');
+    }) as unknown as typeof fetch;
+
+    const store = createMilkdropCatalogStore({
+      dbName: 'milkdrop-catalog-store-fetch-failure-test',
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+
+    await expect(store.listPresets()).resolves.toEqual([]);
+    await expect(store.getPresetSource('missing-bundled')).resolves.toBeNull();
   });
 });
