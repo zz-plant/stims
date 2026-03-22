@@ -272,7 +272,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       consoleErrors.push(err.message);
     });
 
-    const url = `http://localhost:${normalizedOptions.port}/toy.html?toy=${encodeURIComponent(options.slug)}&agent=true`;
+    const url = `http://localhost:${normalizedOptions.port}/milkdrop/?experience=${encodeURIComponent(options.slug)}&agent=true`;
     console.log(`Navigating to ${url}...`);
 
     await page.goto(url);

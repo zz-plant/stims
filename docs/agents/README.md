@@ -28,7 +28,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 ## Fast repo map
 
-- `toy.html` — primary app entrypoint for the flagship visualizer.
+- `milkdrop/index.html` — primary app entrypoint for the flagship visualizer.
 - `assets/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
 - `assets/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
 - `assets/data/toys.json` — loader manifest source for the shipped MilkDrop entry.

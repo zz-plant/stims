@@ -116,7 +116,10 @@ describe('toy page query-driven startup', () => {
 
     bootToyPage({
       router: {
-        getCurrentRoute: () => ({ view: 'toy' as const, slug: 'milkdrop' }),
+        getCurrentRoute: () => ({
+          view: 'experience' as const,
+          slug: 'milkdrop',
+        }),
         getLibraryHref: () => '/',
       },
       loadFromQuery: mock(async () => {}),
@@ -177,7 +180,10 @@ describe('toy page query-driven startup', () => {
 
     bootToyPage({
       router: {
-        getCurrentRoute: () => ({ view: 'toy' as const, slug: 'milkdrop' }),
+        getCurrentRoute: () => ({
+          view: 'experience' as const,
+          slug: 'milkdrop',
+        }),
         getLibraryHref: () => '/',
       },
       loadFromQuery: mock(async () => {}),

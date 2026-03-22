@@ -121,7 +121,7 @@ integrationTest(
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?toy=milkdrop`);
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/milkdrop/`);
       await mobile.page.locator('#use-demo-audio').click();
       await mobile.page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
