@@ -16,6 +16,38 @@ type LoaderView = {
 
 export function createToyAudioPromptController({ view }: { view: LoaderView }) {
   const hasActiveAudio = () => document.body.dataset.audioActive === 'true';
+  const hasShellManagedAudioStartupInFlight = () =>
+    document.querySelector(
+      '[data-audio-controls] [data-loading], [data-audio-controls] [aria-busy="true"]',
+    ) !== null;
+
+  let promptVisibilityTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const stopWatchingPromptVisibility = () => {
+    if (promptVisibilityTimer !== null) {
+      clearTimeout(promptVisibilityTimer);
+      promptVisibilityTimer = null;
+    }
+  };
+
+  const hidePrompt = () => {
+    view.showAudioPrompt(false);
+    stopWatchingPromptVisibility();
+  };
+
+  const watchForExternalAudioStart = () => {
+    stopWatchingPromptVisibility();
+
+    const checkPromptVisibility = () => {
+      if (hasActiveAudio()) {
+        hidePrompt();
+        return;
+      }
+      promptVisibilityTimer = setTimeout(checkPromptVisibility, 16);
+    };
+
+    promptVisibilityTimer = setTimeout(checkPromptVisibility, 16);
+  };
 
   const maybeShowPrompt = ({
     launchResult,
@@ -31,12 +63,14 @@ export function createToyAudioPromptController({ view }: { view: LoaderView }) {
     if (
       !launchResult.audioStarterAvailable ||
       !launchResult.startAudio ||
-      hasActiveAudio()
+      hasActiveAudio() ||
+      hasShellManagedAudioStartupInFlight()
     ) {
       return;
     }
 
     let lastAudioSource: 'microphone' | 'demo' = 'microphone';
+    watchForExternalAudioStart();
     view.showAudioPrompt(true, {
       preferDemoAudio,
       starterTips,
@@ -49,7 +83,7 @@ export function createToyAudioPromptController({ view }: { view: LoaderView }) {
         await launchResult.startAudio?.({ source: 'demo' });
       },
       onSuccess: () => {
-        view.showAudioPrompt(false);
+        hidePrompt();
         setAudioActive(true, lastAudioSource);
       },
     });
