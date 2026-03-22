@@ -261,6 +261,8 @@ export function resetRendererPool({
   if (dispose) {
     rendererPool.splice(0, rendererPool.length);
   }
+  activeQuality = getActiveQualityPreset();
+  activeRenderPreferences = getActiveRenderPreferences();
   resetRendererRuntimeControls();
   runtimeControlSubscribers.clear();
   rendererCapabilitiesInitializer.reset();

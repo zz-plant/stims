@@ -254,7 +254,7 @@ test('renders canonical launch hrefs for mapped toys', async () => {
 
   const listMarkup = document.getElementById('toy-list')?.innerHTML ?? '';
   expect(listMarkup).toContain('/milkdrop/');
-  expect(listMarkup).not.toContain('toy.html?toy=milkdrop');
+  expect(listMarkup).not.toContain('milkdrop/?experience=milkdrop');
 });
 
 test('reset view clears active search, filters, and sort chips from the sticky rail', async () => {

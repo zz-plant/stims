@@ -28,7 +28,6 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
-- `toy.html` remains available as a legacy alias when you need to verify backwards compatibility.
 - `index.html` boots the MilkDrop visualizer in place on load, using the same shared loader/runtime as the dedicated launch route.
 - Presets are part of one visualizer product, not separate first-class toys.
 

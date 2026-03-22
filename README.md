@@ -14,7 +14,7 @@ Quick links:
 
 - Live site: [no.toil.fyi](https://no.toil.fyi)
 - Launch app: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
-- Product page: [no.toil.fyi/toys/milkdrop/](https://no.toil.fyi/toys/milkdrop/)
+- Product page: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
@@ -41,7 +41,7 @@ At the product level, Stims currently ships one flagship MilkDrop-led visualizer
 - A quick-check preflight that surfaces graphics, microphone, motion, and compatibility status.
 - A preset-led playback flow designed for immediate experimentation.
 - A settings panel for quality presets, compatibility mode, motion preferences, render scale, and pixel ratio.
-- Library and toy-shell behavior that supports keyboard, gamepad, and TV-style remote navigation.
+- Session-shell behavior that supports keyboard, gamepad, and TV-style remote navigation.
 - Persistent session and local settings so the app can recover your last-used audio and rendering preferences.
 
 ## Quickstart
@@ -97,7 +97,6 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 ## Project shape
 
 - `milkdrop/index.html` (`/milkdrop/`) is the primary visualizer entrypoint.
-- `toy.html` remains available as a legacy alias for backwards compatibility.
 - `index.html` is the focused launch page for the same product.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
 - `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.

@@ -80,7 +80,7 @@ export function buildTryThisFirstRecommendation({
   }
 
   if (starterPresetLabel?.trim()) {
-    steps.push(`Try ${starterPresetLabel.trim()} once the toy opens.`);
+    steps.push(`Try ${starterPresetLabel.trim()} once the visualizer opens.`);
   }
 
   if (wowControl?.trim()) {
@@ -343,7 +343,7 @@ export function initAudioControls(
 
     const appliedPreset = setQualityPresetById(starterPresetId);
     if (!appliedPreset) {
-      updateStatus('Starter preset unavailable on this toy.', 'error');
+      updateStatus('Starter preset unavailable in this visualizer.', 'error');
       return;
     }
 
@@ -802,7 +802,7 @@ function renderAdvancedSources(options: AudioControlsOptions) {
               </button>
               <span id="youtube-audio-info" class="control-panel__info-text">
                 Paste a link, load it, then capture. In the picker, choose “This tab” and enable
-                Share audio. The embedded video keeps playing with sound here while it drives the toy.
+                Share audio. The embedded video keeps playing with sound here while it drives the visualizer.
               </span>
             </span>
           </div>

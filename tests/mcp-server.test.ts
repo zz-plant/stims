@@ -43,7 +43,7 @@ describe('normalizeToys', () => {
     expect(toy?.module).toBeNull();
     expect(toy?.type).toBeNull();
     expect(toy?.allowWebGLFallback).toBe(false);
-    expect(toy?.url).toContain('toy=fallback');
+    expect(toy?.url).toContain('experience=fallback');
   });
 });
 

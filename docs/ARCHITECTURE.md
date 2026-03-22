@@ -4,7 +4,7 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 ## Architecture at a Glance
 
-- **Entry shells** (`index.html`, `milkdrop/index.html`, and legacy `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` now boots the demo-backed MilkDrop session in place, while `/milkdrop/` remains the canonical launch route.
+- **Entry shells** (`index.html` and `milkdrop/index.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` now boots the demo-backed MilkDrop session in place, while `/milkdrop/` remains the canonical launch route.
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
@@ -21,7 +21,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Runtime Layers
 
-- **HTML entry points** (`index.html`, `milkdrop/index.html`, plus legacy `toy.html`) load `assets/js/app.ts`; `index.html` now boots the visualizer directly with demo-audio preference, and query params still refine launch state on the dedicated visualizer route.
+- **HTML entry points** (`index.html` and `milkdrop/index.html`) load `assets/js/app.ts`; `index.html` now boots the visualizer directly with demo-audio preference, and query params still refine launch state on the dedicated visualizer route.
 - **App bootstrap** (`assets/js/app.ts`) detects library vs toy pages, wires controls, runs capability preflight, and starts loader flows.
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
@@ -35,7 +35,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 | Concern | Primary files | Notes |
 | --- | --- | --- |
-| Entry points | `index.html`, `milkdrop/index.html`, `toy.html` | Public HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
+| Entry points | `index.html`, `milkdrop/index.html` | Public HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
 | App bootstrap | `assets/js/app.ts` | Chooses library vs toy boot flow, connects controls, and runs capability preflight before toy start. |
 | Loader + routing | `assets/js/loader.ts`, `assets/js/router.ts` | Navigation, lifecycle, and dynamic imports live here. |
 | Views | `assets/js/toy-view.ts`, `assets/js/library-view.js` | UI for the library grid, toy container, loading, and error states. |
@@ -109,7 +109,6 @@ Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option r
 ### P2 — Shrink shell and toy entry fragmentation
 
 - **Standardize shell responsibilities** across `index.html` and `milkdrop/index.html` with a single documented shell contract and minimal per-page variation.
-- **Document canonical vs legacy launch pages** (`milkdrop/index.html` vs `toy.html`) so contributors know which route is authoritative.
 - **Why this matters:** reducing entry ambiguity helps avoid accidental fixes in generated or non-authoritative pages.
 
 ### Cross-cutting implementation guardrails

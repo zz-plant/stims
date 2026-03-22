@@ -178,9 +178,9 @@ export function setQualityPresetById(
 
 export function getQualityPresetScopeHint(storageKey: string): string {
   if (storageKey === QUALITY_STORAGE_KEY) {
-    return 'Saved on this device and shared across toys.';
+    return 'Saved on this device and shared across Stims sessions.';
   }
-  return 'Saved on this device for this toy profile.';
+  return 'Saved on this device for this visualizer profile.';
 }
 
 export function describeQualityPresetImpact(preset: QualityPreset): string {
@@ -223,7 +223,7 @@ export class PersistentSettingsPanel {
   }
 
   configure(config: PanelConfig = {}) {
-    const { title = 'Toy settings', description } = config;
+    const { title = 'Visualizer settings', description } = config;
     this.heading.textContent = title;
 
     if (description) {

@@ -179,7 +179,7 @@ Cloudflare Pages issues a unique preview deployment for each pull request. Every
 
 ## Validate shell routes before merge
 
-The project ships a marketing homepage at `/` and a canonical launch route at `/milkdrop/`. The legacy `toy.html` alias can still be smoke-tested when needed, but it is no longer the primary product route. Validate representative routes locally and on the PR preview:
+The project ships a marketing homepage at `/` and a canonical launch route at `/milkdrop/`. Validate representative routes locally and on the PR preview:
 
 1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/` and `http://localhost:4173/milkdrop/`).
 2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.

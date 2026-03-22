@@ -34,6 +34,6 @@ bun run check
 ## Manual verification flow
 
 1. Run `bun run dev`.
-2. Open `http://localhost:5173/toy.html?agent=true`.
+2. Open `http://localhost:5173/milkdrop/?agent=true`.
 3. Use demo audio if microphone access is unavailable or repeatability matters.
 4. Confirm shell load, preset playback, changed controls, and cleanup behavior work as expected.
