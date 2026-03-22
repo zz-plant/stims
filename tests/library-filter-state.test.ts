@@ -208,6 +208,55 @@ test('search query filters library cards and persists in the URL', async () => {
   );
 });
 
+test('renders canonical launch hrefs for mapped toys', async () => {
+  window.location.href = 'https://example.com/';
+  window.sessionStorage.clear();
+  window.localStorage.clear();
+
+  document.body.innerHTML = `
+    <p data-search-results></p>
+    <div data-active-filters>
+      <span data-active-filters-status></span>
+      <button data-active-filters-clear type="button">Reset view</button>
+    </div>
+    <form data-search-form>
+      <input id="toy-search" type="search" />
+      <button data-search-clear type="button">Clear</button>
+      <datalist id="toy-search-suggestions"></datalist>
+    </form>
+    <button data-filter-reset type="button">Reset view</button>
+    <select data-sort-control>
+      <option value="featured">Featured</option>
+    </select>
+    <div id="toy-list"></div>
+  `;
+
+  const view = createLibraryView({
+    toys: [
+      {
+        slug: 'milkdrop',
+        title: 'MilkDrop Visualizer',
+        description: 'Canonical launch route.',
+        module: 'assets/js/toys/milkdrop-toy.ts',
+        type: 'module',
+        requiresWebGPU: true,
+        capabilities: {
+          demoAudio: true,
+          microphone: true,
+          motion: false,
+        },
+      },
+    ],
+  });
+
+  await view.init();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  const listMarkup = document.getElementById('toy-list')?.innerHTML ?? '';
+  expect(listMarkup).toContain('/milkdrop/');
+  expect(listMarkup).not.toContain('toy.html?toy=milkdrop');
+});
+
 test('reset view clears active search, filters, and sort chips from the sticky rail', async () => {
   document.body.innerHTML = `
     <p data-search-results></p>

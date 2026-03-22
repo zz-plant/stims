@@ -10,6 +10,26 @@ const DEFAULT_SLUG_PATHS: SlugPathMap = {
   milkdrop: '/milkdrop/',
 };
 
+export function getToyRouteHref(
+  slug: string,
+  {
+    queryParam = 'toy',
+    toyPath = 'toy.html',
+    slugPaths = DEFAULT_SLUG_PATHS,
+  }: {
+    queryParam?: string;
+    toyPath?: string;
+    slugPaths?: SlugPathMap;
+  } = {},
+) {
+  const mappedPath = slugPaths[slug];
+  if (mappedPath) {
+    return mappedPath;
+  }
+
+  return `${toyPath}?${queryParam}=${encodeURIComponent(slug)}`;
+}
+
 const normalizePath = (pathname: string) => {
   const normalized = pathname.replace(/\/index\.html$/u, '/');
   if (normalized === '') return '/';
@@ -112,12 +132,14 @@ export function createRouter({
     if (!win?.history) return;
 
     const url = getUrl(win);
-    const targetPath = slugPaths[slug];
-    if (targetPath) {
+    const href = getToyRouteHref(slug, { queryParam, toyPath, slugPaths });
+    if (href.startsWith('/')) {
       url.searchParams.delete(queryParam);
-      url.pathname = resolvePath(url.pathname, targetPath);
+      url.pathname = resolvePath(url.pathname, href);
     } else {
-      url.searchParams.set(queryParam, slug);
+      const nextUrl = new URL(href, url);
+      url.pathname = nextUrl.pathname;
+      url.search = nextUrl.search;
     }
     win.history.pushState({ [queryParam]: slug }, '', url);
   };
