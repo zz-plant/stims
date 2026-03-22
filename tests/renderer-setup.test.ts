@@ -8,15 +8,28 @@ const freshImport = async () =>
 describe('renderer setup WebGPU fallback safety', () => {
   const originalConsoleInfo = console.info;
   const originalConsoleDebug = console.debug;
+  const originalUserAgent = navigator.userAgent;
 
   afterEach(() => {
     mock.restore();
     console.info = originalConsoleInfo;
     console.debug = originalConsoleDebug;
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: originalUserAgent,
+    });
     document.body.innerHTML = '';
   });
 
   test('falls back to WebGL when WebGPU renderer init stalls', async () => {
+    const stalledRenderer = {
+      setPixelRatio: mock(),
+      setSize: mock(),
+      setAnimationLoop: mock(),
+      dispose: mock(),
+      toneMappingExposure: 1,
+    };
+
     const createWebGLRenderer = mock(() => ({
       setPixelRatio: mock(),
       setSize: mock(),
@@ -34,20 +47,29 @@ describe('renderer setup WebGPU fallback safety', () => {
     const consoleInfo = mock(() => {});
     const consoleDebug = mock(() => {});
 
-    mock.module('../assets/js/utils/device-detect', () => ({
-      isMobileDevice: () => false,
-    }));
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36',
+    });
     mock.module('../assets/js/utils/webgl-check', () => ({
       ensureWebGL: () => true,
     }));
     mock.module('../assets/js/utils/webgl-renderer', () => ({
       createWebGLRenderer,
     }));
+    const getRendererCapabilities = mock(
+      async (options?: { webgpuInitTimeoutMs?: number }) => {
+        void options;
+        return {
+          adapter: { requestDevice },
+          device: null,
+        };
+      },
+    );
+
     mock.module('../assets/js/core/renderer-capabilities.ts', () => ({
-      getRendererCapabilities: async () => ({
-        adapter: { requestDevice },
-        device: null,
-      }),
+      getRendererCapabilities,
       rememberRendererFallback,
     }));
     mock.module('../assets/js/core/renderer-plan.ts', () => ({
@@ -63,9 +85,10 @@ describe('renderer setup WebGPU fallback safety', () => {
           return new Promise(() => {});
         }
 
-        setPixelRatio() {}
-        setSize() {}
-        setAnimationLoop() {}
+        setPixelRatio = stalledRenderer.setPixelRatio;
+        setSize = stalledRenderer.setSize;
+        setAnimationLoop = stalledRenderer.setAnimationLoop;
+        dispose = stalledRenderer.dispose;
       },
     }));
 
@@ -78,8 +101,13 @@ describe('renderer setup WebGPU fallback safety', () => {
     });
 
     expect(result?.backend).toBe('webgl');
+    expect(getRendererCapabilities).toHaveBeenCalledWith({
+      webgpuInitTimeoutMs: 5,
+    });
     expect(createWebGLRenderer).toHaveBeenCalledTimes(1);
     expect(requestDevice).toHaveBeenCalledTimes(1);
+    expect(stalledRenderer.setAnimationLoop).toHaveBeenCalledWith(null);
+    expect(stalledRenderer.dispose).toHaveBeenCalledTimes(1);
     expect(rememberRendererFallback).toHaveBeenCalledWith(
       'WebGPU initialization failed.',
       expect.objectContaining({

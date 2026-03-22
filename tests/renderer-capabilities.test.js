@@ -96,6 +96,41 @@ describe('renderer capabilities', () => {
     expect(result.forceWebGL).toBe(false);
   });
 
+  test('falls back when WebGPU device acquisition times out during capability probing', async () => {
+    const requestDevice = mock(() => new Promise(() => {}));
+    const requestAdapter = mock(async () => ({
+      features: new Set(),
+      limits: {},
+      requestDevice,
+    }));
+
+    Object.defineProperty(global, 'navigator', {
+      writable: true,
+      configurable: true,
+      value: {
+        gpu: {
+          requestAdapter,
+          getPreferredCanvasFormat: () => 'bgra8unorm',
+        },
+      },
+    });
+
+    const result = await getRendererCapabilities({
+      forceRetry: true,
+      webgpuInitTimeoutMs: 5,
+    });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(1);
+    expect(requestDevice).toHaveBeenCalledTimes(1);
+    expect(
+      result.preferredBackend === 'webgl' || result.preferredBackend === null,
+    ).toBe(true);
+    expect(result.fallbackReason).toBe('Unable to acquire a WebGPU device.');
+    expect(result.shouldRetryWebGPU).toBe(true);
+    expect(result.device).toBeNull();
+    expect(result.adapter).toBeNull();
+  });
+
   test('falls back to WebGL when WebGPU is missing', async () => {
     Object.defineProperty(global, 'navigator', {
       writable: true,
