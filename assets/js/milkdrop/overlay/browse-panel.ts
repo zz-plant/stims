@@ -10,6 +10,7 @@ import { type PresetRowCallbacks, PresetRowRenderer } from './preset-row';
 const COLLECTION_TAG_PREFIX = 'collection:';
 const COLLECTION_LABELS: Record<string, string> = {
   'collection:classic-milkdrop': 'Classic MilkDrop',
+  'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:feedback-lab': 'Feedback Lab',
   'collection:low-motion': 'Low Motion',
   'collection:touch-friendly': 'Touch Friendly',
@@ -372,6 +373,16 @@ export class BrowsePanel {
 
     this.browseQualitySelect.disabled = false;
     this.updateBrowseQualityDetails(initialPreset.id);
+  }
+
+  setActiveCollectionTag(collectionTag: string) {
+    this.activeCollectionTag = collectionTag;
+    this.browseDirty = true;
+    this.updateBrowseFilterVisibility();
+    if (this.visible) {
+      this.renderCollectionFilters();
+      this.render();
+    }
   }
 
   setCatalog(

@@ -1,4 +1,5 @@
 import type { createLoader } from '../loader.ts';
+import { CREAM_OF_THE_CROP_COLLECTION_TAG } from '../milkdrop/collection-intent.ts';
 
 const HOME_TOY_SLUG = 'milkdrop';
 const HOME_LANDING_PARAM = 'landing';
@@ -25,6 +26,15 @@ function redirectHomeTrafficToLaunch(win: Window = window) {
   }
   if (!launchUrl.searchParams.has('audio')) {
     launchUrl.searchParams.set('audio', 'demo');
+  }
+  if (!launchUrl.searchParams.has('panel')) {
+    launchUrl.searchParams.set('panel', 'browse');
+  }
+  if (!launchUrl.searchParams.has('collection')) {
+    launchUrl.searchParams.set(
+      'collection',
+      CREAM_OF_THE_CROP_COLLECTION_TAG.replace(/^collection:/u, ''),
+    );
   }
   launchUrl.hash = currentUrl.hash;
 

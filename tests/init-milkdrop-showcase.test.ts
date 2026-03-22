@@ -40,7 +40,12 @@ describe('initMilkdropShowcase', () => {
             order: 1,
             preview: true,
             author: 'Stims Curated',
-            tags: ['collection:classic-milkdrop', 'feedback', 'warp'],
+            tags: [
+              'collection:cream-of-the-crop',
+              'collection:classic-milkdrop',
+              'feedback',
+              'warp',
+            ],
           },
           {
             id: 'low-motion-halo-drift',
@@ -66,10 +71,11 @@ describe('initMilkdropShowcase', () => {
     ).map((card) => card.textContent?.trim());
 
     expect(count?.textContent).toBe(
-      '3 bundled presets. 3 quick collections. Showing 1 presets from Classic MilkDrop.',
+      '3 bundled presets. 4 quick collections. Showing 1 presets from Cream of the Crop.',
     );
     expect(filters).toEqual([
       'All presets3',
+      'Cream of the Crop1',
       'Classic MilkDrop1',
       'Feedback Lab1',
       'Low Motion1',

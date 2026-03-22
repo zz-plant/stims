@@ -46,6 +46,7 @@ function createPresetPill(
 
 const COLLECTION_LABELS: Record<string, string> = {
   'collection:classic-milkdrop': 'Classic MilkDrop',
+  'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:feedback-lab': 'Feedback Lab',
   'collection:low-motion': 'Low Motion',
   'collection:touch-friendly': 'Touch Friendly',
@@ -151,7 +152,8 @@ function createPresetCard(
   actions.className = 'milkdrop-showcase__card-actions';
 
   const launch = documentRef.createElement('a');
-  launch.href = '/milkdrop/?audio=demo';
+  launch.href =
+    '/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop';
   launch.className = 'cta-button primary';
   launch.textContent = 'Launch preset';
   launch.addEventListener('click', () => {
@@ -194,6 +196,7 @@ export async function initMilkdropShowcase() {
 
     const collectionTags = getCollectionTags(entries);
     const initialCollection =
+      collectionTags.find((tag) => tag === 'collection:cream-of-the-crop') ??
       collectionTags.find((tag) => tag === 'collection:classic-milkdrop') ??
       collectionTags[0] ??
       '';

@@ -295,6 +295,10 @@ export class MilkdropOverlay {
     this.browsePanel.setQualityPresets({ presets, activePresetId, storageKey });
   }
 
+  setActiveCollectionTag(collectionTag: string) {
+    this.browsePanel.setActiveCollectionTag(collectionTag);
+  }
+
   setCatalog(
     presets: MilkdropCatalogEntry[],
     activePresetId: string | null,
