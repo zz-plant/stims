@@ -97,8 +97,13 @@ describe('toy page query-driven startup', () => {
     mock.module('../assets/js/ui/system-controls.ts', () => ({
       initSystemControls: mock(),
     }));
+    const requestMilkdropCollectionSelection = mock();
+    const requestMilkdropOverlayTab = mock();
+    mock.module('../assets/js/milkdrop/collection-intent.ts', () => ({
+      requestMilkdropCollectionSelection,
+    }));
     mock.module('../assets/js/milkdrop/overlay-intent.ts', () => ({
-      requestMilkdropOverlayTab: mock(),
+      requestMilkdropOverlayTab,
     }));
     mock.module('../assets/js/milkdrop/preset-selection.ts', () => ({
       requestMilkdropPresetSelection: mock(),
@@ -107,7 +112,9 @@ describe('toy page query-driven startup', () => {
     const { bootToyPage } = await freshImport();
     (
       window as Window & { happyDOM?: { setURL?: (url: string) => void } }
-    ).happyDOM?.setURL?.('https://example.com/milkdrop/?audio=demo');
+    ).happyDOM?.setURL?.(
+      'https://example.com/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop',
+    );
     document.body.innerHTML = `
       <button data-open-preflight type="button">Run quick check</button>
       <section data-audio-controls></section>
@@ -132,6 +139,10 @@ describe('toy page query-driven startup', () => {
 
     expect(receivedAudioOptions?.autoStartSource).toBe('demo');
     expect(receivedAudioOptions?.preferDemoAudio).toBe(true);
+    expect(requestMilkdropOverlayTab).toHaveBeenCalledWith('browse');
+    expect(requestMilkdropCollectionSelection).toHaveBeenCalledWith(
+      'cream-of-the-crop',
+    );
   });
 
   test('embeds tune controls into the start panel for the focused milkdrop session', async () => {
@@ -160,6 +171,9 @@ describe('toy page query-driven startup', () => {
     }));
     mock.module('../assets/js/ui/system-controls.ts', () => ({
       initSystemControls,
+    }));
+    mock.module('../assets/js/milkdrop/collection-intent.ts', () => ({
+      requestMilkdropCollectionSelection: mock(),
     }));
     mock.module('../assets/js/milkdrop/overlay-intent.ts', () => ({
       requestMilkdropOverlayTab: mock(),

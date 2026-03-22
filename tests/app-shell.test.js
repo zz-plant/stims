@@ -25,7 +25,7 @@ describe('home shell user journeys', () => {
     window.location.href = 'https://example.com/';
     document.body.innerHTML = `
       <div data-top-nav-container></div>
-      <a href="/milkdrop/?audio=demo" data-quickstart-slug="milkdrop">Launch</a>
+      <a href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop" data-quickstart-slug="milkdrop">Launch</a>
       <div data-milkdrop-preset-count></div>
       <div data-milkdrop-preset-filters></div>
       <div data-milkdrop-preset-list></div>
@@ -49,6 +49,8 @@ describe('home shell user journeys', () => {
     const currentUrl = new URL(window.location.href);
     expect(currentUrl.pathname).toBe('/milkdrop/');
     expect(currentUrl.searchParams.get('audio')).toBe('demo');
+    expect(currentUrl.searchParams.get('panel')).toBe('browse');
+    expect(currentUrl.searchParams.get('collection')).toBe('cream-of-the-crop');
     expect(mockInitNavigation).not.toHaveBeenCalled();
     expect(mockLoadToy).not.toHaveBeenCalled();
   });

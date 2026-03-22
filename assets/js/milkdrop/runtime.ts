@@ -22,6 +22,7 @@ import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
 import type { QualityPresetManager } from '../utils/toy-settings';
 import type { UnifiedInputState } from '../utils/unified-input';
 import { createMilkdropCatalogStore } from './catalog-store';
+import { consumeRequestedMilkdropCollectionSelection } from './collection-intent';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
 import { upsertMilkdropFields } from './formatter';
@@ -986,9 +987,22 @@ export function createMilkdropExperience({
       if (requestedOverlayTab) {
         overlay.openTab(requestedOverlayTab);
       }
+      const requestedCollectionTag =
+        consumeRequestedMilkdropCollectionSelection();
+      const collectionEntry = requestedCollectionTag
+        ? (catalogCoordinator
+            .getCatalogEntries()
+            .find((entry) => entry.tags.includes(requestedCollectionTag)) ??
+          null)
+        : null;
+      if (collectionEntry && requestedCollectionTag) {
+        overlay.setActiveCollectionTag(requestedCollectionTag);
+      }
       const requestedPresetId = consumeRequestedMilkdropPresetSelection();
       const startupPresetId =
-        requestedPresetId ?? preferences.getStartupPresetId(initialPresetId);
+        requestedPresetId ??
+        preferences.getStartupPresetId(initialPresetId) ??
+        collectionEntry?.id;
       if (startupPresetId) {
         await navigation.selectPreset(startupPresetId, {
           recordHistory: false,

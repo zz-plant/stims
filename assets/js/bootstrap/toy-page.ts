@@ -8,6 +8,7 @@ import type { ToyWindow } from '../core/toy-globals.ts';
 import toyManifest from '../data/toy-manifest.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import type { createLoader } from '../loader.ts';
+import { requestMilkdropCollectionSelection } from '../milkdrop/collection-intent.ts';
 import {
   type MilkdropOverlayTab,
   requestMilkdropOverlayTab,
@@ -182,12 +183,18 @@ export function bootToyPage({
     }
     return null;
   })();
+  const requestedCollectionTag = searchParams.get('collection')?.trim();
   const shouldCombineLaunchPanels = shouldCombineFocusedSessionPanels(toySlug);
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
   document.title = `${toyTitle} · Stims`;
 
-  if (requestedOverlayTab && toySlug === 'milkdrop') {
-    requestMilkdropOverlayTab(requestedOverlayTab);
+  if (toySlug === 'milkdrop') {
+    if (requestedOverlayTab) {
+      requestMilkdropOverlayTab(requestedOverlayTab);
+    }
+    if (requestedCollectionTag) {
+      requestMilkdropCollectionSelection(requestedCollectionTag);
+    }
   }
 
   const collapseFocusedSessionPanels = () => {
