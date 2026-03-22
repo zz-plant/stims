@@ -999,10 +999,15 @@ export function createMilkdropExperience({
         overlay.setActiveCollectionTag(requestedCollectionTag);
       }
       const requestedPresetId = consumeRequestedMilkdropPresetSelection();
-      const startupPresetId =
+      const preferredStartupPresetId =
         requestedPresetId ??
         preferences.getStartupPresetId(initialPresetId) ??
         collectionEntry?.id;
+      const startupPresetId =
+        preferredStartupPresetId &&
+        navigation.isBackendSelectable(preferredStartupPresetId, activeBackend)
+          ? preferredStartupPresetId
+          : navigation.getFirstSelectablePresetId(activeBackend);
       if (startupPresetId) {
         await navigation.selectPreset(startupPresetId, {
           recordHistory: false,
@@ -1011,9 +1016,12 @@ export function createMilkdropExperience({
           return;
         }
       }
-      const first = catalogCoordinator.getCatalogEntries()[0];
-      if (first) {
-        await navigation.selectPreset(first.id, { recordHistory: false });
+      const firstSelectablePresetId =
+        navigation.getFirstSelectablePresetId(activeBackend);
+      if (firstSelectablePresetId) {
+        await navigation.selectPreset(firstSelectablePresetId, {
+          recordHistory: false,
+        });
       }
     });
 
