@@ -1,12 +1,13 @@
 # Page-level specifications
 
-Detailed, testable requirements for the two canonical site routes: the marketing homepage at `/` and the dedicated launch route at `/milkdrop/`.
+Detailed, testable requirements for the root launch flow, the opt-out marketing homepage, and the dedicated launch route at `/milkdrop/`.
 
 ## Homepage (`/` via `index.html`)
 
 | Section | Expected data and state | Layout and interaction expectations | Accessibility and status behaviors |
 | --- | --- | --- | --- |
-| **Global frame** | Loads shared styles from `assets/css/base.css` and `assets/css/index.css`. Uses `lang="en"` and preserves the saved theme before paint. On load, the shared app runtime starts the MilkDrop session in place with demo-audio preference. | The home document now acts as an immediate launch shell rather than a separate first-step page. | Theme toggle must keep `aria-pressed` and `aria-label` in sync for any visible shell controls. |
+| **Root launch behavior** | Loads shared styles from `assets/css/base.css` and `assets/css/index.css`. Uses `lang="en"` and preserves the saved theme before paint. By default, the shared app runtime immediately forwards `/` traffic to `/milkdrop/?audio=demo`, preserving existing query params. | The bare root URL should behave like a working launch shortcut instead of a separate first-step page. | Redirects must stay same-origin and avoid trapping users who explicitly request the landing page. |
+| **Marketing opt-out** | Visiting `/?landing=1` keeps the `index.html` document active and starts the MilkDrop session in place with demo-audio preference. | The opt-out page remains available for sharing, SEO review, and editorial content. | Theme toggle must keep `aria-pressed` and `aria-label` in sync for any visible shell controls. |
 | **Top nav** | Brand lockup plus links to `#experience`, `#presets`, `#lineage`, `/milkdrop/`, and GitHub. | Nav stays compact and sticky without competing with the hero CTAs. | Links remain keyboard reachable and visible in mobile menu mode. |
 | **Hero** | Copy remains inline in `index.html`, but the active session takes priority once the runtime boots. Primary CTA still links to `/milkdrop/?audio=demo`, with a secondary link to `/milkdrop/` for explicit route navigation. | The hero remains as underlying page content, while the fullscreen visualizer session becomes the immediate first-run experience. | CTA focus treatment stays visible whenever the hero is exposed, and modified clicks should fall back to native navigation. |
 | **Experience section** | Static explanatory cards only. No runtime setup widgets live here anymore. | Section clarifies the new information architecture and why setup moved off the homepage. | Cards keep headings in reading order and do not rely on color alone for meaning. |

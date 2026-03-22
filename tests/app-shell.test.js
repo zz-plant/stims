@@ -43,7 +43,19 @@ describe('home shell user journeys', () => {
     delete globalThis.__stimsLoaderOverrides;
   });
 
-  test('home landing starts the milkdrop visualizer in place with demo audio preference', async () => {
+  test('home landing redirects straight to the canonical demo launch route', async () => {
+    await loadAppShell();
+
+    const currentUrl = new URL(window.location.href);
+    expect(currentUrl.pathname).toBe('/milkdrop/');
+    expect(currentUrl.searchParams.get('audio')).toBe('demo');
+    expect(mockInitNavigation).not.toHaveBeenCalled();
+    expect(mockLoadToy).not.toHaveBeenCalled();
+  });
+
+  test('landing opt-out keeps the homepage session boot in place', async () => {
+    window.location.href = 'https://example.com/?landing=1';
+
     await loadAppShell();
 
     expect(mockInitNavigation).toHaveBeenCalledTimes(1);
@@ -52,10 +64,13 @@ describe('home shell user journeys', () => {
       preferDemoAudio: true,
     });
     expect(new URL(window.location.href).pathname).toBe('/');
+    expect(new URL(window.location.href).searchParams.get('landing')).toBe('1');
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
   });
 
   test('homepage quickstart stays a native navigation instead of SPA-loading in place', async () => {
+    window.location.href = 'https://example.com/?landing=1';
+
     await loadAppShell();
 
     const cta = document.querySelector('[data-quickstart-slug="milkdrop"]');
