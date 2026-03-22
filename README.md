@@ -13,7 +13,7 @@ It is built to feel like a first-class browser experience rather than a nostalgi
 Quick links:
 
 - Live site: [no.toil.fyi](https://no.toil.fyi)
-- Launch app: [no.toil.fyi/toy.html](https://no.toil.fyi/toy.html)
+- Launch app: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
 - Product page: [no.toil.fyi/toys/milkdrop/](https://no.toil.fyi/toys/milkdrop/)
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
@@ -32,7 +32,7 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 - A launch flow with readiness checks before microphone prompts and renderer-heavy startup.
 - Multiple audio paths including microphone, demo audio, tab capture, and YouTube-backed tab capture.
 - Renderer preference handling with WebGPU-first startup and direct WebGL fallback when needed.
-- A focused marketing/launch page at `index.html` and the main app at `toy.html`.
+- A focused marketing/launch page at `index.html`, plus the canonical visualizer route at `milkdrop/index.html` (`/milkdrop/`).
 
 ## Shipped experience
 
@@ -61,7 +61,7 @@ At the product level, Stims currently ships one flagship MilkDrop-led visualizer
 3. Open the visualizer:
 
    ```text
-   http://localhost:5173/toy.html
+   http://localhost:5173/milkdrop/
    ```
 
 4. Use `index.html` at the same host if you want to review the launch/marketing surface.
@@ -96,7 +96,8 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 
 ## Project shape
 
-- `toy.html` is the primary visualizer entrypoint.
+- `milkdrop/index.html` (`/milkdrop/`) is the primary visualizer entrypoint.
+- `toy.html` remains available as a legacy alias for backwards compatibility.
 - `index.html` is the focused launch page for the same product.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
 - `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.

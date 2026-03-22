@@ -11,6 +11,7 @@ import {
 } from './library-view/filter-state.js';
 import { ensureIconSymbol, SVG_NS } from './library-view/icon-sprite.js';
 import { setupDarkModeToggle } from './library-view/theme-toggle.js';
+import { getToyRouteHref } from './router.ts';
 import { getRecentToySlugs } from './utils/growth-metrics.ts';
 
 const LIBRARY_RENDER_BATCH_SIZE = 24;
@@ -965,10 +966,7 @@ export function createLibraryView({
     if (toy.module) {
       card.dataset.toyModule = toy.module;
     }
-    const href =
-      toy.type === 'module'
-        ? `toy.html?toy=${encodeURIComponent(toy.slug)}`
-        : toy.module;
+    const href = toy.type === 'module' ? getToyRouteHref(toy.slug) : toy.module;
     if (cardElement === 'button') {
       card.type = 'button';
     } else if (cardElement === 'a') {
