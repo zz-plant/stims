@@ -288,4 +288,79 @@ describe('worker renderer track messaging', () => {
       payload: { phase: 'initialized' },
     });
   });
+
+  test('fails closed when the worker reports an init error before ready', () => {
+    const postMessage = mock();
+    let messageListener: ((event: MessageEvent<unknown>) => void) | null = null;
+    const emitMessage = (event: MessageEvent<unknown>) => {
+      if (!messageListener) {
+        throw new Error('Expected worker message listener to be registered.');
+      }
+
+      messageListener(event);
+    };
+    const addEventListener = mock((type: string, listener: EventListener) => {
+      if (type === 'message') {
+        messageListener = listener as (event: MessageEvent<unknown>) => void;
+      }
+    });
+    const removeEventListener = mock();
+    const terminate = mock();
+    const fakeWorker = {
+      postMessage,
+      addEventListener,
+      removeEventListener,
+      terminate,
+    } as unknown as Worker;
+    const canvas = document.createElement('canvas');
+    const offscreenCanvas = {
+      marker: 'offscreen',
+    } as unknown as OffscreenCanvas;
+    canvas.transferControlToOffscreen = mock(() => offscreenCanvas);
+    const onMessage = mock();
+
+    const track = createExperimentalWorkerRendererTrack({
+      canvas,
+      capabilities: webgpuCapabilities,
+      width: 640,
+      height: 360,
+      enabled: true,
+      workerFactory: () => fakeWorker,
+      onMessage,
+    });
+
+    track?.postFrame({
+      now: 16.67,
+      deltaMs: 16.67,
+      audioLevel: 0.5,
+    });
+    expect(postMessage).toHaveBeenCalledTimes(1);
+
+    emitMessage({
+      data: {
+        type: RENDERER_WORKER_MESSAGE_TYPES.error,
+        payload: {
+          message:
+            'Unable to acquire a WebGPU adapter inside the renderer worker.',
+        },
+      },
+    } as MessageEvent<unknown>);
+
+    expect(removeEventListener).toHaveBeenCalledTimes(1);
+    expect(terminate).toHaveBeenCalledTimes(1);
+    expect(onMessage).toHaveBeenCalledWith({
+      type: RENDERER_WORKER_MESSAGE_TYPES.error,
+      payload: {
+        message:
+          'Unable to acquire a WebGPU adapter inside the renderer worker.',
+      },
+    });
+
+    track?.postResize({ width: 800, height: 600 });
+    track?.postPreset({ id: 'after-error' });
+    track?.dispose();
+
+    expect(postMessage).toHaveBeenCalledTimes(1);
+    expect(terminate).toHaveBeenCalledTimes(1);
+  });
 });
