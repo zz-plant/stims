@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createRouter } from '../assets/js/router.ts';
+import { createRouter, getToyRouteHref } from '../assets/js/router.ts';
 
 function createWindowStub(href = 'http://example.com/library') {
   const location = new URL(href);
@@ -24,6 +24,11 @@ function createWindowStub(href = 'http://example.com/library') {
 }
 
 describe('router utilities', () => {
+  test('returns canonical hrefs for mapped toy routes', () => {
+    expect(getToyRouteHref('milkdrop')).toBe('/milkdrop/');
+    expect(getToyRouteHref('custom-slug')).toBe('toy.html?toy=custom-slug');
+  });
+
   test('pushes toy state and resets to library', () => {
     const { windowStub, location } = createWindowStub(
       'http://example.com/library',

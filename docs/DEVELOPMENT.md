@@ -8,7 +8,7 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 
 1. Install dependencies with `bun install`.
 2. Start local development with `bun run dev`.
-3. Open `http://localhost:5173/toy.html`.
+3. Open `http://localhost:5173/milkdrop/`.
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
@@ -27,7 +27,8 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 
 ## Product assumptions
 
-- The primary app entrypoint is `toy.html`, which defaults to the MilkDrop visualizer.
+- The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
+- `toy.html` remains available as a legacy alias when you need to verify backwards compatibility.
 - `index.html` boots the MilkDrop visualizer in place on load, using the same shared loader/runtime as the dedicated launch route.
 - Presets are part of one visualizer product, not separate first-class toys.
 
