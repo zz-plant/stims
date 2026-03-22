@@ -43,7 +43,35 @@ export type RendererInitConfig = {
   adaptiveMaxPixelRatioMultiplier?: number;
   adaptiveRenderScaleMultiplier?: number;
   adaptiveDensityMultiplier?: number;
+  webgpuInitTimeoutMs?: number;
 };
+
+export const DEFAULT_WEBGPU_INIT_TIMEOUT_MS = 4000;
+
+export async function resolveWithTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string,
+): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    return promise;
+  }
+
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = globalThis.setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId !== null) {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
+}
 
 async function loadWebGPURenderer() {
   const module = await import('./webgpu-renderer.ts');
@@ -75,6 +103,7 @@ export async function initRenderer(
     adaptiveMaxPixelRatioMultiplier = 1,
     adaptiveRenderScaleMultiplier = 1,
     adaptiveDensityMultiplier = 1,
+    webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
   } = config;
 
   const finalize = (
@@ -150,7 +179,11 @@ export async function initRenderer(
 
     if (!device) {
       try {
-        device = await adapter.requestDevice();
+        device = await resolveWithTimeout(
+          adapter.requestDevice(),
+          webgpuInitTimeoutMs,
+          'WebGPU device initialization timed out.',
+        );
       } catch (error) {
         return fallbackToWebGL(
           getRendererFallbackReasonMessage(
@@ -174,7 +207,20 @@ export async function initRenderer(
         device,
       });
       if ('init' in renderer && typeof renderer.init === 'function') {
-        await renderer.init();
+        try {
+          await resolveWithTimeout(
+            renderer.init(),
+            webgpuInitTimeoutMs,
+            'WebGPU renderer initialization timed out.',
+          );
+        } catch (error) {
+          return fallbackToWebGL(
+            getRendererFallbackReasonMessage(
+              RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
+            ),
+            error,
+          );
+        }
       }
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
