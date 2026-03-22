@@ -1,6 +1,16 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 import { createLibraryView } from '../assets/js/library-view.js';
+
+const flushMicrotasks = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+};
+
+afterEach(() => {
+  mock.restore();
+});
 
 const toys = [
   {
@@ -137,6 +147,55 @@ describe('library filter state normalization', () => {
     expect(refineChip?.classList.contains('is-active')).toBe(false);
     expect(document.querySelectorAll('.webtoy-card')).toHaveLength(2);
   });
+});
+
+test('replays the initial card preview sync after effects load', async () => {
+  const initThreeEffects = mock<() => void>(() => {});
+  const syncCardPreviews = mock<
+    (cards: Element[], renderedToys: typeof toys) => void
+  >(() => {});
+  const idleCallbacks: Array<IdleRequestCallback> = [];
+  const originalRequestIdleCallback = window.requestIdleCallback;
+
+  mock.module('../assets/js/library-view/three-library-effects.ts', () => ({
+    createLibraryThreeEffects: () => ({
+      init: initThreeEffects,
+      syncCardPreviews,
+      triggerLaunchTransition() {},
+      startLaunchTransition() {},
+      dispose() {},
+    }),
+  }));
+
+  window.requestIdleCallback = ((callback: IdleRequestCallback) => {
+    idleCallbacks.push(callback);
+    return idleCallbacks.length;
+  }) as typeof window.requestIdleCallback;
+
+  try {
+    const view = createLibraryView({
+      toys,
+    });
+
+    await view.init();
+
+    expect(syncCardPreviews).not.toHaveBeenCalled();
+    expect(idleCallbacks).toHaveLength(1);
+
+    idleCallbacks[0]({
+      didTimeout: false,
+      timeRemaining: () => 50,
+    } as IdleDeadline);
+    await flushMicrotasks();
+
+    const cards = Array.from(document.querySelectorAll('.webtoy-card'));
+
+    expect(initThreeEffects).toHaveBeenCalledTimes(1);
+    expect(syncCardPreviews).toHaveBeenCalledTimes(1);
+    expect(syncCardPreviews).toHaveBeenCalledWith(cards, toys);
+  } finally {
+    window.requestIdleCallback = originalRequestIdleCallback;
+  }
 });
 
 test('renders continue panel when returner signals are present', async () => {
