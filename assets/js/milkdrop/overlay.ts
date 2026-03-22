@@ -1,28 +1,12 @@
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  indentWithTab,
-} from '@codemirror/commands';
-import { StreamLanguage } from '@codemirror/language';
-import { properties } from '@codemirror/legacy-modes/mode/properties';
-import { EditorState } from '@codemirror/state';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { EditorView, keymap, lineNumbers } from '@codemirror/view';
-import {
-  describeQualityPresetImpact,
-  getQualityPresetScopeHint,
-  QUALITY_STORAGE_KEY,
-  type QualityPreset,
-} from '../core/settings-panel';
+import type { QualityPreset } from '../core/settings-panel';
+import { BrowsePanel } from './overlay/browse-panel';
+import { EditorPanel } from './overlay/editor-panel';
+import { InspectorPanel } from './overlay/inspector-panel';
 import type {
   MilkdropCatalogEntry,
-  MilkdropCompatibilityIssueCategory,
   MilkdropCompiledPreset,
   MilkdropEditorSessionState,
-  MilkdropFidelityClass,
   MilkdropFrameState,
-  MilkdropSupportStatus,
 } from './types';
 
 type OverlayCallbacks = {
@@ -46,172 +30,12 @@ type OverlayCallbacks = {
   onInspectorFieldChange: (key: string, value: string | number) => void;
 };
 
-const COLLECTION_TAG_PREFIX = 'collection:';
-
-const COLLECTION_LABELS: Record<string, string> = {
-  'collection:classic-milkdrop': 'Classic MilkDrop',
-  'collection:feedback-lab': 'Feedback Lab',
-  'collection:low-motion': 'Low Motion',
-  'collection:touch-friendly': 'Touch Friendly',
-};
-
-type BrowseMode = 'featured' | 'all' | 'recent' | 'favorites';
-type BrowseSort = 'recommended' | 'title' | 'rating' | 'recent';
-type BrowseFidelityFilter = 'all' | MilkdropFidelityClass;
-type BrowseSection = {
-  title: string;
-  presets: MilkdropCatalogEntry[];
-};
-
-type EditorSnippet = {
-  label: string;
-  description: string;
-  snippet: string;
-};
-
-const EDITOR_SNIPPETS: EditorSnippet[] = [
-  {
-    label: 'Pulse zoom',
-    description: 'Drop in a breathing zoom curve.',
-    snippet: 'zoom=1.01 + 0.035*sin(time*0.82)\n',
-  },
-  {
-    label: 'Hue drift',
-    description: 'Animate the waveform palette.',
-    snippet:
-      'wave_r=0.5 + 0.35*sin(time*0.31)\nwave_g=0.5 + 0.35*sin(time*0.47)\nwave_b=0.5 + 0.35*sin(time*0.63)\n',
-  },
-  {
-    label: 'Warp sway',
-    description: 'Add a gentle audio-reactive bend.',
-    snippet: 'warp=0.01 + bass_att*0.018 + 0.004*sin(time*0.5)\n',
-  },
-];
-
 function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
   buttons.forEach((button) => {
     const isActive = button.dataset.tab === activeId;
     button.classList.toggle('is-active', isActive);
     button.setAttribute('aria-pressed', String(isActive));
   });
-}
-
-function supportLabel(status: MilkdropSupportStatus) {
-  if (status === 'supported') {
-    return 'Supported';
-  }
-  if (status === 'partial') {
-    return 'Partial';
-  }
-  return 'Unsupported';
-}
-
-function fidelityLabel(fidelity: MilkdropFidelityClass) {
-  switch (fidelity) {
-    case 'exact':
-      return 'Exact';
-    case 'near-exact':
-      return 'Near exact';
-    case 'partial':
-      return 'Partial';
-    default:
-      return 'Fallback';
-  }
-}
-
-function getPresetMetaQualifier(preset: MilkdropCatalogEntry) {
-  if (preset.historyIndex !== undefined) {
-    return 'Recent';
-  }
-  if (preset.rating > 0) {
-    return `${preset.rating}★`;
-  }
-  if (preset.origin !== 'bundled') {
-    return 'Imported';
-  }
-  const firstTag = preset.tags.find(
-    (tag) => !tag.startsWith(COLLECTION_TAG_PREFIX),
-  );
-  if (firstTag) {
-    return firstTag.replace(/[-_]/gu, ' ');
-  }
-  return null;
-}
-
-function compatibilityCategoryLabel(
-  category: MilkdropCompatibilityIssueCategory,
-) {
-  switch (category) {
-    case 'unsupported-syntax':
-      return 'Unsupported syntax';
-    case 'unsupported-shader':
-      return 'Unsupported shader';
-    case 'runtime-divergence':
-      return 'Runtime divergence';
-    case 'backend-degradation':
-      return 'Backend degradation';
-    default:
-      return 'Approximation';
-  }
-}
-
-function compatibilityCategoryPriority(
-  category: MilkdropCompatibilityIssueCategory,
-) {
-  switch (category) {
-    case 'unsupported-syntax':
-      return 0;
-    case 'unsupported-shader':
-      return 1;
-    case 'backend-degradation':
-      return 2;
-    case 'runtime-divergence':
-      return 3;
-    default:
-      return 4;
-  }
-}
-
-function getPrimaryDegradationReason(compiled: MilkdropCompiledPreset | null) {
-  if (!compiled) {
-    return null;
-  }
-  return [...compiled.ir.compatibility.parity.degradationReasons].sort(
-    (left, right) => {
-      if (left.blocking !== right.blocking) {
-        return left.blocking ? -1 : 1;
-      }
-      return (
-        compatibilityCategoryPriority(left.category) -
-        compatibilityCategoryPriority(right.category)
-      );
-    },
-  )[0];
-}
-
-function formatPrimaryCompatibilityMessage({
-  primaryReason,
-  support,
-}: {
-  primaryReason:
-    | ReturnType<typeof getPrimaryDegradationReason>
-    | undefined
-    | null;
-  support: { status: MilkdropSupportStatus; reasons: string[] };
-}) {
-  if (primaryReason) {
-    const prefix =
-      primaryReason.blocking && support.status === 'unsupported'
-        ? 'Unsupported feature'
-        : compatibilityCategoryLabel(primaryReason.category);
-    return `${prefix}: ${primaryReason.message}`;
-  }
-
-  if (support.status === 'unsupported') {
-    return `Unsupported feature: ${support.reasons[0] ?? 'This preset requires MilkDrop features Stims cannot execute yet.'}`;
-  }
-
-  return support.reasons[0] ?? 'Preset has fidelity degradations.';
 }
 
 export class MilkdropOverlay {
@@ -221,57 +45,15 @@ export class MilkdropOverlay {
   private readonly panel: HTMLElement;
   private readonly currentPresetLabel: HTMLElement;
   private readonly statusLabel: HTMLElement;
-  private readonly browseList: HTMLElement;
-  private readonly browseActiveLabel: HTMLElement;
-  private readonly browseMetaLabel: HTMLElement;
-  private readonly browseQualitySelect: HTMLSelectElement;
-  private readonly browseQualityHint: HTMLElement;
-  private readonly browseModeTabs: HTMLElement;
-  private readonly browseModeButtons: HTMLButtonElement[] = [];
-  private readonly browseOptionsDisclosure: HTMLDetailsElement;
-  private readonly browseOptionsSummary: HTMLElement;
-  private readonly diagnosticsList: HTMLElement;
-  private readonly editorStatus: HTMLElement;
-  private readonly editorLiveBadge: HTMLElement;
-  private readonly editorSyncBadge: HTMLElement;
-  private readonly editorSafetyBadge: HTMLElement;
-  private readonly inspectorControls: HTMLElement;
-  private readonly inspectorMetrics: HTMLElement;
-  private readonly searchInput: HTMLInputElement;
-  private readonly collectionFilters: HTMLElement;
-  private readonly browseModeSelect: HTMLSelectElement;
-  private readonly browseSupportSelect: HTMLSelectElement;
-  private readonly browseSortSelect: HTMLSelectElement;
   private readonly autoplayToggle: HTMLInputElement;
   private readonly transitionModeSelect: HTMLSelectElement;
   private readonly blendSlider: HTMLInputElement;
   private readonly blendValue: HTMLElement;
   private readonly fileInput: HTMLInputElement;
-  private readonly deleteButton: HTMLButtonElement;
-  private readonly tabPanels: Record<string, HTMLElement>;
   private readonly tabButtons: HTMLButtonElement[];
-  private editor: EditorView;
-  private presets: MilkdropCatalogEntry[] = [];
-  private activePresetId: string | null = null;
-  private activeBackend: 'webgl' | 'webgpu' = 'webgl';
-  private activeCollectionTag = '';
-  private browseMode: BrowseMode = 'featured';
-  private browseSort: BrowseSort = 'recommended';
-  private browseSupportFilter: BrowseFidelityFilter = 'all';
-  private browseQualityPresets: QualityPreset[] = [];
-  private browseQualityStorageKey = QUALITY_STORAGE_KEY;
-  private suppressEditorChange = false;
-  private editorDebounceId: number | null = null;
-  private browseRenderDebounceId: number | null = null;
-  private browseDirty = true;
-  private lastCatalogSignature = '';
-  private lastBrowseRenderSignature = '';
-  private readonly presetRowCache = new Map<
-    string,
-    { signature: string; row: HTMLElement }
-  >();
-  private lastInspectorSignature = '';
-  private lastInspectorRenderAt = 0;
+  private readonly browsePanel: BrowsePanel;
+  private readonly editorPanel: EditorPanel;
+  private readonly inspectorPanel: InspectorPanel;
   private activeTab: 'browse' | 'editor' | 'inspector' = 'browse';
 
   constructor({
@@ -389,24 +171,6 @@ export class MilkdropOverlay {
     randomButton.addEventListener('click', () => this.callbacks.onRandomize());
     navigationGroup.appendChild(randomButton);
 
-    const importButton = document.createElement('button');
-    importButton.type = 'button';
-    importButton.textContent = 'Import';
-    importButton.addEventListener('click', () => this.fileInput.click());
-
-    const exportButton = document.createElement('button');
-    exportButton.type = 'button';
-    exportButton.textContent = 'Export';
-    exportButton.addEventListener('click', () => this.callbacks.onExport());
-
-    this.deleteButton = document.createElement('button');
-    this.deleteButton.type = 'button';
-    this.deleteButton.textContent = 'Delete';
-    this.deleteButton.hidden = true;
-    this.deleteButton.addEventListener('click', () =>
-      this.callbacks.onDeletePreset(),
-    );
-
     this.blendSlider = document.createElement('input');
     this.blendSlider.type = 'range';
     this.blendSlider.min = '0';
@@ -444,327 +208,6 @@ export class MilkdropOverlay {
       return button;
     });
 
-    this.tabPanels = {
-      browse: document.createElement('section'),
-      editor: document.createElement('section'),
-      inspector: document.createElement('section'),
-    };
-    Object.values(this.tabPanels).forEach((panel) => {
-      panel.className = 'milkdrop-overlay__tab-panel';
-    });
-
-    const browseHero = document.createElement('section');
-    browseHero.className = 'milkdrop-overlay__browse-hero';
-
-    const browseCopy = document.createElement('div');
-    browseCopy.className = 'milkdrop-overlay__browse-copy';
-
-    this.browseActiveLabel = document.createElement('div');
-    this.browseActiveLabel.className = 'milkdrop-overlay__browse-active';
-    this.browseActiveLabel.textContent = 'Loading presets...';
-    this.browseActiveLabel.setAttribute('aria-live', 'polite');
-    this.browseActiveLabel.setAttribute('aria-atomic', 'true');
-
-    const qualityCard = document.createElement('div');
-    qualityCard.className = 'milkdrop-overlay__quality';
-
-    const qualityLabel = document.createElement('label');
-    qualityLabel.className = 'milkdrop-overlay__quality-label';
-    qualityLabel.textContent = 'Quality';
-
-    this.browseQualitySelect = document.createElement('select');
-    this.browseQualitySelect.className =
-      'milkdrop-overlay__rating-select milkdrop-overlay__quality-select';
-    this.browseQualitySelect.setAttribute('aria-label', 'Quality preset');
-    this.browseQualitySelect.addEventListener('change', () => {
-      this.updateBrowseQualityDetails(this.browseQualitySelect.value);
-      this.callbacks.onSelectQualityPreset(this.browseQualitySelect.value);
-    });
-    qualityLabel.appendChild(this.browseQualitySelect);
-
-    this.browseMetaLabel = document.createElement('p');
-    this.browseMetaLabel.className = 'milkdrop-overlay__browse-meta';
-    this.browseMetaLabel.textContent = 'Loading status…';
-    this.browseMetaLabel.setAttribute('aria-live', 'polite');
-    this.browseMetaLabel.setAttribute('role', 'status');
-
-    this.browseQualityHint = document.createElement('p');
-    this.browseQualityHint.className = 'milkdrop-overlay__quality-hint';
-
-    qualityCard.append(qualityLabel, this.browseQualityHint);
-
-    browseCopy.append(
-      this.browseActiveLabel,
-      qualityCard,
-      this.browseMetaLabel,
-    );
-    browseHero.append(browseCopy);
-
-    this.searchInput = document.createElement('input');
-    this.searchInput.type = 'search';
-    this.searchInput.className = 'milkdrop-overlay__search';
-    this.searchInput.placeholder = 'Search presets';
-    this.searchInput.setAttribute('aria-label', 'Search presets');
-    this.searchInput.addEventListener('input', () =>
-      this.scheduleBrowseRender(),
-    );
-
-    this.browseModeSelect = document.createElement('select');
-    this.browseModeSelect.className = 'milkdrop-overlay__rating-select';
-    (
-      [
-        ['featured', 'Featured'],
-        ['all', 'All presets'],
-        ['recent', 'Recent'],
-        ['favorites', 'Favorites'],
-      ] satisfies Array<[BrowseMode, string]>
-    ).forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      this.browseModeSelect.appendChild(option);
-    });
-    this.browseModeSelect.addEventListener('change', () =>
-      this.setBrowseMode(this.browseModeSelect.value as BrowseMode),
-    );
-
-    this.browseSupportSelect = document.createElement('select');
-    this.browseSupportSelect.className = 'milkdrop-overlay__rating-select';
-    (
-      [
-        ['all', 'Any fidelity'],
-        ['exact', 'Exact'],
-        ['near-exact', 'Near exact'],
-        ['partial', 'Partial'],
-        ['fallback', 'Fallback'],
-      ] satisfies Array<[BrowseFidelityFilter, string]>
-    ).forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      this.browseSupportSelect.appendChild(option);
-    });
-    this.browseSupportSelect.addEventListener('change', () => {
-      this.browseSupportFilter = this.browseSupportSelect
-        .value as BrowseFidelityFilter;
-      this.scheduleBrowseRender(0);
-    });
-
-    this.browseSortSelect = document.createElement('select');
-    this.browseSortSelect.className = 'milkdrop-overlay__rating-select';
-    (
-      [
-        ['recommended', 'Recommended'],
-        ['recent', 'Recently used'],
-        ['rating', 'Top rated'],
-        ['title', 'Title'],
-      ] satisfies Array<[BrowseSort, string]>
-    ).forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      this.browseSortSelect.appendChild(option);
-    });
-    this.browseSortSelect.addEventListener('change', () => {
-      this.browseSort = this.browseSortSelect.value as BrowseSort;
-      this.scheduleBrowseRender(0);
-    });
-
-    this.browseModeTabs = document.createElement('div');
-    this.browseModeTabs.className = 'milkdrop-overlay__browse-mode-tabs';
-    this.browseModeTabs.setAttribute('role', 'tablist');
-    this.browseModeTabs.setAttribute('aria-label', 'Preset browse modes');
-    this.browseModeTabs.addEventListener('keydown', (event) =>
-      this.handleBrowseModeTabsKeydown(event),
-    );
-    (
-      [
-        ['featured', 'Featured'],
-        ['all', 'All presets'],
-        ['recent', 'Recent'],
-        ['favorites', 'Favorites'],
-      ] satisfies Array<[BrowseMode, string]>
-    ).forEach(([value, label]) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'milkdrop-overlay__browse-mode-tab';
-      button.dataset.mode = value;
-      button.setAttribute('role', 'tab');
-      button.textContent = label;
-      button.addEventListener('click', () => this.setBrowseMode(value));
-      this.browseModeButtons.push(button);
-      this.browseModeTabs.appendChild(button);
-    });
-    this.syncBrowseModeButtons();
-
-    this.browseOptionsDisclosure = document.createElement('details');
-    this.browseOptionsDisclosure.className = 'milkdrop-overlay__browse-options';
-    this.browseOptionsSummary = document.createElement('summary');
-    this.browseOptionsSummary.className =
-      'milkdrop-overlay__browse-options-summary';
-    this.browseOptionsSummary.textContent = 'More filters';
-    this.browseOptionsDisclosure.appendChild(this.browseOptionsSummary);
-
-    const browseOptionsBody = document.createElement('div');
-    browseOptionsBody.className = 'milkdrop-overlay__browse-options-body';
-    browseOptionsBody.append(
-      this.buildBrowseControl('Fidelity', this.browseSupportSelect),
-      this.buildBrowseControl('Sort', this.browseSortSelect),
-    );
-    this.browseOptionsDisclosure.appendChild(browseOptionsBody);
-    this.browseOptionsDisclosure.addEventListener('toggle', () => {
-      this.updateBrowseFilterVisibility();
-    });
-
-    const browseControls = document.createElement('div');
-    browseControls.className = 'milkdrop-overlay__browse-controls';
-    browseControls.append(
-      this.buildBrowseControl('Search', this.searchInput, true),
-      this.buildBrowseControl('Browse', this.browseModeTabs),
-      this.browseOptionsDisclosure,
-    );
-
-    this.collectionFilters = document.createElement('div');
-    this.collectionFilters.className = 'milkdrop-overlay__collection-filters';
-    this.updateBrowseFilterVisibility();
-    this.browseList = document.createElement('div');
-    this.browseList.className = 'milkdrop-overlay__browse';
-    this.tabPanels.browse.append(
-      browseHero,
-      browseControls,
-      this.collectionFilters,
-      this.browseList,
-    );
-
-    const editorHost = document.createElement('div');
-    editorHost.className = 'milkdrop-overlay__editor';
-    const editorIntro = document.createElement('div');
-    editorIntro.className = 'milkdrop-overlay__editor-intro';
-    const editorIntroCopy = document.createElement('div');
-    editorIntroCopy.className = 'milkdrop-overlay__editor-intro-copy';
-    const editorEyebrow = document.createElement('span');
-    editorEyebrow.className = 'milkdrop-overlay__editor-eyebrow';
-    editorEyebrow.textContent = 'Live coding';
-    const editorHeading = document.createElement('strong');
-    editorHeading.className = 'milkdrop-overlay__editor-heading';
-    editorHeading.textContent =
-      'Shape the active preset while it stays on beat';
-    const editorSubheading = document.createElement('p');
-    editorSubheading.className = 'milkdrop-overlay__editor-subheading';
-    editorSubheading.textContent =
-      'Strudel-style feedback loop: edits land automatically, the current visual keeps playing, and broken drafts never interrupt the last good frame.';
-    editorIntroCopy.append(editorEyebrow, editorHeading, editorSubheading);
-    const editorBadgeRow = document.createElement('div');
-    editorBadgeRow.className = 'milkdrop-overlay__editor-badges';
-    this.editorLiveBadge = document.createElement('span');
-    this.editorLiveBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--live';
-    this.editorLiveBadge.textContent = 'Live';
-    this.editorSyncBadge = document.createElement('span');
-    this.editorSyncBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--sync';
-    this.editorSyncBadge.textContent = 'Synced';
-    this.editorSafetyBadge = document.createElement('span');
-    this.editorSafetyBadge.className =
-      'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--safety';
-    this.editorSafetyBadge.textContent = 'Safety net on';
-    editorBadgeRow.append(
-      this.editorLiveBadge,
-      this.editorSyncBadge,
-      this.editorSafetyBadge,
-    );
-    editorIntro.append(editorIntroCopy, editorBadgeRow);
-    this.editorStatus = document.createElement('div');
-    this.editorStatus.className = 'milkdrop-overlay__editor-status';
-    this.editorStatus.textContent = 'Editor ready';
-
-    const editorActions = document.createElement('div');
-    editorActions.className = 'milkdrop-overlay__editor-actions';
-
-    const revertButton = document.createElement('button');
-    revertButton.type = 'button';
-    revertButton.textContent = 'Revert to live';
-    revertButton.addEventListener('click', () =>
-      this.callbacks.onRevertToActive(),
-    );
-    editorActions.appendChild(revertButton);
-
-    const duplicateButton = document.createElement('button');
-    duplicateButton.type = 'button';
-    duplicateButton.textContent = 'Duplicate';
-    duplicateButton.addEventListener('click', () =>
-      this.callbacks.onDuplicatePreset(),
-    );
-    editorActions.appendChild(duplicateButton);
-
-    editorActions.append(importButton, exportButton, this.deleteButton);
-
-    const editorQuickIdeas = document.createElement('div');
-    editorQuickIdeas.className = 'milkdrop-overlay__editor-quick-ideas';
-    const editorQuickIdeasLabel = document.createElement('span');
-    editorQuickIdeasLabel.className =
-      'milkdrop-overlay__editor-quick-ideas-label';
-    editorQuickIdeasLabel.textContent = 'Quick ideas';
-    const editorSnippetButtons = document.createElement('div');
-    editorSnippetButtons.className = 'milkdrop-overlay__editor-snippet-buttons';
-    EDITOR_SNIPPETS.forEach((snippetConfig) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'milkdrop-overlay__editor-snippet';
-      const label = document.createElement('strong');
-      label.textContent = snippetConfig.label;
-      const description = document.createElement('span');
-      description.textContent = snippetConfig.description;
-      button.append(label, description);
-      button.addEventListener('click', () => {
-        this.insertEditorSnippet(snippetConfig.snippet);
-      });
-      editorSnippetButtons.appendChild(button);
-    });
-    editorQuickIdeas.append(editorQuickIdeasLabel, editorSnippetButtons);
-
-    const editorTips = document.createElement('div');
-    editorTips.className = 'milkdrop-overlay__editor-tips';
-    [
-      'Auto-updates after 220ms of calm typing.',
-      'Errors keep the last stable preset visible.',
-      'Tab indents, undo/redo stays local to the draft.',
-    ].forEach((tip) => {
-      const item = document.createElement('div');
-      item.className = 'milkdrop-overlay__editor-tip';
-      item.textContent = tip;
-      editorTips.appendChild(item);
-    });
-
-    this.diagnosticsList = document.createElement('div');
-    this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
-    this.tabPanels.editor.append(
-      editorIntro,
-      this.editorStatus,
-      editorActions,
-      editorQuickIdeas,
-      editorHost,
-      editorTips,
-      this.diagnosticsList,
-    );
-
-    this.inspectorControls = document.createElement('div');
-    this.inspectorControls.className = 'milkdrop-overlay__inspector-controls';
-    this.inspectorMetrics = document.createElement('div');
-    this.inspectorMetrics.className = 'milkdrop-overlay__inspector-metrics';
-    this.tabPanels.inspector.append(
-      this.inspectorControls,
-      this.inspectorMetrics,
-    );
-
-    const panelBody = document.createElement('div');
-    panelBody.className = 'milkdrop-overlay__body';
-    panelBody.append(
-      this.tabPanels.browse,
-      this.tabPanels.editor,
-      this.tabPanels.inspector,
-    );
-
     this.fileInput = document.createElement('input');
     this.fileInput.type = 'file';
     this.fileInput.accept = '.milk,.txt,text/plain';
@@ -777,72 +220,40 @@ export class MilkdropOverlay {
       this.fileInput.value = '';
     });
 
+    this.browsePanel = new BrowsePanel({
+      onSelectPreset: (id) => this.callbacks.onSelectPreset(id),
+      onSelectQualityPreset: (presetId) =>
+        this.callbacks.onSelectQualityPreset(presetId),
+      onToggleFavorite: (id, favorite) =>
+        this.callbacks.onToggleFavorite(id, favorite),
+      onSetRating: (id, rating) => this.callbacks.onSetRating(id, rating),
+    });
+    this.editorPanel = new EditorPanel({
+      onEditorSourceChange: (source) =>
+        this.callbacks.onEditorSourceChange(source),
+      onRevertToActive: () => this.callbacks.onRevertToActive(),
+      onDuplicatePreset: () => this.callbacks.onDuplicatePreset(),
+      onExport: () => this.callbacks.onExport(),
+      onDeletePreset: () => this.callbacks.onDeletePreset(),
+      onRequestImport: () => this.fileInput.click(),
+    });
+    this.inspectorPanel = new InspectorPanel({
+      onInspectorFieldChange: (key, value) =>
+        this.callbacks.onInspectorFieldChange(key, value),
+    });
+
+    const panelBody = document.createElement('div');
+    panelBody.className = 'milkdrop-overlay__body';
+    panelBody.append(
+      this.browsePanel.element,
+      this.editorPanel.element,
+      this.inspectorPanel.element,
+    );
+
     this.panel.append(header, toolbar, tabs, panelBody);
     this.root.append(this.toggleButton, this.panel, this.fileInput);
     host.appendChild(this.root);
     this.setActiveTab('browse');
-
-    this.editor = new EditorView({
-      state: EditorState.create({
-        doc: '',
-        extensions: [
-          lineNumbers(),
-          history(),
-          StreamLanguage.define(properties),
-          oneDark,
-          EditorView.theme({
-            '&': {
-              color: '#eff6ff',
-              background:
-                'linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(8, 47, 73, 0.68))',
-              fontSize: '0.95rem',
-            },
-            '.cm-scroller': {
-              fontFamily:
-                '"IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace',
-              lineHeight: '1.6',
-            },
-            '.cm-gutters': {
-              backgroundColor: 'rgba(8, 47, 73, 0.42)',
-              color: 'rgba(125, 211, 252, 0.65)',
-              borderRight: '1px solid rgba(125, 211, 252, 0.14)',
-            },
-            '.cm-activeLine': {
-              backgroundColor: 'rgba(34, 211, 238, 0.08)',
-            },
-            '.cm-activeLineGutter': {
-              backgroundColor: 'rgba(34, 211, 238, 0.12)',
-            },
-            '.cm-content': {
-              caretColor: '#67e8f9',
-            },
-            '&.cm-focused .cm-cursor': {
-              borderLeftColor: '#67e8f9',
-            },
-            '&.cm-focused': {
-              outline: 'none',
-            },
-            '&.cm-focused .cm-selectionBackground, ::selection': {
-              backgroundColor: 'rgba(34, 211, 238, 0.22)',
-            },
-          }),
-          keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
-          EditorView.lineWrapping,
-          EditorView.updateListener.of((update) => {
-            if (!update.docChanged || this.suppressEditorChange) {
-              return;
-            }
-            if (this.editorDebounceId !== null) {
-              window.clearTimeout(this.editorDebounceId);
-            }
-            this.editorDebounceId = window.setTimeout(() => {
-              this.callbacks.onEditorSourceChange(update.state.doc.toString());
-            }, 220);
-          }),
-        ],
-      }),
-      parent: editorHost,
-    });
   }
 
   toggleOpen(force?: boolean) {
@@ -863,7 +274,7 @@ export class MilkdropOverlay {
   }
 
   shouldRenderInspectorMetrics() {
-    return this.isOpen() && this.activeTab === 'inspector';
+    return this.inspectorPanel.shouldRenderMetrics(this.isOpen());
   }
 
   setCurrentPresetTitle(title: string) {
@@ -872,741 +283,16 @@ export class MilkdropOverlay {
     }
   }
 
-  private setActiveTab(tab: string) {
-    this.activeTab = tab === 'editor' || tab === 'inspector' ? tab : 'browse';
-    Object.entries(this.tabPanels).forEach(([id, panel]) => {
-      panel.hidden = id !== tab;
-    });
-    setButtonActive(this.tabButtons, tab);
-    if (this.activeTab === 'browse' && this.browseDirty) {
-      this.renderCollectionFilters();
-      this.renderBrowseList();
-    }
-  }
-
-  private buildBrowseControl(
-    label: string,
-    control: HTMLElement,
-    isSearch = false,
-  ) {
-    const wrap = document.createElement('label');
-    wrap.className = `milkdrop-overlay__browse-control${isSearch ? ' milkdrop-overlay__browse-control--search' : ''}`;
-
-    const title = document.createElement('span');
-    title.className = 'milkdrop-overlay__browse-control-label';
-    title.textContent = label;
-
-    wrap.append(title, control);
-    return wrap;
-  }
-
-  private setBrowseMode(mode: BrowseMode) {
-    this.browseModeSelect.value = mode;
-    this.browseMode = mode;
-    this.syncBrowseModeButtons();
-    this.updateBrowseFilterVisibility();
-    this.scheduleBrowseRender(0);
-  }
-
-  private handleBrowseModeTabsKeydown(event: KeyboardEvent) {
-    const currentIndex = this.browseModeButtons.findIndex(
-      (button) => button.dataset.mode === this.browseMode,
-    );
-    if (currentIndex < 0) {
-      return;
-    }
-
-    let nextIndex: number | null = null;
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        nextIndex = (currentIndex + 1) % this.browseModeButtons.length;
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        nextIndex =
-          (currentIndex - 1 + this.browseModeButtons.length) %
-          this.browseModeButtons.length;
-        break;
-      case 'Home':
-        nextIndex = 0;
-        break;
-      case 'End':
-        nextIndex = this.browseModeButtons.length - 1;
-        break;
-      default:
-        return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    const nextButton = this.browseModeButtons[nextIndex];
-    const nextMode = nextButton?.dataset.mode as BrowseMode | undefined;
-    if (!nextButton || !nextMode) {
-      return;
-    }
-
-    this.setBrowseMode(nextMode);
-    nextButton.focus();
-  }
-
-  private syncBrowseModeButtons() {
-    this.browseModeButtons.forEach((button) => {
-      const isActive = button.dataset.mode === this.browseMode;
-      button.dataset.active = String(isActive);
-      button.setAttribute('aria-selected', String(isActive));
-      button.tabIndex = isActive ? 0 : -1;
-    });
-  }
-
-  private updateBrowseFilterVisibility() {
-    const shouldShowCollections =
-      this.browseMode === 'all' ||
-      this.browseOptionsDisclosure.open ||
-      this.activeCollectionTag.length > 0;
-    this.collectionFilters.hidden = !shouldShowCollections;
-  }
-
-  private updateBrowseQualityDetails(presetId: string) {
-    const preset = this.browseQualityPresets.find(
-      (entry) => entry.id === presetId,
-    );
-    if (!preset) {
-      return;
-    }
-
-    this.browseQualitySelect.value = preset.id;
-    const impactSummary = describeQualityPresetImpact(preset);
-    const persistenceHint = getQualityPresetScopeHint(
-      this.browseQualityStorageKey,
-    );
-    this.browseQualityHint.textContent = impactSummary || persistenceHint;
-    this.browseQualityHint.hidden = !this.browseQualityHint.textContent;
-  }
-
-  private renderBrowseSummary(filteredCount = this.presets.length) {
-    const activePreset = this.presets.find(
-      (entry) => entry.id === this.activePresetId,
-    );
-    this.browseActiveLabel.textContent = activePreset
-      ? `Now playing ${activePreset.title}`
-      : 'No preset selected';
-
-    const modeLabel = this.browseModeSelect.selectedOptions[0]?.textContent;
-    this.browseMetaLabel.textContent = [
-      `${filteredCount} shown`,
-      modeLabel,
-      this.activeBackend.toUpperCase(),
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  }
-
-  private matchesBrowseFilters(preset: MilkdropCatalogEntry, query: string) {
-    const collectionTag = this.activeCollectionTag;
-    if (collectionTag && !preset.tags.includes(collectionTag)) {
-      return false;
-    }
-
-    if (
-      this.browseSupportFilter !== 'all' &&
-      preset.fidelityClass !== this.browseSupportFilter
-    ) {
-      return false;
-    }
-
-    if (this.browseMode === 'recent' && preset.historyIndex === undefined) {
-      return false;
-    }
-    if (this.browseMode === 'favorites' && !preset.isFavorite) {
-      return false;
-    }
-
-    if (!query) {
-      return true;
-    }
-
-    return (
-      preset.title.toLowerCase().includes(query) ||
-      preset.author?.toLowerCase().includes(query) ||
-      preset.tags.some((tag) => tag.toLowerCase().includes(query))
-    );
-  }
-
-  private sortBrowsePresets(presets: MilkdropCatalogEntry[]) {
-    const sorted = [...presets];
-    sorted.sort((left, right) => {
-      if (this.browseSort === 'title') {
-        return left.title.localeCompare(right.title);
-      }
-      if (this.browseSort === 'rating') {
-        if (left.rating !== right.rating) {
-          return right.rating - left.rating;
-        }
-        return left.title.localeCompare(right.title);
-      }
-      if (this.browseSort === 'recent') {
-        const leftRecent = left.historyIndex ?? Number.MAX_SAFE_INTEGER;
-        const rightRecent = right.historyIndex ?? Number.MAX_SAFE_INTEGER;
-        if (leftRecent !== rightRecent) {
-          return leftRecent - rightRecent;
-        }
-        return left.title.localeCompare(right.title);
-      }
-
-      if (left.isFavorite !== right.isFavorite) {
-        return left.isFavorite ? -1 : 1;
-      }
-      if (
-        (left.curatedRank ?? Number.MAX_SAFE_INTEGER) !==
-        (right.curatedRank ?? Number.MAX_SAFE_INTEGER)
-      ) {
-        return (
-          (left.curatedRank ?? Number.MAX_SAFE_INTEGER) -
-          (right.curatedRank ?? Number.MAX_SAFE_INTEGER)
-        );
-      }
-      if (left.rating !== right.rating) {
-        return right.rating - left.rating;
-      }
-      return left.title.localeCompare(right.title);
-    });
-    return sorted;
-  }
-
-  private buildPresetRow(preset: MilkdropCatalogEntry) {
-    const row = document.createElement('div');
-    row.className = 'milkdrop-overlay__preset';
-    row.dataset.active = String(preset.id === this.activePresetId);
-
-    const launch = document.createElement('button');
-    launch.type = 'button';
-    launch.className = 'milkdrop-overlay__preset-launch';
-    launch.addEventListener('click', () =>
-      this.callbacks.onSelectPreset(preset.id),
-    );
-
-    const titleRow = document.createElement('div');
-    titleRow.className = 'milkdrop-overlay__preset-header';
-
-    const title = document.createElement('div');
-    title.className = 'milkdrop-overlay__preset-title';
-    title.textContent = preset.title;
-
-    const badges = document.createElement('div');
-    badges.className = 'milkdrop-overlay__preset-badges';
-
-    if (preset.id === this.activePresetId) {
-      const activeBadge = document.createElement('span');
-      activeBadge.className =
-        'milkdrop-overlay__preset-tag milkdrop-overlay__preset-tag--active';
-      activeBadge.textContent = 'Live';
-      badges.appendChild(activeBadge);
-    }
-
-    const support = preset.supports[this.activeBackend];
-    const supportBadge = document.createElement('span');
-    supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${preset.fidelityClass}`;
-    supportBadge.textContent = fidelityLabel(preset.fidelityClass);
-    badges.appendChild(supportBadge);
-
-    titleRow.append(title, badges);
-
-    const meta = document.createElement('div');
-    meta.className = 'milkdrop-overlay__preset-meta';
-    const metaQualifier = getPresetMetaQualifier(preset);
-    meta.textContent = [preset.author, metaQualifier]
-      .filter(Boolean)
-      .join(' · ');
-
-    launch.append(titleRow, meta);
-
-    const actions = document.createElement('div');
-    actions.className = 'milkdrop-overlay__preset-actions';
-
-    const favorite = document.createElement('button');
-    favorite.type = 'button';
-    favorite.className = 'milkdrop-overlay__favorite';
-    favorite.textContent = preset.isFavorite ? '★' : '☆';
-    favorite.setAttribute(
-      'aria-label',
-      preset.isFavorite ? 'Remove saved preset' : 'Save preset',
-    );
-    favorite.title = preset.isFavorite ? 'Remove saved preset' : 'Save preset';
-    favorite.addEventListener('click', (event) => {
-      event.stopPropagation();
-      this.callbacks.onToggleFavorite(preset.id, !preset.isFavorite);
-    });
-
-    const rating = document.createElement('select');
-    rating.className = 'milkdrop-overlay__rating-select';
-    rating.setAttribute('aria-label', `Rate ${preset.title}`);
-    rating.title = `Rate ${preset.title}`;
-    [0, 1, 2, 3, 4, 5].forEach((value) => {
-      const option = document.createElement('option');
-      option.value = String(value);
-      option.textContent = value === 0 ? '☆' : `${value}★`;
-      rating.appendChild(option);
-    });
-    rating.value = String(preset.rating);
-    rating.addEventListener('change', (event) => {
-      event.stopPropagation();
-      this.callbacks.onSetRating(preset.id, Number.parseInt(rating.value, 10));
-    });
-
-    actions.append(favorite, rating);
-
-    if (preset.origin !== 'bundled') {
-      const removable = document.createElement('span');
-      removable.className = 'milkdrop-overlay__preset-flag';
-      removable.textContent = 'Delete from toolbar';
-      actions.appendChild(removable);
-    }
-
-    row.append(launch, actions);
-
-    const hasCompatibilityWarning =
-      support.status !== 'supported' ||
-      preset.parity.degradationReasons.length > 0;
-    if (hasCompatibilityWarning) {
-      const reasons = document.createElement('div');
-      reasons.className = 'milkdrop-overlay__preset-warning';
-      const primaryReason = [...preset.parity.degradationReasons].sort(
-        (left, right) => {
-          if (left.blocking !== right.blocking) {
-            return left.blocking ? -1 : 1;
-          }
-          return (
-            compatibilityCategoryPriority(left.category) -
-            compatibilityCategoryPriority(right.category)
-          );
-        },
-      )[0];
-      reasons.textContent = formatPrimaryCompatibilityMessage({
-        primaryReason,
-        support,
-      });
-      row.appendChild(reasons);
-    }
-
-    return row;
-  }
-
-  private getPresetRowSignature(preset: MilkdropCatalogEntry) {
-    const support = preset.supports[this.activeBackend];
-    const primaryReason = [...preset.parity.degradationReasons].sort(
-      (left, right) => {
-        if (left.blocking !== right.blocking) {
-          return left.blocking ? -1 : 1;
-        }
-        return (
-          compatibilityCategoryPriority(left.category) -
-          compatibilityCategoryPriority(right.category)
-        );
-      },
-    )[0];
-    return [
-      preset.id,
-      preset.title,
-      preset.author ?? '',
-      preset.origin,
-      preset.certification,
-      preset.rating,
-      preset.isFavorite ? 1 : 0,
-      preset.historyIndex ?? -1,
-      preset.tags.join(','),
-      this.activePresetId === preset.id ? 1 : 0,
-      this.activeBackend,
-      support.status,
-      support.reasons[0] ?? '',
-      primaryReason?.category ?? '',
-      primaryReason?.message ?? '',
-    ].join('|');
-  }
-
-  private getPresetRow(preset: MilkdropCatalogEntry) {
-    const signature = this.getPresetRowSignature(preset);
-    const cached = this.presetRowCache.get(preset.id);
-    if (cached && cached.signature === signature) {
-      return cached.row;
-    }
-    const row = this.buildPresetRow(preset);
-    this.presetRowCache.set(preset.id, { signature, row });
-    return row;
-  }
-
-  private appendPresetSection(
-    title: string,
-    presets: MilkdropCatalogEntry[],
-    target: DocumentFragment | HTMLElement = this.browseList,
-  ) {
-    if (presets.length === 0) {
-      return;
-    }
-    const section = document.createElement('section');
-    section.className = 'milkdrop-overlay__browse-section';
-    const heading = document.createElement('div');
-    heading.className = 'milkdrop-overlay__browse-heading';
-    heading.textContent = title;
-    const count = document.createElement('span');
-    count.className = 'milkdrop-overlay__browse-count';
-    count.textContent = String(presets.length);
-    heading.appendChild(count);
-    section.appendChild(heading);
-    presets.forEach((preset) => {
-      section.appendChild(this.getPresetRow(preset));
-    });
-    target.appendChild(section);
-  }
-
-  private dedupeBrowsePresets(
-    presets: MilkdropCatalogEntry[],
-    seen: Set<string>,
-  ) {
-    return presets.filter((preset) => {
-      if (seen.has(preset.id)) {
-        return false;
-      }
-      seen.add(preset.id);
-      return true;
-    });
-  }
-
-  private buildFeaturedBrowseSections(filtered: MilkdropCatalogEntry[]) {
-    const sections: BrowseSection[] = [];
-    const seen = new Set<string>();
-    const recent = filtered
-      .filter((preset) => preset.historyIndex !== undefined)
-      .slice(0, 4);
-    const favoriteRecovery = filtered
-      .filter(
-        (preset) =>
-          preset.isFavorite &&
-          !recent.some((recentPreset) => recentPreset.id === preset.id),
-      )
-      .slice(0, 4);
-    const recovery = this.dedupeBrowsePresets(
-      [...recent, ...favoriteRecovery],
-      seen,
-    ).slice(0, 6);
-
-    if (recovery.length > 0) {
-      const hasRecent = recent.length > 0;
-      const hasFavorites = favoriteRecovery.length > 0;
-      const title = hasRecent
-        ? hasFavorites
-          ? 'Continue listening'
-          : 'Recent'
-        : 'Favorites';
-      sections.push({ title, presets: recovery });
-    }
-
-    const recommended = this.dedupeBrowsePresets(filtered, seen).slice(0, 12);
-    if (recommended.length > 0) {
-      sections.push({ title: 'Recommended', presets: recommended });
-    }
-
-    return sections;
-  }
-
-  private scheduleBrowseRender(delayMs = 120) {
-    this.browseDirty = true;
-    if (this.activeTab !== 'browse') {
-      return;
-    }
-    if (this.browseRenderDebounceId !== null) {
-      window.clearTimeout(this.browseRenderDebounceId);
-    }
-    this.browseRenderDebounceId = window.setTimeout(() => {
-      this.browseRenderDebounceId = null;
-      this.renderBrowseList();
-    }, delayMs);
-  }
-
-  private renderBrowseList() {
-    const query = this.searchInput.value.trim().toLowerCase();
-    const renderSignature = [
-      this.lastCatalogSignature,
-      this.activePresetId ?? '',
-      this.activeBackend,
-      this.activeCollectionTag,
-      this.browseMode,
-      this.browseSupportFilter,
-      this.browseSort,
-      query,
-    ].join('|');
-    if (
-      renderSignature === this.lastBrowseRenderSignature &&
-      !this.browseDirty
-    ) {
-      return;
-    }
-    this.lastBrowseRenderSignature = renderSignature;
-    this.browseDirty = false;
-    this.updateBrowseFilterVisibility();
-    const filtered = this.sortBrowsePresets(
-      this.presets.filter((preset) => this.matchesBrowseFilters(preset, query)),
-    );
-
-    const fragment = document.createDocumentFragment();
-    this.renderBrowseSummary(filtered.length);
-    if (filtered.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'milkdrop-overlay__browse-empty';
-      empty.textContent = 'No presets match the current filters.';
-      this.browseList.replaceChildren(empty);
-      return;
-    }
-
-    const useSections =
-      this.browseMode === 'featured' &&
-      !query &&
-      !this.activeCollectionTag &&
-      this.browseSupportFilter === 'all' &&
-      this.browseSort === 'recommended';
-
-    if (!useSections) {
-      filtered.forEach((preset) => {
-        fragment.appendChild(this.getPresetRow(preset));
-      });
-      this.browseList.replaceChildren(fragment);
-      return;
-    }
-
-    this.buildFeaturedBrowseSections(filtered).forEach((section) => {
-      this.appendPresetSection(section.title, section.presets, fragment);
-    });
-    this.browseList.replaceChildren(fragment);
-  }
-
-  private renderCollectionFilters() {
-    const collectionTags = [
-      ...new Set(
-        this.presets.flatMap((preset) =>
-          preset.tags.filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX)),
-        ),
-      ),
-    ].sort((left, right) => {
-      return (COLLECTION_LABELS[left] ?? left).localeCompare(
-        COLLECTION_LABELS[right] ?? right,
-      );
-    });
-
-    const fragment = document.createDocumentFragment();
-    const options = [
-      { tag: '', label: 'All presets' },
-      ...collectionTags.map((tag) => ({
-        tag,
-        label:
-          COLLECTION_LABELS[tag] ??
-          tag.slice(COLLECTION_TAG_PREFIX.length).replace(/-/gu, ' '),
-      })),
-    ];
-
-    options.forEach((option) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'milkdrop-overlay__collection-filter';
-      button.textContent = option.label;
-      button.dataset.active = String(option.tag === this.activeCollectionTag);
-      button.addEventListener('click', () => {
-        this.activeCollectionTag = option.tag;
-        this.browseDirty = true;
-        this.updateBrowseFilterVisibility();
-        this.renderCollectionFilters();
-        this.renderBrowseList();
-      });
-      fragment.appendChild(button);
-    });
-    this.collectionFilters.replaceChildren(fragment);
-  }
-
-  private buildInspectorField(
-    key: string,
-    label: string,
-    value: string | number,
-    options: { min?: number; max?: number; step?: number } = {},
-  ) {
-    const wrap = document.createElement('label');
-    wrap.className = 'milkdrop-overlay__field';
-    const title = document.createElement('span');
-    title.textContent = label;
-    wrap.appendChild(title);
-
-    if (typeof value === 'number') {
-      const input = document.createElement('input');
-      input.type = 'range';
-      input.min = String(options.min ?? 0);
-      input.max = String(options.max ?? 2);
-      input.step = String(options.step ?? 0.01);
-      input.value = String(value);
-      const valueLabel = document.createElement('strong');
-      valueLabel.textContent = Number(value).toFixed(2);
-      input.addEventListener('input', () => {
-        const nextValue = Number.parseFloat(input.value);
-        valueLabel.textContent = nextValue.toFixed(2);
-        this.callbacks.onInspectorFieldChange(key, nextValue);
-      });
-      wrap.append(input, valueLabel);
-      return wrap;
-    }
-
-    const textInput = document.createElement('input');
-    textInput.type = 'text';
-    textInput.value = value;
-    textInput.addEventListener('change', () => {
-      this.callbacks.onInspectorFieldChange(key, textInput.value);
-    });
-    wrap.appendChild(textInput);
-    return wrap;
-  }
-
-  private renderInspectorControls(compiled: MilkdropCompiledPreset) {
-    const signature = `${compiled.source.id}:${compiled.formattedSource}`;
-    if (signature === this.lastInspectorSignature) {
-      return;
-    }
-    this.lastInspectorSignature = signature;
-
-    const fields: HTMLElement[] = [
-      this.buildInspectorField('title', 'Title', compiled.title),
-      this.buildInspectorField('author', 'Author', compiled.author ?? ''),
-      this.buildInspectorField('zoom', 'Zoom', compiled.ir.numericFields.zoom, {
-        min: 0.75,
-        max: 1.4,
-        step: 0.01,
-      }),
-      this.buildInspectorField(
-        'rot',
-        'Rotation',
-        compiled.ir.numericFields.rot,
-        {
-          min: -0.2,
-          max: 0.2,
-          step: 0.0025,
-        },
-      ),
-      this.buildInspectorField('warp', 'Warp', compiled.ir.numericFields.warp, {
-        min: 0,
-        max: 0.45,
-        step: 0.005,
-      }),
-      this.buildInspectorField(
-        'blend_duration',
-        'Blend seconds',
-        compiled.ir.numericFields.blend_duration,
-        {
-          min: 0,
-          max: 8,
-          step: 0.25,
-        },
-      ),
-      this.buildInspectorField(
-        'mesh_density',
-        'Mesh density',
-        compiled.ir.numericFields.mesh_density,
-        { min: 8, max: 36, step: 1 },
-      ),
-      this.buildInspectorField(
-        'wave_scale',
-        'Main wave scale',
-        compiled.ir.numericFields.wave_scale,
-        { min: 0.5, max: 2, step: 0.01 },
-      ),
-      this.buildInspectorField(
-        'ob_size',
-        'Outer border',
-        compiled.ir.numericFields.ob_size,
-        {
-          min: 0,
-          max: 0.3,
-          step: 0.005,
-        },
-      ),
-      this.buildInspectorField(
-        'ib_size',
-        'Inner border',
-        compiled.ir.numericFields.ib_size,
-        {
-          min: 0,
-          max: 0.3,
-          step: 0.005,
-        },
-      ),
-    ];
-
-    compiled.ir.customWaves.forEach((wave) => {
-      fields.push(
-        this.buildInspectorField(
-          `wavecode_${wave.index - 1}_enabled`,
-          `Wave ${wave.index} enabled`,
-          wave.fields.enabled ?? 0,
-          { min: 0, max: 1, step: 1 },
-        ),
-      );
-      fields.push(
-        this.buildInspectorField(
-          `wavecode_${wave.index - 1}_samples`,
-          `Wave ${wave.index} samples`,
-          wave.fields.samples ?? 64,
-          { min: 8, max: 192, step: 1 },
-        ),
-      );
-    });
-
-    compiled.ir.customShapes.forEach((shape) => {
-      fields.push(
-        this.buildInspectorField(
-          `shapecode_${shape.index - 1}_enabled`,
-          `Shape ${shape.index} enabled`,
-          shape.fields.enabled ?? 0,
-          { min: 0, max: 1, step: 1 },
-        ),
-      );
-      fields.push(
-        this.buildInspectorField(
-          `shapecode_${shape.index - 1}_rad`,
-          `Shape ${shape.index} radius`,
-          shape.fields.rad ?? 0.15,
-          { min: 0.04, max: 0.8, step: 0.01 },
-        ),
-      );
-    });
-
-    this.inspectorControls.replaceChildren(...fields);
-  }
-
   setQualityPresets({
     presets,
     activePresetId,
-    storageKey = QUALITY_STORAGE_KEY,
+    storageKey,
   }: {
     presets: QualityPreset[];
     activePresetId: string;
     storageKey?: string;
   }) {
-    this.browseQualityPresets = presets;
-    this.browseQualityStorageKey = storageKey;
-
-    this.browseQualitySelect.replaceChildren();
-    presets.forEach((preset) => {
-      const option = document.createElement('option');
-      option.value = preset.id;
-      option.textContent = preset.label;
-      this.browseQualitySelect.appendChild(option);
-    });
-
-    const initialPreset =
-      presets.find((preset) => preset.id === activePresetId) ?? presets[0];
-    if (!initialPreset) {
-      this.browseQualitySelect.disabled = true;
-      this.browseQualityHint.textContent = '';
-      this.browseQualityHint.hidden = true;
-      return;
-    }
-
-    this.browseQualitySelect.disabled = false;
-    this.updateBrowseQualityDetails(initialPreset.id);
+    this.browsePanel.setQualityPresets({ presets, activePresetId, storageKey });
   }
 
   setCatalog(
@@ -1614,43 +300,11 @@ export class MilkdropOverlay {
     activePresetId: string | null,
     backend: 'webgl' | 'webgpu',
   ) {
-    const catalogSignature = presets
-      .map((preset) =>
-        [
-          preset.id,
-          preset.rating,
-          preset.isFavorite ? 1 : 0,
-          preset.historyIndex ?? -1,
-          preset.tags.join(','),
-          preset.supports[backend].status,
-        ].join(':'),
-      )
-      .join('|');
-    const activeChanged =
-      this.activePresetId !== activePresetId || this.activeBackend !== backend;
-    this.presets = presets;
-    this.activePresetId = activePresetId;
-    this.activeBackend = backend;
-    this.browseDirty =
-      this.browseDirty ||
-      activeChanged ||
-      this.lastCatalogSignature !== catalogSignature;
-    this.lastCatalogSignature = catalogSignature;
-    const validIds = new Set(presets.map((preset) => preset.id));
-    Array.from(this.presetRowCache.keys()).forEach((id) => {
-      if (!validIds.has(id)) {
-        this.presetRowCache.delete(id);
-      }
-    });
-    if (this.activeTab === 'browse') {
-      this.renderCollectionFilters();
-      this.renderBrowseList();
-    }
-    const activePreset = this.presets.find(
-      (entry) => entry.id === activePresetId,
+    this.browsePanel.setCatalog(presets, activePresetId, backend);
+    const activePreset = presets.find((entry) => entry.id === activePresetId);
+    this.editorPanel.setDeleteEnabled(
+      Boolean(activePreset && activePreset.origin !== 'bundled'),
     );
-    this.deleteButton.hidden =
-      !activePreset || activePreset.origin === 'bundled';
   }
 
   setAutoplay(enabled: boolean) {
@@ -1662,117 +316,15 @@ export class MilkdropOverlay {
     this.blendValue.textContent = `${value.toFixed(2)}s`;
   }
 
-  private insertEditorSnippet(snippet: string) {
-    const selection = this.editor.state.selection.main;
-    const prefix =
-      selection.from > 0 &&
-      this.editor.state.doc.sliceString(selection.from - 1, selection.from) !==
-        '\n'
-        ? '\n'
-        : '';
-    const suffix =
-      selection.to < this.editor.state.doc.length &&
-      this.editor.state.doc.sliceString(selection.to, selection.to + 1) !== '\n'
-        ? '\n'
-        : '';
-    const text = `${prefix}${snippet}${suffix}`;
-    this.editor.dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: text,
-      },
-      selection: {
-        anchor: selection.from + text.length,
-      },
-      scrollIntoView: true,
-    });
-    this.editor.focus();
-  }
-
   setTransitionMode(mode: 'blend' | 'cut') {
     this.transitionModeSelect.value = mode;
     this.blendSlider.disabled = mode === 'cut';
   }
 
   setSessionState(state: MilkdropEditorSessionState) {
-    const nextSource = state.source;
-    if (nextSource !== this.editor.state.doc.toString()) {
-      this.suppressEditorChange = true;
-      this.editor.dispatch({
-        changes: {
-          from: 0,
-          to: this.editor.state.doc.length,
-          insert: nextSource,
-        },
-      });
-      this.suppressEditorChange = false;
-    }
-
-    const errors = state.diagnostics.filter(
-      (diagnostic) => diagnostic.severity === 'error',
-    );
-    const primaryReason = getPrimaryDegradationReason(state.latestCompiled);
-    const activeCompatibility = state.latestCompiled?.ir.compatibility.parity;
-    const latestWebglStatus =
-      state.latestCompiled?.ir.compatibility.backends.webgl.status;
-    const latestWebgpuStatus =
-      state.latestCompiled?.ir.compatibility.backends.webgpu.status;
-    const baseStatus = errors.length
-      ? `${errors.length} issue${errors.length === 1 ? '' : 's'} keeping the last good preset live`
-      : state.dirty
-        ? 'Live preset updated from editor'
-        : 'Editor synced with live preset';
-    const fidelityStatus = activeCompatibility
-      ? `Fidelity ${fidelityLabel(activeCompatibility.fidelityClass)} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
-      : null;
-    this.editorStatus.textContent = [baseStatus, fidelityStatus]
-      .filter(Boolean)
-      .join(' | ');
-    const hasErrors = errors.length > 0;
-    this.editorLiveBadge.textContent = hasErrors
-      ? 'Holding last good frame'
-      : 'Live';
-    this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
-    this.editorSyncBadge.textContent = state.dirty ? 'Draft changed' : 'Synced';
-    this.editorSyncBadge.dataset.tone = state.dirty ? 'accent' : 'muted';
-    this.editorSafetyBadge.textContent = hasErrors
-      ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
-      : (fidelityStatus ?? 'Safety net on');
-    this.editorSafetyBadge.dataset.tone = hasErrors
-      ? 'danger'
-      : activeCompatibility?.fidelityClass === 'partial' ||
-          activeCompatibility?.fidelityClass === 'fallback'
-        ? 'warning'
-        : 'muted';
-
-    this.diagnosticsList.replaceChildren();
-    const derivedNotices = [
-      primaryReason
-        ? {
-            severity: primaryReason.blocking ? 'warning' : 'info',
-            message: `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}`,
-          }
-        : null,
-    ].filter(Boolean) as Array<{
-      severity: 'warning' | 'info';
-      message: string;
-    }>;
-
-    [...state.diagnostics.slice(0, 8), ...derivedNotices]
-      .slice(0, 10)
-      .forEach((diagnostic) => {
-        const item = document.createElement('div');
-        item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
-        item.textContent =
-          'line' in diagnostic && diagnostic.line
-            ? `Line ${diagnostic.line}: ${diagnostic.message}`
-            : diagnostic.message;
-        this.diagnosticsList.appendChild(item);
-      });
-
+    this.editorPanel.setSessionState(state);
     if (state.activeCompiled) {
-      this.renderInspectorControls(state.activeCompiled);
+      this.inspectorPanel.setCompiledPreset(state.activeCompiled);
     }
   }
 
@@ -1785,66 +337,16 @@ export class MilkdropOverlay {
     frameState: MilkdropFrameState | null;
     backend: 'webgl' | 'webgpu';
   }) {
-    this.activeBackend = backend;
     if (compiled) {
       this.setCurrentPresetTitle(compiled.title);
+      this.inspectorPanel.setCompiledPreset(compiled);
     }
-
-    if (!frameState || !compiled) {
-      if (this.shouldRenderInspectorMetrics()) {
-        this.inspectorMetrics.textContent = 'Waiting for preview frames...';
-      }
-      return;
-    }
-
-    if (!this.shouldRenderInspectorMetrics()) {
-      return;
-    }
-
-    const support = compiled.ir.compatibility.backends[backend];
-    const parity = compiled.ir.compatibility.parity;
-    const primaryReason = getPrimaryDegradationReason(compiled);
-    const degradationCategorySummary =
-      parity.degradationReasons.length > 0
-        ? [
-            ...new Set(
-              parity.degradationReasons.map((reason) =>
-                compatibilityCategoryLabel(reason.category),
-              ),
-            ),
-          ].join(', ')
-        : 'None';
-    const metricsMarkup = `
-      <div><strong>Backend:</strong> ${backend}</div>
-      <div><strong>Transport support:</strong> ${supportLabel(support.status)}</div>
-      <div><strong>Fidelity:</strong> ${fidelityLabel(parity.fidelityClass)}</div>
-      <div><strong>Certification:</strong> ${compiled.source.origin === 'bundled' ? 'bundled' : 'exploratory'}</div>
-      <div><strong>Degradation categories:</strong> ${degradationCategorySummary}</div>
-      <div><strong>Evidence:</strong> compile ${parity.evidence.compile}, runtime ${parity.evidence.runtime}, visual ${parity.evidence.visual}</div>
-      <div><strong>Backend divergence:</strong> ${parity.backendDivergence.length}</div>
-      <div><strong>Visual fallbacks:</strong> ${parity.visualFallbacks.length}</div>
-      <div><strong>Features:</strong> ${compiled.ir.compatibility.featureAnalysis.featuresUsed.join(', ') || 'base-globals'}</div>
-      <div><strong>Frame:</strong> ${frameState.signals.frame}</div>
-      <div><strong>Bass / mid / treb:</strong> ${frameState.signals.bass.toFixed(2)} / ${frameState.signals.mid.toFixed(2)} / ${frameState.signals.treb.toFixed(2)}</div>
-      <div><strong>Beat pulse:</strong> ${frameState.signals.beatPulse.toFixed(2)}</div>
-      <div><strong>Main wave points:</strong> ${Math.floor(frameState.mainWave.positions.length / 3)}</div>
-      <div><strong>Custom waves:</strong> ${frameState.customWaves.length}</div>
-      <div><strong>Shapes:</strong> ${frameState.shapes.length}</div>
-      <div><strong>Borders:</strong> ${frameState.borders.length}</div>
-      <div><strong>Register pressure:</strong> q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}</div>
-      <div><strong>Primary note:</strong> ${primaryReason || support.status !== 'supported' ? formatPrimaryCompatibilityMessage({ primaryReason, support }) : (parity.visualFallbacks[0] ?? 'Validated for the active backend.')}</div>
-    `;
-    const now =
-      typeof performance !== 'undefined' ? performance.now() : Date.now();
-    if (
-      metricsMarkup === this.lastInspectorSignature &&
-      now - this.lastInspectorRenderAt < 240
-    ) {
-      return;
-    }
-    this.lastInspectorSignature = metricsMarkup;
-    this.lastInspectorRenderAt = now;
-    this.inspectorMetrics.innerHTML = metricsMarkup;
+    this.inspectorPanel.renderMetrics({
+      compiled,
+      frameState,
+      backend,
+      isOpen: this.isOpen(),
+    });
   }
 
   setStatus(message: string) {
@@ -1852,13 +354,16 @@ export class MilkdropOverlay {
   }
 
   dispose() {
-    this.editor.destroy();
-    if (this.editorDebounceId !== null) {
-      window.clearTimeout(this.editorDebounceId);
-    }
-    if (this.browseRenderDebounceId !== null) {
-      window.clearTimeout(this.browseRenderDebounceId);
-    }
+    this.editorPanel.dispose();
+    this.browsePanel.dispose();
     this.root.remove();
+  }
+
+  private setActiveTab(tab: string) {
+    this.activeTab = tab === 'editor' || tab === 'inspector' ? tab : 'browse';
+    this.browsePanel.setVisible(this.activeTab === 'browse');
+    this.editorPanel.setVisible(this.activeTab === 'editor');
+    this.inspectorPanel.setVisible(this.activeTab === 'inspector');
+    setButtonActive(this.tabButtons, this.activeTab);
   }
 }
