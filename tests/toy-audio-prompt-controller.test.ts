@@ -32,7 +32,7 @@ describe('toy audio prompt controller', () => {
     expect(options.starterTips).toEqual(['Try mic first']);
   });
 
-  test('skips the floating prompt when shell controls already exist', () => {
+  test('still shows the floating prompt when shell controls exist behind the active toy overlay', () => {
     document.body.innerHTML =
       '<div id="active-toy-container"></div><div data-audio-controls><div data-existing="true"></div></div>';
 
@@ -53,6 +53,10 @@ describe('toy audio prompt controller', () => {
       starterTips: ['Try demo first'],
     });
 
-    expect(showAudioPrompt).not.toHaveBeenCalled();
+    expect(showAudioPrompt).toHaveBeenCalledTimes(1);
+    const [active, options] = showAudioPrompt.mock.calls[0];
+    expect(active).toBe(true);
+    expect(options.preferDemoAudio).toBe(true);
+    expect(options.starterTips).toEqual(['Try demo first']);
   });
 });

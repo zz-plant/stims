@@ -275,7 +275,7 @@ describe('loadToy', () => {
     expect(vibrate).toHaveBeenCalled();
   });
 
-  test('does not show a duplicate floating audio prompt when shell controls already exist', async () => {
+  test('shows the floating audio prompt even when shell controls exist behind the active toy overlay', async () => {
     document.body.innerHTML =
       '<div id="toy-list"></div><div data-audio-controls><div data-existing="true"></div></div>';
 
@@ -296,7 +296,7 @@ describe('loadToy', () => {
 
     expect(
       document.querySelector('#active-toy-container .control-panel'),
-    ).toBeNull();
+    ).not.toBeNull();
   });
 
   test('keeps the current toy mounted while the next toy is loading', async () => {

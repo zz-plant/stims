@@ -15,13 +15,6 @@ type LoaderView = {
 };
 
 export function createToyAudioPromptController({ view }: { view: LoaderView }) {
-  const shellOwnsAudioControls = () => {
-    const container = document.querySelector<HTMLElement>(
-      '[data-audio-controls]',
-    );
-    return Boolean(container && container.childElementCount > 0);
-  };
-
   const hasActiveAudio = () => document.body.dataset.audioActive === 'true';
 
   const maybeShowPrompt = ({
@@ -38,7 +31,6 @@ export function createToyAudioPromptController({ view }: { view: LoaderView }) {
     if (
       !launchResult.audioStarterAvailable ||
       !launchResult.startAudio ||
-      shellOwnsAudioControls() ||
       hasActiveAudio()
     ) {
       return;
