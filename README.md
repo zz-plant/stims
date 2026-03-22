@@ -15,6 +15,7 @@ Quick links:
 - Live site: [no.toil.fyi](https://no.toil.fyi)
 - Launch app: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
 - Product page: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
+- Marketing page opt-out: [no.toil.fyi/?landing=1](https://no.toil.fyi/?landing=1)
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
@@ -32,7 +33,7 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 - A launch flow with readiness checks before microphone prompts and renderer-heavy startup.
 - Multiple audio paths including microphone, demo audio, tab capture, and YouTube-backed tab capture.
 - Renderer preference handling with WebGPU-first startup and direct WebGL fallback when needed.
-- A focused marketing/launch page at `index.html`, plus the canonical visualizer route at `milkdrop/index.html` (`/milkdrop/`).
+- A root URL that auto-forwards to the demo-backed visualizer, plus an opt-out marketing page at `/?landing=1` and the canonical visualizer route at `milkdrop/index.html` (`/milkdrop/`).
 
 ## Shipped experience
 
