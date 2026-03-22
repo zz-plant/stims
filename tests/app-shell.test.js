@@ -31,7 +31,7 @@ describe('home shell user journeys', () => {
       <div data-milkdrop-preset-list></div>
     `;
     document.body.dataset.page = 'home';
-    mockLoadToy = mock();
+    mockLoadToy = mock(async () => {});
     mockLoadFromQuery = mock();
     mockInitNavigation = mock();
   });
@@ -43,14 +43,15 @@ describe('home shell user journeys', () => {
     delete globalThis.__stimsLoaderOverrides;
   });
 
-  test('home landing renders site navigation without query-driven toy loading', async () => {
+  test('home landing starts the milkdrop visualizer in place with demo audio preference', async () => {
     await loadAppShell();
 
-    expect(document.querySelector('[data-top-nav]')).not.toBeNull();
-    expect(document.querySelector('.nav-link[href="#presets"]')).not.toBeNull();
-    expect(
-      document.querySelector('.nav-link[href="/milkdrop/"]'),
-    ).not.toBeNull();
+    expect(mockInitNavigation).toHaveBeenCalledTimes(1);
+    expect(mockLoadToy).toHaveBeenCalledTimes(1);
+    expect(mockLoadToy).toHaveBeenCalledWith('milkdrop', {
+      preferDemoAudio: true,
+    });
+    expect(new URL(window.location.href).pathname).toBe('/');
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
   });
 
@@ -64,6 +65,6 @@ describe('home shell user journeys', () => {
       new window.MouseEvent('click', { bubbles: true, cancelable: true }),
     );
 
-    expect(mockLoadToy).not.toHaveBeenCalled();
+    expect(mockLoadToy).toHaveBeenCalledTimes(1);
   });
 });
