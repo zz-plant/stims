@@ -1,5 +1,6 @@
 import type * as THREE from 'three';
 import { isMobileDevice } from '../utils/device-detect';
+import { DEFAULT_WEBGPU_INIT_TIMEOUT_MS } from './renderer-init-timeout.ts';
 import type {
   RendererInitConfig,
   RendererInitResult,
@@ -47,7 +48,7 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   exposure: 1,
   antialias: true,
   alpha: false,
-  webgpuInitTimeoutMs: 4000,
+  webgpuInitTimeoutMs: DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
 };
 
 export const DEFAULT_RENDERER_RUNTIME_CONTROLS: RendererRuntimeControls = {
