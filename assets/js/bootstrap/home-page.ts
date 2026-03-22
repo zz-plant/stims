@@ -1,26 +1,16 @@
-import { initNavigation as initTopNav } from '../ui/nav.ts';
-import { initMilkdropShowcase } from '../utils/init-milkdrop-showcase.ts';
-import { initNavScrollEffects } from '../utils/init-nav-scroll.ts';
+import type { createLoader } from '../loader.ts';
 
-const runInit = (label: string, init: () => void | Promise<void>) => {
-  try {
-    Promise.resolve(init()).catch((error) => {
-      console.error(`Failed to initialize ${label}`, error);
-    });
-  } catch (error) {
-    console.error(`Failed to initialize ${label}`, error);
-  }
-};
+const HOME_TOY_SLUG = 'milkdrop';
+
+type LoaderApi = ReturnType<typeof createLoader>;
 
 export function bootHomePage({
-  navContainer,
+  loadToy,
+  initNavigation,
 }: {
-  navContainer: HTMLElement | null;
+  loadToy: LoaderApi['loadToy'];
+  initNavigation: LoaderApi['initNavigation'];
 }) {
-  if (navContainer) {
-    initTopNav(navContainer, { mode: 'library' });
-  }
-
-  runInit('milkdrop showcase', initMilkdropShowcase);
-  runInit('nav scroll effects', initNavScrollEffects);
+  initNavigation();
+  void loadToy(HOME_TOY_SLUG, { preferDemoAudio: true });
 }

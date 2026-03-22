@@ -4,7 +4,7 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 ## Architecture at a Glance
 
-- **Entry shells** (`index.html`, `milkdrop/index.html`, and legacy `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` explains the product and `/milkdrop/` is the canonical launch route.
+- **Entry shells** (`index.html`, `milkdrop/index.html`, and legacy `toy.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` now boots the demo-backed MilkDrop session in place, while `/milkdrop/` remains the canonical launch route.
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
@@ -21,7 +21,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Runtime Layers
 
-- **HTML entry points** (`index.html`, `milkdrop/index.html`, plus legacy `toy.html`) load `assets/js/app.ts`; the canonical launch path is `/milkdrop/`, while query params refine launch state.
+- **HTML entry points** (`index.html`, `milkdrop/index.html`, plus legacy `toy.html`) load `assets/js/app.ts`; `index.html` now boots the visualizer directly with demo-audio preference, and query params still refine launch state on the dedicated visualizer route.
 - **App bootstrap** (`assets/js/app.ts`) detects library vs toy pages, wires controls, runs capability preflight, and starts loader flows.
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
