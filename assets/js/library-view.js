@@ -58,6 +58,7 @@ export function createLibraryView({
   let threeEffects = createNoopThreeEffects();
   let threeEffectsLoader = null;
   let threeEffectsInitialized = false;
+  let pendingCardPreviewSync = null;
   const filterLabelCache = new Map();
 
   const {
@@ -79,6 +80,17 @@ export function createLibraryView({
   const getState = () => stateController.getState();
   const getToyKey = (toy, index = 0) => toy?.slug ?? `toy-${index}`;
 
+  const syncThreeEffectCardPreviews = (cards, renderedToys) => {
+    pendingCardPreviewSync = { cards, renderedToys };
+    threeEffects.syncCardPreviews(cards, renderedToys);
+  };
+
+  const replayPendingCardPreviewSync = () => {
+    if (!pendingCardPreviewSync) return;
+    const { cards, renderedToys } = pendingCardPreviewSync;
+    threeEffects.syncCardPreviews(cards, renderedToys);
+  };
+
   const ensureThreeEffects = async () => {
     if (threeEffectsLoader) return threeEffectsLoader;
     threeEffectsLoader = import('./library-view/three-library-effects.ts')
@@ -86,6 +98,7 @@ export function createLibraryView({
         threeEffects = createLibraryThreeEffects();
         if (threeEffectsInitialized) {
           threeEffects.init();
+          replayPendingCardPreviewSync();
         }
         return threeEffects;
       })
@@ -589,7 +602,7 @@ export function createLibraryView({
     renderGrowthPanels,
     createEmptyState,
     onCardsRendered: (cards, renderedToys) => {
-      threeEffects.syncCardPreviews(cards, renderedToys);
+      syncThreeEffectCardPreviews(cards, renderedToys);
       updateResultsMeta(lastFilteredToys.length);
       updateActiveFiltersSummary();
     },
