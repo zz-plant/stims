@@ -1,21 +1,22 @@
+import { createLibraryCardRenderer } from './library-view/card-renderer.js';
 import { createLibraryDomCache } from './library-view/dom-cache.js';
 import {
   createFilterToken,
-  createLibraryStateStorage,
-  getStateFromUrl,
-  normalizeCapabilityToken,
   normalizeFilterToken,
-  normalizeMoodToken,
-  resolvePathname,
-  stateToParams,
 } from './library-view/filter-state.js';
-import { ensureIconSymbol, SVG_NS } from './library-view/icon-sprite.js';
+import { createLibraryInputController } from './library-view/input-controller.js';
+import { createLibraryListRenderer } from './library-view/render-list.js';
+import {
+  computeFilteredToys,
+  createLibraryStateController,
+  createToySearchMetadataMap,
+  DEFAULT_LIBRARY_SORT,
+  getMatchedFields,
+  getQueryTokens,
+} from './library-view/state-controller.js';
 import { setupDarkModeToggle } from './library-view/theme-toggle.js';
 import { getToyRouteHref } from './router.ts';
 import { getRecentToySlugs } from './utils/growth-metrics.ts';
-
-const LIBRARY_RENDER_BATCH_SIZE = 24;
-const LIBRARY_INITIAL_RENDER_COUNT = 24;
 
 const createNoopThreeEffects = () => ({
   init() {},
@@ -40,29 +41,25 @@ export function createLibraryView({
   themeToggleId = 'theme-toggle',
 } = {}) {
   const STORAGE_KEY = 'stims-library-state';
-  const { saveStateToStorage, readStateFromStorage } =
-    createLibraryStateStorage({ storageKey: STORAGE_KEY });
   const COMPATIBILITY_MODE_KEY = 'stims-compatibility-mode';
+  const stateController = createLibraryStateController({
+    storageKey: STORAGE_KEY,
+    compatibilityModeKey: COMPATIBILITY_MODE_KEY,
+  });
+
   let allToys = toys;
   let originalOrder = new Map();
-  let searchQuery = '';
-  let sortBy = 'featured';
   let lastCommittedQuery = '';
   let pendingRenderFrame = 0;
   let lastFilteredToys = [];
-  let lastRenderedQuery = '';
   let suggestionSignature = '';
-  let renderedCardMap = new Map();
   let toyBySlug = new Map();
   let toySearchMetadata = new Map();
-  let pendingBatchHandle = 0;
-  let activeRenderToken = 0;
   let threeEffects = createNoopThreeEffects();
   let threeEffectsLoader = null;
   let threeEffectsInitialized = false;
-  let pendingPreviewSync = null;
   const filterLabelCache = new Map();
-  const activeFilters = new Set();
+
   const {
     ensureMetaNode,
     ensureSearchForm,
@@ -79,30 +76,8 @@ export function createLibraryView({
     ensureFilterChips,
   } = createLibraryDomCache(document);
 
-  const getToyList = () => document.getElementById(targetId);
+  const getState = () => stateController.getState();
   const getToyKey = (toy, index = 0) => toy?.slug ?? `toy-${index}`;
-
-  const cancelPendingBatch = () => {
-    if (!pendingBatchHandle) return;
-    if (
-      typeof window !== 'undefined' &&
-      typeof window.cancelIdleCallback === 'function'
-    ) {
-      window.cancelIdleCallback(pendingBatchHandle);
-    } else {
-      window.clearTimeout(pendingBatchHandle);
-    }
-    pendingBatchHandle = 0;
-  };
-
-  const flushPendingPreviewSync = () => {
-    if (!pendingPreviewSync) return;
-    threeEffects.syncCardPreviews(
-      pendingPreviewSync.cards,
-      pendingPreviewSync.toys,
-    );
-    pendingPreviewSync = null;
-  };
 
   const ensureThreeEffects = async () => {
     if (threeEffectsLoader) return threeEffectsLoader;
@@ -112,7 +87,6 @@ export function createLibraryView({
         if (threeEffectsInitialized) {
           threeEffects.init();
         }
-        flushPendingPreviewSync();
         return threeEffects;
       })
       .catch((error) => {
@@ -135,50 +109,16 @@ export function createLibraryView({
     window.setTimeout(start, 120);
   };
 
-  const buildToySearchMetadata = (toy) => {
-    const tags = (toy.tags ?? []).map((tag) => tag.toLowerCase());
-    const moods = (toy.moods ?? []).map((mood) => mood.toLowerCase());
-    const flags = [
-      toy.requiresWebGPU ? 'webgpu webgl gpu' : '',
-      toy.capabilities?.microphone ? 'microphone mic live audio' : '',
-      toy.capabilities?.demoAudio ? 'demo audio preview starter' : '',
-      toy.capabilities?.motion ? 'motion tilt gyro mobile' : '',
-    ]
-      .filter(Boolean)
-      .map((value) => value.toLowerCase());
-
-    const fields = {
-      title: toy.title?.toLowerCase() ?? '',
-      slug: toy.slug?.toLowerCase() ?? '',
-      description: toy.description?.toLowerCase() ?? '',
-      tags,
-      moods,
-      flags,
-    };
-
-    return {
-      fields,
-      searchHaystacks: [
-        fields.title,
-        fields.slug,
-        fields.description,
-        ...tags,
-        ...moods,
-        ...flags,
-      ].filter(Boolean),
-    };
-  };
-
   const syncRefineDisclosure = () => {
     const refine = ensureLibraryRefine();
     if (!(refine instanceof HTMLElement) || refine.tagName !== 'DETAILS')
       return;
     const summary = refine.querySelector('summary');
-
+    const state = getState();
     const hasActiveRefinement =
-      searchQuery.trim().length > 0 ||
-      activeFilters.size > 0 ||
-      sortBy !== 'featured';
+      state.query.trim().length > 0 ||
+      state.filters.length > 0 ||
+      state.sort !== DEFAULT_LIBRARY_SORT;
 
     if (hasActiveRefinement) {
       refine.open = true;
@@ -194,7 +134,6 @@ export function createLibraryView({
       window.matchMedia('(max-width: 520px)').matches;
 
     refine.open = !shouldCollapseByViewport;
-
     if (summary instanceof HTMLElement) {
       summary.textContent = refine.open
         ? 'Hide all filters'
@@ -202,13 +141,8 @@ export function createLibraryView({
     }
   };
 
-  const getOriginalIndex = (toy) => originalOrder.get(getToyKey(toy)) ?? 0;
-  const getFeaturedRank = (toy) =>
-    Number.isFinite(toy.featuredRank)
-      ? toy.featuredRank
-      : Number.POSITIVE_INFINITY;
-
   const getSortLabel = () => {
+    const state = getState();
     const sortControl = ensureSortControl();
     if (sortControl && sortControl.tagName === 'SELECT') {
       const selected = sortControl.selectedOptions?.[0];
@@ -221,20 +155,7 @@ export function createLibraryView({
       immersive: 'Most immersive',
       az: 'A → Z',
     };
-    return sortLabels[sortBy] ?? sortBy;
-  };
-
-  const matchesMoodToken = (toyMoods, value) => {
-    const normalizedValue = normalizeMoodToken(value);
-    const aliases = {
-      calm: ['calming', 'serene', 'minimal'],
-      calming: ['calm', 'serene', 'minimal'],
-    };
-    const accepted = new Set([
-      normalizedValue,
-      ...(aliases[normalizedValue] ?? []),
-    ]);
-    return (toyMoods ?? []).some((mood) => accepted.has(mood.toLowerCase()));
+    return sortLabels[state.sort] ?? state.sort;
   };
 
   const formatTokenLabel = (token) => {
@@ -270,8 +191,8 @@ export function createLibraryView({
     const note = ensureSearchMetaNote();
     if (!(note instanceof HTMLElement)) return;
 
-    const baseActiveLabels = Array.from(activeFilters)
-      .filter(
+    const baseActiveLabels = getState()
+      .filters.filter(
         (token) =>
           token.startsWith('mood:') || token === 'capability:microphone',
       )
@@ -287,36 +208,133 @@ export function createLibraryView({
     note.textContent = `Quick filters active: ${baseActiveLabels.join(' + ')}. Press / to search.`;
   };
 
-  const updateActiveFiltersSummary = () => {
-    const summary = ensureActiveFiltersSummary();
-    if (!(summary instanceof HTMLElement)) {
-      return;
+  const updateSearchClearState = () => {
+    const clearButton = ensureSearchClearButton();
+    if (!(clearButton instanceof HTMLButtonElement)) return;
+    const hasQuery = getState().query.trim().length > 0;
+    clearButton.disabled = !hasQuery;
+    clearButton.setAttribute('aria-disabled', String(!hasQuery));
+  };
+
+  const updateFilterResetState = () => {
+    const resetButton = ensureFilterResetButton();
+    if (!(resetButton instanceof HTMLButtonElement)) return;
+    const state = getState();
+    const hasRefinements =
+      state.filters.length > 0 ||
+      state.sort !== DEFAULT_LIBRARY_SORT ||
+      state.query.trim().length > 0;
+    resetButton.disabled = !hasRefinements;
+    resetButton.setAttribute('aria-disabled', String(!hasRefinements));
+  };
+
+  const emitFilterStateChange = () => {
+    if (typeof document === 'undefined') return;
+    document.dispatchEvent(new Event('library:filters-changed'));
+  };
+
+  const updateFilterChipA11y = (chip, isActive) => {
+    if (!chip || typeof chip.setAttribute !== 'function') return;
+    chip.setAttribute('aria-pressed', String(isActive));
+  };
+
+  const resolveChipToken = (chip) => {
+    if (!(chip instanceof HTMLElement)) return null;
+    const type = chip.getAttribute('data-filter-type');
+    const value = chip.getAttribute('data-filter-value');
+    if (!type || !value) return null;
+    return createFilterToken(type, value);
+  };
+
+  const setChipActiveState = (chip, isActive) => {
+    if (!(chip instanceof HTMLElement)) return;
+    chip.classList.toggle('is-active', isActive);
+    updateFilterChipA11y(chip, isActive);
+  };
+
+  const syncFilterTokenState = (token, isActive) => {
+    document.querySelectorAll('[data-filter-chip]').forEach((chip) => {
+      if (resolveChipToken(chip) !== token) return;
+      setChipActiveState(chip, isActive);
+    });
+  };
+
+  const syncAllFilterChips = () => {
+    const activeFilters = new Set(getState().filters);
+    ensureFilterChips().forEach((chip) => {
+      const token = resolveChipToken(chip);
+      if (!token) return;
+      setChipActiveState(chip, activeFilters.has(token));
+    });
+  };
+
+  const resolveQuickLaunchToy = (list, query) => {
+    const trimmedQuery = query.trim().toLowerCase();
+    if (!trimmedQuery || list.length === 0) return null;
+
+    const exactMatch = list.find((toy) => {
+      const slug = toy.slug?.toLowerCase() ?? '';
+      const title = toy.title?.toLowerCase() ?? '';
+      return slug === trimmedQuery || title === trimmedQuery;
+    });
+
+    if (exactMatch) return exactMatch;
+    if (list.length === 1) return list[0];
+    return null;
+  };
+
+  const updateResultsMeta = (visibleCount) => {
+    const meta = ensureMetaNode();
+    if (!meta) return;
+
+    const state = getState();
+    const parts = [`${visibleCount} results`];
+
+    if (state.filters.length > 0) {
+      parts.push(
+        `${state.filters.length} filter${state.filters.length === 1 ? '' : 's'}`,
+      );
     }
 
-    const tokens = Array.from(activeFilters);
-    const hasQuery = searchQuery.trim().length > 0;
-    const hasTokens = tokens.length > 0;
-    const hasSort = sortBy !== 'featured';
+    if (state.sort !== DEFAULT_LIBRARY_SORT) {
+      parts.push(getSortLabel());
+    }
+
+    const quickLaunchToy = resolveQuickLaunchToy(lastFilteredToys, state.query);
+    if (quickLaunchToy) {
+      parts.push(`↵ Launch ${quickLaunchToy.title}`);
+    }
+
+    meta.textContent = parts.join(' • ');
+  };
+
+  const updateActiveFiltersSummary = () => {
+    const summary = ensureActiveFiltersSummary();
+    if (!(summary instanceof HTMLElement)) return;
+
+    const state = getState();
+    const hasQuery = state.query.trim().length > 0;
+    const hasTokens = state.filters.length > 0;
+    const hasSort = state.sort !== DEFAULT_LIBRARY_SORT;
     const canClear = hasTokens || hasSort || hasQuery;
+
     const chipItems = [
       ...(hasQuery
         ? [
             {
-              label: `Search: ${searchQuery.trim()}`,
+              label: `Search: ${state.query.trim()}`,
               onClick: () => clearSearch(),
             },
           ]
         : []),
-      ...tokens.map((token) => ({
+      ...state.filters.map((token) => ({
         label: formatTokenLabel(token),
         onClick: () => {
-          activeFilters.delete(token);
-          syncFilterTokenState(token, false);
+          const result = stateController.toggleFilter(token);
+          if (!result.token) return;
+          syncFilterTokenState(result.token, result.isActive);
           emitFilterStateChange();
-          commitState({ replace: false });
-          renderToys(applyFilters());
-          updateFilterResetState();
-          updateActiveFiltersSummary();
+          commitAndRender({ replace: false });
         },
       })),
       ...(hasSort
@@ -324,18 +342,12 @@ export function createLibraryView({
             {
               label: `Sort: ${getSortLabel()}`,
               onClick: () => {
-                sortBy = 'featured';
+                stateController.setSort(DEFAULT_LIBRARY_SORT);
                 const sortControl = ensureSortControl();
-                if (
-                  sortControl instanceof HTMLElement &&
-                  sortControl.tagName === 'SELECT'
-                ) {
-                  sortControl.value = sortBy;
+                if (sortControl instanceof HTMLSelectElement) {
+                  sortControl.value = DEFAULT_LIBRARY_SORT;
                 }
-                commitState({ replace: false });
-                renderToys(applyFilters());
-                updateFilterResetState();
-                updateActiveFiltersSummary();
+                commitAndRender({ replace: false });
               },
             },
           ]
@@ -344,11 +356,11 @@ export function createLibraryView({
 
     const summaryTextParts = [];
     if (hasQuery) {
-      summaryTextParts.push(`Search: ${searchQuery.trim()}`);
+      summaryTextParts.push(`Search: ${state.query.trim()}`);
     }
-    if (tokens.length > 0) {
+    if (hasTokens) {
       summaryTextParts.push(
-        `Filters: ${tokens.map((token) => formatTokenLabel(token)).join(', ')}`,
+        `Filters: ${state.filters.map((token) => formatTokenLabel(token)).join(', ')}`,
       );
     }
     if (hasSort) {
@@ -381,10 +393,7 @@ export function createLibraryView({
     }
 
     const clearButton = ensureActiveFiltersClear();
-    if (
-      clearButton instanceof HTMLElement &&
-      clearButton.tagName === 'BUTTON'
-    ) {
+    if (clearButton instanceof HTMLButtonElement) {
       clearButton.disabled = !canClear;
       clearButton.setAttribute('aria-disabled', String(!canClear));
     }
@@ -392,371 +401,34 @@ export function createLibraryView({
     updateSearchMetaNote();
   };
 
-  const updateSearchClearState = () => {
-    const clearButton = ensureSearchClearButton();
-    if (!(clearButton instanceof HTMLElement)) return;
-    if (clearButton.tagName !== 'BUTTON') return;
-    const hasQuery = searchQuery.trim().length > 0;
-    clearButton.disabled = !hasQuery;
-    clearButton.setAttribute('aria-disabled', String(!hasQuery));
-  };
-
-  const updateFilterResetState = () => {
-    const resetButton = ensureFilterResetButton();
-    if (!(resetButton instanceof HTMLElement)) return;
-    if (resetButton.tagName !== 'BUTTON') return;
-    const hasRefinements =
-      activeFilters.size > 0 ||
-      sortBy !== 'featured' ||
-      searchQuery.trim().length > 0;
-    resetButton.disabled = !hasRefinements;
-    resetButton.setAttribute('aria-disabled', String(!hasRefinements));
-  };
-
-  const updateFilterChipA11y = (chip, isActive) => {
-    if (!chip || typeof chip.setAttribute !== 'function') return;
-    chip.setAttribute('aria-pressed', String(isActive));
-  };
-
-  const resolveChipToken = (chip) => {
-    if (!(chip instanceof HTMLElement)) return null;
-    const type = chip.getAttribute('data-filter-type');
-    const value = chip.getAttribute('data-filter-value');
-    if (!type || !value) return null;
-    return createFilterToken(type, value);
-  };
-
-  const setChipActiveState = (chip, isActive) => {
-    if (!(chip instanceof HTMLElement)) return;
-    chip.classList.toggle('is-active', isActive);
-    updateFilterChipA11y(chip, isActive);
-  };
-
-  const syncFilterTokenState = (token, isActive) => {
-    document.querySelectorAll('[data-filter-chip]').forEach((chip) => {
-      if (resolveChipToken(chip) !== token) return;
-      setChipActiveState(chip, isActive);
+  const computeAndApplyFilters = () => {
+    const nextList = computeFilteredToys({
+      toys: allToys,
+      state: getState(),
+      metadataByKey: toySearchMetadata,
+      getToyKey,
+      originalOrder,
     });
+    lastFilteredToys = nextList;
+    updateResultsMeta(nextList.length);
+    return nextList;
   };
 
-  const emitFilterStateChange = () => {
-    if (typeof document === 'undefined') return;
-    document.dispatchEvent(new Event('library:filters-changed'));
-  };
-
-  const resolveQuickLaunchToy = (list, query) => {
-    const trimmedQuery = query.trim().toLowerCase();
-    if (!trimmedQuery || list.length === 0) return null;
-
-    const exactMatch = list.find((toy) => {
-      const slug = toy.slug?.toLowerCase() ?? '';
-      const title = toy.title?.toLowerCase() ?? '';
-      return slug === trimmedQuery || title === trimmedQuery;
-    });
-
-    if (exactMatch) return exactMatch;
-    if (list.length === 1) return list[0];
-    return null;
-  };
-
-  const updateResultsMeta = (visibleCount) => {
-    const meta = ensureMetaNode();
-    if (!meta) return;
-
-    const parts = [`${visibleCount} results`];
-
-    if (activeFilters.size > 0) {
-      parts.push(
-        `${activeFilters.size} filter${activeFilters.size === 1 ? '' : 's'}`,
-      );
-    }
-
-    if (sortBy !== 'featured') {
-      parts.push(getSortLabel());
-    }
-
-    const quickLaunchToy = resolveQuickLaunchToy(lastFilteredToys, searchQuery);
-    if (quickLaunchToy) {
-      parts.push(`↵ Launch ${quickLaunchToy.title}`);
-    }
-
-    meta.textContent = parts.join(' • ');
-  };
-
-  const resetFiltersAndSearch = () => {
-    searchQuery = '';
-    Array.from(activeFilters).forEach((token) => {
-      syncFilterTokenState(token, false);
-    });
-    activeFilters.clear();
-    sortBy = 'featured';
-    emitFilterStateChange();
-
+  const syncStateToInputs = () => {
+    const state = getState();
     if (searchInputId) {
       const search = document.getElementById(searchInputId);
       if (search && 'value' in search) {
-        search.value = '';
+        search.value = state.query;
       }
     }
 
     const sortControl = ensureSortControl();
-    if (sortControl && sortControl.tagName === 'SELECT') {
-      sortControl.value = sortBy;
+    if (sortControl instanceof HTMLSelectElement) {
+      sortControl.value = state.sort;
     }
 
-    commitState({ replace: false });
-    syncRefineDisclosure();
-    renderToys(applyFilters());
-    updateSearchClearState();
-    updateFilterResetState();
-  };
-
-  const capabilityScore = (toy) =>
-    (toy.requiresWebGPU ? 2 : 0) +
-    Number(toy.capabilities?.microphone) +
-    Number(toy.capabilities?.demoAudio) +
-    Number(toy.capabilities?.motion);
-
-  const lowSetupScore = (toy) => {
-    const hasMic = Boolean(toy.capabilities?.microphone);
-    const hasDemo = Boolean(toy.capabilities?.demoAudio);
-    const requiresWebGPU = Boolean(toy.requiresWebGPU);
-    const hasMotion = Boolean(toy.capabilities?.motion);
-
-    return (
-      Number(hasDemo) * 3 +
-      Number(!hasMic) * 2 +
-      Number(!requiresWebGPU) * 2 +
-      Number(!hasMotion)
-    );
-  };
-
-  const hasSetupIntentToken = (query) => {
-    const setupTokens = new Set([
-      'mic',
-      'microphone',
-      'demo',
-      'audio',
-      'motion',
-      'tilt',
-      'gyro',
-      'webgpu',
-      'webgl',
-    ]);
-    return getQueryTokens(query).some((token) => setupTokens.has(token));
-  };
-
-  const shouldApplyLowSetupBoost = () => {
-    if (sortBy !== 'featured') return false;
-    if (activeFilters.size > 0) return false;
-    if (!searchQuery.trim()) return false;
-    if (hasSetupIntentToken(searchQuery)) return false;
-    return true;
-  };
-
-  const sortList = (list) => {
-    const sorted = [...list];
-    switch (sortBy) {
-      case 'newest':
-        return sorted.sort((a, b) => getOriginalIndex(b) - getOriginalIndex(a));
-      case 'az':
-        return sorted.sort((a, b) => a.title.localeCompare(b.title));
-      case 'immersive':
-        return sorted.sort(
-          (a, b) =>
-            capabilityScore(b) - capabilityScore(a) ||
-            getOriginalIndex(a) - getOriginalIndex(b),
-        );
-      default:
-        if (shouldApplyLowSetupBoost()) {
-          return sorted.sort(
-            (a, b) =>
-              lowSetupScore(b) - lowSetupScore(a) ||
-              getFeaturedRank(a) - getFeaturedRank(b) ||
-              getOriginalIndex(a) - getOriginalIndex(b),
-          );
-        }
-        return sorted.sort(
-          (a, b) =>
-            getFeaturedRank(a) - getFeaturedRank(b) ||
-            getOriginalIndex(a) - getOriginalIndex(b),
-        );
-    }
-  };
-
-  const matchesFilter = (toy, token) => {
-    const [type, value] = token.split(':');
-    if (!type || !value) return true;
-
-    switch (type) {
-      case 'mood':
-        return matchesMoodToken(toy.moods, value);
-      case 'capability':
-        return Boolean(toy.capabilities?.[normalizeCapabilityToken(value)]);
-      case 'feature':
-        if (value === 'webgpu') return Boolean(toy.requiresWebGPU);
-        if (value === 'compatible') {
-          return !toy.requiresWebGPU || Boolean(toy.allowWebGLFallback);
-        }
-        return true;
-      case 'tag':
-        return (toy.tags ?? []).some((tag) => tag.toLowerCase() === value);
-      default:
-        return true;
-    }
-  };
-
-  const getQueryTokens = (query) =>
-    query
-      .trim()
-      .toLowerCase()
-      .split(/[\s,]+/)
-      .filter(Boolean);
-
-  const getMatchedFields = (toy, queryTokens) => {
-    if (!queryTokens.length) return [];
-
-    const metadata = toySearchMetadata.get(getToyKey(toy));
-    const fields = metadata?.fields;
-    if (!fields) return [];
-
-    const matchedSources = new Set();
-    queryTokens.forEach((token) => {
-      if (fields.title.includes(token)) matchedSources.add('Title');
-      if (fields.slug.includes(token)) matchedSources.add('Slug');
-      if (fields.description.includes(token)) {
-        matchedSources.add('Description');
-      }
-      if (fields.tags.some((tag) => tag.includes(token))) {
-        matchedSources.add('Tags');
-      }
-      if (fields.moods.some((mood) => mood.includes(token))) {
-        matchedSources.add('Moods');
-      }
-      if (toy.requiresWebGPU && 'webgpu'.includes(token)) {
-        matchedSources.add('WebGPU');
-      }
-      if (toy.capabilities?.microphone && 'microphone mic'.includes(token)) {
-        matchedSources.add('Mic');
-      }
-      if (toy.capabilities?.demoAudio && 'demo audio'.includes(token)) {
-        matchedSources.add('Demo audio');
-      }
-      if (toy.capabilities?.motion && 'motion tilt gyro'.includes(token)) {
-        matchedSources.add('Motion');
-      }
-    });
-
-    return Array.from(matchedSources).slice(0, 3);
-  };
-
-  const matchesSearchQuery = (toy, queryTokens) => {
-    if (queryTokens.length === 0) return true;
-    const metadata = toySearchMetadata.get(getToyKey(toy));
-    const searchHaystacks = metadata?.searchHaystacks ?? [];
-
-    return queryTokens.every((token) =>
-      searchHaystacks.some((field) => field.includes(token)),
-    );
-  };
-
-  const computeFilteredToys = () => {
-    const queryTokens = getQueryTokens(searchQuery);
-    const filterTokens = Array.from(activeFilters);
-    const filtered = allToys.filter((toy) => {
-      const matchesChips =
-        filterTokens.length === 0 ||
-        filterTokens.every((token) => matchesFilter(toy, token));
-      return matchesChips && matchesSearchQuery(toy, queryTokens);
-    });
-
-    return sortList(filtered);
-  };
-
-  const applyFilters = () => {
-    const sorted = computeFilteredToys();
-    lastFilteredToys = sorted;
-    updateResultsMeta(sorted.length);
-    return sorted;
-  };
-
-  const setToys = (nextToys = []) => {
-    allToys = nextToys;
-    originalOrder = new Map(
-      nextToys.map((toy, index) => [getToyKey(toy, index), index]),
-    );
-    toyBySlug = new Map(
-      nextToys.filter((toy) => toy.slug).map((toy) => [toy.slug, toy]),
-    );
-    toySearchMetadata = new Map(
-      nextToys.map((toy, index) => [
-        getToyKey(toy, index),
-        buildToySearchMetadata(toy),
-      ]),
-    );
-    populateSearchSuggestions();
-  };
-
-  const commitState = ({ replace }) => {
-    const state = {
-      query: searchQuery,
-      filters: Array.from(activeFilters),
-      sort: sortBy,
-    };
-    const params = stateToParams(state);
-    const nextUrl = `${resolvePathname()}${
-      params.toString() ? `?${params.toString()}` : ''
-    }`;
-    try {
-      if (replace) {
-        window.history.replaceState(state, '', nextUrl);
-      } else {
-        window.history.pushState(state, '', nextUrl);
-      }
-    } catch (_error) {
-      // Ignore history errors in non-browser environments.
-    }
-    saveStateToStorage(state);
-  };
-
-  const applyState = (state, { render = true } = {}) => {
-    searchQuery = typeof state.query === 'string' ? state.query : '';
-    sortBy = state.sort ?? 'featured';
-    activeFilters.clear();
-    (state.filters ?? [])
-      .map((token) => normalizeFilterToken(token))
-      .filter(Boolean)
-      .forEach((token) => activeFilters.add(token));
-    lastCommittedQuery = searchQuery.trim();
-
-    if (searchInputId) {
-      const search = document.getElementById(searchInputId);
-      if (search && 'value' in search) {
-        search.value = searchQuery;
-      }
-    }
-
-    const chips = ensureFilterChips();
-    chips.forEach((chip) => {
-      const type = chip.getAttribute('data-filter-type');
-      const value = chip.getAttribute('data-filter-value');
-      if (!type || !value) return;
-      const token = createFilterToken(type, value);
-      if (!token) return;
-      const isActive = activeFilters.has(token);
-      chip.classList.toggle('is-active', isActive);
-      updateFilterChipA11y(chip, isActive);
-    });
-    emitFilterStateChange();
-
-    const sortControl = ensureSortControl();
-    if (sortControl && sortControl.tagName === 'SELECT') {
-      sortControl.value = sortBy;
-    }
-
-    if (render) {
-      renderToys(applyFilters());
-    }
+    syncAllFilterChips();
     updateSearchClearState();
     updateFilterResetState();
     updateActiveFiltersSummary();
@@ -798,129 +470,6 @@ export function createLibraryView({
     void openToy(toy, { launchCard });
   };
 
-  const titleCaseLabel = (value = '') =>
-    value
-      .replace(/\s*·\s*/g, ' ')
-      .replace(/[-_]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/^\w/, (char) => char.toUpperCase());
-
-  const normalizeGuideKey = (value = '') =>
-    value
-      .toLowerCase()
-      .replace(/\s*·\s*/g, ' ')
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-
-  const guidesOverlap = (left, right) => {
-    const normalizedLeft = normalizeGuideKey(left);
-    const normalizedRight = normalizeGuideKey(right);
-    if (!normalizedLeft || !normalizedRight) return false;
-    return (
-      normalizedLeft === normalizedRight ||
-      normalizedLeft.includes(normalizedRight) ||
-      normalizedRight.includes(normalizedLeft)
-    );
-  };
-
-  const getInteractionSignal = (toy) => {
-    if (toy.capabilities?.motion) return 'Tilt';
-    const tags = (toy.tags ?? []).map((tag) => tag.toLowerCase());
-    if (
-      tags.some((tag) =>
-        ['touch', 'gestural', 'sculpting', 'pottery', 'haptics'].includes(tag),
-      )
-    ) {
-      return 'Touch-led';
-    }
-    return null;
-  };
-
-  const getCardSignals = (toy) => {
-    const signals = [];
-    const interactionSignal = getInteractionSignal(toy);
-    if (interactionSignal) {
-      signals.push(interactionSignal);
-    }
-
-    (toy.moods ?? []).slice(0, 2).forEach((mood) => {
-      const label = titleCaseLabel(mood);
-      if (!signals.includes(label)) {
-        signals.push(label);
-      }
-    });
-
-    return signals.slice(0, 3);
-  };
-
-  const getPrimaryGuideLabel = (toy) => {
-    if (toy.starterPreset?.label) {
-      return titleCaseLabel(toy.starterPreset.label);
-    }
-    if (toy.capabilities?.motion) {
-      return 'Tilt your device';
-    }
-    if (getInteractionSignal(toy) === 'Touch-led') {
-      return 'Use touch';
-    }
-    if (toy.wowControl) {
-      return titleCaseLabel(toy.wowControl);
-    }
-    if (toy.controls?.[0]) {
-      return titleCaseLabel(toy.controls[0]);
-    }
-    if (toy.recommendedCapability === 'microphone') {
-      return 'Use live mic';
-    }
-    if (toy.recommendedCapability === 'demoAudio') {
-      return 'Use demo audio';
-    }
-    return null;
-  };
-
-  const getSecondaryGuideLabel = (toy, primaryGuide) => {
-    if (toy.wowControl) {
-      const wowLabel = titleCaseLabel(toy.wowControl);
-      const usesPresetLanguage = /preset|starter/i.test(wowLabel);
-      if (!guidesOverlap(primaryGuide, wowLabel) && !usesPresetLanguage) {
-        return wowLabel;
-      }
-    }
-
-    if (
-      toy.recommendedCapability === 'microphone' &&
-      !guidesOverlap(primaryGuide, 'Use live mic')
-    ) {
-      return 'Use live mic';
-    }
-
-    if (
-      toy.recommendedCapability === 'demoAudio' &&
-      !guidesOverlap(primaryGuide, 'Use demo audio')
-    ) {
-      return 'Use demo audio';
-    }
-
-    return null;
-  };
-
-  const getCardGuidance = (toy) => {
-    const primaryGuide = getPrimaryGuideLabel(toy);
-    const secondaryGuide = getSecondaryGuideLabel(toy, primaryGuide);
-    const guides = [primaryGuide, secondaryGuide].filter(Boolean);
-
-    if (guides.length > 0) {
-      return `Start with: ${guides.join(' • ')}`;
-    }
-
-    if (toy.firstRunHint) {
-      return toy.firstRunHint;
-    }
-
-    return null;
-  };
-
   const renderGrowthPanels = (listElement) => {
     if (!listElement || typeof listElement.appendChild !== 'function') return;
 
@@ -955,158 +504,239 @@ export function createLibraryView({
     }
   };
 
-  const createCard = (toy, queryTokens = []) => {
-    const card = document.createElement(cardElement);
-    card.className = 'webtoy-card';
-    if (toy.slug) {
-      card.dataset.toySlug = toy.slug;
-    }
-    if (toy.type) {
-      card.dataset.toyType = toy.type;
-    }
-    if (toy.module) {
-      card.dataset.toyModule = toy.module;
-    }
-    const href = toy.type === 'module' ? getToyRouteHref(toy.slug) : toy.module;
-    if (cardElement === 'button') {
-      card.type = 'button';
-    } else if (cardElement === 'a') {
-      card.href = href;
-      card.setAttribute('data-toy-href', href);
-    }
+  const createEmptyState = () => {
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+    emptyState.setAttribute('role', 'status');
+    emptyState.setAttribute('aria-live', 'polite');
 
-    if (enableIcons) {
-      const symbolId = ensureIconSymbol(toy);
-      if (symbolId) {
-        const icon = document.createElementNS(SVG_NS, 'svg');
-        icon.classList.add('toy-icon');
-        icon.setAttribute('viewBox', '0 0 120 120');
-        icon.setAttribute('role', 'img');
-        icon.setAttribute('aria-label', `${toy.title} icon`);
+    const message = document.createElement('p');
+    message.className = 'empty-state__message';
+    message.textContent =
+      'No visuals match your search or filters. Try clearing your search or removing filters.';
 
-        const title = document.createElementNS(SVG_NS, 'title');
-        title.textContent = `${toy.title} icon`;
-        icon.appendChild(title);
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'cta-button';
+    resetButton.textContent = 'Reset view';
+    resetButton.addEventListener('click', () => resetFiltersAndSearch());
 
-        const use = document.createElementNS(SVG_NS, 'use');
-        use.setAttribute('href', `#${symbolId}`);
-        icon.appendChild(use);
-        card.appendChild(icon);
-      }
-    }
+    const quickActions = document.createElement('div');
+    quickActions.className = 'webtoy-card-actions';
 
-    const title = document.createElement('h3');
-    title.textContent = toy.title;
-    const desc = document.createElement('p');
-    desc.className = 'webtoy-card-description';
-    desc.textContent = toy.description;
-    card.appendChild(title);
-    card.appendChild(desc);
+    const applySuggestedState = ({ query = '', filters = [] }) => {
+      stateController.setState({ query, filters, sort: DEFAULT_LIBRARY_SORT });
+      syncStateToInputs();
+      renderCurrentState();
+      stateController.commitState({ replace: false });
+    };
 
-    const guidance = getCardGuidance(toy);
-    if (guidance) {
-      const guidanceNode = document.createElement('p');
-      guidanceNode.className = 'webtoy-card-guidance';
-      guidanceNode.textContent = guidance;
-      card.appendChild(guidanceNode);
-    }
+    [
+      { label: 'Show demo-ready', query: 'demo audio' },
+      { label: 'Show mobile-friendly', query: 'mobile' },
+      { label: 'Show broader device support', filters: ['feature:compatible'] },
+    ].forEach(({ label, query, filters }) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'cta-button cta-button--muted';
+      button.textContent = label;
+      button.addEventListener('click', () =>
+        applySuggestedState({ query, filters }),
+      );
+      quickActions.appendChild(button);
+    });
 
-    const matchedFields = getMatchedFields(toy, queryTokens);
-    if (matchedFields.length > 0) {
-      const matches = document.createElement('p');
-      matches.className = 'webtoy-card-match';
+    const collapseSuggestions =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 600px)').matches;
 
-      const label = document.createElement('strong');
-      label.textContent = 'Matches:';
-      matches.appendChild(label);
+    emptyState.append(message, resetButton);
 
-      matchedFields.forEach((field) => {
-        const matchToken = document.createElement('mark');
-        matchToken.textContent = field;
-        matches.appendChild(matchToken);
-      });
+    if (collapseSuggestions) {
+      const suggestionsDisclosure = document.createElement('details');
+      suggestionsDisclosure.className = 'empty-state__suggestions';
 
-      card.appendChild(matches);
+      const summary = document.createElement('summary');
+      summary.textContent = 'Try suggestions';
+
+      suggestionsDisclosure.append(summary, quickActions);
+      emptyState.appendChild(suggestionsDisclosure);
+    } else {
+      emptyState.appendChild(quickActions);
     }
 
-    if (enableCapabilityBadges) {
-      const signals = getCardSignals(toy);
-      if (signals.length > 0) {
-        const metaRow = document.createElement('div');
-        metaRow.className = 'webtoy-card-signals';
-        signals.forEach((signal) => {
-          const badge = document.createElement('span');
-          badge.className = 'webtoy-card-signal';
-          badge.textContent = signal;
-          metaRow.appendChild(badge);
-        });
-        card.appendChild(metaRow);
-      }
-    }
-
-    if (toy.type === 'module') {
-      const actions = document.createElement('div');
-      actions.className = 'webtoy-card-actions';
-
-      const open = document.createElement('button');
-      open.type = 'button';
-      open.className = 'cta-button cta-button--accent';
-      open.textContent = 'Open controls';
-      open.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const launchCard = event.currentTarget.closest('.webtoy-card');
-        void openToy(toy, { launchCard });
-      });
-      open.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.stopPropagation();
-        }
-      });
-      actions.appendChild(open);
-
-      const play = document.createElement('button');
-      play.type = 'button';
-      play.className = 'cta-button cta-button--muted';
-      play.textContent = toy.capabilities?.demoAudio
-        ? 'Start demo'
-        : toy.capabilities?.microphone
-          ? 'Start mic'
-          : 'Launch';
-      play.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const launchCard = event.currentTarget.closest('.webtoy-card');
-        void openToy(toy, {
-          preferDemoAudio: Boolean(toy.capabilities?.demoAudio),
-          launchCard,
-        });
-      });
-      play.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.stopPropagation();
-        }
-      });
-
-      actions.appendChild(play);
-
-      card.appendChild(actions);
-    }
-
-    return card;
+    return emptyState;
   };
 
-  const applyCardMotionVariant = (card, index) => {
-    if (!(card instanceof HTMLElement)) return;
-    const variants = [
-      'card-motion--rise',
-      'card-motion--tilt',
-      'card-motion--glide',
-      'card-motion--bloom',
-    ];
-    card.classList.remove(...variants);
-    card.classList.add(variants[index % variants.length]);
-    card.style.setProperty('--card-enter-delay', `${index * 45}ms`);
+  const cardRenderer = createLibraryCardRenderer({
+    document,
+    cardElement,
+    enableIcons,
+    enableCapabilityBadges,
+    getToyHref: (toy) =>
+      toy.type === 'module' ? getToyRouteHref(toy.slug) : toy.module,
+    getMatchedFields: (toy, queryTokens) =>
+      getMatchedFields(toy, queryTokens, toySearchMetadata, getToyKey),
+    openToy,
+  });
+
+  const listRenderer = createLibraryListRenderer({
+    document,
+    targetId,
+    getToyKey,
+    createCard: (toy, queryTokens) => cardRenderer.createCard(toy, queryTokens),
+    renderGrowthPanels,
+    createEmptyState,
+    onCardsRendered: (cards, renderedToys) => {
+      threeEffects.syncCardPreviews(cards, renderedToys);
+      updateResultsMeta(lastFilteredToys.length);
+      updateActiveFiltersSummary();
+    },
+  });
+
+  const renderCurrentState = () => {
+    const state = getState();
+    const listToRender = computeAndApplyFilters();
+    listRenderer.render({
+      listToRender,
+      query: state.query,
+      queryTokens: getQueryTokens(state.query),
+    });
+  };
+
+  const commitAndRender = ({ replace }) => {
+    stateController.commitState({ replace });
+    syncRefineDisclosure();
+    renderCurrentState();
+    updateSearchClearState();
+    updateFilterResetState();
+    updateActiveFiltersSummary();
+    lastCommittedQuery = getState().query.trim();
+  };
+
+  const scheduleRender = () => {
+    if (pendingRenderFrame) return;
+
+    const commitRender = () => {
+      pendingRenderFrame = 0;
+      renderCurrentState();
+      updateSearchClearState();
+      updateActiveFiltersSummary();
+    };
+
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.requestAnimationFrame === 'function'
+    ) {
+      pendingRenderFrame = window.requestAnimationFrame(commitRender);
+      return;
+    }
+
+    pendingRenderFrame = globalThis.setTimeout(commitRender, 16);
+  };
+
+  const filterToys = (query) => {
+    stateController.applyQuery(query);
+    computeAndApplyFilters();
+    syncRefineDisclosure();
+    scheduleRender();
+  };
+
+  const clearSearch = () => {
+    stateController.applyQuery('');
+    syncStateToInputs();
+    stateController.commitState({ replace: false });
+    syncRefineDisclosure();
+    renderCurrentState();
+  };
+
+  const resetFiltersAndSearch = () => {
+    stateController.clearState();
+    emitFilterStateChange();
+    syncStateToInputs();
+    stateController.commitState({ replace: false });
+    syncRefineDisclosure();
+    renderCurrentState();
+  };
+
+  const clearAllFilters = () => {
+    resetFiltersAndSearch();
+  };
+
+  const populateSearchSuggestions = () => {
+    const datalist = ensureSearchSuggestions();
+    if (!datalist) return;
+    const nextSuggestionSignature = allToys
+      .map((toy) => toy.slug ?? toy.title ?? '')
+      .join('|');
+    if (nextSuggestionSignature === suggestionSignature) return;
+    suggestionSignature = nextSuggestionSignature;
+
+    const suggestions = new Set();
+    allToys.forEach((toy) => {
+      if (toy.title) suggestions.add(toy.title);
+      if (toy.slug) suggestions.add(toy.slug);
+      (toy.tags ?? []).forEach((tag) => suggestions.add(tag));
+      (toy.moods ?? []).forEach((mood) => suggestions.add(mood));
+      if (toy.capabilities?.microphone) suggestions.add('microphone');
+      if (toy.capabilities?.demoAudio) suggestions.add('demo audio');
+      if (toy.capabilities?.motion) suggestions.add('motion');
+      if (toy.requiresWebGPU) suggestions.add('webgpu');
+    });
+    const fragment = document.createDocumentFragment();
+    Array.from(suggestions)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b))
+      .forEach((suggestion) => {
+        const option = document.createElement('option');
+        option.value = suggestion;
+        fragment.appendChild(option);
+      });
+    datalist.replaceChildren(fragment);
+  };
+
+  const setToys = (nextToys = []) => {
+    allToys = nextToys;
+    originalOrder = new Map(
+      nextToys.map((toy, index) => [getToyKey(toy, index), index]),
+    );
+    toyBySlug = new Map(
+      nextToys.filter((toy) => toy.slug).map((toy) => [toy.slug, toy]),
+    );
+    toySearchMetadata = createToySearchMetadataMap(nextToys, getToyKey);
+    populateSearchSuggestions();
+  };
+
+  const applyState = (state, { render = true } = {}) => {
+    stateController.setState({
+      query: state.query,
+      filters: (state.filters ?? []).map((token) =>
+        normalizeFilterToken(token),
+      ),
+      sort: state.sort ?? DEFAULT_LIBRARY_SORT,
+    });
+    lastCommittedQuery = getState().query.trim();
+    emitFilterStateChange();
+    syncStateToInputs();
+    if (render) {
+      renderCurrentState();
+    } else {
+      computeAndApplyFilters();
+    }
+  };
+
+  const toggleFilterChip = (chip) => {
+    const token = resolveChipToken(chip);
+    if (!token) return;
+    const result = stateController.toggleFilter(token);
+    if (!result.token) return;
+    emitFilterStateChange();
+    syncFilterTokenState(result.token, result.isActive);
+    stateController.commitState({ replace: false });
+    renderCurrentState();
+    updateFilterResetState();
+    updateActiveFiltersSummary();
   };
 
   const initCardClickHandlers = () => {
@@ -1153,501 +783,87 @@ export function createLibraryView({
     }
   };
 
-  const createEmptyState = () => {
-    const emptyState = document.createElement('div');
-    emptyState.className = 'empty-state';
-    emptyState.setAttribute('role', 'status');
-    emptyState.setAttribute('aria-live', 'polite');
-
-    const message = document.createElement('p');
-    message.className = 'empty-state__message';
-    message.textContent =
-      'No visuals match your search or filters. Try clearing your search or removing filters.';
-
-    const resetButton = document.createElement('button');
-    resetButton.type = 'button';
-    resetButton.className = 'cta-button';
-    resetButton.textContent = 'Reset view';
-    resetButton.addEventListener('click', () => resetFiltersAndSearch());
-
-    const quickActions = document.createElement('div');
-    quickActions.className = 'webtoy-card-actions';
-
-    const applySuggestedState = ({ query = '', filters = [] }) => {
-      applyState(
-        {
-          query,
-          filters,
-          sort: 'featured',
-        },
-        { render: true },
-      );
-      commitState({ replace: false });
-      updateSearchClearState();
-      updateFilterResetState();
-      updateActiveFiltersSummary();
-    };
-
-    [
-      { label: 'Show demo-ready', query: 'demo audio' },
-      { label: 'Show mobile-friendly', query: 'mobile' },
-      { label: 'Show broader device support', filters: ['feature:compatible'] },
-    ].forEach(({ label, query, filters }) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'cta-button cta-button--muted';
-      button.textContent = label;
-      button.addEventListener('click', () =>
-        applySuggestedState({ query, filters }),
-      );
-      quickActions.appendChild(button);
-    });
-
-    const collapseSuggestions =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(max-width: 600px)').matches;
-
-    emptyState.append(message, resetButton);
-
-    if (collapseSuggestions) {
-      const suggestionsDisclosure = document.createElement('details');
-      suggestionsDisclosure.className = 'empty-state__suggestions';
-
-      const summary = document.createElement('summary');
-      summary.textContent = 'Try suggestions';
-
-      suggestionsDisclosure.append(summary, quickActions);
-      emptyState.appendChild(suggestionsDisclosure);
-    } else {
-      emptyState.appendChild(quickActions);
-    }
-
-    return emptyState;
-  };
-
-  const scheduleRender = () => {
-    if (pendingRenderFrame) return;
-
-    const commitRender = () => {
-      pendingRenderFrame = 0;
-      renderToys(applyFilters());
-      updateSearchClearState();
-      updateActiveFiltersSummary();
-    };
-
-    if (
-      typeof window !== 'undefined' &&
-      typeof window.requestAnimationFrame === 'function'
-    ) {
-      pendingRenderFrame = window.requestAnimationFrame(commitRender);
-      return;
-    }
-
-    pendingRenderFrame = globalThis.setTimeout(commitRender, 16);
-  };
-
-  const renderToys = (listToRender) => {
-    const list = getToyList();
-    if (!list) return;
-    cancelPendingBatch();
-    activeRenderToken += 1;
-    const renderToken = activeRenderToken;
-    const shouldRebuildCards = lastRenderedQuery !== searchQuery;
-    if (shouldRebuildCards) {
-      renderedCardMap = new Map();
-    }
-
-    if (listToRender.length === 0) {
-      renderedCardMap.clear();
-      pendingPreviewSync = { cards: [], toys: [] };
-      const fragment = document.createDocumentFragment();
-      fragment.appendChild(createEmptyState());
-      list.replaceChildren(fragment);
-      flushPendingPreviewSync();
-      updateResultsMeta(0);
-      updateActiveFiltersSummary();
-      return;
-    }
-
-    const nextCardMap = new Map();
-    const cards = [];
-    const queryTokens = getQueryTokens(searchQuery);
-    listToRender.forEach((toy, index) => {
-      const key = getToyKey(toy, index);
-      const card = renderedCardMap.get(key) ?? createCard(toy, queryTokens);
-      applyCardMotionVariant(card, index);
-      nextCardMap.set(key, card);
-      cards.push(card);
-    });
-
-    renderedCardMap = nextCardMap;
-    lastRenderedQuery = searchQuery;
-
-    const appendBatch = (count) => {
-      if (renderToken !== activeRenderToken) return;
-      const fragment = document.createDocumentFragment();
-      renderGrowthPanels(fragment);
-      cards.slice(0, count).forEach((card) => {
-        fragment.appendChild(card);
-      });
-      list.replaceChildren(fragment);
-      pendingPreviewSync = {
-        cards: cards.slice(0, count),
-        toys: listToRender.slice(0, count),
-      };
-      flushPendingPreviewSync();
-      updateResultsMeta(listToRender.length);
-      updateActiveFiltersSummary();
-    };
-
-    const scheduleRemainingBatches = (count) => {
-      if (count >= cards.length) return;
-      const nextCount = Math.min(
-        cards.length,
-        count + LIBRARY_RENDER_BATCH_SIZE,
-      );
-      const commit = () => {
-        pendingBatchHandle = 0;
-        if (renderToken !== activeRenderToken) return;
-        const fragment = document.createDocumentFragment();
-        cards.slice(count, nextCount).forEach((card) => {
-          fragment.appendChild(card);
-        });
-        list.appendChild(fragment);
-        pendingPreviewSync = {
-          cards: cards.slice(0, nextCount),
-          toys: listToRender.slice(0, nextCount),
-        };
-        flushPendingPreviewSync();
-        scheduleRemainingBatches(nextCount);
-      };
-
-      if (
-        typeof window !== 'undefined' &&
-        typeof window.requestIdleCallback === 'function'
-      ) {
-        pendingBatchHandle = window.requestIdleCallback(commit, {
-          timeout: 300,
-        });
-        return;
+  const inputController = createLibraryInputController({
+    document,
+    searchInputId,
+    getState,
+    ensureSearchForm,
+    ensureSearchClearButton,
+    ensureFilterResetButton,
+    ensureSearchSuggestions,
+    ensureActiveFiltersClear,
+    ensureLibraryRefine,
+    ensureSortControl,
+    ensureFilterChips,
+    updateFilterChipA11y,
+    resolveChipToken,
+    filterLabelCache,
+    onSearchInput(query) {
+      filterToys(query);
+      stateController.commitState({ replace: true });
+    },
+    onSearchBlur() {
+      if (getState().query.trim() !== lastCommittedQuery) {
+        lastCommittedQuery = getState().query.trim();
+        stateController.commitState({ replace: false });
       }
-      pendingBatchHandle = window.setTimeout(commit, 32);
-    };
-
-    const initialCount = Math.min(cards.length, LIBRARY_INITIAL_RENDER_COUNT);
-    appendBatch(initialCount);
-    scheduleRemainingBatches(initialCount);
-  };
-
-  const filterToys = (query) => {
-    searchQuery = query;
-    lastFilteredToys = computeFilteredToys();
-    syncRefineDisclosure();
-    scheduleRender();
-  };
-
-  const clearSearch = () => {
-    searchQuery = '';
-    if (searchInputId) {
-      const search = document.getElementById(searchInputId);
-      if (search && 'value' in search) {
-        search.value = '';
-      }
-    }
-    commitState({ replace: false });
-    syncRefineDisclosure();
-    renderToys(applyFilters());
-    updateSearchClearState();
-    updateActiveFiltersSummary();
-  };
-
-  const clearAllFilters = () => {
-    resetFiltersAndSearch();
-  };
-
-  const populateSearchSuggestions = () => {
-    const datalist = ensureSearchSuggestions();
-    if (!datalist) return;
-    const nextSuggestionSignature = allToys
-      .map((toy) => toy.slug ?? toy.title ?? '')
-      .join('|');
-    if (nextSuggestionSignature === suggestionSignature) return;
-    suggestionSignature = nextSuggestionSignature;
-
-    const suggestions = new Set();
-    allToys.forEach((toy) => {
-      if (toy.title) suggestions.add(toy.title);
-      if (toy.slug) suggestions.add(toy.slug);
-      (toy.tags ?? []).forEach((tag) => suggestions.add(tag));
-      (toy.moods ?? []).forEach((mood) => suggestions.add(mood));
-      if (toy.capabilities?.microphone) suggestions.add('microphone');
-      if (toy.capabilities?.demoAudio) suggestions.add('demo audio');
-      if (toy.capabilities?.motion) suggestions.add('motion');
-      if (toy.requiresWebGPU) suggestions.add('webgpu');
-    });
-    const fragment = document.createDocumentFragment();
-    Array.from(suggestions)
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b))
-      .forEach((suggestion) => {
-        const option = document.createElement('option');
-        option.value = suggestion;
-        fragment.appendChild(option);
-      });
-    datalist.replaceChildren(fragment);
-  };
-
-  const toggleFilterChip = (chip) => {
-    const token = resolveChipToken(chip);
-    if (!token) return;
-    const isActive = !activeFilters.has(token);
-    emitFilterStateChange();
-    if (isActive) {
-      activeFilters.add(token);
-    } else {
-      activeFilters.delete(token);
-    }
-    syncFilterTokenState(token, isActive);
-    commitState({ replace: false });
-    renderToys(applyFilters());
-    updateFilterResetState();
-    updateActiveFiltersSummary();
-  };
-
-  const initFilters = () => {
-    const chips = ensureFilterChips();
-    chips.forEach((chip) => {
-      updateFilterChipA11y(chip, chip.classList.contains('is-active'));
-      const token = resolveChipToken(chip);
-      if (!token) return;
-      const label = chip.textContent?.trim();
-      if (label) {
-        filterLabelCache.set(token, label);
-      }
-    });
-
-    const FILTER_DELEGATE_KEY = '__stimsLibraryFilterDelegate';
-    const previousDelegate = document[FILTER_DELEGATE_KEY];
-    if (typeof previousDelegate === 'function') {
-      document.removeEventListener('click', previousDelegate);
-    }
-
-    const handleFilterChipClick = (event) => {
-      const target = event.target;
-      if (!(target && typeof target === 'object' && 'closest' in target))
-        return;
-      const chip = target.closest?.('[data-filter-chip]');
-      if (!(chip instanceof HTMLElement)) return;
-      toggleFilterChip(chip);
-    };
-
-    document[FILTER_DELEGATE_KEY] = handleFilterChipClick;
-    document.addEventListener('click', handleFilterChipClick);
-
-    const sortControl = ensureSortControl();
-    if (sortControl && sortControl.tagName === 'SELECT') {
-      sortControl.addEventListener('change', () => {
-        sortBy = sortControl.value;
-        commitState({ replace: false });
-        renderToys(applyFilters());
-      });
-    }
-
-    const resetButton = ensureFilterResetButton();
-    if (
-      resetButton instanceof HTMLElement &&
-      resetButton.tagName === 'BUTTON'
-    ) {
-      resetButton.addEventListener('click', () => resetFiltersAndSearch());
-      updateFilterResetState();
-    }
-
-    const refine = ensureLibraryRefine();
-    if (refine instanceof HTMLElement && refine.tagName === 'DETAILS') {
-      refine.addEventListener('toggle', () => {
-        const summary = refine.querySelector('summary');
-        if (!(summary instanceof HTMLElement)) return;
-        summary.textContent = refine.open
-          ? 'Hide all filters'
-          : 'Show all filters';
-      });
-    }
-
-    const clearButton = ensureActiveFiltersClear();
-    if (
-      clearButton instanceof HTMLElement &&
-      clearButton.tagName === 'BUTTON' &&
-      clearButton !== resetButton
-    ) {
-      clearButton.addEventListener('click', () => resetFiltersAndSearch());
-    }
-  };
-
-  const initSearch = () => {
-    if (!searchInputId) return;
-    const search = document.getElementById(searchInputId);
-    if (search instanceof HTMLInputElement) {
-      if (!search.placeholder) {
-        search.placeholder = 'Search visuals, moods, audio modes, or controls';
-      }
-      search.setAttribute(
-        'aria-label',
-        'Search visuals by title, mood, audio mode, or interaction',
-      );
-    }
-    if (search) {
-      search.addEventListener('input', (e) => {
-        filterToys(e.target.value);
-        commitState({ replace: true });
-      });
-
-      search.addEventListener('blur', () => {
-        if (searchQuery.trim() !== lastCommittedQuery) {
-          lastCommittedQuery = searchQuery.trim();
-          commitState({ replace: false });
-        }
-      });
-    }
-
-    const form = ensureSearchForm();
-    if (form) {
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-      });
-    }
-
-    const clearButton = ensureSearchClearButton();
-    if (
-      clearButton instanceof HTMLElement &&
-      clearButton.tagName === 'BUTTON'
-    ) {
-      clearButton.addEventListener('click', () => clearSearch());
-      updateSearchClearState();
-    }
-
-    const isEditableTarget = (target) => {
-      if (!(target instanceof HTMLElement)) return false;
-      if (target instanceof HTMLInputElement) return true;
-      if (target instanceof HTMLTextAreaElement) return true;
-      return target.isContentEditable;
-    };
-
-    const focusSearch = () => {
-      if (!(search instanceof HTMLInputElement)) return;
-      search.focus();
-      search.select();
-    };
-
-    search?.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        if (searchQuery.trim().length > 0) {
-          event.preventDefault();
-          clearSearch();
-        }
-        return;
-      }
-
-      const isPlainEnter =
-        event.key === 'Enter' &&
-        !event.shiftKey &&
-        !event.altKey &&
-        !event.metaKey &&
-        !event.ctrlKey;
-      if (!isPlainEnter) return;
-
+    },
+    onSearchClear() {
+      clearSearch();
+    },
+    onSearchSubmit() {},
+    onSearchQuickLaunch() {
       const quickLaunchToy = resolveQuickLaunchToy(
         lastFilteredToys,
-        searchQuery,
+        getState().query,
       );
-      if (!quickLaunchToy) return;
-
-      event.preventDefault();
+      if (!quickLaunchToy) return false;
       void openToy(quickLaunchToy);
-    });
-
-    document.addEventListener('keydown', (event) => {
-      const target = event.target;
-      const isMetaShortcut =
-        event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey);
-      const isSlashShortcut =
-        event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey;
-      const isEscapeShortcut = event.key === 'Escape';
-
-      if (isMetaShortcut && !isEditableTarget(target)) {
-        event.preventDefault();
-        focusSearch();
-        return;
-      }
-
-      if (isSlashShortcut && !isEditableTarget(target)) {
-        event.preventDefault();
-        focusSearch();
-        return;
-      }
-
-      if (isEscapeShortcut && !isEditableTarget(target)) {
-        if (searchQuery.trim().length > 0 || activeFilters.size > 0) {
-          event.preventDefault();
-          clearAllFilters();
-        }
-      }
-    });
-  };
+      return true;
+    },
+    onSearchFocusShortcut() {},
+    onEscapeShortcut() {
+      clearAllFilters();
+    },
+    onFilterChipToggle(chip) {
+      toggleFilterChip(chip);
+    },
+    onSortChange(sort) {
+      stateController.setSort(sort);
+      stateController.commitState({ replace: false });
+      renderCurrentState();
+      updateFilterResetState();
+      updateActiveFiltersSummary();
+    },
+    onResetFilters() {
+      resetFiltersAndSearch();
+    },
+  });
 
   const init = async () => {
     setToys(allToys);
-    const urlState = getStateFromUrl();
-    const hasUrlState =
-      urlState.query.trim().length > 0 ||
-      urlState.filters.length > 0 ||
-      urlState.sort !== 'featured';
-    if (hasUrlState) {
-      applyState(urlState, { render: false });
-    } else {
-      const storedState = readStateFromStorage();
-      if (storedState) {
-        applyState(
-          {
-            query: storedState.query ?? '',
-            filters: storedState.filters ?? [],
-            sort: storedState.sort ?? 'featured',
-          },
-          { render: false },
-        );
-        commitState({ replace: true });
-      } else {
-        try {
-          if (
-            window.sessionStorage.getItem(COMPATIBILITY_MODE_KEY) === 'true'
-          ) {
-            applyState(
-              {
-                query: '',
-                filters: ['feature:compatible'],
-                sort: 'featured',
-              },
-              { render: false },
-            );
-            commitState({ replace: true });
-          }
-        } catch (_error) {
-          // Ignore storage access issues.
-        }
-      }
+    const initialState = stateController.restoreInitialState();
+    const hasStoredOnlyState =
+      initialState.query.trim().length > 0 ||
+      initialState.filters.length > 0 ||
+      initialState.sort !== DEFAULT_LIBRARY_SORT;
+    applyState(initialState, { render: false });
+    if (hasStoredOnlyState && window.location.search !== '') {
+      lastCommittedQuery = getState().query.trim();
+    } else if (hasStoredOnlyState) {
+      stateController.commitState({ replace: true });
     }
 
     syncRefineDisclosure();
     threeEffectsInitialized = true;
-    renderToys(applyFilters());
+    renderCurrentState();
     requestThreeEffects();
 
     if (enableDarkModeToggle) {
       setupDarkModeToggle(themeToggleId);
     }
 
-    initSearch();
-    initFilters();
+    inputController.init();
     if (typeof initNavigation === 'function') {
       initNavigation();
     }
@@ -1657,7 +873,7 @@ export function createLibraryView({
     }
 
     window.addEventListener('popstate', () => {
-      const nextState = getStateFromUrl();
+      const nextState = stateController.readStateFromUrl();
       applyState(nextState, { render: true });
       syncRefineDisclosure();
     });
@@ -1679,7 +895,7 @@ export function createLibraryView({
   return {
     init,
     setToys,
-    renderToys,
+    renderToys: renderCurrentState,
     filterToys,
   };
 }
