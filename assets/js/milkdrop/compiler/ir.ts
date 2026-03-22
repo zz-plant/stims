@@ -37,7 +37,7 @@ type ShaderControlAnalysis = {
   expressions: MilkdropPresetIR['shaderText']['controlExpressions'];
 };
 
-type IrAssemblyHelpers = {
+type ProgramAssemblyHelpers = {
   createProgramBlock: () => ProgramBlock;
   compileProgramsFromField: (
     field: MilkdropPresetField,
@@ -50,6 +50,9 @@ type IrAssemblyHelpers = {
       { sourceLine: string; line: number }
     >,
   ) => boolean;
+};
+
+type FieldAssemblyHelpers = {
   normalizeFieldKey: (field: MilkdropPresetField) => string | null;
   getHardUnsupportedField: (
     key: string,
@@ -94,6 +97,9 @@ type IrAssemblyHelpers = {
     field: PendingHardUnsupportedField,
     runtimeGlobals: Record<string, number>,
   ) => boolean;
+};
+
+type ShaderAssemblyHelpers = {
   extractShaderControls: (shaderText: string | null) => ShaderControlAnalysis;
   mergeShaderControlAnalysis: (
     warpAnalysis: ShaderControlAnalysis,
@@ -109,6 +115,13 @@ type IrAssemblyHelpers = {
     requiresControlFallback: boolean;
     supportedBackends: Array<'webgl' | 'webgpu'>;
   }) => NonNullable<MilkdropPresetIR['shaderText']['warpProgram']>;
+  normalizeBlockedConstructValue: (value: string) => string;
+  buildUnsupportedVolumeSamplerWarnings: (
+    controls: MilkdropShaderControls,
+  ) => string[];
+};
+
+type CompatibilityAssemblyHelpers = {
   buildBlockingConstructDetails: (args: {
     sourceId?: string;
     ignoredFields: string[];
@@ -122,10 +135,6 @@ type IrAssemblyHelpers = {
   collectExpressionCompatibilityGaps: (
     parsedExpressions: MilkdropExpressionNode[],
     assignedTargets: Set<string>,
-  ) => string[];
-  normalizeBlockedConstructValue: (value: string) => string;
-  buildUnsupportedVolumeSamplerWarnings: (
-    controls: MilkdropShaderControls,
   ) => string[];
   buildBackendSupport: typeof buildBackendSupport;
   createBackendEvidence: Parameters<
@@ -179,7 +188,10 @@ export function createMilkdropIr({
   hasLegacyMotionVectorControls,
   analyzeProgramRegisters,
   hasProgramStatements,
-  helpers,
+  programHelpers,
+  fieldHelpers,
+  shaderHelpers,
+  compatibilityHelpers,
 }: {
   ast: MilkdropPresetAST;
   diagnostics: MilkdropDiagnostic[];
@@ -208,16 +220,19 @@ export function createMilkdropIr({
   hasProgramStatements: Parameters<
     typeof buildFeatureAnalysis
   >[0]['hasProgramStatements'];
-  helpers: IrAssemblyHelpers;
+  programHelpers: ProgramAssemblyHelpers;
+  fieldHelpers: FieldAssemblyHelpers;
+  shaderHelpers: ShaderAssemblyHelpers;
+  compatibilityHelpers: CompatibilityAssemblyHelpers;
 }): MilkdropPresetIR {
   const numericFields = { ...defaultState };
   const stringFields: Record<string, string> = {};
   const parsedExpressions: MilkdropExpressionNode[] = [];
   const assignedTargets = new Set<string>();
   const programs = {
-    init: helpers.createProgramBlock(),
-    perFrame: helpers.createProgramBlock(),
-    perPixel: helpers.createProgramBlock(),
+    init: programHelpers.createProgramBlock(),
+    perFrame: programHelpers.createProgramBlock(),
+    perPixel: programHelpers.createProgramBlock(),
   };
   const customWaveMap = new Map<number, MilkdropWaveDefinition>();
   const customShapeMap = new Map<number, MilkdropShapeDefinition>();
@@ -238,7 +253,7 @@ export function createMilkdropIr({
 
   ast.fields.forEach((field) => {
     if (
-      helpers.compileProgramsFromField(
+      programHelpers.compileProgramsFromField(
         field,
         programs,
         customWaveMap,
@@ -250,20 +265,23 @@ export function createMilkdropIr({
       return;
     }
 
-    const normalizedKey = helpers.normalizeFieldKey(field);
+    const normalizedKey = fieldHelpers.normalizeFieldKey(field);
     if (normalizedKey === null) {
       return;
     }
 
-    const hardUnsupportedField = helpers.getHardUnsupportedField(normalizedKey);
+    const hardUnsupportedField =
+      fieldHelpers.getHardUnsupportedField(normalizedKey);
 
     if (metadataKeys.has(normalizedKey)) {
-      stringFields[normalizedKey] = helpers.normalizeString(field.rawValue);
+      stringFields[normalizedKey] = fieldHelpers.normalizeString(
+        field.rawValue,
+      );
       return;
     }
 
     if (shaderFieldPattern.test(normalizedKey)) {
-      const rawValue = helpers.normalizeShaderFieldChunk(field.rawValue);
+      const rawValue = fieldHelpers.normalizeShaderFieldChunk(field.rawValue);
       if (!rawValue) {
         return;
       }
@@ -293,9 +311,12 @@ export function createMilkdropIr({
         softUnknownKeys.add(normalizedKey);
         return;
       }
-      const compiledScalar = helpers.compileScalarField(field, diagnostics);
+      const compiledScalar = fieldHelpers.compileScalarField(
+        field,
+        diagnostics,
+      );
       if (compiledScalar.value === null) {
-        helpers.addDiagnostic(
+        fieldHelpers.addDiagnostic(
           diagnostics,
           'error',
           'preset_invalid_scalar',
@@ -311,7 +332,7 @@ export function createMilkdropIr({
         parsedExpressions.push(compiledScalar.expression);
       }
       numericFields[normalizedKey] = compiledScalar.value;
-      helpers.ensureWaveDefinition(customWaveMap, index).fields[suffix] =
+      fieldHelpers.ensureWaveDefinition(customWaveMap, index).fields[suffix] =
         compiledScalar.value;
       return;
     }
@@ -335,7 +356,7 @@ export function createMilkdropIr({
           return;
         }
         softUnknownKeys.add(normalizedKey);
-        helpers.addDiagnostic(
+        fieldHelpers.addDiagnostic(
           diagnostics,
           'warning',
           'preset_unknown_field',
@@ -347,9 +368,12 @@ export function createMilkdropIr({
         );
         return;
       }
-      const compiledScalar = helpers.compileScalarField(field, diagnostics);
+      const compiledScalar = fieldHelpers.compileScalarField(
+        field,
+        diagnostics,
+      );
       if (compiledScalar.value === null) {
-        helpers.addDiagnostic(
+        fieldHelpers.addDiagnostic(
           diagnostics,
           'error',
           'preset_invalid_scalar',
@@ -365,7 +389,7 @@ export function createMilkdropIr({
         parsedExpressions.push(compiledScalar.expression);
       }
       numericFields[normalizedKey] = compiledScalar.value;
-      helpers.ensureShapeDefinition(customShapeMap, index).fields[suffix] =
+      fieldHelpers.ensureShapeDefinition(customShapeMap, index).fields[suffix] =
         compiledScalar.value;
       return;
     }
@@ -381,7 +405,7 @@ export function createMilkdropIr({
         return;
       }
       softUnknownKeys.add(normalizedKey);
-      helpers.addDiagnostic(
+      fieldHelpers.addDiagnostic(
         diagnostics,
         'warning',
         'preset_unknown_field',
@@ -394,9 +418,9 @@ export function createMilkdropIr({
       return;
     }
 
-    const compiledScalar = helpers.compileScalarField(field, diagnostics);
+    const compiledScalar = fieldHelpers.compileScalarField(field, diagnostics);
     if (compiledScalar.value === null) {
-      helpers.addDiagnostic(
+      fieldHelpers.addDiagnostic(
         diagnostics,
         'error',
         'preset_invalid_scalar',
@@ -413,21 +437,23 @@ export function createMilkdropIr({
     }
     numericFields[normalizedKey] =
       normalizedKey === 'video_echo_orientation'
-        ? helpers.normalizeVideoEchoOrientation(compiledScalar.value)
+        ? fieldHelpers.normalizeVideoEchoOrientation(compiledScalar.value)
         : compiledScalar.value;
   });
 
   pendingProgramSources.forEach(({ sourceLine, line }, block) => {
-    helpers.pushProgramStatement(block, sourceLine, line, diagnostics);
+    fieldHelpers.pushProgramStatement(block, sourceLine, line, diagnostics);
   });
 
-  const runtimeGlobals = helpers.resolveRuntimeGlobals({
+  const runtimeGlobals = fieldHelpers.resolveRuntimeGlobals({
     numericFields,
     programs,
   });
 
   pendingHardUnsupportedFields.forEach((pendingField, normalizedKey) => {
-    if (!helpers.isHardUnsupportedFieldBlocking(pendingField, runtimeGlobals)) {
+    if (
+      !fieldHelpers.isHardUnsupportedFieldBlocking(pendingField, runtimeGlobals)
+    ) {
       return;
     }
     hardUnsupportedFields.set(normalizedKey, {
@@ -435,7 +461,7 @@ export function createMilkdropIr({
       feature: pendingField.feature,
       message: pendingField.message,
     });
-    helpers.addDiagnostic(
+    fieldHelpers.addDiagnostic(
       diagnostics,
       'warning',
       'preset_unsupported_field',
@@ -453,15 +479,17 @@ export function createMilkdropIr({
   const customShapes = [...customShapeMap.values()].sort(
     (left, right) => left.index - right.index,
   );
-  const shaderWarpAnalysis = helpers.extractShaderControls(warpShaderText);
-  const shaderCompAnalysis = helpers.extractShaderControls(compShaderText);
-  const mergedShaderControls = helpers.mergeShaderControlAnalysis(
+  const shaderWarpAnalysis =
+    shaderHelpers.extractShaderControls(warpShaderText);
+  const shaderCompAnalysis =
+    shaderHelpers.extractShaderControls(compShaderText);
+  const mergedShaderControls = shaderHelpers.mergeShaderControlAnalysis(
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
   const warpShaderProgram =
     shaderWarpAnalysis.directProgramStatements.length > 0
-      ? helpers.buildShaderProgramPayload({
+      ? shaderHelpers.buildShaderProgramPayload({
           stage: 'warp',
           statements: shaderWarpAnalysis.directProgramStatements,
           normalizedLines: shaderWarpAnalysis.directProgramLines,
@@ -476,7 +504,7 @@ export function createMilkdropIr({
       : null;
   const compShaderProgram =
     shaderCompAnalysis.directProgramStatements.length > 0
-      ? helpers.buildShaderProgramPayload({
+      ? shaderHelpers.buildShaderProgramPayload({
           stage: 'comp',
           statements: shaderCompAnalysis.directProgramStatements,
           normalizedLines: shaderCompAnalysis.directProgramLines,
@@ -495,14 +523,15 @@ export function createMilkdropIr({
   const approximatedShaderLines = [
     ...shaderWarpAnalysis.unsupportedLines,
     ...shaderCompAnalysis.unsupportedLines,
-  ].map(helpers.normalizeBlockedConstructValue);
-  const blockingConstructDetails = helpers.buildBlockingConstructDetails({
-    sourceId: source.id,
-    ignoredFields,
-    hardUnsupportedFields,
-    approximatedShaderLines,
-  });
-  helpers.collectExpressionsFromValue(
+  ].map(shaderHelpers.normalizeBlockedConstructValue);
+  const blockingConstructDetails =
+    compatibilityHelpers.buildBlockingConstructDetails({
+      sourceId: source.id,
+      ignoredFields,
+      hardUnsupportedFields,
+      approximatedShaderLines,
+    });
+  compatibilityHelpers.collectExpressionsFromValue(
     mergedShaderControls.expressions,
     parsedExpressions,
   );
@@ -525,10 +554,11 @@ export function createMilkdropIr({
       parsedExpressions.push(statement.expression);
     }
   }
-  const missingAliasesOrFunctions = helpers.collectExpressionCompatibilityGaps(
-    parsedExpressions,
-    assignedTargets,
-  );
+  const missingAliasesOrFunctions =
+    compatibilityHelpers.collectExpressionCompatibilityGaps(
+      parsedExpressions,
+      assignedTargets,
+    );
   const hasShaderText = Boolean(warpShaderText || compShaderText);
   const hasBlockingShaderApproximation = blockingConstructDetails.some(
     (construct) => construct.kind === 'shader' && !construct.allowlisted,
@@ -539,7 +569,7 @@ export function createMilkdropIr({
     (hasShaderText && !hasBlockingShaderApproximation);
   unsupportedShaderText = hasBlockingShaderApproximation;
   if (unsupportedShaderText) {
-    helpers.addDiagnostic(
+    fieldHelpers.addDiagnostic(
       diagnostics,
       'warning',
       'preset_unsupported_shader_text',
@@ -568,7 +598,7 @@ export function createMilkdropIr({
                 : 'translated',
           }
       : { webgl: 'none', webgpu: 'none' };
-  const featureAnalysis = helpers.buildFeatureAnalysis({
+  const featureAnalysis = compatibilityHelpers.buildFeatureAnalysis({
     programs,
     customWaves,
     customShapes,
@@ -591,11 +621,11 @@ export function createMilkdropIr({
     ),
   ];
   const unsupportedVolumeSamplerWarnings =
-    helpers.buildUnsupportedVolumeSamplerWarnings(
+    shaderHelpers.buildUnsupportedVolumeSamplerWarnings(
       mergedShaderControls.controls,
     );
   unsupportedVolumeSamplerWarnings.forEach((message) => {
-    helpers.addDiagnostic(
+    fieldHelpers.addDiagnostic(
       diagnostics,
       'warning',
       'preset_shader_volume_approximation',
@@ -603,41 +633,44 @@ export function createMilkdropIr({
     );
   });
   const backends = {
-    webgl: helpers.buildBackendSupport({
+    webgl: compatibilityHelpers.buildBackendSupport({
       backend: 'webgl',
       featureAnalysis,
       sharedWarnings,
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
       unsupportedVolumeSamplerWarnings,
-      createBackendEvidence: helpers.createBackendEvidence,
+      createBackendEvidence: compatibilityHelpers.createBackendEvidence,
       backendPartialFeatureGaps,
       backendShaderTextGaps,
     }),
-    webgpu: helpers.buildBackendSupport({
+    webgpu: compatibilityHelpers.buildBackendSupport({
       backend: 'webgpu',
       featureAnalysis,
       sharedWarnings,
       softUnknownKeys: [...softUnknownKeys],
       hardUnsupportedFields: [...hardUnsupportedFields.values()],
       unsupportedVolumeSamplerWarnings,
-      createBackendEvidence: helpers.createBackendEvidence,
+      createBackendEvidence: compatibilityHelpers.createBackendEvidence,
       backendPartialFeatureGaps,
       backendShaderTextGaps,
     }),
   };
   const blockedConstructs = [
-    ...ignoredFields.map(helpers.toBlockedFieldConstruct),
-    ...approximatedShaderLines.map(helpers.toBlockedShaderConstruct),
+    ...ignoredFields.map(compatibilityHelpers.toBlockedFieldConstruct),
+    ...approximatedShaderLines.map(
+      compatibilityHelpers.toBlockedShaderConstruct,
+    ),
   ];
   const finalBackends = backends;
-  const backendDivergence = helpers.buildBackendDivergence(finalBackends);
-  const visualFallbacks = helpers.buildVisualFallbacks({
+  const backendDivergence =
+    compatibilityHelpers.buildBackendDivergence(finalBackends);
+  const visualFallbacks = compatibilityHelpers.buildVisualFallbacks({
     approximatedShaderLines,
     webgl: finalBackends.webgl,
     webgpu: finalBackends.webgpu,
   });
-  const degradationReasons = helpers.buildDegradationReasons({
+  const degradationReasons = compatibilityHelpers.buildDegradationReasons({
     blockedConstructDetails: blockingConstructDetails,
     backendDivergence,
     visualFallbacks,
@@ -650,11 +683,11 @@ export function createMilkdropIr({
       : backendDivergence.length > 0 || visualFallbacks.length > 0
         ? 'runtime'
         : 'visual';
-  const evidence = helpers.buildCompatibilityEvidence({
+  const evidence = compatibilityHelpers.buildCompatibilityEvidence({
     diagnostics,
     visualEvidenceTier,
   });
-  const fidelityClass = helpers.classifyFidelity({
+  const fidelityClass = compatibilityHelpers.classifyFidelity({
     blockedConstructDetails: blockingConstructDetails,
     degradationReasons,
     webgl: finalBackends.webgl,
@@ -700,12 +733,12 @@ export function createMilkdropIr({
     videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
     videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
     videoEchoZoom: numericFields.video_echo_zoom ?? 1,
-    videoEchoOrientation: helpers.normalizeVideoEchoOrientation(
+    videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(
       numericFields.video_echo_orientation ?? 0,
     ),
   };
   const gpuDescriptorPlans = {
-    webgpu: helpers.buildWebGpuDescriptorPlan({
+    webgpu: compatibilityHelpers.buildWebGpuDescriptorPlan({
       featureAnalysis,
       webgpu: finalBackends.webgpu,
       numericFields,
@@ -831,7 +864,7 @@ export function createMilkdropIr({
       videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
       videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
       videoEchoZoom: numericFields.video_echo_zoom ?? 1,
-      videoEchoOrientation: helpers.normalizeVideoEchoOrientation(
+      videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(
         numericFields.video_echo_orientation ?? 0,
       ),
     },
