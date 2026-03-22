@@ -131,9 +131,22 @@ export function createExperimentalWorkerRendererTrack({
   const queuedMessages: RendererWorkerRequestMessage[] = [];
   let isReady = false;
   let isDisposed = false;
+  let hasInitFailed = false;
+
+  const failClosed = () => {
+    if (isDisposed) {
+      return;
+    }
+
+    hasInitFailed = true;
+    isDisposed = true;
+    queuedMessages.length = 0;
+    worker.removeEventListener('message', handleMessage as EventListener);
+    worker.terminate();
+  };
 
   const postWhenReady = (message: RendererWorkerRequestMessage) => {
-    if (isDisposed) {
+    if (isDisposed || hasInitFailed) {
       return;
     }
 
@@ -166,6 +179,10 @@ export function createExperimentalWorkerRendererTrack({
     if (event.data.type === RENDERER_WORKER_MESSAGE_TYPES.ready) {
       isReady = true;
       flushQueuedMessages();
+    }
+
+    if (event.data.type === RENDERER_WORKER_MESSAGE_TYPES.error && !isReady) {
+      failClosed();
     }
 
     onMessage?.(event.data);
