@@ -4,7 +4,7 @@ import {
 } from '../overlay-intent';
 import { MILKDROP_PRESET_SELECTION_EVENT } from '../preset-selection';
 
-export function createMilkdropOverlayCallbacks(actions: {
+export type MilkdropOverlayActionHandlers = {
   onSelectPreset: (id: string) => void;
   onSelectQualityPreset: (presetId: string) => void;
   onToggleFavorite: (id: string, favorite: boolean) => void;
@@ -23,7 +23,11 @@ export function createMilkdropOverlayCallbacks(actions: {
   onEditorSourceChange: (source: string) => void;
   onRevertToActive: () => void;
   onInspectorFieldChange: (key: string, value: string | number) => void;
-}) {
+};
+
+export function createMilkdropOverlayCallbacks(
+  actions: MilkdropOverlayActionHandlers,
+) {
   return {
     onSelectPreset: (id: string) => {
       void actions.onSelectPreset(id);

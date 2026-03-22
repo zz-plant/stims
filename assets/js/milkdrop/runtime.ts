@@ -29,31 +29,23 @@ import { MilkdropOverlay } from './overlay';
 import { consumeRequestedMilkdropOverlayTab } from './overlay-intent';
 import { consumeRequestedMilkdropPresetSelection } from './preset-selection';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
+import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
+import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
+import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
+import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
+import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
+import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
 import {
-  downloadPresetFile,
-  readUiPrefs,
-  writeUiPrefs,
-} from './runtime/persistence';
-import {
-  cloneBlendState,
-  estimateFrameBlendWorkload,
-  isEditablePreset,
-} from './runtime/session';
-import {
-  createMilkdropOverlayCallbacks,
-  installMilkdropRuntimeKeybindings,
   installRequestedOverlayTabListener,
   installRequestedPresetListener,
 } from './runtime/ui-bridge';
 import { createMilkdropSignalTracker } from './runtime-signals';
 import type {
-  MilkdropCatalogEntry,
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropGpuGeometryHints,
   MilkdropGpuInteractionPayload,
   MilkdropPostVisual,
-  MilkdropPresetSource,
   MilkdropRuntimeSignals,
 } from './types';
 import { createMilkdropVM } from './vm';
@@ -629,7 +621,6 @@ export function createMilkdropExperience({
   };
   initialPresetId?: string;
 }) {
-  const prefs = readUiPrefs();
   const catalogStore = createMilkdropCatalogStore();
   const defaultPreset = compileMilkdropPresetSource(DEFAULT_PRESET_SOURCE, {
     id: 'signal-bloom',
@@ -637,6 +628,7 @@ export function createMilkdropExperience({
     origin: 'bundled',
     author: 'Stims',
   });
+  const preferences = createMilkdropRuntimePreferences();
   const webgpuOptimizationFlags = resolveMilkdropWebGpuOptimizationFlags();
   const disabledWebGpuOptimizationFlags =
     getDisabledMilkdropWebGpuOptimizationFlags(webgpuOptimizationFlags);
@@ -644,70 +636,6 @@ export function createMilkdropExperience({
   const signalTracker = createMilkdropSignalTracker();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
-  });
-  const overlay = new MilkdropOverlay({
-    host: container ?? document.body,
-    callbacks: createMilkdropOverlayCallbacks({
-      onSelectPreset: (id) => {
-        void selectPreset(id);
-      },
-      onSelectQualityPreset: (presetId) => {
-        const preset = setQualityPresetById(presetId, {
-          presets: qualityControl.presets,
-          storageKey: qualityControl.storageKey,
-        });
-        if (!preset) {
-          return;
-        }
-        quality.applyQualityPreset(preset);
-      },
-      onToggleFavorite: (id, favorite) => {
-        void catalogStore.setFavorite(id, favorite).then(syncCatalog);
-      },
-      onSetRating: (id, rating) => {
-        void catalogStore.setRating(id, rating).then(syncCatalog);
-      },
-      onToggleAutoplay: (enabled) => {
-        autoplay = enabled;
-        writeUiPrefs({ autoplay: enabled });
-      },
-      onTransitionModeChange: (mode) => {
-        setTransitionMode(mode);
-      },
-      onGoBackPreset: () => {
-        void goBackPreset();
-      },
-      onNextPreset: () => selectAdjacentPreset(1),
-      onPreviousPreset: () => selectAdjacentPreset(-1),
-      onRandomize: () => {
-        void selectRandomPreset();
-      },
-      onBlendDurationChange: (value) => {
-        blendDuration = value;
-        writeUiPrefs({ blendDuration: value });
-      },
-      onImportFiles: (files) => {
-        void importFiles(files);
-      },
-      onExport: () => {
-        exportPreset();
-      },
-      onDuplicatePreset: () => {
-        void duplicatePreset();
-      },
-      onDeletePreset: () => {
-        void deleteActivePreset();
-      },
-      onEditorSourceChange: (source) => {
-        void session.applySource(source);
-      },
-      onRevertToActive: () => {
-        void session.resetToActive();
-      },
-      onInspectorFieldChange: (key, value) => {
-        void session.updateField(key, value);
-      },
-    }),
   });
 
   let runtime: ToyRuntimeInstance | null = null;
@@ -718,21 +646,17 @@ export function createMilkdropExperience({
   let currentFrameState: MilkdropFrameState | null = null;
   let blendState = cloneBlendState(currentFrameState);
   let blendEndAtMs = 0;
-  let autoplay = prefs.autoplay ?? false;
-  let blendDuration =
-    prefs.blendDuration ?? activeCompiled.ir.numericFields.blend_duration;
-  let transitionMode: 'blend' | 'cut' = prefs.transitionMode ?? 'blend';
+  let autoplay = preferences.getAutoplay();
+  let blendDuration = preferences.getBlendDuration(
+    activeCompiled.ir.numericFields.blend_duration,
+  );
+  let transitionMode = preferences.getTransitionMode();
   let lastPresetSwitchAt = performance.now();
-  let catalogEntries: MilkdropCatalogEntry[] = [];
-  let selectionHistory: string[] = [];
-  let selectionCursor = -1;
   let fallbackTriggered = false;
   let lastStatusMessage: string | null = null;
   let disposeKeyboardShortcuts: (() => void) | null = null;
   let disposeRequestedPresetListener: (() => void) | null = null;
   let disposeRequestedOverlayTabListener: (() => void) | null = null;
-  let catalogSyncPromise: Promise<void> | null = null;
-  let catalogSyncFrameId: number | null = null;
   let lastInspectorOverlaySyncAt = 0;
   let adaptiveQualityController: AdaptiveQualityController | null = null;
   let adaptiveQualityState: AdaptiveQualityState | null = null;
@@ -768,48 +692,31 @@ export function createMilkdropExperience({
   const setTransitionMode = (mode: 'blend' | 'cut') => {
     transitionMode = mode;
     overlay.setTransitionMode(mode);
-    writeUiPrefs({ transitionMode: mode });
+    preferences.setTransitionMode(mode);
   };
 
-  overlay.setAutoplay(autoplay);
-  overlay.setBlendDuration(blendDuration);
-  overlay.setTransitionMode(transitionMode);
-  overlay.setQualityPresets({
-    presets: qualityControl.presets,
-    activePresetId: quality.activeQuality.id,
-    storageKey: qualityControl.storageKey,
-  });
-  overlay.setSessionState(session.getState());
-  if (prefs.fallbackNotice) {
-    setOverlayStatus(prefs.fallbackNotice);
-    writeUiPrefs({ fallbackNotice: undefined });
-  }
-
-  const syncCatalog = async () => {
-    catalogEntries = await catalogStore.listPresets();
-    overlay.setCatalog(catalogEntries, activePresetId, activeBackend);
-  };
-
-  const scheduleCatalogSync = () => {
-    if (catalogSyncPromise || catalogSyncFrameId !== null) {
-      return catalogSyncPromise ?? Promise.resolve();
-    }
-
-    catalogSyncPromise = new Promise((resolve) => {
-      catalogSyncFrameId = window.requestAnimationFrame(() => {
-        catalogSyncFrameId = null;
-        void syncCatalog().finally(() => {
-          catalogSyncPromise = null;
-          resolve();
-        });
-      });
+  const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
+    activeCompiled = compiled;
+    activePresetId = compiled.source.id;
+    vm.setPreset(compiled);
+    vm.setRenderBackend(activeBackend);
+    adapter?.setPreset(compiled);
+    overlay.setCurrentPresetTitle(compiled.title);
+    overlay.setSessionState(session.getState());
+    overlay.setInspectorState({
+      compiled: activeCompiled,
+      frameState: currentFrameState,
+      backend: activeBackend,
     });
-
-    return catalogSyncPromise;
+    updateAgentDebugSnapshot();
   };
 
-  const getActiveCatalogEntry = () =>
-    catalogEntries.find((entry) => entry.id === activePresetId) ?? null;
+  const catalogCoordinator = createMilkdropCatalogCoordinator({
+    catalogStore,
+    onCatalogChanged(entries, nextActivePresetId, nextActiveBackend) {
+      overlay.setCatalog(entries, nextActivePresetId, nextActiveBackend);
+    },
+  });
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
     shouldFallbackMilkdropPresetToWebgl({
@@ -830,92 +737,168 @@ export function createMilkdropExperience({
       return;
     }
     fallbackTriggered = true;
-    writeUiPrefs({
-      lastPresetId: presetId,
-      fallbackNotice: reason,
-    });
+    preferences.recordFallback({ presetId, reason });
     setCompatibilityMode(true);
     window.location.reload();
   };
 
-  const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
-    activeCompiled = compiled;
-    activePresetId = compiled.source.id;
-    vm.setPreset(compiled);
-    vm.setRenderBackend(activeBackend);
-    adapter?.setPreset(compiled);
-    overlay.setCurrentPresetTitle(compiled.title);
-    overlay.setSessionState(session.getState());
-    overlay.setInspectorState({
-      compiled: activeCompiled,
-      frameState: currentFrameState,
-      backend: activeBackend,
-    });
-    updateAgentDebugSnapshot();
-  };
+  const navigation = createMilkdropPresetNavigationController({
+    catalogStore,
+    catalogCoordinator,
+    session,
+    getActivePresetId: () => activePresetId,
+    getActiveBackend: () => activeBackend,
+    getCurrentFrameState: () => currentFrameState,
+    getBlendDuration: () => blendDuration,
+    getTransitionMode: () => transitionMode,
+    applyCompiledPreset,
+    setOverlayStatus,
+    shouldFallbackToWebgl,
+    triggerWebglFallback,
+    rememberLastPreset: (id) => {
+      preferences.rememberLastPreset(id);
+    },
+    preparePresetTransition(nextBlendState) {
+      blendState = nextBlendState;
+      blendEndAtMs =
+        nextBlendState && blendDuration > 0
+          ? performance.now() + blendDuration * 1000
+          : 0;
+    },
+    markPresetSwitched() {
+      lastPresetSwitchAt = performance.now();
+    },
+  });
 
-  const rememberSelection = async (id: string) => {
-    if (selectionHistory[selectionCursor] !== id) {
-      selectionHistory = selectionHistory.slice(0, selectionCursor + 1);
-      selectionHistory.push(id);
-      selectionCursor = selectionHistory.length - 1;
-    }
-    await catalogStore.recordRecent(id);
-    await catalogStore.pushHistory(id);
-  };
+  const presetFileActions = createMilkdropPresetFileActions({
+    catalogStore,
+    getActiveCatalogEntry: () =>
+      catalogCoordinator.getActiveCatalogEntry(activePresetId),
+    getActiveCompiled: () =>
+      session.getState().activeCompiled ?? activeCompiled,
+    scheduleCatalogSync: () =>
+      catalogCoordinator.scheduleCatalogSync({
+        activePresetId,
+        activeBackend,
+      }),
+    selectPreset: navigation.selectPreset,
+  });
 
-  const selectPreset = async (
-    id: string,
-    options: { recordHistory?: boolean } = {},
-  ) => {
-    const source = await catalogStore.getPresetSource(id);
-    if (!source) {
-      setOverlayStatus(`Preset ${id} could not be loaded.`);
-      return;
-    }
-    const draft = await catalogStore.getDraft(id);
-    const resolvedSource: MilkdropPresetSource = {
-      ...source,
-      raw: draft ?? source.raw,
-    };
+  const interactionPresenter = createMilkdropRuntimeInteractionPresenter({
+    overlay: {
+      isOpen: () => overlay.isOpen(),
+      toggleOpen: (open?: boolean) => overlay.toggleOpen(open),
+    },
+    overlayActions: {
+      onSelectPreset: navigation.selectPreset,
+      onSelectQualityPreset: (presetId) => {
+        const preset = setQualityPresetById(presetId, {
+          presets: qualityControl.presets,
+          storageKey: qualityControl.storageKey,
+        });
+        if (!preset) {
+          return;
+        }
+        quality.applyQualityPreset(preset);
+      },
+      onToggleFavorite: async (id, favorite) => {
+        await catalogStore.setFavorite(id, favorite);
+        await catalogCoordinator.syncCatalog({
+          activePresetId,
+          activeBackend,
+        });
+      },
+      onSetRating: async (id, rating) => {
+        await catalogStore.setRating(id, rating);
+        await catalogCoordinator.syncCatalog({
+          activePresetId,
+          activeBackend,
+        });
+      },
+      onToggleAutoplay: (enabled) => {
+        autoplay = enabled;
+        preferences.setAutoplay(enabled);
+      },
+      onTransitionModeChange: setTransitionMode,
+      onGoBackPreset: navigation.goBackPreset,
+      onNextPreset: () => navigation.selectAdjacentPreset(1),
+      onPreviousPreset: () => navigation.selectAdjacentPreset(-1),
+      onRandomize: navigation.selectRandomPreset,
+      onBlendDurationChange: (value) => {
+        blendDuration = value;
+        preferences.setBlendDuration(value);
+      },
+      onImportFiles: presetFileActions.importFiles,
+      onExport: presetFileActions.exportPreset,
+      onDuplicatePreset: presetFileActions.duplicatePreset,
+      onDeletePreset: presetFileActions.deleteActivePreset,
+      onEditorSourceChange: (source) => session.applySource(source),
+      onRevertToActive: () => session.resetToActive(),
+      onInspectorFieldChange: (key, value) => session.updateField(key, value),
+    },
+    keybindingActions: {
+      getActivePresetId: () => activePresetId,
+      getActiveCatalogEntry: () =>
+        catalogCoordinator.getActiveCatalogEntry(activePresetId),
+      getTransitionMode: () => transitionMode,
+      getBlendDuration: () => blendDuration,
+      selectAdjacentPreset: (direction) => {
+        void navigation.selectAdjacentPreset(direction);
+      },
+      selectRandomPreset: () => {
+        void navigation.selectRandomPreset();
+      },
+      goBackPreset: () => {
+        void navigation.goBackPreset();
+      },
+      setTransitionMode,
+      setOverlayStatus,
+      cycleWaveMode: (direction) => {
+        void cycleWaveMode(direction);
+      },
+      nudgeNumericField: (args) => {
+        void nudgeNumericField(args);
+      },
+      toggleFavorite: (id) => {
+        const entry = catalogCoordinator.getActiveCatalogEntry(activePresetId);
+        void catalogStore
+          .setFavorite(id, !(entry?.isFavorite ?? false))
+          .then(() =>
+            catalogCoordinator.syncCatalog({
+              activePresetId,
+              activeBackend,
+            }),
+          );
+      },
+      setRating: (id, rating) => {
+        void catalogStore.setRating(id, rating).then(() =>
+          catalogCoordinator.syncCatalog({
+            activePresetId,
+            activeBackend,
+          }),
+        );
+      },
+    },
+  });
 
-    const nextState = await session.loadPreset(resolvedSource);
-    const nextCompiled = nextState.activeCompiled;
-    if (!nextCompiled) {
-      setOverlayStatus(`Preset ${id} did not compile.`);
-      return;
-    }
+  const overlay = new MilkdropOverlay({
+    host: container ?? document.body,
+    callbacks: interactionPresenter.overlayCallbacks,
+  });
 
-    if (shouldFallbackToWebgl(nextCompiled)) {
-      triggerWebglFallback({
-        presetId: id,
-        reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
-      });
-      return;
-    }
-
-    if (
-      transitionMode === 'blend' &&
-      blendDuration > 0 &&
-      estimateFrameBlendWorkload(currentFrameState) < 900
-    ) {
-      blendState = cloneBlendState(currentFrameState);
-      blendEndAtMs = performance.now() + blendDuration * 1000;
-    } else {
-      blendState = null;
-      blendEndAtMs = 0;
-    }
-    lastPresetSwitchAt = performance.now();
-
-    if (options.recordHistory !== false) {
-      await rememberSelection(id);
-    }
-
-    writeUiPrefs({ lastPresetId: id });
-    applyCompiledPreset(nextCompiled);
-    setOverlayStatus(`Loaded ${nextCompiled.title}.`);
-    await scheduleCatalogSync();
-  };
+  overlay.setAutoplay(autoplay);
+  overlay.setBlendDuration(blendDuration);
+  overlay.setTransitionMode(transitionMode);
+  overlay.setQualityPresets({
+    presets: qualityControl.presets,
+    activePresetId: quality.activeQuality.id,
+    storageKey: qualityControl.storageKey,
+  });
+  overlay.setSessionState(session.getState());
+  const fallbackNotice = preferences.consumeFallbackNotice();
+  if (fallbackNotice) {
+    setOverlayStatus(fallbackNotice);
+  }
 
   const applyFieldValues = async (updates: Record<string, string | number>) => {
     const baseline =
@@ -957,132 +940,6 @@ export function createMilkdropExperience({
     setOverlayStatus(`Wave mode: ${next}`);
   };
 
-  const selectAdjacentPreset = async (direction: 1 | -1) => {
-    if (!catalogEntries.length) {
-      return;
-    }
-    const currentIndex = catalogEntries.findIndex(
-      (entry) => entry.id === activePresetId,
-    );
-    const nextIndex =
-      currentIndex >= 0
-        ? (currentIndex + direction + catalogEntries.length) %
-          catalogEntries.length
-        : 0;
-    const next = catalogEntries[nextIndex];
-    if (next) {
-      await selectPreset(next.id);
-    }
-  };
-
-  const selectRandomPreset = async () => {
-    if (!catalogEntries.length) {
-      return;
-    }
-    const pool = catalogEntries.filter((entry) => {
-      if (entry.id === activePresetId) {
-        return false;
-      }
-      return entry.supports[activeBackend].status === 'supported';
-    });
-    const candidates = pool.length
-      ? pool
-      : catalogEntries.filter((entry) => entry.id !== activePresetId);
-    if (!candidates.length) {
-      return;
-    }
-
-    const weightedPool = candidates.flatMap((entry) => {
-      const weight = Math.max(
-        1,
-        1 +
-          (entry.isFavorite ? 2 : 0) +
-          entry.rating +
-          (entry.historyIndex !== undefined ? 1 : 0),
-      );
-      return Array.from({ length: weight }, () => entry.id);
-    });
-
-    const selectionId =
-      weightedPool[Math.floor(Math.random() * weightedPool.length)];
-    if (selectionId) {
-      await selectPreset(selectionId);
-    }
-  };
-
-  const goBackPreset = async () => {
-    if (selectionCursor <= 0) {
-      const persisted = await catalogStore.getHistory();
-      if (persisted.length > 1) {
-        const previous = persisted[1] as string;
-        selectionHistory = [...persisted].reverse();
-        selectionCursor = Math.max(0, selectionHistory.length - 2);
-        await selectPreset(previous, { recordHistory: false });
-      }
-      return;
-    }
-    selectionCursor -= 1;
-    const previousId = selectionHistory[selectionCursor];
-    if (previousId) {
-      await selectPreset(previousId, { recordHistory: false });
-    }
-  };
-
-  const importFiles = async (files: FileList) => {
-    for (const file of Array.from(files)) {
-      const raw = await file.text();
-      const compiled = compileMilkdropPresetSource(raw, {
-        title: file.name.replace(/\.[^.]+$/u, ''),
-        origin: 'imported',
-      });
-      const saved = await catalogStore.savePreset({
-        id: `${compiled.source.id}-${Date.now()}`,
-        title: compiled.title,
-        raw,
-        origin: 'imported',
-        author: compiled.author,
-        fileName: file.name,
-      });
-      await catalogStore.saveDraft(saved.id, compiled.formattedSource);
-      await scheduleCatalogSync();
-      await selectPreset(saved.id);
-    }
-  };
-
-  const duplicatePreset = async () => {
-    const compiled = session.getState().activeCompiled ?? activeCompiled;
-    const saved = await catalogStore.savePreset({
-      id: `${compiled.source.id}-copy-${Date.now()}`,
-      title: `${compiled.title} Copy`,
-      raw: compiled.formattedSource,
-      origin: 'user',
-      author: compiled.author,
-    });
-    await scheduleCatalogSync();
-    await selectPreset(saved.id);
-  };
-
-  const deleteActivePreset = async () => {
-    const entry = getActiveCatalogEntry();
-    if (!entry || !isEditablePreset(entry)) {
-      return;
-    }
-    const deletedId = entry.id;
-    await catalogStore.deletePreset(deletedId);
-    await scheduleCatalogSync();
-    const replacement = catalogEntries.find(
-      (candidate) => candidate.id !== deletedId,
-    );
-    if (replacement) {
-      await selectPreset(replacement.id, { recordHistory: false });
-    }
-  };
-
-  const exportPreset = () => {
-    const compiled = session.getState().activeCompiled ?? activeCompiled;
-    downloadPresetFile(compiled.source.id, compiled.formattedSource);
-  };
-
   session.subscribe((state) => {
     overlay.setSessionState(state);
     const nextCompiled = state.activeCompiled;
@@ -1103,12 +960,15 @@ export function createMilkdropExperience({
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
     }
-    void scheduleCatalogSync();
+    void catalogCoordinator.scheduleCatalogSync({
+      activePresetId,
+      activeBackend,
+    });
   });
 
   disposeRequestedPresetListener = installRequestedPresetListener(
     (presetId) => {
-      void selectPreset(presetId);
+      void navigation.selectPreset(presetId);
     },
   );
   disposeRequestedOverlayTabListener = installRequestedOverlayTabListener(
@@ -1116,25 +976,32 @@ export function createMilkdropExperience({
       overlay.openTab(tab);
     },
   );
-  void scheduleCatalogSync().then(async () => {
-    const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
-    if (requestedOverlayTab) {
-      overlay.openTab(requestedOverlayTab);
-    }
-    const requestedPresetId = consumeRequestedMilkdropPresetSelection();
-    const startupPresetId =
-      requestedPresetId ?? initialPresetId ?? prefs.lastPresetId;
-    if (startupPresetId) {
-      await selectPreset(startupPresetId, { recordHistory: false });
-      if (activePresetId === startupPresetId) {
-        return;
+  void catalogCoordinator
+    .scheduleCatalogSync({
+      activePresetId,
+      activeBackend,
+    })
+    .then(async () => {
+      const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
+      if (requestedOverlayTab) {
+        overlay.openTab(requestedOverlayTab);
       }
-    }
-    const first = catalogEntries[0];
-    if (first) {
-      await selectPreset(first.id, { recordHistory: false });
-    }
-  });
+      const requestedPresetId = consumeRequestedMilkdropPresetSelection();
+      const startupPresetId =
+        requestedPresetId ?? preferences.getStartupPresetId(initialPresetId);
+      if (startupPresetId) {
+        await navigation.selectPreset(startupPresetId, {
+          recordHistory: false,
+        });
+        if (activePresetId === startupPresetId) {
+          return;
+        }
+      }
+      const first = catalogCoordinator.getCatalogEntries()[0];
+      if (first) {
+        await navigation.selectPreset(first.id, { recordHistory: false });
+      }
+    });
 
   return {
     applyFields(updates: Record<string, string | number>) {
@@ -1149,7 +1016,7 @@ export function createMilkdropExperience({
       return activePresetId;
     },
 
-    selectPreset,
+    selectPreset: navigation.selectPreset,
 
     setStatus(message: string) {
       setOverlayStatus(message);
@@ -1158,38 +1025,8 @@ export function createMilkdropExperience({
     attachRuntime(nextRuntime: ToyRuntimeInstance) {
       runtime = nextRuntime;
       if (!disposeKeyboardShortcuts) {
-        disposeKeyboardShortcuts = installMilkdropRuntimeKeybindings({
-          overlay,
-          getActivePresetId: () => activePresetId,
-          getActiveCatalogEntry,
-          getTransitionMode: () => transitionMode,
-          getBlendDuration: () => blendDuration,
-          selectAdjacentPreset: (direction) => {
-            void selectAdjacentPreset(direction);
-          },
-          selectRandomPreset: () => {
-            void selectRandomPreset();
-          },
-          goBackPreset: () => {
-            void goBackPreset();
-          },
-          setTransitionMode,
-          setOverlayStatus,
-          cycleWaveMode: (direction) => {
-            void cycleWaveMode(direction);
-          },
-          nudgeNumericField: (args) => {
-            void nudgeNumericField(args);
-          },
-          toggleFavorite: (id) => {
-            void catalogStore
-              .setFavorite(id, !(getActiveCatalogEntry()?.isFavorite ?? false))
-              .then(syncCatalog);
-          },
-          setRating: (id, rating) => {
-            void catalogStore.setRating(id, rating).then(syncCatalog);
-          },
-        });
+        disposeKeyboardShortcuts =
+          interactionPresenter.installKeyboardShortcuts();
       }
       nextRuntime.toy.rendererReady.then((handle) => {
         activeBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
@@ -1245,7 +1082,10 @@ export function createMilkdropExperience({
           });
           return;
         }
-        void scheduleCatalogSync();
+        void catalogCoordinator.scheduleCatalogSync({
+          activePresetId,
+          activeBackend,
+        });
       });
     },
 
@@ -1293,10 +1133,10 @@ export function createMilkdropExperience({
 
       if (
         autoplay &&
-        catalogEntries.length > 1 &&
+        catalogCoordinator.getCatalogEntries().length > 1 &&
         now - lastPresetSwitchAt > Math.max(12000, blendDuration * 1000 + 6000)
       ) {
-        void selectRandomPreset();
+        void navigation.selectRandomPreset();
       }
 
       currentFrameState = applyMilkdropInteractionResponse(
@@ -1385,11 +1225,7 @@ export function createMilkdropExperience({
       disposeRequestedPresetListener = null;
       disposeRequestedOverlayTabListener?.();
       disposeRequestedOverlayTabListener = null;
-      if (catalogSyncFrameId !== null) {
-        window.cancelAnimationFrame(catalogSyncFrameId);
-        catalogSyncFrameId = null;
-      }
-      catalogSyncPromise = null;
+      catalogCoordinator.dispose();
     },
   };
 }
