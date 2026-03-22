@@ -361,7 +361,8 @@ export function createLibraryView({
 
     const status = ensureActiveFiltersStatus();
     if (status instanceof HTMLElement) {
-      status.textContent = summaryTextParts.join(' • ') || 'Showing all toys';
+      status.textContent =
+        summaryTextParts.join(' • ') || 'Showing all visualizers';
     }
 
     const chips = ensureActiveFiltersChips();

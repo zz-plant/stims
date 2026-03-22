@@ -2,7 +2,7 @@ type WindowGetter = () => (Window & typeof globalThis) | null;
 
 export type Route =
   | { view: 'library'; slug: null }
-  | { view: 'toy'; slug: string | null };
+  | { view: 'experience'; slug: string | null };
 
 type SlugPathMap = Record<string, string>;
 
@@ -13,12 +13,12 @@ const DEFAULT_SLUG_PATHS: SlugPathMap = {
 export function getToyRouteHref(
   slug: string,
   {
-    queryParam = 'toy',
-    toyPath = 'toy.html',
+    queryParam = 'experience',
+    routePath = 'milkdrop/',
     slugPaths = DEFAULT_SLUG_PATHS,
   }: {
     queryParam?: string;
-    toyPath?: string;
+    routePath?: string;
     slugPaths?: SlugPathMap;
   } = {},
 ) {
@@ -27,7 +27,10 @@ export function getToyRouteHref(
     return mappedPath;
   }
 
-  return `${toyPath}?${queryParam}=${encodeURIComponent(slug)}`;
+  const normalizedRoutePath = routePath.endsWith('/')
+    ? routePath
+    : `${routePath}/`;
+  return `/${normalizedRoutePath}?${queryParam}=${encodeURIComponent(slug)}`;
 }
 
 const normalizePath = (pathname: string) => {
@@ -45,16 +48,16 @@ const normalizePath = (pathname: string) => {
 
 export function createRouter({
   windowRef = () => (typeof window === 'undefined' ? null : window),
-  queryParam = 'toy',
+  queryParam = 'experience',
   libraryPath = '/',
-  toyPath = 'toy.html',
+  routePath = 'milkdrop/',
   defaultToySlug = 'milkdrop',
   slugPaths = DEFAULT_SLUG_PATHS,
 }: {
   windowRef?: WindowGetter;
   queryParam?: string;
   libraryPath?: string;
-  toyPath?: string;
+  routePath?: string;
   defaultToySlug?: string | null;
   slugPaths?: SlugPathMap;
 } = {}) {
@@ -100,10 +103,17 @@ export function createRouter({
     return getSlugFromPath(win.location.pathname);
   };
 
-  const isToyPath = (pathname: string) =>
-    pathname === `/${toyPath}` ||
-    pathname.endsWith(`/${toyPath}`) ||
-    pathname.endsWith(toyPath);
+  const normalizedRoutePath = routePath.endsWith('/')
+    ? routePath
+    : `${routePath}/`;
+
+  const isExperiencePath = (pathname: string) => {
+    const normalizedPath = normalizePath(pathname);
+    return (
+      normalizedPath === `/${normalizedRoutePath}` ||
+      normalizedPath.endsWith(`/${normalizedRoutePath}`)
+    );
+  };
 
   const getCurrentRoute = (): Route => {
     const win = getWindow();
@@ -112,16 +122,16 @@ export function createRouter({
     const url = getUrl(win);
     const slug = url.searchParams.get(queryParam);
     if (slug) {
-      return { view: 'toy', slug };
+      return { view: 'experience', slug };
     }
 
     const pathSlug = getSlugFromPath(url.pathname);
     if (pathSlug) {
-      return { view: 'toy', slug: pathSlug };
+      return { view: 'experience', slug: pathSlug };
     }
 
-    if (isToyPath(url.pathname)) {
-      return { view: 'toy', slug: defaultToySlug };
+    if (isExperiencePath(url.pathname)) {
+      return { view: 'experience', slug: defaultToySlug };
     }
 
     return { view: 'library', slug: null };
@@ -132,7 +142,7 @@ export function createRouter({
     if (!win?.history) return;
 
     const url = getUrl(win);
-    const href = getToyRouteHref(slug, { queryParam, toyPath, slugPaths });
+    const href = getToyRouteHref(slug, { queryParam, routePath, slugPaths });
     if (href.startsWith('/')) {
       url.searchParams.delete(queryParam);
       url.pathname = resolvePath(url.pathname, href);

@@ -159,7 +159,7 @@ export function initSystemControls(
 ): SystemControlsHandle {
   const {
     title = 'Tune',
-    description = 'Adjust quality, motion, and compatibility for this toy.',
+    description = 'Adjust quality, motion, and compatibility for this visualizer session.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId,
     variant = 'floating',
@@ -253,7 +253,7 @@ export function initSystemControls(
 
   panel.addToggle({
     label: 'Tilt',
-    description: 'Enable tilt controls on supported toys.',
+    description: 'Enable tilt controls on supported visualizers.',
     defaultValue: getActiveMotionPreference().enabled,
     onChange: (value) => {
       setMotionPreference({ enabled: value });

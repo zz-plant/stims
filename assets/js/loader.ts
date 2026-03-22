@@ -26,7 +26,7 @@ import { ensureWebGL } from './utils/webgl-check.ts';
 
 type Toy = ToyEntry;
 
-const TOY_QUERY_PARAM = 'toy';
+const TOY_QUERY_PARAM = 'experience';
 
 const TOY_MICRO_GOALS: Record<string, string[]> = {
   milkdrop: [

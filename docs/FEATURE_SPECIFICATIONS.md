@@ -23,7 +23,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
 ### Intro hero
-- **Quickstart CTA**: One primary homepage launch CTA deep-links to `toy.html?toy=milkdrop` and sets expectation that a short quick check opens first.
+- **Quickstart CTA**: One primary homepage launch CTA deep-links to `/milkdrop/` and sets expectation that a short quick check opens first.
 - **Readiness summary**: “Ready • <performance> • <compatibility>” reacts to performance settings and renderer compatibility.
 - **Quick check entry**: Secondary CTA opens the preflight dialog and deep-links to the readiness/performance section.
 - **Claim posture**: Copy uses careful lineage language and does not claim blanket legacy compatibility.
@@ -58,7 +58,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 ## Toy runtime shell
 
 ### Loader & routing
-- **Route entry**: `toy.html?toy=<slug>` loads the matching module from the toy registry.
+- **Route entry**: `/milkdrop/` loads the flagship module, and `/milkdrop/?experience=<slug>` supports explicit deep links when needed.
 - **Lifecycle**: Loader handles status states, disposal, and cleanup before switching toys.
 - **WebGPU gating**: Toys can require WebGPU, optionally auto-load with WebGL fallback, and only hard-stop when a WebGPU-only toy cannot run.
 - **Prewarming**: Renderer capabilities and microphone permissions are prewarmed before loading.

@@ -148,7 +148,7 @@ export function bootToyPage({
 }: {
   router: {
     getCurrentRoute: () => {
-      view: 'library' | 'toy';
+      view: 'library' | 'experience';
       slug: string | null;
     };
     getLibraryHref: () => string;
@@ -171,8 +171,8 @@ export function bootToyPage({
 
   const toyWindow = window as unknown as ToyWindow;
   const toySlug =
-    searchParams.get('toy') ??
-    (currentRoute.view === 'toy' ? currentRoute.slug : null) ??
+    searchParams.get('experience') ??
+    (currentRoute.view === 'experience' ? currentRoute.slug : null) ??
     'milkdrop';
   const requestedAudioSource = searchParams.get('audio')?.trim().toLowerCase();
   const requestedOverlayTab = (() => {

@@ -240,7 +240,7 @@ function renderToyNav(
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
-      <p class="active-toy-nav__eyebrow">Now playing</p>
+      <p class="active-toy-nav__eyebrow">Live now</p>
       <p class="active-toy-nav__title">${safeTitle}</p>
       <p class="active-toy-nav__hint">${hintText}</p>
       ${safeSlug ? `<span class="active-toy-nav__pill">${safeSlug}</span>` : ''}

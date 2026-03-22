@@ -187,14 +187,14 @@ const renderRecommendations = (
         <p class="builder-result__description">${toy.description}</p>
         <p class="builder-result__reason">${reasons.slice(0, 2).join(' · ') || 'Great all-around starter.'}</p>
       </div>
-      <a class="builder-result__link" href="toy.html?toy=${toy.slug}">Open</a>
+      <a class="builder-result__link" href="milkdrop/?experience=${toy.slug}">Open</a>
     `;
     list.appendChild(item);
   }
 
   const lead = recommendations[0]?.toy;
   if (lead) {
-    cta.href = `toy.html?toy=${lead.slug}`;
+    cta.href = `milkdrop/?experience=${lead.slug}`;
     cta.textContent = `Launch ${lead.title}`;
     cta.removeAttribute('aria-disabled');
   } else {

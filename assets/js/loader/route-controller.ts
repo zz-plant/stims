@@ -11,7 +11,7 @@ export function createLoaderRouteController({
     route: Route,
     { updateRoute = false }: { updateRoute?: boolean } = {},
   ) => {
-    if (route.view === 'toy') {
+    if (route.view === 'experience') {
       if (route.slug) {
         await loadToy(route.slug);
         return;

@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import type {
   Audio,
   AudioListener,
   PositionalAudio,
   WebGLRenderer,
 } from 'three';
+import { resetRenderPreferencesState } from '../assets/js/core/render-preferences.ts';
 import type { RendererInitConfig } from '../assets/js/core/renderer-setup.ts';
 import {
   acquireAudioHandle,
@@ -17,10 +18,18 @@ import {
   setRendererRuntimeControls,
   subscribeToRendererRuntimeControls,
 } from '../assets/js/core/services/render-service.ts';
+import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
 import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/utils/audio-handler.ts';
 
 describe('render-service pooling', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    resetRenderPreferencesState();
+    resetSettingsPanelState();
+    resetRendererPool({ dispose: true });
+  });
+
   const setPixelRatioMock = mock();
   const setSizeMock = mock();
   const fakeRenderer = {
@@ -35,8 +44,10 @@ describe('render-service pooling', () => {
     setPixelRatioMock.mockReset();
     setSizeMock.mockReset();
     document.body.innerHTML = '';
-    resetRendererPool({ dispose: true });
     window.localStorage.clear();
+    resetRenderPreferencesState();
+    resetSettingsPanelState();
+    resetRendererPool({ dispose: true });
     Object.defineProperty(window, 'devicePixelRatio', {
       configurable: true,
       value: 1,
