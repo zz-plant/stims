@@ -1,0 +1,7 @@
+title=Parity Feedback Orientation 01
+author=Stim Legacy Corpus
+video_echo_enabled=1
+video_echo_alpha=0.145
+video_echo_zoom=1.018
+echo_orient=2
+per_frame_1=rot = rot + 0.0025; zoom = zoom + 0.001
