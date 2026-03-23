@@ -393,6 +393,16 @@ footer {
   gap: 0.55rem;
   flex-wrap: wrap;
   row-gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.nav-actions::backdrop {
+  background: rgba(6, 10, 14, 0.35);
+  backdrop-filter: blur(4px);
 }
 
 .nav-toggle {
@@ -4207,7 +4217,36 @@ footer {
     gap: 0.6rem;
   }
 
-  .top-nav[data-nav-expanded="false"] .nav-actions {
+  .nav-actions[popover] {
+    inset: auto;
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 5rem);
+    left: max(1rem, env(safe-area-inset-left));
+    right: max(1rem, env(safe-area-inset-right));
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0.85rem;
+    border-radius: 16px;
+    border: 1px solid
+      color-mix(in srgb, var(--accent-color) 20%, var(--surface-border));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--panel-highlight) 82%, transparent),
+        transparent 58%
+      ),
+      var(--panel-glass);
+    box-shadow: var(--shadow-surface);
+    backdrop-filter: blur(16px) saturate(130%);
+  }
+
+  .nav-actions[popover]:popover-open {
+    display: flex;
+  }
+
+  .top-nav[data-nav-expanded="false"] .nav-actions:not([popover]) {
     display: none;
   }
 

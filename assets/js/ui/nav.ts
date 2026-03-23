@@ -83,6 +83,7 @@ function resetNavigationState(container: ToyNavContainer) {
 
 function renderLibraryNav(container: HTMLElement, _doc: Document) {
   const toyContainer = container as ToyNavContainer;
+  const actionsId = 'nav-actions';
 
   container.innerHTML = `
     <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="true">
@@ -93,11 +94,18 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
           <p class="brand-title">Stims ✦</p>
         </div>
       </div>
-      <button class="nav-toggle" type="button" aria-expanded="true" aria-controls="nav-actions">
+      <button
+        class="nav-toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="${actionsId}"
+        popovertarget="${actionsId}"
+        popovertargetaction="toggle"
+      >
         <span data-nav-toggle-label>Menu</span>
         <span class="nav-toggle__icon" data-nav-toggle-icon aria-hidden="true">☰</span>
       </button>
-      <div class="nav-actions" id="nav-actions">
+      <div class="nav-actions" id="${actionsId}" popover="auto">
         <div class="nav-section nav-section--primary nav-section--jump" aria-label="Page sections">
           <a class="nav-link nav-link--section" data-section-link href="#experience">Experience</a>
           <a class="nav-link nav-link--section" data-section-link href="#presets">Presets</a>
@@ -126,12 +134,18 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
   const icon = container.querySelector(
     '[data-nav-toggle-icon]',
   ) as HTMLSpanElement | null;
-  const actions = container.querySelector('#nav-actions') as HTMLElement | null;
+  const actions = container.querySelector(
+    `#${actionsId}`,
+  ) as HTMLElement | null;
   const mediaQuery = getMediaQueryList(maxWidthQuery(BREAKPOINTS.xs));
   const onResize = () => syncWithViewport();
+  const supportsPopover =
+    typeof HTMLElement !== 'undefined' &&
+    'showPopover' in HTMLElement.prototype &&
+    'hidePopover' in HTMLElement.prototype;
   let isExpanded = !isBelowBreakpoint(BREAKPOINTS.xs);
 
-  const applyState = (expanded: boolean) => {
+  const syncToggleUi = (expanded: boolean) => {
     if (!nav || !toggle) return;
     nav.dataset.navExpanded = expanded ? 'true' : 'false';
     toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
@@ -145,55 +159,86 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
     if (icon) {
       icon.textContent = expanded ? '✕' : '☰';
     }
+  };
+
+  const applyFallbackState = (expanded: boolean) => {
+    if (!actions) return;
+    actions.hidden = !expanded;
+    actions.setAttribute('aria-hidden', expanded ? 'false' : 'true');
+    if (expanded) {
+      actions.removeAttribute('inert');
+    } else {
+      actions.setAttribute('inert', '');
+    }
+  };
+
+  const isPopoverOpen = () => Boolean(actions?.matches?.(':popover-open'));
+
+  const syncWithViewport = () => {
+    const compactViewport = isBelowBreakpoint(BREAKPOINTS.xs);
+
+    if (!actions) {
+      syncToggleUi(!compactViewport);
+      return;
+    }
+
+    if (supportsPopover) {
+      if (compactViewport) {
+        actions.setAttribute('popover', 'auto');
+        if (!isPopoverOpen()) {
+          actions.setAttribute('aria-hidden', 'true');
+          actions.setAttribute('inert', '');
+        }
+        isExpanded = isPopoverOpen();
+      } else {
+        if (isPopoverOpen()) {
+          (actions as HTMLElement & { hidePopover: () => void }).hidePopover();
+        }
+        actions.removeAttribute('popover');
+        actions.hidden = false;
+        actions.setAttribute('aria-hidden', 'false');
+        actions.removeAttribute('inert');
+        isExpanded = true;
+      }
+    } else {
+      actions.hidden = false;
+      if (compactViewport) {
+        applyFallbackState(isExpanded);
+      } else {
+        isExpanded = true;
+        applyFallbackState(true);
+      }
+    }
+
+    syncToggleUi(compactViewport ? isExpanded : true);
+  };
+
+  const onToggle = () => {
+    if (!supportsPopover || !isBelowBreakpoint(BREAKPOINTS.xs)) return;
+    isExpanded = isPopoverOpen();
     if (actions) {
-      actions.setAttribute('aria-hidden', expanded ? 'false' : 'true');
-      if (expanded) {
+      actions.setAttribute('aria-hidden', isExpanded ? 'false' : 'true');
+      if (isExpanded) {
         actions.removeAttribute('inert');
       } else {
         actions.setAttribute('inert', '');
       }
     }
-  };
-
-  const syncWithViewport = () => {
-    if (isBelowBreakpoint(BREAKPOINTS.xs)) {
-      isExpanded = false;
-    } else {
-      isExpanded = true;
-    }
-    applyState(isExpanded);
+    syncToggleUi(isExpanded);
   };
 
   syncWithViewport();
 
-  toggle?.addEventListener('click', () => {
-    isExpanded = !isExpanded;
-    applyState(isExpanded);
-  });
-
-  const onEscape = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape') return;
-    if (!isBelowBreakpoint(BREAKPOINTS.xs) || !isExpanded) return;
-    isExpanded = false;
-    applyState(isExpanded);
-    toggle?.focus();
-  };
-
-  const onDocumentClick = (event: Event) => {
-    if (!isBelowBreakpoint(BREAKPOINTS.xs) || !isExpanded || !nav) return;
-    const target = event.target;
-    if (target instanceof Node && nav.contains(target)) return;
-    isExpanded = false;
-    applyState(isExpanded);
-  };
-
-  const onDocumentFocusIn = (event: Event) => {
-    if (!isBelowBreakpoint(BREAKPOINTS.xs) || !isExpanded || !nav) return;
-    const target = event.target;
-    if (target instanceof Node && nav.contains(target)) return;
-    isExpanded = false;
-    applyState(isExpanded);
-  };
+  if (!supportsPopover) {
+    toggle?.addEventListener('click', () => {
+      if (!isBelowBreakpoint(BREAKPOINTS.xs)) return;
+      isExpanded = !isExpanded;
+      applyFallbackState(isExpanded);
+      syncToggleUi(isExpanded);
+    });
+  } else {
+    actions?.addEventListener('toggle', onToggle);
+  }
 
   if (mediaQuery) {
     mediaQuery.addEventListener('change', syncWithViewport);
@@ -201,17 +246,22 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
     window.addEventListener('resize', onResize);
   }
 
-  container.ownerDocument.addEventListener('keydown', onEscape);
-  container.ownerDocument.addEventListener('click', onDocumentClick);
-  container.ownerDocument.addEventListener('focusin', onDocumentFocusIn);
-
   container
     .querySelectorAll('.nav-link, .nav-link--section, .theme-toggle')
     .forEach((link) => {
       link.addEventListener('click', () => {
         if (!isBelowBreakpoint(BREAKPOINTS.xs)) return;
+        if (supportsPopover) {
+          if (isPopoverOpen()) {
+            (
+              actions as (HTMLElement & { hidePopover: () => void }) | null
+            )?.hidePopover();
+          }
+          return;
+        }
         isExpanded = false;
-        applyState(isExpanded);
+        applyFallbackState(false);
+        syncToggleUi(false);
       });
     });
 
@@ -221,9 +271,7 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
     } else {
       window.removeEventListener('resize', onResize);
     }
-    container.ownerDocument.removeEventListener('keydown', onEscape);
-    container.ownerDocument.removeEventListener('click', onDocumentClick);
-    container.ownerDocument.removeEventListener('focusin', onDocumentFocusIn);
+    actions?.removeEventListener('toggle', onToggle);
   };
 }
 
