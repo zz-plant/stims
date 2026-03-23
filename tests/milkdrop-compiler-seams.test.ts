@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { buildWebGpuDescriptorPlan } from '../assets/js/milkdrop/compiler/gpu-descriptor-plan.ts';
+import { lowerGpuFieldProgram } from '../assets/js/milkdrop/compiler/gpu-field-planner.ts';
 import {
   buildBackendSupport,
   buildFeatureAnalysis,
 } from '../assets/js/milkdrop/compiler/parity.ts';
+import { normalizeFieldKey } from '../assets/js/milkdrop/compiler/preset-normalization.ts';
 import type {
   MilkdropBackendSupportEvidence,
   MilkdropProgramBlock,
@@ -148,6 +150,45 @@ describe('milkdrop compiler seams', () => {
         feature: 'motion-vectors',
         reason: 'Unsupported motion vectors',
         recommendedFallback: 'webgl',
+      },
+    ]);
+  });
+
+  test('normalizes legacy custom field keys and lowers GPU-safe programs', () => {
+    expect(
+      normalizeFieldKey({
+        key: 'wavecode_0_badditive',
+        rawValue: '1',
+        line: 1,
+        section: null,
+      }),
+    ).toBe('custom_wave_1_additive');
+
+    const lowered = lowerGpuFieldProgram({
+      statements: [
+        {
+          target: 'zoom',
+          expression: {
+            type: 'call',
+            name: 'sin',
+            args: [{ type: 'identifier', name: 'time' }],
+          },
+          line: 1,
+          source: 'zoom = sin(time)',
+        },
+      ],
+      sourceLines: ['zoom = sin(time)'],
+    });
+
+    expect(lowered).not.toBeNull();
+    expect(lowered?.statements).toEqual([
+      {
+        target: 'zoom',
+        expression: {
+          type: 'call',
+          name: 'sin',
+          args: [{ type: 'identifier', name: 'time' }],
+        },
       },
     ]);
   });
