@@ -825,10 +825,66 @@ video_echo=1
     ).toBe(true);
     expect(renderCalls).toBe(1);
     expect(compositeStates[0]?.mixAlpha).toBeGreaterThan(0);
+    expect(compositeStates[0]?.videoEchoOrientation).toBe(0);
     expect(compositeStates[0]?.signalTime).toBeCloseTo(
       frameState.signals.time,
       6,
     );
+  });
+
+  test.each([
+    'webgl',
+    'webgpu',
+  ] as const)('routes video echo orientation through the feedback composite state on %s', (backend) => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Orientation Routing
+video_echo=1
+video_echo_orientation=3
+        `.trim(),
+      { id: `feedback-orientation-routing-${backend}` },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend,
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]).toMatchObject({
+      videoEchoOrientation: 3,
+      zoom:
+        frameState.post.videoEchoZoom +
+        frameState.post.shaderControls.warpScale * 0.04,
+    });
   });
 
   test('forwards overlay and warp volume sampling metadata into feedback state', () => {

@@ -98,6 +98,11 @@ const REPRESENTATIVE_BACKEND_EXPECTATIONS = {
       'webgpu:supported-shader-text-gap',
     ],
   },
+  'parity-feedback-orientation-01': {
+    webgl: 'supported',
+    webgpu: 'supported',
+    divergence: [],
+  },
 } as const;
 
 function loadJson<T>(filePath: string): T {
@@ -318,6 +323,43 @@ describe('milkdrop parity corpus harness', () => {
         );
       }
     });
+  });
+
+  test('keeps dedicated video echo orientation parity fixtures fully supported and out of the allowlist path', () => {
+    const manifest = loadJson<ParityManifest>(PARITY_MANIFEST_PATH);
+    const entry = manifest.presets.find(
+      (candidate) => candidate.id === 'parity-feedback-orientation-01',
+    );
+
+    expect(entry).toBeDefined();
+    if (!entry) {
+      throw new Error(
+        'Missing video echo orientation parity fixture in manifest.',
+      );
+    }
+
+    expect(entry.allowlisted).toBe(false);
+    const compiled = compileParityPreset(entry);
+    const frameState = createMilkdropVM(compiled).step(
+      makeSignals({ frame: 4 }),
+    );
+
+    expect(compiled.ir.numericFields.video_echo_orientation).toBe(2);
+    expect(compiled.ir.post.videoEchoOrientation).toBe(2);
+    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([]);
+    expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual(
+      [],
+    );
+    expect(
+      compiled.ir.compatibility.parity.degradationReasons.map(
+        (reason) => reason.code,
+      ),
+    ).not.toContain('allowlisted-gap');
+    expect(frameState.post.videoEchoOrientation).toBe(2);
+    expect(frameState.variables.video_echo_orientation).toBeCloseTo(2, 6);
   });
 
   test('treats former shader-gap parity entries as supported richer shader programs', () => {
