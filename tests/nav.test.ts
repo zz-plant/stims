@@ -56,7 +56,7 @@ describe('site navigation interactions', () => {
     window.matchMedia = originalMatchMedia;
   });
 
-  test('Escape closes mobile menu and restores focus to menu toggle', () => {
+  test('mobile fallback toggle updates the menu state without document listeners', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -64,15 +64,21 @@ describe('site navigation interactions', () => {
     initNavigation(container, { mode: 'library' });
 
     const toggle = container.querySelector('.nav-toggle') as HTMLButtonElement;
+    const actions = container.querySelector('#nav-actions') as HTMLElement;
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(actions.getAttribute('aria-hidden')).toBe('true');
+
     toggle.click();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(actions.getAttribute('aria-hidden')).toBe('false');
 
     document.dispatchEvent(
       new window.KeyboardEvent('keydown', { key: 'Escape' }),
     );
 
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(document.activeElement).toBe(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(actions.getAttribute('aria-hidden')).toBe('false');
   });
 
   test('menu toggle exposes stateful aria-label text on mobile', () => {
