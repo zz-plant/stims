@@ -1249,6 +1249,13 @@ header.hero {
     rgba(255, 255, 255, 0.03);
 }
 
+@supports (content-visibility: auto) {
+  .milkdrop-showcase__card {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 220px;
+  }
+}
+
 .milkdrop-showcase__card-eyebrow {
   margin: 0;
   font-size: 0.72rem;
@@ -3264,6 +3271,13 @@ html.light .search-meta__note {
   touch-action: manipulation;
   min-height: clamp(188px, 18vw, 224px);
   isolation: isolate;
+}
+
+@supports (content-visibility: auto) {
+  .webtoy-card {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 320px;
+  }
 }
 
 html:not(.light) .webtoy-card {
@@ -5800,6 +5814,28 @@ body[data-page="home"] .content {
 .launch-check p:last-child {
   color: var(--text-muted);
   line-height: 1.55;
+}
+
+@supports (content-visibility: auto) {
+  .home-lineage__card,
+  .home-source__card,
+  .home-showcase__frame,
+  .launch-check {
+    content-visibility: auto;
+  }
+
+  .home-lineage__card,
+  .home-source__card {
+    contain-intrinsic-size: 1px 220px;
+  }
+
+  .home-showcase__frame {
+    contain-intrinsic-size: 1px 680px;
+  }
+
+  .launch-check {
+    contain-intrinsic-size: 1px 180px;
+  }
 }
 
 .launch-workspace__header {
