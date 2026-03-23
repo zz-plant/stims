@@ -1,0 +1,137 @@
+import type {
+  MilkdropDiagnostic,
+  MilkdropPresetSource,
+} from './common-types.ts';
+import type { MilkdropCompiledPreset } from './compiler-types.ts';
+
+export type MilkdropRuntimeSignals = {
+  time: number;
+  deltaMs: number;
+  frame: number;
+  fps: number;
+  bass: number;
+  mid: number;
+  mids: number;
+  treb: number;
+  treble: number;
+  bassAtt: number;
+  midsAtt: number;
+  trebleAtt: number;
+  bass_att: number;
+  mid_att: number;
+  mids_att: number;
+  treb_att: number;
+  treble_att: number;
+  rms: number;
+  vol: number;
+  music: number;
+  beat: number;
+  beatPulse: number;
+  beat_pulse: number;
+  weightedEnergy: number;
+  inputX: number;
+  inputY: number;
+  input_x: number;
+  input_y: number;
+  inputDx: number;
+  inputDy: number;
+  input_dx: number;
+  input_dy: number;
+  inputSpeed: number;
+  input_speed: number;
+  inputPressed: number;
+  input_pressed: number;
+  inputJustPressed: number;
+  input_just_pressed: number;
+  inputJustReleased: number;
+  input_just_released: number;
+  inputCount: number;
+  input_count: number;
+  gestureScale: number;
+  gesture_scale: number;
+  gestureRotation: number;
+  gesture_rotation: number;
+  gestureTranslateX: number;
+  gestureTranslateY: number;
+  gesture_translate_x: number;
+  gesture_translate_y: number;
+  hoverActive: number;
+  hover_active: number;
+  hoverX: number;
+  hoverY: number;
+  hover_x: number;
+  hover_y: number;
+  wheelDelta: number;
+  wheel_delta: number;
+  wheelAccum: number;
+  wheel_accum: number;
+  dragIntensity: number;
+  drag_intensity: number;
+  dragAngle: number;
+  drag_angle: number;
+  accentPulse: number;
+  accent_pulse: number;
+  actionAccent: number;
+  action_accent: number;
+  actionModeNext: number;
+  action_mode_next: number;
+  actionModePrevious: number;
+  action_mode_previous: number;
+  actionPresetNext: number;
+  action_preset_next: number;
+  actionPresetPrevious: number;
+  action_preset_previous: number;
+  actionQuickLook1: number;
+  action_quick_look_1: number;
+  actionQuickLook2: number;
+  action_quick_look_2: number;
+  actionQuickLook3: number;
+  action_quick_look_3: number;
+  actionRemix: number;
+  action_remix: number;
+  inputSourcePointer: number;
+  input_source_pointer: number;
+  inputSourceKeyboard: number;
+  input_source_keyboard: number;
+  inputSourceGamepad: number;
+  input_source_gamepad: number;
+  inputSourceMouse: number;
+  input_source_mouse: number;
+  inputSourceTouch: number;
+  input_source_touch: number;
+  inputSourcePen: number;
+  input_source_pen: number;
+  motionX: number;
+  motionY: number;
+  motionZ: number;
+  motion_x: number;
+  motion_y: number;
+  motion_z: number;
+  motionEnabled: number;
+  motion_enabled: number;
+  motionStrength: number;
+  motion_strength: number;
+  frequencyData: Uint8Array;
+  waveformData?: Uint8Array;
+};
+
+export type MilkdropEditorSessionState = {
+  source: string;
+  latestCompiled: MilkdropCompiledPreset | null;
+  activeCompiled: MilkdropCompiledPreset | null;
+  diagnostics: MilkdropDiagnostic[];
+  dirty: boolean;
+};
+
+export interface MilkdropEditorSession {
+  getState(): MilkdropEditorSessionState;
+  loadPreset(source: MilkdropPresetSource): Promise<MilkdropEditorSessionState>;
+  applySource(source: string): Promise<MilkdropEditorSessionState>;
+  updateField(
+    key: string,
+    value: string | number,
+  ): Promise<MilkdropEditorSessionState>;
+  resetToActive(): Promise<MilkdropEditorSessionState>;
+  subscribe(listener: (state: MilkdropEditorSessionState) => void): () => void;
+  dispose(): void;
+}

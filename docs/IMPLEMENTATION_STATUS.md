@@ -20,6 +20,10 @@ This document is the consolidated source for implementation progress across road
 ## Refactor milestone tracking
 
 - [ ] **Milestone A:** Baseline + lifecycle contract draft.
+  - [x] Extracted MilkDrop runtime lifecycle seams into focused startup, failover, interaction, and lifecycle modules.
+  - [x] Added targeted startup/fallback/lifecycle seam coverage for the refactored runtime modules.
+  - [x] Split oversized MilkDrop compiler/runtime/catalog/renderer type groups into topic-specific modules behind the shared barrel.
+  - [ ] Documented manual smoke baselines and behavior snapshots for milestone sign-off.
 - [ ] **Milestone B:** Pilot migration complete and validated.
 - [ ] **Milestone C:** Broad toy migration with hardened drift checks.
 - [ ] **Milestone D:** Performance/reliability pass complete.
@@ -29,6 +33,7 @@ This document is the consolidated source for implementation progress across road
 
 - [ ] 1) Baseline and observability.
 - [ ] 2) Shared runtime boundary extraction.
+  - [x] MilkDrop runtime orchestration now delegates startup selection, backend failover, interaction shaping, and frame lifecycle decisions to dedicated modules.
 - [ ] 3) Toy module normalization.
 - [ ] 4) Data and metadata consistency hardening.
 - [ ] 5) Incremental performance and reliability pass.
@@ -36,7 +41,7 @@ This document is the consolidated source for implementation progress across road
 
 ## Technical debt execution queue
 
-- [ ] Split oversized runtime modules by responsibility and backfill focused tests.
+- [x] Split oversized runtime modules by responsibility and backfill focused tests.
 - [ ] Add deterministic generated-artifact validation for metadata/taxonomy updates.
 - [ ] Raise toy-level smoke coverage, starting with high-traffic toys.
 - [ ] Harden metadata source-of-truth drift checks.
