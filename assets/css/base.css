@@ -1534,13 +1534,19 @@ body {
 }
 
 .control-panel__info-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  width: fit-content;
+}
+
+.control-panel__info-disclosure {
+  display: grid;
+  gap: 6px;
 }
 
 .control-panel__info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
   border: none;
   background: none;
   padding: 0;
@@ -1551,6 +1557,22 @@ body {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+  list-style: none;
+}
+
+.control-panel__info::-webkit-details-marker {
+  display: none;
+}
+
+.control-panel__info::after {
+  content: "▾";
+  font-size: 0.75rem;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.control-panel__info-disclosure[open] .control-panel__info::after {
+  transform: rotate(180deg);
 }
 
 .control-panel__info:focus-visible {
@@ -1560,20 +1582,14 @@ body {
 }
 
 .control-panel__info-text {
+  max-width: min(32rem, 100%);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(155, 243, 255, 0.22);
+  background: rgba(10, 18, 28, 0.72);
   font-size: 0.85rem;
-  color: rgba(233, 251, 255, 0.85);
-  opacity: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition:
-    opacity 0.2s ease,
-    max-height 0.2s ease;
-}
-
-.control-panel__info-wrap:hover .control-panel__info-text,
-.control-panel__info-wrap:focus-within .control-panel__info-text {
-  opacity: 1;
-  max-height: 80px;
+  line-height: 1.45;
+  color: rgba(233, 251, 255, 0.9);
 }
 
 .control-panel__note {
