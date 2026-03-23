@@ -751,6 +751,40 @@ function renderPostStartGuidance({
   `;
 }
 
+function renderSourceHelpDisclosure({
+  sourceLabelId,
+  summaryId,
+  panelId,
+  summary,
+  content,
+}: {
+  sourceLabelId: string;
+  summaryId: string;
+  panelId: string;
+  summary: string;
+  content: string;
+}) {
+  return `
+    <details class="control-panel__info-wrap control-panel__info-disclosure">
+      <summary
+        id="${summaryId}"
+        class="control-panel__info"
+        aria-controls="${panelId}"
+      >
+        ${summary}
+      </summary>
+      <div
+        id="${panelId}"
+        class="control-panel__info-text"
+        role="note"
+        aria-labelledby="${sourceLabelId} ${summaryId}"
+      >
+        ${content}
+      </div>
+    </details>
+  `;
+}
+
 function renderAdvancedSources(options: AudioControlsOptions) {
   if (!options.onRequestTabAudio && !options.onRequestYouTubeAudio) {
     return '';
@@ -766,20 +800,15 @@ function renderAdvancedSources(options: AudioControlsOptions) {
             ? `
         <div class="control-panel__row">
           <div class="control-panel__text">
-            <span class="control-panel__label">Tab capture</span>
-            <span class="control-panel__info-wrap">
-              <button
-                class="control-panel__info"
-                type="button"
-                aria-describedby="tab-audio-info"
-              >
-                Tab tips
-              </button>
-              <span id="tab-audio-info" class="control-panel__info-text">
-                Capture sound from the current tab. In the picker, choose “This tab” and enable
-                Share audio.
-              </span>
-            </span>
+            <span id="tab-audio-label" class="control-panel__label">Tab capture</span>
+            ${renderSourceHelpDisclosure({
+              sourceLabelId: 'tab-audio-label',
+              summaryId: 'tab-audio-summary',
+              panelId: 'tab-audio-info',
+              summary: 'Tab tips',
+              content:
+                'Capture sound from the current tab. In the picker, choose “This tab” and enable Share audio.',
+            })}
           </div>
           <button id="use-tab-audio" class="cta-button" type="button">Capture tab</button>
         </div>
@@ -791,20 +820,15 @@ function renderAdvancedSources(options: AudioControlsOptions) {
             ? `
         <div class="control-panel__row control-panel__row--stacked">
           <div class="control-panel__text">
-            <span class="control-panel__label">YouTube capture</span>
-            <span class="control-panel__info-wrap">
-              <button
-                class="control-panel__info"
-                type="button"
-                aria-describedby="youtube-audio-info"
-              >
-                YouTube tips
-              </button>
-              <span id="youtube-audio-info" class="control-panel__info-text">
-                Paste a link, load it, then capture. In the picker, choose “This tab” and enable
-                Share audio. The embedded video keeps playing with sound here while it drives the visualizer.
-              </span>
-            </span>
+            <span id="youtube-audio-label" class="control-panel__label">YouTube capture</span>
+            ${renderSourceHelpDisclosure({
+              sourceLabelId: 'youtube-audio-label',
+              summaryId: 'youtube-audio-summary',
+              panelId: 'youtube-audio-info',
+              summary: 'YouTube tips',
+              content:
+                'Paste a link, load it, then capture. In the picker, choose “This tab” and enable Share audio. The embedded video keeps playing with sound here while it drives the visualizer.',
+            })}
           </div>
           <div class="control-panel__field">
             <label class="sr-only" for="youtube-url">YouTube URL</label>
