@@ -249,7 +249,7 @@ describe('milkdrop overlay compatibility messaging', () => {
     globalThis.MutationObserver = OriginalMutationObserver;
   });
 
-  test('shows unsupported feature messaging for imported blocker presets', () => {
+  test('does not show unsupported feature messaging for imported video echo orientation presets', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
       observe() {}
@@ -259,42 +259,19 @@ describe('milkdrop overlay compatibility messaging', () => {
     } as unknown as typeof MutationObserver;
 
     const overlay = createOverlay();
-    const preset = createCatalogEntry('blocked-import', 'Blocked import');
-    preset.origin = 'imported';
-    preset.supports.webgl.status = 'unsupported';
-    preset.supports.webgl.reasons = [
-      'Unsupported feature "video-echo-orientation" from preset field "video_echo_orientation": Video echo orientation is not implemented, so rotated or mirrored feedback trails cannot be reproduced.',
-    ];
-    preset.supports.webgl.evidence = [
-      {
-        backend: 'webgl',
-        scope: 'shared',
-        status: 'unsupported',
-        code: 'unsupported-hard-feature',
-        feature: 'video-echo-orientation',
-        message:
-          'Unsupported feature "video-echo-orientation" from preset field "video_echo_orientation": Video echo orientation is not implemented, so rotated or mirrored feedback trails cannot be reproduced.',
-      },
-    ];
-    preset.supports.webgl.unsupportedFeatures = ['video-echo-orientation'];
-    preset.fidelityClass = 'fallback';
-    preset.parity.degradationReasons = [
-      {
-        code: 'unsupported-hard-feature',
-        category: 'unsupported-syntax',
-        message:
-          'Unsupported feature "video-echo-orientation" is triggered by preset field "video_echo_orientation".',
-        system: 'compiler',
-        blocking: true,
-      },
-    ];
-
-    overlay.setCatalog([preset], 'blocked-import', 'webgl');
-
-    expect(document.body.textContent).toContain(
-      'Unsupported feature: Unsupported feature "video-echo-orientation" is triggered by preset field "video_echo_orientation".',
+    const preset = createCatalogEntry(
+      'supported-import',
+      'Supported orientation import',
     );
-    expect(document.body.textContent).toContain('Blocked import');
+    preset.origin = 'imported';
+    preset.supports.webgl.status = 'supported';
+    preset.supports.webgpu.status = 'supported';
+    preset.fidelityClass = 'near-exact';
+
+    overlay.setCatalog([preset], 'supported-import', 'webgl');
+
+    expect(document.body.textContent).toContain('Supported orientation import');
+    expect(document.body.textContent).not.toContain('Unsupported feature:');
 
     overlay.dispose();
   });

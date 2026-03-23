@@ -4,7 +4,7 @@
   "backendTarget": "webgpu",
   "fallbackBackend": "webgl",
   "minimumPresetCount": 100,
-  "presetCount": 101,
+  "presetCount": 102,
   "defaults": {
     "provenance": "Stims parity corpus",
     "license": "Repo fixtures for compatibility testing",
@@ -719,6 +719,13 @@
       "title": "Parity Allowlisted Shader Gap",
       "file": "parity-allowlisted-shader-gap.milk",
       "strata": ["shader-supported", "video-echo"],
+      "allowlisted": false
+    },
+    {
+      "id": "parity-feedback-orientation-01",
+      "title": "Parity Feedback Orientation 01",
+      "file": "parity-feedback-orientation-01.milk",
+      "strata": ["feedback", "video-echo", "orientation"],
       "allowlisted": false
     }
   ],
