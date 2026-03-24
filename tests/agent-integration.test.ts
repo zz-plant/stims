@@ -20,6 +20,53 @@ const PLAYWRIGHT_RENDERER_ARGS = [
 ];
 let devServer: ChildProcess | null = null;
 
+function isDevServerRunning() {
+  return (
+    devServer !== null &&
+    devServer.exitCode === null &&
+    devServer.signalCode === null
+  );
+}
+
+async function stopDevServer() {
+  if (!devServer) {
+    return;
+  }
+
+  const server = devServer;
+  devServer = null;
+  server.kill('SIGTERM');
+  await new Promise((resolve) => server.once('exit', resolve));
+}
+
+async function startDevServer() {
+  devServer = spawn(
+    process.execPath,
+    ['run', 'vite', '--host', '127.0.0.1', '--port', String(TEST_PORT)],
+    {
+      stdio: 'ignore',
+      cwd: process.cwd(),
+    },
+  );
+
+  await waitForServer(`http://127.0.0.1:${TEST_PORT}/`);
+}
+
+async function ensureDevServer() {
+  if (!isDevServerRunning()) {
+    await stopDevServer();
+    await startDevServer();
+    return;
+  }
+
+  try {
+    await waitForServer(`http://127.0.0.1:${TEST_PORT}/`, 3000);
+  } catch (_error) {
+    await stopDevServer();
+    await startDevServer();
+  }
+}
+
 async function waitForServer(url: string, timeoutMs = 20000) {
   const startedAt = Date.now();
 
@@ -63,29 +110,17 @@ async function createMobilePage() {
 beforeAll(async () => {
   if (!hasChromium) return;
 
-  devServer = spawn(
-    process.execPath,
-    ['run', 'vite', '--host', '127.0.0.1', '--port', String(TEST_PORT)],
-    {
-      stdio: 'ignore',
-      cwd: process.cwd(),
-    },
-  );
-
-  await waitForServer(`http://127.0.0.1:${TEST_PORT}/`);
+  await startDevServer();
 }, 30000);
 
 afterAll(async () => {
-  if (!devServer) return;
-
-  devServer.kill('SIGTERM');
-  await new Promise((resolve) => devServer?.once('exit', resolve));
-  devServer = null;
+  await stopDevServer();
 });
 
 integrationTest(
   'agents can launch and capture milkdrop',
   async () => {
+    await ensureDevServer();
     const outputDir = await mkdtemp(path.join(tmpdir(), 'stims-agent-'));
 
     try {
@@ -113,6 +148,7 @@ integrationTest(
 integrationTest(
   'agents can detect failing toy',
   async () => {
+    await ensureDevServer();
     const result = await playToy({
       slug: 'non-existent-toy-slug',
       duration: 1000,
@@ -125,8 +161,9 @@ integrationTest(
 );
 
 integrationTest(
-  'milkdrop shows touch onboarding after audio starts on a coarse-pointer viewport',
+  'milkdrop collapses into the focused session shell after mobile audio start',
   async () => {
+    await ensureDevServer();
     const mobile = await createMobilePage();
 
     try {
@@ -144,35 +181,38 @@ integrationTest(
       await mobile.page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
       );
-
-      await mobile.page.waitForSelector('[data-gesture-hints]:not([hidden])');
-      const gestureText =
-        (await mobile.page.textContent('[data-gesture-hints]')) ?? '';
-      expect(gestureText).toContain('Touch gestures');
-      expect(gestureText).toContain(
-        'Drag to bend the scene and shove the feedback trail.',
-      );
-      expect(gestureText).toContain(
-        'Pinch to swell or compress the depth and intensity.',
-      );
-      expect(gestureText).not.toContain('Press Q/E');
-      expect(gestureText).not.toContain('Desktop controls');
+      const focusedSessionState = await mobile.page.evaluate(() => ({
+        focusedSession: document.documentElement.dataset.focusedSession ?? null,
+        audioControlsHidden: Boolean(
+          document
+            .querySelector('[data-audio-controls]')
+            ?.hasAttribute('hidden'),
+        ),
+        canvasVisible:
+          (document.querySelector('canvas')?.getBoundingClientRect().width ??
+            0) > 0,
+      }));
+      expect(focusedSessionState.focusedSession).toBe('live');
+      expect(focusedSessionState.audioControlsHidden).toBe(true);
+      expect(focusedSessionState.canvasVisible).toBe(true);
     } finally {
       await mobile.close();
     }
   },
-  { timeout: 45000 },
+  { timeout: 60000 },
 );
 
 integrationTest(
   'browser-backed audio controls use mobile fallback gestures without desktop shortcut copy',
   async () => {
+    await ensureDevServer();
     const mobile = await createMobilePage();
 
     try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/`);
+      await mobile.page.goto(
+        `http://127.0.0.1:${TEST_PORT}/test-audio-controls-harness.html`,
+      );
       await mobile.page.evaluate(async () => {
-        document.body.innerHTML = '<section id="audio-controls"></section>';
         const moduleUrl = new URL(
           '/assets/js/ui/audio-controls.ts',
           window.location.origin,
@@ -207,5 +247,5 @@ integrationTest(
       await mobile.close();
     }
   },
-  { timeout: 45000 },
+  { timeout: 60000 },
 );

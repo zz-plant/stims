@@ -5908,6 +5908,32 @@ body[data-page="home"] .content {
 }
 
 @media (max-width: 760px) {
+  .launch-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .launch-workspace {
+    order: 1;
+  }
+
+  .shell-header--launch {
+    order: 2;
+  }
+
+  .launch-intro {
+    order: 3;
+  }
+
+  .launch-intro__copy {
+    gap: 0.8rem;
+  }
+
+  .launch-checklist {
+    gap: 0.7rem;
+  }
+
   .home-hero__copy h1 {
     max-width: none;
     font-size: clamp(2.5rem, 1.5rem + 6vw, 3.6rem);

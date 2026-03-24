@@ -392,6 +392,11 @@ export function bootToyPage({
       });
     });
 
+  if (shouldAutoBootFocusedSession) {
+    setFocusedSessionMode('launch');
+    startLoaderIfNeeded();
+  }
+
   void preflight.run();
 
   window.addEventListener('pagehide', () => {
