@@ -160,8 +160,23 @@ export function bootToyPage({
   settingsContainer: HTMLElement | null;
 }) {
   let loaderStarted = false;
+  let focusedSessionMode: 'off' | 'launch' | 'live' = 'off';
   const searchParams = new URLSearchParams(window.location.search);
   const currentRoute = router.getCurrentRoute();
+
+  const setFocusedSessionMode = (mode: 'off' | 'launch' | 'live') => {
+    if (focusedSessionMode === mode) {
+      return;
+    }
+
+    focusedSessionMode = mode;
+    if (mode === 'off') {
+      delete document.documentElement.dataset.focusedSession;
+      return;
+    }
+
+    document.documentElement.dataset.focusedSession = mode;
+  };
 
   const startLoaderIfNeeded = () => {
     if (loaderStarted) return;
@@ -185,6 +200,11 @@ export function bootToyPage({
   })();
   const requestedCollectionTag = searchParams.get('collection')?.trim();
   const shouldCombineLaunchPanels = shouldCombineFocusedSessionPanels(toySlug);
+  const shouldAutoBootFocusedSession =
+    shouldCombineLaunchPanels &&
+    (requestedAudioSource === 'demo' ||
+      requestedOverlayTab !== null ||
+      requestedCollectionTag !== null);
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
   document.title = `${toyTitle} · Stims`;
 
@@ -201,6 +221,7 @@ export function bootToyPage({
     if (!shouldCombineLaunchPanels) {
       return;
     }
+    setFocusedSessionMode('live');
     if (audioControlsContainer) {
       audioControlsContainer.hidden = true;
     }
@@ -336,8 +357,14 @@ export function bootToyPage({
 
   const handlePreflightReady = (result: CapabilityPreflightResult) => {
     if (!result.canProceed) {
+      setFocusedSessionMode('off');
       preflight.open(undefined, { rerun: false });
       return;
+    }
+
+    if (shouldAutoBootFocusedSession) {
+      setFocusedSessionMode('launch');
+      startLoaderIfNeeded();
     }
 
     setupAudio(result, {

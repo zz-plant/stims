@@ -472,6 +472,19 @@ body {
   overscroll-behavior: contain;
 }
 
+:root[data-focused-session="launch"] .active-toy-nav,
+:root[data-focused-session="live"] .active-toy-nav {
+  width: min(880px, calc(100% - 24px));
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.15fr);
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 18px;
+  background: rgba(6, 11, 22, 0.8);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 248, 234, 0.05);
+}
+
 .active-toy-nav__content {
   display: grid;
   gap: 4px;
@@ -500,6 +513,11 @@ body {
   font-size: 0.92rem;
 }
 
+:root[data-focused-session="launch"] .active-toy-nav__hint,
+:root[data-focused-session="live"] .active-toy-nav__hint {
+  display: none;
+}
+
 .active-toy-nav__pill {
   display: inline-flex;
   align-items: center;
@@ -517,6 +535,17 @@ body {
   letter-spacing: 0.03em;
   width: fit-content;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-focused-session="launch"] .active-toy-nav__title,
+:root[data-focused-session="live"] .active-toy-nav__title {
+  font-size: 0.96rem;
+}
+
+:root[data-focused-session="launch"] .active-toy-nav__pill,
+:root[data-focused-session="live"] .active-toy-nav__pill {
+  padding: 4px 8px;
+  font-size: 0.75rem;
 }
 
 .active-toy-nav__actions {
@@ -607,6 +636,22 @@ body {
 .toy-nav__flow:active,
 .toy-nav__challenge:active {
   transform: translateY(0);
+}
+
+:root[data-focused-session="launch"] .toy-nav__share,
+:root[data-focused-session="launch"] .toy-nav__pip,
+:root[data-focused-session="launch"] .toy-nav__next,
+:root[data-focused-session="launch"] .toy-nav__flow,
+:root[data-focused-session="launch"] .toy-nav__challenge,
+:root[data-focused-session="launch"] .toy-nav__back,
+:root[data-focused-session="live"] .toy-nav__share,
+:root[data-focused-session="live"] .toy-nav__pip,
+:root[data-focused-session="live"] .toy-nav__next,
+:root[data-focused-session="live"] .toy-nav__flow,
+:root[data-focused-session="live"] .toy-nav__challenge,
+:root[data-focused-session="live"] .toy-nav__back {
+  min-height: 38px;
+  padding: 8px 12px;
 }
 
 .toy-nav__mobile-toggle {
@@ -1905,6 +1950,21 @@ body {
     display: none;
   }
 
+  :root[data-focused-session="launch"] .active-toy-nav,
+  :root[data-focused-session="live"] .active-toy-nav {
+    max-height: min(24svh, 196px);
+    padding: 7px 8px;
+  }
+
+  :root[data-focused-session="launch"]
+    .active-toy-nav__actions[data-toy-actions-expanded="true"]
+    .active-toy-nav__actions-secondary,
+  :root[data-focused-session="live"]
+    .active-toy-nav__actions[data-toy-actions-expanded="true"]
+    .active-toy-nav__actions-secondary {
+    max-height: min(12svh, 118px);
+  }
+
   :root[data-preflight-open="true"]
     .control-panel--floating:not(.preflight-panel),
   :root[data-preflight-open="true"] .milkdrop-overlay__toggle {
@@ -2663,6 +2723,11 @@ body.tv-mode .control-panel input {
   pointer-events: none;
 }
 
+:root[data-focused-session="launch"] .milkdrop-overlay,
+:root[data-focused-session="live"] .milkdrop-overlay {
+  inset: auto 16px 16px auto;
+}
+
 .milkdrop-overlay__toggle {
   pointer-events: auto;
   border: 1px solid rgba(125, 211, 252, 0.3);
@@ -2699,6 +2764,19 @@ body.tv-mode .control-panel input {
   color: #e2e8f0;
   box-shadow: 0 24px 68px rgba(2, 6, 23, 0.55);
   backdrop-filter: blur(24px);
+}
+
+:root[data-focused-session="launch"] .milkdrop-overlay__panel,
+:root[data-focused-session="live"] .milkdrop-overlay__panel {
+  width: min(42vw, 560px);
+  max-height: min(64vh, 700px);
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(56, 189, 248, 0.14),
+      transparent 34%
+    ),
+    linear-gradient(160deg, rgba(9, 14, 27, 0.92), rgba(14, 20, 38, 0.92));
 }
 
 .milkdrop-overlay.is-open .milkdrop-overlay__panel {
@@ -3467,6 +3545,12 @@ body.tv-mode .control-panel input {
   .milkdrop-overlay__editor-actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  :root[data-focused-session="launch"] .milkdrop-overlay__panel,
+  :root[data-focused-session="live"] .milkdrop-overlay__panel {
+    width: min(48vw, 520px);
+    max-height: min(60vh, 620px);
+  }
 }
 
 @media (max-width: 640px) {
@@ -3486,6 +3570,11 @@ body.tv-mode .control-panel input {
     max-height: min(100dvh, 100svh);
     border-radius: 20px 20px 0 0;
     margin: 0;
+  }
+
+  :root[data-focused-session="launch"] .milkdrop-overlay__panel,
+  :root[data-focused-session="live"] .milkdrop-overlay__panel {
+    max-height: min(62dvh, 540px);
   }
 
   .milkdrop-overlay__header,

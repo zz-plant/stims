@@ -511,16 +511,16 @@ export function createMilkdropExperience({
       overlay.openTab(tab);
     },
   );
+  const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
+  if (requestedOverlayTab) {
+    overlay.openTab(requestedOverlayTab);
+  }
   void catalogCoordinator
     .scheduleCatalogSync({
       activePresetId,
       activeBackend,
     })
     .then(async () => {
-      const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
-      if (requestedOverlayTab) {
-        overlay.openTab(requestedOverlayTab);
-      }
       const requestedCollectionTag =
         consumeRequestedMilkdropCollectionSelection();
       const collectionEntry = requestedCollectionTag

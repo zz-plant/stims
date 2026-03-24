@@ -11,6 +11,13 @@ const chromiumPath = chromium.executablePath();
 const hasChromium = fs.existsSync(chromiumPath);
 const integrationTest = hasChromium ? test : test.skip;
 const TEST_PORT = 5180;
+const PLAYWRIGHT_RENDERER_ARGS = [
+  '--use-angle=swiftshader',
+  '--use-gl=angle',
+  '--enable-webgl',
+  '--enable-unsafe-swiftshader',
+  '--ignore-gpu-blocklist',
+];
 let devServer: ChildProcess | null = null;
 
 async function waitForServer(url: string, timeoutMs = 20000) {
@@ -33,7 +40,9 @@ async function waitForServer(url: string, timeoutMs = 20000) {
 }
 
 async function createMobilePage() {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    args: PLAYWRIGHT_RENDERER_ARGS,
+  });
   const context = await browser.newContext({
     viewport: { width: 430, height: 932 },
     isMobile: true,
@@ -122,7 +131,16 @@ integrationTest(
 
     try {
       await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/milkdrop/`);
-      await mobile.page.locator('#use-demo-audio').click();
+      const demoButton = mobile.page
+        .locator('[data-audio-controls] #use-demo-audio')
+        .first();
+      await demoButton.waitFor({ state: 'attached' });
+      await demoButton.scrollIntoViewIfNeeded();
+      await demoButton.evaluate((button) => {
+        if (button instanceof HTMLElement) {
+          button.click();
+        }
+      });
       await mobile.page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
       );
