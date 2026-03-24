@@ -327,7 +327,10 @@ export function buildMesh({
   }
 
   return {
-    positions: positions.slice(0, writeIndex),
+    positions:
+      writeIndex === positions.length
+        ? positions
+        : positions.slice(0, writeIndex),
     color: colorValue,
     alpha,
   };

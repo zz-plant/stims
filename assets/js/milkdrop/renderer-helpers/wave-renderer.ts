@@ -49,6 +49,7 @@ export function createWaveObject(
         ...(wave.additive ? { blending: AdditiveBlending } : {}),
       }),
     );
+    object.geometry.userData.skipDynamicBounds = true;
     helpers.ensureGeometryPositions(object.geometry, wave.positions);
     helpers.setMaterialColor(
       object.material,
@@ -69,6 +70,7 @@ export function createWaveObject(
       ...(wave.additive ? { blending: AdditiveBlending } : {}),
     }),
   );
+  object.geometry.userData.skipDynamicBounds = true;
   helpers.ensureGeometryPositions(
     object.geometry,
     helpers.getWaveLinePositions(wave, behavior),
@@ -198,6 +200,7 @@ export function createLineObject(
       }),
     ),
   );
+  object.geometry.userData.skipDynamicBounds = true;
   helpers.ensureGeometryPositions(object.geometry, positions);
   helpers.setMaterialColor(object.material, color, alpha);
   object.position.z = 0.24;

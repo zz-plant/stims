@@ -160,26 +160,37 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   getStateSnapshot() {
-    return {
+    const snapshot: MutableState = {
       ...this.state,
       ...this.registers,
-      ...Object.fromEntries(
-        this.waveState.customWaveLocals.flatMap((waveState, index) =>
-          Object.entries(waveState).map(([key, value]) => [
-            `wave${index + 1}_${key}`,
-            value,
-          ]),
-        ),
-      ),
-      ...Object.fromEntries(
-        this.shapeState.customShapeLocals.flatMap((shapeState, index) =>
-          Object.entries(shapeState).map(([key, value]) => [
-            `shape${index + 1}_${key}`,
-            value,
-          ]),
-        ),
-      ),
     };
+    for (
+      let index = 0;
+      index < this.waveState.customWaveLocals.length;
+      index += 1
+    ) {
+      const waveState = this.waveState.customWaveLocals[index];
+      if (!waveState) {
+        continue;
+      }
+      for (const [key, value] of Object.entries(waveState)) {
+        snapshot[`wave${index + 1}_${key}`] = value;
+      }
+    }
+    for (
+      let index = 0;
+      index < this.shapeState.customShapeLocals.length;
+      index += 1
+    ) {
+      const shapeState = this.shapeState.customShapeLocals[index];
+      if (!shapeState) {
+        continue;
+      }
+      for (const [key, value] of Object.entries(shapeState)) {
+        snapshot[`shape${index + 1}_${key}`] = value;
+      }
+    }
+    return snapshot;
   }
 
   private nextRandom = () => {
@@ -319,23 +330,12 @@ class MilkdropPresetVM implements MilkdropVM {
     env: MutableState,
     locals: MutableState | null = null,
   ) {
-    const scopedEnv = {
-      ...env,
-      ...this.state,
-      ...this.registers,
-      ...(locals ?? {}),
-    };
     block.statements.forEach((statement) => {
-      const value = evaluateMilkdropExpression(
-        statement.expression,
-        scopedEnv,
-        {
-          nextRandom: this.nextRandom,
-        },
-      );
+      const value = evaluateMilkdropExpression(statement.expression, env, {
+        nextRandom: this.nextRandom,
+      });
       this.setValue(statement.target, value, locals);
       env[statement.target] = value;
-      scopedEnv[statement.target] = value;
     });
   }
 

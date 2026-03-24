@@ -561,6 +561,10 @@ function ensureGeometryPositions(
     attribute.setUsage(DynamicDrawUsage);
     geometry.setAttribute('position', attribute);
   }
+  if (geometry.userData.skipDynamicBounds === true) {
+    setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), Math.SQRT2 * 2.4);
+    return;
+  }
   setGeometryBoundsFromPositions(geometry, positions);
 }
 
@@ -706,6 +710,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.batcher = batcher;
     this.webgpuOptimizationFlags = { ...webgpuOptimizationFlags };
     this.root.frustumCulled = false;
+    this.meshLines.geometry.userData.skipDynamicBounds = true;
+    this.proceduralMotionVectors.geometry.userData.skipDynamicBounds = true;
+    this.blendProceduralMotionVectors.geometry.userData.skipDynamicBounds = true;
 
     this.background.position.z = -1.2;
     this.meshLines.position.z = -0.3;

@@ -42,6 +42,7 @@ export function buildMainWave({
     detailScale,
     previousSamples: waveState.lastWaveSamples,
     previousMomentum: waveState.lastWaveMomentum,
+    buffers: waveState.buffers,
     useProcedural: supportsProceduralWave(drawMode),
   });
   syncSamples(
@@ -71,14 +72,15 @@ export function commitMainWaveFrame({
 }) {
   if (waveState.lastWaveform) {
     waveState.trails.unshift(waveState.lastWaveform);
-    waveState.trails = waveState.trails.slice(0, MAX_TRAILS);
+    if (waveState.trails.length > MAX_TRAILS) {
+      waveState.trails.length = MAX_TRAILS;
+    }
   }
   if (waveState.lastProceduralWave) {
     waveState.proceduralTrailWaves.unshift(waveState.lastProceduralWave);
-    waveState.proceduralTrailWaves = waveState.proceduralTrailWaves.slice(
-      0,
-      MAX_TRAILS,
-    );
+    if (waveState.proceduralTrailWaves.length > MAX_TRAILS) {
+      waveState.proceduralTrailWaves.length = MAX_TRAILS;
+    }
   }
   waveState.lastWaveform = mainWave;
   waveState.lastProceduralWave = proceduralMainWave;

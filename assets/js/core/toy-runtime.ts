@@ -23,6 +23,8 @@ import { registerToyGlobals } from './toy-globals';
 import type { ToyInstance } from './toy-interface';
 import WebToy, { type WebToyOptions } from './web-toy';
 
+const EMPTY_UINT8 = new Uint8Array(0);
+
 export type ToyRuntimeFrame = {
   toy: WebToy;
   time: number;
@@ -418,8 +420,7 @@ export function createToyRuntime({
         frameState.time = now;
         frameState.analyser = analyser;
         frameState.frequencyData = getContextFrequencyData(ctx);
-        frameState.waveformData =
-          analyser?.getWaveformData() ?? new Uint8Array(0);
+        frameState.waveformData = analyser?.getWaveformData() ?? EMPTY_UINT8;
         frameState.input = inputController.getState();
         frameState.performance = performanceController.getSettings();
         pluginManager.update(frameState);

@@ -2,7 +2,6 @@ import { createBeatTracker } from '../utils/audio-beat';
 import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { getBandLevels, getWeightedEnergy } from '../utils/audio-reactivity';
 import type { MilkdropRuntimeSignals } from './types';
-
 export function createMilkdropSignalTracker() {
   const beatTracker = createBeatTracker({
     threshold: 0.34,
@@ -12,7 +11,6 @@ export function createMilkdropSignalTracker() {
   });
   let frame = 0;
   let rms = 0;
-
   return {
     reset() {
       frame = 0;

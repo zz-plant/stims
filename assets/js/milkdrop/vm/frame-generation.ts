@@ -222,6 +222,11 @@ export function buildMainWaveFrame({
   detailScale,
   previousSamples,
   previousMomentum,
+  buffers = {
+    liveSamples: [],
+    smoothedSamples: [],
+    momentumSamples: [],
+  },
   useProcedural,
 }: {
   state: Record<string, number>;
@@ -229,6 +234,11 @@ export function buildMainWaveFrame({
   detailScale: number;
   previousSamples: number[];
   previousMomentum: number[];
+  buffers?: {
+    liveSamples: number[];
+    smoothedSamples: number[];
+    momentumSamples: number[];
+  };
   useProcedural: boolean;
 }): {
   visual: MilkdropWaveVisual;
@@ -255,9 +265,12 @@ export function buildMainWaveFrame({
   const modWaveAlphaStart = clamp(state.modwavealphastart ?? 1, 0, 2);
   const modWaveAlphaEnd = clamp(state.modwavealphaend ?? 1, 0, 2);
   const alphaByVolume = (state.bmodwavealphabyvolume ?? 0) >= 0.5;
-  const liveSamples = new Array<number>(samples);
-  const smoothedSamples = new Array<number>(samples);
-  const nextMomentum = new Array<number>(samples);
+  const liveSamples = buffers.liveSamples;
+  const smoothedSamples = buffers.smoothedSamples;
+  const nextMomentum = buffers.momentumSamples;
+  liveSamples.length = samples;
+  smoothedSamples.length = samples;
+  nextMomentum.length = samples;
   const smoothingBlend = clamp(1 - smoothing, 0.04, 1);
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);

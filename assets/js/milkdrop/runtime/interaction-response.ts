@@ -236,59 +236,85 @@ export function applyMilkdropInteractionResponse(
         }
       : null;
 
+  if (usesGpuInteractionPayload) {
+    return {
+      ...frameState,
+      interaction,
+      mainWave: {
+        ...frameState.mainWave,
+        thickness: clamp(
+          frameState.mainWave.thickness + dragBoost * 0.8,
+          1,
+          12,
+        ),
+      },
+      mesh: {
+        ...frameState.mesh,
+        alpha: clamp(frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12, 0, 1),
+      },
+      shapes: frameState.shapes.map((shape) => ({
+        ...shape,
+        x: nudgeCenter(shape.x, offsetX),
+        y: nudgeCenter(shape.y, -offsetY),
+        radius: clamp(shape.radius * scale, 0.02, 0.6),
+        rotation: shape.rotation + rotation,
+      })),
+      post: enhancePostEffects(frameState.post, {
+        offsetX,
+        offsetY,
+        rotation,
+        pinchDelta,
+        dragBoost,
+      }),
+      gpuGeometry: enhanceGpuGeometry(frameState.gpuGeometry, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+        pinchDelta,
+      }),
+    };
+  }
+
   return {
     ...frameState,
     interaction,
     mainWave: {
       ...frameState.mainWave,
-      positions:
-        usesGpuInteractionPayload && frameState.gpuGeometry.mainWave
-          ? frameState.mainWave.positions
-          : transformScenePositions(frameState.mainWave.positions, {
-              offsetX,
-              offsetY,
-              rotation,
-              scale,
-            }),
+      positions: transformScenePositions(frameState.mainWave.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
       thickness: clamp(frameState.mainWave.thickness + dragBoost * 0.8, 1, 12),
     },
-    customWaves: frameState.customWaves.map((wave, index) => ({
+    customWaves: frameState.customWaves.map((wave) => ({
       ...wave,
-      positions:
-        usesGpuInteractionPayload &&
-        Boolean(frameState.gpuGeometry.customWaves[index])
-          ? wave.positions
-          : transformScenePositions(wave.positions, {
-              offsetX,
-              offsetY,
-              rotation,
-              scale,
-            }),
+      positions: transformScenePositions(wave.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
     })),
-    trails: frameState.trails.map((trail, index) => ({
+    trails: frameState.trails.map((trail) => ({
       ...trail,
-      positions:
-        usesGpuInteractionPayload &&
-        Boolean(frameState.gpuGeometry.trailWaves[index])
-          ? trail.positions
-          : transformScenePositions(trail.positions, {
-              offsetX,
-              offsetY,
-              rotation,
-              scale,
-            }),
+      positions: transformScenePositions(trail.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
     })),
     mesh: {
       ...frameState.mesh,
-      positions:
-        usesGpuInteractionPayload && frameState.gpuGeometry.meshField
-          ? frameState.mesh.positions
-          : transformScenePositions(frameState.mesh.positions, {
-              offsetX,
-              offsetY,
-              rotation,
-              scale,
-            }),
+      positions: transformScenePositions(frameState.mesh.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
       alpha: clamp(frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12, 0, 1),
     },
     shapes: frameState.shapes.map((shape) => ({
@@ -300,15 +326,12 @@ export function applyMilkdropInteractionResponse(
     })),
     motionVectors: frameState.motionVectors.map((vector) => ({
       ...vector,
-      positions:
-        usesGpuInteractionPayload && frameState.gpuGeometry.motionVectorField
-          ? vector.positions
-          : transformScenePositions(vector.positions, {
-              offsetX,
-              offsetY,
-              rotation,
-              scale,
-            }),
+      positions: transformScenePositions(vector.positions, {
+        offsetX,
+        offsetY,
+        rotation,
+        scale,
+      }),
     })),
     post: enhancePostEffects(frameState.post, {
       offsetX,

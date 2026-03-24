@@ -677,16 +677,12 @@ export function createMilkdropExperience({
         frequencyData: frame.frequencyData,
         waveformData: frame.waveformData,
       });
-      const inputOverrides = buildMilkdropInputSignalOverrides(
-        frame.input,
-        mergedSignals,
-      );
-      const signals = Object.assign(
-        mergedSignals,
-        baseSignals,
-        inputOverrides,
-        options.signalOverrides,
-      );
+      Object.assign(mergedSignals, baseSignals);
+      buildMilkdropInputSignalOverrides(frame.input, mergedSignals);
+      if (options.signalOverrides) {
+        Object.assign(mergedSignals, options.signalOverrides);
+      }
+      const signals = mergedSignals as MilkdropRuntimeSignals;
 
       if (
         shouldAutoAdvancePreset({
