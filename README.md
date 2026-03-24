@@ -10,7 +10,7 @@ Stims is an independent browser-native visualizer built in the lineage of Ryan G
 
 It is built to feel like a first-class browser experience rather than a nostalgic desktop clone: quick preflight checks, multiple audio input paths, renderer fallback, and a visualizer shell that stays usable across desktop, laptop, touch, and TV-style setups.
 
-Quick links:
+## Quick links
 
 - Live site: [no.toil.fyi](https://no.toil.fyi)
 - Launch app: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
@@ -18,6 +18,20 @@ Quick links:
 - Marketing page opt-out: [no.toil.fyi/?landing=1](https://no.toil.fyi/?landing=1)
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+## Table of contents
+
+- [Why Stims exists](#why-stims-exists)
+- [What you get](#what-you-get)
+- [Shipped experience](#shipped-experience)
+- [Quickstart](#quickstart)
+- [Common commands](#common-commands)
+- [Development notes](#development-notes)
+- [Contributing at a glance](#contributing-at-a-glance)
+- [Project shape](#project-shape)
+- [Troubleshooting](#troubleshooting)
+- [Docs](#docs)
+- [Lineage](#lineage)
 
 ## Why Stims exists
 
@@ -46,6 +60,13 @@ At the product level, Stims currently ships one flagship MilkDrop-led visualizer
 - Persistent session and local settings so the app can recover your last-used audio and rendering preferences.
 
 ## Quickstart
+
+### Prerequisites
+
+- [Bun](https://bun.sh) 1.3+
+- A modern browser with WebGL enabled (WebGPU is optional and auto-detected)
+
+### Run locally
 
 1. Install dependencies:
 
@@ -85,6 +106,12 @@ If you want to validate the production bundle locally, run `bun run build` and t
 
 For JavaScript or TypeScript changes, `bun run check` is the repository quality gate.
 
+## Development notes
+
+- Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
+- If your browser supports WebGPU but visuals fail, switch renderer preference to WebGL in app settings and refresh.
+- Use `bun run preview` after `bun run build` to test the production bundle behavior (including route handling) before deployment.
+
 ## Contributing at a glance
 
 - Package manager: `bun`
@@ -103,6 +130,12 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 - `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.
 - `tests/` contains unit, integration, and compatibility coverage.
 - `docs/` is the canonical contributor documentation set.
+
+## Troubleshooting
+
+- **Blank canvas on startup**: confirm hardware acceleration is enabled in your browser and retry with WebGL preference.
+- **No microphone or tab audio input**: check browser permission prompts and verify the selected input device in the in-app controls.
+- **Mobile device cannot reach local dev server**: use `bun run dev:host`, then load the host machine IP from the mobile browser.
 
 ## Docs
 
