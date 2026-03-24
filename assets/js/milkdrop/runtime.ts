@@ -32,7 +32,6 @@ import { consumeRequestedMilkdropPresetSelection } from './preset-selection';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
 import { createMilkdropBackendFailover } from './runtime/backend-fallback';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
-import { buildAgentMilkdropDebugSnapshot } from './runtime/debug-snapshot';
 import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
 import {
   applyMilkdropInteractionResponse,
@@ -44,6 +43,7 @@ import {
   buildRenderFrameState,
   shouldAutoAdvancePreset,
 } from './runtime/lifecycle';
+import { createMilkdropPresentationController } from './runtime/presentation-controller';
 import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
 import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
@@ -204,55 +204,55 @@ export function createMilkdropExperience({
       window.location.reload();
     },
   });
+  let overlay: MilkdropOverlay | null = null;
+  const presentationController = createMilkdropPresentationController({
+    getOverlay: () => overlay,
+    session,
+    vm,
+    getAdapter: () => adapter,
+    getState: () => ({
+      activePresetId,
+      compiledPreset: activeCompiled,
+      frameState: currentFrameState,
+      backend: activeBackend,
+      status: lastStatusMessage,
+      adaptiveQuality: adaptiveQualityState,
+    }),
+    setCompiledState: (compiled) => {
+      activeCompiled = compiled;
+      activePresetId = compiled.source.id;
+    },
+    isAgentMode,
+    setDebugSnapshot,
+  });
 
-  const updateAgentDebugSnapshot = () => {
-    if (!isAgentMode()) {
-      return;
-    }
-    setDebugSnapshot(
-      'milkdrop',
-      buildAgentMilkdropDebugSnapshot({
-        activePresetId,
-        compiledPreset: activeCompiled,
-        frameState: currentFrameState,
-        status: lastStatusMessage,
-        adaptiveQuality: adaptiveQualityState,
-      }),
-    );
-  };
+  const updateAgentDebugSnapshot = () =>
+    presentationController.updateAgentDebugSnapshot();
 
   const setOverlayStatus = (message: string) => {
     lastStatusMessage = message;
-    overlay.setStatus(message);
-    updateAgentDebugSnapshot();
+    presentationController.setOverlayStatus(message);
+  };
+  const getOverlay = () => {
+    if (!overlay) {
+      throw new Error('Milkdrop overlay is not ready.');
+    }
+    return overlay;
   };
 
   const setTransitionMode = (mode: 'blend' | 'cut') => {
     transitionMode = mode;
-    overlay.setTransitionMode(mode);
+    overlay?.setTransitionMode(mode);
     preferences.setTransitionMode(mode);
   };
 
-  const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
-    activeCompiled = compiled;
-    activePresetId = compiled.source.id;
-    vm.setPreset(compiled);
-    vm.setRenderBackend(activeBackend);
-    adapter?.setPreset(compiled);
-    overlay.setCurrentPresetTitle(compiled.title);
-    overlay.setSessionState(session.getState());
-    overlay.setInspectorState({
-      compiled: activeCompiled,
-      frameState: currentFrameState,
-      backend: activeBackend,
-    });
-    updateAgentDebugSnapshot();
-  };
+  const applyCompiledPreset = (compiled: MilkdropCompiledPreset) =>
+    presentationController.applyCompiledPreset(compiled);
 
   const catalogCoordinator = createMilkdropCatalogCoordinator({
     catalogStore,
     onCatalogChanged(entries, nextActivePresetId, nextActiveBackend) {
-      overlay.setCatalog(entries, nextActivePresetId, nextActiveBackend);
+      getOverlay().setCatalog(entries, nextActivePresetId, nextActiveBackend);
     },
   });
 
@@ -321,8 +321,8 @@ export function createMilkdropExperience({
 
   const interactionPresenter = createMilkdropRuntimeInteractionPresenter({
     overlay: {
-      isOpen: () => overlay.isOpen(),
-      toggleOpen: (open?: boolean) => overlay.toggleOpen(open),
+      isOpen: () => getOverlay().isOpen(),
+      toggleOpen: (open?: boolean) => getOverlay().toggleOpen(open),
     },
     overlayActions: {
       onSelectPreset: navigation.selectPreset,
@@ -416,7 +416,7 @@ export function createMilkdropExperience({
     },
   });
 
-  const overlay = new MilkdropOverlay({
+  overlay = new MilkdropOverlay({
     host: container ?? document.body,
     callbacks: interactionPresenter.overlayCallbacks,
   });
@@ -741,17 +741,13 @@ export function createMilkdropExperience({
         now - lastInspectorOverlaySyncAt >= 180
       ) {
         lastInspectorOverlaySyncAt = now;
-        overlay.setInspectorState({
-          compiled: activeCompiled,
-          frameState: currentFrameState,
-          backend: activeBackend,
-        });
+        presentationController.syncInspectorState();
       }
     },
 
     dispose() {
       clearDebugSnapshot('milkdrop');
-      overlay.dispose();
+      overlay?.dispose();
       session.dispose();
       adapter?.dispose();
       adapter = null;

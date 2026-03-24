@@ -1,4 +1,3 @@
-import { setCurrentToy } from './core/agent-api.ts';
 import { getRendererCapabilities } from './core/renderer-capabilities.ts';
 import {
   prewarmMicrophone,
@@ -12,15 +11,16 @@ import {
 } from './core/toy-lifecycle.ts';
 import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
+import { createLoaderLibraryResetController } from './loader/library-reset-controller.ts';
 import { createLoaderRouteController } from './loader/route-controller.ts';
 import { createToyAudioPromptController } from './loader/toy-audio-prompt-controller.ts';
 import { createToyCapabilityController } from './loader/toy-capability-controller.ts';
 import { createToyLaunchController } from './loader/toy-launch-controller.ts';
 import { createToyLifecycleOrchestration } from './loader/toy-lifecycle-orchestration.ts';
+import { applyToyPostLaunchEffects } from './loader/toy-post-launch-controller.ts';
 import { createToySessionController } from './loader/toy-session-controller.ts';
 import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
-import { recordToyOpen } from './utils/growth-metrics.ts';
 import { createManifestClient } from './utils/manifest-client';
 import { ensureWebGL } from './utils/webgl-check.ts';
 
@@ -82,6 +82,18 @@ export function createLoader({
     registerEscapeHandler,
     updateRendererStatus,
   } = createToyLifecycleOrchestration({ lifecycle, view });
+  const { backToLibrary } = createLoaderLibraryResetController({
+    removeEscapeHandler,
+    disposeActiveToy,
+    showLibraryView: () => view.showLibraryView(),
+    goToLibrary: () => router.goToLibrary(),
+    updateRendererStatus,
+    resetAudioPool: resetAudioPoolFn,
+    clearSessionOnBack: () => sessionController.clearOnBack(),
+    setActiveToySlug: (slug) => {
+      activeToySlug = slug;
+    },
+  });
 
   const showModuleImportError = (
     toy: Toy,
@@ -104,19 +116,6 @@ export function createLoader({
     } catch (error) {
       console.error('Error disposing staged toy', error);
     }
-  };
-
-  const backToLibrary = ({ updateRoute = true } = {}) => {
-    removeEscapeHandler();
-    disposeActiveToy();
-    view.showLibraryView();
-    if (updateRoute) {
-      router.goToLibrary();
-    }
-    updateRendererStatus(null);
-    void resetAudioPoolFn({ stopStreams: true });
-    activeToySlug = null;
-    sessionController.clearOnBack();
   };
 
   const startModuleToy = async (
@@ -242,18 +241,18 @@ export function createLoader({
 
       view.removeStatusElement();
 
-      // Track toy load for agents
-      setCurrentToy(toy.slug);
-      activeToySlug = toy.slug;
-      sessionController.session.rememberToy(toy.slug);
-      recordToyOpen(toy.slug, pushState ? 'library' : 'direct');
-      audioPromptController.maybeShowPrompt({
-        launchResult,
+      applyToyPostLaunchEffects({
+        toy,
+        pushState,
         preferDemoAudio,
+        launchResult,
         container,
-        starterTips: TOY_MICRO_GOALS[toy.slug] ?? [
-          'Try mic, then demo audio, and keep whichever feels better.',
-        ],
+        rememberToy: (slug) => sessionController.session.rememberToy(slug),
+        setActiveToySlug: (slug) => {
+          activeToySlug = slug;
+        },
+        showAudioPrompt: (args) => audioPromptController.maybeShowPrompt(args),
+        starterTips: TOY_MICRO_GOALS[toy.slug],
       });
     };
 

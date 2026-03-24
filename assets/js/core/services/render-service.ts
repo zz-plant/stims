@@ -1,10 +1,6 @@
 import type * as THREE from 'three';
 import { createSharedInitializer } from '../../utils/shared-initializer';
 import {
-  getActiveRenderPreferences,
-  subscribeToRenderPreferences,
-} from '../render-preferences.ts';
-import {
   getRendererCapabilities,
   type RendererBackend,
   type RendererCapabilities,
@@ -28,7 +24,11 @@ import {
   getActiveQualityPreset,
   type QualityPreset,
   subscribeToQualityPreset,
-} from '../settings-panel.ts';
+} from '../state/quality-preset-store.ts';
+import {
+  getActiveRenderPreferences,
+  subscribeToRenderPreferences,
+} from '../state/render-preference-store.ts';
 import type { WebGPURenderer } from '../webgpu-renderer.ts';
 
 export type RendererHandle = {

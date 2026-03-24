@@ -17,15 +17,15 @@ import { ensureWebGL } from '../utils/webgl-check';
 import { initCamera } from './camera-setup.ts';
 import type { RendererInitConfig } from './renderer-setup.ts';
 import { initScene, type SceneConfig } from './scene-setup.ts';
-import {
-  type AudioHandle,
-  acquireAudioHandle,
-} from './services/audio-service.ts';
-import {
-  type RendererHandle,
-  requestRenderer,
-} from './services/render-service.ts';
+import type { AudioHandle } from './services/audio-service.ts';
+import type { RendererHandle } from './services/render-service.ts';
+import { createToyAudioSession } from './toy-audio-session.ts';
 import { defaultToyLifecycle } from './toy-lifecycle.ts';
+import { createToyRendererSession } from './toy-renderer-session.ts';
+import {
+  createToyViewportSession,
+  type ToyViewportState,
+} from './toy-viewport-session.ts';
 
 type CameraOptions = NonNullable<Parameters<typeof initCamera>[0]>;
 type SceneOptions = SceneConfig & Record<string, unknown>;
@@ -65,6 +65,9 @@ export default class WebToy {
   viewportCssWidth: number;
   viewportCssHeight: number;
   resizeFrameId: number | null;
+  private viewportSession: ReturnType<typeof createToyViewportSession> | null;
+  private rendererSession: ReturnType<typeof createToyRendererSession>;
+  private audioSession: ReturnType<typeof createToyAudioSession>;
 
   constructor({
     cameraOptions = {},
@@ -92,26 +95,22 @@ export default class WebToy {
     this.rendererInfo = null;
     this.rendererHandle = null;
     this.rendererOptions = rendererOptions;
-
-    this.rendererReady = requestRenderer({
+    this.rendererSession = createToyRendererSession({
       host: this.container,
-      options: rendererOptions,
       canvas: this.canvas,
-    })
-      .then((handle) => {
+      options: rendererOptions,
+      onReady: (handle) => {
         this.rendererHandle = handle;
         this.renderer = handle?.renderer ?? null;
         this.rendererBackend = handle?.backend ?? null;
         this.rendererInfo = handle?.info ?? null;
         this.canvas = handle?.canvas ?? this.canvas;
-        this.applyRendererSettings();
-        this.handleResize();
-        return handle;
-      })
-      .catch((error) => {
-        console.warn('Renderer initialization failed.', error);
-        return null;
-      });
+        if (handle) {
+          this.applyRendererSettings();
+        }
+      },
+    });
+    this.rendererReady = this.rendererSession.ready;
 
     if (ambientLightOptions) {
       initAmbientLight(this.scene, ambientLightOptions);
@@ -126,6 +125,7 @@ export default class WebToy {
     this.audioStream = null;
     this.audioHandle = null;
     this.audioCleanup = null;
+    this.audioSession = createToyAudioSession({ camera: this.camera });
     this.resizeObserver = null;
     this.resizeHandler = null;
     this.viewportResizeHandler = null;
@@ -134,109 +134,55 @@ export default class WebToy {
     this.viewportCssWidth = window.innerWidth;
     this.viewportCssHeight = window.innerHeight;
     this.resizeFrameId = null;
-
-    if (typeof ResizeObserver !== 'undefined' && this.container) {
-      this.resizeObserver = new ResizeObserver(() => {
-        this.scheduleResize();
-      });
-      this.resizeObserver.observe(this.container);
-    } else {
-      this.resizeHandler = () => this.scheduleResize();
-      window.addEventListener('resize', this.resizeHandler);
-    }
-
-    if (window.visualViewport) {
-      this.viewportResizeHandler = () => this.scheduleResize();
-      window.visualViewport.addEventListener(
-        'resize',
-        this.viewportResizeHandler,
-      );
-      window.visualViewport.addEventListener(
-        'scroll',
-        this.viewportResizeHandler,
-      );
-    }
+    this.viewportSession = createToyViewportSession({
+      container: this.container,
+      onResize: (state) => this.handleViewportResize(state),
+    });
 
     defaultToyLifecycle.adoptActiveToy(this);
   }
 
   scheduleResize() {
-    if (this.resizeFrameId !== null) return;
-    this.resizeFrameId = window.requestAnimationFrame(() => {
-      this.resizeFrameId = null;
-      this.handleResize();
-    });
+    this.viewportSession?.scheduleResize();
   }
 
-  handleResize() {
-    const visualViewport = window.visualViewport;
-    const viewportWidth = Math.max(
-      1,
-      Math.round(visualViewport?.width ?? window.innerWidth),
-    );
-    const viewportHeight = Math.max(
-      1,
-      Math.round(visualViewport?.height ?? window.innerHeight),
-    );
-    let width = viewportWidth;
-    let height = viewportHeight;
-
-    if (this.container && this.container !== document.body) {
-      width = Math.max(1, this.container.clientWidth);
-      height = Math.max(1, this.container.clientHeight);
-    }
-
-    const viewportChanged =
-      viewportWidth !== this.viewportCssWidth ||
-      viewportHeight !== this.viewportCssHeight;
-    if (viewportChanged) {
-      this.viewportCssWidth = viewportWidth;
-      this.viewportCssHeight = viewportHeight;
-      document.documentElement.style.setProperty(
-        '--app-height',
-        `${viewportHeight}px`,
-      );
-      document.documentElement.style.setProperty(
-        '--app-width',
-        `${viewportWidth}px`,
-      );
-    }
-
-    if (width === this.viewportWidth && height === this.viewportHeight) {
+  private handleViewportResize(state: ToyViewportState) {
+    if (
+      state.width === this.viewportWidth &&
+      state.height === this.viewportHeight &&
+      state.cssWidth === this.viewportCssWidth &&
+      state.cssHeight === this.viewportCssHeight
+    ) {
       return;
     }
 
-    this.viewportWidth = width;
-    this.viewportHeight = height;
+    this.viewportWidth = state.width;
+    this.viewportHeight = state.height;
+    this.viewportCssWidth = state.cssWidth;
+    this.viewportCssHeight = state.cssHeight;
 
-    this.camera.aspect = width / height;
+    this.camera.aspect = state.width / state.height;
     this.camera.updateProjectionMatrix();
+    this.rendererSession.setViewport(state);
     this.applyRendererSettings();
   }
 
   applyRendererSettings() {
-    if (!this.renderer) return;
-
-    this.rendererHandle?.applySettings(this.rendererOptions, {
+    this.rendererSession.applySettings(this.rendererOptions, {
       width: this.viewportWidth,
       height: this.viewportHeight,
+      cssWidth: this.viewportCssWidth,
+      cssHeight: this.viewportCssHeight,
     });
   }
 
   updateRendererSettings(options: Partial<RendererInitConfig>) {
     this.rendererOptions = { ...this.rendererOptions, ...options };
-    this.applyRendererSettings();
+    this.rendererSession.updateOptions(options);
   }
 
   async initAudio(options = {}) {
-    this.audioHandle?.release?.();
-    this.audioHandle = null;
-    this.analyser = null;
-    this.audioListener = null;
-    this.audio = null;
-    this.audioStream = null;
-
-    const audio = await acquireAudioHandle({ ...options, camera: this.camera });
+    const audio = await this.audioSession.initAudio(options);
     this.audioHandle = audio;
     this.analyser = audio.analyser;
     this.audioListener = audio.listener;
@@ -250,32 +196,8 @@ export default class WebToy {
   }
 
   dispose() {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-
-    if (this.resizeHandler) {
-      window.removeEventListener('resize', this.resizeHandler);
-      this.resizeHandler = null;
-    }
-
-    if (this.resizeFrameId !== null) {
-      window.cancelAnimationFrame(this.resizeFrameId);
-      this.resizeFrameId = null;
-    }
-
-    if (this.viewportResizeHandler && window.visualViewport) {
-      window.visualViewport.removeEventListener(
-        'resize',
-        this.viewportResizeHandler,
-      );
-      window.visualViewport.removeEventListener(
-        'scroll',
-        this.viewportResizeHandler,
-      );
-      this.viewportResizeHandler = null;
-    }
+    this.viewportSession?.dispose();
+    this.viewportSession = null;
 
     this.renderer?.setAnimationLoop?.(null);
 
@@ -298,16 +220,14 @@ export default class WebToy {
       }
     }
 
-    if (this.audioHandle) {
-      this.audioHandle.release();
-      this.audioHandle = null;
-      this.analyser = null;
-      this.audioListener = null;
-      this.audio = null;
-      this.audioStream = null;
-    }
+    this.audioSession.dispose();
+    this.audioHandle = null;
+    this.analyser = null;
+    this.audioListener = null;
+    this.audio = null;
+    this.audioStream = null;
 
-    this.rendererHandle?.release();
+    this.rendererSession.dispose();
     this.rendererHandle = null;
     this.renderer = null;
     this.rendererInfo = null;

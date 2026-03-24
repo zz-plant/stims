@@ -1,10 +1,27 @@
-export type ShaderQuality = 'low' | 'balanced' | 'high';
+import {
+  applyPerformanceSettings,
+  clampPerformanceValue,
+  DEFAULT_PERFORMANCE_SETTINGS,
+  getActivePerformanceSettings,
+  getActivePerformanceStorageKey,
+  MAX_PARTICLE_BUDGET,
+  MAX_PIXEL_RATIO,
+  MIN_PARTICLE_BUDGET,
+  MIN_PIXEL_RATIO,
+  PERFORMANCE_SETTINGS_STORAGE_KEY,
+  type PerformanceSettings,
+  parseShaderQuality,
+  resetPerformanceSettingsStore,
+  subscribeToPerformanceSettings,
+} from './state/performance-settings-store.ts';
 
-export type PerformanceSettings = {
-  maxPixelRatio: number;
-  particleBudget: number;
-  shaderQuality: ShaderQuality;
-};
+export {
+  getActivePerformanceSettings,
+  type PerformanceSettings,
+  type ShaderQuality,
+  setPerformanceSettings,
+  subscribeToPerformanceSettings,
+} from './state/performance-settings-store.ts';
 
 export type PerformancePanelOptions = {
   title?: string;
@@ -12,161 +29,8 @@ export type PerformancePanelOptions = {
   storageKey?: string;
 };
 
-const DEFAULT_SETTINGS: PerformanceSettings = {
-  maxPixelRatio: 1.75,
-  particleBudget: 1,
-  shaderQuality: 'balanced',
-};
-
-const STORAGE_KEY = 'stims:performance-settings';
-const MIN_PIXEL_RATIO = 1;
-const MAX_PIXEL_RATIO = 2.5;
-const MIN_PARTICLE_BUDGET = 0.4;
-const MAX_PARTICLE_BUDGET = 1.6;
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-const subscribers = new Set<(settings: PerformanceSettings) => void>();
-let activeSettings: PerformanceSettings | null = null;
-let activeStorageKey: string = STORAGE_KEY;
+const STORAGE_KEY = PERFORMANCE_SETTINGS_STORAGE_KEY;
 let singletonPanel: PerformancePanel | null = null;
-
-function getStorage(): Storage | null {
-  try {
-    return typeof localStorage !== 'undefined' ? localStorage : null;
-  } catch (error) {
-    console.debug('localStorage unavailable', error);
-    return null;
-  }
-}
-
-function parseShaderQuality(value: string): ShaderQuality | null {
-  if (value === 'low' || value === 'balanced' || value === 'high') {
-    return value;
-  }
-  return null;
-}
-
-function parseUrlSettings(): Partial<PerformanceSettings> {
-  if (typeof window === 'undefined') return {};
-  const params = new URLSearchParams(window.location.search);
-
-  const urlMaxPixelRatio = params.get('maxPixelRatio');
-  const urlParticleBudget = params.get('particleBudget');
-  const urlShaderQuality = params.get('shaderQuality');
-
-  const parsed: Partial<PerformanceSettings> = {};
-
-  if (urlMaxPixelRatio) {
-    const value = Number.parseFloat(urlMaxPixelRatio);
-    if (!Number.isNaN(value)) {
-      parsed.maxPixelRatio = clamp(value, MIN_PIXEL_RATIO, MAX_PIXEL_RATIO);
-    }
-  }
-
-  if (urlParticleBudget) {
-    const value = Number.parseFloat(urlParticleBudget);
-    if (!Number.isNaN(value)) {
-      parsed.particleBudget = clamp(
-        value,
-        MIN_PARTICLE_BUDGET,
-        MAX_PARTICLE_BUDGET,
-      );
-    }
-  }
-
-  if (urlShaderQuality) {
-    const quality = parseShaderQuality(urlShaderQuality);
-    if (quality) parsed.shaderQuality = quality;
-  }
-
-  return parsed;
-}
-
-function getStoredSettings(storageKey = STORAGE_KEY): PerformanceSettings {
-  const overrides = parseUrlSettings();
-  const storage = getStorage();
-
-  if (!storage) {
-    return { ...DEFAULT_SETTINGS, ...overrides };
-  }
-
-  const raw = storage.getItem(storageKey);
-  if (!raw) {
-    return { ...DEFAULT_SETTINGS, ...overrides };
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<PerformanceSettings>;
-    return {
-      ...DEFAULT_SETTINGS,
-      ...parsed,
-      ...overrides,
-      maxPixelRatio: clamp(
-        parsed.maxPixelRatio ??
-          overrides.maxPixelRatio ??
-          DEFAULT_SETTINGS.maxPixelRatio,
-        MIN_PIXEL_RATIO,
-        MAX_PIXEL_RATIO,
-      ),
-      particleBudget: clamp(
-        parsed.particleBudget ??
-          overrides.particleBudget ??
-          DEFAULT_SETTINGS.particleBudget,
-        MIN_PARTICLE_BUDGET,
-        MAX_PARTICLE_BUDGET,
-      ),
-      shaderQuality:
-        parseShaderQuality(parsed.shaderQuality ?? '') ||
-        overrides.shaderQuality ||
-        DEFAULT_SETTINGS.shaderQuality,
-    };
-  } catch (error) {
-    console.debug('Unable to parse stored performance settings', error);
-    return { ...DEFAULT_SETTINGS, ...overrides };
-  }
-}
-
-export function getActivePerformanceSettings({
-  storageKey = STORAGE_KEY,
-}: {
-  storageKey?: string;
-} = {}): PerformanceSettings {
-  if (activeSettings && activeStorageKey === storageKey) return activeSettings;
-
-  activeSettings = getStoredSettings(storageKey);
-  activeStorageKey = storageKey;
-  return activeSettings;
-}
-
-export function subscribeToPerformanceSettings(
-  subscriber: (settings: PerformanceSettings) => void,
-) {
-  subscribers.add(subscriber);
-  if (activeSettings) subscriber(activeSettings);
-  return () => subscribers.delete(subscriber);
-}
-
-function persistSettings(
-  settings: PerformanceSettings,
-  storageKey = STORAGE_KEY,
-) {
-  const storage = getStorage();
-  if (!storage) return;
-  storage.setItem(storageKey, JSON.stringify(settings));
-}
-
-function applySettings(
-  settings: PerformanceSettings,
-  storageKey = STORAGE_KEY,
-) {
-  activeSettings = settings;
-  activeStorageKey = storageKey;
-  subscribers.forEach((subscriber) => subscriber(settings));
-  persistSettings(settings, storageKey);
-}
 
 class PerformancePanel {
   private container: HTMLDivElement;
@@ -315,40 +179,40 @@ class PerformancePanel {
   }
 
   private handlePixelRatioInput() {
-    const value = clamp(
+    const value = clampPerformanceValue(
       Number.parseFloat(this.pixelRatioInput.value),
       MIN_PIXEL_RATIO,
       MAX_PIXEL_RATIO,
     );
     const next = {
-      ...(activeSettings ?? DEFAULT_SETTINGS),
+      ...getActivePerformanceSettings({ storageKey: this.storageKey }),
       maxPixelRatio: value,
     };
-    applySettings(next, this.storageKey);
+    applyPerformanceSettings(next, this.storageKey);
   }
 
   private handleParticleInput() {
-    const value = clamp(
+    const value = clampPerformanceValue(
       Number.parseFloat(this.particleInput.value),
       MIN_PARTICLE_BUDGET,
       MAX_PARTICLE_BUDGET,
     );
     const next = {
-      ...(activeSettings ?? DEFAULT_SETTINGS),
+      ...getActivePerformanceSettings({ storageKey: this.storageKey }),
       particleBudget: value,
     };
-    applySettings(next, this.storageKey);
+    applyPerformanceSettings(next, this.storageKey);
   }
 
   private handleShaderChange() {
     const quality =
       parseShaderQuality(this.shaderSelect.value) ??
-      DEFAULT_SETTINGS.shaderQuality;
+      DEFAULT_PERFORMANCE_SETTINGS.shaderQuality;
     const next = {
-      ...(activeSettings ?? DEFAULT_SETTINGS),
+      ...getActivePerformanceSettings({ storageKey: this.storageKey }),
       shaderQuality: quality,
     };
-    applySettings(next, this.storageKey);
+    applyPerformanceSettings(next, this.storageKey);
   }
 
   private syncUi(settings: PerformanceSettings) {
@@ -368,41 +232,19 @@ export function getPerformancePanel(options: PerformancePanelOptions = {}) {
   } else if (!document.body.contains(singletonPanel.getElement())) {
     document.body.appendChild(singletonPanel.getElement());
   }
-  if (options.storageKey && options.storageKey !== activeStorageKey) {
+  if (
+    options.storageKey &&
+    options.storageKey !== getActivePerformanceStorageKey()
+  ) {
     singletonPanel.configure(options);
   }
   return singletonPanel;
 }
 
-export function setPerformanceSettings(settings: Partial<PerformanceSettings>) {
-  const current =
-    activeSettings ??
-    getActivePerformanceSettings({ storageKey: activeStorageKey });
-  const merged: PerformanceSettings = {
-    ...current,
-    ...settings,
-    maxPixelRatio: clamp(
-      settings.maxPixelRatio ?? current.maxPixelRatio,
-      MIN_PIXEL_RATIO,
-      MAX_PIXEL_RATIO,
-    ),
-    particleBudget: clamp(
-      settings.particleBudget ?? current.particleBudget,
-      MIN_PARTICLE_BUDGET,
-      MAX_PARTICLE_BUDGET,
-    ),
-    shaderQuality:
-      parseShaderQuality(settings.shaderQuality ?? '') ?? current.shaderQuality,
-  };
-  applySettings(merged, activeStorageKey);
-}
-
 export function resetPerformancePanelState(
   options: { removePanel?: boolean } = {},
 ) {
-  activeSettings = null;
-  activeStorageKey = STORAGE_KEY;
-  subscribers.clear();
+  resetPerformanceSettingsStore();
 
   if (options.removePanel && singletonPanel) {
     singletonPanel.getElement().remove();
