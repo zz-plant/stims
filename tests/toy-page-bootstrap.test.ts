@@ -64,6 +64,8 @@ describe('toy page query-driven startup', () => {
           preferDemoAudio?: boolean;
         }
       | undefined;
+    const loadFromQuery = mock(async () => {});
+    const initNavigation = mock();
 
     mock.module('../assets/js/core/capability-preflight.ts', () => ({
       attachCapabilityPreflight: ({
@@ -129,14 +131,16 @@ describe('toy page query-driven startup', () => {
         }),
         getLibraryHref: () => '/',
       },
-      loadFromQuery: mock(async () => {}),
-      initNavigation: mock(),
+      loadFromQuery,
+      initNavigation,
       audioControlsContainer: document.querySelector('[data-audio-controls]'),
       settingsContainer: document.querySelector('[data-settings-panel]'),
     });
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
+    expect(initNavigation).toHaveBeenCalledTimes(1);
+    expect(loadFromQuery).toHaveBeenCalledTimes(1);
     expect(receivedAudioOptions?.autoStartSource).toBe('demo');
     expect(receivedAudioOptions?.preferDemoAudio).toBe(true);
     expect(requestMilkdropOverlayTab).toHaveBeenCalledWith('browse');

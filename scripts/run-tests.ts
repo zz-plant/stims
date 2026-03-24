@@ -103,18 +103,24 @@ async function resolveProfileFiles(profile: string): Promise<string[]> {
   );
 }
 
-async function main() {
-  const { profile, watch, explicitFiles } = parseArgs(process.argv.slice(2));
-  const files = explicitFiles.length
-    ? explicitFiles
-    : await resolveProfileFiles(profile);
-
+async function runBunTest({
+  files,
+  watch,
+  maxConcurrency,
+}: {
+  files: string[];
+  watch: boolean;
+  maxConcurrency?: number;
+}) {
   const cmd = [
     'bun',
     'test',
     '--preload=./tests/setup.ts',
     '--importmap=./tests/importmap.json',
     ...(watch ? ['--watch'] : []),
+    ...(typeof maxConcurrency === 'number'
+      ? [`--max-concurrency=${maxConcurrency}`]
+      : []),
     ...files,
   ];
 
@@ -126,7 +132,38 @@ async function main() {
     stderr: 'inherit',
   });
 
-  const exitCode = await proc.exited;
+  return proc.exited;
+}
+
+async function main() {
+  const { profile, watch, explicitFiles } = parseArgs(process.argv.slice(2));
+  const files = explicitFiles.length
+    ? explicitFiles
+    : await resolveProfileFiles(profile);
+  const includesIntegration = files.includes(INTEGRATION_TEST);
+
+  if (!watch && includesIntegration && files.length > 1) {
+    const unitFiles = files.filter((file) => file !== INTEGRATION_TEST);
+    if (unitFiles.length > 0) {
+      const unitExitCode = await runBunTest({ files: unitFiles, watch });
+      if (unitExitCode !== 0) {
+        process.exit(unitExitCode);
+      }
+    }
+
+    const integrationExitCode = await runBunTest({
+      files: [INTEGRATION_TEST],
+      watch,
+      maxConcurrency: 1,
+    });
+    process.exit(integrationExitCode);
+  }
+
+  const exitCode = await runBunTest({
+    files,
+    watch,
+    maxConcurrency: includesIntegration ? 1 : undefined,
+  });
   process.exit(exitCode);
 }
 
