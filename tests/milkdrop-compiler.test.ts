@@ -104,11 +104,16 @@ wavecode_0_a=1
 [preset00]
 bAdditiveWaves=1
 AdditiveWaves=1
+additivewaves=1
+waveadditive=1
 bWaveDots=1
 waveDots=1
+wavedots=1
+waveusedots=1
 bWaveThick=1
 fWaveThick=1.6
 waveThick=1.8
+wavethick=2
       `.trim(),
       { id: 'legacy-root-wave-aliases' },
     );
@@ -123,7 +128,7 @@ waveThick=1.8
     );
     expect(compiled.ir.numericFields.wave_additive).toBe(1);
     expect(compiled.ir.numericFields.wave_usedots).toBe(1);
-    expect(compiled.ir.numericFields.wave_thick).toBeCloseTo(1.8, 6);
+    expect(compiled.ir.numericFields.wave_thick).toBeCloseTo(2, 6);
   });
 
   test('normalizes legacy projectm shapecode booleans onto canonical shape fields', () => {
