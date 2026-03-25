@@ -163,6 +163,54 @@ describe('milkdrop compiler seams', () => {
         section: null,
       }),
     ).toBe('custom_wave_1_additive');
+    expect(
+      normalizeFieldKey({
+        key: 'bAdditiveWaves',
+        rawValue: '1',
+        line: 2,
+        section: null,
+      }),
+    ).toBe('wave_additive');
+    expect(
+      normalizeFieldKey({
+        key: 'AdditiveWaves',
+        rawValue: '1',
+        line: 2,
+        section: null,
+      }),
+    ).toBe('wave_additive');
+    expect(
+      normalizeFieldKey({
+        key: 'bWaveDots',
+        rawValue: '1',
+        line: 3,
+        section: null,
+      }),
+    ).toBe('wave_usedots');
+    expect(
+      normalizeFieldKey({
+        key: 'waveDots',
+        rawValue: '1',
+        line: 3,
+        section: null,
+      }),
+    ).toBe('wave_usedots');
+    expect(
+      normalizeFieldKey({
+        key: 'fWaveThick',
+        rawValue: '2',
+        line: 4,
+        section: null,
+      }),
+    ).toBe('wave_thick');
+    expect(
+      normalizeFieldKey({
+        key: 'waveThick',
+        rawValue: '2',
+        line: 4,
+        section: null,
+      }),
+    ).toBe('wave_thick');
 
     const lowered = lowerGpuFieldProgram({
       statements: [
