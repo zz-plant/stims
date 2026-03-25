@@ -38,4 +38,10 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 - [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md)
 
+## Playwright screenshot outputs
+
+- Treat `output/playwright/` as **ephemeral automation output**. These artifacts are ignored by git and should not be committed.
+- Store committed baseline snapshots in `tests/fixtures/playwright-baselines/`.
+- Keep one canonical baseline image per scenario and replace that file in place when expectations change.
+
 Older toy-catalog docs may still exist for historical context, but they are no longer the main operating model.

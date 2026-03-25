@@ -38,7 +38,7 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
 const DEFAULT_OPTIONS = {
   port: 5173,
   duration: 5000,
-  outputDir: './screenshots',
+  outputDir: './output/playwright',
 };
 const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';
 const CONTROL_DEMO_SELECTOR = '#use-demo-audio';
@@ -472,7 +472,7 @@ if (import.meta.main) {
     console.error('  --duration <ms>     Duration to run (default: 5000)');
     console.error('  --no-headless       Run in visible window');
     console.error(
-      '  --output <dir>      Output directory (default: ./screenshots)',
+      '  --output <dir>      Output directory (default: ./output/playwright)',
     );
     process.exit(1);
   }
@@ -489,7 +489,7 @@ if (import.meta.main) {
 
   const port = getArg('--port', 5173) as number;
   const duration = getArg('--duration', 3000) as number;
-  const outputDir = getArg('--output', './screenshots') as string;
+  const outputDir = getArg('--output', './output/playwright') as string;
   const headless = !args.includes('--no-headless');
 
   console.log(`Launching ${slug} on port ${port}...`);

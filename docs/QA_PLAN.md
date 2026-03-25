@@ -54,3 +54,9 @@ quality gate and then the focused QA suite:
 bun run check
 bun run test tests/audio-controls.test.ts tests/library-filter-state.test.ts tests/capability-preflight.test.ts
 ```
+
+## Visual snapshot storage guidance
+
+- Playwright run artifacts belong in `output/playwright/` and are intentionally transient.
+- Only canonical baselines should be committed, under `tests/fixtures/playwright-baselines/`.
+- Keep one authoritative baseline image per scenario to avoid drift and duplicate snapshots.
