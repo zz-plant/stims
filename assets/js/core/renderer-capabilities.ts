@@ -1,6 +1,7 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
 import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
+import { isMobileDevice } from '../utils/device-detect.ts';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {
   getRendererFallbackReasonMessage,
@@ -169,6 +170,19 @@ function getEnvironmentKey() {
   if (typeof navigator === 'undefined') return 'no-navigator';
   const nav = navigator as Navigator & { gpu?: GPU; userAgent?: string };
   return nav.gpu ?? nav.userAgent ?? nav;
+}
+
+function isGuardedMobileWebGPUEnvironment() {
+  if (typeof navigator === 'undefined' || !isMobileDevice()) {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent?.toLowerCase() ?? '';
+  return (
+    userAgent.includes('samsungbrowser/') ||
+    userAgent.includes('; wv') ||
+    userAgent.includes('miuibrowser/')
+  );
 }
 
 function resetCache() {
@@ -411,6 +425,15 @@ async function probeRendererCapabilities({
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.compatibilityMode,
         ),
+        { forceWebGL: true },
+      ),
+    );
+  }
+
+  if (isGuardedMobileWebGPUEnvironment()) {
+    return cacheResult(
+      buildFallback(
+        'WebGPU is temporarily disabled on this mobile browser while we stabilize renderer compatibility. Using WebGL mode.',
         { forceWebGL: true },
       ),
     );

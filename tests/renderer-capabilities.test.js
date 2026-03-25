@@ -76,7 +76,7 @@ describe('renderer capabilities', () => {
     expect(second.webgpu?.preferredCanvasFormat).toBe('bgra8unorm');
   });
 
-  test('probes WebGPU on mobile user agents when GPU APIs are present', async () => {
+  test('still probes WebGPU on capable mobile browsers', async () => {
     const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
       device: { label: 'mobile-device' },
     });
@@ -94,6 +94,30 @@ describe('renderer capabilities', () => {
     expect(result.preferredBackend).toBe('webgpu');
     expect(result.fallbackReason).toBeNull();
     expect(result.forceWebGL).toBe(false);
+  });
+
+  test('forces WebGL on guarded mobile browsers with known WebGPU instability', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'mobile-device' },
+    });
+
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (Linux; Android 15; SAMSUNG SM-S928U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/124.0.0.0 Mobile Safari/537.36',
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(0);
+    expect(requestDevice).toHaveBeenCalledTimes(0);
+    expect(
+      result.preferredBackend === 'webgl' || result.preferredBackend === null,
+    ).toBe(true);
+    expect(result.fallbackReason).toContain(
+      'temporarily disabled on this mobile browser',
+    );
+    expect(result.forceWebGL).toBe(true);
   });
 
   test('falls back when WebGPU device acquisition times out during capability probing', async () => {
