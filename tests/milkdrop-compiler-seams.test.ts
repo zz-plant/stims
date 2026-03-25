@@ -181,6 +181,22 @@ describe('milkdrop compiler seams', () => {
     ).toBe('wave_additive');
     expect(
       normalizeFieldKey({
+        key: 'additivewaves',
+        rawValue: '1',
+        line: 2,
+        section: null,
+      }),
+    ).toBe('wave_additive');
+    expect(
+      normalizeFieldKey({
+        key: 'waveadditive',
+        rawValue: '1',
+        line: 2,
+        section: null,
+      }),
+    ).toBe('wave_additive');
+    expect(
+      normalizeFieldKey({
         key: 'bWaveDots',
         rawValue: '1',
         line: 3,
@@ -197,6 +213,22 @@ describe('milkdrop compiler seams', () => {
     ).toBe('wave_usedots');
     expect(
       normalizeFieldKey({
+        key: 'wavedots',
+        rawValue: '1',
+        line: 3,
+        section: null,
+      }),
+    ).toBe('wave_usedots');
+    expect(
+      normalizeFieldKey({
+        key: 'waveusedots',
+        rawValue: '1',
+        line: 3,
+        section: null,
+      }),
+    ).toBe('wave_usedots');
+    expect(
+      normalizeFieldKey({
         key: 'fWaveThick',
         rawValue: '2',
         line: 4,
@@ -206,6 +238,14 @@ describe('milkdrop compiler seams', () => {
     expect(
       normalizeFieldKey({
         key: 'waveThick',
+        rawValue: '2',
+        line: 4,
+        section: null,
+      }),
+    ).toBe('wave_thick');
+    expect(
+      normalizeFieldKey({
+        key: 'wavethick',
         rawValue: '2',
         line: 4,
         section: null,
