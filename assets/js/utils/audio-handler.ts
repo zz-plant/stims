@@ -465,7 +465,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
     );
   }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  if (!navigator.mediaDevices?.getUserMedia) {
     throw new AudioAccessError(
       'unsupported',
       'This browser does not support microphone capture.',
