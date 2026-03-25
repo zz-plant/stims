@@ -98,6 +98,34 @@ wavecode_0_a=1
     });
   });
 
+  test('normalizes legacy root wave aliases without unsupported-field warnings', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+bAdditiveWaves=1
+AdditiveWaves=1
+bWaveDots=1
+waveDots=1
+bWaveThick=1
+fWaveThick=1.6
+waveThick=1.8
+      `.trim(),
+      { id: 'legacy-root-wave-aliases' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.diagnostics).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          message: expect.stringContaining('Unknown preset field'),
+        }),
+      ]),
+    );
+    expect(compiled.ir.numericFields.wave_additive).toBe(1);
+    expect(compiled.ir.numericFields.wave_usedots).toBe(1);
+    expect(compiled.ir.numericFields.wave_thick).toBeCloseTo(1.8, 6);
+  });
+
   test('normalizes legacy projectm shapecode booleans onto canonical shape fields', () => {
     const compiled = compileMilkdropPresetSource(
       `
