@@ -887,6 +887,52 @@ video_echo_orientation=3
     });
   });
 
+  test('routes red-blue stereo flag through the feedback composite state', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Stereo Routing
+bRedBlueStereo=1
+      `.trim(),
+      { id: 'feedback-red-blue-stereo-routing' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgl',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.redBlueStereo).toBe(1);
+  });
+
   test('forwards overlay and warp volume sampling metadata into feedback state', () => {
     const preset = compileMilkdropPresetSource(
       `

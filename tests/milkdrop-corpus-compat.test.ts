@@ -108,8 +108,8 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
   'low-motion-halo-drift.milk': { webgl: 'supported', webgpu: 'supported' },
   'prism-drum-tunnel.milk': { webgl: 'supported', webgpu: 'supported' },
   'rovastar-parallel-universe.milk': {
-    webgl: 'partial',
-    webgpu: 'partial',
+    webgl: 'supported',
+    webgpu: 'supported',
     forbiddenUnsupportedKeys: [
       'mv_dx',
       'mv_dy',
