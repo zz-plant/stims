@@ -284,6 +284,7 @@ function createCompositeUniforms(
     darkenCenter: uniform(0),
     solarize: uniform(0),
     invert: uniform(0),
+    redBlueStereo: uniform(0),
     gammaAdj: uniform(1),
     textureWrap: uniform(0),
     feedbackTexture: uniform(0),
@@ -1181,6 +1182,16 @@ function createCompositeOutputNode(
         clamp(max(uniforms.invert, uniforms.invertBoost), 0, 1),
       ),
     );
+    const stereoEnabled = step(0.5, uniforms.redBlueStereo);
+    const stereoOffset = float(0.003).add(uniforms.signalEnergy.mul(0.003));
+    const leftStereo = uniforms.previousTex.sample(
+      sampleUvNode(previousUv.sub(vec2(stereoOffset, 0)), uniforms.textureWrap),
+    ).rgb;
+    const rightStereo = uniforms.previousTex.sample(
+      sampleUvNode(previousUv.add(vec2(stereoOffset, 0)), uniforms.textureWrap),
+    ).rgb;
+    const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
+    color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
     color.assign(hueRotateNode(color, uniforms.hueShift));
     color.assign(applySaturationNode(color, uniforms.saturation));
     color.assign(applyContrastNode(color, uniforms.contrast));
@@ -1405,6 +1416,7 @@ class WebGPUMilkdropFeedbackManager {
       state.darkenCenter > 0.5 ||
       state.solarize > 0.5 ||
       state.invert > 0.5 ||
+      (state.redBlueStereo ?? 0) > 0.5 ||
       Math.abs(state.gammaAdj - 1) > 0.0001;
     const nextResolutionScale = needsSceneResolution
       ? this.sceneResolutionScale
@@ -1427,6 +1439,8 @@ class WebGPUMilkdropFeedbackManager {
     this.compositeMaterial.uniforms.darkenCenter.value = state.darkenCenter;
     this.compositeMaterial.uniforms.solarize.value = state.solarize;
     this.compositeMaterial.uniforms.invert.value = state.invert;
+    this.compositeMaterial.uniforms.redBlueStereo.value =
+      state.redBlueStereo ?? 0;
     this.compositeMaterial.uniforms.gammaAdj.value = state.gammaAdj;
     this.compositeMaterial.uniforms.textureWrap.value = state.textureWrap;
     this.compositeMaterial.uniforms.feedbackTexture.value =

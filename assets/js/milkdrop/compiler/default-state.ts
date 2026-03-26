@@ -206,6 +206,7 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   darken_center: 0,
   solarize: 0,
   invert: 0,
+  red_blue_stereo: 0,
   gammaadj: 1,
   video_echo_enabled: 0,
   video_echo_alpha: 0.18,

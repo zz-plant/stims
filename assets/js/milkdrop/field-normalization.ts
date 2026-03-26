@@ -6,6 +6,8 @@ const aliasMap: Record<string, string | null> = {
   fvideoechozoom: 'video_echo_zoom',
   fvideoechoalpha: 'video_echo_alpha',
   nvideoechoorientation: 'video_echo_orientation',
+  bredbluestereo: 'red_blue_stereo',
+  redbluestereo: 'red_blue_stereo',
   fwavealpha: 'wave_a',
   fwavethick: 'wave_thick',
   fwavescale: 'wave_scale',

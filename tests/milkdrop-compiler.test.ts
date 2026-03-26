@@ -131,6 +131,19 @@ wavethick=2
     expect(compiled.ir.numericFields.wave_thick).toBeCloseTo(2, 6);
   });
 
+  test('supports legacy bRedBlueStereo flag as a canonical post field', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+bRedBlueStereo=1
+      `.trim(),
+      { id: 'legacy-red-blue-stereo' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.red_blue_stereo).toBe(1);
+  });
+
   test('normalizes legacy projectm shapecode booleans onto canonical shape fields', () => {
     const compiled = compileMilkdropPresetSource(
       `
