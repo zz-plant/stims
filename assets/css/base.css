@@ -3736,6 +3736,27 @@ body.tv-mode .control-panel input {
   }
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .milkdrop-overlay {
+    inset: auto 10px max(10px, env(safe-area-inset-bottom, 0px)) 10px;
+    display: grid;
+    justify-items: stretch;
+    align-items: end;
+  }
+
+  :root[data-focused-session="launch"] .milkdrop-overlay,
+  :root[data-focused-session="live"] .milkdrop-overlay {
+    inset: auto 10px max(10px, env(safe-area-inset-bottom, 0px)) 10px;
+  }
+
+  .milkdrop-overlay__panel,
+  :root[data-focused-session="launch"] .milkdrop-overlay__panel,
+  :root[data-focused-session="live"] .milkdrop-overlay__panel {
+    width: 100%;
+    max-width: none;
+  }
+}
+
 :root {
   --toy-shell-metal: linear-gradient(
     180deg,
