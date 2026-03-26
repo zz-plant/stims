@@ -257,6 +257,7 @@ export type MilkdropFeedbackCompositeState = {
   darkenCenter: number;
   solarize: number;
   invert: number;
+  redBlueStereo?: number;
   gammaAdj: number;
   textureWrap: number;
   feedbackTexture: number;

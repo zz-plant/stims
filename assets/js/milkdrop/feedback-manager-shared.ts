@@ -252,6 +252,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         darkenCenter: { value: 0 },
         solarize: { value: 0 },
         invert: { value: 0 },
+        redBlueStereo: { value: 0 },
         gammaAdj: { value: 1 },
         textureWrap: { value: 0 },
         feedbackTexture: { value: 0 },
@@ -322,6 +323,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float darkenCenter;
         uniform float solarize;
         uniform float invert;
+        uniform float redBlueStereo;
         uniform float gammaAdj;
         uniform float textureWrap;
         uniform float feedbackTexture;
@@ -539,6 +541,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           if (invert > 0.01 || invertBoost > 0.01) {
             color = mix(color, 1.0 - color, clamp(max(invert, invertBoost), 0.0, 1.0));
           }
+          if (redBlueStereo > 0.5) {
+            float stereoOffset = 0.003 + signalEnergy * 0.003;
+            vec2 stereoShift = vec2(stereoOffset, 0.0);
+            vec3 leftColor = texture2D(previousTex, sampleUv(prevUv - stereoShift, textureWrap)).rgb;
+            vec3 rightColor = texture2D(previousTex, sampleUv(prevUv + stereoShift, textureWrap)).rgb;
+            color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
+          }
           color = hueRotate(color, hueShift);
           color = applySaturation(color, saturation);
           color = applyContrast(color, contrast);
@@ -610,6 +619,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.darkenCenter.value = state.darkenCenter;
     uniforms.solarize.value = state.solarize;
     uniforms.invert.value = state.invert;
+    uniforms.redBlueStereo.value = state.redBlueStereo ?? 0;
     uniforms.gammaAdj.value = state.gammaAdj;
     uniforms.textureWrap.value = state.textureWrap;
     uniforms.feedbackTexture.value = state.feedbackTexture;
