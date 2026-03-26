@@ -169,7 +169,12 @@ const cacheResult = (result: RendererCapabilities) => {
 function getEnvironmentKey() {
   if (typeof navigator === 'undefined') return 'no-navigator';
   const nav = navigator as Navigator & { gpu?: GPU; userAgent?: string };
-  return nav.gpu ?? nav.userAgent ?? nav;
+  const hasGpu = Boolean(nav.gpu);
+  const userAgent = nav.userAgent ?? '';
+  const compatibilityMode = isCompatibilityModeEnabled()
+    ? 'compat-on'
+    : 'compat-off';
+  return `${hasGpu}:${userAgent}:${compatibilityMode}`;
 }
 
 function isGuardedMobileWebGPUEnvironment() {
