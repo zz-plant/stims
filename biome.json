@@ -5,7 +5,8 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "warn",
+        "noDescendingSpecificity": "off"
       },
       "correctness": {
         "noUnusedVariables": "warn"
