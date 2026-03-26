@@ -13,6 +13,14 @@ let resetRendererCapabilities;
 let summarizeRendererOptimizationSupport;
 
 const originalNavigator = global.navigator;
+const COMPATIBILITY_MODE_KEY = 'stims:compatibility-mode';
+
+async function resetRenderPreferencesState() {
+  const { resetRenderPreferencesState: resetPreferences } = await import(
+    '../assets/js/core/render-preferences.ts'
+  );
+  resetPreferences();
+}
 
 function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
   const requestDevice = mock(async () => device);
@@ -37,6 +45,8 @@ function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
 
 beforeEach(async () => {
   mock.restore();
+  await resetRenderPreferencesState();
+  window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
   ({
     getRendererCapabilities,
     getRendererOptimizationSupport,
@@ -48,10 +58,11 @@ beforeEach(async () => {
   } = await freshImport());
 });
 
-afterEach(() => {
+afterEach(async () => {
   resetRendererCapabilities();
   mock.restore();
-  window.localStorage.removeItem('stims:compatibility-mode');
+  window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
+  await resetRenderPreferencesState();
   Object.defineProperty(global, 'navigator', {
     writable: true,
     configurable: true,
@@ -188,11 +199,8 @@ describe('renderer capabilities', () => {
   });
 
   test('marks forced WebGL when compatibility mode is enabled', async () => {
-    window.localStorage.setItem('stims:compatibility-mode', 'true');
-    const { resetRenderPreferencesState } = await import(
-      '../assets/js/core/render-preferences.ts'
-    );
-    resetRenderPreferencesState();
+    window.localStorage.setItem(COMPATIBILITY_MODE_KEY, 'true');
+    await resetRenderPreferencesState();
 
     const result = await getRendererCapabilities({ forceRetry: true });
 
@@ -217,10 +225,7 @@ describe('renderer capabilities', () => {
   });
 
   test('captures high-end WebGPU feature support for richer defaults', async () => {
-    const { resetRenderPreferencesState } = await import(
-      '../assets/js/core/render-preferences.ts'
-    );
-    resetRenderPreferencesState();
+    await resetRenderPreferencesState();
     mockNavigatorWithGPU({
       device: { label: 'device' },
       adapter: {
