@@ -251,6 +251,14 @@ describe('milkdrop compiler seams', () => {
         section: null,
       }),
     ).toBe('wave_thick');
+    expect(
+      normalizeFieldKey({
+        key: 'bRedBlueStereo',
+        rawValue: '1',
+        line: 5,
+        section: null,
+      }),
+    ).toBe('red_blue_stereo');
 
     const lowered = lowerGpuFieldProgram({
       statements: [
