@@ -4,6 +4,8 @@ import {
   loadToyModuleStarter,
 } from '../assets/js/utils/toy-module-loader.ts';
 
+const fixtureModulePath = '../../tests/fixtures/toy-modules/fake-module.js';
+
 describe('toy module loader', () => {
   test('finds bundled toy modules without manifest indirection', async () => {
     const importer = getBundledToyModuleImporter(
@@ -35,16 +37,16 @@ describe('toy module loader', () => {
 
   test('uses manifest resolution for non-bundled module ids', async () => {
     const manifestClient = {
-      resolveModulePath: mock(async () => './__mocks__/fake-module.js'),
+      resolveModulePath: mock(async () => fixtureModulePath),
     };
 
     const result = await loadToyModuleStarter({
-      moduleId: './__mocks__/fake-module.js',
+      moduleId: fixtureModulePath,
       manifestClient: manifestClient as never,
     });
 
     expect(manifestClient.resolveModulePath).toHaveBeenCalledWith(
-      './__mocks__/fake-module.js',
+      fixtureModulePath,
     );
     expect(result.ok).toBe(true);
   });

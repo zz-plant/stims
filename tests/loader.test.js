@@ -6,6 +6,11 @@ import { createToyView } from '../assets/js/toy-view.ts';
 const originalLocation = window.location;
 const originalHistory = window.history;
 const originalNavigator = global.navigator;
+const fixtureModulePath = '../../tests/fixtures/toy-modules/fake-module.js';
+const fixtureGlobalAudioModulePath =
+  '../../tests/fixtures/toy-modules/fake-global-audio-module.js';
+const fixtureDelayedModulePath =
+  '../../tests/fixtures/toy-modules/fake-delayed-module.js';
 
 const defaultCapabilities = {
   preferredBackend: 'webgpu',
@@ -60,7 +65,7 @@ const defaultToys = [
   {
     slug: 'milkdrop',
     title: 'Test MilkDrop Visualizer',
-    module: './__mocks__/fake-module.js',
+    module: fixtureModulePath,
     type: 'module',
     requiresWebGPU: false,
   },
@@ -69,7 +74,7 @@ const defaultToys = [
 async function buildLoader({
   toys = defaultToys,
   locationHref = 'http://example.com/library',
-  manifestPath = './__mocks__/fake-module.js',
+  manifestPath = fixtureModulePath,
   ensureWebGLCheck = () => true,
   rendererCapabilities = capabilitiesMock.getRendererCapabilities,
   prewarmRendererCapabilities = servicesMock.prewarmRendererCapabilities,
@@ -200,7 +205,7 @@ describe('loadToy', () => {
 
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
     expect(manifestClient.resolveModulePath).toHaveBeenCalledWith(
-      './__mocks__/fake-module.js',
+      fixtureModulePath,
     );
     expect(window.location.search).toBe('');
   });
@@ -284,7 +289,7 @@ describe('loadToy', () => {
         {
           slug: 'audio-toy',
           title: 'Audio Toy',
-          module: './__mocks__/fake-global-audio-module.js',
+          module: fixtureGlobalAudioModulePath,
           type: 'module',
           requiresWebGPU: false,
         },
@@ -312,7 +317,7 @@ describe('loadToy', () => {
         {
           slug: 'audio-toy',
           title: 'Audio Toy',
-          module: './__mocks__/fake-global-audio-module.js',
+          module: fixtureGlobalAudioModulePath,
           type: 'module',
           requiresWebGPU: false,
         },
@@ -333,14 +338,14 @@ describe('loadToy', () => {
         {
           slug: 'first-toy',
           title: 'First Toy',
-          module: './__mocks__/fake-module.js',
+          module: fixtureModulePath,
           type: 'module',
           requiresWebGPU: false,
         },
         {
           slug: 'second-toy',
           title: 'Second Toy',
-          module: './__mocks__/fake-delayed-module.js',
+          module: fixtureDelayedModulePath,
           type: 'module',
           requiresWebGPU: false,
         },
@@ -389,7 +394,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
-          module: './__mocks__/fake-module.js',
+          module: fixtureModulePath,
           type: 'module',
           requiresWebGPU: true,
           allowWebGLFallback: false,
@@ -427,7 +432,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
-          module: './__mocks__/fake-module.js',
+          module: fixtureModulePath,
           type: 'module',
           requiresWebGPU: true,
           allowWebGLFallback: true,
@@ -456,7 +461,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
-          module: './__mocks__/fake-module.js',
+          module: fixtureModulePath,
           type: 'module',
           requiresWebGPU: true,
           allowWebGLFallback: true,
@@ -488,7 +493,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
-          module: './__mocks__/fake-module.js',
+          module: fixtureModulePath,
           type: 'module',
           requiresWebGPU: true,
           allowWebGLFallback: true,
@@ -532,7 +537,7 @@ describe('WebGPU requirements', () => {
         {
           slug: 'webgpu-toy',
           title: 'Fancy WebGPU',
-          module: './__mocks__/fake-module.js',
+          module: fixtureModulePath,
           type: 'module',
           requiresWebGPU: true,
           allowWebGLFallback: true,
