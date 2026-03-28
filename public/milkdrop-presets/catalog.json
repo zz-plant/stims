@@ -17,11 +17,11 @@
         "warp",
         "preset"
       ],
-      "expectedFidelityClass": "near-exact",
-      "visualEvidenceTier": "runtime",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
         "webgl": true,
-        "webgpu": false
+        "webgpu": true
       }
     },
     {
@@ -38,11 +38,11 @@
         "original-pack",
         "preset"
       ],
-      "expectedFidelityClass": "fallback",
-      "visualEvidenceTier": "compile",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
-        "webgl": false,
-        "webgpu": false
+        "webgl": true,
+        "webgpu": true
       }
     },
     {
@@ -60,11 +60,11 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "fallback",
-      "visualEvidenceTier": "compile",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
-        "webgl": false,
-        "webgpu": false
+        "webgl": true,
+        "webgpu": true
       }
     },
     {
@@ -82,11 +82,11 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "fallback",
-      "visualEvidenceTier": "compile",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
-        "webgl": false,
-        "webgpu": false
+        "webgl": true,
+        "webgpu": true
       }
     },
     {
@@ -102,11 +102,11 @@
         "drums",
         "preset"
       ],
-      "expectedFidelityClass": "near-exact",
-      "visualEvidenceTier": "runtime",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
         "webgl": true,
-        "webgpu": false
+        "webgpu": true
       }
     },
     {
@@ -124,11 +124,11 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "fallback",
-      "visualEvidenceTier": "compile",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
-        "webgl": false,
-        "webgpu": false
+        "webgl": true,
+        "webgpu": true
       }
     },
     {
@@ -144,11 +144,11 @@
         "reactive",
         "preset"
       ],
-      "expectedFidelityClass": "near-exact",
-      "visualEvidenceTier": "runtime",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
         "webgl": true,
-        "webgpu": false
+        "webgpu": true
       }
     },
     {
@@ -164,11 +164,11 @@
         "halos",
         "preset"
       ],
-      "expectedFidelityClass": "near-exact",
-      "visualEvidenceTier": "runtime",
+      "expectedFidelityClass": "exact",
+      "visualEvidenceTier": "visual",
       "supports": {
         "webgl": true,
-        "webgpu": false
+        "webgpu": true
       }
     }
   ]

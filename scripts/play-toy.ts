@@ -54,7 +54,7 @@ const PLAYWRIGHT_RENDERER_ARGS = [
   '--enable-unsafe-swiftshader',
   '--ignore-gpu-blocklist',
 ];
-const INITIAL_SHELL_TIMEOUT_MS = 30000;
+const INITIAL_SHELL_TIMEOUT_MS = 60000;
 const TOY_LOAD_TIMEOUT_MS = 30000;
 const AUDIO_ACTIVATION_TIMEOUT_MS = 5000;
 

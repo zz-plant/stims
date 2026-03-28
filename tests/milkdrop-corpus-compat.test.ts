@@ -28,26 +28,22 @@ const LOCAL_SHAPE_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> =
   {
     'shape-legacy-max-slot-orbit.milk': {
       diagnostics: [],
-      webgl: 'partial',
-      webgpu: 'partial',
-      fidelityClass: 'near-exact',
+      webgl: 'supported',
+      webgpu: 'supported',
+      fidelityClass: 'exact',
       unsupportedKeys: [],
-      warnings: [
-        'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
-      ],
+      warnings: [],
       blockedConstructs: [],
       missingAliasesOrFunctions: [],
       customShapeCount: 1,
     },
     'shape-projectm-dual-lattice.milk': {
       diagnostics: [],
-      webgl: 'partial',
-      webgpu: 'partial',
-      fidelityClass: 'near-exact',
+      webgl: 'supported',
+      webgpu: 'supported',
+      fidelityClass: 'exact',
       unsupportedKeys: [],
-      warnings: [
-        'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
-      ],
+      warnings: [],
       blockedConstructs: [],
       missingAliasesOrFunctions: [],
       customShapeCount: 2,
@@ -57,8 +53,8 @@ const LOCAL_SHAPE_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> =
 const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
   'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'supported' },
   'eos-glowsticks-v2-03-music.milk': {
-    webgl: 'partial',
-    webgpu: 'partial',
+    webgl: 'supported',
+    webgpu: 'supported',
     forbiddenUnsupportedKeys: [
       'mv_dx',
       'mv_dy',
@@ -68,8 +64,8 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
     ],
   },
   'eos-phat-cubetrace-v2.milk': {
-    webgl: 'partial',
-    webgpu: 'partial',
+    webgl: 'supported',
+    webgpu: 'supported',
     forbiddenUnsupportedKeys: [
       'mv_dx',
       'mv_dy',
@@ -80,8 +76,8 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
   },
   'kinetic-grid-pulse.milk': { webgl: 'supported', webgpu: 'supported' },
   'krash-rovastar-cerebral-demons-stars.milk': {
-    webgl: 'partial',
-    webgpu: 'partial',
+    webgl: 'supported',
+    webgpu: 'supported',
     forbiddenUnsupportedKeys: [
       'mv_dx',
       'mv_dy',

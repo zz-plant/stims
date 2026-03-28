@@ -204,6 +204,9 @@ shape_0_init1=ang=tex_ang+instance*0.1;
     );
     expect(frameState.shapes[0]).toMatchObject({
       sides: 6,
+      textured: true,
+      textureZoom: 0.9,
+      textureAngle: 0.25,
     });
     expect(frameState.shapes[0]?.rotation).toBeCloseTo(
       0.25 + signals.time * 0.08,

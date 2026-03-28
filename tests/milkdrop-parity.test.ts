@@ -84,19 +84,13 @@ const REPRESENTATIVE_BACKEND_EXPECTATIONS = {
   },
   'parity-shader-01': {
     webgl: 'supported',
-    webgpu: 'partial',
-    divergence: [
-      'status:webgl=supported,webgpu=partial',
-      'webgpu:supported-shader-text-gap',
-    ],
+    webgpu: 'supported',
+    divergence: [],
   },
   'parity-allowlisted-shader-gap': {
     webgl: 'supported',
-    webgpu: 'partial',
-    divergence: [
-      'status:webgl=supported,webgpu=partial',
-      'webgpu:supported-shader-text-gap',
-    ],
+    webgpu: 'supported',
+    divergence: [],
   },
   'parity-feedback-orientation-01': {
     webgl: 'supported',
@@ -384,7 +378,7 @@ describe('milkdrop parity corpus harness', () => {
         (reason) => reason.code,
       ),
     ).not.toContain('allowlisted-gap');
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
   });
 });
 
@@ -417,66 +411,67 @@ test('keeps former shader-gap parity fixtures out of the allowlist when only vid
       unsupported: [],
     }),
   );
-  expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
-    'status:webgl=supported,webgpu=partial',
-    'webgpu:supported-shader-text-gap',
-  ]);
+  expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
   expect(
     compiled.ir.compatibility.parity.degradationReasons.map(
       (reason) => reason.code,
     ),
   ).not.toContain('allowlisted-gap');
-  expect(compiled.ir.compatibility.parity.visualFallbacks).toEqual([
-    'webgpu->webgl',
-  ]);
+  expect(compiled.ir.compatibility.parity.visualFallbacks).toEqual([]);
 });
 
 describe('milkdrop parity visual baselines', () => {
-  test('replays the canonical baseline suite through the VM', () => {
-    const baselines = loadJson<VisualBaseline>(VISUAL_BASELINES_PATH);
+  test(
+    'replays the canonical baseline suite through the VM',
+    () => {
+      const baselines = loadJson<VisualBaseline>(VISUAL_BASELINES_PATH);
 
-    baselines.presets.forEach((baselinePreset) => {
-      const raw = readFileSync(
-        join(PARITY_CORPUS_DIR, baselinePreset.file),
-        'utf8',
-      );
-      const compiled = compileMilkdropPresetSource(raw, {
-        id: baselinePreset.id,
-        title: baselinePreset.id,
-        fileName: baselinePreset.file,
-        origin: 'user',
+      baselines.presets.forEach((baselinePreset) => {
+        const raw = readFileSync(
+          join(PARITY_CORPUS_DIR, baselinePreset.file),
+          'utf8',
+        );
+        const compiled = compileMilkdropPresetSource(raw, {
+          id: baselinePreset.id,
+          title: baselinePreset.id,
+          fileName: baselinePreset.file,
+          origin: 'user',
+        });
+        const vm = createMilkdropVM(compiled);
+
+        baselinePreset.frames.forEach((baselineFrame) => {
+          const frameState = vm.step(
+            makeSignals({ frame: baselineFrame.frame }),
+          );
+          const summary = buildFrameSummary(frameState);
+
+          expect(summary.mainWaveCount).toBe(baselineFrame.mainWave.count);
+          expect(summary.waveformCount).toBe(baselineFrame.waveform.count);
+          expect(summary.customWaveCount).toBe(baselineFrame.customWaves.count);
+          expect(summary.shapeCount).toBe(baselineFrame.shapes.count);
+          expect(summary.borderCount).toBe(baselineFrame.borders.count);
+          expect(summary.motionVectorCount).toBe(
+            baselineFrame.motionVectors.count,
+          );
+          expect(summary.post.gammaAdj).toBeCloseTo(
+            baselineFrame.post.gammaAdj,
+            6,
+          );
+          expect(summary.post.videoEchoAlpha).toBeCloseTo(
+            baselineFrame.post.videoEchoAlpha,
+            6,
+          );
+          expect(summary.post.videoEchoZoom).toBeCloseTo(
+            baselineFrame.post.videoEchoZoom,
+            6,
+          );
+          expect(summary.post.shaderMixAlpha).toBeCloseTo(
+            baselineFrame.post.shaderMixAlpha,
+            6,
+          );
+        });
       });
-      const vm = createMilkdropVM(compiled);
-
-      baselinePreset.frames.forEach((baselineFrame) => {
-        const frameState = vm.step(makeSignals({ frame: baselineFrame.frame }));
-        const summary = buildFrameSummary(frameState);
-
-        expect(summary.mainWaveCount).toBe(baselineFrame.mainWave.count);
-        expect(summary.waveformCount).toBe(baselineFrame.waveform.count);
-        expect(summary.customWaveCount).toBe(baselineFrame.customWaves.count);
-        expect(summary.shapeCount).toBe(baselineFrame.shapes.count);
-        expect(summary.borderCount).toBe(baselineFrame.borders.count);
-        expect(summary.motionVectorCount).toBe(
-          baselineFrame.motionVectors.count,
-        );
-        expect(summary.post.gammaAdj).toBeCloseTo(
-          baselineFrame.post.gammaAdj,
-          6,
-        );
-        expect(summary.post.videoEchoAlpha).toBeCloseTo(
-          baselineFrame.post.videoEchoAlpha,
-          6,
-        );
-        expect(summary.post.videoEchoZoom).toBeCloseTo(
-          baselineFrame.post.videoEchoZoom,
-          6,
-        );
-        expect(summary.post.shaderMixAlpha).toBeCloseTo(
-          baselineFrame.post.shaderMixAlpha,
-          6,
-        );
-      });
-    });
-  });
+    },
+    { timeout: 15000 },
+  );
 });

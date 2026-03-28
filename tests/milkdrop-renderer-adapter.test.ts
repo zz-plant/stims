@@ -6,9 +6,12 @@ import {
   LinearFilter,
   LineBasicMaterial,
   LineSegments,
+  type Mesh,
+  MeshBasicMaterial,
   OrthographicCamera,
   Scene,
   ShaderMaterial,
+  Texture,
   WebGLRenderer,
 } from 'three';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
@@ -248,6 +251,115 @@ shapecode_0_thickoutline=1
       expect(mesh.material).toBeInstanceOf(ShaderMaterial);
       expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
     });
+  });
+
+  test('falls back to non-batched shape rendering for textured custom shapes on WebGPU', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Textured Shape Fallback
+shapecode_0_enabled=1
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.8
+shapecode_0_tex_ang=0.35
+      `.trim(),
+      { id: 'textured-shape-fallback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+    const meshFills = flattenRenderTree(root).filter(
+      (child) =>
+        child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
+    );
+
+    expect(batchedShapes).toHaveLength(0);
+    expect(meshFills.length).toBeGreaterThan(0);
+  });
+
+  test('samples the previous feedback frame when textured shapes have a shape texture available', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Textured Shape Shader
+shapecode_0_enabled=1
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.75
+shapecode_0_tex_ang=0.2
+      `.trim(),
+      { id: 'textured-shape-shader' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const feedbackTexture = new Texture();
+    const feedback = {
+      applyCompositeState() {},
+      getShapeTexture() {
+        return feedbackTexture;
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgl',
+      preset,
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children?: Array<{ children?: unknown[] }>;
+    };
+    const shapesGroup = root.children?.[5] as
+      | { children?: unknown[] }
+      | undefined;
+    const shapeGroup = shapesGroup?.children?.[0] as
+      | { children?: unknown[] }
+      | undefined;
+    const fill = shapeGroup?.children?.[0] as Mesh | undefined;
+    const material = fill?.material as ShaderMaterial | undefined;
+
+    expect(material).toBeInstanceOf(ShaderMaterial);
+    expect(material?.uniforms.shapeTexture.value).toBe(feedbackTexture);
+    expect(material?.uniforms.textured.value).toBe(1);
+    expect(material?.uniforms.textureZoom.value).toBeCloseTo(0.75, 6);
+    expect(material?.uniforms.textureAngle.value).toBeCloseTo(0.2, 6);
   });
 
   test('reuses cached polygon geometries for same-sided shapes', () => {

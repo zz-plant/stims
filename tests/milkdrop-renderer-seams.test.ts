@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { Group } from 'three';
-import { renderShapeGroup } from '../assets/js/milkdrop/renderer-helpers/shape-renderer.ts';
+import { renderShapeGroup } from '../assets/js/milkdrop/renderer-helpers/shape-renderer';
 
 describe('milkdrop renderer seams', () => {
   test('keeps renderer groups synchronized with the latest shape count', () => {

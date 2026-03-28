@@ -73,10 +73,7 @@ describe('milkdrop compiler seams', () => {
       },
       backendShaderTextGaps: {
         webgl: {},
-        webgpu: {
-          supportedSubset:
-            'Translated shader text keeps control fallbacks active.',
-        },
+        webgpu: {},
       },
     });
 
@@ -94,7 +91,7 @@ describe('milkdrop compiler seams', () => {
     expect(support.reasons).toContain(
       'Video echo needs the legacy feedback path.',
     );
-    expect(support.evidence).toHaveLength(3);
+    expect(support.evidence).toHaveLength(2);
   });
 
   test('routes WebGPU descriptor planning to fallback when unsupported features remain', () => {

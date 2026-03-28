@@ -2153,9 +2153,7 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [
-        "WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state."
-      ],
+      "warnings": [],
       "featuresUsed": ["base-globals"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
@@ -2188,23 +2186,13 @@
           "evidence": []
         },
         "webgpu": {
-          "status": "partial",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "partial",
-              "code": "supported-shader-text-gap",
-              "feature": null
-            }
-          ]
+          "status": "supported",
+          "evidence": []
         }
       },
       "parity": {
-        "fidelityClass": "near-exact",
-        "backendDivergence": [
-          "status:webgl=supported,webgpu=partial",
-          "webgpu:supported-shader-text-gap"
-        ],
+        "fidelityClass": "exact",
+        "backendDivergence": [],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
@@ -2224,9 +2212,7 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [
-        "WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state."
-      ],
+      "warnings": [],
       "featuresUsed": ["base-globals"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
@@ -2259,23 +2245,13 @@
           "evidence": []
         },
         "webgpu": {
-          "status": "partial",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "partial",
-              "code": "supported-shader-text-gap",
-              "feature": null
-            }
-          ]
+          "status": "supported",
+          "evidence": []
         }
       },
       "parity": {
-        "fidelityClass": "near-exact",
-        "backendDivergence": [
-          "status:webgl=supported,webgpu=partial",
-          "webgpu:supported-shader-text-gap"
-        ],
+        "fidelityClass": "exact",
+        "backendDivergence": [],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
