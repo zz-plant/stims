@@ -7,6 +7,8 @@ import { createToyLifecycle } from '../assets/js/core/toy-lifecycle.ts';
 import type { ToyEntry } from '../assets/js/data/toy-schema.ts';
 import { createToyLaunchController } from '../assets/js/loader/toy-launch-controller.ts';
 
+const FIXTURE_MODULES_ROOT = '../../tests/fixtures/toy-modules';
+
 function createManifestClient(modulePath: string) {
   return {
     resolveModulePath: async () => modulePath,
@@ -98,11 +100,13 @@ describe('toy launch controller module normalization', () => {
     const controller = createToyLaunchController({
       lifecycle,
       toys: [],
-      manifestClient: createManifestClient('./__mocks__/fake-module.js'),
+      manifestClient: createManifestClient(
+        `${FIXTURE_MODULES_ROOT}/fake-module.js`,
+      ),
     });
 
     const result = await controller.launchToy({
-      toy: createToy('./__mocks__/fake-module.js', 'named-start'),
+      toy: createToy(`${FIXTURE_MODULES_ROOT}/fake-module.js`, 'named-start'),
       request: {
         slug: 'named-start',
         container: document.body,
@@ -120,12 +124,15 @@ describe('toy launch controller module normalization', () => {
       lifecycle,
       toys: [],
       manifestClient: createManifestClient(
-        './__mocks__/fake-default-module.js',
+        `${FIXTURE_MODULES_ROOT}/fake-default-module.js`,
       ),
     });
 
     const result = await controller.launchToy({
-      toy: createToy('./__mocks__/fake-default-module.js', 'default-start'),
+      toy: createToy(
+        `${FIXTURE_MODULES_ROOT}/fake-default-module.js`,
+        'default-start',
+      ),
       request: {
         slug: 'default-start',
         container: document.body,
@@ -142,11 +149,16 @@ describe('toy launch controller module normalization', () => {
     const controller = createToyLaunchController({
       lifecycle,
       toys: [],
-      manifestClient: createManifestClient('./__mocks__/fake-missing-start.js'),
+      manifestClient: createManifestClient(
+        `${FIXTURE_MODULES_ROOT}/fake-missing-start.js`,
+      ),
     });
 
     const result = await controller.launchToy({
-      toy: createToy('./__mocks__/fake-missing-start.js', 'missing-start'),
+      toy: createToy(
+        `${FIXTURE_MODULES_ROOT}/fake-missing-start.js`,
+        'missing-start',
+      ),
       request: {
         slug: 'missing-start',
         container: document.body,
