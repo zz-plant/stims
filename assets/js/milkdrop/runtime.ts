@@ -323,6 +323,8 @@ export function createMilkdropExperience({
     overlay: {
       isOpen: () => getOverlay().isOpen(),
       toggleOpen: (open?: boolean) => getOverlay().toggleOpen(open),
+      toggleShortcutHud: (open?: boolean) =>
+        getOverlay().toggleShortcutHud(open),
     },
     overlayActions: {
       onSelectPreset: navigation.selectPreset,

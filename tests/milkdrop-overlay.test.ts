@@ -207,6 +207,26 @@ describe('milkdrop overlay browse simplifications', () => {
 
     overlay.dispose();
   });
+
+  test('opens the shortcut HUD through the help tab helper', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+    const overlay = createOverlay();
+
+    overlay.toggleShortcutHud(true);
+
+    expect(overlay.isOpen()).toBe(true);
+    expect(
+      document.querySelector('.milkdrop-overlay__shortcut-hud'),
+    ).toBeTruthy();
+
+    overlay.dispose();
+  });
 });
 
 describe('milkdrop overlay inspector metrics', () => {

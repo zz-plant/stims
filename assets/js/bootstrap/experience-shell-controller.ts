@@ -168,8 +168,11 @@ export function bootExperienceShell({
 }) {
   let loaderStarted = false;
   let focusedSessionMode: 'off' | 'launch' | 'live' = 'off';
+  let sessionDisplayMode: 'setup' | 'immersive' | 'tools' = 'setup';
+  let sessionChromeVisibility: 'visible' | 'hidden' = 'visible';
   const searchParams = new URLSearchParams(window.location.search);
   const currentRoute = router.getCurrentRoute();
+  const root = document.documentElement;
 
   const setFocusedSessionMode = (mode: 'off' | 'launch' | 'live') => {
     if (focusedSessionMode === mode) {
@@ -178,11 +181,22 @@ export function bootExperienceShell({
 
     focusedSessionMode = mode;
     if (mode === 'off') {
-      delete document.documentElement.dataset.focusedSession;
+      delete root.dataset.focusedSession;
       return;
     }
 
-    document.documentElement.dataset.focusedSession = mode;
+    root.dataset.focusedSession = mode;
+  };
+
+  const setSessionDisplayMode = (mode: 'setup' | 'immersive' | 'tools') => {
+    sessionDisplayMode = mode;
+    root.dataset.sessionDisplayMode = mode;
+    root.dataset.sessionChrome = sessionChromeVisibility;
+  };
+
+  const setSessionChromeVisibility = (visibility: 'visible' | 'hidden') => {
+    sessionChromeVisibility = visibility;
+    root.dataset.sessionChrome = visibility;
   };
 
   const startLoaderIfNeeded = () => {
@@ -234,11 +248,18 @@ export function bootExperienceShell({
     requestedPresetId,
   });
 
+  if (shouldCombineLaunchPanels) {
+    setSessionDisplayMode('setup');
+    setSessionChromeVisibility('visible');
+  }
+
   const collapseFocusedSessionPanels = () => {
     if (!shouldCombineLaunchPanels) {
       return;
     }
+    setSessionDisplayMode('immersive');
     setFocusedSessionMode('live');
+    setSessionChromeVisibility('hidden');
     if (audioControlsContainer) {
       audioControlsContainer.hidden = true;
     }
@@ -382,12 +403,17 @@ export function bootExperienceShell({
   const handlePreflightReady = (result: CapabilityPreflightResult) => {
     if (!result.canProceed) {
       setFocusedSessionMode('off');
+      setSessionDisplayMode('setup');
+      setSessionChromeVisibility('visible');
       preflight.open(undefined, { rerun: false });
       return;
     }
 
+    const shouldAutoStartDemo = requestedAudioSource === 'demo';
     if (shouldAutoBootFocusedSession) {
-      setFocusedSessionMode('launch');
+      setSessionDisplayMode(shouldAutoStartDemo ? 'immersive' : 'setup');
+      setFocusedSessionMode(shouldAutoStartDemo ? 'live' : 'launch');
+      setSessionChromeVisibility(shouldAutoStartDemo ? 'hidden' : 'visible');
       startLoaderIfNeeded();
     }
 
@@ -395,6 +421,10 @@ export function bootExperienceShell({
       forcePreferDemoAudio: isPresetFirstToySession(toySlug),
     });
     setupSystemControls(result);
+
+    if (shouldAutoStartDemo) {
+      collapseFocusedSessionPanels();
+    }
   };
 
   const preflight = attachCapabilityPreflight({
@@ -415,11 +445,6 @@ export function bootExperienceShell({
         preflight.open(trigger);
       });
     });
-
-  if (shouldAutoBootFocusedSession) {
-    setFocusedSessionMode('launch');
-    startLoaderIfNeeded();
-  }
 
   void preflight.run();
 

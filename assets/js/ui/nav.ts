@@ -41,6 +41,7 @@ export interface NavOptions {
 
 type ToyNavContainer = HTMLElement & {
   __toyNavOffsetCleanup?: () => void;
+  __toyNavChromeCleanup?: () => void;
   __libraryNavCleanup?: () => void;
 };
 
@@ -79,6 +80,8 @@ export function initNavigation(container: HTMLElement, options: NavOptions) {
 function resetNavigationState(container: ToyNavContainer) {
   container.__toyNavOffsetCleanup?.();
   container.__toyNavOffsetCleanup = undefined;
+  container.__toyNavChromeCleanup?.();
+  container.__toyNavChromeCleanup = undefined;
   container.__libraryNavCleanup?.();
   container.__libraryNavCleanup = undefined;
   container.ownerDocument.documentElement.style.removeProperty(
@@ -301,8 +304,8 @@ function renderToyNav(
   const safeTitle = escapeHtml(options.title ?? 'Stims');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Back returns to Stims. Open more when you need extra controls.'
-    : 'Press Esc or use Back to return to Stims.';
+    ? 'Tap Session for controls.'
+    : 'Press M for presets or open Session for more controls.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
@@ -318,20 +321,20 @@ function renderToyNav(
         >
           <span aria-hidden="true">←</span><span>Back to Stims</span>
         </button>
-        <button
-          type="button"
-          class="toy-nav__mobile-toggle"
-          data-toy-actions-toggle="true"
-          aria-controls="toy-nav-secondary-actions"
-          aria-expanded="false"
-        >
-          More
-        </button>
       </div>
     </div>
     <div class="active-toy-nav__actions" id="toy-nav-actions" data-toy-actions-expanded="false">
       <div class="active-toy-nav__actions-primary">
         <div class="renderer-status-container"></div>
+        <button
+          type="button"
+          class="toy-nav__mobile-toggle toy-nav__session-toggle"
+          data-toy-actions-toggle="true"
+          aria-controls="toy-nav-secondary-actions"
+          aria-expanded="false"
+        >
+          Session
+        </button>
       </div>
       <div
         class="active-toy-nav__actions-secondary"
@@ -406,24 +409,64 @@ function renderToyNav(
   const actionsToggleBtn = container.querySelector(
     '[data-toy-actions-toggle="true"]',
   ) as HTMLButtonElement | null;
-  const mobileActionsMediaQuery = getMediaQueryList(
-    maxWidthQuery(BREAKPOINTS.md),
-  );
-  let actionsExpanded = !isBelowBreakpoint(BREAKPOINTS.md);
+  let actionsExpanded = false;
+  let hideChromeTimeoutId: number | null = null;
+  const root = doc.documentElement;
+
+  const isImmersiveSession = () => root.dataset.sessionDisplayMode === 'immersive';
+  const isToolsSession = () => root.dataset.sessionDisplayMode === 'tools';
+  const isOverlayOpen = () =>
+    Boolean(doc.querySelector('.milkdrop-overlay.is-open'));
+  const hasFocusedControls = () =>
+    container.contains(doc.activeElement) ||
+    Boolean(doc.querySelector('.milkdrop-overlay.is-open :focus'));
+  const shouldKeepChromeVisible = () =>
+    actionsExpanded ||
+    isToolsSession() ||
+    isOverlayOpen() ||
+    hasFocusedControls() ||
+    root.dataset.preflightOpen === 'true';
+  const setChromeVisibility = (visibility: 'visible' | 'hidden') => {
+    root.dataset.sessionChrome = visibility;
+  };
+  const clearHideChromeTimeout = () => {
+    if (hideChromeTimeoutId !== null) {
+      const win = doc.defaultView ?? window;
+      win.clearTimeout(hideChromeTimeoutId);
+      hideChromeTimeoutId = null;
+    }
+  };
+  const scheduleChromeHide = () => {
+    clearHideChromeTimeout();
+    if (!isImmersiveSession() || shouldKeepChromeVisible()) {
+      setChromeVisibility('visible');
+      return;
+    }
+    const win = doc.defaultView ?? window;
+    hideChromeTimeoutId = win.setTimeout(() => {
+      if (!shouldKeepChromeVisible() && isImmersiveSession()) {
+        setChromeVisibility('hidden');
+      }
+      hideChromeTimeoutId = null;
+    }, 2200);
+  };
+  const revealChrome = () => {
+    setChromeVisibility('visible');
+    scheduleChromeHide();
+  };
 
   const applyActionsState = (expanded: boolean) => {
     actionsContainer?.setAttribute(
       'data-toy-actions-expanded',
       expanded ? 'true' : 'false',
     );
-    const isCompactViewport = isBelowBreakpoint(BREAKPOINTS.md);
     if (secondaryActionsContainer) {
-      secondaryActionsContainer.hidden = isCompactViewport && !expanded;
+      secondaryActionsContainer.hidden = !expanded;
       secondaryActionsContainer.setAttribute(
         'aria-hidden',
-        isCompactViewport && !expanded ? 'true' : 'false',
+        expanded ? 'false' : 'true',
       );
-      if (isCompactViewport && !expanded) {
+      if (!expanded) {
         secondaryActionsContainer.setAttribute('inert', '');
       } else {
         secondaryActionsContainer.removeAttribute('inert');
@@ -438,12 +481,15 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded ? 'Hide more' : 'More';
+      actionsToggleBtn.textContent = expanded ? 'Hide session' : 'Session';
     }
+    if (expanded) {
+      setChromeVisibility('visible');
+    }
+    scheduleChromeHide();
   };
 
   const syncActionsForViewport = () => {
-    actionsExpanded = !isBelowBreakpoint(BREAKPOINTS.md);
     applyActionsState(actionsExpanded);
   };
 
@@ -453,12 +499,6 @@ function renderToyNav(
     actionsExpanded = !actionsExpanded;
     applyActionsState(actionsExpanded);
   });
-
-  if (mobileActionsMediaQuery) {
-    mobileActionsMediaQuery.addEventListener('change', syncActionsForViewport);
-  } else {
-    window.addEventListener('resize', syncActionsForViewport);
-  }
 
   const shareBtn = container.querySelector('.toy-nav__share');
   const shareStatus = container.querySelector(
@@ -577,6 +617,44 @@ function renderToyNav(
     }
     void copyShareLink();
   });
+
+  const revealChromeEvents = ['pointermove', 'pointerdown', 'focusin', 'keydown'];
+  const revealChromeHandler = () => revealChrome();
+  revealChromeEvents.forEach((eventName) => {
+    doc.addEventListener(eventName, revealChromeHandler);
+  });
+  const MutationObserverCtor = doc.defaultView?.MutationObserver;
+  const mutationObserver = MutationObserverCtor
+    ? new MutationObserverCtor(() => {
+        if (shouldKeepChromeVisible()) {
+          setChromeVisibility('visible');
+        }
+        scheduleChromeHide();
+      })
+    : null;
+  mutationObserver?.observe(root, {
+    attributes: true,
+    attributeFilter: [
+      'data-session-display-mode',
+      'data-session-chrome',
+      'data-preflight-open',
+    ],
+  });
+  mutationObserver?.observe(doc.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+  scheduleChromeHide();
+
+  (container as ToyNavContainer).__toyNavChromeCleanup = () => {
+    clearHideChromeTimeout();
+    revealChromeEvents.forEach((eventName) => {
+      doc.removeEventListener(eventName, revealChromeHandler);
+    });
+    mutationObserver?.disconnect();
+  };
 
   setupPictureInPictureControls(container, doc);
 }

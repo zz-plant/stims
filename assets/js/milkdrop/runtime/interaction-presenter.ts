@@ -10,7 +10,11 @@ export function createMilkdropRuntimeInteractionPresenter({
   overlayActions,
   keybindingActions,
 }: {
-  overlay: { isOpen: () => boolean; toggleOpen: (open?: boolean) => void };
+  overlay: {
+    isOpen: () => boolean;
+    toggleOpen: (open?: boolean) => void;
+    toggleShortcutHud: (open?: boolean) => void;
+  };
   overlayActions: MilkdropOverlayActionHandlers;
   keybindingActions: {
     getActivePresetId: () => string;

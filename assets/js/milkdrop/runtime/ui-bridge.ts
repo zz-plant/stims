@@ -92,7 +92,11 @@ export function installMilkdropRuntimeKeybindings({
   toggleFavorite,
   setRating,
 }: {
-  overlay: { isOpen: () => boolean; toggleOpen: (open?: boolean) => void };
+  overlay: {
+    isOpen: () => boolean;
+    toggleOpen: (open?: boolean) => void;
+    toggleShortcutHud: (open?: boolean) => void;
+  };
   getActivePresetId: () => string;
   getActiveCatalogEntry: () => unknown;
   getTransitionMode: () => 'blend' | 'cut';
@@ -129,10 +133,18 @@ export function installMilkdropRuntimeKeybindings({
       event.preventDefault();
       return;
     }
+    if (event.key === '?') {
+      overlay.toggleShortcutHud();
+      event.preventDefault();
+      return;
+    }
     if (event.key === 'Escape' && overlay.isOpen()) {
       overlay.toggleOpen(false);
       event.preventDefault();
       return;
+    }
+    if (event.key === 'Escape') {
+      overlay.toggleShortcutHud(false);
     }
     if (event.key === 'n') {
       selectAdjacentPreset(1);

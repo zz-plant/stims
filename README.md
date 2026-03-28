@@ -54,10 +54,10 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 At the product level, Stims currently ships one flagship MilkDrop-led visualizer experience with:
 
 - A quick-check preflight that surfaces graphics, microphone, motion, and compatibility status.
-- A setup-first launchpad that handles audio choice and device tuning before the live session takes over.
+- An immersive-first launch route that can drop straight into demo playback while keeping audio choice and device tuning close at hand.
 - A preset-led playback flow designed for immediate experimentation.
 - A settings panel for quality presets, compatibility mode, motion preferences, render scale, and pixel ratio.
-- A live overlay for preset browsing, editing, import/export, and inspection without leaving playback.
+- A live overlay that keeps preset browsing primary and tucks editing and inspection one layer deeper without leaving playback.
 - Session-shell behavior that supports keyboard, gamepad, and TV-style remote navigation.
 - Persistent session and local settings so the app can recover your last-used audio and rendering preferences.
 
@@ -88,7 +88,7 @@ At the product level, Stims currently ships one flagship MilkDrop-led visualizer
    http://localhost:5173/milkdrop/
    ```
 
-4. Use `index.html` at the same host if you want to review the homepage surface, or `/milkdrop/` if you want the setup-first launchpad.
+4. Use `index.html` at the same host if you want to review the homepage surface, or `/milkdrop/` if you want the immersive-first MilkDrop launch route.
 
 If you want to validate the production bundle locally, run `bun run build` and then `bun run preview`.
 
@@ -126,8 +126,8 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 
 ## Project shape
 
-- `milkdrop/index.html` (`/milkdrop/`) is the setup-first launch route for the visualizer.
-- `index.html` is the editorial homepage that routes into the launchpad and live workspace.
+- `milkdrop/index.html` (`/milkdrop/`) is the immersive-first launch route for the visualizer.
+- `index.html` is the editorial homepage that routes into the MilkDrop launch route and live session.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
 - `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.
 - `tests/` contains unit, integration, and compatibility coverage.

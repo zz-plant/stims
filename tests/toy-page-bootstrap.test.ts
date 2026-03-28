@@ -190,6 +190,10 @@ describe('toy page query-driven startup', () => {
     expect(loadFromQuery).toHaveBeenCalledTimes(1);
     expect(receivedAudioOptions?.autoStartSource).toBe('demo');
     expect(receivedAudioOptions?.preferDemoAudio).toBe(true);
+    expect(document.documentElement.dataset.sessionDisplayMode).toBe(
+      'immersive',
+    );
+    expect(document.documentElement.dataset.sessionChrome).toBe('hidden');
     expect(requestMilkdropOverlayTab).toHaveBeenCalledWith('browse');
     expect(requestMilkdropCollectionSelection).toHaveBeenCalledWith(
       'cream-of-the-crop',
@@ -278,5 +282,7 @@ describe('toy page query-driven startup', () => {
     expect(initSystemControls.mock.calls[0]?.[1]).toMatchObject({
       variant: 'embedded',
     });
+    expect(document.documentElement.dataset.sessionDisplayMode).toBe('setup');
+    expect(document.documentElement.dataset.sessionChrome).toBe('visible');
   });
 });

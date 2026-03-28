@@ -7481,3 +7481,20 @@ section.intro,
     position: static;
   }
 }
+
+:root[data-focused-session="live"][data-session-display-mode="immersive"]
+  .launch-intro,
+:root[data-focused-session="live"][data-session-display-mode="immersive"]
+  .launch-panels {
+  display: none;
+}
+
+:root[data-focused-session="live"][data-session-display-mode="tools"]
+  .launch-intro {
+  display: none;
+}
+
+:root[data-focused-session="live"][data-session-display-mode="tools"]
+  .launch-panels {
+  display: block;
+}

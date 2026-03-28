@@ -24,11 +24,11 @@ This document captures the **current, shipped feature set** of Stims as implemen
 
 ### Intro hero
 - **Primary CTA**: One homepage CTA deep-links to the live workspace with demo audio.
-- **Secondary CTA**: One homepage CTA opens `/milkdrop/` as the setup-first launchpad.
-- **Architecture framing**: Copy explains the three-surface model: homepage for context, launchpad for setup, and overlay for live workspace controls.
+- **Secondary CTA**: One homepage CTA opens `/milkdrop/` as the immersive-first MilkDrop route.
+- **Architecture framing**: Copy explains the three-surface model: homepage for context, `/milkdrop/` for fast playback and first-run setup, and the overlay for live controls.
 
 ### Surface map
-- **Route cards**: Static cards explain the responsibilities of the homepage, launchpad, and live workspace.
+- **Route cards**: Static cards explain the responsibilities of the homepage, immersive route, and live workspace.
 - **No in-place runtime boot**: Homepage visuals remain lightweight and do not mount the full live runtime in-place.
 
 ### Preset showcase
@@ -36,7 +36,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Launch behavior**: Preset cards open the live workspace on `/milkdrop/` and can preselect a preset before playback begins.
 
 ### Structure section
-- **Intentional split**: Static copy explains that setup belongs on `/milkdrop/` while browsing, editing, and inspection belong in the live session overlay.
+- **Intentional split**: Static copy explains that `/milkdrop/` now gets users into playback quickly while keeping setup and deeper tools close without making them the primary surface.
 - **Lineage language**: Copy continues to credit Ryan Geiss&rsquo;s MilkDrop without implying official continuation.
 
 ## Toy runtime shell
@@ -48,11 +48,9 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Prewarming**: Renderer capabilities and microphone permissions are prewarmed before loading.
 
 ### Toy navigation bar
-- **Now playing header**: Shows title + slug pill and “Press Esc” hint.
+- **Minimal default chrome**: Live mode keeps visible chrome lean by default and reveals the fuller menu/tray on demand.
 - **Renderer status**: Displays active renderer (WebGPU/WebGL), fallback reason, and a recovery action when the preferred renderer can be retried.
-- **Share link**: Copies the current URL to clipboard with status feedback.
-- **Picture-in-picture**: Captures the toy canvas into a PiP video window when supported.
-- **Back to library**: Returns to the library view.
+- **Session actions**: Share link, picture-in-picture, and back navigation remain available from the revealed session menu.
 
 ### Audio controls
 - **Primary options**: Live mic or demo audio, with one focused path visually emphasized at a time.
@@ -65,7 +63,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Preference persistence**: Stores last-used source in session storage (`stims-audio-source`), advanced panel state in `stims-audio-advanced-open`.
 
 ### Capability preflight
-- **Linear launch step**: The toy shell preflight is framed as “Step 1 of 2 · Quick check” with one primary CTA (`Continue to audio setup`) when the toy can run.
+- **Linear launch step**: The toy shell preflight still guards startup, but demo playback can move directly into immersive mode once the check succeeds.
 - **Progressive disclosure**: Technical details remain collapsed behind a disclosure by default.
 - **Fallback path**: Blocking states surface one clear library return path and keep compatible-browsing recovery obvious.
 
@@ -85,6 +83,11 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Motion toggle**: Enable/disable motion input on supported toys (`stims:motion-enabled`).
 - **Resolution + pixel ratio controls**: Range sliders with live value labels.
 - **Reset**: Clears custom overrides to match the active preset.
+
+### MilkDrop live overlay
+- **Preset-first overlay**: Browsing and transport stay on the primary overlay surface.
+- **Tools one layer deeper**: Editor and inspector remain available from a secondary tools surface and still honor deep-link entry.
+- **Shortcut HUD + preset OSD**: Live mode can surface a transient preset announcement and a dedicated shortcut sheet without making them persistent chrome.
 
 ### Gamepad and remote navigation
 - **Focus movement**: D-pad/axes and Arrow keys move focus with spatial direction matching before fallback cycling.

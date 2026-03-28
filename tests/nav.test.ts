@@ -222,7 +222,7 @@ describe('toy navigation visibility states', () => {
     expect(secondary.hidden).toBe(true);
     expect(secondary.getAttribute('aria-hidden')).toBe('true');
     expect(secondary.hasAttribute('inert')).toBe(true);
-    expect(toggle.textContent).toBe('More');
+    expect(toggle.textContent).toBe('Session');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
     expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
@@ -241,7 +241,7 @@ describe('toy navigation visibility states', () => {
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Hide more');
+    expect(toggle.textContent).toBe('Hide session');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('aria-controls')).toBe(
       'toy-nav-secondary-actions',
