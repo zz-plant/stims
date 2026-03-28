@@ -4,7 +4,7 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 ## Architecture at a Glance
 
-- **Entry shells** (`index.html` and `milkdrop/index.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` is the editorial homepage, `/milkdrop/` is the setup-first launch route, and the live overlay becomes the in-session workspace after startup.
+- **Entry shells** (`index.html` and `milkdrop/index.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` is the editorial homepage, `/milkdrop/` is the immersive-first playback route, and the live overlay becomes the in-session workspace for presets and deeper tools.
 - **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
 - **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
 - **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.

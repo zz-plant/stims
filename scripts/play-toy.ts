@@ -220,22 +220,30 @@ async function requestDemoAudio(page: Page) {
 }
 
 async function getErrorStatus(page: Page) {
-  return page.evaluate(() => {
-    const status = document.querySelector<HTMLElement>(
-      '.active-toy-status.is-error',
-    );
-    if (!(status instanceof HTMLElement)) {
+  try {
+    return await page.evaluate(() => {
+      const status = document.querySelector<HTMLElement>(
+        '.active-toy-status.is-error',
+      );
+      if (!(status instanceof HTMLElement)) {
+        return null;
+      }
+
+      const title = status.querySelector('h2')?.textContent?.trim() ?? '';
+      const message = status.querySelector('p')?.textContent?.trim() ?? '';
+      if (!title && !message) {
+        return null;
+      }
+
+      return { title, message };
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.toLowerCase().includes('execution context was destroyed')) {
       return null;
     }
-
-    const title = status.querySelector('h2')?.textContent?.trim() ?? '';
-    const message = status.querySelector('p')?.textContent?.trim() ?? '';
-    if (!title && !message) {
-      return null;
-    }
-
-    return { title, message };
-  });
+    throw error;
+  }
 }
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
@@ -272,7 +280,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       consoleErrors.push(err.message);
     });
 
-    const url = `http://localhost:${normalizedOptions.port}/milkdrop/?experience=${encodeURIComponent(options.slug)}&agent=true`;
+    const url = `http://localhost:${normalizedOptions.port}/milkdrop/?experience=${encodeURIComponent(options.slug)}&agent=true&audio=demo`;
     console.log(`Navigating to ${url}...`);
 
     await page.goto(url);

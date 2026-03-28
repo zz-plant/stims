@@ -3517,9 +3517,9 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__shortcut-title {
-  margin-bottom: 6px !important;
+  margin-bottom: 6px;
   color: rgba(186, 230, 253, 0.76);
-  font-size: 0.73rem !important;
+  font-size: 0.73rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;

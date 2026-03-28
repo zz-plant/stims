@@ -168,7 +168,6 @@ export function bootExperienceShell({
 }) {
   let loaderStarted = false;
   let focusedSessionMode: 'off' | 'launch' | 'live' = 'off';
-  let sessionDisplayMode: 'setup' | 'immersive' | 'tools' = 'setup';
   let sessionChromeVisibility: 'visible' | 'hidden' = 'visible';
   const searchParams = new URLSearchParams(window.location.search);
   const currentRoute = router.getCurrentRoute();
@@ -189,7 +188,6 @@ export function bootExperienceShell({
   };
 
   const setSessionDisplayMode = (mode: 'setup' | 'immersive' | 'tools') => {
-    sessionDisplayMode = mode;
     root.dataset.sessionDisplayMode = mode;
     root.dataset.sessionChrome = sessionChromeVisibility;
   };

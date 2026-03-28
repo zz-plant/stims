@@ -179,7 +179,7 @@ Cloudflare Pages issues a unique preview deployment for each pull request. Every
 
 ## Validate shell routes before merge
 
-The project now treats `/` as the editorial homepage and `/milkdrop/` as the setup-first launch route. Validate representative routes locally and on the PR preview:
+The project now treats `/` as the editorial homepage and `/milkdrop/` as the immersive-first playback route. Validate representative routes locally and on the PR preview:
 
 1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/` and `http://localhost:4173/milkdrop/`).
 2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.

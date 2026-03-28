@@ -42,6 +42,7 @@ export interface NavOptions {
 type ToyNavContainer = HTMLElement & {
   __toyNavOffsetCleanup?: () => void;
   __toyNavChromeCleanup?: () => void;
+  __toyNavDetachCleanup?: () => void;
   __libraryNavCleanup?: () => void;
 };
 
@@ -82,6 +83,8 @@ function resetNavigationState(container: ToyNavContainer) {
   container.__toyNavOffsetCleanup = undefined;
   container.__toyNavChromeCleanup?.();
   container.__toyNavChromeCleanup = undefined;
+  container.__toyNavDetachCleanup?.();
+  container.__toyNavDetachCleanup = undefined;
   container.__libraryNavCleanup?.();
   container.__libraryNavCleanup = undefined;
   container.ownerDocument.documentElement.style.removeProperty(
@@ -413,7 +416,8 @@ function renderToyNav(
   let hideChromeTimeoutId: number | null = null;
   const root = doc.documentElement;
 
-  const isImmersiveSession = () => root.dataset.sessionDisplayMode === 'immersive';
+  const isImmersiveSession = () =>
+    root.dataset.sessionDisplayMode === 'immersive';
   const isToolsSession = () => root.dataset.sessionDisplayMode === 'tools';
   const isOverlayOpen = () =>
     Boolean(doc.querySelector('.milkdrop-overlay.is-open'));
@@ -427,6 +431,9 @@ function renderToyNav(
     hasFocusedControls() ||
     root.dataset.preflightOpen === 'true';
   const setChromeVisibility = (visibility: 'visible' | 'hidden') => {
+    if (root.dataset.sessionChrome === visibility) {
+      return;
+    }
     root.dataset.sessionChrome = visibility;
   };
   const clearHideChromeTimeout = () => {
@@ -618,7 +625,12 @@ function renderToyNav(
     void copyShareLink();
   });
 
-  const revealChromeEvents = ['pointermove', 'pointerdown', 'focusin', 'keydown'];
+  const revealChromeEvents = [
+    'pointermove',
+    'pointerdown',
+    'focusin',
+    'keydown',
+  ];
   const revealChromeHandler = () => revealChrome();
   revealChromeEvents.forEach((eventName) => {
     doc.addEventListener(eventName, revealChromeHandler);
@@ -657,6 +669,37 @@ function renderToyNav(
   };
 
   setupPictureInPictureControls(container, doc);
+  installToyNavDetachCleanup(container as ToyNavContainer, doc);
+}
+
+function installToyNavDetachCleanup(container: ToyNavContainer, doc: Document) {
+  container.__toyNavDetachCleanup?.();
+
+  const MutationObserverCtor = doc.defaultView?.MutationObserver;
+  let observer: MutationObserver | undefined;
+  if (MutationObserverCtor) {
+    const detachObserver = new MutationObserverCtor(() => {
+      if (container.isConnected) {
+        return;
+      }
+      container.__toyNavChromeCleanup?.();
+      container.__toyNavChromeCleanup = undefined;
+      container.__toyNavOffsetCleanup?.();
+      container.__toyNavOffsetCleanup = undefined;
+      detachObserver.disconnect();
+      container.__toyNavDetachCleanup = undefined;
+    });
+    observer = detachObserver;
+  }
+
+  observer?.observe(doc.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  container.__toyNavDetachCleanup = () => {
+    observer?.disconnect();
+  };
 }
 
 function setupToyNavFloatingOffset(container: ToyNavContainer, doc: Document) {
