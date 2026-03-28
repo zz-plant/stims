@@ -391,6 +391,14 @@ export function createMilkdropIr({
       numericFields[normalizedKey] = compiledScalar.value;
       fieldHelpers.ensureShapeDefinition(customShapeMap, index).fields[suffix] =
         compiledScalar.value;
+      if (hardUnsupportedField) {
+        pendingHardUnsupportedFields.set(normalizedKey, {
+          key: normalizedKey,
+          feature: hardUnsupportedField.feature,
+          message: hardUnsupportedField.message,
+          line: field.line,
+        });
+      }
       return;
     }
 
@@ -439,6 +447,14 @@ export function createMilkdropIr({
       normalizedKey === 'video_echo_orientation'
         ? fieldHelpers.normalizeVideoEchoOrientation(compiledScalar.value)
         : compiledScalar.value;
+    if (hardUnsupportedField) {
+      pendingHardUnsupportedFields.set(normalizedKey, {
+        key: normalizedKey,
+        feature: hardUnsupportedField.feature,
+        message: hardUnsupportedField.message,
+        line: field.line,
+      });
+    }
   });
 
   pendingProgramSources.forEach(({ sourceLine, line }, block) => {

@@ -95,6 +95,7 @@ export type MilkdropFeatureKey =
   | 'per-pixel-equations'
   | 'custom-waves'
   | 'custom-shapes'
+  | 'shape-texture-controls'
   | 'borders'
   | 'motion-vectors'
   | 'video-echo'
@@ -159,6 +160,7 @@ export type MilkdropBackendSupportEvidenceCode =
   | 'supported-shader-text-gap'
   | 'unsupported-shader-text-gap'
   | 'volume-sampler-gap'
+  | 'shape-texture-gap'
   | 'video-echo-gap'
   | 'post-effects-gap';
 

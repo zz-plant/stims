@@ -65,6 +65,7 @@ const FEATURE_ORDER: MilkdropFeatureKey[] = [
   'per-pixel-equations',
   'custom-waves',
   'custom-shapes',
+  'shape-texture-controls',
   'borders',
   'motion-vectors',
   'video-echo',
@@ -95,8 +96,14 @@ const BACKEND_PARTIAL_FEATURE_GAPS: Record<
   MilkdropRenderBackend,
   Partial<Record<MilkdropFeatureKey, string>>
 > = {
-  webgl: {},
-  webgpu: {},
+  webgl: {
+    'shape-texture-controls':
+      'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
+  },
+  webgpu: {
+    'shape-texture-controls':
+      'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
+  },
 };
 const BACKEND_SHADER_TEXT_GAPS: Record<
   MilkdropRenderBackend,

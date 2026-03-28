@@ -87,10 +87,13 @@ const customWaveFieldOrder = [
 const customShapeFieldOrder = [
   'enabled',
   'sides',
+  'textured',
   'x',
   'y',
   'rad',
   'ang',
+  'tex_zoom',
+  'tex_ang',
   'r',
   'g',
   'b',

@@ -10,4 +10,6 @@ This local corpus keeps shape coverage in a corpus-style form by focusing on:
 - shape scalar fields,
 - shape init and per-frame programs,
 - legacy slot spellings such as `shapecode_32_*`,
+- shape texture-control fields such as `textured`, `tex_zoom`, and `tex_ang`,
+- projectM-style locals such as `instance`,
 - border, thick outline, and additive flags.

@@ -52,6 +52,7 @@ export function buildFeatureAnalysis({
     programs: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>,
   ) => boolean;
 }): MilkdropFeatureAnalysis {
+  const shapeTextureTargets = new Set(['textured', 'tex_zoom', 'tex_ang']);
   const features = new Set<MilkdropFeatureKey>(['base-globals']);
   const registerUsage = { q: 0, t: 0 };
 
@@ -92,6 +93,24 @@ export function buildFeatureAnalysis({
   });
   if (customShapeFeatureUsed) {
     features.add('custom-shapes');
+  }
+
+  const customShapeTextureFeatureUsed = customShapes.some((shape) => {
+    const shapeFields = shape.fields;
+    return (
+      typeof shapeFields.textured === 'number' ||
+      typeof shapeFields.tex_zoom === 'number' ||
+      typeof shapeFields.tex_ang === 'number' ||
+      shape.programs.init.statements.some((statement) =>
+        shapeTextureTargets.has(statement.target),
+      ) ||
+      shape.programs.perFrame.statements.some((statement) =>
+        shapeTextureTargets.has(statement.target),
+      )
+    );
+  });
+  if (customShapeTextureFeatureUsed) {
+    features.add('shape-texture-controls');
   }
 
   if ((numericFields.ob_size ?? 0) > 0 || (numericFields.ib_size ?? 0) > 0) {
@@ -263,7 +282,11 @@ export function buildBackendSupport({
           scope: 'backend',
           status: 'partial',
           code:
-            feature === 'video-echo' ? 'video-echo-gap' : 'post-effects-gap',
+            feature === 'video-echo'
+              ? 'video-echo-gap'
+              : feature === 'shape-texture-controls'
+                ? 'shape-texture-gap'
+                : 'post-effects-gap',
           message,
           feature: feature as MilkdropCompatibilityFeatureKey,
         }),

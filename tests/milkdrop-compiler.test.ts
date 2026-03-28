@@ -174,6 +174,42 @@ shapecode_0_bThickOutline=1
     });
   });
 
+  test('preserves MilkDrop2 shape texture controls and instance locals as explicit partial support', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.9
+shapecode_0_tex_ang=0.25
+shape_0_init1=ang=tex_ang+instance*0.1;
+      `.trim(),
+      { id: 'shape-texture-controls' },
+    );
+
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.customShapes[0]?.fields).toMatchObject({
+      enabled: 1,
+      sides: 6,
+      textured: 1,
+      tex_zoom: 0.9,
+      tex_ang: 0.25,
+    });
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'shape-texture-controls',
+    );
+    expect(compiled.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
+    ]);
+  });
+
   test('keeps zoom and fZoomExponent distinct in compiled numeric fields', () => {
     const compiled = compileMilkdropPresetSource(
       `

@@ -27,44 +27,29 @@ type ShapeCorpusExpectation = {
 const LOCAL_SHAPE_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> =
   {
     'shape-legacy-max-slot-orbit.milk': {
-      diagnostics: [
-        'preset_unknown_field',
-        'preset_unknown_field',
-        'preset_unknown_field',
-      ],
+      diagnostics: [],
       webgl: 'partial',
       webgpu: 'partial',
-      fidelityClass: 'fallback',
-      unsupportedKeys: [
-        'shape_32_tex_ang',
-        'shape_32_tex_zoom',
-        'shape_32_textured',
-      ],
+      fidelityClass: 'near-exact',
+      unsupportedKeys: [],
       warnings: [
-        'Unknown preset field "shape_32_textured" was ignored.',
-        'Unknown preset field "shape_32_tex_ang" was ignored.',
-        'Unknown preset field "shape_32_tex_zoom" was ignored.',
+        'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
       ],
-      blockedConstructs: [
-        'field:shape_32_tex_ang',
-        'field:shape_32_tex_zoom',
-        'field:shape_32_textured',
-      ],
+      blockedConstructs: [],
       missingAliasesOrFunctions: [],
       customShapeCount: 1,
     },
     'shape-projectm-dual-lattice.milk': {
-      diagnostics: ['preset_unknown_field', 'preset_unknown_field'],
+      diagnostics: [],
       webgl: 'partial',
       webgpu: 'partial',
-      fidelityClass: 'fallback',
-      unsupportedKeys: ['shape_1_tex_zoom', 'shape_1_textured'],
+      fidelityClass: 'near-exact',
+      unsupportedKeys: [],
       warnings: [
-        'Unknown preset field "shape_1_textured" was ignored.',
-        'Unknown preset field "shape_1_tex_zoom" was ignored.',
+        'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
       ],
-      blockedConstructs: ['field:shape_1_tex_zoom', 'field:shape_1_textured'],
-      missingAliasesOrFunctions: ['instance'],
+      blockedConstructs: [],
+      missingAliasesOrFunctions: [],
       customShapeCount: 2,
     },
   };
