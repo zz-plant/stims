@@ -187,6 +187,7 @@ describe('milkdrop overlay quality controls', () => {
 
     expect(select).not.toBeNull();
     expect(select?.value).toBe('balanced');
+    expect(document.body.textContent).toContain('Live look');
     expect(document.body.textContent).toContain(
       'What changes: pixel ratio up to 1.50x, render scale 1.00x, particle density 1.00x.',
     );
@@ -200,6 +201,44 @@ describe('milkdrop overlay quality controls', () => {
     expect(document.body.textContent).toContain(
       'What changes: pixel ratio up to 1.10x, render scale 0.85x, particle density 0.70x.',
     );
+
+    overlay.dispose();
+  });
+
+  test('shows a one-time workspace handoff hint and lets users dismiss it', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    localStorage.removeItem('stims:milkdrop:workspace-hint-dismissed');
+
+    const overlay = createOverlay();
+    overlay.toggleOpen(true);
+
+    expect(document.body.textContent).toContain(
+      'Now in the workspace: browse presets, change the live look, or edit the active preset without stopping playback.',
+    );
+
+    const dismiss = document.querySelector(
+      '.milkdrop-overlay__workspace-hint-dismiss',
+    ) as HTMLButtonElement | null;
+    expect(dismiss).not.toBeNull();
+    dismiss?.click();
+
+    expect(
+      localStorage.getItem('stims:milkdrop:workspace-hint-dismissed'),
+    ).toBe('true');
+    expect(
+      (
+        document.querySelector(
+          '.milkdrop-overlay__workspace-hint',
+        ) as HTMLElement | null
+      )?.hidden,
+    ).toBe(true);
 
     overlay.dispose();
   });
