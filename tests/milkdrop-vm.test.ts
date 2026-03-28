@@ -179,6 +179,38 @@ per_pixel_1=rot = rot + 0.001;
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
   });
 
+  test('keeps shape texture-control locals and projectM instance aliases available at runtime', () => {
+    const signals = makeSignals({ frame: 1 });
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shape Texture Runtime
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.9
+shapecode_0_tex_ang=0.25
+shape_0_init1=ang=tex_ang+instance*0.1;
+      `.trim(),
+      { id: 'shape-texture-runtime' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(signals);
+
+    expect(preset.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(frameState.compatibility.featureAnalysis.featuresUsed).toContain(
+      'shape-texture-controls',
+    );
+    expect(frameState.shapes[0]).toMatchObject({
+      sides: 6,
+    });
+    expect(frameState.shapes[0]?.rotation).toBeCloseTo(
+      0.25 + signals.time * 0.08,
+      6,
+    );
+  });
+
   test('applies wave_brighten normalization and gamma-adjusted post state', () => {
     const preset = compileMilkdropPresetSource(
       `
