@@ -406,7 +406,7 @@ function renderIssueList(
 
     const fallbackItem = document.createElement('li');
     const fallbackLink = document.createElement('a');
-    fallbackLink.href = '/#experience';
+    fallbackLink.href = '/#launches';
     fallbackLink.textContent = 'Review supported-browser guidance';
     fallbackItem.appendChild(fallbackLink);
     linkList.appendChild(fallbackItem);

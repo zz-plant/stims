@@ -18,7 +18,18 @@ export function bootHomePage({
   navContainer: HTMLElement | null;
 }) {
   if (navContainer) {
-    initTopNav(navContainer, { mode: 'library' });
+    initTopNav(navContainer, {
+      mode: 'library',
+      sectionLinks: [
+        { href: '#launches', label: 'Launches' },
+        { href: '#presets', label: 'Presets' },
+        { href: '#why-stims', label: 'Why Stims' },
+      ],
+      utilityLink: {
+        href: '/milkdrop/',
+        label: 'Launch MilkDrop',
+      },
+    });
   }
 
   runInit('milkdrop showcase', initMilkdropShowcase);

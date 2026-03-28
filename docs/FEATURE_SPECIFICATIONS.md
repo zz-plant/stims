@@ -6,7 +6,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 
 | Area | Current state | Primary sources in repo |
 | --- | --- | --- |
-| Homepage (`index.html`) | Editorial homepage with route map, preset showcase, and launch-routing CTAs is live. | `index.html`, `assets/js/bootstrap/home-page.ts`, `assets/js/utils/init-milkdrop-showcase.ts` |
+| Homepage (`index.html`) | Product-led homepage with cinematic hero, focused launch cards, preset showcase, and route-aware CTA structure is live. | `index.html`, `assets/js/bootstrap/home-page.ts`, `assets/js/utils/init-milkdrop-showcase.ts` |
 | System readiness & performance | Launch-route preflight and setup tuning are wired. | `assets/js/readiness-probe.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/ui/system-controls.ts` |
 | Toy runtime shell | Loader, toy nav, status/errors, audio prompt, and settings panel are live. | `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/ui/*` |
 | Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
@@ -18,25 +18,25 @@ This document captures the **current, shipped feature set** of Stims as implemen
 ## Homepage and routing
 
 ### Global navigation
-- **Brand + jump links**: The homepage exposes the surface map, preset showcase, structure section, and launchpad.
+- **Brand + jump links**: The homepage exposes launch options, preset showcase, the Why Stims section, and the launchpad.
 - **Utilities**: Open GitHub and toggle light/dark theme.
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
 ### Intro hero
 - **Primary CTA**: One homepage CTA deep-links to the live workspace with demo audio.
 - **Secondary CTA**: One homepage CTA opens `/milkdrop/` as the immersive-first MilkDrop route.
-- **Architecture framing**: Copy explains the three-surface model: homepage for context, `/milkdrop/` for fast playback and first-run setup, and the overlay for live controls.
+- **Product framing**: Copy emphasizes browser-native playback, live editing, bundled presets, and multiple audio inputs before the route model appears lower on the page.
 
-### Surface map
-- **Route cards**: Static cards explain the responsibilities of the homepage, immersive route, and live workspace.
+### Launch cards
+- **Focused entry points**: Static cards give users three obvious first moves: demo playback, bring-your-own-audio setup, and live editing.
 - **No in-place runtime boot**: Homepage visuals remain lightweight and do not mount the full live runtime in-place.
 
 ### Preset showcase
 - **Curated entry points**: Bundled preset cards and collection filters are hydrated from `public/milkdrop-presets/catalog.json`.
 - **Launch behavior**: Preset cards open the live workspace on `/milkdrop/` and can preselect a preset before playback begins.
 
-### Structure section
-- **Intentional split**: Static copy explains that `/milkdrop/` now gets users into playback quickly while keeping setup and deeper tools close without making them the primary surface.
+### Why Stims section
+- **Intentional split**: Static copy explains the roles of homepage, `/milkdrop/`, and the live overlay without turning the whole page into route documentation.
 - **Lineage language**: Copy continues to credit Ryan Geiss&rsquo;s MilkDrop without implying official continuation.
 
 ## Toy runtime shell

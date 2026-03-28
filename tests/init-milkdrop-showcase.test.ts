@@ -71,7 +71,7 @@ describe('initMilkdropShowcase', () => {
     ).map((card) => card.textContent?.trim());
 
     expect(count?.textContent).toBe(
-      '3 bundled presets across 4 quick collections. Showing 1 picks from Cream of the Crop.',
+      '3 bundled presets across 4 quick collections. Showing 1 featured picks from Cream of the Crop.',
     );
     expect(filters).toEqual([
       'All presets3',
