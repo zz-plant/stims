@@ -21,17 +21,18 @@ const supportedWebgl: MilkdropBackendSupport = {
 
 const partialWebgpu: MilkdropBackendSupport = {
   status: 'partial',
-  reasons: ['Non-volume tex3D aux sampling is approximated from 2D data.'],
+  reasons: ['Video echo needs the legacy feedback path.'],
   evidence: [
     {
       backend: 'webgpu',
       scope: 'backend',
       status: 'partial',
-      code: 'volume-sampler-gap',
-      message: 'Non-volume tex3D aux sampling is approximated from 2D data.',
+      code: 'video-echo-gap',
+      message: 'Video echo needs the legacy feedback path.',
+      feature: 'video-echo',
     },
   ],
-  requiredFeatures: ['base-globals'],
+  requiredFeatures: ['base-globals', 'video-echo'],
   unsupportedFeatures: [],
 };
 
