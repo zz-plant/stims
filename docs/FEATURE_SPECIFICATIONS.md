@@ -6,8 +6,8 @@ This document captures the **current, shipped feature set** of Stims as implemen
 
 | Area | Current state | Primary sources in repo |
 | --- | --- | --- |
-| Homepage (`index.html`) | MilkDrop-led hero path, quick-check/performance entry, broader toy-lab search + filters, and toy grid are live. | `index.html`, `assets/js/library-view.js` |
-| System readiness & performance | Readiness probes + performance controls + preflight dialog are wired. | `assets/js/readiness-probe.ts`, `assets/js/utils/init-system-check.ts`, `assets/js/core/capability-preflight.ts` |
+| Homepage (`index.html`) | Editorial homepage with route map, preset showcase, and launch-routing CTAs is live. | `index.html`, `assets/js/bootstrap/home-page.ts`, `assets/js/utils/init-milkdrop-showcase.ts` |
+| System readiness & performance | Launch-route preflight and setup tuning are wired. | `assets/js/readiness-probe.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/ui/system-controls.ts` |
 | Toy runtime shell | Loader, toy nav, status/errors, audio prompt, and settings panel are live. | `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/ui/*` |
 | Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
 | Renderer fallback | WebGPU preferred with direct WebGL fallback plus an optional force-WebGL compatibility mode. | `assets/js/core/renderer-capabilities.ts`, `assets/js/core/render-preferences.ts` |
@@ -15,45 +15,29 @@ This document captures the **current, shipped feature set** of Stims as implemen
 | Gamepad + remote navigation | Focus + input support is enabled on library and toy pages for gamepads and keyboard-style TV remotes. | `assets/js/utils/gamepad-navigation.ts`, `assets/js/app.ts` |
 | Toy catalog metadata | Registry includes titles, tags, moods, controls, and lifecycle stage. | `assets/data/toys.json` |
 
-## Homepage and discovery
+## Homepage and routing
 
 ### Global navigation
-- **Brand + jump links**: MilkDrop/start and broader toy-lab discovery are shown alongside the brand mark.
+- **Brand + jump links**: The homepage exposes the surface map, preset showcase, structure section, and launchpad.
 - **Utilities**: Open GitHub and toggle light/dark theme.
 - **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
 
 ### Intro hero
-- **Quickstart CTA**: One primary homepage launch CTA deep-links to `/milkdrop/` and sets expectation that a short quick check opens first.
-- **Readiness summary**: “Ready • <performance> • <compatibility>” reacts to performance settings and renderer compatibility.
-- **Quick check entry**: Secondary CTA opens the preflight dialog and deep-links to the readiness/performance section.
-- **Claim posture**: Copy uses careful lineage language and does not claim blanket legacy compatibility.
+- **Primary CTA**: One homepage CTA deep-links to the live workspace with demo audio.
+- **Secondary CTA**: One homepage CTA opens `/milkdrop/` as the setup-first launchpad.
+- **Architecture framing**: Copy explains the three-surface model: homepage for context, launchpad for setup, and overlay for live workspace controls.
 
-### MilkDrop flagship proof
-- **Preset-led proof points**: Bundled presets, blend transitions, live editor flow, and import/export are presented as the flagship product path.
-- **Lightweight showcase**: Homepage visuals remain lightweight and do not mount the full live runtime in-place.
+### Surface map
+- **Route cards**: Static cards explain the responsibilities of the homepage, launchpad, and live workspace.
+- **No in-place runtime boot**: Homepage visuals remain lightweight and do not mount the full live runtime in-place.
 
-### System check section
-- **Live readiness panel**: Displays status for graphics acceleration, microphone, motion input, and reduced motion preference.
-- **Details toggle**: Expands/collapses the system check detail state while syncing the URL hash.
-- **Performance controls**: Inline settings panel with quality presets, compatibility mode (force WebGL), motion enable toggle, and sliders for resolution scale + pixel ratio.
-- **Fast actions**: Visible homepage buttons open the quick-check modal or reveal extra readiness detail without leaving the page.
-- **Preflight dialog**: Modal focuses on readiness, one clear next step, and optional technical details.
+### Preset showcase
+- **Curated entry points**: Bundled preset cards and collection filters are hydrated from `public/milkdrop-presets/catalog.json`.
+- **Launch behavior**: Preset cards open the live workspace on `/milkdrop/` and can preselect a preset before playback begins.
 
-### Search, filters, and sorting
-- **Search**: Broader toy-lab input supports keyword matching across title, slug, description, tags, moods, and capability terms.
-- **Suggestions**: Datalist is populated from toy metadata (title, tags, moods, capability terms, WebGPU).
-- **Filters**: Quick chips and disclosure-based refinement share one state model, with applied search/filter/sort chips rendered into a sticky rail while scrolling.
-- **Sort controls**: Featured, Newest, Most immersive, and A → Z.
-- **Canonical reset**: Discovery uses one consistent “Reset view” action for sticky rail recovery and empty-state recovery.
-- **Empty state**: If no matches, a reset button clears the current discovery state and keeps suggestion chips secondary on narrow screens.
-- **State persistence**: Search, filters, and sort persist in session storage and URL query params (`q`, `filters`, `sort`).
-
-### Toy cards
-- **Card content**: Icon, title, description, and capability badges.
-- **Capability badges**:
-  - WebGPU indicator (shows warning + fallback note if unsupported).
-  - Mic / Demo audio / Motion badges.
-- **Interaction**: Cards handle keyboard activation and standard click to open the toy.
+### Structure section
+- **Intentional split**: Static copy explains that setup belongs on `/milkdrop/` while browsing, editing, and inspection belong in the live session overlay.
+- **Lineage language**: Copy continues to credit Ryan Geiss&rsquo;s MilkDrop without implying official continuation.
 
 ## Toy runtime shell
 

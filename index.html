@@ -96,27 +96,33 @@
     <div class="content">
       <header class="shell-header">
         <div data-top-nav-container></div>
-        <div class="shell-panels">
-          <div class="shell-panel" data-audio-controls hidden></div>
-          <div class="shell-panel" data-settings-panel hidden></div>
-        </div>
       </header>
 
       <main class="home-shell" id="main-content">
         <header class="hero home-hero" id="home" aria-label="Stims overview">
           <div class="home-hero__grid">
             <div class="home-hero__copy">
-              <p class="eyebrow">Independent browser-native visualizer</p>
-              <h1>MilkDrop energy, tuned for the browser.</h1>
+              <p class="eyebrow">Browser-native MilkDrop session</p>
+              <h1>One visualizer. Three clear surfaces.</h1>
               <p class="tagline">
-                Start with demo audio now. Use <code>/milkdrop/</code> for mic or tab audio,
-                presets, and editing.
+                Learn what Stims is here. Set up compatibility and audio in
+                <code>/milkdrop/</code>. Browse, edit, and inspect only after the live session
+                takes over.
+              </p>
+              <p class="home-hero__support">
+                The homepage is now the explanation layer, the launchpad is the setup layer, and
+                the runtime overlay is the workspace.
               </p>
               <div class="hero-cta-row" role="group" aria-label="Primary actions">
                 <a href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop" class="cta-button primary">
-                  Start with demo audio
+                  Start demo in the workspace
                 </a>
-                <a href="/milkdrop/" class="cta-button ghost">Set up live audio</a>
+                <a href="/milkdrop/" class="cta-button ghost">Open launchpad</a>
+              </div>
+              <div class="home-hero__status-row" aria-label="Surface summary">
+                <span class="pill pill--accent">Homepage = context</span>
+                <span class="pill pill--soft">Launchpad = setup</span>
+                <span class="pill pill--contrast">Overlay = workspace</span>
               </div>
             </div>
 
@@ -129,10 +135,21 @@
                   <div class="milkdrop-stage__core"></div>
                 </div>
               </div>
+              <section class="home-hero__focus" aria-label="Current product model">
+                <p class="home-route-card__label">Current model</p>
+                <h2>Setup is not part of the homepage anymore.</h2>
+                <p>
+                  Use the launchpad for quick checks, audio source choice, and device tuning. Once
+                  visuals start, the live session becomes the only place for preset work.
+                </p>
+              </section>
               <aside class="home-hero__aside" aria-label="What opens in MilkDrop">
-                <p class="home-hero__aside-label">Inside <code>/milkdrop/</code></p>
-                <h2>Preset-first launch, modern browser flow.</h2>
-                <p>Audio setup, presets, and editing live inside <code>/milkdrop/</code>.</p>
+                <p class="home-hero__aside-label">Inside the live workspace</p>
+                <h2>Browse presets, tune quality, and reshape the active preset in place.</h2>
+                <p>
+                  Stims keeps creative work inside one live overlay instead of splitting it across
+                  separate browse and edit pages.
+                </p>
               </aside>
             </div>
           </div>
@@ -140,20 +157,52 @@
 
         <section class="home-proof" id="experience" aria-labelledby="experience-title">
           <div class="section-heading">
-            <p class="eyebrow">After launch</p>
-            <h2 id="experience-title">One place for the full session.</h2>
+            <p class="eyebrow">Surface map</p>
+            <h2 id="experience-title">Each surface now has one job.</h2>
             <p class="section-description">
-              The homepage now stays editorial while the `/milkdrop/` route owns launch-time setup,
-              session controls, and post-launch tools, so the visualizer can stay focused once you are
-              in motion.
+              This is the aggressive simplification: understand the product here, configure it in
+              the launchpad, then stay inside the live workspace once playback starts.
             </p>
+          </div>
+          <div class="home-route-grid" aria-label="Surface responsibilities">
+            <article class="home-route-card">
+              <p class="home-route-card__label">Surface 01</p>
+              <h3>Homepage</h3>
+              <p>
+                Explain the product, show curated proof, and route people toward the right launch.
+              </p>
+              <a class="text-link" href="#presets">See preset entry points</a>
+            </article>
+            <article class="home-route-card home-route-card--accent">
+              <p class="home-route-card__label">Surface 02</p>
+              <h3>Launchpad</h3>
+              <p>
+                Handle quick checks, audio source choice, and device tuning before the visuals own
+                the viewport.
+              </p>
+              <a class="text-link" href="/milkdrop/">Open the launchpad</a>
+            </article>
+            <article class="home-route-card">
+              <p class="home-route-card__label">Surface 03</p>
+              <h3>Live workspace</h3>
+              <p>
+                Browse presets, switch looks, inspect runtime data, and edit or import presets
+                without leaving playback.
+              </p>
+              <a
+                class="text-link"
+                href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
+              >
+                Open the workspace on demo audio
+              </a>
+            </article>
           </div>
         </section>
 
         <section class="home-showcase" id="presets" aria-labelledby="presets-title">
           <div class="section-heading">
-            <p class="eyebrow">Bundled presets</p>
-            <h2 id="presets-title">Pick a preset and start there.</h2>
+            <p class="eyebrow">Workspace entry points</p>
+            <h2 id="presets-title">Pick a preset and drop straight into the live browser.</h2>
             <p class="section-description" data-milkdrop-preset-count>
               Loading bundled preset collections…
             </p>
@@ -179,7 +228,7 @@
                 </div>
                 <div class="milkdrop-showcase__card-actions">
                   <a class="cta-button primary" href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop">
-                    Open preset browser
+                    Open in workspace
                   </a>
                 </div>
               </article>
@@ -187,57 +236,70 @@
           </div>
         </section>
 
-        <section class="home-lineage" id="lineage" aria-labelledby="lineage-title">
+        <section class="home-lineage" id="structure" aria-labelledby="structure-title">
           <div class="section-heading">
-            <p class="eyebrow">Lineage</p>
-            <h2 id="lineage-title">MilkDrop lineage, clear ownership.</h2>
+            <p class="eyebrow">Structure</p>
+            <h2 id="structure-title">The split is intentional.</h2>
             <p class="section-description">
-              Stims credits Ryan Geiss&rsquo;s MilkDrop while staying explicit that this is an
-              independent browser-native implementation.
-            </p>
-            <p class="section-description">
-              The retro nod stays in spirit: desktop-era preset hunting, translated into a cleaner
-              browser-native launch flow.
+              Stims still lives in the lineage of MilkDrop, but the browser version now uses a much
+              clearer flow than the old mixed landing-and-session approach.
             </p>
           </div>
           <div class="home-lineage__grid">
             <article class="home-lineage__card">
-              <h3>What stays</h3>
+              <h3>What the launchpad owns</h3>
               <ul class="home-list">
-                <li>Preset-driven visuals and fast iteration.</li>
-                <li>Browser-native preset browsing, editing, import, and export.</li>
-                <li>Clear credit to MilkDrop, Winamp-era context, and preset authors.</li>
+                <li>Quick compatibility checks before users commit to playback.</li>
+                <li>Audio source choice: demo, mic, tab capture, or YouTube-backed tab capture.</li>
+                <li>Device tuning such as quality presets, safe mode, and motion settings.</li>
               </ul>
             </article>
             <article class="home-lineage__card">
-              <h3>What changes</h3>
+              <h3>What the live session owns</h3>
               <ul class="home-list">
-                <li>The browser is the platform, so compatibility and performance controls are explicit.</li>
-                <li><code>/milkdrop/</code> is the dedicated place for audio setup, presets, and editing.</li>
+                <li>Preset browsing, favorites, recent history, and collection-based discovery.</li>
+                <li>Autoplay, random runs, transition control, and runtime inspection.</li>
+                <li>Live editing plus import, export, duplication, and deletion for editable presets.</li>
               </ul>
             </article>
           </div>
         </section>
 
+        <section class="home-principles" aria-labelledby="principles-title">
+          <div class="section-heading">
+            <p class="eyebrow">Why this makes sense</p>
+            <h2 id="principles-title">The product gets simpler when the surfaces stop overlapping.</h2>
+          </div>
+          <div class="home-stat-grid">
+            <article class="home-stat">
+              <p class="home-stat__label">No mixed context</p>
+              <h3>Setup lives in one place.</h3>
+              <p>Users should not wonder whether to configure audio on the homepage or in-session.</p>
+            </article>
+            <article class="home-stat">
+              <p class="home-stat__label">No duplicate browse model</p>
+              <h3>Preset work happens live.</h3>
+              <p>The homepage can preview presets, but the real browser stays inside playback.</p>
+            </article>
+            <article class="home-stat">
+              <p class="home-stat__label">No early editor trap</p>
+              <h3>Editing follows motion.</h3>
+              <p>Users see the visuals first, then edit while the current preset keeps running.</p>
+            </article>
+          </div>
+        </section>
       </main>
 
       <footer class="home-footer" id="site-footer">
-        <p>Stims is an independent browser-native visualizer in the lineage of MilkDrop.</p>
+        <p>Homepage explains. <code>/milkdrop/</code> sets up. The live overlay does the work.</p>
         <p class="footer-nav">
-          <a href="#experience" class="text-link">Experience</a>
+          <a href="#experience" class="text-link">Surfaces</a>
           <span aria-hidden="true">·</span>
           <a href="#presets" class="text-link">Presets</a>
           <span aria-hidden="true">·</span>
-          <a href="/milkdrop/" class="text-link">Launch</a>
+          <a href="#structure" class="text-link">Structure</a>
           <span aria-hidden="true">·</span>
-          <a
-            href="https://github.com/zz-plant/stims"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-link"
-          >
-            GitHub
-          </a>
+          <a href="/milkdrop/" class="text-link">Launchpad</a>
         </p>
       </footer>
     </div>
