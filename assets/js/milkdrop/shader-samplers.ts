@@ -15,6 +15,18 @@ export const MILKDROP_SHADER_TEXTURE_SAMPLERS = new Set<
   'fractal',
 ]);
 
+const MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS =
+  new Set<MilkdropShaderTextureSampler>([
+    'noise',
+    'perlin',
+    'simplex',
+    'voronoi',
+    'aura',
+    'caustics',
+    'pattern',
+    'fractal',
+  ]);
+
 const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   string,
   MilkdropShaderTextureSampler | 'main'
@@ -54,6 +66,8 @@ export function isMilkdropShaderSamplerName(
 
 export function isMilkdropVolumeShaderSamplerName(
   value: string,
-): value is 'simplex' {
-  return value === 'simplex';
+): value is MilkdropShaderTextureSampler {
+  return MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS.has(
+    value as MilkdropShaderTextureSampler,
+  );
 }

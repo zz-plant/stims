@@ -950,7 +950,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(compiled.ir.compatibility.warnings).toEqual([]);
   });
 
-  test('downgrades tex3D extraction for aux samplers without volume atlases', () => {
+  test('keeps tex3D extraction supported for atlas-backed aux samplers', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Shader Non-volume 3D Alias
@@ -966,31 +966,12 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
       '3d',
     );
     expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
-    expect(compiled.diagnostics).toEqual([
-      expect.objectContaining({
-        code: 'preset_shader_volume_approximation',
-        severity: 'warning',
-        message:
-          'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
-      }),
-    ]);
-    expect(compiled.ir.compatibility.warnings).toEqual([
-      'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
-    ]);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgl.evidence).toContainEqual(
-      expect.objectContaining({
-        code: 'volume-sampler-gap',
-        status: 'partial',
-      }),
-    );
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toContainEqual(
-      expect.objectContaining({
-        code: 'volume-sampler-gap',
-        status: 'partial',
-      }),
-    );
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgl.evidence).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
   });
 
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
