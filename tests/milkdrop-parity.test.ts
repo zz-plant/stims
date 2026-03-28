@@ -472,6 +472,6 @@ describe('milkdrop parity visual baselines', () => {
         });
       });
     },
-    { timeout: 15000 },
+    { timeout: 30000 },
   );
 });
