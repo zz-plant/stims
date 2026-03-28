@@ -10,11 +10,13 @@ import type { ToyEntry } from '../data/toy-schema.ts';
 import type { createLoader } from '../loader.ts';
 import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
 import { initAudioControls } from '../ui/audio-controls.ts';
+import { initNavigation as initTopNav } from '../ui/nav.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
 import { isSmartTvDevice } from '../utils/device-detect.ts';
 import {
   applyMilkdropLaunchIntents,
   parseRequestedOverlayTab,
+  parseRequestedPresetId,
 } from './milkdrop-launch-intents.ts';
 
 type LoaderApi = ReturnType<typeof createLoader>;
@@ -147,6 +149,7 @@ export function bootExperienceShell({
   router,
   loadFromQuery,
   initNavigation,
+  navContainer,
   audioControlsContainer,
   settingsContainer,
 }: {
@@ -159,6 +162,7 @@ export function bootExperienceShell({
   };
   loadFromQuery: LoaderApi['loadFromQuery'];
   initNavigation: LoaderApi['initNavigation'];
+  navContainer: HTMLElement | null;
   audioControlsContainer: HTMLElement | null;
   settingsContainer: HTMLElement | null;
 }) {
@@ -198,19 +202,37 @@ export function bootExperienceShell({
   const requestedAudioSource = searchParams.get('audio')?.trim().toLowerCase();
   const requestedOverlayTab = parseRequestedOverlayTab(searchParams);
   const requestedCollectionTag = searchParams.get('collection')?.trim() ?? null;
+  const requestedPresetId = parseRequestedPresetId(searchParams);
   const shouldCombineLaunchPanels = shouldCombineFocusedSessionPanels(toySlug);
   const shouldAutoBootFocusedSession =
     shouldCombineLaunchPanels &&
     (requestedAudioSource === 'demo' ||
       requestedOverlayTab !== null ||
-      requestedCollectionTag !== null);
+      requestedCollectionTag !== null ||
+      requestedPresetId !== null);
   const toyTitle = resolveToyTitle(toySlug, toyManifest as Toy[]);
   document.title = `${toyTitle} · Stims`;
+
+  if (navContainer) {
+    initTopNav(navContainer, {
+      mode: 'library',
+      sectionLinks: [
+        { href: '#session-flow', label: 'Flow' },
+        { href: '#launch-workspace', label: 'Setup' },
+        { href: '#launch-panels', label: 'Controls' },
+      ],
+      utilityLink: {
+        href: '/',
+        label: 'Back home',
+      },
+    });
+  }
 
   applyMilkdropLaunchIntents({
     toySlug,
     requestedOverlayTab,
     requestedCollectionTag,
+    requestedPresetId,
   });
 
   const collapseFocusedSessionPanels = () => {

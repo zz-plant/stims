@@ -3,6 +3,7 @@ import {
   type MilkdropOverlayTab,
   requestMilkdropOverlayTab,
 } from '../milkdrop/overlay-intent.ts';
+import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
 
 export function parseRequestedOverlayTab(searchParams: URLSearchParams) {
   const value = searchParams.get('panel')?.trim().toLowerCase();
@@ -12,14 +13,21 @@ export function parseRequestedOverlayTab(searchParams: URLSearchParams) {
   return null;
 }
 
+export function parseRequestedPresetId(searchParams: URLSearchParams) {
+  const value = searchParams.get('preset')?.trim();
+  return value ? value : null;
+}
+
 export function applyMilkdropLaunchIntents({
   toySlug,
   requestedOverlayTab,
   requestedCollectionTag,
+  requestedPresetId,
 }: {
   toySlug: string | null;
   requestedOverlayTab: MilkdropOverlayTab | null;
   requestedCollectionTag: string | null;
+  requestedPresetId: string | null;
 }) {
   if (toySlug !== 'milkdrop') {
     return;
@@ -31,5 +39,9 @@ export function applyMilkdropLaunchIntents({
 
   if (requestedCollectionTag) {
     requestMilkdropCollectionSelection(requestedCollectionTag);
+  }
+
+  if (requestedPresetId) {
+    requestMilkdropPresetSelection(requestedPresetId);
   }
 }

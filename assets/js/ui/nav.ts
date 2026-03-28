@@ -17,6 +17,14 @@ export interface NavOptions {
   mode: 'library' | 'toy';
   title?: string;
   slug?: string;
+  sectionLinks?: Array<{
+    href: string;
+    label: string;
+  }>;
+  utilityLink?: {
+    href: string;
+    label: string;
+  };
   onBack?: () => void;
   onShare?: () => void;
   onNextToy?: () => void | Promise<void>;
@@ -60,7 +68,7 @@ export function initNavigation(container: HTMLElement, options: NavOptions) {
   resetNavigationState(container as ToyNavContainer);
 
   if (options.mode === 'library') {
-    renderLibraryNav(container, doc);
+    renderLibraryNav(container, doc, options);
   } else {
     renderToyNav(container, doc, options);
   }
@@ -81,9 +89,22 @@ function resetNavigationState(container: ToyNavContainer) {
   );
 }
 
-function renderLibraryNav(container: HTMLElement, _doc: Document) {
+function renderLibraryNav(
+  container: HTMLElement,
+  _doc: Document,
+  options: NavOptions,
+) {
   const toyContainer = container as ToyNavContainer;
   const actionsId = 'nav-actions';
+  const sectionLinks = options.sectionLinks ?? [
+    { href: '#experience', label: 'Surfaces' },
+    { href: '#presets', label: 'Presets' },
+    { href: '#structure', label: 'Structure' },
+  ];
+  const utilityLink = options.utilityLink ?? {
+    href: '/milkdrop/',
+    label: 'Open setup',
+  };
 
   container.innerHTML = `
     <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="true">
@@ -107,13 +128,16 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
       </button>
       <div class="nav-actions" id="${actionsId}" popover="auto">
         <div class="nav-section nav-section--primary nav-section--jump" aria-label="Page sections">
-          <a class="nav-link nav-link--section" data-section-link href="#experience">Surfaces</a>
-          <a class="nav-link nav-link--section" data-section-link href="#presets">Presets</a>
-          <a class="nav-link nav-link--section" data-section-link href="#structure">Structure</a>
+          ${sectionLinks
+            .map(
+              (link) =>
+                `<a class="nav-link nav-link--section" data-section-link href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`,
+            )
+            .join('')}
           <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
         <div class="nav-section nav-section--utilities" aria-label="Site actions">
-          <a class="nav-link nav-link--launch" href="/milkdrop/">Open setup</a>
+          <a class="nav-link nav-link--launch" href="${escapeHtml(utilityLink.href)}">${escapeHtml(utilityLink.label)}</a>
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
             <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
             <span class="theme-toggle__label" data-theme-label>Dark mode</span>
