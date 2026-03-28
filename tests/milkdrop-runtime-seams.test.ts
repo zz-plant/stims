@@ -1,5 +1,9 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { createMilkdropBackendFailover } from '../assets/js/milkdrop/runtime/backend-fallback.ts';
+import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import {
+  createMilkdropBackendFailover,
+  shouldPresetFallbackToWebgl,
+} from '../assets/js/milkdrop/runtime/backend-fallback.ts';
 import {
   buildBlendStateForRender,
   buildRenderFrameState,
@@ -10,6 +14,7 @@ import type {
   MilkdropBlendState,
   MilkdropFrameState,
 } from '../assets/js/milkdrop/types.ts';
+import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 
 const gpuBlendState: MilkdropBlendState = {
   mode: 'gpu',
@@ -119,6 +124,55 @@ describe('milkdrop runtime lifecycle seams', () => {
 });
 
 describe('milkdrop backend failover seams', () => {
+  test('prefers webgl for presets that still hit known webgpu feedback or shape gaps', () => {
+    const videoEchoPreset = compileMilkdropPresetSource(
+      `
+title=Video Echo Orientation Gap
+video_echo=1
+video_echo_orientation=3
+      `.trim(),
+      { id: 'video-echo-orientation-gap' },
+    );
+    const customShapePreset = compileMilkdropPresetSource(
+      `
+title=Custom Shape Gap
+shapecode_0_enabled=1
+shapecode_0_sides=5
+      `.trim(),
+      { id: 'custom-shape-gap' },
+    );
+    const stablePreset = compileMilkdropPresetSource(
+      `
+title=Stable WebGPU Preset
+zoom=1.02
+warp=0.08
+      `.trim(),
+      { id: 'stable-webgpu-preset' },
+    );
+
+    expect(
+      shouldPresetFallbackToWebgl({
+        compiled: videoEchoPreset,
+        activeBackend: 'webgpu',
+        webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      }),
+    ).toBe(true);
+    expect(
+      shouldPresetFallbackToWebgl({
+        compiled: customShapePreset,
+        activeBackend: 'webgpu',
+        webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      }),
+    ).toBe(true);
+    expect(
+      shouldPresetFallbackToWebgl({
+        compiled: stablePreset,
+        activeBackend: 'webgpu',
+        webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      }),
+    ).toBe(false);
+  });
+
   test('records fallback metadata and reloads once for webgpu failures', () => {
     const recordFallback = mock(() => {});
     const reload = mock(() => {});
