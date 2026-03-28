@@ -107,7 +107,7 @@ function renderLibraryNav(
   };
 
   container.innerHTML = `
-    <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="true">
+    <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="false">
       <div class="brand">
         <span class="brand-mark"></span>
         <div class="brand-copy">
@@ -118,15 +118,13 @@ function renderLibraryNav(
       <button
         class="nav-toggle"
         type="button"
-        aria-expanded="true"
+        aria-expanded="false"
         aria-controls="${actionsId}"
-        popovertarget="${actionsId}"
-        popovertargetaction="toggle"
       >
         <span data-nav-toggle-label>Menu</span>
         <span class="nav-toggle__icon" data-nav-toggle-icon aria-hidden="true">☰</span>
       </button>
-      <div class="nav-actions" id="${actionsId}" popover="auto">
+      <div class="nav-actions" id="${actionsId}">
         <div class="nav-section nav-section--primary nav-section--jump" aria-label="Page sections">
           ${sectionLinks
             .map(
@@ -162,11 +160,8 @@ function renderLibraryNav(
   ) as HTMLElement | null;
   const mediaQuery = getMediaQueryList(maxWidthQuery(BREAKPOINTS.xs));
   const onResize = () => syncWithViewport();
-  const supportsPopover =
-    typeof HTMLElement !== 'undefined' &&
-    'showPopover' in HTMLElement.prototype &&
-    'hidePopover' in HTMLElement.prototype;
-  let isExpanded = !isBelowBreakpoint(BREAKPOINTS.xs);
+  const supportsPopover = false;
+  let isExpanded = false;
 
   const syncToggleUi = (expanded: boolean) => {
     if (!nav || !toggle) return;
@@ -306,7 +301,7 @@ function renderToyNav(
   const safeTitle = escapeHtml(options.title ?? 'Stims');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Back returns to Stims. Open audio and settings when needed.'
+    ? 'Back returns to Stims. Open more when you need extra controls.'
     : 'Press Esc or use Back to return to Stims.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
@@ -328,36 +323,36 @@ function renderToyNav(
           class="toy-nav__mobile-toggle"
           data-toy-actions-toggle="true"
           aria-controls="toy-nav-secondary-actions"
-          aria-expanded="true"
+          aria-expanded="false"
         >
-          Audio & settings
+          More
         </button>
       </div>
     </div>
-    <div class="active-toy-nav__actions" id="toy-nav-actions" data-toy-actions-expanded="true">
+    <div class="active-toy-nav__actions" id="toy-nav-actions" data-toy-actions-expanded="false">
       <div class="active-toy-nav__actions-primary">
         <div class="renderer-status-container"></div>
-        ${
-          options.onNextToy
-            ? `<div class="toy-nav__next-wrapper">
-                <button type="button" class="toy-nav__next" data-next-toy="true">
-                  Next
-                </button>
-                <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
-              </div>`
-            : ''
-        }
-        <div class="toy-nav__share-wrapper">
-          <button type="button" class="toy-nav__share" data-share-toy="true">
-            Share
-          </button>
-          <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
-        </div>
       </div>
       <div
         class="active-toy-nav__actions-secondary"
         id="toy-nav-secondary-actions"
       >
+      ${
+        options.onNextToy
+          ? `<div class="toy-nav__next-wrapper">
+              <button type="button" class="toy-nav__next" data-next-toy="true">
+                Next
+              </button>
+              <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
+            </div>`
+          : ''
+      }
+      <div class="toy-nav__share-wrapper">
+        <button type="button" class="toy-nav__share" data-share-toy="true">
+          Share
+        </button>
+        <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
+      </div>
       ${
         options.onToggleHaptics && options.hapticsSupported
           ? `<div class="toy-nav__flow-wrapper">
@@ -443,9 +438,7 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded
-        ? 'Hide audio & settings'
-        : 'Audio & settings';
+      actionsToggleBtn.textContent = expanded ? 'Hide more' : 'More';
     }
   };
 

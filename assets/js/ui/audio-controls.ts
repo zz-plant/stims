@@ -145,25 +145,14 @@ export function initAudioControls(
   const starterPresetLabel =
     options.starterPresetLabel?.trim() || 'calm starter preset';
   const starterPresetId = options.starterPresetId?.trim() || 'low-motion';
-  const tryThisFirst = buildTryThisFirstRecommendation({
-    recommendedCapability: options.recommendedCapability,
-    starterPresetLabel: options.starterPresetLabel,
-    wowControl: options.wowControl,
-    firstRunHint,
-  });
 
   container.innerHTML = `
     <p class="control-panel__eyebrow">Start</p>
     <div class="control-panel__heading">Start the visualizer</div>
-    <p class="control-panel__description">Choose the fastest source for this session. Demo starts instantly. Mic reacts to live room sound.</p>
+    <p class="control-panel__description">Start with demo for the fastest path in, or use mic for live room sound.</p>
     ${renderPrimaryAudioChoice()}
-    ${renderQuickstartSpotlight({
-      summary: tryThisFirst.summary,
-      detail: tryThisFirst.detail,
-      starterPresetLabel,
-      showStarterPresetAction: false,
-    })}
     ${renderAdvancedSources(options)}
+    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
     ${renderPostStartGuidance({
       firstRunHint,
       desktopHints,
@@ -173,7 +162,6 @@ export function initAudioControls(
       starterPresetLabel,
       showStarterPresetAction: true,
     })}
-    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
   `;
 
   const micBtn = container.querySelector('#start-audio-btn');
@@ -316,16 +304,10 @@ export function initAudioControls(
     maybeAutoStartMicrophone();
   });
 
-  const quickstartSpotlight = container.querySelector(
-    '[data-quickstart-spotlight]',
-  ) as HTMLElement | null;
   const postStartGuidance = container.querySelector(
     '[data-post-start-guidance]',
   ) as HTMLElement | null;
-  const hideFirstSteps = () => {
-    if (quickstartSpotlight) {
-      quickstartSpotlight.hidden = true;
-    }
+  const showPostStartGuidance = () => {
     if (postStartGuidance) {
       postStartGuidance.hidden = false;
     }
@@ -409,7 +391,7 @@ export function initAudioControls(
     hasStartedAudio = true;
     options.onSuccess?.();
     showGestureHints();
-    hideFirstSteps();
+    showPostStartGuidance();
   };
 
   if (options.initialStatus) {
@@ -631,38 +613,6 @@ function renderPrimaryAudioChoice() {
       </div>
       <button id="use-demo-audio" class="cta-button primary" type="button">Use demo</button>
     </div>
-  `;
-}
-
-function renderQuickstartSpotlight({
-  summary,
-  detail,
-  starterPresetLabel,
-  showStarterPresetAction,
-}: {
-  summary: string;
-  detail: string;
-  starterPresetLabel: string;
-  showStarterPresetAction: boolean;
-}) {
-  return `
-    <section class="control-panel__quickstart-spotlight" data-quickstart-spotlight role="note" aria-label="Start here">
-      <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">Start here</span>
-        <div class="control-panel__first-steps-actions">
-          ${
-            showStarterPresetAction
-              ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Apply ${starterPresetLabel}</button>`
-              : ''
-          }
-        </div>
-      </div>
-      <p class="control-panel__comparison" data-audio-comparison>${summary}</p>
-      ${detail ? `<p class="control-panel__microcopy">${detail}</p>` : ''}
-      <ul class="control-panel__tips control-panel__tips--compact">
-        <li data-first-step-source>Demo is the quickest way to get started. Mic is better when you want live input.</li>
-      </ul>
-    </section>
   `;
 }
 

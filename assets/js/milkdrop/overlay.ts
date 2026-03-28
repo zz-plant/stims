@@ -39,9 +39,6 @@ function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
 }
 
 export class MilkdropOverlay {
-  private static readonly WORKSPACE_HINT_STORAGE_KEY =
-    'stims:milkdrop:workspace-hint-dismissed';
-
   private readonly callbacks: OverlayCallbacks;
   private readonly root: HTMLElement;
   private readonly toggleButton: HTMLButtonElement;
@@ -53,7 +50,6 @@ export class MilkdropOverlay {
   private readonly blendSlider: HTMLInputElement;
   private readonly blendValue: HTMLElement;
   private readonly fileInput: HTMLInputElement;
-  private readonly workspaceHint: HTMLElement;
   private readonly tabButtons: HTMLButtonElement[];
   private readonly browsePanel: BrowsePanel;
   private readonly editorPanel: EditorPanel;
@@ -145,35 +141,10 @@ export class MilkdropOverlay {
     transitionWrap.append(transitionLabel, this.transitionModeSelect);
     sessionGroup.appendChild(transitionWrap);
 
-    const navigationGroup = document.createElement('div');
-    navigationGroup.className =
-      'milkdrop-overlay__toolbar-group milkdrop-overlay__toolbar-group--transport';
-
-    const backButton = document.createElement('button');
-    backButton.type = 'button';
-    backButton.textContent = 'Back';
-    backButton.addEventListener('click', () => this.callbacks.onGoBackPreset());
-    navigationGroup.appendChild(backButton);
-
-    const previousButton = document.createElement('button');
-    previousButton.type = 'button';
-    previousButton.textContent = 'Prev';
-    previousButton.addEventListener('click', () =>
-      this.callbacks.onPreviousPreset(),
-    );
-    navigationGroup.appendChild(previousButton);
-
-    const nextButton = document.createElement('button');
-    nextButton.type = 'button';
-    nextButton.textContent = 'Next';
-    nextButton.addEventListener('click', () => this.callbacks.onNextPreset());
-    navigationGroup.appendChild(nextButton);
-
     const randomButton = document.createElement('button');
     randomButton.type = 'button';
-    randomButton.textContent = 'Random';
+    randomButton.textContent = 'Shuffle';
     randomButton.addEventListener('click', () => this.callbacks.onRandomize());
-    navigationGroup.appendChild(randomButton);
 
     this.blendSlider = document.createElement('input');
     this.blendSlider.type = 'range';
@@ -198,7 +169,7 @@ export class MilkdropOverlay {
       this.blendValue,
     );
 
-    toolbar.append(sessionGroup, navigationGroup, blendWrap);
+    toolbar.append(sessionGroup, randomButton, blendWrap);
 
     const tabs = document.createElement('div');
     tabs.className = 'milkdrop-overlay__tabs';
@@ -223,24 +194,6 @@ export class MilkdropOverlay {
       }
       this.fileInput.value = '';
     });
-
-    this.workspaceHint = document.createElement('section');
-    this.workspaceHint.className = 'milkdrop-overlay__workspace-hint';
-    this.workspaceHint.setAttribute('role', 'note');
-    this.workspaceHint.setAttribute('aria-label', 'Workspace hint');
-    const workspaceHintCopy = document.createElement('p');
-    workspaceHintCopy.className = 'milkdrop-overlay__workspace-hint-copy';
-    workspaceHintCopy.textContent =
-      'Now in the workspace: browse presets, change the live look, or edit the active preset without stopping playback.';
-    const workspaceHintDismiss = document.createElement('button');
-    workspaceHintDismiss.type = 'button';
-    workspaceHintDismiss.className = 'milkdrop-overlay__workspace-hint-dismiss';
-    workspaceHintDismiss.textContent = 'Dismiss';
-    workspaceHintDismiss.addEventListener('click', () =>
-      this.dismissWorkspaceHint(),
-    );
-    this.workspaceHint.append(workspaceHintCopy, workspaceHintDismiss);
-    this.workspaceHint.hidden = this.hasDismissedWorkspaceHint();
 
     this.browsePanel = new BrowsePanel({
       onSelectPreset: (id) => this.callbacks.onSelectPreset(id),
@@ -267,7 +220,6 @@ export class MilkdropOverlay {
     const panelBody = document.createElement('div');
     panelBody.className = 'milkdrop-overlay__body';
     panelBody.append(
-      this.workspaceHint,
       this.browsePanel.element,
       this.editorPanel.element,
       this.inspectorPanel.element,
@@ -282,15 +234,9 @@ export class MilkdropOverlay {
   toggleOpen(force?: boolean) {
     if (typeof force === 'boolean') {
       this.root.classList.toggle('is-open', force);
-      if (force) {
-        this.maybeRevealWorkspaceHint();
-      }
       return;
     }
     this.root.classList.toggle('is-open');
-    if (this.isOpen()) {
-      this.maybeRevealWorkspaceHint();
-    }
   }
 
   isOpen() {
@@ -390,34 +336,6 @@ export class MilkdropOverlay {
     this.editorPanel.dispose();
     this.browsePanel.dispose();
     this.root.remove();
-  }
-
-  private hasDismissedWorkspaceHint() {
-    try {
-      return (
-        globalThis.localStorage?.getItem(
-          MilkdropOverlay.WORKSPACE_HINT_STORAGE_KEY,
-        ) === 'true'
-      );
-    } catch {
-      return false;
-    }
-  }
-
-  private maybeRevealWorkspaceHint() {
-    this.workspaceHint.hidden = this.hasDismissedWorkspaceHint();
-  }
-
-  private dismissWorkspaceHint() {
-    this.workspaceHint.hidden = true;
-    try {
-      globalThis.localStorage?.setItem(
-        MilkdropOverlay.WORKSPACE_HINT_STORAGE_KEY,
-        'true',
-      );
-    } catch {
-      return;
-    }
   }
 
   private setActiveTab(tab: string) {

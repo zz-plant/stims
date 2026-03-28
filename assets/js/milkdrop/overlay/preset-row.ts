@@ -243,30 +243,7 @@ function buildPresetRow({
     callbacks.onToggleFavorite(preset.id, !preset.isFavorite);
   });
 
-  const rating = document.createElement('select');
-  rating.className = 'milkdrop-overlay__rating-select';
-  rating.setAttribute('aria-label', `Rate ${preset.title}`);
-  rating.title = `Rate ${preset.title}`;
-  [0, 1, 2, 3, 4, 5].forEach((value) => {
-    const option = document.createElement('option');
-    option.value = String(value);
-    option.textContent = value === 0 ? '☆' : `${value}★`;
-    rating.appendChild(option);
-  });
-  rating.value = String(preset.rating);
-  rating.addEventListener('change', (event) => {
-    event.stopPropagation();
-    callbacks.onSetRating(preset.id, Number.parseInt(rating.value, 10));
-  });
-
-  actions.append(favorite, rating);
-
-  if (preset.origin !== 'bundled') {
-    const removable = document.createElement('span');
-    removable.className = 'milkdrop-overlay__preset-flag';
-    removable.textContent = 'Delete from toolbar';
-    actions.appendChild(removable);
-  }
+  actions.appendChild(favorite);
 
   row.append(launch, actions);
 

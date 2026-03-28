@@ -1,9 +1,4 @@
-import {
-  describeQualityPresetImpact,
-  getQualityPresetScopeHint,
-  QUALITY_STORAGE_KEY,
-  type QualityPreset,
-} from '../../core/settings-panel';
+import type { QualityPreset } from '../../core/settings-panel';
 import type { MilkdropCatalogEntry, MilkdropFidelityClass } from '../types';
 import { type PresetRowCallbacks, PresetRowRenderer } from './preset-row';
 
@@ -121,13 +116,10 @@ export function sortBrowsePresets({
 export class BrowsePanel {
   readonly element: HTMLElement;
 
-  private readonly callbacks: BrowsePanelCallbacks;
   private readonly rowRenderer: PresetRowRenderer;
   private readonly browseList: HTMLElement;
   private readonly browseActiveLabel: HTMLElement;
   private readonly browseMetaLabel: HTMLElement;
-  private readonly browseQualitySelect: HTMLSelectElement;
-  private readonly browseQualityHint: HTMLElement;
   private readonly browseModeButtons: HTMLButtonElement[] = [];
   private readonly browseOptionsDisclosure: HTMLDetailsElement;
   private readonly searchInput: HTMLInputElement;
@@ -142,8 +134,6 @@ export class BrowsePanel {
   private browseMode: BrowseMode = 'featured';
   private browseSort: BrowseSort = 'recommended';
   private browseSupportFilter: BrowseFidelityFilter = 'all';
-  private browseQualityPresets: QualityPreset[] = [];
-  private browseQualityStorageKey = QUALITY_STORAGE_KEY;
   private browseRenderDebounceId: number | null = null;
   private browseDirty = true;
   private lastCatalogSignature = '';
@@ -151,7 +141,6 @@ export class BrowsePanel {
   private visible = true;
 
   constructor(callbacks: BrowsePanelCallbacks) {
-    this.callbacks = callbacks;
     this.rowRenderer = new PresetRowRenderer(callbacks);
     this.element = document.createElement('section');
     this.element.className = 'milkdrop-overlay__tab-panel';
@@ -167,35 +156,12 @@ export class BrowsePanel {
     this.browseActiveLabel.setAttribute('aria-live', 'polite');
     this.browseActiveLabel.setAttribute('aria-atomic', 'true');
 
-    const qualityCard = document.createElement('div');
-    qualityCard.className = 'milkdrop-overlay__quality';
-    const qualityLabel = document.createElement('label');
-    qualityLabel.className = 'milkdrop-overlay__quality-label';
-    qualityLabel.textContent = 'Live look';
-    this.browseQualitySelect = document.createElement('select');
-    this.browseQualitySelect.className =
-      'milkdrop-overlay__rating-select milkdrop-overlay__quality-select';
-    this.browseQualitySelect.setAttribute('aria-label', 'Live quality preset');
-    this.browseQualitySelect.addEventListener('change', () => {
-      this.updateBrowseQualityDetails(this.browseQualitySelect.value);
-      this.callbacks.onSelectQualityPreset(this.browseQualitySelect.value);
-    });
-    qualityLabel.appendChild(this.browseQualitySelect);
-
     this.browseMetaLabel = document.createElement('p');
     this.browseMetaLabel.className = 'milkdrop-overlay__browse-meta';
     this.browseMetaLabel.textContent = 'Loading status…';
     this.browseMetaLabel.setAttribute('aria-live', 'polite');
     this.browseMetaLabel.setAttribute('role', 'status');
-
-    this.browseQualityHint = document.createElement('p');
-    this.browseQualityHint.className = 'milkdrop-overlay__quality-hint';
-    qualityCard.append(qualityLabel, this.browseQualityHint);
-    browseCopy.append(
-      this.browseActiveLabel,
-      qualityCard,
-      this.browseMetaLabel,
-    );
+    browseCopy.append(this.browseActiveLabel, this.browseMetaLabel);
     browseHero.append(browseCopy);
 
     this.searchInput = document.createElement('input');
@@ -303,6 +269,7 @@ export class BrowsePanel {
     const browseOptionsBody = document.createElement('div');
     browseOptionsBody.className = 'milkdrop-overlay__browse-options-body';
     browseOptionsBody.append(
+      this.buildBrowseControl('Browse', browseModeTabs),
       this.buildBrowseControl('Fidelity', this.browseSupportSelect),
       this.buildBrowseControl('Sort', this.browseSortSelect),
     );
@@ -315,7 +282,6 @@ export class BrowsePanel {
     browseControls.className = 'milkdrop-overlay__browse-controls';
     browseControls.append(
       this.buildBrowseControl('Search', this.searchInput, true),
-      this.buildBrowseControl('Browse', browseModeTabs),
       this.browseOptionsDisclosure,
     );
 
@@ -343,36 +309,18 @@ export class BrowsePanel {
   }
 
   setQualityPresets({
-    presets,
-    activePresetId,
-    storageKey = QUALITY_STORAGE_KEY,
+    presets: _presets,
+    activePresetId: _activePresetId,
+    storageKey: _storageKey,
   }: {
     presets: QualityPreset[];
     activePresetId: string;
     storageKey?: string;
   }) {
-    this.browseQualityPresets = presets;
-    this.browseQualityStorageKey = storageKey;
-
-    this.browseQualitySelect.replaceChildren();
-    presets.forEach((preset) => {
-      const option = document.createElement('option');
-      option.value = preset.id;
-      option.textContent = preset.label;
-      this.browseQualitySelect.appendChild(option);
-    });
-
-    const initialPreset =
-      presets.find((preset) => preset.id === activePresetId) ?? presets[0];
-    if (!initialPreset) {
-      this.browseQualitySelect.disabled = true;
-      this.browseQualityHint.textContent = '';
-      this.browseQualityHint.hidden = true;
-      return;
-    }
-
-    this.browseQualitySelect.disabled = false;
-    this.updateBrowseQualityDetails(initialPreset.id);
+    void _presets;
+    void _activePresetId;
+    void _storageKey;
+    // Live quality tuning now lives in the dedicated settings surface.
   }
 
   setActiveCollectionTag(collectionTag: string) {
@@ -380,7 +328,6 @@ export class BrowsePanel {
     this.browseDirty = true;
     this.updateBrowseFilterVisibility();
     if (this.visible) {
-      this.renderCollectionFilters();
       this.render();
     }
   }
@@ -414,7 +361,6 @@ export class BrowsePanel {
     this.lastCatalogSignature = catalogSignature;
     this.rowRenderer.syncValidIds(new Set(presets.map((preset) => preset.id)));
     if (this.visible) {
-      this.renderCollectionFilters();
       this.render();
     }
   }
@@ -500,27 +446,8 @@ export class BrowsePanel {
 
   private updateBrowseFilterVisibility() {
     const shouldShowCollections =
-      this.browseMode === 'all' ||
-      this.browseOptionsDisclosure.open ||
-      this.activeCollectionTag.length > 0;
+      this.browseOptionsDisclosure.open || this.activeCollectionTag.length > 0;
     this.collectionFilters.hidden = !shouldShowCollections;
-  }
-
-  private updateBrowseQualityDetails(presetId: string) {
-    const preset = this.browseQualityPresets.find(
-      (entry) => entry.id === presetId,
-    );
-    if (!preset) {
-      return;
-    }
-
-    this.browseQualitySelect.value = preset.id;
-    const impactSummary = describeQualityPresetImpact(preset);
-    const persistenceHint = getQualityPresetScopeHint(
-      this.browseQualityStorageKey,
-    );
-    this.browseQualityHint.textContent = impactSummary || persistenceHint;
-    this.browseQualityHint.hidden = !this.browseQualityHint.textContent;
   }
 
   private renderBrowseSummary(filteredCount = this.presets.length) {
@@ -656,6 +583,7 @@ export class BrowsePanel {
     this.lastBrowseRenderSignature = renderSignature;
     this.browseDirty = false;
     this.updateBrowseFilterVisibility();
+    this.renderCollectionFilters();
     const filtered = sortBrowsePresets({
       presets: this.presets.filter((preset) =>
         matchesBrowseFilters({

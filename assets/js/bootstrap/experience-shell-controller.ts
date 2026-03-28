@@ -217,8 +217,7 @@ export function bootExperienceShell({
     initTopNav(navContainer, {
       mode: 'library',
       sectionLinks: [
-        { href: '#session-flow', label: 'Flow' },
-        { href: '#launch-workspace', label: 'Setup' },
+        { href: '#main-content', label: 'Start' },
         { href: '#launch-panels', label: 'Controls' },
       ],
       utilityLink: {
