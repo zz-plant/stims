@@ -39,6 +39,9 @@ function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
 }
 
 export class MilkdropOverlay {
+  private static readonly WORKSPACE_HINT_STORAGE_KEY =
+    'stims:milkdrop:workspace-hint-dismissed';
+
   private readonly callbacks: OverlayCallbacks;
   private readonly root: HTMLElement;
   private readonly toggleButton: HTMLButtonElement;
@@ -50,6 +53,7 @@ export class MilkdropOverlay {
   private readonly blendSlider: HTMLInputElement;
   private readonly blendValue: HTMLElement;
   private readonly fileInput: HTMLInputElement;
+  private readonly workspaceHint: HTMLElement;
   private readonly tabButtons: HTMLButtonElement[];
   private readonly browsePanel: BrowsePanel;
   private readonly editorPanel: EditorPanel;
@@ -220,6 +224,24 @@ export class MilkdropOverlay {
       this.fileInput.value = '';
     });
 
+    this.workspaceHint = document.createElement('section');
+    this.workspaceHint.className = 'milkdrop-overlay__workspace-hint';
+    this.workspaceHint.setAttribute('role', 'note');
+    this.workspaceHint.setAttribute('aria-label', 'Workspace hint');
+    const workspaceHintCopy = document.createElement('p');
+    workspaceHintCopy.className = 'milkdrop-overlay__workspace-hint-copy';
+    workspaceHintCopy.textContent =
+      'Now in the workspace: browse presets, change the live look, or edit the active preset without stopping playback.';
+    const workspaceHintDismiss = document.createElement('button');
+    workspaceHintDismiss.type = 'button';
+    workspaceHintDismiss.className = 'milkdrop-overlay__workspace-hint-dismiss';
+    workspaceHintDismiss.textContent = 'Dismiss';
+    workspaceHintDismiss.addEventListener('click', () =>
+      this.dismissWorkspaceHint(),
+    );
+    this.workspaceHint.append(workspaceHintCopy, workspaceHintDismiss);
+    this.workspaceHint.hidden = this.hasDismissedWorkspaceHint();
+
     this.browsePanel = new BrowsePanel({
       onSelectPreset: (id) => this.callbacks.onSelectPreset(id),
       onSelectQualityPreset: (presetId) =>
@@ -245,6 +267,7 @@ export class MilkdropOverlay {
     const panelBody = document.createElement('div');
     panelBody.className = 'milkdrop-overlay__body';
     panelBody.append(
+      this.workspaceHint,
       this.browsePanel.element,
       this.editorPanel.element,
       this.inspectorPanel.element,
@@ -259,9 +282,15 @@ export class MilkdropOverlay {
   toggleOpen(force?: boolean) {
     if (typeof force === 'boolean') {
       this.root.classList.toggle('is-open', force);
+      if (force) {
+        this.maybeRevealWorkspaceHint();
+      }
       return;
     }
     this.root.classList.toggle('is-open');
+    if (this.isOpen()) {
+      this.maybeRevealWorkspaceHint();
+    }
   }
 
   isOpen() {
@@ -361,6 +390,34 @@ export class MilkdropOverlay {
     this.editorPanel.dispose();
     this.browsePanel.dispose();
     this.root.remove();
+  }
+
+  private hasDismissedWorkspaceHint() {
+    try {
+      return (
+        globalThis.localStorage?.getItem(
+          MilkdropOverlay.WORKSPACE_HINT_STORAGE_KEY,
+        ) === 'true'
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private maybeRevealWorkspaceHint() {
+    this.workspaceHint.hidden = this.hasDismissedWorkspaceHint();
+  }
+
+  private dismissWorkspaceHint() {
+    this.workspaceHint.hidden = true;
+    try {
+      globalThis.localStorage?.setItem(
+        MilkdropOverlay.WORKSPACE_HINT_STORAGE_KEY,
+        'true',
+      );
+    } catch {
+      return;
+    }
   }
 
   private setActiveTab(tab: string) {

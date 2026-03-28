@@ -113,7 +113,7 @@ function renderLibraryNav(container: HTMLElement, _doc: Document) {
           <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
         <div class="nav-section nav-section--utilities" aria-label="Site actions">
-          <a class="nav-link nav-link--launch" href="/milkdrop/">Open launchpad</a>
+          <a class="nav-link nav-link--launch" href="/milkdrop/">Open setup</a>
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
             <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
             <span class="theme-toggle__label" data-theme-label>Dark mode</span>

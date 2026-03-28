@@ -76,6 +76,11 @@ describe('control panel mobile affordances', () => {
     document.body.appendChild(host);
     const panel = initSystemControls(host, {
       variant: 'embedded',
+      title: 'Device defaults',
+      description:
+        'Choose the startup quality and compatibility settings for this device.',
+      qualityLabel: 'Startup look',
+      qualityHint: 'These defaults apply before the live workspace takes over.',
     });
 
     expect(panel.element.classList.contains('control-panel--embedded')).toBe(
@@ -84,5 +89,10 @@ describe('control panel mobile affordances', () => {
     expect(panel.element.classList.contains('control-panel--inline')).toBe(
       false,
     );
+    expect(panel.element.textContent).toContain('Device defaults');
+    expect(panel.element.textContent).toContain(
+      'Choose the startup quality and compatibility settings for this device.',
+    );
+    expect(panel.element.textContent).toContain('Startup look');
   });
 });

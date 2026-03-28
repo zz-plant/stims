@@ -171,11 +171,11 @@ export class BrowsePanel {
     qualityCard.className = 'milkdrop-overlay__quality';
     const qualityLabel = document.createElement('label');
     qualityLabel.className = 'milkdrop-overlay__quality-label';
-    qualityLabel.textContent = 'Quality';
+    qualityLabel.textContent = 'Live look';
     this.browseQualitySelect = document.createElement('select');
     this.browseQualitySelect.className =
       'milkdrop-overlay__rating-select milkdrop-overlay__quality-select';
-    this.browseQualitySelect.setAttribute('aria-label', 'Quality preset');
+    this.browseQualitySelect.setAttribute('aria-label', 'Live quality preset');
     this.browseQualitySelect.addEventListener('change', () => {
       this.updateBrowseQualityDetails(this.browseQualitySelect.value);
       this.callbacks.onSelectQualityPreset(this.browseQualitySelect.value);

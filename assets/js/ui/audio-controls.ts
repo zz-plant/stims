@@ -72,7 +72,7 @@ export function buildTryThisFirstRecommendation({
   if (recommendedCapability === 'microphone') {
     steps.push('Start with live mic for the most responsive visuals.');
   } else if (recommendedCapability === 'demoAudio') {
-    steps.push('Start with demo audio for the quickest start.');
+    steps.push('Start with demo audio for the fastest path in.');
   } else if (recommendedCapability === 'touch') {
     steps.push(
       'Start audio, then use touch gestures to bend, scale, and twist the scene.',
@@ -93,7 +93,7 @@ export function buildTryThisFirstRecommendation({
 
   const summary =
     steps[0] ??
-    'Start with demo audio or live mic, then interact with the canvas once sound begins.';
+    'Start with demo audio or live mic, then shape the session once playback starts.';
   const detail =
     steps.length > 1
       ? steps.slice(1).join(' ')
@@ -155,7 +155,7 @@ export function initAudioControls(
   container.innerHTML = `
     <p class="control-panel__eyebrow">Start</p>
     <div class="control-panel__heading">Start the visualizer</div>
-    <p class="control-panel__description">Start with demo audio for the quickest setup. Switch to mic when you want live input.</p>
+    <p class="control-panel__description">Choose the fastest source for this session. Demo starts instantly. Mic reacts to live room sound.</p>
     ${renderPrimaryAudioChoice()}
     ${renderQuickstartSpotlight({
       summary: tryThisFirst.summary,

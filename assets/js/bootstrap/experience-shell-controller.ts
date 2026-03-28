@@ -343,8 +343,11 @@ export function bootExperienceShell({
     }
 
     initSystemControls(host, {
-      title: 'Tune',
-      description: 'Keep the visualizer comfortable and responsive.',
+      title: 'Device defaults',
+      description:
+        'Choose the startup quality and compatibility settings for this device.',
+      qualityLabel: 'Startup look',
+      qualityHint: 'These defaults apply before the live workspace takes over.',
       defaultPresetId:
         result?.performance.recommendedQualityPresetId ?? undefined,
       variant: shouldCombineLaunchPanels ? 'embedded' : 'inline',

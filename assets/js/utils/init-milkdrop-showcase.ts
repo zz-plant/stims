@@ -78,14 +78,12 @@ function buildPresetDescription(entry: MilkdropCatalogEntry) {
     (tag) => !tag.startsWith('collection:'),
   );
   if (!tags.length) {
-    return 'Opens this preset inside the shared browser-native MilkDrop Visualizer.';
+    return 'Opens this preset in the live Stims workspace.';
   }
   return `${tags
     .slice(0, 3)
     .map((tag) => tag.replace(/-/gu, ' '))
-    .join(
-      ' · ',
-    )} preset. Opens inside the shared browser-native MilkDrop Visualizer.`;
+    .join(' · ')} preset. Opens in the live Stims workspace.`;
 }
 
 function createCollectionButton(
@@ -155,7 +153,7 @@ function createPresetCard(
   launch.href =
     '/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop';
   launch.className = 'cta-button primary';
-  launch.textContent = 'Open in workspace';
+  launch.textContent = 'Open in live workspace';
   launch.addEventListener('click', () => {
     requestMilkdropPresetSelection(entry.id);
   });
@@ -221,7 +219,7 @@ export async function initMilkdropShowcase() {
         ),
       );
 
-      presetCount.textContent = `${entries.length} bundled presets. ${collectionTags.length} quick collections. Showing ${featuredEntries.length} presets from ${collectionLabel}.`;
+      presetCount.textContent = `${entries.length} bundled presets across ${collectionTags.length} quick collections. Showing ${featuredEntries.length} picks from ${collectionLabel}.`;
 
       presetFilters.replaceChildren(
         createCollectionButton(document, {

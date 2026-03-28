@@ -33,6 +33,8 @@ type SystemControlOptions = {
   description?: string;
   qualityPresets?: QualityPreset[];
   defaultPresetId?: string;
+  qualityLabel?: string;
+  qualityHint?: string;
   variant?: 'floating' | 'inline' | 'embedded';
   includeAdvancedControls?: boolean;
   showDetailedQualitySummary?: boolean;
@@ -162,6 +164,8 @@ export function initSystemControls(
     description = 'Adjust quality, motion, and compatibility for this visualizer session.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId,
+    qualityLabel = 'Look',
+    qualityHint = 'Balance fidelity and frame rate.',
     variant = 'floating',
     includeAdvancedControls = true,
     showDetailedQualitySummary = false,
@@ -186,8 +190,8 @@ export function initSystemControls(
   panel.setQualityPresets({
     presets: qualityPresets,
     defaultPresetId: resolvedDefaultPresetId,
-    label: 'Look',
-    hint: 'Balance fidelity and frame rate.',
+    label: qualityLabel,
+    hint: qualityHint,
     showScopeHint: showDetailedQualitySummary,
     showChangeSummary: showDetailedQualitySummary,
     onChange: onQualityPresetChange,
