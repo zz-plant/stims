@@ -155,7 +155,7 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
   } as MilkdropCatalogEntry;
 }
 
-describe('milkdrop overlay quality controls', () => {
+describe('milkdrop overlay browse simplifications', () => {
   const OriginalMutationObserver = globalThis.MutationObserver;
 
   afterEach(() => {
@@ -163,7 +163,7 @@ describe('milkdrop overlay quality controls', () => {
     globalThis.MutationObserver = OriginalMutationObserver;
   });
 
-  test('renders quality controls inside browse and reports changes', () => {
+  test('keeps live quality controls out of browse', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
       observe() {}
@@ -181,31 +181,16 @@ describe('milkdrop overlay quality controls', () => {
       storageKey: 'stims:milkdrop:quality',
     });
 
-    const select = document.querySelector(
-      '.milkdrop-overlay__quality-select',
-    ) as HTMLSelectElement | null;
-
-    expect(select).not.toBeNull();
-    expect(select?.value).toBe('balanced');
-    expect(document.body.textContent).toContain('Live look');
-    expect(document.body.textContent).toContain(
-      'What changes: pixel ratio up to 1.50x, render scale 1.00x, particle density 1.00x.',
-    );
-
-    if (select) {
-      select.value = 'tv';
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    expect(onSelectQualityPreset).toHaveBeenCalledWith('tv');
-    expect(document.body.textContent).toContain(
-      'What changes: pixel ratio up to 1.10x, render scale 0.85x, particle density 0.70x.',
-    );
+    expect(
+      document.querySelector('.milkdrop-overlay__quality-select'),
+    ).toBeNull();
+    expect(document.body.textContent).not.toContain('Live look');
+    expect(onSelectQualityPreset).not.toHaveBeenCalled();
 
     overlay.dispose();
   });
 
-  test('shows a one-time workspace handoff hint and lets users dismiss it', () => {
+  test('opens without a workspace handoff hint card', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
       observe() {}
@@ -213,32 +198,12 @@ describe('milkdrop overlay quality controls', () => {
         return [];
       }
     } as unknown as typeof MutationObserver;
-
-    localStorage.removeItem('stims:milkdrop:workspace-hint-dismissed');
-
     const overlay = createOverlay();
     overlay.toggleOpen(true);
 
-    expect(document.body.textContent).toContain(
-      'Now in the workspace: browse presets, change the live look, or edit the active preset without stopping playback.',
-    );
-
-    const dismiss = document.querySelector(
-      '.milkdrop-overlay__workspace-hint-dismiss',
-    ) as HTMLButtonElement | null;
-    expect(dismiss).not.toBeNull();
-    dismiss?.click();
-
     expect(
-      localStorage.getItem('stims:milkdrop:workspace-hint-dismissed'),
-    ).toBe('true');
-    expect(
-      (
-        document.querySelector(
-          '.milkdrop-overlay__workspace-hint',
-        ) as HTMLElement | null
-      )?.hidden,
-    ).toBe(true);
+      document.querySelector('.milkdrop-overlay__workspace-hint'),
+    ).toBeNull();
 
     overlay.dispose();
   });
@@ -553,7 +518,7 @@ describe('milkdrop overlay browse rendering', () => {
     expect(allPresetsTab.tabIndex).toBe(0);
     expect(allPresetsTab.getAttribute('aria-selected')).toBe('true');
     expect(featuredTab.tabIndex).toBe(-1);
-    expect(collectionFilters.hidden).toBe(false);
+    expect(collectionFilters.hidden).toBe(true);
     expect(document.activeElement).toBe(allPresetsTab);
     expect(globalArrowHandlerTriggered).toBe(false);
 
@@ -622,6 +587,10 @@ describe('milkdrop overlay browse rendering', () => {
     expect(collectionFilters?.hidden).toBe(true);
 
     allPresetsTab.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(collectionFilters?.hidden).toBe(true);
+
+    optionsDisclosure.open = true;
+    optionsDisclosure.dispatchEvent(new Event('toggle'));
     expect(collectionFilters?.hidden).toBe(false);
     expect(collectionFilters?.textContent).toContain('Classic MilkDrop');
     expect(collectionFilters?.textContent).toContain('Feedback Lab');
@@ -681,17 +650,15 @@ describe('milkdrop overlay browse rendering', () => {
     const activeFavorite = activeRow?.querySelector(
       '.milkdrop-overlay__favorite',
     ) as HTMLButtonElement | null;
-    const activeRating = activeRow?.querySelector(
-      '.milkdrop-overlay__rating-select',
-    ) as HTMLSelectElement | null;
-
     expect(activeMeta?.textContent).toBe('Stims · Recent');
     expect(activeBadges).toEqual(['Live', 'Exact']);
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(
       'Remove saved preset',
     );
-    expect(activeRating?.value).toBe('4');
+    expect(
+      activeRow?.querySelector('.milkdrop-overlay__rating-select'),
+    ).toBeNull();
     expect(
       activeRow?.querySelector('.milkdrop-overlay__preset-warning'),
     ).toBeNull();

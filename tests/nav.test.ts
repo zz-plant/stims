@@ -222,13 +222,13 @@ describe('toy navigation visibility states', () => {
     expect(secondary.hidden).toBe(true);
     expect(secondary.getAttribute('aria-hidden')).toBe('true');
     expect(secondary.hasAttribute('inert')).toBe(true);
-    expect(toggle.textContent).toBe('Audio & settings');
+    expect(toggle.textContent).toBe('More');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
     expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
   });
 
-  test('mobile toy nav toggle updates its tools label as the drawer opens', () => {
+  test('mobile toy nav toggle updates its label as the drawer opens', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -241,7 +241,7 @@ describe('toy navigation visibility states', () => {
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Hide audio & settings');
+    expect(toggle.textContent).toBe('Hide more');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('aria-controls')).toBe(
       'toy-nav-secondary-actions',

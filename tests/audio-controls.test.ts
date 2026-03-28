@@ -126,7 +126,7 @@ describe('audio controls primary emphasis', () => {
     );
   });
 
-  test('shows comparison guidance and recommended source badge', () => {
+  test('shows concise source guidance and recommended source badge', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -135,7 +135,7 @@ describe('audio controls primary emphasis', () => {
     });
 
     expect(container.textContent).toContain(
-      'Choose the fastest source for this session. Demo starts instantly. Mic reacts to live room sound.',
+      'Start with demo for the fastest path in, or use mic for live room sound.',
     );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
@@ -301,30 +301,19 @@ describe('audio controls primary emphasis', () => {
     expect(desktopHints?.textContent).toContain('Move to steer');
     expect(touchHints?.hidden).toBe(true);
   });
-  test('does not auto-hide the try-this-first spotlight before user dismisses it', () => {
+  test('does not render a duplicate pre-start spotlight card', () => {
     const container = document.createElement('section');
-    const originalSetTimeout = window.setTimeout;
-    let timeoutCalls = 0;
-    window.setTimeout = ((...args: Parameters<typeof window.setTimeout>) => {
-      timeoutCalls += 1;
-      return originalSetTimeout(...args);
-    }) as typeof window.setTimeout;
 
     initAudioControls(container, {
       onRequestMicrophone: async () => {},
       onRequestDemoAudio: async () => {},
     });
 
-    const firstSteps = container.querySelector(
-      '[data-quickstart-spotlight]',
-    ) as HTMLElement;
-    expect(firstSteps.hidden).toBe(false);
-    expect(timeoutCalls).toBe(0);
-
-    window.setTimeout = originalSetTimeout;
+    expect(container.querySelector('[data-quickstart-spotlight]')).toBeNull();
+    expect(container.querySelector('[data-first-step-source]')).toBeNull();
   });
 
-  test('renders the start-here spotlight with concise first-run guidance', () => {
+  test('keeps first-run guidance inside the post-start panel', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -333,12 +322,11 @@ describe('audio controls primary emphasis', () => {
       firstRunHint: 'Try turning the main knob slowly for smoother motion.',
     });
 
-    const firstSteps = container.querySelector(
-      '[data-quickstart-spotlight]',
-    ) as HTMLElement;
-    expect(firstSteps.hidden).toBe(false);
-    expect(firstSteps.textContent).toContain('Start here');
-    expect(firstSteps.textContent).toContain(
+    const postStartGuidance = container.querySelector(
+      '[data-post-start-guidance]',
+    ) as HTMLElement | null;
+    expect(postStartGuidance?.hidden).toBe(true);
+    expect(postStartGuidance?.textContent).toContain(
       'Try turning the main knob slowly for smoother motion.',
     );
   });
@@ -451,7 +439,7 @@ describe('audio controls primary emphasis', () => {
     ).toEqual(['Drag to bend the scene hard.', 'Rotate to twist the image.']);
   });
 
-  test('keeps a single visible start-here prompt instead of stacked quick-start tips', () => {
+  test('keeps the start surface focused instead of stacking quick-start prompts', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -460,12 +448,8 @@ describe('audio controls primary emphasis', () => {
       starterTips: ['Tip one', 'Tip two'],
     });
 
-    const quickstart = container.querySelector(
-      '[data-quickstart-spotlight]',
-    ) as HTMLElement;
-    expect(quickstart.hidden).toBe(false);
+    expect(container.querySelector('[data-quickstart-spotlight]')).toBeNull();
     expect(container.querySelector('[data-quickstart-panel]')).toBeNull();
-    expect(quickstart.textContent).toContain('Start here');
   });
 
   test('applies low-motion starter preset from first-steps quick action', () => {
@@ -609,7 +593,7 @@ describe('audio controls primary emphasis', () => {
     });
   });
 
-  test('updates onboarding source copy when demo is preferred', () => {
+  test('does not render separate onboarding source copy when demo is preferred', () => {
     const container = document.createElement('section');
 
     initAudioControls(container, {
@@ -618,10 +602,7 @@ describe('audio controls primary emphasis', () => {
       preferDemoAudio: true,
     });
 
-    const sourceStep = container.querySelector('[data-first-step-source]');
-    expect(sourceStep?.textContent).toContain(
-      'Demo is the quickest way to get started.',
-    );
+    expect(container.querySelector('[data-first-step-source]')).toBeNull();
   });
 
   test('disables YouTube load until a valid link is entered', () => {
@@ -773,17 +754,19 @@ describe('audio controls primary emphasis', () => {
 
     const micRow = container.querySelector('[data-audio-row="mic"]');
     const demoRow = container.querySelector('[data-audio-row="demo"]');
-    const firstSteps = container.querySelector(
-      '[data-quickstart-spotlight]',
-    ) as HTMLElement;
-
     expect(micRow?.classList.contains('control-panel__row--primary')).toBe(
       false,
     );
     expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
       true,
     );
-    expect(firstSteps.hidden).toBe(true);
+    expect(
+      (
+        container.querySelector(
+          '[data-post-start-guidance]',
+        ) as HTMLElement | null
+      )?.hidden,
+    ).toBe(false);
   });
 
   test('switches emphasis back to microphone after successful mic start', async () => {
