@@ -1,5 +1,3 @@
-import { WebHaptics } from 'web-haptics';
-
 export type HapticPatternStep = {
   delay?: number;
   duration: number;
@@ -15,15 +13,28 @@ export type HapticEngine = {
 };
 
 export function supportsHaptics(navigatorRef: () => Navigator | null) {
-  return (
-    WebHaptics.isSupported || typeof navigatorRef()?.vibrate === 'function'
+  return typeof navigatorRef()?.vibrate === 'function';
+}
+
+function toVibrationPattern(input: HapticInput): number[] {
+  if (typeof input === 'number') {
+    return [input];
+  }
+
+  if (Array.isArray(input) && typeof input[0] === 'number') {
+    return input as number[];
+  }
+
+  const steps = (input as HapticPatternStep[]) ?? [];
+  return steps.flatMap((entry) =>
+    entry.delay ? [entry.delay, entry.duration] : [entry.duration],
   );
 }
 
 export function createHapticsEngine(
   navigatorRef: () => Navigator | null,
 ): HapticEngine {
-  const webHaptics = new WebHaptics();
+  const isSupported = supportsHaptics(navigatorRef);
 
   const trigger = (
     input: HapticInput = [
@@ -33,38 +44,19 @@ export function createHapticsEngine(
       },
     ],
   ) => {
-    if (WebHaptics.isSupported) {
-      return webHaptics.trigger(input);
-    }
-
     const nav = navigatorRef();
     if (!nav?.vibrate) {
       return Promise.resolve();
     }
 
-    if (typeof input === 'number') {
-      nav.vibrate(input);
-      return Promise.resolve();
-    }
-
-    if (Array.isArray(input) && typeof input[0] === 'number') {
-      nav.vibrate(input as number[]);
-      return Promise.resolve();
-    }
-
-    const steps = (input as HapticPatternStep[]) ?? [];
-    const pattern = steps.flatMap((entry) =>
-      entry.delay ? [entry.delay, entry.duration] : [entry.duration],
-    );
-    nav.vibrate(pattern);
+    nav.vibrate(toVibrationPattern(input));
     return Promise.resolve();
   };
 
   return {
-    isSupported: WebHaptics.isSupported,
+    isSupported,
     trigger,
     cancel: () => {
-      webHaptics.cancel();
       navigatorRef()?.vibrate?.(0);
     },
   };
