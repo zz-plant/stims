@@ -21,18 +21,17 @@ const supportedWebgl: MilkdropBackendSupport = {
 
 const partialWebgpu: MilkdropBackendSupport = {
   status: 'partial',
-  reasons: ['Translated shader text keeps control fallbacks active.'],
+  reasons: ['Non-volume tex3D aux sampling is approximated from 2D data.'],
   evidence: [
     {
       backend: 'webgpu',
       scope: 'backend',
       status: 'partial',
-      code: 'supported-shader-text-gap',
-      message: 'Translated shader text keeps control fallbacks active.',
-      feature: 'unsupported-shader-text',
+      code: 'volume-sampler-gap',
+      message: 'Non-volume tex3D aux sampling is approximated from 2D data.',
     },
   ],
-  requiredFeatures: ['base-globals', 'unsupported-shader-text'],
+  requiredFeatures: ['base-globals'],
   unsupportedFeatures: [],
 };
 

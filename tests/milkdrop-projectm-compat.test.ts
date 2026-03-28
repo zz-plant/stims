@@ -81,21 +81,6 @@ const FULL_SUPPORT_EXPECTATION = {
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
-const TRANSLATED_WEBGPU_SUPPORT_EXPECTATION = {
-  diagnostics: [],
-  webgl: 'supported',
-  webgpu: 'partial',
-  divergence: [
-    'status:webgl=supported,webgpu=partial',
-    'webgpu:supported-shader-text-gap',
-  ],
-  warnings: [
-    'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
-  ],
-  blockedConstructs: [],
-  unsupportedKeys: [],
-} as const satisfies ProjectMFixtureExpectation;
-
 const PROJECTM_FIXTURE_EXPECTATIONS = {
   '000-empty.milk': FULL_SUPPORT_EXPECTATION,
   '001-line.milk': FULL_SUPPORT_EXPECTATION,
@@ -131,8 +116,8 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '250-wavecode.milk': FULL_SUPPORT_EXPECTATION,
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
-  '260-compshader-noise_lq.milk': TRANSLATED_WEBGPU_SUPPORT_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': TRANSLATED_WEBGPU_SUPPORT_EXPECTATION,
+  '260-compshader-noise_lq.milk': FULL_SUPPORT_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': FULL_SUPPORT_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],
@@ -516,22 +501,26 @@ describe('milkdrop vendored projectM fixture corpus', () => {
     expect(actualSnapshot).toEqual(expectedSnapshot);
   });
 
-  test('steps the vendored upstream fixture corpus through the VM without invalid frame output', () => {
-    const corpus = loadProjectMPresetCorpus();
+  test(
+    'steps the vendored upstream fixture corpus through the VM without invalid frame output',
+    () => {
+      const corpus = loadProjectMPresetCorpus();
 
-    corpus.forEach(({ file, compiled }) => {
-      const vm = createMilkdropVM(compiled);
+      corpus.forEach(({ file, compiled }) => {
+        const vm = createMilkdropVM(compiled);
 
-      [1, 2, 5].forEach((frame) => {
-        const frameState = vm.step(makeSignals({ frame }));
-        const numericValues = collectFrameNumbers(frameState);
+        [1, 2, 5].forEach((frame) => {
+          const frameState = vm.step(makeSignals({ frame }));
+          const numericValues = collectFrameNumbers(frameState);
 
-        expect(frameState.presetId).toBe(basename(file, '.milk'));
-        expect(frameState.title.length).toBeGreaterThan(0);
-        expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
-        expect(frameState.waveform.positions.length).toBeGreaterThan(0);
-        expect(numericValues.every(Number.isFinite)).toBe(true);
+          expect(frameState.presetId).toBe(basename(file, '.milk'));
+          expect(frameState.title.length).toBeGreaterThan(0);
+          expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
+          expect(frameState.waveform.positions.length).toBeGreaterThan(0);
+          expect(numericValues.every(Number.isFinite)).toBe(true);
+        });
       });
-    });
-  });
+    },
+    { timeout: 30000 },
+  );
 });

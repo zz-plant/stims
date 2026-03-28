@@ -96,14 +96,8 @@ const BACKEND_PARTIAL_FEATURE_GAPS: Record<
   MilkdropRenderBackend,
   Partial<Record<MilkdropFeatureKey, string>>
 > = {
-  webgl: {
-    'shape-texture-controls':
-      'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
-  },
-  webgpu: {
-    'shape-texture-controls':
-      'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
-  },
+  webgl: {},
+  webgpu: {},
 };
 const BACKEND_SHADER_TEXT_GAPS: Record<
   MilkdropRenderBackend,
@@ -117,8 +111,6 @@ const BACKEND_SHADER_TEXT_GAPS: Record<
       'This preset includes custom shader text outside the fully supported subset and will be approximated.',
   },
   webgpu: {
-    supportedSubset:
-      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
     unsupportedSubset:
       'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
   },

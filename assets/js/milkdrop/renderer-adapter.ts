@@ -4,6 +4,7 @@ import type {
   PointsMaterial,
   Scene,
   ShaderMaterial,
+  Texture,
 } from 'three';
 import {
   AdditiveBlending,
@@ -506,6 +507,17 @@ function interpolateShapeVisual(
     y: lerpNumber(previousShape.y, currentShape.y, mix),
     radius: lerpNumber(previousShape.radius, currentShape.radius, mix),
     rotation: lerpNumber(previousShape.rotation, currentShape.rotation, mix),
+    textured: previousShape.textured || currentShape.textured,
+    textureZoom: lerpNumber(
+      previousShape.textureZoom,
+      currentShape.textureZoom,
+      mix,
+    ),
+    textureAngle: lerpNumber(
+      previousShape.textureAngle,
+      currentShape.textureAngle,
+      mix,
+    ),
     color: lerpColor(previousShape.color, currentShape.color, mix),
     secondaryColor:
       previousShape.secondaryColor || currentShape.secondaryColor
@@ -964,6 +976,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
                 this.behavior,
                 {
                   getShapeFillFallbackColor,
+                  getShapeTexture: () =>
+                    (this.feedback?.getShapeTexture?.() as Texture | null) ??
+                    null,
                   getUnitPolygonFillGeometry,
                   getUnitPolygonOutlineGeometry,
                   getUnitPolygonClosedLineGeometry,
@@ -978,6 +993,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
                 {
                   disposeMaterial,
                   getShapeFillFallbackColor,
+                  getShapeTexture: () =>
+                    (this.feedback?.getShapeTexture?.() as Texture | null) ??
+                    null,
                   setMaterialColor,
                 },
                 syncAlphaMultiplier,

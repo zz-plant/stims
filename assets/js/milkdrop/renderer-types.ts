@@ -1,4 +1,4 @@
-import type { Camera, Scene } from 'three';
+import type { Camera, Scene, Texture } from 'three';
 import type {
   MilkdropCompatibilityReport,
   MilkdropCompiledPreset,
@@ -44,6 +44,9 @@ export type MilkdropShapeVisual = {
   radius: number;
   sides: number;
   rotation: number;
+  textured: boolean;
+  textureZoom: number;
+  textureAngle: number;
   color: MilkdropColor;
   secondaryColor?: MilkdropColor | null;
   borderColor: MilkdropColor;
@@ -322,6 +325,7 @@ export type MilkdropFeedbackSetRenderTarget = {
 
 export interface MilkdropFeedbackManager {
   applyCompositeState(state: MilkdropFeedbackCompositeState): void;
+  getShapeTexture?(): Texture | null;
   setAdaptiveQuality?(
     multipliers: Partial<{
       feedbackResolutionMultiplier: number;

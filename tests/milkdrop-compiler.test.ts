@@ -174,7 +174,7 @@ shapecode_0_bThickOutline=1
     });
   });
 
-  test('preserves MilkDrop2 shape texture controls and instance locals as explicit partial support', () => {
+  test('preserves MilkDrop2 shape texture controls and instance locals as fully supported runtime state', () => {
     const compiled = compileMilkdropPresetSource(
       `
 [preset00]
@@ -203,11 +203,9 @@ shape_0_init1=ang=tex_ang+instance*0.1;
     expect(compiled.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
       [],
     );
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.warnings).toEqual([
-      'Custom shape texture controls (textured, tex_zoom, tex_ang) are parsed but not rendered yet.',
-    ]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
   });
 
   test('keeps zoom and fZoomExponent distinct in compiled numeric fields', () => {
@@ -416,7 +414,7 @@ ib_border=1
     );
 
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(
       compiled.ir.compatibility.featureAnalysis.unsupportedShaderText,
     ).toBe(false);
@@ -427,10 +425,7 @@ ib_border=1
     expect(compiled.ir.post.innerBorderStyle).toBe(true);
     expect(compiled.ir.post.shaderControls.hueShift).toBeCloseTo(0.35, 6);
     expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.25, 6);
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
-      'status:webgl=supported,webgpu=partial',
-      'webgpu:supported-shader-text-gap',
-    ]);
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
   });
 
   test('supports shader transform controls in the subset', () => {
@@ -542,14 +537,8 @@ comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
     expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'supported-shader-text-gap',
-        }),
-      ]),
-    );
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );
@@ -661,7 +650,7 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
 
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.post.shaderControls.colorScale.r).toBeCloseTo(1.2, 6);
     expect(compiled.ir.post.shaderControls.colorScale.g).toBeCloseTo(1.2, 6);
     expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(1.2, 6);
@@ -669,16 +658,7 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
     expect(compiled.ir.shaderText.compAst).toHaveLength(1);
     expect(compiled.ir.shaderText.warpProgram).toBeNull();
     expect(compiled.ir.shaderText.compProgram).toBeNull();
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'supported-shader-text-gap',
-          status: 'partial',
-          message:
-            'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
-        }),
-      ]),
-    );
+    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );
@@ -824,11 +804,8 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
       b: 1.2,
     });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([
-      'status:webgl=supported,webgpu=partial',
-      'webgpu:supported-shader-text-gap',
-    ]);
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
   });
 
   test('extracts tex3D and texture3D shader sampler aliases as volume lookups', () => {
@@ -853,11 +830,11 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
       expect(compiled.diagnostics).toEqual([]);
-      expect(compiled.ir.compatibility.warnings).toEqual([
-        'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
-      ]);
+      expect(compiled.ir.compatibility.warnings).toEqual([]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'supported',
+      );
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
       );
@@ -890,11 +867,9 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
       compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
     ).not.toBeNull();
     expect(compiled.diagnostics).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([
-      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
-    ]);
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.compProgram).toBeNull();
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
@@ -971,10 +946,8 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
       '3d',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.warnings).toEqual([
-      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
-    ]);
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
   });
 
   test('downgrades tex3D extraction for aux samplers without volume atlases', () => {
@@ -1003,7 +976,6 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
     ]);
     expect(compiled.ir.compatibility.warnings).toEqual([
       'Texture layer shader control uses tex3D/texture3D with aux sampler "noise", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.',
-      'WebGPU now translates the supported shader-text subset into its direct feedback execution plan while preserving control-based fallbacks for the remaining composite state.',
     ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
@@ -1450,7 +1422,7 @@ warp_shader=unsupported(shader)
         (reason) => reason.code,
       ),
     ).not.toContain('allowlisted-gap');
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
   });
 
   test('lists missing aliases and functions from parsed expressions', () => {

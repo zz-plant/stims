@@ -1077,6 +1077,16 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     return target;
   }
 
+  private clearShapeTarget(key: string) {
+    const target = this.shapeTargets.get(key);
+    if (!target) {
+      return;
+    }
+    target.dispose();
+    this.root.remove(target.group);
+    this.shapeTargets.delete(key);
+  }
+
   private getBorderTarget(key: string) {
     let target = this.borderTargets.get(key);
     if (!target) {
@@ -1159,6 +1169,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier: number,
   ) {
+    if (shapes.some((shape) => shape.textured)) {
+      this.clearShapeTarget(target);
+      return false;
+    }
     this.getShapeTarget(target).sync(shapes, alphaMultiplier);
     return true;
   }

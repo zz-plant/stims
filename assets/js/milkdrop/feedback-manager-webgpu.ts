@@ -1383,6 +1383,10 @@ class WebGPUMilkdropFeedbackManager {
     return this.targets[(this.index + 1) % 2];
   }
 
+  getShapeTexture() {
+    return this.readTarget.texture;
+  }
+
   swap() {
     this.index = (this.index + 1) % 2;
     this.presentMaterial.map = this.readTarget.texture;

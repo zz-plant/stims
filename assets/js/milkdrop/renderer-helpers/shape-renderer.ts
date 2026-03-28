@@ -1,4 +1,4 @@
-import type { Group, Line, LineLoop, Material, Mesh } from 'three';
+import type { Group, Line, LineLoop, Material, Mesh, Texture } from 'three';
 import {
   AdditiveBlending,
   Color,
@@ -18,13 +18,173 @@ import type {
 } from '../renderer-adapter';
 import type { MilkdropShapeVisual } from '../types';
 
+type ShapeFillHelpers = {
+  getShapeFillFallbackColor: (
+    shape: MilkdropShapeVisual,
+  ) => MilkdropShapeVisual['color'];
+  getShapeTexture: () => Texture | null;
+};
+
+function shouldUseShapeShaderFill(
+  shape: MilkdropShapeVisual,
+  behavior: MilkdropBackendBehavior,
+  texture: Texture | null,
+) {
+  return (
+    (Boolean(shape.secondaryColor) && behavior.supportsShapeGradient) ||
+    (shape.textured && texture !== null)
+  );
+}
+
+function syncShapeShaderUniforms(
+  material: ShaderMaterial,
+  shape: MilkdropShapeVisual,
+  texture: Texture | null,
+  alphaMultiplier: number,
+) {
+  material.uniforms.primaryColor.value.setRGB(
+    shape.color.r,
+    shape.color.g,
+    shape.color.b,
+  );
+  material.uniforms.secondaryColor.value.setRGB(
+    shape.secondaryColor?.r ?? 0,
+    shape.secondaryColor?.g ?? 0,
+    shape.secondaryColor?.b ?? 0,
+  );
+  material.uniforms.primaryAlpha.value =
+    (shape.color.a ?? 0.4) * alphaMultiplier;
+  material.uniforms.secondaryAlpha.value =
+    (shape.secondaryColor?.a ?? 0) * alphaMultiplier;
+  material.uniforms.shapeTexture.value = texture;
+  material.uniforms.useGradient.value = shape.secondaryColor ? 1 : 0;
+  material.uniforms.textured.value = shape.textured && texture ? 1 : 0;
+  material.uniforms.textureZoom.value = Math.max(
+    0.0001,
+    shape.textureZoom ?? 1,
+  );
+  material.uniforms.textureAngle.value = shape.textureAngle ?? 0;
+}
+
+function createShapeFillShaderMaterial(
+  shape: MilkdropShapeVisual,
+  texture: Texture | null,
+  alphaMultiplier: number,
+) {
+  const material = new ShaderMaterial({
+    uniforms: {
+      primaryColor: {
+        value: new Color(shape.color.r, shape.color.g, shape.color.b),
+      },
+      secondaryColor: {
+        value: new Color(
+          shape.secondaryColor?.r ?? 0,
+          shape.secondaryColor?.g ?? 0,
+          shape.secondaryColor?.b ?? 0,
+        ),
+      },
+      primaryAlpha: {
+        value: (shape.color.a ?? 0.4) * alphaMultiplier,
+      },
+      secondaryAlpha: {
+        value: (shape.secondaryColor?.a ?? 0) * alphaMultiplier,
+      },
+      shapeTexture: {
+        value: texture,
+      },
+      useGradient: {
+        value: shape.secondaryColor ? 1 : 0,
+      },
+      textured: {
+        value: shape.textured && texture ? 1 : 0,
+      },
+      textureZoom: {
+        value: Math.max(0.0001, shape.textureZoom ?? 1),
+      },
+      textureAngle: {
+        value: shape.textureAngle ?? 0,
+      },
+    },
+    transparent: true,
+    side: DoubleSide,
+    ...(shape.additive ? { blending: AdditiveBlending } : {}),
+    vertexShader: `
+      varying vec2 vLocal;
+
+      void main() {
+        vLocal = position.xy;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 primaryColor;
+      uniform vec3 secondaryColor;
+      uniform float primaryAlpha;
+      uniform float secondaryAlpha;
+      uniform sampler2D shapeTexture;
+      uniform float useGradient;
+      uniform float textured;
+      uniform float textureZoom;
+      uniform float textureAngle;
+      varying vec2 vLocal;
+
+      vec2 rotate2d(vec2 value, float angle) {
+        float s = sin(angle);
+        float c = cos(angle);
+        return vec2(
+          value.x * c - value.y * s,
+          value.x * s + value.y * c
+        );
+      }
+
+      void main() {
+        float blend = clamp(length(vLocal), 0.0, 1.0);
+        vec3 tint = mix(primaryColor, secondaryColor, blend * useGradient);
+        float alpha = mix(primaryAlpha, secondaryAlpha, blend * useGradient);
+        vec3 color = tint;
+
+        if (textured > 0.5) {
+          vec2 sampleUv =
+            rotate2d(vLocal, textureAngle) * (0.5 * max(textureZoom, 0.0001)) +
+            0.5;
+          vec4 sampled = texture2D(shapeTexture, clamp(sampleUv, 0.0, 1.0));
+          color = sampled.rgb * tint;
+          alpha *= sampled.a;
+        }
+
+        gl_FragColor = vec4(color, alpha);
+      }
+    `,
+  });
+  syncShapeShaderUniforms(material, shape, texture, alphaMultiplier);
+  return material;
+}
+
+function createShapeFillMaterial(
+  shape: MilkdropShapeVisual,
+  behavior: MilkdropBackendBehavior,
+  helpers: ShapeFillHelpers,
+  alphaMultiplier: number,
+) {
+  const texture = helpers.getShapeTexture();
+  if (shouldUseShapeShaderFill(shape, behavior, texture)) {
+    return createShapeFillShaderMaterial(shape, texture, alphaMultiplier);
+  }
+
+  const fillColor = helpers.getShapeFillFallbackColor(shape);
+  return new MeshBasicMaterial({
+    color: new Color(fillColor.r, fillColor.g, fillColor.b),
+    opacity: (fillColor.a ?? 0.4) * alphaMultiplier,
+    transparent: true,
+    side: DoubleSide,
+    ...(shape.additive ? { blending: AdditiveBlending } : {}),
+  });
+}
+
 export function createShapeObject(
   shape: MilkdropShapeVisual,
   behavior: MilkdropBackendBehavior,
-  helpers: {
-    getShapeFillFallbackColor: (
-      shape: MilkdropShapeVisual,
-    ) => MilkdropShapeVisual['color'];
+  helpers: ShapeFillHelpers & {
     getUnitPolygonFillGeometry: (sides: number) => ThreeMesh['geometry'];
     getUnitPolygonOutlineGeometry: (sides: number) => ThreeLine['geometry'];
     getUnitPolygonClosedLineGeometry: (sides: number) => ThreeLine['geometry'];
@@ -32,50 +192,9 @@ export function createShapeObject(
   alphaMultiplier = 1,
 ) {
   const group = new ThreeGroup();
-  const fillMaterial =
-    shape.secondaryColor && behavior.supportsShapeGradient
-      ? new ShaderMaterial({
-          uniforms: {
-            primaryColor: {
-              value: new Color(shape.color.r, shape.color.g, shape.color.b),
-            },
-            secondaryColor: {
-              value: new Color(
-                shape.secondaryColor.r,
-                shape.secondaryColor.g,
-                shape.secondaryColor.b,
-              ),
-            },
-            primaryAlpha: {
-              value: (shape.color.a ?? 0.4) * alphaMultiplier,
-            },
-            secondaryAlpha: {
-              value: (shape.secondaryColor.a ?? 0) * alphaMultiplier,
-            },
-          },
-          transparent: true,
-          side: DoubleSide,
-          ...(shape.additive ? { blending: AdditiveBlending } : {}),
-          vertexShader: `varying vec2 vLocal; void main() { vLocal = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-          fragmentShader: `uniform vec3 primaryColor; uniform vec3 secondaryColor; uniform float primaryAlpha; uniform float secondaryAlpha; varying vec2 vLocal; void main() { float blend = clamp(length(vLocal), 0.0, 1.0); vec3 color = mix(primaryColor, secondaryColor, blend); float alpha = mix(primaryAlpha, secondaryAlpha, blend); gl_FragColor = vec4(color, alpha); }`,
-        })
-      : new MeshBasicMaterial({
-          color: new Color(
-            helpers.getShapeFillFallbackColor(shape).r,
-            helpers.getShapeFillFallbackColor(shape).g,
-            helpers.getShapeFillFallbackColor(shape).b,
-          ),
-          opacity:
-            (helpers.getShapeFillFallbackColor(shape).a ?? 0.4) *
-            alphaMultiplier,
-          transparent: true,
-          side: DoubleSide,
-          ...(shape.additive ? { blending: AdditiveBlending } : {}),
-        });
-
   const fill = new ThreeMesh(
     helpers.getUnitPolygonFillGeometry(shape.sides),
-    fillMaterial,
+    createShapeFillMaterial(shape, behavior, helpers, alphaMultiplier),
   );
   fill.position.set(shape.x, shape.y, 0.14);
   fill.scale.set(shape.radius, shape.radius, 1);
@@ -136,13 +255,10 @@ export function syncShapeFillMaterial(
   mesh: Mesh,
   shape: MilkdropShapeVisual,
   behavior: MilkdropBackendBehavior,
-  helpers: {
+  helpers: ShapeFillHelpers & {
     disposeMaterial: (
       material: Material | Material[] | null | undefined,
     ) => void;
-    getShapeFillFallbackColor: (
-      shape: MilkdropShapeVisual,
-    ) => MilkdropShapeVisual['color'];
     setMaterialColor: (
       material: MeshBasicMaterial,
       color: MilkdropShapeVisual['color'],
@@ -151,55 +267,22 @@ export function syncShapeFillMaterial(
   },
   alphaMultiplier: number,
 ) {
-  const wantsGradient =
-    Boolean(shape.secondaryColor) && behavior.supportsShapeGradient;
+  const texture = helpers.getShapeTexture();
+  const wantsShaderFill = shouldUseShapeShaderFill(shape, behavior, texture);
   const existingMaterial = mesh.material;
 
-  if (wantsGradient) {
+  if (wantsShaderFill) {
     if (!(existingMaterial instanceof ShaderMaterial)) {
       helpers.disposeMaterial(existingMaterial);
-      mesh.material = new ShaderMaterial({
-        uniforms: {
-          primaryColor: {
-            value: new Color(shape.color.r, shape.color.g, shape.color.b),
-          },
-          secondaryColor: {
-            value: new Color(
-              shape.secondaryColor?.r ?? 0,
-              shape.secondaryColor?.g ?? 0,
-              shape.secondaryColor?.b ?? 0,
-            ),
-          },
-          primaryAlpha: {
-            value: (shape.color.a ?? 0.4) * alphaMultiplier,
-          },
-          secondaryAlpha: {
-            value: (shape.secondaryColor?.a ?? 0) * alphaMultiplier,
-          },
-        },
-        transparent: true,
-        side: DoubleSide,
-        ...(shape.additive ? { blending: AdditiveBlending } : {}),
-        vertexShader: `varying vec2 vLocal; void main() { vLocal = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-        fragmentShader: `uniform vec3 primaryColor; uniform vec3 secondaryColor; uniform float primaryAlpha; uniform float secondaryAlpha; varying vec2 vLocal; void main() { float blend = clamp(length(vLocal), 0.0, 1.0); vec3 color = mix(primaryColor, secondaryColor, blend); float alpha = mix(primaryAlpha, secondaryAlpha, blend); gl_FragColor = vec4(color, alpha); }`,
-      });
+      mesh.material = createShapeFillShaderMaterial(
+        shape,
+        texture,
+        alphaMultiplier,
+      );
     }
 
     const material = mesh.material as ShaderMaterial;
-    material.uniforms.primaryColor.value.setRGB(
-      shape.color.r,
-      shape.color.g,
-      shape.color.b,
-    );
-    material.uniforms.secondaryColor.value.setRGB(
-      shape.secondaryColor?.r ?? 0,
-      shape.secondaryColor?.g ?? 0,
-      shape.secondaryColor?.b ?? 0,
-    );
-    material.uniforms.primaryAlpha.value =
-      (shape.color.a ?? 0.4) * alphaMultiplier;
-    material.uniforms.secondaryAlpha.value =
-      (shape.secondaryColor?.a ?? 0) * alphaMultiplier;
+    syncShapeShaderUniforms(material, shape, texture, alphaMultiplier);
     material.blending = shape.additive ? AdditiveBlending : NormalBlending;
     return;
   }
@@ -358,9 +441,7 @@ export function syncShapeObject(
     const nextAccent = new (
       behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
     )(
-      behavior.useLineLoopPrimitives
-        ? (border as Line | LineLoop).geometry
-        : (border as Line | LineLoop).geometry,
+      (border as Line | LineLoop).geometry,
       new LineBasicMaterial({
         transparent: true,
       }),

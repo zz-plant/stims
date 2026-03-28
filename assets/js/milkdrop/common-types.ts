@@ -157,7 +157,6 @@ export type MilkdropRenderBackend = 'webgl' | 'webgpu';
 export type MilkdropBackendSupportEvidenceCode =
   | 'unknown-field'
   | 'unsupported-hard-feature'
-  | 'supported-shader-text-gap'
   | 'unsupported-shader-text-gap'
   | 'volume-sampler-gap'
   | 'shape-texture-gap'

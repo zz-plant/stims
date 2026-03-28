@@ -30,6 +30,9 @@ export function shapeVisualFromLocals(
     ),
     sides: Math.max(3, Math.round(locals.sides ?? 6)),
     rotation: (locals.ang ?? 0) + signals.time * 0.08,
+    textured: (locals.textured ?? 0) >= 0.5,
+    textureZoom: Math.max(0.0001, Math.abs(locals.tex_zoom ?? 1)),
+    textureAngle: locals.tex_ang ?? 0,
     color: color(
       locals.r ?? 1,
       locals.g ?? 0.5,

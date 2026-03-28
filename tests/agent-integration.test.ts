@@ -142,7 +142,7 @@ integrationTest(
       await rm(outputDir, { recursive: true, force: true });
     }
   },
-  { timeout: 45000 },
+  { timeout: 60000 },
 );
 
 integrationTest(

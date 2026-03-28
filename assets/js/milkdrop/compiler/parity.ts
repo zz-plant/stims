@@ -236,21 +236,6 @@ export function buildBackendSupport({
     );
   });
 
-  if (featureAnalysis.shaderTextExecution[backend] === 'translated') {
-    const shaderTextMessage = backendShaderTextGaps[backend].supportedSubset;
-    if (shaderTextMessage) {
-      evidence.push(
-        createBackendEvidence({
-          backend,
-          scope: 'backend',
-          status: 'partial',
-          code: 'supported-shader-text-gap',
-          message: shaderTextMessage,
-        }),
-      );
-    }
-  }
-
   if (featureAnalysis.shaderTextExecution[backend] === 'unsupported') {
     const unsupportedMessage = backendShaderTextGaps[backend].unsupportedSubset;
     if (unsupportedMessage) {

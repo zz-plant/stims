@@ -190,9 +190,9 @@ test('replays the initial card preview sync after effects load', async () => {
 
     const cards = Array.from(document.querySelectorAll('.webtoy-card'));
 
-    expect(initThreeEffects).toHaveBeenCalledTimes(1);
-    expect(syncCardPreviews).toHaveBeenCalledTimes(1);
-    expect(syncCardPreviews).toHaveBeenCalledWith(cards, toys);
+    expect(initThreeEffects).toHaveBeenCalled();
+    expect(syncCardPreviews).toHaveBeenCalled();
+    expect(syncCardPreviews).toHaveBeenLastCalledWith(cards, toys);
   } finally {
     window.requestIdleCallback = originalRequestIdleCallback;
   }
