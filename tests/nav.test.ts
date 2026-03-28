@@ -140,6 +140,40 @@ describe('site navigation interactions', () => {
     expect(utilityHrefs).toContain('/milkdrop/');
   });
 
+  test('site nav accepts launch-route section links and a custom utility action', () => {
+    const { matchMedia } = createMatchMediaStub(false);
+    window.matchMedia = matchMedia;
+
+    const container = document.getElementById('nav') as HTMLElement;
+    initNavigation(container, {
+      mode: 'library',
+      sectionLinks: [
+        { href: '#session-flow', label: 'Flow' },
+        { href: '#launch-workspace', label: 'Setup' },
+        { href: '#launch-panels', label: 'Controls' },
+      ],
+      utilityLink: { href: '/', label: 'Back home' },
+    });
+
+    const hrefs = Array.from(
+      container.querySelectorAll('.nav-section--primary .nav-link'),
+    ).map((link) => (link as HTMLAnchorElement).getAttribute('href'));
+
+    expect(hrefs).toContain('#session-flow');
+    expect(hrefs).toContain('#launch-workspace');
+    expect(hrefs).toContain('#launch-panels');
+    expect(hrefs).toContain('https://github.com/zz-plant/stims');
+
+    const utilityLinks = Array.from(
+      container.querySelectorAll('.nav-section--utilities .nav-link'),
+    ).map((link) => ({
+      href: (link as HTMLAnchorElement).getAttribute('href'),
+      label: link.textContent?.trim(),
+    }));
+
+    expect(utilityLinks).toContainEqual({ href: '/', label: 'Back home' });
+  });
+
   test('re-rendering site nav cleans up previous media-query listener', () => {
     const { matchMedia, getListenerCount } = createMatchMediaStub();
     window.matchMedia = matchMedia;

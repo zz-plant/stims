@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import {
+  applyMilkdropLaunchIntents,
   isPresetFirstToySession,
+  parseRequestedPresetId,
   shouldCombineFocusedSessionPanels,
   shouldPreferDemoAudio,
 } from '../assets/js/bootstrap/toy-page.ts';
@@ -48,6 +50,44 @@ describe('toy page demo-audio preference', () => {
     expect(shouldCombineFocusedSessionPanels('milkdrop')).toBe(true);
     expect(shouldCombineFocusedSessionPanels(null)).toBe(true);
     expect(shouldCombineFocusedSessionPanels('seary')).toBe(false);
+  });
+});
+
+describe('milkdrop launch intent parsing', () => {
+  test('returns a trimmed preset id when requested in the query', () => {
+    const searchParams = new URLSearchParams('preset=  signal-bloom  ');
+
+    expect(parseRequestedPresetId(searchParams)).toBe('signal-bloom');
+  });
+
+  test('ignores blank preset ids', () => {
+    const searchParams = new URLSearchParams('preset=   ');
+
+    expect(parseRequestedPresetId(searchParams)).toBeNull();
+  });
+
+  test('routes preset launch intents only for milkdrop', () => {
+    const requestMilkdropPresetSelection = mock();
+
+    mock.module('../assets/js/milkdrop/preset-selection.ts', () => ({
+      requestMilkdropPresetSelection,
+    }));
+
+    applyMilkdropLaunchIntents({
+      toySlug: 'milkdrop',
+      requestedOverlayTab: null,
+      requestedCollectionTag: null,
+      requestedPresetId: 'signal-bloom',
+    });
+    applyMilkdropLaunchIntents({
+      toySlug: 'seary',
+      requestedOverlayTab: null,
+      requestedCollectionTag: null,
+      requestedPresetId: 'ignored-preset',
+    });
+
+    expect(requestMilkdropPresetSelection).toHaveBeenCalledTimes(1);
+    expect(requestMilkdropPresetSelection).toHaveBeenCalledWith('signal-bloom');
   });
 });
 
@@ -101,6 +141,8 @@ describe('toy page query-driven startup', () => {
     }));
     const requestMilkdropCollectionSelection = mock();
     const requestMilkdropOverlayTab = mock();
+    const requestMilkdropPresetSelection = mock();
+    const initTopNav = mock();
     mock.module('../assets/js/milkdrop/collection-intent.ts', () => ({
       requestMilkdropCollectionSelection,
     }));
@@ -108,17 +150,21 @@ describe('toy page query-driven startup', () => {
       requestMilkdropOverlayTab,
     }));
     mock.module('../assets/js/milkdrop/preset-selection.ts', () => ({
-      requestMilkdropPresetSelection: mock(),
+      requestMilkdropPresetSelection,
+    }));
+    mock.module('../assets/js/ui/nav.ts', () => ({
+      initNavigation: initTopNav,
     }));
 
     const { bootToyPage } = await freshImport();
     (
       window as Window & { happyDOM?: { setURL?: (url: string) => void } }
     ).happyDOM?.setURL?.(
-      'https://example.com/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop',
+      'https://example.com/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop&preset=signal-bloom',
     );
     document.body.innerHTML = `
       <button data-open-preflight type="button">Run quick check</button>
+      <div data-top-nav-container></div>
       <section data-audio-controls></section>
       <section data-settings-panel></section>
     `;
@@ -133,6 +179,7 @@ describe('toy page query-driven startup', () => {
       },
       loadFromQuery,
       initNavigation,
+      navContainer: document.querySelector('[data-top-nav-container]'),
       audioControlsContainer: document.querySelector('[data-audio-controls]'),
       settingsContainer: document.querySelector('[data-settings-panel]'),
     });
@@ -146,6 +193,17 @@ describe('toy page query-driven startup', () => {
     expect(requestMilkdropOverlayTab).toHaveBeenCalledWith('browse');
     expect(requestMilkdropCollectionSelection).toHaveBeenCalledWith(
       'cream-of-the-crop',
+    );
+    expect(requestMilkdropPresetSelection).toHaveBeenCalledWith('signal-bloom');
+    expect(initTopNav).toHaveBeenCalledWith(
+      document.querySelector('[data-top-nav-container]'),
+      expect.objectContaining({
+        mode: 'library',
+        utilityLink: {
+          href: '/',
+          label: 'Back home',
+        },
+      }),
     );
   });
 
@@ -206,6 +264,7 @@ describe('toy page query-driven startup', () => {
       },
       loadFromQuery: mock(async () => {}),
       initNavigation: mock(),
+      navContainer: null,
       audioControlsContainer: document.querySelector('[data-audio-controls]'),
       settingsContainer: document.querySelector('[data-settings-panel]'),
     });
