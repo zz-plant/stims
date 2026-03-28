@@ -2,6 +2,7 @@ export const RENDERER_FALLBACK_REASON_CODES = {
   rendererUnavailable: 'RENDERER_UNAVAILABLE',
   compatibilityMode: 'COMPATIBILITY_MODE',
   webgpuUnavailable: 'WEBGPU_UNAVAILABLE',
+  fallbackAdapter: 'FALLBACK_ADAPTER',
   noAdapter: 'NO_ADAPTER',
   noDevice: 'NO_DEVICE',
   webgpuInitFailed: 'WEBGPU_INIT_FAILED',
@@ -17,6 +18,8 @@ const REASON_MESSAGES: Record<RendererFallbackReasonCode, string> = {
   RENDERER_UNAVAILABLE: 'Renderer capabilities are unavailable.',
   COMPATIBILITY_MODE: 'Compatibility mode is enabled. Using WebGL.',
   WEBGPU_UNAVAILABLE: 'WebGPU is not available in this browser.',
+  FALLBACK_ADAPTER:
+    'Only a fallback WebGPU adapter is available. Using WebGL for performance and compatibility.',
   NO_ADAPTER: 'No compatible WebGPU adapter was found.',
   NO_DEVICE: 'Unable to acquire a WebGPU device.',
   WEBGPU_INIT_FAILED: 'WebGPU initialization failed.',

@@ -244,6 +244,16 @@ function getPreferredCanvasFormat() {
   return gpuNavigator.gpu?.getPreferredCanvasFormat?.() ?? null;
 }
 
+function isFallbackAdapter(adapter: GPUAdapter | null | undefined) {
+  return Boolean(
+    (
+      adapter as GPUAdapter & {
+        isFallbackAdapter?: boolean;
+      }
+    )?.isFallbackAdapter,
+  );
+}
+
 function getWorkerSupport(): WebGPUWorkerSupport {
   const transferControlToOffscreen =
     typeof HTMLCanvasElement !== 'undefined' &&
@@ -466,6 +476,16 @@ async function probeRendererCapabilities({
           {
             shouldRetryWebGPU: true,
           },
+        ),
+      );
+    }
+
+    if (isFallbackAdapter(adapter)) {
+      return cacheResult(
+        buildFallback(
+          getRendererFallbackReasonMessage(
+            RENDERER_FALLBACK_REASON_CODES.fallbackAdapter,
+          ),
         ),
       );
     }

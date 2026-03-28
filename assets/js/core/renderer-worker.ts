@@ -123,6 +123,18 @@ async function initRenderer({
     );
   }
 
+  if (
+    (
+      adapter as GPUAdapter & {
+        isFallbackAdapter?: boolean;
+      }
+    ).isFallbackAdapter
+  ) {
+    throw new Error(
+      'Renderer worker rejected a fallback WebGPU adapter. Use the main-thread WebGL fallback instead.',
+    );
+  }
+
   const device = await adapter.requestDevice();
   const renderer = new WebGPURenderer({
     canvas,
