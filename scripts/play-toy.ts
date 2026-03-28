@@ -170,7 +170,33 @@ async function waitForAudioActive(
   }
 }
 
+async function isImmersiveSessionReady(page: Page) {
+  return page
+    .evaluate(() => {
+      const canvas =
+        document.querySelector<HTMLCanvasElement>('#active-toy-container canvas') ??
+        document.querySelector<HTMLCanvasElement>('canvas');
+      const overlayToggle = document.querySelector('.milkdrop-overlay__toggle');
+      const liveNav = document.querySelector('.active-toy-nav');
+      const activeStatus = document.querySelector('.active-toy-status');
+      const rect = canvas?.getBoundingClientRect();
+      const canvasVisible = Boolean(rect && rect.width > 0 && rect.height > 0);
+      return Boolean(
+        document.body.dataset.toyLoaded === 'true' ||
+          activeStatus ||
+          canvasVisible ||
+          overlayToggle ||
+          liveNav,
+      );
+    })
+    .catch(() => false);
+}
+
 async function requestDemoAudio(page: Page) {
+  if ((await isAudioActive(page)) || (await isImmersiveSessionReady(page))) {
+    return true;
+  }
+
   const activatedViaAgentApi = await page
     .evaluate(async () => {
       const stimState = (
@@ -220,29 +246,49 @@ async function requestDemoAudio(page: Page) {
 }
 
 async function getErrorStatus(page: Page) {
-  try {
-    return await page.evaluate(() => {
-      const status = document.querySelector<HTMLElement>(
-        '.active-toy-status.is-error',
-      );
-      if (!(status instanceof HTMLElement)) {
-        return null;
-      }
-
-      const title = status.querySelector('h2')?.textContent?.trim() ?? '';
-      const message = status.querySelector('p')?.textContent?.trim() ?? '';
-      if (!title && !message) {
-        return null;
-      }
-
-      return { title, message };
-    });
-  } catch (error) {
+  const handleEvaluationFailure = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
-    if (message.toLowerCase().includes('execution context was destroyed')) {
+    const normalized = message.toLowerCase();
+    if (
+      normalized.includes('execution context was destroyed') ||
+      normalized.includes('target page, context or browser has been closed')
+    ) {
       return null;
     }
     throw error;
+  };
+
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  try {
+    const timeout = new Promise<null>((resolve) => {
+      timeoutId = setTimeout(() => resolve(null), 500);
+    });
+    const evaluation = page
+      .evaluate(() => {
+        const status = document.querySelector<HTMLElement>(
+          '.active-toy-status.is-error',
+        );
+        if (!(status instanceof HTMLElement)) {
+          return null;
+        }
+
+        const title = status.querySelector('h2')?.textContent?.trim() ?? '';
+        const message = status.querySelector('p')?.textContent?.trim() ?? '';
+        if (!title && !message) {
+          return null;
+        }
+
+        return { title, message };
+      })
+      .catch(handleEvaluationFailure);
+
+    return await Promise.race([evaluation, timeout]);
+  } catch (error) {
+    return handleEvaluationFailure(error);
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -297,6 +343,14 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       () =>
         document.body.dataset.toyLoaded === 'true' ||
         document.querySelector('.active-toy-status') ||
+        (() => {
+          const canvas =
+            document.querySelector('#active-toy-container canvas') ??
+            document.querySelector('canvas');
+          if (!(canvas instanceof HTMLCanvasElement)) return false;
+          const rect = canvas.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        })() ||
         [
           ...document.querySelectorAll(
             '[data-demo-audio-btn], #use-demo-audio, [data-mic-audio-btn], #start-audio-btn',
@@ -331,7 +385,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     }
 
     // Click demo audio button if present
-    if (await requestDemoAudio(page)) {
+    if (!(await isAudioActive(page)) && (await requestDemoAudio(page))) {
       console.log('Requesting demo audio...');
     }
 
@@ -339,6 +393,14 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       () =>
         document.body.dataset.toyLoaded === 'true' ||
         document.querySelector('.active-toy-status') ||
+        (() => {
+          const canvas =
+            document.querySelector('#active-toy-container canvas') ??
+            document.querySelector('canvas');
+          if (!(canvas instanceof HTMLCanvasElement)) return false;
+          const rect = canvas.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        })() ||
         document.querySelector('#use-demo-audio') ||
         document.querySelector('#start-audio-btn'),
       undefined,
@@ -366,7 +428,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         console.log('Continuing with WebGL fallback...');
       }
 
-      if (await requestDemoAudio(page)) {
+      if (!(await isAudioActive(page)) && (await requestDemoAudio(page))) {
         console.log('Enabling demo audio...');
       } else if (await clickVisibleButton(page, CONTROL_MIC_SELECTOR)) {
         console.log('No demo audio button found. Enabling microphone...');
@@ -378,7 +440,15 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     await page.waitForFunction(
       () =>
         document.body.dataset.toyLoaded === 'true' ||
-        document.querySelector('.active-toy-status'),
+        document.querySelector('.active-toy-status') ||
+        (() => {
+          const canvas =
+            document.querySelector('#active-toy-container canvas') ??
+            document.querySelector('canvas');
+          if (!(canvas instanceof HTMLCanvasElement)) return false;
+          const rect = canvas.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        })(),
       undefined,
       { timeout: TOY_LOAD_TIMEOUT_MS },
     );
