@@ -1158,7 +1158,7 @@ function createCompositeOutputNode(
     );
     color.assign(mix(color, brightened, brightenMask));
     color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
-    const centerMask = clamp(uv.sub(0.5).length().mul(400), 0, 1);
+    const centerMask = clamp(baseUv.sub(0.5).length().mul(400), 0, 1);
     color.assign(
       color.mul(
         mix(
