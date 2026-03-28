@@ -8,11 +8,16 @@ export {
   shouldCombineFocusedSessionPanels,
   shouldPreferDemoAudio,
 } from './experience-shell-controller.ts';
+export {
+  applyMilkdropLaunchIntents,
+  parseRequestedPresetId,
+} from './milkdrop-launch-intents.ts';
 
 export function bootToyPage({
   router,
   loadFromQuery,
   initNavigation,
+  navContainer,
   audioControlsContainer,
   settingsContainer,
 }: {
@@ -25,6 +30,7 @@ export function bootToyPage({
   };
   loadFromQuery: LoaderApi['loadFromQuery'];
   initNavigation: LoaderApi['initNavigation'];
+  navContainer: HTMLElement | null;
   audioControlsContainer: HTMLElement | null;
   settingsContainer: HTMLElement | null;
 }) {
@@ -32,6 +38,7 @@ export function bootToyPage({
     router,
     loadFromQuery,
     initNavigation,
+    navContainer,
     audioControlsContainer,
     settingsContainer,
   });

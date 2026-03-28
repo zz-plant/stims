@@ -1,3 +1,2 @@
 [test]
 preload = ["./tests/setup.ts"]
-importmap = "./tests/importmap.json"

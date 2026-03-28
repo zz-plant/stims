@@ -1,32 +1,54 @@
-import { beforeAll, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
+import { initLighting } from '../assets/js/lighting/lighting-setup.ts';
 
-let initLighting;
-let stubLighting;
-let Scene;
+class Vector3 {
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
 
-beforeAll(async () => {
-  ({ initLighting } = await import('../assets/js/lighting/lighting-setup.ts'));
-  ({ Scene, ...stubLighting } = await import('./three-stub.ts'));
-});
+  set(x, y, z) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+}
+
+class BaseLight {
+  position = new Vector3();
+  set castShadow(_value) {}
+}
+
+class DirectionalLight extends BaseLight {}
+class SpotLight extends BaseLight {}
+class HemisphereLight extends BaseLight {}
+class PointLight extends BaseLight {}
+
+class Scene {
+  children = [];
+
+  add(light) {
+    this.children.push(light);
+  }
+}
+
+const lightingConstructors = {
+  DirectionalLight,
+  SpotLight,
+  HemisphereLight,
+  PointLight,
+};
 
 describe('initLighting', () => {
   test('uses default position values when position is omitted', () => {
     const scene = new Scene();
 
-    initLighting(
-      scene,
-      { type: 'DirectionalLight' },
-      {
-        DirectionalLight: stubLighting.DirectionalLight,
-        SpotLight: stubLighting.SpotLight,
-        HemisphereLight: stubLighting.HemisphereLight,
-        PointLight: stubLighting.PointLight,
-      },
-    );
+    initLighting(scene, { type: 'DirectionalLight' }, lightingConstructors);
 
     expect(scene.children).toHaveLength(1);
     const light = scene.children[0];
-    expect(light).toBeInstanceOf(stubLighting.DirectionalLight);
+    expect(light).toBeInstanceOf(DirectionalLight);
     expect(light.position.x).toBe(10);
     expect(light.position.y).toBe(10);
     expect(light.position.z).toBe(10);
@@ -38,12 +60,7 @@ describe('initLighting', () => {
     initLighting(
       scene,
       { type: 'DirectionalLight', position: { y: 5 } },
-      {
-        DirectionalLight: stubLighting.DirectionalLight,
-        SpotLight: stubLighting.SpotLight,
-        HemisphereLight: stubLighting.HemisphereLight,
-        PointLight: stubLighting.PointLight,
-      },
+      lightingConstructors,
     );
 
     const light = scene.children[0];
@@ -56,17 +73,8 @@ describe('initLighting', () => {
     const scene = new Scene();
 
     expect(() =>
-      initLighting(
-        scene,
-        { type: 'HemisphereLight' },
-        {
-          DirectionalLight: stubLighting.DirectionalLight,
-          SpotLight: stubLighting.SpotLight,
-          HemisphereLight: stubLighting.HemisphereLight,
-          PointLight: stubLighting.PointLight,
-        },
-      ),
+      initLighting(scene, { type: 'HemisphereLight' }, lightingConstructors),
     ).not.toThrow();
-    expect(scene.children[0]).toBeInstanceOf(stubLighting.HemisphereLight);
+    expect(scene.children[0]).toBeInstanceOf(HemisphereLight);
   });
 });

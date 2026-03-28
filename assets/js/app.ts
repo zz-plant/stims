@@ -160,6 +160,7 @@ const startApp = async () => {
         router,
         loadFromQuery,
         initNavigation,
+        navContainer,
         audioControlsContainer,
         settingsContainer,
       });

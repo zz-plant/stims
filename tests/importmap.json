@@ -1,7 +1,0 @@
-{
-  "imports": {
-    "three": "./three-stub.ts",
-    "three/examples/jsm/renderers/webgpu/WebGPURenderer.js": "./three-webgpu-renderer-stub.ts",
-    "three/src/renderers/webgpu/WebGPURenderer.js": "./three-webgpu-renderer-stub.ts"
-  }
-}
