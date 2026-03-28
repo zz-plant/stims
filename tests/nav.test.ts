@@ -116,7 +116,7 @@ describe('site navigation interactions', () => {
     expect(actions.hasAttribute('inert')).toBeFalse();
   });
 
-  test('site nav exposes primary launch links in the main link set', () => {
+  test('site nav exposes the homepage sections plus launchpad in the main link set', () => {
     const { matchMedia } = createMatchMediaStub(false);
     window.matchMedia = matchMedia;
 
@@ -129,10 +129,15 @@ describe('site navigation interactions', () => {
 
     expect(hrefs).toContain('#experience');
     expect(hrefs).toContain('#presets');
-    expect(hrefs).toContain('#lineage');
-    expect(hrefs).toContain('/milkdrop/');
+    expect(hrefs).toContain('#structure');
     expect(hrefs).toContain('https://github.com/zz-plant/stims');
-    expect(hrefs).toHaveLength(5);
+    expect(hrefs).toHaveLength(4);
+
+    const utilityHrefs = Array.from(
+      container.querySelectorAll('.nav-section--utilities .nav-link'),
+    ).map((link) => (link as HTMLAnchorElement).getAttribute('href'));
+
+    expect(utilityHrefs).toContain('/milkdrop/');
   });
 
   test('re-rendering site nav cleans up previous media-query listener', () => {

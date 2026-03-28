@@ -13,9 +13,9 @@ It is built to feel like a first-class browser experience rather than a nostalgi
 ## Quick links
 
 - Live site: [no.toil.fyi](https://no.toil.fyi)
+- Homepage: [no.toil.fyi/](https://no.toil.fyi/)
 - Launch app: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
 - Product page: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
-- Marketing page opt-out: [no.toil.fyi/?landing=1](https://no.toil.fyi/?landing=1)
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
@@ -47,15 +47,17 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 - A launch flow with readiness checks before microphone prompts and renderer-heavy startup.
 - Multiple audio paths including microphone, demo audio, tab capture, and YouTube-backed tab capture.
 - Renderer preference handling with WebGPU-first startup and direct WebGL fallback when needed.
-- A root URL that auto-forwards to the demo-backed visualizer, plus an opt-out marketing page at `/?landing=1` and the canonical visualizer route at `milkdrop/index.html` (`/milkdrop/`).
+- A homepage that explains the product model, a dedicated launch route at `milkdrop/index.html` (`/milkdrop/`) for setup, and a live session overlay for preset browsing and editing once playback begins.
 
 ## Shipped experience
 
 At the product level, Stims currently ships one flagship MilkDrop-led visualizer experience with:
 
 - A quick-check preflight that surfaces graphics, microphone, motion, and compatibility status.
+- A setup-first launchpad that handles audio choice and device tuning before the live session takes over.
 - A preset-led playback flow designed for immediate experimentation.
 - A settings panel for quality presets, compatibility mode, motion preferences, render scale, and pixel ratio.
+- A live overlay for preset browsing, editing, import/export, and inspection without leaving playback.
 - Session-shell behavior that supports keyboard, gamepad, and TV-style remote navigation.
 - Persistent session and local settings so the app can recover your last-used audio and rendering preferences.
 
@@ -86,7 +88,7 @@ At the product level, Stims currently ships one flagship MilkDrop-led visualizer
    http://localhost:5173/milkdrop/
    ```
 
-4. Use `index.html` at the same host if you want to review the launch/marketing surface.
+4. Use `index.html` at the same host if you want to review the homepage surface, or `/milkdrop/` if you want the setup-first launchpad.
 
 If you want to validate the production bundle locally, run `bun run build` and then `bun run preview`.
 
@@ -124,8 +126,8 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 
 ## Project shape
 
-- `milkdrop/index.html` (`/milkdrop/`) is the primary visualizer entrypoint.
-- `index.html` is the focused launch page for the same product.
+- `milkdrop/index.html` (`/milkdrop/`) is the setup-first launch route for the visualizer.
+- `index.html` is the editorial homepage that routes into the launchpad and live workspace.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
 - `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.
 - `tests/` contains unit, integration, and compatibility coverage.

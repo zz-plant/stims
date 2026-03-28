@@ -1,58 +1,26 @@
-import type { createLoader } from '../loader.ts';
-import { CREAM_OF_THE_CROP_COLLECTION_TAG } from '../milkdrop/collection-intent.ts';
+import { initNavigation as initTopNav } from '../ui/nav.ts';
+import { initMilkdropShowcase } from '../utils/init-milkdrop-showcase.ts';
+import { initNavScrollEffects } from '../utils/init-nav-scroll.ts';
 
-const HOME_TOY_SLUG = 'milkdrop';
-const HOME_LANDING_PARAM = 'landing';
-const HOME_LANDING_OPT_OUT = '1';
-
-type LoaderApi = ReturnType<typeof createLoader>;
-
-function redirectHomeTrafficToLaunch(win: Window = window) {
-  const currentUrl = new URL(win.location.href);
-
-  if (currentUrl.pathname !== '/') {
-    return false;
+const runInit = (label: string, init: () => void | Promise<void>) => {
+  try {
+    Promise.resolve(init()).catch((error) => {
+      console.error(`Failed to initialize ${label}`, error);
+    });
+  } catch (error) {
+    console.error(`Failed to initialize ${label}`, error);
   }
-
-  if (
-    currentUrl.searchParams.get(HOME_LANDING_PARAM) === HOME_LANDING_OPT_OUT
-  ) {
-    return false;
-  }
-
-  const launchUrl = new URL('/milkdrop/', currentUrl);
-  for (const [key, value] of currentUrl.searchParams.entries()) {
-    launchUrl.searchParams.append(key, value);
-  }
-  if (!launchUrl.searchParams.has('audio')) {
-    launchUrl.searchParams.set('audio', 'demo');
-  }
-  if (!launchUrl.searchParams.has('panel')) {
-    launchUrl.searchParams.set('panel', 'browse');
-  }
-  if (!launchUrl.searchParams.has('collection')) {
-    launchUrl.searchParams.set(
-      'collection',
-      CREAM_OF_THE_CROP_COLLECTION_TAG.replace(/^collection:/u, ''),
-    );
-  }
-  launchUrl.hash = currentUrl.hash;
-
-  win.location.replace(launchUrl.toString());
-  return true;
-}
+};
 
 export function bootHomePage({
-  loadToy,
-  initNavigation,
+  navContainer,
 }: {
-  loadToy: LoaderApi['loadToy'];
-  initNavigation: LoaderApi['initNavigation'];
+  navContainer: HTMLElement | null;
 }) {
-  if (redirectHomeTrafficToLaunch()) {
-    return;
+  if (navContainer) {
+    initTopNav(navContainer, { mode: 'library' });
   }
 
-  initNavigation();
-  void loadToy(HOME_TOY_SLUG, { preferDemoAudio: true });
+  runInit('milkdrop showcase', initMilkdropShowcase);
+  runInit('nav scroll effects', initNavScrollEffects);
 }

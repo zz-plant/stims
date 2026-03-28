@@ -6,6 +6,7 @@ const freshImport = async (path) =>
 let mockLoadToy;
 let mockLoadFromQuery;
 let mockInitNavigation;
+const originalFetch = globalThis.fetch;
 
 async function loadAppShell() {
   globalThis.__stimsLoaderOverrides = {
@@ -23,9 +24,9 @@ describe('home shell user journeys', () => {
   beforeEach(() => {
     mock.restore();
     window.location.href = 'https://example.com/';
+    globalThis.fetch = mock(async () => ({ ok: false }));
     document.body.innerHTML = `
       <div data-top-nav-container></div>
-      <a href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop" data-quickstart-slug="milkdrop">Launch</a>
       <div data-milkdrop-preset-count></div>
       <div data-milkdrop-preset-filters></div>
       <div data-milkdrop-preset-list></div>
@@ -38,50 +39,32 @@ describe('home shell user journeys', () => {
 
   afterEach(() => {
     mock.restore();
+    globalThis.fetch = originalFetch;
     document.body.innerHTML = '';
     document.body.removeAttribute('data-page');
     delete globalThis.__stimsLoaderOverrides;
   });
 
-  test('home landing redirects straight to the canonical demo launch route', async () => {
+  test('homepage stays on the root route and renders the editorial shell', async () => {
     await loadAppShell();
 
     const currentUrl = new URL(window.location.href);
-    expect(currentUrl.pathname).toBe('/milkdrop/');
-    expect(currentUrl.searchParams.get('audio')).toBe('demo');
-    expect(currentUrl.searchParams.get('panel')).toBe('browse');
-    expect(currentUrl.searchParams.get('collection')).toBe('cream-of-the-crop');
+    expect(currentUrl.pathname).toBe('/');
+    expect(document.querySelector('.top-nav')).not.toBeNull();
     expect(mockInitNavigation).not.toHaveBeenCalled();
     expect(mockLoadToy).not.toHaveBeenCalled();
-  });
-
-  test('landing opt-out keeps the homepage session boot in place', async () => {
-    window.location.href = 'https://example.com/?landing=1';
-
-    await loadAppShell();
-
-    expect(mockInitNavigation).toHaveBeenCalledTimes(1);
-    expect(mockLoadToy).toHaveBeenCalledTimes(1);
-    expect(mockLoadToy).toHaveBeenCalledWith('milkdrop', {
-      preferDemoAudio: true,
-    });
-    expect(new URL(window.location.href).pathname).toBe('/');
-    expect(new URL(window.location.href).searchParams.get('landing')).toBe('1');
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
   });
 
-  test('homepage quickstart stays a native navigation instead of SPA-loading in place', async () => {
+  test('legacy landing query no longer changes the homepage boot model', async () => {
     window.location.href = 'https://example.com/?landing=1';
 
     await loadAppShell();
 
-    const cta = document.querySelector('[data-quickstart-slug="milkdrop"]');
-    expect(cta).not.toBeNull();
-
-    cta?.dispatchEvent(
-      new window.MouseEvent('click', { bubbles: true, cancelable: true }),
-    );
-
-    expect(mockLoadToy).toHaveBeenCalledTimes(1);
+    expect(new URL(window.location.href).pathname).toBe('/');
+    expect(new URL(window.location.href).searchParams.get('landing')).toBe('1');
+    expect(mockLoadFromQuery).not.toHaveBeenCalled();
+    expect(mockInitNavigation).not.toHaveBeenCalled();
+    expect(mockLoadToy).not.toHaveBeenCalled();
   });
 });

@@ -129,11 +129,7 @@ const startApp = async () => {
     initGamepadNavigation();
   });
 
-  if (
-    pageType === 'experience' ||
-    pageType === 'library' ||
-    pageType === 'home'
-  ) {
+  if (pageType === 'experience' || pageType === 'library') {
     const [{ createLoader }, { createRouter }] = await Promise.all([
       import('./loader.ts'),
       import('./router.ts'),
@@ -180,11 +176,12 @@ const startApp = async () => {
       });
       return;
     }
+  }
 
+  if (pageType === 'home') {
     const { bootHomePage } = await import('./bootstrap/home-page.ts');
     bootHomePage({
-      loadToy: loader.loadToy ?? defaultLoader.loadToy,
-      initNavigation,
+      navContainer,
     });
     return;
   }

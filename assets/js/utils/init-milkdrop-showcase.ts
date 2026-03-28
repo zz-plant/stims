@@ -155,7 +155,7 @@ function createPresetCard(
   launch.href =
     '/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop';
   launch.className = 'cta-button primary';
-  launch.textContent = 'Launch preset';
+  launch.textContent = 'Open in workspace';
   launch.addEventListener('click', () => {
     requestMilkdropPresetSelection(entry.id);
   });
