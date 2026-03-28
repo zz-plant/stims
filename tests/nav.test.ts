@@ -2,6 +2,12 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { initNavigation } from '../assets/js/ui/nav.ts';
 
 type MatchMediaListener = (event: MediaQueryListEvent) => void;
+type NavCleanupContainer = HTMLElement & {
+  __toyNavOffsetCleanup?: () => void;
+  __toyNavChromeCleanup?: () => void;
+  __toyNavDetachCleanup?: () => void;
+  __libraryNavCleanup?: () => void;
+};
 
 function createMatchMediaStub(matches = true) {
   const listeners = new Set<MatchMediaListener>();
@@ -52,6 +58,16 @@ describe('site navigation interactions', () => {
   });
 
   afterEach(() => {
+    const container = document.getElementById(
+      'nav',
+    ) as NavCleanupContainer | null;
+    container?.__toyNavOffsetCleanup?.();
+    container?.__toyNavChromeCleanup?.();
+    container?.__toyNavDetachCleanup?.();
+    container?.__libraryNavCleanup?.();
+    delete document.documentElement.dataset.sessionDisplayMode;
+    delete document.documentElement.dataset.sessionChrome;
+    delete document.documentElement.dataset.toyControlsExpanded;
     document.body.innerHTML = '';
     window.matchMedia = originalMatchMedia;
   });
@@ -195,6 +211,16 @@ describe('toy navigation visibility states', () => {
   });
 
   afterEach(() => {
+    const container = document.getElementById(
+      'nav',
+    ) as NavCleanupContainer | null;
+    container?.__toyNavOffsetCleanup?.();
+    container?.__toyNavChromeCleanup?.();
+    container?.__toyNavDetachCleanup?.();
+    container?.__libraryNavCleanup?.();
+    delete document.documentElement.dataset.sessionDisplayMode;
+    delete document.documentElement.dataset.sessionChrome;
+    delete document.documentElement.dataset.toyControlsExpanded;
     document.body.innerHTML = '';
     window.matchMedia = originalMatchMedia;
   });
@@ -250,5 +276,22 @@ describe('toy navigation visibility states', () => {
       (container.querySelector('#toy-nav-secondary-actions') as HTMLElement)
         .hidden,
     ).toBe(false);
+  });
+
+  test('immersive sessions auto-hide chrome until interaction reveals it again', async () => {
+    const { matchMedia } = createMatchMediaStub();
+    window.matchMedia = matchMedia;
+
+    const container = document.getElementById('nav') as HTMLElement;
+    document.documentElement.dataset.sessionDisplayMode = 'immersive';
+    document.documentElement.dataset.sessionChrome = 'visible';
+    initNavigation(container, { mode: 'toy', title: 'Spectrum Bloom' });
+
+    await new Promise((resolve) => setTimeout(resolve, 2300));
+
+    expect(document.documentElement.dataset.sessionChrome).toBe('hidden');
+
+    document.dispatchEvent(new window.Event('pointermove'));
+    expect(document.documentElement.dataset.sessionChrome).toBe('visible');
   });
 });
