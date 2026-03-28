@@ -168,16 +168,10 @@ integrationTest(
 
     try {
       await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/milkdrop/`);
-      const demoButton = mobile.page
-        .locator('[data-audio-controls] #use-demo-audio')
-        .first();
-      await demoButton.waitFor({ state: 'attached' });
-      await demoButton.scrollIntoViewIfNeeded();
-      await demoButton.evaluate((button) => {
-        if (button instanceof HTMLElement) {
-          button.click();
-        }
-      });
+      const demoButton = mobile.page.locator(
+        '[data-audio-controls] #use-demo-audio',
+      );
+      await demoButton.click();
       await mobile.page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
       );

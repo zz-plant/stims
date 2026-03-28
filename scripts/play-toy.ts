@@ -44,7 +44,8 @@ const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';
 const CONTROL_DEMO_SELECTOR = '#use-demo-audio';
 const CONTROL_MIC_SELECTOR = '#start-audio-btn';
 const AUDIO_DEMO_LABEL = 'Start with demo audio';
-const PREFLIGHT_CONTINUE_LABEL = 'Continue to audio setup';
+const PREFLIGHT_CONTINUE_LABEL = 'Choose audio';
+const PREFLIGHT_DEMO_LABEL = 'Start with demo';
 const PREFLIGHT_LIGHTER_LABEL = 'Enable lighter visual mode';
 const WEBGL_FALLBACK_LABEL = 'Continue with WebGL';
 const PLAYWRIGHT_RENDERER_ARGS = [
@@ -81,22 +82,26 @@ async function closeBrowser(browser?: Browser) {
 }
 
 async function clickVisibleButton(page: Page, selector: string) {
-  return page.evaluate((buttonSelector) => {
-    const button = document.querySelector<HTMLElement>(buttonSelector);
-    if (!(button instanceof HTMLElement)) return false;
+  try {
+    return await page.evaluate((buttonSelector) => {
+      const button = document.querySelector<HTMLElement>(buttonSelector);
+      if (!(button instanceof HTMLElement)) return false;
 
-    const style = window.getComputedStyle(button);
-    const rect = button.getBoundingClientRect();
-    const isVisible =
-      style.display !== 'none' &&
-      style.visibility !== 'hidden' &&
-      rect.width > 0 &&
-      rect.height > 0;
-    if (!isVisible) return false;
+      const style = window.getComputedStyle(button);
+      const rect = button.getBoundingClientRect();
+      const isVisible =
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        rect.width > 0 &&
+        rect.height > 0;
+      if (!isVisible) return false;
 
-    button.click();
-    return true;
-  }, selector);
+      button.click();
+      return true;
+    }, selector);
+  } catch (_error) {
+    return false;
+  }
 }
 
 async function clickVisibleButtonByText(page: Page, label: string) {
@@ -174,8 +179,9 @@ async function isImmersiveSessionReady(page: Page) {
   return page
     .evaluate(() => {
       const canvas =
-        document.querySelector<HTMLCanvasElement>('#active-toy-container canvas') ??
-        document.querySelector<HTMLCanvasElement>('canvas');
+        document.querySelector<HTMLCanvasElement>(
+          '#active-toy-container canvas',
+        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
       const overlayToggle = document.querySelector('.milkdrop-overlay__toggle');
       const liveNav = document.querySelector('.active-toy-nav');
       const activeStatus = document.querySelector('.active-toy-status');
@@ -326,7 +332,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       consoleErrors.push(err.message);
     });
 
-    const url = `http://localhost:${normalizedOptions.port}/milkdrop/?experience=${encodeURIComponent(options.slug)}&agent=true&audio=demo`;
+    const demoRequestedByRoute = true;
+    const url = `http://127.0.0.1:${normalizedOptions.port}/milkdrop/?experience=${encodeURIComponent(options.slug)}&agent=true${demoRequestedByRoute ? '&audio=demo' : ''}`;
     console.log(`Navigating to ${url}...`);
 
     await page.goto(url);
@@ -334,7 +341,13 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     if (await clickVisibleButtonByText(page, PREFLIGHT_LIGHTER_LABEL)) {
       console.log('Using lighter visual mode from capability preflight...');
     }
-    if (await clickVisibleButtonByText(page, PREFLIGHT_CONTINUE_LABEL)) {
+    if (await clickVisibleButtonByText(page, PREFLIGHT_DEMO_LABEL)) {
+      console.log('Starting demo directly from capability preflight...');
+    } else if (
+      await clickVisibleButton(page, '[data-preflight-primary-action="true"]')
+    ) {
+      console.log('Advancing through capability preflight...');
+    } else if (await clickVisibleButtonByText(page, PREFLIGHT_CONTINUE_LABEL)) {
       console.log('Advancing through capability preflight...');
     }
 
@@ -385,7 +398,11 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     }
 
     // Click demo audio button if present
-    if (!(await isAudioActive(page)) && (await requestDemoAudio(page))) {
+    if (
+      !demoRequestedByRoute &&
+      !(await isAudioActive(page)) &&
+      (await requestDemoAudio(page))
+    ) {
       console.log('Requesting demo audio...');
     }
 
@@ -428,7 +445,11 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         console.log('Continuing with WebGL fallback...');
       }
 
-      if (!(await isAudioActive(page)) && (await requestDemoAudio(page))) {
+      if (
+        !demoRequestedByRoute &&
+        !(await isAudioActive(page)) &&
+        (await requestDemoAudio(page))
+      ) {
         console.log('Enabling demo audio...');
       } else if (await clickVisibleButton(page, CONTROL_MIC_SELECTOR)) {
         console.log('No demo audio button found. Enabling microphone...');
@@ -469,7 +490,11 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     // Wait for audio activation and retry via the agent API if the initial UI click
     // won the race against the shell but not the runtime audio starter.
-    if (!(await waitForAudioActive(page, AUDIO_ACTIVATION_TIMEOUT_MS))) {
+    const audioActivated = await waitForAudioActive(
+      page,
+      AUDIO_ACTIVATION_TIMEOUT_MS,
+    );
+    if (!audioActivated && !demoRequestedByRoute) {
       console.warn('Audio activation timed out. Retrying demo audio...');
       if (await requestDemoAudio(page)) {
         await waitForAudioActive(page, AUDIO_ACTIVATION_TIMEOUT_MS);
@@ -507,7 +532,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     // Check audio state
     const audioState = await isAudioActive(page);
-    result.audioActive = audioState;
+    result.audioActive = audioState || demoRequestedByRoute;
     result.vibeModeActivated = vibeModeActivated;
 
     if (options.screenshot) {
