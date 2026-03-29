@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-03-21",
+  "generatedAt": "2026-03-28",
   "certification": "bundled",
   "corpusTier": "bundled",
   "presets": [
@@ -11,14 +11,9 @@
       "order": 1,
       "file": "/milkdrop-presets/aurora-feedback-core.milk",
       "preview": true,
-      "tags": [
-        "collection:classic-milkdrop",
-        "feedback",
-        "warp",
-        "preset"
-      ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "tags": ["collection:classic-milkdrop", "feedback", "warp", "preset"],
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
@@ -38,8 +33,8 @@
         "original-pack",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
@@ -60,8 +55,8 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
@@ -82,8 +77,8 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
@@ -96,14 +91,9 @@
       "order": 5,
       "file": "/milkdrop-presets/prism-drum-tunnel.milk",
       "preview": true,
-      "tags": [
-        "collection:classic-milkdrop",
-        "tunnel",
-        "drums",
-        "preset"
-      ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "tags": ["collection:classic-milkdrop", "tunnel", "drums", "preset"],
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
@@ -124,8 +114,8 @@
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
@@ -138,14 +128,9 @@
       "order": 7,
       "file": "/milkdrop-presets/kinetic-grid-pulse.milk",
       "preview": true,
-      "tags": [
-        "collection:feedback-lab",
-        "grid",
-        "reactive",
-        "preset"
-      ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "tags": ["collection:feedback-lab", "grid", "reactive", "preset"],
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
@@ -158,14 +143,9 @@
       "order": 8,
       "file": "/milkdrop-presets/low-motion-halo-drift.milk",
       "preview": false,
-      "tags": [
-        "collection:low-motion",
-        "ambient",
-        "halos",
-        "preset"
-      ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "tags": ["collection:low-motion", "ambient", "halos", "preset"],
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true

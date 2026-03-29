@@ -43,6 +43,7 @@ bun run check:quick
 ```
 
 `check:quick` also includes the no-`@ts-nocheck` guard.
+It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `assets/data/milkdrop-parity/measured-results.json`.
 
 ## Task-specific checks
 

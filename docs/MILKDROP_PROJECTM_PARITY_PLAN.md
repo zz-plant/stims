@@ -88,6 +88,14 @@ bun run parity:promote-result -- \
 
 That step writes to `assets/data/milkdrop-parity/measured-results.json`, which is the first manifest used by runtime/catalog analysis to prefer measured visual fidelity over compiler-only inference.
 
+Sync the shipped bundled catalog metadata from that measured-results manifest:
+
+```bash
+bun run parity:sync-catalog
+```
+
+That rewrite keeps `public/milkdrop-presets/catalog.json` aligned with measured evidence: certified presets keep their measured labels, and unmeasured bundled presets are downgraded to `partial` / `runtime` instead of shipping as visually certified.
+
 ## Phase 2: make compatibility reporting honest
 
 1. Populate hard-unsupported feature tables instead of leaving them empty.
