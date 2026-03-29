@@ -52,6 +52,18 @@ bun scripts/import-projectm-reference.ts \
 
 Both workflows append entries to `parity-artifacts.manifest.json` inside the output directory so later diff tooling can resolve matching Stims and projectM artifacts by preset id.
 
+To diff the latest pair for a preset:
+
+```bash
+bun run parity:diff -- --output ./screenshots/parity --preset eos-glowsticks-v2-03-music
+```
+
+The diff command writes:
+
+- a JSON report with mismatch metrics,
+- an optional diff PNG,
+- a `parity-diff` manifest entry tied back to the source artifact ids.
+
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
