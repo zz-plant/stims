@@ -34,7 +34,20 @@ This produces:
 
 - a screenshot for the requested preset,
 - a `milkdrop` agent debug snapshot JSON alongside it,
-- a stable enough capture path to start building parity fixtures.
+- a stable enough capture path to start building parity fixtures,
+- a local `parity-artifacts.manifest.json` entry describing the capture.
+
+Import a reference render into the same directory:
+
+```bash
+bun scripts/import-projectm-reference.ts \
+  --preset eos-glowsticks-v2-03-music \
+  --image /absolute/path/to/projectm-frame.png \
+  --meta /absolute/path/to/projectm-frame.json \
+  --output ./screenshots/parity
+```
+
+That import copies the reference files into the parity output directory and appends provenance metadata to the same manifest.
 
 ## Phase 2: make compatibility reporting honest
 

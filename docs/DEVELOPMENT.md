@@ -40,6 +40,18 @@ bun scripts/play-toy.ts milkdrop \
 
 This keeps the capture focused on one preset and saves both the screenshot and the runtime debug snapshot for later comparison.
 
+You can import an external `projectM` reference render into the same artifact directory:
+
+```bash
+bun scripts/import-projectm-reference.ts \
+  --preset eos-glowsticks-v2-03-music \
+  --image /absolute/path/to/projectm-frame.png \
+  --meta /absolute/path/to/projectm-frame.json \
+  --output ./screenshots/parity
+```
+
+Both workflows append entries to `parity-artifacts.manifest.json` inside the output directory so later diff tooling can resolve matching Stims and projectM artifacts by preset id.
+
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
