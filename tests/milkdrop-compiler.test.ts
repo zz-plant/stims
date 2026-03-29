@@ -763,6 +763,30 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
     );
   });
 
+  test('builds direct comp programs that can reference translated control values', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Mixed Direct And Controls
+comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
+      `.trim(),
+      { id: 'shader-mixed-direct-controls' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.35, 6);
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source: 'ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          requiresControlFallback: true,
+        }),
+      }),
+    );
+  });
+
   test('keeps richer legacy shader programs executable without downgrading them to unsupported shader text', () => {
     const fixturePath = join(
       process.cwd(),

@@ -543,6 +543,43 @@ function getShaderEnvValue(
     weighted_energy: () => shaderFloat(env.uniforms.signalEnergy),
     pi: () => shaderFloat(Math.PI),
     e: () => shaderFloat(Math.E),
+    warp: () => shaderFloat(env.uniforms.warpScale),
+    warp_scale: () => shaderFloat(env.uniforms.warpScale),
+    dx: () => shaderFloat(env.uniforms.offsetX),
+    offset_x: () => shaderFloat(env.uniforms.offsetX),
+    translate_x: () => shaderFloat(env.uniforms.offsetX),
+    dy: () => shaderFloat(env.uniforms.offsetY),
+    offset_y: () => shaderFloat(env.uniforms.offsetY),
+    translate_y: () => shaderFloat(env.uniforms.offsetY),
+    rot: () => shaderFloat(env.uniforms.rotation),
+    rotation: () => shaderFloat(env.uniforms.rotation),
+    zoom: () => shaderFloat(env.uniforms.zoomMul),
+    scale: () => shaderFloat(env.uniforms.zoomMul),
+    saturation: () => shaderFloat(env.uniforms.saturation),
+    sat: () => shaderFloat(env.uniforms.saturation),
+    contrast: () => shaderFloat(env.uniforms.contrast),
+    r: () => shaderFloat(env.uniforms.colorScale.x),
+    red: () => shaderFloat(env.uniforms.colorScale.x),
+    g: () => shaderFloat(env.uniforms.colorScale.y),
+    green: () => shaderFloat(env.uniforms.colorScale.y),
+    b: () => shaderFloat(env.uniforms.colorScale.z),
+    blue: () => shaderFloat(env.uniforms.colorScale.z),
+    hue: () => shaderFloat(env.uniforms.hueShift),
+    hue_shift: () => shaderFloat(env.uniforms.hueShift),
+    mix: () => shaderFloat(env.uniforms.mixAlpha),
+    feedback: () => shaderFloat(env.uniforms.mixAlpha),
+    feedback_alpha: () => shaderFloat(env.uniforms.mixAlpha),
+    brighten: () => shaderFloat(env.uniforms.brightenBoost),
+    invert: () => shaderFloat(env.uniforms.invertBoost),
+    solarize: () => shaderFloat(env.uniforms.solarizeBoost),
+    tint: () =>
+      makeShaderValue(
+        'vec3',
+        vec3(env.uniforms.tint.x, env.uniforms.tint.y, env.uniforms.tint.z),
+      ),
+    tint_r: () => shaderFloat(env.uniforms.tint.x),
+    tint_g: () => shaderFloat(env.uniforms.tint.y),
+    tint_b: () => shaderFloat(env.uniforms.tint.z),
   };
 
   const resolved = uniformMap[normalized]?.() ?? null;
@@ -862,7 +899,9 @@ function assignShaderTarget(
   statement: MilkdropShaderStatement,
   value: ShaderNodeValue,
 ) {
-  const target = statement.target.toLowerCase();
+  const rawTarget = statement.target.toLowerCase();
+  const target =
+    rawTarget === 'return' ? (env.values.has('ret') ? 'ret' : 'uv') : rawTarget;
   const segments = target.split('.');
   const baseKey = segments[0] ?? target;
   const baseValue = getShaderEnvValue(env, baseKey);

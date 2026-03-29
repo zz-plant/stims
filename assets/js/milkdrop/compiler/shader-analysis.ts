@@ -2649,6 +2649,24 @@ function isUnsupportedParsedShaderStatement({
   return !isAuxShaderSamplerName(invertedSample.source);
 }
 
+function shouldEmitDirectProgramStatement(target: string) {
+  const key = target.toLowerCase();
+  if (key === 'uv' || key === 'ret' || key === 'return') {
+    return true;
+  }
+  if (
+    key === 'shader_body' ||
+    isKnownShaderScalarKey(key) ||
+    key === 'tint' ||
+    key === 'texture_source' ||
+    key === 'texture_mode' ||
+    key === 'warp_texture_source'
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function extractShaderControls(
   shaderText: string | null,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
@@ -2730,6 +2748,12 @@ export function extractShaderControls(
         })
       ) {
         unsupportedLines.push(line);
+        return;
+      }
+      if (shouldEmitDirectProgramStatement(parsedStatement.target)) {
+        directProgramStatements.push(parsedStatement);
+        directProgramLines.push(line);
+        supportedLineCount += 1;
         return;
       }
       supportedLineCount += 1;
