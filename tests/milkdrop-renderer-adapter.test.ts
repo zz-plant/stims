@@ -936,7 +936,8 @@ video_echo=1
       }),
     ).toBe(true);
     expect(renderCalls).toBe(1);
-    expect(compositeStates[0]?.mixAlpha).toBeGreaterThan(0);
+    expect(compositeStates[0]?.mixAlpha).toBe(0);
+    expect(compositeStates[0]?.videoEchoAlpha).toBeGreaterThan(0);
     expect(compositeStates[0]?.videoEchoOrientation).toBe(0);
     expect(compositeStates[0]?.signalTime).toBeCloseTo(
       frameState.signals.time,
@@ -952,6 +953,10 @@ video_echo=1
       `
 title=Feedback Orientation Routing
 video_echo=1
+video_echo_alpha=0.42
+video_echo_zoom=1.11
+warp_shader=warp=0.6
+comp_shader=mix=0.25
 video_echo_orientation=3
         `.trim(),
       { id: `feedback-orientation-routing-${backend}` },
@@ -992,10 +997,11 @@ video_echo_orientation=3
     ).toBe(true);
 
     expect(compositeStates[0]).toMatchObject({
+      mixAlpha: 0.25,
+      videoEchoAlpha: 0.42,
       videoEchoOrientation: 3,
-      zoom:
-        frameState.post.videoEchoZoom +
-        frameState.post.shaderControls.warpScale * 0.04,
+      zoom: frameState.post.videoEchoZoom,
+      warpScale: frameState.post.shaderControls.warpScale,
     });
   });
 
