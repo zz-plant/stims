@@ -796,6 +796,46 @@ comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
     );
   });
 
+  test('retains direct-program local temp statements needed by comp output', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Direct Temp Context
+comp_shader=float pulse = beat_pulse * 0.4; ret = tex2d(sampler_main, uv).rgb + vec3(pulse, 0.0, 0.0)
+      `.trim(),
+      { id: 'shader-direct-temp-context' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'float pulse = beat_pulse * 0.4; ret = tex2d(sampler_main, uv).rgb + vec3(pulse, 0.0, 0.0)',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: false,
+          statementTargets: ['pulse', 'ret'],
+        }),
+        statements: [
+          expect.objectContaining({
+            declaration: 'float',
+            target: 'pulse',
+          }),
+          expect.objectContaining({
+            target: 'ret',
+          }),
+        ],
+      }),
+    );
+  });
+
   test('marks webgl partial when shader text depends entirely on direct program execution', () => {
     const compiled = compileMilkdropPresetSource(
       `
@@ -826,6 +866,47 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)
     );
   });
 
+  test('retains direct-program local temp statements needed by warp output', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Warp Direct Temp Context
+warp_shader=vec2 drift = vec2(time * 0.02, -0.01); uv = uv + drift * (tex2d(sampler_main, uv).xy - 0.5)
+      `.trim(),
+      { id: 'warp-direct-temp-context' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'vec2 drift = vec2(time * 0.02, -0.01); uv = uv + drift * (tex2d(sampler_main, uv).xy - 0.5)',
+        execution: expect.objectContaining({
+          entryTarget: 'uv',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: false,
+          statementTargets: ['drift', 'uv'],
+        }),
+        statements: [
+          expect.objectContaining({
+            declaration: 'vec2',
+            target: 'drift',
+          }),
+          expect.objectContaining({
+            target: 'uv',
+          }),
+        ],
+      }),
+    );
+  });
+
   test('normalizes direct warp shader_body programs onto uv output', () => {
     const compiled = compileMilkdropPresetSource(
       `
@@ -836,12 +917,12 @@ warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
     );
 
     expect(compiled.ir.shaderText.supported).toBe(true);
-    expect(compiled.ir.compatibility.featureAnalysis.shaderTextExecution).toEqual(
-      {
-        webgl: 'unsupported',
-        webgpu: 'direct',
-      },
-    );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.warpProgram).toEqual(
