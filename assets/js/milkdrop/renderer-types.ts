@@ -139,6 +139,7 @@ export type MilkdropProceduralCustomWaveVisual = {
   color: MilkdropColor;
   alpha: number;
   additive: boolean;
+  thickness: number;
 };
 
 export type MilkdropProceduralMotionVectorFieldVisual =

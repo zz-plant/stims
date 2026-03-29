@@ -378,6 +378,7 @@ shapecode_0_tex_ang=0.2
     expect(material?.uniforms.textured.value).toBe(1);
     expect(material?.uniforms.textureZoom.value).toBeCloseTo(0.75, 6);
     expect(material?.uniforms.textureAngle.value).toBeCloseTo(0.2, 6);
+    expect(material?.fragmentShader).toContain('fract(sampleUv)');
   });
 
   test('reuses cached polygon geometries for same-sided shapes', () => {
@@ -434,6 +435,74 @@ shapecode_1_sides=6
 
     expect(populatedFillMeshes.length).toBeGreaterThan(0);
     expect(populatedOutlineMeshes.length).toBeGreaterThan(0);
+  });
+
+  test('keeps WebGPU shape outline thickness stable across different radii', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Stable Outline Thickness
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.2
+shapecode_0_border_a=1
+shapecode_0_thickoutline=1
+shapecode_1_enabled=1
+shapecode_1_sides=6
+shapecode_1_rad=0.4
+shapecode_1_border_a=1
+shapecode_1_thickoutline=1
+      `.trim(),
+      { id: 'stable-outline-thickness' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const ringMeshes = flattenRenderTree(root).filter(
+      (child) => child.geometry?.getAttribute?.('instanceScales') !== undefined,
+    );
+    const outlineScales = ringMeshes
+      .map((mesh) => getFloat32AttributeArray(mesh, 'instanceScales'))
+      .filter(
+        (scales): scales is Float32Array =>
+          scales !== null && (scales[0] ?? 0) <= 1.001,
+      )
+      .map((scales) => Array.from(scales).map((value) => Number(value)))
+      .sort((left, right) => (left[1] ?? 0) - (right[1] ?? 0));
+    const accentScales = ringMeshes
+      .map((mesh) => getFloat32AttributeArray(mesh, 'instanceScales'))
+      .filter(
+        (scales): scales is Float32Array =>
+          scales !== null && (scales[0] ?? 0) > 1.001,
+      )
+      .map((scales) => Array.from(scales).map((value) => Number(value)))
+      .sort((left, right) => (left[0] ?? 0) - (right[0] ?? 0));
+
+    expect(frameState.shapes).toHaveLength(2);
+    expect(outlineScales).toHaveLength(2);
+    expect(accentScales).toHaveLength(2);
+    expect(outlineScales).toEqual([
+      [1, 0.9656862616539001],
+      [1, 0.9828431606292725],
+    ]);
+    expect(accentScales).toEqual([
+      [1.0220588445663452, 1.0049020051956177],
+      [1.0441176891326904, 1.0098038911819458],
+    ]);
   });
 
   test('reuses wave and border objects across renders', () => {
@@ -1589,6 +1658,7 @@ wavecode_0_r=0.8
 wavecode_0_g=0.4
 wavecode_0_b=1
 wavecode_0_a=0.35
+wavecode_0_thick=5
       `.trim(),
       { id: 'procedural-custom-wave-renderer' },
     );
@@ -1620,6 +1690,7 @@ wavecode_0_a=0.35
 
     expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
     expect(renderedWaveChildren.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.customWaves[0]?.thickness).toBe(5);
   });
 
   test('keeps procedural blend interaction alpha separate from blend alpha on webgpu', () => {
@@ -1720,6 +1791,7 @@ wavecode_0_a=0.35
           color: { r: 1, g: 0.8, b: 0.6, a: 1 },
           alpha: 0.35,
           additive: false,
+          thickness: 1,
         },
         {
           samples: Array.from({ length: 40 }, (_, index) =>
@@ -1734,6 +1806,7 @@ wavecode_0_a=0.35
           color: { r: 0.8, g: 0.4, b: 1, a: 1 },
           alpha: 0.35,
           additive: false,
+          thickness: 1,
         },
         0.6,
         0.4,

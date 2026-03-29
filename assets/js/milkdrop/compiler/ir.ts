@@ -506,32 +506,30 @@ export function createMilkdropIr({
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
-  const warpShaderProgram =
-    shaderWarpAnalysis.directProgramRequired
-      ? shaderHelpers.buildShaderProgramPayload({
-          stage: 'warp',
-          statements: shaderWarpAnalysis.directProgramStatements,
-          normalizedLines: shaderWarpAnalysis.directProgramLines,
-          requiresControlFallback:
-            shaderWarpAnalysis.directProgramStatements.length !==
-            shaderWarpAnalysis.statements.length,
-          supportedBackends:
-            shaderWarpAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
-        })
-      : null;
-  const compShaderProgram =
-    shaderCompAnalysis.directProgramRequired
-      ? shaderHelpers.buildShaderProgramPayload({
-          stage: 'comp',
-          statements: shaderCompAnalysis.directProgramStatements,
-          normalizedLines: shaderCompAnalysis.directProgramLines,
-          requiresControlFallback:
-            shaderCompAnalysis.directProgramStatements.length !==
-            shaderCompAnalysis.statements.length,
-          supportedBackends:
-            shaderCompAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
-        })
-      : null;
+  const warpShaderProgram = shaderWarpAnalysis.directProgramRequired
+    ? shaderHelpers.buildShaderProgramPayload({
+        stage: 'warp',
+        statements: shaderWarpAnalysis.directProgramStatements,
+        normalizedLines: shaderWarpAnalysis.directProgramLines,
+        requiresControlFallback:
+          shaderWarpAnalysis.directProgramStatements.length !==
+          shaderWarpAnalysis.statements.length,
+        supportedBackends:
+          shaderWarpAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
+      })
+    : null;
+  const compShaderProgram = shaderCompAnalysis.directProgramRequired
+    ? shaderHelpers.buildShaderProgramPayload({
+        stage: 'comp',
+        statements: shaderCompAnalysis.directProgramStatements,
+        normalizedLines: shaderCompAnalysis.directProgramLines,
+        requiresControlFallback:
+          shaderCompAnalysis.directProgramStatements.length !==
+          shaderCompAnalysis.statements.length,
+        supportedBackends:
+          shaderCompAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
+      })
+    : null;
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();

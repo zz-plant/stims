@@ -582,7 +582,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             }
             float amount = clamp(overlayTextureAmount, 0.0, 1.5);
             if (overlayTextureMode < 1.5) {
-              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
+              color = overlayColor;
             } else if (overlayTextureMode < 2.5) {
               color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
             } else if (overlayTextureMode < 3.5) {

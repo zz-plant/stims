@@ -943,6 +943,88 @@ warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
     );
   });
 
+  test('keeps richer direct sampler alias and swizzle programs on the webgpu execution path', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Shader Alias And Swizzle
+warp_shader=uv = uv + vec2(0.02) * (tex2d(sampler_perlin, uv).yx - 0.5)
+comp_shader=ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.0)).bgr
+      `.trim(),
+      { id: 'direct-shader-alias-and-swizzle' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'uv = uv + vec2(0.02) * (tex2d(sampler_perlin, uv).yx - 0.5)',
+        execution: expect.objectContaining({
+          entryTarget: 'uv',
+          supportedBackends: ['webgpu'],
+        }),
+      }),
+    );
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.0)).bgr',
+        execution: expect.objectContaining({
+          entryTarget: 'ret',
+          supportedBackends: ['webgpu'],
+        }),
+      }),
+    );
+  });
+
+  test('keeps direct component-swizzle assignment programs on the webgpu execution path', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Swizzle Assignment
+warp_shader=uv.yx = vec2(0.15, 0.35)
+comp_shader=ret.rg = vec2(0.2, 0.4); ret.b = 0.6
+      `.trim(),
+      { id: 'direct-swizzle-assignment' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
+      expect.objectContaining({
+        source: 'uv.yx = vec2(0.15, 0.35)',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          statementTargets: ['uv.yx'],
+        }),
+      }),
+    );
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source: 'ret.rg = vec2(0.2, 0.4); ret.b = 0.6',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          statementTargets: ['ret.rg', 'ret.b'],
+        }),
+      }),
+    );
+  });
+
   test('keeps richer legacy shader programs executable without downgrading them to unsupported shader text', () => {
     const fixturePath = join(
       process.cwd(),

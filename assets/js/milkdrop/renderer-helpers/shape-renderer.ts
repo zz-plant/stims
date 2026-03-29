@@ -147,7 +147,7 @@ function createShapeFillShaderMaterial(
           vec2 sampleUv =
             rotate2d(vLocal, textureAngle) * (0.5 * max(textureZoom, 0.0001)) +
             0.5;
-          vec4 sampled = texture2D(shapeTexture, clamp(sampleUv, 0.0, 1.0));
+          vec4 sampled = texture2D(shapeTexture, fract(sampleUv));
           color = sampled.rgb * tint;
           alpha *= sampled.a;
         }

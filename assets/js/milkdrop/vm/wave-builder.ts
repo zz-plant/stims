@@ -228,6 +228,7 @@ export function buildCustomWaves({
         color: waveColor,
         alpha: waveAlpha,
         additive,
+        thickness: clamp(frameLocals.thick ?? 1, 1, 6),
       });
     }
   });

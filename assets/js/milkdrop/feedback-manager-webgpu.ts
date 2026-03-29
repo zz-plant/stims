@@ -30,12 +30,17 @@ import {
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './renderer-adapter.ts';
+import {
+  isMilkdropVolumeShaderSamplerName,
+  normalizeMilkdropShaderSamplerName,
+} from './shader-samplers.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
   MilkdropShaderExpressionNode,
   MilkdropShaderProgramPayload,
   MilkdropShaderStatement,
+  MilkdropShaderTextureSampler,
 } from './types';
 
 const {
@@ -367,6 +372,18 @@ type ShaderNodeEnv = {
   sampleAuxTextureNode: ReturnType<typeof createSampleAuxTextureNode>;
 };
 
+type DirectShaderSwizzleComponent = 'x' | 'y' | 'z';
+
+export type DirectShaderSwizzleSpec = {
+  kind: ShaderNodeValue['kind'];
+  components: DirectShaderSwizzleComponent[];
+};
+
+export type DirectShaderSamplerBinding = {
+  canonicalSource: MilkdropShaderTextureSampler | 'main';
+  sourceId: number;
+};
+
 function makeShaderValue(
   kind: ShaderNodeValue['kind'],
   node: any,
@@ -397,6 +414,140 @@ function shaderValueFromNode(node: any, kind: ShaderNodeValue['kind']) {
     return makeShaderValue('vec2', node);
   }
   return makeShaderValue('vec3', node);
+}
+
+function getDirectShaderSamplerSourceId(
+  canonicalSource: MilkdropShaderTextureSampler | 'main',
+) {
+  switch (canonicalSource) {
+    case 'main':
+      return 0;
+    case 'noise':
+    case 'perlin':
+      return 1;
+    case 'simplex':
+      return 2;
+    case 'voronoi':
+      return 3;
+    case 'aura':
+      return 4;
+    case 'caustics':
+      return 5;
+    case 'pattern':
+      return 6;
+    case 'fractal':
+      return 7;
+    default:
+      return 0;
+  }
+}
+
+export function resolveDirectShaderSamplerBinding(
+  sourceName: string,
+  sampleDimension: '2d' | '3d',
+): DirectShaderSamplerBinding | null {
+  const canonicalSource = normalizeMilkdropShaderSamplerName(sourceName);
+  if (!canonicalSource) {
+    return null;
+  }
+  if (
+    sampleDimension === '3d' &&
+    (canonicalSource === 'main' ||
+      !isMilkdropVolumeShaderSamplerName(canonicalSource))
+  ) {
+    return null;
+  }
+  return {
+    canonicalSource,
+    sourceId: getDirectShaderSamplerSourceId(canonicalSource),
+  };
+}
+
+export function resolveDirectShaderSwizzle(
+  kind: Exclude<ShaderNodeValue['kind'], 'scalar'>,
+  property: string,
+): DirectShaderSwizzleSpec | null {
+  const normalized = property.toLowerCase();
+  const componentMap =
+    kind === 'vec2'
+      ? ({
+          x: 'x',
+          y: 'y',
+          r: 'x',
+          g: 'y',
+        } satisfies Record<string, DirectShaderSwizzleComponent>)
+      : ({
+          x: 'x',
+          y: 'y',
+          z: 'z',
+          r: 'x',
+          g: 'y',
+          b: 'z',
+        } satisfies Record<string, DirectShaderSwizzleComponent>);
+  if (
+    normalized.length < 1 ||
+    normalized.length > 3 ||
+    [...normalized].some((entry) => !(entry in componentMap))
+  ) {
+    return null;
+  }
+  const components = [...normalized].map(
+    (entry) => componentMap[entry] as DirectShaderSwizzleComponent,
+  );
+  return {
+    kind:
+      components.length === 1
+        ? 'scalar'
+        : components.length === 2
+          ? 'vec2'
+          : 'vec3',
+    components,
+  };
+}
+
+function getDirectShaderSwizzleComponentNode(
+  value: ShaderNodeValue,
+  component: DirectShaderSwizzleComponent,
+) {
+  if (value.kind === 'scalar') {
+    return value.node;
+  }
+  if (component === 'x') {
+    return value.node.x;
+  }
+  if (component === 'y') {
+    return value.node.y;
+  }
+  return value.node.z;
+}
+
+function buildDirectShaderSwizzleValue(
+  value: ShaderNodeValue,
+  property: string,
+): ShaderNodeValue | null {
+  if (value.kind === 'scalar') {
+    return null;
+  }
+  const swizzle = resolveDirectShaderSwizzle(value.kind, property);
+  if (!swizzle) {
+    return null;
+  }
+  const componentNodes = swizzle.components.map((component) => {
+    if (component === 'x') {
+      return value.node.x;
+    }
+    if (component === 'y') {
+      return value.node.y;
+    }
+    return value.node.z;
+  });
+  if (swizzle.kind === 'scalar') {
+    return shaderFloat(componentNodes[0]);
+  }
+  if (swizzle.kind === 'vec2') {
+    return shaderVec2(componentNodes[0], componentNodes[1]);
+  }
+  return shaderVec3(componentNodes[0], componentNodes[1], componentNodes[2]);
 }
 
 function coerceShaderValue(
@@ -627,36 +778,7 @@ function compileShaderExpressionNode(
       if (!object) {
         return null;
       }
-      const property = node.property.toLowerCase();
-      if (object.kind === 'vec2') {
-        if (property === 'x' || property === 'r') {
-          return shaderFloat(object.node.x);
-        }
-        if (property === 'y' || property === 'g') {
-          return shaderFloat(object.node.y);
-        }
-        if (property === 'xy' || property === 'rg') {
-          return makeShaderValue('vec2', object.node.xy);
-        }
-      }
-      if (object.kind === 'vec3') {
-        if (property === 'x' || property === 'r') {
-          return shaderFloat(object.node.x);
-        }
-        if (property === 'y' || property === 'g') {
-          return shaderFloat(object.node.y);
-        }
-        if (property === 'z' || property === 'b') {
-          return shaderFloat(object.node.z);
-        }
-        if (property === 'xy' || property === 'rg') {
-          return makeShaderValue('vec2', object.node.xy);
-        }
-        if (property === 'rgb' || property === 'xyz') {
-          return makeShaderValue('vec3', object.node.xyz);
-        }
-      }
-      return null;
+      return buildDirectShaderSwizzleValue(object, node.property);
     }
     case 'call': {
       const name = node.name.toLowerCase();
@@ -672,6 +794,10 @@ function compileShaderExpressionNode(
           coerceShaderValue(args[1], 'scalar').node,
         );
       }
+      if ((name === 'vec2' || name === 'float2') && args.length >= 1) {
+        const scalar = coerceShaderValue(args[0], 'scalar').node;
+        return shaderVec2(scalar, scalar);
+      }
       if (name === 'float2' && args.length >= 2) {
         return shaderVec2(
           coerceShaderValue(args[0], 'scalar').node,
@@ -679,6 +805,10 @@ function compileShaderExpressionNode(
         );
       }
       if (name === 'vec3' || name === 'float3') {
+        if (args.length >= 1 && args[0]?.kind === 'scalar') {
+          const scalar = coerceShaderValue(args[0], 'scalar').node;
+          return shaderVec3(scalar, scalar, scalar);
+        }
         if (args.length >= 3) {
           return shaderVec3(
             coerceShaderValue(args[0], 'scalar').node,
@@ -718,6 +848,13 @@ function compileShaderExpressionNode(
         if (!coordinate) {
           return null;
         }
+        const resolvedBinding = resolveDirectShaderSamplerBinding(
+          sourceName,
+          name === 'tex3d' || name === 'texture3d' ? '3d' : '2d',
+        );
+        if (!resolvedBinding) {
+          return null;
+        }
         const sampleDimension =
           name === 'tex3d' || name === 'texture3d' ? float(1) : float(0);
         const sampleUv =
@@ -726,23 +863,7 @@ function compileShaderExpressionNode(
             : coerceShaderValue(coordinate, 'vec2').node;
         const sampleZ =
           coordinate.kind === 'vec3' ? coordinate.node.z : float(0);
-        const sourceId =
-          sourceName === 'sampler_main'
-            ? float(0)
-            : sourceName.includes('noise')
-              ? float(1)
-              : sourceName.includes('simplex')
-                ? float(2)
-                : sourceName.includes('voronoi')
-                  ? float(3)
-                  : sourceName.includes('aura')
-                    ? float(4)
-                    : sourceName.includes('caustics')
-                      ? float(5)
-                      : sourceName.includes('pattern')
-                        ? float(6)
-                        : float(7);
-        if (sourceName === 'sampler_main') {
+        if (resolvedBinding.canonicalSource === 'main') {
           return makeShaderValue(
             'vec3',
             env.uniforms.currentTex.sample(
@@ -752,8 +873,12 @@ function compileShaderExpressionNode(
         }
         return makeShaderValue(
           'vec3',
-          env.sampleAuxTextureNode(sourceId, sampleDimension, sampleUv, sampleZ)
-            .rgb,
+          env.sampleAuxTextureNode(
+            float(resolvedBinding.sourceId),
+            sampleDimension,
+            sampleUv,
+            sampleZ,
+          ).rgb,
         );
       }
       if ((name === 'mix' || name === 'lerp') && args.length >= 3) {
@@ -928,18 +1053,34 @@ function assignShaderTarget(
     return;
   }
 
+  const swizzle = resolveDirectShaderSwizzle(baseValue.kind, property);
+  if (!swizzle) {
+    return;
+  }
+  if (new Set(swizzle.components).size !== swizzle.components.length) {
+    return;
+  }
   const parent =
     baseValue.kind === 'vec3'
       ? coerceShaderValue(baseValue, 'vec3').node.toVar()
       : coerceShaderValue(baseValue, 'vec2').node.toVar();
-  const scalarNode = coerceShaderValue(nextValue, 'scalar').node;
-  if (property === 'x' || property === 'r') {
-    parent.x.assign(scalarNode);
-  } else if (property === 'y' || property === 'g') {
-    parent.y.assign(scalarNode);
-  } else if (property === 'z' || property === 'b') {
-    parent.z.assign(scalarNode);
-  }
+  const assignedValue = coerceShaderValue(nextValue, swizzle.kind);
+  swizzle.components.forEach((component, index) => {
+    const targetNode =
+      component === 'x'
+        ? parent.x
+        : component === 'y'
+          ? parent.y
+          : parent.z;
+    const sourceNode =
+      swizzle.kind === 'scalar'
+        ? assignedValue.node
+        : getDirectShaderSwizzleComponentNode(
+            assignedValue,
+            (['x', 'y', 'z'][index] ?? 'x') as DirectShaderSwizzleComponent,
+          );
+    targetNode.assign(sourceNode);
+  });
   setShaderEnvValue(env, baseKey, shaderValueFromNode(parent, baseValue.kind));
 }
 
@@ -1262,6 +1403,7 @@ function createCompositeOutputNode(
       step(0.5, uniforms.overlayTextureInvert),
     );
     const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
+    const overlayReplace = overlayColor;
     const overlayMixAmount = clamp(overlayAmount, 0, 1);
     const overlayMix = mix(color, overlayColor, overlayMixAmount);
     const overlayAdd = min(vec3(1), color.add(overlayColor.mul(overlayAmount)));
@@ -1269,12 +1411,16 @@ function createCompositeOutputNode(
       mix(vec3(1), overlayColor, overlayMixAmount),
     );
     const overlayResult = select(
-      uniforms.overlayTextureMode.lessThan(2.5),
-      overlayMix,
+      uniforms.overlayTextureMode.lessThan(1.5),
+      overlayReplace,
       select(
-        uniforms.overlayTextureMode.lessThan(3.5),
-        overlayAdd,
-        overlayMultiply,
+        uniforms.overlayTextureMode.lessThan(2.5),
+        overlayMix,
+        select(
+          uniforms.overlayTextureMode.lessThan(3.5),
+          overlayAdd,
+          overlayMultiply,
+        ),
       ),
     );
     color.assign(mix(color, overlayResult, overlayMask));

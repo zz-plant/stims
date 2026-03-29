@@ -2153,12 +2153,13 @@ function applyShaderAstStatement({
     shaderValueEnv,
     shaderEnv,
   );
+  const baseKey = key.split('.')[0] ?? key;
   if (
-    key === 'uv' ||
-    key === 'ret' ||
-    key === 'shader_body' ||
-    key === 'tint' ||
-    isKnownShaderScalarKey(key)
+    baseKey === 'uv' ||
+    baseKey === 'ret' ||
+    baseKey === 'shader_body' ||
+    baseKey === 'tint' ||
+    isKnownShaderScalarKey(baseKey)
   ) {
     return false;
   }
@@ -2659,11 +2660,12 @@ function isUnsupportedParsedShaderStatement({
 
 function shouldEmitDirectProgramStatement(target: string) {
   const key = target.toLowerCase();
+  const baseKey = key.split('.')[0] ?? key;
   if (
-    key === 'uv' ||
-    key === 'ret' ||
-    key === 'return' ||
-    key === 'shader_body'
+    baseKey === 'uv' ||
+    baseKey === 'ret' ||
+    baseKey === 'return' ||
+    baseKey === 'shader_body'
   ) {
     return true;
   }
@@ -2672,9 +2674,7 @@ function shouldEmitDirectProgramStatement(target: string) {
 
 function shouldRetainDirectProgramContextStatement(target: string) {
   const key = target.toLowerCase();
-  if (
-    shouldEmitDirectProgramStatement(key)
-  ) {
+  if (shouldEmitDirectProgramStatement(key)) {
     return false;
   }
   if (

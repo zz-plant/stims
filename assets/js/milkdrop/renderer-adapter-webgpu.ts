@@ -70,6 +70,9 @@ type BorderRingInstance = {
 
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
+const SHAPE_OUTLINE_INNER_OFFSET = -0.007;
+const SHAPE_ACCENT_INNER_OFFSET = 0.002;
+const SHAPE_ACCENT_OUTER_OFFSET = 0.009;
 const polygonFillGeometryCache = new Map<number, BufferGeometry>();
 const polygonRingGeometryCache = new Map<number, InstancedBufferGeometry>();
 
@@ -134,6 +137,24 @@ function createBorderRingGeometry() {
     new Float32BufferAttribute(innerWeight, 1),
   );
   return geometry;
+}
+
+function toRadiusNormalizedScale(radius: number, offset: number) {
+  const safeRadius = Math.max(0.0001, radius);
+  return Math.max(0, safeRadius + offset) / safeRadius;
+}
+
+function createShapeRingScales(
+  radius: number,
+  {
+    outerOffset = 0,
+    innerOffset = 0,
+  }: { outerOffset?: number; innerOffset?: number } = {},
+) {
+  return {
+    outerScale: toRadiusNormalizedScale(radius, outerOffset),
+    innerScale: toRadiusNormalizedScale(radius, innerOffset),
+  };
 }
 
 function getUnitPolygonFillGeometry(sides: number) {
@@ -372,6 +393,7 @@ class CompactSegmentUploadBuffer {
     let previousX = 0;
     let previousY = 0;
     let hasPrevious = false;
+    const width = 0.0025 * Math.max(1, wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
       const sampleValue = wave.samples[index] ?? 0;
@@ -395,7 +417,7 @@ class CompactSegmentUploadBuffer {
           0.28,
           wave.color,
           wave.alpha,
-          0.003,
+          width,
         );
       }
       previousX = x;
@@ -983,6 +1005,9 @@ class ShapeBatchBucket {
     const outlineInstances: ShapeRingInstance[] = [];
     const accentInstances: ShapeRingInstance[] = [];
     for (const shape of shapes) {
+      const outlineScales = createShapeRingScales(shape.radius, {
+        innerOffset: SHAPE_OUTLINE_INNER_OFFSET,
+      });
       fillInstances.push({
         x: shape.x,
         y: shape.y,
@@ -1002,10 +1027,14 @@ class ShapeBatchBucket {
         rotation: shape.rotation,
         color: shape.borderColor,
         alpha: (shape.borderColor.a ?? 1) * alphaMultiplier,
-        outerScale: 1,
-        innerScale: 0.965,
+        outerScale: outlineScales.outerScale,
+        innerScale: outlineScales.innerScale,
       });
       if (shape.thickOutline) {
+        const accentScales = createShapeRingScales(shape.radius, {
+          outerOffset: SHAPE_ACCENT_OUTER_OFFSET,
+          innerOffset: SHAPE_ACCENT_INNER_OFFSET,
+        });
         accentInstances.push({
           x: shape.x,
           y: shape.y,
@@ -1014,8 +1043,8 @@ class ShapeBatchBucket {
           color: shape.borderColor,
           alpha:
             Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45) * alphaMultiplier,
-          outerScale: 1.045,
-          innerScale: 1.01,
+          outerScale: accentScales.outerScale,
+          innerScale: accentScales.innerScale,
         });
       }
     }
