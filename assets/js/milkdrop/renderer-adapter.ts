@@ -102,6 +102,7 @@ export type MilkdropRendererAdapterConfig = {
 export type MilkdropRendererBatcher = {
   attach: (root: Group) => void;
   dispose: () => void;
+  setShapeTexture?: (texture: Texture | null) => void;
   renderWaveGroup?: (
     target:
       | 'main-wave'
@@ -955,6 +956,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier = 1,
   ) {
+    this.batcher?.setShapeTexture?.(
+      (this.feedback?.getShapeTexture?.() as Texture | null) ?? null,
+    );
     return renderShapeGroupHelper({
       target,
       group,

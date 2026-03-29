@@ -10,6 +10,7 @@ import {
   Mesh,
   NormalBlending,
   ShaderMaterial,
+  Texture,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
@@ -45,6 +46,9 @@ type ShapeFillInstance = {
   secondaryColor: MilkdropColor;
   secondaryAlpha: number;
   useGradient: number;
+  textured: number;
+  textureZoom: number;
+  textureAngle: number;
 };
 
 type ShapeRingInstance = {
@@ -767,11 +771,14 @@ class InstancedBorderBatch {
 
 class InstancedShapeFillBatch {
   readonly mesh: Mesh;
+  private readonly getShapeTexture: () => Texture | null;
 
   constructor(
     sides: number,
     blending: typeof NormalBlending | typeof AdditiveBlending,
+    getShapeTexture: () => Texture | null,
   ) {
+    this.getShapeTexture = getShapeTexture;
     this.mesh = new Mesh(
       cloneAsInstancedGeometry(getUnitPolygonFillGeometry(sides)),
       new ShaderMaterial({
@@ -779,15 +786,24 @@ class InstancedShapeFillBatch {
         depthWrite: false,
         side: DoubleSide,
         blending,
+        uniforms: {
+          shapeTexture: {
+            value: null,
+          },
+        },
         vertexShader: `
           attribute vec4 instanceTransform;
           attribute vec4 instancePrimaryColorAlpha;
           attribute vec4 instanceSecondaryColorAlpha;
-          attribute float instanceGradient;
+          attribute vec4 instanceFillControl;
           varying vec4 vPrimaryColor;
           varying vec4 vSecondaryColor;
           varying float vGradient;
           varying float vBlend;
+          varying vec2 vLocal;
+          varying float vTextured;
+          varying float vTextureZoom;
+          varying float vTextureAngle;
 
           void main() {
             float cosR = cos(instanceTransform.w);
@@ -799,8 +815,12 @@ class InstancedShapeFillBatch {
             );
             vPrimaryColor = instancePrimaryColorAlpha;
             vSecondaryColor = instanceSecondaryColorAlpha;
-            vGradient = instanceGradient;
+            vGradient = instanceFillControl.x;
             vBlend = clamp(length(position.xy), 0.0, 1.0);
+            vLocal = position.xy;
+            vTextured = instanceFillControl.y;
+            vTextureZoom = instanceFillControl.z;
+            vTextureAngle = instanceFillControl.w;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(
               rotated + instanceTransform.xy,
               0.14,
@@ -809,12 +829,36 @@ class InstancedShapeFillBatch {
           }
         `,
         fragmentShader: `
+          uniform sampler2D shapeTexture;
           varying vec4 vPrimaryColor;
           varying vec4 vSecondaryColor;
           varying float vGradient;
           varying float vBlend;
+          varying vec2 vLocal;
+          varying float vTextured;
+          varying float vTextureZoom;
+          varying float vTextureAngle;
+
+          vec2 rotate2d(vec2 value, float angle) {
+            float s = sin(angle);
+            float c = cos(angle);
+            return vec2(
+              value.x * c - value.y * s,
+              value.x * s + value.y * c
+            );
+          }
+
           void main() {
-            gl_FragColor = mix(vPrimaryColor, vSecondaryColor, vBlend * vGradient);
+            vec4 color = mix(vPrimaryColor, vSecondaryColor, vBlend * vGradient);
+            if (vTextured > 0.5) {
+              vec2 sampleUv =
+                rotate2d(vLocal, vTextureAngle) *
+                  (0.5 * max(vTextureZoom, 0.0001)) +
+                0.5;
+              vec4 sampled = texture2D(shapeTexture, fract(sampleUv));
+              color = vec4(sampled.rgb * color.rgb, color.a * sampled.a);
+            }
+            gl_FragColor = color;
           }
         `,
       }),
@@ -825,6 +869,8 @@ class InstancedShapeFillBatch {
     const geometry = this.mesh.geometry as InstancedBufferGeometry;
     geometry.instanceCount = instances.length;
     this.mesh.visible = instances.length > 0;
+    const material = this.mesh.material as ShaderMaterial;
+    material.uniforms.shapeTexture.value = this.getShapeTexture();
     const transform = ensureInstancedAttribute(
       geometry,
       'instanceTransform',
@@ -843,10 +889,10 @@ class InstancedShapeFillBatch {
       4,
       instances.length,
     );
-    const gradient = ensureInstancedAttribute(
+    const fillControl = ensureInstancedAttribute(
       geometry,
-      'instanceGradient',
-      1,
+      'instanceFillControl',
+      4,
       instances.length,
     );
     for (let index = 0; index < instances.length; index += 1) {
@@ -872,12 +918,18 @@ class InstancedShapeFillBatch {
         instance.secondaryColor.b,
         instance.secondaryAlpha,
       );
-      gradient.setX(index, instance.useGradient);
+      fillControl.setXYZW(
+        index,
+        instance.useGradient,
+        instance.textured,
+        instance.textureZoom,
+        instance.textureAngle,
+      );
     }
     transform.needsUpdate = true;
     primaryColorAlpha.needsUpdate = true;
     secondaryColorAlpha.needsUpdate = true;
-    gradient.needsUpdate = true;
+    fillControl.needsUpdate = true;
   }
 
   dispose() {
@@ -992,9 +1044,17 @@ class ShapeBatchBucket {
   private readonly outline: InstancedShapeRingBatch;
   private readonly accent: InstancedShapeRingBatch;
 
-  constructor(sides: number, additive: boolean) {
+  constructor(
+    sides: number,
+    additive: boolean,
+    getShapeTexture: () => Texture | null,
+  ) {
     const blending = additive ? AdditiveBlending : NormalBlending;
-    this.fill = new InstancedShapeFillBatch(sides, blending);
+    this.fill = new InstancedShapeFillBatch(
+      sides,
+      blending,
+      getShapeTexture,
+    );
     this.outline = new InstancedShapeRingBatch(sides, blending);
     this.accent = new InstancedShapeRingBatch(sides, blending);
     this.group.add(this.fill.mesh, this.outline.mesh, this.accent.mesh);
@@ -1019,6 +1079,9 @@ class ShapeBatchBucket {
         secondaryAlpha:
           (shape.secondaryColor?.a ?? shape.color.a ?? 0.4) * alphaMultiplier,
         useGradient: shape.secondaryColor ? 1 : 0,
+        textured: shape.textured ? 1 : 0,
+        textureZoom: Math.max(0.0001, shape.textureZoom ?? 1),
+        textureAngle: shape.textureAngle ?? 0,
       });
       outlineInstances.push({
         x: shape.x,
@@ -1063,6 +1126,11 @@ class ShapeBatchBucket {
 class ShapeBatchTarget {
   readonly group = new Group();
   private readonly buckets = new Map<string, ShapeBatchBucket>();
+  private readonly getShapeTexture: () => Texture | null;
+
+  constructor(getShapeTexture: () => Texture | null) {
+    this.getShapeTexture = getShapeTexture;
+  }
 
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
     const grouped = new Map<string, MilkdropShapeVisual[]>();
@@ -1077,7 +1145,11 @@ class ShapeBatchTarget {
       let bucket = this.buckets.get(key);
       if (!bucket) {
         const [sides, mode] = key.split(':');
-        bucket = new ShapeBatchBucket(Number(sides), mode === 'add');
+        bucket = new ShapeBatchBucket(
+          Number(sides),
+          mode === 'add',
+          this.getShapeTexture,
+        );
         this.buckets.set(key, bucket);
         this.group.add(bucket.group);
       }
@@ -1109,6 +1181,11 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private readonly borderTargets = new Map<string, InstancedBorderBatch>();
   private readonly normalSegmentUploads = new CompactSegmentUploadBuffer();
   private readonly additiveSegmentUploads = new CompactSegmentUploadBuffer();
+  private shapeTexture: Texture | null = null;
+
+  setShapeTexture(texture: Texture | null) {
+    this.shapeTexture = texture;
+  }
 
   private resetSegmentUploads() {
     this.normalSegmentUploads.reset();
@@ -1132,7 +1209,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getShapeTarget(key: string) {
     let target = this.shapeTargets.get(key);
     if (!target) {
-      target = new ShapeBatchTarget();
+      target = new ShapeBatchTarget(() => this.shapeTexture);
       this.shapeTargets.set(key, target);
       this.root.add(target.group);
     }
@@ -1231,7 +1308,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier: number,
   ) {
-    if (shapes.some((shape) => shape.textured)) {
+    if (shapes.some((shape) => shape.textured) && this.shapeTexture === null) {
       this.clearShapeTarget(target);
       return false;
     }
