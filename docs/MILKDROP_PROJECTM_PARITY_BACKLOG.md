@@ -16,6 +16,23 @@ to:
 
 - "matches projectM within an explicit visual tolerance"
 
+## Current status snapshot
+
+Completed foundation:
+- Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, measured-result promotion, and honest fidelity labeling are all wired.
+
+Completed parity slices:
+- Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.
+- Milestone 6 has partial completion: unsupported `tex3D(sampler_main, ...)` and non-volume aux `tex3D(...)` paths are now downgraded instead of silently treated as full support.
+- Milestone 7 has partial completion: the native WebGPU shape batcher now preserves two-color custom-shape gradients instead of flattening them to one averaged fill color.
+
+Primary remaining roadmap:
+1. Expand direct shader-text execution so richer `warp` and `comp` programs stop relying on scalar approximations or soft semantic-only success.
+2. Close the remaining texture and sampler behavior gaps, especially overlay, warp, and shape texture semantics that still differ from `projectM`.
+3. Match wave, shape, border, and mesh rasterization more closely in draw ordering, thickness, smoothing, and blend semantics.
+4. Re-certify WebGPU against both checked-in `projectM` references and the Stims compatibility WebGL path before allowing stronger fidelity claims.
+5. Deepen the measured certification corpus for shader-heavy, sampler-heavy, and rasterization-heavy presets.
+
 ## Milestone 0: tooling baseline
 
 Status:
@@ -158,6 +175,9 @@ Acceptance criteria:
 
 ## Milestone 5: shader-text parity
 
+Status:
+- In progress
+
 Goal:
 - Shrink the gap between translated controls and actual projectM shader behavior.
 
@@ -174,11 +194,19 @@ Implementation tasks:
 3. Mark unsupported constructs as explicit parity failures rather than soft optimism.
 4. Add shader-heavy certified presets to the visual corpus.
 
+Current remaining focus:
+- Prioritize richer direct `shader_body` / `ret` execution paths before adding more control-translation heuristics.
+- Audit presets that still compile as semantically supported while carrying non-trivial approximated shader lines.
+- Promote at least one shader-heavy certified preset from semantic-only success to measured visual pass after each execution-path expansion.
+
 Acceptance criteria:
 - Shader-heavy certified presets no longer pass only on semantic grounds.
 - Unsupported shader constructs are visible in diagnostics and reflected in fidelity labels.
 
 ## Milestone 6: texture and sampler parity
+
+Status:
+- In progress
 
 Goal:
 - Remove known sampler approximations that visibly change output.
@@ -194,11 +222,19 @@ Implementation tasks:
 2. Close or explicitly downgrade non-equivalent `tex3D` and volume-sampler behavior.
 3. Validate overlay texture, warp texture, and shape texture behavior visually.
 
+Current remaining focus:
+- Keep explicit downgrade behavior for any sampler path that cannot yet be shown visually equivalent to `projectM`.
+- Revisit overlay, warp, and shape texture handling on both feedback managers, not just compiler-side sampler classification.
+- Add measured reference coverage for sampler-heavy certified presets before relaxing any fallback logic.
+
 Acceptance criteria:
 - Sampler-heavy certified presets have measured parity coverage.
 - Remaining sampler approximations are reflected as explicit fallback status.
 
 ## Milestone 7: wave, shape, and mesh rasterization parity
+
+Status:
+- In progress
 
 Goal:
 - Match what projectM actually draws, not just how many primitives Stims emits.
@@ -216,11 +252,19 @@ Implementation tasks:
 2. Expand visual certification for custom waves and custom shapes.
 3. Revisit legacy aliases only when visual evidence shows mismatch.
 
+Current remaining focus:
+- Compare WebGPU and compatibility WebGL output for custom-wave, custom-shape, and border-heavy presets before changing more backend flags.
+- Tighten shape-outline, border-ring, and waveform thickness behavior based on measured reference output rather than object-count parity.
+- Treat remaining visible draw-order or smoothing drift as certification blockers even when the VM output is already semantically correct.
+
 Acceptance criteria:
 - Certified wave/shape presets are judged by rendered output rather than object counts alone.
 - Remaining differences are explicit and measurable.
 
 ## Milestone 8: WebGPU re-certification
+
+Status:
+- Not started
 
 Goal:
 - Prevent WebGPU from claiming parity before it has earned it.
@@ -237,6 +281,11 @@ Implementation tasks:
    - Stims compatibility WebGL output
 2. Disable exactness claims for WebGPU where descriptor-plan output diverges.
 3. Keep fallback routing conservative until equivalence is proven.
+
+Current remaining focus:
+- Build a repeatable “projectM reference plus WebGL comparator” review loop for the certified corpus.
+- Require native WebGPU capture success for certified presets; fallback to WebGL remains a certification failure.
+- Gate any future WebGPU backend-capability claims on measured output, not on native execution alone.
 
 Acceptance criteria:
 - WebGPU-specific certification exists for the certified corpus.

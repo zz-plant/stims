@@ -1140,7 +1140,7 @@ video_echo=1
 title=Direct Shader Program Feedback
 video_echo=1
 warp_shader=shader_body=tex2d(sampler_main,uv).rgb;
-comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(0.1, 0.0, 0.0);
+comp_shader=ret = tex2d(sampler_main, uv).rgb * 1.2;
       `.trim(),
       { id: 'direct-shader-program-feedback' },
     );
@@ -1180,6 +1180,65 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(0.1, 0.0, 0.0);
 
     expect(compositeStates[0]?.shaderExecution).toBe('controls');
     expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
+  });
+
+  test('forwards direct shader programs into the webgpu feedback composite state', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Direct Shader Program Feedback
+fShader=1
+video_echo=1
+comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
+      `.trim(),
+      { id: 'direct-shader-program-feedback' },
+    );
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      swap() {},
+      resize() {},
+      render() {
+        return true;
+      },
+      getTexture() {
+        return new Texture();
+      },
+      dispose() {},
+    } as MilkdropFeedbackManager;
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.shaderExecution).toBe('direct');
+    expect(compositeStates[0]?.shaderPrograms.comp).toEqual(
+      expect.objectContaining({
+        source: 'ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          requiresControlFallback: true,
+        }),
+      }),
+    );
   });
 
   test('renders waveform-driven main wave and trails on webgpu line-wave presets', () => {
