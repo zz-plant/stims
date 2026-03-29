@@ -1241,6 +1241,66 @@ comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
     );
   });
 
+  test('forwards direct warp shader_body programs into the webgpu feedback composite state', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Direct Warp Shader Body Feedback
+fShader=1
+video_echo=1
+warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
+      `.trim(),
+      { id: 'direct-warp-shader-body-feedback' },
+    );
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      swap() {},
+      resize() {},
+      render() {
+        return true;
+      },
+      getTexture() {
+        return new Texture();
+      },
+      dispose() {},
+    } as MilkdropFeedbackManager;
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.shaderExecution).toBe('direct');
+    expect(compositeStates[0]?.shaderPrograms.warp).toEqual(
+      expect.objectContaining({
+        source: 'shader_body=uv + vec2(time * 0.02, 0.0)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'warp',
+          entryTarget: 'uv',
+          supportedBackends: ['webgpu'],
+        }),
+      }),
+    );
+  });
+
   test('renders waveform-driven main wave and trails on webgpu line-wave presets', () => {
     const preset = compileMilkdropPresetSource(
       `
