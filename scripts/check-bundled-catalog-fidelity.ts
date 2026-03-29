@@ -6,6 +6,7 @@ import {
 } from './measured-visual-results.ts';
 import {
   BUNDLED_CATALOG_PATH,
+  type BundledCatalogDocument,
   buildSyncedBundledCatalogDocument,
 } from './sync-bundled-catalog-fidelity.ts';
 
@@ -13,14 +14,6 @@ type CheckBundledCatalogFidelityResult = {
   ok: boolean;
   catalogPath: string;
   message: string;
-};
-
-type BundledCatalogDocument = {
-  version: number;
-  generatedAt: string;
-  certification?: 'bundled' | 'certified' | 'exploratory';
-  corpusTier?: 'bundled' | 'certified' | 'exploratory';
-  presets: Array<Record<string, unknown>>;
 };
 
 export function checkBundledCatalogFidelity({
