@@ -54,3 +54,25 @@ test('keeps overlay replace mode distinct from overlay mix mode in the shared fe
     manager.dispose();
   }
 });
+
+test('samples warp textures in warp-stage UV space inside the shared feedback shader', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    compositeMaterial: { fragmentShader: string };
+    dispose: () => void;
+  };
+
+  try {
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;',
+    );
+    expect(manager.compositeMaterial.fragmentShader).not.toContain(
+      'vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;',
+    );
+  } finally {
+    manager.dispose();
+  }
+});

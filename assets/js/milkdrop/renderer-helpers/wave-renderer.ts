@@ -65,6 +65,7 @@ export function createWaveObject(
   const object = new ObjectType(
     new BufferGeometry(),
     new LineBasicMaterial({
+      linewidth: Math.max(1, wave.thickness),
       transparent: true,
       opacity: wave.alpha * alphaMultiplier,
       ...(wave.additive ? { blending: AdditiveBlending } : {}),
@@ -120,6 +121,7 @@ export function updateWaveObject(
     );
   } else {
     const material = object.material as LineBasicMaterial;
+    material.linewidth = Math.max(1, wave.thickness);
     material.blending = wave.additive ? AdditiveBlending : NormalBlending;
     helpers.setMaterialColor(
       material,

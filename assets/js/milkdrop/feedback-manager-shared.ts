@@ -501,7 +501,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             rotation * 0.6
           );
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
-            vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;
+            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
             vec2 warpVector =
               sampleAuxTexture(
                 warpTextureSource,

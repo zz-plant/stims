@@ -965,8 +965,7 @@ comp_shader=ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.warpProgram).toEqual(
       expect.objectContaining({
-        source:
-          'uv = uv + vec2(0.02) * (tex2d(sampler_perlin, uv).yx - 0.5)',
+        source: 'uv = uv + vec2(0.02) * (tex2d(sampler_perlin, uv).yx - 0.5)',
         execution: expect.objectContaining({
           entryTarget: 'uv',
           supportedBackends: ['webgpu'],

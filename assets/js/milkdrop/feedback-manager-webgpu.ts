@@ -1067,11 +1067,7 @@ function assignShaderTarget(
   const assignedValue = coerceShaderValue(nextValue, swizzle.kind);
   swizzle.components.forEach((component, index) => {
     const targetNode =
-      component === 'x'
-        ? parent.x
-        : component === 'y'
-          ? parent.y
-          : parent.z;
+      component === 'x' ? parent.x : component === 'y' ? parent.y : parent.z;
     const sourceNode =
       swizzle.kind === 'scalar'
         ? assignedValue.node
@@ -1216,11 +1212,12 @@ function createCompositeOutputNode(
       uniforms.warpScale.mul(0.8),
       uniforms.rotation.mul(0.6),
     ).toVar();
+    const warpTextureBaseUv = currentUv.toVar();
 
     const warpTextureMask = step(0.5, uniforms.warpTextureSource).mul(
       step(0.0001, uniforms.warpTextureAmount),
     );
-    const warpUv = baseUv
+    const warpUv = warpTextureBaseUv
       .mul(uniforms.warpTextureScale)
       .add(uniforms.warpTextureOffset);
     const warpVector = sampleAuxTextureNode(
