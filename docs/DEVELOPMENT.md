@@ -93,6 +93,16 @@ bun run parity:promote-result -- \
 
 This upserts the preset into `assets/data/milkdrop-parity/measured-results.json`, which is the first repo-tracked source used to override inferred fidelity with measured visual evidence.
 
+To sync the shipped bundled catalog metadata with that measured-results manifest:
+
+```bash
+bun run parity:sync-catalog
+```
+
+This rewrites `public/milkdrop-presets/catalog.json` so presets with measured visual results keep their certified fidelity labels, while unmeasured bundled presets are published as `partial` with `runtime` evidence instead of optimistic `exact`/`visual` metadata.
+
+`bun run check:quick` and `bun run check` now verify that `public/milkdrop-presets/catalog.json` is still synced with `assets/data/milkdrop-parity/measured-results.json`. If that check fails, rerun `bun run parity:sync-catalog`.
+
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).

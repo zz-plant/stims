@@ -36,6 +36,10 @@ async function main() {
       cmd: ['bunx', 'biome', 'check', 'assets', 'scripts', 'tests'],
     },
     {
+      label: 'Bundled catalog fidelity',
+      cmd: ['bun', 'run', 'check:catalog-fidelity'],
+    },
+    {
       label: 'TypeScript typecheck',
       cmd: ['bun', 'run', 'typecheck'],
     },
