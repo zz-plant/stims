@@ -775,12 +775,12 @@ comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
     expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.35, 6);
-    expect(compiled.ir.compatibility.featureAnalysis.shaderTextExecution).toEqual(
-      {
-        webgl: 'translated',
-        webgpu: 'direct',
-      },
-    );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.compProgram).toEqual(
@@ -806,6 +806,36 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)
     );
 
     expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: false,
+        }),
+      }),
+    );
+  });
+
+  test('normalizes direct warp shader_body programs onto uv output', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Warp Shader Body
+warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
+      `.trim(),
+      { id: 'direct-warp-shader-body' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.compatibility.featureAnalysis.shaderTextExecution).toEqual(
       {
         webgl: 'unsupported',
@@ -814,13 +844,20 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.shaderText.compProgram).toEqual(
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
       expect.objectContaining({
-        source: 'ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)',
+        source: 'shader_body=uv + vec2(time * 0.02, 0.0)',
         execution: expect.objectContaining({
+          entryTarget: 'uv',
           supportedBackends: ['webgpu'],
           requiresControlFallback: false,
+          statementTargets: ['uv'],
         }),
+        statements: [
+          expect.objectContaining({
+            target: 'uv',
+          }),
+        ],
       }),
     );
   });

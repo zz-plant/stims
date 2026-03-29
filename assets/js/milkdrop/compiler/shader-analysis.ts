@@ -2541,18 +2541,26 @@ export function buildShaderProgramPayload({
   requiresControlFallback: boolean;
   supportedBackends: MilkdropRenderBackend[];
 }): MilkdropShaderProgramPayload {
+  const entryTarget = stage === 'warp' ? 'uv' : 'ret';
+  const programStatements = statements.map((statement) => ({
+    ...statement,
+    target:
+      statement.target.toLowerCase() === 'shader_body'
+        ? entryTarget
+        : statement.target,
+  }));
   return {
     stage,
     source: normalizedLines.join('; '),
     normalizedLines,
-    statements,
+    statements: programStatements,
     execution: {
       kind: 'direct-feedback-program',
       stage,
-      entryTarget: stage === 'warp' ? 'uv' : 'ret',
+      entryTarget,
       supportedBackends,
       requiresControlFallback,
-      statementTargets: statements.map((statement) => statement.target),
+      statementTargets: programStatements.map((statement) => statement.target),
     },
   };
 }
@@ -2651,11 +2659,15 @@ function isUnsupportedParsedShaderStatement({
 
 function shouldEmitDirectProgramStatement(target: string) {
   const key = target.toLowerCase();
-  if (key === 'uv' || key === 'ret' || key === 'return') {
+  if (
+    key === 'uv' ||
+    key === 'ret' ||
+    key === 'return' ||
+    key === 'shader_body'
+  ) {
     return true;
   }
   if (
-    key === 'shader_body' ||
     isKnownShaderScalarKey(key) ||
     key === 'tint' ||
     key === 'texture_source' ||
