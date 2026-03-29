@@ -67,9 +67,7 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       kind: 'vec2',
       components: ['y', 'x'],
     });
-    expect(new Set(xy?.components ?? []).size).toBe(
-      (xy?.components.length ?? 0),
-    );
+    expect(new Set(xy?.components ?? []).size).toBe(xy?.components.length ?? 0);
 
     const rgb = resolveDirectShaderSwizzle('vec3', 'bgr');
     expect(rgb).toEqual({
@@ -77,7 +75,7 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       components: ['z', 'y', 'x'],
     });
     expect(new Set(rgb?.components ?? []).size).toBe(
-      (rgb?.components.length ?? 0),
+      rgb?.components.length ?? 0,
     );
 
     const duplicate = resolveDirectShaderSwizzle('vec3', 'rr');

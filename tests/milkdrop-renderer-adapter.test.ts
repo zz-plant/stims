@@ -1892,10 +1892,12 @@ motion_vectors_x=6
 motion_vectors_y=4
 wave_mode=5
 wave_usedots=0
+wave_thick=5
 wavecode_0_enabled=1
 wavecode_0_samples=40
 wavecode_0_spectrum=1
 wavecode_0_usedots=0
+wavecode_0_thick=4
       `.trim(),
       { id: 'webgl-fallback-renderer' },
     );
@@ -1949,6 +1951,14 @@ wavecode_0_usedots=0
     expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
       LineBasicMaterial,
     );
+    expect(
+      (mainWaveGroup.children[0]?.material as LineBasicMaterial | undefined)
+        ?.linewidth,
+    ).toBe(5);
+    expect(
+      (customWaveGroup.children[0]?.material as LineBasicMaterial | undefined)
+        ?.linewidth,
+    ).toBe(4);
     expect(
       motionVectorGroup.children[0]?.children?.[0]?.material,
     ).toBeInstanceOf(LineBasicMaterial);
