@@ -10,7 +10,9 @@ import {
 export type PlayToyResult = {
   slug: string;
   success: boolean;
+  presetId?: string;
   screenshot?: string;
+  debugSnapshot?: string;
   video?: string;
   error?: string;
   consoleErrors?: string[];
@@ -20,12 +22,15 @@ export type PlayToyResult = {
 
 type PlayToyOptions = {
   slug: string;
+  presetId?: string;
   port?: number;
   duration?: number;
   screenshot?: boolean;
+  debugSnapshot?: boolean;
   video?: boolean;
   outputDir?: string;
   headless?: boolean;
+  vibeMode?: boolean;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
@@ -33,6 +38,7 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   duration: number;
   outputDir: string;
   headless: boolean;
+  vibeMode: boolean;
 };
 
 const DEFAULT_OPTIONS = {
@@ -66,6 +72,7 @@ function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
     duration: options.duration ?? DEFAULT_OPTIONS.duration,
     outputDir: options.outputDir ?? DEFAULT_OPTIONS.outputDir,
     headless: options.headless !== false,
+    vibeMode: options.vibeMode !== false,
   };
 }
 
@@ -73,6 +80,55 @@ function ensureOutputDir(dir: string) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
+}
+
+function sanitizeArtifactSegment(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+export function buildPlayToyArtifactStem({
+  slug,
+  presetId,
+}: {
+  slug: string;
+  presetId?: string;
+}) {
+  const slugSegment = sanitizeArtifactSegment(slug) || 'toy';
+  const presetSegment = presetId
+    ? sanitizeArtifactSegment(presetId) || 'preset'
+    : null;
+  return presetSegment
+    ? `${slugSegment}--preset-${presetSegment}`
+    : slugSegment;
+}
+
+export function buildPlayToyUrl({
+  port,
+  slug,
+  presetId,
+  demoAudio = true,
+}: {
+  port: number;
+  slug: string;
+  presetId?: string;
+  demoAudio?: boolean;
+}) {
+  const params = new URLSearchParams({
+    experience: slug,
+    agent: 'true',
+  });
+  if (demoAudio) {
+    params.set('audio', 'demo');
+  }
+  if (presetId?.trim()) {
+    params.set('preset', presetId.trim());
+  }
+  return `http://127.0.0.1:${port}/milkdrop/?${params.toString()}`;
 }
 
 async function closeBrowser(browser?: Browser) {
@@ -298,6 +354,24 @@ async function getErrorStatus(page: Page) {
   }
 }
 
+async function getMilkdropDebugSnapshot(page: Page) {
+  return page
+    .evaluate(() => {
+      const stimState = (
+        window as typeof window & {
+          stimState?: {
+            getDebugSnapshot?: (key: string) => unknown | null;
+          };
+        }
+      ).stimState;
+      if (!stimState || typeof stimState.getDebugSnapshot !== 'function') {
+        return null;
+      }
+      return stimState.getDebugSnapshot('milkdrop');
+    })
+    .catch(() => null);
+}
+
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   const normalizedOptions = normalizeOptions(options);
 
@@ -333,7 +407,12 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     });
 
     const demoRequestedByRoute = true;
-    const url = `http://127.0.0.1:${normalizedOptions.port}/milkdrop/?experience=${encodeURIComponent(options.slug)}&agent=true${demoRequestedByRoute ? '&audio=demo' : ''}`;
+    const url = buildPlayToyUrl({
+      port: normalizedOptions.port,
+      slug: options.slug,
+      presetId: normalizedOptions.presetId,
+      demoAudio: demoRequestedByRoute,
+    });
     console.log(`Navigating to ${url}...`);
 
     await page.goto(url);
@@ -502,23 +581,28 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     }
 
     // Trigger a temporary vibe mode in agent sessions when available
-    const vibeModeActivated = await page
-      .evaluate(async () => {
-        const stimState = (
-          window as typeof window & {
-            stimState?: {
-              activateVibeMode?: (durationMs?: number) => Promise<void>;
-            };
-          }
-        ).stimState;
-        if (!stimState || typeof stimState.activateVibeMode !== 'function') {
-          return false;
-        }
+    const vibeModeActivated = normalizedOptions.vibeMode
+      ? await page
+          .evaluate(async () => {
+            const stimState = (
+              window as typeof window & {
+                stimState?: {
+                  activateVibeMode?: (durationMs?: number) => Promise<void>;
+                };
+              }
+            ).stimState;
+            if (
+              !stimState ||
+              typeof stimState.activateVibeMode !== 'function'
+            ) {
+              return false;
+            }
 
-        await stimState.activateVibeMode(1800);
-        return true;
-      })
-      .catch(() => false);
+            await stimState.activateVibeMode(1800);
+            return true;
+          })
+          .catch(() => false)
+      : false;
 
     // Wait for visualization to run
     console.log(`Watching for ${normalizedOptions.duration}ms...`);
@@ -527,6 +611,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     const result: PlayToyResult = {
       slug: options.slug,
       success: true,
+      presetId: normalizedOptions.presetId,
       consoleErrors: consoleErrors.length > 0 ? consoleErrors : undefined,
     };
 
@@ -534,9 +619,14 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     const audioState = await isAudioActive(page);
     result.audioActive = audioState || demoRequestedByRoute;
     result.vibeModeActivated = vibeModeActivated;
+    const artifactStem = buildPlayToyArtifactStem({
+      slug: options.slug,
+      presetId: normalizedOptions.presetId,
+    });
+    const artifactTimestamp = Date.now();
 
     if (options.screenshot) {
-      const screenshotName = `${options.slug}-${Date.now()}.png`;
+      const screenshotName = `${artifactStem}-${artifactTimestamp}.png`;
       const screenshotPath = path.join(
         normalizedOptions.outputDir,
         screenshotName,
@@ -544,6 +634,15 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       await page.screenshot({ path: screenshotPath });
       result.screenshot = screenshotPath;
       console.log(`Screenshot saved to ${screenshotPath}`);
+    }
+
+    if (options.debugSnapshot) {
+      const snapshot = await getMilkdropDebugSnapshot(page);
+      const snapshotName = `${artifactStem}-${artifactTimestamp}.debug.json`;
+      const snapshotPath = path.join(normalizedOptions.outputDir, snapshotName);
+      fs.writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+      result.debugSnapshot = snapshotPath;
+      console.log(`Debug snapshot saved to ${snapshotPath}`);
     }
 
     await page.close();
@@ -571,9 +670,16 @@ if (import.meta.main) {
   if (!slug || slug.startsWith('--')) {
     console.error('Usage: bun scripts/play-toy.ts <slug> [options]');
     console.error('Options:');
+    console.error(
+      '  --preset <id>       Requested preset id for /milkdrop/ runs',
+    );
     console.error('  --port <number>     Dev server port (default: 5173)');
     console.error('  --duration <ms>     Duration to run (default: 5000)');
     console.error('  --no-headless       Run in visible window');
+    console.error(
+      '  --debug-snapshot    Save the milkdrop agent debug snapshot',
+    );
+    console.error('  --no-vibe-mode      Skip temporary agent vibe mode');
     console.error(
       '  --output <dir>      Output directory (default: ./screenshots)',
     );
@@ -592,18 +698,24 @@ if (import.meta.main) {
 
   const port = getArg('--port', 5173) as number;
   const duration = getArg('--duration', 3000) as number;
+  const presetId = getArg('--preset', '') as string;
   const outputDir = getArg('--output', './screenshots') as string;
   const headless = !args.includes('--no-headless');
+  const debugSnapshot = args.includes('--debug-snapshot');
+  const vibeMode = !args.includes('--no-vibe-mode');
 
   console.log(`Launching ${slug} on port ${port}...`);
 
   playToy({
     slug,
+    presetId: presetId.trim() || undefined,
     port,
     screenshot: true,
+    debugSnapshot,
     video: false,
     duration,
     outputDir,
     headless,
+    vibeMode,
   }).then((res) => console.log(JSON.stringify(res, null, 2)));
 }
