@@ -167,7 +167,7 @@ function resolvePair(
   return { stims, projectm };
 }
 
-async function loadImagePixels(filePath: string): Promise<ImagePixels> {
+export async function loadImagePixels(filePath: string): Promise<ImagePixels> {
   const image = sharp(filePath).ensureAlpha();
   const metadata = await image.metadata();
   const { data, info } = await image
@@ -262,7 +262,7 @@ export function computeParityDiffMetrics({
   };
 }
 
-async function writeDiffImage({
+export async function writeDiffImage({
   outputPath,
   width,
   height,

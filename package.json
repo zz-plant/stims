@@ -58,6 +58,8 @@
     "mcp": "bun run scripts/mcp-server.ts",
     "parity:diff": "bun run scripts/diff-parity-artifacts.ts",
     "parity:promote-reference": "bun run scripts/promote-projectm-reference.ts",
+    "parity:promote-result": "bun run scripts/promote-parity-suite-result.ts",
+    "parity:suite": "bun run scripts/run-parity-diff-suite.ts",
     "test:agent": "bun run test:integration",
     "prepare": "husky install",
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",

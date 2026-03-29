@@ -70,6 +70,24 @@ bun run parity:promote-reference -- \
 
 That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `assets/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
 
+Run the certified suite against that checked-in manifest:
+
+```bash
+bun run parity:suite -- --output ./screenshots/parity --write-diff-images
+```
+
+That suite resolves the latest Stims capture per certified preset, compares it to the checked-in projectM reference image, writes per-preset reports under `./screenshots/parity/suite/`, and ranks results by worst mismatch first.
+
+Promote an individual suite result into the checked-in measured-results manifest:
+
+```bash
+bun run parity:promote-result -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music
+```
+
+That step writes to `assets/data/milkdrop-parity/measured-results.json`, which is the first manifest used by runtime/catalog analysis to prefer measured visual fidelity over compiler-only inference.
+
 ## Phase 2: make compatibility reporting honest
 
 1. Populate hard-unsupported feature tables instead of leaving them empty.
