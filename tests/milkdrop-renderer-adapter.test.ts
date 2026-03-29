@@ -250,8 +250,8 @@ shapecode_0_thickoutline=1
         child.geometry?.getAttribute?.('instancePrimaryColorAlpha') !==
         undefined,
     );
-    const fillGradient = fillMesh?.geometry?.getAttribute?.(
-      'instanceGradient',
+    const fillControl = fillMesh?.geometry?.getAttribute?.(
+      'instanceFillControl',
     ) as { array: Float32Array } | undefined;
     const fillPrimary = fillMesh?.geometry?.getAttribute?.(
       'instancePrimaryColorAlpha',
@@ -266,7 +266,7 @@ shapecode_0_thickoutline=1
       expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
     });
     expect(fillMesh).toBeDefined();
-    expect(fillGradient?.array[0]).toBe(1);
+    expect(fillControl?.array[0]).toBe(1);
     expect(fillPrimary?.array).toEqual(new Float32Array([1, 0.2, 0.1, 0.7]));
     expect(fillSecondary?.array).toEqual(new Float32Array([0.1, 0.2, 1, 0.3]));
   });
@@ -299,18 +299,90 @@ shapecode_0_tex_ang=0.35
       blendState: null,
     });
 
-    const root = scene.children[0] as RenderTreeNode;
-    const batchedShapes = flattenRenderTree(root).filter(
+    const root = scene.children[0] as {
+      children?: RenderTreeNode[];
+    };
+    const shapesGroup = root.children?.[5] as RenderTreeNode | undefined;
+    const batchedShapes = flattenRenderTree(shapesGroup ?? {}).filter(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined,
     );
-    const meshFills = flattenRenderTree(root).filter(
+    const meshFills = flattenRenderTree(shapesGroup ?? {}).filter(
       (child) =>
         child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
     );
 
     expect(batchedShapes).toHaveLength(0);
     expect(meshFills.length).toBeGreaterThan(0);
+  });
+
+  test('batches textured custom shapes on WebGPU when a shape texture is available', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Textured Shape Batched
+shapecode_0_enabled=1
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.8
+shapecode_0_tex_ang=0.35
+      `.trim(),
+      { id: 'textured-shape-batched' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const feedbackTexture = new Texture();
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    }) as unknown as {
+      attach: () => void;
+      render: (payload: {
+        frameState: typeof frameState;
+        blendState: null;
+      }) => void;
+      feedback: { getShapeTexture: () => Texture | null } | null;
+    };
+
+    adapter.attach();
+    adapter.feedback = {
+      getShapeTexture() {
+        return feedbackTexture;
+      },
+    };
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const shapeChildren = (root.children?.[5] as RenderTreeNode | undefined) ?? {};
+    const batchedFill = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceFillControl') !== undefined,
+    ) as
+      | {
+          material?: ShaderMaterial & {
+            uniforms?: { shapeTexture?: { value: Texture | null } };
+          };
+        }
+      | undefined;
+    const meshFills = flattenRenderTree(shapeChildren).filter(
+      (child) =>
+        child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
+    );
+
+    expect(batchedFill?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      batchedFill?.material?.uniforms?.shapeTexture?.value,
+    ).toBe(feedbackTexture);
+    expect(getFloat32AttributeArray(batchedFill, 'instanceFillControl')).toEqual(
+      Float32Array.from([0, 1, 0.8, 0.35]),
+    );
+    expect(meshFills).toHaveLength(0);
   });
 
   test('samples the previous feedback frame when textured shapes have a shape texture available', () => {
@@ -587,7 +659,9 @@ ob_border=1
     const root = scene.children[0] as {
       children: Array<{
         children?: Array<{
-          children?: Array<{ material?: LineBasicMaterial | MeshBasicMaterial }>;
+          children?: Array<{
+            material?: LineBasicMaterial | MeshBasicMaterial;
+          }>;
         }>;
       }>;
     };
@@ -604,7 +678,7 @@ ob_border=1
     expect(accent?.material).toBeInstanceOf(LineBasicMaterial);
     expect(outline?.material?.opacity).toBeCloseTo(0.8, 6);
     expect(accent?.material?.opacity).toBeCloseTo(0.44, 6);
-    expect((accent?.material?.opacity ?? 0)).toBeLessThan(
+    expect(accent?.material?.opacity ?? 0).toBeLessThan(
       outline?.material?.opacity ?? 0,
     );
   });
