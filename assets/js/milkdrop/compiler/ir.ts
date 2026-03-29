@@ -515,9 +515,7 @@ export function createMilkdropIr({
             shaderWarpAnalysis.directProgramStatements.length !==
             shaderWarpAnalysis.statements.length,
           supportedBackends:
-            shaderWarpAnalysis.unsupportedLines.length === 0
-              ? ['webgl', 'webgpu']
-              : [],
+            shaderWarpAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
         })
       : null;
   const compShaderProgram =
@@ -530,9 +528,7 @@ export function createMilkdropIr({
             shaderCompAnalysis.directProgramStatements.length !==
             shaderCompAnalysis.statements.length,
           supportedBackends:
-            shaderCompAnalysis.unsupportedLines.length === 0
-              ? ['webgl', 'webgpu']
-              : [],
+            shaderCompAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
         })
       : null;
   const ignoredFields = [
@@ -581,6 +577,13 @@ export function createMilkdropIr({
   const hasBlockingShaderApproximation = blockingConstructDetails.some(
     (construct) => construct.kind === 'shader' && !construct.allowlisted,
   );
+  const hasDirectShaderPrograms =
+    warpShaderProgram !== null || compShaderProgram !== null;
+  const webglCanRelyOnTranslatedShaderControls =
+    (warpShaderProgram === null ||
+      warpShaderProgram.execution.requiresControlFallback) &&
+    (compShaderProgram === null ||
+      compShaderProgram.execution.requiresControlFallback);
   supportedShaderText =
     shaderWarpAnalysis.supported ||
     shaderCompAnalysis.supported ||
@@ -599,8 +602,11 @@ export function createMilkdropIr({
       ? unsupportedShaderText
         ? { webgl: 'unsupported', webgpu: 'unsupported' }
         : {
-            webgl:
-              warpShaderProgram || compShaderProgram ? 'direct' : 'translated',
+            webgl: hasDirectShaderPrograms
+              ? webglCanRelyOnTranslatedShaderControls
+                ? 'translated'
+                : 'unsupported'
+              : 'translated',
             webgpu:
               (warpShaderProgram === null ||
                 warpShaderProgram.execution.supportedBackends.includes(
@@ -610,7 +616,7 @@ export function createMilkdropIr({
                 compShaderProgram.execution.supportedBackends.includes(
                   'webgpu',
                 ))
-                ? warpShaderProgram || compShaderProgram
+                ? hasDirectShaderPrograms
                   ? 'direct'
                   : 'translated'
                 : 'translated',
