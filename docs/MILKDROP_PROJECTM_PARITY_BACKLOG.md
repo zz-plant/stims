@@ -23,8 +23,8 @@ Completed foundation:
 
 Completed parity slices:
 - Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.
-- Milestone 6 has partial completion: unsupported `tex3D(sampler_main, ...)` and non-volume aux `tex3D(...)` paths are now downgraded instead of silently treated as full support, overlay replace mode is distinct from overlay mix mode, and textured-shape sampling now wraps instead of clamping.
-- Milestone 7 has partial completion: the native WebGPU shape batcher now preserves two-color custom-shape gradients instead of flattening them to one averaged fill color, procedural custom-wave thickness survives the GPU path, and WebGPU shape-outline thickness is normalized in world space instead of growing with shape radius.
+- Milestone 6 has partial completion: unsupported `tex3D(sampler_main, ...)` and non-volume aux `tex3D(...)` paths are now downgraded instead of silently treated as full support, overlay replace mode is distinct from overlay mix mode, textured-shape sampling now wraps instead of clamping, and warp textures now sample in warp-stage UV space instead of raw screen UV space.
+- Milestone 7 has partial completion: the native WebGPU shape batcher now preserves two-color custom-shape gradients instead of flattening them to one averaged fill color, procedural custom-wave thickness survives the GPU path, WebGPU shape-outline thickness is normalized in world space instead of growing with shape radius, and CPU/WebGL line-wave fallbacks now preserve explicit preset `thick` values in their line materials.
 
 Primary remaining roadmap:
 1. Expand direct shader-text execution so richer `warp` and `comp` programs stop relying on scalar approximations or soft semantic-only success.
