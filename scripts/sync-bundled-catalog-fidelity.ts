@@ -9,7 +9,7 @@ import {
 
 export const BUNDLED_CATALOG_PATH = 'public/milkdrop-presets/catalog.json';
 
-type BundledCatalogDocument = {
+export type BundledCatalogDocument = {
   version: number;
   generatedAt: string;
   certification?: 'bundled' | 'certified' | 'exploratory';
