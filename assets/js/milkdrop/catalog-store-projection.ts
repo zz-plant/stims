@@ -20,6 +20,7 @@ export function toCatalogEntry(
     certification?: MilkdropCatalogEntry['certification'];
     expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
     visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];
+    evidence?: MilkdropCatalogEntry['evidence'];
   } = {},
 ): MilkdropCatalogEntry {
   return {
@@ -43,7 +44,7 @@ export function toCatalogEntry(
     visualEvidenceTier:
       options.visualEvidenceTier ??
       compiled.ir.compatibility.parity.visualEvidenceTier,
-    evidence: compiled.ir.compatibility.parity.evidence,
+    evidence: options.evidence ?? compiled.ir.compatibility.parity.evidence,
     certification: options.certification ?? 'exploratory',
     corpusTier: options.corpusTier ?? 'exploratory',
     parity: compiled.ir.compatibility.parity,

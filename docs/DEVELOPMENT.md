@@ -75,6 +75,24 @@ bun run parity:promote-reference -- \
 
 This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `assets/data/milkdrop-parity/visual-reference-manifest.json`.
 
+To run the certified parity suite against the checked-in visual reference manifest:
+
+```bash
+bun run parity:suite -- --output ./screenshots/parity --write-diff-images
+```
+
+This reads `assets/data/milkdrop-parity/visual-reference-manifest.json`, resolves the latest Stims captures for each certified preset, writes per-preset reports under `./screenshots/parity/suite/`, and emits a ranked `summary.json` with worst mismatches first.
+
+To promote a suite report into the checked-in measured-results manifest:
+
+```bash
+bun run parity:promote-result -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music
+```
+
+This upserts the preset into `assets/data/milkdrop-parity/measured-results.json`, which is the first repo-tracked source used to override inferred fidelity with measured visual evidence.
+
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).

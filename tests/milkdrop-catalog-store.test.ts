@@ -61,9 +61,9 @@ describe('milkdrop catalog store', () => {
     expect(bundled).toBeDefined();
     expect(bundled?.supports.webgl.status).toBe('supported');
     expect(bundled?.supports.webgpu.status).toBe('supported');
-    expect(bundled?.fidelityClass).toBe('exact');
-    expect(bundled?.visualEvidenceTier).toBe('visual');
-    expect(bundled?.evidence.visual).toBe('reference-suite');
+    expect(bundled?.fidelityClass).toBe('partial');
+    expect(bundled?.visualEvidenceTier).toBe('runtime');
+    expect(bundled?.evidence.visual).toBe('not-captured');
   });
 
   test('derives backend support, favorites, ratings, and history from preset analysis', async () => {
@@ -112,9 +112,10 @@ describe('milkdrop catalog store', () => {
 
     expect(bundled?.supports.webgl.status).toBe('supported');
     expect(bundled?.supports.webgpu.status).toBe('supported');
-    expect(bundled?.fidelityClass).toBe('exact');
+    expect(bundled?.fidelityClass).toBe('partial');
     expect(bundled?.certification).toBe('bundled');
-    expect(bundled?.visualEvidenceTier).toBe('visual');
+    expect(bundled?.visualEvidenceTier).toBe('runtime');
+    expect(bundled?.evidence.visual).toBe('not-captured');
     expect(bundled?.featuresUsed).toContain('video-echo');
     expect(bundled?.featuresUsed).toContain('custom-waves');
 
