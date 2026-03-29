@@ -4,7 +4,10 @@ import path from 'node:path';
 
 export const PARITY_ARTIFACT_MANIFEST_FILE = 'parity-artifacts.manifest.json';
 
-export type ParityArtifactKind = 'stims-capture' | 'projectm-reference';
+export type ParityArtifactKind =
+  | 'stims-capture'
+  | 'projectm-reference'
+  | 'parity-diff';
 
 export type ParityArtifactEntry = {
   id: string;

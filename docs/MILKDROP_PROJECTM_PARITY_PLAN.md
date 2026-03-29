@@ -49,6 +49,14 @@ bun scripts/import-projectm-reference.ts \
 
 That import copies the reference files into the parity output directory and appends provenance metadata to the same manifest.
 
+Diff the latest Stims/reference pair for a preset:
+
+```bash
+bun run parity:diff -- --output ./screenshots/parity --preset eos-glowsticks-v2-03-music
+```
+
+This writes a diff report, an optional diff PNG, and a `parity-diff` entry into the same manifest so follow-on tooling can reason about historical results.
+
 ## Phase 2: make compatibility reporting honest
 
 1. Populate hard-unsupported feature tables instead of leaving them empty.

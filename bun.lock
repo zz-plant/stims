@@ -15,6 +15,7 @@
         "@codemirror/theme-one-dark": "^6.1.3",
         "@codemirror/view": "^6.40.0",
         "@modelcontextprotocol/sdk": "^1.26.0",
+        "sharp": "^0.34.5",
         "three": "^0.182.0",
         "web-haptics": "^0.0.6",
         "yaml": "^2.8.2",
