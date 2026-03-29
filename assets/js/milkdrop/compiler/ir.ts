@@ -33,6 +33,7 @@ type ShaderControlAnalysis = {
   statements: MilkdropShaderStatement[];
   directProgramStatements: MilkdropShaderStatement[];
   directProgramLines: string[];
+  directProgramRequired: boolean;
   unsupportedLines: string[];
   supported: boolean;
   controls: MilkdropShaderControls;
@@ -506,7 +507,7 @@ export function createMilkdropIr({
     shaderCompAnalysis,
   );
   const warpShaderProgram =
-    shaderWarpAnalysis.directProgramStatements.length > 0
+    shaderWarpAnalysis.directProgramRequired
       ? shaderHelpers.buildShaderProgramPayload({
           stage: 'warp',
           statements: shaderWarpAnalysis.directProgramStatements,
@@ -519,7 +520,7 @@ export function createMilkdropIr({
         })
       : null;
   const compShaderProgram =
-    shaderCompAnalysis.directProgramStatements.length > 0
+    shaderCompAnalysis.directProgramRequired
       ? shaderHelpers.buildShaderProgramPayload({
           stage: 'comp',
           statements: shaderCompAnalysis.directProgramStatements,

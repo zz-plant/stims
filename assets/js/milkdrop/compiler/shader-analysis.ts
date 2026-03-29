@@ -2667,6 +2667,16 @@ function shouldEmitDirectProgramStatement(target: string) {
   ) {
     return true;
   }
+  return false;
+}
+
+function shouldRetainDirectProgramContextStatement(target: string) {
+  const key = target.toLowerCase();
+  if (
+    shouldEmitDirectProgramStatement(key)
+  ) {
+    return false;
+  }
   if (
     isKnownShaderScalarKey(key) ||
     key === 'tint' ||
@@ -2692,6 +2702,7 @@ export function extractShaderControls(
       statements: [],
       directProgramStatements: [],
       directProgramLines: [],
+      directProgramRequired: false,
     };
   }
 
@@ -2719,12 +2730,18 @@ export function extractShaderControls(
   const statements: MilkdropShaderStatement[] = [];
   const directProgramStatements: MilkdropShaderStatement[] = [];
   const directProgramLines: string[] = [];
+  let directProgramRequired = false;
 
   let supportedLineCount = 0;
   normalized.forEach((line) => {
     const parsedStatement = parseMilkdropShaderStatement(line);
     if (parsedStatement) {
       statements.push(parsedStatement);
+      const requiresDirectProgram = shouldEmitDirectProgramStatement(
+        parsedStatement.target,
+      );
+      const retainsDirectProgramContext =
+        shouldRetainDirectProgramContextStatement(parsedStatement.target);
       if (
         applyShaderAstStatement({
           statement: parsedStatement,
@@ -2735,6 +2752,10 @@ export function extractShaderControls(
           shaderExpressionEnv,
         })
       ) {
+        if (retainsDirectProgramContext) {
+          directProgramStatements.push(parsedStatement);
+          directProgramLines.push(line);
+        }
         supportedLineCount += 1;
         return;
       }
@@ -2762,7 +2783,14 @@ export function extractShaderControls(
         unsupportedLines.push(line);
         return;
       }
-      if (shouldEmitDirectProgramStatement(parsedStatement.target)) {
+      if (requiresDirectProgram) {
+        directProgramStatements.push(parsedStatement);
+        directProgramLines.push(line);
+        directProgramRequired = true;
+        supportedLineCount += 1;
+        return;
+      }
+      if (retainsDirectProgramContext) {
         directProgramStatements.push(parsedStatement);
         directProgramLines.push(line);
         supportedLineCount += 1;
@@ -3349,10 +3377,11 @@ export function extractShaderControls(
     supported:
       supportedLineCount > 0 &&
       unsupportedLines.length === 0 &&
-      directProgramStatements.length === 0,
+      !directProgramRequired,
     statements,
     directProgramStatements,
     directProgramLines,
+    directProgramRequired,
   };
 }
 
