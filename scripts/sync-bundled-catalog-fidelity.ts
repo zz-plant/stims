@@ -30,6 +30,16 @@ export function syncBundledCatalogPresetFidelity(
       ...preset,
       expectedFidelityClass: inferredCatalogFidelityWithoutMeasuredResult(),
       visualEvidenceTier: 'runtime',
+      visualCertification: {
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: inferredCatalogFidelityWithoutMeasuredResult(),
+        visualEvidenceTier: 'runtime',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+        reasons: ['No measured WebGPU reference capture is recorded yet.'],
+      },
     };
   }
 
@@ -37,6 +47,18 @@ export function syncBundledCatalogPresetFidelity(
     ...preset,
     expectedFidelityClass: measuredResult.fidelityClass,
     visualEvidenceTier: measuredResult.visualEvidenceTier,
+    visualCertification: {
+      status: measuredResult.certificationStatus,
+      measured: true,
+      source: 'reference-suite',
+      fidelityClass: measuredResult.fidelityClass,
+      visualEvidenceTier: measuredResult.visualEvidenceTier,
+      requiredBackend: measuredResult.requiredBackend,
+      actualBackend: measuredResult.actualBackend,
+      reasons: measuredResult.certificationReason
+        ? [measuredResult.certificationReason]
+        : [],
+    },
   };
 }
 

@@ -69,6 +69,7 @@ bun run parity:promote-reference -- \
 ```
 
 That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `assets/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
+The bounded preset universe for that work is tracked separately in `assets/data/milkdrop-parity/certification-corpus.json`, so reference images and measured results stay scoped to an explicit WebGPU certification corpus instead of open-ended imports.
 
 Run the certified suite against that checked-in manifest:
 

@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type {
   MilkdropFidelityClass,
+  MilkdropParitySourceFamily,
+  MilkdropParityToleranceProfile,
+  MilkdropRenderBackend,
   MilkdropVisualEvidenceTier,
 } from '../assets/js/milkdrop/common-types.ts';
 
@@ -13,7 +16,14 @@ export type MeasuredVisualPresetResult = {
   title: string;
   fidelityClass: MilkdropFidelityClass;
   visualEvidenceTier: Extract<MilkdropVisualEvidenceTier, 'visual'>;
-  suiteStatus: 'pass' | 'fail';
+  suiteStatus: 'pass' | 'fail' | 'backend-mismatch';
+  certificationStatus: 'certified' | 'uncertified';
+  certificationReason: string | null;
+  requiredBackend: MilkdropRenderBackend;
+  actualBackend: MilkdropRenderBackend | null;
+  sourceFamily: MilkdropParitySourceFamily;
+  strata: string[];
+  toleranceProfile: MilkdropParityToleranceProfile;
   mismatchRatio: number;
   threshold: number;
   failThreshold: number;
@@ -49,7 +59,31 @@ export function loadMeasuredVisualResultsManifest(
   return {
     ...createDefaultMeasuredVisualResultsManifest(),
     ...parsed,
-    presets: Array.isArray(parsed.presets) ? parsed.presets : [],
+    presets: Array.isArray(parsed.presets)
+      ? parsed.presets.map((preset) => {
+          const normalizedPreset = { ...preset };
+          return {
+            ...normalizedPreset,
+            certificationStatus:
+              normalizedPreset.certificationStatus ??
+              (normalizedPreset.suiteStatus === 'pass'
+                ? 'certified'
+                : 'uncertified'),
+            certificationReason:
+              normalizedPreset.certificationReason ??
+              (normalizedPreset.suiteStatus === 'pass'
+                ? null
+                : 'Measured visual parity did not pass the certification gate.'),
+            requiredBackend: normalizedPreset.requiredBackend ?? 'webgpu',
+            actualBackend: normalizedPreset.actualBackend ?? null,
+            sourceFamily: normalizedPreset.sourceFamily ?? 'ad-hoc',
+            strata: Array.isArray(normalizedPreset.strata)
+              ? normalizedPreset.strata
+              : [],
+            toleranceProfile: normalizedPreset.toleranceProfile ?? 'default',
+          };
+        })
+      : [],
   };
 }
 

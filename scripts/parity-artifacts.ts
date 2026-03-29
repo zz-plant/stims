@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import type { MilkdropRenderBackend } from '../assets/js/milkdrop/common-types.ts';
 
 export const PARITY_ARTIFACT_MANIFEST_FILE = 'parity-artifacts.manifest.json';
 
@@ -22,6 +23,7 @@ export type ParityArtifactEntry = {
     metadata?: string | null;
   };
   capture?: {
+    backend?: MilkdropRenderBackend | null;
     url?: string | null;
     durationMs?: number | null;
     audioMode?: 'demo' | 'microphone' | 'none' | null;

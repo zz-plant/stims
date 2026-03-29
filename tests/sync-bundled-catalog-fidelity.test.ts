@@ -29,6 +29,16 @@ test('unmeasured bundled presets degrade to non-visual published fidelity', () =
     file: '/milkdrop-presets/aurora-feedback-core.milk',
     expectedFidelityClass: 'partial',
     visualEvidenceTier: 'runtime',
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'runtime',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+    },
   });
 });
 
@@ -78,6 +88,13 @@ test('measured bundled presets keep certified visual fidelity in the published c
         fidelityClass: 'near-exact',
         visualEvidenceTier: 'visual',
         suiteStatus: 'pass',
+        certificationStatus: 'certified',
+        certificationReason: null,
+        requiredBackend: 'webgpu',
+        actualBackend: 'webgpu',
+        sourceFamily: 'bundled',
+        strata: ['bundled'],
+        toleranceProfile: 'default',
         mismatchRatio: 0.01,
         threshold: 16,
         failThreshold: 0.02,
@@ -98,11 +115,20 @@ test('measured bundled presets keep certified visual fidelity in the published c
       id: 'measured-preset',
       expectedFidelityClass: 'near-exact',
       visualEvidenceTier: 'visual',
+      visualCertification: expect.objectContaining({
+        status: 'certified',
+        requiredBackend: 'webgpu',
+        actualBackend: 'webgpu',
+      }),
     }),
     expect.objectContaining({
       id: 'unmeasured-preset',
       expectedFidelityClass: 'partial',
       visualEvidenceTier: 'runtime',
+      visualCertification: expect.objectContaining({
+        status: 'uncertified',
+        requiredBackend: 'webgpu',
+      }),
     }),
   ]);
 });

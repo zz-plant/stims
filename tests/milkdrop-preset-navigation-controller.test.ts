@@ -40,6 +40,25 @@ function createCatalogEntry(
     },
     fidelityClass: 'fallback',
     visualEvidenceTier: 'compile',
+    semanticSupport: {
+      fidelityClass: 'fallback',
+      evidence: {
+        visual: 'not-captured',
+        runtime: 'not-run',
+        compile: 'verified',
+      },
+      visualEvidenceTier: 'compile',
+    },
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'fallback',
+      visualEvidenceTier: 'compile',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+    },
     evidence: {
       visual: 'not-captured',
       runtime: 'not-run',
@@ -63,6 +82,25 @@ function createCatalogEntry(
       approximatedShaderLines: [],
       blockedConstructs: [],
       blockingConstructDetails: [],
+      semanticSupport: {
+        fidelityClass: 'fallback',
+        evidence: {
+          visual: 'not-captured',
+          runtime: 'not-run',
+          compile: 'verified',
+        },
+        visualEvidenceTier: 'compile',
+      },
+      visualCertification: {
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: 'fallback',
+        visualEvidenceTier: 'compile',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+        reasons: ['No measured WebGPU reference capture is recorded yet.'],
+      },
     },
   };
 }

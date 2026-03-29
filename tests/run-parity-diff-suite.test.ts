@@ -48,8 +48,12 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
     presetCount: 2,
     defaults: {
       renderer: 'projectm',
+      requiredBackend: 'webgpu',
       width: 2,
       height: 1,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
     },
@@ -58,9 +62,21 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
         id: 'pass-preset',
         title: 'Pass Preset',
         image: 'pass.png',
+        sourceFamily: 'bundled',
         strata: ['feedback'],
-        tolerance: { threshold: 16, failThreshold: 0.02 },
-        capture: { renderer: 'projectm', width: 2, height: 1 },
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'projectm',
+          requiredBackend: 'webgpu',
+          width: 2,
+          height: 1,
+          warmupMs: 5000,
+          captureOffsetMs: 0,
+        },
         provenance: {
           label: 'fixture',
           importedAt: '2026-03-28T00:00:00.000Z',
@@ -70,9 +86,21 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
         id: 'fail-preset',
         title: 'Fail Preset',
         image: 'fail.png',
+        sourceFamily: 'bundled',
         strata: ['shader-supported'],
-        tolerance: { threshold: 16, failThreshold: 0.02 },
-        capture: { renderer: 'projectm', width: 2, height: 1 },
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'projectm',
+          requiredBackend: 'webgpu',
+          width: 2,
+          height: 1,
+          warmupMs: 5000,
+          captureOffsetMs: 0,
+        },
         provenance: {
           label: 'fixture',
           importedAt: '2026-03-28T00:00:00.000Z',
@@ -86,6 +114,7 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
     slug: 'milkdrop',
     presetId: 'pass-preset',
     files: { image: path.join(outputDir, 'pass-stims.png') },
+    capture: { backend: 'webgpu' },
     createdAt: '2026-03-28T01:00:00.000Z',
   });
   appendParityArtifactEntry(outputDir, {
@@ -93,6 +122,7 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
     slug: 'milkdrop',
     presetId: 'fail-preset',
     files: { image: path.join(outputDir, 'fail-stims.png') },
+    capture: { backend: 'webgpu' },
     createdAt: '2026-03-28T01:00:00.000Z',
   });
 
@@ -146,8 +176,12 @@ test('runParityDiffSuite reports missing stims captures', async () => {
     presetCount: 1,
     defaults: {
       renderer: 'projectm',
+      requiredBackend: 'webgpu',
       width: 1,
       height: 1,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
     },
@@ -156,9 +190,21 @@ test('runParityDiffSuite reports missing stims captures', async () => {
         id: 'missing-preset',
         title: 'Missing Preset',
         image: 'missing.png',
+        sourceFamily: 'bundled',
         strata: [],
-        tolerance: { threshold: 16, failThreshold: 0.02 },
-        capture: { renderer: 'projectm', width: 1, height: 1 },
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'projectm',
+          requiredBackend: 'webgpu',
+          width: 1,
+          height: 1,
+          warmupMs: 5000,
+          captureOffsetMs: 0,
+        },
         provenance: {
           label: 'fixture',
           importedAt: '2026-03-28T00:00:00.000Z',
@@ -176,4 +222,106 @@ test('runParityDiffSuite reports missing stims captures', async () => {
 
   expect(result.summary.missingCount).toBe(1);
   expect(result.summary.results[0]?.status).toBe('missing-stims-capture');
+});
+
+test('runParityDiffSuite reports certified backend mismatches before diffing', async () => {
+  const repoRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stims-parity-suite-backend-'),
+  );
+  const fixtureRoot = path.join(
+    repoRoot,
+    'tests',
+    'fixtures',
+    'milkdrop',
+    'projectm-reference',
+  );
+  const outputDir = path.join(repoRoot, 'screenshots', 'parity');
+  fs.mkdirSync(fixtureRoot, { recursive: true });
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  await sharp({
+    create: {
+      width: 1,
+      height: 1,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
+    },
+  })
+    .png()
+    .toFile(path.join(fixtureRoot, 'webgpu-only.png'));
+  await sharp({
+    create: {
+      width: 1,
+      height: 1,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
+    },
+  })
+    .png()
+    .toFile(path.join(outputDir, 'webgl-capture.png'));
+
+  saveVisualReferenceManifest(repoRoot, {
+    version: 1,
+    parityTarget: 'projectm-visual-reference',
+    fixtureRoot: 'tests/fixtures/milkdrop/projectm-reference',
+    minimumPresetCount: 0,
+    presetCount: 1,
+    defaults: {
+      renderer: 'projectm',
+      requiredBackend: 'webgpu',
+      width: 1,
+      height: 1,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      toleranceProfile: 'default',
+      threshold: 16,
+      failThreshold: 0.02,
+    },
+    presets: [
+      {
+        id: 'webgpu-only',
+        title: 'WebGPU Only',
+        image: 'webgpu-only.png',
+        sourceFamily: 'bundled',
+        strata: ['feedback'],
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'projectm',
+          requiredBackend: 'webgpu',
+          width: 1,
+          height: 1,
+          warmupMs: 5000,
+          captureOffsetMs: 0,
+        },
+        provenance: {
+          label: 'fixture',
+          importedAt: '2026-03-28T00:00:00.000Z',
+        },
+      },
+    ],
+  });
+
+  appendParityArtifactEntry(outputDir, {
+    kind: 'stims-capture',
+    slug: 'milkdrop',
+    presetId: 'webgpu-only',
+    files: { image: path.join(outputDir, 'webgl-capture.png') },
+    capture: { backend: 'webgl' },
+    createdAt: '2026-03-28T01:00:00.000Z',
+  });
+
+  const result = await runParityDiffSuite({
+    repoRoot,
+    outputDir,
+    writeDiffImages: false,
+    strict: false,
+  });
+
+  expect(result.summary.backendMismatchCount).toBe(1);
+  expect(result.summary.results[0]?.status).toBe('backend-mismatch');
+  expect(result.summary.results[0]?.actualBackend).toBe('webgl');
 });

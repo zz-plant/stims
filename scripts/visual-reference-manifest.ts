@@ -1,5 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type {
+  MilkdropParitySourceFamily,
+  MilkdropParityToleranceProfile,
+  MilkdropRenderBackend,
+} from '../assets/js/milkdrop/common-types.ts';
 
 export const VISUAL_REFERENCE_MANIFEST_PATH =
   'assets/data/milkdrop-parity/visual-reference-manifest.json';
@@ -11,15 +16,20 @@ export type VisualReferencePresetEntry = {
   title: string;
   image: string;
   metadata?: string | null;
+  sourceFamily: MilkdropParitySourceFamily;
   strata: string[];
   tolerance: {
+    profile: MilkdropParityToleranceProfile;
     threshold: number;
     failThreshold: number;
   };
   capture: {
     renderer: 'projectm';
+    requiredBackend: MilkdropRenderBackend;
     width: number;
     height: number;
+    warmupMs: number;
+    captureOffsetMs: number;
   };
   provenance: {
     label: string;
@@ -36,8 +46,12 @@ export type VisualReferenceManifest = {
   presetCount: number;
   defaults: {
     renderer: 'projectm';
+    requiredBackend: MilkdropRenderBackend;
     width: number;
     height: number;
+    warmupMs: number;
+    captureOffsetMs: number;
+    toleranceProfile: MilkdropParityToleranceProfile;
     threshold: number;
     failThreshold: number;
   };
@@ -53,8 +67,12 @@ export function createDefaultVisualReferenceManifest(): VisualReferenceManifest 
     presetCount: 0,
     defaults: {
       renderer: 'projectm',
+      requiredBackend: 'webgpu',
       width: 1280,
       height: 720,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      toleranceProfile: 'default',
       threshold: 16,
       failThreshold: 0.02,
     },
@@ -76,7 +94,52 @@ export function loadVisualReferenceManifest(
   return {
     ...createDefaultVisualReferenceManifest(),
     ...parsed,
-    presets: Array.isArray(parsed.presets) ? parsed.presets : [],
+    presets: Array.isArray(parsed.presets)
+      ? parsed.presets.map((preset) => {
+          const normalizedPreset = { ...preset };
+          return {
+            ...normalizedPreset,
+            sourceFamily: normalizedPreset.sourceFamily ?? 'ad-hoc',
+            tolerance: {
+              profile:
+                normalizedPreset.tolerance?.profile ??
+                parsed.defaults?.toleranceProfile ??
+                'default',
+              threshold:
+                normalizedPreset.tolerance?.threshold ??
+                parsed.defaults?.threshold ??
+                16,
+              failThreshold:
+                normalizedPreset.tolerance?.failThreshold ??
+                parsed.defaults?.failThreshold ??
+                0.02,
+            },
+            capture: {
+              renderer: 'projectm',
+              requiredBackend:
+                normalizedPreset.capture?.requiredBackend ??
+                parsed.defaults?.requiredBackend ??
+                'webgpu',
+              width:
+                normalizedPreset.capture?.width ??
+                parsed.defaults?.width ??
+                1280,
+              height:
+                normalizedPreset.capture?.height ??
+                parsed.defaults?.height ??
+                720,
+              warmupMs:
+                normalizedPreset.capture?.warmupMs ??
+                parsed.defaults?.warmupMs ??
+                5000,
+              captureOffsetMs:
+                normalizedPreset.capture?.captureOffsetMs ??
+                parsed.defaults?.captureOffsetMs ??
+                0,
+            },
+          };
+        })
+      : [],
     presetCount: Array.isArray(parsed.presets)
       ? parsed.presets.length
       : (parsed.presetCount ?? 0),

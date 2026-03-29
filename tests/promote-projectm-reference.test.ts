@@ -61,10 +61,19 @@ test('promoteProjectMReference copies a projectM artifact into tracked fixtures 
       strata: ['feedback', 'shader-supported'],
       image: 'signal-bloom.png',
       metadata: 'signal-bloom.meta.json',
+      sourceFamily: 'ad-hoc',
+      tolerance: {
+        profile: 'default',
+        threshold: 16,
+        failThreshold: 0.02,
+      },
       capture: {
         renderer: 'projectm',
+        requiredBackend: 'webgpu',
         width: 4,
         height: 3,
+        warmupMs: 5000,
+        captureOffsetMs: 0,
       },
     }),
   );

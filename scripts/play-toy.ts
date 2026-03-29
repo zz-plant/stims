@@ -373,6 +373,15 @@ async function getMilkdropDebugSnapshot(page: Page) {
     .catch(() => null);
 }
 
+async function getActiveRenderBackend(page: Page) {
+  return page
+    .evaluate(() => {
+      const backend = document.body.dataset.activeBackend;
+      return backend === 'webgl' || backend === 'webgpu' ? backend : null;
+    })
+    .catch(() => null);
+}
+
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   const normalizedOptions = normalizeOptions(options);
 
@@ -647,6 +656,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     }
 
     if (result.screenshot || result.debugSnapshot) {
+      const captureBackend = await getActiveRenderBackend(page);
       const { manifestPath } = appendParityArtifactEntry(
         normalizedOptions.outputDir,
         {
@@ -658,6 +668,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
             debugSnapshot: result.debugSnapshot,
           },
           capture: {
+            backend: captureBackend,
             url,
             durationMs: normalizedOptions.duration,
             audioMode: demoRequestedByRoute ? 'demo' : 'none',

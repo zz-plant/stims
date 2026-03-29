@@ -11,12 +11,29 @@
       "order": 1,
       "file": "/milkdrop-presets/aurora-feedback-core.milk",
       "preview": true,
-      "tags": ["collection:classic-milkdrop", "feedback", "warp", "preset"],
+      "tags": [
+        "collection:classic-milkdrop",
+        "feedback",
+        "warp",
+        "preset"
+      ],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -38,6 +55,18 @@
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -60,6 +89,18 @@
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -82,6 +123,18 @@
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -91,12 +144,29 @@
       "order": 5,
       "file": "/milkdrop-presets/prism-drum-tunnel.milk",
       "preview": true,
-      "tags": ["collection:classic-milkdrop", "tunnel", "drums", "preset"],
+      "tags": [
+        "collection:classic-milkdrop",
+        "tunnel",
+        "drums",
+        "preset"
+      ],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -119,6 +189,18 @@
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -128,12 +210,29 @@
       "order": 7,
       "file": "/milkdrop-presets/kinetic-grid-pulse.milk",
       "preview": true,
-      "tags": ["collection:feedback-lab", "grid", "reactive", "preset"],
+      "tags": [
+        "collection:feedback-lab",
+        "grid",
+        "reactive",
+        "preset"
+      ],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -143,12 +242,29 @@
       "order": 8,
       "file": "/milkdrop-presets/low-motion-halo-drift.milk",
       "preview": false,
-      "tags": ["collection:low-motion", "ambient", "halos", "preset"],
+      "tags": [
+        "collection:low-motion",
+        "ambient",
+        "halos",
+        "preset"
+      ],
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     }
   ]

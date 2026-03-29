@@ -191,18 +191,27 @@ export async function promoteProjectMReference(
     title: options.title ?? artifact.title ?? existingEntry?.title ?? presetId,
     image: fixturePaths.relativeImagePath,
     metadata: fixturePaths.relativeMetadataPath,
+    sourceFamily: existingEntry?.sourceFamily ?? 'ad-hoc',
     strata:
       options.strata.length > 0
         ? options.strata
         : (existingEntry?.strata ?? []),
     tolerance: existingEntry?.tolerance ?? {
+      profile: manifest.defaults.toleranceProfile,
       threshold: manifest.defaults.threshold,
       failThreshold: manifest.defaults.failThreshold,
     },
     capture: {
       renderer: 'projectm',
+      requiredBackend:
+        existingEntry?.capture.requiredBackend ??
+        manifest.defaults.requiredBackend,
       width: size.width,
       height: size.height,
+      warmupMs: existingEntry?.capture.warmupMs ?? manifest.defaults.warmupMs,
+      captureOffsetMs:
+        existingEntry?.capture.captureOffsetMs ??
+        manifest.defaults.captureOffsetMs,
     },
     provenance: {
       label:
