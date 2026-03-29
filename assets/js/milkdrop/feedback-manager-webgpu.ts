@@ -285,6 +285,7 @@ function createCompositeUniforms(
     patternTex: texture(auxTextures.pattern),
     fractalTex: texture(auxTextures.fractal),
     mixAlpha: uniform(0.18),
+    videoEchoAlpha: uniform(0),
     zoom: uniform(1.02),
     videoEchoOrientation: uniform(0),
     brighten: uniform(0),
@@ -1126,21 +1127,20 @@ function createCompositeOutputNode(
       },
     );
 
-    const directCurrentColor = applyDirectCompProgram(
-      shaderPrograms.comp,
-      shaderEnv,
-      currentUv,
+    let color = mix(
       current.rgb,
-    );
-    const color = mix(
-      directCurrentColor,
       previousColor,
-      clamp(uniforms.mixAlpha.add(uniforms.feedbackTexture.mul(0.2)), 0, 1),
+      clamp(
+        uniforms.videoEchoAlpha.add(uniforms.feedbackTexture.mul(0.2)),
+        0,
+        1,
+      ),
     ).toVar();
+    color.assign(mix(color, previousColor, clamp(uniforms.mixAlpha, 0, 1)));
     color.assign(
       mix(
         color,
-        directCurrentColor,
+        current.rgb,
         clamp(
           uniforms.currentFrameBoost,
           0,
@@ -1148,6 +1148,12 @@ function createCompositeOutputNode(
         ),
       ),
     );
+    color = applyDirectCompProgram(
+      shaderPrograms.comp,
+      shaderEnv,
+      currentUv,
+      color,
+    ).toVar();
 
     const brightenMask = max(
       step(0.01, uniforms.brighten),
@@ -1436,6 +1442,7 @@ class WebGPUMilkdropFeedbackManager {
     }
 
     this.compositeMaterial.uniforms.mixAlpha.value = state.mixAlpha;
+    this.compositeMaterial.uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
     this.compositeMaterial.uniforms.zoom.value = state.zoom;
     this.compositeMaterial.uniforms.videoEchoOrientation.value =
       state.videoEchoOrientation;

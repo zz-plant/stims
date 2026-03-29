@@ -209,6 +209,11 @@ export function createCompositeFragmentShaderVariant(
       blurBlock,
     )
     .replace(
+      /color = mix\(\s*current\.rgb,\s*previousColor,\s*clamp\(mixAlpha \+ feedbackTexture \* 0\.2, 0\.0, 1\.0\)\s*\);/,
+      `color = mix(current.rgb, previousColor, clamp(videoEchoAlpha + feedbackTexture * 0.2, 0.0, 1.0));
+          color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));`,
+    )
+    .replace(
       /color = mix\(color, current\.rgb, clamp\(currentFrameBoost, 0\.0, 0\.3\)\);/,
       `color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, ${currentFrameBoostCap.toFixed(1)}));`,
     );
@@ -253,6 +258,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         patternTex: { value: this.auxTextures.pattern },
         fractalTex: { value: this.auxTextures.fractal },
         mixAlpha: { value: 0.18 },
+        videoEchoAlpha: { value: 0 },
         zoom: { value: 1.02 },
         videoEchoOrientation: { value: 0 },
         brighten: { value: 0 },
@@ -324,6 +330,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform sampler2D patternTex;
         uniform sampler2D fractalTex;
         uniform float mixAlpha;
+        uniform float videoEchoAlpha;
         uniform float zoom;
         uniform float videoEchoOrientation;
         uniform float brighten;
@@ -530,8 +537,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           vec3 color = mix(
             current.rgb,
             previousColor,
-            clamp(mixAlpha + feedbackTexture * 0.2, 0.0, 1.0)
+            clamp(videoEchoAlpha + feedbackTexture * 0.2, 0.0, 1.0)
           );
+          color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));
           color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, ${MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP.toFixed(1)}));
           if (brighten > 0.01 || brightenBoost > 0.01) {
             color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
@@ -624,6 +632,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
     uniforms.mixAlpha.value = state.mixAlpha;
+    uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
     uniforms.zoom.value = state.zoom;
     uniforms.videoEchoOrientation.value = state.videoEchoOrientation;
     uniforms.brighten.value = state.brighten;

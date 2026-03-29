@@ -54,12 +54,11 @@ export function buildFeedbackCompositeState({
   return {
     shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
     shaderPrograms,
-    mixAlpha: frameState.post.videoEchoEnabled
-      ? frameState.post.videoEchoAlpha + controls.mixAlpha
-      : controls.mixAlpha,
-    zoom: frameState.post.videoEchoEnabled
-      ? frameState.post.videoEchoZoom + controls.warpScale * 0.04
-      : 1,
+    mixAlpha: controls.mixAlpha,
+    videoEchoAlpha: frameState.post.videoEchoEnabled
+      ? frameState.post.videoEchoAlpha
+      : 0,
+    zoom: frameState.post.videoEchoEnabled ? frameState.post.videoEchoZoom : 1,
     videoEchoOrientation: frameState.post.videoEchoEnabled
       ? frameState.post.videoEchoOrientation
       : 0,

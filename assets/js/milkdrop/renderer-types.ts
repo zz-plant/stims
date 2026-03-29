@@ -253,6 +253,7 @@ export type MilkdropFeedbackCompositeState = {
     comp: MilkdropShaderProgramPayload | null;
   };
   mixAlpha: number;
+  videoEchoAlpha: number;
   zoom: number;
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   brighten: number;
