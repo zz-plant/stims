@@ -6,6 +6,7 @@ import {
   chromium,
   type Page,
 } from 'playwright';
+import { appendParityArtifactEntry } from './parity-artifacts.ts';
 
 export type PlayToyResult = {
   slug: string;
@@ -643,6 +644,28 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       fs.writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
       result.debugSnapshot = snapshotPath;
       console.log(`Debug snapshot saved to ${snapshotPath}`);
+    }
+
+    if (result.screenshot || result.debugSnapshot) {
+      const { manifestPath } = appendParityArtifactEntry(
+        normalizedOptions.outputDir,
+        {
+          kind: 'stims-capture',
+          slug: options.slug,
+          presetId: normalizedOptions.presetId ?? null,
+          files: {
+            image: result.screenshot,
+            debugSnapshot: result.debugSnapshot,
+          },
+          capture: {
+            url,
+            durationMs: normalizedOptions.duration,
+            audioMode: demoRequestedByRoute ? 'demo' : 'none',
+            vibeMode: normalizedOptions.vibeMode,
+          },
+        },
+      );
+      console.log(`Parity artifact manifest updated at ${manifestPath}`);
     }
 
     await page.close();
