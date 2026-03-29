@@ -861,6 +861,52 @@ function isShaderAuxSampleExpression(node: MilkdropShaderExpressionNode) {
   return Boolean(source && source !== 'main' && source !== 'none');
 }
 
+function isUnsupportedVolumeSampleSource(source: string | null | undefined) {
+  if (!source || source === 'main' || source === 'none') {
+    return source !== 'none';
+  }
+  return !isMilkdropVolumeShaderSamplerName(source);
+}
+
+function hasUnsupportedVolumeSample(
+  node: MilkdropShaderExpressionNode | null,
+): boolean {
+  if (!node) {
+    return false;
+  }
+
+  switch (node.type) {
+    case 'literal':
+    case 'identifier':
+      return false;
+    case 'unary':
+      return hasUnsupportedVolumeSample(node.operand);
+    case 'binary':
+      return (
+        hasUnsupportedVolumeSample(node.left) ||
+        hasUnsupportedVolumeSample(node.right)
+      );
+    case 'member':
+      return hasUnsupportedVolumeSample(node.object);
+    case 'call': {
+      const callName = normalizeShaderCallName(node.name);
+      if (callName === 'tex3d') {
+        const samplerArg = node.args[0];
+        const source =
+          samplerArg?.type === 'identifier'
+            ? normalizeShaderSamplerName(samplerArg.name)
+            : 'main';
+        if (!source || isUnsupportedVolumeSampleSource(source)) {
+          return true;
+        }
+      }
+      return node.args.some((arg) => hasUnsupportedVolumeSample(arg));
+    }
+    default:
+      return false;
+  }
+}
+
 function extractScaledShaderSampleExpression(
   node: MilkdropShaderExpressionNode,
 ): {
@@ -1239,6 +1285,10 @@ function applyShaderAstStatement({
     statement.expression,
     shaderExpressionEnv,
   );
+
+  if (hasUnsupportedVolumeSample(resolvedExpression)) {
+    return false;
+  }
 
   const scalarResult = () =>
     evaluateShaderScalarResult(
@@ -2547,9 +2597,11 @@ function isUnsupportedParsedShaderStatement({
   const directSample = getShaderSampleInfo(resolvedExpression);
   if (
     directSample &&
-    directSample.source !== 'main' &&
-    directSample.source !== 'none' &&
-    !isAuxShaderSamplerName(directSample.source)
+    ((directSample.sampleDimension === '3d' &&
+      isUnsupportedVolumeSampleSource(directSample.source)) ||
+      (directSample.source !== 'main' &&
+        directSample.source !== 'none' &&
+        !isAuxShaderSamplerName(directSample.source)))
   ) {
     return true;
   }
@@ -3250,11 +3302,6 @@ export function extractShaderControls(
         }
         break;
       }
-    }
-    if (parsedStatement) {
-      directProgramStatements.push(parsedStatement);
-      directProgramLines.push(line);
-      return;
     }
     unsupportedLines.push(line);
   });

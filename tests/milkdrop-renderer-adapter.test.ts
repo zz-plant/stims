@@ -245,12 +245,30 @@ shapecode_0_thickoutline=1
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined,
     );
+    const fillMesh = batchedShapes.find(
+      (child) =>
+        child.geometry?.getAttribute?.('instancePrimaryColorAlpha') !==
+        undefined,
+    );
+    const fillGradient = fillMesh?.geometry?.getAttribute?.(
+      'instanceGradient',
+    ) as { array: Float32Array } | undefined;
+    const fillPrimary = fillMesh?.geometry?.getAttribute?.(
+      'instancePrimaryColorAlpha',
+    ) as { array: Float32Array } | undefined;
+    const fillSecondary = fillMesh?.geometry?.getAttribute?.(
+      'instanceSecondaryColorAlpha',
+    ) as { array: Float32Array } | undefined;
 
     expect(batchedShapes).toHaveLength(3);
     batchedShapes.forEach((mesh) => {
       expect(mesh.material).toBeInstanceOf(ShaderMaterial);
       expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
     });
+    expect(fillMesh).toBeDefined();
+    expect(fillGradient?.array[0]).toBe(1);
+    expect(fillPrimary?.array).toEqual(new Float32Array([1, 0.2, 0.1, 0.7]));
+    expect(fillSecondary?.array).toEqual(new Float32Array([0.1, 0.2, 1, 0.3]));
   });
 
   test('falls back to non-batched shape rendering for textured custom shapes on WebGPU', () => {

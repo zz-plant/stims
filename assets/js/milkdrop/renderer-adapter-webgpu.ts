@@ -40,11 +40,20 @@ type ShapeFillInstance = {
   y: number;
   radius: number;
   rotation: number;
-  color: MilkdropColor;
-  alpha: number;
+  primaryColor: MilkdropColor;
+  primaryAlpha: number;
+  secondaryColor: MilkdropColor;
+  secondaryAlpha: number;
+  useGradient: number;
 };
 
-type ShapeRingInstance = ShapeFillInstance & {
+type ShapeRingInstance = {
+  x: number;
+  y: number;
+  radius: number;
+  rotation: number;
+  color: MilkdropColor;
+  alpha: number;
   outerScale: number;
   innerScale: number;
 };
@@ -235,18 +244,6 @@ function ensureInstancedAttribute(
   attribute.setUsage(DynamicDrawUsage);
   geometry.setAttribute(name, attribute);
   return attribute;
-}
-
-function getShapeFillFallbackColor(shape: MilkdropShapeVisual) {
-  if (!shape.secondaryColor) {
-    return shape.color;
-  }
-  return {
-    r: (shape.color.r + shape.secondaryColor.r) * 0.5,
-    g: (shape.color.g + shape.secondaryColor.g) * 0.5,
-    b: (shape.color.b + shape.secondaryColor.b) * 0.5,
-    a: Math.max(shape.color.a ?? 0.4, shape.secondaryColor.a ?? 0),
-  };
 }
 
 class CompactSegmentUploadBuffer {
@@ -762,8 +759,13 @@ class InstancedShapeFillBatch {
         blending,
         vertexShader: `
           attribute vec4 instanceTransform;
-          attribute vec4 instanceColorAlpha;
-          varying vec4 vColor;
+          attribute vec4 instancePrimaryColorAlpha;
+          attribute vec4 instanceSecondaryColorAlpha;
+          attribute float instanceGradient;
+          varying vec4 vPrimaryColor;
+          varying vec4 vSecondaryColor;
+          varying float vGradient;
+          varying float vBlend;
 
           void main() {
             float cosR = cos(instanceTransform.w);
@@ -773,7 +775,10 @@ class InstancedShapeFillBatch {
               scaled.x * cosR - scaled.y * sinR,
               scaled.x * sinR + scaled.y * cosR
             );
-            vColor = instanceColorAlpha;
+            vPrimaryColor = instancePrimaryColorAlpha;
+            vSecondaryColor = instanceSecondaryColorAlpha;
+            vGradient = instanceGradient;
+            vBlend = clamp(length(position.xy), 0.0, 1.0);
             gl_Position = projectionMatrix * modelViewMatrix * vec4(
               rotated + instanceTransform.xy,
               0.14,
@@ -782,9 +787,12 @@ class InstancedShapeFillBatch {
           }
         `,
         fragmentShader: `
-          varying vec4 vColor;
+          varying vec4 vPrimaryColor;
+          varying vec4 vSecondaryColor;
+          varying float vGradient;
+          varying float vBlend;
           void main() {
-            gl_FragColor = vColor;
+            gl_FragColor = mix(vPrimaryColor, vSecondaryColor, vBlend * vGradient);
           }
         `,
       }),
@@ -801,10 +809,22 @@ class InstancedShapeFillBatch {
       4,
       instances.length,
     );
-    const colorAlpha = ensureInstancedAttribute(
+    const primaryColorAlpha = ensureInstancedAttribute(
       geometry,
-      'instanceColorAlpha',
+      'instancePrimaryColorAlpha',
       4,
+      instances.length,
+    );
+    const secondaryColorAlpha = ensureInstancedAttribute(
+      geometry,
+      'instanceSecondaryColorAlpha',
+      4,
+      instances.length,
+    );
+    const gradient = ensureInstancedAttribute(
+      geometry,
+      'instanceGradient',
+      1,
       instances.length,
     );
     for (let index = 0; index < instances.length; index += 1) {
@@ -816,16 +836,26 @@ class InstancedShapeFillBatch {
         instance.radius,
         instance.rotation,
       );
-      colorAlpha.setXYZW(
+      primaryColorAlpha.setXYZW(
         index,
-        instance.color.r,
-        instance.color.g,
-        instance.color.b,
-        instance.alpha,
+        instance.primaryColor.r,
+        instance.primaryColor.g,
+        instance.primaryColor.b,
+        instance.primaryAlpha,
       );
+      secondaryColorAlpha.setXYZW(
+        index,
+        instance.secondaryColor.r,
+        instance.secondaryColor.g,
+        instance.secondaryColor.b,
+        instance.secondaryAlpha,
+      );
+      gradient.setX(index, instance.useGradient);
     }
     transform.needsUpdate = true;
-    colorAlpha.needsUpdate = true;
+    primaryColorAlpha.needsUpdate = true;
+    secondaryColorAlpha.needsUpdate = true;
+    gradient.needsUpdate = true;
   }
 
   dispose() {
@@ -953,14 +983,17 @@ class ShapeBatchBucket {
     const outlineInstances: ShapeRingInstance[] = [];
     const accentInstances: ShapeRingInstance[] = [];
     for (const shape of shapes) {
-      const fillColor = getShapeFillFallbackColor(shape);
       fillInstances.push({
         x: shape.x,
         y: shape.y,
         radius: shape.radius,
         rotation: shape.rotation,
-        color: fillColor,
-        alpha: (fillColor.a ?? 0.4) * alphaMultiplier,
+        primaryColor: shape.color,
+        primaryAlpha: (shape.color.a ?? 0.4) * alphaMultiplier,
+        secondaryColor: shape.secondaryColor ?? shape.color,
+        secondaryAlpha:
+          (shape.secondaryColor?.a ?? shape.color.a ?? 0.4) * alphaMultiplier,
+        useGradient: shape.secondaryColor ? 1 : 0,
       });
       outlineInstances.push({
         x: shape.x,

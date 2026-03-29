@@ -194,7 +194,7 @@ export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   useHalfFloatFeedback: true,
   closeLinesManually: true,
   useLineLoopPrimitives: false,
-  supportsShapeGradient: false,
+  supportsShapeGradient: true,
   supportsFeedbackPass: true,
 };
 

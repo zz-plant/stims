@@ -950,7 +950,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(compiled.ir.compatibility.warnings).toEqual([]);
   });
 
-  test('keeps tex3D extraction supported for atlas-backed aux samplers', () => {
+  test('downgrades non-volume aux tex3D aliases as unsupported shader text', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Shader Non-volume 3D Alias
@@ -959,19 +959,61 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
       { id: 'shader-non-volume-3d-alias' },
     );
 
-    expect(compiled.ir.shaderText.supported).toBe(true);
-    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
-    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
-    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
-      '3d',
+    expect(compiled.ir.shaderText.supported).toBe(false);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([
+      'ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz',
+    ]);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'unsupported-shader-text',
     );
-    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
-    expect(compiled.diagnostics).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgl.evidence).toEqual([]);
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
+      'ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz',
+    ]);
+  });
+
+  test('downgrades tex3D sampler_main usage as unsupported shader text', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Main Volume Unsupported
+comp_shader=ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz
+      `.trim(),
+      { id: 'shader-main-volume-unsupported' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(false);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([
+      'ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz',
+    ]);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'unsupported-shader-text',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
+      'ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz',
+    ]);
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual({
+      routing: 'fallback-webgl',
+      proceduralWaves: [],
+      proceduralMesh: null,
+      proceduralMotionVectors: null,
+      feedback: null,
+      unsupported: [
+        {
+          kind: 'unsupported-feature',
+          feature: 'unsupported-shader-text',
+          reason:
+            'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+          recommendedFallback: 'webgl',
+        },
+      ],
+    });
   });
 
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
