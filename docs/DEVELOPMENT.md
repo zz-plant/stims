@@ -25,6 +25,21 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
 
+## Compatibility capture workflow
+
+Use the headless launcher when you need a repeatable preset capture for parity work:
+
+```bash
+bun scripts/play-toy.ts milkdrop \
+  --preset eos-glowsticks-v2-03-music \
+  --duration 1500 \
+  --debug-snapshot \
+  --no-vibe-mode \
+  --output ./screenshots/parity
+```
+
+This keeps the capture focused on one preset and saves both the screenshot and the runtime debug snapshot for later comparison.
+
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
