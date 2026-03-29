@@ -21,12 +21,19 @@ type RunParityDiffSuiteOptions = {
 type SuitePresetResult = {
   presetId: string;
   title: string;
-  status: 'pass' | 'fail' | 'missing-stims-capture' | 'error';
+  status:
+    | 'backend-mismatch'
+    | 'pass'
+    | 'fail'
+    | 'missing-stims-capture'
+    | 'error';
   mismatchRatio: number | null;
   reportPath: string | null;
   diffImagePath: string | null;
   stimsArtifactId: string | null;
   projectmImagePath: string;
+  requiredBackend: 'webgl' | 'webgpu';
+  actualBackend: 'webgl' | 'webgpu' | null;
   error?: string;
 };
 
@@ -36,6 +43,7 @@ type SuiteSummary = {
   outputDir: string;
   suiteDir: string;
   certifiedPresetCount: number;
+  backendMismatchCount: number;
   passCount: number;
   failCount: number;
   missingCount: number;
@@ -103,14 +111,16 @@ function latestStimsArtifactForPreset(
 
 function suiteResultRank(result: SuitePresetResult) {
   switch (result.status) {
-    case 'fail':
+    case 'backend-mismatch':
       return 0;
-    case 'error':
+    case 'fail':
       return 1;
-    case 'missing-stims-capture':
+    case 'error':
       return 2;
-    case 'pass':
+    case 'missing-stims-capture':
       return 3;
+    case 'pass':
+      return 4;
   }
 }
 
@@ -154,6 +164,8 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         diffImagePath: null,
         stimsArtifactId: null,
         projectmImagePath,
+        requiredBackend: preset.capture.requiredBackend,
+        actualBackend: null,
       });
       continue;
     }
@@ -172,7 +184,58 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         diffImagePath: null,
         stimsArtifactId: stimsArtifact.id,
         projectmImagePath,
+        requiredBackend: preset.capture.requiredBackend,
+        actualBackend: stimsArtifact.capture?.backend ?? null,
         error: `Missing Stims image for artifact "${stimsArtifact.id}".`,
+      });
+      continue;
+    }
+
+    const actualBackend = stimsArtifact.capture?.backend ?? null;
+    if (actualBackend !== preset.capture.requiredBackend) {
+      const reportPath = path.join(suiteDir, `${preset.id}.json`);
+      const mismatchError = [
+        `Certified preset requires ${preset.capture.requiredBackend.toUpperCase()}.`,
+        actualBackend
+          ? `Latest Stims capture used ${actualBackend.toUpperCase()}.`
+          : 'Latest Stims capture did not record an actual backend.',
+      ].join(' ');
+      fs.writeFileSync(
+        reportPath,
+        `${JSON.stringify(
+          {
+            version: 1,
+            presetId: preset.id,
+            title: preset.title,
+            stimsArtifactId: stimsArtifact.id,
+            projectmImagePath,
+            requiredBackend: preset.capture.requiredBackend,
+            actualBackend,
+            sourceFamily: preset.sourceFamily,
+            strata: preset.strata,
+            toleranceProfile: preset.tolerance.profile,
+            threshold: preset.tolerance.threshold,
+            failThreshold: preset.tolerance.failThreshold,
+            metrics: { mismatchRatio: null },
+            status: 'backend-mismatch',
+            error: mismatchError,
+          },
+          null,
+          2,
+        )}\n`,
+      );
+      results.push({
+        presetId: preset.id,
+        title: preset.title,
+        status: 'backend-mismatch',
+        mismatchRatio: null,
+        reportPath,
+        diffImagePath: null,
+        stimsArtifactId: stimsArtifact.id,
+        projectmImagePath,
+        requiredBackend: preset.capture.requiredBackend,
+        actualBackend,
+        error: mismatchError,
       });
       continue;
     }
@@ -204,6 +267,11 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
             title: preset.title,
             stimsArtifactId: stimsArtifact.id,
             projectmImagePath,
+            requiredBackend: preset.capture.requiredBackend,
+            actualBackend,
+            sourceFamily: preset.sourceFamily,
+            strata: preset.strata,
+            toleranceProfile: preset.tolerance.profile,
             threshold: preset.tolerance.threshold,
             failThreshold: preset.tolerance.failThreshold,
             metrics,
@@ -231,6 +299,8 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         diffImagePath: options.writeDiffImages ? diffImagePath : null,
         stimsArtifactId: stimsArtifact.id,
         projectmImagePath,
+        requiredBackend: preset.capture.requiredBackend,
+        actualBackend,
       });
     } catch (error) {
       results.push({
@@ -242,6 +312,8 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         diffImagePath: null,
         stimsArtifactId: stimsArtifact.id,
         projectmImagePath,
+        requiredBackend: preset.capture.requiredBackend,
+        actualBackend,
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -255,6 +327,9 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
     outputDir: options.outputDir,
     suiteDir,
     certifiedPresetCount: referenceManifest.presets.length,
+    backendMismatchCount: results.filter(
+      (result) => result.status === 'backend-mismatch',
+    ).length,
     passCount: results.filter((result) => result.status === 'pass').length,
     failCount: results.filter((result) => result.status === 'fail').length,
     missingCount: results.filter(
@@ -269,12 +344,13 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
 
   if (
     options.strict &&
-    (summary.failCount > 0 ||
+    (summary.backendMismatchCount > 0 ||
+      summary.failCount > 0 ||
       summary.missingCount > 0 ||
       summary.errorCount > 0)
   ) {
     throw new Error(
-      `Parity suite failed with ${summary.failCount} failing, ${summary.missingCount} missing, and ${summary.errorCount} errored presets.`,
+      `Parity suite failed with ${summary.backendMismatchCount} backend mismatches, ${summary.failCount} failing, ${summary.missingCount} missing, and ${summary.errorCount} errored presets.`,
     );
   }
 

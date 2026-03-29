@@ -1,0 +1,338 @@
+{
+  "version": 1,
+  "parityTarget": "projectm-webgpu-certification-v1",
+  "requiredBackend": "webgpu",
+  "presetCount": 26,
+  "groups": {
+    "bundled-shipped": {
+      "minimumCount": 8,
+      "description": "Every shipped bundled preset, including curated Stims presets and bundled external-pack imports."
+    },
+    "local-custom-shape": {
+      "minimumCount": 2,
+      "description": "Dedicated local fixtures that cover custom-shape behavior absent from the vendored upstream slice."
+    },
+    "parity-corpus": {
+      "minimumCount": 8,
+      "description": "Representative parity-corpus presets chosen to maximize subsystem coverage and currently observed divergence."
+    },
+    "projectm-upstream": {
+      "minimumCount": 6,
+      "description": "Representative vendored projectM upstream fixtures covering parser/runtime semantics with upstream provenance."
+    }
+  },
+  "presets": [
+    {
+      "id": "aurora-feedback-core",
+      "title": "Aurora Feedback Core",
+      "file": "aurora-feedback-core.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "bundled",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["feedback", "warp", "bundled"],
+      "selectionReason": "Shipped Stims-curated feedback preset."
+    },
+    {
+      "id": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "file": "eos-glowsticks-v2-03-music.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["waveform", "glowsticks", "external-pack"],
+      "selectionReason": "Popular bundled external-pack preset with recognizable visual output."
+    },
+    {
+      "id": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "file": "rovastar-parallel-universe.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["feedback", "lasers", "external-pack"],
+      "selectionReason": "Bundled external-pack preset with strong feedback-driven divergence risk."
+    },
+    {
+      "id": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "file": "eos-phat-cubetrace-v2.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["geometry", "shapes", "external-pack"],
+      "selectionReason": "Bundled external-pack preset with shape-heavy geometry."
+    },
+    {
+      "id": "prism-drum-tunnel",
+      "title": "Prism Drum Tunnel",
+      "file": "prism-drum-tunnel.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "bundled",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["tunnel", "drums", "bundled"],
+      "selectionReason": "Shipped Stims-curated preset with distinct tunnel motion."
+    },
+    {
+      "id": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "file": "krash-rovastar-cerebral-demons-stars.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["comets", "feedback", "external-pack"],
+      "selectionReason": "Bundled external-pack preset with star/comet motion and feedback."
+    },
+    {
+      "id": "kinetic-grid-pulse",
+      "title": "Kinetic Grid Pulse",
+      "file": "kinetic-grid-pulse.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "bundled",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["grid", "reactive", "bundled"],
+      "selectionReason": "Shipped Stims-curated preset with explicit reactive grid structure."
+    },
+    {
+      "id": "low-motion-halo-drift",
+      "title": "Low Motion Halo Drift",
+      "file": "low-motion-halo-drift.milk",
+      "fixtureRoot": "public/milkdrop-presets",
+      "corpusGroup": "bundled-shipped",
+      "sourceFamily": "bundled",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["ambient", "halos", "bundled"],
+      "selectionReason": "Shipped low-motion preset that broadens the corpus beyond high-energy captures."
+    },
+    {
+      "id": "shape-legacy-max-slot-orbit",
+      "title": "Shape Legacy Max Slot Orbit",
+      "file": "shape-legacy-max-slot-orbit.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/local-shape-corpus",
+      "corpusGroup": "local-custom-shape",
+      "sourceFamily": "local-custom-shape",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["custom-shape", "legacy-slot", "shape-texture"],
+      "selectionReason": "Local shape fixture focused on legacy max-slot alias coverage."
+    },
+    {
+      "id": "shape-projectm-dual-lattice",
+      "title": "Shape projectM Dual Lattice",
+      "file": "shape-projectm-dual-lattice.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/local-shape-corpus",
+      "corpusGroup": "local-custom-shape",
+      "sourceFamily": "local-custom-shape",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["custom-shape", "borders", "shape-texture"],
+      "selectionReason": "Local shape fixture focused on projectM-style custom-shape behavior."
+    },
+    {
+      "id": "parity-feedback-orientation-01",
+      "title": "Parity Feedback Orientation 01",
+      "file": "parity-feedback-orientation-01.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["feedback", "video-echo", "orientation"],
+      "selectionReason": "Explicit orientation fixture for feedback/video-echo parity."
+    },
+    {
+      "id": "parity-per-pixel-03",
+      "title": "Parity Per Pixel 03",
+      "file": "parity-per-pixel-03.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["per-pixel", "per-frame"],
+      "selectionReason": "Representative per-pixel warp fixture."
+    },
+    {
+      "id": "parity-wave-02",
+      "title": "Parity Wave 02",
+      "file": "parity-wave-02.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["custom-wave", "registers"],
+      "selectionReason": "Representative custom-wave fixture."
+    },
+    {
+      "id": "parity-shape-07",
+      "title": "Parity Shape 07",
+      "file": "parity-shape-07.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["custom-shape", "borders"],
+      "selectionReason": "Representative custom-shape fixture."
+    },
+    {
+      "id": "parity-motion-04",
+      "title": "Parity Motion 04",
+      "file": "parity-motion-04.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["motion-vectors", "per-frame"],
+      "selectionReason": "Representative motion-vector fixture."
+    },
+    {
+      "id": "parity-registers-05",
+      "title": "Parity Registers 05",
+      "file": "parity-registers-05.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["registers", "per-frame"],
+      "selectionReason": "Representative register-heavy fixture."
+    },
+    {
+      "id": "parity-shader-08",
+      "title": "Parity Shader 08",
+      "file": "parity-shader-08.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["shader-supported", "feedback"],
+      "selectionReason": "Representative shader-supported fixture."
+    },
+    {
+      "id": "parity-hybrid-09",
+      "title": "Parity Hybrid 09",
+      "file": "parity-hybrid-09.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
+      "selectionReason": "Hybrid fixture spanning multiple subsystems in one preset."
+    },
+    {
+      "id": "parity-legacy-wave-01",
+      "title": "Parity Legacy Wave 01",
+      "file": "parity-legacy-wave-01.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["custom-wave", "legacy-slot"],
+      "selectionReason": "Legacy-slot custom-wave representative."
+    },
+    {
+      "id": "parity-legacy-shape-01",
+      "title": "Parity Legacy Shape 01",
+      "file": "parity-legacy-shape-01.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/parity-corpus",
+      "corpusGroup": "parity-corpus",
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["custom-shape", "legacy-slot"],
+      "selectionReason": "Legacy-slot custom-shape representative."
+    },
+    {
+      "id": "001-line",
+      "title": "001 Line",
+      "file": "001-line.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/projectm-upstream",
+      "corpusGroup": "projectm-upstream",
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["waveform", "upstream"],
+      "selectionReason": "Minimal upstream line primitive fixture."
+    },
+    {
+      "id": "100-square",
+      "title": "100 Square",
+      "file": "100-square.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/projectm-upstream",
+      "corpusGroup": "projectm-upstream",
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["shapes", "upstream"],
+      "selectionReason": "Minimal upstream shape fixture."
+    },
+    {
+      "id": "110-per_pixel",
+      "title": "110 Per Pixel",
+      "file": "110-per_pixel.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/projectm-upstream",
+      "corpusGroup": "projectm-upstream",
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["per-pixel", "upstream"],
+      "selectionReason": "Upstream per-pixel warp fixture."
+    },
+    {
+      "id": "250-wavecode",
+      "title": "250 Wavecode",
+      "file": "250-wavecode.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/projectm-upstream",
+      "corpusGroup": "projectm-upstream",
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["custom-wave", "upstream"],
+      "selectionReason": "Upstream custom-wave fixture."
+    },
+    {
+      "id": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "file": "260-compshader-noise_lq.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/projectm-upstream",
+      "corpusGroup": "projectm-upstream",
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["shader-supported", "samplers", "upstream"],
+      "selectionReason": "Upstream comp-shader fixture with sampler behavior."
+    },
+    {
+      "id": "261-compshader-noisevol_lq",
+      "title": "261 Compshader Noisevol LQ",
+      "file": "261-compshader-noisevol_lq.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/projectm-upstream",
+      "corpusGroup": "projectm-upstream",
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["shader-supported", "volume-sampler", "upstream"],
+      "selectionReason": "Upstream volume-sampler comp-shader fixture."
+    }
+  ]
+}

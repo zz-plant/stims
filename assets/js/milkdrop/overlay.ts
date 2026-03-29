@@ -485,6 +485,7 @@ export class MilkdropOverlay {
       compiled,
       frameState,
       backend,
+      presetEntry: this.activePresetEntry,
       isOpen: this.isOpen(),
     });
   }

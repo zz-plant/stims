@@ -19,6 +19,14 @@ import {
 } from 'three';
 import { disposeMaterial } from '../utils/three-dispose';
 import {
+  MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
+  MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
+  MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
+  MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
+} from './feedback-composite-profile.ts';
+import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
@@ -156,11 +164,11 @@ export function createCompositeFragmentShaderVariant(
   source: string,
   {
     enhancedFeedbackBlur = false,
-    currentFrameBoostCap = 0.3,
+    currentFrameBoostCap = MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
   }: MilkdropCompositeShaderConfig = {},
 ) {
   const blurBlock = enhancedFeedbackBlur
-    ? `if (feedbackSoftness > 0.01) {
+    ? `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
             vec2 sampleOffset = texelSize * (0.65 + feedbackSoftness * 0.6);
             vec3 softened = (
               previous.rgb +
@@ -179,8 +187,8 @@ export function createCompositeFragmentShaderVariant(
               clamp(feedbackSoftness * 0.6, 0.0, 0.65)
             );
           }`
-    : `if (feedbackSoftness > 0.01) {
-            vec2 sampleOffset = texelSize * (0.75 + feedbackSoftness * 0.5);
+    : `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
             vec3 softened = (
               previous.rgb +
               texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
@@ -191,7 +199,7 @@ export function createCompositeFragmentShaderVariant(
             previousColor = mix(
               previousColor,
               softened,
-              clamp(feedbackSoftness * 0.45, 0.0, 0.5)
+              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }`;
 
@@ -504,8 +512,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
           vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
           vec3 previousColor = previous.rgb;
-          if (feedbackSoftness > 0.01) {
-            vec2 sampleOffset = texelSize * (0.75 + feedbackSoftness * 0.5);
+          if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
             vec3 softened = (
               previous.rgb +
               texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
@@ -516,7 +524,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             previousColor = mix(
               previousColor,
               softened,
-              clamp(feedbackSoftness * 0.45, 0.0, 0.5)
+              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }
           vec3 color = mix(
@@ -524,7 +532,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             previousColor,
             clamp(mixAlpha + feedbackTexture * 0.2, 0.0, 1.0)
           );
-          color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, 0.3));
+          color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, ${MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP.toFixed(1)}));
           if (brighten > 0.01 || brightenBoost > 0.01) {
             color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
           }

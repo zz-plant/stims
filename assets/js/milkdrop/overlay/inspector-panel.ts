@@ -1,4 +1,5 @@
 import type {
+  MilkdropCatalogEntry,
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropSupportStatus,
@@ -50,13 +51,38 @@ export function formatInspectorMetrics({
   compiled,
   frameState,
   backend,
+  presetEntry,
 }: {
   compiled: MilkdropCompiledPreset;
   frameState: MilkdropFrameState;
   backend: 'webgl' | 'webgpu';
+  presetEntry?: MilkdropCatalogEntry | null;
 }) {
   const support = compiled.ir.compatibility.backends[backend];
   const parity = compiled.ir.compatibility.parity;
+  const semanticSupport = parity.semanticSupport ?? {
+    fidelityClass: parity.fidelityClass,
+    evidence: parity.evidence,
+    visualEvidenceTier: parity.visualEvidenceTier,
+  };
+  const visualCertification = presetEntry?.visualCertification ??
+    parity.visualCertification ?? {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass:
+        parity.fidelityClass === 'exact' ||
+        parity.fidelityClass === 'near-exact'
+          ? 'partial'
+          : parity.fidelityClass,
+      visualEvidenceTier:
+        parity.visualEvidenceTier === 'visual'
+          ? 'runtime'
+          : parity.visualEvidenceTier,
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+    };
   const compatibilitySummary = formatCompatibilitySummary({
     support,
     compiled,
@@ -64,10 +90,27 @@ export function formatInspectorMetrics({
   return [
     { label: 'Backend', value: backend },
     { label: 'Transport support', value: supportLabel(support.status) },
-    { label: 'Fidelity', value: fidelityLabel(parity.fidelityClass) },
     {
-      label: 'Certification',
-      value: compiled.source.origin === 'bundled' ? 'bundled' : 'exploratory',
+      label: 'Fidelity',
+      value: fidelityLabel(
+        presetEntry?.fidelityClass ?? visualCertification.fidelityClass,
+      ),
+    },
+    {
+      label: 'Semantic support',
+      value: fidelityLabel(semanticSupport.fidelityClass),
+    },
+    {
+      label: 'Visual certification',
+      value: `${visualCertification.status} (${visualCertification.measured ? 'measured' : 'inferred'})`,
+    },
+    {
+      label: 'Required backend',
+      value: visualCertification.requiredBackend ?? 'none',
+    },
+    {
+      label: 'Captured backend',
+      value: visualCertification.actualBackend ?? 'none',
     },
     {
       label: 'Degradation categories',
@@ -75,7 +118,7 @@ export function formatInspectorMetrics({
     },
     {
       label: 'Evidence',
-      value: `compile ${parity.evidence.compile}, runtime ${parity.evidence.runtime}, visual ${parity.evidence.visual}`,
+      value: `compile ${semanticSupport.evidence.compile}, runtime ${semanticSupport.evidence.runtime}, visual ${presetEntry?.evidence.visual ?? parity.evidence.visual}`,
     },
     {
       label: 'Backend divergence',
@@ -104,6 +147,14 @@ export function formatInspectorMetrics({
     {
       label: 'Register pressure',
       value: `q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}`,
+    },
+    {
+      label: 'Certification note',
+      value:
+        visualCertification.reasons[0] ??
+        (visualCertification.status === 'certified'
+          ? 'Measured WebGPU reference capture passed.'
+          : 'Awaiting measured WebGPU certification.'),
     },
     { label: 'Primary note', value: compatibilitySummary.primaryNote },
   ] satisfies InspectorMetric[];
@@ -256,11 +307,13 @@ export class InspectorPanel {
     compiled,
     frameState,
     backend,
+    presetEntry,
     isOpen,
   }: {
     compiled: MilkdropCompiledPreset | null;
     frameState: MilkdropFrameState | null;
     backend: 'webgl' | 'webgpu';
+    presetEntry?: MilkdropCatalogEntry | null;
     isOpen: boolean;
   }) {
     if (!frameState || !compiled) {
@@ -274,7 +327,12 @@ export class InspectorPanel {
       return;
     }
 
-    const metrics = formatInspectorMetrics({ compiled, frameState, backend });
+    const metrics = formatInspectorMetrics({
+      compiled,
+      frameState,
+      backend,
+      presetEntry,
+    });
     const metricsSignature = metrics
       .map((metric) => `${metric.label}:${metric.value}`)
       .join('|');

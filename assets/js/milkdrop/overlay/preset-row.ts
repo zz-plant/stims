@@ -171,6 +171,9 @@ function buildPresetRowSignature({
     support.reasons[0] ?? '',
     primaryReason?.category ?? '',
     primaryReason?.message ?? '',
+    preset.visualCertification?.status ?? '',
+    preset.visualCertification?.measured ? 1 : 0,
+    preset.visualCertification?.requiredBackend ?? '',
   ].join('|');
 }
 
@@ -217,6 +220,13 @@ function buildPresetRow({
   supportBadge.textContent = fidelityLabel(preset.fidelityClass);
   badges.appendChild(supportBadge);
 
+  const certificationBadge = document.createElement('span');
+  certificationBadge.className = 'milkdrop-overlay__preset-tag';
+  certificationBadge.textContent = preset.visualCertification?.measured
+    ? 'Measured'
+    : 'Inferred';
+  badges.appendChild(certificationBadge);
+
   titleRow.append(title, badges);
 
   const meta = document.createElement('div');
@@ -250,7 +260,8 @@ function buildPresetRow({
   const support = preset.supports[activeBackend];
   const hasCompatibilityWarning =
     support.status !== 'supported' ||
-    preset.parity.degradationReasons.length > 0;
+    preset.parity.degradationReasons.length > 0 ||
+    preset.visualCertification?.status === 'uncertified';
   if (hasCompatibilityWarning) {
     const reasons = document.createElement('div');
     reasons.className = 'milkdrop-overlay__preset-warning';
@@ -265,10 +276,16 @@ function buildPresetRow({
         );
       },
     )[0];
-    reasons.textContent = formatPrimaryCompatibilityMessage({
-      primaryReason,
-      support,
-    });
+    reasons.textContent =
+      preset.visualCertification?.status === 'uncertified'
+        ? (preset.visualCertification.reasons[0] ??
+          `Awaiting measured ${(
+            preset.visualCertification.requiredBackend ?? 'webgpu'
+          ).toUpperCase()} certification.`)
+        : formatPrimaryCompatibilityMessage({
+            primaryReason,
+            support,
+          });
     row.appendChild(reasons);
   }
 

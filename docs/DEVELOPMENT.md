@@ -74,6 +74,7 @@ bun run parity:promote-reference -- \
 ```
 
 This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `assets/data/milkdrop-parity/visual-reference-manifest.json`.
+The checked-in certification target set itself lives in `assets/data/milkdrop-parity/certification-corpus.json`; visual references and measured results should only be added for presets in that bounded corpus.
 
 To run the certified parity suite against the checked-in visual reference manifest:
 

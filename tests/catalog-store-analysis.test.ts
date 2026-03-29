@@ -25,17 +25,33 @@ test('measured visual results override inferred fidelity and evidence tier', () 
         fidelityClass: 'near-exact',
         visualEvidenceTier: 'visual',
         suiteStatus: 'pass',
+        certificationStatus: 'certified',
+        certificationReason: null,
+        requiredBackend: 'webgpu',
+        actualBackend: 'webgpu',
       },
     ],
   );
 
-  expect(overrides).toEqual({
-    expectedFidelityClass: 'near-exact',
-    visualEvidenceTier: 'visual',
-    evidence: {
-      ...compiled.ir.compatibility.parity.evidence,
-      runtime: 'smoke-tested',
-      visual: 'reference-suite',
-    },
-  });
+  expect(overrides).toEqual(
+    expect.objectContaining({
+      expectedFidelityClass: 'near-exact',
+      visualEvidenceTier: 'visual',
+      evidence: {
+        ...compiled.ir.compatibility.parity.evidence,
+        runtime: 'smoke-tested',
+        visual: 'reference-suite',
+      },
+      visualCertification: {
+        status: 'certified',
+        measured: true,
+        source: 'reference-suite',
+        fidelityClass: 'near-exact',
+        visualEvidenceTier: 'visual',
+        requiredBackend: 'webgpu',
+        actualBackend: 'webgpu',
+        reasons: [],
+      },
+    }),
+  );
 });

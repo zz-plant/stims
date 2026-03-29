@@ -124,7 +124,7 @@ describe('milkdrop runtime lifecycle seams', () => {
 });
 
 describe('milkdrop backend failover seams', () => {
-  test('prefers webgl for presets that still hit known webgpu feedback or shape gaps', () => {
+  test('keeps orientation-only echo and custom-shape presets on webgpu when descriptor planning stays native', () => {
     const videoEchoPreset = compileMilkdropPresetSource(
       `
 title=Video Echo Orientation Gap
@@ -156,14 +156,14 @@ warp=0.08
         activeBackend: 'webgpu',
         webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldPresetFallbackToWebgl({
         compiled: customShapePreset,
         activeBackend: 'webgpu',
         webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldPresetFallbackToWebgl({
         compiled: stablePreset,

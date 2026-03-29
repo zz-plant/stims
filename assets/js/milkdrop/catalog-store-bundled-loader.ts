@@ -60,6 +60,8 @@ export function createBundledCatalogLoader({
             corpusTier: entry.corpusTier ?? defaultCorpusTier,
             expectedFidelityClass: entry.expectedFidelityClass,
             visualEvidenceTier: entry.visualEvidenceTier,
+            semanticSupport: entry.semanticSupport,
+            visualCertification: entry.visualCertification,
             supports: entry.supports ?? entry.compatibility,
           }));
         })

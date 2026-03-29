@@ -120,6 +120,20 @@ export type MilkdropVisualEvidenceTier =
   | 'runtime'
   | 'visual';
 
+export type MilkdropParitySourceFamily =
+  | 'bundled'
+  | 'local-custom-shape'
+  | 'parity-corpus'
+  | 'projectm-fixture'
+  | 'external-pack'
+  | 'ad-hoc';
+
+export type MilkdropParityToleranceProfile =
+  | 'default'
+  | 'strict'
+  | 'loose'
+  | (string & {});
+
 export type MilkdropBlockingConstruct = {
   kind: 'field' | 'shader';
   value: string;
@@ -154,6 +168,23 @@ export type MilkdropCompatibilityEvidence = {
 
 export type MilkdropRenderBackend = 'webgl' | 'webgpu';
 
+export type MilkdropSemanticSupport = {
+  fidelityClass: MilkdropFidelityClass;
+  evidence: MilkdropCompatibilityEvidence;
+  visualEvidenceTier: MilkdropVisualEvidenceTier;
+};
+
+export type MilkdropVisualCertification = {
+  status: 'certified' | 'uncertified';
+  measured: boolean;
+  source: 'inferred' | 'reference-suite';
+  fidelityClass: MilkdropFidelityClass;
+  visualEvidenceTier: MilkdropVisualEvidenceTier;
+  requiredBackend: MilkdropRenderBackend | null;
+  actualBackend: MilkdropRenderBackend | null;
+  reasons: string[];
+};
+
 export type MilkdropBackendSupportEvidenceCode =
   | 'unknown-field'
   | 'unsupported-hard-feature'
@@ -184,6 +215,8 @@ export type MilkdropParityReport = {
   fidelityClass: MilkdropFidelityClass;
   evidence: MilkdropCompatibilityEvidence;
   visualEvidenceTier: MilkdropVisualEvidenceTier;
+  semanticSupport: MilkdropSemanticSupport;
+  visualCertification: MilkdropVisualCertification;
 };
 
 export type MilkdropCompileOptions = Record<string, never>;

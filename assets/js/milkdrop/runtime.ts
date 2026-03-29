@@ -589,6 +589,9 @@ export function createMilkdropExperience({
       }
       nextRuntime.toy.rendererReady.then((handle) => {
         activeBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
+        if (typeof document !== 'undefined') {
+          document.body.dataset.activeBackend = activeBackend;
+        }
         vm.setRenderBackend(activeBackend);
         adapter = createMilkdropRendererAdapter({
           scene: nextRuntime.toy.scene,

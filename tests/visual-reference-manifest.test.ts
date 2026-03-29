@@ -26,9 +26,14 @@ test('visual reference manifest stays internally consistent', () => {
   manifest.presets.forEach((entry) => {
     expect(entry.id.trim().length).toBeGreaterThan(0);
     expect(entry.title.trim().length).toBeGreaterThan(0);
+    expect(entry.sourceFamily.trim().length).toBeGreaterThan(0);
     expect(entry.capture.renderer).toBe('projectm');
+    expect(entry.capture.requiredBackend).toBe('webgpu');
     expect(entry.capture.width).toBeGreaterThan(0);
     expect(entry.capture.height).toBeGreaterThan(0);
+    expect(entry.capture.warmupMs).toBeGreaterThanOrEqual(0);
+    expect(entry.capture.captureOffsetMs).toBeGreaterThanOrEqual(0);
+    expect(entry.tolerance.profile.trim().length).toBeGreaterThan(0);
     expect(entry.tolerance.threshold).toBeGreaterThanOrEqual(0);
     expect(entry.tolerance.failThreshold).toBeGreaterThanOrEqual(0);
     expect(existsSync(path.join(fixtureRoot, entry.image))).toBe(true);

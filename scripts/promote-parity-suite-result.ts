@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MilkdropFidelityClass } from '../assets/js/milkdrop/common-types.ts';
+import type {
+  MilkdropFidelityClass,
+  MilkdropParitySourceFamily,
+  MilkdropParityToleranceProfile,
+  MilkdropRenderBackend,
+} from '../assets/js/milkdrop/common-types.ts';
 import {
   type MeasuredVisualPresetResult,
   upsertMeasuredVisualPresetResult,
@@ -15,12 +20,18 @@ type PromoteParitySuiteResultOptions = {
 type SuitePresetReport = {
   presetId: string;
   title: string;
+  requiredBackend: MilkdropRenderBackend;
+  actualBackend: MilkdropRenderBackend | null;
+  sourceFamily: MilkdropParitySourceFamily;
+  strata: string[];
+  toleranceProfile: MilkdropParityToleranceProfile;
   threshold: number;
   failThreshold: number;
   metrics: {
-    mismatchRatio: number;
+    mismatchRatio: number | null;
   };
-  status: 'pass' | 'fail';
+  status: 'pass' | 'fail' | 'backend-mismatch';
+  error?: string;
 };
 
 function usage() {
@@ -76,7 +87,7 @@ function loadSuitePresetReport({
 export function fidelityClassFromSuiteReport(
   report: SuitePresetReport,
 ): MilkdropFidelityClass {
-  if (report.status === 'fail') {
+  if (report.status !== 'pass' || report.metrics.mismatchRatio === null) {
     return 'fallback';
   }
   if (report.metrics.mismatchRatio === 0) {
@@ -98,7 +109,23 @@ export function measuredResultFromSuiteReport({
     fidelityClass: fidelityClassFromSuiteReport(report),
     visualEvidenceTier: 'visual',
     suiteStatus: report.status,
-    mismatchRatio: report.metrics.mismatchRatio,
+    certificationStatus:
+      report.status === 'pass' &&
+      report.actualBackend === report.requiredBackend
+        ? 'certified'
+        : 'uncertified',
+    certificationReason:
+      report.status === 'pass' &&
+      report.actualBackend === report.requiredBackend
+        ? null
+        : (report.error ??
+          'Measured visual parity did not pass the WebGPU certification gate.'),
+    requiredBackend: report.requiredBackend,
+    actualBackend: report.actualBackend,
+    sourceFamily: report.sourceFamily,
+    strata: report.strata,
+    toleranceProfile: report.toleranceProfile,
+    mismatchRatio: report.metrics.mismatchRatio ?? 1,
     threshold: report.threshold,
     failThreshold: report.failThreshold,
     updatedAt: new Date().toISOString(),

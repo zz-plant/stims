@@ -8,10 +8,12 @@ import type {
   MilkdropPresetField,
   MilkdropPresetIR,
   MilkdropPresetSource,
+  MilkdropSemanticSupport,
   MilkdropShaderControls,
   MilkdropShaderStatement,
   MilkdropShapeDefinition,
   MilkdropVideoEchoOrientation,
+  MilkdropVisualCertification,
   MilkdropWaveDefinition,
 } from '../types';
 import type { buildWebGpuDescriptorPlan } from './gpu-descriptor-plan';
@@ -710,6 +712,25 @@ export function createMilkdropIr({
     webgpu: finalBackends.webgpu,
     noBlockedConstructs: blockedConstructs.length === 0,
   });
+  const semanticSupport: MilkdropSemanticSupport = {
+    fidelityClass,
+    evidence,
+    visualEvidenceTier,
+  };
+  const visualCertification: MilkdropVisualCertification = {
+    status: 'uncertified',
+    measured: false,
+    source: 'inferred',
+    fidelityClass:
+      fidelityClass === 'exact' || fidelityClass === 'near-exact'
+        ? 'partial'
+        : fidelityClass,
+    visualEvidenceTier:
+      visualEvidenceTier === 'visual' ? 'runtime' : visualEvidenceTier,
+    requiredBackend: 'webgpu',
+    actualBackend: null,
+    reasons: ['No measured WebGPU reference capture is recorded yet.'],
+  };
 
   const parity: MilkdropParityReport = {
     ignoredFields,
@@ -723,6 +744,8 @@ export function createMilkdropIr({
     fidelityClass,
     evidence,
     visualEvidenceTier,
+    semanticSupport,
+    visualCertification,
   };
 
   const title = stringFields.title || 'MilkDrop Session';

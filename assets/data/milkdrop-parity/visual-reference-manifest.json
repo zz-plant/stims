@@ -6,8 +6,12 @@
   "presetCount": 0,
   "defaults": {
     "renderer": "projectm",
+    "requiredBackend": "webgpu",
     "width": 1280,
     "height": 720,
+    "warmupMs": 5000,
+    "captureOffsetMs": 0,
+    "toleranceProfile": "default",
     "threshold": 16,
     "failThreshold": 0.02
   },

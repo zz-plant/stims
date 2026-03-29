@@ -45,6 +45,25 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
     },
     fidelityClass: 'exact',
     visualEvidenceTier: 'none',
+    semanticSupport: {
+      fidelityClass: 'exact',
+      evidence: {
+        compile: 'verified',
+        runtime: 'not-run',
+        visual: 'not-captured',
+      },
+      visualEvidenceTier: 'none',
+    },
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'none',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+    },
     evidence: {
       compile: 'verified',
       runtime: 'not-run',
@@ -68,6 +87,25 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
         visual: 'not-captured',
       },
       visualEvidenceTier: 'none',
+      semanticSupport: {
+        fidelityClass: 'exact',
+        evidence: {
+          compile: 'verified',
+          runtime: 'not-run',
+          visual: 'not-captured',
+        },
+        visualEvidenceTier: 'none',
+      },
+      visualCertification: {
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: 'partial',
+        visualEvidenceTier: 'none',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+        reasons: ['No measured WebGPU reference capture is recorded yet.'],
+      },
     },
   } as MilkdropCatalogEntry;
 }

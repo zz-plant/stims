@@ -128,6 +128,25 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
     },
     fidelityClass: 'exact',
     visualEvidenceTier: 'none',
+    semanticSupport: {
+      fidelityClass: 'exact',
+      evidence: {
+        compile: 'verified',
+        runtime: 'not-run',
+        visual: 'not-captured',
+      },
+      visualEvidenceTier: 'none',
+    },
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'none',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+    },
     evidence: {
       compile: 'verified',
       runtime: 'not-run',
@@ -151,6 +170,25 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
         visual: 'not-captured',
       },
       visualEvidenceTier: 'none',
+      semanticSupport: {
+        fidelityClass: 'exact',
+        evidence: {
+          compile: 'verified',
+          runtime: 'not-run',
+          visual: 'not-captured',
+        },
+        visualEvidenceTier: 'none',
+      },
+      visualCertification: {
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: 'partial',
+        visualEvidenceTier: 'none',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+        reasons: ['No measured WebGPU reference capture is recorded yet.'],
+      },
     },
   } as MilkdropCatalogEntry;
 }
@@ -633,6 +671,16 @@ describe('milkdrop overlay browse rendering', () => {
     activePreset.isFavorite = true;
     activePreset.rating = 4;
     activePreset.tags = ['collection:classic-milkdrop', 'slow-burn'];
+    activePreset.visualCertification = {
+      ...activePreset.visualCertification,
+      status: 'certified',
+      measured: true,
+      source: 'reference-suite',
+      fidelityClass: 'exact',
+      visualEvidenceTier: 'visual',
+      actualBackend: 'webgpu',
+      reasons: [],
+    };
 
     const partialPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
     partialPreset.author = 'Guest';
@@ -650,6 +698,16 @@ describe('milkdrop overlay browse rendering', () => {
         blocking: false,
       },
     ];
+    partialPreset.visualCertification = {
+      ...partialPreset.visualCertification,
+      status: 'certified',
+      measured: true,
+      source: 'reference-suite',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'visual',
+      actualBackend: 'webgpu',
+      reasons: [],
+    };
 
     overlay.setCatalog([activePreset, partialPreset], 'signal-bloom', 'webgl');
 
@@ -671,7 +729,7 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__favorite',
     ) as HTMLButtonElement | null;
     expect(activeMeta?.textContent).toBe('Stims · Recent');
-    expect(activeBadges).toEqual(['Live', 'Exact']);
+    expect(activeBadges).toEqual(['Live', 'Exact', 'Measured']);
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(
       'Remove saved preset',

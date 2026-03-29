@@ -20,9 +20,16 @@ export function toCatalogEntry(
     certification?: MilkdropCatalogEntry['certification'];
     expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
     visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];
+    semanticSupport?: MilkdropCatalogEntry['semanticSupport'];
+    visualCertification?: MilkdropCatalogEntry['visualCertification'];
     evidence?: MilkdropCatalogEntry['evidence'];
   } = {},
 ): MilkdropCatalogEntry {
+  const semanticSupport =
+    options.semanticSupport ?? compiled.ir.compatibility.parity.semanticSupport;
+  const visualCertification =
+    options.visualCertification ??
+    compiled.ir.compatibility.parity.visualCertification;
   return {
     id: source.id,
     title: compiled.title,
@@ -39,11 +46,11 @@ export function toCatalogEntry(
     warnings: compiled.ir.compatibility.warnings,
     supports: supportsFromCompiled(compiled),
     fidelityClass:
-      options.expectedFidelityClass ??
-      compiled.ir.compatibility.parity.fidelityClass,
+      options.expectedFidelityClass ?? visualCertification.fidelityClass,
     visualEvidenceTier:
-      options.visualEvidenceTier ??
-      compiled.ir.compatibility.parity.visualEvidenceTier,
+      options.visualEvidenceTier ?? visualCertification.visualEvidenceTier,
+    semanticSupport,
+    visualCertification,
     evidence: options.evidence ?? compiled.ir.compatibility.parity.evidence,
     certification: options.certification ?? 'exploratory',
     corpusTier: options.corpusTier ?? 'exploratory',
@@ -90,6 +97,25 @@ export function toUnavailableBundledCatalogEntry(
     },
     fidelityClass: 'fallback',
     visualEvidenceTier: 'none',
+    semanticSupport: {
+      fidelityClass: 'fallback',
+      evidence: {
+        compile: 'issues',
+        runtime: 'not-run',
+        visual: 'not-captured',
+      },
+      visualEvidenceTier: 'none',
+    },
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'fallback',
+      visualEvidenceTier: 'none',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['Bundled preset could not be analyzed.'],
+    },
     evidence: {
       compile: 'issues',
       runtime: 'not-run',
@@ -121,6 +147,25 @@ export function toUnavailableBundledCatalogEntry(
         visual: 'not-captured',
       },
       visualEvidenceTier: 'none',
+      semanticSupport: {
+        fidelityClass: 'fallback',
+        evidence: {
+          compile: 'issues',
+          runtime: 'not-run',
+          visual: 'not-captured',
+        },
+        visualEvidenceTier: 'none',
+      },
+      visualCertification: {
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: 'fallback',
+        visualEvidenceTier: 'none',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+        reasons: ['Bundled preset could not be analyzed.'],
+      },
     },
     bundledFile: entry.file,
   };

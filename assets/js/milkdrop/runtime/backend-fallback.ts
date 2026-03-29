@@ -16,20 +16,12 @@ export function shouldPresetFallbackToWebgl({
     typeof import('../webgpu-optimization-flags.ts').resolveMilkdropWebGpuOptimizationFlags
   >;
 }) {
-  const hasKnownWebGpuRuntimeGap =
-    compiled.ir.post.videoEchoOrientation !== 0 ||
-    compiled.ir.customShapes.length > 0;
-
   return shouldFallbackMilkdropPresetToWebgl({
     backend: activeBackend,
     compatibilityMode: isCompatibilityModeEnabled(),
     descriptorPlan: compiled.ir.compatibility.gpuDescriptorPlans.webgpu,
     flags: webgpuOptimizationFlags,
-  })
-    ? true
-    : activeBackend === 'webgpu' &&
-        !isCompatibilityModeEnabled() &&
-        hasKnownWebGpuRuntimeGap;
+  });
 }
 
 export function createMilkdropBackendFailover({

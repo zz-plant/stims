@@ -18,6 +18,14 @@ import {
 import { NodeMaterial, RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three-dispose';
 import {
+  MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
+  MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
+  MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
+  MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
+} from './feedback-composite-profile.ts';
+import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
@@ -1060,78 +1068,63 @@ function createCompositeOutputNode(
     );
     const previousColor = previous.rgb.toVar();
 
-    If(uniforms.feedbackSoftness.greaterThan(0.01), () => {
-      const sampleOffset = uniforms.texelSize.mul(
-        float(0.65).add(uniforms.feedbackSoftness.mul(0.6)),
-      );
-      const softened = previous.rgb
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(sampleOffset.x, 0)),
-              uniforms.textureWrap,
+    If(
+      uniforms.feedbackSoftness.greaterThan(
+        float(MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD),
+      ),
+      () => {
+        const sampleOffset = uniforms.texelSize.mul(
+          float(MILKDROP_FEEDBACK_BLUR_OFFSET_BASE).add(
+            uniforms.feedbackSoftness.mul(MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE),
+          ),
+        );
+        const softened = previous.rgb
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.add(vec2(sampleOffset.x, 0)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.sub(vec2(sampleOffset.x, 0)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.add(vec2(0, sampleOffset.y)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.sub(vec2(0, sampleOffset.y)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .div(5);
+        previousColor.assign(
+          mix(
+            previousColor,
+            softened,
+            clamp(
+              uniforms.feedbackSoftness.mul(MILKDROP_FEEDBACK_BLUR_BLEND_SCALE),
+              0,
+              MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
             ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.sub(vec2(sampleOffset.x, 0)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(0, sampleOffset.y)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.sub(vec2(0, sampleOffset.y)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(previousUv.add(sampleOffset), uniforms.textureWrap),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(previousUv.sub(sampleOffset), uniforms.textureWrap),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(sampleOffset.x, sampleOffset.y.mul(-1))),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(sampleOffset.x.mul(-1), sampleOffset.y)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .div(9);
-      previousColor.assign(
-        mix(
-          previousColor,
-          softened,
-          clamp(uniforms.feedbackSoftness.mul(0.6), 0, 0.65),
-        ),
-      );
-    });
+          ),
+        );
+      },
+    );
 
     const directCurrentColor = applyDirectCompProgram(
       shaderPrograms.comp,
@@ -1145,7 +1138,15 @@ function createCompositeOutputNode(
       clamp(uniforms.mixAlpha.add(uniforms.feedbackTexture.mul(0.2)), 0, 1),
     ).toVar();
     color.assign(
-      mix(color, directCurrentColor, clamp(uniforms.currentFrameBoost, 0, 0.4)),
+      mix(
+        color,
+        directCurrentColor,
+        clamp(
+          uniforms.currentFrameBoost,
+          0,
+          MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
+        ),
+      ),
     );
 
     const brightenMask = max(

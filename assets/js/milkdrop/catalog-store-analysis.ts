@@ -17,7 +17,11 @@ type MeasuredVisualPresetResult = {
     MilkdropCatalogEntry['visualEvidenceTier'],
     'visual'
   >;
-  suiteStatus: 'pass' | 'fail';
+  suiteStatus: 'pass' | 'fail' | 'backend-mismatch';
+  certificationStatus: 'certified' | 'uncertified';
+  certificationReason: string | null;
+  requiredBackend: 'webgl' | 'webgpu';
+  actualBackend: 'webgl' | 'webgpu' | null;
 };
 
 type MeasuredVisualResultsManifest = {
@@ -60,6 +64,26 @@ function inferredVisualEvidenceWithoutMeasuredResult(
       visual: 'not-captured',
     },
   };
+}
+
+function inferredVisualCertificationWithoutMeasuredResult(
+  compiled: MilkdropCompiledPreset,
+): MilkdropCatalogEntry['visualCertification'] {
+  return (
+    compiled.ir.compatibility.parity.visualCertification ?? {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: inferredFidelityWithoutMeasuredVisualResult(compiled),
+      visualEvidenceTier:
+        compiled.ir.compatibility.parity.visualEvidenceTier === 'visual'
+          ? 'runtime'
+          : compiled.ir.compatibility.parity.visualEvidenceTier,
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+    }
+  );
 }
 
 export function supportsFromCompiled(compiled: MilkdropCompiledPreset): {
@@ -113,6 +137,8 @@ export function getValidatedCatalogOverrides(
   expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
   visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];
   evidence?: MilkdropCatalogEntry['evidence'];
+  semanticSupport?: MilkdropCatalogEntry['semanticSupport'];
+  visualCertification?: MilkdropCatalogEntry['visualCertification'];
 } {
   const measuredResult = measuredResults.find(
     (preset) => preset.id === entry.id,
@@ -126,6 +152,23 @@ export function getValidatedCatalogOverrides(
         runtime: 'smoke-tested',
         visual: 'reference-suite',
       },
+      semanticSupport: compiled.ir.compatibility.parity.semanticSupport ?? {
+        fidelityClass: compiled.ir.compatibility.parity.fidelityClass,
+        evidence: compiled.ir.compatibility.parity.evidence,
+        visualEvidenceTier: compiled.ir.compatibility.parity.visualEvidenceTier,
+      },
+      visualCertification: {
+        status: measuredResult.certificationStatus,
+        measured: true,
+        source: 'reference-suite',
+        fidelityClass: measuredResult.fidelityClass,
+        visualEvidenceTier: measuredResult.visualEvidenceTier,
+        requiredBackend: measuredResult.requiredBackend,
+        actualBackend: measuredResult.actualBackend,
+        reasons: measuredResult.certificationReason
+          ? [measuredResult.certificationReason]
+          : [],
+      },
     };
   }
 
@@ -134,11 +177,20 @@ export function getValidatedCatalogOverrides(
     expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
     visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];
     evidence?: MilkdropCatalogEntry['evidence'];
+    semanticSupport?: MilkdropCatalogEntry['semanticSupport'];
+    visualCertification?: MilkdropCatalogEntry['visualCertification'];
   } = {
     expectedFidelityClass:
       inferredFidelityWithoutMeasuredVisualResult(compiled),
     visualEvidenceTier: inferredVisual.visualEvidenceTier,
     evidence: inferredVisual.evidence,
+    semanticSupport: compiled.ir.compatibility.parity.semanticSupport ?? {
+      fidelityClass: compiled.ir.compatibility.parity.fidelityClass,
+      evidence: compiled.ir.compatibility.parity.evidence,
+      visualEvidenceTier: compiled.ir.compatibility.parity.visualEvidenceTier,
+    },
+    visualCertification:
+      inferredVisualCertificationWithoutMeasuredResult(compiled),
   };
 
   if (!catalogSupportsMatchCompiled(entry, compiled)) {
