@@ -2,6 +2,8 @@
 
 This document turns the current preset-fidelity gap into an implementation roadmap.
 
+For milestone-by-milestone execution details, see [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md).
+
 The immediate goal is not to claim broad `projectM` parity. It is to build a repeatable visual oracle, downgrade over-optimistic compatibility labels, and then close the largest rendering gaps in order of impact.
 
 ## Current state
@@ -56,6 +58,17 @@ bun run parity:diff -- --output ./screenshots/parity --preset eos-glowsticks-v2-
 ```
 
 This writes a diff report, an optional diff PNG, and a `parity-diff` entry into the same manifest so follow-on tooling can reason about historical results.
+
+Promote an imported `projectM` reference into the checked-in fixture corpus:
+
+```bash
+bun run parity:promote-reference -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music \
+  --strata feedback,shader-supported
+```
+
+That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `assets/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
 
 ## Phase 2: make compatibility reporting honest
 

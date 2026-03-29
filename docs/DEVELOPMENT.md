@@ -64,6 +64,17 @@ The diff command writes:
 - an optional diff PNG,
 - a `parity-diff` manifest entry tied back to the source artifact ids.
 
+To promote an imported `projectM` reference into the checked-in fixture corpus:
+
+```bash
+bun run parity:promote-reference -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music \
+  --strata feedback,shader-supported
+```
+
+This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `assets/data/milkdrop-parity/visual-reference-manifest.json`.
+
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).

@@ -57,6 +57,7 @@
     "pages:deploy:reuse": "bun run build -- --reuse && bunx wrangler pages deploy dist",
     "mcp": "bun run scripts/mcp-server.ts",
     "parity:diff": "bun run scripts/diff-parity-artifacts.ts",
+    "parity:promote-reference": "bun run scripts/promote-projectm-reference.ts",
     "test:agent": "bun run test:integration",
     "prepare": "husky install",
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",

@@ -11,6 +11,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 - Day-to-day implementation: [`DEVELOPMENT.md`](./DEVELOPMENT.md)
 - Runtime details: [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 - projectM parity roadmap: [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md)
+- projectM parity backlog: [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md)
 - Lineage and public wording: [`LINEAGE_AND_CREDITS.md`](./LINEAGE_AND_CREDITS.md)
 - Deployment and release flow: [`DEPLOYMENT.md`](./DEPLOYMENT.md)
 
@@ -19,6 +20,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 - [`DEVELOPMENT.md`](./DEVELOPMENT.md)
 - [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 - [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md)
+- [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md)
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 - [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md)
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md)

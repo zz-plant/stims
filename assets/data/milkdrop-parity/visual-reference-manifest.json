@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "parityTarget": "projectm-visual-reference",
+  "fixtureRoot": "tests/fixtures/milkdrop/projectm-reference",
+  "minimumPresetCount": 0,
+  "presetCount": 0,
+  "defaults": {
+    "renderer": "projectm",
+    "width": 1280,
+    "height": 720,
+    "threshold": 16,
+    "failThreshold": 0.02
+  },
+  "presets": []
+}
