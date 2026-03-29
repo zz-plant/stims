@@ -555,6 +555,60 @@ ob_size=0.03
     expect(secondBorderObject).toBe(firstBorderObject);
   });
 
+  test('keeps styled border accent opacity attenuated on initial WebGL render', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Styled Border Accent
+ob_size=0.03
+ob_a=0.8
+ob_r=1
+ob_g=0.9
+ob_b=0.7
+ob_border=1
+      `.trim(),
+      { id: 'styled-border-accent' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        children?: Array<{
+          children?: Array<{ material?: LineBasicMaterial | MeshBasicMaterial }>;
+        }>;
+      }>;
+    };
+    const borderGroup = root.children[6];
+    const outerBorder = borderGroup?.children?.[0];
+    const outline = outerBorder?.children?.[1] as
+      | { material?: LineBasicMaterial }
+      | undefined;
+    const accent = outerBorder?.children?.[2] as
+      | { material?: LineBasicMaterial }
+      | undefined;
+
+    expect(outline?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(accent?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(outline?.material?.opacity).toBeCloseTo(0.8, 6);
+    expect(accent?.material?.opacity).toBeCloseTo(0.44, 6);
+    expect((accent?.material?.opacity ?? 0)).toBeLessThan(
+      outline?.material?.opacity ?? 0,
+    );
+  });
+
   test('reuses shape groups and wave position attributes across renders', () => {
     const preset = compileMilkdropPresetSource(
       `

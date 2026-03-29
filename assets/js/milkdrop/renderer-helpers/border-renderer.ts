@@ -126,7 +126,7 @@ export function createBorderObject(
   helpers.setMaterialColor(
     accent.material,
     border.color,
-    border.alpha * alphaMultiplier,
+    Math.max(0.15, border.alpha * 0.55) * alphaMultiplier,
   );
   accent.scale.set(
     border.key === 'outer' ? 0.985 : 1.015,
