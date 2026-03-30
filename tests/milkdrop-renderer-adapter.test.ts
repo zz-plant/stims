@@ -2240,6 +2240,43 @@ wavecode_0_thick=5
     );
   });
 
+  test('keeps procedural main-wave blend alpha anchored to the previous frame on webgpu', () => {
+    const previousWave = {
+      samples: [0.2, -0.1, 0.3, -0.25, 0.15],
+      velocities: [0.04, -0.02, 0.01, -0.03, 0.02],
+      mode: 0,
+      centerX: 0,
+      centerY: 0,
+      scale: 1,
+      mystery: 0,
+      time: 0.1,
+      beatPulse: 0.2,
+      trebleAtt: 0.35,
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      alpha: 0.2,
+      additive: false,
+      thickness: 1,
+    };
+    const currentWave = {
+      ...previousWave,
+      time: 0.3,
+      alpha: 0.8,
+    };
+
+    const line =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralWaveObject(
+        undefined,
+        previousWave,
+        currentWave,
+        0.65,
+        0.35,
+        null,
+      );
+    const material = line.material as ShaderMaterial;
+
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.07, 6);
+  });
+
   test('keeps procedural custom-wave blend alpha anchored to the previous frame on webgpu', () => {
     const previousWave = {
       samples: Array.from({ length: 40 }, (_, index) => Math.sin(index / 8)),
