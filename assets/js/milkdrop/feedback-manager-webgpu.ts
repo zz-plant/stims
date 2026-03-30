@@ -468,7 +468,7 @@ export function resolveDirectShaderSwizzle(
   property: string,
 ): DirectShaderSwizzleSpec | null {
   const normalized = property.toLowerCase();
-  const componentMap =
+  const componentMap: Record<string, DirectShaderSwizzleComponent> =
     kind === 'vec2'
       ? ({
           x: 'x',
@@ -1050,6 +1050,10 @@ function assignShaderTarget(
 
   const property = segments[1]?.toLowerCase();
   if (!property) {
+    return;
+  }
+
+  if (baseValue.kind === 'scalar') {
     return;
   }
 

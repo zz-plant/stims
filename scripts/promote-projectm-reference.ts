@@ -14,8 +14,11 @@ type PromoteProjectMReferenceOptions = {
   outputDir: string;
   presetId?: string;
   projectmId?: string;
+  sourceImagePath?: string;
+  sourceMetadataPath?: string;
   strata: string[];
   title?: string;
+  label?: string;
 };
 
 function usage() {
@@ -27,9 +30,16 @@ function usage() {
     '  --output <dir>      Parity artifact directory (default: ./screenshots/parity)',
   );
   console.error(
+    '  --source-image <path>  Promote directly from a local projectM image if no parity artifact exists',
+  );
+  console.error(
+    '  --source-meta <path>   Optional metadata sidecar when promoting directly from a local image',
+  );
+  console.error(
     '  --strata <a,b,c>    Optional comma-separated strata for the certified reference',
   );
   console.error('  --title <title>     Optional explicit title override');
+  console.error('  --label <label>     Optional provenance label override');
 }
 
 function parseArgs(argv: string[]): PromoteProjectMReferenceOptions | null {
@@ -53,15 +63,18 @@ function parseArgs(argv: string[]): PromoteProjectMReferenceOptions | null {
       getArg('--output', './screenshots/parity') ?? './screenshots/parity',
     presetId,
     projectmId,
+    sourceImagePath: getArg('--source-image'),
+    sourceMetadataPath: getArg('--source-meta'),
     strata: (getArg('--strata', '') ?? '')
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean),
     title: getArg('--title'),
+    label: getArg('--label'),
   };
 }
 
-function resolveArtifact(
+function resolveSource(
   manifest: ReturnType<typeof loadParityArtifactManifest>,
   options: PromoteProjectMReferenceOptions,
 ) {
@@ -75,7 +88,20 @@ function resolveArtifact(
     ? projectmArtifacts.find((entry) => entry.id === options.projectmId)
     : projectmArtifacts.find((entry) => entry.presetId === options.presetId);
 
-  if (!artifact) {
+  if (artifact) {
+    return {
+      artifactId: artifact.id,
+      title: artifact.title ?? null,
+      imagePath: resolveArtifactFile(options.outputDir, artifact.files.image),
+      metadataPath: resolveArtifactFile(
+        options.outputDir,
+        artifact.files.metadata,
+      ),
+      provenanceLabel: artifact.provenance?.label ?? null,
+    };
+  }
+
+  if (!options.sourceImagePath) {
     throw new Error(
       options.projectmId
         ? `No projectM artifact found for id "${options.projectmId}".`
@@ -83,7 +109,15 @@ function resolveArtifact(
     );
   }
 
-  return artifact;
+  return {
+    artifactId: null,
+    title: options.title ?? null,
+    imagePath: path.resolve(options.sourceImagePath),
+    metadataPath: options.sourceMetadataPath
+      ? path.resolve(options.sourceMetadataPath)
+      : null,
+    provenanceLabel: options.label ?? 'existing repo artifact',
+  };
 }
 
 function resolveArtifactFile(
@@ -103,6 +137,24 @@ function sanitizeFileStem(value: string) {
     .replace(/[^a-z0-9._-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+function formatPresetTitle(value: string) {
+  return value
+    .trim()
+    .split(/[-_]+/g)
+    .filter(Boolean)
+    .map((part) => {
+      const lower = part.toLowerCase();
+      if (lower === 'projectm') {
+        return 'ProjectM';
+      }
+      if (part.length <= 3) {
+        return part.toUpperCase();
+      }
+      return `${part[0]?.toUpperCase() ?? ''}${part.slice(1).toLowerCase()}`;
+    })
+    .join(' ');
 }
 
 async function readImageSize(filePath: string) {
@@ -151,25 +203,25 @@ export async function promoteProjectMReference(
   options: PromoteProjectMReferenceOptions,
 ) {
   const artifactManifest = loadParityArtifactManifest(options.outputDir);
-  const artifact = resolveArtifact(artifactManifest, options);
-  const presetId = artifact.presetId?.trim();
+  const source = resolveSource(artifactManifest, options);
+  const presetId = options.presetId?.trim() ?? options.projectmId?.trim();
   if (!presetId) {
-    throw new Error(`Artifact "${artifact.id}" is missing a preset id.`);
-  }
-
-  const sourceImagePath = resolveArtifactFile(
-    options.outputDir,
-    artifact.files.image,
-  );
-  if (!sourceImagePath || !fs.existsSync(sourceImagePath)) {
     throw new Error(
-      `Artifact "${artifact.id}" is missing a readable image file.`,
+      source.artifactId
+        ? `Artifact "${source.artifactId}" is missing a preset id.`
+        : `Direct projectM source for preset "${options.presetId}" is missing a preset id.`,
     );
   }
-  const sourceMetadataPath = resolveArtifactFile(
-    options.outputDir,
-    artifact.files.metadata,
-  );
+
+  const sourceImagePath = source.imagePath;
+  if (!sourceImagePath || !fs.existsSync(sourceImagePath)) {
+    throw new Error(
+      source.artifactId
+        ? `Artifact "${source.artifactId}" is missing a readable image file.`
+        : `Direct projectM source image is missing or unreadable.`,
+    );
+  }
+  const sourceMetadataPath = source.metadataPath;
 
   const fixturePaths = buildFixturePaths({
     repoRoot: options.repoRoot,
@@ -188,10 +240,14 @@ export async function promoteProjectMReference(
   const existingEntry = manifest.presets.find((entry) => entry.id === presetId);
   const entry: VisualReferencePresetEntry = {
     id: presetId,
-    title: options.title ?? artifact.title ?? existingEntry?.title ?? presetId,
+    title:
+      options.title ??
+      source.title ??
+      existingEntry?.title ??
+      formatPresetTitle(presetId),
     image: fixturePaths.relativeImagePath,
     metadata: fixturePaths.relativeMetadataPath,
-    sourceFamily: existingEntry?.sourceFamily ?? 'ad-hoc',
+    sourceFamily: existingEntry?.sourceFamily ?? 'projectm-fixture',
     strata:
       options.strata.length > 0
         ? options.strata
@@ -215,11 +271,12 @@ export async function promoteProjectMReference(
     },
     provenance: {
       label:
-        artifact.provenance?.label ??
+        options.label ??
+        source.provenanceLabel ??
         existingEntry?.provenance.label ??
         'projectM reference import',
       importedAt: new Date().toISOString(),
-      sourceArtifactId: artifact.id,
+      sourceArtifactId: source.artifactId,
     },
   };
 

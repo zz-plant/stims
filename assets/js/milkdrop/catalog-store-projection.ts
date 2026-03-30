@@ -1,4 +1,7 @@
-import { supportsFromCompiled } from './catalog-store-analysis';
+import {
+  getConservativeBundledCatalogProjectionDefaults,
+  supportsFromCompiled,
+} from './catalog-store-analysis';
 import type { StoredMetaRecord } from './catalog-store-persistence';
 import type {
   MilkdropBundledCatalogEntry,
@@ -30,6 +33,12 @@ export function toCatalogEntry(
   const visualCertification =
     options.visualCertification ??
     compiled.ir.compatibility.parity.visualCertification;
+  const hasMeasuredVisualCertification =
+    options.visualCertification?.measured === true;
+  const bundledDefaults =
+    source.origin === 'bundled' && !hasMeasuredVisualCertification
+      ? getConservativeBundledCatalogProjectionDefaults(compiled)
+      : null;
   return {
     id: source.id,
     title: compiled.title,
@@ -46,12 +55,22 @@ export function toCatalogEntry(
     warnings: compiled.ir.compatibility.warnings,
     supports: supportsFromCompiled(compiled),
     fidelityClass:
-      options.expectedFidelityClass ?? visualCertification.fidelityClass,
+      bundledDefaults?.fidelityClass ??
+      options.expectedFidelityClass ??
+      visualCertification.fidelityClass,
     visualEvidenceTier:
-      options.visualEvidenceTier ?? visualCertification.visualEvidenceTier,
+      bundledDefaults?.visualEvidenceTier ??
+      options.visualEvidenceTier ??
+      visualCertification.visualEvidenceTier,
     semanticSupport,
-    visualCertification,
-    evidence: options.evidence ?? compiled.ir.compatibility.parity.evidence,
+    visualCertification:
+      bundledDefaults?.visualCertification ??
+      options.visualCertification ??
+      visualCertification,
+    evidence:
+      bundledDefaults?.evidence ??
+      options.evidence ??
+      compiled.ir.compatibility.parity.evidence,
     certification: options.certification ?? 'exploratory',
     corpusTier: options.corpusTier ?? 'exploratory',
     parity: compiled.ir.compatibility.parity,

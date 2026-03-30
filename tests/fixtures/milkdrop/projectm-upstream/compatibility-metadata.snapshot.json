@@ -2212,7 +2212,9 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [],
+      "warnings": [
+        "This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate."
+      ],
       "featuresUsed": ["base-globals"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
@@ -2236,13 +2238,27 @@
           "fieldProgram": null
         },
         "proceduralMotionVectors": null,
-        "feedback": null,
+        "feedback": {
+          "kind": "feedback-post-effect",
+          "shaderExecution": "direct",
+          "usesFeedbackTexture": false,
+          "usesVideoEcho": false,
+          "usesPostEffects": false,
+          "fallbackToLegacyFeedback": false
+        },
         "unsupported": []
       },
       "backends": {
         "webgl": {
-          "status": "supported",
-          "evidence": []
+          "status": "partial",
+          "evidence": [
+            {
+              "scope": "backend",
+              "status": "partial",
+              "code": "unsupported-shader-text-gap",
+              "feature": "unsupported-shader-text"
+            }
+          ]
         },
         "webgpu": {
           "status": "supported",
@@ -2250,8 +2266,11 @@
         }
       },
       "parity": {
-        "fidelityClass": "exact",
-        "backendDivergence": [],
+        "fidelityClass": "near-exact",
+        "backendDivergence": [
+          "status:webgl=partial,webgpu=supported",
+          "webgl:unsupported-shader-text-gap:unsupported-shader-text"
+        ],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],

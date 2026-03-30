@@ -1091,8 +1091,11 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
       expect(compiled.diagnostics).toEqual([]);
-      expect(compiled.ir.compatibility.warnings).toEqual([]);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        'This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate.',
+      ]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
         'supported',
       );
@@ -1206,9 +1209,15 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
       '3d',
     );
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate.',
+    ]);
   });
 
   test('downgrades non-volume aux tex3D aliases as unsupported shader text', () => {

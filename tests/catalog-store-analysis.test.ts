@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test';
 import { getValidatedCatalogOverrides } from '../assets/js/milkdrop/catalog-store-analysis.ts';
+import { toCatalogEntry } from '../assets/js/milkdrop/catalog-store-projection.ts';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 
 test('measured visual results override inferred fidelity and evidence tier', () => {
@@ -52,6 +53,42 @@ test('measured visual results override inferred fidelity and evidence tier', () 
         actualBackend: 'webgpu',
         reasons: [],
       },
+    }),
+  );
+});
+
+test('bundled catalog entries downgrade optimistic labels without measured evidence', () => {
+  const source = {
+    id: 'bundled-exact',
+    title: 'Bundled Exact',
+    raw: 'title=Bundled Exact\n',
+    origin: 'bundled' as const,
+  };
+  const compiled = compileMilkdropPresetSource(source.raw, source);
+
+  const entry = toCatalogEntry(source, compiled, null, {
+    expectedFidelityClass: 'exact',
+    visualEvidenceTier: 'visual',
+    certification: 'bundled',
+    corpusTier: 'bundled',
+  });
+
+  expect(entry).toEqual(
+    expect.objectContaining({
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'runtime',
+      visualCertification: expect.objectContaining({
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: 'partial',
+        visualEvidenceTier: 'runtime',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+      }),
+      evidence: expect.objectContaining({
+        visual: 'not-captured',
+      }),
     }),
   );
 });

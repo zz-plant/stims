@@ -99,7 +99,7 @@ export function loadVisualReferenceManifest(
           const normalizedPreset = { ...preset };
           return {
             ...normalizedPreset,
-            sourceFamily: normalizedPreset.sourceFamily ?? 'ad-hoc',
+            sourceFamily: normalizedPreset.sourceFamily ?? 'projectm-fixture',
             tolerance: {
               profile:
                 normalizedPreset.tolerance?.profile ??

@@ -2689,6 +2689,34 @@ function shouldRetainDirectProgramContextStatement(target: string) {
   return true;
 }
 
+function shouldPreferDirectProgramExecution(
+  target: string,
+  expression: MilkdropShaderExpressionNode,
+) {
+  const key = target.toLowerCase();
+  if (key !== 'ret' && key !== 'return' && key !== 'shader_body') {
+    return false;
+  }
+
+  const directSample = getShaderSampleInfo(expression);
+  if (
+    directSample &&
+    directSample.sampleDimension === '3d' &&
+    directSample.source !== 'main' &&
+    directSample.source !== 'none'
+  ) {
+    return true;
+  }
+
+  const scaledSample = extractScaledShaderSampleExpression(expression);
+  return Boolean(
+    scaledSample &&
+      scaledSample.sample.sampleDimension === '3d' &&
+      scaledSample.sample.source !== 'main' &&
+      scaledSample.sample.source !== 'none',
+  );
+}
+
 export function extractShaderControls(
   shaderText: string | null,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
@@ -2742,6 +2770,17 @@ export function extractShaderControls(
       );
       const retainsDirectProgramContext =
         shouldRetainDirectProgramContextStatement(parsedStatement.target);
+      const prefersDirectProgram = shouldPreferDirectProgramExecution(
+        parsedStatement.target,
+        parsedStatement.expression,
+      );
+      const pushDirectProgramStatement = () => {
+        directProgramStatements.push(parsedStatement);
+        directProgramLines.push(line);
+        if (prefersDirectProgram) {
+          directProgramRequired = true;
+        }
+      };
       if (
         applyShaderAstStatement({
           statement: parsedStatement,
@@ -2752,9 +2791,8 @@ export function extractShaderControls(
           shaderExpressionEnv,
         })
       ) {
-        if (retainsDirectProgramContext) {
-          directProgramStatements.push(parsedStatement);
-          directProgramLines.push(line);
+        if (retainsDirectProgramContext || prefersDirectProgram) {
+          pushDirectProgramStatement();
         }
         supportedLineCount += 1;
         return;
@@ -2769,6 +2807,9 @@ export function extractShaderControls(
           shaderEnv,
         })
       ) {
+        if (prefersDirectProgram) {
+          pushDirectProgramStatement();
+        }
         supportedLineCount += 1;
         return;
       }
@@ -2784,15 +2825,13 @@ export function extractShaderControls(
         return;
       }
       if (requiresDirectProgram) {
-        directProgramStatements.push(parsedStatement);
-        directProgramLines.push(line);
+        pushDirectProgramStatement();
         directProgramRequired = true;
         supportedLineCount += 1;
         return;
       }
       if (retainsDirectProgramContext) {
-        directProgramStatements.push(parsedStatement);
-        directProgramLines.push(line);
+        pushDirectProgramStatement();
         supportedLineCount += 1;
         return;
       }

@@ -174,8 +174,10 @@ describe('milkdrop shader sampler aliases', () => {
         compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
       ).not.toBeNull();
       expect(compiled.diagnostics).toEqual([]);
-      expect(compiled.ir.compatibility.warnings).toEqual([]);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        'This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate.',
+      ]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
         'supported',
       );

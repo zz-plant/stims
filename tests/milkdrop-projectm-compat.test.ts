@@ -81,6 +81,21 @@ const FULL_SUPPORT_EXPECTATION = {
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
+const SHADER_DIRECT_EXECUTION_EXPECTATION = {
+  diagnostics: [],
+  webgl: 'partial',
+  webgpu: 'supported',
+  divergence: [
+    'status:webgl=partial,webgpu=supported',
+    'webgl:unsupported-shader-text-gap:unsupported-shader-text',
+  ],
+  warnings: [
+    'This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate.',
+  ],
+  blockedConstructs: [],
+  unsupportedKeys: [],
+} as const satisfies ProjectMFixtureExpectation;
+
 const PROJECTM_FIXTURE_EXPECTATIONS = {
   '000-empty.milk': FULL_SUPPORT_EXPECTATION,
   '001-line.milk': FULL_SUPPORT_EXPECTATION,
@@ -117,7 +132,7 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
   '260-compshader-noise_lq.milk': FULL_SUPPORT_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': FULL_SUPPORT_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': SHADER_DIRECT_EXECUTION_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],
