@@ -104,7 +104,8 @@ If you want to validate the production bundle locally, run `bun run build` and t
 | Run all tests | `bun run test` |
 | Build production assets | `bun run build` |
 | Preview the production build | `bun run preview` |
-| Deploy to Cloudflare Pages | `bun run pages:deploy` |
+| Manual Cloudflare Pages preview deploy | `bun run pages:deploy:preview` |
+| Manual Cloudflare Pages production deploy | `bun run pages:deploy` |
 
 For JavaScript or TypeScript changes, `bun run check` is the repository quality gate.
 
@@ -113,6 +114,7 @@ For JavaScript or TypeScript changes, `bun run check` is the repository quality 
 - Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
 - If your browser supports WebGPU but visuals fail, switch renderer preference to WebGL in app settings and refresh.
 - Use `bun run preview` after `bun run build` to test the production bundle behavior (including route handling) before deployment.
+- Cloudflare Pages preview and production deploys normally come from the connected GitHub project; the `pages:deploy:*` scripts are the explicit manual fallback path.
 
 ## Contributing at a glance
 
