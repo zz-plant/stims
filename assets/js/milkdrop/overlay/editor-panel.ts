@@ -342,16 +342,24 @@ export class EditorPanel {
       state.latestCompiled?.ir.compatibility.backends.webgl.status;
     const latestWebgpuStatus =
       state.latestCompiled?.ir.compatibility.backends.webgpu.status;
+    const isDegraded = Boolean(
+      activeCompatibility &&
+        (activeCompatibility.fidelityClass === 'partial' ||
+          activeCompatibility.fidelityClass === 'fallback' ||
+          latestWebglStatus !== 'supported' ||
+          latestWebgpuStatus !== 'supported'),
+    );
     const baseStatus = errors.length
       ? `${errors.length} issue${errors.length === 1 ? '' : 's'} holding the last stable look`
       : state.dirty
         ? 'Live draft updating'
         : 'Draft matches the live look';
-    const fidelityStatus = activeCompatibility
-      ? `Match strength: ${editorFidelitySummary(
-          fidelityLabel(activeCompatibility.fidelityClass),
-        )} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
-      : null;
+    const fidelityStatus =
+      activeCompatibility && isDegraded
+        ? `Match strength: ${editorFidelitySummary(
+            fidelityLabel(activeCompatibility.fidelityClass),
+          )} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
+        : null;
     this.editorStatus.textContent = [baseStatus, fidelityStatus]
       .filter(Boolean)
       .join(' | ');
@@ -362,13 +370,13 @@ export class EditorPanel {
     this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
     this.editorSyncBadge.textContent = state.dirty ? 'Draft changed' : 'Synced';
     this.editorSyncBadge.dataset.tone = state.dirty ? 'accent' : 'muted';
+    this.editorSafetyBadge.hidden = !hasErrors && !isDegraded;
     this.editorSafetyBadge.textContent = hasErrors
       ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
       : (fidelityStatus ?? 'Stable');
     this.editorSafetyBadge.dataset.tone = hasErrors
       ? 'danger'
-      : activeCompatibility?.fidelityClass === 'partial' ||
-          activeCompatibility?.fidelityClass === 'fallback'
+      : isDegraded
         ? 'warning'
         : 'muted';
 

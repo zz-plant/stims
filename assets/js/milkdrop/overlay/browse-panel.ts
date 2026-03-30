@@ -11,6 +11,14 @@ const COLLECTION_LABELS: Record<string, string> = {
   'collection:touch-friendly': 'Touch Friendly',
 };
 
+function collectionLabel(tag: string) {
+  if (!tag) return '';
+  return (
+    COLLECTION_LABELS[tag] ??
+    tag.slice(COLLECTION_TAG_PREFIX.length).replace(/-/gu, ' ')
+  );
+}
+
 export type BrowseMode = 'featured' | 'all' | 'recent' | 'favorites';
 export type BrowseSort = 'recommended' | 'title' | 'rating' | 'recent';
 export type BrowseFidelityFilter = 'all' | MilkdropFidelityClass;
@@ -122,7 +130,9 @@ export class BrowsePanel {
 
   private readonly rowRenderer: PresetRowRenderer;
   private readonly browseList: HTMLElement;
+  private readonly browseEyebrowLabel: HTMLElement;
   private readonly browseActiveLabel: HTMLElement;
+  private readonly browseSupportLabel: HTMLElement;
   private readonly browseMetaLabel: HTMLElement;
   private readonly browseModeButtons: HTMLButtonElement[] = [];
   private readonly browseOptionsDisclosure: HTMLDetailsElement;
@@ -154,18 +164,31 @@ export class BrowsePanel {
     const browseCopy = document.createElement('div');
     browseCopy.className = 'milkdrop-overlay__browse-copy';
 
+    this.browseEyebrowLabel = document.createElement('p');
+    this.browseEyebrowLabel.className = 'milkdrop-overlay__browse-eyebrow';
+    this.browseEyebrowLabel.textContent = 'Featured looks';
+
     this.browseActiveLabel = document.createElement('div');
     this.browseActiveLabel.className = 'milkdrop-overlay__browse-active';
     this.browseActiveLabel.textContent = 'Loading presets...';
     this.browseActiveLabel.setAttribute('aria-live', 'polite');
     this.browseActiveLabel.setAttribute('aria-atomic', 'true');
 
+    this.browseSupportLabel = document.createElement('p');
+    this.browseSupportLabel.className = 'milkdrop-overlay__browse-support';
+    this.browseSupportLabel.textContent = 'Loading current look…';
+
     this.browseMetaLabel = document.createElement('p');
     this.browseMetaLabel.className = 'milkdrop-overlay__browse-meta';
     this.browseMetaLabel.textContent = 'Loading status…';
     this.browseMetaLabel.setAttribute('aria-live', 'polite');
     this.browseMetaLabel.setAttribute('role', 'status');
-    browseCopy.append(this.browseActiveLabel, this.browseMetaLabel);
+    browseCopy.append(
+      this.browseEyebrowLabel,
+      this.browseActiveLabel,
+      this.browseSupportLabel,
+      this.browseMetaLabel,
+    );
     browseHero.append(browseCopy);
 
     this.searchInput = document.createElement('input');
@@ -458,14 +481,33 @@ export class BrowsePanel {
     const activePreset = this.presets.find(
       (entry) => entry.id === this.activePresetId,
     );
-    this.browseActiveLabel.textContent = activePreset
-      ? `Playing ${activePreset.title}`
-      : 'Choose a look';
-
+    const currentCollectionLabel = collectionLabel(this.activeCollectionTag);
     const modeLabel = this.browseModeSelect.selectedOptions[0]?.textContent;
+    this.browseEyebrowLabel.textContent = activePreset
+      ? 'Live preset'
+      : this.browseMode === 'favorites'
+        ? 'Saved looks'
+        : this.browseMode === 'recent'
+          ? 'Back in rotation'
+          : this.browseMode === 'all'
+            ? currentCollectionLabel || 'All looks'
+            : 'Featured looks';
+    this.browseActiveLabel.textContent = activePreset
+      ? activePreset.title
+      : currentCollectionLabel || 'Choose a look';
+
+    this.browseSupportLabel.textContent = activePreset
+      ? [activePreset.author, currentCollectionLabel || modeLabel]
+          .filter(Boolean)
+          .join(' · ')
+      : [
+          currentCollectionLabel || modeLabel,
+          `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'} ready`,
+        ]
+          .filter(Boolean)
+          .join(' · ');
     this.browseMetaLabel.textContent = [
       `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'}`,
-      modeLabel,
       browseBackendLabel(this.activeBackend),
     ]
       .filter(Boolean)
@@ -656,9 +698,7 @@ export class BrowsePanel {
       { tag: '', label: 'All presets' },
       ...collectionTags.map((tag) => ({
         tag,
-        label:
-          COLLECTION_LABELS[tag] ??
-          tag.slice(COLLECTION_TAG_PREFIX.length).replace(/-/gu, ' '),
+        label: collectionLabel(tag),
       })),
     ];
 

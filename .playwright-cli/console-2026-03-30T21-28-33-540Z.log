@@ -1,0 +1,11 @@
+Total messages: 10 (Errors: 8, Warnings: 0)
+Returning 8 messages for level "error"
+
+[ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=a5bd3944:282
+[ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=a5bd3944:282
+[ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=a5bd3944:282
+[ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=a5bd3944:282
+[ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=a5bd3944:282
+[ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=a5bd3944:282
+[ERROR] THREE.NodeMaterial: Material "ShaderMaterial" is not compatible. @ http://127.0.0.1:4173/node_modules/.vite/deps/chunk-LHVUQBBK.js?v=a5bd3944:282
+Transition was skipped

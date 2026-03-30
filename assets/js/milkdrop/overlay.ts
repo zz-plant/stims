@@ -87,6 +87,8 @@ export class MilkdropOverlay {
     this.callbacks = callbacks;
     this.root = document.createElement('div');
     this.root.className = 'milkdrop-overlay';
+    this.root.dataset.activeView = this.activeView;
+    this.root.dataset.activeToolView = this.activeToolView;
 
     this.toggleButton = document.createElement('button');
     this.toggleButton.type = 'button';
@@ -96,6 +98,8 @@ export class MilkdropOverlay {
 
     this.panel = document.createElement('aside');
     this.panel.className = 'milkdrop-overlay__panel';
+    this.panel.dataset.activeView = this.activeView;
+    this.panel.dataset.activeToolView = this.activeToolView;
 
     this.presetOsd = document.createElement('div');
     this.presetOsd.className = 'milkdrop-overlay__osd';
@@ -543,6 +547,8 @@ export class MilkdropOverlay {
 
   private setActiveView(view: OverlayPrimaryView) {
     this.activeView = view;
+    this.root.dataset.activeView = view;
+    this.panel.dataset.activeView = view;
     this.browsePanel.setVisible(view === 'browse');
     this.toolsPanel.hidden = view !== 'tools';
     if (view === 'tools') {
@@ -558,6 +564,8 @@ export class MilkdropOverlay {
 
   private setActiveToolView(view: OverlayToolView) {
     this.activeToolView = view;
+    this.root.dataset.activeToolView = view;
+    this.panel.dataset.activeToolView = view;
     const toolsVisible = this.activeView === 'tools';
     this.editorPanel.setVisible(toolsVisible && view === 'editor');
     this.inspectorPanel.setVisible(toolsVisible && view === 'inspector');

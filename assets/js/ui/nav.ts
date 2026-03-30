@@ -307,8 +307,8 @@ function renderToyNav(
   const safeTitle = escapeHtml(options.title ?? 'Stims');
   const safeSlug = options.slug ? escapeHtml(options.slug) : '';
   const hintText = isMobileDevice()
-    ? 'Open Controls when you want the session drawer.'
-    : 'Press M for presets, or open Controls for the rest.';
+    ? 'Open Controls when you need the rest.'
+    : 'Press M or open Controls.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
@@ -844,12 +844,18 @@ function renderRendererStatus(
   status: NonNullable<NavOptions['rendererStatus']>,
 ) {
   const fallback = status.backend !== 'webgpu';
-  const pillClass = fallback
-    ? 'renderer-pill--fallback'
-    : 'renderer-pill--success';
   const fallbackReason = status.fallbackReason
     ? escapeHtml(status.fallbackReason)
     : null;
+  if (!fallback && !fallbackReason && !status.actionLabel) {
+    container.innerHTML = '';
+    container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+  const pillClass = fallback
+    ? 'renderer-pill--fallback'
+    : 'renderer-pill--success';
   const titleText = escapeHtml(
     status.fallbackReason ??
       (fallback
