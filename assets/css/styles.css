@@ -11,6 +11,8 @@
   --color-accent: #7a8fa5;
   --color-button: #6f8195;
   --color-button-hover: #7f8f9f;
+  --duration-fast: 0.3s;
+  --tap-target-size: 44px;
 }
 
 /* General Styles */
@@ -35,7 +37,6 @@ footer {
 
 header {
   padding: 20px;
-  color: var(--color-text-primary);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -51,13 +52,14 @@ header {
   border-radius: 4px;
   background-color: var(--color-surface);
   color: var(--color-text-primary);
-  transition: all 0.3s;
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
   font-size: 1rem;
-  min-height: 44px;
+  min-height: var(--tap-target-size);
 }
 
-#search-bar:focus,
-#search-bar:focus-visible {
+#search-bar:is(:focus, :focus-visible) {
   border-color: var(--color-accent);
   outline: 2px solid rgba(122, 143, 165, 0.9);
   outline-offset: 2px;
@@ -83,8 +85,8 @@ header {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   width: clamp(220px, 30cqi, 280px);
   transition:
-    transform 0.3s,
-    background-color 0.3s;
+    transform var(--duration-fast),
+    background-color var(--duration-fast);
 }
 
 @container webtoy-grid (max-width: 560px) {
@@ -103,15 +105,13 @@ header {
   font-size: 1.4em;
 }
 
-.webtoy-card a,
-footer a {
+:is(.webtoy-card, footer) a {
   color: var(--color-link);
   text-decoration: none;
-  transition: color 0.3s;
+  transition: color var(--duration-fast);
 }
 
-.webtoy-card a:hover,
-footer a:hover {
+:is(.webtoy-card, footer) a:hover {
   color: var(--color-link-hover);
 }
 
@@ -138,9 +138,9 @@ button {
   margin-top: 10px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
-  min-height: 44px;
-  min-width: 44px;
+  transition: background-color var(--duration-fast);
+  min-height: var(--tap-target-size);
+  min-width: var(--tap-target-size);
   touch-action: manipulation;
 }
 
@@ -148,8 +148,7 @@ button:hover {
   background-color: var(--color-button-hover);
 }
 
-button:focus,
-button:focus-visible {
+button:is(:focus, :focus-visible) {
   outline: 2px solid rgba(255, 255, 255, 0.9);
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
