@@ -729,7 +729,7 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__favorite',
     ) as HTMLButtonElement | null;
     expect(activeMeta?.textContent).toBe('Stims · Recent');
-    expect(activeBadges).toEqual(['Live', 'Exact', 'Measured']);
+    expect(activeBadges).toEqual(['Live', 'Ready', 'Checked']);
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(
       'Remove saved preset',

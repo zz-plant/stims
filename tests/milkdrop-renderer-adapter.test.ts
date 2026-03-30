@@ -358,7 +358,8 @@ shapecode_0_tex_ang=0.35
     });
 
     const root = scene.children[0] as RenderTreeNode;
-    const shapeChildren = (root.children?.[5] as RenderTreeNode | undefined) ?? {};
+    const shapeChildren =
+      (root.children?.[5] as RenderTreeNode | undefined) ?? {};
     const batchedFill = flattenRenderTree(root).find(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
@@ -376,12 +377,12 @@ shapecode_0_tex_ang=0.35
     );
 
     expect(batchedFill?.material).toBeInstanceOf(ShaderMaterial);
-    expect(
-      batchedFill?.material?.uniforms?.shapeTexture?.value,
-    ).toBe(feedbackTexture);
-    expect(getFloat32AttributeArray(batchedFill, 'instanceFillControl')).toEqual(
-      Float32Array.from([0, 1, 0.8, 0.35]),
+    expect(batchedFill?.material?.uniforms?.shapeTexture?.value).toBe(
+      feedbackTexture,
     );
+    expect(
+      getFloat32AttributeArray(batchedFill, 'instanceFillControl'),
+    ).toEqual(Float32Array.from([0, 1, 0.8, 0.35]));
     expect(meshFills).toHaveLength(0);
   });
 
