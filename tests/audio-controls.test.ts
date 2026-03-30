@@ -135,7 +135,7 @@ describe('audio controls primary emphasis', () => {
     });
 
     expect(container.textContent).toContain(
-      'Start with demo for the fastest path in, or use mic for live room sound.',
+      'Demo gets you in fastest. Use mic when you want the room to drive the picture.',
     );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
@@ -163,7 +163,7 @@ describe('audio controls primary emphasis', () => {
 
     expect(postStartGuidance.hidden).toBe(true);
     expect(advancedInputs.open).toBe(false);
-    expect(postStartGuidance.textContent).toContain('Next');
+    expect(postStartGuidance.textContent).toContain('After start');
     expect(advancedInputs.textContent).toContain('Other audio sources');
   });
 
@@ -238,7 +238,7 @@ describe('audio controls primary emphasis', () => {
     await flush();
 
     expect(hintPanel.hidden).toBe(false);
-    expect(hintPanel.textContent).toContain('Touch gestures');
+    expect(hintPanel.textContent).toContain('Touch moves');
     expect(hintPanel.textContent).toContain('Pinch/rotate gestures');
   });
 
@@ -297,7 +297,7 @@ describe('audio controls primary emphasis', () => {
       '[data-gesture-hints]',
     ) as HTMLElement | null;
 
-    expect(desktopHints?.textContent).toContain('Desktop controls');
+    expect(desktopHints?.textContent).toContain('Try this next');
     expect(desktopHints?.textContent).toContain('Move to steer');
     expect(touchHints?.hidden).toBe(true);
   });
@@ -408,7 +408,7 @@ describe('audio controls primary emphasis', () => {
         wowControl: 'Q/E mood cycling',
       }),
     ).toEqual({
-      summary: 'Start with demo audio for the fastest path in.',
+      summary: 'Start with demo audio for the fastest first look.',
       detail:
         'Try Aurora starter once the visualizer opens. Then explore Q/E mood cycling.',
     });

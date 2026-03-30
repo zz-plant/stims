@@ -1050,11 +1050,7 @@ class ShapeBatchBucket {
     getShapeTexture: () => Texture | null,
   ) {
     const blending = additive ? AdditiveBlending : NormalBlending;
-    this.fill = new InstancedShapeFillBatch(
-      sides,
-      blending,
-      getShapeTexture,
-    );
+    this.fill = new InstancedShapeFillBatch(sides, blending, getShapeTexture);
     this.outline = new InstancedShapeRingBatch(sides, blending);
     this.accent = new InstancedShapeRingBatch(sides, blending);
     this.group.add(this.fill.mesh, this.outline.mesh, this.accent.mesh);

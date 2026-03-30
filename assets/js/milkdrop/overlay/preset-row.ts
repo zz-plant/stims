@@ -37,6 +37,23 @@ export function fidelityLabel(fidelity: MilkdropFidelityClass) {
   }
 }
 
+export function presetFidelityBadgeLabel(fidelity: MilkdropFidelityClass) {
+  switch (fidelity) {
+    case 'exact':
+      return 'Ready';
+    case 'near-exact':
+      return 'Close match';
+    case 'partial':
+      return 'Remixed';
+    default:
+      return 'Compat';
+  }
+}
+
+export function presetCertificationBadgeLabel(measured: boolean) {
+  return measured ? 'Checked' : 'Estimated';
+}
+
 export function getPresetMetaQualifier(preset: MilkdropCatalogEntry) {
   if (preset.historyIndex !== undefined) {
     return 'Recent';
@@ -217,14 +234,14 @@ function buildPresetRow({
 
   const supportBadge = document.createElement('span');
   supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${preset.fidelityClass}`;
-  supportBadge.textContent = fidelityLabel(preset.fidelityClass);
+  supportBadge.textContent = presetFidelityBadgeLabel(preset.fidelityClass);
   badges.appendChild(supportBadge);
 
   const certificationBadge = document.createElement('span');
   certificationBadge.className = 'milkdrop-overlay__preset-tag';
-  certificationBadge.textContent = preset.visualCertification?.measured
-    ? 'Measured'
-    : 'Inferred';
+  certificationBadge.textContent = presetCertificationBadgeLabel(
+    Boolean(preset.visualCertification?.measured),
+  );
   badges.appendChild(certificationBadge);
 
   titleRow.append(title, badges);

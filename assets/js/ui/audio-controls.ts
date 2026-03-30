@@ -72,7 +72,7 @@ export function buildTryThisFirstRecommendation({
   if (recommendedCapability === 'microphone') {
     steps.push('Start with live mic for the most responsive visuals.');
   } else if (recommendedCapability === 'demoAudio') {
-    steps.push('Start with demo audio for the fastest path in.');
+    steps.push('Start with demo audio for the fastest first look.');
   } else if (recommendedCapability === 'touch') {
     steps.push(
       'Start audio, then use touch gestures to bend, scale, and twist the scene.',
@@ -93,7 +93,7 @@ export function buildTryThisFirstRecommendation({
 
   const summary =
     steps[0] ??
-    'Start with demo audio or live mic, then shape the session once playback starts.';
+    'Start with demo audio or live mic, then shape the session once the visual opens.';
   const detail =
     steps.length > 1
       ? steps.slice(1).join(' ')
@@ -148,8 +148,8 @@ export function initAudioControls(
 
   container.innerHTML = `
     <p class="control-panel__eyebrow">Start</p>
-    <div class="control-panel__heading">Start the visualizer</div>
-    <p class="control-panel__description">Start with demo for the fastest path in, or use mic for live room sound.</p>
+    <div class="control-panel__heading">Pick a sound source</div>
+    <p class="control-panel__description">Demo gets you in fastest. Use mic when you want the room to drive the picture.</p>
     ${renderPrimaryAudioChoice()}
     ${renderAdvancedSources(options)}
     <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
@@ -239,7 +239,7 @@ export function initAudioControls(
       return;
     }
 
-    micBtn.textContent = 'Allow mic';
+    micBtn.textContent = 'Start mic';
   };
 
   const updateStatus = (
@@ -290,13 +290,13 @@ export function initAudioControls(
     setMicrophoneButtonState();
     if (state === 'denied' && !hasStartedAudio) {
       updateStatus(
-        'Microphone is currently blocked. Start with demo audio now, then allow mic in site permissions when ready.',
+        'Microphone is currently blocked. Start with demo now, then re-enable mic permissions when you are ready.',
       );
       emphasizeDemoAudio();
     }
     if (state === 'unsupported' && !hasStartedAudio) {
       updateStatus(
-        'Microphone is unavailable in this browser. Start with demo audio now.',
+        'Microphone is unavailable in this browser. Start with demo now.',
       );
       emphasizeDemoAudio();
     }
@@ -522,7 +522,7 @@ export function initAudioControls(
       'Live mic connected.',
       microphonePermissionState === 'granted'
         ? 'Starting live mic…'
-        : 'Requesting microphone permission…',
+        : 'Requesting microphone access…',
     );
   });
 
@@ -602,7 +602,7 @@ function renderPrimaryAudioChoice() {
         <span class="control-panel__subtext">Room, voice, or instrument.</span>
         <span class="control-panel__microcopy">Needs microphone permission.</span>
       </div>
-      <button id="start-audio-btn" class="cta-button ghost" type="button">Use mic</button>
+      <button id="start-audio-btn" class="cta-button ghost" type="button">Start mic</button>
     </div>
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
@@ -611,7 +611,7 @@ function renderPrimaryAudioChoice() {
         <span class="control-panel__subtext">Built-in soundtrack.</span>
         <span class="control-panel__microcopy">No permission prompt.</span>
       </div>
-      <button id="use-demo-audio" class="cta-button primary" type="button">Use demo</button>
+      <button id="use-demo-audio" class="cta-button primary" type="button">Start demo</button>
     </div>
   `;
 }
@@ -636,14 +636,14 @@ function renderPostStartGuidance({
   return `
     <section class="control-panel__post-start" data-post-start-guidance hidden aria-label="Next steps">
       <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">Next</span>
+        <span class="control-panel__label">After start</span>
         ${
           showStarterPresetAction
             ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Apply ${starterPresetLabel}</button>`
             : ''
         }
       </div>
-      <p class="control-panel__comparison">Audio is live. Now tune the look or change how you interact.</p>
+      <p class="control-panel__comparison">You are in. Keep the canvas moving, then tune the session only if you want more control.</p>
       ${
         firstRunHint
           ? `<p class="control-panel__microcopy">${firstRunHint}</p>`
@@ -654,9 +654,9 @@ function renderPostStartGuidance({
           ? `
       <section class="control-panel__gesture-hints" data-desktop-hints aria-live="polite">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">Desktop controls</span>
+          <span class="control-panel__label">Try this next</span>
         </div>
-        <p class="control-panel__microcopy">On desktop, try these controls to steer the picture quickly:</p>
+        <p class="control-panel__microcopy">On desktop, these controls change the scene fastest:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${desktopHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>
@@ -669,10 +669,10 @@ function renderPostStartGuidance({
           ? `
       <section class="control-panel__gesture-hints" data-gesture-hints hidden aria-live="polite">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">Touch gestures</span>
+          <span class="control-panel__label">Touch moves</span>
           <button type="button" class="control-panel__dismiss" data-dismiss-gesture-hints>Got it</button>
         </div>
-        <p class="control-panel__microcopy">Once audio starts, use these gestures to reshape the scene fast:</p>
+        <p class="control-panel__microcopy">Once audio starts, these gestures reshape the scene fastest:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${touchHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>
@@ -685,7 +685,7 @@ function renderPostStartGuidance({
           ? `
       <section class="control-panel__gesture-hints" aria-live="polite">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">What changes first</span>
+          <span class="control-panel__label">Quick wins</span>
         </div>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${starterTips

@@ -20,6 +20,10 @@ type BrowseSection = {
   presets: MilkdropCatalogEntry[];
 };
 
+function browseBackendLabel(backend: 'webgl' | 'webgpu') {
+  return backend === 'webgpu' ? 'Best quality' : 'Compatibility mode';
+}
+
 type BrowsePanelCallbacks = PresetRowCallbacks & {
   onSelectQualityPreset: (presetId: string) => void;
 };
@@ -263,7 +267,7 @@ export class BrowsePanel {
     this.browseOptionsDisclosure.className = 'milkdrop-overlay__browse-options';
     const browseOptionsSummary = document.createElement('summary');
     browseOptionsSummary.className = 'milkdrop-overlay__browse-options-summary';
-    browseOptionsSummary.textContent = 'More filters';
+    browseOptionsSummary.textContent = 'Refine list';
     this.browseOptionsDisclosure.appendChild(browseOptionsSummary);
 
     const browseOptionsBody = document.createElement('div');
@@ -455,14 +459,14 @@ export class BrowsePanel {
       (entry) => entry.id === this.activePresetId,
     );
     this.browseActiveLabel.textContent = activePreset
-      ? `Now playing ${activePreset.title}`
-      : 'No preset selected';
+      ? `Playing ${activePreset.title}`
+      : 'Choose a look';
 
     const modeLabel = this.browseModeSelect.selectedOptions[0]?.textContent;
     this.browseMetaLabel.textContent = [
-      `${filteredCount} shown`,
+      `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'}`,
       modeLabel,
-      this.activeBackend.toUpperCase(),
+      browseBackendLabel(this.activeBackend),
     ]
       .filter(Boolean)
       .join(' · ');

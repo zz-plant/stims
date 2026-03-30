@@ -1,0 +1,264 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - button "Open navigation menu" [ref=e12]:
+          - generic [ref=e13]: Menu
+          - generic [ref=e14]: ☰
+    - main: ▾ ▾
+  - generic [ref=e32]:
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - paragraph [ref=e35]: MilkDrop Visualizer
+        - button "Back to Stims" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: ←
+          - generic [ref=e39]: Back to Stims
+      - generic [ref=e41]:
+        - generic "WebGPU renderer active." [ref=e44]: WebGPU
+        - button "Session" [ref=e45]
+    - generic [ref=e46]:
+      - generic:
+        - complementary [ref=e47]:
+          - generic [ref=e48]:
+            - generic [ref=e49]:
+              - generic [ref=e50]: Rovastar - Parallel Universe
+              - generic [ref=e51]: Loaded Rovastar - Parallel Universe.
+            - generic [ref=e52]:
+              - button "Shortcuts" [ref=e53]
+              - button "Close" [ref=e54]
+          - generic [ref=e55]:
+            - generic [ref=e56]:
+              - button "Back" [ref=e57]
+              - button "Prev" [ref=e58]
+              - button "Next" [ref=e59]
+              - button "Shuffle" [ref=e60]
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - checkbox "Autoplay" [ref=e63]
+                - text: Autoplay
+              - generic [ref=e64]:
+                - generic [ref=e65]: Transition
+                - combobox "Transition" [ref=e66]:
+                  - option "Blend" [selected]
+                  - option "Hard cut"
+            - generic [ref=e67]:
+              - text: Blend
+              - slider "Blend 2.50s" [ref=e68]: "2.5"
+              - generic [ref=e69]: 2.50s
+          - generic [ref=e70]:
+            - button "Presets" [ref=e71]
+            - button "Tools" [pressed] [ref=e72]
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - button "Editor" [pressed] [ref=e76]
+              - button "Inspector" [ref=e77]
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - generic [ref=e80]:
+                  - generic [ref=e81]: Live coding
+                  - strong [ref=e82]: Shape the active preset while it stays on beat
+                  - paragraph [ref=e83]: "Strudel-style feedback loop: edits land automatically, the current visual keeps playing, and broken drafts never interrupt the last good frame."
+                - generic [ref=e84]:
+                  - generic [ref=e85]: Live
+                  - generic [ref=e86]: Draft changed
+                  - generic [ref=e87]: Fidelity Exact · WebGL supported · WebGPU supported
+              - generic [ref=e88]: Live preset updated from editor | Fidelity Exact · WebGL supported · WebGPU supported
+              - generic [ref=e89]:
+                - button "Revert to live" [ref=e90]
+                - button "Duplicate" [ref=e91]
+                - button "Import" [ref=e92]
+                - button "Export" [ref=e93]
+              - generic [ref=e94]:
+                - generic [ref=e95]: Quick ideas
+                - generic [ref=e96]:
+                  - button "Pulse zoom Drop in a breathing zoom curve." [ref=e97]:
+                    - strong [ref=e98]: Pulse zoom
+                    - generic [ref=e99]: Drop in a breathing zoom curve.
+                  - button "Hue drift Animate the waveform palette." [ref=e100]:
+                    - strong [ref=e101]: Hue drift
+                    - generic [ref=e102]: Animate the waveform palette.
+                  - button "Warp sway Add a gentle audio-reactive bend." [ref=e103]:
+                    - strong [ref=e104]: Warp sway
+                    - generic [ref=e105]: Add a gentle audio-reactive bend.
+              - generic [ref=e108]:
+                - generic [ref=e110]:
+                  - generic [ref=e111]: "1"
+                  - generic [ref=e112]: "2"
+                  - generic [ref=e113]: "3"
+                  - generic [ref=e114]: "4"
+                  - generic [ref=e115]: "5"
+                  - generic [ref=e116]: "6"
+                  - generic [ref=e117]: "7"
+                  - generic [ref=e118]: "8"
+                  - generic [ref=e119]: "9"
+                  - generic [ref=e120]: "10"
+                  - generic [ref=e121]: "11"
+                  - generic [ref=e122]: "12"
+                  - generic [ref=e123]: "13"
+                  - generic [ref=e124]: "14"
+                  - generic [ref=e125]: "15"
+                  - generic [ref=e126]: "16"
+                  - generic [ref=e127]: "17"
+                  - generic [ref=e128]: "18"
+                  - generic [ref=e129]: "19"
+                  - generic [ref=e130]: "20"
+                  - generic [ref=e131]: "21"
+                  - generic [ref=e132]: "22"
+                  - generic [ref=e133]: "23"
+                  - generic [ref=e134]: "24"
+                  - generic [ref=e135]: "25"
+                  - generic [ref=e136]: "26"
+                  - generic [ref=e137]: "27"
+                  - generic [ref=e138]: "28"
+                  - generic [ref=e139]: "29"
+                  - generic [ref=e140]: "30"
+                  - generic [ref=e141]: "31"
+                  - generic [ref=e142]: "32"
+                  - generic [ref=e143]: "33"
+                  - generic [ref=e144]: "34"
+                  - generic [ref=e145]: "35"
+                  - generic [ref=e146]: "36"
+                  - generic [ref=e147]: "37"
+                  - generic [ref=e148]: "38"
+                  - generic [ref=e149]: "39"
+                  - generic [ref=e150]: "40"
+                  - generic [ref=e151]: "41"
+                  - generic [ref=e152]: "42"
+                  - generic [ref=e153]: "43"
+                  - generic [ref=e154]: "44"
+                  - generic [ref=e155]: "45"
+                  - generic [ref=e156]: "46"
+                  - generic [ref=e157]: "47"
+                  - generic [ref=e158]: "48"
+                  - generic [ref=e159]: "49"
+                  - generic [ref=e160]: "50"
+                  - generic [ref=e161]: "51"
+                  - generic [ref=e162]: "52"
+                  - generic [ref=e163]: "53"
+                  - generic [ref=e164]: "54"
+                  - generic [ref=e165]: "55"
+                  - generic [ref=e166]: "56"
+                  - generic [ref=e167]: "57"
+                  - generic [ref=e168]: "58"
+                  - generic [ref=e169]: "59"
+                  - generic [ref=e170]: "60"
+                  - generic [ref=e171]: "61"
+                  - generic [ref=e172]: "62"
+                  - generic [ref=e173]: "63"
+                  - generic [ref=e174]: "64"
+                  - generic [ref=e175]: "65"
+                  - generic [ref=e176]: "66"
+                  - generic [ref=e177]: "67"
+                  - generic [ref=e178]: "68"
+                  - generic [ref=e179]: "69"
+                  - generic [ref=e180]: "70"
+                  - generic [ref=e181]: "71"
+                  - generic [ref=e182]: "72"
+                  - generic [ref=e183]: "73"
+                  - generic [ref=e184]: "74"
+                  - generic [ref=e185]: "75"
+                  - generic [ref=e186]: "76"
+                  - generic [ref=e187]: "77"
+                  - generic [ref=e188]: "78"
+                  - generic [ref=e189]: "79"
+                  - generic [ref=e190]: "80"
+                  - generic [ref=e191]: "81"
+                  - generic [ref=e192]: "82"
+                  - generic [ref=e193]: "83"
+                  - generic [ref=e194]: "84"
+                - textbox [ref=e195]:
+                  - generic [ref=e196]: "[preset00]"
+                  - generic [ref=e197]: fRating=5.000000
+                  - generic [ref=e198]: fGammaAdj=2.000000
+                  - generic [ref=e199]: fDecay=0.990000
+                  - generic [ref=e200]: fVideoEchoZoom=0.999609
+                  - generic [ref=e201]: fVideoEchoAlpha=0.500000
+                  - generic [ref=e202]: nVideoEchoOrientation=3
+                  - generic [ref=e203]: nWaveMode=0
+                  - generic [ref=e204]: bAdditiveWaves=0
+                  - generic [ref=e205]: bWaveDots=0
+                  - generic [ref=e206]: bWaveThick=1
+                  - generic [ref=e207]: bModWaveAlphaByVolume=0
+                  - generic [ref=e208]: bMaximizeWaveColor=0
+                  - generic [ref=e209]: bTexWrap=1
+                  - generic [ref=e210]: bDarkenCenter=1
+                  - generic [ref=e211]: bRedBlueStereo=0
+                  - generic [ref=e212]: bBrighten=0
+                  - generic [ref=e213]: bDarken=0
+                  - generic [ref=e214]: bSolarize=0
+                  - generic [ref=e215]: bInvert=0
+                  - generic [ref=e216]: fWaveAlpha=4.099998
+                  - generic [ref=e217]: fWaveScale=0.032378
+                  - generic [ref=e218]: fWaveSmoothing=0.630000
+                  - generic [ref=e219]: fWaveParam=-0.400000
+                  - generic [ref=e220]: fModWaveAlphaStart=0.710000
+                  - generic [ref=e221]: fModWaveAlphaEnd=1.300000
+                  - generic [ref=e222]: fWarpAnimSpeed=1.000000
+                  - generic [ref=e223]: fWarpScale=1.331000
+                  - generic [ref=e224]: fZoomExponent=1.000000
+                  - generic [ref=e225]: fShader=0.000000
+                  - generic [ref=e226]: zoom=1.000000
+                  - generic [ref=e227]: rot=0.000000
+                  - generic [ref=e228]: cx=0.500000
+                  - generic [ref=e229]: cy=0.500000
+                  - generic [ref=e230]: dx=0.000000
+                  - generic [ref=e231]: dy=0.000000
+                  - generic [ref=e232]: warp=0.010000
+                  - generic [ref=e233]: sx=1.000000
+                  - generic [ref=e234]: sy=1.000000
+                  - generic [ref=e235]: wave_r=0.650000
+                  - generic [ref=e236]: wave_g=0.650000
+                  - generic [ref=e237]: wave_b=0.650000
+                  - generic [ref=e238]: wave_x=0.045000
+                  - generic [ref=e239]: wave_y=0.940000
+                  - generic [ref=e240]: ob_size=0.005000
+                  - generic [ref=e241]: ob_r=0.000000
+                  - generic [ref=e242]: ob_g=0.000000
+                  - generic [ref=e243]: ob_b=0.000000
+                  - generic [ref=e244]: ob_a=1.000000
+                  - generic [ref=e245]: ib_size=0.005000
+                  - generic [ref=e246]: ib_r=1.000000
+                  - generic [ref=e247]: ib_g=0.000000
+                  - generic [ref=e248]: ib_b=0.250000
+                  - generic [ref=e249]: ib_a=1.000000
+                  - generic [ref=e250]: nMotionVectorsX=12.000000
+                  - generic [ref=e251]: nMotionVectorsY=9.000000
+                  - generic [ref=e252]: mv_dx=0.000000
+                  - generic [ref=e253]: mv_dy=0.000000
+                  - generic [ref=e254]: mv_l=4.400000
+                  - generic [ref=e255]: mv_r=1.000000
+                  - generic [ref=e256]: mv_g=0.000000
+                  - generic [ref=e257]: mv_b=0.000000
+                  - generic [ref=e258]: mv_a=0.000000
+                  - generic [ref=e259]: per_frame_1=wave_r = 0.5+0.5*sin(time);
+                  - generic [ref=e260]: per_frame_2=wave_r = 0.5+0.5*sin(time);
+                  - generic [ref=e261]: per_frame_3=xwave_a = 0;
+                  - generic [ref=e262]: per_frame_4=ib_b = 0.5+0.3*sin(time*2.314);
+                  - generic [ref=e263]: per_frame_5=ib_r = 0.7+0.3*sin(time*1.867);
+                  - generic [ref=e264]: per_frame_6=q8 = if(above(bass,1.2),2*bass,0.5);
+                  - generic [ref=e265]: per_frame_7=q7 = if(above(bass_att,1.2),2*bass_att,0.5);
+                  - generic [ref=e266]: per_frame_8=q6 = if(above(bass+bass_att,2.3),bass+bass_att,0.5);
+                  - generic [ref=e267]: per_frame_9=warp =0;
+                  - generic [ref=e268]: per_frame_10=q5 = if(above(treb+treb_att,2.8),1,0);
+                  - generic [ref=e269]: per_frame_11=monitor = q5;
+                  - generic [ref=e270]: per_frame_12=ib_g = q5;
+                  - generic [ref=e271]: per_pixel_1=myx = x-0.5;
+                  - generic [ref=e272]: per_pixel_2=myy = y-0.5;
+                  - generic [ref=e273]: per_pixel_3=q1 =0.1*sqrt(x*x+y*y);
+                  - generic [ref=e274]: per_pixel_4=q1 = 0.05*(x+y);
+                  - generic [ref=e275]: per_pixel_5=dy = q1*abs(sin(50*bass));
+                  - generic [ref=e276]: per_pixel_6=dx = q1*abs(sin(50*bass_att));
+                  - generic [ref=e277]: per_pixel_7=dy = 0.2*q1*q6;
+                  - generic [ref=e278]: per_pixel_8=dx=0.2*q1*q6;
+              - generic [ref=e280]:
+                - generic [ref=e281]: Auto-updates after 220ms of calm typing.
+                - generic [ref=e282]: Errors keep the last stable preset visible.
+                - generic [ref=e283]: Tab indents, undo/redo stays local to the draft.
+        - generic:
+          - generic: Rovastar - Parallel Universe
+          - generic: Imported

@@ -22,6 +22,19 @@ type EditorSnippet = {
   snippet: string;
 };
 
+function editorFidelitySummary(fidelity: ReturnType<typeof fidelityLabel>) {
+  switch (fidelity) {
+    case 'Exact':
+      return 'very close';
+    case 'Near exact':
+      return 'close';
+    case 'Partial':
+      return 'loose';
+    default:
+      return 'compatibility-first';
+  }
+}
+
 const EDITOR_SNIPPETS: EditorSnippet[] = [
   {
     label: 'Pulse zoom',
@@ -168,11 +181,11 @@ export class EditorPanel {
     const editorHeading = document.createElement('strong');
     editorHeading.className = 'milkdrop-overlay__editor-heading';
     editorHeading.textContent =
-      'Shape the active preset while it stays on beat';
+      'Adjust the active preset without stopping playback';
     const editorSubheading = document.createElement('p');
     editorSubheading.className = 'milkdrop-overlay__editor-subheading';
     editorSubheading.textContent =
-      'Strudel-style feedback loop: edits land automatically, the current visual keeps playing, and broken drafts never interrupt the last good frame.';
+      'Edits land automatically, the current look keeps playing, and broken drafts never interrupt the last stable frame.';
     editorIntroCopy.append(editorEyebrow, editorHeading, editorSubheading);
     const editorBadgeRow = document.createElement('div');
     editorBadgeRow.className = 'milkdrop-overlay__editor-badges';
@@ -203,7 +216,7 @@ export class EditorPanel {
 
     const revertButton = document.createElement('button');
     revertButton.type = 'button';
-    revertButton.textContent = 'Revert to live';
+    revertButton.textContent = 'Reset draft';
     revertButton.addEventListener('click', () =>
       this.callbacks.onRevertToActive(),
     );
@@ -245,7 +258,7 @@ export class EditorPanel {
     const editorQuickIdeasLabel = document.createElement('span');
     editorQuickIdeasLabel.className =
       'milkdrop-overlay__editor-quick-ideas-label';
-    editorQuickIdeasLabel.textContent = 'Quick ideas';
+    editorQuickIdeasLabel.textContent = 'Quick moves';
     const editorSnippetButtons = document.createElement('div');
     editorSnippetButtons.className = 'milkdrop-overlay__editor-snippet-buttons';
     EDITOR_SNIPPETS.forEach((snippetConfig) => {
@@ -330,12 +343,14 @@ export class EditorPanel {
     const latestWebgpuStatus =
       state.latestCompiled?.ir.compatibility.backends.webgpu.status;
     const baseStatus = errors.length
-      ? `${errors.length} issue${errors.length === 1 ? '' : 's'} keeping the last good preset live`
+      ? `${errors.length} issue${errors.length === 1 ? '' : 's'} holding the last stable look`
       : state.dirty
-        ? 'Live preset updated from editor'
-        : 'Editor synced with live preset';
+        ? 'Live draft updating'
+        : 'Draft matches the live look';
     const fidelityStatus = activeCompatibility
-      ? `Fidelity ${fidelityLabel(activeCompatibility.fidelityClass)} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
+      ? `Match strength: ${editorFidelitySummary(
+          fidelityLabel(activeCompatibility.fidelityClass),
+        )} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
       : null;
     this.editorStatus.textContent = [baseStatus, fidelityStatus]
       .filter(Boolean)
@@ -349,7 +364,7 @@ export class EditorPanel {
     this.editorSyncBadge.dataset.tone = state.dirty ? 'accent' : 'muted';
     this.editorSafetyBadge.textContent = hasErrors
       ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
-      : (fidelityStatus ?? 'Safety net on');
+      : (fidelityStatus ?? 'Stable');
     this.editorSafetyBadge.dataset.tone = hasErrors
       ? 'danger'
       : activeCompatibility?.fidelityClass === 'partial' ||
