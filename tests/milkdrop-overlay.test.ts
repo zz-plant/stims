@@ -488,10 +488,10 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__browse',
     ) as HTMLElement | null;
 
-    expect(search?.placeholder).toBe('Search presets');
+    expect(search?.placeholder).toBe('Search looks');
     expect(modeTabs.map((tab) => tab.textContent?.trim())).toEqual([
       'Featured',
-      'All presets',
+      'All looks',
       'Recent',
       'Favorites',
     ]);
@@ -729,7 +729,7 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__favorite',
     ) as HTMLButtonElement | null;
     expect(activeMeta?.textContent).toBe('Stims · Recent');
-    expect(activeBadges).toEqual(['Live', 'Ready', 'Checked']);
+    expect(activeBadges).toEqual(['Live']);
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(
       'Remove saved preset',
@@ -742,6 +742,15 @@ describe('milkdrop overlay browse rendering', () => {
     ).toBeNull();
     expect(activeRow?.textContent).not.toContain('slow-burn');
     expect(activeRow?.textContent).not.toContain('bundled');
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-support'),
+    ).toBeNull();
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-active')?.textContent,
+    ).toBe('Signal Bloom');
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-meta')?.textContent,
+    ).toBe('2 picks');
 
     const partialRow = rows[1];
     const partialMeta = partialRow?.querySelector(
