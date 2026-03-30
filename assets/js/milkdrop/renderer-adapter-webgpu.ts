@@ -944,6 +944,7 @@ class InstancedShapeRingBatch {
   constructor(
     sides: number,
     blending: typeof NormalBlending | typeof AdditiveBlending,
+    layerZ: number,
   ) {
     this.mesh = new Mesh(
       getUnitPolygonRingGeometry(sides).clone(),
@@ -952,7 +953,11 @@ class InstancedShapeRingBatch {
         depthWrite: false,
         side: DoubleSide,
         blending,
+        uniforms: {
+          layerZ: { value: layerZ },
+        },
         vertexShader: `
+          uniform float layerZ;
           attribute vec2 unitCorner;
           attribute float innerWeight;
           attribute vec4 instanceTransform;
@@ -972,7 +977,7 @@ class InstancedShapeRingBatch {
             vColor = instanceColorAlpha;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(
               rotated + instanceTransform.xy,
-              0.16,
+              layerZ,
               1.0
             );
           }
@@ -1051,8 +1056,8 @@ class ShapeBatchBucket {
   ) {
     const blending = additive ? AdditiveBlending : NormalBlending;
     this.fill = new InstancedShapeFillBatch(sides, blending, getShapeTexture);
-    this.outline = new InstancedShapeRingBatch(sides, blending);
-    this.accent = new InstancedShapeRingBatch(sides, blending);
+    this.outline = new InstancedShapeRingBatch(sides, blending, 0.16);
+    this.accent = new InstancedShapeRingBatch(sides, blending, 0.15);
     this.group.add(this.fill.mesh, this.outline.mesh, this.accent.mesh);
   }
 

@@ -578,6 +578,64 @@ shapecode_1_thickoutline=1
     ]);
   });
 
+  test('keeps the WebGPU thick-outline accent under the main shape border', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shape Accent Layering
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.3
+shapecode_0_border_a=1
+shapecode_0_thickoutline=1
+      `.trim(),
+      { id: 'shape-accent-layering' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const ringMeshes = flattenRenderTree(root).filter(
+      (child) => child.geometry?.getAttribute?.('instanceScales') !== undefined,
+    ) as Array<{
+      geometry?: {
+        getAttribute?: (name: string) => { array?: Float32Array } | undefined;
+      };
+      material?: ShaderMaterial & {
+        uniforms?: { layerZ?: { value: number } };
+      };
+    }>;
+    const outlineMesh = ringMeshes.find((mesh) => {
+      const scales = getFloat32AttributeArray(mesh, 'instanceScales');
+      return scales !== null && (scales[0] ?? 0) <= 1.001;
+    });
+    const accentMesh = ringMeshes.find((mesh) => {
+      const scales = getFloat32AttributeArray(mesh, 'instanceScales');
+      return scales !== null && (scales[0] ?? 0) > 1.001;
+    });
+
+    expect(outlineMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(accentMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(outlineMesh?.material?.uniforms?.layerZ?.value).toBeCloseTo(0.16, 6);
+    expect(accentMesh?.material?.uniforms?.layerZ?.value).toBeCloseTo(0.15, 6);
+    expect(
+      accentMesh?.material?.uniforms?.layerZ?.value ?? Infinity,
+    ).toBeLessThan(outlineMesh?.material?.uniforms?.layerZ?.value ?? -Infinity);
+  });
+
   test('reuses wave and border objects across renders', () => {
     const preset = compileMilkdropPresetSource(
       `
