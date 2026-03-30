@@ -39,6 +39,7 @@ export function buildWebGpuDescriptorPlan({
     | 'darken'
     | 'solarize'
     | 'invert'
+    | 'shaderControls'
     | 'shaderPrograms'
   >;
   lowerGpuFieldProgram: (
@@ -143,6 +144,15 @@ export function buildWebGpuDescriptorPlan({
     post.shaderPrograms.warp !== null || post.shaderPrograms.comp !== null;
   const feedbackUsesPostEffects =
     post.brighten || post.darken || post.solarize || post.invert;
+  const feedbackUsesOverlayTexture =
+    post.shaderControls.textureLayer.source !== 'none' &&
+    (post.shaderControls.textureLayer.mode === 'replace' ||
+      Math.abs(post.shaderControls.textureLayer.amount) > 0.0001);
+  const feedbackUsesWarpTexture =
+    post.shaderControls.warpTexture.source !== 'none' &&
+    Math.abs(post.shaderControls.warpTexture.amount) > 0.0001;
+  const feedbackUsesShaderTextures =
+    feedbackUsesOverlayTexture || feedbackUsesWarpTexture;
   const shaderExecution =
     featureAnalysis.shaderTextExecution.webgpu === 'direct'
       ? 'direct'
@@ -153,6 +163,7 @@ export function buildWebGpuDescriptorPlan({
     post.videoEchoEnabled ||
     post.feedbackTexture ||
     feedbackUsesShaderPrograms ||
+    feedbackUsesShaderTextures ||
     feedbackUsesPostEffects
       ? {
           kind: 'feedback-post-effect',
@@ -164,6 +175,7 @@ export function buildWebGpuDescriptorPlan({
             shaderExecution === 'direct' ||
             post.videoEchoEnabled ||
             post.feedbackTexture ||
+            feedbackUsesShaderTextures ||
             feedbackUsesPostEffects
               ? 'scene'
               : 'adaptive',

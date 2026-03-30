@@ -131,6 +131,28 @@ function createFeedbackRenderTarget(
   return target;
 }
 
+function hasOverlayReplaceFeedback(state: MilkdropFeedbackCompositeState) {
+  return (
+    state.overlayTextureSource > 0.5 &&
+    state.overlayTextureMode > 0.5 &&
+    state.overlayTextureMode < 1.5
+  );
+}
+
+function hasOverlayBlendFeedback(state: MilkdropFeedbackCompositeState) {
+  return (
+    state.overlayTextureSource > 0.5 &&
+    state.overlayTextureMode >= 1.5 &&
+    Math.abs(state.overlayTextureAmount) > 0.0001
+  );
+}
+
+function hasWarpTextureFeedback(state: MilkdropFeedbackCompositeState) {
+  return (
+    state.warpTextureSource > 0.5 && Math.abs(state.warpTextureAmount) > 0.0001
+  );
+}
+
 function hueRotateNode(colorValue: any, angle: any) {
   return Fn(() => {
     const s = sin(angle);
@@ -1386,9 +1408,16 @@ function createCompositeOutputNode(
     color.assign(color.mul(uniforms.colorScale));
     color.assign(color.mul(uniforms.tint));
 
-    const overlayMask = step(0.5, uniforms.overlayTextureSource)
-      .mul(step(0.5, uniforms.overlayTextureMode))
-      .mul(step(0.0001, uniforms.overlayTextureAmount));
+    const overlaySourceMask = step(0.5, uniforms.overlayTextureSource);
+    const overlayReplaceMask = step(0.5, uniforms.overlayTextureMode).mul(
+      float(1).sub(step(1.5, uniforms.overlayTextureMode)),
+    );
+    const overlayBlendMask = step(1.5, uniforms.overlayTextureMode).mul(
+      step(0.0001, uniforms.overlayTextureAmount),
+    );
+    const overlayMask = overlaySourceMask.mul(
+      max(overlayReplaceMask, overlayBlendMask),
+    );
     const overlayUv = baseUv
       .mul(uniforms.overlayTextureScale)
       .add(uniforms.overlayTextureOffset);
@@ -1608,6 +1637,9 @@ class WebGPUMilkdropFeedbackManager {
       Math.abs(state.zoom - 1) > 0.0001 ||
       state.videoEchoOrientation !== 0 ||
       state.feedbackTexture > 0.5 ||
+      hasOverlayReplaceFeedback(state) ||
+      hasOverlayBlendFeedback(state) ||
+      hasWarpTextureFeedback(state) ||
       state.brighten > 0.5 ||
       state.darken > 0.5 ||
       state.darkenCenter > 0.5 ||

@@ -45,10 +45,16 @@ test('keeps overlay replace mode distinct from overlay mix mode in the shared fe
 
   try {
     expect(manager.compositeMaterial.fragmentShader).toContain(
-      'if (overlayTextureMode < 1.5) {\n              color = overlayColor;',
+      'bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;',
     );
     expect(manager.compositeMaterial.fragmentShader).toContain(
-      '} else if (overlayTextureMode < 2.5) {\n              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));',
+      'bool overlayBlend = overlayTextureMode >= 1.5 && overlayTextureAmount > 0.0001;',
+    );
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'if (overlayTextureSource > 0.5 && (overlayReplace || overlayBlend)) {',
+    );
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'if (overlayTextureMode < 1.5) {\n              color = overlayColor;',
     );
   } finally {
     manager.dispose();

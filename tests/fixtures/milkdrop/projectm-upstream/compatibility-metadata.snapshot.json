@@ -2177,7 +2177,14 @@
           "fieldProgram": null
         },
         "proceduralMotionVectors": null,
-        "feedback": null,
+        "feedback": {
+          "kind": "feedback-post-effect",
+          "shaderExecution": "controls",
+          "usesFeedbackTexture": false,
+          "usesVideoEcho": false,
+          "usesPostEffects": false,
+          "fallbackToLegacyFeedback": false
+        },
         "unsupported": []
       },
       "backends": {

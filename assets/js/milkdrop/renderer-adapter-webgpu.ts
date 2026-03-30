@@ -1,3 +1,4 @@
+import type { Texture } from 'three';
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -10,7 +11,6 @@ import {
   Mesh,
   NormalBlending,
   ShaderMaterial,
-  Texture,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';

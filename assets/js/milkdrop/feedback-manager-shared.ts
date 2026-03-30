@@ -569,7 +569,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           color = applyContrast(color, contrast);
           color *= colorScale;
           color *= tint;
-          if (overlayTextureSource > 0.5 && overlayTextureMode > 0.5 && overlayTextureAmount > 0.0001) {
+          bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;
+          bool overlayBlend = overlayTextureMode >= 1.5 && overlayTextureAmount > 0.0001;
+          if (overlayTextureSource > 0.5 && (overlayReplace || overlayBlend)) {
             vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
             vec3 overlayColor = sampleAuxTexture(
               overlayTextureSource,
