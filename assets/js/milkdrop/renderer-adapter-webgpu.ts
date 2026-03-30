@@ -584,7 +584,7 @@ class InstancedSegmentBatch {
   constructor(renderOrder: number) {
     this.group.renderOrder = renderOrder;
     this.normalMesh = this.createMesh(NormalBlending, renderOrder);
-    this.additiveMesh = this.createMesh(AdditiveBlending, renderOrder);
+    this.additiveMesh = this.createMesh(AdditiveBlending, renderOrder + 1);
     this.group.add(this.normalMesh, this.additiveMesh);
   }
 
@@ -1103,25 +1103,26 @@ class ShapeBatchBucket {
     getShapeTexture: () => Texture | null,
     renderOrder: number,
   ) {
+    const bucketRenderOrder = renderOrder + (additive ? 1 : 0);
     const blending = additive ? AdditiveBlending : NormalBlending;
-    this.group.renderOrder = renderOrder;
+    this.group.renderOrder = bucketRenderOrder;
     this.fill = new InstancedShapeFillBatch(
       sides,
       blending,
       getShapeTexture,
-      renderOrder,
+      bucketRenderOrder,
     );
     this.outline = new InstancedShapeRingBatch(
       sides,
       blending,
       0.16,
-      renderOrder,
+      bucketRenderOrder,
     );
     this.accent = new InstancedShapeRingBatch(
       sides,
       blending,
       0.15,
-      renderOrder,
+      bucketRenderOrder,
     );
     this.group.add(this.fill.mesh, this.outline.mesh, this.accent.mesh);
   }

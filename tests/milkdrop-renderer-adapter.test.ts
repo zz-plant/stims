@@ -656,6 +656,7 @@ wave_a=0.8
 shapecode_0_enabled=1
 shapecode_0_sides=6
 shapecode_0_rad=0.24
+shapecode_0_additive=0
 ob_size=0.03
       `.trim(),
       { id: 'wave-shape-border-later' },
@@ -753,6 +754,104 @@ mv_y=6
     expect(root.children[10]?.renderOrder).toBe(100);
     expect(root.children[11]?.renderOrder).toBe(110);
     expect(root.children[12]?.renderOrder).toBe(120);
+  });
+
+  test('keeps additive fallback custom waves above normal custom waves', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Fallback Additive Custom Waves
+wavecode_0_enabled=1
+wavecode_0_samples=24
+wavecode_0_usedots=0
+wavecode_0_additive=1
+wavecode_1_enabled=1
+wavecode_1_samples=24
+wavecode_1_usedots=0
+wavecode_1_additive=0
+      `.trim(),
+      { id: 'fallback-additive-custom-waves' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children?: Array<{ children?: Array<{ renderOrder?: number }> }>;
+    };
+    const customWaveGroup = root.children?.[3];
+    const waveOrders = (customWaveGroup?.children ?? [])
+      .map((child) => child.renderOrder)
+      .sort((left, right) => (left ?? 0) - (right ?? 0));
+
+    expect(waveOrders).toEqual([30, 31]);
+  });
+
+  test('keeps additive WebGPU wave batches above normal batches within a layer', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGPU Additive Custom Waves
+wavecode_0_enabled=1
+wavecode_0_samples=24
+wavecode_0_usedots=0
+wavecode_0_additive=1
+wavecode_1_enabled=1
+wavecode_1_samples=24
+wavecode_1_usedots=0
+wavecode_1_additive=0
+      `.trim(),
+      { id: 'webgpu-additive-custom-waves' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const customWaveBatches = flattenRenderTree(root).filter(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        child.material instanceof ShaderMaterial &&
+        (child.renderOrder ?? 0) >= 30 &&
+        (child.renderOrder ?? 0) < 40,
+    ) as Array<{
+      material: ShaderMaterial;
+      renderOrder?: number;
+    }>;
+    const normalBatch = customWaveBatches.find(
+      (child) => child.material.blending !== AdditiveBlending,
+    );
+    const additiveBatch = customWaveBatches.find(
+      (child) => child.material.blending === AdditiveBlending,
+    );
+
+    expect(normalBatch?.renderOrder).toBe(30);
+    expect(additiveBatch?.renderOrder).toBe(31);
+    expect(additiveBatch?.renderOrder ?? Infinity).toBeGreaterThan(
+      normalBatch?.renderOrder ?? -Infinity,
+    );
   });
 
   test('reuses wave and border objects across renders', () => {

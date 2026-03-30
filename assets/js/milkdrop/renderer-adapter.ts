@@ -626,6 +626,70 @@ function withRenderOrder<T extends { renderOrder: number }>(
   return object;
 }
 
+function getMilkdropLayerRenderOrder(
+  target:
+    | 'background'
+    | 'mesh'
+    | 'main-wave'
+    | 'custom-wave'
+    | 'trails'
+    | 'shapes'
+    | 'borders'
+    | 'motion-vectors'
+    | 'blend-main-wave'
+    | 'blend-custom-wave'
+    | 'blend-shapes'
+    | 'blend-borders'
+    | 'blend-motion-vectors',
+) {
+  switch (target) {
+    case 'background':
+      return 0;
+    case 'mesh':
+      return 10;
+    case 'main-wave':
+      return 20;
+    case 'custom-wave':
+      return 30;
+    case 'trails':
+      return 40;
+    case 'shapes':
+      return 50;
+    case 'borders':
+      return 60;
+    case 'motion-vectors':
+      return 70;
+    case 'blend-main-wave':
+      return 80;
+    case 'blend-custom-wave':
+      return 90;
+    case 'blend-shapes':
+      return 100;
+    case 'blend-borders':
+      return 110;
+    case 'blend-motion-vectors':
+      return 120;
+  }
+}
+
+function getMilkdropPassRenderOrder(
+  target:
+    | 'main-wave'
+    | 'custom-wave'
+    | 'trails'
+    | 'shapes'
+    | 'borders'
+    | 'motion-vectors'
+    | 'blend-main-wave'
+    | 'blend-custom-wave'
+    | 'blend-shapes'
+    | 'blend-borders'
+    | 'blend-motion-vectors',
+  additive = false,
+) {
+  return getMilkdropLayerRenderOrder(target) + (additive ? 1 : 0);
+}
+
 class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   private readonly behavior: MilkdropBackendBehavior;
@@ -648,7 +712,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         }),
       ),
     ),
-    0,
+    getMilkdropLayerRenderOrder('background'),
   );
   private readonly meshLines: LineSegments<
     BufferGeometry,
@@ -664,23 +728,35 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         }),
       ),
     ),
-    10,
+    getMilkdropLayerRenderOrder('mesh'),
   );
-  private readonly mainWaveGroup = withRenderOrder(new Group(), 20);
-  private readonly customWaveGroup = withRenderOrder(new Group(), 30);
-  private readonly trailGroup = withRenderOrder(new Group(), 40);
-  private readonly shapesGroup = withRenderOrder(new Group(), 50);
+  private readonly mainWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('main-wave'),
+  );
+  private readonly customWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('custom-wave'),
+  );
+  private readonly trailGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('trails'),
+  );
+  private readonly shapesGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('shapes'),
+  );
   private readonly borderGroup = withRenderOrder(
     markAlwaysOnscreen(new Group()),
-    60,
+    getMilkdropLayerRenderOrder('borders'),
   );
   private readonly motionVectorGroup = withRenderOrder(
     markAlwaysOnscreen(new Group()),
-    70,
+    getMilkdropLayerRenderOrder('motion-vectors'),
   );
   private readonly motionVectorCpuGroup = withRenderOrder(
     markAlwaysOnscreen(new Group()),
-    70,
+    getMilkdropLayerRenderOrder('motion-vectors'),
   );
   private readonly proceduralMotionVectors: LineSegments<
     BufferGeometry,
@@ -696,22 +772,31 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         }),
       ),
     ),
-    70,
+    getMilkdropLayerRenderOrder('motion-vectors'),
   );
-  private readonly blendWaveGroup = withRenderOrder(new Group(), 80);
-  private readonly blendCustomWaveGroup = withRenderOrder(new Group(), 90);
-  private readonly blendShapeGroup = withRenderOrder(new Group(), 100);
+  private readonly blendWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-main-wave'),
+  );
+  private readonly blendCustomWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-custom-wave'),
+  );
+  private readonly blendShapeGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-shapes'),
+  );
   private readonly blendBorderGroup = withRenderOrder(
     markAlwaysOnscreen(new Group()),
-    110,
+    getMilkdropLayerRenderOrder('blend-borders'),
   );
   private readonly blendMotionVectorGroup = withRenderOrder(
     markAlwaysOnscreen(new Group()),
-    120,
+    getMilkdropLayerRenderOrder('blend-motion-vectors'),
   );
   private readonly blendMotionVectorCpuGroup = withRenderOrder(
     markAlwaysOnscreen(new Group()),
-    120,
+    getMilkdropLayerRenderOrder('blend-motion-vectors'),
   );
   private readonly blendProceduralMotionVectors: LineSegments<
     BufferGeometry,
@@ -727,7 +812,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         }),
       ),
     ),
-    120,
+    getMilkdropLayerRenderOrder('blend-motion-vectors'),
   );
   private readonly feedback: MilkdropFeedbackManager | null;
   private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
@@ -853,8 +938,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,
-      syncWaveObject: (existing, wave, nextAlphaMultiplier) =>
-        syncWaveObjectHelper(
+      syncWaveObject: (existing, wave, nextAlphaMultiplier) => {
+        const synced = syncWaveObjectHelper(
           existing,
           wave,
           this.behavior,
@@ -865,7 +950,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             setMaterialColor,
           },
           nextAlphaMultiplier,
-        ),
+        );
+        if (synced) {
+          synced.renderOrder = getMilkdropPassRenderOrder(
+            target,
+            wave.additive,
+          );
+        }
+        return synced;
+      },
     });
   }
 
@@ -883,6 +976,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       const wave = waves[index] as MilkdropProceduralWaveVisual;
       const existing = group.children[index] as Line | undefined;
       const synced = syncProceduralWaveObject(existing, wave, interaction);
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        target === 'trail-waves' ? 'trails' : 'main-wave',
+        wave.additive,
+      );
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -909,6 +1006,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         existing,
         wave,
         interaction,
+      );
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        'custom-wave',
+        wave.additive,
       );
       if (!existing) {
         group.add(synced);
@@ -944,6 +1045,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         alphaMultiplier,
         interaction,
       );
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        'blend-main-wave',
+        wave.current.additive,
+      );
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -978,6 +1083,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         alphaMultiplier,
         interaction,
       );
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        'blend-custom-wave',
+        wave.current.additive,
+      );
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -1005,8 +1114,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,
-      syncShapeObject: (existing, shape, nextAlphaMultiplier) =>
-        syncShapeObjectHelper(
+      syncShapeObject: (existing, shape, nextAlphaMultiplier) => {
+        const synced = syncShapeObjectHelper(
           existing,
           shape,
           this.behavior,
@@ -1063,7 +1172,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             getUnitPolygonFillGeometry,
           },
           nextAlphaMultiplier,
-        ),
+        );
+        synced.renderOrder = getMilkdropPassRenderOrder(target, shape.additive);
+        return synced;
+      },
     });
   }
 
@@ -1168,13 +1280,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,
-      syncLineObject: (existing, line, nextAlphaMultiplier) =>
-        syncLineObjectHelper(existing, line, nextAlphaMultiplier, {
-          disposeObject,
-          ensureGeometryPositions,
-          markAlwaysOnscreen,
-          setMaterialColor,
-        }),
+      syncLineObject: (existing, line, nextAlphaMultiplier) => {
+        const synced = syncLineObjectHelper(
+          existing,
+          line,
+          nextAlphaMultiplier,
+          {
+            disposeObject,
+            ensureGeometryPositions,
+            markAlwaysOnscreen,
+            setMaterialColor,
+          },
+        );
+        synced.renderOrder = getMilkdropPassRenderOrder(target, line.additive);
+        return synced;
+      },
     });
   }
 
