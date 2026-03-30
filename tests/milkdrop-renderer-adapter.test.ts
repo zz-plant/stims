@@ -36,6 +36,7 @@ type RenderTreeNode = {
   material?: unknown;
   type?: string;
   instanceCount?: number;
+  renderOrder?: number;
 };
 
 function flattenRenderTree(node: RenderTreeNode): RenderTreeNode[] {
@@ -634,6 +635,71 @@ shapecode_0_thickoutline=1
     expect(
       accentMesh?.material?.uniforms?.layerZ?.value ?? Infinity,
     ).toBeLessThan(outlineMesh?.material?.uniforms?.layerZ?.value ?? -Infinity);
+  });
+
+  test('keeps WebGPU batched layer ordering stable when targets are created later', () => {
+    const initialPreset = compileMilkdropPresetSource(
+      `
+title=Shape First
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.24
+      `.trim(),
+      { id: 'shape-first' },
+    );
+    const layeredPreset = compileMilkdropPresetSource(
+      `
+title=Wave Shape Border Later
+wave_mode=0
+wave_usedots=0
+wave_a=0.8
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.24
+ob_size=0.03
+      `.trim(),
+      { id: 'wave-shape-border-later' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(initialPreset).step(makeSignals()),
+      blendState: null,
+    });
+    adapter.render({
+      frameState: createMilkdropVM(layeredPreset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveBatch = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceLine') !== undefined,
+    );
+    const shapeBatch = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceFillControl') !== undefined,
+    );
+    const borderBatch = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
+
+    expect(waveBatch?.renderOrder).toBe(20);
+    expect(shapeBatch?.renderOrder).toBe(50);
+    expect(borderBatch?.renderOrder).toBe(60);
+    expect(waveBatch?.renderOrder ?? Infinity).toBeLessThan(
+      shapeBatch?.renderOrder ?? -Infinity,
+    );
+    expect(shapeBatch?.renderOrder ?? Infinity).toBeLessThan(
+      borderBatch?.renderOrder ?? -Infinity,
+    );
   });
 
   test('reuses wave and border objects across renders', () => {

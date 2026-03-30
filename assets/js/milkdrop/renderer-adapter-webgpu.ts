@@ -271,6 +271,38 @@ function ensureInstancedAttribute(
   return attribute;
 }
 
+function getBatchedTargetRenderOrder(key: string) {
+  switch (key) {
+    case 'wave:main-wave':
+    case 'procedural-wave:main-wave':
+      return 20;
+    case 'wave:custom-wave':
+    case 'procedural-custom-wave':
+      return 30;
+    case 'line:trails':
+    case 'procedural-wave:trail-waves':
+      return 40;
+    case 'shapes':
+      return 50;
+    case 'borders':
+      return 60;
+    case 'line:motion-vectors':
+      return 70;
+    case 'wave:blend-main-wave':
+      return 80;
+    case 'wave:blend-custom-wave':
+      return 90;
+    case 'blend-shapes':
+      return 100;
+    case 'blend-borders':
+      return 110;
+    case 'line:blend-motion-vectors':
+      return 120;
+    default:
+      return 0;
+  }
+}
+
 class CompactSegmentUploadBuffer {
   private lineData: Float32Array<ArrayBufferLike> = new Float32Array(0);
   private styleData: Float32Array<ArrayBufferLike> = new Float32Array(0);
@@ -546,17 +578,21 @@ function buildProceduralWavePoint(
 
 class InstancedSegmentBatch {
   readonly group = new Group();
-  private readonly normalMesh = this.createMesh(NormalBlending);
-  private readonly additiveMesh = this.createMesh(AdditiveBlending);
+  private readonly normalMesh: Mesh;
+  private readonly additiveMesh: Mesh;
 
-  constructor() {
+  constructor(renderOrder: number) {
+    this.group.renderOrder = renderOrder;
+    this.normalMesh = this.createMesh(NormalBlending, renderOrder);
+    this.additiveMesh = this.createMesh(AdditiveBlending, renderOrder);
     this.group.add(this.normalMesh, this.additiveMesh);
   }
 
   private createMesh(
     blending: typeof NormalBlending | typeof AdditiveBlending,
+    renderOrder: number,
   ) {
-    return new Mesh(
+    const mesh = new Mesh(
       SEGMENT_QUAD_GEOMETRY.clone(),
       new ShaderMaterial({
         transparent: true,
@@ -591,6 +627,8 @@ class InstancedSegmentBatch {
         `,
       }),
     );
+    mesh.renderOrder = renderOrder;
+    return mesh;
   }
 
   syncSplit(
@@ -641,16 +679,20 @@ class InstancedSegmentBatch {
 
 class InstancedBorderBatch {
   readonly group = new Group();
-  private readonly fillMesh = this.createMesh(0.285);
-  private readonly outlineMesh = this.createMesh(0.3);
-  private readonly accentMesh = this.createMesh(0.31);
+  private readonly fillMesh: Mesh;
+  private readonly outlineMesh: Mesh;
+  private readonly accentMesh: Mesh;
 
-  constructor() {
+  constructor(renderOrder: number) {
+    this.group.renderOrder = renderOrder;
+    this.fillMesh = this.createMesh(0.285, renderOrder);
+    this.outlineMesh = this.createMesh(0.3, renderOrder);
+    this.accentMesh = this.createMesh(0.31, renderOrder);
     this.group.add(this.fillMesh, this.outlineMesh, this.accentMesh);
   }
 
-  private createMesh(_defaultZ: number) {
-    return new Mesh(
+  private createMesh(_defaultZ: number, renderOrder: number) {
+    const mesh = new Mesh(
       BORDER_RING_GEOMETRY.clone(),
       new ShaderMaterial({
         transparent: true,
@@ -680,6 +722,8 @@ class InstancedBorderBatch {
         `,
       }),
     );
+    mesh.renderOrder = renderOrder;
+    return mesh;
   }
 
   sync(borders: MilkdropBorderVisual[], alphaMultiplier: number) {
@@ -777,6 +821,7 @@ class InstancedShapeFillBatch {
     sides: number,
     blending: typeof NormalBlending | typeof AdditiveBlending,
     getShapeTexture: () => Texture | null,
+    renderOrder: number,
   ) {
     this.getShapeTexture = getShapeTexture;
     this.mesh = new Mesh(
@@ -863,6 +908,7 @@ class InstancedShapeFillBatch {
         `,
       }),
     );
+    this.mesh.renderOrder = renderOrder;
   }
 
   sync(instances: ShapeFillInstance[]) {
@@ -945,6 +991,7 @@ class InstancedShapeRingBatch {
     sides: number,
     blending: typeof NormalBlending | typeof AdditiveBlending,
     layerZ: number,
+    renderOrder: number,
   ) {
     this.mesh = new Mesh(
       getUnitPolygonRingGeometry(sides).clone(),
@@ -990,6 +1037,7 @@ class InstancedShapeRingBatch {
         `,
       }),
     );
+    this.mesh.renderOrder = renderOrder;
   }
 
   sync(instances: ShapeRingInstance[]) {
@@ -1053,11 +1101,28 @@ class ShapeBatchBucket {
     sides: number,
     additive: boolean,
     getShapeTexture: () => Texture | null,
+    renderOrder: number,
   ) {
     const blending = additive ? AdditiveBlending : NormalBlending;
-    this.fill = new InstancedShapeFillBatch(sides, blending, getShapeTexture);
-    this.outline = new InstancedShapeRingBatch(sides, blending, 0.16);
-    this.accent = new InstancedShapeRingBatch(sides, blending, 0.15);
+    this.group.renderOrder = renderOrder;
+    this.fill = new InstancedShapeFillBatch(
+      sides,
+      blending,
+      getShapeTexture,
+      renderOrder,
+    );
+    this.outline = new InstancedShapeRingBatch(
+      sides,
+      blending,
+      0.16,
+      renderOrder,
+    );
+    this.accent = new InstancedShapeRingBatch(
+      sides,
+      blending,
+      0.15,
+      renderOrder,
+    );
     this.group.add(this.fill.mesh, this.outline.mesh, this.accent.mesh);
   }
 
@@ -1128,9 +1193,12 @@ class ShapeBatchTarget {
   readonly group = new Group();
   private readonly buckets = new Map<string, ShapeBatchBucket>();
   private readonly getShapeTexture: () => Texture | null;
+  private readonly renderOrder: number;
 
-  constructor(getShapeTexture: () => Texture | null) {
+  constructor(getShapeTexture: () => Texture | null, renderOrder: number) {
     this.getShapeTexture = getShapeTexture;
+    this.renderOrder = renderOrder;
+    this.group.renderOrder = renderOrder;
   }
 
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
@@ -1150,6 +1218,7 @@ class ShapeBatchTarget {
           Number(sides),
           mode === 'add',
           this.getShapeTexture,
+          this.renderOrder,
         );
         this.buckets.set(key, bucket);
         this.group.add(bucket.group);
@@ -1200,7 +1269,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getWaveTarget(key: string) {
     let target = this.waveTargets.get(key);
     if (!target) {
-      target = new InstancedSegmentBatch();
+      target = new InstancedSegmentBatch(getBatchedTargetRenderOrder(key));
       this.waveTargets.set(key, target);
       this.root.add(target.group);
     }
@@ -1210,7 +1279,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getShapeTarget(key: string) {
     let target = this.shapeTargets.get(key);
     if (!target) {
-      target = new ShapeBatchTarget(() => this.shapeTexture);
+      target = new ShapeBatchTarget(
+        () => this.shapeTexture,
+        getBatchedTargetRenderOrder(key),
+      );
       this.shapeTargets.set(key, target);
       this.root.add(target.group);
     }
@@ -1230,7 +1302,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getBorderTarget(key: string) {
     let target = this.borderTargets.get(key);
     if (!target) {
-      target = new InstancedBorderBatch();
+      target = new InstancedBorderBatch(getBatchedTargetRenderOrder(key));
       this.borderTargets.set(key, target);
       this.root.add(target.group);
     }
