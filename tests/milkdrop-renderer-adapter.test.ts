@@ -2240,6 +2240,134 @@ wavecode_0_thick=5
     );
   });
 
+  test('keeps additive procedural main-wave blends above normal blend order on webgpu', () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Additive Procedural Main Wave Previous
+wave_mode=0
+wave_usedots=0
+wave_additive=1
+wave_a=0.8
+      `.trim(),
+      { id: 'additive-procedural-main-wave-previous' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Normal Procedural Main Wave Current
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+      `.trim(),
+      { id: 'normal-procedural-main-wave-current' },
+    );
+
+    const previousVm = createMilkdropVM(previousPreset);
+    previousVm.setRenderBackend('webgpu');
+    const currentVm = createMilkdropVM(currentPreset);
+    currentVm.setRenderBackend('webgpu');
+    const previousFrame = previousVm.step(makeSignals({ time: 0.1 }));
+    const frameState = currentVm.step(makeSignals({ time: 0.3 }));
+
+    expect(previousFrame.gpuGeometry.mainWave).not.toBeNull();
+    expect(frameState.gpuGeometry.mainWave).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const blendedMainWave = flattenRenderTree(root).find(
+      (child) =>
+        child.material instanceof ShaderMaterial &&
+        child.material.blending === AdditiveBlending &&
+        child.renderOrder === 81,
+    ) as { material?: ShaderMaterial; renderOrder?: number } | undefined;
+
+    expect(blendedMainWave?.material).toBeInstanceOf(ShaderMaterial);
+    expect(blendedMainWave?.material?.blending).toBe(AdditiveBlending);
+    expect(blendedMainWave?.renderOrder).toBe(81);
+  });
+
+  test('keeps additive procedural custom-wave blends above normal blend order on webgpu', () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Additive Procedural Custom Wave Previous
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_usedots=0
+wavecode_0_additive=1
+wavecode_0_a=0.35
+      `.trim(),
+      { id: 'additive-procedural-custom-wave-previous' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Normal Procedural Custom Wave Current
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_usedots=0
+wavecode_0_additive=0
+wavecode_0_a=0.35
+      `.trim(),
+      { id: 'normal-procedural-custom-wave-current' },
+    );
+
+    const previousVm = createMilkdropVM(previousPreset);
+    previousVm.setRenderBackend('webgpu');
+    const currentVm = createMilkdropVM(currentPreset);
+    currentVm.setRenderBackend('webgpu');
+    const previousFrame = previousVm.step(makeSignals({ time: 0.1 }));
+    const frameState = currentVm.step(makeSignals({ time: 0.3 }));
+
+    expect(previousFrame.gpuGeometry.customWaves).toHaveLength(1);
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const blendedCustomWave = flattenRenderTree(root).find(
+      (child) =>
+        child.material instanceof ShaderMaterial &&
+        child.material.blending === AdditiveBlending &&
+        child.renderOrder === 91,
+    ) as { material?: ShaderMaterial; renderOrder?: number } | undefined;
+
+    expect(blendedCustomWave?.material).toBeInstanceOf(ShaderMaterial);
+    expect(blendedCustomWave?.material?.blending).toBe(AdditiveBlending);
+    expect(blendedCustomWave?.renderOrder).toBe(91);
+  });
+
   test('renders GPU blend snapshots on webgl without requiring CPU-cloned wave state', () => {
     const preset = compileMilkdropPresetSource(
       `
