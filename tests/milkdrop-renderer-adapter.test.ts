@@ -702,6 +702,59 @@ ob_size=0.03
     );
   });
 
+  test('keeps fallback layer ordering explicit on the adapter root', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Fallback Layer Ordering
+wave_mode=0
+wave_usedots=0
+wave_a=0.8
+shapecode_0_enabled=1
+shapecode_0_sides=6
+ob_size=0.03
+mv_a=0.4
+mv_x=8
+mv_y=6
+      `.trim(),
+      { id: 'fallback-layer-ordering' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        renderOrder?: number;
+      }>;
+    };
+
+    expect(root.children[0]?.renderOrder).toBe(0);
+    expect(root.children[1]?.renderOrder).toBe(10);
+    expect(root.children[2]?.renderOrder).toBe(20);
+    expect(root.children[3]?.renderOrder).toBe(30);
+    expect(root.children[4]?.renderOrder).toBe(40);
+    expect(root.children[5]?.renderOrder).toBe(50);
+    expect(root.children[6]?.renderOrder).toBe(60);
+    expect(root.children[7]?.renderOrder).toBe(70);
+    expect(root.children[8]?.renderOrder).toBe(80);
+    expect(root.children[9]?.renderOrder).toBe(90);
+    expect(root.children[10]?.renderOrder).toBe(100);
+    expect(root.children[11]?.renderOrder).toBe(110);
+    expect(root.children[12]?.renderOrder).toBe(120);
+  });
+
   test('reuses wave and border objects across renders', () => {
     const preset = compileMilkdropPresetSource(
       `

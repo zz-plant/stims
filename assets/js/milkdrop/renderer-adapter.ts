@@ -618,6 +618,14 @@ function trimGroupChildren(group: Group, keepCount: number) {
   }
 }
 
+function withRenderOrder<T extends { renderOrder: number }>(
+  object: T,
+  renderOrder: number,
+) {
+  object.renderOrder = renderOrder;
+  return object;
+}
+
 class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   readonly backend: 'webgl' | 'webgpu';
   private readonly behavior: MilkdropBackendBehavior;
@@ -627,69 +635,99 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly camera: Camera;
   private readonly renderer: RendererLike | null;
   private readonly root = new Group();
-  private readonly background = markAlwaysOnscreen(
-    new Mesh(
-      BACKGROUND_GEOMETRY,
-      new MeshBasicMaterial({
-        color: 0x000000,
-        transparent: false,
-        opacity: 1,
-        depthWrite: true,
-        depthTest: false,
-      }),
+  private readonly background = withRenderOrder(
+    markAlwaysOnscreen(
+      new Mesh(
+        BACKGROUND_GEOMETRY,
+        new MeshBasicMaterial({
+          color: 0x000000,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true,
+          depthTest: false,
+        }),
+      ),
     ),
+    0,
   );
   private readonly meshLines: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = markAlwaysOnscreen(
-    new LineSegments(
-      new BufferGeometry(),
-      new LineBasicMaterial({
-        color: 0x4d66f2,
-        transparent: true,
-        opacity: 0.24,
-      }),
+  > = withRenderOrder(
+    markAlwaysOnscreen(
+      new LineSegments(
+        new BufferGeometry(),
+        new LineBasicMaterial({
+          color: 0x4d66f2,
+          transparent: true,
+          opacity: 0.24,
+        }),
+      ),
     ),
+    10,
   );
-  private readonly mainWaveGroup = new Group();
-  private readonly customWaveGroup = new Group();
-  private readonly trailGroup = new Group();
-  private readonly shapesGroup = new Group();
-  private readonly borderGroup = markAlwaysOnscreen(new Group());
-  private readonly motionVectorGroup = markAlwaysOnscreen(new Group());
-  private readonly motionVectorCpuGroup = markAlwaysOnscreen(new Group());
+  private readonly mainWaveGroup = withRenderOrder(new Group(), 20);
+  private readonly customWaveGroup = withRenderOrder(new Group(), 30);
+  private readonly trailGroup = withRenderOrder(new Group(), 40);
+  private readonly shapesGroup = withRenderOrder(new Group(), 50);
+  private readonly borderGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    60,
+  );
+  private readonly motionVectorGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    70,
+  );
+  private readonly motionVectorCpuGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    70,
+  );
   private readonly proceduralMotionVectors: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = markAlwaysOnscreen(
-    new LineSegments(
-      new BufferGeometry(),
-      new LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.35,
-      }),
+  > = withRenderOrder(
+    markAlwaysOnscreen(
+      new LineSegments(
+        new BufferGeometry(),
+        new LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.35,
+        }),
+      ),
     ),
+    70,
   );
-  private readonly blendWaveGroup = new Group();
-  private readonly blendCustomWaveGroup = new Group();
-  private readonly blendShapeGroup = new Group();
-  private readonly blendBorderGroup = markAlwaysOnscreen(new Group());
-  private readonly blendMotionVectorGroup = markAlwaysOnscreen(new Group());
-  private readonly blendMotionVectorCpuGroup = markAlwaysOnscreen(new Group());
+  private readonly blendWaveGroup = withRenderOrder(new Group(), 80);
+  private readonly blendCustomWaveGroup = withRenderOrder(new Group(), 90);
+  private readonly blendShapeGroup = withRenderOrder(new Group(), 100);
+  private readonly blendBorderGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    110,
+  );
+  private readonly blendMotionVectorGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    120,
+  );
+  private readonly blendMotionVectorCpuGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    120,
+  );
   private readonly blendProceduralMotionVectors: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = markAlwaysOnscreen(
-    new LineSegments(
-      new BufferGeometry(),
-      new LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.35,
-      }),
+  > = withRenderOrder(
+    markAlwaysOnscreen(
+      new LineSegments(
+        new BufferGeometry(),
+        new LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.35,
+        }),
+      ),
     ),
+    120,
   );
   private readonly feedback: MilkdropFeedbackManager | null;
   private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
