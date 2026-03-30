@@ -50,10 +50,6 @@ export function presetFidelityBadgeLabel(fidelity: MilkdropFidelityClass) {
   }
 }
 
-export function presetCertificationBadgeLabel(measured: boolean) {
-  return measured ? 'Checked' : 'Estimated';
-}
-
 export function getPresetMetaQualifier(preset: MilkdropCatalogEntry) {
   if (preset.historyIndex !== undefined) {
     return 'Recent';
@@ -221,6 +217,7 @@ function buildPresetRow({
   title.className = 'milkdrop-overlay__preset-title';
   title.textContent = preset.title;
 
+  const support = preset.supports[activeBackend];
   const badges = document.createElement('div');
   badges.className = 'milkdrop-overlay__preset-badges';
 
@@ -232,16 +229,11 @@ function buildPresetRow({
     badges.appendChild(activeBadge);
   }
 
-  const supportBadge = document.createElement('span');
-  supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${preset.fidelityClass}`;
-  supportBadge.textContent = presetFidelityBadgeLabel(preset.fidelityClass);
-  badges.appendChild(supportBadge);
-
-  if (preset.visualCertification?.measured) {
-    const certificationBadge = document.createElement('span');
-    certificationBadge.className = 'milkdrop-overlay__preset-tag';
-    certificationBadge.textContent = presetCertificationBadgeLabel(true);
-    badges.appendChild(certificationBadge);
+  if (preset.fidelityClass !== 'exact' || support.status !== 'supported') {
+    const supportBadge = document.createElement('span');
+    supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${preset.fidelityClass}`;
+    supportBadge.textContent = presetFidelityBadgeLabel(preset.fidelityClass);
+    badges.appendChild(supportBadge);
   }
 
   titleRow.append(title, badges);
@@ -274,7 +266,6 @@ function buildPresetRow({
 
   row.append(launch, actions);
 
-  const support = preset.supports[activeBackend];
   const hasCompatibilityWarning =
     support.status !== 'supported' ||
     preset.parity.degradationReasons.length > 0;

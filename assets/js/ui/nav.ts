@@ -4,7 +4,6 @@ import {
   isBelowBreakpoint,
   maxWidthQuery,
 } from '../utils/breakpoints';
-import { isMobileDevice } from '../utils/device-detect';
 import {
   exitToyPictureInPicture,
   getToyPictureInPictureVideo,
@@ -305,17 +304,10 @@ function renderToyNav(
   options: NavOptions,
 ) {
   const safeTitle = escapeHtml(options.title ?? 'Stims');
-  const safeSlug = options.slug ? escapeHtml(options.slug) : '';
-  const hintText = isMobileDevice()
-    ? 'Open Controls when you need the rest.'
-    : 'Press M or open Controls.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
-      <p class="active-toy-nav__eyebrow">Now playing</p>
       <p class="active-toy-nav__title">${safeTitle}</p>
-      <p class="active-toy-nav__hint">${hintText}</p>
-      ${safeSlug ? `<span class="active-toy-nav__pill">${safeSlug}</span>` : ''}
       <div class="active-toy-nav__mobile-actions">
         <button
           type="button"
@@ -563,18 +555,20 @@ function renderToyNav(
   const updateHapticsUI = () => {
     if (!hapticsBtn) return;
     hapticsBtn.setAttribute('aria-pressed', String(hapticsActive));
-    hapticsBtn.textContent = hapticsActive ? 'Pulse on' : 'Pulse';
+    hapticsBtn.textContent = hapticsActive
+      ? 'Pulse feedback on'
+      : 'Pulse feedback';
   };
 
   const handleNextToy = async () => {
     if (!options.onNextToy || !nextBtn) return;
     nextBtn.disabled = true;
     nextBtn.setAttribute('aria-busy', 'true');
-    showNextStatus('Loading next stim…');
+    showNextStatus('Loading next look…');
     try {
       await options.onNextToy();
     } catch (_error) {
-      showNextStatus('Unable to load next stim.');
+      showNextStatus('Unable to load the next look.');
     } finally {
       nextBtn.disabled = false;
       nextBtn.removeAttribute('aria-busy');
@@ -589,7 +583,7 @@ function renderToyNav(
     updateHapticsUI();
     options.onToggleHaptics?.(hapticsActive);
     showHapticsStatus(
-      hapticsActive ? 'Beat haptics enabled.' : 'Beat haptics disabled.',
+      hapticsActive ? 'Pulse feedback on.' : 'Pulse feedback off.',
     );
   });
 
@@ -611,7 +605,7 @@ function renderToyNav(
         doc.execCommand('copy');
         helper.remove();
       }
-      showShareStatus('Share link copied.');
+      showShareStatus('Link copied.');
     } catch (_error) {
       showShareStatus('Unable to copy link.');
     }
@@ -826,7 +820,7 @@ function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
       if (errorName === 'NotSupportedError') {
         disablePip('Picture-in-picture is not available in this browser.');
       } else {
-        showStatus('Unable to use picture in picture.');
+        showStatus('Unable to open the mini player.');
       }
       updateButtonState();
     } finally {
@@ -859,16 +853,15 @@ function renderRendererStatus(
   const titleText = escapeHtml(
     status.fallbackReason ??
       (fallback
-        ? 'Running in compatibility mode.'
-        : 'Running with the highest-fidelity renderer.'),
+        ? 'Using a simpler renderer on this device.'
+        : 'Using the highest-quality renderer available on this device.'),
   );
 
   container.innerHTML = `
     <div class="renderer-status">
       <span class="renderer-pill ${pillClass}" title="${titleText}">
-        ${fallback ? 'Compatibility mode' : 'Best quality'}
+        ${fallback ? 'Using a simpler renderer' : 'Best quality'}
       </span>
-      ${fallbackReason ? `<small class="renderer-pill__detail">${fallbackReason}</small>` : ''}
       ${status.actionLabel ? `<button type="button" class="renderer-pill__retry">${escapeHtml(status.actionLabel)}</button>` : ''}
     </div>
   `;

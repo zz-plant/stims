@@ -278,6 +278,24 @@ describe('toy navigation visibility states', () => {
     ).toBe(false);
   });
 
+  test('toy nav keeps the default surface focused on the title and controls', () => {
+    const { matchMedia } = createMatchMediaStub();
+    window.matchMedia = matchMedia;
+
+    const container = document.getElementById('nav') as HTMLElement;
+    initNavigation(container, {
+      mode: 'toy',
+      title: 'Spectrum Bloom',
+      slug: 'spectrum-bloom',
+    });
+
+    expect(container.querySelector('.active-toy-nav__eyebrow')).toBeNull();
+    expect(container.querySelector('.active-toy-nav__hint')).toBeNull();
+    expect(container.querySelector('.active-toy-nav__pill')).toBeNull();
+    expect(container.textContent).toContain('Spectrum Bloom');
+    expect(container.textContent).toContain('Controls');
+  });
+
   test('immersive sessions auto-hide chrome until interaction reveals it again', async () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;

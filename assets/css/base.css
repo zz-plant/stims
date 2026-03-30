@@ -4830,3 +4830,282 @@ body {
     display: grid;
   }
 }
+
+/* Mobile polish pass: reclaim vertical space and reduce control density. */
+@media (max-width: 640px) {
+  :root[data-focused-session="launch"] .active-toy-nav,
+  :root[data-focused-session="live"] .active-toy-nav {
+    gap: 3px;
+    max-height: min(16svh, 128px);
+    padding: 6px 8px;
+  }
+
+  :root[data-focused-session="launch"] .active-toy-nav__eyebrow,
+  :root[data-focused-session="live"] .active-toy-nav__eyebrow {
+    display: none;
+  }
+
+  :root[data-focused-session="launch"] .active-toy-nav__content,
+  :root[data-focused-session="live"] .active-toy-nav__content {
+    gap: 0;
+  }
+
+  :root[data-focused-session="launch"] .active-toy-nav__title,
+  :root[data-focused-session="live"] .active-toy-nav__title {
+    font-size: 0.86rem;
+  }
+
+  :root[data-focused-session="launch"] .active-toy-nav__mobile-actions,
+  :root[data-focused-session="live"] .active-toy-nav__mobile-actions {
+    margin-top: 2px;
+  }
+
+  :root[data-focused-session="launch"] .toy-nav__mobile-toggle,
+  :root[data-focused-session="launch"] .toy-nav__back-quick,
+  :root[data-focused-session="live"] .toy-nav__mobile-toggle,
+  :root[data-focused-session="live"] .toy-nav__back-quick {
+    min-height: 36px;
+    padding: 7px 9px;
+    font-size: 0.77rem;
+  }
+
+  .milkdrop-overlay.is-open .milkdrop-overlay__panel,
+  :root[data-focused-session="launch"]
+    .milkdrop-overlay.is-open
+    .milkdrop-overlay__panel,
+  :root[data-focused-session="live"]
+    .milkdrop-overlay.is-open
+    .milkdrop-overlay__panel {
+    max-height: min(78dvh, 760px);
+  }
+
+  .milkdrop-overlay[data-active-view="tools"][data-active-tool-view="editor"].is-open
+    .milkdrop-overlay__panel {
+    max-height: min(84dvh, 820px);
+  }
+
+  .milkdrop-overlay__header {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    gap: 8px;
+  }
+
+  .milkdrop-overlay__title {
+    font-size: 0.9rem;
+  }
+
+  .milkdrop-overlay__status {
+    display: none;
+  }
+
+  .milkdrop-overlay__header-actions {
+    gap: 6px;
+  }
+
+  .milkdrop-overlay__close,
+  .milkdrop-overlay__hud-toggle,
+  .milkdrop-overlay__toolbar button,
+  .milkdrop-overlay__editor-actions button,
+  .milkdrop-overlay__favorite,
+  .milkdrop-overlay__tabs button,
+  .milkdrop-overlay__rating-select {
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: 0.78rem;
+  }
+
+  .milkdrop-overlay__toolbar {
+    gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .milkdrop-overlay__toolbar-group,
+  .milkdrop-overlay__toolbar-group:first-child {
+    gap: 8px;
+  }
+
+  .milkdrop-overlay__toolbar-field span,
+  .milkdrop-overlay__browse-control-label {
+    font-size: 0.68rem;
+  }
+
+  .milkdrop-overlay__blend {
+    gap: 6px;
+    font-size: 0.82rem;
+  }
+
+  .milkdrop-overlay__tabs {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .milkdrop-overlay__browse {
+    gap: 8px;
+    margin-top: 8px;
+    padding-bottom: 16px;
+  }
+
+  .milkdrop-overlay__browse-hero {
+    gap: 4px;
+  }
+
+  .milkdrop-overlay__browse-active {
+    font-size: 1rem;
+  }
+
+  .milkdrop-overlay__browse-support,
+  .milkdrop-overlay__browse-meta {
+    font-size: 0.76rem;
+  }
+
+  .milkdrop-overlay__search {
+    min-height: 36px;
+    padding: 7px 10px;
+  }
+
+  .milkdrop-overlay__browse-mode-tab,
+  .milkdrop-overlay__browse-options-summary,
+  .milkdrop-overlay__collection-filter {
+    min-height: 30px;
+    font-size: 0.72rem;
+  }
+
+  .milkdrop-overlay__preset {
+    gap: 8px;
+    padding: 10px 11px;
+  }
+
+  .milkdrop-overlay__preset-title {
+    font-size: 0.92rem;
+  }
+
+  .milkdrop-overlay__preset-meta {
+    font-size: 0.74rem;
+  }
+
+  .milkdrop-overlay__preset-badges {
+    gap: 4px;
+  }
+
+  .milkdrop-overlay__support,
+  .milkdrop-overlay__preset-tag {
+    padding: 3px 7px;
+    font-size: 0.64rem;
+  }
+
+  .milkdrop-overlay__editor-intro {
+    gap: 8px;
+  }
+
+  .milkdrop-overlay__editor-badges {
+    gap: 6px;
+  }
+
+  .milkdrop-overlay__editor-badge {
+    min-height: 28px;
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+
+  .milkdrop-overlay__editor-status {
+    font-size: 0.76rem;
+  }
+
+  .milkdrop-overlay__editor {
+    min-height: min(34dvh, 320px);
+  }
+
+  .milkdrop-overlay__editor .cm-editor {
+    min-height: min(34dvh, 320px);
+  }
+
+  .milkdrop-overlay__editor-actions {
+    gap: 6px;
+  }
+
+  .milkdrop-overlay__editor-snippet-buttons {
+    gap: 6px;
+  }
+
+  .milkdrop-overlay__editor-snippet {
+    min-height: 56px;
+    padding: 8px 10px;
+  }
+
+  .milkdrop-overlay__editor-snippet strong {
+    font-size: 0.82rem;
+  }
+
+  .milkdrop-overlay__editor-snippet span {
+    font-size: 0.74rem;
+  }
+
+  .milkdrop-overlay__osd {
+    bottom: 0.75rem;
+    min-width: min(16rem, calc(100vw - 1rem));
+    max-width: min(20rem, calc(100vw - 1rem));
+    padding: 0.75rem 0.9rem;
+  }
+
+  .milkdrop-overlay__osd-title {
+    font-size: 0.9rem;
+  }
+
+  .milkdrop-overlay__osd-meta {
+    font-size: 0.72rem;
+  }
+
+  .milkdrop-overlay__browse-support,
+  .milkdrop-overlay__editor-status,
+  .milkdrop-overlay__editor-tips {
+    display: none;
+  }
+
+  .milkdrop-overlay__toolbar-group--transport
+    .milkdrop-overlay__transport-button:last-child {
+    display: none;
+  }
+
+  .milkdrop-overlay__toolbar-group:first-child .milkdrop-overlay__checkbox {
+    display: none;
+  }
+
+  .milkdrop-overlay__browse-mode-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .milkdrop-overlay__browse-mode-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .milkdrop-overlay__browse-options {
+    justify-self: start;
+  }
+
+  .milkdrop-overlay__browse-count {
+    min-width: 22px;
+    min-height: 16px;
+    font-size: 0.62rem;
+  }
+
+  .milkdrop-overlay__preset-actions {
+    display: none;
+  }
+
+  .milkdrop-overlay__editor-quick-ideas {
+    gap: 6px;
+  }
+
+  .milkdrop-overlay__editor-snippet-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .milkdrop-overlay__editor-snippet {
+    min-height: 48px;
+  }
+}

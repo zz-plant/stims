@@ -8425,3 +8425,222 @@ body[data-page="home"] .content {
     font-size: clamp(2.25rem, 9vw, 3.5rem);
   }
 }
+
+@media (max-width: 640px) {
+  .section-shell {
+    padding: 0.85rem;
+  }
+
+  .shell-header {
+    padding-top: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .top-nav {
+    padding: 0.6rem 0.75rem;
+    border-radius: 18px;
+    top: 0.35rem;
+  }
+
+  .brand {
+    gap: 0.5rem;
+  }
+
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+
+  .brand-copy .eyebrow {
+    font-size: 0.68rem;
+  }
+
+  .brand-title {
+    font-size: 0.92rem;
+  }
+
+  .nav-toggle {
+    min-height: 38px;
+    padding: 0.45rem 0.7rem;
+    border-radius: 10px;
+  }
+
+  .nav-link {
+    min-height: 38px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.92rem;
+  }
+
+  body[data-page="home"] .content {
+    gap: 0.9rem;
+  }
+
+  .home-shell,
+  .launch-shell {
+    gap: 0.85rem;
+  }
+
+  .home-stage {
+    padding: 1rem;
+  }
+
+  .home-stage__copy {
+    gap: 0.65rem;
+  }
+
+  .home-stage__copy h1 {
+    font-size: clamp(2.25rem, 11vw, 3.35rem);
+    max-width: 8ch;
+  }
+
+  .home-stage__copy .tagline,
+  .home-stage__support {
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .home-stage__visual {
+    gap: 0.6rem;
+  }
+
+  .home-stage__viewport {
+    min-height: 17rem;
+    padding: 0.75rem;
+  }
+
+  .home-stage__viewport-header {
+    font-size: 0.68rem;
+  }
+
+  .home-stage__orb {
+    width: 8.5rem;
+  }
+
+  .home-stage__waveform {
+    bottom: 10%;
+    left: 8%;
+    right: 8%;
+    gap: 0.22rem;
+  }
+
+  .home-stage__meta {
+    gap: 0.5rem;
+  }
+
+  .home-stage__metric,
+  .home-stage__panel,
+  .launch-card,
+  .system-card,
+  .home-system__footer,
+  .home-presets__frame {
+    padding: 0.9rem;
+  }
+
+  .home-stage__metric-value {
+    font-size: 0.95rem;
+  }
+
+  .home-stage__panel--summary {
+    max-width: none;
+  }
+
+  .home-stage__panel--summary p:last-child {
+    font-size: 0.92rem;
+  }
+
+  .section-heading {
+    gap: 0.35rem;
+  }
+
+  .section-heading h2 {
+    font-size: clamp(1.6rem, 8vw, 2.2rem);
+  }
+
+  .section-description {
+    font-size: 0.94rem;
+    line-height: 1.45;
+  }
+
+  .home-launches__grid {
+    gap: 0.6rem;
+  }
+
+  .launch-card {
+    gap: 0.5rem;
+  }
+
+  .launch-card h3 {
+    font-size: 1.05rem;
+  }
+
+  .launch-card p {
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  body[data-page="home"] .hero-cta-row {
+    gap: 0.5rem;
+  }
+
+  body[data-page="home"] .hero-cta-row .cta-button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .launch-shell {
+    gap: 0.75rem;
+  }
+
+  .launch-intro__copy {
+    gap: 0.7rem;
+  }
+
+  .launch-intro__copy h1 {
+    font-size: clamp(2rem, 9.5vw, 3rem);
+    max-width: 10ch;
+  }
+
+  .launch-intro__copy .section-description,
+  .launch-intro__support {
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .launch-intro__actions {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .launch-intro__actions .cta-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .launch-intro__support {
+    max-width: 30rem;
+  }
+
+  .launch-panels__header {
+    gap: 0.35rem;
+  }
+
+  .launch-panels__header h2 {
+    font-size: clamp(1.45rem, 7.5vw, 2.1rem);
+  }
+
+  .launch-panels .shell-panels {
+    gap: 0.7rem;
+  }
+
+  .launch-panels .shell-panel--tune {
+    opacity: 1;
+  }
+
+  .launch-panels .shell-panel[data-audio-controls] > .control-panel,
+  .launch-panels .shell-panel[data-settings-panel] > .control-panel,
+  .launch-panels .shell-panel > [data-audio-controls] > .control-panel,
+  .launch-panels .shell-panel > [data-settings-panel] > .control-panel {
+    border-radius: 20px;
+  }
+}

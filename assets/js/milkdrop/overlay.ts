@@ -93,7 +93,7 @@ export class MilkdropOverlay {
     this.toggleButton = document.createElement('button');
     this.toggleButton.type = 'button';
     this.toggleButton.className = 'milkdrop-overlay__toggle';
-    this.toggleButton.textContent = 'Mix';
+    this.toggleButton.textContent = 'Controls';
     this.toggleButton.addEventListener('click', () => this.toggleOpen());
 
     this.panel = document.createElement('aside');
@@ -115,7 +115,7 @@ export class MilkdropOverlay {
     this.shortcutHud.hidden = true;
     const shortcutHeading = document.createElement('div');
     shortcutHeading.className = 'milkdrop-overlay__shortcut-title';
-    shortcutHeading.textContent = 'Live controls';
+    shortcutHeading.textContent = 'Keyboard shortcuts';
     const shortcutList = document.createElement('div');
     shortcutList.className = 'milkdrop-overlay__shortcut-list';
     [
@@ -142,7 +142,7 @@ export class MilkdropOverlay {
     this.currentPresetLabel.textContent = 'MilkDrop Visualizer';
     this.statusLabel = document.createElement('div');
     this.statusLabel.className = 'milkdrop-overlay__status';
-    this.statusLabel.textContent = 'Loading catalog...';
+    this.statusLabel.hidden = true;
     titleBlock.append(this.currentPresetLabel, this.statusLabel);
 
     const headerActions = document.createElement('div');
@@ -271,7 +271,7 @@ export class MilkdropOverlay {
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.tab = tab;
-      button.textContent = tab === 'browse' ? 'Presets' : 'Tools';
+      button.textContent = tab === 'browse' ? 'Looks' : 'Tools';
       button.addEventListener('click', () =>
         this.setActiveView(tab as OverlayPrimaryView),
       );
@@ -495,7 +495,9 @@ export class MilkdropOverlay {
   }
 
   setStatus(message: string) {
-    this.statusLabel.textContent = message;
+    const nextMessage = message.trim();
+    this.statusLabel.textContent = nextMessage;
+    this.statusLabel.hidden = nextMessage.length === 0;
   }
 
   dispose() {

@@ -28,10 +28,6 @@ type BrowseSection = {
   presets: MilkdropCatalogEntry[];
 };
 
-function browseBackendLabel(backend: 'webgl' | 'webgpu') {
-  return backend === 'webgpu' ? 'Best quality' : 'Compatibility mode';
-}
-
 type BrowsePanelCallbacks = PresetRowCallbacks & {
   onSelectQualityPreset: (presetId: string) => void;
 };
@@ -132,7 +128,6 @@ export class BrowsePanel {
   private readonly browseList: HTMLElement;
   private readonly browseEyebrowLabel: HTMLElement;
   private readonly browseActiveLabel: HTMLElement;
-  private readonly browseSupportLabel: HTMLElement;
   private readonly browseMetaLabel: HTMLElement;
   private readonly browseModeButtons: HTMLButtonElement[] = [];
   private readonly browseOptionsDisclosure: HTMLDetailsElement;
@@ -170,23 +165,19 @@ export class BrowsePanel {
 
     this.browseActiveLabel = document.createElement('div');
     this.browseActiveLabel.className = 'milkdrop-overlay__browse-active';
-    this.browseActiveLabel.textContent = 'Loading presets...';
+    this.browseActiveLabel.textContent = 'Choose a look';
     this.browseActiveLabel.setAttribute('aria-live', 'polite');
     this.browseActiveLabel.setAttribute('aria-atomic', 'true');
 
-    this.browseSupportLabel = document.createElement('p');
-    this.browseSupportLabel.className = 'milkdrop-overlay__browse-support';
-    this.browseSupportLabel.textContent = 'Loading current look…';
-
     this.browseMetaLabel = document.createElement('p');
     this.browseMetaLabel.className = 'milkdrop-overlay__browse-meta';
-    this.browseMetaLabel.textContent = 'Loading status…';
+    this.browseMetaLabel.textContent = '';
     this.browseMetaLabel.setAttribute('aria-live', 'polite');
     this.browseMetaLabel.setAttribute('role', 'status');
+    this.browseMetaLabel.hidden = true;
     browseCopy.append(
       this.browseEyebrowLabel,
       this.browseActiveLabel,
-      this.browseSupportLabel,
       this.browseMetaLabel,
     );
     browseHero.append(browseCopy);
@@ -194,8 +185,8 @@ export class BrowsePanel {
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'search';
     this.searchInput.className = 'milkdrop-overlay__search';
-    this.searchInput.placeholder = 'Search presets';
-    this.searchInput.setAttribute('aria-label', 'Search presets');
+    this.searchInput.placeholder = 'Search looks';
+    this.searchInput.setAttribute('aria-label', 'Search looks');
     this.searchInput.addEventListener('input', () => this.scheduleRender());
 
     this.browseModeSelect = document.createElement('select');
@@ -203,7 +194,7 @@ export class BrowsePanel {
     (
       [
         ['featured', 'Featured'],
-        ['all', 'All presets'],
+        ['all', 'All looks'],
         ['recent', 'Recent'],
         ['favorites', 'Favorites'],
       ] satisfies Array<[BrowseMode, string]>
@@ -221,10 +212,10 @@ export class BrowsePanel {
     this.browseSupportSelect.className = 'milkdrop-overlay__rating-select';
     (
       [
-        ['all', 'Any fidelity'],
-        ['exact', 'Exact'],
-        ['near-exact', 'Near exact'],
-        ['partial', 'Partial'],
+        ['all', 'Any quality'],
+        ['exact', 'Best'],
+        ['near-exact', 'Close'],
+        ['partial', 'Rough'],
         ['fallback', 'Fallback'],
       ] satisfies Array<[BrowseFidelityFilter, string]>
     ).forEach(([value, label]) => {
@@ -262,14 +253,14 @@ export class BrowsePanel {
     const browseModeTabs = document.createElement('div');
     browseModeTabs.className = 'milkdrop-overlay__browse-mode-tabs';
     browseModeTabs.setAttribute('role', 'tablist');
-    browseModeTabs.setAttribute('aria-label', 'Preset browse modes');
+    browseModeTabs.setAttribute('aria-label', 'Look browse modes');
     browseModeTabs.addEventListener('keydown', (event) =>
       this.handleBrowseModeTabsKeydown(event),
     );
     (
       [
         ['featured', 'Featured'],
-        ['all', 'All presets'],
+        ['all', 'All looks'],
         ['recent', 'Recent'],
         ['favorites', 'Favorites'],
       ] satisfies Array<[BrowseMode, string]>
@@ -290,14 +281,14 @@ export class BrowsePanel {
     this.browseOptionsDisclosure.className = 'milkdrop-overlay__browse-options';
     const browseOptionsSummary = document.createElement('summary');
     browseOptionsSummary.className = 'milkdrop-overlay__browse-options-summary';
-    browseOptionsSummary.textContent = 'Refine list';
+    browseOptionsSummary.textContent = 'Filter looks';
     this.browseOptionsDisclosure.appendChild(browseOptionsSummary);
 
     const browseOptionsBody = document.createElement('div');
     browseOptionsBody.className = 'milkdrop-overlay__browse-options-body';
     browseOptionsBody.append(
       this.buildBrowseControl('Browse', browseModeTabs),
-      this.buildBrowseControl('Fidelity', this.browseSupportSelect),
+      this.buildBrowseControl('Match', this.browseSupportSelect),
       this.buildBrowseControl('Sort', this.browseSortSelect),
     );
     this.browseOptionsDisclosure.appendChild(browseOptionsBody);
@@ -482,7 +473,6 @@ export class BrowsePanel {
       (entry) => entry.id === this.activePresetId,
     );
     const currentCollectionLabel = collectionLabel(this.activeCollectionTag);
-    const modeLabel = this.browseModeSelect.selectedOptions[0]?.textContent;
     this.browseEyebrowLabel.textContent = activePreset
       ? 'Live preset'
       : this.browseMode === 'favorites'
@@ -495,23 +485,8 @@ export class BrowsePanel {
     this.browseActiveLabel.textContent = activePreset
       ? activePreset.title
       : currentCollectionLabel || 'Choose a look';
-
-    this.browseSupportLabel.textContent = activePreset
-      ? [activePreset.author, currentCollectionLabel || modeLabel]
-          .filter(Boolean)
-          .join(' · ')
-      : [
-          currentCollectionLabel || modeLabel,
-          `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'} ready`,
-        ]
-          .filter(Boolean)
-          .join(' · ');
-    this.browseMetaLabel.textContent = [
-      `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'}`,
-      browseBackendLabel(this.activeBackend),
-    ]
-      .filter(Boolean)
-      .join(' · ');
+    this.browseMetaLabel.textContent = `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'}`;
+    this.browseMetaLabel.hidden = false;
   }
 
   private appendPresetSection(
@@ -648,7 +623,7 @@ export class BrowsePanel {
     if (filtered.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'milkdrop-overlay__browse-empty';
-      empty.textContent = 'No presets match the current filters.';
+      empty.textContent = 'No looks match the current filters.';
       this.browseList.replaceChildren(empty);
       return;
     }
@@ -695,7 +670,7 @@ export class BrowsePanel {
 
     const fragment = document.createDocumentFragment();
     const options = [
-      { tag: '', label: 'All presets' },
+      { tag: '', label: 'All looks' },
       ...collectionTags.map((tag) => ({
         tag,
         label: collectionLabel(tag),
