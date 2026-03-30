@@ -2411,6 +2411,188 @@ shapecode_0_border_a=0.25
     expect(border?.material?.opacity).toBeCloseTo(0.2625, 6);
   });
 
+  test('keeps previous-only blend shapes visible when the current frame has fewer shape slots', () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Previous Extra Shape
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.22
+shapecode_0_thickoutline=0
+shapecode_0_a=0.2
+shapecode_1_enabled=1
+shapecode_1_sides=6
+shapecode_1_rad=0.18
+shapecode_1_x=-0.35
+shapecode_1_y=0.2
+shapecode_1_thickoutline=0
+shapecode_1_a=0.5
+      `.trim(),
+      { id: 'previous-extra-shape' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Current Fewer Shapes
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.3
+shapecode_0_thickoutline=0
+shapecode_0_a=0.9
+      `.trim(),
+      { id: 'current-fewer-shapes' },
+    );
+
+    const previousFrame = createMilkdropVM(previousPreset).step(
+      makeSignals({ time: 0.1 }),
+    );
+    const frameState = createMilkdropVM(currentPreset).step(
+      makeSignals({ time: 0.3 }),
+    );
+
+    expect(previousFrame.shapes).toHaveLength(2);
+    expect(frameState.shapes).toHaveLength(1);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const blendShapeGroup = (
+      adapter as unknown as {
+        blendShapeGroup: {
+          children: Array<{
+            children?: Array<{
+              material?: MeshBasicMaterial | ShaderMaterial | LineBasicMaterial;
+            }>;
+          }>;
+        };
+      }
+    ).blendShapeGroup;
+    const extraBlendedShape = blendShapeGroup.children[1];
+    const extraFill = extraBlendedShape?.children?.[0] as
+      | { material?: MeshBasicMaterial | ShaderMaterial }
+      | undefined;
+
+    expect(blendShapeGroup.children).toHaveLength(2);
+    expect(extraFill?.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(
+      (extraFill?.material as MeshBasicMaterial | undefined)?.opacity,
+    ).toBeCloseTo(0.175, 6);
+  });
+
+  test('keeps previous-only procedural custom waves visible when the current frame has fewer slots', () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Previous Extra Procedural Custom Wave
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_scaling=1.15
+wavecode_0_mystery=0.25
+wavecode_0_usedots=0
+wavecode_0_x=0.55
+wavecode_0_y=0.45
+wavecode_0_r=0.8
+wavecode_0_g=0.4
+wavecode_0_b=1
+wavecode_0_thick=5
+wavecode_0_a=0.2
+wavecode_1_enabled=1
+wavecode_1_samples=40
+wavecode_1_spectrum=1
+wavecode_1_scaling=1.05
+wavecode_1_mystery=0.1
+wavecode_1_usedots=0
+wavecode_1_x=0.35
+wavecode_1_y=0.55
+wavecode_1_r=1
+wavecode_1_g=0.6
+wavecode_1_b=0.2
+wavecode_1_thick=4
+wavecode_1_a=0.4
+      `.trim(),
+      { id: 'previous-extra-procedural-custom-wave' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Current Fewer Procedural Custom Waves
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_scaling=1.15
+wavecode_0_mystery=0.25
+wavecode_0_usedots=0
+wavecode_0_x=0.55
+wavecode_0_y=0.45
+wavecode_0_r=0.8
+wavecode_0_g=0.4
+wavecode_0_b=1
+wavecode_0_thick=5
+wavecode_0_a=0.8
+      `.trim(),
+      { id: 'current-fewer-procedural-custom-waves' },
+    );
+
+    const previousVm = createMilkdropVM(previousPreset);
+    previousVm.setRenderBackend('webgpu');
+    const currentVm = createMilkdropVM(currentPreset);
+    currentVm.setRenderBackend('webgpu');
+    const previousFrame = previousVm.step(makeSignals({ time: 0.1 }));
+    const frameState = currentVm.step(makeSignals({ time: 0.3 }));
+
+    expect(previousFrame.gpuGeometry.customWaves).toHaveLength(2);
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgpu',
+      batcher: null,
+      preset: currentPreset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const blendCustomWaveGroup = (
+      adapter as unknown as {
+        blendCustomWaveGroup: {
+          children: Array<{ material?: ShaderMaterial }>;
+        };
+      }
+    ).blendCustomWaveGroup;
+    const extraBlendedWave = blendCustomWaveGroup.children[1];
+
+    expect(blendCustomWaveGroup.children).toHaveLength(2);
+    expect(extraBlendedWave?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      (extraBlendedWave?.material as ShaderMaterial | undefined)?.uniforms.alpha
+        .value,
+    ).toBeCloseTo(0.14, 6);
+  });
+
   test('keeps additive procedural main-wave blends above normal blend order on webgpu', () => {
     const previousPreset = compileMilkdropPresetSource(
       `

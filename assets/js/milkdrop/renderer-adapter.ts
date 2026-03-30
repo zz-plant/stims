@@ -1258,11 +1258,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     mix: number,
     alphaMultiplier = 1,
   ) {
-    const interpolatedShapes = currentShapes.map((shape, index) => {
-      const previousShape = previousShapes[index];
-      return previousShape
-        ? interpolateShapeVisual(previousShape, shape, mix)
-        : shape;
+    const interpolatedShapes = previousShapes.map((previousShape, index) => {
+      const currentShape = currentShapes[index];
+      return currentShape
+        ? interpolateShapeVisual(previousShape, currentShape, mix)
+        : previousShape;
     });
     this.renderShapeGroup(
       'blend-shapes',
@@ -1505,15 +1505,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       }
       if (
         canUseProceduralCustomWaves &&
-        previousFrame.gpuGeometry.customWaves.length > 0 &&
-        payload.frameState.gpuGeometry.customWaves.length > 0
+        previousFrame.gpuGeometry.customWaves.length > 0
       ) {
-        const interpolatedCustomWaves = previousFrame.gpuGeometry.customWaves
-          .map((wave, index) => {
-            const current = payload.frameState.gpuGeometry.customWaves[index];
-            return current ? { previous: wave, current } : null;
-          })
-          .filter((wave): wave is NonNullable<typeof wave> => wave !== null);
+        const interpolatedCustomWaves =
+          previousFrame.gpuGeometry.customWaves.map((wave, index) => {
+            const current =
+              payload.frameState.gpuGeometry.customWaves[index] ?? wave;
+            return { previous: wave, current };
+          });
         this.renderInterpolatedProceduralCustomWaveGroup(
           this.blendCustomWaveGroup,
           interpolatedCustomWaves,
