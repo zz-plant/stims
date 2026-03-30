@@ -484,6 +484,7 @@ function lerpColor(
   previousColor: MilkdropColor,
   currentColor: MilkdropColor,
   mix: number,
+  { preservePreviousAlpha = false }: { preservePreviousAlpha?: boolean } = {},
 ): MilkdropColor {
   return {
     r: lerpNumber(previousColor.r, currentColor.r, mix),
@@ -491,7 +492,9 @@ function lerpColor(
     b: lerpNumber(previousColor.b, currentColor.b, mix),
     ...(previousColor.a !== undefined || currentColor.a !== undefined
       ? {
-          a: lerpNumber(previousColor.a ?? 0, currentColor.a ?? 0, mix),
+          a: preservePreviousAlpha
+            ? (previousColor.a ?? currentColor.a ?? 0)
+            : lerpNumber(previousColor.a ?? 0, currentColor.a ?? 0, mix),
         }
       : {}),
   };
@@ -519,19 +522,27 @@ function interpolateShapeVisual(
       currentShape.textureAngle,
       mix,
     ),
-    color: lerpColor(previousShape.color, currentShape.color, mix),
+    color: lerpColor(previousShape.color, currentShape.color, mix, {
+      preservePreviousAlpha: true,
+    }),
     secondaryColor:
       previousShape.secondaryColor || currentShape.secondaryColor
         ? lerpColor(
             previousShape.secondaryColor ?? previousShape.color,
             currentShape.secondaryColor ?? currentShape.color,
             mix,
+            {
+              preservePreviousAlpha: true,
+            },
           )
         : null,
     borderColor: lerpColor(
       previousShape.borderColor,
       currentShape.borderColor,
       mix,
+      {
+        preservePreviousAlpha: true,
+      },
     ),
     additive: previousShape.additive || currentShape.additive,
     thickOutline: previousShape.thickOutline || currentShape.thickOutline,

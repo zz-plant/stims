@@ -301,8 +301,7 @@ export function syncInterpolatedProceduralWaveObject(
     lerpNumber(previousWave.color.g, currentWave.color.g, mix),
     lerpNumber(previousWave.color.b, currentWave.color.b, mix),
   );
-  material.uniforms.alpha.value =
-    lerpNumber(previousWave.alpha, currentWave.alpha, mix) * alphaMultiplier;
+  material.uniforms.alpha.value = previousWave.alpha * alphaMultiplier;
   material.blending =
     previousWave.additive || currentWave.additive
       ? AdditiveBlending
@@ -339,8 +338,7 @@ export function syncInterpolatedProceduralCustomWaveObject(
     lerpNumber(previousWave.color.g, currentWave.color.g, mix),
     lerpNumber(previousWave.color.b, currentWave.color.b, mix),
   );
-  material.uniforms.alpha.value =
-    lerpNumber(previousWave.alpha, currentWave.alpha, mix) * alphaMultiplier;
+  material.uniforms.alpha.value = previousWave.alpha * alphaMultiplier;
   material.blending =
     previousWave.additive || currentWave.additive
       ? AdditiveBlending

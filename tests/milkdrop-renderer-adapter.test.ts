@@ -2240,6 +2240,140 @@ wavecode_0_thick=5
     );
   });
 
+  test('keeps procedural custom-wave blend alpha anchored to the previous frame on webgpu', () => {
+    const previousWave = {
+      samples: Array.from({ length: 40 }, (_, index) => Math.sin(index / 8)),
+      spectrum: true,
+      centerX: 0,
+      centerY: 0,
+      scaling: 1.15,
+      mystery: 0.25,
+      time: 0.1,
+      color: { r: 1, g: 0.8, b: 0.6, a: 1 },
+      alpha: 0.2,
+      additive: false,
+      thickness: 5,
+    };
+    const currentWave = {
+      ...previousWave,
+      time: 0.3,
+      color: { r: 0.8, g: 0.4, b: 1, a: 1 },
+      alpha: 0.8,
+    };
+
+    const line =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralCustomWaveObject(
+        undefined,
+        previousWave,
+        currentWave,
+        0.65,
+        0.35,
+        null,
+      );
+    const material = line.material as ShaderMaterial;
+
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.07, 6);
+  });
+
+  test('keeps interpolated shape blend alpha anchored to the previous frame on webgl', () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Previous Shape Blend Alpha
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.22
+shapecode_0_thickoutline=0
+shapecode_0_a=0.2
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+shapecode_0_a2=0.6
+shapecode_0_r2=0.1
+shapecode_0_g2=0.3
+shapecode_0_b2=1
+shapecode_0_border_a=0.75
+      `.trim(),
+      { id: 'previous-shape-blend-alpha' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Current Shape Blend Alpha
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.3
+shapecode_0_thickoutline=0
+shapecode_0_x=0.2
+shapecode_0_y=-0.15
+shapecode_0_a=0.9
+shapecode_0_r=0.2
+shapecode_0_g=1
+shapecode_0_b=0.3
+shapecode_0_a2=0.1
+shapecode_0_r2=1
+shapecode_0_g2=0.4
+shapecode_0_b2=0.2
+shapecode_0_border_a=0.25
+      `.trim(),
+      { id: 'current-shape-blend-alpha' },
+    );
+
+    const previousFrame = createMilkdropVM(previousPreset).step(
+      makeSignals({ time: 0.1 }),
+    );
+    const frameState = createMilkdropVM(currentPreset).step(
+      makeSignals({ time: 0.3 }),
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        children?: Array<{
+          children?: Array<{
+            material?: ShaderMaterial | LineBasicMaterial;
+          }>;
+        }>;
+      }>;
+    };
+    const blendShapeGroup = root.children[10];
+    const blendedShape = blendShapeGroup?.children?.[0];
+    const fill = blendedShape?.children?.[0] as
+      | { material?: ShaderMaterial }
+      | undefined;
+    const borderChildren = blendedShape?.children ?? [];
+    const border = borderChildren[borderChildren.length - 1] as
+      | { material?: LineBasicMaterial }
+      | undefined;
+
+    expect(fill?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      (fill?.material as ShaderMaterial | undefined)?.uniforms.primaryAlpha
+        .value,
+    ).toBeCloseTo(0.07, 6);
+    expect(
+      (fill?.material as ShaderMaterial | undefined)?.uniforms.secondaryAlpha
+        .value,
+    ).toBeCloseTo(0.21, 6);
+    expect(border?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(border?.material?.opacity).toBeCloseTo(0.2625, 6);
+  });
+
   test('keeps additive procedural main-wave blends above normal blend order on webgpu', () => {
     const previousPreset = compileMilkdropPresetSource(
       `
