@@ -134,7 +134,6 @@ export class BrowsePanel {
   private readonly searchInput: HTMLInputElement;
   private readonly collectionFilters: HTMLElement;
   private readonly browseModeSelect: HTMLSelectElement;
-  private readonly browseSupportSelect: HTMLSelectElement;
   private readonly browseSortSelect: HTMLSelectElement;
   private presets: MilkdropCatalogEntry[] = [];
   private activePresetId: string | null = null;
@@ -208,28 +207,6 @@ export class BrowsePanel {
       this.setBrowseMode(this.browseModeSelect.value as BrowseMode),
     );
 
-    this.browseSupportSelect = document.createElement('select');
-    this.browseSupportSelect.className = 'milkdrop-overlay__rating-select';
-    (
-      [
-        ['all', 'Any quality'],
-        ['exact', 'Best'],
-        ['near-exact', 'Close'],
-        ['partial', 'Rough'],
-        ['fallback', 'Fallback'],
-      ] satisfies Array<[BrowseFidelityFilter, string]>
-    ).forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      this.browseSupportSelect.appendChild(option);
-    });
-    this.browseSupportSelect.addEventListener('change', () => {
-      this.browseSupportFilter = this.browseSupportSelect
-        .value as BrowseFidelityFilter;
-      this.scheduleRender(0);
-    });
-
     this.browseSortSelect = document.createElement('select');
     this.browseSortSelect.className = 'milkdrop-overlay__rating-select';
     (
@@ -288,7 +265,6 @@ export class BrowsePanel {
     browseOptionsBody.className = 'milkdrop-overlay__browse-options-body';
     browseOptionsBody.append(
       this.buildBrowseControl('Browse', browseModeTabs),
-      this.buildBrowseControl('Match', this.browseSupportSelect),
       this.buildBrowseControl('Sort', this.browseSortSelect),
     );
     this.browseOptionsDisclosure.appendChild(browseOptionsBody);
@@ -623,7 +599,7 @@ export class BrowsePanel {
     if (filtered.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'milkdrop-overlay__browse-empty';
-      empty.textContent = 'No looks match the current filters.';
+      empty.textContent = 'No looks match this search yet.';
       this.browseList.replaceChildren(empty);
       return;
     }

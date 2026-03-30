@@ -170,11 +170,6 @@ export class MilkdropOverlay {
       'milkdrop-overlay__toolbar-group milkdrop-overlay__toolbar-group--transport';
     [
       {
-        label: 'Back',
-        className: 'milkdrop-overlay__transport-button',
-        action: () => this.callbacks.onGoBackPreset(),
-      },
-      {
         label: 'Prev',
         className: 'milkdrop-overlay__transport-button',
         action: () => this.callbacks.onPreviousPreset(),
@@ -183,11 +178,6 @@ export class MilkdropOverlay {
         label: 'Next',
         className: 'milkdrop-overlay__transport-button',
         action: () => this.callbacks.onNextPreset(),
-      },
-      {
-        label: 'Shuffle',
-        className: 'milkdrop-overlay__transport-button',
-        action: () => this.callbacks.onRandomize(),
       },
     ].forEach(({ label, className, action }) => {
       const button = document.createElement('button');
@@ -206,14 +196,6 @@ export class MilkdropOverlay {
     this.autoplayToggle.addEventListener('change', () => {
       this.callbacks.onToggleAutoplay(this.autoplayToggle.checked);
     });
-
-    const autoplayLabel = document.createElement('label');
-    autoplayLabel.className = 'milkdrop-overlay__checkbox';
-    autoplayLabel.append(
-      this.autoplayToggle,
-      document.createTextNode('Autoplay'),
-    );
-    sessionGroup.appendChild(autoplayLabel);
 
     this.transitionModeSelect = document.createElement('select');
     this.transitionModeSelect.className = 'milkdrop-overlay__rating-select';

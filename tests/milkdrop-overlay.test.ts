@@ -622,14 +622,14 @@ describe('milkdrop overlay browse rendering', () => {
     const collectionFilters = document.querySelector(
       '.milkdrop-overlay__collection-filters',
     ) as HTMLElement | null;
-    const fidelitySelect = document.querySelector(
+    const sortSelect = document.querySelector(
       '.milkdrop-overlay__browse-options .milkdrop-overlay__rating-select',
     ) as HTMLSelectElement | null;
     const allPresetsTab = document.querySelector(
       '.milkdrop-overlay__browse-mode-tab[data-mode="all"]',
     ) as HTMLButtonElement | null;
 
-    expect(fidelitySelect?.value).toBe('all');
+    expect(sortSelect?.value).toBe('recommended');
     expect(collectionFilters?.hidden).toBe(true);
 
     if (!optionsDisclosure || !allPresetsTab) {
@@ -762,7 +762,7 @@ describe('milkdrop overlay browse rendering', () => {
 
     expect(partialMeta?.textContent).toBe('Guest');
     expect(partialWarning?.textContent).toBe(
-      'Backend degradation: Wave mesh falls back to a simpler path.',
+      'Showing a simpler version. Wave mesh falls back to a simpler path.',
     );
 
     overlay.dispose();

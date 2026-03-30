@@ -37,19 +37,6 @@ export function fidelityLabel(fidelity: MilkdropFidelityClass) {
   }
 }
 
-export function presetFidelityBadgeLabel(fidelity: MilkdropFidelityClass) {
-  switch (fidelity) {
-    case 'exact':
-      return 'Ready';
-    case 'near-exact':
-      return 'Close match';
-    case 'partial':
-      return 'Remixed';
-    default:
-      return 'Compat';
-  }
-}
-
 export function getPresetMetaQualifier(preset: MilkdropCatalogEntry) {
   if (preset.historyIndex !== undefined) {
     return 'Recent';
@@ -133,18 +120,21 @@ export function formatPrimaryCompatibilityMessage({
   support: { status: MilkdropSupportStatus; reasons: string[] };
 }) {
   if (primaryReason) {
-    const prefix =
-      primaryReason.blocking && support.status === 'unsupported'
-        ? 'Unsupported feature'
-        : compatibilityCategoryLabel(primaryReason.category);
-    return `${prefix}: ${primaryReason.message}`;
+    if (primaryReason.blocking && support.status === 'unsupported') {
+      return `This look needs a feature Stims cannot render yet. ${primaryReason.message}`;
+    }
+    return `Showing a simpler version. ${primaryReason.message}`;
   }
 
   if (support.status === 'unsupported') {
-    return `Unsupported feature: ${support.reasons[0] ?? 'This preset requires MilkDrop features Stims cannot execute yet.'}`;
+    return support.reasons[0]
+      ? `This look needs a feature Stims cannot render yet. ${support.reasons[0]}`
+      : 'This look needs a feature Stims cannot render yet.';
   }
 
-  return support.reasons[0] ?? 'Preset has fidelity degradations.';
+  return support.reasons[0]
+    ? `Showing a simpler version. ${support.reasons[0]}`
+    : 'Showing a simpler version.';
 }
 
 function buildPresetRowSignature({
@@ -227,13 +217,6 @@ function buildPresetRow({
       'milkdrop-overlay__preset-tag milkdrop-overlay__preset-tag--active';
     activeBadge.textContent = 'Live';
     badges.appendChild(activeBadge);
-  }
-
-  if (preset.fidelityClass !== 'exact' || support.status !== 'supported') {
-    const supportBadge = document.createElement('span');
-    supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${preset.fidelityClass}`;
-    supportBadge.textContent = presetFidelityBadgeLabel(preset.fidelityClass);
-    badges.appendChild(supportBadge);
   }
 
   titleRow.append(title, badges);

@@ -327,7 +327,7 @@ describe('inspector panel formatting', () => {
     expect(formatCompatibilitySummary({ support, compiled })).toEqual({
       degradationCategorySummary: 'Backend degradation',
       primaryNote:
-        'Backend degradation: Wave mesh falls back to a simpler path.',
+        'Showing a simpler version. Wave mesh falls back to a simpler path.',
     });
 
     const metrics = formatInspectorMetrics({
@@ -340,7 +340,9 @@ describe('inspector panel formatting', () => {
     ).toBe('Partial');
     expect(
       metrics.find((metric) => metric.label === 'Primary note')?.value,
-    ).toBe('Backend degradation: Wave mesh falls back to a simpler path.');
+    ).toBe(
+      'Showing a simpler version. Wave mesh falls back to a simpler path.',
+    );
   });
 
   test('renders inspector metrics into DOM once the panel is visible', () => {
@@ -357,7 +359,7 @@ describe('inspector panel formatting', () => {
 
     expect(panel.metricsElement.textContent).toContain('Backend: webgpu');
     expect(panel.metricsElement.textContent).toContain(
-      'Primary note: Backend degradation: Wave mesh falls back to a simpler path.',
+      'Primary note: Showing a simpler version. Wave mesh falls back to a simpler path.',
     );
   });
 });

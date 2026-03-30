@@ -5802,12 +5802,6 @@ body[data-page="home"] .content {
   margin: 0;
 }
 
-.launch-intro__support {
-  margin: 0;
-  color: var(--text-muted);
-  line-height: 1.6;
-}
-
 .launch-checklist {
   display: grid;
   gap: 0.85rem;
@@ -7975,15 +7969,6 @@ body[data-page="home"] .hero-cta-row .cta-button.primary {
   line-height: 1.15;
 }
 
-.home-stage__panel--summary {
-  max-width: 30rem;
-}
-
-.home-stage__panel--summary p:last-child {
-  color: var(--text-muted);
-  line-height: 1.55;
-}
-
 .home-stage__panel p:last-child,
 .launch-card p,
 .system-card p:last-child,
@@ -7993,7 +7978,7 @@ body[data-page="home"] .hero-cta-row .cta-button.primary {
 }
 
 .home-launches__grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .launch-card {
@@ -8344,10 +8329,6 @@ body[data-page="home"] .content {
   min-height: 23rem;
 }
 
-.home-stage__panel--summary {
-  max-width: 24rem;
-}
-
 .home-launches__grid {
   gap: 0.75rem;
   align-items: stretch;
@@ -8385,10 +8366,6 @@ body[data-page="home"] .content {
 
 .launch-intro__copy h1 {
   max-width: 13ch;
-}
-
-.launch-intro__support {
-  max-width: 36rem;
 }
 
 .launch-panels__header {
@@ -8525,7 +8502,7 @@ body[data-page="home"] .content {
   }
 
   .home-stage__meta {
-    gap: 0.5rem;
+    display: none;
   }
 
   .home-stage__metric,
@@ -8539,14 +8516,6 @@ body[data-page="home"] .content {
 
   .home-stage__metric-value {
     font-size: 0.95rem;
-  }
-
-  .home-stage__panel--summary {
-    max-width: none;
-  }
-
-  .home-stage__panel--summary p:last-child {
-    font-size: 0.92rem;
   }
 
   .section-heading {
@@ -8563,6 +8532,7 @@ body[data-page="home"] .content {
   }
 
   .home-launches__grid {
+    grid-template-columns: 1fr;
     gap: 0.6rem;
   }
 
@@ -8601,8 +8571,7 @@ body[data-page="home"] .content {
     max-width: 10ch;
   }
 
-  .launch-intro__copy .section-description,
-  .launch-intro__support {
+  .launch-intro__copy .section-description {
     font-size: 0.92rem;
     line-height: 1.45;
   }
@@ -8615,10 +8584,6 @@ body[data-page="home"] .content {
   .launch-intro__actions .cta-button {
     width: 100%;
     min-width: 0;
-  }
-
-  .launch-intro__support {
-    max-width: 30rem;
   }
 
   .launch-panels__header {

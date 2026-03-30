@@ -343,10 +343,9 @@ export class EditorPanel {
         : '';
     this.editorStatus.textContent = baseStatus;
     this.editorStatus.hidden = !shouldShowStatus;
-    this.editorLiveBadge.textContent = hasErrors
-      ? 'Showing last good frame'
-      : 'Live';
-    this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
+    this.editorLiveBadge.textContent = 'Showing last good frame';
+    this.editorLiveBadge.dataset.tone = 'warning';
+    this.editorLiveBadge.hidden = !hasErrors;
     this.editorSyncBadge.textContent = 'Changes pending';
     this.editorSyncBadge.dataset.tone = state.dirty ? 'accent' : 'muted';
     this.editorSyncBadge.hidden = !state.dirty;
