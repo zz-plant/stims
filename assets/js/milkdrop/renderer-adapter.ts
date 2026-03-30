@@ -1047,7 +1047,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
       synced.renderOrder = getMilkdropPassRenderOrder(
         'blend-main-wave',
-        wave.current.additive,
+        wave.previous.additive || wave.current.additive,
       );
       if (!existing) {
         group.add(synced);
@@ -1085,7 +1085,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       );
       synced.renderOrder = getMilkdropPassRenderOrder(
         'blend-custom-wave',
-        wave.current.additive,
+        wave.previous.additive || wave.current.additive,
       );
       if (!existing) {
         group.add(synced);
