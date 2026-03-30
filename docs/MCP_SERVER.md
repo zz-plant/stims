@@ -79,34 +79,48 @@ The following tools are only available from the Bun/Node stdio server (`bun run 
 
 ## Cloudflare Worker deployment (optional transport)
 
-[`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts) serves the same tools over Streamable HTTP (POST requests for JSON-RPC, GET + `text/event-stream` for streaming responses) and WebSocket upgrades on the `/mcp` route. The worker bundles markdown and toy metadata at build time via `?raw` imports, so it does not rely on file system access in production.
+[`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts) serves the same tools over Streamable HTTP (POST requests for JSON-RPC, GET + `text/event-stream` for streaming responses) and WebSocket upgrades on the `/mcp` route. The worker bundles markdown and toy metadata at build time via Wrangler `Text` module rules, so it does not rely on file system access in production.
 
 - **Schema validation:** Uses `CfWorkerJsonSchemaValidator` from `@modelcontextprotocol/sdk/validation/cfworker` (peer dependency: `@cfworker/json-schema`).
 - **Bindings:** No KV, D1, or other bindings are required.
 
-### `wrangler.toml` example
+### `wrangler.mcp.jsonc`
 
-The Worker uses the repository’s pinned compatibility date (`2024-10-20`) to keep WebSocket support consistent with `wrangler.toml` and the deployment snippets in `docs/DEPLOYMENT.md`.
+The Worker uses a dedicated Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc) so the MCP transport can evolve independently from the Pages project config in [`wrangler.toml`](../wrangler.toml).
 
-```toml
-name = "stims"
-main = "scripts/mcp-worker.ts"
-compatibility_date = "2024-10-20"
-workers_dev = true
-compatibility_flags = ["nodejs_compat"]
+```jsonc
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "stims",
+  "main": "scripts/mcp-worker.ts",
+  "compatibility_date": "2024-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/*.md"],
+      "fallthrough": false
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": true
+}
 ```
 
 ### Deploying
 
 1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
-2. Keep Worker naming aligned with `wrangler.toml` unless you intentionally override `--name` for a separate environment.
+2. Validate the Worker bundle and config:
+   ```bash
+   bun run mcp:check
+   ```
 3. Deploy with Wrangler:
    ```bash
-   bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
+   bun run mcp:deploy
    ```
 4. Local preview (Worker fetch + WebSocket support):
    ```bash
-   bunx wrangler dev scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
+   bun run mcp:dev
    ```
 
 ### Client endpoints

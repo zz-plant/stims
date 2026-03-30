@@ -1,0 +1,162 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Launches" [ref=e14] [cursor=pointer]:
+              - /url: "#launches"
+            - link "Presets" [ref=e15] [cursor=pointer]:
+              - /url: "#presets"
+            - link "Why Stims" [ref=e16] [cursor=pointer]:
+              - /url: "#why-stims"
+            - link "GitHub" [ref=e17] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e18]:
+            - link "Launch MilkDrop" [ref=e19] [cursor=pointer]:
+              - /url: /milkdrop/
+            - button "Switch to light mode" [pressed] [ref=e20] [cursor=pointer]:
+              - generic [ref=e21]: ☀️
+              - generic [ref=e22]: Light mode
+    - main [ref=e23]:
+      - generic "Stims overview" [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - paragraph [ref=e27]: Browser-native MilkDrop visualizer
+            - heading "Press play. Let the room move." [level=1] [ref=e28]
+            - paragraph [ref=e29]: MilkDrop energy in the browser.
+            - paragraph [ref=e30]: Demo starts fastest. Launchpad is there when you need it.
+            - group "Primary actions" [ref=e31]:
+              - link "Start with demo audio" [ref=e32] [cursor=pointer]:
+                - /url: /milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop
+              - link "Open launchpad" [ref=e33] [cursor=pointer]:
+                - /url: /milkdrop/
+            - generic "Stims highlights" [ref=e34]:
+              - article [ref=e35]:
+                - paragraph [ref=e36]: Presets
+                - paragraph [ref=e37]: 300+ presets
+              - article [ref=e38]:
+                - paragraph [ref=e39]: Inputs
+                - paragraph [ref=e40]: Demo, mic, tab, YouTube
+          - generic [ref=e43]:
+            - generic [ref=e44]: Stims live preview
+            - generic [ref=e45]: Live
+      - region "Two ways in." [ref=e68]:
+        - generic [ref=e69]:
+          - paragraph [ref=e70]: Pick a lane
+          - heading "Two ways in." [level=2] [ref=e71]
+          - paragraph [ref=e72]: Demo is the quickest way in. The launchpad stays here when you want your own audio.
+        - generic "Launch options" [ref=e73]:
+          - article [ref=e74]:
+            - paragraph [ref=e75]: Fastest first click
+            - heading "Play now" [level=3] [ref=e76]
+            - paragraph [ref=e77]: Start demo playback and get straight to motion.
+            - link "Start demo" [ref=e78] [cursor=pointer]:
+              - /url: /milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop
+          - article [ref=e79]:
+            - paragraph [ref=e80]: Use your own sound
+            - heading "Open launchpad" [level=3] [ref=e81]
+            - paragraph [ref=e82]: Set up microphone, tab audio, or YouTube input when you need it.
+            - link "Open launchpad" [ref=e83] [cursor=pointer]:
+              - /url: /milkdrop/
+      - region "Pick a look fast." [ref=e84]:
+        - generic [ref=e86]:
+          - paragraph [ref=e87]: Starter presets
+          - heading "Pick a look fast." [level=2] [ref=e88]
+          - paragraph [ref=e89]: 8 bundled presets across 4 quick collections. Showing 3 featured picks from Cream of the Crop.
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - button "All presets 8" [ref=e92] [cursor=pointer]:
+              - text: All presets
+              - generic [ref=e93]: "8"
+            - button "Classic MilkDrop 6" [ref=e94] [cursor=pointer]:
+              - text: Classic MilkDrop
+              - generic [ref=e95]: "6"
+            - button "Cream of the Crop 3" [ref=e96] [cursor=pointer]:
+              - text: Cream of the Crop
+              - generic [ref=e97]: "3"
+            - button "Feedback Lab 1" [ref=e98] [cursor=pointer]:
+              - text: Feedback Lab
+              - generic [ref=e99]: "1"
+            - button "Low Motion 1" [ref=e100] [cursor=pointer]:
+              - text: Low Motion
+              - generic [ref=e101]: "1"
+          - generic [ref=e102]:
+            - article [ref=e103]:
+              - paragraph [ref=e104]: Cream of the Crop
+              - heading "Rovastar - Parallel Universe" [level=3] [ref=e105]
+              - paragraph [ref=e106]: By Rovastar
+              - paragraph [ref=e107]: popular · lasers · cream of the crop energy. Opens directly in live playback.
+              - generic [ref=e108]:
+                - generic "Popular by Rovastar" [ref=e109]: Popular
+                - generic "Lasers by Rovastar" [ref=e110]: Lasers
+                - generic "Cream Of The Crop by Rovastar" [ref=e111]: Cream Of The Crop
+              - link "Start with this preset" [ref=e113] [cursor=pointer]:
+                - /url: /milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop
+            - article [ref=e114]:
+              - paragraph [ref=e115]: Cream of the Crop
+              - heading "Eo.S. + Phat - Cubetrace v2" [level=3] [ref=e116]
+              - paragraph [ref=e117]: By Eo.S. + Phat
+              - paragraph [ref=e118]: popular · geometry · cream of the crop energy. Opens directly in live playback.
+              - generic [ref=e119]:
+                - generic "Popular by Eo.S. + Phat" [ref=e120]: Popular
+                - generic "Geometry by Eo.S. + Phat" [ref=e121]: Geometry
+                - generic "Cream Of The Crop by Eo.S. + Phat" [ref=e122]: Cream Of The Crop
+              - link "Start with this preset" [ref=e124] [cursor=pointer]:
+                - /url: /milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop
+            - article [ref=e125]:
+              - paragraph [ref=e126]: Cream of the Crop
+              - heading "Krash & Rovastar - Cerebral Demons (Stars Remix)" [level=3] [ref=e127]
+              - paragraph [ref=e128]: By Krash & Rovastar
+              - paragraph [ref=e129]: popular · comets · cream of the crop energy. Opens directly in live playback.
+              - generic [ref=e130]:
+                - generic "Popular by Krash & Rovastar" [ref=e131]: Popular
+                - generic "Comets by Krash & Rovastar" [ref=e132]: Comets
+                - generic "Cream Of The Crop by Krash & Rovastar" [ref=e133]: Cream Of The Crop
+              - link "Start with this preset" [ref=e135] [cursor=pointer]:
+                - /url: /milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop
+      - region "Built for the moment after music starts." [ref=e136]:
+        - generic [ref=e137]:
+          - paragraph [ref=e138]: Why it feels different
+          - heading "Built for the moment after music starts." [level=2] [ref=e139]
+          - paragraph [ref=e140]: Stims is a playback workspace first. Setup exists when you need it, but the core experience stays focused on motion, preset discovery, and live iteration.
+        - generic [ref=e141]:
+          - article [ref=e142]:
+            - paragraph [ref=e143]: Browser-native
+            - heading "No install ritual." [level=3] [ref=e144]
+            - paragraph [ref=e145]: Open a URL, choose a signal, and let the canvas fill the room.
+          - article [ref=e146]:
+            - paragraph [ref=e147]: Preset-first
+            - heading "Discovery stays inside motion." [level=3] [ref=e148]
+            - paragraph [ref=e149]: Browse collections, favorites, and recent runs without dropping out of playback.
+          - article [ref=e150]:
+            - paragraph [ref=e151]: Live editing
+            - heading "Change the active preset in place." [level=3] [ref=e152]
+            - paragraph [ref=e153]: Open the editor, try ideas fast, and keep a safety net while the visual keeps running.
+          - article [ref=e154]:
+            - paragraph [ref=e155]: Launchpad
+            - heading "Use setup only when it helps." [level=3] [ref=e156]
+            - paragraph [ref=e157]: Mic input, tab capture, quality presets, and motion defaults are there when you need more control.
+        - paragraph [ref=e158]:
+          - text: Want the implementation details too?
+          - link "Inspect the source on GitHub" [ref=e159] [cursor=pointer]:
+            - /url: https://github.com/zz-plant/stims
+    - contentinfo [ref=e160]:
+      - paragraph [ref=e161]: Stims is built for fast entry and long sessions inside one live visual workspace.
+      - paragraph [ref=e162]:
+        - link "Launches" [ref=e163] [cursor=pointer]:
+          - /url: "#launches"
+        - generic [ref=e164]: ·
+        - link "Presets" [ref=e165] [cursor=pointer]:
+          - /url: "#presets"
+        - generic [ref=e166]: ·
+        - link "Why Stims" [ref=e167] [cursor=pointer]:
+          - /url: "#why-stims"
+        - generic [ref=e168]: ·
+        - link "Launchpad" [ref=e169] [cursor=pointer]:
+          - /url: /milkdrop/

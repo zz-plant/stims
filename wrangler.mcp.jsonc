@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "stims",
+  "main": "scripts/mcp-worker.ts",
+  "compatibility_date": "2024-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/*.md"],
+      "fallthrough": false
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": true
+}
