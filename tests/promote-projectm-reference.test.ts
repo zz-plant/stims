@@ -61,7 +61,7 @@ test('promoteProjectMReference copies a projectM artifact into tracked fixtures 
       strata: ['feedback', 'shader-supported'],
       image: 'signal-bloom.png',
       metadata: 'signal-bloom.meta.json',
-      sourceFamily: 'ad-hoc',
+      sourceFamily: 'projectm-fixture',
       tolerance: {
         profile: 'default',
         threshold: 16,
@@ -77,4 +77,44 @@ test('promoteProjectMReference copies a projectM artifact into tracked fixtures 
       },
     }),
   );
+});
+
+test('promoteProjectMReference can promote a direct local projectM image without an artifact manifest', async () => {
+  const repoRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stims-promote-reference-direct-repo-'),
+  );
+  const sourceImagePath = path.join(repoRoot, 'candidate-projectm.png');
+
+  await sharp({
+    create: {
+      width: 6,
+      height: 4,
+      channels: 4,
+      background: { r: 90, g: 120, b: 150, alpha: 1 },
+    },
+  })
+    .png()
+    .toFile(sourceImagePath);
+
+  const result = await promoteProjectMReference({
+    repoRoot,
+    outputDir: path.join(repoRoot, 'screenshots', 'parity'),
+    presetId: 'candidate-projectm',
+    sourceImagePath,
+    strata: ['feedback', 'shader-supported'],
+  });
+
+  expect(fs.existsSync(result.image)).toBe(true);
+  expect(loadVisualReferenceManifest(repoRoot).presets).toEqual([
+    expect.objectContaining({
+      id: 'candidate-projectm',
+      title: 'Candidate ProjectM',
+      image: 'candidate-projectm.png',
+      sourceFamily: 'projectm-fixture',
+      provenance: expect.objectContaining({
+        label: 'existing repo artifact',
+        sourceArtifactId: null,
+      }),
+    }),
+  ]);
 });

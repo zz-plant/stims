@@ -24,6 +24,14 @@ const legacyUnsupportedShaderFixture = readFileSync(
   'utf8',
 );
 
+const projectmNoiseVolumeFixture = readFileSync(
+  join(
+    import.meta.dir,
+    'fixtures/milkdrop/projectm-upstream/261-compshader-noisevol_lq.milk',
+  ),
+  'utf8',
+);
+
 describe('milkdrop compiler shader analysis', () => {
   test('extracts supported shader controls from the legacy feedback fixture', () => {
     const compiled = compileMilkdropPresetSource(
@@ -84,5 +92,28 @@ describe('milkdrop compiler shader analysis', () => {
     expect(payload.execution.statementTargets).toEqual(['ret']);
     expect(payload.execution.requiresControlFallback).toBe(true);
     expect(payload.source).toBe('ret=tex2d(sampler_main,uv).rgb*gain');
+  });
+
+  test('prefers direct execution for shader_body projectM presets', () => {
+    const compiled = compileMilkdropPresetSource(projectmNoiseVolumeFixture, {
+      id: '261-compshader-noisevol_lq',
+    });
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(
+      compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
+    ).toBe(false);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
   });
 });
