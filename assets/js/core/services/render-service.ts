@@ -5,6 +5,7 @@ import {
   type RendererCapabilities,
   rememberRendererFallback,
 } from '../renderer-capabilities.ts';
+import { shouldPreferWebGLForKnownCompatibilityGaps } from '../renderer-query-override.ts';
 import {
   applyRendererSettings,
   DEFAULT_RENDERER_RUNTIME_CONTROLS,
@@ -60,7 +61,8 @@ const runtimeControlSubscribers = new Set<
 const rendererCapabilitiesInitializer =
   createSharedInitializer<RendererCapabilities>(() =>
     getRendererCapabilities({
-      preferWebGLForKnownCompatibilityGaps: true,
+      preferWebGLForKnownCompatibilityGaps:
+        shouldPreferWebGLForKnownCompatibilityGaps(),
     }),
   );
 

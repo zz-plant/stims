@@ -19,6 +19,7 @@ import {
   DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
+import { shouldPreferWebGLForKnownCompatibilityGaps } from './renderer-query-override.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
 import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
 import { ensureWebGL } from './webgl-check';
@@ -158,7 +159,8 @@ export async function initRenderer(
   };
 
   const capabilities = await getRendererCapabilities({
-    preferWebGLForKnownCompatibilityGaps: true,
+    preferWebGLForKnownCompatibilityGaps:
+      shouldPreferWebGLForKnownCompatibilityGaps(),
     webgpuInitTimeoutMs,
   });
   const plan = deriveRendererPlan({
