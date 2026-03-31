@@ -4,10 +4,14 @@ import {
 } from '../core/services/microphone-permission-service.ts';
 import { setQualityPresetById } from '../core/settings-panel.ts';
 import {
+  captureDisplayAudioStream,
+  renderAdvancedAudioSources,
+  setupYouTubeAudioControls,
+} from './audio-advanced-sources.ts';
+import {
   resolveTouchGestureHints,
   supportsTouchLikeInput,
 } from './audio-control-policy.ts';
-import { YouTubeController } from './youtube-controller';
 
 export { resolveTouchGestureHints } from './audio-control-policy.ts';
 
@@ -87,7 +91,6 @@ export function initAudioControls(
   container: HTMLElement,
   options: AudioControlsOptions,
 ) {
-  const youtubeController = new YouTubeController();
   const STORAGE_KEY = 'stims-audio-source';
   const readStoredSource = () => {
     try {
@@ -123,21 +126,21 @@ export function initAudioControls(
   const starterPresetId = options.starterPresetId?.trim() || 'low-motion';
 
   container.innerHTML = `
-    <p class="control-panel__eyebrow">Start</p>
-    <div class="control-panel__heading">Pick a sound source</div>
-    <p class="control-panel__description">Demo gets you in fastest. Use mic when you want the room to drive the picture.</p>
-    ${renderPrimaryAudioChoice()}
-    ${renderAdvancedSources(options)}
-    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
-    ${renderPostStartGuidance({
-      firstRunHint,
-      desktopHints,
-      touchHints,
-      supportsTouchLikeInput: touchLikeInputSupported,
-      starterTips: options.starterTips,
-      starterPresetLabel,
-      showStarterPresetAction: true,
-    })}
+	    <p class="control-panel__eyebrow">Start</p>
+	    <div class="control-panel__heading">Pick a sound source</div>
+	    <p class="control-panel__description">Demo gets you in fastest. Use mic when you want the room to drive the picture.</p>
+	    ${renderPrimaryAudioChoice()}
+	    ${renderAdvancedAudioSources(options)}
+	    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
+	    ${renderPostStartGuidance({
+        firstRunHint,
+        desktopHints,
+        touchHints,
+        supportsTouchLikeInput: touchLikeInputSupported,
+        starterTips: options.starterTips,
+        starterPresetLabel,
+        showStarterPresetAction: true,
+      })}
   `;
 
   const micBtn = container.querySelector('#start-audio-btn');
@@ -537,18 +540,10 @@ export function initAudioControls(
     void handleRequest(
       tabBtn,
       async () => {
-        if (!navigator.mediaDevices?.getDisplayMedia) {
-          throw new Error('Tab audio capture unavailable.');
-        }
         updateStatus('Select tab to capture audio.', 'success');
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
+        const stream = await captureDisplayAudioStream({
+          unavailableMessage: 'Tab audio capture unavailable.',
         });
-        if (!stream.getAudioTracks().length) {
-          stream.getTracks().forEach((track) => track.stop());
-          throw new Error('No audio track detected.');
-        }
         await requestTabAudio(stream);
       },
       'Tab audio capture failed.',
@@ -559,9 +554,8 @@ export function initAudioControls(
   });
 
   if (options.onRequestYouTubeAudio) {
-    setupYouTubeLogic(
+    setupYouTubeAudioControls(
       container,
-      youtubeController,
       options.onRequestYouTubeAudio,
       updateStatus,
       handleSuccess,
@@ -675,307 +669,4 @@ function renderPostStartGuidance({
       }
     </section>
   `;
-}
-
-function renderSourceHelpDisclosure({
-  sourceLabelId,
-  summaryId,
-  panelId,
-  summary,
-  content,
-}: {
-  sourceLabelId: string;
-  summaryId: string;
-  panelId: string;
-  summary: string;
-  content: string;
-}) {
-  return `
-    <details class="control-panel__info-wrap control-panel__info-disclosure">
-      <summary
-        id="${summaryId}"
-        class="control-panel__info"
-        aria-controls="${panelId}"
-      >
-        ${summary}
-      </summary>
-      <div
-        id="${panelId}"
-        class="control-panel__info-text"
-        role="note"
-        aria-labelledby="${sourceLabelId} ${summaryId}"
-      >
-        ${content}
-      </div>
-    </details>
-  `;
-}
-
-function renderAdvancedSources(options: AudioControlsOptions) {
-  if (!options.onRequestTabAudio && !options.onRequestYouTubeAudio) {
-    return '';
-  }
-
-  return `
-    <details class="control-panel__details" data-advanced-inputs>
-      <summary class="control-panel__label">Other audio sources</summary>
-      <p class="control-panel__advanced-helper">Use these when you want the visuals to react to music or videos already playing in your browser.</p>
-      <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel>
-        ${
-          options.onRequestTabAudio
-            ? `
-        <div class="control-panel__row">
-          <div class="control-panel__text">
-            <span id="tab-audio-label" class="control-panel__label">Tab capture</span>
-            ${renderSourceHelpDisclosure({
-              sourceLabelId: 'tab-audio-label',
-              summaryId: 'tab-audio-summary',
-              panelId: 'tab-audio-info',
-              summary: 'Tab tips',
-              content:
-                'Capture sound from the current tab. In the picker, choose “This tab” and enable Share audio.',
-            })}
-          </div>
-          <button id="use-tab-audio" class="cta-button" type="button">Capture tab</button>
-        </div>
-        `
-            : ''
-        }
-        ${
-          options.onRequestYouTubeAudio
-            ? `
-        <div class="control-panel__row control-panel__row--stacked">
-          <div class="control-panel__text">
-            <span id="youtube-audio-label" class="control-panel__label">YouTube capture</span>
-            ${renderSourceHelpDisclosure({
-              sourceLabelId: 'youtube-audio-label',
-              summaryId: 'youtube-audio-summary',
-              panelId: 'youtube-audio-info',
-              summary: 'YouTube tips',
-              content:
-                'Paste a link, load it, then capture. In the picker, choose “This tab” and enable Share audio. The embedded video keeps playing with sound here while it drives the visualizer.',
-            })}
-          </div>
-          <div class="control-panel__field">
-            <label class="sr-only" for="youtube-url">YouTube URL</label>
-            <input
-              id="youtube-url"
-              class="control-panel__input"
-              type="url"
-              placeholder="https://youtube.com/watch?v=..."
-              autocomplete="off"
-              inputmode="url"
-            />
-            <button id="load-youtube" class="cta-button" type="button">Load</button>
-          </div>
-          <p id="youtube-url-feedback" class="control-panel__microcopy" data-youtube-url-feedback role="status" aria-live="polite">Paste a full YouTube link to load it.</p>
-          <div id="recent-youtube" class="control-panel__recent" hidden>
-            <span class="control-panel__label small">Recent</span>
-            <div id="recent-list" class="control-panel__chip-list"></div>
-          </div>
-          <div class="control-panel__actions control-panel__actions--inline">
-            <button id="use-youtube-audio" class="cta-button" type="button">Capture YouTube</button>
-          </div>
-          <div id="youtube-player-container" class="control-panel__embed" hidden>
-            <div id="youtube-player"></div>
-          </div>
-        </div>
-        `
-            : ''
-        }
-      </div>
-    </details>
-  `;
-}
-
-function setupYouTubeLogic(
-  container: HTMLElement,
-  controller: YouTubeController,
-  onUse: (stream: MediaStream) => Promise<void>,
-  updateStatus: (msg: string, v?: 'success' | 'error') => void,
-  onSuccess?: () => void,
-) {
-  const doc = container.ownerDocument;
-  const input = container.querySelector('#youtube-url') as HTMLInputElement;
-  const loadBtn = container.querySelector('#load-youtube');
-  const useBtn = container.querySelector(
-    '#use-youtube-audio',
-  ) as HTMLButtonElement;
-  const playerContainer = container.querySelector(
-    '#youtube-player-container',
-  ) as HTMLElement;
-  const recentContainer = container.querySelector(
-    '#recent-youtube',
-  ) as HTMLElement;
-  const recentList = container.querySelector('#recent-list') as HTMLElement;
-  const urlFeedback = container.querySelector(
-    '[data-youtube-url-feedback]',
-  ) as HTMLElement | null;
-  const STORAGE_KEY = 'stims-youtube-url';
-  let youtubeReady = false;
-
-  const setUseButtonReadyState = () => {
-    if (!useBtn) return;
-    useBtn.disabled = !youtubeReady;
-    useBtn.setAttribute('aria-disabled', String(!youtubeReady));
-  };
-
-  const setLoadButtonValidityState = () => {
-    if (!input || !(loadBtn instanceof HTMLButtonElement)) return;
-    const value = input.value.trim();
-    const videoId = controller.parseVideoId(input.value);
-    const isValid = Boolean(videoId);
-    loadBtn.disabled = !isValid;
-    loadBtn.setAttribute('aria-disabled', String(!isValid));
-    input.setAttribute('aria-invalid', value ? String(!isValid) : 'false');
-    if (urlFeedback) {
-      if (!value) {
-        urlFeedback.textContent = 'Paste a full YouTube link to load it.';
-      } else if (!isValid) {
-        urlFeedback.textContent =
-          'That link was not recognized. Try a full youtube.com/watch URL.';
-      } else {
-        urlFeedback.textContent = 'Link looks good. Press Load to continue.';
-      }
-    }
-  };
-  const readStoredUrl = () => {
-    try {
-      return window.sessionStorage.getItem(STORAGE_KEY);
-    } catch (_error) {
-      return null;
-    }
-  };
-  const writeStoredUrl = (value: string) => {
-    try {
-      window.sessionStorage.setItem(STORAGE_KEY, value);
-    } catch (_error) {
-      // Ignore storage errors.
-    }
-  };
-
-  const updateRecentList = () => {
-    const recent = controller.getRecentVideos();
-    if (recent.length === 0) {
-      recentContainer.hidden = true;
-      return;
-    }
-    recentContainer.hidden = false;
-    recentList.innerHTML = '';
-    recent.forEach((v) => {
-      const chip = doc.createElement('button');
-      chip.className = 'control-panel__chip';
-      chip.textContent = v.id;
-      chip.title = `Load video ${v.id}`;
-      chip.type = 'button';
-      chip.setAttribute('aria-label', `Load video ${v.id}`);
-      chip.addEventListener('click', () => {
-        input.value = `https://www.youtube.com/watch?v=${v.id}`;
-        writeStoredUrl(input.value);
-        setLoadButtonValidityState();
-        loadVideo(v.id);
-      });
-      recentList.appendChild(chip);
-    });
-  };
-
-  const loadVideo = async (id: string) => {
-    try {
-      playerContainer.hidden = false;
-      youtubeReady = false;
-      setUseButtonReadyState();
-      updateStatus('Loading player…', 'success');
-      await controller.loadVideo('youtube-player', id, (state) => {
-        if (state === 1) {
-          // Playing
-          updateStatus('Ready to capture audio.', 'success');
-          youtubeReady = true;
-          setUseButtonReadyState();
-        }
-      });
-      updateStatus('Video loaded.', 'success');
-      updateRecentList();
-    } catch (_err) {
-      updateStatus('Failed to load YouTube player.');
-      playerContainer.hidden = true;
-      youtubeReady = false;
-      setUseButtonReadyState();
-    }
-  };
-
-  if (input) {
-    input.setAttribute('aria-describedby', 'youtube-url-feedback');
-  }
-  setUseButtonReadyState();
-  setLoadButtonValidityState();
-  updateRecentList();
-
-  if (input) {
-    const storedUrl = readStoredUrl();
-    if (storedUrl) {
-      input.value = storedUrl;
-      setLoadButtonValidityState();
-    }
-    input.addEventListener('input', () => {
-      writeStoredUrl(input.value);
-      youtubeReady = false;
-      setUseButtonReadyState();
-      setLoadButtonValidityState();
-    });
-    input.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      if (loadBtn instanceof HTMLButtonElement && loadBtn.disabled) return;
-      loadBtn?.dispatchEvent(new Event('click'));
-    });
-  }
-
-  loadBtn?.addEventListener('click', () => {
-    const videoId = controller.parseVideoId(input.value);
-    if (!videoId) {
-      updateStatus('Paste a valid YouTube link.');
-      youtubeReady = false;
-      setUseButtonReadyState();
-      input.focus();
-      return;
-    }
-    loadVideo(videoId);
-  });
-
-  useBtn?.addEventListener('click', async () => {
-    if (!youtubeReady) {
-      updateStatus('Load a YouTube video first.');
-      input.focus();
-      return;
-    }
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      updateStatus('Screen capture unavailable.');
-      return;
-    }
-
-    try {
-      useBtn.disabled = true;
-      useBtn.toggleAttribute('data-loading', true);
-      useBtn.setAttribute('aria-busy', 'true');
-      updateStatus('Select tab to capture audio.', 'success');
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true,
-      });
-      if (!stream.getAudioTracks().length) {
-        stream.getTracks().forEach((t) => t.stop());
-        updateStatus('No audio track detected.');
-        return;
-      }
-      await onUse(stream);
-      onSuccess?.();
-      updateStatus('YouTube audio connected.', 'success');
-    } catch (_err) {
-      updateStatus('YouTube audio capture failed.');
-    } finally {
-      useBtn.disabled = false;
-      useBtn.toggleAttribute('data-loading', false);
-      useBtn.setAttribute('aria-busy', 'false');
-    }
-  });
 }
