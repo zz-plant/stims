@@ -36,6 +36,18 @@ The following docs still describe the retired multi-toy model. Keep them only as
 - [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md)
 - [`toys.md`](./toys.md)
 
+## README synchronization
+
+When docs are added, moved, renamed, archived, or removed, keep the repository entry-point READMEs aligned in the same PR:
+
+- `README.md`
+- `CONTRIBUTING.md`
+- `AGENTS.md`
+- `docs/README.md`
+- `docs/agents/README.md`
+
+Reference [`DOCS_MAINTENANCE.md`](./DOCS_MAINTENANCE.md) for the full synchronization contract and per-change requirements.
+
 ## Conventions
 
 - Package manager: `bun`
