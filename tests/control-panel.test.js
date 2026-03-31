@@ -1,14 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-
-function setUserAgent(userAgent) {
-  Object.defineProperty(navigator, 'userAgent', {
-    value: userAgent,
-    configurable: true,
-  });
-}
-
-const freshImport = async () =>
-  import(`../assets/js/ui/system-controls.ts?t=${Date.now()}-${Math.random()}`);
+import { importFresh, replaceProperty } from './test-helpers.ts';
 
 const DEFAULT_DESKTOP_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
@@ -17,20 +8,28 @@ const DEFAULT_MOBILE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
 
 let originalUserAgent;
+let restoreUserAgent = () => {};
 
 describe('control panel mobile affordances', () => {
   afterEach(() => {
     if (originalUserAgent) {
-      setUserAgent(originalUserAgent);
+      restoreUserAgent();
     }
+    restoreUserAgent = () => {};
     document.body.innerHTML = '';
   });
 
   test('defaults to mobile-friendly idle preset when user agent is mobile', async () => {
     originalUserAgent = navigator.userAgent;
-    setUserAgent(DEFAULT_MOBILE_UA);
+    restoreUserAgent = replaceProperty(
+      navigator,
+      'userAgent',
+      DEFAULT_MOBILE_UA,
+    );
 
-    const { initSystemControls } = await freshImport();
+    const { initSystemControls } = await importFresh(
+      '../assets/js/ui/system-controls.ts',
+    );
     const host = document.createElement('div');
     document.body.appendChild(host);
     const panel = initSystemControls(host, {
@@ -50,9 +49,15 @@ describe('control panel mobile affordances', () => {
 
   test('keeps idle motion enabled on desktop while mobile preset stays off', async () => {
     originalUserAgent = navigator.userAgent;
-    setUserAgent(DEFAULT_DESKTOP_UA);
+    restoreUserAgent = replaceProperty(
+      navigator,
+      'userAgent',
+      DEFAULT_DESKTOP_UA,
+    );
 
-    const { initSystemControls } = await freshImport();
+    const { initSystemControls } = await importFresh(
+      '../assets/js/ui/system-controls.ts',
+    );
     const host = document.createElement('div');
     document.body.appendChild(host);
     const panel = initSystemControls(host, {
@@ -71,7 +76,9 @@ describe('control panel mobile affordances', () => {
   });
 
   test('supports embedding system controls inside another panel', async () => {
-    const { initSystemControls } = await freshImport();
+    const { initSystemControls } = await importFresh(
+      '../assets/js/ui/system-controls.ts',
+    );
     const host = document.createElement('div');
     document.body.appendChild(host);
     const panel = initSystemControls(host, {

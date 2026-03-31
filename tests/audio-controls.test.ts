@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { YouTubeController } from '../assets/js/ui/youtube-controller.ts';
+import { flushTasks, importFresh } from './test-helpers.ts';
 
-const freshImport = async <T>(path: string): Promise<T> =>
-  import(`${path}?t=${Date.now()}-${Math.random()}`) as Promise<T>;
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+const flush = () => flushTasks();
 
 let initAudioControls: typeof import('../assets/js/ui/audio-controls.ts').initAudioControls;
 let buildTryThisFirstRecommendation: typeof import('../assets/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
@@ -63,7 +61,7 @@ describe('audio controls primary emphasis', () => {
         removeEventListener: () => {},
         dispatchEvent: () => false,
       }) as MediaQueryList) as typeof window.matchMedia;
-    const audioControlsModule = await freshImport<
+    const audioControlsModule = await importFresh<
       typeof import('../assets/js/ui/audio-controls.ts')
     >('../assets/js/ui/audio-controls.ts');
     initAudioControls = audioControlsModule.initAudioControls;

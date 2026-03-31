@@ -1,23 +1,17 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-
-const freshImport = async () =>
-  import(
-    `../assets/js/core/renderer-setup.ts?ts=${Date.now()}-${Math.random()}`
-  );
+import { importFresh, replaceProperty } from './test-helpers.ts';
 
 describe('renderer setup WebGPU fallback safety', () => {
   const originalConsoleInfo = console.info;
   const originalConsoleDebug = console.debug;
-  const originalUserAgent = navigator.userAgent;
+  let restoreUserAgent = () => {};
 
   afterEach(() => {
     mock.restore();
     console.info = originalConsoleInfo;
     console.debug = originalConsoleDebug;
-    Object.defineProperty(navigator, 'userAgent', {
-      configurable: true,
-      value: originalUserAgent,
-    });
+    restoreUserAgent();
+    restoreUserAgent = () => {};
     document.body.innerHTML = '';
   });
 
@@ -47,11 +41,11 @@ describe('renderer setup WebGPU fallback safety', () => {
     const consoleInfo = mock(() => {});
     const consoleDebug = mock(() => {});
 
-    Object.defineProperty(navigator, 'userAgent', {
-      configurable: true,
-      value:
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36',
-    });
+    restoreUserAgent = replaceProperty(
+      navigator,
+      'userAgent',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36',
+    );
     mock.module('../assets/js/core/webgl-check', () => ({
       ensureWebGL: () => true,
     }));
@@ -95,7 +89,9 @@ describe('renderer setup WebGPU fallback safety', () => {
     console.info = consoleInfo;
     console.debug = consoleDebug;
 
-    const { initRenderer } = await freshImport();
+    const { initRenderer } = await importFresh<
+      typeof import('../assets/js/core/renderer-setup.ts')
+    >('../assets/js/core/renderer-setup.ts');
     const result = await initRenderer(document.createElement('canvas'), {
       webgpuInitTimeoutMs: 5,
     });
