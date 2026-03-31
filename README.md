@@ -26,6 +26,7 @@ It is built to feel like a first-class browser experience rather than a nostalgi
 - [Shipped experience](#shipped-experience)
 - [Quickstart](#quickstart)
 - [Common commands](#common-commands)
+- [README maintenance checklist](#readme-maintenance-checklist)
 - [Development notes](#development-notes)
 - [Contributing at a glance](#contributing-at-a-glance)
 - [Project shape](#project-shape)
@@ -109,6 +110,18 @@ If you want to validate the production bundle locally, run `bun run build` and t
 
 For JavaScript or TypeScript changes, `bun run check` is the repository quality gate.
 
+## README maintenance checklist
+
+When changing project workflows or documentation structure, keep README-level entry points aligned in the same change:
+
+- `README.md` (this file)
+- `CONTRIBUTING.md`
+- `AGENTS.md`
+- `docs/README.md`
+- `docs/agents/README.md`
+
+Use [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md) as the synchronization checklist for add/move/rename/delete docs updates.
+
 ## Development notes
 
 - Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
@@ -151,6 +164,7 @@ Start with:
 - [docs/MILKDROP_PRESET_RUNTIME.md](./docs/MILKDROP_PRESET_RUNTIME.md)
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - [docs/FEATURE_SPECIFICATIONS.md](./docs/FEATURE_SPECIFICATIONS.md)
+- [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md)
 - [docs/LINEAGE_AND_CREDITS.md](./docs/LINEAGE_AND_CREDITS.md)
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 
