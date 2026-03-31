@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   createUnifiedInput,
   type UnifiedInputState,
-} from '../assets/js/utils/unified-input.ts';
+} from '../assets/js/core/unified-input.ts';
 
 const flushInput = async () => {
   await new Promise((resolve) => setTimeout(resolve, 24));

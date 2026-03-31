@@ -52,10 +52,10 @@ describe('renderer setup WebGPU fallback safety', () => {
       value:
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36',
     });
-    mock.module('../assets/js/utils/webgl-check', () => ({
+    mock.module('../assets/js/core/webgl-check', () => ({
       ensureWebGL: () => true,
     }));
-    mock.module('../assets/js/utils/webgl-renderer', () => ({
+    mock.module('../assets/js/core/webgl-renderer', () => ({
       createWebGLRenderer,
     }));
     const getRendererCapabilities = mock(

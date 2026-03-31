@@ -5,6 +5,8 @@ import type {
   PositionalAudio,
   WebGLRenderer,
 } from 'three';
+import type { FrequencyAnalyser } from '../assets/js/core/audio-handler.ts';
+import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/core/audio-handler.ts';
 import { resetRenderPreferencesState } from '../assets/js/core/render-preferences.ts';
 import type { RendererInitConfig } from '../assets/js/core/renderer-setup.ts';
 import {
@@ -19,8 +21,6 @@ import {
   subscribeToRendererRuntimeControls,
 } from '../assets/js/core/services/render-service.ts';
 import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
-import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
-import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/utils/audio-handler.ts';
 
 describe('render-service pooling', () => {
   beforeEach(() => {

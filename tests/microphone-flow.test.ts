@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { AudioAccessError } from '../assets/js/core/audio-handler.ts';
 import { setupMicrophonePermissionFlow } from '../assets/js/core/microphone-flow.ts';
-import { AudioAccessError } from '../assets/js/utils/audio-handler.ts';
 
 function buildDom() {
   const startButton = document.createElement('button');
