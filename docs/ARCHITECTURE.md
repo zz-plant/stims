@@ -12,6 +12,83 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 Use this section as a quick compass: if you need to change how a toy starts or stops, look at the loader and core runtime; if you need to change UI state or status messaging, look at the views; if you need to change toy behavior, look at the toy modules and `WebToy` helpers.
 
+## High-level architecture diagrams
+
+### 1) Layered system context
+
+```mermaid
+flowchart TB
+  User[User / browser session]
+
+  subgraph ShellLayer[Shell + boot layer]
+    Shell[HTML shells\nindex.html + milkdrop/index.html]
+    App[App bootstrap\nassets/js/app.ts]
+  end
+
+  subgraph AppLayer[Application orchestration layer]
+    Router[assets/js/router.ts\npath/history normalization]
+    Loader[assets/js/loader.ts\ntoy lifecycle + navigation]
+    Views[assets/js/toy-view.ts + assets/js/library-view.js\nlibrary/toy shell + status]
+    Preflight[assets/js/core/capability-preflight.ts\nstartup capability gates]
+    Manifest[assets/js/utils/manifest-client.ts\ndev/build module URL resolution]
+  end
+
+  subgraph RuntimeLayer[Toy + runtime layer]
+    Toy[Toy module\nassets/js/toys/milkdrop-toy.ts]
+    Core[assets/js/core/web-toy.ts + assets/js/core/*\nscene/camera/loop/runtime contracts]
+    Renderer[assets/js/core/services/render-service.ts\nWebGPU/WebGL pooled renderer]
+    Audio[assets/js/core/services/audio-service.ts\npooled mic stream + analysers]
+    Settings[assets/js/core/settings-panel.ts + assets/js/core/renderer-settings.ts\nquality + runtime tuning]
+  end
+
+  User --> Shell --> App
+  App --> Router
+  App --> Loader
+  App --> Views
+  App --> Preflight
+  Loader --> Manifest --> Toy --> Core
+  Core --> Renderer
+  Core --> Audio
+  Core --> Settings
+  Router --> Loader
+  Views --> Loader
+  Preflight --> Loader
+```
+
+### 2) Startup handoff sequence (happy path)
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant S as HTML shell
+  participant A as assets/js/app.ts
+  participant P as assets/js/core/capability-preflight.ts
+  participant L as assets/js/loader.ts
+  participant M as assets/js/utils/manifest-client.ts
+  participant T as assets/js/toys/milkdrop-toy.ts
+  participant C as assets/js/core/web-toy.ts
+  participant R as assets/js/core/services/render-service.ts
+  participant Au as assets/js/core/services/audio-service.ts
+
+  U->>S: Open /milkdrop/
+  S->>A: Bootstrap app
+  A->>P: Run capability preflight
+  P-->>A: Capability + hint state
+  A->>L: Create loader + wire controls/router
+  L->>M: Resolve toy module URL
+  M-->>L: Importable module path
+  L->>T: import() + start()
+  T->>C: Build runtime instance
+  C->>R: Acquire pooled renderer handle
+  C->>Au: Acquire pooled audio handle
+  C-->>L: Return dispose handle
+```
+
+Legend:
+- **Boot/orchestration**: shell + app + loader/router/view/preflight.
+- **Runtime**: toy module and shared `core/*` systems.
+- **Services**: pooled renderer/audio resources reused across toy loads.
+
 ## Architecture tiers (what is required vs optional)
 
 - **Tier 0: Site runtime (required).** HTML entry points, loader/router, views, runtime core, and toy modules. This tier is enough to run and deploy the web toy experience.
