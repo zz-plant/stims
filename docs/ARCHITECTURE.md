@@ -26,19 +26,19 @@ flowchart TB
   end
 
   subgraph AppLayer[Application orchestration layer]
-    Router[router.ts\npath/history normalization]
-    Loader[loader.ts\ntoy lifecycle + navigation]
-    Views[toy-view.ts + library-view.js\nlibrary/toy shell + status]
-    Preflight[capability-preflight.ts\nstartup capability gates]
-    Manifest[manifest-client.ts\ndev/build module URL resolution]
+    Router[assets/js/router.ts\npath/history normalization]
+    Loader[assets/js/loader.ts\ntoy lifecycle + navigation]
+    Views[assets/js/toy-view.ts + assets/js/library-view.js\nlibrary/toy shell + status]
+    Preflight[assets/js/core/capability-preflight.ts\nstartup capability gates]
+    Manifest[assets/js/utils/manifest-client.ts\ndev/build module URL resolution]
   end
 
   subgraph RuntimeLayer[Toy + runtime layer]
     Toy[Toy module\nassets/js/toys/milkdrop-toy.ts]
-    Core[core/web-toy.ts + core/*\nscene/camera/loop/runtime contracts]
-    Renderer[core/services/render-service.ts\nWebGPU/WebGL pooled renderer]
-    Audio[core/services/audio-service.ts\npooled mic stream + analysers]
-    Settings[settings-panel.ts + renderer-settings.ts\nquality + runtime tuning]
+    Core[assets/js/core/web-toy.ts + assets/js/core/*\nscene/camera/loop/runtime contracts]
+    Renderer[assets/js/core/services/render-service.ts\nWebGPU/WebGL pooled renderer]
+    Audio[assets/js/core/services/audio-service.ts\npooled mic stream + analysers]
+    Settings[assets/js/core/settings-panel.ts + assets/js/core/renderer-settings.ts\nquality + runtime tuning]
   end
 
   User --> Shell --> App
@@ -61,14 +61,14 @@ flowchart TB
 sequenceDiagram
   participant U as User
   participant S as HTML shell
-  participant A as app.ts
-  participant P as capability-preflight
-  participant L as loader.ts
-  participant M as manifest-client
-  participant T as milkdrop-toy.ts
-  participant C as core/web-toy.ts
-  participant R as render-service
-  participant Au as audio-service
+  participant A as assets/js/app.ts
+  participant P as assets/js/core/capability-preflight.ts
+  participant L as assets/js/loader.ts
+  participant M as assets/js/utils/manifest-client.ts
+  participant T as assets/js/toys/milkdrop-toy.ts
+  participant C as assets/js/core/web-toy.ts
+  participant R as assets/js/core/services/render-service.ts
+  participant Au as assets/js/core/services/audio-service.ts
 
   U->>S: Open /milkdrop/
   S->>A: Bootstrap app
