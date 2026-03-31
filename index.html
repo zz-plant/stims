@@ -102,27 +102,39 @@
         <header class="hero home-stage" id="overview" aria-label="Stims overview">
           <div class="home-stage__grid">
             <div class="home-stage__copy">
-              <p class="eyebrow">Browser-native MilkDrop visualizer</p>
-              <h1>Press play. Let the room move.</h1>
-              <p class="tagline">MilkDrop energy in the browser.</p>
-              <p class="home-stage__support">Demo starts fastest. Launchpad is there when you need it.</p>
+              <div class="home-stage__kicker-row" aria-label="Experience summary">
+                <span class="pill pill--accent">Mobile-first launch</span>
+                <span class="pill pill--soft">Demo, mic, tab, YouTube</span>
+              </div>
+              <p class="eyebrow">Browser-native visualizer</p>
+              <h1>Start fast. Tune live.</h1>
+              <p class="tagline">
+                Stims is built so the first tap feels obvious on a phone: instant demo playback
+                when you want motion now, deeper controls only when you actually need them.
+              </p>
               <div class="hero-cta-row" role="group" aria-label="Primary actions">
                 <a
                   href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
                   class="cta-button primary"
                 >
-                  Start with demo audio
+                  Start demo instantly
                 </a>
                 <a href="/milkdrop/" class="cta-button ghost">Open launchpad</a>
               </div>
-              <div class="home-stage__meta" aria-label="Stims highlights">
-                <article class="home-stage__metric">
-                  <p class="home-stage__metric-label">Presets</p>
-                  <p class="home-stage__metric-value">300+ presets</p>
+              <p class="home-stage__support">
+                The workspace stays live while you switch presets, bring in your own audio, and
+                decide how hands-on you want to get.
+              </p>
+              <div class="home-stage__proof-grid" aria-label="Stims value highlights">
+                <article class="home-stage__proof-card">
+                  <p class="home-stage__panel-label">Fastest path</p>
+                  <h2>Demo drops you straight into playback.</h2>
+                  <p>No account, no install, no setup wall before the visual starts moving.</p>
                 </article>
-                <article class="home-stage__metric">
-                  <p class="home-stage__metric-label">Inputs</p>
-                  <p class="home-stage__metric-value">Demo, mic, tab, YouTube</p>
+                <article class="home-stage__proof-card">
+                  <p class="home-stage__panel-label">Touch-ready</p>
+                  <h2>Built for one-thumb decisions.</h2>
+                  <p>Big actions, readable preset browsing, and a mobile dock that keeps launch close.</p>
                 </article>
               </div>
             </div>
@@ -130,8 +142,12 @@
             <div class="home-stage__visual">
               <div class="home-stage__viewport" aria-hidden="true">
                 <div class="home-stage__viewport-header">
-                  <span>Stims live preview</span>
-                  <span>Live</span>
+                  <span>Stims pocket stage</span>
+                  <span>Live preview</span>
+                </div>
+                <div class="home-stage__hud">
+                  <span class="home-stage__hud-pill">Preset swap</span>
+                  <span class="home-stage__hud-pill">Touch ready</span>
                 </div>
                 <div class="home-stage__rings"></div>
                 <div class="home-stage__orb"></div>
@@ -156,6 +172,34 @@
                   <span></span>
                   <span></span>
                 </div>
+                <div class="home-stage__queue">
+                  <article class="home-stage__queue-card">
+                    <p class="home-stage__queue-label">Now playing</p>
+                    <p class="home-stage__queue-value">Cream of the Crop</p>
+                  </article>
+                  <article class="home-stage__queue-card">
+                    <p class="home-stage__queue-label">Source</p>
+                    <p class="home-stage__queue-value">Demo audio</p>
+                  </article>
+                  <article class="home-stage__queue-card">
+                    <p class="home-stage__queue-label">Next move</p>
+                    <p class="home-stage__queue-value">Bring your own sound</p>
+                  </article>
+                </div>
+              </div>
+              <div class="home-stage__meta" aria-label="Stims highlights">
+                <article class="home-stage__metric">
+                  <p class="home-stage__metric-label">Presets</p>
+                  <p class="home-stage__metric-value">Curated collections that are easy to scan on mobile.</p>
+                </article>
+                <article class="home-stage__metric">
+                  <p class="home-stage__metric-label">Inputs</p>
+                  <p class="home-stage__metric-value">Demo, mic, tab audio, and YouTube when you want your own source.</p>
+                </article>
+                <article class="home-stage__metric">
+                  <p class="home-stage__metric-label">Editing</p>
+                  <p class="home-stage__metric-value">Live preset changes without dropping out of the visual session.</p>
+                </article>
               </div>
             </div>
           </div>
@@ -163,17 +207,23 @@
 
         <section class="home-launches section-shell" id="launches" aria-labelledby="launches-title">
           <div class="section-heading">
-            <p class="eyebrow">Pick a lane</p>
-            <h2 id="launches-title">Two ways in.</h2>
+            <p class="eyebrow">Pick your start</p>
+            <h2 id="launches-title">Two entry points. One clear default.</h2>
             <p class="section-description">
-              Demo is the quickest way in. The launchpad stays here when you want your own audio.
+              Stims now leads with the fastest decision on small screens: start the demo immediately,
+              then graduate into setup only if the session asks for it.
             </p>
           </div>
           <div class="home-launches__grid" aria-label="Launch options">
             <article class="launch-card launch-card--featured">
-              <p class="launch-card__eyebrow">Fastest first click</p>
-              <h3>Play now</h3>
-              <p>Start demo playback and get straight to motion.</p>
+              <p class="launch-card__eyebrow">Default path</p>
+              <h3>Jump into motion</h3>
+              <p>Open demo playback with bundled presets already in reach. Best for a first run or a fast reset.</p>
+              <ul class="home-list" aria-label="Demo launch benefits">
+                <li>One tap from homepage to playback</li>
+                <li>Preset browser already in the flow</li>
+                <li>No permissions required to start</li>
+              </ul>
               <a
                 class="cta-button primary"
                 href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
@@ -182,10 +232,15 @@
               </a>
             </article>
             <article class="launch-card">
-              <p class="launch-card__eyebrow">Use your own sound</p>
-              <h3>Open launchpad</h3>
-              <p>Set up microphone, tab audio, or YouTube input when you need it.</p>
-              <a class="cta-button ghost" href="/milkdrop/">Open launchpad</a>
+              <p class="launch-card__eyebrow">Bring your own sound</p>
+              <h3>Open the launchpad</h3>
+              <p>Use microphone, tab capture, or YouTube when you want the visual to follow your actual room.</p>
+              <ul class="home-list" aria-label="Launchpad benefits">
+                <li>Choose your input before playback</li>
+                <li>Adjust performance and motion defaults</li>
+                <li>Stay ready for longer sessions</li>
+              </ul>
+              <a class="cta-button ghost" href="/milkdrop/">Set up your source</a>
             </article>
           </div>
         </section>
@@ -193,11 +248,23 @@
         <section class="home-presets section-shell" id="presets" aria-labelledby="presets-title">
           <div class="home-presets__intro">
             <div class="section-heading">
-              <p class="eyebrow">Starter presets</p>
-              <h2 id="presets-title">Pick a look fast.</h2>
+              <p class="eyebrow">Preset flow</p>
+              <h2 id="presets-title">Find a mood, not a menu maze.</h2>
               <p class="section-description" data-milkdrop-preset-count>
                 Loading bundled preset collections…
               </p>
+            </div>
+            <div class="home-presets__rail" aria-label="Preset browsing highlights">
+              <article class="home-stage__proof-card">
+                <p class="home-stage__panel-label">Curated first</p>
+                <h3>Collections stay short enough to browse from a phone.</h3>
+                <p>Start with strong picks instead of paging through everything at once.</p>
+              </article>
+              <article class="home-stage__proof-card">
+                <p class="home-stage__panel-label">Live selection</p>
+                <h3>Each card is a direct jump into playback.</h3>
+                <p>Pick the vibe you want and land inside the visual without a second setup step.</p>
+              </article>
             </div>
           </div>
           <div class="home-presets__frame">
@@ -217,14 +284,14 @@
                 </p>
                 <div class="milkdrop-showcase__tag-row">
                   <span class="pill pill--accent">preset</span>
-                  <span class="pill pill--soft">browser</span>
+                  <span class="pill pill--soft">mobile</span>
                 </div>
                 <div class="milkdrop-showcase__card-actions">
                   <a
                     class="cta-button primary"
                     href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
                   >
-                    Start in live playback
+                    Start in playback
                   </a>
                 </div>
               </article>
@@ -234,56 +301,70 @@
 
         <section class="home-system section-shell" id="why-stims" aria-labelledby="why-stims-title">
           <div class="section-heading">
-            <p class="eyebrow">Why it feels different</p>
-            <h2 id="why-stims-title">Built for the moment after music starts.</h2>
+            <p class="eyebrow">Session design</p>
+            <h2 id="why-stims-title">Made for the handheld session.</h2>
             <p class="section-description">
-              Stims is a playback workspace first. Setup exists when you need it, but the core
-              experience stays focused on motion, preset discovery, and live iteration.
+              The UX now stays focused on the sequence that matters most on mobile: launch fast,
+              swap looks quickly, then go deeper only if the session earns it.
             </p>
           </div>
           <div class="home-system__cards">
             <article class="system-card">
-              <p class="system-card__label">Browser-native</p>
-              <h3>No install ritual.</h3>
-              <p>Open a URL, choose a signal, and let the canvas fill the room.</p>
+              <p class="system-card__label">01 Launch</p>
+              <h3>Lead with motion.</h3>
+              <p>The homepage keeps one strong primary action above the fold instead of competing routes.</p>
             </article>
             <article class="system-card">
-              <p class="system-card__label">Preset-first</p>
-              <h3>Discovery stays inside motion.</h3>
-              <p>Browse collections, favorites, and recent runs without dropping out of playback.</p>
+              <p class="system-card__label">02 Browse</p>
+              <h3>Scan collections quickly.</h3>
+              <p>Preset browsing is organized around short curated groups so the next look is easy to spot.</p>
             </article>
             <article class="system-card">
-              <p class="system-card__label">Live editing</p>
-              <h3>Change the active preset in place.</h3>
-              <p>Open the editor, try ideas fast, and keep a safety net while the visual keeps running.</p>
+              <p class="system-card__label">03 Expand</p>
+              <h3>Bring in your own audio.</h3>
+              <p>Launchpad stays available for mic, tab, and YouTube once you want the room to drive the visual.</p>
             </article>
             <article class="system-card">
-              <p class="system-card__label">Launchpad</p>
-              <h3>Use setup only when it helps.</h3>
-              <p>Mic input, tab capture, quality presets, and motion defaults are there when you need more control.</p>
+              <p class="system-card__label">04 Iterate</p>
+              <h3>Edit without breaking flow.</h3>
+              <p>Preset changes and deeper tools stay connected to a live playback workspace instead of a detached config screen.</p>
             </article>
           </div>
-          <p class="home-system__footer">
-            Want the implementation details too?
-            <a class="text-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">
+          <div class="home-system__footer">
+            <p>Want the implementation details too?</p>
+            <a
+              class="text-link"
+              href="https://github.com/zz-plant/stims"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Inspect the source on GitHub
             </a>
-          </p>
+          </div>
         </section>
       </main>
 
       <footer class="home-footer" id="site-footer">
-        <p>Stims is built for fast entry and long sessions inside one live visual workspace.</p>
+        <p>Stims is a browser-native visual workspace built to feel immediate on a phone and expansive once playback begins.</p>
         <p class="footer-nav">
-          <a href="#launches" class="text-link">Launches</a>
+          <a href="#launches" class="text-link">Start</a>
           <span aria-hidden="true">·</span>
           <a href="#presets" class="text-link">Presets</a>
           <span aria-hidden="true">·</span>
-          <a href="#why-stims" class="text-link">Why Stims</a>
+          <a href="#why-stims" class="text-link">Workflow</a>
           <span aria-hidden="true">·</span>
           <a href="/milkdrop/" class="text-link">Launchpad</a>
         </p>
       </footer>
+    </div>
+    <div class="home-mobile-dock" aria-label="Quick launch actions">
+      <a
+        href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
+        class="cta-button primary"
+      >
+        Start demo
+      </a>
+      <a href="/milkdrop/" class="cta-button ghost">Launchpad</a>
     </div>
     <script type="module" src="/assets/js/app.ts"></script>
   </body>

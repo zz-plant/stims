@@ -37,6 +37,11 @@ The following docs still describe the retired multi-toy model. Keep them only as
 
 - [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md)
 - [`TOY_TESTING_SPEC.md`](./TOY_TESTING_SPEC.md)
+- [`COMPETITOR_BATTLECARD.md`](./COMPETITOR_BATTLECARD.md)
+- [`SEO_AUDIT.md`](./SEO_AUDIT.md)
+- [`USER_JOURNEY_CRITIQUE.md`](./USER_JOURNEY_CRITIQUE.md)
+- [`USABILITY_AUDIT.md`](./USABILITY_AUDIT.md)
+- [`UX_AUDIT_2026-02.md`](./UX_AUDIT_2026-02.md)
 
 ## README synchronization
 
