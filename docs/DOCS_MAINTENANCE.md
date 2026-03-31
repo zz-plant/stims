@@ -23,7 +23,7 @@ When restructuring docs, keep these entry points in sync:
 | Change type | Required docs updates |
 | --- | --- |
 | New script or renamed script | `docs/DEVELOPMENT.md` plus agent overlays that reference scripts. |
-| New toy / renamed toy slug | `docs/TOY_DEVELOPMENT.md`, `docs/TOY_SCRIPT_INDEX.md`, and `docs/toys.md` in the same change. |
+| New toy / renamed toy slug | Update `assets/data/toys.json`, then run `bun run generate:toys` so `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` stay aligned; update `docs/TOY_DEVELOPMENT.md` only if the workflow itself changed. |
 | Workflow behavior changes | Update the source workflow doc (for example `docs/DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, `docs/QA_PLAN.md`). |
 | Repo-local agent skill/workflow changes | `docs/agents/custom-capabilities.md` plus any agent overlays or MCP docs that mention the changed capability. |
 | Docs restructuring | Update links and references across all entry points listed above. |

@@ -375,87 +375,151 @@ export function buildMilkdropInputSignalOverrides(
   input: UnifiedInputState | null,
   target: Partial<MilkdropRuntimeSignals> = {},
 ): Partial<MilkdropRuntimeSignals> {
+  type NumericSignalKey = {
+    [Key in keyof MilkdropRuntimeSignals]: MilkdropRuntimeSignals[Key] extends number
+      ? Key
+      : never;
+  }[keyof MilkdropRuntimeSignals];
+  type NumericSignalName = Exclude<NumericSignalKey, undefined>;
+
   const gesture = input?.gesture;
   const performance = input?.performance;
   const sourceFlags = performance?.sourceFlags;
   const actions = performance?.actions;
-  const inputSpeed = Math.hypot(
-    input?.dragDelta.x ?? 0,
-    input?.dragDelta.y ?? 0,
+  const normalizedCentroid = input?.normalizedCentroid;
+  const dragDelta = input?.dragDelta;
+  const hover = performance?.hover;
+  const numericTarget = target as Partial<Record<NumericSignalName, number>>;
+  const inputSpeed = Math.hypot(dragDelta?.x ?? 0, dragDelta?.y ?? 0);
+  const assignAliasedValue = (
+    camelKey: NumericSignalName,
+    snakeKey: NumericSignalName,
+    value: number,
+  ) => {
+    numericTarget[camelKey] = value;
+    numericTarget[snakeKey] = value;
+  };
+
+  assignAliasedValue('inputX', 'input_x', normalizedCentroid?.x ?? 0);
+  assignAliasedValue('inputY', 'input_y', normalizedCentroid?.y ?? 0);
+  assignAliasedValue('inputDx', 'input_dx', dragDelta?.x ?? 0);
+  assignAliasedValue('inputDy', 'input_dy', dragDelta?.y ?? 0);
+  assignAliasedValue('inputSpeed', 'input_speed', inputSpeed);
+  assignAliasedValue('inputPressed', 'input_pressed', input?.isPressed ? 1 : 0);
+  assignAliasedValue(
+    'inputJustPressed',
+    'input_just_pressed',
+    input?.justPressed ? 1 : 0,
+  );
+  assignAliasedValue(
+    'inputJustReleased',
+    'input_just_released',
+    input?.justReleased ? 1 : 0,
+  );
+  assignAliasedValue('inputCount', 'input_count', input?.pointerCount ?? 0);
+  assignAliasedValue('gestureScale', 'gesture_scale', gesture?.scale ?? 1);
+  assignAliasedValue(
+    'gestureRotation',
+    'gesture_rotation',
+    gesture?.rotation ?? 0,
+  );
+  assignAliasedValue(
+    'gestureTranslateX',
+    'gesture_translate_x',
+    gesture?.translation.x ?? 0,
+  );
+  assignAliasedValue(
+    'gestureTranslateY',
+    'gesture_translate_y',
+    gesture?.translation.y ?? 0,
+  );
+  assignAliasedValue(
+    'hoverActive',
+    'hover_active',
+    performance?.hoverActive ? 1 : 0,
+  );
+  assignAliasedValue('hoverX', 'hover_x', hover?.x ?? 0);
+  assignAliasedValue('hoverY', 'hover_y', hover?.y ?? 0);
+  assignAliasedValue('wheelDelta', 'wheel_delta', performance?.wheelDelta ?? 0);
+  assignAliasedValue('wheelAccum', 'wheel_accum', performance?.wheelAccum ?? 0);
+  assignAliasedValue(
+    'dragIntensity',
+    'drag_intensity',
+    performance?.dragIntensity ?? 0,
+  );
+  assignAliasedValue('dragAngle', 'drag_angle', performance?.dragAngle ?? 0);
+  assignAliasedValue(
+    'accentPulse',
+    'accent_pulse',
+    performance?.accentPulse ?? 0,
+  );
+  assignAliasedValue('actionAccent', 'action_accent', actions?.accent ?? 0);
+  assignAliasedValue(
+    'actionModeNext',
+    'action_mode_next',
+    actions?.modeNext ?? 0,
+  );
+  assignAliasedValue(
+    'actionModePrevious',
+    'action_mode_previous',
+    actions?.modePrevious ?? 0,
+  );
+  assignAliasedValue(
+    'actionPresetNext',
+    'action_preset_next',
+    actions?.presetNext ?? 0,
+  );
+  assignAliasedValue(
+    'actionPresetPrevious',
+    'action_preset_previous',
+    actions?.presetPrevious ?? 0,
+  );
+  assignAliasedValue(
+    'actionQuickLook1',
+    'action_quick_look_1',
+    actions?.quickLook1 ?? 0,
+  );
+  assignAliasedValue(
+    'actionQuickLook2',
+    'action_quick_look_2',
+    actions?.quickLook2 ?? 0,
+  );
+  assignAliasedValue(
+    'actionQuickLook3',
+    'action_quick_look_3',
+    actions?.quickLook3 ?? 0,
+  );
+  assignAliasedValue('actionRemix', 'action_remix', actions?.remix ?? 0);
+  assignAliasedValue(
+    'inputSourcePointer',
+    'input_source_pointer',
+    sourceFlags?.pointer ? 1 : 0,
+  );
+  assignAliasedValue(
+    'inputSourceKeyboard',
+    'input_source_keyboard',
+    sourceFlags?.keyboard ? 1 : 0,
+  );
+  assignAliasedValue(
+    'inputSourceGamepad',
+    'input_source_gamepad',
+    sourceFlags?.gamepad ? 1 : 0,
+  );
+  assignAliasedValue(
+    'inputSourceMouse',
+    'input_source_mouse',
+    sourceFlags?.mouse ? 1 : 0,
+  );
+  assignAliasedValue(
+    'inputSourceTouch',
+    'input_source_touch',
+    sourceFlags?.touch ? 1 : 0,
+  );
+  assignAliasedValue(
+    'inputSourcePen',
+    'input_source_pen',
+    sourceFlags?.pen ? 1 : 0,
   );
 
-  return Object.assign(target, {
-    inputX: input?.normalizedCentroid.x ?? 0,
-    inputY: input?.normalizedCentroid.y ?? 0,
-    input_x: input?.normalizedCentroid.x ?? 0,
-    input_y: input?.normalizedCentroid.y ?? 0,
-    inputDx: input?.dragDelta.x ?? 0,
-    inputDy: input?.dragDelta.y ?? 0,
-    input_dx: input?.dragDelta.x ?? 0,
-    input_dy: input?.dragDelta.y ?? 0,
-    inputSpeed: inputSpeed,
-    input_speed: inputSpeed,
-    inputPressed: input?.isPressed ? 1 : 0,
-    input_pressed: input?.isPressed ? 1 : 0,
-    inputJustPressed: input?.justPressed ? 1 : 0,
-    input_just_pressed: input?.justPressed ? 1 : 0,
-    inputJustReleased: input?.justReleased ? 1 : 0,
-    input_just_released: input?.justReleased ? 1 : 0,
-    inputCount: input?.pointerCount ?? 0,
-    input_count: input?.pointerCount ?? 0,
-    gestureScale: gesture?.scale ?? 1,
-    gesture_scale: gesture?.scale ?? 1,
-    gestureRotation: gesture?.rotation ?? 0,
-    gesture_rotation: gesture?.rotation ?? 0,
-    gestureTranslateX: gesture?.translation.x ?? 0,
-    gestureTranslateY: gesture?.translation.y ?? 0,
-    gesture_translate_x: gesture?.translation.x ?? 0,
-    gesture_translate_y: gesture?.translation.y ?? 0,
-    hoverActive: performance?.hoverActive ? 1 : 0,
-    hover_active: performance?.hoverActive ? 1 : 0,
-    hoverX: performance?.hover?.x ?? 0,
-    hoverY: performance?.hover?.y ?? 0,
-    hover_x: performance?.hover?.x ?? 0,
-    hover_y: performance?.hover?.y ?? 0,
-    wheelDelta: performance?.wheelDelta ?? 0,
-    wheel_delta: performance?.wheelDelta ?? 0,
-    wheelAccum: performance?.wheelAccum ?? 0,
-    wheel_accum: performance?.wheelAccum ?? 0,
-    dragIntensity: performance?.dragIntensity ?? 0,
-    drag_intensity: performance?.dragIntensity ?? 0,
-    dragAngle: performance?.dragAngle ?? 0,
-    drag_angle: performance?.dragAngle ?? 0,
-    accentPulse: performance?.accentPulse ?? 0,
-    accent_pulse: performance?.accentPulse ?? 0,
-    actionAccent: actions?.accent ?? 0,
-    action_accent: actions?.accent ?? 0,
-    actionModeNext: actions?.modeNext ?? 0,
-    action_mode_next: actions?.modeNext ?? 0,
-    actionModePrevious: actions?.modePrevious ?? 0,
-    action_mode_previous: actions?.modePrevious ?? 0,
-    actionPresetNext: actions?.presetNext ?? 0,
-    action_preset_next: actions?.presetNext ?? 0,
-    actionPresetPrevious: actions?.presetPrevious ?? 0,
-    action_preset_previous: actions?.presetPrevious ?? 0,
-    actionQuickLook1: actions?.quickLook1 ?? 0,
-    action_quick_look_1: actions?.quickLook1 ?? 0,
-    actionQuickLook2: actions?.quickLook2 ?? 0,
-    action_quick_look_2: actions?.quickLook2 ?? 0,
-    actionQuickLook3: actions?.quickLook3 ?? 0,
-    action_quick_look_3: actions?.quickLook3 ?? 0,
-    actionRemix: actions?.remix ?? 0,
-    action_remix: actions?.remix ?? 0,
-    inputSourcePointer: sourceFlags?.pointer ? 1 : 0,
-    input_source_pointer: sourceFlags?.pointer ? 1 : 0,
-    inputSourceKeyboard: sourceFlags?.keyboard ? 1 : 0,
-    input_source_keyboard: sourceFlags?.keyboard ? 1 : 0,
-    inputSourceGamepad: sourceFlags?.gamepad ? 1 : 0,
-    input_source_gamepad: sourceFlags?.gamepad ? 1 : 0,
-    inputSourceMouse: sourceFlags?.mouse ? 1 : 0,
-    input_source_mouse: sourceFlags?.mouse ? 1 : 0,
-    inputSourceTouch: sourceFlags?.touch ? 1 : 0,
-    input_source_touch: sourceFlags?.touch ? 1 : 0,
-    inputSourcePen: sourceFlags?.pen ? 1 : 0,
-    input_source_pen: sourceFlags?.pen ? 1 : 0,
-  });
+  return target;
 }

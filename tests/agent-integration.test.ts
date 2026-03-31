@@ -118,6 +118,34 @@ afterAll(async () => {
 });
 
 integrationTest(
+  'homepage launchpad CTA opens the milkdrop shell',
+  async () => {
+    await ensureDevServer();
+    const mobile = await createMobilePage();
+
+    try {
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/`);
+      await mobile.page.locator('.hero-cta-row a[href="/milkdrop/"]').click();
+      await mobile.page.waitForURL(`http://127.0.0.1:${TEST_PORT}/milkdrop/`);
+      await mobile.page.waitForSelector('[data-audio-controls]');
+
+      const launchpadState = await mobile.page.evaluate(() => ({
+        hasAudioControls: Boolean(
+          document.querySelector('[data-audio-controls]'),
+        ),
+        hasQuickCheck: Boolean(document.querySelector('.preflight-panel')),
+      }));
+
+      expect(launchpadState.hasAudioControls).toBe(true);
+      expect(launchpadState.hasQuickCheck).toBe(true);
+    } finally {
+      await mobile.close();
+    }
+  },
+  { timeout: 45000 },
+);
+
+integrationTest(
   'agents can launch and capture milkdrop',
   async () => {
     await ensureDevServer();
