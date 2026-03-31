@@ -94,7 +94,6 @@ export function isArchitectureDependencyAllowed({
     ) {
       return true;
     }
-    if (targetLayer === 'data') return true;
     return false;
   }
 
@@ -104,9 +103,7 @@ export function isArchitectureDependencyAllowed({
 
   if (sourceLayer === 'ui') {
     return (
-      targetLayer === 'ui' ||
-      targetLayer === 'core' ||
-      targetLayer === 'utils'
+      targetLayer === 'ui' || targetLayer === 'core' || targetLayer === 'utils'
     );
   }
 

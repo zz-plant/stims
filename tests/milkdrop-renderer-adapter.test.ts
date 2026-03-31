@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import type { Vector2 } from 'three';
 import {
   AdditiveBlending,
@@ -34,6 +35,7 @@ type RenderTreeNode = {
   geometry?: {
     getAttribute?: (name: string) => unknown;
   };
+  visible?: boolean;
   material?: unknown;
   type?: string;
   instanceCount?: number;
@@ -334,6 +336,56 @@ shapecode_0_thickoutline=1
       expect(batchedShapes).toHaveLength(0);
       expect(shaderMaterials).toHaveLength(0);
       expect(basicShapeFills.length).toBeGreaterThan(0);
+    } finally {
+      restoreLocation();
+    }
+  });
+
+  test('drops empty trail line objects on query-forced webgpu sessions', () => {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL('http://localhost/?renderer=webgpu'),
+    );
+
+    try {
+      const preset = compileMilkdropPresetSource(
+        readFileSync(
+          './tests/fixtures/milkdrop/projectm-upstream/100-square.milk',
+          'utf8',
+        ),
+        { id: '100-square' },
+      );
+      const vm = createMilkdropVM(preset);
+      vm.setRenderBackend('webgpu');
+      const frameState = vm.step(makeSignals());
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const adapter = createMilkdropRendererAdapter({
+        scene,
+        camera,
+        backend: 'webgpu',
+        preset,
+      });
+
+      adapter.attach();
+      adapter.render({
+        frameState,
+        blendState: null,
+      });
+
+      const root = scene.children[0] as { children?: RenderTreeNode[] };
+      const trailGroup = root.children?.[4] as RenderTreeNode | undefined;
+      const emptyVisibleLines = flattenRenderTree(trailGroup ?? {}).filter(
+        (child) =>
+          child.type === 'Line' &&
+          child.geometry?.getAttribute?.('position') !== undefined &&
+          (child.geometry?.getAttribute?.('position') as { count?: number })
+            ?.count === 0 &&
+          child.visible !== false,
+      );
+
+      expect(emptyVisibleLines).toHaveLength(0);
     } finally {
       restoreLocation();
     }
