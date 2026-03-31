@@ -21,13 +21,13 @@ export function bootHomePage({
     initTopNav(navContainer, {
       mode: 'library',
       sectionLinks: [
-        { href: '#launches', label: 'Launches' },
+        { href: '#launches', label: 'Start' },
         { href: '#presets', label: 'Presets' },
-        { href: '#why-stims', label: 'Why Stims' },
+        { href: '#why-stims', label: 'Workflow' },
       ],
       utilityLink: {
         href: '/milkdrop/',
-        label: 'Launch MilkDrop',
+        label: 'Open launchpad',
       },
     });
   }

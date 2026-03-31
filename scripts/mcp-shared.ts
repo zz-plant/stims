@@ -196,7 +196,7 @@ function registerTools(server: McpServer) {
     'list_docs',
     {
       description:
-        'Return quick-start, runtime, repository layout, and toy catalog pointers from README.md with line references.',
+        'Return quick-start, runtime, repository layout, and manifest-doc pointers from README.md with line references.',
       inputSchema: z.object({}).strict(),
     },
     async () => {

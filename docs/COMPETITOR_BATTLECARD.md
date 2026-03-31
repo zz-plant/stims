@@ -1,5 +1,7 @@
 # Competitor battlecard (Stims)
 
+> Historical context note (2026-03): This document started under the broader multi-toy positioning. Keep it as strategy context only, and align any reused public copy with the current MilkDrop-led `/milkdrop/` product model before shipping it.
+
 This doc intentionally separates **internal strategy content** from **external-safe messaging** so teams can reuse the same research without leaking direct competitor framing into public copy.
 
 ## Internal use: competitor battlecard table
@@ -20,9 +22,9 @@ Use these lines in public-facing pages (README/site/docs) without naming competi
 
 - **MilkDrop-led lineage framing:** "Stims brings an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop to the web."
 - **Careful claim language:** "Preset-driven and inspired by MilkDrop-era workflows, without claiming full legacy parity."
-- **Instant launch:** "Open the MilkDrop Visualizer in one click, then branch into the broader toy lab."
-- **Beyond one-off visuals:** "Explore a full collection with audio, motion, and performance controls."
-- **Consistent UX across toys:** "One shared experience layer across MilkDrop and the rest of Stims."
+- **Instant launch:** "Open the MilkDrop Visualizer in one click and land in the dedicated launchpad."
+- **Beyond one-off visuals:** "Explore curated presets with audio, motion, and performance controls."
+- **Consistent UX across sessions:** "One shared experience layer across launch, preset browse, live editing, and playback."
 
 ## How this should change the site
 
@@ -30,11 +32,11 @@ Apply the external angle bank to public surfaces in this order:
 
 1. **Homepage hero (`index.html`)**
    - Primary headline should position Stims as an independent browser-native visualizer in the MilkDrop lineage.
-   - Primary CTA should launch `toy.html?toy=milkdrop`.
+   - Primary CTA should launch `/milkdrop/`.
    - Supporting sentence should reinforce presets, live editing, import/export, and careful lineage language.
-2. **Homepage proof + discovery sections (`index.html`)**
-   - Add a MilkDrop proof section before broader toy-lab discovery.
-   - Keep broader discovery language secondary and explicit.
+2. **Homepage proof + launchpad sections (`index.html`)**
+   - Add a MilkDrop proof section before secondary browse/discovery content.
+   - Keep launchpad and preset-browse language secondary to the flagship visualizer framing.
 3. **Metadata snippets (`index.html` OG/Twitter/description)**
    - Keep concise value proposition aligned with MilkDrop-led messaging and Stims branding.
 4. **Public docs IA guidance (`docs/PUBLIC_DOCS_SITE_MAP.md`)**

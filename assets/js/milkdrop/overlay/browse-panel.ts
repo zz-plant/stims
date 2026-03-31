@@ -146,6 +146,7 @@ export class BrowsePanel {
   private browseDirty = true;
   private lastCatalogSignature = '';
   private lastBrowseRenderSignature = '';
+  private lastCollectionFilterSignature = '';
   private visible = true;
 
   constructor(callbacks: BrowsePanelCallbacks) {
@@ -643,6 +644,14 @@ export class BrowsePanel {
         COLLECTION_LABELS[right] ?? right,
       );
     });
+    const collectionFilterSignature = [
+      this.activeCollectionTag,
+      collectionTags.join('|'),
+    ].join('||');
+    if (collectionFilterSignature === this.lastCollectionFilterSignature) {
+      return;
+    }
+    this.lastCollectionFilterSignature = collectionFilterSignature;
 
     const fragment = document.createDocumentFragment();
     const options = [

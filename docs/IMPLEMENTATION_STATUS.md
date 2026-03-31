@@ -33,11 +33,14 @@ This document is the consolidated source for implementation progress across road
   - [x] Promoted additional runtime-critical helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) out of `utils/` and into `core/`.
   - [x] Turned `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` into deterministic generated artifacts from `assets/data/toys.json`.
   - [x] Wired `bun run check:toys` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
-- [ ] **Milestone D:** Performance/reliability pass complete.
+- [x] **Milestone D:** Performance/reliability pass complete.
   - [x] Reduced per-frame signal override allocation churn in the MilkDrop input-response path.
   - [x] Expanded browser-backed smoke coverage to include homepage-to-launchpad navigation in addition to live-session launch coverage.
-- [ ] **Milestone E:** Documentation closeout and cleanup.
+  - [x] Coalesced queued catalog refreshes to the latest requested state and added direct runtime coverage for mid-sync updates.
+  - [x] Stopped rebuilding collection-filter controls across browse search rerenders when the available options stay unchanged.
+- [x] **Milestone E:** Documentation closeout and cleanup.
   - [x] Rewrote current contributor docs around the single-visualizer workflow and removed stale references to retired toy-entry surfaces from active docs.
+  - [x] Marked remaining multi-toy strategy/audit docs as archival context and rewrote manual workflow notes that still needed a live `/milkdrop/` path.
 
 ### Refactor workstream tracking
 
@@ -52,9 +55,12 @@ This document is the consolidated source for implementation progress across road
   - [x] Architecture boundary enforcement now runs in CI-local parity through `bun run check:architecture`.
   - [x] Toy manifest docs are generated from `assets/data/toys.json` and validated by `bun run check:toys`.
   - [x] SEO surface validation now runs alongside the main quality gate through `bun run check:seo`.
-- [ ] 5) Incremental performance and reliability pass.
+- [x] 5) Incremental performance and reliability pass.
+  - [x] Catalog refresh scheduling now coalesces to the latest requested overlay state during rapid preset/backend churn.
+  - [x] Browse collection filters no longer rebuild on every search-driven rerender when the option set is unchanged.
 - [x] 6) Documentation and contributor UX completion.
   - [x] Contributor and agent docs now reflect the single-visualizer product model and generated manifest-doc workflow.
+  - [x] Historical docs and manual notes now explicitly distinguish archival multi-toy context from the current `/milkdrop/` workflow.
 
 ## Technical debt execution queue
 

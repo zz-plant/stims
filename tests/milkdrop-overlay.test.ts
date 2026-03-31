@@ -656,6 +656,68 @@ describe('milkdrop overlay browse rendering', () => {
     overlay.dispose();
   });
 
+  test('preserves collection filter nodes across search rerenders when options stay the same', async () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    classicPreset.tags = ['collection:classic-milkdrop'];
+    const feedbackPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
+    feedbackPreset.tags = ['collection:feedback-lab'];
+
+    overlay.setCatalog(
+      [classicPreset, feedbackPreset],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const optionsDisclosure = document.querySelector(
+      '.milkdrop-overlay__browse-options',
+    ) as HTMLDetailsElement | null;
+    const collectionFilters = document.querySelector(
+      '.milkdrop-overlay__collection-filters',
+    ) as HTMLElement | null;
+    const search = document.querySelector(
+      '.milkdrop-overlay__search',
+    ) as HTMLInputElement | null;
+
+    if (!optionsDisclosure || !collectionFilters || !search) {
+      throw new Error('Expected browse options, filters, and search input.');
+    }
+
+    optionsDisclosure.open = true;
+    optionsDisclosure.dispatchEvent(new Event('toggle'));
+
+    const beforeSearch = [
+      ...collectionFilters.querySelectorAll(
+        '.milkdrop-overlay__collection-filter',
+      ),
+    ];
+
+    search.value = 'signal';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 150));
+
+    const afterSearch = [
+      ...collectionFilters.querySelectorAll(
+        '.milkdrop-overlay__collection-filter',
+      ),
+    ];
+
+    expect(afterSearch).toHaveLength(beforeSearch.length);
+    afterSearch.forEach((button, index) => {
+      expect(button).toBe(beforeSearch[index]);
+    });
+
+    overlay.dispose();
+  });
+
   test('keeps preset rows focused on launch metadata and compact secondary actions', () => {
     globalThis.MutationObserver = class {
       disconnect() {}

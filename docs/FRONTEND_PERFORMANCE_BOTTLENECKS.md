@@ -61,6 +61,7 @@ Recommended follow-up:
 
 - Debounce search input.
 - Cache row elements by preset id and patch only changed fields.
+- Keep overlay chrome (for example collection filters) stable when browse options have not changed.
 - Separate sorting/filtering from DOM updates so unchanged rows can be retained.
 - Consider virtualizing long browse lists if the catalog keeps growing.
 
@@ -78,6 +79,7 @@ Recommended follow-up:
 
 - Distinguish “catalog metadata changed” from “editor source changed”.
 - Only refresh the active row when rating/favorite state changes.
+- Coalesce queued catalog refreshes to the latest requested state before they hit the overlay.
 - Throttle or batch catalog refreshes behind `requestAnimationFrame()` or a microtask queue.
 
 ### 5. Inspector work still performs string-heavy summaries in active sessions
