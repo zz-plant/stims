@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from '../core/services/microphone-permission-service.ts';
+import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 

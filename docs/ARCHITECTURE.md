@@ -130,7 +130,7 @@ Use this to keep future changes honest: homepage work should stay editorial, lau
 | `ui` | nav, audio/system controls, DOM-level affordances and control rendering | public `core/*` state/services, leaf `utils/*` helpers | `app`, `loader/*` internals, toy-specific runtime modules |
 | `utils` | pure helpers, manifest adapters, environment/browser convenience wrappers | `utils/*`, `data/*`; narrow `core/*` imports only when acting as a compatibility adapter pending promotion | `app`, `loader`, page bootstraps, toy modules |
 
-Current migration note: runtime-critical starter and quality helpers for the shipped MilkDrop path now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`, while homepage/library boot initializers now live under `assets/js/bootstrap/*` and `assets/js/ui/nav-scroll-effects.ts` instead of `utils/`.
+Current migration note: runtime-critical starter and quality helpers for the shipped MilkDrop path now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`; additional runtime helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) have also been promoted into `assets/js/core/*`. Homepage/library boot initializers now live under `assets/js/bootstrap/*` and `assets/js/ui/nav-scroll-effects.ts` instead of `utils/`.
 
 ## Source Map (Where Things Live)
 
@@ -171,7 +171,7 @@ flowchart TD
   WebToy --> Caps[renderer-capabilities.ts
   detect WebGPU/WebGL]
   WebToy --> Audio[microphone-flow.ts
-  utils/audio-handler.ts]
+  core/audio-handler.ts]
   WebToy --> Settings[settings-panel.ts]
   Views -->|back/escape| Loader
   Preflight --> Loader
@@ -196,13 +196,13 @@ These are the highest-value architecture changes to reduce drift, lower onboardi
 
 Status: ✅ Implemented in code (`renderer-capabilities` now owns rendering support detection, and `toy-audio-startup` centralizes toy audio start orchestration).
 
-- **Unify rendering/capability entry points** by converging legacy capability wrappers into `utils/webgl-check.ts` plus the core-facing APIs in `core/capability-preflight.ts` and `core/renderer-capabilities.ts`.
+- **Unify rendering/capability entry points** by converging legacy capability wrappers into `core/webgl-check.ts` plus the core-facing APIs in `core/capability-preflight.ts` and `core/renderer-capabilities.ts`.
 - **Define one startup contract** from `app.ts` → `loader.ts` → toy module start/dispose so all toy flows (mic/demo/tab/YouTube) follow the same typed path.
 - **Why first:** startup paths are currently split across `app.ts`, loader helpers, and utility wrappers, which increases regression risk whenever permission or renderer logic changes.
 
 ### P1 — Clarify core vs utils boundaries
 
-Status: ✅ Implemented for startup/audio contracts and extended through the first pilot migration (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`; shipped MilkDrop starter/quality helpers now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`).
+Status: ✅ Implemented for startup/audio contracts and extended through the broader runtime-helper migration (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`; shipped MilkDrop starter/quality helpers now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`; shared runtime helpers such as `audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation now also live in `assets/js/core/*`).
 
 - **Promote runtime-critical utilities into `core/`** (or create a documented `runtime/` namespace) so ownership is obvious for long-lived services.
 - **Keep `utils/` for leaf helpers only** (pure helpers/UI convenience code) and avoid placing lifecycle-critical modules there.
@@ -217,9 +217,9 @@ Status: ✅ Documented and aligned in code; `index.html` remains editorial and `
 
 ### Cross-cutting implementation guardrails
 
-- Add an explicit “runtime ownership map” in this doc (`app`, `loader`, `core`, `utils`, `ui`) with allowed dependency directions.
-- Introduce architecture lint checks (import-boundary rules) to enforce the intended layering over time.
-- Track migration progress with a small checklist in `docs/FULL_REFACTOR_PLAN.md` so architecture updates stay visible across PRs.
+- [x] Add an explicit “runtime ownership map” in this doc (`app`, `loader`, `core`, `utils`, `ui`) with allowed dependency directions.
+- [x] Introduce architecture lint checks (import-boundary rules) to enforce the intended layering over time.
+- [ ] Track migration progress with a small checklist in `docs/FULL_REFACTOR_PLAN.md` so architecture updates stay visible across PRs.
 
 ### Loader lifecycle
 

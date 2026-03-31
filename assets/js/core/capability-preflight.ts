@@ -1,10 +1,10 @@
-import { bindLibraryBackLink } from '../utils/library-back-navigation.ts';
 import {
   renderPreflightIssueList,
   updatePreflightNextStep,
   updatePreflightStatusList,
   updatePreflightWhyDetails,
 } from './capability-preflight-content.ts';
+import { bindLibraryBackLink } from './library-back-navigation.ts';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,

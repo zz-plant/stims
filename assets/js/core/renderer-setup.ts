@@ -5,8 +5,6 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { isMobileDevice } from '../utils/device-detect';
-import { ensureWebGL } from '../utils/webgl-check';
-import { createWebGLRenderer } from '../utils/webgl-renderer';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
   getRendererCapabilities,
@@ -23,6 +21,8 @@ import {
 } from './renderer-init-timeout.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
 import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
+import { ensureWebGL } from './webgl-check';
+import { createWebGLRenderer } from './webgl-renderer';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
 export type RendererInitResult = {

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
+import type { UnifiedInputState } from '../assets/js/core/unified-input.ts';
 import {
   applyMilkdropInteractionResponse,
   buildMilkdropInputSignalOverrides,
 } from '../assets/js/milkdrop/runtime.ts';
 import type { MilkdropFrameState } from '../assets/js/milkdrop/types.ts';
-import type { UnifiedInputState } from '../assets/js/utils/unified-input.ts';
 
 describe('milkdrop input signal overrides', () => {
   test('maps desktop performance state into runtime signals', () => {

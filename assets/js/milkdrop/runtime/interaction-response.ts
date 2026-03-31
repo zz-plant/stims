@@ -1,5 +1,5 @@
 import type { ShaderQuality } from '../../core/performance-panel';
-import type { UnifiedInputState } from '../../utils/unified-input.ts';
+import type { UnifiedInputState } from '../../core/unified-input.ts';
 import type {
   MilkdropFrameState,
   MilkdropGpuGeometryHints,

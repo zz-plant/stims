@@ -1,5 +1,5 @@
-import type { RenderingSupport } from '../core/renderer-capabilities.ts';
-import { getRenderingSupport } from '../core/renderer-capabilities.ts';
+import type { RenderingSupport } from './renderer-capabilities.ts';
+import { getRenderingSupport } from './renderer-capabilities.ts';
 
 const OVERLAY_ID = 'rendering-capability-overlay';
 const MODAL_PARAM = 'modal';

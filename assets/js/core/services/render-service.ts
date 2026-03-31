@@ -1,5 +1,4 @@
 import type * as THREE from 'three';
-import { createSharedInitializer } from '../../utils/shared-initializer';
 import {
   getRendererCapabilities,
   type RendererBackend,
@@ -20,6 +19,7 @@ import {
   type RendererInitConfig,
   type RendererInitResult,
 } from '../renderer-setup.ts';
+import { createSharedInitializer } from '../shared-initializer.ts';
 import {
   getActiveQualityPreset,
   type QualityPreset,

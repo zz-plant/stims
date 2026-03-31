@@ -17,8 +17,8 @@ import {
 } from './library-view/state-controller.js';
 import { setupDarkModeToggle } from './library-view/theme-toggle.js';
 import { createLibraryThreeEffectsManager } from './library-view/three-effects-manager.js';
-import { getToyRouteHref } from './router.ts';
 import { getRecentToySlugs } from './utils/growth-metrics.ts';
+import { getToyRouteHref } from './utils/toy-route-href.ts';
 
 export function createLibraryView({
   toys = [],

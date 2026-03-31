@@ -1,14 +1,16 @@
 // patternRecognition.js: A pattern recognition and predictive listening script for audio-based visualizers
 
-import type { FrequencyAnalyser } from './audio-handler';
+type FrequencyAnalyserLike = {
+  getFrequencyData: () => Uint8Array;
+};
 
 class PatternRecognizer {
-  analyser: FrequencyAnalyser;
+  analyser: FrequencyAnalyserLike;
   bufferSize: number;
   patternBuffer: Uint8Array[];
   writeIndex: number;
   filled: number;
-  constructor(analyser: FrequencyAnalyser, bufferSize = 30) {
+  constructor(analyser: FrequencyAnalyserLike, bufferSize = 30) {
     // Reduced buffer size for performance
     this.analyser = analyser;
     this.bufferSize = bufferSize;

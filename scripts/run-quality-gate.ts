@@ -40,6 +40,10 @@ async function main() {
       cmd: ['bun', 'run', 'check:catalog-fidelity'],
     },
     {
+      label: 'Architecture boundary check',
+      cmd: ['bun', 'run', 'check:architecture'],
+    },
+    {
       label: 'TypeScript typecheck',
       cmd: ['bun', 'run', 'typecheck'],
     },

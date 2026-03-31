@@ -1,6 +1,6 @@
+import { applyPartyMode } from '../core/party-mode.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import type { createToyView } from '../toy-view.ts';
-import { applyPartyMode } from '../utils/party-mode.ts';
 import { createFlowTimer, getFlowIntervalMs } from './flow-timer.ts';
 import { canUseHaptics, createHapticsController } from './haptics.ts';
 import { createSessionTracking } from './session-tracking.ts';

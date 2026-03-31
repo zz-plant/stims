@@ -1,11 +1,11 @@
 import {
   getActiveMotionPreference,
   setMotionPreference,
-} from '../core/motion-preferences';
+} from './motion-preferences';
 import {
   getActiveRenderPreferences,
   setRenderPreferences,
-} from '../core/render-preferences';
+} from './render-preferences';
 
 type PartyModeOptions = {
   enabled: boolean;

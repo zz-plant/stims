@@ -1,8 +1,8 @@
 import { setCompatibilityMode } from '../core/render-preferences.ts';
 import type { getRendererCapabilities } from '../core/renderer-capabilities.ts';
 import { assessToyCapabilities } from '../core/toy-capabilities.ts';
+import { ensureWebGL } from '../core/webgl-check.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
-import { ensureWebGL } from '../utils/webgl-check.ts';
 
 type RendererCapabilities = Awaited<ReturnType<typeof getRendererCapabilities>>;
 
