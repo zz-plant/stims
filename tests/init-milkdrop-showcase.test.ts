@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { initMilkdropShowcase } from '../assets/js/utils/init-milkdrop-showcase.ts';
+import { initMilkdropShowcase } from '../assets/js/bootstrap/milkdrop-showcase.ts';
 
 describe('initMilkdropShowcase', () => {
   const originalFetch = globalThis.fetch;

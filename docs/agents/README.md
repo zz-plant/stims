@@ -40,8 +40,9 @@ Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the checklist before f
 
 ## Fast repo map
 
-- `milkdrop/index.html` — primary app entrypoint for the flagship visualizer.
+- `index.html` and `milkdrop/index.html` — shared-shell entry points; homepage stays editorial, `/milkdrop/` owns the immersive launch route.
 - `assets/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
+- `assets/js/bootstrap/` — page-level shell wiring for home, library, and experience routes.
 - `assets/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
 - `assets/data/toys.json` — loader manifest source for the shipped MilkDrop entry.
 - `tests/` — automated test suite.

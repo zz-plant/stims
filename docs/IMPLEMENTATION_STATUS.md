@@ -19,22 +19,27 @@ This document is the consolidated source for implementation progress across road
 
 ## Refactor milestone tracking
 
-- [ ] **Milestone A:** Baseline + lifecycle contract draft.
+- [x] **Milestone A:** Baseline + lifecycle contract draft.
   - [x] Extracted MilkDrop runtime lifecycle seams into focused startup, failover, interaction, and lifecycle modules.
   - [x] Added targeted startup/fallback/lifecycle seam coverage for the refactored runtime modules.
   - [x] Split oversized MilkDrop compiler/runtime/catalog/renderer type groups into topic-specific modules behind the shared barrel.
-  - [ ] Documented manual smoke baselines and behavior snapshots for milestone sign-off.
-- [ ] **Milestone B:** Pilot migration complete and validated.
+  - [x] Documented manual smoke baselines and behavior snapshots for milestone sign-off.
+- [x] **Milestone B:** Pilot migration complete and validated.
+  - [x] Documented the runtime ownership map and shell contract in `docs/ARCHITECTURE.md`.
+  - [x] Migrated the shipped MilkDrop starter/quality helpers from `utils/` into `core/` as the pilot boundary slice.
+  - [x] Validated the pilot with focused tests, `bun run check:toys`, and `bun run check`.
 - [ ] **Milestone C:** Broad toy migration with hardened drift checks.
 - [ ] **Milestone D:** Performance/reliability pass complete.
 - [ ] **Milestone E:** Documentation closeout and cleanup.
 
 ### Refactor workstream tracking
 
-- [ ] 1) Baseline and observability.
+- [x] 1) Baseline and observability.
 - [ ] 2) Shared runtime boundary extraction.
   - [x] MilkDrop runtime orchestration now delegates startup selection, backend failover, interaction shaping, and frame lifecycle decisions to dedicated modules.
+  - [x] Runtime ownership boundaries are now documented in `docs/ARCHITECTURE.md`.
 - [ ] 3) Toy module normalization.
+  - [x] MilkDrop pilot slice now uses `core/` starter/quality helpers instead of `utils/` runtime helpers.
 - [ ] 4) Data and metadata consistency hardening.
 - [ ] 5) Incremental performance and reliability pass.
 - [ ] 6) Documentation and contributor UX completion.

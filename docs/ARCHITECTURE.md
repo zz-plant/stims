@@ -108,12 +108,37 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 - **Shared services** (`assets/js/core/services/*`) pool renderers and microphone streams so toys can hand off resources without re-allocating (and re-prompting for mic access).
 - **Toy module** (`assets/js/toys/milkdrop-toy.ts`) exports the shipped MilkDrop visualizer entrypoint.
 
+## Shell Contract
+
+Both public HTML shells load the same shared CSS bundle and bootstrap `assets/js/app.ts`. The contract is:
+
+- `index.html` owns editorial marketing content, preset discovery teasers, and links into the live visualizer session.
+- `milkdrop/index.html` owns the dedicated launchpad shell, including the audio/settings panel slots needed before or during session start.
+- `assets/js/app.ts` is the only runtime bootstrap entrypoint. It reads `data-page`, chooses the matching page bootstrap, and hands session work to loader/core modules.
+- Query-driven session state belongs on `/milkdrop/`; the homepage should only link into those states, not recreate launch logic inline.
+- Neither HTML shell should contain direct toy/runtime logic beyond declarative slots (`data-top-nav-container`, `data-audio-controls`, `data-settings-panel`) and page identity (`data-page`).
+
+Use this to keep future changes honest: homepage work should stay editorial, launch-route work should stay session-oriented, and cross-shell runtime behavior should be implemented once in JavaScript modules rather than duplicated in HTML.
+
+## Runtime Ownership Map
+
+| Layer | Owns | May depend on | Must not depend on |
+| --- | --- | --- | --- |
+| `app` | page-type detection, top-level bootstrap handoff, global device/telemetry boot | `bootstrap/*`, `loader.ts`, `router.ts`, boot-safe `core/*`, leaf `utils/*` | toy modules, `ui/*` internals beyond bootstrap wiring, `milkdrop/*` runtime internals |
+| `loader` | route sync, capability gating, toy lifecycle orchestration, dynamic module loading | `loader/*`, `router.ts`, `toy-view.ts`, `core/*`, manifest/data helpers | `bootstrap/*`, page-specific editorial code, direct `ui/*` controller composition |
+| `core` | renderer/audio/runtime systems, shared services, toy runtime starter/quality primitives | `core/*`, `data/*`, leaf `utils/*` adapters that touch browser/platform APIs | `app`, `loader`, `bootstrap`, page-level DOM composition in `ui/*` |
+| `ui` | nav, audio/system controls, DOM-level affordances and control rendering | public `core/*` state/services, leaf `utils/*` helpers | `app`, `loader/*` internals, toy-specific runtime modules |
+| `utils` | pure helpers, manifest adapters, environment/browser convenience wrappers | `utils/*`, `data/*`; narrow `core/*` imports only when acting as a compatibility adapter pending promotion | `app`, `loader`, page bootstraps, toy modules |
+
+Current migration note: runtime-critical starter and quality helpers for the shipped MilkDrop path now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`, while homepage/library boot initializers now live under `assets/js/bootstrap/*` and `assets/js/ui/nav-scroll-effects.ts` instead of `utils/`.
+
 ## Source Map (Where Things Live)
 
 | Concern | Primary files | Notes |
 | --- | --- | --- |
 | Entry points | `index.html`, `milkdrop/index.html` | Public HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
 | App bootstrap | `assets/js/app.ts` | Chooses library vs toy boot flow, connects controls, and runs capability preflight before toy start. |
+| Page bootstraps | `assets/js/bootstrap/*` | Home, library, and experience shells compose page-level DOM wiring without owning runtime internals. |
 | Loader + routing | `assets/js/loader.ts`, `assets/js/router.ts` | Navigation, lifecycle, and dynamic imports live here. |
 | Views | `assets/js/toy-view.ts`, `assets/js/library-view.js` | UI for the library grid, toy container, loading, and error states. |
 | Core runtime | `assets/js/core/web-toy.ts` + `assets/js/core/*` | Rendering, audio, settings, and the animation loop. |
@@ -155,7 +180,7 @@ flowchart TD
 
 ## Documentation verification status
 
-Last verified against the current runtime structure: **2026-03-16**.
+Last verified against the current runtime structure: **2026-03-31**.
 
 Verification checks performed:
 
@@ -177,13 +202,15 @@ Status: ✅ Implemented in code (`renderer-capabilities` now owns rendering supp
 
 ### P1 — Clarify core vs utils boundaries
 
-Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`).
+Status: ✅ Implemented for startup/audio contracts and extended through the first pilot migration (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`; shipped MilkDrop starter/quality helpers now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`).
 
 - **Promote runtime-critical utilities into `core/`** (or create a documented `runtime/` namespace) so ownership is obvious for long-lived services.
 - **Keep `utils/` for leaf helpers only** (pure helpers/UI convenience code) and avoid placing lifecycle-critical modules there.
 - **Why next:** current cross-import patterns (`core/*` depending on `utils/*` for startup/audio/types) make architecture intent harder to reason about for contributors.
 
 ### P2 — Shrink shell and toy entry fragmentation
+
+Status: ✅ Documented and aligned in code; `index.html` remains editorial and `milkdrop/index.html` remains the only query-driven launch shell.
 
 - **Standardize shell responsibilities** across `index.html` and `milkdrop/index.html` with a single documented shell contract and minimal per-page variation.
 - **Why this matters:** reducing entry ambiguity helps avoid accidental fixes in generated or non-authoritative pages.
