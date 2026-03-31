@@ -131,6 +131,27 @@ describe('renderer capabilities', () => {
     expect(result.forceWebGL).toBe(true);
   });
 
+  test('can prefer WebGL for known live-visualizer compatibility gaps', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'desktop-device' },
+    });
+
+    const result = await getRendererCapabilities({
+      forceRetry: true,
+      preferWebGLForKnownCompatibilityGaps: true,
+    });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(0);
+    expect(requestDevice).toHaveBeenCalledTimes(0);
+    expect(
+      result.preferredBackend === 'webgl' || result.preferredBackend === null,
+    ).toBe(true);
+    expect(result.fallbackReason).toContain(
+      'temporarily disabled for the live visualizer',
+    );
+    expect(result.forceWebGL).toBe(true);
+  });
+
   test('falls back when WebGPU device acquisition times out during capability probing', async () => {
     const requestDevice = mock(() => new Promise(() => {}));
     const requestAdapter = mock(async () => ({

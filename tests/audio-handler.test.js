@@ -206,6 +206,20 @@ describe('audio-handler utilities', () => {
     await expect(initAudio({ fftSize: 512 })).resolves.toBeDefined();
   });
 
+  test('initAudio loads the analyser worklet from the shared utils path', async () => {
+    await initAudio();
+
+    const listenerInstance = await import('three').then(
+      ({ AudioListener }) => AudioListener.mock.results[0]?.value,
+    );
+    const addModuleArg =
+      listenerInstance?.context?.audioWorklet?.addModule?.mock.calls[0]?.[0];
+
+    expect(String(addModuleArg)).toContain(
+      '/assets/js/utils/frequency-analyser-processor.ts',
+    );
+  });
+
   test('initAudio rejects with unsupported error when media devices are missing', async () => {
     Object.defineProperty(global.navigator, 'mediaDevices', {
       configurable: true,
