@@ -99,6 +99,8 @@ function renderLibraryNav(
   _doc: Document,
   options: NavOptions,
 ) {
+  const compactLandscapeQuery =
+    '(max-height: 520px) and (orientation: landscape)';
   const toyContainer = container as ToyNavContainer;
   const actionsId = 'nav-actions';
   const sectionLinks = options.sectionLinks ?? [
@@ -164,9 +166,13 @@ function renderLibraryNav(
     `#${actionsId}`,
   ) as HTMLElement | null;
   const mediaQuery = getMediaQueryList(maxWidthQuery(BREAKPOINTS.xs));
+  const compactLandscapeMediaQuery = getMediaQueryList(compactLandscapeQuery);
   const onResize = () => syncWithViewport();
   const supportsPopover = false;
   let isExpanded = false;
+  const isCompactViewport = () =>
+    isBelowBreakpoint(BREAKPOINTS.xs) ||
+    Boolean(compactLandscapeMediaQuery?.matches);
 
   const syncToggleUi = (expanded: boolean) => {
     if (!nav || !toggle) return;
@@ -198,7 +204,7 @@ function renderLibraryNav(
   const isPopoverOpen = () => Boolean(actions?.matches?.(':popover-open'));
 
   const syncWithViewport = () => {
-    const compactViewport = isBelowBreakpoint(BREAKPOINTS.xs);
+    const compactViewport = isCompactViewport();
 
     if (!actions) {
       syncToggleUi(!compactViewport);
@@ -237,7 +243,7 @@ function renderLibraryNav(
   };
 
   const onToggle = () => {
-    if (!supportsPopover || !isBelowBreakpoint(BREAKPOINTS.xs)) return;
+    if (!supportsPopover || !isCompactViewport()) return;
     isExpanded = isPopoverOpen();
     if (actions) {
       actions.setAttribute('aria-hidden', isExpanded ? 'false' : 'true');
@@ -254,7 +260,7 @@ function renderLibraryNav(
 
   if (!supportsPopover) {
     toggle?.addEventListener('click', () => {
-      if (!isBelowBreakpoint(BREAKPOINTS.xs)) return;
+      if (!isCompactViewport()) return;
       isExpanded = !isExpanded;
       applyFallbackState(isExpanded);
       syncToggleUi(isExpanded);
@@ -265,6 +271,7 @@ function renderLibraryNav(
 
   if (mediaQuery) {
     mediaQuery.addEventListener('change', syncWithViewport);
+    compactLandscapeMediaQuery?.addEventListener('change', syncWithViewport);
   } else {
     window.addEventListener('resize', onResize);
   }
@@ -273,7 +280,7 @@ function renderLibraryNav(
     .querySelectorAll('.nav-link, .nav-link--section, .theme-toggle')
     .forEach((link) => {
       link.addEventListener('click', () => {
-        if (!isBelowBreakpoint(BREAKPOINTS.xs)) return;
+        if (!isCompactViewport()) return;
         if (supportsPopover) {
           if (isPopoverOpen()) {
             (
@@ -291,6 +298,10 @@ function renderLibraryNav(
   toyContainer.__libraryNavCleanup = () => {
     if (mediaQuery) {
       mediaQuery.removeEventListener('change', syncWithViewport);
+      compactLandscapeMediaQuery?.removeEventListener(
+        'change',
+        syncWithViewport,
+      );
     } else {
       window.removeEventListener('resize', onResize);
     }

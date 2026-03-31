@@ -9372,6 +9372,137 @@ body[data-page="home"] .home-mobile-dock .cta-button {
   }
 }
 
+@media (max-height: 520px) and (orientation: landscape) {
+  .shell-header {
+    margin-bottom: 0.35rem;
+  }
+
+  .top-nav {
+    gap: 0.45rem;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    max-height: min(48vh, 15rem);
+    overflow: auto;
+    margin-top: 0.45rem;
+    padding: 0.75rem;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--accent-color) 18%, var(--surface-border));
+  }
+
+  .nav-section,
+  .nav-section--jump,
+  .nav-section--utilities {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0;
+    border: 0;
+  }
+
+  .nav-section--jump,
+  .nav-section--utilities {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .nav-link,
+  .theme-toggle {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  body[data-page="home"] .content {
+    gap: 0.75rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  body[data-page="home"] .home-mobile-dock {
+    display: none;
+  }
+
+  body[data-page="home"] .home-stage {
+    padding: 0.9rem;
+  }
+
+  body[data-page="home"] .home-stage__copy h1 {
+    max-width: none;
+    font-size: clamp(2rem, 5vw, 2.8rem);
+  }
+
+  body[data-page="home"] .home-stage__proof-grid,
+  body[data-page="home"] .home-stage__meta,
+  body[data-page="home"] .home-stage__support {
+    display: none;
+  }
+
+  body[data-page="home"] .hero-cta-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  body[data-page="home"] .hero-cta-row .cta-button {
+    min-height: 48px;
+  }
+
+  body[data-page="home"] .home-stage__viewport {
+    min-height: 15rem;
+    padding: 0.8rem;
+  }
+
+  body[data-page="home"] .home-stage__orb {
+    width: 7.5rem;
+  }
+
+  body[data-page="home"] .home-stage__waveform {
+    bottom: 4.8rem;
+    height: 22%;
+  }
+
+  .launch-shell {
+    gap: 0.85rem;
+  }
+
+  .launch-intro,
+  .launch-panels {
+    gap: 0.75rem;
+  }
+
+  .launch-intro__copy {
+    gap: 0.55rem;
+    max-width: 32rem;
+  }
+
+  .launch-intro__copy h1 {
+    max-width: none;
+    font-size: clamp(1.9rem, 4.8vw, 2.5rem);
+  }
+
+  .launch-intro__actions .cta-button {
+    min-height: 48px;
+  }
+
+  .launch-panels .shell-panels {
+    gap: 0.75rem;
+  }
+
+  .launch-panels .shell-panel--tune {
+    position: static;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   body[data-page="home"] .home-mobile-dock,
   body[data-page="home"] .home-stage__hud-pill,
