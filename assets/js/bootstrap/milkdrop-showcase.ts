@@ -1,4 +1,4 @@
-import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
+import { requestMilkdropPresetSelection } from '../milkdrop/public/launch-intents.ts';
 
 type MilkdropCatalogEntry = {
   id: string;

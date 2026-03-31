@@ -1,4 +1,4 @@
-import type { createManifestClient } from './manifest-client.ts';
+import type { createManifestClient } from '../utils/manifest-client.ts';
 
 export type ToyModuleStarter = (args: {
   container: HTMLElement;

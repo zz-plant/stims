@@ -8,7 +8,7 @@ import type { ToyWindow } from '../core/toy-globals.ts';
 import toyManifest from '../data/toy-manifest.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import type { createLoader } from '../loader.ts';
-import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
+import { requestMilkdropPresetSelection } from '../milkdrop/public/launch-intents.ts';
 import {
   resolveTouchGestureHints,
   supportsTouchLikeInput,
