@@ -1,17 +1,15 @@
 import {
   getPerformancePanel,
   type PerformancePanelOptions,
-} from '../core/performance-panel';
-import type { ToyStartOptions } from '../core/toy-interface';
+} from './performance-panel';
+import { getSettingsPanel } from './settings-panel';
+import type { ToyStartOptions } from './toy-interface';
+import type { QualityPresetManager } from './toy-quality';
 import {
   createToyRuntime,
   type ToyRuntimeOptions,
   type ToyRuntimePlugin,
-} from '../core/toy-runtime';
-import {
-  configureToySettingsPanel,
-  type QualityPresetManager,
-} from './toy-settings';
+} from './toy-runtime';
 
 type ToyRuntimeStarterSettings = {
   title: string;
@@ -64,7 +62,12 @@ export function createToyRuntimeStarter({
     });
 
     if (settingsPanel) {
-      configureToySettingsPanel(settingsPanel);
+      const panel = getSettingsPanel();
+      panel.configure({
+        title: settingsPanel.title,
+        description: settingsPanel.description,
+      });
+      settingsPanel.quality?.configureQualityPresets(panel);
     }
 
     return runtime;

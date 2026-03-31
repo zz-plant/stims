@@ -1,8 +1,8 @@
 import toyManifest from '../data/toy-manifest.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
-import { DATA_SELECTORS, DATASET_KEYS } from './data-attributes.ts';
-import { isMobileDevice } from './device-detect.ts';
-import { applyPartyMode } from './party-mode';
+import { DATA_SELECTORS, DATASET_KEYS } from '../utils/data-attributes.ts';
+import { isMobileDevice } from '../utils/device-detect.ts';
+import { applyPartyMode } from '../utils/party-mode';
 
 type InitQuickstartOptions = {
   loadToy: typeof import('../loader.ts').loadToy;

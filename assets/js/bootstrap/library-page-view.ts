@@ -1,8 +1,8 @@
 import toyManifest from '../data/toy-manifest.ts';
 import type { ToyManifest } from '../data/toy-schema.ts';
 import { createLibraryView } from '../library-view.js';
-import { recordLibraryVisit } from './growth-metrics.ts';
-import { parseToyManifest } from './manifest-client.ts';
+import { recordLibraryVisit } from '../utils/growth-metrics.ts';
+import { parseToyManifest } from '../utils/manifest-client.ts';
 
 const resolveToys = async () => {
   try {

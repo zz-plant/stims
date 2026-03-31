@@ -2,6 +2,8 @@
 
 This guide captures the highest-impact flows to validate and how we keep them covered with automation. Stims is positioned as an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader toy lab, so QA should protect both the flagship `milkdrop` flow and cross-toy reliability. Run the linked tests when touching the associated areas so regressions surface quickly.
 
+For Milestone A refactor sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md) as the authoritative manual baseline and artifact-capture checklist.
+
 ## High-value flows
 
 - **Flagship launch and broader discovery**
@@ -24,6 +26,8 @@ When you touch the landing page or toy shell UI, run this short manual pass:
 3. **Toy launch**: Open a toy from the library, confirm preflight shows one primary CTA, start demo audio, and verify visuals respond.
 4. **Touch affordances**: On a narrow/touch viewport, confirm the top-row back action is visible before launch and gesture hints appear after audio starts.
 5. **Performance panel**: Open quick check, toggle a quality preset, and verify the selection persists when switching toys.
+
+If the change is part of architecture or runtime refactor work, also run the artifact-capture and sign-off flow in [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md).
 
 ## How to run the QA automation
 

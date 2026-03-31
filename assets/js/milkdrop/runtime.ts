@@ -19,8 +19,8 @@ import {
   type QualityPreset,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
+import type { QualityPresetManager } from '../core/toy-quality';
 import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
-import type { QualityPresetManager } from '../utils/toy-settings';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { consumeRequestedMilkdropCollectionSelection } from './collection-intent';
 import { compileMilkdropPresetSource } from './compiler';

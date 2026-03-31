@@ -6,7 +6,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 
 | Area | Current state | Primary sources in repo |
 | --- | --- | --- |
-| Homepage (`index.html`) | Product-led homepage with cinematic hero, focused launch cards, preset showcase, and route-aware CTA structure is live. | `index.html`, `assets/js/bootstrap/home-page.ts`, `assets/js/utils/init-milkdrop-showcase.ts` |
+| Homepage (`index.html`) | Product-led homepage with cinematic hero, focused launch cards, preset showcase, and route-aware CTA structure is live. | `index.html`, `assets/js/bootstrap/home-page.ts`, `assets/js/bootstrap/milkdrop-showcase.ts` |
 | System readiness & performance | Launch-route preflight and setup tuning are wired. | `assets/js/readiness-probe.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/ui/system-controls.ts` |
 | Toy runtime shell | Loader, toy nav, status/errors, audio prompt, and settings panel are live. | `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/ui/*` |
 | Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
@@ -28,7 +28,7 @@ This document captures the **current, shipped feature set** of Stims as implemen
 - **Product framing**: Copy emphasizes browser-native playback, live editing, bundled presets, and multiple audio inputs before the route model appears lower on the page.
 
 ### Launch cards
-- **Focused entry points**: Static cards give users three obvious first moves: demo playback, bring-your-own-audio setup, and live editing.
+- **Focused entry points**: Static cards give users two obvious first moves: demo playback or bring-your-own-audio setup.
 - **No in-place runtime boot**: Homepage visuals remain lightweight and do not mount the full live runtime in-place.
 
 ### Preset showcase

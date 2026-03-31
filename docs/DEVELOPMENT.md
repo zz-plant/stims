@@ -107,7 +107,7 @@ This rewrites `public/milkdrop-presets/catalog.json` so presets with measured vi
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
-- `index.html` boots the MilkDrop visualizer in place on load, using the same shared loader/runtime as the dedicated launch route.
+- `index.html` is the editorial homepage shell and links into `/milkdrop/` for query-driven launch states.
 - Presets are part of one visualizer product, not separate first-class toys.
 
 ## Docs to keep aligned

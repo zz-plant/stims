@@ -5,6 +5,8 @@
 - `docs/DEVELOPMENT.md` — scripts and contributor workflow baseline.
 - `docs/MILKDROP_PRESET_RUNTIME.md` — preset runtime, editor, compiler, and compatibility behavior.
 - `docs/ARCHITECTURE.md` — runtime architecture and flow.
+- `docs/MANUAL_SMOKE_BASELINE.md` — milestone sign-off checklist for startup/shell/runtime changes.
+- `docs/QA_PLAN.md` — broader QA map and focused regression coverage.
 - `docs/PAGE_SPECIFICATIONS.md` — app shell and launch-flow behavior.
 - `docs/DEPLOYMENT.md` — shipping and hosting guidance.
 

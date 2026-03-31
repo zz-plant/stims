@@ -1,6 +1,6 @@
 import { initNavigation as initTopNav } from '../ui/nav.ts';
-import { initMilkdropShowcase } from '../utils/init-milkdrop-showcase.ts';
-import { initNavScrollEffects } from '../utils/init-nav-scroll.ts';
+import { initNavScrollEffects } from '../ui/nav-scroll-effects.ts';
+import { initMilkdropShowcase } from './milkdrop-showcase.ts';
 
 const runInit = (label: string, init: () => void | Promise<void>) => {
   try {

@@ -1,5 +1,5 @@
-import { BREAKPOINTS, isBelowBreakpoint } from './breakpoints.ts';
-import { DATA_SELECTORS } from './data-attributes.ts';
+import { BREAKPOINTS, isBelowBreakpoint } from '../utils/breakpoints.ts';
+import { DATA_SELECTORS } from '../utils/data-attributes.ts';
 
 export const initNavScrollEffects = () => {
   const nav = document.querySelector(DATA_SELECTORS.topNav);
