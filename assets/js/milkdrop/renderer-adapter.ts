@@ -1263,6 +1263,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             setMaterialColor,
           },
         );
+        if (!synced) {
+          return null;
+        }
         synced.renderOrder = getMilkdropPassRenderOrder(target, line.additive);
         return synced;
       },

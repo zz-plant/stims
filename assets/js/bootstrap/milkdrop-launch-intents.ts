@@ -1,8 +1,8 @@
 import {
+  type MilkdropOverlayTab,
   requestMilkdropCollectionSelection,
   requestMilkdropOverlayTab,
   requestMilkdropPresetSelection,
-  type MilkdropOverlayTab,
 } from '../milkdrop/public/launch-intents.ts';
 
 export function parseRequestedOverlayTab(searchParams: URLSearchParams) {
