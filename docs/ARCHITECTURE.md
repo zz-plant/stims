@@ -12,6 +12,31 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 Use this section as a quick compass: if you need to change how a toy starts or stops, look at the loader and core runtime; if you need to change UI state or status messaging, look at the views; if you need to change toy behavior, look at the toy modules and `WebToy` helpers.
 
+## High-level architecture diagram
+
+```mermaid
+flowchart TB
+  User[User in browser] --> Shell[HTML shell\nindex.html or milkdrop/index.html]
+  Shell --> App[App bootstrap\nassets/js/app.ts]
+
+  App --> Router[Navigation + routing\nassets/js/router.ts]
+  App --> Loader[Lifecycle loader\nassets/js/loader.ts]
+  App --> View[UI views\ntoy-view.ts + library-view.js]
+  App --> Preflight[Capability preflight\ncore/capability-preflight.ts]
+
+  Loader --> Manifest[Module resolver\nutils/manifest-client.ts]
+  Manifest --> Toy[Toy module\nassets/js/toys/milkdrop-toy.ts]
+  Toy --> Core[Runtime core\nassets/js/core/*]
+
+  Core --> Renderer[Renderer service\nWebGPU/WebGL pooling]
+  Core --> Audio[Audio service\nmicrophone pooling]
+  Core --> Settings[Settings + quality propagation]
+
+  Router --> View
+  Preflight --> Loader
+  View --> Loader
+```
+
 ## Architecture tiers (what is required vs optional)
 
 - **Tier 0: Site runtime (required).** HTML entry points, loader/router, views, runtime core, and toy modules. This tier is enough to run and deploy the web toy experience.
