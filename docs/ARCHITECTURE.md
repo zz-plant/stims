@@ -12,30 +12,82 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 Use this section as a quick compass: if you need to change how a toy starts or stops, look at the loader and core runtime; if you need to change UI state or status messaging, look at the views; if you need to change toy behavior, look at the toy modules and `WebToy` helpers.
 
-## High-level architecture diagram
+## High-level architecture diagrams
+
+### 1) Layered system context
 
 ```mermaid
 flowchart TB
-  User[User in browser] --> Shell[HTML shell\nindex.html or milkdrop/index.html]
-  Shell --> App[App bootstrap\nassets/js/app.ts]
+  User[User / browser session]
 
-  App --> Router[Navigation + routing\nassets/js/router.ts]
-  App --> Loader[Lifecycle loader\nassets/js/loader.ts]
-  App --> View[UI views\ntoy-view.ts + library-view.js]
-  App --> Preflight[Capability preflight\ncore/capability-preflight.ts]
+  subgraph ShellLayer[Shell + boot layer]
+    Shell[HTML shells\nindex.html + milkdrop/index.html]
+    App[App bootstrap\nassets/js/app.ts]
+  end
 
-  Loader --> Manifest[Module resolver\nutils/manifest-client.ts]
-  Manifest --> Toy[Toy module\nassets/js/toys/milkdrop-toy.ts]
-  Toy --> Core[Runtime core\nassets/js/core/*]
+  subgraph AppLayer[Application orchestration layer]
+    Router[router.ts\npath/history normalization]
+    Loader[loader.ts\ntoy lifecycle + navigation]
+    Views[toy-view.ts + library-view.js\nlibrary/toy shell + status]
+    Preflight[capability-preflight.ts\nstartup capability gates]
+    Manifest[manifest-client.ts\ndev/build module URL resolution]
+  end
 
-  Core --> Renderer[Renderer service\nWebGPU/WebGL pooling]
-  Core --> Audio[Audio service\nmicrophone pooling]
-  Core --> Settings[Settings + quality propagation]
+  subgraph RuntimeLayer[Toy + runtime layer]
+    Toy[Toy module\nassets/js/toys/milkdrop-toy.ts]
+    Core[core/web-toy.ts + core/*\nscene/camera/loop/runtime contracts]
+    Renderer[core/services/render-service.ts\nWebGPU/WebGL pooled renderer]
+    Audio[core/services/audio-service.ts\npooled mic stream + analysers]
+    Settings[settings-panel.ts + renderer-settings.ts\nquality + runtime tuning]
+  end
 
-  Router --> View
+  User --> Shell --> App
+  App --> Router
+  App --> Loader
+  App --> Views
+  App --> Preflight
+  Loader --> Manifest --> Toy --> Core
+  Core --> Renderer
+  Core --> Audio
+  Core --> Settings
+  Router --> Loader
+  Views --> Loader
   Preflight --> Loader
-  View --> Loader
 ```
+
+### 2) Startup handoff sequence (happy path)
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant S as HTML shell
+  participant A as app.ts
+  participant P as capability-preflight
+  participant L as loader.ts
+  participant M as manifest-client
+  participant T as milkdrop-toy.ts
+  participant C as core/web-toy.ts
+  participant R as render-service
+  participant Au as audio-service
+
+  U->>S: Open /milkdrop/
+  S->>A: Bootstrap app
+  A->>P: Run capability preflight
+  P-->>A: Capability + hint state
+  A->>L: Create loader + wire controls/router
+  L->>M: Resolve toy module URL
+  M-->>L: Importable module path
+  L->>T: import() + start()
+  T->>C: Build runtime instance
+  C->>R: Acquire pooled renderer handle
+  C->>Au: Acquire pooled audio handle
+  C-->>L: Return dispose handle
+```
+
+Legend:
+- **Boot/orchestration**: shell + app + loader/router/view/preflight.
+- **Runtime**: toy module and shared `core/*` systems.
+- **Services**: pooled renderer/audio resources reused across toy loads.
 
 ## Architecture tiers (what is required vs optional)
 
