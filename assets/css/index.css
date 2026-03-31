@@ -252,6 +252,20 @@ footer {
   gap: var(--section-gap);
 }
 
+.content > :is(.home-shell, .launch-shell, .home-footer),
+.home-shell > *,
+.launch-shell > *,
+.section-shell,
+.home-stage__grid > *,
+.home-presets__intro > *,
+.launch-panels .shell-panels,
+.launch-panels .shell-panel,
+.shell-header--launch .shell-panels,
+.shell-header--launch .shell-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .content::before {
   content: "";
   position: fixed;
@@ -1630,6 +1644,8 @@ header.hero {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-color);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .pill--accent {
@@ -1694,7 +1710,7 @@ header.hero {
 
 .hero-cta-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
   align-items: stretch;
 }
@@ -5296,6 +5312,8 @@ section.intro {
   font-weight: 700;
   letter-spacing: 0.01em;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .cta-button.primary {
@@ -7755,6 +7773,7 @@ body[data-page="home"] .hero-cta-row .cta-button.primary {
   z-index: 2;
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   font-size: 0.78rem;
   letter-spacing: 0.16em;
