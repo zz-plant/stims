@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
-import { type ChildProcess, spawn } from 'node:child_process';
+import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -96,14 +96,34 @@ async function createMobilePage() {
     hasTouch: true,
   });
   const page = await context.newPage();
+
+  const forceCloseChromium = () => {
+    spawnSync('pkill', ['-f', 'playwright_chromiumdev_profile'], {
+      stdio: 'ignore',
+    });
+  };
+
+  const closeBrowser = async () => {
+    await context.close().catch(() => {});
+    const closeResult = await Promise.race([
+      browser
+        .close()
+        .then(() => 'closed' as const)
+        .catch(() => 'closed' as const),
+      new Promise<'timeout'>((resolve) => {
+        setTimeout(() => resolve('timeout'), 1500);
+      }),
+    ]);
+    if (closeResult === 'timeout') {
+      forceCloseChromium();
+    }
+  };
+
   return {
     browser,
     context,
     page,
-    close: async () => {
-      await context.close();
-      await browser.close();
-    },
+    close: closeBrowser,
   };
 }
 

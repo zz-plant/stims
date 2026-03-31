@@ -188,6 +188,122 @@ describe('render-service pooling', () => {
     });
     expect(setPixelRatioMock).toHaveBeenLastCalledWith(1.35);
   });
+  test('refreshes the active webgpu renderer before each animation frame', async () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    const originalGlobalRequestAnimationFrame =
+      globalThis.requestAnimationFrame;
+    const originalGlobalCancelAnimationFrame = globalThis.cancelAnimationFrame;
+    let nextAnimationFrameId = 1;
+    let pendingFrames = new Map<number, FrameRequestCallback>();
+
+    try {
+      const requestAnimationFrameMock = ((callback: FrameRequestCallback) => {
+        const frameId = nextAnimationFrameId;
+        nextAnimationFrameId += 1;
+        pendingFrames.set(frameId, callback);
+        return frameId;
+      }) as typeof window.requestAnimationFrame;
+      const cancelAnimationFrameMock = ((frameId: number) => {
+        pendingFrames.delete(frameId);
+      }) as typeof window.cancelAnimationFrame;
+
+      window.requestAnimationFrame = requestAnimationFrameMock;
+      window.cancelAnimationFrame = cancelAnimationFrameMock;
+      globalThis.requestAnimationFrame = requestAnimationFrameMock;
+      globalThis.cancelAnimationFrame = cancelAnimationFrameMock;
+
+      const flushFrame = async (time: number) => {
+        const queuedFrames = [...pendingFrames.values()];
+        pendingFrames = new Map();
+        queuedFrames.forEach((callback) => callback(time));
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      };
+      const waitForScheduledFrame = async () => {
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          if (pendingFrames.size > 0) {
+            return;
+          }
+          await Promise.resolve();
+        }
+      };
+
+      const firstRenderer = {
+        setPixelRatio: mock(),
+        setSize: mock(),
+        setAnimationLoop: mock(),
+        render: mock(),
+        dispose: mock(),
+        toneMappingExposure: 1,
+      } as unknown as WebGLRenderer;
+      const secondRenderer = {
+        setPixelRatio: mock(),
+        setSize: mock(),
+        setAnimationLoop: mock(),
+        render: mock(),
+        dispose: mock(),
+        toneMappingExposure: 1,
+      } as unknown as WebGLRenderer;
+      const thirdRenderer = {
+        setPixelRatio: mock(),
+        setSize: mock(),
+        setAnimationLoop: mock(),
+        render: mock(),
+        dispose: mock(),
+        toneMappingExposure: 1,
+      } as unknown as WebGLRenderer;
+
+      const initResults = [firstRenderer, secondRenderer, thirdRenderer].map(
+        (renderer) => ({
+          renderer,
+          backend: 'webgpu' as const,
+          adapter: null,
+          device: null,
+          maxPixelRatio: 1.75,
+          renderScale: 1,
+          adaptiveMaxPixelRatioMultiplier: 1,
+          adaptiveRenderScaleMultiplier: 1,
+          adaptiveDensityMultiplier: 1,
+          exposure: 1,
+        }),
+      );
+      const initRendererImpl = mock(async () => initResults.shift() ?? null);
+
+      const handle = await requestRenderer({ initRendererImpl });
+      const frameCallback = mock(() => {
+        handle.renderer.render({} as never, {} as never);
+      });
+
+      expect(initRendererImpl).toHaveBeenCalledTimes(1);
+      expect(handle.renderer).not.toBe(firstRenderer);
+
+      handle.renderer.setAnimationLoop?.(frameCallback);
+      await waitForScheduledFrame();
+      await flushFrame(16);
+      await waitForScheduledFrame();
+      await flushFrame(32);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(initRendererImpl).toHaveBeenCalledTimes(3);
+      expect(firstRenderer.dispose).toHaveBeenCalledTimes(1);
+      expect(secondRenderer.dispose).toHaveBeenCalledTimes(1);
+      expect(thirdRenderer.dispose).toHaveBeenCalledTimes(0);
+      expect(secondRenderer.render).toHaveBeenCalledTimes(1);
+      expect(thirdRenderer.render).toHaveBeenCalledTimes(1);
+      expect(frameCallback).toHaveBeenCalledTimes(2);
+
+      handle.renderer.setAnimationLoop?.(null);
+    } finally {
+      window.requestAnimationFrame = originalRequestAnimationFrame;
+      window.cancelAnimationFrame = originalCancelAnimationFrame;
+      globalThis.requestAnimationFrame = originalGlobalRequestAnimationFrame;
+      globalThis.cancelAnimationFrame = originalGlobalCancelAnimationFrame;
+    }
+  });
 });
 
 describe('audio-service pooling', () => {
