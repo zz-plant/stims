@@ -513,7 +513,10 @@ describe('WebGPU requirements', () => {
 
     expect(capabilitiesMock.getRendererCapabilities).toHaveBeenNthCalledWith(
       2,
-      { forceRetry: true },
+      {
+        forceRetry: true,
+        preferWebGLForKnownCompatibilityGaps: true,
+      },
     );
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
   });

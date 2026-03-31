@@ -116,6 +116,12 @@ type FallbackOptions = {
   forceWebGL?: boolean;
 };
 
+type RendererCapabilityProbeOptions = {
+  forceRetry?: boolean;
+  preferWebGLForKnownCompatibilityGaps?: boolean;
+  webgpuInitTimeoutMs?: number;
+};
+
 let capabilitiesPromise: Promise<RendererCapabilities> | null = null;
 let cachedCapabilities: RendererCapabilities | null = null;
 let cachedEnvironmentKey: unknown = null;
@@ -166,7 +172,11 @@ const cacheResult = (result: RendererCapabilities) => {
   return result;
 };
 
-function getEnvironmentKey() {
+function getEnvironmentKey({
+  preferWebGLForKnownCompatibilityGaps = false,
+}: {
+  preferWebGLForKnownCompatibilityGaps?: boolean;
+} = {}) {
   if (typeof navigator === 'undefined') return 'no-navigator';
   const nav = navigator as Navigator & { gpu?: GPU; userAgent?: string };
   const hasGpu = Boolean(nav.gpu);
@@ -174,7 +184,10 @@ function getEnvironmentKey() {
   const compatibilityMode = isCompatibilityModeEnabled()
     ? 'compat-on'
     : 'compat-off';
-  return `${hasGpu}:${userAgent}:${compatibilityMode}`;
+  const webgpuCompatibilityMode = preferWebGLForKnownCompatibilityGaps
+    ? 'webgpu-gap-guard-on'
+    : 'webgpu-gap-guard-off';
+  return `${hasGpu}:${userAgent}:${compatibilityMode}:${webgpuCompatibilityMode}`;
 }
 
 function isGuardedMobileWebGPUEnvironment() {
@@ -420,8 +433,10 @@ export function getRenderingSupport(): RenderingSupport {
 }
 
 async function probeRendererCapabilities({
+  preferWebGLForKnownCompatibilityGaps = false,
   webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
 }: {
+  preferWebGLForKnownCompatibilityGaps?: boolean;
   webgpuInitTimeoutMs?: number;
 } = {}): Promise<RendererCapabilities> {
   if (typeof navigator === 'undefined') {
@@ -449,6 +464,15 @@ async function probeRendererCapabilities({
     return cacheResult(
       buildFallback(
         'WebGPU is temporarily disabled on this mobile browser while we stabilize renderer compatibility. Using WebGL mode.',
+        { forceWebGL: true },
+      ),
+    );
+  }
+
+  if (preferWebGLForKnownCompatibilityGaps) {
+    return cacheResult(
+      buildFallback(
+        'WebGPU is temporarily disabled for the live visualizer while we stabilize ShaderMaterial compatibility. Using WebGL mode.',
         { forceWebGL: true },
       ),
     );
@@ -594,12 +618,12 @@ export function rememberRendererFallback(
 
 export async function getRendererCapabilities({
   forceRetry = false,
+  preferWebGLForKnownCompatibilityGaps = false,
   webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
-}: {
-  forceRetry?: boolean;
-  webgpuInitTimeoutMs?: number;
-} = {}) {
-  const environmentKey = getEnvironmentKey();
+}: RendererCapabilityProbeOptions = {}) {
+  const environmentKey = getEnvironmentKey({
+    preferWebGLForKnownCompatibilityGaps,
+  });
   const environmentChanged = environmentKey !== cachedEnvironmentKey;
 
   if (forceRetry || environmentChanged) {
@@ -609,7 +633,10 @@ export async function getRendererCapabilities({
   cachedEnvironmentKey = environmentKey;
 
   if (!capabilitiesPromise) {
-    capabilitiesPromise = probeRendererCapabilities({ webgpuInitTimeoutMs });
+    capabilitiesPromise = probeRendererCapabilities({
+      preferWebGLForKnownCompatibilityGaps,
+      webgpuInitTimeoutMs,
+    });
   }
 
   return capabilitiesPromise;

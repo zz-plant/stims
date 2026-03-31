@@ -166,7 +166,9 @@ export function buildCapabilityPreflightResult({
 
 export async function runCapabilityProbe(): Promise<CapabilityPreflightResult> {
   const [rendererPlanResult, microphone] = await Promise.all([
-    getRendererPlan().catch((error) => {
+    getRendererPlan({
+      preferWebGLForKnownCompatibilityGaps: true,
+    }).catch((error) => {
       console.warn('Renderer capability probe failed', error);
       return {
         capabilities: null,

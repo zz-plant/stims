@@ -58,7 +58,11 @@ const runtimeControlSubscribers = new Set<
   (controls: RendererRuntimeControls) => void
 >();
 const rendererCapabilitiesInitializer =
-  createSharedInitializer<RendererCapabilities>(getRendererCapabilities);
+  createSharedInitializer<RendererCapabilities>(() =>
+    getRendererCapabilities({
+      preferWebGLForKnownCompatibilityGaps: true,
+    }),
+  );
 
 function getRenderDefaults(): Partial<RendererInitConfig> {
   return {

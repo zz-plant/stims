@@ -4,7 +4,7 @@ import { queryMicrophonePermissionState as querySharedMicrophonePermissionState 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 
 const FREQUENCY_ANALYSER_PROCESSOR = new URL(
-  './frequency-analyser-processor.ts',
+  '../utils/frequency-analyser-processor.ts',
   import.meta.url,
 );
 

@@ -158,6 +158,7 @@ export async function initRenderer(
   };
 
   const capabilities = await getRendererCapabilities({
+    preferWebGLForKnownCompatibilityGaps: true,
     webgpuInitTimeoutMs,
   });
   const plan = deriveRendererPlan({

@@ -40,7 +40,10 @@ export function createToyCapabilityController({
     assessToyCapabilities({
       toy,
       rendererCapabilities: () =>
-        rendererCapabilities({ forceRetry: forceRendererRetry }),
+        rendererCapabilities({
+          forceRetry: forceRendererRetry,
+          preferWebGLForKnownCompatibilityGaps: true,
+        }),
       ensureWebGLCheck,
       initialCapabilities,
     });
