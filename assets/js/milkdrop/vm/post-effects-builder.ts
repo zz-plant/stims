@@ -49,6 +49,7 @@ export function buildPost({
     feedbackTexture: (state.feedback_texture ?? 0) > 0.5,
     outerBorderStyle: (state.ob_border ?? 0) > 0.5,
     innerBorderStyle: (state.ib_border ?? 0) > 0.5,
+    redBlueStereo: (state.red_blue_stereo ?? state.redbluestereo ?? 0) > 0.5,
     shaderControls: buildShaderControls({ preset, signals, createEnv }),
     shaderPrograms: preset.ir.post.shaderPrograms,
     brighten: (state.brighten ?? 0) > 0.5,

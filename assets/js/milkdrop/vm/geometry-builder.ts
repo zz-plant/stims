@@ -399,6 +399,17 @@ function getProceduralMotionVectorFieldVisual({
     legacyControls: motionVectorContext.legacyControls,
     program: proceduralMotionVectorPlan.fieldProgram,
     signals: meshField.signals,
+    tint: color(
+      state.mv_r ?? 1,
+      state.mv_g ?? 1,
+      state.mv_b ?? 1,
+      state.mv_a ?? 0.35,
+    ),
+    alpha: clamp(
+      state.mv_a ?? 0.35,
+      motionVectorContext.legacyControls ? 0 : 0.02,
+      1,
+    ),
     ...buildProceduralFieldTransform(state),
   };
 }

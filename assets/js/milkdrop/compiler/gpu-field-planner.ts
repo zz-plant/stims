@@ -87,6 +87,11 @@ const GPU_FIELD_FUNCTIONS = new Set([
   'equal',
 ]);
 
+type LowerGpuFieldProgramOptions = {
+  additionalStateIdentifiers?: Iterable<string>;
+  additionalAllowedIdentifiers?: Iterable<string>;
+};
+
 function isGpuFieldTemporary(identifier: string) {
   return /^q\d+$/u.test(identifier) || /^t\d+$/u.test(identifier);
 }
@@ -100,13 +105,6 @@ function lowerGpuFieldIdentifier(identifier: string) {
     return GPU_FIELD_SIGNAL_ALIAS_MAP.get(normalized) ?? normalized;
   }
   return normalized;
-}
-
-function isSupportedGpuFieldTarget(identifier: string) {
-  return (
-    GPU_FIELD_STATE_IDENTIFIERS.has(identifier) ||
-    isGpuFieldTemporary(identifier)
-  );
 }
 
 function lowerGpuFieldExpression(
@@ -170,14 +168,27 @@ function lowerGpuFieldExpression(
 
 export function lowerGpuFieldProgram(
   program: MilkdropProgramBlock,
+  {
+    additionalStateIdentifiers = [],
+    additionalAllowedIdentifiers = [],
+  }: LowerGpuFieldProgramOptions = {},
 ): MilkdropGpuFieldProgramDescriptor | null {
   if (program.statements.length === 0) {
     return null;
   }
 
-  const allowedIdentifiers = new Set<string>([
+  const stateIdentifiers = new Set<string>([
     ...GPU_FIELD_STATE_IDENTIFIERS,
+    ...Array.from(additionalStateIdentifiers, (identifier) =>
+      lowerGpuFieldIdentifier(identifier),
+    ),
+  ]);
+  const allowedIdentifiers = new Set<string>([
+    ...stateIdentifiers,
     ...GPU_FIELD_SIGNAL_ALIAS_MAP.values(),
+    ...Array.from(additionalAllowedIdentifiers, (identifier) =>
+      lowerGpuFieldIdentifier(identifier),
+    ),
     'pi',
     'e',
   ]);
@@ -186,7 +197,7 @@ export function lowerGpuFieldProgram(
 
   for (const statement of program.statements) {
     const target = lowerGpuFieldIdentifier(statement.target);
-    if (!isSupportedGpuFieldTarget(target)) {
+    if (!(stateIdentifiers.has(target) || isGpuFieldTemporary(target))) {
       return null;
     }
 

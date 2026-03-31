@@ -130,12 +130,16 @@ export type MilkdropProceduralWaveVisual = {
 
 export type MilkdropProceduralCustomWaveVisual = {
   samples: number[];
+  sampleValues2?: number[];
   spectrum: boolean;
   centerX: number;
   centerY: number;
   scaling: number;
   mystery: number;
   time: number;
+  sampleCount?: number;
+  signals?: MilkdropGpuFieldSignalInputs;
+  fieldProgram?: MilkdropGpuFieldProgramDescriptor | null;
   color: MilkdropColor;
   alpha: number;
   additive: boolean;
@@ -152,6 +156,8 @@ export type MilkdropProceduralMotionVectorFieldVisual =
     legacyControls: boolean;
     program: MilkdropGpuFieldProgramDescriptor | null;
     signals: MilkdropGpuFieldSignalInputs;
+    tint?: MilkdropColor;
+    alpha?: number;
   };
 
 export type MilkdropGpuGeometryHints = {
@@ -182,6 +188,7 @@ export type MilkdropPostVisual = {
   feedbackTexture: boolean;
   outerBorderStyle: boolean;
   innerBorderStyle: boolean;
+  redBlueStereo?: boolean;
   shaderControls: MilkdropShaderControls;
   shaderPrograms: {
     warp: MilkdropShaderProgramPayload | null;

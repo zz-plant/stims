@@ -161,7 +161,6 @@ describe('milkdrop compiler seams', () => {
         unsupportedFeatures: ['motion-vectors'],
         recommendedFallback: 'webgl',
       },
-      numericFields: {},
       programs: {
         init: emptyBlock(),
         perFrame: emptyBlock(),
@@ -179,7 +178,6 @@ describe('milkdrop compiler seams', () => {
         shaderPrograms: { warp: null, comp: null },
       },
       lowerGpuFieldProgram: () => null,
-      hasLegacyMotionVectorControls: () => false,
     });
 
     expect(plan.routing).toBe('fallback-webgl');
@@ -216,7 +214,6 @@ describe('milkdrop compiler seams', () => {
         unsupportedFeatures: [],
         recommendedFallback: undefined,
       },
-      numericFields: {},
       programs: {
         init: emptyBlock(),
         perFrame: emptyBlock(),
@@ -234,7 +231,6 @@ describe('milkdrop compiler seams', () => {
         shaderPrograms: { warp: null, comp: null },
       },
       lowerGpuFieldProgram: () => null,
-      hasLegacyMotionVectorControls: () => false,
     });
 
     expect(plan.feedback).toEqual(

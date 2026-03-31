@@ -149,19 +149,20 @@ export function renderMotionVectors({
       ...proceduralField,
       time: payload.signals.time,
       trebleAtt: payload.signals.trebleAtt,
-      tint: {
+      tint: proceduralField.tint ?? {
         r: Math.min(Math.max(payload.variables.mv_r ?? 1, 0), 1),
         g: Math.min(Math.max(payload.variables.mv_g ?? 1, 0), 1),
         b: Math.min(Math.max(payload.variables.mv_b ?? 1, 0), 1),
       },
       alpha:
-        Math.min(
-          Math.max(
-            payload.variables.mv_a ?? 0.35,
-            proceduralField.legacyControls ? 0 : 0.02,
-          ),
-          1,
-        ) * alphaMultiplier,
+        (proceduralField.alpha ??
+          Math.min(
+            Math.max(
+              payload.variables.mv_a ?? 0.35,
+              proceduralField.legacyControls ? 0 : 0.02,
+            ),
+            1,
+          )) * alphaMultiplier,
     } satisfies ProceduralFieldUniformInput);
     const proceduralMaterial = proceduralObject.material as ShaderMaterial;
     syncProceduralInteractionUniforms(

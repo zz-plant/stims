@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { isAbsolute } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
@@ -840,6 +842,14 @@ async function loadMarkdownFile(file: MarkdownSourceKey) {
 
   if (!resolved) {
     throw new Error(`Unsupported markdown file: ${file}`);
+  }
+
+  if (
+    typeof resolved === 'string' &&
+    isAbsolute(resolved) &&
+    resolved.endsWith('.md')
+  ) {
+    return await readFile(resolved, 'utf8');
   }
 
   return resolved;

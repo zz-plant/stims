@@ -16,16 +16,13 @@ import type {
 export function buildWebGpuDescriptorPlan({
   featureAnalysis,
   webgpu,
-  numericFields,
   programs,
   customWaves,
   post,
   lowerGpuFieldProgram,
-  hasLegacyMotionVectorControls,
 }: {
   featureAnalysis: MilkdropFeatureAnalysis;
   webgpu: MilkdropBackendSupport;
-  numericFields: Record<string, number>;
   programs: Pick<
     MilkdropPresetIR['programs'],
     'init' | 'perFrame' | 'perPixel'
@@ -44,11 +41,11 @@ export function buildWebGpuDescriptorPlan({
   >;
   lowerGpuFieldProgram: (
     program: MilkdropPresetIR['programs']['perPixel'],
+    options?: {
+      additionalStateIdentifiers?: Iterable<string>;
+      additionalAllowedIdentifiers?: Iterable<string>;
+    },
   ) => MilkdropProceduralMeshDescriptorPlan['fieldProgram'];
-  hasLegacyMotionVectorControls: (
-    numericFields: Record<string, number>,
-    programs: Pick<MilkdropPresetIR['programs'], 'init' | 'perFrame'>,
-  ) => boolean;
 }): MilkdropWebGpuDescriptorPlan {
   const unsupported = webgpu.evidence
     .filter(
@@ -93,25 +90,50 @@ export function buildWebGpuDescriptorPlan({
       target: 'main-wave',
       slotIndex: null,
       sampleSource: 'waveform',
+      fieldProgram: null,
     },
     {
       kind: 'procedural-wave',
       target: 'trail-waves',
       slotIndex: null,
       sampleSource: 'waveform',
+      fieldProgram: null,
     },
     ...customWaves
-      .filter((wave) => wave.programs.perPoint.statements.length === 0)
-      .map(
-        (wave) =>
-          ({
-            kind: 'procedural-wave',
-            target: 'custom-wave',
-            slotIndex: wave.index,
-            sampleSource:
-              (wave.fields.spectrum ?? 0) >= 0.5 ? 'spectrum' : 'waveform',
-          }) satisfies MilkdropProceduralWaveDescriptorPlan,
-      ),
+      .map<MilkdropProceduralWaveDescriptorPlan | null>((wave) => {
+        const loweredPerPointProgram =
+          wave.programs.perPoint.statements.length > 0
+            ? lowerGpuFieldProgram(wave.programs.perPoint, {
+                additionalStateIdentifiers: [
+                  'sample',
+                  'value',
+                  'value1',
+                  'value2',
+                ],
+                additionalAllowedIdentifiers: [
+                  'samples',
+                  'spectrum',
+                  'scaling',
+                  'mystery',
+                ],
+              })
+            : null;
+        if (
+          wave.programs.perPoint.statements.length > 0 &&
+          loweredPerPointProgram === null
+        ) {
+          return null;
+        }
+        return {
+          kind: 'procedural-wave',
+          target: 'custom-wave',
+          slotIndex: wave.index,
+          sampleSource:
+            (wave.fields.spectrum ?? 0) >= 0.5 ? 'spectrum' : 'waveform',
+          fieldProgram: loweredPerPointProgram,
+        } satisfies MilkdropProceduralWaveDescriptorPlan;
+      })
+      .filter((wave): wave is Exclude<typeof wave, null> => wave !== null),
   ];
 
   const loweredPerPixelProgram = lowerGpuFieldProgram(programs.perPixel);
@@ -128,10 +150,6 @@ export function buildWebGpuDescriptorPlan({
       : null;
   const proceduralMotionVectors: MilkdropProceduralMotionVectorDescriptorPlan | null =
     featureAnalysis.featuresUsed.includes('motion-vectors') &&
-    !hasLegacyMotionVectorControls(numericFields, {
-      init: programs.init,
-      perFrame: programs.perFrame,
-    }) &&
     supportsProceduralFieldEvaluation
       ? {
           kind: 'procedural-motion-vectors',

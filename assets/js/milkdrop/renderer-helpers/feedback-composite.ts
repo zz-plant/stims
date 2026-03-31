@@ -67,12 +67,7 @@ export function buildFeedbackCompositeState({
     darkenCenter: frameState.post.darkenCenter ? 1 : 0,
     solarize: frameState.post.solarize ? 1 : 0,
     invert: frameState.post.invert ? 1 : 0,
-    redBlueStereo:
-      (frameState.variables.red_blue_stereo ??
-        frameState.variables.redbluestereo ??
-        0) > 0.5
-        ? 1
-        : 0,
+    redBlueStereo: frameState.post.redBlueStereo ? 1 : 0,
     gammaAdj: frameState.post.gammaAdj,
     textureWrap: frameState.post.textureWrap ? 1 : 0,
     feedbackTexture: frameState.post.feedbackTexture ? 1 : 0,
