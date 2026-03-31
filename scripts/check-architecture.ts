@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const SOURCE_ROOT = path.resolve('assets/js');
 const JS_SOURCE_PATTERN = /\.(?:ts|js)$/;
-const IGNORED_SEGMENTS = new Set(['lib', 'data']);
+const IGNORED_SEGMENTS = new Set(['lib']);
 const CORE_TO_UTILS_ALLOWLIST = new Set([
   'assets/js/utils/device-detect.ts',
   'assets/js/utils/device-detect.js',
@@ -15,7 +15,11 @@ type ArchitectureLayer =
   | 'bootstrap'
   | 'core'
   | 'ui'
-  | 'utils';
+  | 'utils'
+  | 'data'
+  | 'toy'
+  | 'milkdrop-public'
+  | 'milkdrop';
 
 type ArchitectureViolation = {
   source: string;
@@ -52,6 +56,12 @@ export function classifyArchitectureLayer(
   ) {
     return 'ui';
   }
+  if (relative.startsWith('assets/js/data/')) return 'data';
+  if (relative.startsWith('assets/js/toys/')) return 'toy';
+  if (relative.startsWith('assets/js/milkdrop/public/')) {
+    return 'milkdrop-public';
+  }
+  if (relative.startsWith('assets/js/milkdrop/')) return 'milkdrop';
   if (relative.startsWith('assets/js/utils/')) return 'utils';
 
   return null;
@@ -68,6 +78,14 @@ export function isArchitectureDependencyAllowed({
 }) {
   const relativeTarget = normalizeRelative(targetPath);
 
+  if (sourceLayer === 'data') {
+    return targetLayer === 'data';
+  }
+
+  if (targetLayer === 'data') {
+    return true;
+  }
+
   if (sourceLayer === 'core') {
     if (targetLayer === 'core') return true;
     if (
@@ -76,6 +94,7 @@ export function isArchitectureDependencyAllowed({
     ) {
       return true;
     }
+    if (targetLayer === 'data') return true;
     return false;
   }
 
@@ -85,16 +104,60 @@ export function isArchitectureDependencyAllowed({
 
   if (sourceLayer === 'ui') {
     return (
-      targetLayer === 'ui' || targetLayer === 'core' || targetLayer === 'utils'
+      targetLayer === 'ui' ||
+      targetLayer === 'core' ||
+      targetLayer === 'utils'
     );
   }
 
   if (sourceLayer === 'loader') {
-    return targetLayer !== 'app' && targetLayer !== 'bootstrap';
+    return (
+      targetLayer === 'loader' ||
+      targetLayer === 'core' ||
+      targetLayer === 'ui' ||
+      targetLayer === 'utils' ||
+      targetLayer === 'toy' ||
+      targetLayer === 'milkdrop-public'
+    );
   }
 
   if (sourceLayer === 'bootstrap') {
-    return targetLayer !== 'app';
+    return (
+      targetLayer === 'bootstrap' ||
+      targetLayer === 'loader' ||
+      targetLayer === 'core' ||
+      targetLayer === 'ui' ||
+      targetLayer === 'utils' ||
+      targetLayer === 'milkdrop-public'
+    );
+  }
+
+  if (sourceLayer === 'toy') {
+    return (
+      targetLayer === 'toy' ||
+      targetLayer === 'core' ||
+      targetLayer === 'utils' ||
+      targetLayer === 'milkdrop-public' ||
+      targetLayer === 'milkdrop'
+    );
+  }
+
+  if (sourceLayer === 'milkdrop-public') {
+    return (
+      targetLayer === 'milkdrop-public' ||
+      targetLayer === 'milkdrop' ||
+      targetLayer === 'core' ||
+      targetLayer === 'utils'
+    );
+  }
+
+  if (sourceLayer === 'milkdrop') {
+    return (
+      targetLayer === 'milkdrop' ||
+      targetLayer === 'milkdrop-public' ||
+      targetLayer === 'core' ||
+      targetLayer === 'utils'
+    );
   }
 
   return true;

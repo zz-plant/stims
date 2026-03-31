@@ -69,7 +69,7 @@ describe('milkdrop launch intent parsing', () => {
   test('routes preset launch intents only for milkdrop', () => {
     const requestMilkdropPresetSelection = mock();
 
-    mock.module('../assets/js/milkdrop/preset-selection.ts', () => ({
+    mock.module('../assets/js/milkdrop/public/launch-intents.ts', () => ({
       requestMilkdropPresetSelection,
     }));
 
@@ -143,13 +143,9 @@ describe('toy page query-driven startup', () => {
     const requestMilkdropOverlayTab = mock();
     const requestMilkdropPresetSelection = mock();
     const initTopNav = mock();
-    mock.module('../assets/js/milkdrop/collection-intent.ts', () => ({
+    mock.module('../assets/js/milkdrop/public/launch-intents.ts', () => ({
       requestMilkdropCollectionSelection,
-    }));
-    mock.module('../assets/js/milkdrop/overlay-intent.ts', () => ({
       requestMilkdropOverlayTab,
-    }));
-    mock.module('../assets/js/milkdrop/preset-selection.ts', () => ({
       requestMilkdropPresetSelection,
     }));
     mock.module('../assets/js/ui/nav.ts', () => ({
@@ -238,13 +234,9 @@ describe('toy page query-driven startup', () => {
     mock.module('../assets/js/ui/system-controls.ts', () => ({
       initSystemControls,
     }));
-    mock.module('../assets/js/milkdrop/collection-intent.ts', () => ({
+    mock.module('../assets/js/milkdrop/public/launch-intents.ts', () => ({
       requestMilkdropCollectionSelection: mock(),
-    }));
-    mock.module('../assets/js/milkdrop/overlay-intent.ts', () => ({
       requestMilkdropOverlayTab: mock(),
-    }));
-    mock.module('../assets/js/milkdrop/preset-selection.ts', () => ({
       requestMilkdropPresetSelection: mock(),
     }));
 
