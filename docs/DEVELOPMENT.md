@@ -12,7 +12,7 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
-`bun run check` includes the architecture boundary guard, so it now verifies the documented `app` / `loader` / `bootstrap` / `core` / `ui` / `utils` dependency directions in addition to lint, typecheck, and tests.
+`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` / `loader` / `bootstrap` / `core` / `ui` / `utils` dependency directions in addition to lint, typecheck, and tests.
 
 ## Main scripts
 
@@ -23,6 +23,8 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 | WebGPU-focused local session | `bun run dev:webgpu` |
 | Full quality gate | `bun run check` |
 | Faster local quality gate | `bun run check:quick` |
+| Toy manifest + generated doc drift check | `bun run check:toys` |
+| SEO surface check | `bun run check:seo` |
 | Architecture boundary check | `bun run check:architecture` |
 | Run tests | `bun run test` |
 | Build production assets | `bun run build` |

@@ -9,13 +9,14 @@
 - `docs/QA_PLAN.md` — broader QA map and focused regression coverage.
 - `docs/PAGE_SPECIFICATIONS.md` — app shell and launch-flow behavior.
 - `docs/DEPLOYMENT.md` — shipping and hosting guidance.
+- `docs/TOY_SCRIPT_INDEX.md` / `docs/toys.md` — generated manifest reference docs synced from `assets/data/toys.json`.
 
 ## High-signal code locations
 
 - `assets/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
 - `assets/js/milkdrop/` — preset compiler, VM, runtime, editor, overlay, and catalog behavior.
 - `assets/js/loader.ts` — loader/query param routing into `milkdrop/index.html`.
-- `assets/data/toys.json` (or `assets/data/toys.yaml` / `assets/data/toys.yml`) — loader manifest source still used for routing and compatibility.
+- `assets/data/toys.json` — loader manifest source still used for routing and compatibility.
 - `public/milkdrop-presets/` — bundled preset corpus and catalog assets.
 
 ## Config and entry points
