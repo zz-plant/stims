@@ -381,8 +381,9 @@ export function syncShapeObject(
   }
 
   const fill = existing.children[0];
-  const accent = existing.children[1];
-  const border = existing.children[wantsAccent ? 2 : 1];
+  const hadAccent = existing.children.length >= 3;
+  const accent = hadAccent ? existing.children[1] : undefined;
+  const border = existing.children[hadAccent ? 2 : 1];
   const expectsLoop = behavior.useLineLoopPrimitives;
   const hasSupportedBorder = expectsLoop
     ? border instanceof ThreeLineLoop

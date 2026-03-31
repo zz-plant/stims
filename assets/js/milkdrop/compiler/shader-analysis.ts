@@ -1333,6 +1333,9 @@ export function buildShaderProgramPayload({
   requiresControlFallback: boolean;
   supportedBackends: MilkdropRenderBackend[];
 }): MilkdropShaderProgramPayload {
+  const hasPureVolumeSampleControlFallback = statements.some((statement) =>
+    shouldUseTranslatedControlsForDirectVolumeSample(statement),
+  );
   const entryTarget = stage === 'warp' ? 'uv' : 'ret';
   const programStatements = statements.map((statement) => ({
     ...statement,
@@ -1351,10 +1354,32 @@ export function buildShaderProgramPayload({
       stage,
       entryTarget,
       supportedBackends,
-      requiresControlFallback,
+      requiresControlFallback:
+        requiresControlFallback || hasPureVolumeSampleControlFallback,
       statementTargets: programStatements.map((statement) => statement.target),
     },
   };
+}
+
+function shouldUseTranslatedControlsForDirectVolumeSample(
+  statement: MilkdropShaderStatement,
+) {
+  const key = statement.target.toLowerCase();
+  if (key !== 'ret' && key !== 'return' && key !== 'shader_body') {
+    return false;
+  }
+
+  const directSample = getShaderSampleInfo(statement.expression);
+  if (
+    !directSample ||
+    directSample.sampleDimension !== '3d' ||
+    directSample.source === 'main' ||
+    directSample.source === 'none'
+  ) {
+    return false;
+  }
+
+  return !isUnsupportedVolumeSampleSource(directSample.source);
 }
 
 function isUnsupportedParsedShaderStatement({

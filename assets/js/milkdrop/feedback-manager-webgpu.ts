@@ -17,7 +17,10 @@ import {
 // @ts-expect-error - 'three/tsl' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three-dispose';
-import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
+import {
+  WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+} from './backend-behavior';
 import {
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
@@ -337,11 +340,15 @@ function createCompositeUniforms(
     invertBoost: uniform(0),
     solarizeBoost: uniform(0),
     tint: uniform(new Color(1, 1, 1)),
+    // Keep the feedback blur/boost seed aligned with the compatibility renderer.
+    // Frame state does not overwrite these uniforms, so a backend-specific seed
+    // would create a persistent visual drift even when both paths otherwise
+    // receive the same composite state.
     feedbackSoftness: uniform(
-      WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.feedbackSoftness,
+      WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.feedbackSoftness,
     ),
     currentFrameBoost: uniform(
-      WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.currentFrameBoost,
+      WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.currentFrameBoost,
     ),
     overlayTextureSource: uniform(0),
     overlayTextureMode: uniform(0),
