@@ -94,7 +94,7 @@ describe('milkdrop compiler shader analysis', () => {
     expect(payload.source).toBe('ret=tex2d(sampler_main,uv).rgb*gain');
   });
 
-  test('prefers direct execution for shader_body projectM presets', () => {
+  test('keeps pure projectM volume samples direct on WebGPU while allowing translated WebGL controls', () => {
     const compiled = compileMilkdropPresetSource(projectmNoiseVolumeFixture, {
       id: '261-compshader-noisevol_lq',
     });
@@ -106,14 +106,14 @@ describe('milkdrop compiler shader analysis', () => {
     );
     expect(
       compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'unsupported',
+      webgl: 'translated',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
   });
 });

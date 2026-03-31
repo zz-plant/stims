@@ -1018,6 +1018,89 @@ shapecode_0_thickoutline=1
     expect(secondWaveAttribute).toBe(firstWaveAttribute);
   });
 
+  test('keeps the main shape border synced when thick-outline is disabled across renders', () => {
+    const accentedPreset = compileMilkdropPresetSource(
+      `
+title=Accented Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.18
+shapecode_0_x=-0.12
+shapecode_0_y=0.08
+shapecode_0_border_a=0.9
+shapecode_0_thickoutline=1
+      `.trim(),
+      { id: 'accented-shape' },
+    );
+    const plainPreset = compileMilkdropPresetSource(
+      `
+title=Plain Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.31
+shapecode_0_x=0.23
+shapecode_0_y=-0.17
+shapecode_0_rot=0.4
+shapecode_0_border_a=0.25
+shapecode_0_thickoutline=0
+      `.trim(),
+      { id: 'plain-shape' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(accentedPreset).step(makeSignals()),
+      blendState: null,
+    });
+    adapter.render({
+      frameState: createMilkdropVM(plainPreset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children?: Array<{
+        children?: Array<{
+          children?: Array<{
+            material?: LineBasicMaterial | ShaderMaterial;
+            position?: { x: number; y: number; z: number };
+            scale?: { x: number; y: number; z: number };
+            rotation?: { z: number };
+          }>;
+        }>;
+      }>;
+    };
+    const shapesGroup = root.children?.[5];
+    const shapeGroup = shapesGroup?.children?.[0];
+    const fill = shapeGroup?.children?.[0] as Mesh | undefined;
+    const border = shapeGroup?.children?.[1] as
+      | {
+          material?: LineBasicMaterial;
+          position?: { x: number; y: number; z: number };
+          scale?: { x: number; y: number; z: number };
+          rotation?: { z: number };
+        }
+      | undefined;
+
+    expect(shapeGroup?.children).toHaveLength(2);
+    expect(fill?.type).toBe('Mesh');
+    expect(border?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(border?.material?.opacity).toBeCloseTo(0.25, 6);
+    expect(border?.position?.x).toBeCloseTo(fill?.position.x ?? NaN, 6);
+    expect(border?.position?.y).toBeCloseTo(fill?.position.y ?? NaN, 6);
+    expect(border?.position?.z).toBeCloseTo(0.16, 6);
+    expect(border?.scale?.x).toBeCloseTo(fill?.scale.x ?? NaN, 6);
+    expect(border?.scale?.y).toBeCloseTo(fill?.scale.y ?? NaN, 6);
+    expect(border?.rotation?.z).toBeCloseTo(fill?.rotation.z ?? NaN, 6);
+  });
+
   test('forwards gamma-adjusted post state into feedback uniforms', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -2950,6 +3033,12 @@ ob_border=1
             samples: number;
             texture: { type: number; minFilter: number; magFilter: number };
           };
+          compositeMaterial: {
+            uniforms: {
+              feedbackSoftness: { value: number };
+              currentFrameBoost: { value: number };
+            };
+          };
         } | null;
       }
     ).feedback;
@@ -3001,11 +3090,21 @@ video_echo=1
             samples: number;
             texture: { type: number; minFilter: number; magFilter: number };
           };
+          compositeMaterial: {
+            uniforms: {
+              feedbackSoftness: { value: number };
+              currentFrameBoost: { value: number };
+            };
+          };
         } | null;
       }
     ).feedback;
 
     expect(feedback).not.toBeNull();
+    expect(feedback?.compositeMaterial.uniforms.feedbackSoftness.value).toBe(0);
+    expect(feedback?.compositeMaterial.uniforms.currentFrameBoost.value).toBe(
+      0,
+    );
   });
 
   test('routes webgpu audio-only presets through the feedback composite path', () => {
