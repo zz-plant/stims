@@ -18,6 +18,10 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { disposeMaterial } from '../utils/three-dispose';
+import type {
+  FeedbackBackendProfile,
+  MilkdropBackendBehavior,
+} from './backend-behavior';
 import {
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
@@ -30,10 +34,6 @@ import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
-import type {
-  FeedbackBackendProfile,
-  MilkdropBackendBehavior,
-} from './renderer-adapter.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,

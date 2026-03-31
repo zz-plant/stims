@@ -17,6 +17,7 @@ import {
 // @ts-expect-error - 'three/tsl' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three-dispose';
+import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import {
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
@@ -29,7 +30,6 @@ import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
-import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './renderer-adapter.ts';
 import {
   isMilkdropVolumeShaderSamplerName,
   normalizeMilkdropShaderSamplerName,

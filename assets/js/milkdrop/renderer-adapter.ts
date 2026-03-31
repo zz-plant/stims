@@ -26,6 +26,11 @@ import {
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import {
+  type MilkdropBackendBehavior,
+  WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+} from './backend-behavior';
+import {
   createBorderObject as createBorderObjectHelper,
   renderBorderGroup as renderBorderGroupHelper,
   syncBorderObject as syncBorderObjectHelper,
@@ -76,6 +81,16 @@ import {
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
+
+export type {
+  FeedbackBackendProfile,
+  MilkdropBackendBehavior,
+} from './backend-behavior';
+export {
+  getFeedbackBackendProfile,
+  WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+} from './backend-behavior';
 
 type RendererLike = {
   getSize?: (target: Vector2) => Vector2;
@@ -147,57 +162,10 @@ export type MilkdropRendererBatcher = {
   ) => boolean;
 };
 
-export type FeedbackBackendProfile = {
-  currentFrameBoost: number;
-  feedbackSoftness: number;
-  sceneResolutionScale: number;
-  feedbackResolutionScale: number;
-  samples: number;
-};
-
 export type MilkdropFeedbackManagerFactory = (
   width: number,
   height: number,
 ) => MilkdropFeedbackManager;
-
-export type MilkdropBackendBehavior = {
-  feedbackProfile: FeedbackBackendProfile;
-  useHalfFloatFeedback: boolean;
-  closeLinesManually: boolean;
-  useLineLoopPrimitives: boolean;
-  supportsShapeGradient: boolean;
-  supportsFeedbackPass: boolean;
-};
-
-export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
-  feedbackProfile: {
-    currentFrameBoost: 0,
-    feedbackSoftness: 0,
-    sceneResolutionScale: 0.72,
-    feedbackResolutionScale: 0.72,
-    samples: 0,
-  },
-  useHalfFloatFeedback: false,
-  closeLinesManually: false,
-  useLineLoopPrimitives: true,
-  supportsShapeGradient: true,
-  supportsFeedbackPass: true,
-};
-
-export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
-  feedbackProfile: {
-    currentFrameBoost: 0.1,
-    feedbackSoftness: 0.65,
-    sceneResolutionScale: 1,
-    feedbackResolutionScale: 0.85,
-    samples: 0,
-  },
-  useHalfFloatFeedback: true,
-  closeLinesManually: true,
-  useLineLoopPrimitives: false,
-  supportsShapeGradient: true,
-  supportsFeedbackPass: true,
-};
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
@@ -243,14 +211,6 @@ function getShaderTextureBlendModeId(mode: string) {
 
 function getShaderSampleDimensionId(dimension: '2d' | '3d') {
   return dimension === '3d' ? 1 : 0;
-}
-
-export function getFeedbackBackendProfile(
-  backend: 'webgl' | 'webgpu',
-): FeedbackBackendProfile {
-  return backend === 'webgpu'
-    ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile
-    : WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
 }
 
 function markSharedGeometry<T extends BufferGeometry>(geometry: T) {

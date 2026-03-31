@@ -9,10 +9,15 @@ import toyManifest from '../data/toy-manifest.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import type { createLoader } from '../loader.ts';
 import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
+import {
+  resolveTouchGestureHints,
+  supportsTouchLikeInput,
+} from '../ui/audio-control-policy.ts';
 import { initAudioControls } from '../ui/audio-controls.ts';
 import { initNavigation as initTopNav } from '../ui/nav.ts';
 import { initSystemControls } from '../ui/system-controls.ts';
 import { isSmartTvDevice } from '../utils/device-detect.ts';
+import { buildExperienceAudioInitState } from './experience-audio-init.ts';
 import {
   applyMilkdropLaunchIntents,
   parseRequestedOverlayTab,
@@ -33,12 +38,6 @@ type ToyWithControls = Pick<
   | 'recommendedCapability'
 >;
 
-const DEFAULT_TOUCH_HINTS = [
-  'Drag to bend the scene.',
-  'Pinch to swell or compress the depth.',
-  'Rotate with two fingers to twist the image.',
-];
-
 const resolveToyTitle = (slug: string | null, toys: Toy[]) => {
   if (!slug) {
     return 'MilkDrop Visualizer';
@@ -46,79 +45,8 @@ const resolveToyTitle = (slug: string | null, toys: Toy[]) => {
   return toys.find((toy) => toy.slug === slug)?.title ?? slug;
 };
 
-function supportsTouchLikeInput() {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  if (typeof window.matchMedia === 'function') {
-    if (
-      window.matchMedia('(pointer: coarse)').matches ||
-      window.matchMedia('(hover: none)').matches
-    ) {
-      return true;
-    }
-  }
-
-  return navigator.maxTouchPoints > 0;
-}
-
-function normalizeHints(hints: string[] | undefined, limit = 3) {
-  return (hints ?? [])
-    .map((hint) => hint.trim())
-    .filter(Boolean)
-    .slice(0, limit);
-}
-
 function resolveTouchHints(toyMeta: ToyWithControls | null) {
-  const explicitHints = normalizeHints(toyMeta?.touchHints);
-  if (explicitHints.length > 0) {
-    return explicitHints;
-  }
-
-  return DEFAULT_TOUCH_HINTS;
-}
-
-function buildAudioInitState(result: CapabilityPreflightResult | null) {
-  if (isSmartTvDevice()) {
-    return {
-      preferDemoAudio: true,
-      initialStatus: {
-        message:
-          'TV mode enabled. Demo audio is selected first for easier remote setup, but microphone and tab audio are still available.',
-        variant: 'success' as const,
-      },
-    };
-  }
-
-  if (!result) {
-    return {};
-  }
-
-  const microphone = result.microphone;
-  if (!microphone?.supported) {
-    return {
-      preferDemoAudio: true,
-      initialStatus: {
-        message:
-          'Microphone access is unavailable in this browser. Use demo, tab, or YouTube audio to keep exploring.',
-        variant: 'error' as const,
-      },
-    };
-  }
-
-  if (microphone.state === 'denied') {
-    return {
-      preferDemoAudio: true,
-      initialStatus: {
-        message:
-          'Microphone access is blocked. Update permissions or use demo, tab, or YouTube audio to start the visuals.',
-        variant: 'error' as const,
-      },
-    };
-  }
-
-  return {};
+  return resolveTouchGestureHints({ touchHints: toyMeta?.touchHints });
 }
 
 export function shouldPreferDemoAudio({
@@ -303,7 +231,7 @@ export function bootExperienceShell({
     ).slice(0, 6);
     const starterPresetId = toyMeta?.starterPreset?.id;
     const starterPresetLabel = toyMeta?.starterPreset?.label;
-    const audioInitState = buildAudioInitState(result);
+    const audioInitState = buildExperienceAudioInitState(result);
 
     initAudioControls(audioControlsContainer, {
       onRequestMicrophone: async () => {

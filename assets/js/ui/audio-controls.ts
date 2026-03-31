@@ -3,7 +3,13 @@ import {
   queryMicrophonePermissionState,
 } from '../core/services/microphone-permission-service.ts';
 import { setQualityPresetById } from '../core/settings-panel.ts';
+import {
+  resolveTouchGestureHints,
+  supportsTouchLikeInput,
+} from './audio-control-policy.ts';
 import { YouTubeController } from './youtube-controller';
+
+export { resolveTouchGestureHints } from './audio-control-policy.ts';
 
 export interface AudioControlsOptions {
   onRequestMicrophone: () => Promise<void>;
@@ -27,33 +33,6 @@ export interface AudioControlsOptions {
   autoStartMicrophoneWhenGranted?: boolean;
   autoStartSource?: 'demo';
   initialShortcut?: 'tab' | 'youtube';
-}
-
-const DEFAULT_TOUCH_GESTURE_HINTS = [
-  'Drag to bend the scene.',
-  'Pinch to swell or compress the depth.',
-  'Rotate with two fingers to twist the image.',
-];
-
-function normalizeHints(hints: string[] | undefined, limit = 3) {
-  return (hints ?? [])
-    .map((hint) => hint.trim())
-    .filter(Boolean)
-    .slice(0, limit);
-}
-
-export function resolveTouchGestureHints(options: {
-  touchHints?: string[];
-  gestureHints?: string[];
-}) {
-  const explicitHints = normalizeHints(
-    options.touchHints ?? options.gestureHints,
-  );
-  if (explicitHints.length > 0) {
-    return explicitHints;
-  }
-
-  return DEFAULT_TOUCH_GESTURE_HINTS;
 }
 
 export function buildTryThisFirstRecommendation({
@@ -131,10 +110,7 @@ export function initAudioControls(
   container.className = preserveFloatingLayout
     ? 'control-panel control-panel--audio control-panel--floating'
     : 'control-panel control-panel--audio';
-  const supportsTouchLikeInput =
-    (typeof window.matchMedia === 'function' &&
-      window.matchMedia('(pointer: coarse)').matches) ||
-    navigator.maxTouchPoints > 0;
+  const touchLikeInputSupported = supportsTouchLikeInput();
   const firstRunHint = options.firstRunHint?.trim();
   const touchHints = resolveTouchGestureHints(options);
   const desktopHints = (options.desktopHints ?? [])
@@ -157,7 +133,7 @@ export function initAudioControls(
       firstRunHint,
       desktopHints,
       touchHints,
-      supportsTouchLikeInput,
+      supportsTouchLikeInput: touchLikeInputSupported,
       starterTips: options.starterTips,
       starterPresetLabel,
       showStarterPresetAction: true,
@@ -342,7 +318,7 @@ export function initAudioControls(
   ) as HTMLElement | null;
 
   const showGestureHints = () => {
-    if (!gestureHintsPanel || !supportsTouchLikeInput) return;
+    if (!gestureHintsPanel || !touchLikeInputSupported) return;
 
     let isDismissed = false;
     try {

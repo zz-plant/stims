@@ -13,15 +13,13 @@ import {
   ShaderMaterial,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
 import type {
   MilkdropRendererAdapterConfig,
   MilkdropRendererBatcher,
 } from './renderer-adapter.ts';
-import {
-  createMilkdropRendererAdapterCore,
-  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-} from './renderer-adapter.ts';
+import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
