@@ -31,8 +31,10 @@ function shouldUseShapeShaderFill(
   texture: Texture | null,
 ) {
   return (
-    (Boolean(shape.secondaryColor) && behavior.supportsShapeGradient) ||
-    (shape.textured && texture !== null)
+    (behavior.supportsShapeShaderFill &&
+      Boolean(shape.secondaryColor) &&
+      behavior.supportsShapeGradient) ||
+    (behavior.supportsShapeShaderFill && shape.textured && texture !== null)
   );
 }
 

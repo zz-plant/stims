@@ -12,6 +12,7 @@ export type MilkdropBackendBehavior = {
   closeLinesManually: boolean;
   useLineLoopPrimitives: boolean;
   supportsShapeGradient: boolean;
+  supportsShapeShaderFill: boolean;
   supportsFeedbackPass: boolean;
 };
 
@@ -27,6 +28,7 @@ export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   closeLinesManually: false,
   useLineLoopPrimitives: true,
   supportsShapeGradient: true,
+  supportsShapeShaderFill: true,
   supportsFeedbackPass: true,
 };
 
@@ -42,6 +44,7 @@ export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   closeLinesManually: true,
   useLineLoopPrimitives: false,
   supportsShapeGradient: true,
+  supportsShapeShaderFill: true,
   supportsFeedbackPass: true,
 };
 

@@ -28,11 +28,38 @@ import type {
   MilkdropShapeVisual,
   MilkdropWaveVisual,
 } from './types';
+import {
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  type MilkdropWebGpuOptimizationFlags,
+} from './webgpu-optimization-flags.ts';
+import { shouldUseSafeMilkdropWebGpuPath } from './webgpu-query-override.ts';
 
 export type MilkdropWebGPURendererAdapterConfig = Omit<
   MilkdropRendererAdapterConfig,
   'backend'
 >;
+
+const SAFE_WEBGPU_BEHAVIOR = {
+  ...WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+  supportsShapeGradient: false,
+  supportsShapeShaderFill: false,
+  supportsFeedbackPass: false,
+} as const;
+
+function buildSafeWebGpuOptimizationFlags(
+  flags: MilkdropWebGpuOptimizationFlags | undefined,
+): MilkdropWebGpuOptimizationFlags {
+  return {
+    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    ...flags,
+    proceduralMainWave: false,
+    proceduralTrailWaves: false,
+    proceduralCustomWaves: false,
+    proceduralMesh: false,
+    proceduralMotionVectors: false,
+    directFeedbackShaders: false,
+  };
+}
 
 type ShapeFillInstance = {
   x: number;
@@ -1448,11 +1475,19 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
 export function createMilkdropWebGPURendererAdapter(
   config: MilkdropWebGPURendererAdapterConfig,
 ) {
+  const useSafeWebGpuPath = shouldUseSafeMilkdropWebGpuPath();
   return createMilkdropRendererAdapterCore({
     ...config,
     backend: 'webgpu',
-    behavior: WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-    createFeedbackManager: createMilkdropWebGPUFeedbackManager,
-    batcher: new WebGPUBatchingLayer(),
+    behavior: useSafeWebGpuPath
+      ? SAFE_WEBGPU_BEHAVIOR
+      : WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+    createFeedbackManager: useSafeWebGpuPath
+      ? undefined
+      : createMilkdropWebGPUFeedbackManager,
+    batcher: useSafeWebGpuPath ? null : new WebGPUBatchingLayer(),
+    webgpuOptimizationFlags: useSafeWebGpuPath
+      ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
+      : config.webgpuOptimizationFlags,
   });
 }

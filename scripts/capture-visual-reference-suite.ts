@@ -1,4 +1,4 @@
-import { playToy, type PlayToyOptions } from './play-toy.ts';
+import { type PlayToyOptions, playToy } from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 type CaptureVisualReferenceSuiteOptions = {

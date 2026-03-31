@@ -19,8 +19,8 @@ import {
   DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
-import { shouldPreferWebGLForKnownCompatibilityGaps } from './renderer-query-override.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
+import { shouldPreferWebGLForKnownCompatibilityGaps } from './renderer-query-override.ts';
 import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
 import { ensureWebGL } from './webgl-check';
 import { createWebGLRenderer } from './webgl-renderer';

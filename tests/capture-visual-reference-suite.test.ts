@@ -2,13 +2,13 @@ import { expect, test } from 'bun:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {
-  buildVisualReferenceCaptureRequests,
-} from '../scripts/capture-visual-reference-suite.ts';
+import { buildVisualReferenceCaptureRequests } from '../scripts/capture-visual-reference-suite.ts';
 import { saveVisualReferenceManifest } from '../scripts/visual-reference-manifest.ts';
 
 test('buildVisualReferenceCaptureRequests derives viewport and timing from the reference manifest', () => {
-  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'stims-parity-capture-'));
+  const repoRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stims-parity-capture-'),
+  );
 
   saveVisualReferenceManifest(repoRoot, {
     version: 1,

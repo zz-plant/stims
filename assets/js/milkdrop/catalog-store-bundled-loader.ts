@@ -1,8 +1,8 @@
+import { shouldUseCertificationCorpus } from './catalog-query-override.ts';
 import type {
   MilkdropBundledCatalogEntry,
   MilkdropPresetSource,
 } from './types';
-import { shouldUseCertificationCorpus } from './catalog-query-override.ts';
 
 type BundledCatalogDocument =
   | MilkdropBundledCatalogEntry[]
@@ -54,26 +54,30 @@ function buildCertificationCorpusFileUrl(
   return `/${[normalizedRoot, fileName].filter(Boolean).join('/')}`;
 }
 
-async function loadCertificationCorpusCatalog() {
+async function loadCertificationCorpusCatalog(): Promise<
+  MilkdropBundledCatalogEntry[]
+> {
   const response = await fetch(CERTIFICATION_CORPUS_URL, { cache: 'no-store' });
   if (!response.ok) {
     return [] as MilkdropBundledCatalogEntry[];
   }
 
   const document = (await response.json()) as CertificationCorpusDocument;
-  return (document.presets ?? []).map((entry, index) => ({
-    id: entry.id,
-    title: entry.title,
-    file: buildCertificationCorpusFileUrl(entry.fixtureRoot, entry.file),
-    tags: [
-      ...(entry.strata ?? []),
-      ...(entry.sourceFamily ? [entry.sourceFamily] : []),
-      'certification-corpus',
-    ],
-    curatedRank: 10_000 + index,
-    certification: 'certified',
-    corpusTier: 'certified',
-  }));
+  return (document.presets ?? []).map(
+    (entry, index): MilkdropBundledCatalogEntry => ({
+      id: entry.id,
+      title: entry.title,
+      file: buildCertificationCorpusFileUrl(entry.fixtureRoot, entry.file),
+      tags: [
+        ...(entry.strata ?? []),
+        ...(entry.sourceFamily ? [entry.sourceFamily] : []),
+        'certification-corpus',
+      ],
+      curatedRank: 10_000 + index,
+      certification: 'certified',
+      corpusTier: 'certified',
+    }),
+  );
 }
 
 export function createBundledCatalogLoader({
