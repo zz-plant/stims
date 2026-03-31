@@ -9510,3 +9510,500 @@ body[data-page="home"] .home-mobile-dock .cta-button {
     backdrop-filter: none;
   }
 }
+
+/* Aggressive screen redesign: reduce repeated chrome and strengthen stage hierarchy. */
+body[data-page="home"] .home-stage__grid {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: stretch;
+  gap: clamp(1rem, 2vw, 1.6rem);
+}
+
+body[data-page="home"] .home-stage__copy {
+  align-content: start;
+  gap: 0.8rem;
+}
+
+body[data-page="home"] .home-stage__copy h1 {
+  max-width: 6.25ch;
+  font-size: clamp(3.2rem, 10vw, 6.6rem);
+}
+
+body[data-page="home"] .home-stage__copy .tagline {
+  max-width: 31rem;
+  font-size: clamp(1rem, 0.7vw + 0.96rem, 1.18rem);
+}
+
+body[data-page="home"] .home-stage__support {
+  max-width: 26rem;
+  color: color-mix(in srgb, var(--text-muted) 88%, white);
+}
+
+body[data-page="home"] .hero-cta-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+body[data-page="home"] .hero-cta-row .cta-button {
+  min-height: 58px;
+}
+
+body[data-page="home"] .hero-cta-row .cta-button.ghost {
+  min-width: 11rem;
+}
+
+body[data-page="home"] .home-stage__visual {
+  position: relative;
+  align-content: stretch;
+}
+
+body[data-page="home"] .home-stage__visual::after {
+  content: "";
+  position: absolute;
+  inset: 6% -4% -8% 12%;
+  border-radius: 32px;
+  background:
+    radial-gradient(
+      circle at 25% 30%,
+      rgba(124, 232, 255, 0.16),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 82% 18%,
+      rgba(255, 159, 104, 0.14),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 52% 72%,
+      rgba(200, 255, 116, 0.08),
+      transparent 30%
+    );
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body[data-page="home"] .home-stage__viewport,
+body[data-page="home"] .home-stage__queue,
+body[data-page="home"] .home-stage__meta {
+  position: relative;
+  z-index: 1;
+}
+
+body[data-page="home"] .home-stage__viewport {
+  min-height: clamp(26rem, 58vh, 40rem);
+  padding: 1.15rem;
+  border-radius: 32px;
+}
+
+body[data-page="home"] .home-stage__hud {
+  top: 1.15rem;
+  left: auto;
+  right: 1.15rem;
+  justify-content: flex-end;
+}
+
+body[data-page="home"] .home-stage__queue {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+body[data-page="home"] .home-stage__queue-card {
+  min-height: 0;
+}
+
+body[data-page="home"] .home-stage__proof-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+body[data-page="home"] .home-stage__proof-card {
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 48%),
+    rgba(9, 17, 26, 0.56);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+body[data-page="home"] .home-stage__proof-card h2,
+body[data-page="home"] .home-stage__proof-card h3 {
+  font-size: 1rem;
+}
+
+body[data-page="home"] .home-stage__proof-card p:last-child {
+  font-size: 0.88rem;
+}
+
+body[data-page="home"] .home-stage__meta {
+  display: none;
+}
+
+body[data-page="home"] .section-shell:not(.home-stage) {
+  border-radius: 30px;
+  padding: 1.2rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 48%),
+    rgba(8, 16, 24, 0.66);
+}
+
+body[data-page="home"] .home-launches__grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 0.85rem;
+}
+
+body[data-page="home"] .launch-card,
+body[data-page="home"] .system-card {
+  border-radius: 24px;
+}
+
+body[data-page="home"] .launch-card:not(.launch-card--featured),
+body[data-page="home"] .system-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 54%),
+    rgba(7, 13, 21, 0.48);
+}
+
+body[data-page="home"] .launch-card--featured {
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(200, 255, 116, 0.12),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 54%),
+    rgba(8, 16, 24, 0.82);
+}
+
+body[data-page="home"] .home-presets__intro {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 1rem;
+}
+
+body[data-page="home"] .home-presets__rail {
+  align-content: start;
+}
+
+body[data-page="home"] .milkdrop-showcase__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+body[data-page="home"] .milkdrop-showcase__card {
+  padding: 1.15rem;
+  border-radius: 24px;
+}
+
+body[data-page="home"] .home-system__cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+body[data-page="home"] .home-mobile-dock {
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+body[data-page="home"] .home-mobile-dock .cta-button.ghost {
+  display: none;
+}
+
+body[data-page="home"][data-home-dock-state="hidden"] .home-mobile-dock {
+  opacity: 0;
+  transform: translateY(calc(100% + 1rem));
+  pointer-events: none;
+}
+
+body[data-page="experience"] .launch-shell {
+  gap: clamp(1rem, 2vw, 1.6rem);
+}
+
+body[data-page="experience"] .launch-intro {
+  padding: clamp(1.2rem, 2vw, 1.6rem);
+  border-radius: 32px;
+  background:
+    linear-gradient(125deg, rgba(200, 255, 116, 0.08), transparent 28%),
+    radial-gradient(
+      circle at 12% 18%,
+      rgba(124, 232, 255, 0.18),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 84% 12%,
+      rgba(255, 159, 104, 0.1),
+      transparent 24%
+    ),
+    linear-gradient(180deg, rgba(16, 25, 39, 0.98), rgba(10, 15, 24, 0.96));
+  border-color: rgba(208, 226, 255, 0.14);
+  box-shadow:
+    0 28px 64px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+body[data-page="experience"] .launch-intro__grid {
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+
+body[data-page="experience"] .launch-intro__copy {
+  align-content: start;
+  gap: 0.95rem;
+  max-width: 38rem;
+}
+
+body[data-page="experience"] .launch-intro__copy h1 {
+  margin: 0;
+  max-width: 7ch;
+  font-size: clamp(3rem, 9vw, 5.4rem);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+body[data-page="experience"] .launch-intro__copy .section-description {
+  max-width: 26rem;
+  font-size: 1.06rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, #f5f8ff 84%, transparent);
+}
+
+body[data-page="experience"] .launch-intro__actions .cta-button {
+  min-width: min(21rem, 100%);
+  min-height: 58px;
+  box-shadow: 0 18px 36px rgba(144, 217, 69, 0.18);
+}
+
+body[data-page="experience"] .launch-intro__aside {
+  gap: 1rem;
+  padding: 1.2rem;
+  border-radius: 28px;
+  border-color: rgba(255, 255, 255, 0.05);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 44%),
+    rgba(4, 8, 14, 0.9);
+  box-shadow: none;
+}
+
+body[data-page="experience"] .launch-intro__aside h2 {
+  font-size: clamp(1.5rem, 1.1rem + 1vw, 2.1rem);
+  line-height: 1;
+}
+
+body[data-page="experience"] .launch-checklist {
+  gap: 0.7rem;
+}
+
+body[data-page="experience"] .launch-check {
+  gap: 0.5rem;
+  padding: 1rem 1.05rem;
+  border-radius: 20px;
+  border-color: rgba(255, 255, 255, 0.05);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 40%),
+    rgba(7, 11, 18, 0.8);
+  box-shadow: none;
+}
+
+body[data-page="experience"] .launch-check h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.15;
+  color: #f5f8ff;
+}
+
+body[data-page="experience"] .launch-check p:last-child {
+  font-size: 0.9rem;
+}
+
+body[data-page="experience"] .launch-panels {
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 42%),
+    rgba(4, 8, 13, 0.62);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+body[data-page="experience"] .launch-panels__header {
+  max-width: 34rem;
+}
+
+body[data-page="experience"] .launch-panels .shell-panels {
+  grid-template-columns: minmax(0, 1.16fr) minmax(0, 0.84fr);
+  gap: 1rem;
+}
+
+body[data-page="experience"]
+  .launch-panels
+  .shell-panel[data-audio-controls]
+  > .control-panel,
+body[data-page="experience"]
+  .launch-panels
+  .shell-panel[data-settings-panel]
+  > .control-panel,
+body[data-page="experience"]
+  .launch-panels
+  .shell-panel
+  > [data-audio-controls]
+  > .control-panel,
+body[data-page="experience"]
+  .launch-panels
+  .shell-panel
+  > [data-settings-panel]
+  > .control-panel {
+  min-height: 100%;
+  max-height: none;
+  overflow: visible;
+}
+
+body[data-page="experience"] .launch-panels .control-panel {
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 42%),
+    rgba(7, 12, 20, 0.82);
+  border-color: rgba(214, 230, 255, 0.08);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.16);
+}
+
+body[data-page="experience"] .launch-panels .control-panel::after {
+  inset: 10px;
+  border-radius: 20px;
+}
+
+body[data-page="experience"] .launch-panels .shell-panel--tune .control-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 36%),
+    rgba(5, 9, 15, 0.68);
+}
+
+body[data-page="experience"] .launch-panels .control-panel__row--primary {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(200, 255, 116, 0.09),
+      rgba(124, 232, 255, 0.06)
+    ),
+    rgba(12, 20, 28, 0.78);
+  border-color: rgba(200, 255, 116, 0.16);
+}
+
+body[data-page="experience"] .launch-panels .control-panel__gesture-hints,
+body[data-page="experience"] .launch-panels .control-panel__first-steps,
+body[data-page="experience"] .launch-panels .control-panel__quickstart,
+body[data-page="experience"] .launch-panels .control-panel__source-shortcuts {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+:root[data-focused-session="live"]
+  body[data-page="experience"]
+  .shell-header--launch-nav {
+  display: none;
+}
+
+:root[data-focused-session="live"] body[data-page="experience"] .content {
+  padding-top: max(0.85rem, env(safe-area-inset-top));
+}
+
+@media (max-width: 1080px) {
+  body[data-page="home"] .home-stage__grid,
+  body[data-page="home"] .home-presets__intro,
+  body[data-page="experience"] .launch-intro__grid,
+  body[data-page="experience"] .launch-panels .shell-panels {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-page="home"] .milkdrop-showcase__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body[data-page="home"] .home-system__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  body[data-page="home"] .hero-cta-row {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-page="home"] .hero-cta-row .cta-button.ghost {
+    min-width: 0;
+  }
+
+  body[data-page="home"] .home-stage__queue {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-page="home"] .home-stage__proof-grid,
+  body[data-page="home"] .home-launches__grid,
+  body[data-page="home"] .milkdrop-showcase__grid,
+  body[data-page="home"] .home-system__cards {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-page="experience"] .launch-intro__copy h1 {
+    max-width: 6ch;
+    font-size: clamp(2.5rem, 13vw, 4rem);
+  }
+}
+
+@media (max-width: 640px) {
+  body[data-page="home"] .home-stage {
+    padding: 1rem;
+  }
+
+  body[data-page="home"] .home-stage__kicker-row {
+    display: none;
+  }
+
+  body[data-page="home"] .home-stage__copy {
+    gap: 0.7rem;
+  }
+
+  body[data-page="home"] .home-stage__proof-grid {
+    display: none;
+  }
+
+  body[data-page="home"] .home-stage__copy h1 {
+    max-width: 5.8ch;
+    font-size: clamp(2.7rem, 14vw, 4rem);
+  }
+
+  body[data-page="home"] .home-stage__viewport {
+    min-height: 24rem;
+  }
+
+  body[data-page="home"] .home-stage__hud {
+    left: 1rem;
+    right: 1rem;
+    justify-content: flex-start;
+  }
+
+  body[data-page="experience"] .launch-intro,
+  body[data-page="experience"] .launch-panels {
+    padding: 1rem;
+    border-radius: 28px;
+  }
+
+  body[data-page="experience"] .launch-intro__copy {
+    gap: 0.8rem;
+  }
+
+  body[data-page="experience"] .launch-intro__copy .section-description {
+    font-size: 0.96rem;
+  }
+
+  body[data-page="experience"] .launch-intro__aside {
+    padding: 1rem;
+    border-radius: 24px;
+  }
+
+  body[data-page="experience"] .launch-check {
+    padding: 0.9rem 0.95rem;
+    border-radius: 18px;
+  }
+}
