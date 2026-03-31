@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "generatedAt": "2026-03-31T20:32:03.976Z",
+  "outputDir": "./screenshots/parity",
+  "suiteDir": "screenshots/parity/suite",
+  "certifiedPresetCount": 4,
+  "backendMismatchCount": 0,
+  "passCount": 0,
+  "failCount": 4,
+  "missingCount": 0,
+  "errorCount": 0,
+  "results": [
+    {
+      "presetId": "100-square",
+      "title": "100 Square",
+      "status": "fail",
+      "mismatchRatio": 0.6074455155529325,
+      "reportPath": "screenshots/parity/suite/100-square.json",
+      "diffImagePath": "screenshots/parity/suite/100-square.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260331203123",
+      "projectmImagePath": "/Users/kanav/Documents/GitHub/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
+    },
+    {
+      "presetId": "250-wavecode",
+      "title": "250 Wavecode",
+      "status": "fail",
+      "mismatchRatio": 0.6064646862089317,
+      "reportPath": "screenshots/parity/suite/250-wavecode.json",
+      "diffImagePath": "screenshots/parity/suite/250-wavecode.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260331203133",
+      "projectmImagePath": "/Users/kanav/Documents/GitHub/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
+    },
+    {
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": "300 Beatdetect Bassmidtreb",
+      "status": "fail",
+      "mismatchRatio": 0.6056864931033729,
+      "reportPath": "screenshots/parity/suite/300-beatdetect-bassmidtreb.json",
+      "diffImagePath": "screenshots/parity/suite/300-beatdetect-bassmidtreb.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260331203155",
+      "projectmImagePath": "/Users/kanav/Documents/GitHub/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
+    },
+    {
+      "presetId": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "status": "fail",
+      "mismatchRatio": 0.6051332327802916,
+      "reportPath": "screenshots/parity/suite/260-compshader-noise_lq.json",
+      "diffImagePath": "screenshots/parity/suite/260-compshader-noise_lq.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260331203143",
+      "projectmImagePath": "/Users/kanav/Documents/GitHub/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
+    }
+  ]
+}

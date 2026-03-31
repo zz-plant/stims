@@ -21,30 +21,43 @@ export type PlayToyResult = {
   vibeModeActivated?: boolean;
 };
 
+export type PlayToyRendererProfile = 'compatibility' | 'webgpu';
+export type PlayToyCatalogMode = 'bundled' | 'certification';
+
 type PlayToyOptions = {
   slug: string;
   presetId?: string;
   port?: number;
   duration?: number;
+  viewportWidth?: number;
+  viewportHeight?: number;
   screenshot?: boolean;
   debugSnapshot?: boolean;
   video?: boolean;
   outputDir?: string;
   headless?: boolean;
   vibeMode?: boolean;
+  rendererProfile?: PlayToyRendererProfile;
+  catalogMode?: PlayToyCatalogMode;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
   port: number;
   duration: number;
+  viewportWidth: number;
+  viewportHeight: number;
   outputDir: string;
   headless: boolean;
   vibeMode: boolean;
+  rendererProfile: PlayToyRendererProfile;
+  catalogMode: PlayToyCatalogMode;
 };
 
 const DEFAULT_OPTIONS = {
   port: 5173,
   duration: 5000,
+  viewportWidth: 1280,
+  viewportHeight: 720,
   outputDir: './screenshots',
 };
 const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';
@@ -55,12 +68,17 @@ const PREFLIGHT_CONTINUE_LABEL = 'Choose audio';
 const PREFLIGHT_DEMO_LABEL = 'Start with demo';
 const PREFLIGHT_LIGHTER_LABEL = 'Enable lighter visual mode';
 const WEBGL_FALLBACK_LABEL = 'Continue with WebGL';
-const PLAYWRIGHT_RENDERER_ARGS = [
+const COMPATIBILITY_RENDERER_ARGS = [
   '--use-angle=swiftshader',
   '--use-gl=angle',
   '--enable-webgl',
   '--enable-unsafe-swiftshader',
   '--ignore-gpu-blocklist',
+];
+const WEBGPU_RENDERER_ARGS = [
+  '--enable-unsafe-webgpu',
+  '--ignore-gpu-blocklist',
+  '--enable-features=Vulkan',
 ];
 const INITIAL_SHELL_TIMEOUT_MS = 60000;
 const TOY_LOAD_TIMEOUT_MS = 30000;
@@ -71,9 +89,13 @@ function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
     ...options,
     port: options.port ?? DEFAULT_OPTIONS.port,
     duration: options.duration ?? DEFAULT_OPTIONS.duration,
+    viewportWidth: options.viewportWidth ?? DEFAULT_OPTIONS.viewportWidth,
+    viewportHeight: options.viewportHeight ?? DEFAULT_OPTIONS.viewportHeight,
     outputDir: options.outputDir ?? DEFAULT_OPTIONS.outputDir,
     headless: options.headless !== false,
     vibeMode: options.vibeMode !== false,
+    rendererProfile: options.rendererProfile ?? 'compatibility',
+    catalogMode: options.catalogMode ?? 'bundled',
   };
 }
 
@@ -108,16 +130,28 @@ export function buildPlayToyArtifactStem({
     : slugSegment;
 }
 
+export function resolveChromiumRendererArgs(
+  rendererProfile: PlayToyRendererProfile,
+) {
+  return rendererProfile === 'webgpu'
+    ? WEBGPU_RENDERER_ARGS
+    : COMPATIBILITY_RENDERER_ARGS;
+}
+
 export function buildPlayToyUrl({
   port,
   slug,
   presetId,
   demoAudio = true,
+  rendererProfile = 'compatibility',
+  catalogMode = 'bundled',
 }: {
   port: number;
   slug: string;
   presetId?: string;
   demoAudio?: boolean;
+  rendererProfile?: PlayToyRendererProfile;
+  catalogMode?: PlayToyCatalogMode;
 }) {
   const params = new URLSearchParams({
     experience: slug,
@@ -128,6 +162,12 @@ export function buildPlayToyUrl({
   }
   if (presetId?.trim()) {
     params.set('preset', presetId.trim());
+  }
+  if (rendererProfile === 'webgpu') {
+    params.set('renderer', 'webgpu');
+  }
+  if (catalogMode === 'certification') {
+    params.set('corpus', 'certification');
   }
   return `http://127.0.0.1:${port}/milkdrop/?${params.toString()}`;
 }
@@ -382,8 +422,51 @@ async function getActiveRenderBackend(page: Page) {
     .catch(() => null);
 }
 
+async function captureActiveToyCanvas(
+  page: Page,
+  screenshotPath: string,
+): Promise<boolean> {
+  const canvasDataUrl = await page
+    .evaluate(() => {
+      const canvas =
+        document.querySelector<HTMLCanvasElement>('#active-toy-container canvas') ??
+        document.querySelector<HTMLCanvasElement>('canvas');
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        return null;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        return null;
+      }
+
+      try {
+        return canvas.toDataURL('image/png');
+      } catch (_error) {
+        return null;
+      }
+    })
+    .catch(() => null);
+
+  if (!canvasDataUrl) {
+    return false;
+  }
+
+  const [, base64Data = ''] = canvasDataUrl.split(',', 2);
+  if (!base64Data) {
+    return false;
+  }
+
+  fs.writeFileSync(screenshotPath, Buffer.from(base64Data, 'base64'));
+  return true;
+}
+
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   const normalizedOptions = normalizeOptions(options);
+  const chromiumArgs = resolveChromiumRendererArgs(
+    normalizedOptions.rendererProfile,
+  );
+  const allowWebglFallback = normalizedOptions.rendererProfile !== 'webgpu';
 
   // Ensure output directory exists
   ensureOutputDir(normalizedOptions.outputDir);
@@ -394,10 +477,13 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   try {
     browser = await chromium.launch({
       headless: normalizedOptions.headless,
-      args: PLAYWRIGHT_RENDERER_ARGS,
+      args: chromiumArgs,
     });
     const context = await browser.newContext({
-      viewport: { width: 1280, height: 720 }, // Standard 720p
+      viewport: {
+        width: normalizedOptions.viewportWidth,
+        height: normalizedOptions.viewportHeight,
+      },
       recordVideo: options.video
         ? { dir: normalizedOptions.outputDir }
         : undefined,
@@ -422,10 +508,23 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       slug: options.slug,
       presetId: normalizedOptions.presetId,
       demoAudio: demoRequestedByRoute,
+      rendererProfile: normalizedOptions.rendererProfile,
+      catalogMode: normalizedOptions.catalogMode,
     });
     console.log(`Navigating to ${url}...`);
 
     await page.goto(url);
+
+    if (normalizedOptions.rendererProfile === 'webgpu') {
+      const hasNavigatorGpu = await page
+        .evaluate(() => typeof navigator.gpu !== 'undefined')
+        .catch(() => false);
+      if (!hasNavigatorGpu) {
+        throw new Error(
+          'Chromium WebGPU profile launched without navigator.gpu; parity capture cannot certify WebGPU from this browser session.',
+        );
+      }
+    }
 
     if (await clickVisibleButtonByText(page, PREFLIGHT_LIGHTER_LABEL)) {
       console.log('Using lighter visual mode from capability preflight...');
@@ -530,7 +629,32 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       () => document.body.dataset.toyLoaded === 'true',
     );
     if (!toyLoadedAfterPreflight) {
-      if (await clickVisibleButtonByText(page, WEBGL_FALLBACK_LABEL)) {
+      const webglFallbackVisible = await page
+        .evaluate((label) => {
+          return [...document.querySelectorAll('button')].some((element) => {
+            if (!(element instanceof HTMLElement)) return false;
+            const style = window.getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            const isVisible =
+              style.display !== 'none' &&
+              style.visibility !== 'hidden' &&
+              rect.width > 0 &&
+              rect.height > 0;
+            return isVisible && element.textContent?.trim() === label;
+          });
+        }, WEBGL_FALLBACK_LABEL)
+        .catch(() => false);
+
+      if (!allowWebglFallback && webglFallbackVisible) {
+        throw new Error(
+          'MilkDrop requested WebGL fallback while the capture runner required a WebGPU-certified session.',
+        );
+      }
+
+      if (
+        allowWebglFallback &&
+        (await clickVisibleButtonByText(page, WEBGL_FALLBACK_LABEL))
+      ) {
         console.log('Continuing with WebGL fallback...');
       }
 
@@ -641,7 +765,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         normalizedOptions.outputDir,
         screenshotName,
       );
-      await page.screenshot({ path: screenshotPath });
+      const capturedCanvas = await captureActiveToyCanvas(page, screenshotPath);
+      if (!capturedCanvas) {
+        await page.screenshot({ path: screenshotPath });
+      }
       result.screenshot = screenshotPath;
       console.log(`Screenshot saved to ${screenshotPath}`);
     }
@@ -671,6 +798,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
             backend: captureBackend,
             url,
             durationMs: normalizedOptions.duration,
+            viewportWidth: normalizedOptions.viewportWidth,
+            viewportHeight: normalizedOptions.viewportHeight,
             audioMode: demoRequestedByRoute ? 'demo' : 'none',
             vibeMode: normalizedOptions.vibeMode,
           },
@@ -709,9 +838,17 @@ if (import.meta.main) {
     );
     console.error('  --port <number>     Dev server port (default: 5173)');
     console.error('  --duration <ms>     Duration to run (default: 5000)');
+    console.error('  --width <px>        Capture viewport width (default: 1280)');
+    console.error('  --height <px>       Capture viewport height (default: 720)');
     console.error('  --no-headless       Run in visible window');
     console.error(
       '  --debug-snapshot    Save the milkdrop agent debug snapshot',
+    );
+    console.error(
+      '  --renderer-profile <compatibility|webgpu>  Chromium launch profile (default: compatibility)',
+    );
+    console.error(
+      '  --catalog-mode <bundled|certification>     Preset corpus to expose in the runtime catalog (default: bundled)',
     );
     console.error('  --no-vibe-mode      Skip temporary agent vibe mode');
     console.error(
@@ -732,11 +869,18 @@ if (import.meta.main) {
 
   const port = getArg('--port', 5173) as number;
   const duration = getArg('--duration', 3000) as number;
+  const viewportWidth = getArg('--width', 1280) as number;
+  const viewportHeight = getArg('--height', 720) as number;
   const presetId = getArg('--preset', '') as string;
   const outputDir = getArg('--output', './screenshots') as string;
   const headless = !args.includes('--no-headless');
   const debugSnapshot = args.includes('--debug-snapshot');
   const vibeMode = !args.includes('--no-vibe-mode');
+  const rendererProfile = getArg(
+    '--renderer-profile',
+    'compatibility',
+  ) as PlayToyRendererProfile;
+  const catalogMode = getArg('--catalog-mode', 'bundled') as PlayToyCatalogMode;
 
   console.log(`Launching ${slug} on port ${port}...`);
 
@@ -748,8 +892,12 @@ if (import.meta.main) {
     debugSnapshot,
     video: false,
     duration,
+    viewportWidth,
+    viewportHeight,
     outputDir,
     headless,
     vibeMode,
+    rendererProfile,
+    catalogMode,
   }).then((res) => console.log(JSON.stringify(res, null, 2)));
 }
