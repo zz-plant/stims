@@ -37,7 +37,9 @@ test('bundled catalog loader appends certification-only presets when the certifi
       );
     }
 
-    if (url.endsWith('/assets/data/milkdrop-parity/certification-corpus.json')) {
+    if (
+      url.endsWith('/assets/data/milkdrop-parity/certification-corpus.json')
+    ) {
       return Promise.resolve(
         new Response(
           JSON.stringify({
@@ -54,7 +56,8 @@ test('bundled catalog loader appends certification-only presets when the certifi
                 id: '100-square',
                 title: '100 Square',
                 file: '100-square.milk',
-                fixtureRoot: 'tests/fixtures/milkdrop/projectm-upstream/presets/tests',
+                fixtureRoot:
+                  'tests/fixtures/milkdrop/projectm-upstream/presets/tests',
                 sourceFamily: 'projectm-fixture',
                 strata: ['geometry'],
               },
@@ -67,7 +70,7 @@ test('bundled catalog loader appends certification-only presets when the certifi
     return Promise.reject(new Error(`Unexpected fetch ${url}`));
   });
 
-  globalThis.fetch = fetchMock as typeof fetch;
+  globalThis.fetch = fetchMock as unknown as typeof fetch;
 
   const loader = createBundledCatalogLoader({
     catalogUrl: '/milkdrop-presets/catalog.json',
@@ -114,7 +117,7 @@ test('bundled catalog loader stays on the shipped catalog when no certification 
     return Promise.reject(new Error(`Unexpected fetch ${url}`));
   });
 
-  globalThis.fetch = fetchMock as typeof fetch;
+  globalThis.fetch = fetchMock as unknown as typeof fetch;
 
   const loader = createBundledCatalogLoader({
     catalogUrl: '/milkdrop-presets/catalog.json',

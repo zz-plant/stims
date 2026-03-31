@@ -24,7 +24,7 @@ export type PlayToyResult = {
 export type PlayToyRendererProfile = 'compatibility' | 'webgpu';
 export type PlayToyCatalogMode = 'bundled' | 'certification';
 
-type PlayToyOptions = {
+export type PlayToyOptions = {
   slug: string;
   presetId?: string;
   port?: number;
@@ -429,8 +429,9 @@ async function captureActiveToyCanvas(
   const canvasDataUrl = await page
     .evaluate(() => {
       const canvas =
-        document.querySelector<HTMLCanvasElement>('#active-toy-container canvas') ??
-        document.querySelector<HTMLCanvasElement>('canvas');
+        document.querySelector<HTMLCanvasElement>(
+          '#active-toy-container canvas',
+        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
       if (!(canvas instanceof HTMLCanvasElement)) {
         return null;
       }
@@ -838,8 +839,12 @@ if (import.meta.main) {
     );
     console.error('  --port <number>     Dev server port (default: 5173)');
     console.error('  --duration <ms>     Duration to run (default: 5000)');
-    console.error('  --width <px>        Capture viewport width (default: 1280)');
-    console.error('  --height <px>       Capture viewport height (default: 720)');
+    console.error(
+      '  --width <px>        Capture viewport width (default: 1280)',
+    );
+    console.error(
+      '  --height <px>       Capture viewport height (default: 720)',
+    );
     console.error('  --no-headless       Run in visible window');
     console.error(
       '  --debug-snapshot    Save the milkdrop agent debug snapshot',

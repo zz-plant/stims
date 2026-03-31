@@ -27,6 +27,7 @@ import type {
 } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
+import { replaceProperty } from './test-helpers.ts';
 
 type RenderTreeNode = {
   children?: RenderTreeNode[];
@@ -270,6 +271,72 @@ shapecode_0_thickoutline=1
     expect(fillControl?.array[0]).toBe(1);
     expect(fillPrimary?.array).toEqual(new Float32Array([1, 0.2, 0.1, 0.7]));
     expect(fillSecondary?.array).toEqual(new Float32Array([0.1, 0.2, 1, 0.3]));
+  });
+
+  test('uses non-shader render materials for query-forced webgpu sessions', () => {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL('http://localhost/?renderer=webgpu'),
+    );
+
+    try {
+      const preset = compileMilkdropPresetSource(
+        `
+title=Safe WebGPU Route
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_a=0.7
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+shapecode_0_a2=0.3
+shapecode_0_r2=0.1
+shapecode_0_g2=0.2
+shapecode_0_b2=1
+shapecode_0_border_a=0.9
+shapecode_0_thickoutline=1
+        `.trim(),
+        { id: 'safe-webgpu-route' },
+      );
+
+      const frameState = createMilkdropVM(preset).step(makeSignals());
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const adapter = createMilkdropRendererAdapter({
+        scene,
+        camera,
+        backend: 'webgpu',
+        preset,
+      });
+
+      adapter.attach();
+      adapter.render({
+        frameState,
+        blendState: null,
+      });
+
+      const root = scene.children[0] as RenderTreeNode;
+      const tree = flattenRenderTree(root);
+      const batchedShapes = tree.filter(
+        (child) =>
+          child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+      );
+      const shaderMaterials = tree.filter(
+        (child) => child.material instanceof ShaderMaterial,
+      );
+      const basicShapeFills = tree.filter(
+        (child) =>
+          child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
+      );
+
+      expect(batchedShapes).toHaveLength(0);
+      expect(shaderMaterials).toHaveLength(0);
+      expect(basicShapeFills.length).toBeGreaterThan(0);
+    } finally {
+      restoreLocation();
+    }
   });
 
   test('falls back to non-batched shape rendering for textured custom shapes on WebGPU', () => {
