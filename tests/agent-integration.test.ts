@@ -205,18 +205,30 @@ integrationTest(
       );
       const focusedSessionState = await mobile.page.evaluate(() => ({
         focusedSession: document.documentElement.dataset.focusedSession ?? null,
+        activeBackend: document.body.dataset.activeBackend ?? null,
         audioControlsHidden: Boolean(
           document
             .querySelector('[data-audio-controls]')
             ?.hasAttribute('hidden'),
         ),
+        fallbackNotice: Array.from(
+          document.querySelectorAll(
+            '[role="status"], .status-pill, .renderer-pill',
+          ),
+        )
+          .map((node) => node.textContent ?? '')
+          .join(' '),
         canvasVisible:
           (document.querySelector('canvas')?.getBoundingClientRect().width ??
             0) > 0,
       }));
       expect(focusedSessionState.focusedSession).toBe('live');
+      expect(focusedSessionState.activeBackend).toBe('webgl');
       expect(focusedSessionState.audioControlsHidden).toBe(true);
       expect(focusedSessionState.canvasVisible).toBe(true);
+      expect(focusedSessionState.fallbackNotice).toContain(
+        'Using a simpler renderer',
+      );
     } finally {
       await mobile.close();
     }
