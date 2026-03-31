@@ -1844,7 +1844,7 @@ warp_shader=unsupported(shader)
     });
   });
 
-  test('keeps legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+  test('keeps legacy motion-vector controls on descriptor plans alongside mesh descriptors', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Legacy Motion Vectors
@@ -1864,13 +1864,17 @@ mv_l=0.4
           requiresPerPixelProgram: false,
           fieldProgram: null,
         },
-        proceduralMotionVectors: null,
+        proceduralMotionVectors: {
+          kind: 'procedural-motion-vectors',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
         unsupported: [],
       }),
     );
   });
 
-  test('keeps scripted legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+  test('keeps scripted legacy motion-vector controls on descriptor plans alongside mesh descriptors', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Scripted Legacy Motion Vectors
@@ -1897,9 +1901,41 @@ per_frame_1=mv_dx=0.05;
           requiresPerPixelProgram: false,
           fieldProgram: null,
         },
-        proceduralMotionVectors: null,
+        proceduralMotionVectors: {
+          kind: 'procedural-motion-vectors',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
         unsupported: [],
       }),
+    );
+  });
+
+  test('lowers supported custom-wave per-point programs into webgpu descriptor plans', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Lowered Custom Wave Per Point
+wavecode_0_enabled=1
+wavecode_0_samples=32
+wavecode_0_usedots=0
+wave_0_per_point1=x = x + value1 * 0.15;
+wave_0_per_point2=y = y + sin(sample * pi) * 0.08;
+      `.trim(),
+      { id: 'lowered-custom-wave-per-point' },
+    );
+
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          target: 'custom-wave',
+          slotIndex: 1,
+          fieldProgram: expect.objectContaining({
+            kind: 'gpu-field-program',
+          }),
+        }),
+      ]),
     );
   });
 });

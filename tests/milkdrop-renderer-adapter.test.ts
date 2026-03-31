@@ -1325,7 +1325,7 @@ warpanimspeed=1.25
     expect(motionVectorGroup.children[1]?.material).toBeDefined();
   });
 
-  test('falls back to CPU motion-vector overlays on webgpu for legacy controls', () => {
+  test('renders legacy motion-vector overlays directly on webgpu', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Legacy Motion Vector Overlay
@@ -1345,8 +1345,8 @@ warpanimspeed=1.25
     vm.setRenderBackend('webgpu');
     const frameState = vm.step(makeSignals());
 
-    expect(frameState.motionVectors.length).toBeGreaterThan(0);
-    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.motionVectorField?.legacyControls).toBe(true);
 
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
@@ -1370,14 +1370,16 @@ warpanimspeed=1.25
       }>;
     };
 
-    const matchingMotionVectorMesh = flattenRenderTree(root).find(
-      (child) =>
-        isWebGPUSegmentBatchNode(child) &&
-        getGeometryInstanceCount(child) === frameState.motionVectors.length,
-    );
+    const cpuMotionVectors = motionVectorGroup.children[0] as {
+      children?: Array<unknown>;
+    };
+    const proceduralMotionVectors = motionVectorGroup.children[1] as {
+      visible?: boolean;
+      material?: unknown;
+    };
 
-    expect(matchingMotionVectorMesh).toBeDefined();
-    expect(motionVectorGroup.children[1]?.visible).toBe(false);
+    expect(cpuMotionVectors.children).toHaveLength(0);
+    expect(proceduralMotionVectors.material).toBeDefined();
   });
 
   test('passes semantic feedback state to the feedback manager', () => {
@@ -2064,6 +2066,8 @@ wavecode_0_g=0.4
 wavecode_0_b=1
 wavecode_0_a=0.35
 wavecode_0_thick=5
+wave_0_per_point1=x = x + value1 * 0.1;
+wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
       `.trim(),
       { id: 'procedural-custom-wave-renderer' },
     );
@@ -2096,6 +2100,7 @@ wavecode_0_thick=5
     expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
     expect(renderedWaveChildren.length).toBeGreaterThan(0);
     expect(frameState.gpuGeometry.customWaves[0]?.thickness).toBe(5);
+    expect(frameState.gpuGeometry.customWaves[0]?.fieldProgram).not.toBeNull();
   });
 
   test('keeps procedural blend interaction alpha separate from blend alpha on webgpu', () => {
