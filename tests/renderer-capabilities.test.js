@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { importFresh, replaceProperty } from './test-helpers.ts';
 
 const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
-const freshImport = async () =>
-  import(`${capabilitiesModule}?t=${Date.now()}-${Math.random()}`);
 
 let getRendererCapabilities;
 let getRendererOptimizationSupport;
@@ -12,8 +11,8 @@ let rememberRendererFallback;
 let resetRendererCapabilities;
 let summarizeRendererOptimizationSupport;
 
-const originalNavigator = global.navigator;
 const COMPATIBILITY_MODE_KEY = 'stims:compatibility-mode';
+let restoreNavigator = () => {};
 
 async function resetRenderPreferencesState() {
   const { resetRenderPreferencesState: resetPreferences } = await import(
@@ -30,14 +29,11 @@ function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
     requestDevice,
     ...adapter,
   }));
-  Object.defineProperty(global, 'navigator', {
-    writable: true,
-    configurable: true,
-    value: {
-      gpu: {
-        requestAdapter,
-        getPreferredCanvasFormat: () => 'bgra8unorm',
-      },
+  restoreNavigator();
+  restoreNavigator = replaceProperty(global, 'navigator', {
+    gpu: {
+      requestAdapter,
+      getPreferredCanvasFormat: () => 'bgra8unorm',
     },
   });
   return { requestAdapter, requestDevice };
@@ -55,7 +51,7 @@ beforeEach(async () => {
     rememberRendererFallback,
     resetRendererCapabilities,
     summarizeRendererOptimizationSupport,
-  } = await freshImport());
+  } = await importFresh(capabilitiesModule));
 });
 
 afterEach(async () => {
@@ -63,11 +59,8 @@ afterEach(async () => {
   mock.restore();
   window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
   await resetRenderPreferencesState();
-  Object.defineProperty(global, 'navigator', {
-    writable: true,
-    configurable: true,
-    value: originalNavigator,
-  });
+  restoreNavigator();
+  restoreNavigator = () => {};
 });
 
 describe('renderer capabilities', () => {
@@ -160,14 +153,11 @@ describe('renderer capabilities', () => {
       requestDevice,
     }));
 
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: {
-        gpu: {
-          requestAdapter,
-          getPreferredCanvasFormat: () => 'bgra8unorm',
-        },
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
       },
     });
 
@@ -196,14 +186,11 @@ describe('renderer capabilities', () => {
       requestDevice,
     }));
 
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: {
-        gpu: {
-          requestAdapter,
-          getPreferredCanvasFormat: () => 'bgra8unorm',
-        },
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
       },
     });
 
@@ -223,11 +210,8 @@ describe('renderer capabilities', () => {
   });
 
   test('falls back to WebGL when WebGPU is missing', async () => {
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: {},
-    });
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {});
 
     const result = await getRendererCapabilities({ forceRetry: true });
 
