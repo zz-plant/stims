@@ -56,6 +56,7 @@ const COLLECTION_LABELS: Record<string, string> = {
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:feedback-lab': 'Feedback Lab',
   'collection:low-motion': 'Low Motion',
+  'collection:rovastar-and-collaborators': 'Rovastar and collaborators',
   'collection:touch-friendly': 'Touch Friendly',
 };
 const HIDDEN_COLLECTION_FILTER_TAGS = new Set([

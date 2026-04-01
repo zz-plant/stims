@@ -12,11 +12,13 @@ const PRESET_META_TAG_LABELS: Record<string, string> = {
   'collection:classic-milkdrop': 'Classic MilkDrop',
   'collection:feedback-lab': 'Feedback Lab',
   'collection:low-motion': 'Low Motion',
+  'collection:rovastar-and-collaborators': 'Rovastar and collaborators',
   'collection:touch-friendly': 'Touch Friendly',
   'original-pack': 'Original pack',
 };
 const PRESET_META_TAG_PRIORITY = [
   'collection:cream-of-the-crop',
+  'collection:rovastar-and-collaborators',
   'collection:classic-milkdrop',
   'original-pack',
   'collection:feedback-lab',
