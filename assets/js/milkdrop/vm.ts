@@ -416,6 +416,8 @@ class MilkdropPresetVM implements MilkdropVM {
       preset: this.preset,
       meshField,
       trailWaves: this.waveState.proceduralTrailWaves,
+      signals,
+      detailScale: this.detailScale,
       proceduralMotionVectorPlan,
     });
     gpuGeometry.mainWave = proceduralMainWave;

@@ -19,6 +19,9 @@ export function createMilkdropEditorActions({
     return session.applySource(upsertMilkdropFields(baseline, updates));
   };
 
+  const updateFieldValues = async (updates: Record<string, string | number>) =>
+    applyFieldValues(updates);
+
   const nudgeNumericField = async ({
     key,
     delta,
@@ -39,19 +42,20 @@ export function createMilkdropEditorActions({
       max,
       Math.max(min, Number.parseFloat((current + delta).toFixed(digits))),
     );
-    await session.updateField(key, next);
+    await applyFieldValues({ [key]: next });
     setOverlayStatus(`${label}: ${next.toFixed(Math.min(digits, 2))}`);
   };
 
   const cycleWaveMode = async (direction: 1 | -1) => {
     const current = Math.round(getCompiled().ir.numericFields.wave_mode ?? 0);
     const next = (((current + direction) % 8) + 8) % 8;
-    await session.updateField('wave_mode', next);
+    await applyFieldValues({ wave_mode: next });
     setOverlayStatus(`Wave mode: ${next}`);
   };
 
   return {
     applyFieldValues,
+    updateFieldValues,
     nudgeNumericField,
     cycleWaveMode,
   };

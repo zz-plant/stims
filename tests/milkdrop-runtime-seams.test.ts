@@ -105,6 +105,15 @@ describe('milkdrop runtime lifecycle seams', () => {
       post: {
         shaderEnabled: true,
         videoEchoEnabled: true,
+        postprocessingProfile: {
+          enabled: true,
+        },
+      },
+      gpuGeometry: {
+        particleField: {
+          enabled: true,
+          instanceCount: 96,
+        },
       },
     } as MilkdropFrameState;
 
@@ -120,6 +129,8 @@ describe('milkdrop runtime lifecycle seams', () => {
     expect(downgraded).not.toBe(frameState);
     expect(downgraded.post.shaderEnabled).toBe(false);
     expect(downgraded.post.videoEchoEnabled).toBe(false);
+    expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
+    expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);
   });
 });
 

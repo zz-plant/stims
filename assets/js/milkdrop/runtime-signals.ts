@@ -69,6 +69,7 @@ export function createMilkdropSignalTracker() {
         treb: treble,
         treble,
         bassAtt,
+        midAtt: midsAtt,
         midsAtt,
         trebleAtt,
         bass_att: bassAtt,

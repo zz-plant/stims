@@ -40,6 +40,7 @@ function makeSignals({
     treb: 0.4,
     treble: 0.4,
     bassAtt: 0.6,
+    midAtt: 0.45,
     bass_att: 0.6,
     mid_att: 0.45,
     midsAtt: 0.45,

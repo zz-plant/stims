@@ -4,6 +4,20 @@ import {
 } from '../overlay-intent';
 import { MILKDROP_PRESET_SELECTION_EVENT } from '../preset-selection';
 
+export {
+  describeMilkdropScenePickResult,
+  getMilkdropSceneDragFieldUpdates,
+  getMilkdropScenePickResult,
+  getMilkdropSceneSelectionFieldMap,
+  isMilkdropSceneSelectionEditable,
+  type MilkdropSceneDragModifiers,
+  type MilkdropScenePickDescription,
+  type MilkdropScenePickKind,
+  type MilkdropScenePickResult,
+  type MilkdropScenePointerPoint,
+  resolveMilkdropScenePointerPoint,
+} from './scene-selection';
+
 export type MilkdropOverlayActionHandlers = {
   onSelectPreset: (id: string) => void;
   onSelectQualityPreset: (presetId: string) => void;

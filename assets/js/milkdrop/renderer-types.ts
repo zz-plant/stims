@@ -9,6 +9,18 @@ import type {
 } from './compiler-types.ts';
 import type { MilkdropRuntimeSignals } from './runtime-types.ts';
 
+export type MilkdropPostprocessingProfile = {
+  enabled: boolean;
+  bloomStrength: number;
+  bloomRadius: number;
+  bloomThreshold: number;
+  filmNoise: number;
+  filmScanlines: number;
+  filmScanlineCount: number;
+  vignetteStrength: number;
+  chromaOffset: number;
+};
+
 export type MilkdropColor = {
   r: number;
   g: number;
@@ -160,12 +172,23 @@ export type MilkdropProceduralMotionVectorFieldVisual =
     alpha?: number;
   };
 
+export type MilkdropParticleFieldVisual = {
+  enabled: boolean;
+  instanceCount: number;
+  size: number;
+  alpha: number;
+  motionScale: number;
+  seed: number;
+  anchorSource: 'mesh-field';
+};
+
 export type MilkdropGpuGeometryHints = {
   mainWave: MilkdropProceduralWaveVisual | null;
   trailWaves: MilkdropProceduralWaveVisual[];
   customWaves: MilkdropProceduralCustomWaveVisual[];
   meshField: MilkdropProceduralMeshFieldVisual | null;
   motionVectorField: MilkdropProceduralMotionVectorFieldVisual | null;
+  particleField?: MilkdropParticleFieldVisual | null;
 };
 
 export type MilkdropGpuInteractionTransform = {
@@ -205,6 +228,7 @@ export type MilkdropPostVisual = {
   videoEchoZoom: number;
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   warp: number;
+  postprocessingProfile?: MilkdropPostprocessingProfile | null;
 };
 
 export type MilkdropFrameState = {

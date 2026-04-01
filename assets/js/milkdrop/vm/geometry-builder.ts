@@ -1,9 +1,12 @@
+import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
+import { isMobileDevice } from '../../utils/device-detect';
 import type {
   MilkdropCompiledPreset,
   MilkdropGpuFieldSignalInputs,
   MilkdropGpuGeometryHints,
   MilkdropMeshVisual,
   MilkdropMotionVectorVisual,
+  MilkdropParticleFieldVisual,
   MilkdropProceduralMeshDescriptorPlan,
   MilkdropProceduralMeshFieldVisual,
   MilkdropProceduralMotionVectorDescriptorPlan,
@@ -14,6 +17,7 @@ import {
   clamp,
   color,
   type GeometryBuilderState,
+  hashSeed,
   MAX_MOTION_VECTOR_COLUMNS,
   MAX_MOTION_VECTOR_ROWS,
   type MeshField,
@@ -22,6 +26,141 @@ import {
   type MutableState,
   normalizeTransformCenter,
 } from './shared';
+
+type ParticleFieldDeviceProfile = {
+  isMobile: boolean;
+  lowPower: boolean;
+};
+
+type ParticleFieldSource = {
+  state: MutableState;
+  meshField: MeshField;
+  signals: MilkdropRuntimeSignals;
+  detailScale: number;
+  deviceProfile?: Partial<ParticleFieldDeviceProfile>;
+};
+
+export function shouldEnableParticleField({
+  meshDensity,
+  pointCount,
+  detailScale,
+  isMobile,
+  lowPower,
+}: {
+  meshDensity: number;
+  pointCount: number;
+  detailScale: number;
+  isMobile: boolean;
+  lowPower: boolean;
+}) {
+  return (
+    !isMobile &&
+    !lowPower &&
+    meshDensity >= 12 &&
+    pointCount >= 64 &&
+    detailScale >= 0.85
+  );
+}
+
+function resolveParticleFieldDeviceProfile(
+  overrides: Partial<ParticleFieldDeviceProfile> = {},
+): ParticleFieldDeviceProfile {
+  return {
+    isMobile: overrides.isMobile ?? isMobileDevice(),
+    lowPower:
+      overrides.lowPower ?? getDevicePerformanceProfile().lowPower ?? false,
+  };
+}
+
+function getParticleFieldInstanceCount({
+  meshDensity,
+  detailScale,
+  pointCount,
+}: {
+  meshDensity: number;
+  detailScale: number;
+  pointCount: number;
+}) {
+  const densityInfluence = clamp(detailScale, 0.5, 1.65);
+  const rawCount = Math.round(
+    Math.sqrt(pointCount) * (4.5 + meshDensity * 0.22) * densityInfluence,
+  );
+  return clamp(rawCount, 24, 320);
+}
+
+export function buildParticleFieldVisual({
+  state,
+  meshField,
+  signals,
+  detailScale,
+  deviceProfile,
+}: ParticleFieldSource): MilkdropParticleFieldVisual {
+  const resolvedDeviceProfile = resolveParticleFieldDeviceProfile(
+    deviceProfile ?? {},
+  );
+  const pointCount = meshField.points.length;
+  const enabled = shouldEnableParticleField({
+    meshDensity: meshField.density,
+    pointCount,
+    detailScale,
+    ...resolvedDeviceProfile,
+  });
+
+  if (!enabled) {
+    return {
+      enabled: false,
+      instanceCount: 0,
+      size: 0,
+      alpha: 0,
+      motionScale: 0,
+      seed: 0,
+      anchorSource: 'mesh-field',
+    };
+  }
+
+  const instanceCount = getParticleFieldInstanceCount({
+    meshDensity: meshField.density,
+    detailScale,
+    pointCount,
+  });
+  const size = clamp(
+    0.012 +
+      Math.max(0, 24 - meshField.density) * 0.00025 +
+      clamp(state.wave_scale ?? 1, 0.5, 2.5) * 0.0025,
+    0.012,
+    0.042,
+  );
+  const alpha = clamp(
+    0.07 +
+      (state.wave_a ?? 0.4) * 0.22 +
+      signals.beatPulse * 0.08 +
+      signals.music * 0.03,
+    0.06,
+    0.48,
+  );
+  const motionScale = clamp(
+    0.006 +
+      signals.bassAtt * 0.011 +
+      signals.midAtt * 0.008 +
+      signals.trebleAtt * 0.01 +
+      clamp(state.warp ?? 0, 0, 1) * 0.004,
+    0.004,
+    0.03,
+  );
+  const seed = hashSeed(
+    `${meshField.density}:${Math.round(state.mesh_density ?? 0)}:${Math.round(state.wave_mode ?? 0)}`,
+  );
+
+  return {
+    enabled: true,
+    instanceCount,
+    size,
+    alpha,
+    motionScale,
+    seed,
+    anchorSource: 'mesh-field',
+  };
+}
 
 function getTransformCacheKey(x: number, y: number) {
   const quantizedX = Math.round((x + 1) * 2048);
@@ -419,19 +558,31 @@ export function buildGpuGeometryHints({
   preset,
   meshField,
   trailWaves,
+  signals,
+  detailScale,
   proceduralMotionVectorPlan,
 }: {
   state: MutableState;
   preset: MilkdropCompiledPreset;
   meshField: MeshField;
   trailWaves: import('../types').MilkdropProceduralWaveVisual[];
+  signals: MilkdropRuntimeSignals;
+  detailScale: number;
   proceduralMotionVectorPlan: MilkdropProceduralMotionVectorDescriptorPlan | null;
-}): MilkdropGpuGeometryHints {
+}): MilkdropGpuGeometryHints & {
+  particleField: MilkdropParticleFieldVisual;
+} {
   return {
     mainWave: null,
     trailWaves: trailWaves.slice(),
     customWaves: [],
     meshField: getProceduralMeshFieldVisual({ state, meshField }),
+    particleField: buildParticleFieldVisual({
+      state,
+      meshField,
+      signals,
+      detailScale,
+    }),
     motionVectorField: getProceduralMotionVectorFieldVisual({
       state,
       preset,

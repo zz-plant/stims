@@ -9,6 +9,12 @@ import {
   isAgentMode,
   setDebugSnapshot,
 } from '../core/agent-api.ts';
+import {
+  createMilkdropPostprocessingComposer,
+  type PostprocessingPipeline,
+  resolveWebGLRenderer,
+  shouldRenderMilkdropPostprocessing,
+} from '../core/postprocessing.ts';
 import { getCachedRendererCapabilities } from '../core/renderer-capabilities.ts';
 import {
   type AdaptiveQualityController,
@@ -21,6 +27,8 @@ import {
 } from '../core/settings-panel.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
 import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
+import { isMobileDevice } from '../utils/device-detect.ts';
+import { shouldUseCertificationCorpus } from './catalog-query-override.ts';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
@@ -138,6 +146,69 @@ wave_0_per_point1=y = y + sin(sample * pi * 12 + time) * 0.06
 shape_0_per_frame1=rad = 0.14 + beat_pulse * 0.08
 `;
 
+function shouldAllowMilkdropEnhancedEffects({
+  shaderQuality,
+  qualityPresetId,
+}: {
+  shaderQuality: 'low' | 'balanced' | 'high';
+  qualityPresetId: string;
+}) {
+  return (
+    shaderQuality !== 'low' &&
+    qualityPresetId !== 'performance' &&
+    qualityPresetId !== 'low-motion' &&
+    !isMobileDevice() &&
+    !shouldUseCertificationCorpus()
+  );
+}
+
+function applyMilkdropEnhancedEffectsPolicy({
+  frameState,
+  shaderQuality,
+  qualityPresetId,
+}: {
+  frameState: MilkdropFrameState;
+  shaderQuality: 'low' | 'balanced' | 'high';
+  qualityPresetId: string;
+}) {
+  if (
+    shouldAllowMilkdropEnhancedEffects({
+      shaderQuality,
+      qualityPresetId,
+    })
+  ) {
+    return frameState;
+  }
+
+  const particleField = frameState.gpuGeometry.particleField;
+  const postprocessingProfile = frameState.post.postprocessingProfile;
+  if (!particleField?.enabled && !postprocessingProfile?.enabled) {
+    return frameState;
+  }
+
+  return {
+    ...frameState,
+    post: postprocessingProfile
+      ? {
+          ...frameState.post,
+          postprocessingProfile: {
+            ...postprocessingProfile,
+            enabled: false,
+          },
+        }
+      : frameState.post,
+    gpuGeometry: particleField
+      ? {
+          ...frameState.gpuGeometry,
+          particleField: {
+            ...particleField,
+            enabled: false,
+          },
+        }
+      : frameState.gpuGeometry,
+  };
+}
+
 export function createMilkdropExperience({
   container,
   quality,
@@ -191,10 +262,15 @@ export function createMilkdropExperience({
   let adaptiveQualityController: AdaptiveQualityController | null = null;
   let adaptiveQualityState: AdaptiveQualityState | null = null;
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
+  let postprocessingPipeline: PostprocessingPipeline | null = null;
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
     shaderEnabled: false,
     videoEchoEnabled: false,
+  };
+  const disposePostprocessingPipeline = () => {
+    postprocessingPipeline?.dispose();
+    postprocessingPipeline = null;
   };
 
   registerAgentMilkdropRuntimeDebugHandle({
@@ -561,6 +637,7 @@ export function createMilkdropExperience({
           document.body.dataset.activeBackend = activeBackend;
         }
         vm.setRenderBackend(activeBackend);
+        disposePostprocessingPipeline();
         adapter = createMilkdropRendererAdapter({
           scene: nextRuntime.toy.scene,
           camera: nextRuntime.toy.camera,
@@ -683,10 +760,14 @@ export function createMilkdropExperience({
         blendDuration,
       });
 
-      const renderFrameState = buildRenderFrameState({
-        frameState: currentFrameState,
+      const renderFrameState = applyMilkdropEnhancedEffectsPolicy({
+        frameState: buildRenderFrameState({
+          frameState: currentFrameState,
+          shaderQuality: frame.performance.shaderQuality,
+          lowQualityPostOverride,
+        }),
         shaderQuality: frame.performance.shaderQuality,
-        lowQualityPostOverride,
+        qualityPresetId: quality.activeQuality.id,
       });
 
       const renderStartAt = performance.now();
@@ -695,7 +776,44 @@ export function createMilkdropExperience({
         blendState: activeBlendState,
       });
       if (!adapterPresentedFrame) {
-        runtime.toy.render();
+        const profile = renderFrameState.post.postprocessingProfile ?? null;
+        const webglRenderer = resolveWebGLRenderer(
+          activeBackend,
+          runtime.toy.renderer,
+        );
+
+        if (
+          profile &&
+          shouldRenderMilkdropPostprocessing({
+            backend: activeBackend,
+            renderer: runtime.toy.renderer,
+            profile,
+          }) &&
+          webglRenderer
+        ) {
+          if (!postprocessingPipeline) {
+            postprocessingPipeline = createMilkdropPostprocessingComposer({
+              renderer: webglRenderer,
+              scene: runtime.toy.scene,
+              camera: runtime.toy.camera,
+              profile,
+            });
+          } else {
+            postprocessingPipeline.applyProfile(profile);
+          }
+
+          if (postprocessingPipeline) {
+            postprocessingPipeline.updateSize();
+            postprocessingPipeline.render();
+          } else {
+            runtime.toy.render();
+          }
+        } else {
+          disposePostprocessingPipeline();
+          runtime.toy.render();
+        }
+      } else {
+        disposePostprocessingPipeline();
       }
       const frameEndAt = performance.now();
       adaptiveQualityController?.recordFrame({
@@ -718,6 +836,7 @@ export function createMilkdropExperience({
       clearDebugSnapshot('milkdrop');
       overlay?.dispose();
       session.dispose();
+      disposePostprocessingPipeline();
       adapter?.dispose();
       adapter = null;
       adaptiveQualityUnsubscribe?.();

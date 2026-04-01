@@ -53,6 +53,7 @@ import {
 import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
 import { renderMesh as renderMeshHelper } from './renderer-helpers/mesh-renderer';
 import { renderMotionVectors as renderMotionVectorsHelper } from './renderer-helpers/motion-vector-renderer';
+import { renderParticleFieldGroup as renderParticleFieldGroupHelper } from './renderer-helpers/particle-field-renderer';
 import {
   syncInterpolatedProceduralCustomWaveObject,
   syncInterpolatedProceduralWaveObject,
@@ -80,6 +81,7 @@ import type {
   MilkdropFeedbackManager,
   MilkdropGpuGeometryHints,
   MilkdropGpuInteractionTransform,
+  MilkdropParticleFieldVisual,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
   MilkdropRendererAdapter,
@@ -229,6 +231,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     new Group(),
     getMilkdropLayerRenderOrder('trails'),
   );
+  private readonly particleFieldGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('particle-field'),
+  );
   private readonly shapesGroup = withRenderOrder(
     new Group(),
     getMilkdropLayerRenderOrder('shapes'),
@@ -268,6 +274,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly blendCustomWaveGroup = withRenderOrder(
     new Group(),
     getMilkdropLayerRenderOrder('blend-custom-wave'),
+  );
+  private readonly blendParticleFieldGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-particle-field'),
   );
   private readonly blendShapeGroup = withRenderOrder(
     new Group(),
@@ -344,6 +354,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.mainWaveGroup);
     this.root.add(this.customWaveGroup);
     this.root.add(this.trailGroup);
+    this.root.add(this.particleFieldGroup);
     this.root.add(this.shapesGroup);
     this.root.add(this.borderGroup);
     this.motionVectorGroup.add(this.motionVectorCpuGroup);
@@ -352,6 +363,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.motionVectorGroup);
     this.root.add(this.blendWaveGroup);
     this.root.add(this.blendCustomWaveGroup);
+    this.root.add(this.blendParticleFieldGroup);
     this.root.add(this.blendShapeGroup);
     this.root.add(this.blendBorderGroup);
     this.blendMotionVectorGroup.add(this.blendMotionVectorCpuGroup);
@@ -915,6 +927,20 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState.trails,
       );
     }
+    renderParticleFieldGroupHelper({
+      target: 'particle-field',
+      group: this.particleFieldGroup,
+      particleField:
+        (
+          payload.frameState.gpuGeometry as {
+            particleField?: MilkdropParticleFieldVisual | null;
+          }
+        ).particleField ?? null,
+      mesh: payload.frameState.mesh,
+      meshPositions: payload.frameState.mesh.positions,
+      signals: payload.frameState.signals,
+      trimGroupChildren,
+    });
     this.renderShapeGroup(
       'shapes',
       this.shapesGroup,
@@ -1033,6 +1059,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
           blend.alpha,
         );
       }
+      renderParticleFieldGroupHelper({
+        target: 'blend-particle-field',
+        group: this.blendParticleFieldGroup,
+        particleField:
+          (
+            previousFrame.gpuGeometry as {
+              particleField?: MilkdropParticleFieldVisual | null;
+            }
+          ).particleField ?? null,
+        mesh: previousFrame.mesh,
+        meshPositions: previousFrame.mesh.positions,
+        signals: previousFrame.signals,
+        alphaMultiplier: blend.alpha,
+        trimGroupChildren,
+      });
       this.renderInterpolatedShapeGroup(
         this.blendShapeGroup,
         previousFrame.shapes,
@@ -1073,6 +1114,16 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         blend?.mode === 'cpu' ? blend.customWaves : [],
         blend?.alpha ?? 0,
       );
+      renderParticleFieldGroupHelper({
+        target: 'blend-particle-field',
+        group: this.blendParticleFieldGroup,
+        particleField: null,
+        mesh: payload.frameState.mesh,
+        meshPositions: payload.frameState.mesh.positions,
+        signals: payload.frameState.signals,
+        alphaMultiplier: blend?.alpha ?? 0,
+        trimGroupChildren,
+      });
       this.renderShapeGroup(
         'blend-shapes',
         this.blendShapeGroup,
@@ -1112,11 +1163,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     clearGroup(this.mainWaveGroup);
     clearGroup(this.customWaveGroup);
     clearGroup(this.trailGroup);
+    clearGroup(this.particleFieldGroup);
     clearGroup(this.shapesGroup);
     clearGroup(this.borderGroup);
     clearGroup(this.motionVectorGroup);
     clearGroup(this.blendWaveGroup);
     clearGroup(this.blendCustomWaveGroup);
+    clearGroup(this.blendParticleFieldGroup);
     clearGroup(this.blendShapeGroup);
     clearGroup(this.blendBorderGroup);
     clearGroup(this.blendMotionVectorGroup);

@@ -484,11 +484,13 @@ export function getMilkdropLayerRenderOrder(
     | 'main-wave'
     | 'custom-wave'
     | 'trails'
+    | 'particle-field'
     | 'shapes'
     | 'borders'
     | 'motion-vectors'
     | 'blend-main-wave'
     | 'blend-custom-wave'
+    | 'blend-particle-field'
     | 'blend-shapes'
     | 'blend-borders'
     | 'blend-motion-vectors',
@@ -504,6 +506,8 @@ export function getMilkdropLayerRenderOrder(
       return 30;
     case 'trails':
       return 40;
+    case 'particle-field':
+      return 45;
     case 'shapes':
       return 50;
     case 'borders':
@@ -514,6 +518,8 @@ export function getMilkdropLayerRenderOrder(
       return 80;
     case 'blend-custom-wave':
       return 90;
+    case 'blend-particle-field':
+      return 95;
     case 'blend-shapes':
       return 100;
     case 'blend-borders':
@@ -528,11 +534,13 @@ export function getMilkdropPassRenderOrder(
     | 'main-wave'
     | 'custom-wave'
     | 'trails'
+    | 'particle-field'
     | 'shapes'
     | 'borders'
     | 'motion-vectors'
     | 'blend-main-wave'
     | 'blend-custom-wave'
+    | 'blend-particle-field'
     | 'blend-shapes'
     | 'blend-borders'
     | 'blend-motion-vectors',
