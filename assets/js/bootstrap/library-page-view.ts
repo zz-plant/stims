@@ -49,7 +49,7 @@ export const initLibraryView = async ({
 
   const resolvedToys = await resolveToys();
   libraryView.setToys(resolvedToys);
-  libraryView.init();
+  await libraryView.init();
   document.body.dataset.libraryEnhanced = 'true';
 
   return libraryView;

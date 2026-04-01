@@ -33,6 +33,43 @@ const projectmNoiseVolumeFixture = readFileSync(
 );
 
 describe('milkdrop compiler shader analysis', () => {
+  test('keeps shared scalar control aliases aligned across extraction paths', () => {
+    const analysis = extractShaderControls(
+      `
+rot = 0.25
+scale = 1.2
+feedback_alpha = 0.35
+red = 0.8
+green = 0.6
+blue = 0.4
+texture_amount = 0.5
+texture_source = noise
+warp_texture_amount = 0.12
+warp_texture_scale = vec2(1.1, 1.2)
+    `.trim(),
+    );
+
+    expect(analysis.supported).toBe(true);
+    expect(analysis.unsupportedLines).toEqual([]);
+    expect(analysis.controls.rotation).toBeCloseTo(0.25, 6);
+    expect(analysis.controls.zoom).toBeCloseTo(1.2, 6);
+    expect(analysis.controls.mixAlpha).toBeCloseTo(0.35, 6);
+    expect(analysis.controls.colorScale).toMatchObject({
+      r: 0.8,
+      g: 0.6,
+      b: 0.4,
+    });
+    expect(analysis.controls.textureLayer).toMatchObject({
+      source: 'noise',
+      amount: 0.5,
+    });
+    expect(analysis.controls.warpTexture).toMatchObject({
+      amount: 0.12,
+      scaleX: 1.1,
+      scaleY: 1.2,
+    });
+  });
+
   test('extracts supported shader controls from the legacy feedback fixture', () => {
     const compiled = compileMilkdropPresetSource(
       legacySupportedFeedbackFixture,

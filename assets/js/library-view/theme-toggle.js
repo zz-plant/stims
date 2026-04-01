@@ -30,7 +30,7 @@ const getThemeController = () => {
 
 export function setupDarkModeToggle(themeToggleId = 'theme-toggle') {
   const btn = document.getElementById(themeToggleId);
-  if (!btn) return;
+  if (!btn) return null;
 
   const { resolveThemePreference, applyTheme } = getThemeController();
   let theme = resolveThemePreference();
@@ -78,11 +78,17 @@ export function setupDarkModeToggle(themeToggleId = 'theme-toggle') {
   applyTheme(theme);
   updateButtonState();
 
-  btn.addEventListener('click', () => {
+  const handleClick = () => {
     runViewTransition(() => {
       theme = theme === 'dark' ? 'light' : 'dark';
       applyTheme(theme, true);
       updateButtonState();
     });
-  });
+  };
+
+  btn.addEventListener('click', handleClick);
+
+  return () => {
+    btn.removeEventListener('click', handleClick);
+  };
 }

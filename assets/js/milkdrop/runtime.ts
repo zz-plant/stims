@@ -22,16 +22,15 @@ import {
 import type { QualityPresetManager } from '../core/toy-quality';
 import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
 import { createMilkdropCatalogStore } from './catalog-store';
-import { consumeRequestedMilkdropCollectionSelection } from './collection-intent';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
-import { upsertMilkdropFields } from './formatter';
 import { MilkdropOverlay } from './overlay';
 import { consumeRequestedMilkdropOverlayTab } from './overlay-intent';
-import { consumeRequestedMilkdropPresetSelection } from './preset-selection';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
 import { createMilkdropBackendFailover } from './runtime/backend-fallback';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
+import { registerAgentMilkdropRuntimeDebugHandle } from './runtime/debug-snapshot';
+import { createMilkdropEditorActions } from './runtime/editor-actions';
 import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
 import {
   applyMilkdropInteractionResponse,
@@ -48,7 +47,7 @@ import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
 import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
-import { resolveStartupPresetId } from './runtime/startup';
+import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import {
   installRequestedOverlayTabListener,
   installRequestedPresetListener,
@@ -197,6 +196,17 @@ export function createMilkdropExperience({
     shaderEnabled: false,
     videoEchoEnabled: false,
   };
+
+  registerAgentMilkdropRuntimeDebugHandle({
+    isAgentMode,
+    getRuntime: () => runtime,
+    getAdapter: () => adapter,
+    getState: () => ({
+      activePresetId,
+      backend: activeBackend,
+      status: lastStatusMessage,
+    }),
+  });
 
   const backendFailover = createMilkdropBackendFailover({
     preferences,
@@ -437,45 +447,12 @@ export function createMilkdropExperience({
     setOverlayStatus(fallbackNotice);
   }
 
-  const applyFieldValues = async (updates: Record<string, string | number>) => {
-    const baseline =
-      session.getState().latestCompiled?.formattedSource ??
-      session.getState().source;
-    return session.applySource(upsertMilkdropFields(baseline, updates));
-  };
-
-  const nudgeNumericField = async ({
-    key,
-    delta,
-    min,
-    max,
-    label,
-    digits = 3,
-  }: {
-    key: string;
-    delta: number;
-    min: number;
-    max: number;
-    label: string;
-    digits?: number;
-  }) => {
-    const compiled = session.getState().activeCompiled ?? activeCompiled;
-    const current = compiled.ir.numericFields[key] ?? 0;
-    const next = Math.min(
-      max,
-      Math.max(min, Number.parseFloat((current + delta).toFixed(digits))),
-    );
-    await session.updateField(key, next);
-    setOverlayStatus(`${label}: ${next.toFixed(Math.min(digits, 2))}`);
-  };
-
-  const cycleWaveMode = async (direction: 1 | -1) => {
-    const compiled = session.getState().activeCompiled ?? activeCompiled;
-    const current = Math.round(compiled.ir.numericFields.wave_mode ?? 0);
-    const next = (((current + direction) % 8) + 8) % 8;
-    await session.updateField('wave_mode', next);
-    setOverlayStatus(`Wave mode: ${next}`);
-  };
+  const { applyFieldValues, nudgeNumericField, cycleWaveMode } =
+    createMilkdropEditorActions({
+      session,
+      getCompiled: () => session.getState().activeCompiled ?? activeCompiled,
+      setOverlayStatus,
+    });
 
   session.subscribe((state) => {
     overlay.setSessionState(state);
@@ -523,28 +500,21 @@ export function createMilkdropExperience({
       activeBackend,
     })
     .then(async () => {
-      const requestedCollectionTag =
-        consumeRequestedMilkdropCollectionSelection();
-      const collectionEntry = requestedCollectionTag
-        ? (catalogCoordinator
-            .getCatalogEntries()
-            .find((entry) => entry.tags.includes(requestedCollectionTag)) ??
-          null)
-        : null;
+      const {
+        requestedCollectionTag,
+        collectionEntry,
+        startupPresetId,
+        firstSelectablePresetId,
+      } = await selectMilkdropStartupPreset({
+        catalogCoordinator,
+        navigation,
+        preferences,
+        initialPresetId,
+        activeBackend,
+      });
       if (collectionEntry && requestedCollectionTag) {
         overlay.setActiveCollectionTag(requestedCollectionTag);
       }
-      const requestedPresetId =
-        consumeRequestedMilkdropPresetSelection() ?? null;
-      const startupPresetId = resolveStartupPresetId({
-        requestedPresetId,
-        preferredStartupPresetId:
-          preferences.getStartupPresetId(initialPresetId) ?? null,
-        collectionEntryId: collectionEntry?.id ?? null,
-        isBackendSelectable: navigation.isBackendSelectable,
-        getFirstSelectablePresetId: navigation.getFirstSelectablePresetId,
-        activeBackend,
-      });
       if (startupPresetId) {
         await navigation.selectPreset(startupPresetId, {
           recordHistory: false,
@@ -553,8 +523,6 @@ export function createMilkdropExperience({
           return;
         }
       }
-      const firstSelectablePresetId =
-        navigation.getFirstSelectablePresetId(activeBackend);
       if (firstSelectablePresetId) {
         await navigation.selectPreset(firstSelectablePresetId, {
           recordHistory: false,

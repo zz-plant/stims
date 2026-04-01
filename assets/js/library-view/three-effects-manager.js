@@ -14,6 +14,10 @@ export function createLibraryThreeEffectsManager({
   let threeEffectsLoader = null;
   let threeEffectsInitialized = false;
   let pendingCardPreviewSync = null;
+  let pendingRequestHandle = 0;
+  let pendingRequestKind = null;
+  let lifecycleToken = 0;
+  let disposed = false;
 
   const replayPendingCardPreviewSync = () => {
     if (!pendingCardPreviewSync) return;
@@ -21,10 +25,28 @@ export function createLibraryThreeEffectsManager({
     threeEffects.syncCardPreviews(cards, renderedToys);
   };
 
+  const cancelPendingRequest = () => {
+    if (!pendingRequestHandle || !windowObject) return;
+    if (
+      pendingRequestKind === 'idle' &&
+      typeof windowObject.cancelIdleCallback === 'function'
+    ) {
+      windowObject.cancelIdleCallback(pendingRequestHandle);
+    } else {
+      windowObject.clearTimeout(pendingRequestHandle);
+    }
+    pendingRequestHandle = 0;
+    pendingRequestKind = null;
+  };
+
   const ensureThreeEffects = async () => {
     if (threeEffectsLoader) return threeEffectsLoader;
+    const requestToken = lifecycleToken;
     threeEffectsLoader = importEffects()
       .then(({ createLibraryThreeEffects }) => {
+        if (disposed || requestToken !== lifecycleToken) {
+          return createNoopThreeEffects();
+        }
         threeEffects = createLibraryThreeEffects();
         if (threeEffectsInitialized) {
           threeEffects.init();
@@ -33,6 +55,9 @@ export function createLibraryThreeEffectsManager({
         return threeEffects;
       })
       .catch((error) => {
+        if (disposed || requestToken !== lifecycleToken) {
+          return createNoopThreeEffects();
+        }
         console.warn('Failed to initialize library Three.js effects', error);
         threeEffects = createNoopThreeEffects();
         return threeEffects;
@@ -42,31 +67,51 @@ export function createLibraryThreeEffectsManager({
 
   return {
     syncCardPreviews(cards, renderedToys) {
+      if (disposed) return;
       pendingCardPreviewSync = { cards, renderedToys };
       threeEffects.syncCardPreviews(cards, renderedToys);
     },
     requestThreeEffects() {
-      if (!windowObject) return;
+      if (!windowObject || disposed) return;
+      cancelPendingRequest();
       const start = () => {
+        pendingRequestHandle = 0;
+        pendingRequestKind = null;
         void ensureThreeEffects();
       };
       if (typeof windowObject.requestIdleCallback === 'function') {
-        windowObject.requestIdleCallback(start, { timeout: 600 });
+        pendingRequestKind = 'idle';
+        pendingRequestHandle = windowObject.requestIdleCallback(start, {
+          timeout: 600,
+        });
         return;
       }
-      windowObject.setTimeout(start, 120);
+      pendingRequestKind = 'timeout';
+      pendingRequestHandle = windowObject.setTimeout(start, 120);
     },
     setInitialized(initialized = true) {
       threeEffectsInitialized = initialized;
+      if (initialized) {
+        disposed = false;
+      }
     },
     triggerLaunchTransition() {
+      if (disposed) return;
       threeEffects.triggerLaunchTransition();
     },
     startLaunchTransition(launchCard) {
+      if (disposed) return;
       threeEffects.startLaunchTransition(launchCard);
     },
     dispose() {
+      disposed = true;
+      lifecycleToken += 1;
+      cancelPendingRequest();
+      pendingCardPreviewSync = null;
       threeEffects.dispose();
+      threeEffects = createNoopThreeEffects();
+      threeEffectsLoader = null;
+      threeEffectsInitialized = false;
     },
   };
 }

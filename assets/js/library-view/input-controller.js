@@ -23,8 +23,27 @@ export const createLibraryInputController = ({
   onFilterChipToggle,
   onSortChange,
   onResetFilters,
-}) => ({
-  init() {
+}) => {
+  let initialized = false;
+  let cleanup = null;
+
+  const dispose = () => {
+    if (!cleanup) {
+      initialized = false;
+      return;
+    }
+
+    const nextCleanup = cleanup;
+    cleanup = null;
+    initialized = false;
+    nextCleanup();
+  };
+
+  const init = () => {
+    if (initialized && cleanup) {
+      return cleanup;
+    }
+
     const chips = ensureFilterChips();
     chips.forEach((chip) => {
       updateFilterChipA11y(chip, chip.classList.contains('is-active'));
@@ -36,12 +55,10 @@ export const createLibraryInputController = ({
       }
     });
 
-    const FILTER_DELEGATE_KEY = '__stimsLibraryFilterDelegate';
-    const previousDelegate = document[FILTER_DELEGATE_KEY];
-    if (typeof previousDelegate === 'function') {
-      document.removeEventListener('click', previousDelegate);
-    }
-
+    const disposers = [];
+    const registerDisposer = (disposer) => {
+      disposers.push(disposer);
+    };
     const handleFilterChipClick = (event) => {
       const target = event.target;
       if (!(target && typeof target === 'object' && 'closest' in target))
@@ -51,8 +68,10 @@ export const createLibraryInputController = ({
       onFilterChipToggle(chip);
     };
 
-    document[FILTER_DELEGATE_KEY] = handleFilterChipClick;
     document.addEventListener('click', handleFilterChipClick);
+    registerDisposer(() => {
+      document.removeEventListener('click', handleFilterChipClick);
+    });
 
     const search = searchInputId
       ? document.getElementById(searchInputId)
@@ -70,11 +89,13 @@ export const createLibraryInputController = ({
     }
 
     if (search) {
-      search.addEventListener('input', (event) => {
+      const handleSearchInput = (event) => {
         onSearchInput(event.target.value);
-      });
-      search.addEventListener('blur', onSearchBlur);
-      search.addEventListener('keydown', (event) => {
+      };
+      const handleSearchBlur = () => {
+        onSearchBlur();
+      };
+      const handleSearchKeydown = (event) => {
         if (event.key === 'Escape') {
           if (getState().query.trim().length > 0) {
             event.preventDefault();
@@ -92,20 +113,36 @@ export const createLibraryInputController = ({
         if (!isPlainEnter) return;
         if (!onSearchQuickLaunch()) return;
         event.preventDefault();
+      };
+
+      search.addEventListener('input', handleSearchInput);
+      search.addEventListener('blur', handleSearchBlur);
+      search.addEventListener('keydown', handleSearchKeydown);
+      registerDisposer(() => {
+        search.removeEventListener('input', handleSearchInput);
+        search.removeEventListener('blur', handleSearchBlur);
+        search.removeEventListener('keydown', handleSearchKeydown);
       });
     }
 
     const form = ensureSearchForm();
     if (form) {
-      form.addEventListener('submit', (event) => {
+      const handleSearchSubmit = (event) => {
         event.preventDefault();
         onSearchSubmit();
+      };
+      form.addEventListener('submit', handleSearchSubmit);
+      registerDisposer(() => {
+        form.removeEventListener('submit', handleSearchSubmit);
       });
     }
 
     const clearButton = ensureSearchClearButton();
     if (clearButton instanceof HTMLButtonElement) {
       clearButton.addEventListener('click', onSearchClear);
+      registerDisposer(() => {
+        clearButton.removeEventListener('click', onSearchClear);
+      });
     }
 
     const isEditableTarget = (target) => {
@@ -122,7 +159,7 @@ export const createLibraryInputController = ({
       onSearchFocusShortcut();
     };
 
-    document.addEventListener('keydown', (event) => {
+    const handleDocumentKeydown = (event) => {
       const target = event.target;
       const isMetaShortcut =
         event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey);
@@ -149,18 +186,30 @@ export const createLibraryInputController = ({
           onEscapeShortcut();
         }
       }
+    };
+
+    document.addEventListener('keydown', handleDocumentKeydown);
+    registerDisposer(() => {
+      document.removeEventListener('keydown', handleDocumentKeydown);
     });
 
     const sortControl = ensureSortControl();
     if (sortControl instanceof HTMLSelectElement) {
-      sortControl.addEventListener('change', () => {
+      const handleSortChange = () => {
         onSortChange(sortControl.value);
+      };
+      sortControl.addEventListener('change', handleSortChange);
+      registerDisposer(() => {
+        sortControl.removeEventListener('change', handleSortChange);
       });
     }
 
     const resetButton = ensureFilterResetButton();
     if (resetButton instanceof HTMLButtonElement) {
       resetButton.addEventListener('click', onResetFilters);
+      registerDisposer(() => {
+        resetButton.removeEventListener('click', onResetFilters);
+      });
     }
 
     const clearActiveFilters = ensureActiveFiltersClear();
@@ -169,17 +218,44 @@ export const createLibraryInputController = ({
       clearActiveFilters !== resetButton
     ) {
       clearActiveFilters.addEventListener('click', onResetFilters);
+      registerDisposer(() => {
+        clearActiveFilters.removeEventListener('click', onResetFilters);
+      });
     }
 
     const refine = ensureLibraryRefine();
     if (refine instanceof HTMLDetailsElement) {
-      refine.addEventListener('toggle', () => {
+      const handleToggle = () => {
         const summary = refine.querySelector('summary');
         if (!(summary instanceof HTMLElement)) return;
         summary.textContent = refine.open
           ? 'Hide all filters'
           : 'Show all filters';
+      };
+      refine.addEventListener('toggle', handleToggle);
+      registerDisposer(() => {
+        refine.removeEventListener('toggle', handleToggle);
       });
     }
-  },
-});
+
+    cleanup = () => {
+      while (disposers.length > 0) {
+        const disposer = disposers.pop();
+        try {
+          disposer?.();
+        } catch (error) {
+          console.warn('Failed to dispose library input controller', error);
+        }
+      }
+      initialized = false;
+    };
+
+    initialized = true;
+    return cleanup;
+  };
+
+  return {
+    init,
+    dispose,
+  };
+};

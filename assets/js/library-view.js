@@ -49,6 +49,29 @@ export function createLibraryView({
   let suggestionSignature = '';
   let toyBySlug = new Map();
   let toySearchMetadata = new Map();
+  let pendingRenderFrameScheduler = null;
+  let initPromise = null;
+  let initToken = 0;
+  let disposed = false;
+  const cleanupStack = [];
+
+  const registerCleanup = (cleanup) => {
+    if (typeof cleanup === 'function') {
+      cleanupStack.push(cleanup);
+    }
+    return cleanup;
+  };
+
+  const runCleanupStack = () => {
+    while (cleanupStack.length > 0) {
+      const cleanup = cleanupStack.pop();
+      try {
+        cleanup?.();
+      } catch (error) {
+        console.warn('Failed to dispose library view cleanup', error);
+      }
+    }
+  };
 
   const {
     ensureMetaNode,
@@ -286,6 +309,7 @@ export function createLibraryView({
   });
 
   const renderCurrentState = () => {
+    if (disposed) return;
     const state = getState();
     const listToRender = computeAndApplyFilters();
     listRenderer.render({
@@ -296,6 +320,7 @@ export function createLibraryView({
   };
 
   const commitAndRender = ({ replace }) => {
+    if (disposed) return;
     stateController.commitState({ replace });
     filterPresenter.syncRefineDisclosure();
     renderCurrentState();
@@ -309,10 +334,14 @@ export function createLibraryView({
   };
 
   const scheduleRender = () => {
+    if (disposed || pendingRenderFrameScheduler) return;
+
     if (pendingRenderFrame) return;
 
     const commitRender = () => {
       pendingRenderFrame = 0;
+      pendingRenderFrameScheduler = null;
+      if (disposed) return;
       renderCurrentState();
       filterPresenter.updateSearchClearState();
       filterPresenter.updateActiveFiltersSummary({
@@ -325,14 +354,32 @@ export function createLibraryView({
       typeof window !== 'undefined' &&
       typeof window.requestAnimationFrame === 'function'
     ) {
+      pendingRenderFrameScheduler = 'raf';
       pendingRenderFrame = window.requestAnimationFrame(commitRender);
       return;
     }
 
+    pendingRenderFrameScheduler = 'timeout';
     pendingRenderFrame = globalThis.setTimeout(commitRender, 16);
   };
 
+  const cancelScheduledRender = () => {
+    if (!pendingRenderFrame) return;
+    if (
+      pendingRenderFrameScheduler === 'raf' &&
+      typeof window !== 'undefined' &&
+      typeof window.cancelAnimationFrame === 'function'
+    ) {
+      window.cancelAnimationFrame(pendingRenderFrame);
+    } else {
+      globalThis.clearTimeout(pendingRenderFrame);
+    }
+    pendingRenderFrame = 0;
+    pendingRenderFrameScheduler = null;
+  };
+
   const filterToys = (query) => {
+    if (disposed) return;
     stateController.applyQuery(query);
     computeAndApplyFilters();
     filterPresenter.syncRefineDisclosure();
@@ -440,8 +487,9 @@ export function createLibraryView({
 
   const initCardClickHandlers = () => {
     const list = document.getElementById(targetId);
-    if (!list) return;
-    list.addEventListener('click', (event) => {
+    if (!list) return null;
+
+    const handleCardClick = (event) => {
       const target =
         event.target && typeof event.target === 'object' ? event.target : null;
       const card =
@@ -452,9 +500,15 @@ export function createLibraryView({
       const toy = toyBySlug.get(slug);
       if (!toy) return;
       handleOpenToy(toy, event);
+    };
+
+    list.addEventListener('click', handleCardClick);
+    registerCleanup(() => {
+      list.removeEventListener('click', handleCardClick);
     });
+
     if (enableKeyboardHandlers) {
-      list.addEventListener('keydown', (event) => {
+      const handleCardKeydown = (event) => {
         const target =
           event.target && typeof event.target === 'object'
             ? event.target
@@ -478,8 +532,15 @@ export function createLibraryView({
         if (!toy) return;
         event.preventDefault();
         handleOpenToy(toy, event);
+      };
+
+      list.addEventListener('keydown', handleCardKeydown);
+      registerCleanup(() => {
+        list.removeEventListener('keydown', handleCardKeydown);
       });
     }
+
+    return null;
   };
 
   const inputController = createLibraryInputController({
@@ -539,56 +600,101 @@ export function createLibraryView({
     },
   });
 
-  const init = async () => {
-    setToys(allToys);
-    const initialState = stateController.restoreInitialState();
-    const hasStoredOnlyState =
-      initialState.query.trim().length > 0 ||
-      initialState.filters.length > 0 ||
-      initialState.sort !== DEFAULT_LIBRARY_SORT;
-    applyState(initialState, { render: false });
-    if (hasStoredOnlyState && window.location.search !== '') {
-      lastCommittedQuery = getState().query.trim();
-    } else if (hasStoredOnlyState) {
-      stateController.commitState({ replace: true });
+  const init = () => {
+    if (initPromise) {
+      return initPromise;
     }
 
-    filterPresenter.syncRefineDisclosure();
-    threeEffectsManager.setInitialized(true);
-    renderCurrentState();
-    threeEffectsManager.requestThreeEffects();
+    disposed = false;
+    const currentToken = ++initToken;
 
-    if (enableDarkModeToggle) {
-      setupDarkModeToggle(themeToggleId);
-    }
+    initPromise = (async () => {
+      setToys(allToys);
+      const initialState = stateController.restoreInitialState();
+      const hasStoredOnlyState =
+        initialState.query.trim().length > 0 ||
+        initialState.filters.length > 0 ||
+        initialState.sort !== DEFAULT_LIBRARY_SORT;
+      applyState(initialState, { render: false });
+      if (hasStoredOnlyState && window.location.search !== '') {
+        lastCommittedQuery = getState().query.trim();
+      } else if (hasStoredOnlyState) {
+        stateController.commitState({ replace: true });
+      }
 
-    inputController.init();
-    if (typeof initNavigation === 'function') {
-      initNavigation();
-    }
-    initCardClickHandlers();
-    if (typeof loadFromQuery === 'function') {
-      await loadFromQuery();
-    }
-
-    window.addEventListener('popstate', () => {
-      const nextState = stateController.readStateFromUrl();
-      applyState(nextState, { render: true });
       filterPresenter.syncRefineDisclosure();
+      threeEffectsManager.setInitialized(true);
+
+      registerCleanup(() => {
+        cancelScheduledRender();
+        listRenderer.cancelPendingBatch();
+      });
+      registerCleanup(() => threeEffectsManager.dispose());
+
+      if (enableDarkModeToggle) {
+        registerCleanup(setupDarkModeToggle(themeToggleId));
+      }
+
+      registerCleanup(inputController.init());
+      if (typeof initNavigation === 'function') {
+        initNavigation();
+      }
+
+      const cardClickCleanup = initCardClickHandlers();
+      registerCleanup(cardClickCleanup);
+
+      renderCurrentState();
+      threeEffectsManager.requestThreeEffects();
+
+      if (typeof loadFromQuery === 'function') {
+        await loadFromQuery();
+      }
+
+      if (disposed || currentToken !== initToken) {
+        return;
+      }
+
+      const handlePopState = () => {
+        const nextState = stateController.readStateFromUrl();
+        applyState(nextState, { render: true });
+        filterPresenter.syncRefineDisclosure();
+      };
+      window.addEventListener('popstate', handlePopState);
+      registerCleanup(() => {
+        window.removeEventListener('popstate', handlePopState);
+      });
+
+      if (
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function'
+      ) {
+        const narrowViewportQuery = window.matchMedia('(max-width: 680px)');
+        const handleViewportChange = () =>
+          filterPresenter.syncRefineDisclosure();
+        if (typeof narrowViewportQuery.addEventListener === 'function') {
+          narrowViewportQuery.addEventListener('change', handleViewportChange);
+          registerCleanup(() => {
+            narrowViewportQuery.removeEventListener(
+              'change',
+              handleViewportChange,
+            );
+          });
+        } else if (typeof narrowViewportQuery.addListener === 'function') {
+          narrowViewportQuery.addListener(handleViewportChange);
+          registerCleanup(() => {
+            narrowViewportQuery.removeListener(handleViewportChange);
+          });
+        }
+      }
+    })().catch((error) => {
+      if (currentToken === initToken) {
+        runCleanupStack();
+        initPromise = null;
+      }
+      throw error;
     });
 
-    if (
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function'
-    ) {
-      const narrowViewportQuery = window.matchMedia('(max-width: 680px)');
-      const handleViewportChange = () => filterPresenter.syncRefineDisclosure();
-      if (typeof narrowViewportQuery.addEventListener === 'function') {
-        narrowViewportQuery.addEventListener('change', handleViewportChange);
-      } else if (typeof narrowViewportQuery.addListener === 'function') {
-        narrowViewportQuery.addListener(handleViewportChange);
-      }
-    }
+    return initPromise;
   };
 
   return {
@@ -596,5 +702,16 @@ export function createLibraryView({
     setToys,
     renderToys: renderCurrentState,
     filterToys,
+    dispose() {
+      if (disposed) {
+        return;
+      }
+
+      disposed = true;
+      initToken += 1;
+      initPromise = null;
+      cancelScheduledRender();
+      runCleanupStack();
+    },
   };
 }
