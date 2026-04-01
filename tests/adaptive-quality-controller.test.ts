@@ -112,20 +112,35 @@ describe('createAdaptiveQualityController', () => {
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
 
-  test('stays disabled for webgl backends', () => {
+  test('starts conservatively and adapts on webgl backends', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgl',
       capabilities: null,
     });
 
-    controller.recordFrame({
-      frameMs: 40,
-      phases: { renderMs: 35 },
-    });
+    for (let index = 0; index < 24; index += 1) {
+      controller.recordFrame({
+        frameMs: 34,
+        phases: { renderMs: 28 },
+      });
+    }
 
-    const state = controller.getState();
-    expect(state.enabled).toBe(false);
-    expect(state.qualityStep).toBe(0);
-    expect(state.renderScaleMultiplier).toBe(1);
+    const degraded = controller.getState();
+    expect(degraded.enabled).toBe(true);
+    expect(degraded.profile).toBe('fallback-webgl');
+    expect(degraded.qualityStep).toBeGreaterThan(1);
+    expect(degraded.renderScaleMultiplier).toBeLessThan(1);
+
+    for (let index = 0; index < 160; index += 1) {
+      controller.recordFrame({
+        frameMs: 8,
+        phases: { renderMs: 5 },
+      });
+    }
+
+    const recovered = controller.getState();
+    expect(recovered.qualityStep).toBe(1);
+    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(0.9, 6);
+    expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
 });

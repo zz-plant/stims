@@ -590,10 +590,6 @@ export function createMilkdropExperience({
         adaptiveQualityUnsubscribe = adaptiveQualityController.subscribe(
           (state) => {
             adaptiveQualityState = state;
-            if (activeBackend !== 'webgpu') {
-              updateAgentDebugSnapshot();
-              return;
-            }
             nextRuntime.toy.updateRendererSettings({
               adaptiveRenderScaleMultiplier: state.renderScaleMultiplier,
               adaptiveMaxPixelRatioMultiplier: state.maxPixelRatioMultiplier,

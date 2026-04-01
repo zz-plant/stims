@@ -113,7 +113,22 @@ function updateEma(previous: number | null, next: number) {
   return previous + (next - previous) * EMA_ALPHA;
 }
 
-function buildHeuristicProfile(capabilities: WebGPUCapabilitySummary | null) {
+function buildHeuristicProfile(
+  backend: RendererBackend,
+  capabilities: WebGPUCapabilitySummary | null,
+) {
+  if (backend === 'webgl') {
+    return {
+      frameBudgetMs: 16.7,
+      initialStep: 1,
+      profile: 'fallback-webgl',
+      reasons: [
+        'WebGL fallback sessions start from a conservative adaptive quality step.',
+        'Coarse CPU frame timing is used because GPU timing is unavailable.',
+      ],
+    };
+  }
+
   if (!capabilities) {
     return {
       frameBudgetMs: 16.7,
@@ -189,7 +204,7 @@ function buildState({
 }) {
   const step = QUALITY_STEPS[qualityStep] as QualityStep;
   return {
-    enabled: backend === 'webgpu',
+    enabled: true,
     backend,
     timingMode,
     supportsGpuTimestamps,
@@ -217,11 +232,9 @@ export function createAdaptiveQualityController({
   const timingMode: AdaptiveQualityTimingMode = 'coarse-frame';
   const supportsGpuTimestamps =
     backend === 'webgpu' && Boolean(capabilities?.features.timestampQuery);
-  const heuristic = buildHeuristicProfile(
-    backend === 'webgpu' ? capabilities : null,
-  );
+  const heuristic = buildHeuristicProfile(backend, capabilities);
 
-  let qualityStep = backend === 'webgpu' ? heuristic.initialStep : 0;
+  let qualityStep = heuristic.initialStep;
   let averageFrameMs: number | null = null;
   let averageRenderMs: number | null = null;
   let sampleCount = 0;
@@ -240,15 +253,16 @@ export function createAdaptiveQualityController({
     averageRenderMs,
     sampleCount,
     adaptation,
-    reasons:
-      backend === 'webgpu'
+    reasons: [
+      ...heuristic.reasons,
+      ...(backend === 'webgpu'
         ? [
-            ...heuristic.reasons,
             supportsGpuTimestamps
               ? 'timestamp-query is available for future GPU timing upgrades.'
               : 'Falling back to coarse CPU frame timing for now.',
           ]
-        : ['Adaptive quality is disabled outside the WebGPU backend.'],
+        : []),
+    ],
   });
 
   const publish = () => {
@@ -272,7 +286,7 @@ export function createAdaptiveQualityController({
   return {
     getState: () => state,
     recordFrame: ({ frameMs, phases }: AdaptiveQualitySample) => {
-      if (backend !== 'webgpu' || !Number.isFinite(frameMs)) {
+      if (!Number.isFinite(frameMs)) {
         return state;
       }
 

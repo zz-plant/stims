@@ -57,6 +57,24 @@ export const MILKDROP_TEXTURE_FILES = {
   fractal: 'crystal_fractal.png',
 } as const;
 
+const AUX_TEXTURE_SPECS = {
+  noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
+  simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
+  voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
+  aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
+  caustics: { fileName: MILKDROP_TEXTURE_FILES.caustics, colorTexture: false },
+  pattern: { fileName: MILKDROP_TEXTURE_FILES.pattern, colorTexture: false },
+  fractal: { fileName: MILKDROP_TEXTURE_FILES.fractal, colorTexture: false },
+} as const satisfies Record<
+  keyof typeof MILKDROP_TEXTURE_FILES,
+  { fileName: string; colorTexture: boolean }
+>;
+
+type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
+
+const sharedMilkdropTextureCache = new Map<string, Texture>();
+const milkdropTextureLoader = new TextureLoader();
+
 export function resolveTextureUrl(fileName: string) {
   const baseUrl =
     typeof import.meta.env.BASE_URL === 'string'
@@ -79,8 +97,54 @@ export function configureMilkdropTexture(
 }
 
 export function loadMilkdropTexture(fileName: string, colorTexture = false) {
-  const loaded = new TextureLoader().load(resolveTextureUrl(fileName));
+  const loaded = milkdropTextureLoader.load(resolveTextureUrl(fileName));
   return configureMilkdropTexture(loaded, colorTexture);
+}
+
+export function getSharedMilkdropTexture(
+  fileName: string,
+  colorTexture = false,
+) {
+  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}`;
+  let textureValue = sharedMilkdropTextureCache.get(cacheKey);
+  if (!textureValue) {
+    textureValue = loadMilkdropTexture(fileName, colorTexture);
+    sharedMilkdropTextureCache.set(cacheKey, textureValue);
+  }
+  return textureValue;
+}
+
+export function getSharedMilkdropAuxTextures() {
+  return {
+    noise: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.noise.fileName,
+      AUX_TEXTURE_SPECS.noise.colorTexture,
+    ),
+    simplex: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.simplex.fileName,
+      AUX_TEXTURE_SPECS.simplex.colorTexture,
+    ),
+    voronoi: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.voronoi.fileName,
+      AUX_TEXTURE_SPECS.voronoi.colorTexture,
+    ),
+    aura: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.aura.fileName,
+      AUX_TEXTURE_SPECS.aura.colorTexture,
+    ),
+    caustics: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.caustics.fileName,
+      AUX_TEXTURE_SPECS.caustics.colorTexture,
+    ),
+    pattern: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.pattern.fileName,
+      AUX_TEXTURE_SPECS.pattern.colorTexture,
+    ),
+    fractal: getSharedMilkdropTexture(
+      AUX_TEXTURE_SPECS.fractal.fileName,
+      AUX_TEXTURE_SPECS.fractal.colorTexture,
+    ),
+  } satisfies Record<AuxTextureName, Texture>;
 }
 
 export function createFeedbackRenderTarget(

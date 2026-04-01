@@ -237,6 +237,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly feedbackResolutionScale: number;
   readonly profile: FeedbackBackendProfile;
   readonly auxTextures: SharedAuxTextureMap;
+  adaptiveFeedbackResolutionMultiplier = 1;
+  currentFeedbackResolutionScale: number;
+  viewportWidth: number;
+  viewportHeight: number;
   private index = 0;
 
   constructor(
@@ -245,9 +249,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     behavior: MilkdropBackendBehavior,
   ) {
     this.camera.position.z = 1;
+    this.viewportWidth = width;
+    this.viewportHeight = height;
     this.profile = behavior.feedbackProfile;
     this.sceneResolutionScale = this.profile.sceneResolutionScale;
     this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
+    this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
     this.auxTextures = getSharedAuxTextures();
     this.sceneTarget = createFeedbackRenderTarget(width, height, {
       resolutionScale: this.sceneResolutionScale,
@@ -256,12 +263,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     });
     this.targets = [
       createFeedbackRenderTarget(width, height, {
-        resolutionScale: this.feedbackResolutionScale,
+        resolutionScale: this.currentFeedbackResolutionScale,
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: this.profile.samples,
       }),
       createFeedbackRenderTarget(width, height, {
-        resolutionScale: this.feedbackResolutionScale,
+        resolutionScale: this.currentFeedbackResolutionScale,
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: this.profile.samples,
       }),
@@ -742,7 +749,30 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     return true;
   }
 
+  setAdaptiveQuality({
+    feedbackResolutionMultiplier,
+  }: Partial<{
+    feedbackResolutionMultiplier: number;
+  }>) {
+    const nextMultiplier = Math.min(
+      1,
+      Math.max(0.45, feedbackResolutionMultiplier ?? 1),
+    );
+    if (
+      Math.abs(nextMultiplier - this.adaptiveFeedbackResolutionMultiplier) <
+      0.0001
+    ) {
+      return;
+    }
+    this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
+    this.currentFeedbackResolutionScale =
+      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier;
+    this.resize(this.viewportWidth, this.viewportHeight);
+  }
+
   resize(width: number, height: number) {
+    this.viewportWidth = width;
+    this.viewportHeight = height;
     const sceneWidth = Math.max(
       1,
       Math.round(width * this.sceneResolutionScale),
@@ -753,11 +783,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     const feedbackWidth = Math.max(
       1,
-      Math.round(width * this.feedbackResolutionScale),
+      Math.round(width * this.currentFeedbackResolutionScale),
     );
     const feedbackHeight = Math.max(
       1,
-      Math.round(height * this.feedbackResolutionScale),
+      Math.round(height * this.currentFeedbackResolutionScale),
     );
     this.sceneTarget.setSize(sceneWidth, sceneHeight);
     this.targets.forEach((target) =>

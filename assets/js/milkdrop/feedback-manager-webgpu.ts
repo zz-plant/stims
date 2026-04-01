@@ -18,11 +18,10 @@ import {
   createSampleAuxTextureNode,
   createSampleUvNode,
   type FeedbackRendererLike,
+  getSharedMilkdropAuxTextures,
   hasOverlayBlendFeedback,
   hasOverlayReplaceFeedback,
   hasWarpTextureFeedback,
-  loadMilkdropTexture,
-  MILKDROP_TEXTURE_FILES,
 } from './feedback-manager-webgpu-composite.ts';
 
 export {
@@ -1129,15 +1128,7 @@ class WebGPUMilkdropFeedbackManager {
     this.camera.position.z = 1;
     this.viewportWidth = width;
     this.viewportHeight = height;
-    this.auxTextures = {
-      noise: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.noise),
-      simplex: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex),
-      voronoi: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.voronoi),
-      aura: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.aura, true),
-      caustics: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.caustics),
-      pattern: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.pattern),
-      fractal: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.fractal),
-    };
+    this.auxTextures = getSharedMilkdropAuxTextures();
     this.sceneTarget = createFeedbackRenderTarget(
       width,
       height,
@@ -1393,9 +1384,6 @@ class WebGPUMilkdropFeedbackManager {
   dispose() {
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
-    Object.values(this.auxTextures).forEach((textureValue) => {
-      textureValue.dispose();
-    });
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     this.compositeScene.clear();
