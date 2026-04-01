@@ -213,10 +213,12 @@ describe('milkdrop postprocessing profile derivation', () => {
 
     expect(profile.enabled).toBe(false);
     expect(profile.bloomStrength).toBe(0);
+    expect(profile.afterimageDamp).toBe(0);
     expect(profile.filmNoise).toBe(0);
     expect(profile.filmScanlines).toBe(0);
     expect(profile.vignetteStrength).toBe(0);
     expect(profile.chromaOffset).toBe(0);
+    expect(profile.pulseWarp).toBe(0);
   });
 
   test('derives bloom plus film and chroma accents from active post state', () => {
@@ -247,10 +249,14 @@ describe('milkdrop postprocessing profile derivation', () => {
 
     expect(profile.enabled).toBe(true);
     expect(profile.bloomStrength).toBeGreaterThan(0);
+    expect(profile.afterimageDamp).toBeGreaterThan(0);
     expect(profile.filmNoise).toBeGreaterThan(0);
     expect(profile.filmScanlines).toBeGreaterThan(0);
     expect(profile.vignetteStrength).toBeGreaterThan(0);
     expect(profile.chromaOffset).toBeGreaterThan(0);
+    expect(profile.saturation).toBeGreaterThan(1);
+    expect(profile.contrast).toBeGreaterThan(1);
+    expect(profile.pulseWarp).toBeGreaterThan(0);
     expect(profile.filmScanlineCount).toBeGreaterThan(1024);
   });
 });
