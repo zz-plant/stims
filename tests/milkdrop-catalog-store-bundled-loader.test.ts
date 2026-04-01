@@ -38,6 +38,28 @@ test('bundled catalog loader appends certification-only presets when the certifi
     }
 
     if (
+      url.endsWith('/milkdrop-presets/libraries/projectm-upstream/catalog.json')
+    ) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            presets: [
+              {
+                id: '250-wavecode',
+                title: '250 Wavecode',
+                file: '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+                tags: ['collection:vendored-projectm'],
+                order: 1000,
+                certification: 'exploratory',
+                corpusTier: 'exploratory',
+              },
+            ],
+          }),
+        ),
+      );
+    }
+
+    if (
       url.endsWith('/assets/data/milkdrop-parity/certification-corpus.json')
     ) {
       return Promise.resolve(
@@ -79,9 +101,16 @@ test('bundled catalog loader appends certification-only presets when the certifi
 
   expect(entries.map((entry) => entry.id)).toEqual([
     'aurora-feedback-core',
+    '250-wavecode',
     '100-square',
   ]);
   expect(entries[1]).toMatchObject({
+    id: '250-wavecode',
+    file: '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+    certification: 'exploratory',
+    corpusTier: 'exploratory',
+  });
+  expect(entries[2]).toMatchObject({
     id: '100-square',
     file: '/tests/fixtures/milkdrop/projectm-upstream/presets/tests/100-square.milk',
     certification: 'certified',
@@ -121,6 +150,7 @@ test('bundled catalog loader stays on the shipped catalog when no certification 
 
   const loader = createBundledCatalogLoader({
     catalogUrl: '/milkdrop-presets/catalog.json',
+    libraryManifestUrls: [],
   });
   const entries = await loader.getBundledCatalog();
 

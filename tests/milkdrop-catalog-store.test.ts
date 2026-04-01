@@ -187,6 +187,87 @@ describe('milkdrop catalog store', () => {
     expect(entries.map((entry) => entry.id)).toContain('memory-only');
   });
 
+  test('merges supplemental vendored library manifests into the runtime catalog', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: 'aurora-feedback-core',
+                title: 'Aurora Feedback Core',
+                file: '/milkdrop-presets/aurora-feedback-core.milk',
+                order: 1,
+              },
+            ],
+          }),
+        };
+      }
+
+      if (
+        url.endsWith(
+          '/milkdrop-presets/libraries/projectm-upstream/catalog.json',
+        )
+      ) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: '250-wavecode',
+                title: '250 Wavecode',
+                file: '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+                order: 1000,
+                tags: ['collection:vendored-projectm', 'vendored-library'],
+                certification: 'exploratory',
+                corpusTier: 'exploratory',
+              },
+            ],
+          }),
+        };
+      }
+
+      if (url.endsWith('/milkdrop-presets/aurora-feedback-core.milk')) {
+        return {
+          ok: true,
+          text: async () => 'title=Aurora Feedback Core\nvideo_echo=1\n',
+        };
+      }
+
+      if (
+        url.endsWith(
+          '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+        )
+      ) {
+        return {
+          ok: true,
+          text: async () =>
+            'title=250 Wavecode\nwavecode_0_enabled=1\nwavecode_0_samples=512\n',
+        };
+      }
+
+      return { ok: false };
+    }) as unknown as typeof fetch;
+
+    const store = createMilkdropCatalogStore({
+      dbName: 'milkdrop-catalog-store-vendored-library-test',
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+
+    const entries = await store.listPresets();
+    const vendored = entries.find((entry) => entry.id === '250-wavecode');
+
+    expect(entries.map((entry) => entry.id)).toContain('250-wavecode');
+    expect(vendored?.certification).toBe('exploratory');
+    expect(vendored?.corpusTier).toBe('exploratory');
+    expect(vendored?.tags).toContain('collection:vendored-projectm');
+    expect(vendored?.bundledFile).toBe(
+      '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+    );
+  });
+
   test('falls back to memory storage when indexedDB open stalls', async () => {
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input);
