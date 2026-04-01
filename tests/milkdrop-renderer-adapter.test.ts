@@ -91,6 +91,15 @@ function getFloat32AttributeArray(
   return Float32Array.from(attribute.array);
 }
 
+function getRootChildByRenderOrder(
+  root: RenderTreeNode,
+  renderOrder: number,
+): RenderTreeNode | undefined {
+  return (root.children ?? []).find(
+    (child) => child.renderOrder === renderOrder,
+  );
+}
+
 function makeSignals(
   overrides: Partial<MilkdropRuntimeSignals> = {},
 ): MilkdropRuntimeSignals {
@@ -115,6 +124,7 @@ function makeSignals(
     treb: 0.4,
     treble: 0.4,
     bassAtt: 0.6,
+    midAtt: 0.45,
     bass_att: 0.6,
     mid_att: 0.45,
     midsAtt: 0.45,
@@ -341,7 +351,10 @@ shapecode_0_thickoutline=1
           child.geometry?.getAttribute?.('instanceTransform') !== undefined,
       );
       const shaderMaterials = tree.filter(
-        (child) => child.material instanceof ShaderMaterial,
+        (child) =>
+          child.material instanceof ShaderMaterial &&
+          child.renderOrder !== 45 &&
+          child.renderOrder !== 95,
       );
       const basicShapeFills = tree.filter(
         (child) =>
@@ -437,7 +450,7 @@ shapecode_0_tex_ang=0.35
     const root = scene.children[0] as {
       children?: RenderTreeNode[];
     };
-    const shapesGroup = root.children?.[5] as RenderTreeNode | undefined;
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
     const batchedShapes = flattenRenderTree(shapesGroup ?? {}).filter(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined,
@@ -493,8 +506,7 @@ shapecode_0_tex_ang=0.35
     });
 
     const root = scene.children[0] as RenderTreeNode;
-    const shapeChildren =
-      (root.children?.[5] as RenderTreeNode | undefined) ?? {};
+    const shapeChildren = getRootChildByRenderOrder(root, 50) ?? {};
     const batchedFill = flattenRenderTree(root).find(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
@@ -569,12 +581,8 @@ shapecode_0_tex_ang=0.2
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children?: Array<{ children?: unknown[] }>;
-    };
-    const shapesGroup = root.children?.[5] as
-      | { children?: unknown[] }
-      | undefined;
+    const root = scene.children[0] as RenderTreeNode;
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
     const shapeGroup = shapesGroup?.children?.[0] as
       | { children?: unknown[] }
       | undefined;
@@ -848,20 +856,9 @@ mv_y=6
         renderOrder?: number;
       }>;
     };
-
-    expect(root.children[0]?.renderOrder).toBe(0);
-    expect(root.children[1]?.renderOrder).toBe(10);
-    expect(root.children[2]?.renderOrder).toBe(20);
-    expect(root.children[3]?.renderOrder).toBe(30);
-    expect(root.children[4]?.renderOrder).toBe(40);
-    expect(root.children[5]?.renderOrder).toBe(50);
-    expect(root.children[6]?.renderOrder).toBe(60);
-    expect(root.children[7]?.renderOrder).toBe(70);
-    expect(root.children[8]?.renderOrder).toBe(80);
-    expect(root.children[9]?.renderOrder).toBe(90);
-    expect(root.children[10]?.renderOrder).toBe(100);
-    expect(root.children[11]?.renderOrder).toBe(110);
-    expect(root.children[12]?.renderOrder).toBe(120);
+    expect(
+      root.children.map((child) => child.renderOrder).slice(0, 15),
+    ).toEqual([0, 10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 95, 100, 110, 120]);
   });
 
   test('keeps additive fallback custom waves above normal custom waves', () => {
@@ -1053,7 +1050,7 @@ ob_border=1
         }>;
       }>;
     };
-    const borderGroup = root.children[6];
+    const borderGroup = root.children[7];
     const outerBorder = borderGroup?.children?.[0];
     const outline = outerBorder?.children?.[1] as
       | { material?: LineBasicMaterial }
@@ -1181,7 +1178,7 @@ shapecode_0_thickoutline=0
         }>;
       }>;
     };
-    const shapesGroup = root.children?.[5];
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
     const shapeGroup = shapesGroup?.children?.[0];
     const fill = shapeGroup?.children?.[0] as Mesh | undefined;
     const border = shapeGroup?.children?.[1] as
@@ -1494,7 +1491,7 @@ warpanimspeed=1.25
         children?: Array<{ type?: string; material?: unknown }>;
       }>;
     };
-    const motionVectorGroup = root.children?.[7] as {
+    const motionVectorGroup = root.children?.[8] as {
       children: Array<{
         type?: string;
         visible?: boolean;
@@ -1550,7 +1547,7 @@ warpanimspeed=1.25
     });
 
     const root = scene.children[0] as RenderTreeNode;
-    const motionVectorGroup = root.children?.[7] as {
+    const motionVectorGroup = root.children?.[8] as {
       children: Array<{
         type?: string;
         visible?: boolean;
@@ -2629,7 +2626,7 @@ shapecode_0_border_a=0.25
         }>;
       }>;
     };
-    const blendShapeGroup = root.children[10];
+    const blendShapeGroup = root.children[12];
     const blendedShape = blendShapeGroup?.children?.[0];
     const fill = blendedShape?.children?.[0] as
       | { material?: ShaderMaterial }
@@ -3058,7 +3055,7 @@ wavecode_0_thick=4
     const customWaveGroup = root.children[3] as {
       children: Array<{ material?: unknown }>;
     };
-    const motionVectorGroup = root.children[7] as {
+    const motionVectorGroup = root.children[8] as {
       children: Array<{ children?: Array<{ material?: unknown }> }>;
     };
 
