@@ -264,7 +264,7 @@ shapecode_0_thickoutline=1
       'instanceSecondaryColorAlpha',
     ) as { array: Float32Array } | undefined;
 
-    expect(batchedShapes).toHaveLength(3);
+    expect(batchedShapes).toHaveLength(2);
     batchedShapes.forEach((mesh) => {
       expect(mesh.material).toBeInstanceOf(ShaderMaterial);
       expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
@@ -630,7 +630,7 @@ shapecode_1_sides=6
     expect(populatedOutlineMeshes.length).toBeGreaterThan(0);
   });
 
-  test('keeps WebGPU shape outline thickness stable across different radii', () => {
+  test('uses a single thicker WebGPU shape ring across different radii', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Stable Outline Thickness
@@ -670,35 +670,19 @@ shapecode_1_thickoutline=1
     );
     const outlineScales = ringMeshes
       .map((mesh) => getFloat32AttributeArray(mesh, 'instanceScales'))
-      .filter(
-        (scales): scales is Float32Array =>
-          scales !== null && (scales[0] ?? 0) <= 1.001,
-      )
-      .map((scales) => Array.from(scales).map((value) => Number(value)))
-      .sort((left, right) => (left[1] ?? 0) - (right[1] ?? 0));
-    const accentScales = ringMeshes
-      .map((mesh) => getFloat32AttributeArray(mesh, 'instanceScales'))
-      .filter(
-        (scales): scales is Float32Array =>
-          scales !== null && (scales[0] ?? 0) > 1.001,
-      )
+      .filter((scales): scales is Float32Array => scales !== null)
       .map((scales) => Array.from(scales).map((value) => Number(value)))
       .sort((left, right) => (left[0] ?? 0) - (right[0] ?? 0));
 
     expect(frameState.shapes).toHaveLength(2);
     expect(outlineScales).toHaveLength(2);
-    expect(accentScales).toHaveLength(2);
     expect(outlineScales).toEqual([
-      [1, 0.9656862616539001],
-      [1, 0.9828431606292725],
-    ]);
-    expect(accentScales).toEqual([
-      [1.0220588445663452, 1.0049020051956177],
-      [1.0441176891326904, 1.0098038911819458],
+      [1.0220588445663452, 0.9828431606292725],
+      [1.0441176891326904, 0.9656862616539001],
     ]);
   });
 
-  test('keeps the WebGPU thick-outline accent under the main shape border', () => {
+  test('renders a single WebGPU thick-outline ring layer', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Shape Accent Layering
@@ -738,22 +722,12 @@ shapecode_0_thickoutline=1
         uniforms?: { layerZ?: { value: number } };
       };
     }>;
-    const outlineMesh = ringMeshes.find((mesh) => {
-      const scales = getFloat32AttributeArray(mesh, 'instanceScales');
-      return scales !== null && (scales[0] ?? 0) <= 1.001;
-    });
-    const accentMesh = ringMeshes.find((mesh) => {
-      const scales = getFloat32AttributeArray(mesh, 'instanceScales');
-      return scales !== null && (scales[0] ?? 0) > 1.001;
-    });
-
-    expect(outlineMesh?.material).toBeInstanceOf(ShaderMaterial);
-    expect(accentMesh?.material).toBeInstanceOf(ShaderMaterial);
-    expect(outlineMesh?.material?.uniforms?.layerZ?.value).toBeCloseTo(0.16, 6);
-    expect(accentMesh?.material?.uniforms?.layerZ?.value).toBeCloseTo(0.15, 6);
-    expect(
-      accentMesh?.material?.uniforms?.layerZ?.value ?? Infinity,
-    ).toBeLessThan(outlineMesh?.material?.uniforms?.layerZ?.value ?? -Infinity);
+    expect(ringMeshes).toHaveLength(1);
+    expect(ringMeshes[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(ringMeshes[0]?.material?.uniforms?.layerZ?.value).toBeCloseTo(
+      0.16,
+      6,
+    );
   });
 
   test('keeps WebGPU batched layer ordering stable when targets are created later', () => {
@@ -1023,7 +997,7 @@ ob_size=0.03
     expect(secondBorderObject).toBe(firstBorderObject);
   });
 
-  test('keeps styled border accent opacity attenuated on initial WebGL render', () => {
+  test('does not synthesize a styled border accent on initial WebGL render', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Styled Border Accent
@@ -1066,17 +1040,10 @@ ob_border=1
     const outline = outerBorder?.children?.[1] as
       | { material?: LineBasicMaterial }
       | undefined;
-    const accent = outerBorder?.children?.[2] as
-      | { material?: LineBasicMaterial }
-      | undefined;
 
     expect(outline?.material).toBeInstanceOf(LineBasicMaterial);
-    expect(accent?.material).toBeInstanceOf(LineBasicMaterial);
     expect(outline?.material?.opacity).toBeCloseTo(0.8, 6);
-    expect(accent?.material?.opacity).toBeCloseTo(0.44, 6);
-    expect(accent?.material?.opacity ?? 0).toBeLessThan(
-      outline?.material?.opacity ?? 0,
-    );
+    expect(outerBorder?.children).toHaveLength(2);
   });
 
   test('reuses shape groups and wave position attributes across renders', () => {

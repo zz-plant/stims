@@ -203,31 +203,6 @@ export function createShapeObject(
   fill.rotation.z = shape.rotation;
   group.add(fill);
 
-  if (shape.thickOutline) {
-    const accentBorder = new (
-      behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
-    )(
-      behavior.useLineLoopPrimitives
-        ? helpers.getUnitPolygonOutlineGeometry(shape.sides)
-        : helpers.getUnitPolygonClosedLineGeometry(shape.sides),
-      new LineBasicMaterial({
-        color: new Color(
-          shape.borderColor.r,
-          shape.borderColor.g,
-          shape.borderColor.b,
-        ),
-        opacity:
-          Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45) * alphaMultiplier,
-        transparent: true,
-        ...(shape.additive ? { blending: AdditiveBlending } : {}),
-      }),
-    );
-    accentBorder.position.set(shape.x, shape.y, 0.15);
-    accentBorder.scale.set(shape.radius * 1.045, shape.radius * 1.045, 1);
-    accentBorder.rotation.z = shape.rotation;
-    group.add(accentBorder);
-  }
-
   const border = new (
     behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
   )(
@@ -246,7 +221,11 @@ export function createShapeObject(
     }),
   );
   border.position.set(shape.x, shape.y, 0.16);
-  border.scale.set(shape.radius, shape.radius, 1);
+  border.scale.set(
+    shape.radius * (shape.thickOutline ? 1.022 : 1),
+    shape.radius * (shape.thickOutline ? 1.022 : 1),
+    1,
+  );
   border.rotation.z = shape.rotation;
   group.add(border);
 
@@ -334,7 +313,11 @@ export function syncShapeOutline(
     object.geometry = nextGeometry;
   }
   object.position.set(shape.x, shape.y, 0.16);
-  object.scale.set(shape.radius, shape.radius, 1);
+  object.scale.set(
+    shape.radius * (shape.thickOutline ? 1.022 : 1),
+    shape.radius * (shape.thickOutline ? 1.022 : 1),
+    1,
+  );
   object.rotation.z = shape.rotation;
   const material = object.material as LineBasicMaterial;
   material.blending = shape.additive ? AdditiveBlending : NormalBlending;
@@ -370,9 +353,7 @@ export function syncShapeObject(
   },
   alphaMultiplier: number,
 ) {
-  const wantsAccent = shape.thickOutline;
   const fillZ = 0.14;
-  const accentZ = 0.15;
   const borderZ = 0.16;
 
   if (!(existing instanceof ThreeGroup)) {
@@ -383,22 +364,13 @@ export function syncShapeObject(
   }
 
   const fill = existing.children[0];
-  const hadAccent = existing.children.length >= 3;
-  const accent = hadAccent ? existing.children[1] : undefined;
-  const border = existing.children[hadAccent ? 2 : 1];
+  const border = existing.children[1];
   const expectsLoop = behavior.useLineLoopPrimitives;
   const hasSupportedBorder = expectsLoop
     ? border instanceof ThreeLineLoop
     : border instanceof ThreeLine;
-  const hasSupportedAccent = expectsLoop
-    ? accent instanceof ThreeLineLoop
-    : accent instanceof ThreeLine;
 
-  if (
-    !(fill instanceof ThreeMesh) ||
-    !hasSupportedBorder ||
-    (wantsAccent && !hasSupportedAccent)
-  ) {
+  if (!(fill instanceof ThreeMesh) || !hasSupportedBorder) {
     helpers.disposeObject(existing);
     return helpers.createShapeObject(shape, alphaMultiplier);
   }
@@ -411,20 +383,6 @@ export function syncShapeObject(
   fill.rotation.z = shape.rotation;
   helpers.syncShapeFillMaterial(fill, shape, alphaMultiplier);
 
-  if (
-    wantsAccent &&
-    (accent instanceof ThreeLineLoop || accent instanceof ThreeLine)
-  ) {
-    helpers.syncShapeOutline(
-      accent,
-      shape,
-      alphaMultiplier,
-      Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45),
-    );
-    accent.scale.set(shape.radius * 1.045, shape.radius * 1.045, 1);
-    accent.position.z = accentZ;
-  }
-
   helpers.syncShapeOutline(
     border as Line | LineLoop,
     shape,
@@ -432,33 +390,6 @@ export function syncShapeObject(
     shape.borderColor.a ?? 1,
   );
   border.position.z = borderZ;
-
-  if (!wantsAccent && accent) {
-    helpers.disposeObject(accent as { children?: unknown[] });
-    existing.remove(accent);
-  } else if (
-    wantsAccent &&
-    !(accent instanceof ThreeLineLoop) &&
-    !(accent instanceof ThreeLine)
-  ) {
-    const nextAccent = new (
-      behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
-    )(
-      (border as Line | LineLoop).geometry,
-      new LineBasicMaterial({
-        transparent: true,
-      }),
-    );
-    existing.add(nextAccent);
-    helpers.syncShapeOutline(
-      nextAccent,
-      shape,
-      alphaMultiplier,
-      Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45),
-    );
-    nextAccent.scale.set(shape.radius * 1.045, shape.radius * 1.045, 1);
-    nextAccent.position.z = accentZ;
-  }
 
   return existing;
 }

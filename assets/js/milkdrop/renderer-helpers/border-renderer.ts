@@ -105,36 +105,6 @@ export function createBorderObject(
   outline.position.z = 0.3;
   group.add(outline);
 
-  if (!border.styled) {
-    return group;
-  }
-
-  const accent = new (
-    behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
-  )(
-    new BufferGeometry(),
-    new LineBasicMaterial({
-      transparent: true,
-      opacity: Math.max(0.15, border.alpha * 0.55) * alphaMultiplier,
-    }),
-  );
-  accent.frustumCulled = false;
-  helpers.ensureGeometryPositions(
-    accent.geometry,
-    helpers.getBorderLinePositions(border, 0.3, behavior),
-  );
-  helpers.setMaterialColor(
-    accent.material,
-    border.color,
-    Math.max(0.15, border.alpha * 0.55) * alphaMultiplier,
-  );
-  accent.scale.set(
-    border.key === 'outer' ? 0.985 : 1.015,
-    border.key === 'outer' ? 0.985 : 1.015,
-    1,
-  );
-  accent.position.z = 0.31;
-  group.add(accent);
   return group;
 }
 
@@ -256,20 +226,11 @@ export function syncBorderObject(
 
   const fill = existing.children[0];
   const outline = existing.children[1];
-  const accent = existing.children[2];
-  const wantsAccent = border.styled;
   const expectsLoop = behavior.useLineLoopPrimitives;
   const hasSupportedOutline = expectsLoop
     ? outline instanceof ThreeLineLoop
     : outline instanceof ThreeLine;
-  const hasSupportedAccent = expectsLoop
-    ? accent instanceof ThreeLineLoop
-    : accent instanceof ThreeLine;
-  if (
-    !(fill instanceof ThreeMesh) ||
-    !hasSupportedOutline ||
-    (wantsAccent && !hasSupportedAccent)
-  ) {
+  if (!(fill instanceof ThreeMesh) || !hasSupportedOutline) {
     helpers.disposeObject(existing);
     return helpers.createBorderObject(border, alphaMultiplier);
   }
@@ -277,24 +238,6 @@ export function syncBorderObject(
   helpers.updateBorderFill(fill, border, alphaMultiplier);
   helpers.updateBorderLine(outline as Line | LineLoop, border, alphaMultiplier);
   outline.position.z = 0.3;
-  if (
-    wantsAccent &&
-    (accent instanceof ThreeLineLoop || accent instanceof ThreeLine)
-  ) {
-    helpers.updateBorderLine(accent, border, alphaMultiplier);
-    accent.scale.set(
-      border.key === 'outer' ? 0.985 : 1.015,
-      border.key === 'outer' ? 0.985 : 1.015,
-      1,
-    );
-    accent.position.z = 0.31;
-    (accent.material as LineBasicMaterial).opacity =
-      Math.max(0.15, border.alpha * 0.55) * alphaMultiplier;
-  }
-  if (!wantsAccent && accent) {
-    helpers.disposeObject(accent as { children?: unknown[] });
-    existing.remove(accent);
-  }
   return existing;
 }
 

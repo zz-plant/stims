@@ -100,8 +100,7 @@ type BorderRingInstance = {
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
 const SHAPE_OUTLINE_INNER_OFFSET = -0.007;
-const SHAPE_ACCENT_INNER_OFFSET = 0.002;
-const SHAPE_ACCENT_OUTER_OFFSET = 0.009;
+const SHAPE_THICK_OUTLINE_OUTER_OFFSET = 0.009;
 const polygonFillGeometryCache = new Map<number, BufferGeometry>();
 const polygonRingGeometryCache = new Map<number, InstancedBufferGeometry>();
 
@@ -706,14 +705,12 @@ class InstancedBorderBatch {
   readonly group = new Group();
   private readonly fillMesh: Mesh;
   private readonly outlineMesh: Mesh;
-  private readonly accentMesh: Mesh;
 
   constructor(renderOrder: number) {
     this.group.renderOrder = renderOrder;
     this.fillMesh = this.createMesh(0.285, renderOrder);
     this.outlineMesh = this.createMesh(0.3, renderOrder);
-    this.accentMesh = this.createMesh(0.31, renderOrder);
-    this.group.add(this.fillMesh, this.outlineMesh, this.accentMesh);
+    this.group.add(this.fillMesh, this.outlineMesh);
   }
 
   private createMesh(_defaultZ: number, renderOrder: number) {
@@ -754,7 +751,6 @@ class InstancedBorderBatch {
   sync(borders: MilkdropBorderVisual[], alphaMultiplier: number) {
     const fills: BorderRingInstance[] = [];
     const outlines: BorderRingInstance[] = [];
-    const accents: BorderRingInstance[] = [];
     for (const border of borders) {
       const inset = border.key === 'outer' ? border.size : border.size + 0.08;
       fills.push({
@@ -775,22 +771,9 @@ class InstancedBorderBatch {
         color: border.color,
         alpha: border.alpha * alphaMultiplier,
       });
-      if (border.styled) {
-        const scale = border.key === 'outer' ? 0.985 : 1.015;
-        accents.push({
-          inset,
-          outerInset: Math.max(0, inset - 0.003),
-          innerInset: Math.min(0.98, inset + 0.003),
-          scale,
-          z: 0.31,
-          color: border.color,
-          alpha: Math.max(0.15, border.alpha * 0.55) * alphaMultiplier,
-        });
-      }
     }
     this.syncMesh(this.fillMesh, fills);
     this.syncMesh(this.outlineMesh, outlines);
-    this.syncMesh(this.accentMesh, accents);
   }
 
   private syncMesh(mesh: Mesh, instances: BorderRingInstance[]) {
@@ -831,7 +814,7 @@ class InstancedBorderBatch {
   }
 
   dispose() {
-    [this.fillMesh, this.outlineMesh, this.accentMesh].forEach((mesh) => {
+    [this.fillMesh, this.outlineMesh].forEach((mesh) => {
       disposeGeometry(mesh.geometry);
       disposeMaterial(mesh.material);
     });
@@ -1120,7 +1103,6 @@ class ShapeBatchBucket {
   readonly group = new Group();
   private readonly fill: InstancedShapeFillBatch;
   private readonly outline: InstancedShapeRingBatch;
-  private readonly accent: InstancedShapeRingBatch;
 
   constructor(
     sides: number,
@@ -1143,21 +1125,15 @@ class ShapeBatchBucket {
       0.16,
       bucketRenderOrder,
     );
-    this.accent = new InstancedShapeRingBatch(
-      sides,
-      blending,
-      0.15,
-      bucketRenderOrder,
-    );
-    this.group.add(this.fill.mesh, this.outline.mesh, this.accent.mesh);
+    this.group.add(this.fill.mesh, this.outline.mesh);
   }
 
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
     const fillInstances: ShapeFillInstance[] = [];
     const outlineInstances: ShapeRingInstance[] = [];
-    const accentInstances: ShapeRingInstance[] = [];
     for (const shape of shapes) {
       const outlineScales = createShapeRingScales(shape.radius, {
+        outerOffset: shape.thickOutline ? SHAPE_THICK_OUTLINE_OUTER_OFFSET : 0,
         innerOffset: SHAPE_OUTLINE_INNER_OFFSET,
       });
       fillInstances.push({
@@ -1185,33 +1161,14 @@ class ShapeBatchBucket {
         outerScale: outlineScales.outerScale,
         innerScale: outlineScales.innerScale,
       });
-      if (shape.thickOutline) {
-        const accentScales = createShapeRingScales(shape.radius, {
-          outerOffset: SHAPE_ACCENT_OUTER_OFFSET,
-          innerOffset: SHAPE_ACCENT_INNER_OFFSET,
-        });
-        accentInstances.push({
-          x: shape.x,
-          y: shape.y,
-          radius: shape.radius,
-          rotation: shape.rotation,
-          color: shape.borderColor,
-          alpha:
-            Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45) * alphaMultiplier,
-          outerScale: accentScales.outerScale,
-          innerScale: accentScales.innerScale,
-        });
-      }
     }
     this.fill.sync(fillInstances);
     this.outline.sync(outlineInstances);
-    this.accent.sync(accentInstances);
   }
 
   dispose() {
     this.fill.dispose();
     this.outline.dispose();
-    this.accent.dispose();
   }
 }
 
