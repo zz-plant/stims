@@ -27,14 +27,26 @@ describe('applyRendererSettings', () => {
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgl',
         isMobile: true,
+        browserFamily: 'safari',
+        platformFamily: 'ios',
       }),
-    ).toBe(1.25);
+    ).toBe(1.15);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',
         isMobile: true,
+        browserFamily: 'safari',
+        platformFamily: 'ios',
       }),
-    ).toBe(1.5);
+    ).toBe(1.4);
+    expect(
+      getRendererBackendMaxPixelRatioCap({
+        backend: 'webgpu',
+        isMobile: true,
+        browserFamily: 'chrome',
+        platformFamily: 'android',
+      }),
+    ).toBe(1.35);
   });
 
   test('applies explicit viewport dimensions when provided', () => {

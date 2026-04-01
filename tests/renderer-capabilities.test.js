@@ -328,6 +328,50 @@ describe('renderer capabilities', () => {
     });
   });
 
+  test('keeps high-end mobile WebGPU sessions on balanced startup quality', async () => {
+    await resetRenderPreferencesState();
+    mockNavigatorWithGPU({
+      device: { label: 'iphone-device' },
+      adapter: {
+        features: new Set([
+          'shader-f16',
+          'subgroups',
+          'timestamp-query',
+          'float32-blendable',
+          'float32-filterable',
+          'bgra8unorm-storage',
+        ]),
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1024,
+          maxStorageBufferBindingSize: 4294967292,
+          maxTextureDimension2D: 16384,
+        },
+      },
+    });
+
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    });
+    Object.defineProperty(global.navigator, 'platform', {
+      configurable: true,
+      value: 'iPhone',
+    });
+    Object.defineProperty(global.navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(result.webgpu).toMatchObject({
+      performanceTier: 'high-end',
+      recommendedQualityPreset: 'balanced',
+    });
+  });
+
   test('provides a stable optimization support snapshot without reprobe helpers', () => {
     const optimization = summarizeRendererOptimizationSupport({
       features: {

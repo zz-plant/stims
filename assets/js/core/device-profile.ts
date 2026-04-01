@@ -1,4 +1,4 @@
-import { isMobileDevice } from '../utils/device-detect';
+import { getDeviceEnvironmentProfile } from '../utils/device-detect';
 
 export type DevicePerformanceProfile = {
   lowPower: boolean;
@@ -6,9 +6,8 @@ export type DevicePerformanceProfile = {
   reducedMotion: boolean;
 };
 
-const isMobileUserAgent = isMobileDevice();
-
 export function getDevicePerformanceProfile(): DevicePerformanceProfile {
+  const environment = getDeviceEnvironmentProfile();
   const deviceMemory =
     typeof navigator !== 'undefined' && 'deviceMemory' in navigator
       ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
@@ -24,17 +23,33 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
       : false;
 
   const reasons: string[] = [];
-  if (isMobileUserAgent) reasons.push('mobile device detected');
-  if (reducedMotion) reasons.push('reduced motion preference');
-  if (deviceMemory !== null && deviceMemory <= 4) {
+  const limitedDeviceMemory = deviceMemory !== null && deviceMemory <= 4;
+  const limitedCpuCores =
+    hardwareConcurrency !== null && hardwareConcurrency <= 4;
+  const constrainedHandheld =
+    environment.isMobile &&
+    ((deviceMemory !== null && deviceMemory <= 3) ||
+      (hardwareConcurrency !== null && hardwareConcurrency <= 3));
+
+  if (reducedMotion) {
+    reasons.push('reduced motion preference');
+  }
+  if (limitedDeviceMemory) {
     reasons.push('limited device memory');
   }
-  if (hardwareConcurrency !== null && hardwareConcurrency <= 4) {
+  if (limitedCpuCores) {
     reasons.push('limited CPU cores');
+  }
+  if (constrainedHandheld) {
+    reasons.push('handheld thermal envelope');
   }
 
   return {
-    lowPower: reasons.length > 0,
+    lowPower:
+      reducedMotion ||
+      limitedDeviceMemory ||
+      limitedCpuCores ||
+      constrainedHandheld,
     reason: reasons.length > 0 ? reasons.join(', ') : null,
     reducedMotion,
   };

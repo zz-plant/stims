@@ -1,7 +1,10 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
 import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
-import { isMobileDevice } from '../utils/device-detect.ts';
+import {
+  getDeviceEnvironmentProfile,
+  isMobileDevice,
+} from '../utils/device-detect.ts';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {
   getRendererFallbackReasonMessage,
@@ -342,6 +345,7 @@ function getWebGPUPerformanceTier({
 }
 
 function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
+  const environment = getDeviceEnvironmentProfile();
   const features: WebGPUFeatureSupport = {
     bgra8unormStorage: hasFeature(adapter.features, 'bgra8unorm-storage'),
     float32Blendable: hasFeature(adapter.features, 'float32-blendable'),
@@ -377,8 +381,11 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
     optimization: summarizeRendererOptimizationSupport({ features, workers }),
     preferredCanvasFormat: getPreferredCanvasFormat(),
     performanceTier,
-    recommendedQualityPreset:
-      performanceTier === 'high-end' ? 'hi-fi' : 'balanced',
+    recommendedQualityPreset: environment.isMobile
+      ? 'balanced'
+      : performanceTier === 'high-end'
+        ? 'hi-fi'
+        : 'balanced',
   } satisfies WebGPUCapabilitySummary;
 }
 

@@ -146,6 +146,10 @@ function buildHeuristicProfile(
         ? 1
         : 2;
 
+  if (capabilities.recommendedQualityPreset !== 'hi-fi') {
+    initialStep = Math.max(initialStep, 1);
+  }
+
   if (!capabilities.features.float32Blendable) {
     reasons.push('float32 blendable attachments are unavailable.');
     initialStep += 1;
@@ -165,6 +169,14 @@ function buildHeuristicProfile(
   if ((capabilities.limits.maxColorAttachments ?? 0) < 8) {
     reasons.push('color-attachment headroom is limited.');
     initialStep += 1;
+  }
+  if (
+    capabilities.performanceTier === 'high-end' &&
+    capabilities.recommendedQualityPreset !== 'hi-fi'
+  ) {
+    reasons.push(
+      'Balanced startup quality is preferred on touch-first devices for steadier frame pacing.',
+    );
   }
 
   initialStep = clamp(initialStep, 0, QUALITY_STEPS.length - 1);

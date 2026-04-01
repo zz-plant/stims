@@ -4,7 +4,10 @@ import {
   SRGBColorSpace,
   type WebGLRenderer,
 } from 'three';
-import { isMobileDevice } from '../utils/device-detect';
+import {
+  getDeviceEnvironmentProfile,
+  isMobileDevice,
+} from '../utils/device-detect';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
   getRendererCapabilities,
@@ -57,6 +60,7 @@ async function loadWebGPURenderer() {
 }
 
 const isMobileUserAgent = isMobileDevice();
+const deviceEnvironment = getDeviceEnvironmentProfile();
 
 function disposeRenderer(renderer: Partial<WebGLRenderer | WebGPURenderer>) {
   if (
@@ -107,6 +111,8 @@ export async function initRenderer(
     const backendPixelRatioCap = getRendererBackendMaxPixelRatioCap({
       backend,
       isMobile: isMobileUserAgent,
+      browserFamily: deviceEnvironment.browserFamily,
+      platformFamily: deviceEnvironment.platformFamily,
     });
     const effectivePixelRatio = Math.min(
       (window.devicePixelRatio || 1) * renderScale,
