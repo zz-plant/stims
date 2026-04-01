@@ -246,6 +246,26 @@ describe('milkdrop overlay browse simplifications', () => {
     overlay.dispose();
   });
 
+  test('uses a single top-level tab row for looks, edit, and inspect', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+    const overlay = createOverlay();
+
+    const tabLabels = Array.from(
+      document.querySelectorAll('.milkdrop-overlay__tabs button'),
+    ).map((button) => button.textContent?.trim());
+
+    expect(tabLabels).toEqual(['Looks', 'Edit', 'Inspect']);
+    expect(document.querySelector('.milkdrop-overlay__tools-tabs')).toBeNull();
+
+    overlay.dispose();
+  });
+
   test('opens the shortcut HUD through the help tab helper', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
@@ -721,7 +741,8 @@ describe('milkdrop overlay browse rendering', () => {
     optionsDisclosure.dispatchEvent(new Event('toggle'));
     expect(collectionFilters?.hidden).toBe(false);
     expect(collectionFilters?.textContent).toContain('Classic MilkDrop');
-    expect(collectionFilters?.textContent).toContain('Feedback Lab');
+    expect(collectionFilters?.textContent).not.toContain('Feedback Lab');
+    expect(collectionFilters?.textContent).not.toContain('Low Motion');
 
     overlay.dispose();
   });

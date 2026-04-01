@@ -71,16 +71,79 @@ describe('initMilkdropShowcase', () => {
     ).map((card) => card.textContent?.trim());
 
     expect(count?.textContent).toBe(
-      '3 bundled presets across 4 quick collections. Showing 1 featured picks from Cream of the Crop.',
+      '3 bundled presets across 2 quick collections. Showing 1 featured picks from Cream of the Crop.',
     );
     expect(filters).toEqual([
       'All presets3',
       'Cream of the Crop1',
       'Classic MilkDrop1',
-      'Feedback Lab1',
-      'Low Motion1',
     ]);
     expect(cards).toEqual(['Aurora Feedback Core']);
+    expect(
+      document
+        .querySelector('[data-milkdrop-preset-list] .cta-button')
+        ?.getAttribute('href'),
+    ).toBe(
+      '/milkdrop/?audio=demo&panel=browse&preset=aurora-feedback-core&collection=cream-of-the-crop',
+    );
+  });
+
+  test('builds launch links from the rendered preset collection instead of a hardcoded default', async () => {
+    globalThis.fetch = mock(async () => ({
+      ok: true,
+      json: async () => ({
+        presets: [
+          {
+            id: 'kinetic-grid-pulse',
+            title: 'Kinetic Grid Pulse',
+            order: 1,
+            preview: true,
+            tags: ['collection:feedback-lab', 'grid'],
+          },
+        ],
+      }),
+    })) as unknown as typeof fetch;
+
+    await initMilkdropShowcase();
+
+    expect(
+      document
+        .querySelector('[data-milkdrop-preset-list] .cta-button')
+        ?.getAttribute('href'),
+    ).toBe(
+      '/milkdrop/?audio=demo&panel=browse&preset=kinetic-grid-pulse&collection=feedback-lab',
+    );
+  });
+
+  test('uses the active rendered collection when a preset belongs to multiple collections', async () => {
+    globalThis.fetch = mock(async () => ({
+      ok: true,
+      json: async () => ({
+        presets: [
+          {
+            id: 'aurora-feedback-core',
+            title: 'Aurora Feedback Core',
+            order: 1,
+            preview: true,
+            tags: [
+              'collection:classic-milkdrop',
+              'collection:cream-of-the-crop',
+              'feedback',
+            ],
+          },
+        ],
+      }),
+    })) as unknown as typeof fetch;
+
+    await initMilkdropShowcase();
+
+    expect(
+      document
+        .querySelector('[data-milkdrop-preset-list] .cta-button')
+        ?.getAttribute('href'),
+    ).toBe(
+      '/milkdrop/?audio=demo&panel=browse&preset=aurora-feedback-core&collection=cream-of-the-crop',
+    );
   });
 
   test('keeps fallback markup when the catalog cannot be fetched', async () => {
