@@ -82,3 +82,59 @@ test('samples warp textures in warp-stage UV space inside the shared feedback sh
     manager.dispose();
   }
 });
+
+test('does not turn feedback_texture into extra video echo in the shared feedback shader', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    compositeMaterial: { fragmentShader: string };
+    dispose: () => void;
+  };
+
+  try {
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'clamp(videoEchoAlpha, 0.0, 1.0)',
+    );
+    expect(manager.compositeMaterial.fragmentShader).not.toContain(
+      'videoEchoAlpha + feedbackTexture * 0.2',
+    );
+  } finally {
+    manager.dispose();
+  }
+});
+
+test('applies comp-stage color controls and overlay work before legacy post effects in the shared shader', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    compositeMaterial: { fragmentShader: string };
+    dispose: () => void;
+  };
+
+  try {
+    const { fragmentShader } = manager.compositeMaterial;
+    const hueIndex = fragmentShader.indexOf(
+      'color = hueRotate(color, hueShift);',
+    );
+    const overlayIndex = fragmentShader.indexOf(
+      'bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;',
+    );
+    const brightenIndex = fragmentShader.indexOf(
+      'if (brighten > 0.01 || brightenBoost > 0.01) {',
+    );
+    const gammaIndex = fragmentShader.indexOf(
+      'color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));',
+    );
+
+    expect(hueIndex).toBeGreaterThanOrEqual(0);
+    expect(overlayIndex).toBeGreaterThan(hueIndex);
+    expect(brightenIndex).toBeGreaterThan(overlayIndex);
+    expect(gammaIndex).toBeGreaterThan(brightenIndex);
+  } finally {
+    manager.dispose();
+  }
+});
