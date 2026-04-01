@@ -3472,6 +3472,56 @@ video_echo=1
     expect(feedback?.sceneTarget.texture.magFilter).toBe(LinearFilter);
   });
 
+  test('scales shared WebGL feedback targets under adaptive quality pressure', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Adaptive Feedback
+video_echo=1
+      `.trim(),
+      { id: 'webgl-adaptive-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+    adapter.setAdaptiveQuality?.({
+      feedbackResolutionMultiplier: 0.5,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          sceneTarget: { width: number; height: number };
+          targets: Array<{ width: number; height: number }>;
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
+    expect(feedback?.targets[0]?.width).toBe(320);
+    expect(feedback?.targets[0]?.height).toBe(180);
+  });
+
   test('forwards shader transform controls into composite uniforms', () => {
     const preset = compileMilkdropPresetSource(
       `
