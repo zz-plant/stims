@@ -198,6 +198,78 @@ test('replays the initial card preview sync after effects load', async () => {
   }
 });
 
+test('dispose removes library listeners and allows a clean reinit', async () => {
+  document.body.innerHTML = `
+    <p data-search-results></p>
+    <div data-active-filters>
+      <span data-active-filters-status></span>
+      <button data-active-filters-clear type="button">Reset view</button>
+    </div>
+    <form data-search-form>
+      <input id="toy-search" type="search" />
+      <button data-search-clear type="button">Clear</button>
+      <datalist id="toy-search-suggestions"></datalist>
+    </form>
+    <button data-filter-reset type="button">Reset view</button>
+    <select data-sort-control>
+      <option value="featured">Featured</option>
+      <option value="az">A → Z</option>
+    </select>
+    <div id="toy-list"></div>
+  `;
+
+  const pushState = mock();
+  const replaceState = mock();
+  const originalPushState = window.history.pushState;
+  const originalReplaceState = window.history.replaceState;
+
+  Object.defineProperty(window.history, 'pushState', {
+    configurable: true,
+    value: pushState,
+  });
+  Object.defineProperty(window.history, 'replaceState', {
+    configurable: true,
+    value: replaceState,
+  });
+
+  const view = createLibraryView({
+    toys,
+    searchInputId: 'toy-search',
+  });
+
+  try {
+    const firstInit = view.init();
+    const secondInit = view.init();
+    expect(firstInit).toBe(secondInit);
+    await firstInit;
+    view.dispose();
+
+    const sort = document.querySelector(
+      '[data-sort-control]',
+    ) as HTMLSelectElement;
+    sort.value = 'az';
+    sort.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(pushState).not.toHaveBeenCalled();
+
+    await view.init();
+    sort.value = 'az';
+    sort.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(pushState).toHaveBeenCalledTimes(1);
+  } finally {
+    view.dispose();
+    Object.defineProperty(window.history, 'pushState', {
+      configurable: true,
+      value: originalPushState,
+    });
+    Object.defineProperty(window.history, 'replaceState', {
+      configurable: true,
+      value: originalReplaceState,
+    });
+  }
+});
+
 test('renders continue panel when returner signals are present', async () => {
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
