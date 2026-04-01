@@ -3392,8 +3392,8 @@ video_echo=1
     ).feedback;
 
     expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(461);
-    expect(feedback?.sceneTarget.height).toBe(259);
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
     expect(feedback?.sceneTarget.samples).toBe(0);
     expect(feedback?.sceneTarget.texture.type).not.toBe(HalfFloatType);
     expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
