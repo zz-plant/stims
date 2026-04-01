@@ -143,4 +143,50 @@ describe('createAdaptiveQualityController', () => {
     expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(0.9, 6);
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
+
+  test('starts one step down when high-end webgpu devices prefer balanced quality', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: {
+        preferredCanvasFormat: 'bgra8unorm',
+        performanceTier: 'high-end',
+        recommendedQualityPreset: 'balanced',
+        workers: {
+          workers: false,
+          offscreenCanvas: false,
+          transferControlToOffscreen: false,
+        },
+        optimization: {
+          timestampQuery: true,
+          shaderF16: true,
+          subgroups: true,
+          workers: false,
+          offscreenCanvas: false,
+          transferControlToOffscreen: false,
+          workerOffscreenPipeline: false,
+        },
+        features: {
+          bgra8unormStorage: true,
+          float32Blendable: true,
+          float32Filterable: true,
+          shaderF16: true,
+          subgroups: true,
+          timestampQuery: true,
+        },
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1024,
+          maxStorageBufferBindingSize: 4294967292,
+          maxTextureDimension2D: 16384,
+        },
+      },
+    });
+
+    const state = controller.getState();
+    expect(state.qualityStep).toBe(1);
+    expect(state.renderScaleMultiplier).toBeCloseTo(0.94, 6);
+    expect(state.reasons).toContain(
+      'Balanced startup quality is preferred on touch-first devices for steadier frame pacing.',
+    );
+  });
 });
