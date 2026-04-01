@@ -105,6 +105,17 @@ export function deriveMilkdropPostprocessingProfile({
   const filmScanlineCount = Math.round(
     1024 + audioDrive * 512 + (post.videoEchoEnabled ? 128 : 0),
   );
+  const afterimageDamp =
+    post.videoEchoEnabled || audioDrive > 0.16 || visualDrive > 0.14
+      ? clamp(
+          0.74 +
+            audioDrive * 0.15 +
+            visualDrive * 0.06 +
+            (post.videoEchoEnabled ? post.videoEchoAlpha * 0.08 : 0),
+          0.72,
+          0.96,
+        )
+      : 0;
   const vignetteStrength =
     visualDrive > 0.1 || audioDrive > 0.2
       ? clamp(0.05 + visualDrive * 0.32 + audioDrive * 0.16, 0, 0.75)
@@ -120,17 +131,48 @@ export function deriveMilkdropPostprocessingProfile({
           0.008,
         )
       : 0;
+  const saturation = clamp(
+    (post.shaderControls.saturation ?? 1) +
+      audioDrive * 0.18 +
+      (post.brighten ? 0.06 : 0) +
+      (post.solarize ? 0.04 : 0),
+    0.72,
+    1.55,
+  );
+  const contrast = clamp(
+    (post.shaderControls.contrast ?? 1) +
+      visualDrive * 0.16 +
+      audioDrive * 0.08 +
+      (post.darken ? 0.05 : 0),
+    0.8,
+    1.45,
+  );
+  const pulseWarp =
+    audioDrive > 0.16 || visualDrive > 0.14
+      ? clamp(
+          0.001 +
+            audioDrive * 0.012 +
+            Math.abs(post.warp ?? 0) * 0.004 +
+            Math.abs(post.shaderControls.warpScale ?? 0) * 0.006,
+          0,
+          0.03,
+        )
+      : 0;
 
   return {
     enabled: audioDrive > 0.01 || visualDrive > 0.01,
     bloomStrength,
     bloomRadius,
     bloomThreshold,
+    afterimageDamp,
     filmNoise,
     filmScanlines,
     filmScanlineCount,
     vignetteStrength,
     chromaOffset,
+    saturation,
+    contrast,
+    pulseWarp,
   };
 }
 

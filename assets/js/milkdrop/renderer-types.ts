@@ -14,11 +14,15 @@ export type MilkdropPostprocessingProfile = {
   bloomStrength: number;
   bloomRadius: number;
   bloomThreshold: number;
+  afterimageDamp: number;
   filmNoise: number;
   filmScanlines: number;
   filmScanlineCount: number;
   vignetteStrength: number;
   chromaOffset: number;
+  saturation: number;
+  contrast: number;
+  pulseWarp: number;
 };
 
 export type MilkdropColor = {

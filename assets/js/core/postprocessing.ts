@@ -1,5 +1,6 @@
 import type { Camera, Scene, WebGLRenderer } from 'three';
 import { Vector2 } from 'three';
+import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -12,16 +13,21 @@ export type MilkdropPostprocessingProfile = {
   bloomStrength: number;
   bloomRadius: number;
   bloomThreshold: number;
+  afterimageDamp: number;
   filmNoise: number;
   filmScanlines: number;
   filmScanlineCount: number;
   vignetteStrength: number;
   chromaOffset: number;
+  saturation: number;
+  contrast: number;
+  pulseWarp: number;
 };
 
 export type PostprocessingPipeline = {
   composer: EffectComposer;
   bloomPass?: UnrealBloomPass;
+  afterimagePass?: AfterimagePass;
   filmPass?: FilmPass;
   chromaPass?: ShaderPass;
   applyProfile: (profile: MilkdropPostprocessingProfile) => void;
@@ -46,6 +52,9 @@ const MILKDROP_POSTPROCESSING_SHADER = {
     resolution: { value: new Vector2(1, 1) },
     vignetteStrength: { value: 0 },
     chromaOffset: { value: 0 },
+    saturation: { value: 1 },
+    contrast: { value: 1 },
+    pulseWarp: { value: 0 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -60,17 +69,27 @@ const MILKDROP_POSTPROCESSING_SHADER = {
     uniform vec2 resolution;
     uniform float vignetteStrength;
     uniform float chromaOffset;
+    uniform float saturation;
+    uniform float contrast;
+    uniform float pulseWarp;
     varying vec2 vUv;
+
+    vec3 applySaturation(vec3 color, float amount) {
+      float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+      return mix(vec3(luminance), color, amount);
+    }
 
     void main() {
       vec2 centeredUv = vUv - vec2(0.5);
+      float radius = length(centeredUv);
+      vec2 warpedUv = clamp(vUv + centeredUv * radius * pulseWarp, 0.0, 1.0);
       vec2 chromaUvOffset = vec2(chromaOffset) / max(resolution, vec2(1.0));
 
-      vec4 baseColor = texture2D(tDiffuse, vUv);
+      vec4 baseColor = texture2D(tDiffuse, warpedUv);
       vec4 chromaColor = vec4(
-        texture2D(tDiffuse, vUv + chromaUvOffset).r,
+        texture2D(tDiffuse, clamp(warpedUv + chromaUvOffset, 0.0, 1.0)).r,
         baseColor.g,
-        texture2D(tDiffuse, vUv - chromaUvOffset).b,
+        texture2D(tDiffuse, clamp(warpedUv - chromaUvOffset, 0.0, 1.0)).b,
         baseColor.a
       );
 
@@ -78,10 +97,12 @@ const MILKDROP_POSTPROCESSING_SHADER = {
       float vignette = smoothstep(
         vignetteRadius,
         vignetteRadius - 0.28,
-        length(centeredUv)
+        radius
       );
 
       vec3 color = mix(chromaColor.rgb, chromaColor.rgb * vignette, vignetteStrength);
+      color = applySaturation(color, saturation);
+      color = (color - 0.5) * contrast + 0.5;
       gl_FragColor = vec4(color, chromaColor.a);
     }
   `,
@@ -165,6 +186,12 @@ export function createMilkdropPostprocessingComposer({
   const filmPass = new FilmPass() as FilmPassWithUniforms;
   composer.addPass(filmPass);
 
+  const afterimagePass = new AfterimagePass(
+    Math.max(profile.afterimageDamp, 0),
+  );
+  afterimagePass.enabled = profile.afterimageDamp > 0;
+  composer.addPass(afterimagePass);
+
   const chromaPass = new ShaderPass(MILKDROP_POSTPROCESSING_SHADER);
   chromaPass.material.uniforms.vignetteStrength.value =
     profile.vignetteStrength;
@@ -183,9 +210,14 @@ export function createMilkdropPostprocessingComposer({
     filmPass.uniforms.nIntensity.value = nextProfile.filmNoise;
     filmPass.uniforms.sIntensity.value = nextProfile.filmScanlines;
     filmPass.uniforms.sCount.value = nextProfile.filmScanlineCount;
+    afterimagePass.damp = Math.max(nextProfile.afterimageDamp, 0);
+    afterimagePass.enabled = nextProfile.afterimageDamp > 0;
     chromaPass.material.uniforms.vignetteStrength.value =
       nextProfile.vignetteStrength;
     chromaPass.material.uniforms.chromaOffset.value = nextProfile.chromaOffset;
+    chromaPass.material.uniforms.saturation.value = nextProfile.saturation;
+    chromaPass.material.uniforms.contrast.value = nextProfile.contrast;
+    chromaPass.material.uniforms.pulseWarp.value = nextProfile.pulseWarp;
   };
   applyProfile(profile);
 
@@ -204,12 +236,16 @@ export function createMilkdropPostprocessingComposer({
   return {
     composer,
     bloomPass,
+    afterimagePass,
     filmPass,
     chromaPass,
     applyProfile,
     render: () => composer.render(),
     updateSize,
-    dispose: () => composer.dispose(),
+    dispose: () => {
+      afterimagePass.dispose();
+      composer.dispose();
+    },
   };
 }
 
@@ -233,11 +269,15 @@ export function createBloomComposer({
     bloomStrength,
     bloomRadius,
     bloomThreshold,
+    afterimageDamp: 0,
     filmNoise: 0,
     filmScanlines: 0,
     filmScanlineCount: 0,
     vignetteStrength: 0,
     chromaOffset: 0,
+    saturation: 1,
+    contrast: 1,
+    pulseWarp: 0,
   };
   const pipeline = createMilkdropPostprocessingComposer({
     renderer,
