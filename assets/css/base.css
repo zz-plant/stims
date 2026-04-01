@@ -5780,3 +5780,123 @@ body {
     transform: translateZ(0) scale(1.1);
   }
 }
+
+:root[data-focused-session="live"] .active-toy-container {
+  background:
+    radial-gradient(
+      circle at 18% 10%,
+      rgba(111, 125, 255, 0.12),
+      transparent 24%
+    ),
+    radial-gradient(circle at 82% 14%, rgba(255, 179, 71, 0.1), transparent 24%),
+    linear-gradient(180deg, #07101d, #050a14 60%, #04070d);
+}
+
+:root[data-focused-session="live"] .active-toy-container::after {
+  inset: 6% 8% 12%;
+  border-radius: 56px;
+  opacity: 0.68;
+  filter: blur(60px);
+}
+
+:root[data-focused-session="live"] .active-toy-nav {
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  transform: none;
+  width: min(360px, calc(100vw - 120px));
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  padding: 0.68rem 0.78rem;
+  border-radius: 20px;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 11, 19, 0.88),
+    rgba(10, 15, 27, 0.76)
+  );
+  border-color: rgba(164, 194, 255, 0.12);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+}
+
+:root[data-focused-session="live"] .active-toy-nav__content {
+  gap: 0.15rem;
+}
+
+:root[data-focused-session="live"] .active-toy-nav__title {
+  font-size: 0.88rem;
+}
+
+:root[data-focused-session="live"] .active-toy-nav__actions {
+  gap: 0.45rem;
+}
+
+:root[data-focused-session="live"] .renderer-status {
+  gap: 0.35rem;
+  max-width: 15rem;
+}
+
+:root[data-focused-session="live"] .renderer-pill {
+  max-width: 10.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-focused-session="live"] .active-toy-nav__actions-secondary {
+  top: calc(100% + 0.55rem);
+  right: 0;
+}
+
+:root[data-focused-session="live"] .milkdrop-overlay {
+  inset: max(14px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right)) auto auto;
+}
+
+:root[data-focused-session="live"] .milkdrop-overlay__toggle {
+  min-height: 46px;
+  padding: 0.72rem 0.95rem;
+  border-color: rgba(124, 232, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    linear-gradient(135deg, rgba(6, 12, 22, 0.88), rgba(8, 15, 27, 0.9));
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32);
+}
+
+:root[data-focused-session="live"] .milkdrop-overlay__panel {
+  top: max(72px, calc(env(safe-area-inset-top) + 58px));
+  right: max(14px, env(safe-area-inset-right));
+  width: min(430px, calc(100vw - 28px));
+  height: min(
+    calc(
+      100dvh -
+      88px -
+      env(safe-area-inset-top) -
+      env(safe-area-inset-bottom)
+    ),
+    860px
+  );
+  max-height: min(
+    calc(
+      100dvh -
+      88px -
+      env(safe-area-inset-top) -
+      env(safe-area-inset-bottom)
+    ),
+    860px
+  );
+}
+
+@media (max-width: 760px) {
+  :root[data-focused-session="live"] .active-toy-nav {
+    width: min(320px, calc(100vw - 92px));
+  }
+
+  :root[data-focused-session="live"] .milkdrop-overlay {
+    inset: auto max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom)) auto;
+  }
+
+  :root[data-focused-session="live"] .milkdrop-overlay__toggle {
+    min-height: 44px;
+    padding: 0.68rem 0.88rem;
+  }
+}

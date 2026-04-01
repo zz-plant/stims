@@ -82,10 +82,42 @@ function ensureInstancedAttribute(
   return attribute;
 }
 
+function normalizeDirection(dx: number, dy: number) {
+  const length = Math.hypot(dx, dy);
+  if (length <= 0.000001) {
+    return { x: 1, y: 0 };
+  }
+  return { x: dx / length, y: dy / length };
+}
+
+function computeJoinExtension(
+  previousDirection: { x: number; y: number } | null,
+  nextDirection: { x: number; y: number } | null,
+) {
+  if (!previousDirection || !nextDirection) {
+    return 1;
+  }
+
+  const bisectorX = previousDirection.x + nextDirection.x;
+  const bisectorY = previousDirection.y + nextDirection.y;
+  const bisectorLength = Math.hypot(bisectorX, bisectorY);
+  if (bisectorLength <= 0.000001) {
+    return 1;
+  }
+
+  const normalizedBisectorX = bisectorX / bisectorLength;
+  const normalizedBisectorY = bisectorY / bisectorLength;
+  const projection =
+    normalizedBisectorX * nextDirection.x +
+    normalizedBisectorY * nextDirection.y;
+  return Math.min(2.5, Math.max(1, 1 / Math.max(0.35, projection)));
+}
+
 class CompactSegmentUploadBuffer {
   private lineData: Float32Array<ArrayBufferLike> = new Float32Array(0);
   private styleData: Float32Array<ArrayBufferLike> = new Float32Array(0);
   private controlData: Float32Array<ArrayBufferLike> = new Float32Array(0);
+  private joinData: Float32Array<ArrayBufferLike> = new Float32Array(0);
   count = 0;
 
   reset() {
@@ -104,6 +136,10 @@ class CompactSegmentUploadBuffer {
     return this.controlData.subarray(0, this.count * 3);
   }
 
+  getJoinData() {
+    return this.joinData.subarray(0, this.count * 4);
+  }
+
   appendSegment(
     startX: number,
     startY: number,
@@ -114,6 +150,17 @@ class CompactSegmentUploadBuffer {
     color: MilkdropColor,
     alpha: number,
     width: number,
+    {
+      startExtension = 1,
+      endExtension = 1,
+      startCap = 1,
+      endCap = 1,
+    }: {
+      startExtension?: number;
+      endExtension?: number;
+      startCap?: number;
+      endCap?: number;
+    } = {},
   ) {
     this.ensureCapacity(this.count + 1);
     const lineOffset = this.count * 4;
@@ -132,6 +179,12 @@ class CompactSegmentUploadBuffer {
     this.controlData[controlOffset] = startZ;
     this.controlData[controlOffset + 1] = endZ;
     this.controlData[controlOffset + 2] = width * 0.5;
+
+    const joinOffset = this.count * 4;
+    this.joinData[joinOffset] = startExtension;
+    this.joinData[joinOffset + 1] = endExtension;
+    this.joinData[joinOffset + 2] = startCap;
+    this.joinData[joinOffset + 3] = endCap;
     this.count += 1;
   }
 
@@ -142,40 +195,72 @@ class CompactSegmentUploadBuffer {
     width: number,
     closeLoop = false,
   ) {
-    for (let index = 0; index + 5 < positions.length; index += 3) {
+    const pointCount = Math.floor(positions.length / 3);
+    const segmentCount = closeLoop ? pointCount : Math.max(0, pointCount - 1);
+
+    for (let segmentIndex = 0; segmentIndex < segmentCount; segmentIndex += 1) {
+      const startPointIndex = segmentIndex;
+      const endPointIndex = closeLoop
+        ? (segmentIndex + 1) % pointCount
+        : segmentIndex + 1;
+      const previousPointIndex = closeLoop
+        ? (startPointIndex - 1 + pointCount) % pointCount
+        : startPointIndex - 1;
+      const nextPointIndex = closeLoop
+        ? (endPointIndex + 1) % pointCount
+        : endPointIndex + 1;
+
+      const startX = positions[startPointIndex * 3] ?? 0;
+      const startY = positions[startPointIndex * 3 + 1] ?? 0;
+      const startZ = positions[startPointIndex * 3 + 2] ?? 0.24;
+      const endX = positions[endPointIndex * 3] ?? 0;
+      const endY = positions[endPointIndex * 3 + 1] ?? 0;
+      const endZ = positions[endPointIndex * 3 + 2] ?? 0.24;
+
+      const currentDirection = normalizeDirection(endX - startX, endY - startY);
+      const previousDirection =
+        previousPointIndex >= 0
+          ? normalizeDirection(
+              startX - (positions[previousPointIndex * 3] ?? 0),
+              startY - (positions[previousPointIndex * 3 + 1] ?? 0),
+            )
+          : null;
+      const nextDirection =
+        nextPointIndex < pointCount
+          ? normalizeDirection(
+              (positions[nextPointIndex * 3] ?? 0) - endX,
+              (positions[nextPointIndex * 3 + 1] ?? 0) - endY,
+            )
+          : null;
+
       this.appendSegment(
-        positions[index] ?? 0,
-        positions[index + 1] ?? 0,
-        positions[index + 2] ?? 0.24,
-        positions[index + 3] ?? 0,
-        positions[index + 4] ?? 0,
-        positions[index + 5] ?? 0.24,
+        startX,
+        startY,
+        startZ,
+        endX,
+        endY,
+        endZ,
         color,
         alpha,
         width,
+        {
+          startExtension: computeJoinExtension(
+            previousDirection,
+            currentDirection,
+          ),
+          endExtension: computeJoinExtension(currentDirection, nextDirection),
+          startCap: !closeLoop && startPointIndex === 0 ? 1 : 0,
+          endCap: !closeLoop && endPointIndex === pointCount - 1 ? 1 : 0,
+        },
       );
     }
-    if (!closeLoop || positions.length < 6) {
-      return;
-    }
-    const lastPointIndex = positions.length - 3;
-    this.appendSegment(
-      positions[lastPointIndex] ?? 0,
-      positions[lastPointIndex + 1] ?? 0,
-      positions[lastPointIndex + 2] ?? 0.24,
-      positions[0] ?? 0,
-      positions[1] ?? 0,
-      positions[2] ?? 0.24,
-      color,
-      alpha,
-      width,
-    );
   }
 
   private ensureCapacity(count: number) {
     this.lineData = ensureFloat32Capacity(this.lineData, count * 4);
     this.styleData = ensureFloat32Capacity(this.styleData, count * 4);
     this.controlData = ensureFloat32Capacity(this.controlData, count * 3);
+    this.joinData = ensureFloat32Capacity(this.joinData, count * 4);
   }
 }
 
@@ -208,24 +293,66 @@ class InstancedSegmentBatch {
           attribute vec4 instanceLine;
           attribute vec4 instanceColorAlpha;
           attribute vec3 instanceControl;
+          attribute vec4 instanceJoin;
           varying vec4 vColor;
+          varying vec4 vJoin;
+          varying vec2 vSegmentLocal;
+          varying float vSegmentLengthUnits;
 
           void main() {
             vec2 delta = instanceLine.zw;
             float lengthDelta = length(delta);
             vec2 direction = lengthDelta > 0.000001 ? delta / lengthDelta : vec2(1.0, 0.0);
             vec2 normal = vec2(-direction.y, direction.x);
-            vec2 base = instanceLine.xy + delta * segmentCoord.x;
-            vec2 point = base + normal * segmentCoord.y * instanceControl.z;
-            float z = mix(instanceControl.x, instanceControl.y, segmentCoord.x);
+            float halfWidth = max(instanceControl.z, 0.000001);
+            float startExtension = max(instanceJoin.x, 0.0);
+            float endExtension = max(instanceJoin.y, 0.0);
+            float clampedT = clamp(segmentCoord.x, 0.0, 1.0);
+            vec2 base = instanceLine.xy + delta * segmentCoord.x + direction * mix(-startExtension, endExtension, segmentCoord.x) * halfWidth;
+            vec2 point = base + normal * segmentCoord.y * halfWidth;
+            float z = mix(instanceControl.x, instanceControl.y, clampedT);
             vColor = instanceColorAlpha;
+            vJoin = instanceJoin;
+            vSegmentLocal = vec2(
+              mix(
+                -startExtension,
+                lengthDelta / halfWidth + endExtension,
+                segmentCoord.x
+              ),
+              segmentCoord.y
+            );
+            vSegmentLengthUnits = lengthDelta / halfWidth;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(point, z, 1.0);
           }
         `,
         fragmentShader: `
           varying vec4 vColor;
+          varying vec4 vJoin;
+          varying vec2 vSegmentLocal;
+          varying float vSegmentLengthUnits;
           void main() {
-            gl_FragColor = vColor;
+            float edgeDistance = abs(vSegmentLocal.y);
+            if (vSegmentLocal.x < 0.0 && vJoin.z > 0.5) {
+              edgeDistance = length(
+                vec2(
+                  vSegmentLocal.x / max(vJoin.x, 0.000001),
+                  vSegmentLocal.y
+                )
+              );
+            } else if (vSegmentLocal.x > vSegmentLengthUnits && vJoin.w > 0.5) {
+              edgeDistance = length(
+                vec2(
+                  (vSegmentLocal.x - vSegmentLengthUnits) /
+                    max(vJoin.y, 0.000001),
+                  vSegmentLocal.y
+                )
+              );
+            }
+            float alpha = 1.0 - smoothstep(0.88, 1.0, edgeDistance);
+            if (alpha <= 0.0) {
+              discard;
+            }
+            gl_FragColor = vec4(vColor.rgb, vColor.a * alpha);
           }
         `,
       }),
@@ -265,12 +392,20 @@ class InstancedSegmentBatch {
       3,
       instances.count,
     );
+    const join = ensureInstancedAttribute(
+      geometry,
+      'instanceJoin',
+      4,
+      instances.count,
+    );
     (line.array as Float32Array).set(instances.getLineData());
     (colorAlpha.array as Float32Array).set(instances.getStyleData());
     (control.array as Float32Array).set(instances.getControlData());
+    (join.array as Float32Array).set(instances.getJoinData());
     line.needsUpdate = true;
     colorAlpha.needsUpdate = true;
     control.needsUpdate = true;
+    join.needsUpdate = true;
   }
 
   dispose() {

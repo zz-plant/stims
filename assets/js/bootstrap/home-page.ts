@@ -72,9 +72,8 @@ export function bootHomePage({
     initTopNav(navContainer, {
       mode: 'library',
       sectionLinks: [
-        { href: '#launches', label: 'Start' },
+        { href: '#overview', label: 'Start' },
         { href: '#presets', label: 'Presets' },
-        { href: '#why-stims', label: 'Workflow' },
       ],
       utilityLink: {
         href: '/milkdrop/',
