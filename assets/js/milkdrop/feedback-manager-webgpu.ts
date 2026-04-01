@@ -980,11 +980,7 @@ function createCompositeOutputNode(
     let color = mix(
       current.rgb,
       previousColor,
-      clamp(
-        uniforms.videoEchoAlpha.add(uniforms.feedbackTexture.mul(0.2)),
-        0,
-        1,
-      ),
+      clamp(uniforms.videoEchoAlpha, 0, 1),
     ).toVar();
     color.assign(mix(color, previousColor, clamp(uniforms.mixAlpha, 0, 1)));
     color.assign(
@@ -1004,51 +1000,6 @@ function createCompositeOutputNode(
       currentUv,
       color,
     ).toVar();
-
-    const brightenMask = max(
-      step(0.01, uniforms.brighten),
-      step(0.01, uniforms.brightenBoost),
-    );
-    const brightened = min(
-      vec3(1),
-      color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
-    );
-    color.assign(mix(color, brightened, brightenMask));
-    color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
-    const centerMask = clamp(baseUv.sub(0.5).length().mul(400), 0, 1);
-    color.assign(
-      color.mul(
-        mix(
-          float(1),
-          float(0.97).add(centerMask.mul(0.03)),
-          step(0.5, uniforms.darkenCenter),
-        ),
-      ),
-    );
-    color.assign(
-      mix(
-        color,
-        abs(color.sub(0.5)).mul(1.5),
-        clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
-      ),
-    );
-    color.assign(
-      mix(
-        color,
-        vec3(1).sub(color),
-        clamp(max(uniforms.invert, uniforms.invertBoost), 0, 1),
-      ),
-    );
-    const stereoEnabled = step(0.5, uniforms.redBlueStereo);
-    const stereoOffset = float(0.003).add(uniforms.signalEnergy.mul(0.003));
-    const leftStereo = uniforms.previousTex.sample(
-      sampleUvNode(previousUv.sub(vec2(stereoOffset, 0)), uniforms.textureWrap),
-    ).rgb;
-    const rightStereo = uniforms.previousTex.sample(
-      sampleUvNode(previousUv.add(vec2(stereoOffset, 0)), uniforms.textureWrap),
-    ).rgb;
-    const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
-    color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
     color.assign(hueRotateNode(color, uniforms.hueShift));
     color.assign(applySaturationNode(color, uniforms.saturation));
     color.assign(applyContrastNode(color, uniforms.contrast));
@@ -1102,64 +1053,50 @@ function createCompositeOutputNode(
     );
     color.assign(mix(color, overlayResult, overlayMask));
 
-    const spectralUvA = baseUv
-      .mul(
-        vec2(
-          float(1.4).add(uniforms.signalBass.mul(0.8)),
-          float(1.1).add(uniforms.signalMid.mul(0.6)),
+    const brightenMask = max(
+      step(0.01, uniforms.brighten),
+      step(0.01, uniforms.brightenBoost),
+    );
+    const brightened = min(
+      vec3(1),
+      color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
+    );
+    color.assign(mix(color, brightened, brightenMask));
+    color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
+    const centerMask = clamp(baseUv.sub(0.5).length().mul(400), 0, 1);
+    color.assign(
+      color.mul(
+        mix(
+          float(1),
+          float(0.97).add(centerMask.mul(0.03)),
+          step(0.5, uniforms.darkenCenter),
         ),
-      )
-      .add(
-        vec2(uniforms.signalTime.mul(0.035), uniforms.signalTime.mul(-0.02)),
-      );
-    const spectralUvB = baseUv
-      .mul(
-        vec2(
-          float(2).add(uniforms.signalTreb.mul(0.9)),
-          float(1.7).add(uniforms.signalBass.mul(0.5)),
-        ),
-      )
-      .sub(
-        vec2(uniforms.signalTime.mul(0.018), uniforms.signalTime.mul(-0.026)),
-      );
-    const spectralA = sampleAuxTextureNode(
-      float(2),
-      float(0),
-      spectralUvA,
-      0,
+      ),
+    );
+    color.assign(
+      mix(
+        color,
+        abs(color.sub(0.5)).mul(1.5),
+        clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
+      ),
+    );
+    color.assign(
+      mix(
+        color,
+        vec3(1).sub(color),
+        clamp(max(uniforms.invert, uniforms.invertBoost), 0, 1),
+      ),
+    );
+    const stereoEnabled = step(0.5, uniforms.redBlueStereo);
+    const stereoOffset = float(0.003).add(uniforms.signalEnergy.mul(0.003));
+    const leftStereo = uniforms.previousTex.sample(
+      sampleUvNode(previousUv.sub(vec2(stereoOffset, 0)), uniforms.textureWrap),
     ).rgb;
-    const spectralB = sampleAuxTextureNode(
-      float(5),
-      float(0),
-      spectralUvB,
-      0,
+    const rightStereo = uniforms.previousTex.sample(
+      sampleUvNode(previousUv.add(vec2(stereoOffset, 0)), uniforms.textureWrap),
     ).rgb;
-    const spectralPulse = sin(
-      baseUv.x
-        .add(baseUv.y)
-        .mul(18)
-        .add(uniforms.signalTime.mul(2.4))
-        .add(uniforms.signalBeat.mul(Math.PI)),
-    ).mul(0.15);
-    const spectralField = smoothstep(
-      0.38,
-      0.92,
-      dot(mix(spectralA, spectralB, 0.5), vec3(0.3333333)).add(spectralPulse),
-    );
-    const spectralTint = vec3(
-      float(0.35).add(uniforms.signalBass.mul(0.9)),
-      float(0.25).add(uniforms.signalMid.mul(0.8)),
-      float(0.45).add(uniforms.signalTreb.mul(1.1)),
-    );
-    color.addAssign(
-      spectralTint
-        .mul(spectralField)
-        .mul(
-          float(0.06)
-            .add(uniforms.signalEnergy.mul(0.18))
-            .add(uniforms.signalBeat.mul(0.08)),
-        ),
-    );
+    const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
+    color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
 
     const gammaAdjusted = pow(
       max(color, vec3(0)),

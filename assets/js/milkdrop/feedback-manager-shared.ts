@@ -216,7 +216,7 @@ export function createCompositeFragmentShaderVariant(
     )
     .replace(
       /color = mix\(\s*current\.rgb,\s*previousColor,\s*clamp\(mixAlpha \+ feedbackTexture \* 0\.2, 0\.0, 1\.0\)\s*\);/,
-      `color = mix(current.rgb, previousColor, clamp(videoEchoAlpha + feedbackTexture * 0.2, 0.0, 1.0));
+      `color = mix(current.rgb, previousColor, clamp(videoEchoAlpha, 0.0, 1.0));
           color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));`,
     )
     .replace(
@@ -557,33 +557,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           vec3 color = mix(
             current.rgb,
             previousColor,
-            clamp(videoEchoAlpha + feedbackTexture * 0.2, 0.0, 1.0)
+            clamp(videoEchoAlpha, 0.0, 1.0)
           );
           color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));
           color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, ${MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP.toFixed(1)}));
-          if (brighten > 0.01 || brightenBoost > 0.01) {
-            color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
-          }
-          if (darken > 0.5) {
-            color = color * 0.82;
-          }
-          if (darkenCenter > 0.5) {
-            float centerMask = clamp(length(vUv - vec2(0.5)) * 400.0, 0.0, 1.0);
-            color *= 0.97 + 0.03 * centerMask;
-          }
-          if (solarize > 0.01 || solarizeBoost > 0.01) {
-            color = mix(color, abs(color - 0.5) * 1.5, clamp(max(solarize, solarizeBoost), 0.0, 1.0));
-          }
-          if (invert > 0.01 || invertBoost > 0.01) {
-            color = mix(color, 1.0 - color, clamp(max(invert, invertBoost), 0.0, 1.0));
-          }
-          if (redBlueStereo > 0.5) {
-            float stereoOffset = 0.003 + signalEnergy * 0.003;
-            vec2 stereoShift = vec2(stereoOffset, 0.0);
-            vec3 leftColor = texture2D(previousTex, sampleUv(prevUv - stereoShift, textureWrap)).rgb;
-            vec3 rightColor = texture2D(previousTex, sampleUv(prevUv + stereoShift, textureWrap)).rgb;
-            color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
-          }
           color = hueRotate(color, hueShift);
           color = applySaturation(color, saturation);
           color = applyContrast(color, contrast);
@@ -612,6 +589,29 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             } else {
               color *= mix(vec3(1.0), overlayColor, clamp(amount, 0.0, 1.0));
             }
+          }
+          if (brighten > 0.01 || brightenBoost > 0.01) {
+            color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
+          }
+          if (darken > 0.5) {
+            color = color * 0.82;
+          }
+          if (darkenCenter > 0.5) {
+            float centerMask = clamp(length(vUv - vec2(0.5)) * 400.0, 0.0, 1.0);
+            color *= 0.97 + 0.03 * centerMask;
+          }
+          if (solarize > 0.01 || solarizeBoost > 0.01) {
+            color = mix(color, abs(color - 0.5) * 1.5, clamp(max(solarize, solarizeBoost), 0.0, 1.0));
+          }
+          if (invert > 0.01 || invertBoost > 0.01) {
+            color = mix(color, 1.0 - color, clamp(max(invert, invertBoost), 0.0, 1.0));
+          }
+          if (redBlueStereo > 0.5) {
+            float stereoOffset = 0.003 + signalEnergy * 0.003;
+            vec2 stereoShift = vec2(stereoOffset, 0.0);
+            vec3 leftColor = texture2D(previousTex, sampleUv(prevUv - stereoShift, textureWrap)).rgb;
+            vec3 rightColor = texture2D(previousTex, sampleUv(prevUv + stereoShift, textureWrap)).rgb;
+            color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
           }
           color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
