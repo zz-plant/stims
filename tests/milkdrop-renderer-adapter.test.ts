@@ -2191,6 +2191,55 @@ wave_a=0.7
     );
   });
 
+  test('uploads adjacency-aware join metadata for closed WebGPU waves', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Closed Join Metadata
+wave_mode=5
+wave_usedots=0
+wave_additive=0
+wave_a=0.7
+      `.trim(),
+      { id: 'closed-join-metadata' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) ===
+          frameState.mainWave.positions.length / 3,
+    );
+    const joinArray = Array.from(
+      getFloat32AttributeArray(waveMesh, 'instanceJoin') ?? [],
+    );
+
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(
+      joinArray.some((value, index) => index % 4 < 2 && value > 1.01),
+    ).toBe(true);
+    expect(
+      joinArray.every((value, index) =>
+        index % 4 < 2 ? value >= 1 : value === 0,
+      ),
+    ).toBe(true);
+  });
+
   test('keeps additive wave materials transparent when alpha exceeds 1', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -3039,6 +3088,45 @@ wavecode_0_thick=4
     ).toBeCloseTo(0.005, 6);
     expect(motionVectorMesh?.material).toBeInstanceOf(ShaderMaterial);
     expect(getGeometryInstanceCount(motionVectorMesh)).toBeGreaterThan(0);
+  });
+
+  test('marks endpoint caps in WebGL batched line metadata', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Line Join Metadata
+motion_vectors=1
+motion_vectors_x=2
+motion_vectors_y=1
+mv_a=0.7
+      `.trim(),
+      { id: 'webgl-line-join-metadata' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const motionVectorMesh = getRenderedBatchNode(root, [70, 71]);
+    const joinArray = getFloat32AttributeArray(
+      motionVectorMesh,
+      'instanceJoin',
+    );
+
+    expect(motionVectorMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(joinArray?.[2]).toBe(1);
+    expect(joinArray?.[3]).toBe(1);
   });
 
   test('skips feedback composite rendering when shader mode is disabled', () => {
