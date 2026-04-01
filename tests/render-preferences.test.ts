@@ -5,17 +5,24 @@ import {
   MAX_PIXEL_RATIO_KEY,
   RENDER_SCALE_KEY,
   resetRenderPreferencesState,
+  setCompatibilityMode,
   setRenderPreferences,
 } from '../assets/js/core/render-preferences';
+import {
+  hasWebGPUCompatibilityGapOverride,
+  setWebGPUCompatibilityGapOverride,
+} from '../assets/js/core/renderer-query-override.ts';
 
 describe('render preferences', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     resetRenderPreferencesState();
   });
 
   afterEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     resetRenderPreferencesState();
   });
 
@@ -61,5 +68,13 @@ describe('render preferences', () => {
       maxPixelRatio: null,
       renderScale: 1.1,
     });
+  });
+
+  test('clears explicit WebGPU retry overrides when compatibility mode is re-enabled', () => {
+    setWebGPUCompatibilityGapOverride(true);
+
+    setCompatibilityMode(true);
+
+    expect(hasWebGPUCompatibilityGapOverride()).toBe(false);
   });
 });
