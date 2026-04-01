@@ -2663,9 +2663,7 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [
-        "This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate."
-      ],
+      "warnings": [],
       "featuresUsed": ["base-globals"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
@@ -2703,15 +2701,8 @@
       },
       "backends": {
         "webgl": {
-          "status": "partial",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "partial",
-              "code": "unsupported-shader-text-gap",
-              "feature": "unsupported-shader-text"
-            }
-          ]
+          "status": "supported",
+          "evidence": []
         },
         "webgpu": {
           "status": "supported",
@@ -2719,11 +2710,8 @@
         }
       },
       "parity": {
-        "fidelityClass": "near-exact",
-        "backendDivergence": [
-          "status:webgl=partial,webgpu=supported",
-          "webgl:unsupported-shader-text-gap:unsupported-shader-text"
-        ],
+        "fidelityClass": "exact",
+        "backendDivergence": [],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],

@@ -81,16 +81,6 @@ const FULL_SUPPORT_EXPECTATION = {
   unsupportedKeys: [],
 } as const satisfies ProjectMFixtureExpectation;
 
-const SHADER_DIRECT_EXECUTION_EXPECTATION = {
-  diagnostics: [],
-  webgl: 'supported',
-  webgpu: 'supported',
-  divergence: [],
-  warnings: [],
-  blockedConstructs: [],
-  unsupportedKeys: [],
-} as const satisfies ProjectMFixtureExpectation;
-
 const PROJECTM_FIXTURE_EXPECTATIONS = {
   '000-empty.milk': FULL_SUPPORT_EXPECTATION,
   '001-line.milk': FULL_SUPPORT_EXPECTATION,
@@ -127,7 +117,7 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
   '260-compshader-noise_lq.milk': FULL_SUPPORT_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': SHADER_DIRECT_EXECUTION_EXPECTATION,
+  '261-compshader-noisevol_lq.milk': FULL_SUPPORT_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],
@@ -321,42 +311,6 @@ function buildCompatibilitySnapshot(
   file: string,
   compiled: MilkdropCompiledPreset,
 ) {
-  const compatibility =
-    file === '261-compshader-noisevol_lq.milk'
-      ? {
-          ...compiled.ir.compatibility,
-          warnings: [
-            'This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate.',
-          ],
-          backends: {
-            ...compiled.ir.compatibility.backends,
-            webgl: {
-              ...compiled.ir.compatibility.backends.webgl,
-              status: 'partial' as const,
-              evidence: [
-                {
-                  backend: 'webgl' as const,
-                  scope: 'backend' as const,
-                  status: 'partial' as const,
-                  code: 'unsupported-shader-text-gap',
-                  message:
-                    'This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate.',
-                  feature: 'unsupported-shader-text' as const,
-                },
-              ],
-            },
-          },
-          parity: {
-            ...compiled.ir.compatibility.parity,
-            backendDivergence: [
-              'status:webgl=partial,webgpu=supported',
-              'webgl:unsupported-shader-text-gap:unsupported-shader-text',
-            ],
-            fidelityClass: 'near-exact' as const,
-          },
-        }
-      : compiled.ir.compatibility;
-
   return {
     file,
     diagnostics: compiled.diagnostics.map((entry) => ({
@@ -381,65 +335,75 @@ function buildCompatibilitySnapshot(
       })),
     },
     compatibility: {
-      unsupportedKeys: compatibility.unsupportedKeys,
-      warnings: compatibility.warnings,
-      featuresUsed: compatibility.featureAnalysis.featuresUsed,
+      unsupportedKeys: compiled.ir.compatibility.unsupportedKeys,
+      warnings: compiled.ir.compatibility.warnings,
+      featuresUsed: compiled.ir.compatibility.featureAnalysis.featuresUsed,
       gpuDescriptorPlan: {
-        routing: compatibility.gpuDescriptorPlans.webgpu.routing,
+        routing: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
         proceduralWaves:
-          compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
-        proceduralMesh: compatibility.gpuDescriptorPlans.webgpu.proceduralMesh,
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
+        proceduralMesh:
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralMesh,
         proceduralMotionVectors:
-          compatibility.gpuDescriptorPlans.webgpu.proceduralMotionVectors,
-        feedback: compatibility.gpuDescriptorPlans.webgpu.feedback
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu
+            .proceduralMotionVectors,
+        feedback: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
           ? {
-              kind: compatibility.gpuDescriptorPlans.webgpu.feedback.kind,
+              kind: compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                .kind,
               shaderExecution:
-                compatibility.gpuDescriptorPlans.webgpu.feedback
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
                   .shaderExecution,
               usesFeedbackTexture:
-                compatibility.gpuDescriptorPlans.webgpu.feedback
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
                   .usesFeedbackTexture,
               usesVideoEcho:
-                compatibility.gpuDescriptorPlans.webgpu.feedback.usesVideoEcho,
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+                  .usesVideoEcho,
               usesPostEffects:
-                compatibility.gpuDescriptorPlans.webgpu.feedback
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
                   .usesPostEffects,
               fallbackToLegacyFeedback:
-                compatibility.gpuDescriptorPlans.webgpu.feedback
+                compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
                   .fallbackToLegacyFeedback,
             }
           : null,
-        unsupported: compatibility.gpuDescriptorPlans.webgpu.unsupported,
+        unsupported:
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.unsupported,
       },
       backends: {
         webgl: {
-          status: compatibility.backends.webgl.status,
-          evidence: compatibility.backends.webgl.evidence.map((entry) => ({
-            scope: entry.scope,
-            status: entry.status,
-            code: entry.code,
-            feature: entry.feature ?? null,
-          })),
+          status: compiled.ir.compatibility.backends.webgl.status,
+          evidence: compiled.ir.compatibility.backends.webgl.evidence.map(
+            (entry) => ({
+              scope: entry.scope,
+              status: entry.status,
+              code: entry.code,
+              feature: entry.feature ?? null,
+            }),
+          ),
         },
         webgpu: {
-          status: compatibility.backends.webgpu.status,
-          evidence: compatibility.backends.webgpu.evidence.map((entry) => ({
-            scope: entry.scope,
-            status: entry.status,
-            code: entry.code,
-            feature: entry.feature ?? null,
-          })),
+          status: compiled.ir.compatibility.backends.webgpu.status,
+          evidence: compiled.ir.compatibility.backends.webgpu.evidence.map(
+            (entry) => ({
+              scope: entry.scope,
+              status: entry.status,
+              code: entry.code,
+              feature: entry.feature ?? null,
+            }),
+          ),
         },
       },
       parity: {
-        fidelityClass: compatibility.parity.fidelityClass,
-        backendDivergence: compatibility.parity.backendDivergence,
-        ignoredFields: compatibility.parity.ignoredFields,
-        blockedConstructs: compatibility.parity.blockedConstructs,
-        approximatedShaderLines: compatibility.parity.approximatedShaderLines,
+        fidelityClass: compiled.ir.compatibility.parity.fidelityClass,
+        backendDivergence: compiled.ir.compatibility.parity.backendDivergence,
+        ignoredFields: compiled.ir.compatibility.parity.ignoredFields,
+        blockedConstructs: compiled.ir.compatibility.parity.blockedConstructs,
+        approximatedShaderLines:
+          compiled.ir.compatibility.parity.approximatedShaderLines,
         missingAliasesOrFunctions:
-          compatibility.parity.missingAliasesOrFunctions,
+          compiled.ir.compatibility.parity.missingAliasesOrFunctions,
       },
     },
   };

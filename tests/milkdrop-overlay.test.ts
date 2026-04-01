@@ -488,7 +488,7 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__browse',
     ) as HTMLElement | null;
 
-    expect(search?.placeholder).toBe('Search looks');
+    expect(search?.placeholder).toBe('Search looks, authors, or classic names');
     expect(modeTabs.map((tab) => tab.textContent?.trim())).toEqual([
       'Featured',
       'All looks',
@@ -504,6 +504,76 @@ describe('milkdrop overlay browse rendering', () => {
     expect(collectionFilters?.hidden).toBe(true);
     expect(browse?.textContent).toContain('Signal Bloom');
     expect(browse?.textContent).toContain('Aurora Drift');
+
+    overlay.dispose();
+  });
+
+  test('surfaces familiar author and classic sections for MilkDrop veterans', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const activePreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    activePreset.historyIndex = 0;
+
+    const rovastarOne = createCatalogEntry(
+      'rovastar-parallel-universe',
+      'Parallel Universe',
+    );
+    rovastarOne.author = 'Rovastar';
+    rovastarOne.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+      'lasers',
+    ];
+
+    const rovastarTwo = createCatalogEntry(
+      'krash-rovastar-cerebral-demons-stars',
+      'Cerebral Demons',
+    );
+    rovastarTwo.author = 'Krash & Rovastar';
+    rovastarTwo.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+      'comets',
+    ];
+
+    const classicOne = createCatalogEntry('eos-glowsticks', 'Glowsticks');
+    classicOne.author = 'Eo.S.';
+    classicOne.tags = ['collection:classic-milkdrop', 'original-pack'];
+
+    const classicTwo = createCatalogEntry('eos-cubetrace', 'Cubetrace');
+    classicTwo.author = 'Eo.S. + Phat';
+    classicTwo.tags = ['collection:classic-milkdrop', 'geometry'];
+
+    overlay.setCatalog(
+      [activePreset, rovastarOne, rovastarTwo, classicOne, classicTwo],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const headings = [
+      ...document.querySelectorAll('.milkdrop-overlay__browse-heading'),
+    ].map((heading) => (heading.childNodes[0]?.textContent ?? '').trim());
+    const rows = [
+      ...document.querySelectorAll('.milkdrop-overlay__preset'),
+    ] as HTMLElement[];
+    const metaLabels = rows.map(
+      (row) =>
+        row
+          .querySelector('.milkdrop-overlay__preset-meta')
+          ?.textContent?.trim() ?? '',
+    );
+
+    expect(headings).toContain('Rovastar and collaborators');
+    expect(headings).toContain('Classic MilkDrop staples');
+    expect(metaLabels).toContain('Rovastar · Cream of the Crop');
+    expect(metaLabels).toContain('Eo.S. · Classic MilkDrop');
 
     overlay.dispose();
   });
