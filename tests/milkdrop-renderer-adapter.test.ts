@@ -57,6 +57,21 @@ function getGeometryInstanceCount(node: RenderTreeNode | undefined) {
   )?.instanceCount;
 }
 
+function getRenderedBatchNode(
+  root: RenderTreeNode,
+  renderOrder: number | number[],
+) {
+  const allowedRenderOrders = Array.isArray(renderOrder)
+    ? renderOrder
+    : [renderOrder];
+  return flattenRenderTree(root).find(
+    (child) =>
+      child.material instanceof ShaderMaterial &&
+      allowedRenderOrders.includes(child.renderOrder ?? -1) &&
+      (getGeometryInstanceCount(child) ?? 0) > 0,
+  );
+}
+
 function isWebGPUSegmentBatchNode(node: RenderTreeNode) {
   return node.geometry?.getAttribute?.('instanceLine') !== undefined;
 }
@@ -880,11 +895,14 @@ wavecode_1_additive=0
       blendState: null,
     });
 
-    const root = scene.children[0] as {
-      children?: Array<{ children?: Array<{ renderOrder?: number }> }>;
-    };
-    const customWaveGroup = root.children?.[3];
-    const waveOrders = (customWaveGroup?.children ?? [])
+    const root = scene.children[0] as RenderTreeNode;
+    const waveOrders = flattenRenderTree(root)
+      .filter(
+        (child) =>
+          child.material instanceof ShaderMaterial &&
+          (child.renderOrder === 30 || child.renderOrder === 31) &&
+          (getGeometryInstanceCount(child) ?? 0) > 0,
+      )
       .map((child) => child.renderOrder)
       .sort((left, right) => (left ?? 0) - (right ?? 0));
 
@@ -2927,22 +2945,17 @@ wave_a=1
       },
     });
 
-    const root = scene.children[0] as {
-      children: Array<{ children?: Array<{ material?: unknown }> }>;
-    };
-    const blendWaveGroup = root.children[8];
+    const root = scene.children[0] as RenderTreeNode;
+    const blendedWave = getRenderedBatchNode(root, [80, 81]);
 
-    expect(blendWaveGroup?.children?.length ?? 0).toBeGreaterThan(0);
-    const renderedBlendWave = blendWaveGroup?.children?.[0] as
-      | {
-          material?: LineBasicMaterial;
-        }
-      | undefined;
-    expect(renderedBlendWave?.material).toBeInstanceOf(LineBasicMaterial);
-    expect(renderedBlendWave?.material?.opacity).toBeCloseTo(0.5, 6);
+    expect(blendedWave?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(blendedWave)).toBeGreaterThan(0);
+    expect(
+      getFloat32AttributeArray(blendedWave, 'instanceColorAlpha')?.[3],
+    ).toBeCloseTo(0.5, 6);
   });
 
-  test('keeps WebGL fallback on CPU geometry for descriptors that WebGPU synthesizes procedurally', () => {
+  test('keeps WebGL fallback on explicit strip geometry for descriptors that WebGPU synthesizes procedurally', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGL Fallback Renderer
@@ -3005,23 +3018,27 @@ wavecode_0_thick=4
     expect(frameState.gpuGeometry.meshField).toBeNull();
     expect(frameState.gpuGeometry.motionVectorField).toBeNull();
     expect(meshLines.material).toBeInstanceOf(LineBasicMaterial);
-    expect(mainWaveGroup.children[0]?.material).toBeInstanceOf(
-      LineBasicMaterial,
-    );
-    expect(customWaveGroup.children[0]?.material).toBeInstanceOf(
-      LineBasicMaterial,
-    );
+    expect(mainWaveGroup.children).toHaveLength(0);
+    expect(customWaveGroup.children).toHaveLength(0);
+    expect(motionVectorGroup.children[0]?.children ?? []).toHaveLength(0);
+
+    const tree = scene.children[0] as RenderTreeNode;
+    const mainWaveMesh = getRenderedBatchNode(tree, [20, 21]);
+    const customWaveMesh = getRenderedBatchNode(tree, [30, 31]);
+    const motionVectorMesh = getRenderedBatchNode(tree, [70, 71]);
+
+    expect(mainWaveMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(mainWaveMesh)).toBeGreaterThan(0);
     expect(
-      (mainWaveGroup.children[0]?.material as LineBasicMaterial | undefined)
-        ?.linewidth,
-    ).toBe(5);
+      getFloat32AttributeArray(mainWaveMesh, 'instanceControl')?.[2],
+    ).toBeCloseTo(0.00625, 6);
+    expect(customWaveMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(customWaveMesh)).toBeGreaterThan(0);
     expect(
-      (customWaveGroup.children[0]?.material as LineBasicMaterial | undefined)
-        ?.linewidth,
-    ).toBe(4);
-    expect(
-      motionVectorGroup.children[0]?.children?.[0]?.material,
-    ).toBeInstanceOf(LineBasicMaterial);
+      getFloat32AttributeArray(customWaveMesh, 'instanceControl')?.[2],
+    ).toBeCloseTo(0.005, 6);
+    expect(motionVectorMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(motionVectorMesh)).toBeGreaterThan(0);
   });
 
   test('skips feedback composite rendering when shader mode is disabled', () => {
