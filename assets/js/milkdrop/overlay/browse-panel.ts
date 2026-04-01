@@ -10,6 +10,10 @@ const COLLECTION_LABELS: Record<string, string> = {
   'collection:low-motion': 'Low Motion',
   'collection:touch-friendly': 'Touch Friendly',
 };
+const HIDDEN_COLLECTION_FILTER_TAGS = new Set([
+  'collection:feedback-lab',
+  'collection:low-motion',
+]);
 const CLASSIC_MILKDROP_TAGS = new Set([
   'collection:classic-milkdrop',
   'collection:cream-of-the-crop',
@@ -737,11 +741,13 @@ export class BrowsePanel {
           preset.tags.filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX)),
         ),
       ),
-    ].sort((left, right) => {
-      return (COLLECTION_LABELS[left] ?? left).localeCompare(
-        COLLECTION_LABELS[right] ?? right,
-      );
-    });
+    ]
+      .filter((tag) => !HIDDEN_COLLECTION_FILTER_TAGS.has(tag))
+      .sort((left, right) => {
+        return (COLLECTION_LABELS[left] ?? left).localeCompare(
+          COLLECTION_LABELS[right] ?? right,
+        );
+      });
     const collectionFilterSignature = [
       this.activeCollectionTag,
       collectionTags.join('|'),

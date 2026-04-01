@@ -58,6 +58,10 @@ const COLLECTION_LABELS: Record<string, string> = {
   'collection:low-motion': 'Low Motion',
   'collection:touch-friendly': 'Touch Friendly',
 };
+const HIDDEN_COLLECTION_FILTER_TAGS = new Set([
+  'collection:feedback-lab',
+  'collection:low-motion',
+]);
 
 function formatCollectionLabel(tag: string) {
   return (
@@ -78,6 +82,36 @@ function getCollectionTags(entries: MilkdropCatalogEntry[]) {
       ),
     ),
   ];
+}
+
+function getVisibleCollectionTags(collectionTags: string[]) {
+  return collectionTags.filter(
+    (tag) => !HIDDEN_COLLECTION_FILTER_TAGS.has(tag),
+  );
+}
+
+function getPreferredCollectionTag(entry: MilkdropCatalogEntry) {
+  return (entry.tags ?? []).find((tag) => tag.startsWith('collection:')) ?? '';
+}
+
+function buildPresetLaunchHref(
+  entry: MilkdropCatalogEntry,
+  collectionTag: string,
+) {
+  const searchParams = new URLSearchParams({
+    audio: 'demo',
+    panel: 'browse',
+    preset: entry.id,
+  });
+  const selectedCollectionTag =
+    collectionTag || getPreferredCollectionTag(entry);
+  if (selectedCollectionTag) {
+    searchParams.set(
+      'collection',
+      selectedCollectionTag.replace(/^collection:/u, ''),
+    );
+  }
+  return `/milkdrop/?${searchParams.toString()}`;
 }
 
 function buildPresetDescription(entry: MilkdropCatalogEntry) {
@@ -121,6 +155,7 @@ function createCollectionButton(
 function createPresetCard(
   documentRef: Document,
   entry: MilkdropCatalogEntry,
+  collectionTag: string,
   collectionLabel: string,
 ) {
   const card = documentRef.createElement('article');
@@ -163,8 +198,7 @@ function createPresetCard(
   actions.className = 'milkdrop-showcase__card-actions';
 
   const launch = documentRef.createElement('a');
-  launch.href =
-    '/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop';
+  launch.href = buildPresetLaunchHref(entry, collectionTag);
   launch.className = 'cta-button primary';
   launch.textContent = 'Start with this preset';
   launch.addEventListener('click', () => {
@@ -206,9 +240,15 @@ export async function initMilkdropShowcase() {
     }
 
     const collectionTags = getCollectionTags(entries);
+    const visibleCollectionTags = getVisibleCollectionTags(collectionTags);
     const initialCollection =
-      collectionTags.find((tag) => tag === 'collection:cream-of-the-crop') ??
-      collectionTags.find((tag) => tag === 'collection:classic-milkdrop') ??
+      visibleCollectionTags.find(
+        (tag) => tag === 'collection:cream-of-the-crop',
+      ) ??
+      visibleCollectionTags.find(
+        (tag) => tag === 'collection:classic-milkdrop',
+      ) ??
+      visibleCollectionTags[0] ??
       collectionTags[0] ??
       '';
 
@@ -228,11 +268,11 @@ export async function initMilkdropShowcase() {
 
       presetList.replaceChildren(
         ...featuredEntries.map((entry) =>
-          createPresetCard(document, entry, collectionLabel),
+          createPresetCard(document, entry, collectionTag, collectionLabel),
         ),
       );
 
-      presetCount.textContent = `${entries.length} bundled presets across ${collectionTags.length} quick collections. Showing ${featuredEntries.length} featured picks from ${collectionLabel}.`;
+      presetCount.textContent = `${entries.length} bundled presets across ${visibleCollectionTags.length} quick collections. Showing ${featuredEntries.length} featured picks from ${collectionLabel}.`;
 
       presetFilters.replaceChildren(
         createCollectionButton(document, {
@@ -242,7 +282,7 @@ export async function initMilkdropShowcase() {
           active: collectionTag === '',
           onSelect: renderCollection,
         }),
-        ...collectionTags.map((tag) =>
+        ...visibleCollectionTags.map((tag) =>
           createCollectionButton(document, {
             tag,
             label: formatCollectionLabel(tag),

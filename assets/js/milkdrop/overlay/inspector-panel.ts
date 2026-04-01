@@ -158,7 +158,7 @@ export function formatInspectorMetrics({
     { label: 'Borders', value: String(frameState.borders.length) },
     {
       label: 'Particle count',
-      value: String(frameState.gpuGeometry.particleField?.instanceCount ?? 0),
+      value: String(frameState.gpuGeometry?.particleField?.instanceCount ?? 0),
     },
     {
       label: 'Register pressure',

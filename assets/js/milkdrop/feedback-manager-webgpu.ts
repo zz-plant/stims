@@ -105,6 +105,13 @@ type ShaderNodeEnv = {
 };
 
 type DirectShaderSwizzleComponent = 'x' | 'y' | 'z';
+type DirectShaderConstructorPattern =
+  | 'vec2-pair'
+  | 'vec2-splat'
+  | 'vec3-triple'
+  | 'vec3-splat'
+  | 'vec3-vec2-scalar'
+  | 'vec3-scalar-vec2';
 
 function hueRotateNode(colorValue: any, angle: any) {
   return Fn(() => {
@@ -214,6 +221,49 @@ function buildDirectShaderSwizzleValue(
     return shaderVec2(componentNodes[0], componentNodes[1]);
   }
   return shaderVec3(componentNodes[0], componentNodes[1], componentNodes[2]);
+}
+
+export function resolveDirectShaderConstructorPattern(
+  name: string,
+  argKinds: Array<ShaderNodeValue['kind']>,
+): DirectShaderConstructorPattern | null {
+  const normalizedName =
+    name.toLowerCase() === 'float2'
+      ? 'vec2'
+      : name.toLowerCase() === 'float3'
+        ? 'vec3'
+        : name.toLowerCase();
+
+  if (normalizedName === 'vec2') {
+    if (argKinds[0] === 'scalar' && argKinds[1] === 'scalar') {
+      return 'vec2-pair';
+    }
+    if (argKinds[0] === 'scalar') {
+      return 'vec2-splat';
+    }
+    return null;
+  }
+
+  if (normalizedName === 'vec3') {
+    if (
+      argKinds[0] === 'scalar' &&
+      argKinds[1] === 'scalar' &&
+      argKinds[2] === 'scalar'
+    ) {
+      return 'vec3-triple';
+    }
+    if (argKinds[0] === 'vec2' && argKinds[1] === 'scalar') {
+      return 'vec3-vec2-scalar';
+    }
+    if (argKinds[0] === 'scalar' && argKinds[1] === 'vec2') {
+      return 'vec3-scalar-vec2';
+    }
+    if (argKinds[0] === 'scalar') {
+      return 'vec3-splat';
+    }
+  }
+
+  return null;
 }
 
 function coerceShaderValue(
@@ -454,48 +504,44 @@ function compileShaderExpressionNode(
       if (args.length !== node.args.length) {
         return null;
       }
-      if (name === 'vec2' && args.length >= 2) {
+      const constructorPattern = resolveDirectShaderConstructorPattern(
+        name,
+        args.map((entry) => entry.kind),
+      );
+      if (constructorPattern === 'vec2-pair') {
         return shaderVec2(
           coerceShaderValue(args[0], 'scalar').node,
           coerceShaderValue(args[1], 'scalar').node,
         );
       }
-      if ((name === 'vec2' || name === 'float2') && args.length >= 1) {
+      if (constructorPattern === 'vec2-splat') {
         const scalar = coerceShaderValue(args[0], 'scalar').node;
         return shaderVec2(scalar, scalar);
       }
-      if (name === 'float2' && args.length >= 2) {
-        return shaderVec2(
+      if (constructorPattern === 'vec3-triple') {
+        return shaderVec3(
           coerceShaderValue(args[0], 'scalar').node,
+          coerceShaderValue(args[1], 'scalar').node,
+          coerceShaderValue(args[2], 'scalar').node,
+        );
+      }
+      if (constructorPattern === 'vec3-vec2-scalar') {
+        return shaderVec3(
+          args[0].node.x,
+          args[0].node.y,
           coerceShaderValue(args[1], 'scalar').node,
         );
       }
-      if (name === 'vec3' || name === 'float3') {
-        if (args.length >= 1 && args[0]?.kind === 'scalar') {
-          const scalar = coerceShaderValue(args[0], 'scalar').node;
-          return shaderVec3(scalar, scalar, scalar);
-        }
-        if (args.length >= 3) {
-          return shaderVec3(
-            coerceShaderValue(args[0], 'scalar').node,
-            coerceShaderValue(args[1], 'scalar').node,
-            coerceShaderValue(args[2], 'scalar').node,
-          );
-        }
-        if (args.length >= 2 && args[0]?.kind === 'vec2') {
-          return shaderVec3(
-            args[0].node.x,
-            args[0].node.y,
-            coerceShaderValue(args[1], 'scalar').node,
-          );
-        }
-        if (args.length >= 2 && args[1]?.kind === 'vec2') {
-          return shaderVec3(
-            coerceShaderValue(args[0], 'scalar').node,
-            args[1].node.x,
-            args[1].node.y,
-          );
-        }
+      if (constructorPattern === 'vec3-scalar-vec2') {
+        return shaderVec3(
+          coerceShaderValue(args[0], 'scalar').node,
+          args[1].node.x,
+          args[1].node.y,
+        );
+      }
+      if (constructorPattern === 'vec3-splat') {
+        const scalar = coerceShaderValue(args[0], 'scalar').node;
+        return shaderVec3(scalar, scalar, scalar);
       }
       if (
         (name === 'tex2d' ||

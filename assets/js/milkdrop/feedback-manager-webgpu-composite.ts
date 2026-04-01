@@ -337,13 +337,14 @@ export function createSampleAuxTextureNode(
 
   const atlasSliceUvNode = Fn(([sampleUv, sliceIndex]: [any, any]) => {
     const tileScale = float(1 / AUX_TEXTURE_ATLAS_GRID_SIZE);
+    const localUv = mix(vec2(0.01), vec2(0.99), fract(sampleUv));
     const column = sliceIndex.sub(
       floor(sliceIndex.div(AUX_TEXTURE_ATLAS_GRID_SIZE)).mul(
         AUX_TEXTURE_ATLAS_GRID_SIZE,
       ),
     );
     const row = floor(sliceIndex.div(AUX_TEXTURE_ATLAS_GRID_SIZE));
-    return vec2(column, row).mul(tileScale).add(sampleUv.mul(tileScale));
+    return vec2(column, row).add(localUv).mul(tileScale);
   });
 
   return Fn(
@@ -352,16 +353,14 @@ export function createSampleAuxTextureNode(
         sampleDimension.lessThan(0.5),
         sampleAuxTexture2dNode(source, sampleUv),
         (() => {
-          const clampedSlice = clamp(sliceZ, 0, 0.999999).mul(
-            AUX_TEXTURE_ATLAS_SLICE_COUNT - 1,
-          );
-          const lowerSlice = floor(clampedSlice);
-          const upperSlice = clamp(
-            lowerSlice.add(1),
-            0,
-            AUX_TEXTURE_ATLAS_SLICE_COUNT - 1,
-          );
-          const blend = clampedSlice.sub(lowerSlice);
+          const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
+          const wrappedSlice = fract(sliceZ);
+          const scaledSlice = wrappedSlice.mul(sliceCount);
+          const lowerSlice = floor(scaledSlice);
+          const upperSlice = lowerSlice
+            .add(1)
+            .sub(floor(lowerSlice.add(1).div(sliceCount)).mul(sliceCount));
+          const blend = fract(scaledSlice);
           const lowerSample = sampleAuxTexture2dNode(
             source,
             atlasSliceUvNode(sampleUv, lowerSlice),
