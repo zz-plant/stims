@@ -284,6 +284,17 @@ describe('browse panel helpers', () => {
     expect(getPresetMetaQualifier(preset)).toBe('Cream of the Crop');
   });
 
+  test('uses the shipped Rovastar collection label ahead of generic classic tags', () => {
+    const preset = createCatalogEntry('glowsticks', 'Glowsticks');
+    preset.tags = [
+      'collection:classic-milkdrop',
+      'collection:rovastar-and-collaborators',
+      'glowsticks',
+    ];
+
+    expect(getPresetMetaQualifier(preset)).toBe('Rovastar and collaborators');
+  });
+
   test('sorts recommended and recent browse presets predictably', () => {
     const favorite = createCatalogEntry('favorite', 'Beta');
     favorite.isFavorite = true;

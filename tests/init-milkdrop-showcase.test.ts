@@ -146,6 +146,52 @@ describe('initMilkdropShowcase', () => {
     );
   });
 
+  test('shows the shipped Rovastar collection as a visible quick collection', async () => {
+    globalThis.fetch = mock(async () => ({
+      ok: true,
+      json: async () => ({
+        presets: [
+          {
+            id: 'rovastar-parallel-universe',
+            title: 'Rovastar - Parallel Universe',
+            order: 1,
+            preview: true,
+            tags: [
+              'collection:classic-milkdrop',
+              'collection:cream-of-the-crop',
+              'collection:rovastar-and-collaborators',
+              'lasers',
+            ],
+          },
+          {
+            id: 'eos-glowsticks-v2-03-music',
+            title: 'Eo.S. - Glowsticks v2 03 Music',
+            order: 2,
+            preview: true,
+            tags: [
+              'collection:classic-milkdrop',
+              'collection:rovastar-and-collaborators',
+              'glowsticks',
+            ],
+          },
+        ],
+      }),
+    })) as unknown as typeof fetch;
+
+    await initMilkdropShowcase();
+
+    const filters = Array.from(
+      document.querySelectorAll('[data-milkdrop-preset-filters] button'),
+    ).map((button) => button.textContent?.replace(/\s+/gu, ' ').trim());
+
+    expect(filters).toEqual([
+      'All presets2',
+      'Classic MilkDrop2',
+      'Cream of the Crop1',
+      'Rovastar and collaborators2',
+    ]);
+  });
+
   test('keeps fallback markup when the catalog cannot be fetched', async () => {
     globalThis.fetch = mock(async () => ({
       ok: false,

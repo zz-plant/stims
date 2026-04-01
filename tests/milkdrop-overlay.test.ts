@@ -549,6 +549,7 @@ describe('milkdrop overlay browse rendering', () => {
     rovastarOne.tags = [
       'collection:classic-milkdrop',
       'collection:cream-of-the-crop',
+      'collection:rovastar-and-collaborators',
       'lasers',
     ];
 
@@ -560,6 +561,7 @@ describe('milkdrop overlay browse rendering', () => {
     rovastarTwo.tags = [
       'collection:classic-milkdrop',
       'collection:cream-of-the-crop',
+      'collection:rovastar-and-collaborators',
       'comets',
     ];
 
@@ -609,7 +611,10 @@ describe('milkdrop overlay browse rendering', () => {
 
     const overlay = createOverlay();
     const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
-    classicPreset.tags = ['collection:classic-milkdrop'];
+    classicPreset.tags = [
+      'collection:classic-milkdrop',
+      'collection:rovastar-and-collaborators',
+    ];
     classicPreset.historyIndex = 0;
     const favoritePreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
     favoritePreset.isFavorite = true;
@@ -696,7 +701,10 @@ describe('milkdrop overlay browse rendering', () => {
 
     const overlay = createOverlay();
     const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
-    classicPreset.tags = ['collection:classic-milkdrop'];
+    classicPreset.tags = [
+      'collection:classic-milkdrop',
+      'collection:rovastar-and-collaborators',
+    ];
     const feedbackPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
     feedbackPreset.tags = ['collection:feedback-lab'];
 
@@ -741,6 +749,9 @@ describe('milkdrop overlay browse rendering', () => {
     optionsDisclosure.dispatchEvent(new Event('toggle'));
     expect(collectionFilters?.hidden).toBe(false);
     expect(collectionFilters?.textContent).toContain('Classic MilkDrop');
+    expect(collectionFilters?.textContent).toContain(
+      'Rovastar and collaborators',
+    );
     expect(collectionFilters?.textContent).not.toContain('Feedback Lab');
     expect(collectionFilters?.textContent).not.toContain('Low Motion');
 
