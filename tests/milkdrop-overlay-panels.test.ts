@@ -9,6 +9,7 @@ import {
   formatInspectorMetrics,
   InspectorPanel,
 } from '../assets/js/milkdrop/overlay/inspector-panel.ts';
+import { getPresetMetaQualifier } from '../assets/js/milkdrop/overlay/preset-row.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
@@ -230,6 +231,57 @@ describe('browse panel helpers', () => {
         browseSupportFilter: 'partial',
       }),
     ).toBe(false);
+  });
+
+  test('matches classic-name and author-aware browse aliases', () => {
+    const classicPreset = createCatalogEntry(
+      'rovastar-parallel-universe',
+      'Parallel Universe',
+    );
+    classicPreset.author = 'Rovastar';
+    classicPreset.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+    ];
+
+    expect(
+      matchesBrowseFilters({
+        preset: classicPreset,
+        query: 'rovastar',
+        activeCollectionTag: '',
+        browseMode: 'all',
+        browseSupportFilter: 'all',
+      }),
+    ).toBe(true);
+    expect(
+      matchesBrowseFilters({
+        preset: classicPreset,
+        query: 'geiss',
+        activeCollectionTag: '',
+        browseMode: 'all',
+        browseSupportFilter: 'all',
+      }),
+    ).toBe(true);
+    expect(
+      matchesBrowseFilters({
+        preset: classicPreset,
+        query: 'classic milkdrop',
+        activeCollectionTag: '',
+        browseMode: 'all',
+        browseSupportFilter: 'all',
+      }),
+    ).toBe(true);
+  });
+
+  test('prefers familiar collection labels over raw effect tags in row metadata', () => {
+    const preset = createCatalogEntry('parallel-universe', 'Parallel Universe');
+    preset.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+      'lasers',
+    ];
+
+    expect(getPresetMetaQualifier(preset)).toBe('Cream of the Crop');
   });
 
   test('sorts recommended and recent browse presets predictably', () => {

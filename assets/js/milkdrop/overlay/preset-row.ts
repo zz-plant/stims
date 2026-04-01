@@ -7,6 +7,22 @@ import type {
 } from '../types';
 
 const COLLECTION_TAG_PREFIX = 'collection:';
+const PRESET_META_TAG_LABELS: Record<string, string> = {
+  'collection:cream-of-the-crop': 'Cream of the Crop',
+  'collection:classic-milkdrop': 'Classic MilkDrop',
+  'collection:feedback-lab': 'Feedback Lab',
+  'collection:low-motion': 'Low Motion',
+  'collection:touch-friendly': 'Touch Friendly',
+  'original-pack': 'Original pack',
+};
+const PRESET_META_TAG_PRIORITY = [
+  'collection:cream-of-the-crop',
+  'collection:classic-milkdrop',
+  'original-pack',
+  'collection:feedback-lab',
+  'collection:low-motion',
+  'collection:touch-friendly',
+] as const;
 
 export type PresetRowCallbacks = {
   onSelectPreset: (id: string) => void;
@@ -46,6 +62,12 @@ export function getPresetMetaQualifier(preset: MilkdropCatalogEntry) {
   }
   if (preset.origin !== 'bundled') {
     return 'Imported';
+  }
+  const highlightedTag = PRESET_META_TAG_PRIORITY.find((tag) =>
+    preset.tags.includes(tag),
+  );
+  if (highlightedTag) {
+    return PRESET_META_TAG_LABELS[highlightedTag];
   }
   const firstTag = preset.tags.find(
     (tag) => !tag.startsWith(COLLECTION_TAG_PREFIX),

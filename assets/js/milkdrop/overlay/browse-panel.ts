@@ -10,6 +10,23 @@ const COLLECTION_LABELS: Record<string, string> = {
   'collection:low-motion': 'Low Motion',
   'collection:touch-friendly': 'Touch Friendly',
 };
+const CLASSIC_MILKDROP_TAGS = new Set([
+  'collection:classic-milkdrop',
+  'collection:cream-of-the-crop',
+  'original-pack',
+]);
+const CLASSIC_AUTHOR_MARKERS = ['rovastar', 'eo.s.', 'krash', 'phat', 'geiss'];
+
+function normalizeBrowseSearchValue(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, ' ')
+    .trim();
+}
+
+function tokenizeBrowseQuery(query: string) {
+  return normalizeBrowseSearchValue(query).split(/\s+/u).filter(Boolean);
+}
 
 function collectionLabel(tag: string) {
   if (!tag) return '';
@@ -17,6 +34,70 @@ function collectionLabel(tag: string) {
     COLLECTION_LABELS[tag] ??
     tag.slice(COLLECTION_TAG_PREFIX.length).replace(/-/gu, ' ')
   );
+}
+
+function hasClassicMilkdropLineage(preset: MilkdropCatalogEntry) {
+  if (preset.tags.some((tag) => CLASSIC_MILKDROP_TAGS.has(tag))) {
+    return true;
+  }
+
+  const author = preset.author?.toLowerCase() ?? '';
+  return CLASSIC_AUTHOR_MARKERS.some((marker) => author.includes(marker));
+}
+
+function isRovastarPreset(preset: MilkdropCatalogEntry) {
+  const searchable = [preset.title, preset.author ?? '', ...preset.tags].join(
+    ' ',
+  );
+  return normalizeBrowseSearchValue(searchable).includes('rovastar');
+}
+
+function getBrowseSearchTerms(preset: MilkdropCatalogEntry) {
+  const terms = new Set<string>([
+    preset.title,
+    preset.author ?? '',
+    ...preset.tags,
+    ...preset.tags
+      .filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX))
+      .map((tag) => collectionLabel(tag)),
+  ]);
+
+  if (isRovastarPreset(preset)) {
+    terms.add('rovastar');
+    terms.add('rovastar classics');
+  }
+
+  if (hasClassicMilkdropLineage(preset)) {
+    terms.add('classic milkdrop');
+    terms.add('milkdrop classics');
+    terms.add('winamp milkdrop');
+    terms.add('geiss');
+    terms.add('ryan geiss');
+  }
+
+  return [...terms]
+    .map((value) => normalizeBrowseSearchValue(value))
+    .filter(Boolean);
+}
+
+function matchesBrowseQuery(preset: MilkdropCatalogEntry, query: string) {
+  const normalizedQuery = normalizeBrowseSearchValue(query);
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const terms = getBrowseSearchTerms(preset);
+  if (terms.some((term) => term.includes(normalizedQuery))) {
+    return true;
+  }
+
+  const queryTokens = tokenizeBrowseQuery(normalizedQuery);
+  if (queryTokens.length === 0) {
+    return true;
+  }
+
+  const combinedTerms = terms.join(' ');
+  return queryTokens.every((token) => combinedTerms.includes(token));
 }
 
 export type BrowseMode = 'featured' | 'all' | 'recent' | 'favorites';
@@ -67,11 +148,7 @@ export function matchesBrowseFilters({
     return true;
   }
 
-  return (
-    preset.title.toLowerCase().includes(query) ||
-    preset.author?.toLowerCase().includes(query) ||
-    preset.tags.some((tag) => tag.toLowerCase().includes(query))
-  );
+  return matchesBrowseQuery(preset, query);
 }
 
 export function sortBrowsePresets({
@@ -185,8 +262,11 @@ export class BrowsePanel {
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'search';
     this.searchInput.className = 'milkdrop-overlay__search';
-    this.searchInput.placeholder = 'Search looks';
-    this.searchInput.setAttribute('aria-label', 'Search looks');
+    this.searchInput.placeholder = 'Search looks, authors, or classic names';
+    this.searchInput.setAttribute(
+      'aria-label',
+      'Search looks, authors, or classic names',
+    );
     this.searchInput.addEventListener('input', () => this.scheduleRender());
 
     this.browseModeSelect = document.createElement('select');
@@ -536,6 +616,24 @@ export class BrowsePanel {
           : 'Recent'
         : 'Favorites';
       sections.push({ title, presets: recovery });
+    }
+
+    const rovastar = filtered
+      .filter((preset) => isRovastarPreset(preset) && !seen.has(preset.id))
+      .slice(0, 4);
+    if (rovastar.length > 0) {
+      rovastar.forEach((preset) => seen.add(preset.id));
+      sections.push({ title: 'Rovastar and collaborators', presets: rovastar });
+    }
+
+    const classics = filtered
+      .filter(
+        (preset) => hasClassicMilkdropLineage(preset) && !seen.has(preset.id),
+      )
+      .slice(0, 6);
+    if (classics.length >= 2) {
+      classics.forEach((preset) => seen.add(preset.id));
+      sections.push({ title: 'Classic MilkDrop staples', presets: classics });
     }
 
     const recommended = this.dedupeBrowsePresets(filtered, seen).slice(0, 12);
