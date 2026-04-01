@@ -141,22 +141,28 @@ function getSharedAuxTextures(): SharedAuxTextureMap {
 function createFeedbackRenderTarget(
   width: number,
   height: number,
-  behavior: MilkdropBackendBehavior,
+  {
+    resolutionScale,
+    useHalfFloatFeedback,
+    samples,
+  }: {
+    resolutionScale: number;
+    useHalfFloatFeedback: boolean;
+    samples: number;
+  },
 ) {
-  const profile = behavior.feedbackProfile;
-  const resolutionScale = profile.feedbackResolutionScale;
   const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
   const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
   const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
     minFilter: LinearFilter,
     magFilter: LinearFilter,
-    ...(behavior.useHalfFloatFeedback
+    ...(useHalfFloatFeedback
       ? {
           type: HalfFloatType,
         }
       : {}),
   });
-  target.samples = profile.samples;
+  target.samples = samples;
   return target;
 }
 
@@ -227,7 +233,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly presentMaterial: MeshBasicMaterial;
   readonly sceneTarget: WebGLRenderTarget;
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
-  readonly resolutionScale: number;
+  readonly sceneResolutionScale: number;
+  readonly feedbackResolutionScale: number;
   readonly profile: FeedbackBackendProfile;
   readonly auxTextures: SharedAuxTextureMap;
   private index = 0;
@@ -239,12 +246,25 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   ) {
     this.camera.position.z = 1;
     this.profile = behavior.feedbackProfile;
-    this.resolutionScale = this.profile.feedbackResolutionScale;
+    this.sceneResolutionScale = this.profile.sceneResolutionScale;
+    this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
     this.auxTextures = getSharedAuxTextures();
-    this.sceneTarget = createFeedbackRenderTarget(width, height, behavior);
+    this.sceneTarget = createFeedbackRenderTarget(width, height, {
+      resolutionScale: this.sceneResolutionScale,
+      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: this.profile.samples,
+    });
     this.targets = [
-      createFeedbackRenderTarget(width, height, behavior),
-      createFeedbackRenderTarget(width, height, behavior),
+      createFeedbackRenderTarget(width, height, {
+        resolutionScale: this.feedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
+      createFeedbackRenderTarget(width, height, {
+        resolutionScale: this.feedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
     ];
     this.compositeMaterial = new ShaderMaterial({
       uniforms: {
@@ -723,13 +743,29 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   }
 
   resize(width: number, height: number) {
-    const scaledWidth = Math.max(1, Math.round(width * this.resolutionScale));
-    const scaledHeight = Math.max(1, Math.round(height * this.resolutionScale));
-    this.sceneTarget.setSize(scaledWidth, scaledHeight);
-    this.targets.forEach((target) => target.setSize(scaledWidth, scaledHeight));
+    const sceneWidth = Math.max(
+      1,
+      Math.round(width * this.sceneResolutionScale),
+    );
+    const sceneHeight = Math.max(
+      1,
+      Math.round(height * this.sceneResolutionScale),
+    );
+    const feedbackWidth = Math.max(
+      1,
+      Math.round(width * this.feedbackResolutionScale),
+    );
+    const feedbackHeight = Math.max(
+      1,
+      Math.round(height * this.feedbackResolutionScale),
+    );
+    this.sceneTarget.setSize(sceneWidth, sceneHeight);
+    this.targets.forEach((target) =>
+      target.setSize(feedbackWidth, feedbackHeight),
+    );
     this.compositeMaterial.uniforms.texelSize.value.set(
-      1 / Math.max(1, scaledWidth),
-      1 / Math.max(1, scaledHeight),
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
     );
   }
 
