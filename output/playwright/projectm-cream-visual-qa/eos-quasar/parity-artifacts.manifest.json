@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "stims-capture--milkdrop--preset--eos-quasar--20260402032913",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-quasar",
+      "title": null,
+      "createdAt": "2026-04-02T03:29:13.441Z",
+      "files": {
+        "image": "milkdrop--preset-eos-quasar-1775100549041.png",
+        "debugSnapshot": "milkdrop--preset-eos-quasar-1775100549041.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=eos-quasar",
+        "durationMs": 4500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    }
+  ]
+}

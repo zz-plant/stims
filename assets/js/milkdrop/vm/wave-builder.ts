@@ -17,6 +17,8 @@ import {
   type WaveBuilderState,
 } from './shared';
 
+const MAX_CUSTOM_WAVE_SAMPLES = 512;
+
 function syncSamples(target: number[], samples: number[], count: number) {
   target.length = count;
   for (let index = 0; index < count; index += 1) {
@@ -141,7 +143,7 @@ export function buildCustomWaves({
     const sampleCount = clamp(
       Math.round((frameLocals.samples ?? 64) * detailScale),
       8,
-      256,
+      MAX_CUSTOM_WAVE_SAMPLES,
     );
     const centerX = ((frameLocals.x ?? 0.5) - 0.5) * 2;
     const centerY = (0.5 - (frameLocals.y ?? 0.5)) * 2;

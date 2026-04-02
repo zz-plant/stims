@@ -27,6 +27,7 @@ In practice:
 | `.agent/skills/modify-preset-workflow/SKILL.md` | Updating bundled presets, catalog/editor flows, import/export, compatibility, or preset fixtures/metadata. | targeted tests, then `bun run test:compat` or `bun run test:integration` as needed, then `bun run check` |
 | `.agent/skills/play-visualizer/SKILL.md` | Launching or visually checking the flagship visualizer in the browser. | `bun run play:toy milkdrop` or local `bun run dev` session |
 | `.agent/skills/test-visualizer/SKILL.md` | Running visualizer-focused validation or full repo quality gates. | `bun run test …`, `bun run test:integration`, `bun run test:compat`, `bun run check` |
+| `.agent/skills/verify-visualizer-work/SKILL.md` | Quick validation checks during implementation; iterative testing without full quality gate. | `bun run check:quick`, `bun run test`, `bun run dev` with browser testing |
 | `.agent/skills/ship-visualizer-change/SKILL.md` | End-to-end product-facing implementation + docs + PR-ready validation flow. | targeted checks as needed, then `bun run check` |
 
 ## Workflows

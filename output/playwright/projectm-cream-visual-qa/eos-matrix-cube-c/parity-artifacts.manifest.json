@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "stims-capture--milkdrop--preset--eos-matrix-cube-c--20260402032818",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-matrix-cube-c",
+      "title": null,
+      "createdAt": "2026-04-02T03:28:18.537Z",
+      "files": {
+        "image": "milkdrop--preset-eos-matrix-cube-c-1775100494046.png",
+        "debugSnapshot": "milkdrop--preset-eos-matrix-cube-c-1775100494046.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=eos-matrix-cube-c",
+        "durationMs": 4500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    }
+  ]
+}

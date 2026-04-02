@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "stims-capture--milkdrop--preset--eos-phat-magnetosphere-13-pulsar--20260402032844",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-phat-magnetosphere-13-pulsar",
+      "title": null,
+      "createdAt": "2026-04-02T03:28:44.119Z",
+      "files": {
+        "image": "milkdrop--preset-eos-phat-magnetosphere-13-pulsar-1775100521363.png",
+        "debugSnapshot": "milkdrop--preset-eos-phat-magnetosphere-13-pulsar-1775100521363.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=eos-phat-magnetosphere-13-pulsar",
+        "durationMs": 4500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    }
+  ]
+}

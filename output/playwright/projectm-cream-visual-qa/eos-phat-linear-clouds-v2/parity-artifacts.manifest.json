@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "stims-capture--milkdrop--preset--eos-phat-linear-clouds-v2--20260402032543",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-phat-linear-clouds-v2",
+      "title": null,
+      "createdAt": "2026-04-02T03:25:43.002Z",
+      "files": {
+        "image": "milkdrop--preset-eos-phat-linear-clouds-v2-1775100341742.png",
+        "debugSnapshot": "milkdrop--preset-eos-phat-linear-clouds-v2-1775100341742.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=eos-phat-linear-clouds-v2",
+        "durationMs": 4500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    }
+  ]
+}

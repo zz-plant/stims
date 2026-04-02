@@ -4,10 +4,9 @@ body {
   overflow: hidden;
   height: 100%;
   font-size: calc(16px * var(--tv-scale-multiplier));
-  font-family:
-    "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  color: #f5f5f5;
-  line-height: 1.6;
+  font-family: var(--font-family-base);
+  color: var(--text-color);
+  line-height: var(--line-height-normal);
   /* Mobile-specific improvements */
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
@@ -64,15 +63,15 @@ body {
   background:
     radial-gradient(
       circle at 18% 12%,
-      rgba(95, 192, 181, 0.12),
+      color-mix(in srgb, var(--accent-color) 12%, transparent),
       transparent 30%
     ),
     radial-gradient(
       circle at 85% 18%,
-      rgba(211, 137, 84, 0.12),
+      color-mix(in srgb, var(--accent-magenta) 12%, transparent),
       transparent 24%
     ),
-    #05090d;
+    var(--bg-color);
 }
 
 .is-hidden {
@@ -122,17 +121,14 @@ body {
   height: 100%;
   min-height: var(--app-height, 100vh);
   background:
-    radial-gradient(
-      circle at 50% 12%,
-      rgba(95, 192, 181, 0.16),
-      transparent 38%
-    ),
-    radial-gradient(
-      circle at 20% 80%,
-      rgba(233, 212, 155, 0.08),
-      transparent 34%
-    ),
-    linear-gradient(180deg, #091015, #05090d 56%, #0b1215);
+    radial-gradient(circle at 50% 12%, var(--glow-color), transparent 38%),
+    radial-gradient(circle at 20% 80%, var(--highlight-glow), transparent 34%),
+    linear-gradient(
+      180deg,
+      var(--bg-color),
+      color-mix(in srgb, var(--bg-color) 95%, #000) 56%,
+      color-mix(in srgb, var(--bg-color) 90%, #000)
+    );
   overflow: hidden;
   z-index: 2;
 }
@@ -216,18 +212,11 @@ body {
 
 .active-toy-status__content {
   contain: layout style;
-  background: linear-gradient(
-    165deg,
-    rgba(12, 20, 24, 0.94),
-    rgba(9, 14, 18, 0.86)
-  );
-  border: 1px solid rgba(255, 239, 214, 0.16);
-  box-shadow:
-    0 22px 48px rgba(0, 0, 0, 0.45),
-    0 0 24px rgba(95, 192, 181, 0.14),
-    inset 0 1px 0 rgba(255, 248, 234, 0.06);
-  border-radius: 28px;
-  padding: 24px 28px;
+  background: var(--panel-gradient);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl) var(--space-2xl);
   max-width: 460px;
   width: min(90vw, 480px);
   backdrop-filter: blur(18px) saturate(160%);
@@ -235,39 +224,40 @@ body {
 }
 
 .active-toy-status h2 {
-  margin: 12px 0 6px;
-  font-size: 1.4rem;
+  margin: var(--space-md) 0 var(--space-sm);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.01em;
-  text-shadow: 0 0 18px rgba(95, 192, 181, 0.18);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent-color) 18%, transparent);
 }
 
 .active-toy-status p {
   margin: 0;
-  color: rgba(236, 240, 245, 0.75);
-  line-height: 1.5;
-  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+  font-size: var(--font-size-base);
   letter-spacing: 0.01em;
 }
 
 .active-toy-status.is-error .active-toy-status__content {
-  border-color: rgba(219, 120, 120, 0.55);
+  border-color: color-mix(in srgb, #db7878 55%, transparent);
   box-shadow:
-    0 18px 36px rgba(0, 0, 0, 0.45),
-    0 0 18px rgba(219, 120, 120, 0.25);
+    var(--shadow-surface),
+    0 0 18px color-mix(in srgb, #db7878 25%, transparent);
 }
 
 .active-toy-status.is-warning .active-toy-status__content {
-  border-color: rgba(220, 170, 110, 0.65);
+  border-color: color-mix(in srgb, #dcaa6e 65%, transparent);
   box-shadow:
-    0 18px 36px rgba(0, 0, 0, 0.45),
-    0 0 18px rgba(220, 170, 110, 0.25);
+    var(--shadow-surface),
+    0 0 18px color-mix(in srgb, #dcaa6e 25%, transparent);
 }
 
 .active-toy-status__actions {
-  margin-top: 16px;
+  margin-top: var(--space-lg);
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: var(--space-md);
   flex-wrap: wrap;
 }
 
@@ -276,27 +266,28 @@ body {
   grid-template-rows: minmax(220px, 1fr) auto;
   align-items: stretch;
   justify-items: center;
-  gap: 12px;
+  gap: var(--space-md);
   box-sizing: border-box;
   height: 100%;
   padding: clamp(
       102px,
-      calc(var(--toy-nav-floating-offset, 108px) + 8px),
+      calc(var(--toy-nav-floating-offset, 108px) + var(--space-sm)),
       190px
     )
-    clamp(10px, 2.2vw, 20px) calc(env(safe-area-inset-bottom) + 16px);
+    clamp(var(--space-md), 2.2vw, var(--space-lg))
+    calc(env(safe-area-inset-bottom) + var(--space-lg));
   overflow: hidden;
 }
 
 .active-toy-status--page .toy-frame {
   display: block;
-  width: min(1200px, 100%);
+  width: min(var(--content-width), 100%);
   height: 100%;
   min-height: 0;
   margin-inline: auto;
   border: 0;
-  border-radius: 20px;
-  background: rgba(5, 7, 24, 0.85);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg-color) 85%, transparent);
 }
 
 .active-toy-status--page .active-toy-status__actions {

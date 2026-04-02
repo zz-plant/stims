@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "stims-capture--milkdrop--preset--eos-phat-cat-scan-nirvana--20260402032721",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-phat-cat-scan-nirvana",
+      "title": null,
+      "createdAt": "2026-04-02T03:27:21.132Z",
+      "files": {
+        "image": "milkdrop--preset-eos-phat-cat-scan-nirvana-1775100440031.png",
+        "debugSnapshot": "milkdrop--preset-eos-phat-cat-scan-nirvana-1775100440031.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=eos-phat-cat-scan-nirvana",
+        "durationMs": 4500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    }
+  ]
+}

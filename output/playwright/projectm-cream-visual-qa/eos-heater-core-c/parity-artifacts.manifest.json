@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "stims-capture--milkdrop--preset--eos-heater-core-c--20260402032750",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-heater-core-c",
+      "title": null,
+      "createdAt": "2026-04-02T03:27:50.850Z",
+      "files": {
+        "image": "milkdrop--preset-eos-heater-core-c-1775100467983.png",
+        "debugSnapshot": "milkdrop--preset-eos-heater-core-c-1775100467983.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=eos-heater-core-c",
+        "durationMs": 4500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    }
+  ]
+}
