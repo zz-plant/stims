@@ -99,3 +99,71 @@ It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `
 ## Docs-only updates
 
 For Markdown-only edits, you can skip typecheck/tests unless the change modifies commands, paths, or workflow-critical instructions that should be validated.
+
+## Quick CLI reference for agents
+
+Common commands to keep nearby while implementing:
+
+### Development
+
+```bash
+# Start the dev server
+bun run dev
+
+# Specifically test the MilkDrop visualizer
+bun run play:toy milkdrop
+```
+
+### During implementation (iterate-test-verify loop)
+
+```bash
+# Fast syntax/type/lint check (use frequently)
+bun run check:quick
+
+# Run a specific test file while developing
+bun run test tests/path/to/spec.test.ts
+
+# Run all unit tests
+bun run test:unit
+
+# Run integration tests (for runtime/behavior changes)
+bun run test:integration
+
+# Run compatibility tests (for preset/editor changes)
+bun run test:compat
+```
+
+### Before committing
+
+```bash
+# Full quality gate (syntax, types, tests, architecture, SEO, toy manifest)
+bun run check
+```
+
+### Task-specific checks
+
+```bash
+# Architecture boundary violations
+bun run check:architecture
+
+# Toy manifest drift
+bun run check:toys
+
+# SEO surface issues
+bun run check:seo
+```
+
+### Formatting and linting
+
+```bash
+# Check for lint/format issues
+bun run lint
+
+# Auto-fix lint/format issues
+bun run lint:fix
+
+# Format code
+bun run format
+```
+
+For more details, see [`.agent/skills/verify-visualizer-work/SKILL.md`](../../.agent/skills/verify-visualizer-work/SKILL.md).

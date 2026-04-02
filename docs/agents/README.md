@@ -16,6 +16,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 
 - [`tooling-and-quality.md`](./tooling-and-quality.md)
 - [`custom-capabilities.md`](./custom-capabilities.md)
+- [`visual-testing.md`](./visual-testing.md) (browser-based testing, DevTools, agent-mode URL)
 - [`visualizer-workflows.md`](./visualizer-workflows.md) (includes `/ship-visualizer-change` for end-to-end product updates)
 - [`reference-docs.md`](./reference-docs.md)
 

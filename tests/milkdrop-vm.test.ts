@@ -180,6 +180,24 @@ per_pixel_1=rot = rot + 0.001;
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
   });
 
+  test('preserves 512-sample custom waves for imported projectM presets', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=High Sample Custom Wave
+wavecode_0_enabled=1
+wavecode_0_samples=512
+wave_0_per_point1=x = sample * 2 - 1;
+wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
+      `.trim(),
+      { id: 'high-sample-custom-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.customWaves).toHaveLength(1);
+    expect(frameState.customWaves[0]?.positions.length).toBe(512 * 3);
+  });
+
   test('keeps shape texture-control locals and projectM instance aliases available at runtime', () => {
     const signals = makeSignals({ frame: 1 });
     const preset = compileMilkdropPresetSource(
