@@ -72,7 +72,7 @@ describe('site navigation interactions', () => {
     window.matchMedia = originalMatchMedia;
   });
 
-  test('mobile fallback toggle updates the menu state without document listeners', () => {
+  test('mobile fallback toggle updates navigation state and aria attributes without document listeners', () => {
     const { matchMedia } = createMatchMediaStub();
     window.matchMedia = matchMedia;
 
@@ -83,11 +83,15 @@ describe('site navigation interactions', () => {
     const actions = container.querySelector('#nav-actions') as HTMLElement;
 
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-label')).toBe('Open navigation menu');
     expect(actions.getAttribute('aria-hidden')).toBe('true');
+    expect(actions.hasAttribute('inert')).toBeTrue();
 
     toggle.click();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-label')).toBe('Close navigation menu');
     expect(actions.getAttribute('aria-hidden')).toBe('false');
+    expect(actions.hasAttribute('inert')).toBeFalse();
 
     document.dispatchEvent(
       new window.KeyboardEvent('keydown', { key: 'Escape' }),
@@ -95,26 +99,6 @@ describe('site navigation interactions', () => {
 
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(actions.getAttribute('aria-hidden')).toBe('false');
-  });
-
-  test('menu toggle exposes stateful aria-label text on mobile', () => {
-    const { matchMedia } = createMatchMediaStub();
-    window.matchMedia = matchMedia;
-
-    const container = document.getElementById('nav') as HTMLElement;
-    initNavigation(container, { mode: 'library' });
-
-    const toggle = container.querySelector('.nav-toggle') as HTMLButtonElement;
-    const actions = container.querySelector('#nav-actions') as HTMLElement;
-
-    expect(toggle.getAttribute('aria-label')).toBe('Open navigation menu');
-    expect(actions.getAttribute('aria-hidden')).toBe('true');
-    expect(actions.hasAttribute('inert')).toBeTrue();
-
-    toggle.click();
-    expect(toggle.getAttribute('aria-label')).toBe('Close navigation menu');
-    expect(actions.getAttribute('aria-hidden')).toBe('false');
-    expect(actions.hasAttribute('inert')).toBeFalse();
   });
 
   test('desktop viewport keeps nav actions visible and interactive', () => {

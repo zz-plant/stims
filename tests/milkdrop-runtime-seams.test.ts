@@ -9,6 +9,7 @@ import {
   buildRenderFrameState,
   shouldAutoAdvancePreset,
 } from '../assets/js/milkdrop/runtime/lifecycle.ts';
+import { createMilkdropRuntimeLifetime } from '../assets/js/milkdrop/runtime/lifetime.ts';
 import { resolveStartupPresetId } from '../assets/js/milkdrop/runtime/startup.ts';
 import type {
   MilkdropBlendState,
@@ -47,6 +48,24 @@ describe('milkdrop runtime startup seams', () => {
     });
 
     expect(startupId).toBe('fallback');
+  });
+});
+
+describe('milkdrop runtime lifetime seams', () => {
+  test('invalidates stale attachment work and blocks new work after dispose', () => {
+    const lifetime = createMilkdropRuntimeLifetime();
+
+    const firstAttachment = lifetime.beginAttachment();
+    expect(lifetime.isCurrentAttachment(firstAttachment)).toBe(true);
+
+    const secondAttachment = lifetime.beginAttachment();
+    expect(lifetime.isCurrentAttachment(firstAttachment)).toBe(false);
+    expect(lifetime.isCurrentAttachment(secondAttachment)).toBe(true);
+
+    lifetime.dispose();
+
+    expect(lifetime.isActive()).toBe(false);
+    expect(lifetime.isCurrentAttachment(secondAttachment)).toBe(false);
   });
 });
 
