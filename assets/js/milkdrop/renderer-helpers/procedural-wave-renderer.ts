@@ -211,11 +211,15 @@ export function syncProceduralCustomWaveObject(
     object ??
     new Line(
       createProceduralWaveObjectGeometry(wave.samples.length),
-      createProceduralCustomWaveMaterial(),
+      createProceduralCustomWaveMaterial(wave.fieldProgram),
     );
-  if (!(next.material instanceof ShaderMaterial)) {
+  const fieldProgramSignature = wave.fieldProgram?.signature ?? 'default';
+  if (
+    !(next.material instanceof ShaderMaterial) ||
+    next.material.userData.fieldProgramSignature !== fieldProgramSignature
+  ) {
     disposeMaterial(next.material);
-    next.material = createProceduralCustomWaveMaterial();
+    next.material = createProceduralCustomWaveMaterial(wave.fieldProgram);
   }
 
   const sampleTAttribute = next.geometry.getAttribute('sampleT');
@@ -234,8 +238,18 @@ export function syncProceduralCustomWaveObject(
   setOrUpdateScalarAttribute(next.geometry, 'sampleValue', wave.samples);
   setOrUpdateScalarAttribute(
     next.geometry,
+    'sampleValue2',
+    wave.sampleValues2 ?? wave.samples,
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
     'previousSampleValue',
     wave.samples,
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleValue2',
+    wave.sampleValues2 ?? wave.samples,
   );
 
   const material = next.material as ShaderMaterial;
@@ -251,6 +265,45 @@ export function syncProceduralCustomWaveObject(
   material.uniforms.previousMystery.value = wave.mystery;
   material.uniforms.previousSignalTime.value = wave.time;
   material.uniforms.previousSpectrum.value = wave.spectrum ? 1 : 0;
+  material.uniforms.sampleCount.value = wave.sampleCount ?? wave.samples.length;
+  material.uniforms.previousSampleCount.value =
+    wave.sampleCount ?? wave.samples.length;
+  material.uniforms.signalFrame.value = wave.signals?.frame ?? 0;
+  material.uniforms.signalFps.value = wave.signals?.fps ?? 60;
+  material.uniforms.signalBass.value = wave.signals?.bass ?? 0;
+  material.uniforms.signalMid.value = wave.signals?.mid ?? 0;
+  material.uniforms.signalMids.value = wave.signals?.mids ?? 0;
+  material.uniforms.signalTreble.value = wave.signals?.treble ?? 0;
+  material.uniforms.signalBassAtt.value = wave.signals?.bassAtt ?? 0;
+  material.uniforms.signalMidAtt.value = wave.signals?.midAtt ?? 0;
+  material.uniforms.signalMidsAtt.value = wave.signals?.midsAtt ?? 0;
+  material.uniforms.signalTrebleAtt.value = wave.signals?.trebleAtt ?? 0;
+  material.uniforms.signalBeat.value = wave.signals?.beat ?? 0;
+  material.uniforms.signalBeatPulse.value = wave.signals?.beatPulse ?? 0;
+  material.uniforms.signalRms.value = wave.signals?.rms ?? 0;
+  material.uniforms.signalVol.value = wave.signals?.vol ?? 0;
+  material.uniforms.signalMusic.value = wave.signals?.music ?? 0;
+  material.uniforms.signalWeightedEnergy.value =
+    wave.signals?.weightedEnergy ?? 0;
+  material.uniforms.previousSignalFrame.value = wave.signals?.frame ?? 0;
+  material.uniforms.previousSignalFps.value = wave.signals?.fps ?? 60;
+  material.uniforms.previousSignalBass.value = wave.signals?.bass ?? 0;
+  material.uniforms.previousSignalMid.value = wave.signals?.mid ?? 0;
+  material.uniforms.previousSignalMids.value = wave.signals?.mids ?? 0;
+  material.uniforms.previousSignalTreble.value = wave.signals?.treble ?? 0;
+  material.uniforms.previousSignalBassAtt.value = wave.signals?.bassAtt ?? 0;
+  material.uniforms.previousSignalMidAtt.value = wave.signals?.midAtt ?? 0;
+  material.uniforms.previousSignalMidsAtt.value = wave.signals?.midsAtt ?? 0;
+  material.uniforms.previousSignalTrebleAtt.value =
+    wave.signals?.trebleAtt ?? 0;
+  material.uniforms.previousSignalBeat.value = wave.signals?.beat ?? 0;
+  material.uniforms.previousSignalBeatPulse.value =
+    wave.signals?.beatPulse ?? 0;
+  material.uniforms.previousSignalRms.value = wave.signals?.rms ?? 0;
+  material.uniforms.previousSignalVol.value = wave.signals?.vol ?? 0;
+  material.uniforms.previousSignalMusic.value = wave.signals?.music ?? 0;
+  material.uniforms.previousSignalWeightedEnergy.value =
+    wave.signals?.weightedEnergy ?? 0;
   material.uniforms.blendMix.value = 1;
   material.uniforms.tint.value.setRGB(wave.color.r, wave.color.g, wave.color.b);
   material.uniforms.alpha.value = wave.alpha;
@@ -301,8 +354,7 @@ export function syncInterpolatedProceduralWaveObject(
     lerpNumber(previousWave.color.g, currentWave.color.g, mix),
     lerpNumber(previousWave.color.b, currentWave.color.b, mix),
   );
-  material.uniforms.alpha.value =
-    lerpNumber(previousWave.alpha, currentWave.alpha, mix) * alphaMultiplier;
+  material.uniforms.alpha.value = previousWave.alpha * alphaMultiplier;
   material.blending =
     previousWave.additive || currentWave.additive
       ? AdditiveBlending
@@ -323,8 +375,21 @@ export function syncInterpolatedProceduralCustomWaveObject(
   setOrUpdateScalarAttribute(next.geometry, 'sampleValue', currentWave.samples);
   setOrUpdateScalarAttribute(
     next.geometry,
+    'sampleValue2',
+    currentWave.sampleValues2 ?? currentWave.samples,
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
     'previousSampleValue',
     resampleScalarValues(previousWave.samples, currentWave.samples.length),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleValue2',
+    resampleScalarValues(
+      previousWave.sampleValues2 ?? previousWave.samples,
+      currentWave.samples.length,
+    ),
   );
   const material = next.material as ShaderMaterial;
   material.uniforms.previousCenterX.value = previousWave.centerX;
@@ -333,14 +398,42 @@ export function syncInterpolatedProceduralCustomWaveObject(
   material.uniforms.previousMystery.value = previousWave.mystery;
   material.uniforms.previousSignalTime.value = previousWave.time;
   material.uniforms.previousSpectrum.value = previousWave.spectrum ? 1 : 0;
+  material.uniforms.sampleCount.value =
+    currentWave.sampleCount ?? currentWave.samples.length;
+  material.uniforms.previousSampleCount.value =
+    previousWave.sampleCount ?? previousWave.samples.length;
+  material.uniforms.previousSignalFrame.value =
+    previousWave.signals?.frame ?? 0;
+  material.uniforms.previousSignalFps.value = previousWave.signals?.fps ?? 60;
+  material.uniforms.previousSignalBass.value = previousWave.signals?.bass ?? 0;
+  material.uniforms.previousSignalMid.value = previousWave.signals?.mid ?? 0;
+  material.uniforms.previousSignalMids.value = previousWave.signals?.mids ?? 0;
+  material.uniforms.previousSignalTreble.value =
+    previousWave.signals?.treble ?? 0;
+  material.uniforms.previousSignalBassAtt.value =
+    previousWave.signals?.bassAtt ?? 0;
+  material.uniforms.previousSignalMidAtt.value =
+    previousWave.signals?.midAtt ?? 0;
+  material.uniforms.previousSignalMidsAtt.value =
+    previousWave.signals?.midsAtt ?? 0;
+  material.uniforms.previousSignalTrebleAtt.value =
+    previousWave.signals?.trebleAtt ?? 0;
+  material.uniforms.previousSignalBeat.value = previousWave.signals?.beat ?? 0;
+  material.uniforms.previousSignalBeatPulse.value =
+    previousWave.signals?.beatPulse ?? 0;
+  material.uniforms.previousSignalRms.value = previousWave.signals?.rms ?? 0;
+  material.uniforms.previousSignalVol.value = previousWave.signals?.vol ?? 0;
+  material.uniforms.previousSignalMusic.value =
+    previousWave.signals?.music ?? 0;
+  material.uniforms.previousSignalWeightedEnergy.value =
+    previousWave.signals?.weightedEnergy ?? 0;
   material.uniforms.blendMix.value = mix;
   material.uniforms.tint.value.setRGB(
     lerpNumber(previousWave.color.r, currentWave.color.r, mix),
     lerpNumber(previousWave.color.g, currentWave.color.g, mix),
     lerpNumber(previousWave.color.b, currentWave.color.b, mix),
   );
-  material.uniforms.alpha.value =
-    lerpNumber(previousWave.alpha, currentWave.alpha, mix) * alphaMultiplier;
+  material.uniforms.alpha.value = previousWave.alpha * alphaMultiplier;
   material.blending =
     previousWave.additive || currentWave.additive
       ? AdditiveBlending

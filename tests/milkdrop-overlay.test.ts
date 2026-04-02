@@ -128,6 +128,25 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
     },
     fidelityClass: 'exact',
     visualEvidenceTier: 'none',
+    semanticSupport: {
+      fidelityClass: 'exact',
+      evidence: {
+        compile: 'verified',
+        runtime: 'not-run',
+        visual: 'not-captured',
+      },
+      visualEvidenceTier: 'none',
+    },
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'none',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+    },
     evidence: {
       compile: 'verified',
       runtime: 'not-run',
@@ -151,6 +170,25 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
         visual: 'not-captured',
       },
       visualEvidenceTier: 'none',
+      semanticSupport: {
+        fidelityClass: 'exact',
+        evidence: {
+          compile: 'verified',
+          runtime: 'not-run',
+          visual: 'not-captured',
+        },
+        visualEvidenceTier: 'none',
+      },
+      visualCertification: {
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: 'partial',
+        visualEvidenceTier: 'none',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+        reasons: ['No measured WebGPU reference capture is recorded yet.'],
+      },
     },
   } as MilkdropCatalogEntry;
 }
@@ -204,6 +242,26 @@ describe('milkdrop overlay browse simplifications', () => {
     expect(
       document.querySelector('.milkdrop-overlay__workspace-hint'),
     ).toBeNull();
+
+    overlay.dispose();
+  });
+
+  test('uses a single top-level tab row for looks, edit, and inspect', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+    const overlay = createOverlay();
+
+    const tabLabels = Array.from(
+      document.querySelectorAll('.milkdrop-overlay__tabs button'),
+    ).map((button) => button.textContent?.trim());
+
+    expect(tabLabels).toEqual(['Looks', 'Edit', 'Inspect']);
+    expect(document.querySelector('.milkdrop-overlay__tools-tabs')).toBeNull();
 
     overlay.dispose();
   });
@@ -450,10 +508,10 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__browse',
     ) as HTMLElement | null;
 
-    expect(search?.placeholder).toBe('Search presets');
+    expect(search?.placeholder).toBe('Search looks, authors, or classic names');
     expect(modeTabs.map((tab) => tab.textContent?.trim())).toEqual([
       'Featured',
-      'All presets',
+      'All looks',
       'Recent',
       'Favorites',
     ]);
@@ -470,6 +528,78 @@ describe('milkdrop overlay browse rendering', () => {
     overlay.dispose();
   });
 
+  test('surfaces familiar author and classic sections for MilkDrop veterans', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const activePreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    activePreset.historyIndex = 0;
+
+    const rovastarOne = createCatalogEntry(
+      'rovastar-parallel-universe',
+      'Parallel Universe',
+    );
+    rovastarOne.author = 'Rovastar';
+    rovastarOne.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+      'collection:rovastar-and-collaborators',
+      'lasers',
+    ];
+
+    const rovastarTwo = createCatalogEntry(
+      'krash-rovastar-cerebral-demons-stars',
+      'Cerebral Demons',
+    );
+    rovastarTwo.author = 'Krash & Rovastar';
+    rovastarTwo.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+      'collection:rovastar-and-collaborators',
+      'comets',
+    ];
+
+    const classicOne = createCatalogEntry('eos-glowsticks', 'Glowsticks');
+    classicOne.author = 'Eo.S.';
+    classicOne.tags = ['collection:classic-milkdrop', 'original-pack'];
+
+    const classicTwo = createCatalogEntry('eos-cubetrace', 'Cubetrace');
+    classicTwo.author = 'Eo.S. + Phat';
+    classicTwo.tags = ['collection:classic-milkdrop', 'geometry'];
+
+    overlay.setCatalog(
+      [activePreset, rovastarOne, rovastarTwo, classicOne, classicTwo],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const headings = [
+      ...document.querySelectorAll('.milkdrop-overlay__browse-heading'),
+    ].map((heading) => (heading.childNodes[0]?.textContent ?? '').trim());
+    const rows = [
+      ...document.querySelectorAll('.milkdrop-overlay__preset'),
+    ] as HTMLElement[];
+    const metaLabels = rows.map(
+      (row) =>
+        row
+          .querySelector('.milkdrop-overlay__preset-meta')
+          ?.textContent?.trim() ?? '',
+    );
+
+    expect(headings).toContain('Rovastar and collaborators');
+    expect(headings).toContain('Classic MilkDrop staples');
+    expect(metaLabels).toContain('Rovastar · Cream of the Crop');
+    expect(metaLabels).toContain('Eo.S. · Classic MilkDrop');
+
+    overlay.dispose();
+  });
+
   test('keeps browse mode tabs keyboard reachable with roving focus controls', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
@@ -481,7 +611,10 @@ describe('milkdrop overlay browse rendering', () => {
 
     const overlay = createOverlay();
     const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
-    classicPreset.tags = ['collection:classic-milkdrop'];
+    classicPreset.tags = [
+      'collection:classic-milkdrop',
+      'collection:rovastar-and-collaborators',
+    ];
     classicPreset.historyIndex = 0;
     const favoritePreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
     favoritePreset.isFavorite = true;
@@ -568,7 +701,10 @@ describe('milkdrop overlay browse rendering', () => {
 
     const overlay = createOverlay();
     const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
-    classicPreset.tags = ['collection:classic-milkdrop'];
+    classicPreset.tags = [
+      'collection:classic-milkdrop',
+      'collection:rovastar-and-collaborators',
+    ];
     const feedbackPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
     feedbackPreset.tags = ['collection:feedback-lab'];
 
@@ -584,14 +720,14 @@ describe('milkdrop overlay browse rendering', () => {
     const collectionFilters = document.querySelector(
       '.milkdrop-overlay__collection-filters',
     ) as HTMLElement | null;
-    const fidelitySelect = document.querySelector(
+    const sortSelect = document.querySelector(
       '.milkdrop-overlay__browse-options .milkdrop-overlay__rating-select',
     ) as HTMLSelectElement | null;
     const allPresetsTab = document.querySelector(
       '.milkdrop-overlay__browse-mode-tab[data-mode="all"]',
     ) as HTMLButtonElement | null;
 
-    expect(fidelitySelect?.value).toBe('all');
+    expect(sortSelect?.value).toBe('recommended');
     expect(collectionFilters?.hidden).toBe(true);
 
     if (!optionsDisclosure || !allPresetsTab) {
@@ -613,7 +749,73 @@ describe('milkdrop overlay browse rendering', () => {
     optionsDisclosure.dispatchEvent(new Event('toggle'));
     expect(collectionFilters?.hidden).toBe(false);
     expect(collectionFilters?.textContent).toContain('Classic MilkDrop');
-    expect(collectionFilters?.textContent).toContain('Feedback Lab');
+    expect(collectionFilters?.textContent).toContain(
+      'Rovastar and collaborators',
+    );
+    expect(collectionFilters?.textContent).not.toContain('Feedback Lab');
+    expect(collectionFilters?.textContent).not.toContain('Low Motion');
+
+    overlay.dispose();
+  });
+
+  test('preserves collection filter nodes across search rerenders when options stay the same', async () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const classicPreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    classicPreset.tags = ['collection:classic-milkdrop'];
+    const feedbackPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
+    feedbackPreset.tags = ['collection:feedback-lab'];
+
+    overlay.setCatalog(
+      [classicPreset, feedbackPreset],
+      'signal-bloom',
+      'webgl',
+    );
+
+    const optionsDisclosure = document.querySelector(
+      '.milkdrop-overlay__browse-options',
+    ) as HTMLDetailsElement | null;
+    const collectionFilters = document.querySelector(
+      '.milkdrop-overlay__collection-filters',
+    ) as HTMLElement | null;
+    const search = document.querySelector(
+      '.milkdrop-overlay__search',
+    ) as HTMLInputElement | null;
+
+    if (!optionsDisclosure || !collectionFilters || !search) {
+      throw new Error('Expected browse options, filters, and search input.');
+    }
+
+    optionsDisclosure.open = true;
+    optionsDisclosure.dispatchEvent(new Event('toggle'));
+
+    const beforeSearch = [
+      ...collectionFilters.querySelectorAll(
+        '.milkdrop-overlay__collection-filter',
+      ),
+    ];
+
+    search.value = 'signal';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => window.setTimeout(resolve, 150));
+
+    const afterSearch = [
+      ...collectionFilters.querySelectorAll(
+        '.milkdrop-overlay__collection-filter',
+      ),
+    ];
+
+    expect(afterSearch).toHaveLength(beforeSearch.length);
+    afterSearch.forEach((button, index) => {
+      expect(button).toBe(beforeSearch[index]);
+    });
 
     overlay.dispose();
   });
@@ -633,6 +835,16 @@ describe('milkdrop overlay browse rendering', () => {
     activePreset.isFavorite = true;
     activePreset.rating = 4;
     activePreset.tags = ['collection:classic-milkdrop', 'slow-burn'];
+    activePreset.visualCertification = {
+      ...activePreset.visualCertification,
+      status: 'certified',
+      measured: true,
+      source: 'reference-suite',
+      fidelityClass: 'exact',
+      visualEvidenceTier: 'visual',
+      actualBackend: 'webgpu',
+      reasons: [],
+    };
 
     const partialPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
     partialPreset.author = 'Guest';
@@ -650,6 +862,16 @@ describe('milkdrop overlay browse rendering', () => {
         blocking: false,
       },
     ];
+    partialPreset.visualCertification = {
+      ...partialPreset.visualCertification,
+      status: 'certified',
+      measured: true,
+      source: 'reference-suite',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'visual',
+      actualBackend: 'webgpu',
+      reasons: [],
+    };
 
     overlay.setCatalog([activePreset, partialPreset], 'signal-bloom', 'webgl');
 
@@ -671,7 +893,7 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__favorite',
     ) as HTMLButtonElement | null;
     expect(activeMeta?.textContent).toBe('Stims · Recent');
-    expect(activeBadges).toEqual(['Live', 'Exact']);
+    expect(activeBadges).toEqual(['Live']);
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(
       'Remove saved preset',
@@ -684,6 +906,15 @@ describe('milkdrop overlay browse rendering', () => {
     ).toBeNull();
     expect(activeRow?.textContent).not.toContain('slow-burn');
     expect(activeRow?.textContent).not.toContain('bundled');
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-support'),
+    ).toBeNull();
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-active')?.textContent,
+    ).toBe('Signal Bloom');
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-meta')?.textContent,
+    ).toBe('2 picks');
 
     const partialRow = rows[1];
     const partialMeta = partialRow?.querySelector(
@@ -695,7 +926,7 @@ describe('milkdrop overlay browse rendering', () => {
 
     expect(partialMeta?.textContent).toBe('Guest');
     expect(partialWarning?.textContent).toBe(
-      'Backend degradation: Wave mesh falls back to a simpler path.',
+      'Showing a simpler version. Wave mesh falls back to a simpler path.',
     );
 
     overlay.dispose();

@@ -1,5 +1,5 @@
+import type { FrequencyAnalyser } from '../core/audio-handler';
 import { createBeatTracker } from '../utils/audio-beat';
-import type { FrequencyAnalyser } from '../utils/audio-handler';
 import { getBandLevels, getWeightedEnergy } from '../utils/audio-reactivity';
 import type { MilkdropRuntimeSignals } from './types';
 export function createMilkdropSignalTracker() {
@@ -69,6 +69,7 @@ export function createMilkdropSignalTracker() {
         treb: treble,
         treble,
         bassAtt,
+        midAtt: midsAtt,
         midsAtt,
         trebleAtt,
         bass_att: bassAtt,

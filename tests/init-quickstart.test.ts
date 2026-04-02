@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-
+import { initQuickstartCta } from '../assets/js/bootstrap/quickstart-cta.ts';
 import toyManifest from '../assets/js/data/toy-manifest.ts';
-import { initQuickstartCta } from '../assets/js/utils/init-quickstart.ts';
 
 describe('quickstart random pool fallback', () => {
   const originalRandom = Math.random;

@@ -1,0 +1,93 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - button "Open navigation menu" [ref=e12]:
+          - generic [ref=e13]: Menu
+          - generic [ref=e14]: ☰
+    - main [ref=e15]:
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: MilkDrop live route
+        - heading "Start playback fast, then pull controls in when you need them." [level=1] [ref=e19]
+        - paragraph [ref=e20]: Demo audio drops into the immersive session fastest. Mic and capture sources stay close by when you want the visuals to react to your own sound.
+        - group "Launch shortcuts" [ref=e21]:
+          - link "Start demo playback" [ref=e22] [cursor=pointer]:
+            - /url: /milkdrop/?audio=demo
+          - link "Open setup controls" [ref=e23] [cursor=pointer]:
+            - /url: "#launch-panels-title"
+        - paragraph [ref=e24]: Playback stays visual-first once it starts, while presets, tools, and tuning stay one reveal away.
+        - group "Launch helpers" [ref=e25]:
+          - link "Back to Stims" [ref=e26] [cursor=pointer]:
+            - /url: /
+      - region "Keep audio and startup tuning close, not permanently in the foreground." [ref=e27]:
+        - generic [ref=e28]:
+          - paragraph [ref=e29]: Controls
+          - heading "Keep audio and startup tuning close, not permanently in the foreground." [level=2] [ref=e30]
+          - paragraph [ref=e31]: The audio panel gets motion started. Device tuning stays available for first-run setup and slower hardware without competing with the live canvas.
+        - region "Audio" [ref=e33]:
+          - paragraph [ref=e34]: Start
+          - generic [ref=e35]: Start the visualizer
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - generic [ref=e38]: Mic
+              - generic [ref=e39]: Recommended
+              - generic [ref=e40]: Room, voice, or instrument.
+              - generic [ref=e41]: Needs microphone permission.
+            - button "Allow mic" [ref=e42]
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - generic [ref=e45]: Demo
+              - generic [ref=e46]: Recommended
+              - generic [ref=e47]: Built-in soundtrack.
+              - generic [ref=e48]: No permission prompt.
+            - button "Use demo" [ref=e49]
+          - group [ref=e50]:
+            - generic "Other audio sources" [ref=e51] [cursor=pointer]
+            - text: ▾ ▾
+          - region "Next steps" [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]: Next
+              - button "Apply aurora feedback starter" [ref=e55] [cursor=pointer]
+            - paragraph [ref=e56]: Start with the curated preset browser, then toggle autoplay to hear smooth blend transitions.
+            - generic [ref=e57]:
+              - generic [ref=e59]: Desktop controls
+              - paragraph [ref=e60]: "On desktop, try these controls to steer the picture quickly:"
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e63]: Touch gestures
+                - button "Got it" [ref=e64] [cursor=pointer]
+              - paragraph [ref=e65]: "Once audio starts, use these gestures to reshape the scene fast:"
+            - generic [ref=e68]: What changes first
+          - generic [ref=e69]:
+            - generic [ref=e70]: Device defaults
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - generic [ref=e73]: Startup look
+                - generic [ref=e74]: Sharper output and denser effects for stronger GPUs.
+              - combobox "Startup look" [ref=e75]:
+                - option "Battery saver"
+                - option "Low motion"
+                - option "TV balanced"
+                - option "Balanced (default)"
+                - option "Hi-fi visuals" [selected]
+            - generic [ref=e76]:
+              - generic [ref=e77] [cursor=pointer]:
+                - generic [ref=e78]:
+                  - generic [ref=e79]: Safe mode
+                  - generic [ref=e80]: Use safer rendering for older hardware.
+                - checkbox "Safe mode" [ref=e82]
+              - generic [ref=e83] [cursor=pointer]:
+                - generic [ref=e84]:
+                  - generic [ref=e85]: Tilt
+                  - generic [ref=e86]: Enable tilt controls on supported visualizers.
+                - checkbox "Tilt" [checked] [ref=e88]
+              - group [ref=e89]:
+                - generic "Rendering Fine-tune rendering when needed." [ref=e90] [cursor=pointer]:
+                  - generic [ref=e91]:
+                    - generic [ref=e92]: Rendering
+                    - generic [ref=e93]: Fine-tune rendering when needed.

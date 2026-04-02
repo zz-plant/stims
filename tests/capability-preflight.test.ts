@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import type { CapabilityPreflightResult } from '../assets/js/core/services/capability-probe-service.ts';
-
-const freshImport = async <T>(path: string): Promise<T> =>
-  import(`${path}?t=${Date.now()}-${Math.random()}`) as Promise<T>;
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { flushTasks, importFresh } from './test-helpers.ts';
 
 let attachCapabilityPreflight: typeof import('../assets/js/core/capability-preflight.ts').attachCapabilityPreflight;
 
@@ -79,7 +75,7 @@ const readyResult: CapabilityPreflightResult = {
 
 describe('capability preflight launch flow', () => {
   beforeEach(async () => {
-    const preflightModule = await freshImport<
+    const preflightModule = await importFresh<
       typeof import('../assets/js/core/capability-preflight.ts')
     >('../assets/js/core/capability-preflight.ts');
     attachCapabilityPreflight = preflightModule.attachCapabilityPreflight;
@@ -102,8 +98,7 @@ describe('capability preflight launch flow', () => {
       runPreflight: async () => readyResult,
     });
 
-    await flush();
-    await flush();
+    await flushTasks(2);
 
     const dialog = document.querySelector('dialog') as HTMLDialogElement | null;
     expect(dialog).not.toBeNull();
@@ -140,8 +135,7 @@ describe('capability preflight launch flow', () => {
     expect(document.documentElement.dataset.preflightOpen).toBeUndefined();
 
     preflight.open();
-    await flush();
-    await flush();
+    await flushTasks(2);
 
     expect(document.documentElement.dataset.preflightOpen).toBe('true');
 
@@ -152,7 +146,7 @@ describe('capability preflight launch flow', () => {
       | undefined;
 
     closeButton?.click();
-    await flush();
+    await flushTasks();
 
     expect(document.documentElement.dataset.preflightOpen).toBeUndefined();
 
@@ -188,8 +182,7 @@ describe('capability preflight launch flow', () => {
       });
 
       preflight.open();
-      await flush();
-      await flush();
+      await flushTasks(2);
 
       expect(showCalls).toBe(1);
       expect(showModalCalls).toBe(0);

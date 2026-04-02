@@ -24,7 +24,52 @@ const legacyUnsupportedShaderFixture = readFileSync(
   'utf8',
 );
 
+const projectmNoiseVolumeFixture = readFileSync(
+  join(
+    import.meta.dir,
+    'fixtures/milkdrop/projectm-upstream/261-compshader-noisevol_lq.milk',
+  ),
+  'utf8',
+);
+
 describe('milkdrop compiler shader analysis', () => {
+  test('keeps shared scalar control aliases aligned across extraction paths', () => {
+    const analysis = extractShaderControls(
+      `
+rot = 0.25
+scale = 1.2
+feedback_alpha = 0.35
+red = 0.8
+green = 0.6
+blue = 0.4
+texture_amount = 0.5
+texture_source = noise
+warp_texture_amount = 0.12
+warp_texture_scale = vec2(1.1, 1.2)
+    `.trim(),
+    );
+
+    expect(analysis.supported).toBe(true);
+    expect(analysis.unsupportedLines).toEqual([]);
+    expect(analysis.controls.rotation).toBeCloseTo(0.25, 6);
+    expect(analysis.controls.zoom).toBeCloseTo(1.2, 6);
+    expect(analysis.controls.mixAlpha).toBeCloseTo(0.35, 6);
+    expect(analysis.controls.colorScale).toMatchObject({
+      r: 0.8,
+      g: 0.6,
+      b: 0.4,
+    });
+    expect(analysis.controls.textureLayer).toMatchObject({
+      source: 'noise',
+      amount: 0.5,
+    });
+    expect(analysis.controls.warpTexture).toMatchObject({
+      amount: 0.12,
+      scaleX: 1.1,
+      scaleY: 1.2,
+    });
+  });
+
   test('extracts supported shader controls from the legacy feedback fixture', () => {
     const compiled = compileMilkdropPresetSource(
       legacySupportedFeedbackFixture,
@@ -84,5 +129,28 @@ describe('milkdrop compiler shader analysis', () => {
     expect(payload.execution.statementTargets).toEqual(['ret']);
     expect(payload.execution.requiresControlFallback).toBe(true);
     expect(payload.source).toBe('ret=tex2d(sampler_main,uv).rgb*gain');
+  });
+
+  test('keeps pure projectM volume samples direct on WebGPU while allowing translated WebGL controls', () => {
+    const compiled = compileMilkdropPresetSource(projectmNoiseVolumeFixture, {
+      id: '261-compshader-noisevol_lq',
+    });
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(
+      compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
+    ).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
   });
 });

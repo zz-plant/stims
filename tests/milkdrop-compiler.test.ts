@@ -763,6 +763,267 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
     );
   });
 
+  test('builds direct comp programs that can reference translated control values', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Mixed Direct And Controls
+comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
+      `.trim(),
+      { id: 'shader-mixed-direct-controls' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.post.shaderControls.mixAlpha).toBeCloseTo(0.35, 6);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source: 'ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          requiresControlFallback: true,
+          supportedBackends: ['webgpu'],
+        }),
+      }),
+    );
+  });
+
+  test('retains direct-program local temp statements needed by comp output', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Direct Temp Context
+comp_shader=float pulse = beat_pulse * 0.4; ret = tex2d(sampler_main, uv).rgb + vec3(pulse, 0.0, 0.0)
+      `.trim(),
+      { id: 'shader-direct-temp-context' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'float pulse = beat_pulse * 0.4; ret = tex2d(sampler_main, uv).rgb + vec3(pulse, 0.0, 0.0)',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: false,
+          statementTargets: ['pulse', 'ret'],
+        }),
+        statements: [
+          expect.objectContaining({
+            declaration: 'float',
+            target: 'pulse',
+          }),
+          expect.objectContaining({
+            target: 'ret',
+          }),
+        ],
+      }),
+    );
+  });
+
+  test('marks webgl partial when shader text depends entirely on direct program execution', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader WebGL Direct Gap
+comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)
+      `.trim(),
+      { id: 'shader-webgl-direct-gap' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: false,
+        }),
+      }),
+    );
+  });
+
+  test('retains direct-program local temp statements needed by warp output', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Warp Direct Temp Context
+warp_shader=vec2 drift = vec2(time * 0.02, -0.01); uv = uv + drift * (tex2d(sampler_main, uv).xy - 0.5)
+      `.trim(),
+      { id: 'warp-direct-temp-context' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'vec2 drift = vec2(time * 0.02, -0.01); uv = uv + drift * (tex2d(sampler_main, uv).xy - 0.5)',
+        execution: expect.objectContaining({
+          entryTarget: 'uv',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: false,
+          statementTargets: ['drift', 'uv'],
+        }),
+        statements: [
+          expect.objectContaining({
+            declaration: 'vec2',
+            target: 'drift',
+          }),
+          expect.objectContaining({
+            target: 'uv',
+          }),
+        ],
+      }),
+    );
+  });
+
+  test('normalizes direct warp shader_body programs onto uv output', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Warp Shader Body
+warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
+      `.trim(),
+      { id: 'direct-warp-shader-body' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
+      expect.objectContaining({
+        source: 'shader_body=uv + vec2(time * 0.02, 0.0)',
+        execution: expect.objectContaining({
+          entryTarget: 'uv',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: false,
+          statementTargets: ['uv'],
+        }),
+        statements: [
+          expect.objectContaining({
+            target: 'uv',
+          }),
+        ],
+      }),
+    );
+  });
+
+  test('keeps richer direct sampler alias and swizzle programs on the webgpu execution path', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Shader Alias And Swizzle
+warp_shader=uv = uv + vec2(0.02) * (tex2d(sampler_perlin, uv).yx - 0.5)
+comp_shader=ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.0)).bgr
+      `.trim(),
+      { id: 'direct-shader-alias-and-swizzle' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
+      expect.objectContaining({
+        source: 'uv = uv + vec2(0.02) * (tex2d(sampler_perlin, uv).yx - 0.5)',
+        execution: expect.objectContaining({
+          entryTarget: 'uv',
+          supportedBackends: ['webgpu'],
+        }),
+      }),
+    );
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.0)).bgr',
+        execution: expect.objectContaining({
+          entryTarget: 'ret',
+          supportedBackends: ['webgpu'],
+        }),
+      }),
+    );
+  });
+
+  test('keeps direct component-swizzle assignment programs on the webgpu execution path', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Swizzle Assignment
+warp_shader=uv.yx = vec2(0.15, 0.35)
+comp_shader=ret.rg = vec2(0.2, 0.4); ret.b = 0.6
+      `.trim(),
+      { id: 'direct-swizzle-assignment' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'unsupported',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.shaderText.warpProgram).toEqual(
+      expect.objectContaining({
+        source: 'uv.yx = vec2(0.15, 0.35)',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          statementTargets: ['uv.yx'],
+        }),
+      }),
+    );
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source: 'ret.rg = vec2(0.2, 0.4); ret.b = 0.6',
+        execution: expect.objectContaining({
+          supportedBackends: ['webgpu'],
+          statementTargets: ['ret.rg', 'ret.b'],
+        }),
+      }),
+    );
+  });
+
   test('keeps richer legacy shader programs executable without downgrading them to unsupported shader text', () => {
     const fixturePath = join(
       process.cwd(),
@@ -830,11 +1091,13 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
       expect(compiled.diagnostics).toEqual([]);
+      expect(compiled.ir.shaderText.compProgram).not.toBeNull();
       expect(compiled.ir.compatibility.warnings).toEqual([]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
         'supported',
       );
+      expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
       );
@@ -919,7 +1182,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     ).not.toBeNull();
   });
 
-  test('classifies the projectM noisevol fixture as supported volume sampling', () => {
+  test('classifies the projectM noisevol fixture as a pure volume sample that stays direct on WebGPU and translates on WebGL', () => {
     const fixturePath = join(
       process.cwd(),
       'tests',
@@ -945,12 +1208,27 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
       '3d',
     );
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(
+      compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
+    ).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
     expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
   });
 
-  test('keeps tex3D extraction supported for atlas-backed aux samplers', () => {
+  test('downgrades non-volume aux tex3D aliases as unsupported shader text', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Shader Non-volume 3D Alias
@@ -959,19 +1237,61 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
       { id: 'shader-non-volume-3d-alias' },
     );
 
-    expect(compiled.ir.shaderText.supported).toBe(true);
-    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
-    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
-    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
-      '3d',
+    expect(compiled.ir.shaderText.supported).toBe(false);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([
+      'ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz',
+    ]);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'unsupported-shader-text',
     );
-    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
-    expect(compiled.diagnostics).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgl.evidence).toEqual([]);
-    expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
+      'ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz',
+    ]);
+  });
+
+  test('downgrades tex3D sampler_main usage as unsupported shader text', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Main Volume Unsupported
+comp_shader=ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz
+      `.trim(),
+      { id: 'shader-main-volume-unsupported' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(false);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([
+      'ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz',
+    ]);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'unsupported-shader-text',
+    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
+      'ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz',
+    ]);
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual({
+      routing: 'fallback-webgl',
+      proceduralWaves: [],
+      proceduralMesh: null,
+      proceduralMotionVectors: null,
+      feedback: null,
+      unsupported: [
+        {
+          kind: 'unsupported-feature',
+          feature: 'unsupported-shader-text',
+          reason:
+            'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+          recommendedFallback: 'webgl',
+        },
+      ],
+    });
   });
 
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
@@ -1532,7 +1852,7 @@ warp_shader=unsupported(shader)
     });
   });
 
-  test('keeps legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+  test('keeps legacy motion-vector controls on descriptor plans alongside mesh descriptors', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Legacy Motion Vectors
@@ -1552,13 +1872,17 @@ mv_l=0.4
           requiresPerPixelProgram: false,
           fieldProgram: null,
         },
-        proceduralMotionVectors: null,
+        proceduralMotionVectors: {
+          kind: 'procedural-motion-vectors',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
         unsupported: [],
       }),
     );
   });
 
-  test('keeps scripted legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+  test('keeps scripted legacy motion-vector controls on descriptor plans alongside mesh descriptors', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Scripted Legacy Motion Vectors
@@ -1585,9 +1909,41 @@ per_frame_1=mv_dx=0.05;
           requiresPerPixelProgram: false,
           fieldProgram: null,
         },
-        proceduralMotionVectors: null,
+        proceduralMotionVectors: {
+          kind: 'procedural-motion-vectors',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
         unsupported: [],
       }),
+    );
+  });
+
+  test('lowers supported custom-wave per-point programs into webgpu descriptor plans', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Lowered Custom Wave Per Point
+wavecode_0_enabled=1
+wavecode_0_samples=32
+wavecode_0_usedots=0
+wave_0_per_point1=x = x + value1 * 0.15;
+wave_0_per_point2=y = y + sin(sample * pi) * 0.08;
+      `.trim(),
+      { id: 'lowered-custom-wave-per-point' },
+    );
+
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          target: 'custom-wave',
+          slotIndex: 1,
+          fieldProgram: expect.objectContaining({
+            kind: 'gpu-field-program',
+          }),
+        }),
+      ]),
     );
   });
 });

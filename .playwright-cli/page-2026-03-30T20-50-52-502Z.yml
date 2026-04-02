@@ -1,0 +1,128 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Start" [ref=e14] [cursor=pointer]:
+              - /url: "#main-content"
+            - link "Controls" [ref=e15] [cursor=pointer]:
+              - /url: "#launch-panels"
+            - link "GitHub" [ref=e16] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e17]:
+            - link "Back home" [ref=e18] [cursor=pointer]:
+              - /url: /
+            - button "Switch to light mode" [pressed] [ref=e19] [cursor=pointer]:
+              - generic [ref=e20]: ☀️
+              - generic [ref=e21]: Light mode
+    - main: ▾ ▾
+  - generic [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - paragraph [ref=e42]: Live now
+        - paragraph [ref=e43]: MilkDrop Visualizer
+        - generic [ref=e44]: milkdrop
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic "WebGPU renderer active." [ref=e49]: WebGPU
+          - button "Session" [ref=e50]
+        - generic [ref=e51]:
+          - button [ref=e53] [cursor=pointer]: Next
+          - button [ref=e55] [cursor=pointer]: Share
+          - button [ref=e57] [cursor=pointer]: Picture in picture
+          - button [ref=e58] [cursor=pointer]:
+            - generic [ref=e59]: ←
+            - generic [ref=e60]: Back to Stims
+    - complementary [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e65]: Rovastar - Parallel Universe
+          - generic [ref=e66]: Loaded Rovastar - Parallel Universe.
+        - generic [ref=e67]:
+          - button "Shortcuts" [ref=e68]
+          - button "Close" [ref=e69]
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - button "Back" [ref=e72]
+          - button "Prev" [ref=e73]
+          - button "Next" [ref=e74]
+          - button "Shuffle" [ref=e75]
+        - generic [ref=e76]:
+          - generic [ref=e77]:
+            - checkbox "Autoplay" [ref=e78]
+            - text: Autoplay
+          - generic [ref=e79]:
+            - generic [ref=e80]: Transition
+            - combobox "Transition" [ref=e81]:
+              - option "Blend" [selected]
+              - option "Hard cut"
+        - generic [ref=e82]:
+          - text: Blend
+          - slider "Blend 2.50s" [ref=e83]: "2.5"
+          - generic [ref=e84]: 2.50s
+      - generic [ref=e85]:
+        - button "Presets" [pressed] [ref=e86]
+        - button "Tools" [ref=e87]
+      - generic [ref=e89]:
+        - generic [ref=e91]:
+          - generic [ref=e92]: Now playing Rovastar - Parallel Universe
+          - status [ref=e93]: 3 shown · Featured · WEBGPU
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - generic [ref=e96]: Search
+            - searchbox "Search presets" [ref=e97]
+          - group [ref=e98]:
+            - generic "More filters" [ref=e99] [cursor=pointer]
+            - option "Any fidelity" [selected]
+            - option "Exact"
+            - option "Near exact"
+            - option "Partial"
+            - option "Fallback"
+            - option "Recommended" [selected]
+            - option "Recently used"
+            - option "Top rated"
+            - option "Title"
+        - generic [ref=e100]:
+          - button "All presets" [ref=e143]
+          - button "Classic MilkDrop" [ref=e144]
+          - button "Cream of the Crop" [ref=e145]
+          - button "Feedback Lab" [ref=e146]
+          - button "Low Motion" [ref=e147]
+        - generic [ref=e102]:
+          - generic [ref=e148]:
+            - button "Rovastar - Parallel Universe Live Partial Inferred Rovastar · Recent" [ref=e149]:
+              - generic [ref=e150]:
+                - generic [ref=e151]: Rovastar - Parallel Universe
+                - generic [ref=e152]:
+                  - generic [ref=e153]: Live
+                  - generic [ref=e154]: Partial
+                  - generic [ref=e155]: Inferred
+              - generic [ref=e156]: Rovastar · Recent
+            - button "Save preset" [ref=e158]: ☆
+            - generic [ref=e159]: No measured WebGPU reference capture is recorded yet.
+          - generic [ref=e160]:
+            - button "Eo.S. + Phat - Cubetrace v2 Partial Inferred Eo.S. + Phat · Recent" [ref=e161]:
+              - generic [ref=e162]:
+                - generic [ref=e163]: Eo.S. + Phat - Cubetrace v2
+                - generic [ref=e164]:
+                  - generic [ref=e165]: Partial
+                  - generic [ref=e166]: Inferred
+              - generic [ref=e167]: Eo.S. + Phat · Recent
+            - button "Save preset" [ref=e169]: ☆
+            - generic [ref=e170]: No measured WebGPU reference capture is recorded yet.
+          - generic [ref=e171]:
+            - button "Krash & Rovastar - Cerebral Demons (Stars Remix) Partial Inferred Krash & Rovastar · Recent" [ref=e172]:
+              - generic [ref=e173]:
+                - generic [ref=e174]: Krash & Rovastar - Cerebral Demons (Stars Remix)
+                - generic [ref=e175]:
+                  - generic [ref=e176]: Partial
+                  - generic [ref=e177]: Inferred
+              - generic [ref=e178]: Krash & Rovastar · Recent
+            - button "Save preset" [ref=e180]: ☆
+            - generic [ref=e181]: No measured WebGPU reference capture is recorded yet.

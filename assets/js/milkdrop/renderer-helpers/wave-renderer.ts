@@ -65,6 +65,7 @@ export function createWaveObject(
   const object = new ObjectType(
     new BufferGeometry(),
     new LineBasicMaterial({
+      linewidth: Math.max(1, wave.thickness),
       transparent: true,
       opacity: wave.alpha * alphaMultiplier,
       ...(wave.additive ? { blending: AdditiveBlending } : {}),
@@ -120,6 +121,7 @@ export function updateWaveObject(
     );
   } else {
     const material = object.material as LineBasicMaterial;
+    material.linewidth = Math.max(1, wave.thickness);
     material.blending = wave.additive ? AdditiveBlending : NormalBlending;
     helpers.setMaterialColor(
       material,
@@ -152,6 +154,13 @@ export function syncWaveObject(
   },
   alphaMultiplier: number,
 ) {
+  if (wave.positions.length === 0) {
+    if (existing) {
+      helpers.disposeObject(existing);
+    }
+    return null;
+  }
+
   const wantsPoints = wave.drawMode === 'dots';
   const wantsLoop =
     wave.closed && !wantsPoints && behavior.useLineLoopPrimitives;
@@ -230,6 +239,13 @@ export function syncLineObject(
     ) => void;
   },
 ) {
+  if (line.positions.length === 0) {
+    if (existing) {
+      helpers.disposeObject(existing);
+    }
+    return null;
+  }
+
   if (!(existing instanceof ThreeLine) || existing instanceof ThreeLineLoop) {
     if (existing) {
       helpers.disposeObject(existing);
@@ -330,7 +346,7 @@ export function renderLineVisualGroup({
       additive: boolean;
     },
     alphaMultiplier: number,
-  ) => Line;
+  ) => Line | null;
 }) {
   if (batcher?.renderLineVisualGroup?.(target, group, lines, alphaMultiplier)) {
     clearGroup(group);
@@ -352,6 +368,12 @@ export function renderLineVisualGroup({
       },
       alphaMultiplier,
     );
+    if (!synced) {
+      if (existing) {
+        group.remove(existing);
+      }
+      continue;
+    }
     if (!existing) {
       group.add(synced);
     } else if (synced !== existing) {

@@ -1,7 +1,10 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
 import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
-import { isMobileDevice } from '../utils/device-detect.ts';
+import {
+  getDeviceEnvironmentProfile,
+  isMobileDevice,
+} from '../utils/device-detect.ts';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {
   getRendererFallbackReasonMessage,
@@ -116,6 +119,12 @@ type FallbackOptions = {
   forceWebGL?: boolean;
 };
 
+type RendererCapabilityProbeOptions = {
+  forceRetry?: boolean;
+  preferWebGLForKnownCompatibilityGaps?: boolean;
+  webgpuInitTimeoutMs?: number;
+};
+
 let capabilitiesPromise: Promise<RendererCapabilities> | null = null;
 let cachedCapabilities: RendererCapabilities | null = null;
 let cachedEnvironmentKey: unknown = null;
@@ -166,7 +175,11 @@ const cacheResult = (result: RendererCapabilities) => {
   return result;
 };
 
-function getEnvironmentKey() {
+function getEnvironmentKey({
+  preferWebGLForKnownCompatibilityGaps = false,
+}: {
+  preferWebGLForKnownCompatibilityGaps?: boolean;
+} = {}) {
   if (typeof navigator === 'undefined') return 'no-navigator';
   const nav = navigator as Navigator & { gpu?: GPU; userAgent?: string };
   const hasGpu = Boolean(nav.gpu);
@@ -174,7 +187,10 @@ function getEnvironmentKey() {
   const compatibilityMode = isCompatibilityModeEnabled()
     ? 'compat-on'
     : 'compat-off';
-  return `${hasGpu}:${userAgent}:${compatibilityMode}`;
+  const webgpuCompatibilityMode = preferWebGLForKnownCompatibilityGaps
+    ? 'webgpu-gap-guard-on'
+    : 'webgpu-gap-guard-off';
+  return `${hasGpu}:${userAgent}:${compatibilityMode}:${webgpuCompatibilityMode}`;
 }
 
 function isGuardedMobileWebGPUEnvironment() {
@@ -329,6 +345,7 @@ function getWebGPUPerformanceTier({
 }
 
 function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
+  const environment = getDeviceEnvironmentProfile();
   const features: WebGPUFeatureSupport = {
     bgra8unormStorage: hasFeature(adapter.features, 'bgra8unorm-storage'),
     float32Blendable: hasFeature(adapter.features, 'float32-blendable'),
@@ -364,8 +381,11 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
     optimization: summarizeRendererOptimizationSupport({ features, workers }),
     preferredCanvasFormat: getPreferredCanvasFormat(),
     performanceTier,
-    recommendedQualityPreset:
-      performanceTier === 'high-end' ? 'hi-fi' : 'balanced',
+    recommendedQualityPreset: environment.isMobile
+      ? 'balanced'
+      : performanceTier === 'high-end'
+        ? 'hi-fi'
+        : 'balanced',
   } satisfies WebGPUCapabilitySummary;
 }
 
@@ -420,8 +440,10 @@ export function getRenderingSupport(): RenderingSupport {
 }
 
 async function probeRendererCapabilities({
+  preferWebGLForKnownCompatibilityGaps = false,
   webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
 }: {
+  preferWebGLForKnownCompatibilityGaps?: boolean;
   webgpuInitTimeoutMs?: number;
 } = {}): Promise<RendererCapabilities> {
   if (typeof navigator === 'undefined') {
@@ -449,6 +471,15 @@ async function probeRendererCapabilities({
     return cacheResult(
       buildFallback(
         'WebGPU is temporarily disabled on this mobile browser while we stabilize renderer compatibility. Using WebGL mode.',
+        { forceWebGL: true },
+      ),
+    );
+  }
+
+  if (preferWebGLForKnownCompatibilityGaps) {
+    return cacheResult(
+      buildFallback(
+        'WebGPU is temporarily disabled for the live visualizer while we stabilize ShaderMaterial compatibility. Using WebGL mode.',
         { forceWebGL: true },
       ),
     );
@@ -594,12 +625,12 @@ export function rememberRendererFallback(
 
 export async function getRendererCapabilities({
   forceRetry = false,
+  preferWebGLForKnownCompatibilityGaps = false,
   webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
-}: {
-  forceRetry?: boolean;
-  webgpuInitTimeoutMs?: number;
-} = {}) {
-  const environmentKey = getEnvironmentKey();
+}: RendererCapabilityProbeOptions = {}) {
+  const environmentKey = getEnvironmentKey({
+    preferWebGLForKnownCompatibilityGaps,
+  });
   const environmentChanged = environmentKey !== cachedEnvironmentKey;
 
   if (forceRetry || environmentChanged) {
@@ -609,7 +640,10 @@ export async function getRendererCapabilities({
   cachedEnvironmentKey = environmentKey;
 
   if (!capabilitiesPromise) {
-    capabilitiesPromise = probeRendererCapabilities({ webgpuInitTimeoutMs });
+    capabilitiesPromise = probeRendererCapabilities({
+      preferWebGLForKnownCompatibilityGaps,
+      webgpuInitTimeoutMs,
+    });
   }
 
   return capabilitiesPromise;

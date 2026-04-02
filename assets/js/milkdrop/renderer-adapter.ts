@@ -1,30 +1,48 @@
-import type {
-  Camera,
-  Points,
-  PointsMaterial,
-  Scene,
-  ShaderMaterial,
-  Texture,
-} from 'three';
+import type { Camera, Scene, ShaderMaterial, Texture } from 'three';
 import {
-  AdditiveBlending,
   BufferGeometry,
-  DynamicDrawUsage,
-  Float32BufferAttribute,
   Group,
   type Line,
   LineBasicMaterial,
   LineSegments,
   Mesh,
   MeshBasicMaterial,
-  PlaneGeometry,
-  Shape,
-  ShapeGeometry,
-  Sphere,
   Vector2,
-  Vector3,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import {
+  type MilkdropBackendBehavior,
+  WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+} from './backend-behavior';
+import {
+  BACKGROUND_GEOMETRY,
+  clearGroup,
+  disposeObject,
+  ensureGeometryPositions,
+  getBorderLinePositions,
+  getMilkdropLayerRenderOrder,
+  getMilkdropPassRenderOrder,
+  getShaderSampleDimensionId,
+  getShaderTextureBlendModeId,
+  getShaderTextureSourceId,
+  getShapeFillFallbackColor,
+  getUnitPolygonClosedLineGeometry,
+  getUnitPolygonFillGeometry,
+  getUnitPolygonOutlineGeometry,
+  getWaveLinePositions,
+  isFeedbackCapableRenderer,
+  isSharedGeometry,
+  lerpNumber,
+  type MilkdropFeedbackManagerFactory,
+  type MilkdropRendererAdapterConfig,
+  type MilkdropRendererBatcher,
+  markAlwaysOnscreen,
+  type RendererLike,
+  setMaterialColor,
+  trimGroupChildren,
+  withRenderOrder,
+} from './renderer-adapter-shared';
 import {
   createBorderObject as createBorderObjectHelper,
   renderBorderGroup as renderBorderGroupHelper,
@@ -35,6 +53,7 @@ import {
 import { buildFeedbackCompositeState as buildFeedbackCompositeStateHelper } from './renderer-helpers/feedback-composite';
 import { renderMesh as renderMeshHelper } from './renderer-helpers/mesh-renderer';
 import { renderMotionVectors as renderMotionVectorsHelper } from './renderer-helpers/motion-vector-renderer';
+import { renderParticleFieldGroup as renderParticleFieldGroupHelper } from './renderer-helpers/particle-field-renderer';
 import {
   syncInterpolatedProceduralCustomWaveObject,
   syncInterpolatedProceduralWaveObject,
@@ -60,9 +79,9 @@ import type {
   MilkdropCompiledPreset,
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
-  MilkdropFeedbackSetRenderTarget,
   MilkdropGpuGeometryHints,
   MilkdropGpuInteractionTransform,
+  MilkdropParticleFieldVisual,
   MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralWaveVisual,
   MilkdropRendererAdapter,
@@ -77,412 +96,25 @@ import {
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
 
-type RendererLike = {
-  getSize?: (target: Vector2) => Vector2;
-  render: (scene: Scene, camera: Camera) => void;
-  setRenderTarget?: RendererSetRenderTarget;
-};
-
-type RendererSetRenderTarget = {
-  bivarianceHack: MilkdropFeedbackSetRenderTarget;
-}['bivarianceHack'];
-
-export type MilkdropRendererAdapterConfig = {
-  scene: Scene;
-  camera: Camera;
-  renderer?: RendererLike | null;
-  backend: 'webgl' | 'webgpu';
-  preset?: MilkdropCompiledPreset | null;
-  behavior?: MilkdropBackendBehavior;
-  createFeedbackManager?: MilkdropFeedbackManagerFactory;
-  batcher?: MilkdropRendererBatcher | null;
-  webgpuOptimizationFlags?: MilkdropWebGpuOptimizationFlags;
-};
-
-export type MilkdropRendererBatcher = {
-  attach: (root: Group) => void;
-  dispose: () => void;
-  renderWaveGroup?: (
-    target:
-      | 'main-wave'
-      | 'custom-wave'
-      | 'blend-main-wave'
-      | 'blend-custom-wave',
-    group: Group,
-    waves: MilkdropWaveVisual[],
-    alphaMultiplier: number,
-  ) => boolean;
-  renderProceduralWaveGroup?: (
-    target: 'main-wave' | 'trail-waves',
-    group: Group,
-    waves: MilkdropProceduralWaveVisual[],
-  ) => boolean;
-  renderProceduralCustomWaveGroup?: (
-    group: Group,
-    waves: MilkdropProceduralCustomWaveVisual[],
-  ) => boolean;
-  renderShapeGroup?: (
-    target: 'shapes' | 'blend-shapes',
-    group: Group,
-    shapes: MilkdropShapeVisual[],
-    alphaMultiplier: number,
-  ) => boolean;
-  renderBorderGroup?: (
-    target: 'borders' | 'blend-borders',
-    group: Group,
-    borders: MilkdropBorderVisual[],
-    alphaMultiplier: number,
-  ) => boolean;
-  renderLineVisualGroup?: (
-    target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
-    group: Group,
-    lines: Array<{
-      positions: number[];
-      color: MilkdropColor;
-      alpha: number;
-      additive?: boolean;
-    }>,
-    alphaMultiplier: number,
-  ) => boolean;
-};
-
-export type FeedbackBackendProfile = {
-  currentFrameBoost: number;
-  feedbackSoftness: number;
-  sceneResolutionScale: number;
-  feedbackResolutionScale: number;
-  samples: number;
-};
-
-export type MilkdropFeedbackManagerFactory = (
-  width: number,
-  height: number,
-) => MilkdropFeedbackManager;
-
-export type MilkdropBackendBehavior = {
-  feedbackProfile: FeedbackBackendProfile;
-  useHalfFloatFeedback: boolean;
-  closeLinesManually: boolean;
-  useLineLoopPrimitives: boolean;
-  supportsShapeGradient: boolean;
-  supportsFeedbackPass: boolean;
-};
-
-export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
-  feedbackProfile: {
-    currentFrameBoost: 0,
-    feedbackSoftness: 0,
-    sceneResolutionScale: 0.72,
-    feedbackResolutionScale: 0.72,
-    samples: 0,
-  },
-  useHalfFloatFeedback: false,
-  closeLinesManually: false,
-  useLineLoopPrimitives: true,
-  supportsShapeGradient: true,
-  supportsFeedbackPass: true,
-};
-
-export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
-  feedbackProfile: {
-    currentFrameBoost: 0.1,
-    feedbackSoftness: 0.65,
-    sceneResolutionScale: 1,
-    feedbackResolutionScale: 0.85,
-    samples: 0,
-  },
-  useHalfFloatFeedback: true,
-  closeLinesManually: true,
-  useLineLoopPrimitives: false,
-  supportsShapeGradient: false,
-  supportsFeedbackPass: true,
-};
-
-const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
-const BACKGROUND_GEOMETRY = markSharedGeometry(new PlaneGeometry(6.4, 6.4));
-const polygonFillGeometryCache = new Map<number, ShapeGeometry>();
-const polygonOutlineGeometryCache = new Map<string, BufferGeometry>();
-
-function getShaderTextureSourceId(source: string) {
-  switch (source) {
-    case 'noise':
-    case 'perlin':
-      return 1;
-    case 'simplex':
-      return 2;
-    case 'voronoi':
-      return 3;
-    case 'aura':
-      return 4;
-    case 'caustics':
-      return 5;
-    case 'pattern':
-      return 6;
-    case 'fractal':
-      return 7;
-    default:
-      return 0;
-  }
-}
-
-function getShaderTextureBlendModeId(mode: string) {
-  switch (mode) {
-    case 'replace':
-      return 1;
-    case 'mix':
-      return 2;
-    case 'add':
-      return 3;
-    case 'multiply':
-      return 4;
-    default:
-      return 0;
-  }
-}
-
-function getShaderSampleDimensionId(dimension: '2d' | '3d') {
-  return dimension === '3d' ? 1 : 0;
-}
-
-export function getFeedbackBackendProfile(
-  backend: 'webgl' | 'webgpu',
-): FeedbackBackendProfile {
-  return backend === 'webgpu'
-    ? WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile
-    : WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
-}
-
-function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
-  geometry.userData[SHARED_GEOMETRY_FLAG] = true;
-  return geometry;
-}
-
-function isSharedGeometry(geometry: BufferGeometry) {
-  return geometry.userData[SHARED_GEOMETRY_FLAG] === true;
-}
-
-function setGeometryBoundingSphere(
-  geometry: BufferGeometry,
-  center: Vector3,
-  radius: number,
-) {
-  if (!geometry.boundingSphere) {
-    geometry.boundingSphere = new Sphere(center.clone(), radius);
-    return geometry.boundingSphere;
-  }
-  geometry.boundingSphere.center.copy(center);
-  geometry.boundingSphere.radius = radius;
-  return geometry.boundingSphere;
-}
-
-function setSharedGeometryBounds(
-  geometry: BufferGeometry,
-  {
-    center = new Vector3(0, 0, 0),
-    radius,
-  }: {
-    center?: Vector3;
-    radius: number;
-  },
-) {
-  setGeometryBoundingSphere(geometry, center, radius);
-  return geometry;
-}
-
-function setGeometryBoundsFromPositions(
-  geometry: BufferGeometry,
-  positions: number[],
-) {
-  if (positions.length < 3) {
-    return setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), 0);
-  }
-
-  let minX = positions[0] ?? 0;
-  let maxX = minX;
-  let minY = positions[1] ?? 0;
-  let maxY = minY;
-  let minZ = positions[2] ?? 0;
-  let maxZ = minZ;
-
-  for (let index = 3; index < positions.length; index += 3) {
-    const x = positions[index] ?? 0;
-    const y = positions[index + 1] ?? 0;
-    const z = positions[index + 2] ?? 0;
-    minX = Math.min(minX, x);
-    maxX = Math.max(maxX, x);
-    minY = Math.min(minY, y);
-    maxY = Math.max(maxY, y);
-    minZ = Math.min(minZ, z);
-    maxZ = Math.max(maxZ, z);
-  }
-
-  const center = new Vector3(
-    (minX + maxX) * 0.5,
-    (minY + maxY) * 0.5,
-    (minZ + maxZ) * 0.5,
-  );
-  let radiusSq = 0;
-
-  for (let index = 0; index < positions.length; index += 3) {
-    const dx = (positions[index] ?? 0) - center.x;
-    const dy = (positions[index + 1] ?? 0) - center.y;
-    const dz = (positions[index + 2] ?? 0) - center.z;
-    radiusSq = Math.max(radiusSq, dx * dx + dy * dy + dz * dz);
-  }
-
-  return setGeometryBoundingSphere(geometry, center, Math.sqrt(radiusSq));
-}
-
-function markAlwaysOnscreen<
-  T extends Group | Mesh | Line | LineSegments | Points,
->(object: T) {
-  object.frustumCulled = false;
-  return object;
-}
-
-function getUnitPolygonVertices(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
-  return Array.from({ length: safeSides }, (_, index) => {
-    const theta =
-      (index / safeSides) * Math.PI * 2 + Math.PI / Math.max(3, safeSides);
-    return new Vector2(Math.cos(theta), Math.sin(theta));
-  });
-}
-
-function getUnitPolygonFillGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
-  const cached = polygonFillGeometryCache.get(safeSides);
-  if (cached) {
-    return cached;
-  }
-
-  const vertices = getUnitPolygonVertices(safeSides);
-  const firstVertex = vertices[0] ?? new Vector2(1, 0);
-  const fillShape = new Shape();
-  fillShape.moveTo(firstVertex.x, firstVertex.y);
-  vertices.slice(1).forEach((vertex) => fillShape.lineTo(vertex.x, vertex.y));
-  fillShape.lineTo(firstVertex.x, firstVertex.y);
-
-  const geometry = markSharedGeometry(new ShapeGeometry(fillShape));
-  setSharedGeometryBounds(geometry, { radius: 1 });
-  polygonFillGeometryCache.set(safeSides, geometry);
-  return geometry;
-}
-
-function getUnitPolygonOutlineGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
-  const cached = polygonOutlineGeometryCache.get(`open:${safeSides}`);
-  if (cached) {
-    return cached;
-  }
-
-  const geometry = markSharedGeometry(new BufferGeometry());
-  const positions = getUnitPolygonVertices(safeSides).flatMap((vertex) => [
-    vertex.x,
-    vertex.y,
-    0,
-  ]);
-  ensureGeometryPositions(geometry, positions);
-  polygonOutlineGeometryCache.set(`open:${safeSides}`, geometry);
-  return geometry;
-}
-
-function getUnitPolygonClosedLineGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
-  const cached = polygonOutlineGeometryCache.get(`closed:${safeSides}`);
-  if (cached) {
-    return cached;
-  }
-
-  const geometry = markSharedGeometry(new BufferGeometry());
-  const positions = closeLinePositions(
-    getUnitPolygonVertices(safeSides).flatMap((vertex) => [
-      vertex.x,
-      vertex.y,
-      0,
-    ]),
-  );
-  ensureGeometryPositions(geometry, positions);
-  polygonOutlineGeometryCache.set(`closed:${safeSides}`, geometry);
-  return geometry;
-}
-
-function closeLinePositions(positions: number[]) {
-  if (positions.length < 6) {
-    return positions;
-  }
-  const firstX = positions[0];
-  const firstY = positions[1];
-  const firstZ = positions[2];
-  const lastIndex = positions.length - 3;
-  if (
-    positions[lastIndex] === firstX &&
-    positions[lastIndex + 1] === firstY &&
-    positions[lastIndex + 2] === firstZ
-  ) {
-    return positions;
-  }
-  return [...positions, firstX, firstY, firstZ];
-}
-
-function getWaveLinePositions(
-  wave: MilkdropWaveVisual,
-  behavior: MilkdropBackendBehavior,
-) {
-  return wave.closed && behavior.closeLinesManually
-    ? closeLinePositions(wave.positions)
-    : wave.positions;
-}
-
-function getBorderLinePositions(
-  border: MilkdropBorderVisual,
-  z: number,
-  behavior: MilkdropBackendBehavior,
-) {
-  const inset = border.key === 'outer' ? border.size : border.size + 0.08;
-  const left = -1 + inset * 2;
-  const right = 1 - inset * 2;
-  const top = 1 - inset * 2;
-  const bottom = -1 + inset * 2;
-  const positions = [
-    left,
-    top,
-    z,
-    right,
-    top,
-    z,
-    right,
-    bottom,
-    z,
-    left,
-    bottom,
-    z,
-  ];
-  return behavior.closeLinesManually
-    ? closeLinePositions(positions)
-    : positions;
-}
-
-function getShapeFillFallbackColor(shape: MilkdropShapeVisual) {
-  if (!shape.secondaryColor) {
-    return shape.color;
-  }
-  return {
-    r: (shape.color.r + shape.secondaryColor.r) * 0.5,
-    g: (shape.color.g + shape.secondaryColor.g) * 0.5,
-    b: (shape.color.b + shape.secondaryColor.b) * 0.5,
-    a: Math.max(shape.color.a ?? 0.4, shape.secondaryColor.a ?? 0),
-  };
-}
-
-function lerpNumber(previous: number, current: number, mix: number) {
-  return previous + (current - previous) * mix;
-}
+export type {
+  FeedbackBackendProfile,
+  MilkdropBackendBehavior,
+} from './backend-behavior';
+export {
+  getFeedbackBackendProfile,
+  WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+} from './backend-behavior';
+export type {
+  MilkdropRendererAdapterConfig,
+  MilkdropRendererBatcher,
+} from './renderer-adapter-shared';
 
 function lerpColor(
   previousColor: MilkdropColor,
   currentColor: MilkdropColor,
   mix: number,
+  { preservePreviousAlpha = false }: { preservePreviousAlpha?: boolean } = {},
 ): MilkdropColor {
   return {
     r: lerpNumber(previousColor.r, currentColor.r, mix),
@@ -490,7 +122,9 @@ function lerpColor(
     b: lerpNumber(previousColor.b, currentColor.b, mix),
     ...(previousColor.a !== undefined || currentColor.a !== undefined
       ? {
-          a: lerpNumber(previousColor.a ?? 0, currentColor.a ?? 0, mix),
+          a: preservePreviousAlpha
+            ? (previousColor.a ?? currentColor.a ?? 0)
+            : lerpNumber(previousColor.a ?? 0, currentColor.a ?? 0, mix),
         }
       : {}),
   };
@@ -518,103 +152,31 @@ function interpolateShapeVisual(
       currentShape.textureAngle,
       mix,
     ),
-    color: lerpColor(previousShape.color, currentShape.color, mix),
+    color: lerpColor(previousShape.color, currentShape.color, mix, {
+      preservePreviousAlpha: true,
+    }),
     secondaryColor:
       previousShape.secondaryColor || currentShape.secondaryColor
         ? lerpColor(
             previousShape.secondaryColor ?? previousShape.color,
             currentShape.secondaryColor ?? currentShape.color,
             mix,
+            {
+              preservePreviousAlpha: true,
+            },
           )
         : null,
     borderColor: lerpColor(
       previousShape.borderColor,
       currentShape.borderColor,
       mix,
+      {
+        preservePreviousAlpha: true,
+      },
     ),
     additive: previousShape.additive || currentShape.additive,
     thickOutline: previousShape.thickOutline || currentShape.thickOutline,
   };
-}
-
-function isFeedbackCapableRenderer(
-  renderer: RendererLike | null,
-): renderer is RendererLike & {
-  getSize: (target: Vector2) => Vector2;
-  setRenderTarget: RendererSetRenderTarget;
-} {
-  return !!renderer && !!renderer.getSize && !!renderer.setRenderTarget;
-}
-
-function setMaterialColor(
-  material: LineBasicMaterial | MeshBasicMaterial | PointsMaterial,
-  value: { r: number; g: number; b: number },
-  opacity: number,
-) {
-  material.color.setRGB(value.r, value.g, value.b);
-  material.opacity = opacity;
-  material.transparent = opacity < 1 || material.blending === AdditiveBlending;
-}
-
-function ensureGeometryPositions(
-  geometry: BufferGeometry,
-  positions: number[],
-) {
-  const existing = geometry.getAttribute('position');
-  if (
-    existing instanceof Float32BufferAttribute &&
-    existing.itemSize === 3 &&
-    existing.array.length === positions.length
-  ) {
-    existing.array.set(positions);
-    existing.needsUpdate = true;
-  } else {
-    const attribute = new Float32BufferAttribute(positions, 3);
-    attribute.setUsage(DynamicDrawUsage);
-    geometry.setAttribute('position', attribute);
-  }
-  if (geometry.userData.skipDynamicBounds === true) {
-    setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), Math.SQRT2 * 2.4);
-    return;
-  }
-  setGeometryBoundsFromPositions(geometry, positions);
-}
-
-function clearGroup(group: Group) {
-  for (let index = group.children.length - 1; index >= 0; index -= 1) {
-    const child = group.children[index];
-    disposeObject(child);
-    group.remove(child);
-  }
-}
-
-function disposeObject(object: { children?: unknown[] }) {
-  if (
-    'children' in object &&
-    Array.isArray(object.children) &&
-    object.children.length
-  ) {
-    object.children.forEach((child) =>
-      disposeObject(child as { children?: unknown[] }),
-    );
-  }
-  if ('geometry' in object) {
-    const geometry = (object as Line | Mesh | Points).geometry;
-    if (!isSharedGeometry(geometry)) {
-      disposeGeometry(geometry);
-    }
-  }
-  if ('material' in object) {
-    disposeMaterial((object as Line | Mesh | Points).material);
-  }
-}
-
-function trimGroupChildren(group: Group, keepCount: number) {
-  for (let index = group.children.length - 1; index >= keepCount; index -= 1) {
-    const child = group.children[index];
-    disposeObject(child as { children?: unknown[] });
-    group.remove(child);
-  }
 }
 
 class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
@@ -626,69 +188,128 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly camera: Camera;
   private readonly renderer: RendererLike | null;
   private readonly root = new Group();
-  private readonly background = markAlwaysOnscreen(
-    new Mesh(
-      BACKGROUND_GEOMETRY,
-      new MeshBasicMaterial({
-        color: 0x000000,
-        transparent: false,
-        opacity: 1,
-        depthWrite: true,
-        depthTest: false,
-      }),
+  private readonly background = withRenderOrder(
+    markAlwaysOnscreen(
+      new Mesh(
+        BACKGROUND_GEOMETRY,
+        new MeshBasicMaterial({
+          color: 0x000000,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true,
+          depthTest: false,
+        }),
+      ),
     ),
+    getMilkdropLayerRenderOrder('background'),
   );
   private readonly meshLines: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = markAlwaysOnscreen(
-    new LineSegments(
-      new BufferGeometry(),
-      new LineBasicMaterial({
-        color: 0x4d66f2,
-        transparent: true,
-        opacity: 0.24,
-      }),
+  > = withRenderOrder(
+    markAlwaysOnscreen(
+      new LineSegments(
+        new BufferGeometry(),
+        new LineBasicMaterial({
+          color: 0x4d66f2,
+          transparent: true,
+          opacity: 0.24,
+        }),
+      ),
     ),
+    getMilkdropLayerRenderOrder('mesh'),
   );
-  private readonly mainWaveGroup = new Group();
-  private readonly customWaveGroup = new Group();
-  private readonly trailGroup = new Group();
-  private readonly shapesGroup = new Group();
-  private readonly borderGroup = markAlwaysOnscreen(new Group());
-  private readonly motionVectorGroup = markAlwaysOnscreen(new Group());
-  private readonly motionVectorCpuGroup = markAlwaysOnscreen(new Group());
+  private readonly mainWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('main-wave'),
+  );
+  private readonly customWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('custom-wave'),
+  );
+  private readonly trailGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('trails'),
+  );
+  private readonly particleFieldGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('particle-field'),
+  );
+  private readonly shapesGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('shapes'),
+  );
+  private readonly borderGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    getMilkdropLayerRenderOrder('borders'),
+  );
+  private readonly motionVectorGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    getMilkdropLayerRenderOrder('motion-vectors'),
+  );
+  private readonly motionVectorCpuGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    getMilkdropLayerRenderOrder('motion-vectors'),
+  );
   private readonly proceduralMotionVectors: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = markAlwaysOnscreen(
-    new LineSegments(
-      new BufferGeometry(),
-      new LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.35,
-      }),
+  > = withRenderOrder(
+    markAlwaysOnscreen(
+      new LineSegments(
+        new BufferGeometry(),
+        new LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.35,
+        }),
+      ),
     ),
+    getMilkdropLayerRenderOrder('motion-vectors'),
   );
-  private readonly blendWaveGroup = new Group();
-  private readonly blendCustomWaveGroup = new Group();
-  private readonly blendShapeGroup = new Group();
-  private readonly blendBorderGroup = markAlwaysOnscreen(new Group());
-  private readonly blendMotionVectorGroup = markAlwaysOnscreen(new Group());
-  private readonly blendMotionVectorCpuGroup = markAlwaysOnscreen(new Group());
+  private readonly blendWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-main-wave'),
+  );
+  private readonly blendCustomWaveGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-custom-wave'),
+  );
+  private readonly blendParticleFieldGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-particle-field'),
+  );
+  private readonly blendShapeGroup = withRenderOrder(
+    new Group(),
+    getMilkdropLayerRenderOrder('blend-shapes'),
+  );
+  private readonly blendBorderGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    getMilkdropLayerRenderOrder('blend-borders'),
+  );
+  private readonly blendMotionVectorGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    getMilkdropLayerRenderOrder('blend-motion-vectors'),
+  );
+  private readonly blendMotionVectorCpuGroup = withRenderOrder(
+    markAlwaysOnscreen(new Group()),
+    getMilkdropLayerRenderOrder('blend-motion-vectors'),
+  );
   private readonly blendProceduralMotionVectors: LineSegments<
     BufferGeometry,
     LineBasicMaterial | ShaderMaterial
-  > = markAlwaysOnscreen(
-    new LineSegments(
-      new BufferGeometry(),
-      new LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.35,
-      }),
+  > = withRenderOrder(
+    markAlwaysOnscreen(
+      new LineSegments(
+        new BufferGeometry(),
+        new LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.35,
+        }),
+      ),
     ),
+    getMilkdropLayerRenderOrder('blend-motion-vectors'),
   );
   private readonly feedback: MilkdropFeedbackManager | null;
   private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
@@ -733,6 +354,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.mainWaveGroup);
     this.root.add(this.customWaveGroup);
     this.root.add(this.trailGroup);
+    this.root.add(this.particleFieldGroup);
     this.root.add(this.shapesGroup);
     this.root.add(this.borderGroup);
     this.motionVectorGroup.add(this.motionVectorCpuGroup);
@@ -741,6 +363,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.root.add(this.motionVectorGroup);
     this.root.add(this.blendWaveGroup);
     this.root.add(this.blendCustomWaveGroup);
+    this.root.add(this.blendParticleFieldGroup);
     this.root.add(this.blendShapeGroup);
     this.root.add(this.blendBorderGroup);
     this.blendMotionVectorGroup.add(this.blendMotionVectorCpuGroup);
@@ -814,8 +437,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,
-      syncWaveObject: (existing, wave, nextAlphaMultiplier) =>
-        syncWaveObjectHelper(
+      syncWaveObject: (existing, wave, nextAlphaMultiplier) => {
+        const synced = syncWaveObjectHelper(
           existing,
           wave,
           this.behavior,
@@ -826,7 +449,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             setMaterialColor,
           },
           nextAlphaMultiplier,
-        ),
+        );
+        if (synced) {
+          synced.renderOrder = getMilkdropPassRenderOrder(
+            target,
+            wave.additive,
+          );
+        }
+        return synced;
+      },
     });
   }
 
@@ -844,6 +475,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       const wave = waves[index] as MilkdropProceduralWaveVisual;
       const existing = group.children[index] as Line | undefined;
       const synced = syncProceduralWaveObject(existing, wave, interaction);
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        target === 'trail-waves' ? 'trails' : 'main-wave',
+        wave.additive,
+      );
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -870,6 +505,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         existing,
         wave,
         interaction,
+      );
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        'custom-wave',
+        wave.additive,
       );
       if (!existing) {
         group.add(synced);
@@ -905,6 +544,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         alphaMultiplier,
         interaction,
       );
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        'blend-main-wave',
+        wave.previous.additive || wave.current.additive,
+      );
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -939,6 +582,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         alphaMultiplier,
         interaction,
       );
+      synced.renderOrder = getMilkdropPassRenderOrder(
+        'blend-custom-wave',
+        wave.previous.additive || wave.current.additive,
+      );
       if (!existing) {
         group.add(synced);
       } else if (synced !== existing) {
@@ -955,6 +602,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier = 1,
   ) {
+    this.batcher?.setShapeTexture?.(
+      (this.feedback?.getShapeTexture?.() as Texture | null) ?? null,
+    );
     return renderShapeGroupHelper({
       target,
       group,
@@ -963,8 +613,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,
-      syncShapeObject: (existing, shape, nextAlphaMultiplier) =>
-        syncShapeObjectHelper(
+      syncShapeObject: (existing, shape, nextAlphaMultiplier) => {
+        const synced = syncShapeObjectHelper(
           existing,
           shape,
           this.behavior,
@@ -1021,7 +671,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             getUnitPolygonFillGeometry,
           },
           nextAlphaMultiplier,
-        ),
+        );
+        synced.renderOrder = getMilkdropPassRenderOrder(target, shape.additive);
+        return synced;
+      },
     });
   }
 
@@ -1093,11 +746,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     mix: number,
     alphaMultiplier = 1,
   ) {
-    const interpolatedShapes = currentShapes.map((shape, index) => {
-      const previousShape = previousShapes[index];
-      return previousShape
-        ? interpolateShapeVisual(previousShape, shape, mix)
-        : shape;
+    const interpolatedShapes = previousShapes.map((previousShape, index) => {
+      const currentShape = currentShapes[index];
+      return currentShape
+        ? interpolateShapeVisual(previousShape, currentShape, mix)
+        : previousShape;
     });
     this.renderShapeGroup(
       'blend-shapes',
@@ -1126,13 +779,24 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,
-      syncLineObject: (existing, line, nextAlphaMultiplier) =>
-        syncLineObjectHelper(existing, line, nextAlphaMultiplier, {
-          disposeObject,
-          ensureGeometryPositions,
-          markAlwaysOnscreen,
-          setMaterialColor,
-        }),
+      syncLineObject: (existing, line, nextAlphaMultiplier) => {
+        const synced = syncLineObjectHelper(
+          existing,
+          line,
+          nextAlphaMultiplier,
+          {
+            disposeObject,
+            ensureGeometryPositions,
+            markAlwaysOnscreen,
+            setMaterialColor,
+          },
+        );
+        if (!synced) {
+          return null;
+        }
+        synced.renderOrder = getMilkdropPassRenderOrder(target, line.additive);
+        return synced;
+      },
     });
   }
 
@@ -1263,6 +927,20 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState.trails,
       );
     }
+    renderParticleFieldGroupHelper({
+      target: 'particle-field',
+      group: this.particleFieldGroup,
+      particleField:
+        (
+          payload.frameState.gpuGeometry as {
+            particleField?: MilkdropParticleFieldVisual | null;
+          }
+        ).particleField ?? null,
+      mesh: payload.frameState.mesh,
+      meshPositions: payload.frameState.mesh.positions,
+      signals: payload.frameState.signals,
+      trimGroupChildren,
+    });
     this.renderShapeGroup(
       'shapes',
       this.shapesGroup,
@@ -1332,15 +1010,14 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       }
       if (
         canUseProceduralCustomWaves &&
-        previousFrame.gpuGeometry.customWaves.length > 0 &&
-        payload.frameState.gpuGeometry.customWaves.length > 0
+        previousFrame.gpuGeometry.customWaves.length > 0
       ) {
-        const interpolatedCustomWaves = previousFrame.gpuGeometry.customWaves
-          .map((wave, index) => {
-            const current = payload.frameState.gpuGeometry.customWaves[index];
-            return current ? { previous: wave, current } : null;
-          })
-          .filter((wave): wave is NonNullable<typeof wave> => wave !== null);
+        const interpolatedCustomWaves =
+          previousFrame.gpuGeometry.customWaves.map((wave, index) => {
+            const current =
+              payload.frameState.gpuGeometry.customWaves[index] ?? wave;
+            return { previous: wave, current };
+          });
         this.renderInterpolatedProceduralCustomWaveGroup(
           this.blendCustomWaveGroup,
           interpolatedCustomWaves,
@@ -1382,6 +1059,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
           blend.alpha,
         );
       }
+      renderParticleFieldGroupHelper({
+        target: 'blend-particle-field',
+        group: this.blendParticleFieldGroup,
+        particleField:
+          (
+            previousFrame.gpuGeometry as {
+              particleField?: MilkdropParticleFieldVisual | null;
+            }
+          ).particleField ?? null,
+        mesh: previousFrame.mesh,
+        meshPositions: previousFrame.mesh.positions,
+        signals: previousFrame.signals,
+        alphaMultiplier: blend.alpha,
+        trimGroupChildren,
+      });
       this.renderInterpolatedShapeGroup(
         this.blendShapeGroup,
         previousFrame.shapes,
@@ -1422,6 +1114,16 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         blend?.mode === 'cpu' ? blend.customWaves : [],
         blend?.alpha ?? 0,
       );
+      renderParticleFieldGroupHelper({
+        target: 'blend-particle-field',
+        group: this.blendParticleFieldGroup,
+        particleField: null,
+        mesh: payload.frameState.mesh,
+        meshPositions: payload.frameState.mesh.positions,
+        signals: payload.frameState.signals,
+        alphaMultiplier: blend?.alpha ?? 0,
+        trimGroupChildren,
+      });
       this.renderShapeGroup(
         'blend-shapes',
         this.blendShapeGroup,
@@ -1461,11 +1163,13 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     clearGroup(this.mainWaveGroup);
     clearGroup(this.customWaveGroup);
     clearGroup(this.trailGroup);
+    clearGroup(this.particleFieldGroup);
     clearGroup(this.shapesGroup);
     clearGroup(this.borderGroup);
     clearGroup(this.motionVectorGroup);
     clearGroup(this.blendWaveGroup);
     clearGroup(this.blendCustomWaveGroup);
+    clearGroup(this.blendParticleFieldGroup);
     clearGroup(this.blendShapeGroup);
     clearGroup(this.blendBorderGroup);
     clearGroup(this.blendMotionVectorGroup);

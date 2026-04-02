@@ -1,11 +1,12 @@
 import type * as THREE from 'three';
-import { createSharedInitializer } from '../../utils/shared-initializer';
+import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import {
   getRendererCapabilities,
   type RendererBackend,
   type RendererCapabilities,
   rememberRendererFallback,
 } from '../renderer-capabilities.ts';
+import { shouldPreferWebGLForKnownCompatibilityGaps } from '../renderer-query-override.ts';
 import {
   applyRendererSettings,
   DEFAULT_RENDERER_RUNTIME_CONTROLS,
@@ -20,6 +21,7 @@ import {
   type RendererInitConfig,
   type RendererInitResult,
 } from '../renderer-setup.ts';
+import { createSharedInitializer } from '../shared-initializer.ts';
 import {
   getActiveQualityPreset,
   type QualityPreset,
@@ -31,8 +33,10 @@ import {
 } from '../state/render-preference-store.ts';
 import type { WebGPURenderer } from '../webgpu-renderer.ts';
 
+type RendererInstance = THREE.WebGLRenderer | WebGPURenderer;
+
 export type RendererHandle = {
-  renderer: THREE.WebGLRenderer | WebGPURenderer;
+  renderer: RendererInstance;
   backend: RendererBackend;
   info: RendererInitResult;
   canvas: HTMLCanvasElement;
@@ -58,7 +62,12 @@ const runtimeControlSubscribers = new Set<
   (controls: RendererRuntimeControls) => void
 >();
 const rendererCapabilitiesInitializer =
-  createSharedInitializer<RendererCapabilities>(getRendererCapabilities);
+  createSharedInitializer<RendererCapabilities>(() =>
+    getRendererCapabilities({
+      preferWebGLForKnownCompatibilityGaps:
+        shouldPreferWebGLForKnownCompatibilityGaps(),
+    }),
+  );
 
 function getRenderDefaults(): Partial<RendererInitConfig> {
   return {
@@ -97,7 +106,7 @@ function buildSettings(
 }
 
 function applyPoolSettings(
-  renderer: THREE.WebGLRenderer | WebGPURenderer,
+  renderer: RendererInstance,
   info: RendererInitResult,
   options: Partial<RendererInitConfig> = {},
   viewport?: RendererViewport,
@@ -105,22 +114,204 @@ function applyPoolSettings(
   applyRendererSettings(renderer, info, options, getRenderDefaults(), viewport);
 }
 
+function applyRendererOverrides(
+  renderer: RendererInstance,
+  overrides: Map<PropertyKey, unknown>,
+) {
+  overrides.forEach((value, key) => {
+    Reflect.set(renderer as object, key, value);
+  });
+}
+
+function createWebGpuRendererFacade({
+  getRenderer,
+  recreateRenderer,
+}: {
+  getRenderer: () => RendererInstance;
+  recreateRenderer: () => Promise<void>;
+}) {
+  let animationLoop: (() => void) | null = null;
+  let animationFrameId: number | null = null;
+  const overrides = new Map<PropertyKey, unknown>();
+
+  const cancelScheduledFrame = () => {
+    if (animationFrameId === null) {
+      return;
+    }
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  };
+
+  const scheduleNextFrame = () => {
+    if (!animationLoop) {
+      animationFrameId = null;
+      return;
+    }
+
+    animationFrameId = requestAnimationFrame(() => {
+      const callback = animationLoop;
+      if (!callback) {
+        animationFrameId = null;
+        return;
+      }
+
+      void recreateRenderer()
+        .then(() => {
+          if (animationLoop === callback) {
+            callback();
+          }
+        })
+        .catch((error) => {
+          console.warn('WebGPU renderer refresh failed.', error);
+        })
+        .finally(() => {
+          if (animationLoop === callback) {
+            scheduleNextFrame();
+          } else {
+            animationFrameId = null;
+          }
+        });
+    });
+  };
+
+  const renderer = new Proxy({} as RendererInstance, {
+    get: (_target, property) => {
+      if (property === 'setAnimationLoop') {
+        return (callback: (() => void) | null) => {
+          animationLoop = callback;
+          getRenderer().setAnimationLoop?.(null);
+          cancelScheduledFrame();
+          if (callback) {
+            scheduleNextFrame();
+          }
+        };
+      }
+
+      if (property === 'dispose') {
+        return () => {
+          animationLoop = null;
+          cancelScheduledFrame();
+          getRenderer().dispose?.();
+        };
+      }
+
+      const value = Reflect.get(getRenderer() as object, property);
+      return typeof value === 'function' ? value.bind(getRenderer()) : value;
+    },
+    set: (_target, property, value) => {
+      overrides.set(property, value);
+      Reflect.set(getRenderer() as object, property, value);
+      return true;
+    },
+  });
+
+  return {
+    renderer,
+    applyOverrides: (nextRenderer: RendererInstance) =>
+      applyRendererOverrides(nextRenderer, overrides),
+    stopAnimationLoop: () => {
+      animationLoop = null;
+      cancelScheduledFrame();
+      getRenderer().setAnimationLoop?.(null);
+    },
+  };
+}
+
 async function createRendererHandle(
   canvas: HTMLCanvasElement,
   options: Partial<RendererInitConfig>,
   initRendererImpl: typeof initRenderer,
 ): Promise<RendererHandle> {
-  const initResult = await initRendererImpl(canvas, buildSettings(options));
-  if (!initResult) {
+  const initialResult = await initRendererImpl(canvas, buildSettings(options));
+  if (!initialResult) {
     rememberRendererFallback('Renderer initialization failed.');
     throw new Error('Unable to initialize renderer.');
   }
+  let initResult: RendererInitResult = initialResult;
 
   let activeOptions = options;
   let activeViewport: RendererViewport | undefined;
+  let activeRenderer: RendererInstance = initResult.renderer;
+  let stopRendererAnimationLoop: (() => void) | null = null;
+  let applyFacadeOverrides: ((renderer: RendererInstance) => void) | null =
+    null;
+
+  const recreateRenderer = async () => {
+    activeRenderer.setAnimationLoop?.(null);
+
+    if (initResult.backend === 'webgpu' && initResult.device) {
+      const settings = buildSettings(activeOptions, initResult);
+      const { WebGPURenderer: WebGPURendererConstructor } = await import(
+        '../webgpu-renderer.ts'
+      );
+      const nextRenderer = new WebGPURendererConstructor({
+        canvas,
+        antialias: settings.antialias ?? true,
+        alpha: settings.alpha ?? false,
+        device: initResult.device,
+      });
+      if ('init' in nextRenderer && typeof nextRenderer.init === 'function') {
+        await nextRenderer.init();
+      }
+      nextRenderer.outputColorSpace = SRGBColorSpace;
+      nextRenderer.toneMapping = ACESFilmicToneMapping;
+
+      const nextResult: RendererInitResult = {
+        ...initResult,
+        renderer: nextRenderer,
+      };
+      activeRenderer = nextRenderer;
+      applyFacadeOverrides?.(activeRenderer);
+      applyPoolSettings(
+        activeRenderer,
+        nextResult,
+        activeOptions,
+        activeViewport,
+      );
+      initResult = nextResult;
+      handle.info = nextResult;
+      return;
+    }
+
+    activeRenderer.dispose?.();
+
+    const nextResult = await initRendererImpl(
+      canvas,
+      buildSettings(activeOptions, initResult),
+    );
+    if (!nextResult) {
+      rememberRendererFallback('Renderer recreation failed.');
+      throw new Error('Unable to recreate renderer.');
+    }
+
+    activeRenderer = nextResult.renderer;
+    applyFacadeOverrides?.(activeRenderer);
+    applyPoolSettings(
+      activeRenderer,
+      nextResult,
+      activeOptions,
+      activeViewport,
+    );
+    initResult = nextResult;
+    handle.backend = nextResult.backend;
+    handle.info = nextResult;
+  };
+
+  const renderer =
+    initResult.backend === 'webgpu'
+      ? (() => {
+          const facade = createWebGpuRendererFacade({
+            getRenderer: () => activeRenderer,
+            recreateRenderer,
+          });
+          stopRendererAnimationLoop = facade.stopAnimationLoop;
+          applyFacadeOverrides = facade.applyOverrides;
+          return facade.renderer;
+        })()
+      : activeRenderer;
 
   const handle: RendererHandle = {
-    renderer: initResult.renderer,
+    renderer,
     backend: initResult.backend,
     info: initResult,
     canvas,
@@ -133,7 +324,7 @@ async function createRendererHandle(
         activeViewport = viewport;
       }
       applyPoolSettings(
-        initResult.renderer,
+        activeRenderer,
         initResult,
         activeOptions,
         activeViewport,
@@ -142,6 +333,7 @@ async function createRendererHandle(
     release: () => {
       activeOptions = {};
       activeViewport = undefined;
+      stopRendererAnimationLoop?.();
     },
   };
 

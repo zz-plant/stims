@@ -99,10 +99,10 @@ describe('milkdrop shader sampler aliases', () => {
     );
   });
 
-  test('identifies atlas-backed aux samplers as runtime volume samplers', () => {
+  test('identifies only simplex as a runtime volume sampler', () => {
     expect(isVolumeSamplerName('simplex')).toBe(true);
-    expect(isVolumeSamplerName('noise')).toBe(true);
-    expect(isVolumeSamplerName('voronoi')).toBe(true);
+    expect(isVolumeSamplerName('noise')).toBe(false);
+    expect(isVolumeSamplerName('voronoi')).toBe(false);
   });
 
   test('keeps AST shader sampling aligned with compiler shader extraction', () => {

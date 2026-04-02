@@ -43,4 +43,32 @@ describe('milkdrop editor session', () => {
 
     session.dispose();
   });
+
+  test('loads presets into a clean editor state before any user edits', async () => {
+    const session = createMilkdropEditorSession({
+      initialPreset: {
+        id: 'editor-load-clean',
+        title: 'Editor Load Clean',
+        raw: 'title=Editor Load Clean\nwave_r=0.4\n',
+        origin: 'user',
+      },
+    });
+
+    const loaded = await session.loadPreset({
+      id: 'editor-load-clean-2',
+      title: 'Editor Load Clean 2',
+      raw: 'title=Editor Load Clean 2\nwave_g=0.5\n',
+      origin: 'bundled',
+    });
+    const formattedSource = loaded.activeCompiled?.formattedSource;
+
+    expect(loaded.dirty).toBe(false);
+    expect(formattedSource).toBeDefined();
+    if (!formattedSource) {
+      throw new Error('Expected the loaded preset to compile successfully.');
+    }
+    expect(loaded.source).toBe(formattedSource);
+
+    session.dispose();
+  });
 });

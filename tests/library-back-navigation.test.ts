@@ -3,7 +3,7 @@ import {
   bindLibraryBackLink,
   navigateBackToLibrary,
   shouldUseHistoryBackToLibrary,
-} from '../assets/js/utils/library-back-navigation.ts';
+} from '../assets/js/core/library-back-navigation.ts';
 
 describe('library back navigation', () => {
   test('prefers history back when the referrer is the library surface', () => {

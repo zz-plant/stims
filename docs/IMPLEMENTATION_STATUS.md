@@ -19,32 +19,55 @@ This document is the consolidated source for implementation progress across road
 
 ## Refactor milestone tracking
 
-- [ ] **Milestone A:** Baseline + lifecycle contract draft.
+- [x] **Milestone A:** Baseline + lifecycle contract draft.
   - [x] Extracted MilkDrop runtime lifecycle seams into focused startup, failover, interaction, and lifecycle modules.
   - [x] Added targeted startup/fallback/lifecycle seam coverage for the refactored runtime modules.
   - [x] Split oversized MilkDrop compiler/runtime/catalog/renderer type groups into topic-specific modules behind the shared barrel.
-  - [ ] Documented manual smoke baselines and behavior snapshots for milestone sign-off.
-- [ ] **Milestone B:** Pilot migration complete and validated.
-- [ ] **Milestone C:** Broad toy migration with hardened drift checks.
-- [ ] **Milestone D:** Performance/reliability pass complete.
-- [ ] **Milestone E:** Documentation closeout and cleanup.
+  - [x] Documented manual smoke baselines and behavior snapshots for milestone sign-off.
+- [x] **Milestone B:** Pilot migration complete and validated.
+  - [x] Documented the runtime ownership map and shell contract in `docs/ARCHITECTURE.md`.
+  - [x] Migrated the shipped MilkDrop starter/quality helpers from `utils/` into `core/` as the pilot boundary slice.
+  - [x] Validated the pilot with focused tests, `bun run check:toys`, and `bun run check`.
+- [x] **Milestone C:** Broad toy migration with hardened drift checks.
+  - [x] Added `bun run check:architecture` and wired it into the full `bun run check` quality gate.
+  - [x] Promoted additional runtime-critical helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) out of `utils/` and into `core/`.
+  - [x] Turned `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` into deterministic generated artifacts from `assets/data/toys.json`.
+  - [x] Wired `bun run check:toys` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
+- [x] **Milestone D:** Performance/reliability pass complete.
+  - [x] Reduced per-frame signal override allocation churn in the MilkDrop input-response path.
+  - [x] Expanded browser-backed smoke coverage to include homepage-to-launchpad navigation in addition to live-session launch coverage.
+  - [x] Coalesced queued catalog refreshes to the latest requested state and added direct runtime coverage for mid-sync updates.
+  - [x] Stopped rebuilding collection-filter controls across browse search rerenders when the available options stay unchanged.
+- [x] **Milestone E:** Documentation closeout and cleanup.
+  - [x] Rewrote current contributor docs around the single-visualizer workflow and removed stale references to retired toy-entry surfaces from active docs.
+  - [x] Marked remaining multi-toy strategy/audit docs as archival context and rewrote manual workflow notes that still needed a live `/milkdrop/` path.
 
 ### Refactor workstream tracking
 
-- [ ] 1) Baseline and observability.
-- [ ] 2) Shared runtime boundary extraction.
+- [x] 1) Baseline and observability.
+- [x] 2) Shared runtime boundary extraction.
   - [x] MilkDrop runtime orchestration now delegates startup selection, backend failover, interaction shaping, and frame lifecycle decisions to dedicated modules.
-- [ ] 3) Toy module normalization.
-- [ ] 4) Data and metadata consistency hardening.
-- [ ] 5) Incremental performance and reliability pass.
-- [ ] 6) Documentation and contributor UX completion.
+  - [x] Runtime ownership boundaries are now documented in `docs/ARCHITECTURE.md`.
+  - [x] Runtime-critical boundary helpers now live under `assets/js/core/*` instead of `assets/js/utils/*`.
+- [x] 3) Toy module normalization.
+  - [x] MilkDrop pilot slice now uses `core/` starter/quality helpers instead of `utils/` runtime helpers.
+- [x] 4) Data and metadata consistency hardening.
+  - [x] Architecture boundary enforcement now runs in CI-local parity through `bun run check:architecture`.
+  - [x] Toy manifest docs are generated from `assets/data/toys.json` and validated by `bun run check:toys`.
+  - [x] SEO surface validation now runs alongside the main quality gate through `bun run check:seo`.
+- [x] 5) Incremental performance and reliability pass.
+  - [x] Catalog refresh scheduling now coalesces to the latest requested overlay state during rapid preset/backend churn.
+  - [x] Browse collection filters no longer rebuild on every search-driven rerender when the option set is unchanged.
+- [x] 6) Documentation and contributor UX completion.
+  - [x] Contributor and agent docs now reflect the single-visualizer product model and generated manifest-doc workflow.
+  - [x] Historical docs and manual notes now explicitly distinguish archival multi-toy context from the current `/milkdrop/` workflow.
 
 ## Technical debt execution queue
 
 - [x] Split oversized runtime modules by responsibility and backfill focused tests.
-- [ ] Add deterministic generated-artifact validation for metadata/taxonomy updates.
-- [ ] Raise toy-level smoke coverage, starting with high-traffic toys.
-- [ ] Harden metadata source-of-truth drift checks.
+- [x] Add deterministic generated-artifact validation for metadata/taxonomy updates.
+- [x] Raise toy-level smoke coverage, starting with the flagship shipped visualizer flow.
+- [x] Harden metadata source-of-truth drift checks.
 - [x] Maintain visible refactor execution checkpoints in this document.
 
 ## UX delivery queue

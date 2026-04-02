@@ -49,9 +49,15 @@ class FakeAudioContext {
 }
 
 class FakeAudioWorkletNode {
+  static instances = [];
+
   port = { onmessage: null, postMessage: mock() };
   connect = mock();
   disconnect = mock();
+
+  constructor() {
+    FakeAudioWorkletNode.instances.push(this);
+  }
 }
 
 beforeAll(async () => {
@@ -116,11 +122,12 @@ beforeAll(async () => {
     initAudio,
     getFrequencyData,
     stylizeFrequencyData,
-  } = await import('../assets/js/utils/audio-handler.ts'));
+  } = await import('../assets/js/core/audio-handler.ts'));
 });
 
 describe('audio-handler utilities', () => {
   beforeEach(() => {
+    FakeAudioWorkletNode.instances.length = 0;
     originalNavigatorDesc = Object.getOwnPropertyDescriptor(
       global,
       'navigator',
@@ -204,6 +211,50 @@ describe('audio-handler utilities', () => {
 
   test('initAudio supports custom fftSize', async () => {
     await expect(initAudio({ fftSize: 512 })).resolves.toBeDefined();
+  });
+
+  test('initAudio loads the analyser worklet from the shared utils path', async () => {
+    await initAudio();
+
+    const listenerInstance = await import('three').then(
+      ({ AudioListener }) => AudioListener.mock.results[0]?.value,
+    );
+    const addModuleArg =
+      listenerInstance?.context?.audioWorklet?.addModule?.mock.calls[0]?.[0];
+
+    expect(String(addModuleArg)).toContain(
+      '/assets/js/utils/frequency-analyser-processor.ts',
+    );
+  });
+
+  test('FrequencyAnalyser uses AudioWorklet messages when the worklet path succeeds', async () => {
+    const context = new FakeAudioContext();
+    const analyser = await FrequencyAnalyser.create(
+      context,
+      /** @type {MediaStream} */ ({}),
+      8,
+    );
+    const workletNode = FakeAudioWorkletNode.instances.at(-1);
+
+    expect(workletNode).toBeDefined();
+
+    workletNode.port.onmessage?.({
+      data: {
+        frequencyData: new Uint8Array([255, 128, 64, 32]),
+        waveformData: new Uint8Array([0, 32, 64, 96, 128, 160, 192, 255]),
+        rms: 0.42,
+      },
+    });
+
+    expect(Array.from(analyser.getWaveformData())).toEqual([
+      0, 32, 64, 96, 128, 160, 192, 255,
+    ]);
+    expect(analyser.getRmsLevel()).toBe(0.42);
+    expect(analyser.getMultiBandEnergy()).toEqual({
+      bass: 0,
+      mid: (255 + 128) / 2 / 255,
+      treble: (64 + 32) / 2 / 255,
+    });
   });
 
   test('initAudio rejects with unsupported error when media devices are missing', async () => {

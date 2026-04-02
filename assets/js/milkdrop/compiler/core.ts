@@ -108,7 +108,7 @@ const BACKEND_SHADER_TEXT_GAPS: Record<
 > = {
   webgl: {
     unsupportedSubset:
-      'This preset includes custom shader text outside the fully supported subset and will be approximated.',
+      'This preset relies on shader-text paths that the WebGL compatibility renderer cannot execute directly and will approximate.',
   },
   webgpu: {
     unsupportedSubset:

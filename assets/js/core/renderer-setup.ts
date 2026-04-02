@@ -4,9 +4,10 @@ import {
   SRGBColorSpace,
   type WebGLRenderer,
 } from 'three';
-import { isMobileDevice } from '../utils/device-detect';
-import { ensureWebGL } from '../utils/webgl-check';
-import { createWebGLRenderer } from '../utils/webgl-renderer';
+import {
+  getDeviceEnvironmentProfile,
+  isMobileDevice,
+} from '../utils/device-detect';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
   getRendererCapabilities,
@@ -22,7 +23,10 @@ import {
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
 import { deriveRendererPlan } from './renderer-plan.ts';
+import { shouldPreferWebGLForKnownCompatibilityGaps } from './renderer-query-override.ts';
 import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
+import { ensureWebGL } from './webgl-check';
+import { createWebGLRenderer } from './webgl-renderer';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
 export type RendererInitResult = {
@@ -56,6 +60,7 @@ async function loadWebGPURenderer() {
 }
 
 const isMobileUserAgent = isMobileDevice();
+const deviceEnvironment = getDeviceEnvironmentProfile();
 
 function disposeRenderer(renderer: Partial<WebGLRenderer | WebGPURenderer>) {
   if (
@@ -106,6 +111,8 @@ export async function initRenderer(
     const backendPixelRatioCap = getRendererBackendMaxPixelRatioCap({
       backend,
       isMobile: isMobileUserAgent,
+      browserFamily: deviceEnvironment.browserFamily,
+      platformFamily: deviceEnvironment.platformFamily,
     });
     const effectivePixelRatio = Math.min(
       (window.devicePixelRatio || 1) * renderScale,
@@ -158,6 +165,8 @@ export async function initRenderer(
   };
 
   const capabilities = await getRendererCapabilities({
+    preferWebGLForKnownCompatibilityGaps:
+      shouldPreferWebGLForKnownCompatibilityGaps(),
     webgpuInitTimeoutMs,
   });
   const plan = deriveRendererPlan({

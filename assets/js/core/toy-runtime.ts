@@ -1,14 +1,6 @@
-import type {
-  AudioInitOptions,
-  FrequencyAnalyser,
-} from '../utils/audio-handler';
-import {
-  createUnifiedInput,
-  type UnifiedInputOptions,
-  type UnifiedInputState,
-} from '../utils/unified-input';
 import type { AnimationContext } from './animation-loop';
 import { getContextFrequencyData } from './animation-loop';
+import type { AudioInitOptions, FrequencyAnalyser } from './audio-handler';
 import {
   getActivePerformanceSettings,
   type PerformanceSettings,
@@ -21,6 +13,11 @@ import {
 } from './toy-audio';
 import { registerToyGlobals } from './toy-globals';
 import type { ToyInstance } from './toy-interface';
+import {
+  createUnifiedInput,
+  type UnifiedInputOptions,
+  type UnifiedInputState,
+} from './unified-input';
 import WebToy, { type WebToyOptions } from './web-toy';
 
 const EMPTY_UINT8 = new Uint8Array(0);

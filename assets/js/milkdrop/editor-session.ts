@@ -89,23 +89,29 @@ export function createMilkdropEditorSession({
     }).catch(() => compileMilkdropPresetSource(source, sourceMeta));
   };
 
-  const commit = async (source: string) => {
+  const commit = async (
+    source: string,
+    options: {
+      markClean?: boolean;
+    } = {},
+  ) => {
     const compiled = await compile(source);
     if (!hasErrors(compiled)) {
       lastGood = compiled;
     }
 
+    const activeCompiled = hasErrors(compiled) ? lastGood : compiled;
+    const formattedSource = activeCompiled.formattedSource;
+    const nextSource = options.markClean ? formattedSource : source;
+
     state = {
-      source,
+      source: nextSource,
       latestCompiled: compiled,
-      activeCompiled: hasErrors(compiled) ? lastGood : compiled,
+      activeCompiled,
       diagnostics: compiled.diagnostics,
-      dirty:
-        source.trim() !==
-        (hasErrors(compiled)
-          ? lastGood.formattedSource
-          : compiled.formattedSource
-        ).trim(),
+      dirty: options.markClean
+        ? false
+        : nextSource.trim() !== formattedSource.trim(),
     };
     notify();
     return state;
@@ -118,7 +124,7 @@ export function createMilkdropEditorSession({
 
     async loadPreset(source) {
       sourceMeta = source;
-      return commit(source.raw);
+      return commit(source.raw, { markClean: true });
     },
 
     async applySource(source) {
@@ -133,7 +139,7 @@ export function createMilkdropEditorSession({
     async resetToActive() {
       const activeSource =
         state.activeCompiled?.formattedSource ?? state.source;
-      return commit(activeSource);
+      return commit(activeSource, { markClean: true });
     },
 
     subscribe(listener) {

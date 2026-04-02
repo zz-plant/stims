@@ -36,6 +36,22 @@ async function main() {
       cmd: ['bunx', 'biome', 'check', 'assets', 'scripts', 'tests'],
     },
     {
+      label: 'Bundled catalog fidelity',
+      cmd: ['bun', 'run', 'check:catalog-fidelity'],
+    },
+    {
+      label: 'Toy manifest and docs drift',
+      cmd: ['bun', 'run', 'check:toys'],
+    },
+    {
+      label: 'SEO surface check',
+      cmd: ['bun', 'run', 'check:seo'],
+    },
+    {
+      label: 'Architecture boundary check',
+      cmd: ['bun', 'run', 'check:architecture'],
+    },
+    {
       label: 'TypeScript typecheck',
       cmd: ['bun', 'run', 'typecheck'],
     },

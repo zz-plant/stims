@@ -513,7 +513,10 @@ describe('WebGPU requirements', () => {
 
     expect(capabilitiesMock.getRendererCapabilities).toHaveBeenNthCalledWith(
       2,
-      { forceRetry: true },
+      {
+        forceRetry: true,
+        preferWebGLForKnownCompatibilityGaps: false,
+      },
     );
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
   });
@@ -557,6 +560,13 @@ describe('WebGPU requirements', () => {
 
     expect(window.localStorage.getItem('stims:compatibility-mode')).toBe(
       'false',
+    );
+    expect(capabilitiesMock.getRendererCapabilities).toHaveBeenNthCalledWith(
+      2,
+      {
+        forceRetry: true,
+        preferWebGLForKnownCompatibilityGaps: false,
+      },
     );
     expect(document.querySelector('[data-fake-toy]')).not.toBeNull();
   });

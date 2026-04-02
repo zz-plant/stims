@@ -115,6 +115,7 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
     treb: 0,
     treble: 0,
     bassAtt: 0,
+    midAtt: 0,
     midsAtt: 0,
     trebleAtt: 0,
     bass_att: 0,

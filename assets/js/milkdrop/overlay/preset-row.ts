@@ -7,6 +7,24 @@ import type {
 } from '../types';
 
 const COLLECTION_TAG_PREFIX = 'collection:';
+const PRESET_META_TAG_LABELS: Record<string, string> = {
+  'collection:cream-of-the-crop': 'Cream of the Crop',
+  'collection:classic-milkdrop': 'Classic MilkDrop',
+  'collection:feedback-lab': 'Feedback Lab',
+  'collection:low-motion': 'Low Motion',
+  'collection:rovastar-and-collaborators': 'Rovastar and collaborators',
+  'collection:touch-friendly': 'Touch Friendly',
+  'original-pack': 'Original pack',
+};
+const PRESET_META_TAG_PRIORITY = [
+  'collection:cream-of-the-crop',
+  'collection:rovastar-and-collaborators',
+  'collection:classic-milkdrop',
+  'original-pack',
+  'collection:feedback-lab',
+  'collection:low-motion',
+  'collection:touch-friendly',
+] as const;
 
 export type PresetRowCallbacks = {
   onSelectPreset: (id: string) => void;
@@ -46,6 +64,12 @@ export function getPresetMetaQualifier(preset: MilkdropCatalogEntry) {
   }
   if (preset.origin !== 'bundled') {
     return 'Imported';
+  }
+  const highlightedTag = PRESET_META_TAG_PRIORITY.find((tag) =>
+    preset.tags.includes(tag),
+  );
+  if (highlightedTag) {
+    return PRESET_META_TAG_LABELS[highlightedTag];
   }
   const firstTag = preset.tags.find(
     (tag) => !tag.startsWith(COLLECTION_TAG_PREFIX),
@@ -120,18 +144,21 @@ export function formatPrimaryCompatibilityMessage({
   support: { status: MilkdropSupportStatus; reasons: string[] };
 }) {
   if (primaryReason) {
-    const prefix =
-      primaryReason.blocking && support.status === 'unsupported'
-        ? 'Unsupported feature'
-        : compatibilityCategoryLabel(primaryReason.category);
-    return `${prefix}: ${primaryReason.message}`;
+    if (primaryReason.blocking && support.status === 'unsupported') {
+      return `This look needs a feature Stims cannot render yet. ${primaryReason.message}`;
+    }
+    return `Showing a simpler version. ${primaryReason.message}`;
   }
 
   if (support.status === 'unsupported') {
-    return `Unsupported feature: ${support.reasons[0] ?? 'This preset requires MilkDrop features Stims cannot execute yet.'}`;
+    return support.reasons[0]
+      ? `This look needs a feature Stims cannot render yet. ${support.reasons[0]}`
+      : 'This look needs a feature Stims cannot render yet.';
   }
 
-  return support.reasons[0] ?? 'Preset has fidelity degradations.';
+  return support.reasons[0]
+    ? `Showing a simpler version. ${support.reasons[0]}`
+    : 'Showing a simpler version.';
 }
 
 function buildPresetRowSignature({
@@ -171,6 +198,9 @@ function buildPresetRowSignature({
     support.reasons[0] ?? '',
     primaryReason?.category ?? '',
     primaryReason?.message ?? '',
+    preset.visualCertification?.status ?? '',
+    preset.visualCertification?.measured ? 1 : 0,
+    preset.visualCertification?.requiredBackend ?? '',
   ].join('|');
 }
 
@@ -201,6 +231,7 @@ function buildPresetRow({
   title.className = 'milkdrop-overlay__preset-title';
   title.textContent = preset.title;
 
+  const support = preset.supports[activeBackend];
   const badges = document.createElement('div');
   badges.className = 'milkdrop-overlay__preset-badges';
 
@@ -211,11 +242,6 @@ function buildPresetRow({
     activeBadge.textContent = 'Live';
     badges.appendChild(activeBadge);
   }
-
-  const supportBadge = document.createElement('span');
-  supportBadge.className = `milkdrop-overlay__support milkdrop-overlay__support--${preset.fidelityClass}`;
-  supportBadge.textContent = fidelityLabel(preset.fidelityClass);
-  badges.appendChild(supportBadge);
 
   titleRow.append(title, badges);
 
@@ -247,7 +273,6 @@ function buildPresetRow({
 
   row.append(launch, actions);
 
-  const support = preset.supports[activeBackend];
   const hasCompatibilityWarning =
     support.status !== 'supported' ||
     preset.parity.degradationReasons.length > 0;

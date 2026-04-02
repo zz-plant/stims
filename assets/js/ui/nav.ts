@@ -4,7 +4,6 @@ import {
   isBelowBreakpoint,
   maxWidthQuery,
 } from '../utils/breakpoints';
-import { isMobileDevice } from '../utils/device-detect';
 import {
   exitToyPictureInPicture,
   getToyPictureInPictureVideo,
@@ -100,6 +99,8 @@ function renderLibraryNav(
   _doc: Document,
   options: NavOptions,
 ) {
+  const compactLandscapeQuery =
+    '(max-height: 520px) and (orientation: landscape)';
   const toyContainer = container as ToyNavContainer;
   const actionsId = 'nav-actions';
   const sectionLinks = options.sectionLinks ?? [
@@ -165,9 +166,13 @@ function renderLibraryNav(
     `#${actionsId}`,
   ) as HTMLElement | null;
   const mediaQuery = getMediaQueryList(maxWidthQuery(BREAKPOINTS.xs));
+  const compactLandscapeMediaQuery = getMediaQueryList(compactLandscapeQuery);
   const onResize = () => syncWithViewport();
   const supportsPopover = false;
   let isExpanded = false;
+  const isCompactViewport = () =>
+    isBelowBreakpoint(BREAKPOINTS.xs) ||
+    Boolean(compactLandscapeMediaQuery?.matches);
 
   const syncToggleUi = (expanded: boolean) => {
     if (!nav || !toggle) return;
@@ -199,7 +204,7 @@ function renderLibraryNav(
   const isPopoverOpen = () => Boolean(actions?.matches?.(':popover-open'));
 
   const syncWithViewport = () => {
-    const compactViewport = isBelowBreakpoint(BREAKPOINTS.xs);
+    const compactViewport = isCompactViewport();
 
     if (!actions) {
       syncToggleUi(!compactViewport);
@@ -238,7 +243,7 @@ function renderLibraryNav(
   };
 
   const onToggle = () => {
-    if (!supportsPopover || !isBelowBreakpoint(BREAKPOINTS.xs)) return;
+    if (!supportsPopover || !isCompactViewport()) return;
     isExpanded = isPopoverOpen();
     if (actions) {
       actions.setAttribute('aria-hidden', isExpanded ? 'false' : 'true');
@@ -255,7 +260,7 @@ function renderLibraryNav(
 
   if (!supportsPopover) {
     toggle?.addEventListener('click', () => {
-      if (!isBelowBreakpoint(BREAKPOINTS.xs)) return;
+      if (!isCompactViewport()) return;
       isExpanded = !isExpanded;
       applyFallbackState(isExpanded);
       syncToggleUi(isExpanded);
@@ -266,6 +271,7 @@ function renderLibraryNav(
 
   if (mediaQuery) {
     mediaQuery.addEventListener('change', syncWithViewport);
+    compactLandscapeMediaQuery?.addEventListener('change', syncWithViewport);
   } else {
     window.addEventListener('resize', onResize);
   }
@@ -274,7 +280,7 @@ function renderLibraryNav(
     .querySelectorAll('.nav-link, .nav-link--section, .theme-toggle')
     .forEach((link) => {
       link.addEventListener('click', () => {
-        if (!isBelowBreakpoint(BREAKPOINTS.xs)) return;
+        if (!isCompactViewport()) return;
         if (supportsPopover) {
           if (isPopoverOpen()) {
             (
@@ -292,6 +298,10 @@ function renderLibraryNav(
   toyContainer.__libraryNavCleanup = () => {
     if (mediaQuery) {
       mediaQuery.removeEventListener('change', syncWithViewport);
+      compactLandscapeMediaQuery?.removeEventListener(
+        'change',
+        syncWithViewport,
+      );
     } else {
       window.removeEventListener('resize', onResize);
     }
@@ -305,17 +315,10 @@ function renderToyNav(
   options: NavOptions,
 ) {
   const safeTitle = escapeHtml(options.title ?? 'Stims');
-  const safeSlug = options.slug ? escapeHtml(options.slug) : '';
-  const hintText = isMobileDevice()
-    ? 'Tap Session for controls.'
-    : 'Press M for presets or open Session for more controls.';
   container.className = 'active-toy-nav';
   container.innerHTML = `
     <div class="active-toy-nav__content">
-      <p class="active-toy-nav__eyebrow">Live now</p>
       <p class="active-toy-nav__title">${safeTitle}</p>
-      <p class="active-toy-nav__hint">${hintText}</p>
-      ${safeSlug ? `<span class="active-toy-nav__pill">${safeSlug}</span>` : ''}
       <div class="active-toy-nav__mobile-actions">
         <button
           type="button"
@@ -336,7 +339,7 @@ function renderToyNav(
           aria-controls="toy-nav-secondary-actions"
           aria-expanded="false"
         >
-          Session
+          Controls
         </button>
       </div>
       <div
@@ -347,7 +350,7 @@ function renderToyNav(
         options.onNextToy
           ? `<div class="toy-nav__next-wrapper">
               <button type="button" class="toy-nav__next" data-next-toy="true">
-                Next
+                Next look
               </button>
               <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
             </div>`
@@ -355,7 +358,7 @@ function renderToyNav(
       }
       <div class="toy-nav__share-wrapper">
         <button type="button" class="toy-nav__share" data-share-toy="true">
-          Share
+          Copy link
         </button>
         <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
       </div>
@@ -488,7 +491,7 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded ? 'Hide session' : 'Session';
+      actionsToggleBtn.textContent = expanded ? 'Hide controls' : 'Controls';
     }
     if (expanded) {
       setChromeVisibility('visible');
@@ -563,18 +566,20 @@ function renderToyNav(
   const updateHapticsUI = () => {
     if (!hapticsBtn) return;
     hapticsBtn.setAttribute('aria-pressed', String(hapticsActive));
-    hapticsBtn.textContent = hapticsActive ? 'Pulse on' : 'Pulse';
+    hapticsBtn.textContent = hapticsActive
+      ? 'Pulse feedback on'
+      : 'Pulse feedback';
   };
 
   const handleNextToy = async () => {
     if (!options.onNextToy || !nextBtn) return;
     nextBtn.disabled = true;
     nextBtn.setAttribute('aria-busy', 'true');
-    showNextStatus('Loading next stim…');
+    showNextStatus('Loading next look…');
     try {
       await options.onNextToy();
     } catch (_error) {
-      showNextStatus('Unable to load next stim.');
+      showNextStatus('Unable to load the next look.');
     } finally {
       nextBtn.disabled = false;
       nextBtn.removeAttribute('aria-busy');
@@ -589,7 +594,7 @@ function renderToyNav(
     updateHapticsUI();
     options.onToggleHaptics?.(hapticsActive);
     showHapticsStatus(
-      hapticsActive ? 'Beat haptics enabled.' : 'Beat haptics disabled.',
+      hapticsActive ? 'Pulse feedback on.' : 'Pulse feedback off.',
     );
   });
 
@@ -611,7 +616,7 @@ function renderToyNav(
         doc.execCommand('copy');
         helper.remove();
       }
-      showShareStatus('Share link copied.');
+      showShareStatus('Link copied.');
     } catch (_error) {
       showShareStatus('Unable to copy link.');
     }
@@ -768,9 +773,7 @@ function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
   const updateButtonState = () => {
     const active = isToyPictureInPictureActive(doc);
     pipButton.setAttribute('aria-pressed', String(active));
-    pipButton.textContent = active
-      ? 'Exit picture in picture'
-      : 'Picture in picture';
+    pipButton.textContent = active ? 'Close mini player' : 'Mini player';
   };
 
   const showStatus = (message: string) => {
@@ -821,18 +824,14 @@ function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
         await requestToyPictureInPicture(doc);
       }
       updateButtonState();
-      showStatus(
-        wasActive
-          ? 'Picture in picture closed.'
-          : 'Picture in picture enabled.',
-      );
+      showStatus(wasActive ? 'Mini player closed.' : 'Mini player enabled.');
     } catch (_error) {
       const error = _error as Error | DOMException;
       const errorName = 'name' in error ? error.name : '';
       if (errorName === 'NotSupportedError') {
         disablePip('Picture-in-picture is not available in this browser.');
       } else {
-        showStatus('Unable to use picture in picture.');
+        showStatus('Unable to open the mini player.');
       }
       updateButtonState();
     } finally {
@@ -850,25 +849,30 @@ function renderRendererStatus(
   status: NonNullable<NavOptions['rendererStatus']>,
 ) {
   const fallback = status.backend !== 'webgpu';
-  const pillClass = fallback
-    ? 'renderer-pill--fallback'
-    : 'renderer-pill--success';
   const fallbackReason = status.fallbackReason
     ? escapeHtml(status.fallbackReason)
     : null;
+  if (!fallback && !fallbackReason && !status.actionLabel) {
+    container.innerHTML = '';
+    container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+  const pillClass = fallback
+    ? 'renderer-pill--fallback'
+    : 'renderer-pill--success';
   const titleText = escapeHtml(
     status.fallbackReason ??
       (fallback
-        ? 'WebGPU unavailable, using WebGL.'
-        : 'WebGPU renderer active.'),
+        ? 'Using a simpler renderer on this device.'
+        : 'Using the highest-quality renderer available on this device.'),
   );
 
   container.innerHTML = `
     <div class="renderer-status">
       <span class="renderer-pill ${pillClass}" title="${titleText}">
-        ${fallback ? 'WebGL fallback' : 'WebGPU'}
+        ${fallback ? 'Using a simpler renderer' : 'Best quality'}
       </span>
-      ${fallbackReason ? `<small class="renderer-pill__detail">${fallbackReason}</small>` : ''}
       ${status.actionLabel ? `<button type="button" class="renderer-pill__retry">${escapeHtml(status.actionLabel)}</button>` : ''}
     </div>
   `;

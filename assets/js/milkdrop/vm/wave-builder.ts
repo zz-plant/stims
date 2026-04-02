@@ -1,6 +1,8 @@
 import type {
   MilkdropCompiledPreset,
+  MilkdropGpuFieldSignalInputs,
   MilkdropProceduralCustomWaveVisual,
+  MilkdropProceduralWaveDescriptorPlan,
   MilkdropRuntimeSignals,
   MilkdropWaveDefinition,
   MilkdropWaveVisual,
@@ -94,7 +96,7 @@ export function buildCustomWaves({
   runProgram,
   createEnv,
   seedCustomWaveState,
-  supportsProceduralCustomWave,
+  getProceduralCustomWaveDescriptor,
 }: {
   preset: MilkdropCompiledPreset;
   signals: MilkdropRuntimeSignals;
@@ -110,10 +112,10 @@ export function buildCustomWaves({
     extra?: Record<string, number>,
   ) => MutableState;
   seedCustomWaveState: (wave: MilkdropWaveDefinition) => MutableState;
-  supportsProceduralCustomWave: (
+  getProceduralCustomWaveDescriptor: (
     wave: MilkdropWaveDefinition,
     drawMode: 'line' | 'dots',
-  ) => boolean;
+  ) => MilkdropProceduralWaveDescriptorPlan | null;
 }): {
   visual: MilkdropWaveVisual[];
   procedural: MilkdropProceduralCustomWaveVisual[];
@@ -153,9 +155,16 @@ export function buildCustomWaves({
       frameLocals.a ?? 0.4,
     );
     const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
-    const useProcedural = supportsProceduralCustomWave(wave, drawMode);
+    const proceduralDescriptor = getProceduralCustomWaveDescriptor(
+      wave,
+      drawMode,
+    );
+    const useProcedural = proceduralDescriptor !== null;
     const positions = useProcedural ? [] : new Array<number>(sampleCount * 3);
     const proceduralSamples = useProcedural
+      ? new Array<number>(sampleCount)
+      : null;
+    const proceduralSampleValues2 = useProcedural
       ? new Array<number>(sampleCount)
       : null;
     const pointLocals: MutableState = { ...frameLocals };
@@ -173,6 +182,9 @@ export function buildCustomWaves({
 
       if (useProcedural && proceduralSamples) {
         proceduralSamples[point] = spectrumValue;
+        if (proceduralSampleValues2) {
+          proceduralSampleValues2[point] = waveChannels.value2;
+        }
         continue;
       }
 
@@ -217,17 +229,41 @@ export function buildCustomWaves({
     });
 
     if (useProcedural) {
+      const fieldSignals: MilkdropGpuFieldSignalInputs = {
+        time: signals.time,
+        frame: signals.frame,
+        fps: signals.fps,
+        bass: signals.bass,
+        mid: signals.mid,
+        mids: signals.mids,
+        treble: signals.treble,
+        bassAtt: signals.bassAtt,
+        midAtt: signals.mid_att,
+        midsAtt: signals.midsAtt,
+        trebleAtt: signals.trebleAtt,
+        beat: signals.beat,
+        beatPulse: signals.beatPulse,
+        rms: signals.rms,
+        vol: signals.vol,
+        music: signals.music,
+        weightedEnergy: signals.weightedEnergy,
+      };
       proceduralWaves.push({
         samples: proceduralSamples ?? [],
+        sampleValues2: proceduralSampleValues2 ?? [],
         spectrum: (frameLocals.spectrum ?? 0) >= 0.5,
         centerX,
         centerY,
         scaling,
         mystery: frameLocals.mystery ?? 0,
         time: signals.time,
+        sampleCount,
+        signals: fieldSignals,
+        fieldProgram: proceduralDescriptor?.fieldProgram ?? null,
         color: waveColor,
         alpha: waveAlpha,
         additive,
+        thickness: clamp(frameLocals.thick ?? 1, 1, 6),
       });
     }
   });

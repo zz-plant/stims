@@ -27,12 +27,17 @@ function slugify(value: string) {
 export function createMilkdropCatalogStore({
   dbName = 'stims-milkdrop',
   catalogUrl = '/milkdrop-presets/catalog.json',
+  libraryManifestUrls,
 }: {
   dbName?: string;
   catalogUrl?: string;
+  libraryManifestUrls?: string[];
 } = {}): MilkdropCatalogStore {
   const persistence = createCatalogPersistence({ dbName });
-  const bundledCatalog = createBundledCatalogLoader({ catalogUrl });
+  const bundledCatalog = createBundledCatalogLoader({
+    catalogUrl,
+    libraryManifestUrls,
+  });
   const analysis = createCatalogAnalysis();
 
   const getHistoryRecord = async () =>

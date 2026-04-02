@@ -1,8 +1,12 @@
 import { setCompatibilityMode } from '../core/render-preferences.ts';
 import type { getRendererCapabilities } from '../core/renderer-capabilities.ts';
+import {
+  setWebGPUCompatibilityGapOverride,
+  shouldPreferWebGLForKnownCompatibilityGaps,
+} from '../core/renderer-query-override.ts';
 import { assessToyCapabilities } from '../core/toy-capabilities.ts';
+import { ensureWebGL } from '../core/webgl-check.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
-import { ensureWebGL } from '../utils/webgl-check.ts';
 
 type RendererCapabilities = Awaited<ReturnType<typeof getRendererCapabilities>>;
 
@@ -40,7 +44,11 @@ export function createToyCapabilityController({
     assessToyCapabilities({
       toy,
       rendererCapabilities: () =>
-        rendererCapabilities({ forceRetry: forceRendererRetry }),
+        rendererCapabilities({
+          forceRetry: forceRendererRetry,
+          preferWebGLForKnownCompatibilityGaps:
+            shouldPreferWebGLForKnownCompatibilityGaps(),
+        }),
       ensureWebGLCheck,
       initialCapabilities,
     });
@@ -111,6 +119,7 @@ export function createToyCapabilityController({
         if (capabilities.forceWebGL) {
           setCompatibilityMode(false);
         }
+        setWebGPUCompatibilityGapOverride(true);
         retry();
       },
     };

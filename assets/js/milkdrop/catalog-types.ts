@@ -6,6 +6,8 @@ import type {
   MilkdropParityReport,
   MilkdropPresetOrigin,
   MilkdropPresetSource,
+  MilkdropSemanticSupport,
+  MilkdropVisualCertification,
   MilkdropVisualEvidenceTier,
 } from './common-types.ts';
 
@@ -20,6 +22,8 @@ export type MilkdropBundledCatalogEntry = {
   certification?: 'bundled' | 'certified' | 'exploratory';
   expectedFidelityClass?: MilkdropFidelityClass;
   visualEvidenceTier?: MilkdropVisualEvidenceTier;
+  semanticSupport?: MilkdropSemanticSupport;
+  visualCertification?: MilkdropVisualCertification;
   supports?: {
     webgl?: boolean;
     webgpu?: boolean;
@@ -46,6 +50,8 @@ export type MilkdropCatalogEntry = {
   };
   fidelityClass: MilkdropFidelityClass;
   visualEvidenceTier: MilkdropVisualEvidenceTier;
+  semanticSupport: MilkdropSemanticSupport;
+  visualCertification: MilkdropVisualCertification;
   evidence: MilkdropCompatibilityEvidence;
   certification: 'bundled' | 'certified' | 'exploratory';
   corpusTier: 'bundled' | 'certified' | 'exploratory';

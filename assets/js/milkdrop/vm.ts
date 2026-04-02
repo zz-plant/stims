@@ -3,6 +3,7 @@ import { evaluateMilkdropExpression } from './expression';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
+  MilkdropProceduralWaveDescriptorPlan,
   MilkdropRuntimeSignals,
   MilkdropShapeDefinition,
   MilkdropVM,
@@ -354,21 +355,19 @@ class MilkdropPresetVM implements MilkdropVM {
     );
   }
 
-  private supportsProceduralCustomWave(
+  private getProceduralCustomWaveDescriptor(
     wave: MilkdropWaveDefinition,
     drawMode: 'line' | 'dots',
-  ) {
+  ): MilkdropProceduralWaveDescriptorPlan | null {
     const plan = this.getEffectiveWebGpuDescriptorPlan();
+    if (this.renderBackend !== 'webgpu' || drawMode !== 'line') {
+      return null;
+    }
     return (
-      this.renderBackend === 'webgpu' &&
-      drawMode === 'line' &&
-      wave.programs.perPoint.statements.length === 0 &&
-      Boolean(
-        plan?.proceduralWaves.some(
-          (entry) =>
-            entry.target === 'custom-wave' && entry.slotIndex === wave.index,
-        ),
-      )
+      plan?.proceduralWaves.find(
+        (entry) =>
+          entry.target === 'custom-wave' && entry.slotIndex === wave.index,
+      ) ?? null
     );
   }
 
@@ -417,6 +416,8 @@ class MilkdropPresetVM implements MilkdropVM {
       preset: this.preset,
       meshField,
       trailWaves: this.waveState.proceduralTrailWaves,
+      signals,
+      detailScale: this.detailScale,
       proceduralMotionVectorPlan,
     });
     gpuGeometry.mainWave = proceduralMainWave;
@@ -429,8 +430,8 @@ class MilkdropPresetVM implements MilkdropVM {
       runProgram: this.runProgram.bind(this),
       createEnv: this.createEnv.bind(this),
       seedCustomWaveState: this.seedCustomWaveState.bind(this),
-      supportsProceduralCustomWave:
-        this.supportsProceduralCustomWave.bind(this),
+      getProceduralCustomWaveDescriptor:
+        this.getProceduralCustomWaveDescriptor.bind(this),
     });
     const mesh = buildMesh({
       state: this.state,
@@ -463,6 +464,7 @@ class MilkdropPresetVM implements MilkdropVM {
       createEnv: this.createEnv.bind(this),
     });
 
+    let variablesSnapshot: Record<string, number> | null = null;
     const frameState: MilkdropFrameState = buildMilkdropFrameState({
       presetId: this.preset.source.id,
       title: this.preset.title,
@@ -481,9 +483,19 @@ class MilkdropPresetVM implements MilkdropVM {
       motionVectors,
       post,
       signals,
-      variables: this.getStateSnapshot(),
+      variables: {} as Record<string, number>,
       compatibility: this.preset.ir.compatibility,
       gpuGeometry,
+    });
+    Object.defineProperty(frameState, 'variables', {
+      configurable: true,
+      enumerable: true,
+      get: () => {
+        if (variablesSnapshot === null) {
+          variablesSnapshot = this.getStateSnapshot();
+        }
+        return variablesSnapshot;
+      },
     });
     gpuGeometry.customWaves = customWaves.procedural;
     this.geometryState.frameTransformCache.clear();

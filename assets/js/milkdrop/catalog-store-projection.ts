@@ -1,4 +1,7 @@
-import { supportsFromCompiled } from './catalog-store-analysis';
+import {
+  getConservativeBundledCatalogProjectionDefaults,
+  supportsFromCompiled,
+} from './catalog-store-analysis';
 import type { StoredMetaRecord } from './catalog-store-persistence';
 import type {
   MilkdropBundledCatalogEntry,
@@ -20,8 +23,22 @@ export function toCatalogEntry(
     certification?: MilkdropCatalogEntry['certification'];
     expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
     visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];
+    semanticSupport?: MilkdropCatalogEntry['semanticSupport'];
+    visualCertification?: MilkdropCatalogEntry['visualCertification'];
+    evidence?: MilkdropCatalogEntry['evidence'];
   } = {},
 ): MilkdropCatalogEntry {
+  const semanticSupport =
+    options.semanticSupport ?? compiled.ir.compatibility.parity.semanticSupport;
+  const visualCertification =
+    options.visualCertification ??
+    compiled.ir.compatibility.parity.visualCertification;
+  const hasMeasuredVisualCertification =
+    options.visualCertification?.measured === true;
+  const bundledDefaults =
+    source.origin === 'bundled' && !hasMeasuredVisualCertification
+      ? getConservativeBundledCatalogProjectionDefaults(compiled)
+      : null;
   return {
     id: source.id,
     title: compiled.title,
@@ -38,12 +55,22 @@ export function toCatalogEntry(
     warnings: compiled.ir.compatibility.warnings,
     supports: supportsFromCompiled(compiled),
     fidelityClass:
+      bundledDefaults?.fidelityClass ??
       options.expectedFidelityClass ??
-      compiled.ir.compatibility.parity.fidelityClass,
+      visualCertification.fidelityClass,
     visualEvidenceTier:
+      bundledDefaults?.visualEvidenceTier ??
       options.visualEvidenceTier ??
-      compiled.ir.compatibility.parity.visualEvidenceTier,
-    evidence: compiled.ir.compatibility.parity.evidence,
+      visualCertification.visualEvidenceTier,
+    semanticSupport,
+    visualCertification:
+      bundledDefaults?.visualCertification ??
+      options.visualCertification ??
+      visualCertification,
+    evidence:
+      bundledDefaults?.evidence ??
+      options.evidence ??
+      compiled.ir.compatibility.parity.evidence,
     certification: options.certification ?? 'exploratory',
     corpusTier: options.corpusTier ?? 'exploratory',
     parity: compiled.ir.compatibility.parity,
@@ -89,6 +116,25 @@ export function toUnavailableBundledCatalogEntry(
     },
     fidelityClass: 'fallback',
     visualEvidenceTier: 'none',
+    semanticSupport: {
+      fidelityClass: 'fallback',
+      evidence: {
+        compile: 'issues',
+        runtime: 'not-run',
+        visual: 'not-captured',
+      },
+      visualEvidenceTier: 'none',
+    },
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'fallback',
+      visualEvidenceTier: 'none',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: ['Bundled preset could not be analyzed.'],
+    },
     evidence: {
       compile: 'issues',
       runtime: 'not-run',
@@ -120,6 +166,25 @@ export function toUnavailableBundledCatalogEntry(
         visual: 'not-captured',
       },
       visualEvidenceTier: 'none',
+      semanticSupport: {
+        fidelityClass: 'fallback',
+        evidence: {
+          compile: 'issues',
+          runtime: 'not-run',
+          visual: 'not-captured',
+        },
+        visualEvidenceTier: 'none',
+      },
+      visualCertification: {
+        status: 'uncertified',
+        measured: false,
+        source: 'inferred',
+        fidelityClass: 'fallback',
+        visualEvidenceTier: 'none',
+        requiredBackend: 'webgpu',
+        actualBackend: null,
+        reasons: ['Bundled preset could not be analyzed.'],
+      },
     },
     bundledFile: entry.file,
   };

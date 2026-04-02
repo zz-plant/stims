@@ -1,3 +1,4 @@
+import { shouldUseCertificationCorpus } from './catalog-query-override.ts';
 import type {
   MilkdropBundledCatalogEntry,
   MilkdropPresetSource,
@@ -19,6 +20,23 @@ type BundledCatalogDocument =
       >;
     };
 
+type CertificationCorpusDocument = {
+  presets?: Array<{
+    id: string;
+    title: string;
+    file: string;
+    fixtureRoot: string;
+    sourceFamily?: string;
+    strata?: string[];
+  }>;
+};
+
+const CERTIFICATION_CORPUS_URL =
+  '/assets/data/milkdrop-parity/certification-corpus.json';
+const DEFAULT_LIBRARY_MANIFEST_URLS = [
+  '/milkdrop-presets/libraries/projectm-upstream/catalog.json',
+];
+
 export async function loadText(url: string) {
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
@@ -27,10 +45,107 @@ export async function loadText(url: string) {
   return response.text();
 }
 
+function buildCertificationCorpusFileUrl(
+  fixtureRoot: string,
+  fileName: string,
+) {
+  const normalizedFixtureRoot = fixtureRoot.replace(/^\/+/, '');
+  const publicRelativeRoot = normalizedFixtureRoot.startsWith('public/')
+    ? normalizedFixtureRoot.slice('public/'.length)
+    : normalizedFixtureRoot;
+  const normalizedRoot = publicRelativeRoot.replace(/\/+$/, '');
+  return `/${[normalizedRoot, fileName].filter(Boolean).join('/')}`;
+}
+
+async function loadCertificationCorpusCatalog(): Promise<
+  MilkdropBundledCatalogEntry[]
+> {
+  const response = await fetch(CERTIFICATION_CORPUS_URL, { cache: 'no-store' });
+  if (!response.ok) {
+    return [] as MilkdropBundledCatalogEntry[];
+  }
+
+  const document = (await response.json()) as CertificationCorpusDocument;
+  return (document.presets ?? []).map(
+    (entry, index): MilkdropBundledCatalogEntry => ({
+      id: entry.id,
+      title: entry.title,
+      file: buildCertificationCorpusFileUrl(entry.fixtureRoot, entry.file),
+      tags: [
+        ...(entry.strata ?? []),
+        ...(entry.sourceFamily ? [entry.sourceFamily] : []),
+        'certification-corpus',
+      ],
+      curatedRank: 10_000 + index,
+      certification: 'certified',
+      corpusTier: 'certified',
+    }),
+  );
+}
+
+function toBundledCatalogEntries(document: BundledCatalogDocument) {
+  const defaultCertification = Array.isArray(document)
+    ? 'bundled'
+    : (document.certification ?? 'bundled');
+  const defaultCorpusTier = Array.isArray(document)
+    ? 'bundled'
+    : (document.corpusTier ?? 'bundled');
+
+  return Array.isArray(document)
+    ? document
+    : (document.presets ?? []).map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        author: entry.author,
+        file: entry.file,
+        tags: entry.tags,
+        curatedRank: entry.curatedRank ?? entry.order,
+        certification: entry.certification ?? defaultCertification,
+        corpusTier: entry.corpusTier ?? defaultCorpusTier,
+        expectedFidelityClass: entry.expectedFidelityClass,
+        visualEvidenceTier: entry.visualEvidenceTier,
+        semanticSupport: entry.semanticSupport,
+        visualCertification: entry.visualCertification,
+        supports: entry.supports ?? entry.compatibility,
+      }));
+}
+
+async function loadOptionalCatalog(
+  catalogUrl: string,
+): Promise<MilkdropBundledCatalogEntry[]> {
+  return fetch(catalogUrl, { cache: 'no-store' })
+    .then(async (response) => {
+      if (!response.ok) {
+        return [] as MilkdropBundledCatalogEntry[];
+      }
+      const document = (await response.json()) as BundledCatalogDocument;
+      return toBundledCatalogEntries(document);
+    })
+    .catch(() => [] as MilkdropBundledCatalogEntry[]);
+}
+
+function mergeUniqueCatalogEntries(
+  ...catalogs: MilkdropBundledCatalogEntry[][]
+): MilkdropBundledCatalogEntry[] {
+  const entriesById = new Map<string, MilkdropBundledCatalogEntry>();
+
+  catalogs.forEach((catalog) => {
+    catalog.forEach((entry) => {
+      if (!entriesById.has(entry.id)) {
+        entriesById.set(entry.id, entry);
+      }
+    });
+  });
+
+  return [...entriesById.values()];
+}
+
 export function createBundledCatalogLoader({
   catalogUrl,
+  libraryManifestUrls = DEFAULT_LIBRARY_MANIFEST_URLS,
 }: {
   catalogUrl: string;
+  libraryManifestUrls?: string[];
 }) {
   const bundledSourceCache = new Map<string, MilkdropPresetSource>();
   let bundledCatalogPromise: Promise<MilkdropBundledCatalogEntry[]> | null =
@@ -38,30 +153,22 @@ export function createBundledCatalogLoader({
 
   const getBundledCatalog = async () => {
     if (!bundledCatalogPromise) {
-      bundledCatalogPromise = fetch(catalogUrl, { cache: 'no-store' })
-        .then(async (response) => {
-          if (!response.ok) {
-            return [] as MilkdropBundledCatalogEntry[];
+      bundledCatalogPromise = Promise.all([
+        loadOptionalCatalog(catalogUrl),
+        Promise.all(libraryManifestUrls.map((url) => loadOptionalCatalog(url))),
+      ])
+        .then(async ([bundledEntries, libraryCatalogs]) => {
+          const supplementalEntries = libraryCatalogs.flat();
+          const mergedEntries = mergeUniqueCatalogEntries(
+            bundledEntries,
+            supplementalEntries,
+          );
+          if (!shouldUseCertificationCorpus()) {
+            return mergedEntries;
           }
-          const document = (await response.json()) as BundledCatalogDocument;
-          if (Array.isArray(document)) {
-            return document;
-          }
-          const defaultCertification = document.certification ?? 'bundled';
-          const defaultCorpusTier = document.corpusTier ?? 'bundled';
-          return (document.presets ?? []).map((entry) => ({
-            id: entry.id,
-            title: entry.title,
-            author: entry.author,
-            file: entry.file,
-            tags: entry.tags,
-            curatedRank: entry.curatedRank ?? entry.order,
-            certification: entry.certification ?? defaultCertification,
-            corpusTier: entry.corpusTier ?? defaultCorpusTier,
-            expectedFidelityClass: entry.expectedFidelityClass,
-            visualEvidenceTier: entry.visualEvidenceTier,
-            supports: entry.supports ?? entry.compatibility,
-          }));
+
+          const certificationEntries = await loadCertificationCorpusCatalog();
+          return mergeUniqueCatalogEntries(mergedEntries, certificationEntries);
         })
         .catch(() => [] as MilkdropBundledCatalogEntry[]);
     }

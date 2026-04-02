@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "parityTarget": "projectm-visual-reference",
+  "fixtureRoot": "tests/fixtures/milkdrop/projectm-reference",
+  "minimumPresetCount": 4,
+  "presetCount": 4,
+  "defaults": {
+    "renderer": "projectm",
+    "requiredBackend": "webgpu",
+    "width": 1280,
+    "height": 720,
+    "warmupMs": 5000,
+    "captureOffsetMs": 0,
+    "toleranceProfile": "default",
+    "threshold": 16,
+    "failThreshold": 0.02
+  },
+  "presets": [
+    {
+      "id": "100-square",
+      "title": "100 Square",
+      "image": "100-square.png",
+      "metadata": null,
+      "sourceFamily": "projectm-fixture",
+      "strata": ["projectm-upstream", "geometry", "regression"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 2550,
+        "height": 1794,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in output/playwright projectM capture",
+        "importedAt": "2026-03-30T22:20:51.315Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "250-wavecode",
+      "title": "250 Wavecode",
+      "image": "250-wavecode.png",
+      "metadata": null,
+      "sourceFamily": "projectm-fixture",
+      "strata": ["projectm-upstream", "wavecode", "regression"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 2550,
+        "height": 1794,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in output/playwright projectM capture",
+        "importedAt": "2026-03-30T22:20:51.323Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "image": "260-compshader-noise_lq.png",
+      "metadata": null,
+      "sourceFamily": "projectm-fixture",
+      "strata": ["projectm-upstream", "comp-shader", "noise-texture"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 2550,
+        "height": 1794,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in output/playwright projectM capture",
+        "importedAt": "2026-03-30T22:20:51.349Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "300-beatdetect-bassmidtreb",
+      "title": "300 Beatdetect Bassmidtreb",
+      "image": "300-beatdetect-bassmidtreb.png",
+      "metadata": null,
+      "sourceFamily": "projectm-fixture",
+      "strata": ["projectm-upstream", "beat-detect", "regression"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 2550,
+        "height": 1794,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in output/playwright projectM capture",
+        "importedAt": "2026-03-30T22:20:51.356Z",
+        "sourceArtifactId": null
+      }
+    }
+  ]
+}

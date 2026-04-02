@@ -389,6 +389,81 @@ function buildProceduralFieldProgramShaderChunk(
   `;
 }
 
+function buildGpuFieldTemporaryDeclarations(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  return (program?.temporaries ?? [])
+    .map((temporary) => `float ${gpuFieldVarName(temporary)} = 0.0;`)
+    .join('\n        ');
+}
+
+function buildGpuFieldStatementCode(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  return (program?.statements ?? [])
+    .map(
+      (statement) =>
+        `${gpuFieldVarName(statement.target)} = ${buildGpuFieldExpressionShaderSource(
+          statement.expression,
+        )};`,
+    )
+    .join('\n        ');
+}
+
+function buildProceduralCustomWaveProgramShaderChunk(
+  program: MilkdropGpuFieldProgramDescriptor | null | undefined,
+) {
+  if (!program) {
+    return '';
+  }
+
+  const temporaryDeclarations = buildGpuFieldTemporaryDeclarations(program);
+  const statementCode = buildGpuFieldStatementCode(program);
+  return `
+    ${PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS}
+
+    vec2 milkdropCustomWavePointWithProgram(
+      float sampleTValue,
+      float sampleValue1,
+      float sampleValue2,
+      float paramCenterX,
+      float paramCenterY,
+      float paramScaling,
+      float paramMystery,
+      float paramSpectrum,
+      float paramSamples,
+      ${PROCEDURAL_FIELD_PROGRAM_SIGNAL_PARAMETERS}
+    ) {
+      float field_sample = sampleTValue;
+      float field_value = sampleValue1;
+      float field_value1 = sampleValue1;
+      float field_value2 = sampleValue2;
+      float field_samples = paramSamples;
+      float field_spectrum = paramSpectrum;
+      float field_scaling = paramScaling;
+      float field_mystery = paramMystery;
+      float baseY =
+        paramCenterY +
+        (sampleValue1 - 0.5) * 0.55 * paramScaling * (1.0 + paramMystery * 0.25);
+      float orbitalY =
+        paramCenterY +
+        sin(
+          sampleTValue * 3.141592653589793 * 2.0 * (1.0 + paramMystery) +
+            signalTimeValue
+        ) *
+          0.18 *
+          paramScaling;
+      float field_x = paramCenterX + (-1.0 + sampleTValue * 2.0) * 0.85;
+      float field_y = mix(orbitalY, baseY, paramSpectrum);
+      float field_rad = length(vec2(field_x, field_y));
+      float field_ang = atan(field_y, field_x);
+      ${temporaryDeclarations}
+      ${statementCode}
+      return vec2(field_x, field_y);
+    }
+  `;
+}
+
 export function createProceduralMeshMaterial(
   program?: MilkdropGpuFieldProgramDescriptor | null,
 ) {
@@ -934,7 +1009,11 @@ export function createProceduralWaveMaterial() {
   });
 }
 
-export function createProceduralCustomWaveMaterial() {
+export function createProceduralCustomWaveMaterial(
+  program?: MilkdropGpuFieldProgramDescriptor | null,
+) {
+  const customWaveProgramShader =
+    buildProceduralCustomWaveProgramShaderChunk(program);
   return new ShaderMaterial({
     uniforms: {
       centerX: { value: 0 },
@@ -942,7 +1021,24 @@ export function createProceduralCustomWaveMaterial() {
       scaling: { value: 1 },
       mystery: { value: 0 },
       signalTime: { value: 0 },
+      signalFrame: { value: 0 },
+      signalFps: { value: 60 },
+      signalBass: { value: 0 },
+      signalMid: { value: 0 },
+      signalMids: { value: 0 },
+      signalTreble: { value: 0 },
+      signalBassAtt: { value: 0 },
+      signalMidAtt: { value: 0 },
+      signalMidsAtt: { value: 0 },
+      signalTrebleAtt: { value: 0 },
+      signalBeat: { value: 0 },
+      signalBeatPulse: { value: 0 },
+      signalRms: { value: 0 },
+      signalVol: { value: 0 },
+      signalMusic: { value: 0 },
+      signalWeightedEnergy: { value: 0 },
       spectrum: { value: 0 },
+      sampleCount: { value: 64 },
       tint: { value: new Color(1, 1, 1) },
       alpha: { value: 1 },
       previousCenterX: { value: 0 },
@@ -950,32 +1046,89 @@ export function createProceduralCustomWaveMaterial() {
       previousScaling: { value: 1 },
       previousMystery: { value: 0 },
       previousSignalTime: { value: 0 },
+      previousSignalFrame: { value: 0 },
+      previousSignalFps: { value: 60 },
+      previousSignalBass: { value: 0 },
+      previousSignalMid: { value: 0 },
+      previousSignalMids: { value: 0 },
+      previousSignalTreble: { value: 0 },
+      previousSignalBassAtt: { value: 0 },
+      previousSignalMidAtt: { value: 0 },
+      previousSignalMidsAtt: { value: 0 },
+      previousSignalTrebleAtt: { value: 0 },
+      previousSignalBeat: { value: 0 },
+      previousSignalBeatPulse: { value: 0 },
+      previousSignalRms: { value: 0 },
+      previousSignalVol: { value: 0 },
+      previousSignalMusic: { value: 0 },
+      previousSignalWeightedEnergy: { value: 0 },
       previousSpectrum: { value: 0 },
+      previousSampleCount: { value: 64 },
       blendMix: { value: 1 },
       ...createProceduralInteractionUniformState(),
+    },
+    userData: {
+      fieldProgramSignature: program?.signature ?? 'default',
     },
     transparent: true,
     vertexShader: `
       attribute float sampleT;
       attribute float sampleValue;
+      attribute float sampleValue2;
       attribute float previousSampleValue;
+      attribute float previousSampleValue2;
       uniform float centerX;
       uniform float centerY;
       uniform float scaling;
       uniform float mystery;
       uniform float signalTime;
+      uniform float signalFrame;
+      uniform float signalFps;
+      uniform float signalBass;
+      uniform float signalMid;
+      uniform float signalMids;
+      uniform float signalTreble;
+      uniform float signalBassAtt;
+      uniform float signalMidAtt;
+      uniform float signalMidsAtt;
+      uniform float signalTrebleAtt;
+      uniform float signalBeat;
+      uniform float signalBeatPulse;
+      uniform float signalRms;
+      uniform float signalVol;
+      uniform float signalMusic;
+      uniform float signalWeightedEnergy;
       uniform float spectrum;
+      uniform float sampleCount;
       uniform float previousCenterX;
       uniform float previousCenterY;
       uniform float previousScaling;
       uniform float previousMystery;
       uniform float previousSignalTime;
+      uniform float previousSignalFrame;
+      uniform float previousSignalFps;
+      uniform float previousSignalBass;
+      uniform float previousSignalMid;
+      uniform float previousSignalMids;
+      uniform float previousSignalTreble;
+      uniform float previousSignalBassAtt;
+      uniform float previousSignalMidAtt;
+      uniform float previousSignalMidsAtt;
+      uniform float previousSignalTrebleAtt;
+      uniform float previousSignalBeat;
+      uniform float previousSignalBeatPulse;
+      uniform float previousSignalRms;
+      uniform float previousSignalVol;
+      uniform float previousSignalMusic;
+      uniform float previousSignalWeightedEnergy;
       uniform float previousSpectrum;
+      uniform float previousSampleCount;
       uniform float blendMix;
       uniform float interactionOffsetX;
       uniform float interactionOffsetY;
       uniform float interactionRotation;
       uniform float interactionScale;
+      ${customWaveProgramShader}
       ${PROCEDURAL_INTERACTION_SHADER_CHUNK}
 
       void main() {
@@ -984,12 +1137,59 @@ export function createProceduralCustomWaveMaterial() {
           sampleValue,
           blendMix
         );
+        float blendedSampleValue2 = mix(
+          previousSampleValue2,
+          sampleValue2,
+          blendMix
+        );
         float blendedCenterX = mix(previousCenterX, centerX, blendMix);
         float blendedCenterY = mix(previousCenterY, centerY, blendMix);
         float blendedScaling = mix(previousScaling, scaling, blendMix);
         float blendedMystery = mix(previousMystery, mystery, blendMix);
         float blendedSignalTime = mix(previousSignalTime, signalTime, blendMix);
         float blendedSpectrum = mix(previousSpectrum, spectrum, blendMix);
+        float blendedSampleCount = mix(
+          previousSampleCount,
+          sampleCount,
+          blendMix
+        );
+        vec2 point = vec2(0.0);
+        ${
+          /* This branch is compile-time constant because the helper chunk only exists when a program is present. */
+          ''
+        }
+        ${
+          program
+            ? `
+        point = milkdropCustomWavePointWithProgram(
+          sampleT,
+          blendedSampleValue,
+          blendedSampleValue2,
+          blendedCenterX,
+          blendedCenterY,
+          blendedScaling,
+          blendedMystery,
+          blendedSpectrum,
+          blendedSampleCount,
+          blendedSignalTime,
+          mix(previousSignalFrame, signalFrame, blendMix),
+          mix(previousSignalFps, signalFps, blendMix),
+          mix(previousSignalBass, signalBass, blendMix),
+          mix(previousSignalMid, signalMid, blendMix),
+          mix(previousSignalMids, signalMids, blendMix),
+          mix(previousSignalTreble, signalTreble, blendMix),
+          mix(previousSignalBassAtt, signalBassAtt, blendMix),
+          mix(previousSignalMidAtt, signalMidAtt, blendMix),
+          mix(previousSignalMidsAtt, signalMidsAtt, blendMix),
+          mix(previousSignalTrebleAtt, signalTrebleAtt, blendMix),
+          mix(previousSignalBeat, signalBeat, blendMix),
+          mix(previousSignalBeatPulse, signalBeatPulse, blendMix),
+          mix(previousSignalRms, signalRms, blendMix),
+          mix(previousSignalVol, signalVol, blendMix),
+          mix(previousSignalMusic, signalMusic, blendMix),
+          mix(previousSignalWeightedEnergy, signalWeightedEnergy, blendMix)
+        );`
+            : `
         float x = blendedCenterX + (-1.0 + sampleT * 2.0) * 0.85;
         float baseY =
           blendedCenterY +
@@ -1005,8 +1205,9 @@ export function createProceduralCustomWaveMaterial() {
           ) *
             0.18 *
             blendedScaling;
-        float y = mix(orbitalY, baseY, blendedSpectrum);
-        vec2 point = applyMilkdropInteraction(vec2(x, y));
+        point = vec2(x, mix(orbitalY, baseY, blendedSpectrum));`
+        }
+        point = applyMilkdropInteraction(point);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(point, 0.28, 1.0);
       }
     `,

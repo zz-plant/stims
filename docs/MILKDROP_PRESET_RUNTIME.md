@@ -46,11 +46,12 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 
 ## Metadata sync workflow
 
-`assets/data/toys.json` remains the checked-in manifest source for the shipped experience. `bun run generate:toys` rewrites:
+`assets/data/toys.json` remains the checked-in manifest source for the shipped experience. `bun run generate:toys` rewrites the derived artifacts:
 
-- `assets/data/toys.json`
 - `assets/js/data/toy-manifest.ts`
 - `public/toys.json`
+- `docs/TOY_SCRIPT_INDEX.md`
+- `docs/toys.md`
 
 `bun run check:toys` fails if the checked-in JSON or generated artifacts drift.
 

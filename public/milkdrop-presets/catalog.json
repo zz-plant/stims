@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-03-21",
+  "generatedAt": "2026-03-28",
   "certification": "bundled",
   "corpusTier": "bundled",
   "presets": [
@@ -17,11 +17,23 @@
         "warp",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -33,16 +45,29 @@
       "preview": true,
       "tags": [
         "collection:classic-milkdrop",
+        "collection:rovastar-and-collaborators",
         "popular",
         "glowsticks",
         "original-pack",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -55,16 +80,29 @@
       "tags": [
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
         "popular",
         "lasers",
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -77,16 +115,29 @@
       "tags": [
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
         "popular",
         "geometry",
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -102,11 +153,23 @@
         "drums",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -119,16 +182,29 @@
       "tags": [
         "collection:classic-milkdrop",
         "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
         "popular",
         "comets",
         "cream-of-the-crop",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -144,11 +220,23 @@
         "reactive",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     },
     {
@@ -164,11 +252,23 @@
         "halos",
         "preset"
       ],
-      "expectedFidelityClass": "exact",
-      "visualEvidenceTier": "visual",
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
       "supports": {
         "webgl": true,
         "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
       }
     }
   ]

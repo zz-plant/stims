@@ -32,6 +32,7 @@ type OverlayCallbacks = {
 
 type OverlayPrimaryView = 'browse' | 'tools';
 type OverlayToolView = 'editor' | 'inspector';
+type OverlayTab = 'browse' | 'editor' | 'inspector';
 
 function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
   buttons.forEach((button) => {
@@ -58,20 +59,16 @@ export class MilkdropOverlay {
   private readonly blendSlider: HTMLInputElement;
   private readonly blendValue: HTMLElement;
   private readonly fileInput: HTMLInputElement;
-  private readonly primaryTabButtons: HTMLButtonElement[];
-  private readonly toolTabButtons: HTMLButtonElement[];
+  private readonly tabButtons: HTMLButtonElement[];
   private readonly browsePanel: BrowsePanel;
   private readonly editorPanel: EditorPanel;
   private readonly inspectorPanel: InspectorPanel;
-  private readonly toolsPanel: HTMLElement;
-  private readonly toolsTabs: HTMLElement;
   private readonly presetOsd: HTMLElement;
   private readonly presetOsdTitle: HTMLElement;
   private readonly presetOsdMeta: HTMLElement;
   private readonly shortcutHud: HTMLElement;
   private readonly shortcutHudToggle: HTMLButtonElement;
-  private activeView: OverlayPrimaryView = 'browse';
-  private activeToolView: OverlayToolView = 'editor';
+  private activeTab: OverlayTab = 'browse';
   private activePresetId: string | null = null;
   private activePresetEntry: MilkdropCatalogEntry | null = null;
   private osdHideTimeoutId: number | null = null;
@@ -91,11 +88,13 @@ export class MilkdropOverlay {
     this.toggleButton = document.createElement('button');
     this.toggleButton.type = 'button';
     this.toggleButton.className = 'milkdrop-overlay__toggle';
-    this.toggleButton.textContent = 'Mix';
+    this.toggleButton.textContent = 'Controls';
     this.toggleButton.addEventListener('click', () => this.toggleOpen());
 
     this.panel = document.createElement('aside');
     this.panel.className = 'milkdrop-overlay__panel';
+
+    this.syncOverlayDatasets(this.activeTab);
 
     this.presetOsd = document.createElement('div');
     this.presetOsd.className = 'milkdrop-overlay__osd';
@@ -111,7 +110,7 @@ export class MilkdropOverlay {
     this.shortcutHud.hidden = true;
     const shortcutHeading = document.createElement('div');
     shortcutHeading.className = 'milkdrop-overlay__shortcut-title';
-    shortcutHeading.textContent = 'Live controls';
+    shortcutHeading.textContent = 'Keyboard shortcuts';
     const shortcutList = document.createElement('div');
     shortcutList.className = 'milkdrop-overlay__shortcut-list';
     [
@@ -138,7 +137,7 @@ export class MilkdropOverlay {
     this.currentPresetLabel.textContent = 'MilkDrop Visualizer';
     this.statusLabel = document.createElement('div');
     this.statusLabel.className = 'milkdrop-overlay__status';
-    this.statusLabel.textContent = 'Loading catalog...';
+    this.statusLabel.hidden = true;
     titleBlock.append(this.currentPresetLabel, this.statusLabel);
 
     const headerActions = document.createElement('div');
@@ -166,11 +165,6 @@ export class MilkdropOverlay {
       'milkdrop-overlay__toolbar-group milkdrop-overlay__toolbar-group--transport';
     [
       {
-        label: 'Back',
-        className: 'milkdrop-overlay__transport-button',
-        action: () => this.callbacks.onGoBackPreset(),
-      },
-      {
         label: 'Prev',
         className: 'milkdrop-overlay__transport-button',
         action: () => this.callbacks.onPreviousPreset(),
@@ -179,11 +173,6 @@ export class MilkdropOverlay {
         label: 'Next',
         className: 'milkdrop-overlay__transport-button',
         action: () => this.callbacks.onNextPreset(),
-      },
-      {
-        label: 'Shuffle',
-        className: 'milkdrop-overlay__transport-button',
-        action: () => this.callbacks.onRandomize(),
       },
     ].forEach(({ label, className, action }) => {
       const button = document.createElement('button');
@@ -202,14 +191,6 @@ export class MilkdropOverlay {
     this.autoplayToggle.addEventListener('change', () => {
       this.callbacks.onToggleAutoplay(this.autoplayToggle.checked);
     });
-
-    const autoplayLabel = document.createElement('label');
-    autoplayLabel.className = 'milkdrop-overlay__checkbox';
-    autoplayLabel.append(
-      this.autoplayToggle,
-      document.createTextNode('Autoplay'),
-    );
-    sessionGroup.appendChild(autoplayLabel);
 
     this.transitionModeSelect = document.createElement('select');
     this.transitionModeSelect.className = 'milkdrop-overlay__rating-select';
@@ -263,14 +244,13 @@ export class MilkdropOverlay {
 
     const tabs = document.createElement('div');
     tabs.className = 'milkdrop-overlay__tabs';
-    this.primaryTabButtons = ['browse', 'tools'].map((tab) => {
+    this.tabButtons = ['browse', 'editor', 'inspector'].map((tab) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.tab = tab;
-      button.textContent = tab === 'browse' ? 'Presets' : 'Tools';
-      button.addEventListener('click', () =>
-        this.setActiveView(tab as OverlayPrimaryView),
-      );
+      button.textContent =
+        tab === 'browse' ? 'Looks' : tab === 'editor' ? 'Edit' : 'Inspect';
+      button.addEventListener('click', () => this.setActiveTab(tab));
       tabs.appendChild(button);
       return button;
     });
@@ -309,32 +289,13 @@ export class MilkdropOverlay {
         this.callbacks.onInspectorFieldChange(key, value),
     });
 
-    this.toolsTabs = document.createElement('div');
-    this.toolsTabs.className = 'milkdrop-overlay__tools-tabs';
-    this.toolTabButtons = ['editor', 'inspector'].map((tab) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.dataset.tab = tab;
-      button.textContent = tab[0].toUpperCase() + tab.slice(1);
-      button.addEventListener('click', () =>
-        this.setActiveToolView(tab as OverlayToolView),
-      );
-      this.toolsTabs.appendChild(button);
-      return button;
-    });
-
-    this.toolsPanel = document.createElement('section');
-    this.toolsPanel.className =
-      'milkdrop-overlay__tab-panel milkdrop-overlay__tools-panel';
-    this.toolsPanel.append(
-      this.toolsTabs,
+    const panelBody = document.createElement('div');
+    panelBody.className = 'milkdrop-overlay__body';
+    panelBody.append(
+      this.browsePanel.element,
       this.editorPanel.element,
       this.inspectorPanel.element,
     );
-
-    const panelBody = document.createElement('div');
-    panelBody.className = 'milkdrop-overlay__body';
-    panelBody.append(this.browsePanel.element, this.toolsPanel);
 
     this.panel.append(header, toolbar, tabs, this.shortcutHud, panelBody);
     this.root.append(
@@ -344,7 +305,7 @@ export class MilkdropOverlay {
       this.fileInput,
     );
     host.appendChild(this.root);
-    this.setActiveView('browse');
+    this.setActiveTab('browse');
 
     this.shortcutListener = (event) => {
       const target = event.target as HTMLElement | null;
@@ -386,19 +347,13 @@ export class MilkdropOverlay {
   }
 
   openTab(tab: string) {
-    if (tab === 'editor' || tab === 'inspector') {
-      this.setActiveView('tools');
-      this.setActiveToolView(tab);
-    } else {
-      this.setActiveView('browse');
-    }
+    this.setActiveTab(tab);
     this.toggleOpen(true);
   }
 
   shouldRenderInspectorMetrics() {
     return (
-      this.activeView === 'tools' &&
-      this.activeToolView === 'inspector' &&
+      this.activeTab === 'inspector' &&
       this.inspectorPanel.shouldRenderMetrics(this.isOpen())
     );
   }
@@ -485,12 +440,15 @@ export class MilkdropOverlay {
       compiled,
       frameState,
       backend,
+      presetEntry: this.activePresetEntry,
       isOpen: this.isOpen(),
     });
   }
 
   setStatus(message: string) {
-    this.statusLabel.textContent = message;
+    const nextMessage = message.trim();
+    this.statusLabel.textContent = nextMessage;
+    this.statusLabel.hidden = nextMessage.length === 0;
   }
 
   dispose() {
@@ -540,28 +498,25 @@ export class MilkdropOverlay {
     }, 1800);
   }
 
-  private setActiveView(view: OverlayPrimaryView) {
-    this.activeView = view;
-    this.browsePanel.setVisible(view === 'browse');
-    this.toolsPanel.hidden = view !== 'tools';
-    if (view === 'tools') {
-      this.setActiveToolView(this.activeToolView);
-    } else {
-      this.editorPanel.setVisible(false);
-      this.inspectorPanel.setVisible(false);
-    }
-    setButtonActive(this.primaryTabButtons, this.activeView);
-    this.toolsTabs.hidden = view !== 'tools';
+  private setActiveTab(tab: string) {
+    this.activeTab = tab === 'editor' || tab === 'inspector' ? tab : 'browse';
+    this.syncOverlayDatasets(this.activeTab);
+    this.browsePanel.setVisible(this.activeTab === 'browse');
+    this.editorPanel.setVisible(this.activeTab === 'editor');
+    this.inspectorPanel.setVisible(this.activeTab === 'inspector');
+    setButtonActive(this.tabButtons, this.activeTab);
     this.syncRootSessionState();
   }
 
-  private setActiveToolView(view: OverlayToolView) {
-    this.activeToolView = view;
-    const toolsVisible = this.activeView === 'tools';
-    this.editorPanel.setVisible(toolsVisible && view === 'editor');
-    this.inspectorPanel.setVisible(toolsVisible && view === 'inspector');
-    setButtonActive(this.toolTabButtons, this.activeToolView);
-    this.syncRootSessionState();
+  private syncOverlayDatasets(tab: OverlayTab) {
+    const activeView: OverlayPrimaryView =
+      tab === 'browse' ? 'browse' : 'tools';
+    const activeToolView: OverlayToolView =
+      tab === 'inspector' ? 'inspector' : 'editor';
+    this.root.dataset.activeView = activeView;
+    this.root.dataset.activeToolView = activeToolView;
+    this.panel.dataset.activeView = activeView;
+    this.panel.dataset.activeToolView = activeToolView;
   }
 
   private syncRootSessionState() {
@@ -577,7 +532,7 @@ export class MilkdropOverlay {
     }
 
     root.dataset.sessionDisplayMode =
-      this.activeView === 'tools' ? 'tools' : 'immersive';
+      this.activeTab === 'browse' ? 'immersive' : 'tools';
     root.dataset.sessionChrome = 'visible';
   }
 }

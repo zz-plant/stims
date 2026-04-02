@@ -1,27 +1,47 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Texture } from 'three';
 import {
-  Color,
-  HalfFloatType,
-  LinearFilter,
   Mesh,
   MeshBasicMaterial,
   OrthographicCamera,
   PlaneGeometry,
-  RepeatWrapping,
   Scene,
-  SRGBColorSpace,
-  TextureLoader,
-  Vector2,
 } from 'three';
-// @ts-expect-error - 'three/tsl' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
-import { NodeMaterial, RenderTarget, TSL } from 'three/webgpu';
+// @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
+import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
 import { disposeMaterial } from '../utils/three-dispose';
 import {
-  AUX_TEXTURE_ATLAS_GRID_SIZE,
-  AUX_TEXTURE_ATLAS_SLICE_COUNT,
-} from './feedback-volume-sampling.ts';
-import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './renderer-adapter.ts';
+  type CompositeUniformBag,
+  createApplyFeedbackWarpNode,
+  createCompositeUniforms,
+  createFeedbackRenderTarget,
+  createSampleAuxTextureNode,
+  createSampleUvNode,
+  type FeedbackRendererLike,
+  getSharedMilkdropAuxTextures,
+  hasOverlayBlendFeedback,
+  hasOverlayReplaceFeedback,
+  hasWarpTextureFeedback,
+} from './feedback-manager-webgpu-composite.ts';
+
+export {
+  resolveDirectShaderSamplerBinding,
+  resolveDirectShaderSwizzle,
+} from './feedback-manager-webgpu-bindings.ts';
+
+import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
+import {
+  MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
+  MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
+  MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
+  MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
+} from './feedback-composite-profile.ts';
+import {
+  resolveDirectShaderSamplerBinding,
+  resolveDirectShaderSwizzle,
+} from './feedback-manager-webgpu-bindings.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -32,7 +52,6 @@ import type {
 
 const {
   abs,
-  atan,
   clamp,
   cos,
   dot,
@@ -51,8 +70,6 @@ const {
   sin,
   smoothstep,
   step,
-  texture,
-  uniform,
   uv,
   vec2,
   vec3,
@@ -60,63 +77,41 @@ const {
 } = TSL;
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
-const MILKDROP_TEXTURE_FILES = {
-  noise: 'seamless_perlin_noise.png',
-  simplex: 'simplex_noise_3d.png',
-  voronoi: 'voronoi_cellular.png',
-  aura: 'colorful_aura_gradient.png',
-  caustics: 'water_caustics.png',
-  pattern: 'circuit_board_pattern.png',
-  fractal: 'crystal_fractal.png',
-} as const;
-type FeedbackRendererLike = {
-  render: (scene: Scene, camera: Camera) => void;
-  setRenderTarget: (target: RenderTarget | null) => void;
+type ShaderNodeValue = {
+  kind: 'scalar' | 'vec2' | 'vec3';
+  node: any;
 };
 
-type CompositeUniformBag = Record<string, any>;
+type ShaderBinaryOperator =
+  | '+'
+  | '-'
+  | '*'
+  | '/'
+  | '%'
+  | '<'
+  | '<='
+  | '>'
+  | '>='
+  | '=='
+  | '!='
+  | '&&'
+  | '||';
 
-function resolveTextureUrl(fileName: string) {
-  const baseUrl =
-    typeof import.meta.env.BASE_URL === 'string'
-      ? import.meta.env.BASE_URL
-      : '/';
-  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${normalizedBaseUrl}textures/${fileName}`;
-}
+type ShaderNodeEnv = {
+  values: Map<string, ShaderNodeValue>;
+  uniforms: CompositeUniformBag;
+  sampleUvNode: ReturnType<typeof createSampleUvNode>;
+  sampleAuxTextureNode: ReturnType<typeof createSampleAuxTextureNode>;
+};
 
-function configureMilkdropTexture(textureValue: Texture, colorTexture = false) {
-  textureValue.wrapS = RepeatWrapping;
-  textureValue.wrapT = RepeatWrapping;
-  if (colorTexture) {
-    textureValue.colorSpace = SRGBColorSpace;
-  }
-  return textureValue;
-}
-
-function loadMilkdropTexture(fileName: string, colorTexture = false) {
-  const loaded = new TextureLoader().load(resolveTextureUrl(fileName));
-  return configureMilkdropTexture(loaded, colorTexture);
-}
-
-function createFeedbackRenderTarget(
-  width: number,
-  height: number,
-  resolutionScale: number,
-) {
-  const profile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
-  const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
-  const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
-  const target = new RenderTarget(scaledWidth, scaledHeight, {
-    minFilter: LinearFilter,
-    magFilter: LinearFilter,
-    type: WEBGPU_MILKDROP_BACKEND_BEHAVIOR.useHalfFloatFeedback
-      ? HalfFloatType
-      : undefined,
-  });
-  target.samples = profile.samples;
-  return target;
-}
+type DirectShaderSwizzleComponent = 'x' | 'y' | 'z';
+type DirectShaderConstructorPattern =
+  | 'vec2-pair'
+  | 'vec2-splat'
+  | 'vec3-triple'
+  | 'vec3-splat'
+  | 'vec3-vec2-scalar'
+  | 'vec3-scalar-vec2';
 
 function hueRotateNode(colorValue: any, angle: any) {
   return Fn(() => {
@@ -148,216 +143,6 @@ function applyContrastNode(colorValue: any, amount: any) {
   return clamp(colorValue.sub(0.5).mul(amount).add(0.5), vec3(0), vec3(1));
 }
 
-function createSampleUvNode() {
-  return Fn(([rawUv, wrapMode]: [any, any]) => {
-    const clampedUv = clamp(rawUv, vec2(0), vec2(1));
-    const wrappedUv = fract(rawUv);
-    return mix(clampedUv, wrappedUv, step(0.5, wrapMode));
-  });
-}
-
-function createApplyFeedbackWarpNode() {
-  return Fn(([sampleUv, amount, rotationAmount]: [any, any, any]) => {
-    const centered = sampleUv.sub(0.5);
-    const radius = length(centered);
-    const angle = atan(centered.y, centered.x);
-    const spiral = sin(radius.mul(18).sub(angle.mul(4)))
-      .mul(amount)
-      .mul(0.08);
-    const warpedAngle = angle.add(spiral).add(rotationAmount.mul(0.22));
-    const warpedRadius = radius.mul(
-      float(1).add(
-        cos(warpedAngle.mul(3).add(radius.mul(10)))
-          .mul(amount)
-          .mul(0.05),
-      ),
-    );
-    return vec2(cos(warpedAngle), sin(warpedAngle)).mul(warpedRadius).add(0.5);
-  });
-}
-
-function createSampleAuxTextureNode(
-  _uniforms: CompositeUniformBag,
-  noiseTexNode: ReturnType<typeof texture>,
-  simplexTexNode: ReturnType<typeof texture>,
-  voronoiTexNode: ReturnType<typeof texture>,
-  auraTexNode: ReturnType<typeof texture>,
-  causticsTexNode: ReturnType<typeof texture>,
-  patternTexNode: ReturnType<typeof texture>,
-  fractalTexNode: ReturnType<typeof texture>,
-) {
-  const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
-    const flat = vec4(0.5, 0.5, 0.5, 1);
-    return select(
-      source.lessThan(0.5),
-      flat,
-      select(
-        source.lessThan(1.5),
-        noiseTexNode.sample(sampleUv),
-        select(
-          source.lessThan(2.5),
-          simplexTexNode.sample(sampleUv),
-          select(
-            source.lessThan(3.5),
-            voronoiTexNode.sample(sampleUv),
-            select(
-              source.lessThan(4.5),
-              auraTexNode.sample(sampleUv),
-              select(
-                source.lessThan(5.5),
-                causticsTexNode.sample(sampleUv),
-                select(
-                  source.lessThan(6.5),
-                  patternTexNode.sample(sampleUv),
-                  fractalTexNode.sample(sampleUv),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  });
-
-  const atlasSliceUvNode = Fn(([sampleUv, sliceIndex]: [any, any]) => {
-    const localUv = mix(vec2(0.01), vec2(0.99), fract(sampleUv));
-    const gridSize = float(AUX_TEXTURE_ATLAS_GRID_SIZE);
-    const tileSize = vec2(float(1).div(gridSize));
-    const row = floor(sliceIndex.div(gridSize));
-    const column = sliceIndex.sub(row.mul(gridSize));
-    return vec2(column, row).add(localUv).mul(tileSize);
-  });
-
-  return Fn(
-    ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
-      const wrappedUv = fract(sampleUv);
-      const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
-      // Keep tex3D phases fully periodic so modulo-equivalent values stay aligned while the
-      // last atlas segment blends the final slice back to slice 0.
-      const wrappedSliceZ = fract(sliceZ);
-      const scaledSlice = wrappedSliceZ.mul(sliceCount);
-      const sliceIndexA = fract(floor(scaledSlice).div(sliceCount)).mul(
-        sliceCount,
-      );
-      const sliceIndexB = fract(sliceIndexA.add(1).div(sliceCount)).mul(
-        sliceCount,
-      );
-      const sliceBlend = fract(scaledSlice);
-      const planarSample = sampleAuxTexture2dNode(source, wrappedUv);
-      const sliceA = sampleAuxTexture2dNode(
-        source,
-        atlasSliceUvNode(wrappedUv, sliceIndexA),
-      );
-      const sliceB = sampleAuxTexture2dNode(
-        source,
-        atlasSliceUvNode(wrappedUv, sliceIndexB),
-      );
-      return mix(
-        planarSample,
-        mix(sliceA, sliceB, sliceBlend),
-        step(0.5, sampleDimension),
-      );
-    },
-  );
-}
-
-function createCompositeUniforms(
-  sceneTexture: Texture,
-  previousTexture: Texture,
-  auxTextures: Record<string, Texture>,
-) {
-  return {
-    currentTex: texture(sceneTexture),
-    previousTex: texture(previousTexture),
-    noiseTex: texture(auxTextures.noise),
-    simplexTex: texture(auxTextures.simplex),
-    voronoiTex: texture(auxTextures.voronoi),
-    auraTex: texture(auxTextures.aura),
-    causticsTex: texture(auxTextures.caustics),
-    patternTex: texture(auxTextures.pattern),
-    fractalTex: texture(auxTextures.fractal),
-    mixAlpha: uniform(0.18),
-    zoom: uniform(1.02),
-    videoEchoOrientation: uniform(0),
-    brighten: uniform(0),
-    darken: uniform(0),
-    darkenCenter: uniform(0),
-    solarize: uniform(0),
-    invert: uniform(0),
-    redBlueStereo: uniform(0),
-    gammaAdj: uniform(1),
-    textureWrap: uniform(0),
-    feedbackTexture: uniform(0),
-    warpScale: uniform(0),
-    offsetX: uniform(0),
-    offsetY: uniform(0),
-    rotation: uniform(0),
-    zoomMul: uniform(1),
-    saturation: uniform(1),
-    contrast: uniform(1),
-    colorScale: uniform(new Color(1, 1, 1)),
-    hueShift: uniform(0),
-    brightenBoost: uniform(0),
-    invertBoost: uniform(0),
-    solarizeBoost: uniform(0),
-    tint: uniform(new Color(1, 1, 1)),
-    feedbackSoftness: uniform(
-      WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.feedbackSoftness,
-    ),
-    currentFrameBoost: uniform(
-      WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.currentFrameBoost,
-    ),
-    overlayTextureSource: uniform(0),
-    overlayTextureMode: uniform(0),
-    overlayTextureSampleDimension: uniform(0),
-    overlayTextureInvert: uniform(0),
-    overlayTextureAmount: uniform(0),
-    overlayTextureScale: uniform(new Vector2(1, 1)),
-    overlayTextureOffset: uniform(new Vector2(0, 0)),
-    overlayTextureVolumeSliceZ: uniform(0),
-    warpTextureSource: uniform(0),
-    warpTextureSampleDimension: uniform(0),
-    warpTextureAmount: uniform(0),
-    warpTextureScale: uniform(new Vector2(1, 1)),
-    warpTextureOffset: uniform(new Vector2(0, 0)),
-    warpTextureVolumeSliceZ: uniform(0),
-    signalBass: uniform(0),
-    signalMid: uniform(0),
-    signalTreb: uniform(0),
-    signalBeat: uniform(0),
-    signalEnergy: uniform(0),
-    signalTime: uniform(0),
-    texelSize: uniform(new Vector2(1, 1)),
-  } satisfies CompositeUniformBag;
-}
-
-type ShaderNodeValue = {
-  kind: 'scalar' | 'vec2' | 'vec3';
-  node: any;
-};
-
-type ShaderBinaryOperator =
-  | '+'
-  | '-'
-  | '*'
-  | '/'
-  | '%'
-  | '<'
-  | '<='
-  | '>'
-  | '>='
-  | '=='
-  | '!='
-  | '&&'
-  | '||';
-
-type ShaderNodeEnv = {
-  values: Map<string, ShaderNodeValue>;
-  uniforms: CompositeUniformBag;
-  sampleUvNode: ReturnType<typeof createSampleUvNode>;
-  sampleAuxTextureNode: ReturnType<typeof createSampleAuxTextureNode>;
-};
-
 function makeShaderValue(
   kind: ShaderNodeValue['kind'],
   node: any,
@@ -388,6 +173,97 @@ function shaderValueFromNode(node: any, kind: ShaderNodeValue['kind']) {
     return makeShaderValue('vec2', node);
   }
   return makeShaderValue('vec3', node);
+}
+
+function getDirectShaderSwizzleComponentNode(
+  value: ShaderNodeValue,
+  component: DirectShaderSwizzleComponent,
+) {
+  if (value.kind === 'scalar') {
+    return value.node;
+  }
+  if (component === 'x') {
+    return value.node.x;
+  }
+  if (component === 'y') {
+    return value.node.y;
+  }
+  return value.node.z;
+}
+
+function buildDirectShaderSwizzleValue(
+  value: ShaderNodeValue,
+  property: string,
+): ShaderNodeValue | null {
+  if (value.kind === 'scalar') {
+    return null;
+  }
+  const swizzle = resolveDirectShaderSwizzle(
+    value.kind as 'vec2' | 'vec3',
+    property,
+  );
+  if (!swizzle) {
+    return null;
+  }
+  const componentNodes = swizzle.components.map((component) => {
+    if (component === 'x') {
+      return value.node.x;
+    }
+    if (component === 'y') {
+      return value.node.y;
+    }
+    return value.node.z;
+  });
+  if (swizzle.kind === 'scalar') {
+    return shaderFloat(componentNodes[0]);
+  }
+  if (swizzle.kind === 'vec2') {
+    return shaderVec2(componentNodes[0], componentNodes[1]);
+  }
+  return shaderVec3(componentNodes[0], componentNodes[1], componentNodes[2]);
+}
+
+export function resolveDirectShaderConstructorPattern(
+  name: string,
+  argKinds: Array<ShaderNodeValue['kind']>,
+): DirectShaderConstructorPattern | null {
+  const normalizedName =
+    name.toLowerCase() === 'float2'
+      ? 'vec2'
+      : name.toLowerCase() === 'float3'
+        ? 'vec3'
+        : name.toLowerCase();
+
+  if (normalizedName === 'vec2') {
+    if (argKinds[0] === 'scalar' && argKinds[1] === 'scalar') {
+      return 'vec2-pair';
+    }
+    if (argKinds[0] === 'scalar') {
+      return 'vec2-splat';
+    }
+    return null;
+  }
+
+  if (normalizedName === 'vec3') {
+    if (
+      argKinds[0] === 'scalar' &&
+      argKinds[1] === 'scalar' &&
+      argKinds[2] === 'scalar'
+    ) {
+      return 'vec3-triple';
+    }
+    if (argKinds[0] === 'vec2' && argKinds[1] === 'scalar') {
+      return 'vec3-vec2-scalar';
+    }
+    if (argKinds[0] === 'scalar' && argKinds[1] === 'vec2') {
+      return 'vec3-scalar-vec2';
+    }
+    if (argKinds[0] === 'scalar') {
+      return 'vec3-splat';
+    }
+  }
+
+  return null;
 }
 
 function coerceShaderValue(
@@ -534,6 +410,43 @@ function getShaderEnvValue(
     weighted_energy: () => shaderFloat(env.uniforms.signalEnergy),
     pi: () => shaderFloat(Math.PI),
     e: () => shaderFloat(Math.E),
+    warp: () => shaderFloat(env.uniforms.warpScale),
+    warp_scale: () => shaderFloat(env.uniforms.warpScale),
+    dx: () => shaderFloat(env.uniforms.offsetX),
+    offset_x: () => shaderFloat(env.uniforms.offsetX),
+    translate_x: () => shaderFloat(env.uniforms.offsetX),
+    dy: () => shaderFloat(env.uniforms.offsetY),
+    offset_y: () => shaderFloat(env.uniforms.offsetY),
+    translate_y: () => shaderFloat(env.uniforms.offsetY),
+    rot: () => shaderFloat(env.uniforms.rotation),
+    rotation: () => shaderFloat(env.uniforms.rotation),
+    zoom: () => shaderFloat(env.uniforms.zoomMul),
+    scale: () => shaderFloat(env.uniforms.zoomMul),
+    saturation: () => shaderFloat(env.uniforms.saturation),
+    sat: () => shaderFloat(env.uniforms.saturation),
+    contrast: () => shaderFloat(env.uniforms.contrast),
+    r: () => shaderFloat(env.uniforms.colorScale.x),
+    red: () => shaderFloat(env.uniforms.colorScale.x),
+    g: () => shaderFloat(env.uniforms.colorScale.y),
+    green: () => shaderFloat(env.uniforms.colorScale.y),
+    b: () => shaderFloat(env.uniforms.colorScale.z),
+    blue: () => shaderFloat(env.uniforms.colorScale.z),
+    hue: () => shaderFloat(env.uniforms.hueShift),
+    hue_shift: () => shaderFloat(env.uniforms.hueShift),
+    mix: () => shaderFloat(env.uniforms.mixAlpha),
+    feedback: () => shaderFloat(env.uniforms.mixAlpha),
+    feedback_alpha: () => shaderFloat(env.uniforms.mixAlpha),
+    brighten: () => shaderFloat(env.uniforms.brightenBoost),
+    invert: () => shaderFloat(env.uniforms.invertBoost),
+    solarize: () => shaderFloat(env.uniforms.solarizeBoost),
+    tint: () =>
+      makeShaderValue(
+        'vec3',
+        vec3(env.uniforms.tint.x, env.uniforms.tint.y, env.uniforms.tint.z),
+      ),
+    tint_r: () => shaderFloat(env.uniforms.tint.x),
+    tint_g: () => shaderFloat(env.uniforms.tint.y),
+    tint_b: () => shaderFloat(env.uniforms.tint.z),
   };
 
   const resolved = uniformMap[normalized]?.() ?? null;
@@ -581,36 +494,7 @@ function compileShaderExpressionNode(
       if (!object) {
         return null;
       }
-      const property = node.property.toLowerCase();
-      if (object.kind === 'vec2') {
-        if (property === 'x' || property === 'r') {
-          return shaderFloat(object.node.x);
-        }
-        if (property === 'y' || property === 'g') {
-          return shaderFloat(object.node.y);
-        }
-        if (property === 'xy' || property === 'rg') {
-          return makeShaderValue('vec2', object.node.xy);
-        }
-      }
-      if (object.kind === 'vec3') {
-        if (property === 'x' || property === 'r') {
-          return shaderFloat(object.node.x);
-        }
-        if (property === 'y' || property === 'g') {
-          return shaderFloat(object.node.y);
-        }
-        if (property === 'z' || property === 'b') {
-          return shaderFloat(object.node.z);
-        }
-        if (property === 'xy' || property === 'rg') {
-          return makeShaderValue('vec2', object.node.xy);
-        }
-        if (property === 'rgb' || property === 'xyz') {
-          return makeShaderValue('vec3', object.node.xyz);
-        }
-      }
-      return null;
+      return buildDirectShaderSwizzleValue(object, node.property);
     }
     case 'call': {
       const name = node.name.toLowerCase();
@@ -620,40 +504,44 @@ function compileShaderExpressionNode(
       if (args.length !== node.args.length) {
         return null;
       }
-      if (name === 'vec2' && args.length >= 2) {
+      const constructorPattern = resolveDirectShaderConstructorPattern(
+        name,
+        args.map((entry) => entry.kind),
+      );
+      if (constructorPattern === 'vec2-pair') {
         return shaderVec2(
           coerceShaderValue(args[0], 'scalar').node,
           coerceShaderValue(args[1], 'scalar').node,
         );
       }
-      if (name === 'float2' && args.length >= 2) {
-        return shaderVec2(
+      if (constructorPattern === 'vec2-splat') {
+        const scalar = coerceShaderValue(args[0], 'scalar').node;
+        return shaderVec2(scalar, scalar);
+      }
+      if (constructorPattern === 'vec3-triple') {
+        return shaderVec3(
           coerceShaderValue(args[0], 'scalar').node,
+          coerceShaderValue(args[1], 'scalar').node,
+          coerceShaderValue(args[2], 'scalar').node,
+        );
+      }
+      if (constructorPattern === 'vec3-vec2-scalar') {
+        return shaderVec3(
+          args[0].node.x,
+          args[0].node.y,
           coerceShaderValue(args[1], 'scalar').node,
         );
       }
-      if (name === 'vec3' || name === 'float3') {
-        if (args.length >= 3) {
-          return shaderVec3(
-            coerceShaderValue(args[0], 'scalar').node,
-            coerceShaderValue(args[1], 'scalar').node,
-            coerceShaderValue(args[2], 'scalar').node,
-          );
-        }
-        if (args.length >= 2 && args[0]?.kind === 'vec2') {
-          return shaderVec3(
-            args[0].node.x,
-            args[0].node.y,
-            coerceShaderValue(args[1], 'scalar').node,
-          );
-        }
-        if (args.length >= 2 && args[1]?.kind === 'vec2') {
-          return shaderVec3(
-            coerceShaderValue(args[0], 'scalar').node,
-            args[1].node.x,
-            args[1].node.y,
-          );
-        }
+      if (constructorPattern === 'vec3-scalar-vec2') {
+        return shaderVec3(
+          coerceShaderValue(args[0], 'scalar').node,
+          args[1].node.x,
+          args[1].node.y,
+        );
+      }
+      if (constructorPattern === 'vec3-splat') {
+        const scalar = coerceShaderValue(args[0], 'scalar').node;
+        return shaderVec3(scalar, scalar, scalar);
       }
       if (
         (name === 'tex2d' ||
@@ -672,6 +560,13 @@ function compileShaderExpressionNode(
         if (!coordinate) {
           return null;
         }
+        const resolvedBinding = resolveDirectShaderSamplerBinding(
+          sourceName,
+          name === 'tex3d' || name === 'texture3d' ? '3d' : '2d',
+        );
+        if (!resolvedBinding) {
+          return null;
+        }
         const sampleDimension =
           name === 'tex3d' || name === 'texture3d' ? float(1) : float(0);
         const sampleUv =
@@ -680,23 +575,7 @@ function compileShaderExpressionNode(
             : coerceShaderValue(coordinate, 'vec2').node;
         const sampleZ =
           coordinate.kind === 'vec3' ? coordinate.node.z : float(0);
-        const sourceId =
-          sourceName === 'sampler_main'
-            ? float(0)
-            : sourceName.includes('noise')
-              ? float(1)
-              : sourceName.includes('simplex')
-                ? float(2)
-                : sourceName.includes('voronoi')
-                  ? float(3)
-                  : sourceName.includes('aura')
-                    ? float(4)
-                    : sourceName.includes('caustics')
-                      ? float(5)
-                      : sourceName.includes('pattern')
-                        ? float(6)
-                        : float(7);
-        if (sourceName === 'sampler_main') {
+        if (resolvedBinding.canonicalSource === 'main') {
           return makeShaderValue(
             'vec3',
             env.uniforms.currentTex.sample(
@@ -706,8 +585,12 @@ function compileShaderExpressionNode(
         }
         return makeShaderValue(
           'vec3',
-          env.sampleAuxTextureNode(sourceId, sampleDimension, sampleUv, sampleZ)
-            .rgb,
+          env.sampleAuxTextureNode(
+            float(resolvedBinding.sourceId),
+            sampleDimension,
+            sampleUv,
+            sampleZ,
+          ).rgb,
         );
       }
       if ((name === 'mix' || name === 'lerp') && args.length >= 3) {
@@ -853,7 +736,9 @@ function assignShaderTarget(
   statement: MilkdropShaderStatement,
   value: ShaderNodeValue,
 ) {
-  const target = statement.target.toLowerCase();
+  const rawTarget = statement.target.toLowerCase();
+  const target =
+    rawTarget === 'return' ? (env.values.has('ret') ? 'ret' : 'uv') : rawTarget;
   const segments = target.split('.');
   const baseKey = segments[0] ?? target;
   const baseValue = getShaderEnvValue(env, baseKey);
@@ -880,18 +765,37 @@ function assignShaderTarget(
     return;
   }
 
+  if (baseValue.kind === 'scalar') {
+    return;
+  }
+
+  const swizzle = resolveDirectShaderSwizzle(
+    baseValue.kind as 'vec2' | 'vec3',
+    property,
+  );
+  if (!swizzle) {
+    return;
+  }
+  if (new Set(swizzle.components).size !== swizzle.components.length) {
+    return;
+  }
   const parent =
     baseValue.kind === 'vec3'
       ? coerceShaderValue(baseValue, 'vec3').node.toVar()
       : coerceShaderValue(baseValue, 'vec2').node.toVar();
-  const scalarNode = coerceShaderValue(nextValue, 'scalar').node;
-  if (property === 'x' || property === 'r') {
-    parent.x.assign(scalarNode);
-  } else if (property === 'y' || property === 'g') {
-    parent.y.assign(scalarNode);
-  } else if (property === 'z' || property === 'b') {
-    parent.z.assign(scalarNode);
-  }
+  const assignedValue = coerceShaderValue(nextValue, swizzle.kind);
+  swizzle.components.forEach((component, index) => {
+    const targetNode =
+      component === 'x' ? parent.x : component === 'y' ? parent.y : parent.z;
+    const sourceNode =
+      swizzle.kind === 'scalar'
+        ? assignedValue.node
+        : getDirectShaderSwizzleComponentNode(
+            assignedValue,
+            (['x', 'y', 'z'][index] ?? 'x') as DirectShaderSwizzleComponent,
+          );
+    targetNode.assign(sourceNode);
+  });
   setShaderEnvValue(env, baseKey, shaderValueFromNode(parent, baseValue.kind));
 }
 
@@ -983,7 +887,6 @@ function createCompositeOutputNode(
     },
   );
   const sampleAuxTextureNode = createSampleAuxTextureNode(
-    uniforms,
     uniforms.noiseTex,
     uniforms.simplexTex,
     uniforms.voronoiTex,
@@ -1027,11 +930,12 @@ function createCompositeOutputNode(
       uniforms.warpScale.mul(0.8),
       uniforms.rotation.mul(0.6),
     ).toVar();
+    const warpTextureBaseUv = currentUv.toVar();
 
     const warpTextureMask = step(0.5, uniforms.warpTextureSource).mul(
       step(0.0001, uniforms.warpTextureAmount),
     );
-    const warpUv = baseUv
+    const warpUv = warpTextureBaseUv
       .mul(uniforms.warpTextureScale)
       .add(uniforms.warpTextureOffset);
     const warpVector = sampleAuxTextureNode(
@@ -1060,93 +964,139 @@ function createCompositeOutputNode(
     );
     const previousColor = previous.rgb.toVar();
 
-    If(uniforms.feedbackSoftness.greaterThan(0.01), () => {
-      const sampleOffset = uniforms.texelSize.mul(
-        float(0.65).add(uniforms.feedbackSoftness.mul(0.6)),
-      );
-      const softened = previous.rgb
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(sampleOffset.x, 0)),
-              uniforms.textureWrap,
+    If(
+      uniforms.feedbackSoftness.greaterThan(
+        float(MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD),
+      ),
+      () => {
+        const sampleOffset = uniforms.texelSize.mul(
+          float(MILKDROP_FEEDBACK_BLUR_OFFSET_BASE).add(
+            uniforms.feedbackSoftness.mul(MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE),
+          ),
+        );
+        const softened = previous.rgb
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.add(vec2(sampleOffset.x, 0)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.sub(vec2(sampleOffset.x, 0)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.add(vec2(0, sampleOffset.y)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .add(
+            uniforms.previousTex.sample(
+              sampleUvNode(
+                previousUv.sub(vec2(0, sampleOffset.y)),
+                uniforms.textureWrap,
+              ),
+            ).rgb,
+          )
+          .div(5);
+        previousColor.assign(
+          mix(
+            previousColor,
+            softened,
+            clamp(
+              uniforms.feedbackSoftness.mul(MILKDROP_FEEDBACK_BLUR_BLEND_SCALE),
+              0,
+              MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
             ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.sub(vec2(sampleOffset.x, 0)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(0, sampleOffset.y)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.sub(vec2(0, sampleOffset.y)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(previousUv.add(sampleOffset), uniforms.textureWrap),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(previousUv.sub(sampleOffset), uniforms.textureWrap),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(sampleOffset.x, sampleOffset.y.mul(-1))),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .add(
-          uniforms.previousTex.sample(
-            sampleUvNode(
-              previousUv.add(vec2(sampleOffset.x.mul(-1), sampleOffset.y)),
-              uniforms.textureWrap,
-            ),
-          ).rgb,
-        )
-        .div(9);
-      previousColor.assign(
-        mix(
-          previousColor,
-          softened,
-          clamp(uniforms.feedbackSoftness.mul(0.6), 0, 0.65),
-        ),
-      );
-    });
+          ),
+        );
+      },
+    );
 
-    const directCurrentColor = applyDirectCompProgram(
+    let color = mix(
+      current.rgb,
+      previousColor,
+      clamp(uniforms.videoEchoAlpha, 0, 1),
+    ).toVar();
+    color.assign(mix(color, previousColor, clamp(uniforms.mixAlpha, 0, 1)));
+    color.assign(
+      mix(
+        color,
+        current.rgb,
+        clamp(
+          uniforms.currentFrameBoost,
+          0,
+          MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
+        ),
+      ),
+    );
+    color = applyDirectCompProgram(
       shaderPrograms.comp,
       shaderEnv,
       currentUv,
-      current.rgb,
-    );
-    const color = mix(
-      directCurrentColor,
-      previousColor,
-      clamp(uniforms.mixAlpha.add(uniforms.feedbackTexture.mul(0.2)), 0, 1),
+      color,
     ).toVar();
-    color.assign(
-      mix(color, directCurrentColor, clamp(uniforms.currentFrameBoost, 0, 0.4)),
+    color.assign(hueRotateNode(color, uniforms.hueShift));
+    color.assign(applySaturationNode(color, uniforms.saturation));
+    color.assign(applyContrastNode(color, uniforms.contrast));
+    color.assign(color.mul(uniforms.colorScale));
+    color.assign(color.mul(uniforms.tint));
+
+    const overlaySourceMask = step(0.5, uniforms.overlayTextureSource);
+    const overlayReplaceMask = step(0.5, uniforms.overlayTextureMode).mul(
+      float(1).sub(step(1.5, uniforms.overlayTextureMode)),
     );
+    const overlayBlendMask = step(1.5, uniforms.overlayTextureMode).mul(
+      step(0.0001, uniforms.overlayTextureAmount),
+    );
+    const overlayMask = overlaySourceMask.mul(
+      max(overlayReplaceMask, overlayBlendMask),
+    );
+    const overlayUv = baseUv
+      .mul(uniforms.overlayTextureScale)
+      .add(uniforms.overlayTextureOffset);
+    const overlaySample = sampleAuxTextureNode(
+      uniforms.overlayTextureSource,
+      uniforms.overlayTextureSampleDimension,
+      overlayUv,
+      uniforms.overlayTextureVolumeSliceZ,
+    ).rgb;
+    const overlayColor = mix(
+      overlaySample,
+      vec3(1).sub(overlaySample),
+      step(0.5, uniforms.overlayTextureInvert),
+    );
+    const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
+    const overlayReplace = overlayColor;
+    const overlayMixAmount = clamp(overlayAmount, 0, 1);
+    const overlayMix = mix(color, overlayColor, overlayMixAmount);
+    const overlayAdd = min(vec3(1), color.add(overlayColor.mul(overlayAmount)));
+    const overlayMultiply = color.mul(
+      mix(vec3(1), overlayColor, overlayMixAmount),
+    );
+    const overlayResult = select(
+      uniforms.overlayTextureMode.lessThan(1.5),
+      overlayReplace,
+      select(
+        uniforms.overlayTextureMode.lessThan(2.5),
+        overlayMix,
+        select(
+          uniforms.overlayTextureMode.lessThan(3.5),
+          overlayAdd,
+          overlayMultiply,
+        ),
+      ),
+    );
+    color.assign(mix(color, overlayResult, overlayMask));
 
     const brightenMask = max(
       step(0.01, uniforms.brighten),
@@ -1192,105 +1142,6 @@ function createCompositeOutputNode(
     ).rgb;
     const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
     color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
-    color.assign(hueRotateNode(color, uniforms.hueShift));
-    color.assign(applySaturationNode(color, uniforms.saturation));
-    color.assign(applyContrastNode(color, uniforms.contrast));
-    color.assign(color.mul(uniforms.colorScale));
-    color.assign(color.mul(uniforms.tint));
-
-    const overlayMask = step(0.5, uniforms.overlayTextureSource)
-      .mul(step(0.5, uniforms.overlayTextureMode))
-      .mul(step(0.0001, uniforms.overlayTextureAmount));
-    const overlayUv = baseUv
-      .mul(uniforms.overlayTextureScale)
-      .add(uniforms.overlayTextureOffset);
-    const overlaySample = sampleAuxTextureNode(
-      uniforms.overlayTextureSource,
-      uniforms.overlayTextureSampleDimension,
-      overlayUv,
-      uniforms.overlayTextureVolumeSliceZ,
-    ).rgb;
-    const overlayColor = mix(
-      overlaySample,
-      vec3(1).sub(overlaySample),
-      step(0.5, uniforms.overlayTextureInvert),
-    );
-    const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
-    const overlayMixAmount = clamp(overlayAmount, 0, 1);
-    const overlayMix = mix(color, overlayColor, overlayMixAmount);
-    const overlayAdd = min(vec3(1), color.add(overlayColor.mul(overlayAmount)));
-    const overlayMultiply = color.mul(
-      mix(vec3(1), overlayColor, overlayMixAmount),
-    );
-    const overlayResult = select(
-      uniforms.overlayTextureMode.lessThan(2.5),
-      overlayMix,
-      select(
-        uniforms.overlayTextureMode.lessThan(3.5),
-        overlayAdd,
-        overlayMultiply,
-      ),
-    );
-    color.assign(mix(color, overlayResult, overlayMask));
-
-    const spectralUvA = baseUv
-      .mul(
-        vec2(
-          float(1.4).add(uniforms.signalBass.mul(0.8)),
-          float(1.1).add(uniforms.signalMid.mul(0.6)),
-        ),
-      )
-      .add(
-        vec2(uniforms.signalTime.mul(0.035), uniforms.signalTime.mul(-0.02)),
-      );
-    const spectralUvB = baseUv
-      .mul(
-        vec2(
-          float(2).add(uniforms.signalTreb.mul(0.9)),
-          float(1.7).add(uniforms.signalBass.mul(0.5)),
-        ),
-      )
-      .sub(
-        vec2(uniforms.signalTime.mul(0.018), uniforms.signalTime.mul(-0.026)),
-      );
-    const spectralA = sampleAuxTextureNode(
-      float(2),
-      float(0),
-      spectralUvA,
-      0,
-    ).rgb;
-    const spectralB = sampleAuxTextureNode(
-      float(5),
-      float(0),
-      spectralUvB,
-      0,
-    ).rgb;
-    const spectralPulse = sin(
-      baseUv.x
-        .add(baseUv.y)
-        .mul(18)
-        .add(uniforms.signalTime.mul(2.4))
-        .add(uniforms.signalBeat.mul(Math.PI)),
-    ).mul(0.15);
-    const spectralField = smoothstep(
-      0.38,
-      0.92,
-      dot(mix(spectralA, spectralB, 0.5), vec3(0.3333333)).add(spectralPulse),
-    );
-    const spectralTint = vec3(
-      float(0.35).add(uniforms.signalBass.mul(0.9)),
-      float(0.25).add(uniforms.signalMid.mul(0.8)),
-      float(0.45).add(uniforms.signalTreb.mul(1.1)),
-    );
-    color.addAssign(
-      spectralTint
-        .mul(spectralField)
-        .mul(
-          float(0.06)
-            .add(uniforms.signalEnergy.mul(0.18))
-            .add(uniforms.signalBeat.mul(0.08)),
-        ),
-    );
 
     const gammaAdjusted = pow(
       max(color, vec3(0)),
@@ -1323,15 +1174,7 @@ class WebGPUMilkdropFeedbackManager {
     this.camera.position.z = 1;
     this.viewportWidth = width;
     this.viewportHeight = height;
-    this.auxTextures = {
-      noise: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.noise),
-      simplex: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex),
-      voronoi: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.voronoi),
-      aura: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.aura, true),
-      caustics: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.caustics),
-      pattern: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.pattern),
-      fractal: loadMilkdropTexture(MILKDROP_TEXTURE_FILES.fractal),
-    };
+    this.auxTextures = getSharedMilkdropAuxTextures();
     this.sceneTarget = createFeedbackRenderTarget(
       width,
       height,
@@ -1415,6 +1258,9 @@ class WebGPUMilkdropFeedbackManager {
       Math.abs(state.zoom - 1) > 0.0001 ||
       state.videoEchoOrientation !== 0 ||
       state.feedbackTexture > 0.5 ||
+      hasOverlayReplaceFeedback(state) ||
+      hasOverlayBlendFeedback(state) ||
+      hasWarpTextureFeedback(state) ||
       state.brighten > 0.5 ||
       state.darken > 0.5 ||
       state.darkenCenter > 0.5 ||
@@ -1435,6 +1281,7 @@ class WebGPUMilkdropFeedbackManager {
     }
 
     this.compositeMaterial.uniforms.mixAlpha.value = state.mixAlpha;
+    this.compositeMaterial.uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
     this.compositeMaterial.uniforms.zoom.value = state.zoom;
     this.compositeMaterial.uniforms.videoEchoOrientation.value =
       state.videoEchoOrientation;
@@ -1583,9 +1430,6 @@ class WebGPUMilkdropFeedbackManager {
   dispose() {
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
-    Object.values(this.auxTextures).forEach((textureValue) => {
-      textureValue.dispose();
-    });
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     this.compositeScene.clear();

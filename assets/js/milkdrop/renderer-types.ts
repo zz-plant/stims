@@ -9,6 +9,22 @@ import type {
 } from './compiler-types.ts';
 import type { MilkdropRuntimeSignals } from './runtime-types.ts';
 
+export type MilkdropPostprocessingProfile = {
+  enabled: boolean;
+  bloomStrength: number;
+  bloomRadius: number;
+  bloomThreshold: number;
+  afterimageDamp: number;
+  filmNoise: number;
+  filmScanlines: number;
+  filmScanlineCount: number;
+  vignetteStrength: number;
+  chromaOffset: number;
+  saturation: number;
+  contrast: number;
+  pulseWarp: number;
+};
+
 export type MilkdropColor = {
   r: number;
   g: number;
@@ -130,15 +146,20 @@ export type MilkdropProceduralWaveVisual = {
 
 export type MilkdropProceduralCustomWaveVisual = {
   samples: number[];
+  sampleValues2?: number[];
   spectrum: boolean;
   centerX: number;
   centerY: number;
   scaling: number;
   mystery: number;
   time: number;
+  sampleCount?: number;
+  signals?: MilkdropGpuFieldSignalInputs;
+  fieldProgram?: MilkdropGpuFieldProgramDescriptor | null;
   color: MilkdropColor;
   alpha: number;
   additive: boolean;
+  thickness: number;
 };
 
 export type MilkdropProceduralMotionVectorFieldVisual =
@@ -151,7 +172,19 @@ export type MilkdropProceduralMotionVectorFieldVisual =
     legacyControls: boolean;
     program: MilkdropGpuFieldProgramDescriptor | null;
     signals: MilkdropGpuFieldSignalInputs;
+    tint?: MilkdropColor;
+    alpha?: number;
   };
+
+export type MilkdropParticleFieldVisual = {
+  enabled: boolean;
+  instanceCount: number;
+  size: number;
+  alpha: number;
+  motionScale: number;
+  seed: number;
+  anchorSource: 'mesh-field';
+};
 
 export type MilkdropGpuGeometryHints = {
   mainWave: MilkdropProceduralWaveVisual | null;
@@ -159,6 +192,7 @@ export type MilkdropGpuGeometryHints = {
   customWaves: MilkdropProceduralCustomWaveVisual[];
   meshField: MilkdropProceduralMeshFieldVisual | null;
   motionVectorField: MilkdropProceduralMotionVectorFieldVisual | null;
+  particleField?: MilkdropParticleFieldVisual | null;
 };
 
 export type MilkdropGpuInteractionTransform = {
@@ -181,6 +215,7 @@ export type MilkdropPostVisual = {
   feedbackTexture: boolean;
   outerBorderStyle: boolean;
   innerBorderStyle: boolean;
+  redBlueStereo?: boolean;
   shaderControls: MilkdropShaderControls;
   shaderPrograms: {
     warp: MilkdropShaderProgramPayload | null;
@@ -197,6 +232,7 @@ export type MilkdropPostVisual = {
   videoEchoZoom: number;
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   warp: number;
+  postprocessingProfile?: MilkdropPostprocessingProfile | null;
 };
 
 export type MilkdropFrameState = {
@@ -253,6 +289,7 @@ export type MilkdropFeedbackCompositeState = {
     comp: MilkdropShaderProgramPayload | null;
   };
   mixAlpha: number;
+  videoEchoAlpha: number;
   zoom: number;
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   brighten: number;

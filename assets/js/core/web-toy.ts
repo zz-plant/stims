@@ -12,8 +12,7 @@ import type {
   LightConfig,
 } from '../lighting/lighting-setup';
 import { initAmbientLight, initLighting } from '../lighting/lighting-setup';
-import type { FrequencyAnalyser } from '../utils/audio-handler';
-import { ensureWebGL } from '../utils/webgl-check';
+import type { FrequencyAnalyser } from './audio-handler';
 import { initCamera } from './camera-setup.ts';
 import type { RendererInitConfig } from './renderer-setup.ts';
 import { initScene, type SceneConfig } from './scene-setup.ts';
@@ -26,6 +25,7 @@ import {
   createToyViewportSession,
   type ToyViewportState,
 } from './toy-viewport-session.ts';
+import { ensureWebGL } from './webgl-check';
 
 type CameraOptions = NonNullable<Parameters<typeof initCamera>[0]>;
 type SceneOptions = SceneConfig & Record<string, unknown>;

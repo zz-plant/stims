@@ -61,9 +61,9 @@ describe('milkdrop catalog store', () => {
     expect(bundled).toBeDefined();
     expect(bundled?.supports.webgl.status).toBe('supported');
     expect(bundled?.supports.webgpu.status).toBe('supported');
-    expect(bundled?.fidelityClass).toBe('exact');
-    expect(bundled?.visualEvidenceTier).toBe('visual');
-    expect(bundled?.evidence.visual).toBe('reference-suite');
+    expect(bundled?.fidelityClass).toBe('partial');
+    expect(bundled?.visualEvidenceTier).toBe('runtime');
+    expect(bundled?.evidence.visual).toBe('not-captured');
   });
 
   test('derives backend support, favorites, ratings, and history from preset analysis', async () => {
@@ -112,9 +112,10 @@ describe('milkdrop catalog store', () => {
 
     expect(bundled?.supports.webgl.status).toBe('supported');
     expect(bundled?.supports.webgpu.status).toBe('supported');
-    expect(bundled?.fidelityClass).toBe('exact');
+    expect(bundled?.fidelityClass).toBe('partial');
     expect(bundled?.certification).toBe('bundled');
-    expect(bundled?.visualEvidenceTier).toBe('visual');
+    expect(bundled?.visualEvidenceTier).toBe('runtime');
+    expect(bundled?.evidence.visual).toBe('not-captured');
     expect(bundled?.featuresUsed).toContain('video-echo');
     expect(bundled?.featuresUsed).toContain('custom-waves');
 
@@ -184,6 +185,87 @@ describe('milkdrop catalog store', () => {
 
     const entries = await store.listPresets();
     expect(entries.map((entry) => entry.id)).toContain('memory-only');
+  });
+
+  test('merges supplemental vendored library manifests into the runtime catalog', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: 'aurora-feedback-core',
+                title: 'Aurora Feedback Core',
+                file: '/milkdrop-presets/aurora-feedback-core.milk',
+                order: 1,
+              },
+            ],
+          }),
+        };
+      }
+
+      if (
+        url.endsWith(
+          '/milkdrop-presets/libraries/projectm-upstream/catalog.json',
+        )
+      ) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: '250-wavecode',
+                title: '250 Wavecode',
+                file: '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+                order: 1000,
+                tags: ['collection:vendored-projectm', 'vendored-library'],
+                certification: 'exploratory',
+                corpusTier: 'exploratory',
+              },
+            ],
+          }),
+        };
+      }
+
+      if (url.endsWith('/milkdrop-presets/aurora-feedback-core.milk')) {
+        return {
+          ok: true,
+          text: async () => 'title=Aurora Feedback Core\nvideo_echo=1\n',
+        };
+      }
+
+      if (
+        url.endsWith(
+          '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+        )
+      ) {
+        return {
+          ok: true,
+          text: async () =>
+            'title=250 Wavecode\nwavecode_0_enabled=1\nwavecode_0_samples=512\n',
+        };
+      }
+
+      return { ok: false };
+    }) as unknown as typeof fetch;
+
+    const store = createMilkdropCatalogStore({
+      dbName: 'milkdrop-catalog-store-vendored-library-test',
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+
+    const entries = await store.listPresets();
+    const vendored = entries.find((entry) => entry.id === '250-wavecode');
+
+    expect(entries.map((entry) => entry.id)).toContain('250-wavecode');
+    expect(vendored?.certification).toBe('exploratory');
+    expect(vendored?.corpusTier).toBe('exploratory');
+    expect(vendored?.tags).toContain('collection:vendored-projectm');
+    expect(vendored?.bundledFile).toBe(
+      '/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk',
+    );
   });
 
   test('falls back to memory storage when indexedDB open stalls', async () => {

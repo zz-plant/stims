@@ -69,44 +69,58 @@ The following tools are only available from the Bun/Node stdio server (`bun run 
 
 - All tool calls follow MCP stdio conventions. Successful calls return a `content` array with either `text` or `json` entries.
 - Validation errors surface when inputs don’t satisfy the schemas above (for example, passing a number for `slug`).
-- `get_toys` reads from the generated toy manifest (which is built from `assets/data/toys.json`, `assets/data/toys.yaml`, or `assets/data/toys.yml`); keep that file up to date so MCP clients surface accurate metadata.
+- `get_toys` reads from the generated toy manifest built from `assets/data/toys.json`; keep that file up to date so MCP clients surface accurate metadata.
 
 ## Troubleshooting tips
 
 - **Manifest resolution:** The loader summary references `/.vite/manifest.json`; when discussing loader behavior with `describe_loader`, ensure a Vite dev server or build has produced the manifest so paths resolve correctly.
-- **Slug filters:** If `get_toys` returns “No toys matched the requested filters,” double-check the slug in your toy metadata registry file (`assets/data/toys.json`, `assets/data/toys.yaml`, or `assets/data/toys.yml`) or omit filters to retrieve the full catalog.
+- **Slug filters:** If `get_toys` returns “No toys matched the requested filters,” double-check the slug in `assets/data/toys.json` or omit filters to retrieve the full catalog.
 - **Client invocation:** MCP clients must launch `bun run mcp` in the repository root; running elsewhere can block access to `README.md`, the toy data file, or the Vite manifest.
 
 ## Cloudflare Worker deployment (optional transport)
 
-[`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts) serves the same tools over Streamable HTTP (POST requests for JSON-RPC, GET + `text/event-stream` for streaming responses) and WebSocket upgrades on the `/mcp` route. The worker bundles markdown and toy metadata at build time via `?raw` imports, so it does not rely on file system access in production.
+[`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts) serves the same tools over Streamable HTTP (POST requests for JSON-RPC, GET + `text/event-stream` for streaming responses) and WebSocket upgrades on the `/mcp` route. The worker bundles markdown and toy metadata at build time via Wrangler `Text` module rules, so it does not rely on file system access in production.
 
 - **Schema validation:** Uses `CfWorkerJsonSchemaValidator` from `@modelcontextprotocol/sdk/validation/cfworker` (peer dependency: `@cfworker/json-schema`).
 - **Bindings:** No KV, D1, or other bindings are required.
 
-### `wrangler.toml` example
+### `wrangler.mcp.jsonc`
 
-The Worker uses the repository’s pinned compatibility date (`2024-10-20`) to keep WebSocket support consistent with `wrangler.toml` and the deployment snippets in `docs/DEPLOYMENT.md`.
+The Worker uses a dedicated Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc) so the MCP transport can evolve independently from the Pages project config in [`wrangler.toml`](../wrangler.toml).
 
-```toml
-name = "stims"
-main = "scripts/mcp-worker.ts"
-compatibility_date = "2024-10-20"
-workers_dev = true
-compatibility_flags = ["nodejs_compat"]
+```jsonc
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "stims",
+  "main": "scripts/mcp-worker.ts",
+  "compatibility_date": "2024-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/*.md"],
+      "fallthrough": false
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": true
+}
 ```
 
 ### Deploying
 
 1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
-2. Keep Worker naming aligned with `wrangler.toml` unless you intentionally override `--name` for a separate environment.
+2. Validate the Worker bundle and config:
+   ```bash
+   bun run mcp:check
+   ```
 3. Deploy with Wrangler:
    ```bash
-   bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
+   bun run mcp:deploy
    ```
 4. Local preview (Worker fetch + WebSocket support):
    ```bash
-   bunx wrangler dev scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
+   bun run mcp:dev
    ```
 
 ### Client endpoints

@@ -8,8 +8,102 @@ const COLLECTION_LABELS: Record<string, string> = {
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:feedback-lab': 'Feedback Lab',
   'collection:low-motion': 'Low Motion',
+  'collection:rovastar-and-collaborators': 'Rovastar and collaborators',
   'collection:touch-friendly': 'Touch Friendly',
 };
+const HIDDEN_COLLECTION_FILTER_TAGS = new Set([
+  'collection:feedback-lab',
+  'collection:low-motion',
+]);
+const CLASSIC_MILKDROP_TAGS = new Set([
+  'collection:classic-milkdrop',
+  'collection:cream-of-the-crop',
+  'original-pack',
+]);
+const CLASSIC_AUTHOR_MARKERS = ['rovastar', 'eo.s.', 'krash', 'phat', 'geiss'];
+
+function normalizeBrowseSearchValue(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, ' ')
+    .trim();
+}
+
+function tokenizeBrowseQuery(query: string) {
+  return normalizeBrowseSearchValue(query).split(/\s+/u).filter(Boolean);
+}
+
+function collectionLabel(tag: string) {
+  if (!tag) return '';
+  return (
+    COLLECTION_LABELS[tag] ??
+    tag.slice(COLLECTION_TAG_PREFIX.length).replace(/-/gu, ' ')
+  );
+}
+
+function hasClassicMilkdropLineage(preset: MilkdropCatalogEntry) {
+  if (preset.tags.some((tag) => CLASSIC_MILKDROP_TAGS.has(tag))) {
+    return true;
+  }
+
+  const author = preset.author?.toLowerCase() ?? '';
+  return CLASSIC_AUTHOR_MARKERS.some((marker) => author.includes(marker));
+}
+
+function isRovastarPreset(preset: MilkdropCatalogEntry) {
+  const searchable = [preset.title, preset.author ?? '', ...preset.tags].join(
+    ' ',
+  );
+  return normalizeBrowseSearchValue(searchable).includes('rovastar');
+}
+
+function getBrowseSearchTerms(preset: MilkdropCatalogEntry) {
+  const terms = new Set<string>([
+    preset.title,
+    preset.author ?? '',
+    ...preset.tags,
+    ...preset.tags
+      .filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX))
+      .map((tag) => collectionLabel(tag)),
+  ]);
+
+  if (isRovastarPreset(preset)) {
+    terms.add('rovastar');
+    terms.add('rovastar classics');
+  }
+
+  if (hasClassicMilkdropLineage(preset)) {
+    terms.add('classic milkdrop');
+    terms.add('milkdrop classics');
+    terms.add('winamp milkdrop');
+    terms.add('geiss');
+    terms.add('ryan geiss');
+  }
+
+  return [...terms]
+    .map((value) => normalizeBrowseSearchValue(value))
+    .filter(Boolean);
+}
+
+function matchesBrowseQuery(preset: MilkdropCatalogEntry, query: string) {
+  const normalizedQuery = normalizeBrowseSearchValue(query);
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const terms = getBrowseSearchTerms(preset);
+  if (terms.some((term) => term.includes(normalizedQuery))) {
+    return true;
+  }
+
+  const queryTokens = tokenizeBrowseQuery(normalizedQuery);
+  if (queryTokens.length === 0) {
+    return true;
+  }
+
+  const combinedTerms = terms.join(' ');
+  return queryTokens.every((token) => combinedTerms.includes(token));
+}
 
 export type BrowseMode = 'featured' | 'all' | 'recent' | 'favorites';
 export type BrowseSort = 'recommended' | 'title' | 'rating' | 'recent';
@@ -59,11 +153,7 @@ export function matchesBrowseFilters({
     return true;
   }
 
-  return (
-    preset.title.toLowerCase().includes(query) ||
-    preset.author?.toLowerCase().includes(query) ||
-    preset.tags.some((tag) => tag.toLowerCase().includes(query))
-  );
+  return matchesBrowseQuery(preset, query);
 }
 
 export function sortBrowsePresets({
@@ -118,6 +208,7 @@ export class BrowsePanel {
 
   private readonly rowRenderer: PresetRowRenderer;
   private readonly browseList: HTMLElement;
+  private readonly browseEyebrowLabel: HTMLElement;
   private readonly browseActiveLabel: HTMLElement;
   private readonly browseMetaLabel: HTMLElement;
   private readonly browseModeButtons: HTMLButtonElement[] = [];
@@ -125,7 +216,6 @@ export class BrowsePanel {
   private readonly searchInput: HTMLInputElement;
   private readonly collectionFilters: HTMLElement;
   private readonly browseModeSelect: HTMLSelectElement;
-  private readonly browseSupportSelect: HTMLSelectElement;
   private readonly browseSortSelect: HTMLSelectElement;
   private presets: MilkdropCatalogEntry[] = [];
   private activePresetId: string | null = null;
@@ -138,6 +228,7 @@ export class BrowsePanel {
   private browseDirty = true;
   private lastCatalogSignature = '';
   private lastBrowseRenderSignature = '';
+  private lastCollectionFilterSignature = '';
   private visible = true;
 
   constructor(callbacks: BrowsePanelCallbacks) {
@@ -150,25 +241,37 @@ export class BrowsePanel {
     const browseCopy = document.createElement('div');
     browseCopy.className = 'milkdrop-overlay__browse-copy';
 
+    this.browseEyebrowLabel = document.createElement('p');
+    this.browseEyebrowLabel.className = 'milkdrop-overlay__browse-eyebrow';
+    this.browseEyebrowLabel.textContent = 'Featured looks';
+
     this.browseActiveLabel = document.createElement('div');
     this.browseActiveLabel.className = 'milkdrop-overlay__browse-active';
-    this.browseActiveLabel.textContent = 'Loading presets...';
+    this.browseActiveLabel.textContent = 'Choose a look';
     this.browseActiveLabel.setAttribute('aria-live', 'polite');
     this.browseActiveLabel.setAttribute('aria-atomic', 'true');
 
     this.browseMetaLabel = document.createElement('p');
     this.browseMetaLabel.className = 'milkdrop-overlay__browse-meta';
-    this.browseMetaLabel.textContent = 'Loading status…';
+    this.browseMetaLabel.textContent = '';
     this.browseMetaLabel.setAttribute('aria-live', 'polite');
     this.browseMetaLabel.setAttribute('role', 'status');
-    browseCopy.append(this.browseActiveLabel, this.browseMetaLabel);
+    this.browseMetaLabel.hidden = true;
+    browseCopy.append(
+      this.browseEyebrowLabel,
+      this.browseActiveLabel,
+      this.browseMetaLabel,
+    );
     browseHero.append(browseCopy);
 
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'search';
     this.searchInput.className = 'milkdrop-overlay__search';
-    this.searchInput.placeholder = 'Search presets';
-    this.searchInput.setAttribute('aria-label', 'Search presets');
+    this.searchInput.placeholder = 'Search looks, authors, or classic names';
+    this.searchInput.setAttribute(
+      'aria-label',
+      'Search looks, authors, or classic names',
+    );
     this.searchInput.addEventListener('input', () => this.scheduleRender());
 
     this.browseModeSelect = document.createElement('select');
@@ -176,7 +279,7 @@ export class BrowsePanel {
     (
       [
         ['featured', 'Featured'],
-        ['all', 'All presets'],
+        ['all', 'All looks'],
         ['recent', 'Recent'],
         ['favorites', 'Favorites'],
       ] satisfies Array<[BrowseMode, string]>
@@ -189,28 +292,6 @@ export class BrowsePanel {
     this.browseModeSelect.addEventListener('change', () =>
       this.setBrowseMode(this.browseModeSelect.value as BrowseMode),
     );
-
-    this.browseSupportSelect = document.createElement('select');
-    this.browseSupportSelect.className = 'milkdrop-overlay__rating-select';
-    (
-      [
-        ['all', 'Any fidelity'],
-        ['exact', 'Exact'],
-        ['near-exact', 'Near exact'],
-        ['partial', 'Partial'],
-        ['fallback', 'Fallback'],
-      ] satisfies Array<[BrowseFidelityFilter, string]>
-    ).forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      this.browseSupportSelect.appendChild(option);
-    });
-    this.browseSupportSelect.addEventListener('change', () => {
-      this.browseSupportFilter = this.browseSupportSelect
-        .value as BrowseFidelityFilter;
-      this.scheduleRender(0);
-    });
 
     this.browseSortSelect = document.createElement('select');
     this.browseSortSelect.className = 'milkdrop-overlay__rating-select';
@@ -235,14 +316,14 @@ export class BrowsePanel {
     const browseModeTabs = document.createElement('div');
     browseModeTabs.className = 'milkdrop-overlay__browse-mode-tabs';
     browseModeTabs.setAttribute('role', 'tablist');
-    browseModeTabs.setAttribute('aria-label', 'Preset browse modes');
+    browseModeTabs.setAttribute('aria-label', 'Look browse modes');
     browseModeTabs.addEventListener('keydown', (event) =>
       this.handleBrowseModeTabsKeydown(event),
     );
     (
       [
         ['featured', 'Featured'],
-        ['all', 'All presets'],
+        ['all', 'All looks'],
         ['recent', 'Recent'],
         ['favorites', 'Favorites'],
       ] satisfies Array<[BrowseMode, string]>
@@ -263,14 +344,13 @@ export class BrowsePanel {
     this.browseOptionsDisclosure.className = 'milkdrop-overlay__browse-options';
     const browseOptionsSummary = document.createElement('summary');
     browseOptionsSummary.className = 'milkdrop-overlay__browse-options-summary';
-    browseOptionsSummary.textContent = 'More filters';
+    browseOptionsSummary.textContent = 'Filter looks';
     this.browseOptionsDisclosure.appendChild(browseOptionsSummary);
 
     const browseOptionsBody = document.createElement('div');
     browseOptionsBody.className = 'milkdrop-overlay__browse-options-body';
     browseOptionsBody.append(
       this.buildBrowseControl('Browse', browseModeTabs),
-      this.buildBrowseControl('Fidelity', this.browseSupportSelect),
       this.buildBrowseControl('Sort', this.browseSortSelect),
     );
     this.browseOptionsDisclosure.appendChild(browseOptionsBody);
@@ -454,18 +534,21 @@ export class BrowsePanel {
     const activePreset = this.presets.find(
       (entry) => entry.id === this.activePresetId,
     );
+    const currentCollectionLabel = collectionLabel(this.activeCollectionTag);
+    this.browseEyebrowLabel.textContent = activePreset
+      ? 'Live preset'
+      : this.browseMode === 'favorites'
+        ? 'Saved looks'
+        : this.browseMode === 'recent'
+          ? 'Back in rotation'
+          : this.browseMode === 'all'
+            ? currentCollectionLabel || 'All looks'
+            : 'Featured looks';
     this.browseActiveLabel.textContent = activePreset
-      ? `Now playing ${activePreset.title}`
-      : 'No preset selected';
-
-    const modeLabel = this.browseModeSelect.selectedOptions[0]?.textContent;
-    this.browseMetaLabel.textContent = [
-      `${filteredCount} shown`,
-      modeLabel,
-      this.activeBackend.toUpperCase(),
-    ]
-      .filter(Boolean)
-      .join(' · ');
+      ? activePreset.title
+      : currentCollectionLabel || 'Choose a look';
+    this.browseMetaLabel.textContent = `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'}`;
+    this.browseMetaLabel.hidden = false;
   }
 
   private appendPresetSection(
@@ -540,6 +623,24 @@ export class BrowsePanel {
       sections.push({ title, presets: recovery });
     }
 
+    const rovastar = filtered
+      .filter((preset) => isRovastarPreset(preset) && !seen.has(preset.id))
+      .slice(0, 4);
+    if (rovastar.length > 0) {
+      rovastar.forEach((preset) => seen.add(preset.id));
+      sections.push({ title: 'Rovastar and collaborators', presets: rovastar });
+    }
+
+    const classics = filtered
+      .filter(
+        (preset) => hasClassicMilkdropLineage(preset) && !seen.has(preset.id),
+      )
+      .slice(0, 6);
+    if (classics.length >= 2) {
+      classics.forEach((preset) => seen.add(preset.id));
+      sections.push({ title: 'Classic MilkDrop staples', presets: classics });
+    }
+
     const recommended = this.dedupeBrowsePresets(filtered, seen).slice(0, 12);
     if (recommended.length > 0) {
       sections.push({ title: 'Recommended', presets: recommended });
@@ -602,7 +703,7 @@ export class BrowsePanel {
     if (filtered.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'milkdrop-overlay__browse-empty';
-      empty.textContent = 'No presets match the current filters.';
+      empty.textContent = 'No looks match this search yet.';
       this.browseList.replaceChildren(empty);
       return;
     }
@@ -641,20 +742,28 @@ export class BrowsePanel {
           preset.tags.filter((tag) => tag.startsWith(COLLECTION_TAG_PREFIX)),
         ),
       ),
-    ].sort((left, right) => {
-      return (COLLECTION_LABELS[left] ?? left).localeCompare(
-        COLLECTION_LABELS[right] ?? right,
-      );
-    });
+    ]
+      .filter((tag) => !HIDDEN_COLLECTION_FILTER_TAGS.has(tag))
+      .sort((left, right) => {
+        return (COLLECTION_LABELS[left] ?? left).localeCompare(
+          COLLECTION_LABELS[right] ?? right,
+        );
+      });
+    const collectionFilterSignature = [
+      this.activeCollectionTag,
+      collectionTags.join('|'),
+    ].join('||');
+    if (collectionFilterSignature === this.lastCollectionFilterSignature) {
+      return;
+    }
+    this.lastCollectionFilterSignature = collectionFilterSignature;
 
     const fragment = document.createDocumentFragment();
     const options = [
-      { tag: '', label: 'All presets' },
+      { tag: '', label: 'All looks' },
       ...collectionTags.map((tag) => ({
         tag,
-        label:
-          COLLECTION_LABELS[tag] ??
-          tag.slice(COLLECTION_TAG_PREFIX.length).replace(/-/gu, ' '),
+        label: collectionLabel(tag),
       })),
     ];
 

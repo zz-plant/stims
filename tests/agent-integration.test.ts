@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
-import { type ChildProcess, spawn } from 'node:child_process';
+import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -96,14 +96,34 @@ async function createMobilePage() {
     hasTouch: true,
   });
   const page = await context.newPage();
+
+  const forceCloseChromium = () => {
+    spawnSync('pkill', ['-f', 'playwright_chromiumdev_profile'], {
+      stdio: 'ignore',
+    });
+  };
+
+  const closeBrowser = async () => {
+    await context.close().catch(() => {});
+    const closeResult = await Promise.race([
+      browser
+        .close()
+        .then(() => 'closed' as const)
+        .catch(() => 'closed' as const),
+      new Promise<'timeout'>((resolve) => {
+        setTimeout(() => resolve('timeout'), 1500);
+      }),
+    ]);
+    if (closeResult === 'timeout') {
+      forceCloseChromium();
+    }
+  };
+
   return {
     browser,
     context,
     page,
-    close: async () => {
-      await context.close();
-      await browser.close();
-    },
+    close: closeBrowser,
   };
 }
 
@@ -116,6 +136,34 @@ beforeAll(async () => {
 afterAll(async () => {
   await stopDevServer();
 });
+
+integrationTest(
+  'homepage launchpad CTA opens the milkdrop shell',
+  async () => {
+    await ensureDevServer();
+    const mobile = await createMobilePage();
+
+    try {
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/`);
+      await mobile.page.locator('.hero-cta-row a[href="/milkdrop/"]').click();
+      await mobile.page.waitForURL(`http://127.0.0.1:${TEST_PORT}/milkdrop/`);
+      await mobile.page.waitForSelector('[data-audio-controls]');
+
+      const launchpadState = await mobile.page.evaluate(() => ({
+        hasAudioControls: Boolean(
+          document.querySelector('[data-audio-controls]'),
+        ),
+        hasQuickCheck: Boolean(document.querySelector('.preflight-panel')),
+      }));
+
+      expect(launchpadState.hasAudioControls).toBe(true);
+      expect(launchpadState.hasQuickCheck).toBe(true);
+    } finally {
+      await mobile.close();
+    }
+  },
+  { timeout: 45000 },
+);
 
 integrationTest(
   'agents can launch and capture milkdrop',
@@ -177,18 +225,30 @@ integrationTest(
       );
       const focusedSessionState = await mobile.page.evaluate(() => ({
         focusedSession: document.documentElement.dataset.focusedSession ?? null,
+        activeBackend: document.body.dataset.activeBackend ?? null,
         audioControlsHidden: Boolean(
           document
             .querySelector('[data-audio-controls]')
             ?.hasAttribute('hidden'),
         ),
+        fallbackNotice: Array.from(
+          document.querySelectorAll(
+            '[role="status"], .status-pill, .renderer-pill',
+          ),
+        )
+          .map((node) => node.textContent ?? '')
+          .join(' '),
         canvasVisible:
           (document.querySelector('canvas')?.getBoundingClientRect().width ??
             0) > 0,
       }));
       expect(focusedSessionState.focusedSession).toBe('live');
+      expect(focusedSessionState.activeBackend).toBe('webgl');
       expect(focusedSessionState.audioControlsHidden).toBe(true);
       expect(focusedSessionState.canvasVisible).toBe(true);
+      expect(focusedSessionState.fallbackNotice).toContain(
+        'Using a simpler renderer',
+      );
     } finally {
       await mobile.close();
     }

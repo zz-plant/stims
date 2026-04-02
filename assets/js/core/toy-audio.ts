@@ -1,13 +1,10 @@
-import type { AudioInitOptions } from '../utils/audio-handler';
-import {
-  AudioAccessError,
-  getCachedDemoAudioStream,
-} from '../utils/audio-handler';
 import {
   type AnimationContext,
   type AudioLoopToy,
   startAudioLoop,
 } from './animation-loop';
+import type { AudioInitOptions } from './audio-handler';
+import { AudioAccessError, getCachedDemoAudioStream } from './audio-handler';
 
 export type ToyAudioRequest =
   | boolean

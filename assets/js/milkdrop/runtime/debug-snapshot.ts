@@ -1,4 +1,6 @@
 import type { AdaptiveQualityState } from '../../core/services/adaptive-quality-controller.ts';
+import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
+import type { createMilkdropRendererAdapter } from '../renderer-adapter-factory.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -51,5 +53,45 @@ export function buildAgentMilkdropDebugSnapshot({
       shapes: frameState.shapes,
       post: frameState.post,
     },
+  };
+}
+
+export function registerAgentMilkdropRuntimeDebugHandle({
+  isAgentMode,
+  getRuntime,
+  getAdapter,
+  getState,
+}: {
+  isAgentMode: () => boolean;
+  getRuntime: () => ToyRuntimeInstance | null;
+  getAdapter: () => ReturnType<typeof createMilkdropRendererAdapter> | null;
+  getState: () => {
+    activePresetId: string;
+    backend: 'webgl' | 'webgpu';
+    status: string | null;
+  };
+}) {
+  if (typeof window === 'undefined' || !isAgentMode()) {
+    return;
+  }
+
+  (
+    window as Window & {
+      __milkdropRuntimeDebug?: {
+        getRuntime: () => ToyRuntimeInstance | null;
+        getAdapter: () => ReturnType<
+          typeof createMilkdropRendererAdapter
+        > | null;
+        getState: () => {
+          activePresetId: string;
+          backend: 'webgl' | 'webgpu';
+          status: string | null;
+        };
+      };
+    }
+  ).__milkdropRuntimeDebug = {
+    getRuntime,
+    getAdapter,
+    getState,
   };
 }

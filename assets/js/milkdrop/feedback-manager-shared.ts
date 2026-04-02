@@ -18,14 +18,22 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { disposeMaterial } from '../utils/three-dispose';
+import type {
+  FeedbackBackendProfile,
+  MilkdropBackendBehavior,
+} from './backend-behavior';
+import {
+  MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
+  MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
+  MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
+  MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
+} from './feedback-composite-profile.ts';
 import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
-import type {
-  FeedbackBackendProfile,
-  MilkdropBackendBehavior,
-} from './renderer-adapter.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -133,22 +141,28 @@ function getSharedAuxTextures(): SharedAuxTextureMap {
 function createFeedbackRenderTarget(
   width: number,
   height: number,
-  behavior: MilkdropBackendBehavior,
+  {
+    resolutionScale,
+    useHalfFloatFeedback,
+    samples,
+  }: {
+    resolutionScale: number;
+    useHalfFloatFeedback: boolean;
+    samples: number;
+  },
 ) {
-  const profile = behavior.feedbackProfile;
-  const resolutionScale = profile.feedbackResolutionScale;
   const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
   const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
   const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
     minFilter: LinearFilter,
     magFilter: LinearFilter,
-    ...(behavior.useHalfFloatFeedback
+    ...(useHalfFloatFeedback
       ? {
           type: HalfFloatType,
         }
       : {}),
   });
-  target.samples = profile.samples;
+  target.samples = samples;
   return target;
 }
 
@@ -156,11 +170,11 @@ export function createCompositeFragmentShaderVariant(
   source: string,
   {
     enhancedFeedbackBlur = false,
-    currentFrameBoostCap = 0.3,
+    currentFrameBoostCap = MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
   }: MilkdropCompositeShaderConfig = {},
 ) {
   const blurBlock = enhancedFeedbackBlur
-    ? `if (feedbackSoftness > 0.01) {
+    ? `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
             vec2 sampleOffset = texelSize * (0.65 + feedbackSoftness * 0.6);
             vec3 softened = (
               previous.rgb +
@@ -179,8 +193,8 @@ export function createCompositeFragmentShaderVariant(
               clamp(feedbackSoftness * 0.6, 0.0, 0.65)
             );
           }`
-    : `if (feedbackSoftness > 0.01) {
-            vec2 sampleOffset = texelSize * (0.75 + feedbackSoftness * 0.5);
+    : `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
             vec3 softened = (
               previous.rgb +
               texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
@@ -191,7 +205,7 @@ export function createCompositeFragmentShaderVariant(
             previousColor = mix(
               previousColor,
               softened,
-              clamp(feedbackSoftness * 0.45, 0.0, 0.5)
+              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }`;
 
@@ -199,6 +213,11 @@ export function createCompositeFragmentShaderVariant(
     .replace(
       /if \(feedbackSoftness > 0\.01\) \{[\s\S]*?clamp\(feedbackSoftness \* 0\.45, 0\.0, 0\.5\)\s*\);\s*\}/,
       blurBlock,
+    )
+    .replace(
+      /color = mix\(\s*current\.rgb,\s*previousColor,\s*clamp\(mixAlpha \+ feedbackTexture \* 0\.2, 0\.0, 1\.0\)\s*\);/,
+      `color = mix(current.rgb, previousColor, clamp(videoEchoAlpha, 0.0, 1.0));
+          color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));`,
     )
     .replace(
       /color = mix\(color, current\.rgb, clamp\(currentFrameBoost, 0\.0, 0\.3\)\);/,
@@ -214,9 +233,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly presentMaterial: MeshBasicMaterial;
   readonly sceneTarget: WebGLRenderTarget;
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
-  readonly resolutionScale: number;
+  readonly sceneResolutionScale: number;
+  readonly feedbackResolutionScale: number;
   readonly profile: FeedbackBackendProfile;
   readonly auxTextures: SharedAuxTextureMap;
+  adaptiveFeedbackResolutionMultiplier = 1;
+  currentFeedbackResolutionScale: number;
+  viewportWidth: number;
+  viewportHeight: number;
   private index = 0;
 
   constructor(
@@ -225,13 +249,29 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     behavior: MilkdropBackendBehavior,
   ) {
     this.camera.position.z = 1;
+    this.viewportWidth = width;
+    this.viewportHeight = height;
     this.profile = behavior.feedbackProfile;
-    this.resolutionScale = this.profile.feedbackResolutionScale;
+    this.sceneResolutionScale = this.profile.sceneResolutionScale;
+    this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
+    this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
     this.auxTextures = getSharedAuxTextures();
-    this.sceneTarget = createFeedbackRenderTarget(width, height, behavior);
+    this.sceneTarget = createFeedbackRenderTarget(width, height, {
+      resolutionScale: this.sceneResolutionScale,
+      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: this.profile.samples,
+    });
     this.targets = [
-      createFeedbackRenderTarget(width, height, behavior),
-      createFeedbackRenderTarget(width, height, behavior),
+      createFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
+      createFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
     ];
     this.compositeMaterial = new ShaderMaterial({
       uniforms: {
@@ -245,6 +285,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         patternTex: { value: this.auxTextures.pattern },
         fractalTex: { value: this.auxTextures.fractal },
         mixAlpha: { value: 0.18 },
+        videoEchoAlpha: { value: 0 },
         zoom: { value: 1.02 },
         videoEchoOrientation: { value: 0 },
         brighten: { value: 0 },
@@ -316,6 +357,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform sampler2D patternTex;
         uniform sampler2D fractalTex;
         uniform float mixAlpha;
+        uniform float videoEchoAlpha;
         uniform float zoom;
         uniform float videoEchoOrientation;
         uniform float brighten;
@@ -486,7 +528,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             rotation * 0.6
           );
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
-            vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;
+            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
             vec2 warpVector =
               sampleAuxTexture(
                 warpTextureSource,
@@ -504,8 +546,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
           vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
           vec3 previousColor = previous.rgb;
-          if (feedbackSoftness > 0.01) {
-            vec2 sampleOffset = texelSize * (0.75 + feedbackSoftness * 0.5);
+          if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
             vec3 softened = (
               previous.rgb +
               texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
@@ -516,15 +558,45 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             previousColor = mix(
               previousColor,
               softened,
-              clamp(feedbackSoftness * 0.45, 0.0, 0.5)
+              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }
           vec3 color = mix(
             current.rgb,
             previousColor,
-            clamp(mixAlpha + feedbackTexture * 0.2, 0.0, 1.0)
+            clamp(videoEchoAlpha, 0.0, 1.0)
           );
-          color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, 0.3));
+          color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));
+          color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, ${MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP.toFixed(1)}));
+          color = hueRotate(color, hueShift);
+          color = applySaturation(color, saturation);
+          color = applyContrast(color, contrast);
+          color *= colorScale;
+          color *= tint;
+          bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;
+          bool overlayBlend = overlayTextureMode >= 1.5 && overlayTextureAmount > 0.0001;
+          if (overlayTextureSource > 0.5 && (overlayReplace || overlayBlend)) {
+            vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
+            vec3 overlayColor = sampleAuxTexture(
+              overlayTextureSource,
+              overlayTextureSampleDimension,
+              overlayUv,
+              overlayTextureVolumeSliceZ
+            ).rgb;
+            if (overlayTextureInvert > 0.5) {
+              overlayColor = 1.0 - overlayColor;
+            }
+            float amount = clamp(overlayTextureAmount, 0.0, 1.5);
+            if (overlayTextureMode < 1.5) {
+              color = overlayColor;
+            } else if (overlayTextureMode < 2.5) {
+              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
+            } else if (overlayTextureMode < 3.5) {
+              color = min(vec3(1.0), color + overlayColor * amount);
+            } else {
+              color *= mix(vec3(1.0), overlayColor, clamp(amount, 0.0, 1.0));
+            }
+          }
           if (brighten > 0.01 || brightenBoost > 0.01) {
             color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
           }
@@ -547,33 +619,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             vec3 leftColor = texture2D(previousTex, sampleUv(prevUv - stereoShift, textureWrap)).rgb;
             vec3 rightColor = texture2D(previousTex, sampleUv(prevUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
-          }
-          color = hueRotate(color, hueShift);
-          color = applySaturation(color, saturation);
-          color = applyContrast(color, contrast);
-          color *= colorScale;
-          color *= tint;
-          if (overlayTextureSource > 0.5 && overlayTextureMode > 0.5 && overlayTextureAmount > 0.0001) {
-            vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
-            vec3 overlayColor = sampleAuxTexture(
-              overlayTextureSource,
-              overlayTextureSampleDimension,
-              overlayUv,
-              overlayTextureVolumeSliceZ
-            ).rgb;
-            if (overlayTextureInvert > 0.5) {
-              overlayColor = 1.0 - overlayColor;
-            }
-            float amount = clamp(overlayTextureAmount, 0.0, 1.5);
-            if (overlayTextureMode < 1.5) {
-              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
-            } else if (overlayTextureMode < 2.5) {
-              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
-            } else if (overlayTextureMode < 3.5) {
-              color = min(vec3(1.0), color + overlayColor * amount);
-            } else {
-              color *= mix(vec3(1.0), overlayColor, clamp(amount, 0.0, 1.0));
-            }
           }
           color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
@@ -616,6 +661,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
     uniforms.mixAlpha.value = state.mixAlpha;
+    uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
     uniforms.zoom.value = state.zoom;
     uniforms.videoEchoOrientation.value = state.videoEchoOrientation;
     uniforms.brighten.value = state.brighten;
@@ -703,14 +749,53 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     return true;
   }
 
+  setAdaptiveQuality({
+    feedbackResolutionMultiplier,
+  }: Partial<{
+    feedbackResolutionMultiplier: number;
+  }>) {
+    const nextMultiplier = Math.min(
+      1,
+      Math.max(0.45, feedbackResolutionMultiplier ?? 1),
+    );
+    if (
+      Math.abs(nextMultiplier - this.adaptiveFeedbackResolutionMultiplier) <
+      0.0001
+    ) {
+      return;
+    }
+    this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
+    this.currentFeedbackResolutionScale =
+      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier;
+    this.resize(this.viewportWidth, this.viewportHeight);
+  }
+
   resize(width: number, height: number) {
-    const scaledWidth = Math.max(1, Math.round(width * this.resolutionScale));
-    const scaledHeight = Math.max(1, Math.round(height * this.resolutionScale));
-    this.sceneTarget.setSize(scaledWidth, scaledHeight);
-    this.targets.forEach((target) => target.setSize(scaledWidth, scaledHeight));
+    this.viewportWidth = width;
+    this.viewportHeight = height;
+    const sceneWidth = Math.max(
+      1,
+      Math.round(width * this.sceneResolutionScale),
+    );
+    const sceneHeight = Math.max(
+      1,
+      Math.round(height * this.sceneResolutionScale),
+    );
+    const feedbackWidth = Math.max(
+      1,
+      Math.round(width * this.currentFeedbackResolutionScale),
+    );
+    const feedbackHeight = Math.max(
+      1,
+      Math.round(height * this.currentFeedbackResolutionScale),
+    );
+    this.sceneTarget.setSize(sceneWidth, sceneHeight);
+    this.targets.forEach((target) =>
+      target.setSize(feedbackWidth, feedbackHeight),
+    );
     this.compositeMaterial.uniforms.texelSize.value.set(
-      1 / Math.max(1, scaledWidth),
-      1 / Math.max(1, scaledHeight),
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
     );
   }
 

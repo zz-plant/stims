@@ -1,0 +1,91 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Start" [ref=e14] [cursor=pointer]:
+              - /url: "#main-content"
+            - link "Controls" [ref=e15] [cursor=pointer]:
+              - /url: "#launch-panels"
+            - link "GitHub" [ref=e16] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e17]:
+            - link "Back home" [ref=e18] [cursor=pointer]:
+              - /url: /
+            - button "Switch to light mode" [pressed] [ref=e19] [cursor=pointer]:
+              - generic [ref=e20]: ☀️
+              - generic [ref=e21]: Light mode
+    - main: ▾ ▾
+  - generic [ref=e22]:
+    - generic [ref=e30]:
+      - paragraph [ref=e32]: MilkDrop Visualizer
+      - button "Controls" [ref=e35]
+    - complementary [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - generic [ref=e39]: Rovastar - Parallel Universe
+          - generic [ref=e40]: Loaded Rovastar - Parallel Universe.
+        - generic [ref=e41]:
+          - button "Shortcuts" [ref=e42]
+          - button "Close" [ref=e43]
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - button "Prev" [ref=e46]
+          - button "Next" [ref=e47]
+        - generic [ref=e49]:
+          - generic [ref=e50]: Transition
+          - combobox "Transition" [ref=e51]:
+            - option "Blend" [selected]
+            - option "Hard cut"
+        - generic [ref=e52]:
+          - text: Blend
+          - slider "Blend 2.50s" [ref=e53]: "2.5"
+          - generic [ref=e54]: 2.50s
+      - generic [ref=e55]:
+        - button "Looks" [pressed] [ref=e56]
+        - button "Tools" [ref=e57]
+      - generic [ref=e59]:
+        - generic [ref=e61]:
+          - paragraph [ref=e62]: Live preset
+          - generic [ref=e63]: Rovastar - Parallel Universe
+          - status [ref=e64]: 3 picks
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: Search
+            - searchbox "Search looks" [ref=e68]
+          - group [ref=e69]:
+            - generic "Filter looks" [ref=e70] [cursor=pointer]
+            - option "Recommended" [selected]
+            - option "Recently used"
+            - option "Top rated"
+            - option "Title"
+        - generic [ref=e71]:
+          - button "All looks" [ref=e72]
+          - button "Classic MilkDrop" [ref=e73]
+          - button "Cream of the Crop" [ref=e74]
+          - button "Feedback Lab" [ref=e75]
+          - button "Low Motion" [ref=e76]
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - button "Rovastar - Parallel Universe Live Rovastar · Recent" [ref=e79]:
+              - generic [ref=e80]:
+                - generic [ref=e81]: Rovastar - Parallel Universe
+                - generic [ref=e83]: Live
+              - generic [ref=e84]: Rovastar · Recent
+            - button "Save preset" [ref=e86]: ☆
+          - generic [ref=e87]:
+            - button "Eo.S. + Phat - Cubetrace v2 Eo.S. + Phat · Recent" [ref=e88]:
+              - generic [ref=e90]: Eo.S. + Phat - Cubetrace v2
+              - generic [ref=e91]: Eo.S. + Phat · Recent
+            - button "Save preset" [ref=e93]: ☆
+          - generic [ref=e94]:
+            - button "Krash & Rovastar - Cerebral Demons (Stars Remix) Krash & Rovastar · Recent" [ref=e95]:
+              - generic [ref=e97]: Krash & Rovastar - Cerebral Demons (Stars Remix)
+              - generic [ref=e98]: Krash & Rovastar · Recent
+            - button "Save preset" [ref=e100]: ☆

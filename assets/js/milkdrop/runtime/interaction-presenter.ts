@@ -5,10 +5,13 @@ import {
   type MilkdropOverlayActionHandlers,
 } from './ui-bridge';
 
+export type { MilkdropScenePickResult } from './ui-bridge';
+
 export function createMilkdropRuntimeInteractionPresenter({
   overlay,
   overlayActions,
   keybindingActions,
+  sceneInteractionActions,
 }: {
   overlay: {
     isOpen: () => boolean;
@@ -38,6 +41,9 @@ export function createMilkdropRuntimeInteractionPresenter({
     toggleFavorite: (id: string) => void;
     setRating: (id: string, rating: number) => void;
   };
+  sceneInteractionActions?: {
+    isSceneInteractionEnabled: () => boolean;
+  };
 }) {
   return {
     overlayCallbacks: createMilkdropOverlayCallbacks(overlayActions),
@@ -46,6 +52,9 @@ export function createMilkdropRuntimeInteractionPresenter({
         overlay,
         ...keybindingActions,
       });
+    },
+    isSceneInteractionEnabled() {
+      return Boolean(sceneInteractionActions?.isSceneInteractionEnabled?.());
     },
   };
 }

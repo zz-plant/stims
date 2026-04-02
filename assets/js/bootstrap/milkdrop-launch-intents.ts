@@ -1,9 +1,9 @@
-import { requestMilkdropCollectionSelection } from '../milkdrop/collection-intent.ts';
 import {
   type MilkdropOverlayTab,
+  requestMilkdropCollectionSelection,
   requestMilkdropOverlayTab,
-} from '../milkdrop/overlay-intent.ts';
-import { requestMilkdropPresetSelection } from '../milkdrop/preset-selection.ts';
+  requestMilkdropPresetSelection,
+} from '../milkdrop/public/launch-intents.ts';
 
 export function parseRequestedOverlayTab(searchParams: URLSearchParams) {
   const value = searchParams.get('panel')?.trim().toLowerCase();

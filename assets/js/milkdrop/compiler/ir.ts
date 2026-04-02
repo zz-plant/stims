@@ -8,10 +8,12 @@ import type {
   MilkdropPresetField,
   MilkdropPresetIR,
   MilkdropPresetSource,
+  MilkdropSemanticSupport,
   MilkdropShaderControls,
   MilkdropShaderStatement,
   MilkdropShapeDefinition,
   MilkdropVideoEchoOrientation,
+  MilkdropVisualCertification,
   MilkdropWaveDefinition,
 } from '../types';
 import type { buildWebGpuDescriptorPlan } from './gpu-descriptor-plan';
@@ -31,6 +33,7 @@ type ShaderControlAnalysis = {
   statements: MilkdropShaderStatement[];
   directProgramStatements: MilkdropShaderStatement[];
   directProgramLines: string[];
+  directProgramRequired: boolean;
   unsupportedLines: string[];
   supported: boolean;
   controls: MilkdropShaderControls;
@@ -503,36 +506,30 @@ export function createMilkdropIr({
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
-  const warpShaderProgram =
-    shaderWarpAnalysis.directProgramStatements.length > 0
-      ? shaderHelpers.buildShaderProgramPayload({
-          stage: 'warp',
-          statements: shaderWarpAnalysis.directProgramStatements,
-          normalizedLines: shaderWarpAnalysis.directProgramLines,
-          requiresControlFallback:
-            shaderWarpAnalysis.directProgramStatements.length !==
-            shaderWarpAnalysis.statements.length,
-          supportedBackends:
-            shaderWarpAnalysis.unsupportedLines.length === 0
-              ? ['webgl', 'webgpu']
-              : [],
-        })
-      : null;
-  const compShaderProgram =
-    shaderCompAnalysis.directProgramStatements.length > 0
-      ? shaderHelpers.buildShaderProgramPayload({
-          stage: 'comp',
-          statements: shaderCompAnalysis.directProgramStatements,
-          normalizedLines: shaderCompAnalysis.directProgramLines,
-          requiresControlFallback:
-            shaderCompAnalysis.directProgramStatements.length !==
-            shaderCompAnalysis.statements.length,
-          supportedBackends:
-            shaderCompAnalysis.unsupportedLines.length === 0
-              ? ['webgl', 'webgpu']
-              : [],
-        })
-      : null;
+  const warpShaderProgram = shaderWarpAnalysis.directProgramRequired
+    ? shaderHelpers.buildShaderProgramPayload({
+        stage: 'warp',
+        statements: shaderWarpAnalysis.directProgramStatements,
+        normalizedLines: shaderWarpAnalysis.directProgramLines,
+        requiresControlFallback:
+          shaderWarpAnalysis.directProgramStatements.length !==
+          shaderWarpAnalysis.statements.length,
+        supportedBackends:
+          shaderWarpAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
+      })
+    : null;
+  const compShaderProgram = shaderCompAnalysis.directProgramRequired
+    ? shaderHelpers.buildShaderProgramPayload({
+        stage: 'comp',
+        statements: shaderCompAnalysis.directProgramStatements,
+        normalizedLines: shaderCompAnalysis.directProgramLines,
+        requiresControlFallback:
+          shaderCompAnalysis.directProgramStatements.length !==
+          shaderCompAnalysis.statements.length,
+        supportedBackends:
+          shaderCompAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
+      })
+    : null;
   const ignoredFields = [
     ...new Set([...softUnknownKeys, ...hardUnsupportedFields.keys()]),
   ].sort();
@@ -579,6 +576,13 @@ export function createMilkdropIr({
   const hasBlockingShaderApproximation = blockingConstructDetails.some(
     (construct) => construct.kind === 'shader' && !construct.allowlisted,
   );
+  const hasDirectShaderPrograms =
+    warpShaderProgram !== null || compShaderProgram !== null;
+  const webglCanRelyOnTranslatedShaderControls =
+    (warpShaderProgram === null ||
+      warpShaderProgram.execution.requiresControlFallback) &&
+    (compShaderProgram === null ||
+      compShaderProgram.execution.requiresControlFallback);
   supportedShaderText =
     shaderWarpAnalysis.supported ||
     shaderCompAnalysis.supported ||
@@ -597,8 +601,11 @@ export function createMilkdropIr({
       ? unsupportedShaderText
         ? { webgl: 'unsupported', webgpu: 'unsupported' }
         : {
-            webgl:
-              warpShaderProgram || compShaderProgram ? 'direct' : 'translated',
+            webgl: hasDirectShaderPrograms
+              ? webglCanRelyOnTranslatedShaderControls
+                ? 'translated'
+                : 'unsupported'
+              : 'translated',
             webgpu:
               (warpShaderProgram === null ||
                 warpShaderProgram.execution.supportedBackends.includes(
@@ -608,7 +615,7 @@ export function createMilkdropIr({
                 compShaderProgram.execution.supportedBackends.includes(
                   'webgpu',
                 ))
-                ? warpShaderProgram || compShaderProgram
+                ? hasDirectShaderPrograms
                   ? 'direct'
                   : 'translated'
                 : 'translated',
@@ -710,6 +717,25 @@ export function createMilkdropIr({
     webgpu: finalBackends.webgpu,
     noBlockedConstructs: blockedConstructs.length === 0,
   });
+  const semanticSupport: MilkdropSemanticSupport = {
+    fidelityClass,
+    evidence,
+    visualEvidenceTier,
+  };
+  const visualCertification: MilkdropVisualCertification = {
+    status: 'uncertified',
+    measured: false,
+    source: 'inferred',
+    fidelityClass:
+      fidelityClass === 'exact' || fidelityClass === 'near-exact'
+        ? 'partial'
+        : fidelityClass,
+    visualEvidenceTier:
+      visualEvidenceTier === 'visual' ? 'runtime' : visualEvidenceTier,
+    requiredBackend: 'webgpu',
+    actualBackend: null,
+    reasons: ['No measured WebGPU reference capture is recorded yet.'],
+  };
 
   const parity: MilkdropParityReport = {
     ignoredFields,
@@ -723,6 +749,8 @@ export function createMilkdropIr({
     fidelityClass,
     evidence,
     visualEvidenceTier,
+    semanticSupport,
+    visualCertification,
   };
 
   const title = stringFields.title || 'MilkDrop Session';
@@ -757,12 +785,10 @@ export function createMilkdropIr({
     webgpu: compatibilityHelpers.buildWebGpuDescriptorPlan({
       featureAnalysis,
       webgpu: finalBackends.webgpu,
-      numericFields,
       programs,
       customWaves,
       post,
       lowerGpuFieldProgram,
-      hasLegacyMotionVectorControls,
     }),
   };
 
