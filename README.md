@@ -128,6 +128,7 @@ Use [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md) as the synchronizatio
 - If your browser supports WebGPU but visuals fail, switch renderer preference to WebGL in app settings and refresh.
 - Use `bun run preview` after `bun run build` to test the production bundle behavior (including route handling) before deployment.
 - Cloudflare Pages preview and production deploys normally come from the connected GitHub project; the `pages:deploy:*` scripts are the explicit manual fallback path.
+- [`wrangler.toml`](./wrangler.toml) is checked in as the Pages config source of truth for compatibility and placement settings; keep dashboard-only build settings aligned with it.
 
 ## Contributing at a glance
 

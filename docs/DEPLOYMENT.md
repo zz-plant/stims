@@ -111,7 +111,17 @@ Cloudflare Pages can read caching rules from `public/_headers`, which Vite copie
 
 ## Cloudflare Pages Configuration
 
-Cloudflare Pages reads the build command from the project settings in the dashboard, so keep [`wrangler.toml`](../wrangler.toml) limited to the shared Pages metadata (`name`, `compatibility_date`, and `pages_build_output_dir`). Do **not** add a `[build]` table there. Configure the build command (for example, `bun run build`) directly in Pages, or rely on `CF_PAGES=1` with the existing install script to generate `dist/` during install. If the install step already populated `dist/` (the repo’s build script checks for this), the subsequent build command will no-op on Pages to avoid a second Vite build.
+The repository now checks in the Pages Wrangler config in [`wrangler.toml`](../wrangler.toml). That file is the source of truth for Pages settings that Wrangler manages for this project, including the checked-in compatibility dates and placement settings. Keep the dashboard build command and production branch aligned with the repo, but do not rely on the dashboard alone for Pages runtime/config drift.
+
+If you intentionally change Pages configuration in the dashboard, pull the generated config back into the repo before you merge the next deployable change:
+
+```bash
+bunx wrangler pages download config stims --force
+```
+
+Review the resulting diff before committing it. This prevents the repo from silently drifting away from the live Pages project configuration.
+
+Cloudflare Pages still reads the build command from the project settings in the dashboard, so do **not** add a `[build]` table to [`wrangler.toml`](../wrangler.toml). Configure the build command (for example, `bun run build`) directly in Pages, or rely on `CF_PAGES=1` with the existing install script to generate `dist/` during install. If the install step already populated `dist/` (the repo’s build script checks for this), the subsequent build command will no-op on Pages to avoid a second Vite build.
 
 Pages builders occasionally default to older Bun versions, which causes `bun install` to fail against the `bun.lock` that tracks Bun `1.3.8`. This repository includes a `.bun-version` file that Cloudflare Pages automatically detects, ensuring the install step always runs with a compatible runtime. If you need to override this, you can set the `BUN_VERSION=1.3.8` environment variable.
 
@@ -129,7 +139,7 @@ That is the default deployment path for this repo.
 
 ### Manual Pages CLI fallback flows
 
-Use the dedicated scripts when you intentionally need a manual deploy. They pin the Pages project name to `stims`, attach commit metadata automatically, and make preview vs production explicit:
+Use the dedicated scripts when you intentionally need a manual deploy. They now run the same repo-owned Wrangler config as Cloudflare Pages, attach commit metadata automatically, and make preview vs production explicit:
 
 ```bash
 # Build and serve locally with Wrangler Pages dev

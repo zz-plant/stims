@@ -55,7 +55,7 @@
     "serve:dist": "bun run scripts/serve-dist.ts",
     "preview": "vite preview --host",
     "cf:whoami": "bunx wrangler whoami",
-    "pages:dev": "bun run build && bunx wrangler pages dev dist",
+    "pages:dev": "bun run build && bunx wrangler --config wrangler.toml pages dev dist",
     "pages:deploy": "bun run pages:deploy:production",
     "pages:deploy:preview": "bun run build && bun run scripts/deploy-cloudflare.mjs --preview",
     "pages:deploy:preview:reuse": "bun run build -- --reuse && bun run scripts/deploy-cloudflare.mjs --preview",
