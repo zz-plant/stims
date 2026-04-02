@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "libraryId": "projectm-cream-of-the-crop",
+  "libraryName": "projectM Cream of the Crop Picks",
+  "certification": "exploratory",
+  "corpusTier": "exploratory",
+  "presets": [
+    {
+      "id": "eos-ether",
+      "title": "Eo.S. - Ether",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "reaction",
+        "preset"
+      ],
+      "order": 900
+    },
+    {
+      "id": "eos-ether-posession-phat-edit-v3",
+      "title": "Eo.S. - Ether Possession (Phat Edit v3)",
+      "author": "Eo.S. + Phat",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-ether-posession-phat-edit-v3.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "reaction",
+        "preset"
+      ],
+      "order": 901
+    },
+    {
+      "id": "eos-phat-linear-clouds-v2",
+      "title": "Eo.S. + Phat - Linear Clouds v2",
+      "author": "Eo.S. + Phat",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-linear-clouds-v2.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "clouds",
+        "reaction",
+        "preset"
+      ],
+      "order": 902
+    },
+    {
+      "id": "phat-zylot-eos-trippy-rotation",
+      "title": "Phat + Zylot + Eo.S. - Trippy Rotation",
+      "author": "Phat + Zylot + Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/phat-zylot-eos-trippy-rotation.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "rotation",
+        "reaction",
+        "preset"
+      ],
+      "order": 903
+    },
+    {
+      "id": "phat-rovastar-eos-square-faces-v2",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "author": "Phat + Rovastar + Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/phat-rovastar-eos-square-faces-v2.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "geometry",
+        "reaction",
+        "preset"
+      ],
+      "order": 904
+    },
+    {
+      "id": "eos-phat-dark-heart",
+      "title": "Eo.S. + Phat - Dark Heart",
+      "author": "Eo.S. + Phat",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-dark-heart.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "geometry",
+        "wireframe",
+        "preset"
+      ],
+      "order": 905
+    },
+    {
+      "id": "eos-phat-cat-scan-nirvana",
+      "title": "Eo.S. + Phat - CAT Scan (Nirvana)",
+      "author": "Eo.S. + Phat",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-cat-scan-nirvana.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "geometry",
+        "wireframe",
+        "preset"
+      ],
+      "order": 906
+    },
+    {
+      "id": "eos-heater-core-c",
+      "title": "Eo.S. - Heater Core C",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-heater-core-c.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "torus",
+        "wireframe",
+        "preset"
+      ],
+      "order": 907
+    },
+    {
+      "id": "eos-matrix-cube-c",
+      "title": "Eo.S. - Matrix Cube C",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-matrix-cube-c.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "grid",
+        "geometry",
+        "preset"
+      ],
+      "order": 908
+    },
+    {
+      "id": "eos-phat-magnetosphere-13-pulsar",
+      "title": "Eo.S. + Phat - Magnetosphere 13 Pulsar",
+      "author": "Eo.S. + Phat",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-magnetosphere-13-pulsar.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "particles",
+        "supernova",
+        "preset"
+      ],
+      "order": 909
+    },
+    {
+      "id": "eos-quasar",
+      "title": "Eo.S. - Quasar",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-quasar.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "stars",
+        "supernova",
+        "preset"
+      ],
+      "order": 910
+    },
+    {
+      "id": "eos-apocalypse",
+      "title": "Eo.S. - Apocalypse",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-apocalypse.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "orbits",
+        "supernova",
+        "preset"
+      ],
+      "order": 911
+    }
+  ]
+}
