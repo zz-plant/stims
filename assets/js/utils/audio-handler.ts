@@ -326,6 +326,13 @@ export function createSyntheticAudioStream({
 
   oscillator.start();
 
+  const resume = async () => {
+    if (context.state === 'running') {
+      return;
+    }
+    await context.resume();
+  };
+
   const cleanup = () => {
     try {
       oscillator.stop();
@@ -338,12 +345,13 @@ export function createSyntheticAudioStream({
     context.close();
   };
 
-  return { stream: destination.stream, cleanup };
+  return { stream: destination.stream, cleanup, resume };
 }
 
 let cachedDemoAudio: {
   stream: MediaStream;
   teardown: () => Promise<void> | void;
+  resume: () => Promise<void>;
 } | null = null;
 let cachedDemoUsers = 0;
 
@@ -385,6 +393,13 @@ function createProceduralDemoAudio() {
   harmonic.start();
   wobble.start();
 
+  const resume = async () => {
+    if (context.state === 'running') {
+      return;
+    }
+    await context.resume();
+  };
+
   let stopped = false;
   const stop = () => {
     if (stopped) return;
@@ -413,7 +428,7 @@ function createProceduralDemoAudio() {
     }
   };
 
-  return { stream: destination.stream, teardown: disconnect };
+  return { stream: destination.stream, teardown: disconnect, resume };
 }
 
 export function getCachedDemoAudioStream() {
@@ -426,6 +441,7 @@ export function getCachedDemoAudioStream() {
 
   return {
     stream: cachedDemoAudio.stream,
+    resume: () => cachedDemoAudio?.resume() ?? Promise.resolve(),
     cleanup: async () => {
       if (released) return;
       released = true;
@@ -475,6 +491,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
   try {
     const activeListener = new THREE.AudioListener();
     listener = activeListener;
+    if (activeListener.context.state === 'suspended') {
+      await activeListener.context.resume();
+    }
     if (camera) {
       camera.add(activeListener);
     }

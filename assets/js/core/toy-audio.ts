@@ -96,6 +96,14 @@ export async function startToyAudio(
     };
 
     try {
+      await synthetic.resume().catch((error) => {
+        throw new AudioAccessError(
+          'denied',
+          error instanceof Error
+            ? error.message
+            : 'Demo audio is blocked until the page receives a user gesture.',
+        );
+      });
       return await startAudioLoop(toy, animate, {
         ...syntheticOptions,
         stream: synthetic.stream,

@@ -1,0 +1,36 @@
+{
+  "mode": "compat-click",
+  "presetId": "rovastar-parallel-universe",
+  "screenshotPath": "/Users/kanav/Documents/GitHub/stims/output/playwright/rovastar-fix-qa/compat-click--rovastar-parallel-universe.png",
+  "bodyDataset": {
+    "page": "experience",
+    "toyLoaded": "true",
+    "audioActive": "true",
+    "currentToy": "milkdrop",
+    "activeBackend": "webgl",
+    "audioSource": "demo"
+  },
+  "state": {
+    "currentToy": "milkdrop",
+    "audioActive": true,
+    "audioSource": "demo",
+    "toyLoaded": true,
+    "isAgentMode": true,
+    "vibeMode": false,
+    "version": "1.0.0"
+  },
+  "frame": 6,
+  "rms": 0.16787372337921194,
+  "music": 0.0009091764705882353,
+  "backend": "webgl",
+  "status": "Loaded Rovastar - Parallel Universe.",
+  "errors": [
+    "Cannot set properties of undefined (setting 'value')"
+  ],
+  "warnings": [
+    "[.WebGL-0x114001a3200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x114001a2c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x114001aaa00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x114001aa400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ]
+}

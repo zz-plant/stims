@@ -1,0 +1,24 @@
+{
+  "mode": "webgpu-live-click",
+  "presetId": "rovastar-parallel-universe",
+  "screenshotPath": "/Users/kanav/Documents/GitHub/stims/output/playwright/rovastar-fix-qa/webgpu-live-click--rovastar-parallel-universe.png",
+  "bodyDataset": {
+    "page": "experience"
+  },
+  "state": {
+    "currentToy": null,
+    "audioActive": false,
+    "audioSource": null,
+    "toyLoaded": false,
+    "isAgentMode": true,
+    "vibeMode": false,
+    "version": "1.0.0"
+  },
+  "frame": null,
+  "rms": null,
+  "music": null,
+  "backend": null,
+  "status": null,
+  "errors": [],
+  "warnings": []
+}

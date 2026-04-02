@@ -1,0 +1,24 @@
+{
+  "mode": "webgpu-live-click",
+  "presetId": "krash-rovastar-cerebral-demons-stars",
+  "screenshotPath": "/Users/kanav/Documents/GitHub/stims/output/playwright/rovastar-fix-qa/webgpu-live-click--krash-rovastar-cerebral-demons-stars.png",
+  "bodyDataset": {
+    "page": "experience"
+  },
+  "state": {
+    "currentToy": null,
+    "audioActive": false,
+    "audioSource": null,
+    "toyLoaded": false,
+    "isAgentMode": true,
+    "vibeMode": false,
+    "version": "1.0.0"
+  },
+  "frame": null,
+  "rms": null,
+  "music": null,
+  "backend": null,
+  "status": null,
+  "errors": [],
+  "warnings": []
+}

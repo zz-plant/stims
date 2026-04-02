@@ -25,6 +25,19 @@ function getRequestedRenderer() {
   );
 }
 
+function isCertificationSession() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return (
+    new URLSearchParams(window.location.search)
+      .get('corpus')
+      ?.trim()
+      .toLowerCase() === 'certification'
+  );
+}
+
 export function setWebGPUCompatibilityGapOverride(enabled: boolean) {
   const storage = getSessionStorage();
   if (!storage) {
@@ -52,8 +65,12 @@ export function hasWebGPUCompatibilityGapOverride() {
 export function shouldPreferWebGLForKnownCompatibilityGaps() {
   const requestedRenderer = getRequestedRenderer();
 
-  if (requestedRenderer === 'webgpu' || hasWebGPUCompatibilityGapOverride()) {
+  if (hasWebGPUCompatibilityGapOverride()) {
     return false;
+  }
+
+  if (requestedRenderer === 'webgpu') {
+    return !isCertificationSession();
   }
 
   return true;

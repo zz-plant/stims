@@ -46,6 +46,19 @@ type FilmPassWithUniforms = FilmPass & {
   uniforms: FilmPassUniforms;
 };
 
+function setUniformValue(
+  uniforms: Record<string, { value: unknown }> | null | undefined,
+  key: string,
+  value: unknown,
+) {
+  const target = uniforms?.[key];
+  if (!target) {
+    return false;
+  }
+  target.value = value;
+  return true;
+}
+
 const MILKDROP_POSTPROCESSING_SHADER = {
   uniforms: {
     tDiffuse: { value: null },
@@ -193,31 +206,57 @@ export function createMilkdropPostprocessingComposer({
   composer.addPass(afterimagePass);
 
   const chromaPass = new ShaderPass(MILKDROP_POSTPROCESSING_SHADER);
-  chromaPass.material.uniforms.vignetteStrength.value =
-    profile.vignetteStrength;
-  chromaPass.material.uniforms.chromaOffset.value = profile.chromaOffset;
+  setUniformValue(
+    chromaPass.material.uniforms,
+    'vignetteStrength',
+    profile.vignetteStrength,
+  );
+  setUniformValue(
+    chromaPass.material.uniforms,
+    'chromaOffset',
+    profile.chromaOffset,
+  );
   chromaPass.renderToScreen = true;
   composer.addPass(chromaPass);
 
   const lastSize = size.clone();
   const sizeScratch = new Vector2();
-  chromaPass.material.uniforms.resolution.value.set(size.x, size.y);
+  chromaPass.material.uniforms.resolution?.value?.set?.(size.x, size.y);
 
   const applyProfile = (nextProfile: MilkdropPostprocessingProfile) => {
     bloomPass.strength = nextProfile.bloomStrength;
     bloomPass.radius = nextProfile.bloomRadius;
     bloomPass.threshold = nextProfile.bloomThreshold;
-    filmPass.uniforms.nIntensity.value = nextProfile.filmNoise;
-    filmPass.uniforms.sIntensity.value = nextProfile.filmScanlines;
-    filmPass.uniforms.sCount.value = nextProfile.filmScanlineCount;
+    setUniformValue(filmPass.uniforms, 'nIntensity', nextProfile.filmNoise);
+    setUniformValue(filmPass.uniforms, 'sIntensity', nextProfile.filmScanlines);
+    setUniformValue(filmPass.uniforms, 'sCount', nextProfile.filmScanlineCount);
     afterimagePass.damp = Math.max(nextProfile.afterimageDamp, 0);
     afterimagePass.enabled = nextProfile.afterimageDamp > 0;
-    chromaPass.material.uniforms.vignetteStrength.value =
-      nextProfile.vignetteStrength;
-    chromaPass.material.uniforms.chromaOffset.value = nextProfile.chromaOffset;
-    chromaPass.material.uniforms.saturation.value = nextProfile.saturation;
-    chromaPass.material.uniforms.contrast.value = nextProfile.contrast;
-    chromaPass.material.uniforms.pulseWarp.value = nextProfile.pulseWarp;
+    setUniformValue(
+      chromaPass.material.uniforms,
+      'vignetteStrength',
+      nextProfile.vignetteStrength,
+    );
+    setUniformValue(
+      chromaPass.material.uniforms,
+      'chromaOffset',
+      nextProfile.chromaOffset,
+    );
+    setUniformValue(
+      chromaPass.material.uniforms,
+      'saturation',
+      nextProfile.saturation,
+    );
+    setUniformValue(
+      chromaPass.material.uniforms,
+      'contrast',
+      nextProfile.contrast,
+    );
+    setUniformValue(
+      chromaPass.material.uniforms,
+      'pulseWarp',
+      nextProfile.pulseWarp,
+    );
   };
   applyProfile(profile);
 
@@ -225,7 +264,7 @@ export function createMilkdropPostprocessingComposer({
     renderer.getSize(sizeScratch);
     if (sizeScratch.x !== lastSize.x || sizeScratch.y !== lastSize.y) {
       composer.setSize(sizeScratch.x, sizeScratch.y);
-      chromaPass.material.uniforms.resolution.value.set(
+      chromaPass.material.uniforms.resolution?.value?.set?.(
         sizeScratch.x,
         sizeScratch.y,
       );

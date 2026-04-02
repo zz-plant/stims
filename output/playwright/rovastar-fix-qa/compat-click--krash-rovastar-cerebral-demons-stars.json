@@ -1,0 +1,36 @@
+{
+  "mode": "compat-click",
+  "presetId": "krash-rovastar-cerebral-demons-stars",
+  "screenshotPath": "/Users/kanav/Documents/GitHub/stims/output/playwright/rovastar-fix-qa/compat-click--krash-rovastar-cerebral-demons-stars.png",
+  "bodyDataset": {
+    "page": "experience",
+    "toyLoaded": "true",
+    "audioActive": "true",
+    "currentToy": "milkdrop",
+    "activeBackend": "webgl",
+    "audioSource": "demo"
+  },
+  "state": {
+    "currentToy": "milkdrop",
+    "audioActive": true,
+    "audioSource": "demo",
+    "toyLoaded": true,
+    "isAgentMode": true,
+    "vibeMode": false,
+    "version": "1.0.0"
+  },
+  "frame": 3,
+  "rms": 0.24012513532257787,
+  "music": 0.0035356862745098035,
+  "backend": "webgl",
+  "status": "Loaded Krash & Rovastar - Cerebral Demons (Stars Remix).",
+  "errors": [
+    "Cannot set properties of undefined (setting 'value')"
+  ],
+  "warnings": [
+    "[.WebGL-0x124001a0e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x124001a0800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x124001a8c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x124001ab600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ]
+}

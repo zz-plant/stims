@@ -405,8 +405,7 @@ export function createToyRuntime({
   }
 
   const startAudio = async (request?: ToyAudioRequest) => {
-    stopPreviewLoop();
-    return startToyAudio(
+    const context = await startToyAudio(
       toy,
       (ctx) => {
         analyser = ctx.analyser;
@@ -453,6 +452,8 @@ export function createToyRuntime({
         ...audio?.options,
       }),
     );
+    stopPreviewLoop();
+    return context;
   };
 
   const unregisterGlobals = registerToyGlobals(container, startAudio);
