@@ -18,9 +18,18 @@ test('renderer query override allows webgpu certification sessions to bypass the
   restoreLocation = replaceProperty(
     window,
     'location',
-    new URL('http://localhost/?renderer=webgpu'),
+    new URL('http://localhost/?renderer=webgpu&corpus=certification'),
   );
   expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(false);
+});
+
+test('renderer query override keeps the live visualizer on webgl-preferred mode when no certification corpus is requested', () => {
+  restoreLocation = replaceProperty(
+    window,
+    'location',
+    new URL('http://localhost/?renderer=webgpu'),
+  );
+  expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(true);
 });
 
 test('renderer query override keeps the live visualizer on webgl-preferred mode by default', () => {
