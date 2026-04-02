@@ -2,9 +2,30 @@ import { describe, expect, test } from 'bun:test';
 import type { FrequencyAnalyser } from '../assets/js/core/audio-handler.ts';
 import { createMilkdropSignalTracker } from '../assets/js/milkdrop/runtime-signals.ts';
 
-function highEnergyData() {
-  const data = new Uint8Array(128);
-  data.fill(255);
+function filledData(value: number, length = 128) {
+  const data = new Uint8Array(length);
+  data.fill(value);
+  return data;
+}
+
+function pulseData({
+  bass = 0,
+  mid = 0,
+  treble = 0,
+  length = 128,
+}: {
+  bass?: number;
+  mid?: number;
+  treble?: number;
+  length?: number;
+}) {
+  const data = new Uint8Array(length);
+  data.fill(8);
+  for (let index = 0; index < length; index += 1) {
+    const ratio = index / Math.max(1, length - 1);
+    const value = ratio < 0.12 ? bass : ratio < 0.5 ? mid : treble;
+    data[index] = Math.round(value * 255);
+  }
   return data;
 }
 
@@ -17,36 +38,49 @@ function waveformData() {
   return data;
 }
 
+function highEnergyData() {
+  return filledData(255);
+}
+
 describe('milkdrop runtime signals', () => {
   test('increments frame count and emits stable ranges with fallback data', () => {
     const tracker = createMilkdropSignalTracker();
 
-    const first = tracker.update({
+    const quiet = tracker.update({
       time: 0,
       deltaMs: 16.7,
       analyser: null,
-      frequencyData: highEnergyData(),
+      frequencyData: filledData(24),
       waveformData: waveformData(),
     });
-    const second = tracker.update({
-      time: 0.3,
+    const pulse = tracker.update({
+      time: 0.24,
       deltaMs: 16.7,
       analyser: null,
-      frequencyData: highEnergyData(),
+      frequencyData: pulseData({ bass: 1, mid: 0.45, treble: 0.18 }),
+      waveformData: waveformData(),
+    });
+    const sustain = tracker.update({
+      time: 0.32,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: pulseData({ bass: 1, mid: 0.45, treble: 0.18 }),
       waveformData: waveformData(),
     });
 
-    expect(first.frame).toBe(1);
-    expect(second.frame).toBe(2);
-    expect(first.bass).toBeGreaterThan(0);
-    expect(first.weightedEnergy).toBeLessThanOrEqual(1);
-    expect(second.beat).toBe(1);
-    expect(second.beatPulse).toBeGreaterThan(0);
-    expect(second.beat_pulse).toBe(second.beatPulse);
-    expect(second.vol).toBeCloseTo(second.rms, 6);
-    expect(second.music).toBeCloseTo(second.weightedEnergy, 6);
-    expect(second.waveformData).toBeInstanceOf(Uint8Array);
-    expect(second.waveformData?.length).toBe(128);
+    expect(quiet.frame).toBe(1);
+    expect(pulse.frame).toBe(2);
+    expect(quiet.weightedEnergy).toBeLessThanOrEqual(1);
+    expect(pulse.bass).toBeGreaterThan(quiet.bass);
+    expect(pulse.beat).toBe(1);
+    expect(pulse.beatPulse).toBeGreaterThan(0.3);
+    expect(sustain.beat).toBe(0);
+    expect(sustain.beatPulse).toBeLessThan(pulse.beatPulse);
+    expect(pulse.beat_pulse).toBe(pulse.beatPulse);
+    expect(pulse.vol).toBeCloseTo(pulse.rms, 6);
+    expect(pulse.music).toBeCloseTo(pulse.weightedEnergy, 6);
+    expect(pulse.waveformData).toBeInstanceOf(Uint8Array);
+    expect(pulse.waveformData?.length).toBe(128);
   });
 
   test('uses analyser-provided bands and smoothed RMS when available', () => {
@@ -54,6 +88,7 @@ describe('milkdrop runtime signals', () => {
     const analyserStub = {
       getMultiBandEnergy: () => ({ bass: 0.75, mid: 0.4, treble: 0.25 }),
       getRmsLevel: () => 0.8,
+      getSampleRate: () => 48_000,
     } as unknown as FrequencyAnalyser;
 
     const update = tracker.update({
@@ -72,8 +107,30 @@ describe('milkdrop runtime signals', () => {
     expect(update.bass_att).toBeCloseTo(update.bassAtt, 6);
     expect(update.mid_att).toBeCloseTo(update.midsAtt, 6);
     expect(update.treb_att).toBeCloseTo(update.trebleAtt, 6);
-    expect(update.rms).toBeGreaterThan(0.1);
-    expect(update.rms).toBeLessThan(0.2);
+    expect(update.rms).toBeGreaterThan(0.2);
+    expect(update.rms).toBeLessThan(0.4);
+  });
+
+  test('normalizes quieter material so weighted energy still stays responsive', () => {
+    const tracker = createMilkdropSignalTracker();
+    tracker.update({
+      time: 0,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: filledData(18),
+      waveformData: waveformData(),
+    });
+
+    const quietPulse = tracker.update({
+      time: 0.24,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: pulseData({ bass: 0.18, mid: 0.12, treble: 0.08 }),
+      waveformData: waveformData(),
+    });
+
+    expect(quietPulse.weightedEnergy).toBeGreaterThan(0.2);
+    expect(quietPulse.music).toBeCloseTo(quietPulse.weightedEnergy, 6);
   });
 
   test('reset restarts frame numbering and tracker state', () => {
@@ -82,14 +139,14 @@ describe('milkdrop runtime signals', () => {
       time: 0.1,
       deltaMs: 16.7,
       analyser: null,
-      frequencyData: highEnergyData(),
+      frequencyData: pulseData({ bass: 1, mid: 0.4, treble: 0.2 }),
       waveformData: waveformData(),
     });
     tracker.update({
       time: 0.35,
       deltaMs: 16.7,
       analyser: null,
-      frequencyData: highEnergyData(),
+      frequencyData: pulseData({ bass: 1, mid: 0.4, treble: 0.2 }),
       waveformData: waveformData(),
     });
 

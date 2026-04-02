@@ -232,29 +232,39 @@ describe('audio-handler utilities', () => {
     const analyser = await FrequencyAnalyser.create(
       context,
       /** @type {MediaStream} */ ({}),
-      8,
+      64,
     );
     const workletNode = FakeAudioWorkletNode.instances.at(-1);
 
     expect(workletNode).toBeDefined();
 
+    const frequencyData = new Uint8Array(32);
+    frequencyData[0] = 255;
+    frequencyData[3] = 128;
+    frequencyData[8] = 64;
+    const waveform = new Uint8Array(64);
+    for (let index = 0; index < waveform.length; index += 1) {
+      waveform[index] = Math.round(
+        (index / Math.max(1, waveform.length - 1)) * 255,
+      );
+    }
+
     workletNode.port.onmessage?.({
       data: {
-        frequencyData: new Uint8Array([255, 128, 64, 32]),
-        waveformData: new Uint8Array([0, 32, 64, 96, 128, 160, 192, 255]),
+        frequencyData,
+        waveformData: waveform,
         rms: 0.42,
       },
     });
 
-    expect(Array.from(analyser.getWaveformData())).toEqual([
-      0, 32, 64, 96, 128, 160, 192, 255,
-    ]);
+    expect(Array.from(analyser.getWaveformData())).toEqual(
+      Array.from(waveform),
+    );
     expect(analyser.getRmsLevel()).toBe(0.42);
-    expect(analyser.getMultiBandEnergy()).toEqual({
-      bass: 0,
-      mid: (255 + 128) / 2 / 255,
-      treble: (64 + 32) / 2 / 255,
-    });
+    const bands = analyser.getMultiBandEnergy();
+    expect(bands.bass).toBeGreaterThan(bands.mid);
+    expect(bands.mid).toBeGreaterThan(bands.treble);
+    expect(bands.bass).toBeGreaterThan(0.95);
   });
 
   test('initAudio rejects with unsupported error when media devices are missing', async () => {
