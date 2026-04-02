@@ -71,6 +71,7 @@ Use these commands before opening a PR:
 - `bun run build` — production build.
 - `bun run preview` — preview built output.
 - `bun run pages:deploy` — default production deploy for the static site (Track A).
+- `bun run pages:deploy:preview` — preview deploy for the static site.
 - `bun run lint` / `bun run lint:fix` — Biome linting.
 - `bun run format` / `bun run format:check` — Biome formatting.
 - `bun run typecheck` — TypeScript no-emit checks.
@@ -86,7 +87,7 @@ Use these commands before opening a PR:
 
 ## Documentation expectations
 
-When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes).
+When workflows or structure change, update docs in the same PR (including deployment-track guidance in `docs/DEPLOYMENT.md` when release flow changes). For Pages deploy changes, keep [`wrangler.toml`](./wrangler.toml) aligned with the live Cloudflare project config instead of treating the dashboard as the only source of truth.
 
 - Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) as the canonical docs synchronization contract.
 - Treat [`docs/README.md`](./docs/README.md) as the canonical docs index and update it whenever docs are added, renamed, moved, or deleted.

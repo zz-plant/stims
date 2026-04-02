@@ -35,6 +35,7 @@ function tryRunCommand(command, commandArgs) {
 
 const preview = hasFlag('--preview');
 const production = hasFlag('--production');
+const configPath = getFlagValue('--config') ?? 'wrangler.toml';
 
 if (preview === production) {
   console.error(
@@ -95,6 +96,8 @@ const dirtyWorkspace =
 
 const wranglerArgs = [
   'wrangler',
+  '--config',
+  configPath,
   'pages',
   'deploy',
   directory,
@@ -119,6 +122,7 @@ wranglerArgs.push('--commit-dirty', dirtyWorkspace ? 'true' : 'false');
 console.log(
   [
     `[deploy-cloudflare] Target: ${preview ? 'preview' : 'production'}`,
+    `[deploy-cloudflare] Config: ${configPath}`,
     `[deploy-cloudflare] Project: ${projectName}`,
     `[deploy-cloudflare] Directory: ${directory}`,
     preview ? `[deploy-cloudflare] Branch: ${branch}` : null,
