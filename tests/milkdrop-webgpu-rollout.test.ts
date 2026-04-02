@@ -91,7 +91,9 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
       expect.objectContaining({
         routing: 'descriptor-plan',
         proceduralMesh: expect.objectContaining({ kind: 'procedural-mesh' }),
-        proceduralMotionVectors: null,
+        proceduralMotionVectors: expect.objectContaining({
+          kind: 'procedural-motion-vectors',
+        }),
         unsupported: [],
       }),
     );
@@ -104,6 +106,7 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
         proceduralTrailWaves: false,
         proceduralCustomWaves: false,
         proceduralMesh: false,
+        proceduralMotionVectors: false,
       },
     );
 

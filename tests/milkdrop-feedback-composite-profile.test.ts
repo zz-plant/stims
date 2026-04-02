@@ -45,10 +45,16 @@ test('keeps overlay replace mode distinct from overlay mix mode in the shared fe
 
   try {
     expect(manager.compositeMaterial.fragmentShader).toContain(
-      'if (overlayTextureMode < 1.5) {\n              color = overlayColor;',
+      'bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;',
     );
     expect(manager.compositeMaterial.fragmentShader).toContain(
-      '} else if (overlayTextureMode < 2.5) {\n              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));',
+      'bool overlayBlend = overlayTextureMode >= 1.5 && overlayTextureAmount > 0.0001;',
+    );
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'if (overlayTextureSource > 0.5 && (overlayReplace || overlayBlend)) {',
+    );
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'if (overlayTextureMode < 1.5) {\n              color = overlayColor;',
     );
   } finally {
     manager.dispose();
@@ -72,6 +78,62 @@ test('samples warp textures in warp-stage UV space inside the shared feedback sh
     expect(manager.compositeMaterial.fragmentShader).not.toContain(
       'vec2 warpUv = vUv * warpTextureScale + warpTextureOffset;',
     );
+  } finally {
+    manager.dispose();
+  }
+});
+
+test('does not turn feedback_texture into extra video echo in the shared feedback shader', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    compositeMaterial: { fragmentShader: string };
+    dispose: () => void;
+  };
+
+  try {
+    expect(manager.compositeMaterial.fragmentShader).toContain(
+      'clamp(videoEchoAlpha, 0.0, 1.0)',
+    );
+    expect(manager.compositeMaterial.fragmentShader).not.toContain(
+      'videoEchoAlpha + feedbackTexture * 0.2',
+    );
+  } finally {
+    manager.dispose();
+  }
+});
+
+test('applies comp-stage color controls and overlay work before legacy post effects in the shared shader', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    compositeMaterial: { fragmentShader: string };
+    dispose: () => void;
+  };
+
+  try {
+    const { fragmentShader } = manager.compositeMaterial;
+    const hueIndex = fragmentShader.indexOf(
+      'color = hueRotate(color, hueShift);',
+    );
+    const overlayIndex = fragmentShader.indexOf(
+      'bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;',
+    );
+    const brightenIndex = fragmentShader.indexOf(
+      'if (brighten > 0.01 || brightenBoost > 0.01) {',
+    );
+    const gammaIndex = fragmentShader.indexOf(
+      'color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));',
+    );
+
+    expect(hueIndex).toBeGreaterThanOrEqual(0);
+    expect(overlayIndex).toBeGreaterThan(hueIndex);
+    expect(brightenIndex).toBeGreaterThan(overlayIndex);
+    expect(gammaIndex).toBeGreaterThan(brightenIndex);
   } finally {
     manager.dispose();
   }

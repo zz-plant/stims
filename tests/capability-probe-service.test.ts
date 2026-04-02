@@ -245,4 +245,69 @@ describe('capability probe service', () => {
       recommendedQualityPresetId: 'hi-fi',
     });
   });
+
+  test('keeps popular handheld WebGPU devices on balanced defaults', () => {
+    const result = buildCapabilityPreflightResult({
+      renderingSupport: { hasWebGL: true },
+      rendererPlan: {
+        backend: 'webgpu',
+        reasonCode: null,
+        reasonMessage: null,
+        canRetryWebGPU: false,
+      },
+      rendererCapabilities: {
+        webgpu: {
+          features: {
+            bgra8unormStorage: true,
+            float32Blendable: true,
+            float32Filterable: true,
+            shaderF16: true,
+            subgroups: true,
+            timestampQuery: true,
+          },
+          limits: {
+            maxColorAttachments: 8,
+            maxComputeInvocationsPerWorkgroup: 1024,
+            maxStorageBufferBindingSize: 4294967292,
+            maxTextureDimension2D: 16384,
+          },
+          workers: {
+            workers: false,
+            offscreenCanvas: false,
+            transferControlToOffscreen: false,
+          },
+          optimization: {
+            timestampQuery: true,
+            shaderF16: true,
+            subgroups: true,
+            workers: false,
+            offscreenCanvas: false,
+            transferControlToOffscreen: false,
+            workerOffscreenPipeline: false,
+          },
+          preferredCanvasFormat: 'bgra8unorm',
+          performanceTier: 'high-end',
+          recommendedQualityPreset: 'balanced',
+        },
+      },
+      microphone: getMicrophoneCapabilityFromState('prompt'),
+      environment: {
+        secureContext: true,
+        hardwareConcurrency: 6,
+      },
+      performanceProfile: {
+        lowPower: false,
+        reason: null,
+        reducedMotion: false,
+      },
+    });
+
+    expect(result.performance).toEqual({
+      lowPower: false,
+      reason: null,
+      recommendedMaxPixelRatio: 2,
+      recommendedRenderScale: 1,
+      recommendedQualityPresetId: 'balanced',
+    });
+  });
 });

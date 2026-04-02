@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "presetId": "100-square",
+  "title": "100 Square",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260331203123",
+  "projectmImagePath": "/Users/kanav/Documents/GitHub/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "projectm-fixture",
+  "strata": [
+    "projectm-upstream",
+    "geometry",
+    "regression"
+  ],
+  "toleranceProfile": "default",
+  "threshold": 16,
+  "failThreshold": 0.02,
+  "metrics": {
+    "width": 2550,
+    "height": 1794,
+    "totalPixels": 4574700,
+    "mismatchedPixels": 2778881,
+    "mismatchRatio": 0.6074455155529325,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.0712245791752336,
+    "rmse": 0.13489499223241902,
+    "exactMatch": false,
+    "threshold": 16
+  },
+  "status": "fail"
+}

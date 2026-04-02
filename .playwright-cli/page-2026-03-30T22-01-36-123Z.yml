@@ -1,0 +1,21 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner
+    - main [ref=e4]:
+      - generic [ref=e6]:
+        - paragraph [ref=e7]: Start here
+        - heading "Start fast. Tune later." [level=1] [ref=e8]
+        - paragraph [ref=e9]: Demo audio gets you in fastest. Mic and capture stay below.
+        - group "Launch shortcuts" [ref=e10]:
+          - link "Start demo playback" [ref=e11] [cursor=pointer]:
+            - /url: /milkdrop/?audio=demo
+        - group "Launch helpers" [ref=e12]:
+          - link "Back to Stims" [ref=e13] [cursor=pointer]:
+            - /url: /
+      - region "Choose a sound source." [ref=e14]:
+        - generic [ref=e15]:
+          - paragraph [ref=e16]: Controls
+          - heading "Choose a sound source." [level=2] [ref=e17]
+          - paragraph [ref=e18]: Demo is the default. Mic, tab, and YouTube are here when you need them.

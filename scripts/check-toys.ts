@@ -9,8 +9,12 @@ import {
   buildManifestModule,
   buildManifestSource,
   buildPublicToysJson,
+  buildToyNotes,
+  buildToyScriptIndex,
   GENERATED_PUBLIC_TOYS_PATH,
   GENERATED_TOY_MANIFEST_PATH,
+  GENERATED_TOY_NOTES_PATH,
+  GENERATED_TOY_SCRIPT_INDEX_PATH,
 } from './generate-toy-manifest.ts';
 import { loadToyRegistry } from './toy-registry.ts';
 
@@ -51,13 +55,10 @@ export async function runToyChecks(root = repoRoot) {
   const warnings: string[] = [];
 
   try {
-    const [loadedToyData, indexContents] = await Promise.all([
-      loadToyData(root),
-      fs.readFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), 'utf8'),
-    ]);
+    const loadedToyData = await loadToyData(root);
     const { manifest: entries } = loadedToyData;
 
-    await validateEntries(entries, issues, warnings, indexContents, root);
+    await validateEntries(entries, issues, warnings, root);
     await validateRegisteredToyEntrypoints(entries, issues, root);
     validateSlugEntrypointConsistency(entries, issues);
     await detectUnregisteredToyFiles(entries, issues, root);
@@ -107,7 +108,6 @@ async function validateEntries(
   entries: ToyManifest,
   issues: string[],
   warnings: string[],
-  indexContents: string,
   root = repoRoot,
 ) {
   for (const entry of entries) {
@@ -129,12 +129,6 @@ async function validateEntries(
     if (!exists) {
       issues.push(
         `Missing file for ${entry.slug}: ${path.relative(root, targetPath).replace(/\\/g, '/')}\nCreate the file or update assets/data/toys.json, then regenerate with: ${REGENERATE_COMMAND}`,
-      );
-    }
-
-    if (!indexContents.includes(`| \`${entry.slug}\``)) {
-      warnings.push(
-        `docs/TOY_SCRIPT_INDEX.md is missing an entry for ${entry.slug}.`,
       );
     }
   }
@@ -180,6 +174,8 @@ async function validateGeneratedArtifactParity(
   const manifest = buildManifestSource(entries, 'assets/data/toys.json');
   const expectedManifestModule = buildManifestModule(manifest);
   const expectedPublicToys = buildPublicToysJson(manifest);
+  const expectedToyScriptIndex = buildToyScriptIndex(manifest);
+  const expectedToyNotes = buildToyNotes(manifest);
 
   await compareGeneratedFile(
     root,
@@ -191,6 +187,18 @@ async function validateGeneratedArtifactParity(
     root,
     GENERATED_PUBLIC_TOYS_PATH,
     expectedPublicToys,
+    issues,
+  );
+  await compareGeneratedFile(
+    root,
+    GENERATED_TOY_SCRIPT_INDEX_PATH,
+    expectedToyScriptIndex,
+    issues,
+  );
+  await compareGeneratedFile(
+    root,
+    GENERATED_TOY_NOTES_PATH,
+    expectedToyNotes,
     issues,
   );
 }

@@ -1,0 +1,40 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Start" [ref=e14] [cursor=pointer]:
+              - /url: "#main-content"
+            - link "Controls" [ref=e15] [cursor=pointer]:
+              - /url: "#launch-panels"
+            - link "GitHub" [ref=e16] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e17]:
+            - link "Back home" [ref=e18] [cursor=pointer]:
+              - /url: /
+            - button "Switch to light mode" [pressed] [ref=e19] [cursor=pointer]:
+              - generic [ref=e20]: ☀️
+              - generic [ref=e21]: Light mode
+    - main: ▾ ▾
+  - generic [ref=e22]:
+    - generic:
+      - generic:
+        - paragraph: Now playing
+        - paragraph: MilkDrop Visualizer
+        - generic: milkdrop
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic "Running with the highest-fidelity renderer.": Best quality
+          - button "Controls"
+    - status [ref=e24]:
+      - generic [ref=e26]:
+        - heading "Preparing visualizer..." [level=2] [ref=e28]
+        - paragraph [ref=e29]: MilkDrop Visualizer is loading.

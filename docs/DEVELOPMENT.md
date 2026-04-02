@@ -12,6 +12,8 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
+`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` / `loader` / `bootstrap` / `core` / `ui` / `utils` dependency directions in addition to lint, typecheck, and tests.
+
 ## Main scripts
 
 | Task | Command |
@@ -21,6 +23,9 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 | WebGPU-focused local session | `bun run dev:webgpu` |
 | Full quality gate | `bun run check` |
 | Faster local quality gate | `bun run check:quick` |
+| Toy manifest + generated doc drift check | `bun run check:toys` |
+| SEO surface check | `bun run check:seo` |
+| Architecture boundary check | `bun run check:architecture` |
 | Run tests | `bun run test` |
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
@@ -107,7 +112,7 @@ This rewrites `public/milkdrop-presets/catalog.json` so presets with measured vi
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
-- `index.html` boots the MilkDrop visualizer in place on load, using the same shared loader/runtime as the dedicated launch route.
+- `index.html` is the editorial homepage shell and links into `/milkdrop/` for query-driven launch states.
 - Presets are part of one visualizer product, not separate first-class toys.
 
 ## Docs to keep aligned

@@ -248,7 +248,7 @@ describe('toy navigation visibility states', () => {
     expect(secondary.hidden).toBe(true);
     expect(secondary.getAttribute('aria-hidden')).toBe('true');
     expect(secondary.hasAttribute('inert')).toBe(true);
-    expect(toggle.textContent).toBe('Session');
+    expect(toggle.textContent).toBe('Controls');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
     expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
@@ -267,7 +267,7 @@ describe('toy navigation visibility states', () => {
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Hide session');
+    expect(toggle.textContent).toBe('Hide controls');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('aria-controls')).toBe(
       'toy-nav-secondary-actions',
@@ -276,6 +276,24 @@ describe('toy navigation visibility states', () => {
       (container.querySelector('#toy-nav-secondary-actions') as HTMLElement)
         .hidden,
     ).toBe(false);
+  });
+
+  test('toy nav keeps the default surface focused on the title and controls', () => {
+    const { matchMedia } = createMatchMediaStub();
+    window.matchMedia = matchMedia;
+
+    const container = document.getElementById('nav') as HTMLElement;
+    initNavigation(container, {
+      mode: 'toy',
+      title: 'Spectrum Bloom',
+      slug: 'spectrum-bloom',
+    });
+
+    expect(container.querySelector('.active-toy-nav__eyebrow')).toBeNull();
+    expect(container.querySelector('.active-toy-nav__hint')).toBeNull();
+    expect(container.querySelector('.active-toy-nav__pill')).toBeNull();
+    expect(container.textContent).toContain('Spectrum Bloom');
+    expect(container.textContent).toContain('Controls');
   });
 
   test('immersive sessions auto-hide chrome until interaction reveals it again', async () => {

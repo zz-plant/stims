@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
+  getDeviceEnvironmentProfile,
   getSmartTvModeOverride,
   isMobileDevice,
   isSmartTvDevice,
@@ -143,6 +144,38 @@ describe('isMobileDevice', () => {
 
   test('keeps desktop devices classified as non-mobile', () => {
     expect(isMobileDevice()).toBe(false);
+  });
+
+  test('classifies iPhone Safari as ios safari', () => {
+    setNavigatorField(
+      'userAgent',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    );
+    setNavigatorField('platform', 'iPhone');
+    setNavigatorField('maxTouchPoints', 5);
+    window.matchMedia = mobileMatchMedia;
+
+    expect(getDeviceEnvironmentProfile()).toEqual({
+      isMobile: true,
+      browserFamily: 'safari',
+      platformFamily: 'ios',
+    });
+  });
+
+  test('classifies Android Chrome as android chrome', () => {
+    setNavigatorField(
+      'userAgent',
+      'Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36',
+    );
+    setNavigatorField('platform', 'Linux armv8l');
+    setNavigatorField('maxTouchPoints', 5);
+    window.matchMedia = mobileMatchMedia;
+
+    expect(getDeviceEnvironmentProfile()).toEqual({
+      isMobile: true,
+      browserFamily: 'chrome',
+      platformFamily: 'android',
+    });
   });
 });
 

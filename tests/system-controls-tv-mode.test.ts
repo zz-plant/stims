@@ -6,46 +6,31 @@ import {
   resetRenderPreferencesState,
 } from '../assets/js/core/render-preferences.ts';
 import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
-
-const freshImport = async <T>(path: string): Promise<T> =>
-  import(`${path}?t=${Date.now()}-${Math.random()}`) as Promise<T>;
-
-type NavSnapshot = {
-  userAgent: string;
-};
+import { importFresh, replaceProperty } from './test-helpers.ts';
 
 const DESKTOP_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121 Safari/537.36';
 const TV_UA =
   'Mozilla/5.0 (SMART-TV; Linux; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko)';
 
-let snapshot: NavSnapshot;
 let initSystemControls: typeof import('../assets/js/ui/system-controls.ts').initSystemControls;
-
-const setUserAgent = (userAgent: string) => {
-  Object.defineProperty(navigator, 'userAgent', {
-    configurable: true,
-    value: userAgent,
-  });
-};
+let restoreUserAgent = () => {};
 
 describe('system controls tv defaults', () => {
   beforeEach(async () => {
-    snapshot = {
-      userAgent: navigator.userAgent,
-    };
     localStorage.clear();
     document.body.innerHTML = '';
     resetRenderPreferencesState();
     resetSettingsPanelState({ removePanel: true });
-    const systemControlsModule = await freshImport<
+    const systemControlsModule = await importFresh<
       typeof import('../assets/js/ui/system-controls.ts')
     >('../assets/js/ui/system-controls.ts');
     initSystemControls = systemControlsModule.initSystemControls;
   });
 
   afterEach(() => {
-    setUserAgent(snapshot.userAgent);
+    restoreUserAgent();
+    restoreUserAgent = () => {};
     localStorage.clear();
     document.body.innerHTML = '';
     resetRenderPreferencesState();
@@ -53,7 +38,7 @@ describe('system controls tv defaults', () => {
   });
 
   test('applies tv defaults when no render preferences are stored', () => {
-    setUserAgent(TV_UA);
+    restoreUserAgent = replaceProperty(navigator, 'userAgent', TV_UA);
     const host = document.createElement('div');
     document.body.appendChild(host);
 
@@ -69,7 +54,7 @@ describe('system controls tv defaults', () => {
   });
 
   test('does not overwrite existing stored render preferences', () => {
-    setUserAgent(TV_UA);
+    restoreUserAgent = replaceProperty(navigator, 'userAgent', TV_UA);
     localStorage.setItem(COMPATIBILITY_MODE_KEY, 'false');
     localStorage.setItem(MAX_PIXEL_RATIO_KEY, '2');
     localStorage.setItem(RENDER_SCALE_KEY, '1');
@@ -85,7 +70,7 @@ describe('system controls tv defaults', () => {
   });
 
   test('keeps non-tv defaults on desktop devices', () => {
-    setUserAgent(DESKTOP_UA);
+    restoreUserAgent = replaceProperty(navigator, 'userAgent', DESKTOP_UA);
     const host = document.createElement('div');
     document.body.appendChild(host);
 

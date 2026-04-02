@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import type { FrequencyAnalyser } from '../assets/js/core/audio-handler.ts';
 import { createMilkdropSignalTracker } from '../assets/js/milkdrop/runtime-signals.ts';
-import type { FrequencyAnalyser } from '../assets/js/utils/audio-handler.ts';
 
 function highEnergyData() {
   const data = new Uint8Array(128);

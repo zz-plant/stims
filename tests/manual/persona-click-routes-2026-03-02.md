@@ -1,5 +1,7 @@
 # Persona click-route review (2026-03-02)
 
+> Historical context note (2026-03): This route review was captured before the single-visualizer `/milkdrop/` launch flow replaced the older multi-toy entry model. Keep it for archival UX context only.
+
 ## Persona
 
 **Curious first-time visitor on desktop**, wants to quickly find a toy that works without setup friction, then optionally try microphone mode.

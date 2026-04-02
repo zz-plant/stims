@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  createMilkdropWebGPUFeedbackManager,
+  resolveDirectShaderConstructorPattern,
   resolveDirectShaderSamplerBinding,
   resolveDirectShaderSwizzle,
 } from '../assets/js/milkdrop/feedback-manager-webgpu.ts';
+import { getSharedMilkdropAuxTextures } from '../assets/js/milkdrop/feedback-manager-webgpu-composite.ts';
 
 describe('milkdrop webgpu feedback manager helpers', () => {
   test('normalizes direct shader sampler aliases onto canonical runtime bindings', () => {
@@ -86,5 +89,79 @@ describe('milkdrop webgpu feedback manager helpers', () => {
     expect(new Set(duplicate?.components ?? []).size).toBeLessThan(
       duplicate?.components.length ?? 0,
     );
+  });
+
+  test('prefers explicit direct vector constructor arity over scalar splat fallbacks', () => {
+    expect(
+      resolveDirectShaderConstructorPattern('vec2', ['scalar', 'scalar']),
+    ).toBe('vec2-pair');
+    expect(
+      resolveDirectShaderConstructorPattern('float2', ['scalar', 'scalar']),
+    ).toBe('vec2-pair');
+    expect(resolveDirectShaderConstructorPattern('vec2', ['scalar'])).toBe(
+      'vec2-splat',
+    );
+    expect(
+      resolveDirectShaderConstructorPattern('vec3', [
+        'scalar',
+        'scalar',
+        'scalar',
+      ]),
+    ).toBe('vec3-triple');
+    expect(
+      resolveDirectShaderConstructorPattern('float3', [
+        'scalar',
+        'scalar',
+        'scalar',
+      ]),
+    ).toBe('vec3-triple');
+    expect(
+      resolveDirectShaderConstructorPattern('vec3', ['vec2', 'scalar']),
+    ).toBe('vec3-vec2-scalar');
+    expect(
+      resolveDirectShaderConstructorPattern('vec3', ['scalar', 'vec2']),
+    ).toBe('vec3-scalar-vec2');
+    expect(resolveDirectShaderConstructorPattern('vec3', ['scalar'])).toBe(
+      'vec3-splat',
+    );
+  });
+
+  test('reuses shared aux textures across WebGPU feedback manager instances', () => {
+    const first = createMilkdropWebGPUFeedbackManager(640, 360) as unknown as {
+      auxTextures: Record<string, unknown>;
+      dispose: () => void;
+    };
+    const second = createMilkdropWebGPUFeedbackManager(640, 360) as unknown as {
+      auxTextures: Record<string, unknown>;
+      dispose: () => void;
+    };
+
+    expect(first.auxTextures.noise).toBe(second.auxTextures.noise);
+    expect(first.auxTextures.aura).toBe(second.auxTextures.aura);
+
+    first.dispose();
+    second.dispose();
+  });
+
+  test('does not dispose shared aux textures when a WebGPU feedback manager is torn down', () => {
+    const sharedTextures = getSharedMilkdropAuxTextures();
+    const originalDispose = sharedTextures.noise.dispose.bind(
+      sharedTextures.noise,
+    );
+    let disposeCalls = 0;
+    sharedTextures.noise.dispose = () => {
+      disposeCalls += 1;
+    };
+
+    const manager = createMilkdropWebGPUFeedbackManager(640, 360) as {
+      dispose: () => void;
+    };
+
+    try {
+      manager.dispose();
+      expect(disposeCalls).toBe(0);
+    } finally {
+      sharedTextures.noise.dispose = originalDispose;
+    }
   });
 });

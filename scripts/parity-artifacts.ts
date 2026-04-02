@@ -26,6 +26,8 @@ export type ParityArtifactEntry = {
     backend?: MilkdropRenderBackend | null;
     url?: string | null;
     durationMs?: number | null;
+    viewportWidth?: number | null;
+    viewportHeight?: number | null;
     audioMode?: 'demo' | 'microphone' | 'none' | null;
     vibeMode?: boolean | null;
   };

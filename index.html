@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Stims is a browser-native visualizer in the lineage of MilkDrop, with instant demo playback, mic and tab audio, bundled presets, and live preset editing in one running workspace."
+      content="Stims is a browser-native MilkDrop visualizer with instant demo playback and live preset editing."
     />
     <meta name="application-name" content="Stims" />
     <meta name="robots" content="index,follow" />
@@ -25,7 +25,7 @@
     <meta property="og:title" content="Stims | Live browser visualizer" />
     <meta
       property="og:description"
-      content="A browser-native visualizer in the lineage of MilkDrop, with instant demo playback, mic and tab audio, bundled presets, and live preset editing in one running workspace."
+      content="A browser-native MilkDrop visualizer with instant demo playback and live preset editing."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://no.toil.fyi/" />
@@ -40,7 +40,7 @@
     <meta name="twitter:title" content="Stims | Live browser visualizer" />
     <meta
       name="twitter:description"
-      content="A browser-native visualizer in the lineage of MilkDrop, with instant demo playback, mic and tab audio, bundled presets, and live preset editing in one running workspace."
+      content="A browser-native MilkDrop visualizer with instant demo playback and live preset editing."
     />
     <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
     <meta name="twitter:image:alt" content="Stims homepage preview image" />
@@ -74,7 +74,7 @@
             "name": "Stims",
             "publisher": { "@id": "https://no.toil.fyi/#organization" },
             "inLanguage": "en",
-            "description": "Browser-native visualizer in the lineage of MilkDrop, with instant demo playback, live preset discovery, and a dedicated setup route at /milkdrop/."
+            "description": "Browser-native MilkDrop visualizer with instant demo playback and a dedicated setup route at /milkdrop/."
           },
           {
             "@type": "WebPage",
@@ -82,7 +82,7 @@
             "url": "https://no.toil.fyi/",
             "name": "Stims",
             "headline": "Live browser visualizer in the lineage of MilkDrop",
-            "description": "Stims is a browser-native visualizer in the lineage of MilkDrop, with instant demo playback, mic and tab audio, bundled presets, and live preset editing in one running workspace.",
+            "description": "Stims is a browser-native MilkDrop visualizer with instant demo playback and live preset editing.",
             "isPartOf": { "@id": "https://no.toil.fyi/#website" },
             "publisher": { "@id": "https://no.toil.fyi/#organization" },
             "inLanguage": "en"
@@ -102,128 +102,85 @@
         <header class="hero home-stage" id="overview" aria-label="Stims overview">
           <div class="home-stage__grid">
             <div class="home-stage__copy">
+              <div class="home-stage__kicker-row" aria-label="Experience summary">
+                <span class="pill pill--accent">Instant demo route</span>
+                <span class="pill pill--soft">Live preset browser</span>
+              </div>
               <p class="eyebrow">Browser-native MilkDrop visualizer</p>
-              <h1>Turn a browser tab into a living light show.</h1>
+              <h1>Start a visual. Add complexity later.</h1>
               <p class="tagline">
-                Stims brings MilkDrop energy to the web with instant demo playback, your own audio
-                inputs, bundled presets, and a live editor that keeps the visuals running while you
-                reshape them.
-              </p>
-              <p class="home-stage__support">
-                Start on demo audio in one click, then move to the launchpad only when you need
-                microphone input, tab capture, or startup tuning.
+                Stims opens straight into motion with demo audio. If you want live input, the
+                launchpad keeps mic, tab capture, YouTube, and preset editing one step away.
               </p>
               <div class="hero-cta-row" role="group" aria-label="Primary actions">
                 <a
                   href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
                   class="cta-button primary"
                 >
-                  Start with demo audio
+                  Start demo instantly
                 </a>
                 <a href="/milkdrop/" class="cta-button ghost">Open launchpad</a>
               </div>
-              <div class="home-stage__meta" aria-label="Stims highlights">
-                <article class="home-stage__metric">
-                  <p class="home-stage__metric-label">Catalog</p>
-                  <p class="home-stage__metric-value">300+ presets</p>
+              <div class="home-stage__proof-grid" aria-label="What changes after you start">
+                <article class="home-stage__proof-card">
+                  <p class="home-stage__proof-label">Fastest route</p>
+                  <h2>Demo playback</h2>
+                  <p>No permission prompt before the visual starts.</p>
                 </article>
-                <article class="home-stage__metric">
-                  <p class="home-stage__metric-label">Inputs</p>
-                  <p class="home-stage__metric-value">Demo, mic, tab, YouTube</p>
+                <article class="home-stage__proof-card">
+                  <p class="home-stage__proof-label">Same workspace</p>
+                  <h2>Presets stay live</h2>
+                  <p>Swap looks, favorite presets, and stay inside playback.</p>
                 </article>
-                <article class="home-stage__metric">
-                  <p class="home-stage__metric-label">Tools</p>
-                  <p class="home-stage__metric-value">Browse, edit, inspect live</p>
+                <article class="home-stage__proof-card">
+                  <p class="home-stage__proof-label">Go deeper later</p>
+                  <h2>Launchpad handles input</h2>
+                  <p>Mic, tab audio, YouTube, and editor tools live there when you need them.</p>
                 </article>
               </div>
             </div>
 
             <div class="home-stage__visual">
-              <div class="home-stage__viewport" aria-hidden="true">
-                <div class="home-stage__viewport-header">
-                  <span>Stims signal view</span>
-                  <span>Live</span>
-                </div>
-                <div class="home-stage__rings"></div>
-                <div class="home-stage__orb"></div>
-                <div class="home-stage__beam home-stage__beam--one"></div>
-                <div class="home-stage__beam home-stage__beam--two"></div>
-                <div class="home-stage__beam home-stage__beam--three"></div>
-                <div class="home-stage__waveform">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-              <article class="home-stage__panel home-stage__panel--summary">
-                <p class="home-stage__panel-label">Live workspace</p>
-                <p>
-                  Browse presets, open the editor, and inspect runtime state without pausing the
-                  active visual.
+              <aside class="home-stage__summary-panel" aria-label="Start summary">
+                <p class="home-stage__summary-label">Two ways in</p>
+                <h2 class="home-stage__summary-title">Choose speed or control.</h2>
+                <p class="home-stage__summary-copy">
+                  Both paths land in the same live MilkDrop workspace.
                 </p>
-              </article>
+                <div class="home-stage__summary-routes">
+                  <article class="home-stage__summary-route">
+                    <p class="home-stage__summary-route-label">Instant</p>
+                    <h3>Start demo</h3>
+                    <p>Bundled audio, curated presets, and the shortest route to motion.</p>
+                  </article>
+                  <article class="home-stage__summary-route">
+                    <p class="home-stage__summary-route-label">Full setup</p>
+                    <h3>Open launchpad</h3>
+                    <p>Choose mic, tab audio, or YouTube before you enter playback.</p>
+                  </article>
+                </div>
+                <p class="home-stage__summary-note">
+                  Want a specific look first? Pick a bundled preset below and jump directly into
+                  playback.
+                </p>
+              </aside>
             </div>
           </div>
         </header>
 
-        <section class="home-launches section-shell" id="launches" aria-labelledby="launches-title">
-          <div class="section-heading">
-            <p class="eyebrow">Pick a lane</p>
-            <h2 id="launches-title">Choose the quickest entry point.</h2>
-            <p class="section-description">
-              Each route starts the same playback workspace. The difference is how much control you
-              want before the visuals take over.
-            </p>
-          </div>
-          <div class="home-launches__grid" aria-label="Launch options">
-            <article class="launch-card launch-card--featured">
-              <p class="launch-card__eyebrow">Fastest first click</p>
-              <h3>Demo rush</h3>
-              <p>Start on demo audio with a high-hit preset collection already open.</p>
-              <a
-                class="cta-button primary"
-                href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
-              >
-                Start demo audio
-              </a>
-            </article>
-            <article class="launch-card">
-              <p class="launch-card__eyebrow">Use your own sound</p>
-              <h3>Bring the room in</h3>
-              <p>Use the launchpad for microphone, tab audio, YouTube capture, and device tuning.</p>
-              <a class="cta-button ghost" href="/milkdrop/">Open launchpad</a>
-            </article>
-            <article class="launch-card">
-              <p class="launch-card__eyebrow">For tweakers</p>
-              <h3>Edit in motion</h3>
-              <p>Jump straight into the editor with demo playback already running.</p>
-              <a class="cta-button ghost" href="/milkdrop/?audio=demo&panel=editor">Open editor live</a>
-            </article>
-          </div>
-        </section>
-
         <section class="home-presets section-shell" id="presets" aria-labelledby="presets-title">
           <div class="home-presets__intro">
             <div class="section-heading">
-              <p class="eyebrow">Starter presets</p>
-              <h2 id="presets-title">Pick a visual personality before the first beat lands.</h2>
+              <p class="eyebrow">Bundled starters</p>
+              <h2 id="presets-title">Pick a preset and land inside.</h2>
               <p class="section-description" data-milkdrop-preset-count>
                 Loading bundled preset collections…
               </p>
             </div>
+            <p class="home-presets__support">
+              Demo audio is built in. For mic, tab audio, or YouTube,
+              <a class="text-link" href="/milkdrop/">open the launchpad</a>.
+            </p>
           </div>
           <div class="home-presets__frame">
             <div class="milkdrop-showcase__filters" data-milkdrop-preset-filters>
@@ -242,73 +199,50 @@
                 </p>
                 <div class="milkdrop-showcase__tag-row">
                   <span class="pill pill--accent">preset</span>
-                  <span class="pill pill--soft">browser</span>
+                  <span class="pill pill--soft">mobile</span>
                 </div>
                 <div class="milkdrop-showcase__card-actions">
                   <a
                     class="cta-button primary"
                     href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
                   >
-                    Start in live playback
+                    Start in playback
                   </a>
                 </div>
               </article>
             </div>
           </div>
         </section>
-
-        <section class="home-system section-shell" id="why-stims" aria-labelledby="why-stims-title">
-          <div class="section-heading">
-            <p class="eyebrow">Why it feels different</p>
-            <h2 id="why-stims-title">Built for the moment after music starts.</h2>
-            <p class="section-description">
-              Stims is a playback workspace first. Setup exists when you need it, but the core
-              experience stays focused on motion, preset discovery, and live iteration.
-            </p>
-          </div>
-          <div class="home-system__cards">
-            <article class="system-card">
-              <p class="system-card__label">Browser-native</p>
-              <h3>No install ritual.</h3>
-              <p>Open a URL, choose a signal, and let the canvas fill the room.</p>
-            </article>
-            <article class="system-card">
-              <p class="system-card__label">Preset-first</p>
-              <h3>Discovery stays inside motion.</h3>
-              <p>Browse collections, favorites, and recent runs without dropping out of playback.</p>
-            </article>
-            <article class="system-card">
-              <p class="system-card__label">Live editing</p>
-              <h3>Change the active preset in place.</h3>
-              <p>Open the editor, try ideas fast, and keep a safety net while the visual keeps running.</p>
-            </article>
-            <article class="system-card">
-              <p class="system-card__label">Launchpad</p>
-              <h3>Use setup only when it helps.</h3>
-              <p>Mic input, tab capture, quality presets, and motion defaults are there when you need more control.</p>
-            </article>
-          </div>
-          <p class="home-system__footer">
-            Want the implementation details too?
-            <a class="text-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">
-              Inspect the source on GitHub
-            </a>
-          </p>
-        </section>
       </main>
 
       <footer class="home-footer" id="site-footer">
-        <p>Stims is built for fast entry and long sessions inside one live visual workspace.</p>
+        <p>Stims is a browser-native MilkDrop-inspired visualizer built for instant playback and live iteration.</p>
         <p class="footer-nav">
-          <a href="#launches" class="text-link">Launches</a>
+          <a href="#overview" class="text-link">Overview</a>
           <span aria-hidden="true">·</span>
           <a href="#presets" class="text-link">Presets</a>
           <span aria-hidden="true">·</span>
-          <a href="#why-stims" class="text-link">Why Stims</a>
-          <span aria-hidden="true">·</span>
           <a href="/milkdrop/" class="text-link">Launchpad</a>
+          <span aria-hidden="true">·</span>
+          <a
+            href="https://github.com/zz-plant/stims"
+            class="text-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
         </p>
       </footer>
+    </div>
+    <div class="home-mobile-dock" aria-label="Quick launch actions">
+      <a
+        href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
+        class="cta-button primary"
+      >
+        Start demo
+      </a>
+      <a href="/milkdrop/" class="cta-button ghost">Launchpad</a>
     </div>
     <script type="module" src="/assets/js/app.ts"></script>
   </body>

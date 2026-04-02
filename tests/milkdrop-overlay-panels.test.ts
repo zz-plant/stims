@@ -9,6 +9,7 @@ import {
   formatInspectorMetrics,
   InspectorPanel,
 } from '../assets/js/milkdrop/overlay/inspector-panel.ts';
+import { getPresetMetaQualifier } from '../assets/js/milkdrop/overlay/preset-row.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
@@ -232,6 +233,68 @@ describe('browse panel helpers', () => {
     ).toBe(false);
   });
 
+  test('matches classic-name and author-aware browse aliases', () => {
+    const classicPreset = createCatalogEntry(
+      'rovastar-parallel-universe',
+      'Parallel Universe',
+    );
+    classicPreset.author = 'Rovastar';
+    classicPreset.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+    ];
+
+    expect(
+      matchesBrowseFilters({
+        preset: classicPreset,
+        query: 'rovastar',
+        activeCollectionTag: '',
+        browseMode: 'all',
+        browseSupportFilter: 'all',
+      }),
+    ).toBe(true);
+    expect(
+      matchesBrowseFilters({
+        preset: classicPreset,
+        query: 'geiss',
+        activeCollectionTag: '',
+        browseMode: 'all',
+        browseSupportFilter: 'all',
+      }),
+    ).toBe(true);
+    expect(
+      matchesBrowseFilters({
+        preset: classicPreset,
+        query: 'classic milkdrop',
+        activeCollectionTag: '',
+        browseMode: 'all',
+        browseSupportFilter: 'all',
+      }),
+    ).toBe(true);
+  });
+
+  test('prefers familiar collection labels over raw effect tags in row metadata', () => {
+    const preset = createCatalogEntry('parallel-universe', 'Parallel Universe');
+    preset.tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+      'lasers',
+    ];
+
+    expect(getPresetMetaQualifier(preset)).toBe('Cream of the Crop');
+  });
+
+  test('uses the shipped Rovastar collection label ahead of generic classic tags', () => {
+    const preset = createCatalogEntry('glowsticks', 'Glowsticks');
+    preset.tags = [
+      'collection:classic-milkdrop',
+      'collection:rovastar-and-collaborators',
+      'glowsticks',
+    ];
+
+    expect(getPresetMetaQualifier(preset)).toBe('Rovastar and collaborators');
+  });
+
   test('sorts recommended and recent browse presets predictably', () => {
     const favorite = createCatalogEntry('favorite', 'Beta');
     favorite.isFavorite = true;
@@ -327,7 +390,7 @@ describe('inspector panel formatting', () => {
     expect(formatCompatibilitySummary({ support, compiled })).toEqual({
       degradationCategorySummary: 'Backend degradation',
       primaryNote:
-        'Backend degradation: Wave mesh falls back to a simpler path.',
+        'Showing a simpler version. Wave mesh falls back to a simpler path.',
     });
 
     const metrics = formatInspectorMetrics({
@@ -340,7 +403,9 @@ describe('inspector panel formatting', () => {
     ).toBe('Partial');
     expect(
       metrics.find((metric) => metric.label === 'Primary note')?.value,
-    ).toBe('Backend degradation: Wave mesh falls back to a simpler path.');
+    ).toBe(
+      'Showing a simpler version. Wave mesh falls back to a simpler path.',
+    );
   });
 
   test('renders inspector metrics into DOM once the panel is visible', () => {
@@ -357,7 +422,7 @@ describe('inspector panel formatting', () => {
 
     expect(panel.metricsElement.textContent).toContain('Backend: webgpu');
     expect(panel.metricsElement.textContent).toContain(
-      'Primary note: Backend degradation: Wave mesh falls back to a simpler path.',
+      'Primary note: Showing a simpler version. Wave mesh falls back to a simpler path.',
     );
   });
 });

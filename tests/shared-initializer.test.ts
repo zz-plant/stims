@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createSharedInitializer } from '../assets/js/utils/shared-initializer.ts';
+import { createSharedInitializer } from '../assets/js/core/shared-initializer.ts';
 
 describe('createSharedInitializer', () => {
   test('runs initializer once and shares the promise', async () => {
