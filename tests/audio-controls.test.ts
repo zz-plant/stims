@@ -102,6 +102,7 @@ describe('audio controls primary emphasis', () => {
         ) as HTMLElement | null
       )?.hidden,
     ).toBe(true);
+    expect(container.querySelector('[data-first-step-source]')).toBeNull();
     expect(container.classList.contains('control-panel--audio')).toBe(true);
   });
 
@@ -547,62 +548,6 @@ describe('audio controls primary emphasis', () => {
     );
   });
 
-  test('falls back to demo recommendation when microphone is unsupported', async () => {
-    const container = document.createElement('section');
-    const originalNavigator = globalThis.navigator;
-
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        ...originalNavigator,
-        mediaDevices: undefined,
-        permissions: undefined,
-      },
-    });
-
-    initAudioControls(container, {
-      onRequestMicrophone: async () => {},
-      onRequestDemoAudio: async () => {},
-    });
-
-    await flush();
-
-    const micRow = container.querySelector('[data-audio-row="mic"]');
-    const demoRow = container.querySelector('[data-audio-row="demo"]');
-    const status = container.querySelector('#audio-status') as HTMLElement;
-    const micButton = container.querySelector(
-      '#start-audio-btn',
-    ) as HTMLButtonElement;
-
-    expect(micRow?.classList.contains('control-panel__row--primary')).toBe(
-      false,
-    );
-    expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
-      true,
-    );
-    expect(micButton.disabled).toBe(true);
-    expect(status.textContent).toContain(
-      'Microphone is unavailable in this browser',
-    );
-
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: originalNavigator,
-    });
-  });
-
-  test('does not render separate onboarding source copy when demo is preferred', () => {
-    const container = document.createElement('section');
-
-    initAudioControls(container, {
-      onRequestMicrophone: async () => {},
-      onRequestDemoAudio: async () => {},
-      preferDemoAudio: true,
-    });
-
-    expect(container.querySelector('[data-first-step-source]')).toBeNull();
-  });
-
   test('disables YouTube load until a valid link is entered', () => {
     const container = document.createElement('section');
 
@@ -736,61 +681,136 @@ describe('audio controls primary emphasis', () => {
     expect(captureButton.getAttribute('aria-disabled')).toBe('true');
   });
 
-  test('switches emphasis to demo row after successful demo start', async () => {
-    const container = document.createElement('section');
+  test('updates source emphasis for unsupported mic and successful audio starts', async () => {
+    const originalNavigator = globalThis.navigator;
+    const scenarios = [
+      {
+        label: 'unsupported microphone',
+        setupEnvironment() {
+          Object.defineProperty(globalThis, 'navigator', {
+            configurable: true,
+            value: {
+              ...originalNavigator,
+              mediaDevices: undefined,
+              permissions: undefined,
+            },
+          });
+        },
+        options: {
+          onRequestMicrophone: async () => {},
+          onRequestDemoAudio: async () => {},
+        },
+        trigger: async () => {
+          await flush();
+        },
+        assert(container: HTMLElement) {
+          expect(
+            (
+              container.querySelector(
+                '[data-audio-row="mic"]',
+              ) as HTMLElement | null
+            )?.classList.contains('control-panel__row--primary'),
+          ).toBe(false);
+          expect(
+            (
+              container.querySelector(
+                '[data-audio-row="demo"]',
+              ) as HTMLElement | null
+            )?.classList.contains('control-panel__row--primary'),
+          ).toBe(true);
+          expect(
+            (container.querySelector('#start-audio-btn') as HTMLButtonElement)
+              .disabled,
+          ).toBe(true);
+          expect(
+            (container.querySelector('#audio-status') as HTMLElement)
+              .textContent,
+          ).toContain('Microphone is unavailable in this browser');
+        },
+      },
+      {
+        label: 'successful demo start',
+        setupEnvironment() {},
+        options: {
+          onRequestMicrophone: async () => {},
+          onRequestDemoAudio: async () => {},
+        },
+        trigger: async (container: HTMLElement) => {
+          (
+            container.querySelector('#use-demo-audio') as HTMLButtonElement
+          ).click();
+          await flush();
+        },
+        assert(container: HTMLElement) {
+          expect(
+            (
+              container.querySelector(
+                '[data-audio-row="mic"]',
+              ) as HTMLElement | null
+            )?.classList.contains('control-panel__row--primary'),
+          ).toBe(false);
+          expect(
+            (
+              container.querySelector(
+                '[data-audio-row="demo"]',
+              ) as HTMLElement | null
+            )?.classList.contains('control-panel__row--primary'),
+          ).toBe(true);
+          expect(
+            (
+              container.querySelector(
+                '[data-post-start-guidance]',
+              ) as HTMLElement | null
+            )?.hidden,
+          ).toBe(false);
+        },
+      },
+      {
+        label: 'successful microphone start',
+        setupEnvironment() {},
+        options: {
+          onRequestMicrophone: async () => {},
+          onRequestDemoAudio: async () => {},
+          preferDemoAudio: true,
+        },
+        trigger: async (container: HTMLElement) => {
+          (
+            container.querySelector('#start-audio-btn') as HTMLButtonElement
+          ).click();
+          await flush();
+        },
+        assert(container: HTMLElement) {
+          expect(
+            (
+              container.querySelector(
+                '[data-audio-row="mic"]',
+              ) as HTMLElement | null
+            )?.classList.contains('control-panel__row--primary'),
+          ).toBe(true);
+          expect(
+            (
+              container.querySelector(
+                '[data-audio-row="demo"]',
+              ) as HTMLElement | null
+            )?.classList.contains('control-panel__row--primary'),
+          ).toBe(false);
+        },
+      },
+    ] as const;
 
-    initAudioControls(container, {
-      onRequestMicrophone: async () => {},
-      onRequestDemoAudio: async () => {},
+    for (const scenario of scenarios) {
+      restoreNavigatorBaseline();
+      scenario.setupEnvironment();
+      const container = document.createElement('section');
+      initAudioControls(container, scenario.options);
+      await scenario.trigger(container);
+      scenario.assert(container);
+    }
+
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: originalNavigator,
     });
-
-    const demoButton = container.querySelector(
-      '#use-demo-audio',
-    ) as HTMLButtonElement;
-    demoButton.click();
-    await flush();
-
-    const micRow = container.querySelector('[data-audio-row="mic"]');
-    const demoRow = container.querySelector('[data-audio-row="demo"]');
-    expect(micRow?.classList.contains('control-panel__row--primary')).toBe(
-      false,
-    );
-    expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
-      true,
-    );
-    expect(
-      (
-        container.querySelector(
-          '[data-post-start-guidance]',
-        ) as HTMLElement | null
-      )?.hidden,
-    ).toBe(false);
-  });
-
-  test('switches emphasis back to microphone after successful mic start', async () => {
-    const container = document.createElement('section');
-
-    initAudioControls(container, {
-      onRequestMicrophone: async () => {},
-      onRequestDemoAudio: async () => {},
-      preferDemoAudio: true,
-    });
-
-    const micButton = container.querySelector(
-      '#start-audio-btn',
-    ) as HTMLButtonElement;
-    micButton.click();
-    await flush();
-
-    const micRow = container.querySelector('[data-audio-row="mic"]');
-    const demoRow = container.querySelector('[data-audio-row="demo"]');
-
-    expect(micRow?.classList.contains('control-panel__row--primary')).toBe(
-      true,
-    );
-    expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
-      false,
-    );
   });
 
   test('shows inline YouTube URL feedback copy as validity changes', () => {

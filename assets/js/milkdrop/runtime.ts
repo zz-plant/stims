@@ -50,6 +50,7 @@ import {
   buildRenderFrameState,
   shouldAutoAdvancePreset,
 } from './runtime/lifecycle';
+import { createMilkdropRuntimeLifetime } from './runtime/lifetime';
 import { createMilkdropPresentationController } from './runtime/presentation-controller';
 import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
 import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
@@ -128,12 +129,14 @@ export function createMilkdropExperience({
   let adaptiveQualityController: AdaptiveQualityController | null = null;
   let adaptiveQualityState: AdaptiveQualityState | null = null;
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
+  let disposeSessionSubscription: (() => void) | null = null;
   let postprocessingPipeline: PostprocessingPipeline | null = null;
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
     shaderEnabled: false,
     videoEchoEnabled: false,
   };
+  const lifetime = createMilkdropRuntimeLifetime();
   const disposePostprocessingPipeline = () => {
     postprocessingPipeline?.dispose();
     postprocessingPipeline = null;
@@ -396,7 +399,10 @@ export function createMilkdropExperience({
       setOverlayStatus,
     });
 
-  session.subscribe((state) => {
+  disposeSessionSubscription = session.subscribe((state) => {
+    if (!lifetime.isActive() || !overlay) {
+      return;
+    }
     overlay.setSessionState(state);
     const nextCompiled = state.activeCompiled;
     if (!nextCompiled) {
@@ -429,48 +435,56 @@ export function createMilkdropExperience({
   );
   disposeRequestedOverlayTabListener = installRequestedOverlayTabListener(
     (tab) => {
-      overlay.openTab(tab);
+      overlay?.openTab(tab);
     },
   );
   const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
   if (requestedOverlayTab) {
-    overlay.openTab(requestedOverlayTab);
+    overlay?.openTab(requestedOverlayTab);
   }
-  void catalogCoordinator
-    .scheduleCatalogSync({
+  void (async () => {
+    await catalogCoordinator.scheduleCatalogSync({
       activePresetId,
       activeBackend,
-    })
-    .then(async () => {
-      const {
-        requestedCollectionTag,
-        collectionEntry,
-        startupPresetId,
-        firstSelectablePresetId,
-      } = await selectMilkdropStartupPreset({
-        catalogCoordinator,
-        navigation,
-        preferences,
-        initialPresetId,
-        activeBackend,
-      });
-      if (collectionEntry && requestedCollectionTag) {
-        overlay.setActiveCollectionTag(requestedCollectionTag);
-      }
-      if (startupPresetId) {
-        await navigation.selectPreset(startupPresetId, {
-          recordHistory: false,
-        });
-        if (activePresetId === startupPresetId) {
-          return;
-        }
-      }
-      if (firstSelectablePresetId) {
-        await navigation.selectPreset(firstSelectablePresetId, {
-          recordHistory: false,
-        });
-      }
     });
+    if (!lifetime.isActive() || !overlay) {
+      return;
+    }
+    const {
+      requestedCollectionTag,
+      collectionEntry,
+      startupPresetId,
+      firstSelectablePresetId,
+    } = await selectMilkdropStartupPreset({
+      catalogCoordinator,
+      navigation,
+      preferences,
+      initialPresetId,
+      activeBackend,
+    });
+    if (!lifetime.isActive() || !overlay) {
+      return;
+    }
+    if (collectionEntry && requestedCollectionTag) {
+      overlay.setActiveCollectionTag(requestedCollectionTag);
+    }
+    if (startupPresetId) {
+      await navigation.selectPreset(startupPresetId, {
+        recordHistory: false,
+      });
+      if (!lifetime.isActive()) {
+        return;
+      }
+      if (activePresetId === startupPresetId) {
+        return;
+      }
+    }
+    if (firstSelectablePresetId) {
+      await navigation.selectPreset(firstSelectablePresetId, {
+        recordHistory: false,
+      });
+    }
+  })();
 
   return {
     applyFields(updates: Record<string, string | number>) {
@@ -492,18 +506,29 @@ export function createMilkdropExperience({
     },
 
     attachRuntime(nextRuntime: ToyRuntimeInstance) {
+      if (!lifetime.isActive()) {
+        return;
+      }
       runtime = nextRuntime;
+      const attachmentRevision = lifetime.beginAttachment();
       if (!disposeKeyboardShortcuts) {
         disposeKeyboardShortcuts =
           interactionPresenter.installKeyboardShortcuts();
       }
       nextRuntime.toy.rendererReady.then((handle) => {
+        if (
+          !lifetime.isCurrentAttachment(attachmentRevision) ||
+          runtime !== nextRuntime
+        ) {
+          return;
+        }
         activeBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
         if (typeof document !== 'undefined') {
           document.body.dataset.activeBackend = activeBackend;
         }
         vm.setRenderBackend(activeBackend);
         disposePostprocessingPipeline();
+        adapter?.dispose();
         adapter = createMilkdropRendererAdapter({
           scene: nextRuntime.toy.scene,
           camera: nextRuntime.toy.camera,
@@ -549,6 +574,12 @@ export function createMilkdropExperience({
             presetId: activeCompiled.source.id,
             reason: `${activeCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
           });
+          return;
+        }
+        if (
+          !lifetime.isCurrentAttachment(attachmentRevision) ||
+          runtime !== nextRuntime
+        ) {
           return;
         }
         void catalogCoordinator.scheduleCatalogSync({
@@ -690,7 +721,7 @@ export function createMilkdropExperience({
         },
       });
       if (
-        overlay.shouldRenderInspectorMetrics() &&
+        overlay?.shouldRenderInspectorMetrics() &&
         now - lastInspectorOverlaySyncAt >= 180
       ) {
         lastInspectorOverlaySyncAt = now;
@@ -699,8 +730,12 @@ export function createMilkdropExperience({
     },
 
     dispose() {
+      lifetime.dispose();
       clearDebugSnapshot('milkdrop');
+      disposeSessionSubscription?.();
+      disposeSessionSubscription = null;
       overlay?.dispose();
+      overlay = null;
       session.dispose();
       disposePostprocessingPipeline();
       adapter?.dispose();

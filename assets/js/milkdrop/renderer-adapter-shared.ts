@@ -113,6 +113,7 @@ export type MilkdropFeedbackManagerFactory = (
 
 export const DEFAULT_ADAPTER_WEBGPU_OPTIMIZATION_FLAGS =
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS;
+export const MAX_MILKDROP_POLYGON_SIDES = 128;
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 export const BACKGROUND_GEOMETRY = markSharedGeometry(
@@ -250,8 +251,15 @@ export function markAlwaysOnscreen<
   return object;
 }
 
-function getUnitPolygonVertices(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
+export function normalizeMilkdropPolygonSides(sides: number) {
+  if (!Number.isFinite(sides)) {
+    return 3;
+  }
+  return Math.min(MAX_MILKDROP_POLYGON_SIDES, Math.max(3, Math.round(sides)));
+}
+
+export function getUnitPolygonVertices(sides: number) {
+  const safeSides = normalizeMilkdropPolygonSides(sides);
   return Array.from({ length: safeSides }, (_, index) => {
     const theta =
       (index / safeSides) * Math.PI * 2 + Math.PI / Math.max(3, safeSides);
@@ -260,7 +268,7 @@ function getUnitPolygonVertices(sides: number) {
 }
 
 export function getUnitPolygonFillGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
+  const safeSides = normalizeMilkdropPolygonSides(sides);
   const cached = polygonFillGeometryCache.get(safeSides);
   if (cached) {
     return cached;
@@ -280,7 +288,7 @@ export function getUnitPolygonFillGeometry(sides: number) {
 }
 
 export function getUnitPolygonOutlineGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
+  const safeSides = normalizeMilkdropPolygonSides(sides);
   const cached = polygonOutlineGeometryCache.get(`open:${safeSides}`);
   if (cached) {
     return cached;
@@ -298,7 +306,7 @@ export function getUnitPolygonOutlineGeometry(sides: number) {
 }
 
 export function getUnitPolygonClosedLineGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
+  const safeSides = normalizeMilkdropPolygonSides(sides);
   const cached = polygonOutlineGeometryCache.get(`closed:${safeSides}`);
   if (cached) {
     return cached;

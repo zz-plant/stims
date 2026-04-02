@@ -1,8 +1,20 @@
 import { describe, expect, test } from 'bun:test';
 import { Group } from 'three';
+import {
+  MAX_MILKDROP_POLYGON_SIDES,
+  normalizeMilkdropPolygonSides,
+} from '../assets/js/milkdrop/renderer-adapter-shared.ts';
 import { renderShapeGroup } from '../assets/js/milkdrop/renderer-helpers/shape-renderer';
 
 describe('milkdrop renderer seams', () => {
+  test('bounds polygon geometry side counts to the shared cache ceiling', () => {
+    expect(normalizeMilkdropPolygonSides(2)).toBe(3);
+    expect(normalizeMilkdropPolygonSides(6.4)).toBe(6);
+    expect(normalizeMilkdropPolygonSides(10_000)).toBe(
+      MAX_MILKDROP_POLYGON_SIDES,
+    );
+  });
+
   test('keeps renderer groups synchronized with the latest shape count', () => {
     const group = new Group();
     const disposed: unknown[] = [];

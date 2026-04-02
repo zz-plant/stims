@@ -20,6 +20,10 @@ import type {
   MilkdropRendererBatcher,
 } from './renderer-adapter.ts';
 import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
+import {
+  getUnitPolygonVertices,
+  normalizeMilkdropPolygonSides,
+} from './renderer-adapter-shared';
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
@@ -186,26 +190,20 @@ function createShapeRingScales(
 }
 
 function getUnitPolygonFillGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
+  const safeSides = normalizeMilkdropPolygonSides(sides);
   const cached = polygonFillGeometryCache.get(safeSides);
   if (cached) {
     return cached;
   }
+  const vertices = getUnitPolygonVertices(safeSides);
   const positions: number[] = [];
-  for (let index = 0; index < safeSides; index += 1) {
-    const currentAngle = (index / safeSides) * Math.PI * 2;
-    const nextAngle = ((index + 1) / safeSides) * Math.PI * 2;
-    positions.push(
-      0,
-      0,
-      0,
-      Math.cos(currentAngle),
-      Math.sin(currentAngle),
-      0,
-      Math.cos(nextAngle),
-      Math.sin(nextAngle),
-      0,
-    );
+  for (let index = 0; index < vertices.length; index += 1) {
+    const current = vertices[index];
+    const next = vertices[(index + 1) % vertices.length];
+    if (!current || !next) {
+      continue;
+    }
+    positions.push(0, 0, 0, current.x, current.y, 0, next.x, next.y, 0);
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
@@ -214,7 +212,7 @@ function getUnitPolygonFillGeometry(sides: number) {
 }
 
 function getUnitPolygonRingGeometry(sides: number) {
-  const safeSides = Math.max(3, Math.round(sides));
+  const safeSides = normalizeMilkdropPolygonSides(sides);
   const cached = polygonRingGeometryCache.get(safeSides);
   if (cached) {
     return cached;
@@ -222,14 +220,15 @@ function getUnitPolygonRingGeometry(sides: number) {
   const geometry = new InstancedBufferGeometry();
   const unitCorner: number[] = [];
   const innerWeight: number[] = [];
-  for (let index = 0; index < safeSides; index += 1) {
-    const currentAngle = (index / safeSides) * Math.PI * 2;
-    const nextAngle = ((index + 1) / safeSides) * Math.PI * 2;
-    const current: [number, number] = [
-      Math.cos(currentAngle),
-      Math.sin(currentAngle),
-    ];
-    const next: [number, number] = [Math.cos(nextAngle), Math.sin(nextAngle)];
+  const vertices = getUnitPolygonVertices(safeSides);
+  for (let index = 0; index < vertices.length; index += 1) {
+    const currentVertex = vertices[index];
+    const nextVertex = vertices[(index + 1) % vertices.length];
+    if (!currentVertex || !nextVertex) {
+      continue;
+    }
+    const current: [number, number] = [currentVertex.x, currentVertex.y];
+    const next: [number, number] = [nextVertex.x, nextVertex.y];
     unitCorner.push(
       current[0],
       current[1],
