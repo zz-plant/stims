@@ -34,6 +34,7 @@ type CertificationCorpusDocument = {
 const CERTIFICATION_CORPUS_URL =
   '/assets/data/milkdrop-parity/certification-corpus.json';
 const DEFAULT_LIBRARY_MANIFEST_URLS = [
+  '/milkdrop-presets/libraries/projectm-cream-of-the-crop/catalog.json',
   '/milkdrop-presets/libraries/projectm-upstream/catalog.json',
 ];
 

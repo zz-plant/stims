@@ -14,6 +14,7 @@ const COLLECTION_LABELS: Record<string, string> = {
 const HIDDEN_COLLECTION_FILTER_TAGS = new Set([
   'collection:feedback-lab',
   'collection:low-motion',
+  'collection:vendored-projectm',
 ]);
 const CLASSIC_MILKDROP_TAGS = new Set([
   'collection:classic-milkdrop',
