@@ -24,33 +24,6 @@ function resolveEntries(document: MilkdropCatalogDocument) {
   );
 }
 
-function createPresetPill(
-  documentRef: Document,
-  entry: MilkdropCatalogEntry,
-  index: number,
-) {
-  const pill = documentRef.createElement('span');
-  const accentClass =
-    index === 0
-      ? 'pill--accent'
-      : index % 3 === 0
-        ? 'pill--contrast'
-        : 'pill--soft';
-  pill.className = `pill ${accentClass}`;
-  pill.textContent = entry.title;
-  if (entry.author) {
-    pill.title = `${entry.title} by ${entry.author}`;
-  }
-  return pill;
-}
-
-function formatTagLabel(tag: string) {
-  return tag
-    .split('-')
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
 const COLLECTION_LABELS: Record<string, string> = {
   'collection:classic-milkdrop': 'Classic MilkDrop',
   'collection:cream-of-the-crop': 'Cream of the Crop',
@@ -115,19 +88,6 @@ function buildPresetLaunchHref(
   return `/milkdrop/?${searchParams.toString()}`;
 }
 
-function buildPresetDescription(entry: MilkdropCatalogEntry) {
-  const tags = (entry.tags ?? []).filter(
-    (tag) => !tag.startsWith('collection:') && tag !== 'preset',
-  );
-  if (!tags.length) {
-    return 'Launch this preset directly into the live Stims workspace.';
-  }
-  return `${tags
-    .slice(0, 3)
-    .map((tag) => tag.replace(/-/gu, ' '))
-    .join(' · ')} energy. Opens directly in live playback.`;
-}
-
 function createCollectionButton(
   documentRef: Document,
   {
@@ -176,38 +136,19 @@ function createPresetCard(
     ? `By ${entry.author}`
     : 'Bundled Stims preset';
 
-  const description = documentRef.createElement('p');
-  description.className = 'milkdrop-showcase__card-copy';
-  description.textContent = buildPresetDescription(entry);
-
-  const tagRow = documentRef.createElement('div');
-  tagRow.className = 'milkdrop-showcase__tag-row';
-  (entry.tags ?? [])
-    .filter((tag) => !tag.startsWith('collection:') && tag !== 'preset')
-    .slice(0, 3)
-    .forEach((tag, index) => {
-      tagRow.appendChild(
-        createPresetPill(
-          documentRef,
-          { ...entry, title: formatTagLabel(tag) },
-          index,
-        ),
-      );
-    });
-
   const actions = documentRef.createElement('div');
   actions.className = 'milkdrop-showcase__card-actions';
 
   const launch = documentRef.createElement('a');
   launch.href = buildPresetLaunchHref(entry, collectionTag);
   launch.className = 'cta-button primary';
-  launch.textContent = 'Start with this preset';
+  launch.textContent = 'Open preset';
   launch.addEventListener('click', () => {
     requestMilkdropPresetSelection(entry.id);
   });
 
   actions.append(launch);
-  card.append(eyebrow, title, meta, description, tagRow, actions);
+  card.append(eyebrow, title, meta, actions);
   return card;
 }
 
@@ -262,7 +203,7 @@ export async function initMilkdropShowcase() {
       );
       const featuredEntries = (
         previewEntries.length ? previewEntries : filteredByCollection
-      ).slice(0, 6);
+      ).slice(0, 2);
       const collectionLabel = collectionTag
         ? formatCollectionLabel(collectionTag)
         : 'All presets';
@@ -273,7 +214,7 @@ export async function initMilkdropShowcase() {
         ),
       );
 
-      presetCount.textContent = `${entries.length} bundled presets across ${visibleCollectionTags.length} quick collections. Showing ${featuredEntries.length} featured picks from ${collectionLabel}.`;
+      presetCount.textContent = `${entries.length} presets across ${visibleCollectionTags.length} collections. Showing ${featuredEntries.length} from ${collectionLabel}.`;
 
       presetFilters.replaceChildren(
         createCollectionButton(document, {

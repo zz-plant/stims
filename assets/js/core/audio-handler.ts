@@ -8,6 +8,97 @@ const FREQUENCY_ANALYSER_PROCESSOR = new URL(
   import.meta.url,
 );
 
+const DEFAULT_FREQUENCY_BAND_RANGES = {
+  bass: { minHz: 24, maxHz: 320 },
+  mid: { minHz: 320, maxHz: 2800 },
+  treble: { minHz: 2800, maxHz: 12000 },
+} as const;
+const DEFAULT_SAMPLE_RATE = 44_100;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function resolveBandIndexes(
+  dataLength: number,
+  sampleRate: number,
+  range: { minHz: number; maxHz: number },
+) {
+  if (dataLength <= 0 || sampleRate <= 0) {
+    return { start: 0, end: 0 };
+  }
+
+  const fftSize = dataLength * 2;
+  const resolutionHz = sampleRate / fftSize;
+  const nyquistHz = sampleRate / 2;
+  const minHz = clamp(range.minHz, 0, nyquistHz);
+  const maxHz = clamp(Math.max(minHz, range.maxHz), 0, nyquistHz);
+  const start = clamp(Math.floor(minHz / resolutionHz), 0, dataLength - 1);
+  const end = clamp(Math.ceil(maxHz / resolutionHz), start + 1, dataLength);
+
+  return { start, end };
+}
+
+function getBandAverageForRange(
+  data: Uint8Array,
+  sampleRate: number,
+  range: { minHz: number; maxHz: number },
+  band: 'bass' | 'mid' | 'treble',
+) {
+  if (data.length === 0) return 0;
+
+  const { start, end } = resolveBandIndexes(data.length, sampleRate, range);
+  if (end <= start) return 0;
+
+  let sum = 0;
+  let weightTotal = 0;
+
+  for (let index = start; index < end; index += 1) {
+    const position =
+      end - start <= 1 ? 0 : (index - start) / Math.max(1, end - start - 1);
+    const weight =
+      band === 'bass'
+        ? 1.2 - position * 0.3
+        : band === 'treble'
+          ? 0.9 + position * 0.25
+          : 1;
+    sum += (data[index] ?? 0) * weight;
+    weightTotal += weight;
+  }
+
+  return weightTotal > 0 ? sum / weightTotal : 0;
+}
+
+function getFrequencyBandLevels(data: Uint8Array, sampleRate: number) {
+  if (data.length === 0) {
+    return { bass: 0, mid: 0, treble: 0 };
+  }
+
+  return {
+    bass:
+      getBandAverageForRange(
+        data,
+        sampleRate,
+        DEFAULT_FREQUENCY_BAND_RANGES.bass,
+        'bass',
+      ) / 255,
+    mid:
+      getBandAverageForRange(
+        data,
+        sampleRate,
+        DEFAULT_FREQUENCY_BAND_RANGES.mid,
+        'mid',
+      ) / 255,
+    treble:
+      getBandAverageForRange(
+        data,
+        sampleRate,
+        DEFAULT_FREQUENCY_BAND_RANGES.treble,
+        'treble',
+      ) / 255,
+  };
+}
+
 export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
@@ -25,6 +116,7 @@ export class FrequencyAnalyser {
   private readonly silentGain: GainNode;
   private readonly workletNode?: AudioWorkletNode;
   private readonly analyserNode?: AnalyserNode;
+  private readonly sampleRate: number;
   private dataVersion = 0;
   private energyVersion = -1;
   private cachedEnergy = { bass: 0, mid: 0, treble: 0 };
@@ -35,16 +127,19 @@ export class FrequencyAnalyser {
     analyserNode,
     fftSize,
     silentGain,
+    sampleRate,
   }: {
     sourceNode: MediaStreamAudioSourceNode;
     workletNode?: AudioWorkletNode;
     analyserNode?: AnalyserNode;
     fftSize: number;
     silentGain: GainNode;
+    sampleRate: number;
   }) {
     this.sourceNode = sourceNode;
     this.workletNode = workletNode;
     this.analyserNode = analyserNode;
+    this.sampleRate = sampleRate;
     this.frequencyBinCount = fftSize / 2;
     this.frequencyData = new Uint8Array(this.frequencyBinCount);
     this.waveformData = new Uint8Array(fftSize);
@@ -124,6 +219,10 @@ export class FrequencyAnalyser {
           workletNode,
           fftSize,
           silentGain,
+          sampleRate:
+            Number.isFinite(context.sampleRate) && context.sampleRate > 0
+              ? context.sampleRate
+              : DEFAULT_SAMPLE_RATE,
         });
       } catch (error) {
         console.warn(
@@ -147,6 +246,10 @@ export class FrequencyAnalyser {
       analyserNode,
       fftSize,
       silentGain,
+      sampleRate:
+        Number.isFinite(context.sampleRate) && context.sampleRate > 0
+          ? context.sampleRate
+          : DEFAULT_SAMPLE_RATE,
     });
   }
 
@@ -176,25 +279,7 @@ export class FrequencyAnalyser {
   }
 
   private calculateMultiBandEnergy(data: Uint8Array) {
-    const len = data.length;
-
-    const bassEnd = Math.floor(len * 0.1);
-    const midEnd = Math.floor(len * 0.5);
-
-    let bassSum = 0;
-    for (let i = 0; i < bassEnd; i += 1) bassSum += data[i] ?? 0;
-
-    let midSum = 0;
-    for (let i = bassEnd; i < midEnd; i += 1) midSum += data[i] ?? 0;
-
-    let trebleSum = 0;
-    for (let i = midEnd; i < len; i += 1) trebleSum += data[i] ?? 0;
-
-    return {
-      bass: bassSum / (bassEnd || 1) / 255,
-      mid: midSum / (midEnd - bassEnd || 1) / 255,
-      treble: trebleSum / (len - midEnd || 1) / 255,
-    };
+    return getFrequencyBandLevels(data, this.sampleRate);
   }
 
   private updateEnergyHistory(energy = this.getMultiBandEnergy()) {
@@ -233,6 +318,10 @@ export class FrequencyAnalyser {
 
   getRmsLevel() {
     return this.rms;
+  }
+
+  getSampleRate() {
+    return this.sampleRate;
   }
 
   disconnect() {
@@ -661,10 +750,6 @@ export function getAverageFrequency(data: Uint8Array): number {
   }
 
   return sum / data.length;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 /**

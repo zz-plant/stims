@@ -1,20 +1,43 @@
 import type { FrequencyAnalyser } from '../core/audio-handler';
 import { createBeatTracker } from '../utils/audio-beat';
-import { getBandLevels, getWeightedEnergy } from '../utils/audio-reactivity';
+import {
+  getBandLevels,
+  getWeightedEnergy,
+  updateEnergyPeak,
+} from '../utils/audio-reactivity';
 import type { MilkdropRuntimeSignals } from './types';
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function smoothLevel(
+  current: number,
+  next: number,
+  deltaMs: number,
+  attackMs: number,
+  releaseMs: number,
+) {
+  const timeConstantMs = next > current ? attackMs : releaseMs;
+  const coefficient = Math.exp(-Math.max(0, deltaMs) / timeConstantMs);
+  return current * coefficient + next * (1 - coefficient);
+}
+
 export function createMilkdropSignalTracker() {
   const beatTracker = createBeatTracker({
-    threshold: 0.34,
+    threshold: 0.08,
+    onsetThreshold: 0.016,
     minIntervalMs: 170,
-    smoothing: { bass: 0.78, mid: 0.86, treble: 0.9 },
     beatDecay: 0.88,
   });
   let frame = 0;
   let rms = 0;
+  let energyPeak = 0.12;
   return {
     reset() {
       frame = 0;
       rms = 0;
+      energyPeak = 0.12;
       beatTracker.reset();
     },
     update({
@@ -31,24 +54,53 @@ export function createMilkdropSignalTracker() {
       waveformData?: Uint8Array;
     }): MilkdropRuntimeSignals {
       const resolvedWaveformData = waveformData ?? analyser?.getWaveformData();
+      const sampleRate =
+        typeof analyser?.getSampleRate === 'function'
+          ? analyser.getSampleRate()
+          : undefined;
       frame += 1;
       const bands = getBandLevels({
         analyser,
         data: frequencyData,
+        sampleRate,
       });
-      const weightedEnergy = getWeightedEnergy(bands, {
+      const rawWeightedEnergy = getWeightedEnergy(bands, {
         weights: { bass: 0.56, mid: 0.28, treble: 0.16 },
         boost: 1.15,
       });
+      energyPeak = updateEnergyPeak(energyPeak, rawWeightedEnergy, {
+        decay: Math.exp(-Math.max(0, deltaMs) / 720),
+        floor: 0.12,
+      });
+      const normalizedWeightedEnergy = clamp(
+        rawWeightedEnergy / Math.max(energyPeak, 0.12),
+        0,
+        1,
+      );
+      const weightedEnergy = clamp(
+        rawWeightedEnergy * 0.45 + normalizedWeightedEnergy * 0.55,
+        0,
+        1,
+      );
       const update = beatTracker.update(
         {
-          bass: bands.bass,
-          mid: bands.mid,
-          treble: bands.treble,
+          bands: {
+            bass: bands.bass,
+            mid: bands.mid,
+            treble: bands.treble,
+          },
+          weightedEnergy: rawWeightedEnergy,
+          deltaMs,
         },
         time * 1000,
       );
-      rms = rms * 0.82 + (analyser?.getRmsLevel() ?? weightedEnergy) * 0.18;
+      rms = smoothLevel(
+        rms,
+        analyser?.getRmsLevel() ?? weightedEnergy,
+        deltaMs,
+        44,
+        180,
+      );
 
       const bass = bands.bass;
       const mid = bands.mid;
