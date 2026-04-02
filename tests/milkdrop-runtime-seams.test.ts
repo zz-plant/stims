@@ -105,6 +105,15 @@ describe('milkdrop runtime lifecycle seams', () => {
       post: {
         shaderEnabled: true,
         videoEchoEnabled: true,
+        postprocessingProfile: {
+          enabled: true,
+        },
+      },
+      gpuGeometry: {
+        particleField: {
+          enabled: true,
+          instanceCount: 96,
+        },
       },
     } as MilkdropFrameState;
 
@@ -120,11 +129,13 @@ describe('milkdrop runtime lifecycle seams', () => {
     expect(downgraded).not.toBe(frameState);
     expect(downgraded.post.shaderEnabled).toBe(false);
     expect(downgraded.post.videoEchoEnabled).toBe(false);
+    expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
+    expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);
   });
 });
 
 describe('milkdrop backend failover seams', () => {
-  test('prefers webgl for presets that still hit known webgpu feedback or shape gaps', () => {
+  test('keeps orientation-only echo and custom-shape presets on webgpu when descriptor planning stays native', () => {
     const videoEchoPreset = compileMilkdropPresetSource(
       `
 title=Video Echo Orientation Gap
@@ -156,14 +167,14 @@ warp=0.08
         activeBackend: 'webgpu',
         webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldPresetFallbackToWebgl({
         compiled: customShapePreset,
         activeBackend: 'webgpu',
         webgpuOptimizationFlags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       }),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldPresetFallbackToWebgl({
         compiled: stablePreset,

@@ -2,6 +2,8 @@
 
 This document turns the current preset-fidelity gap into an implementation roadmap.
 
+For milestone-by-milestone execution details, see [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md).
+
 The immediate goal is not to claim broad `projectM` parity. It is to build a repeatable visual oracle, downgrade over-optimistic compatibility labels, and then close the largest rendering gaps in order of impact.
 
 ## Current state
@@ -56,6 +58,44 @@ bun run parity:diff -- --output ./screenshots/parity --preset eos-glowsticks-v2-
 ```
 
 This writes a diff report, an optional diff PNG, and a `parity-diff` entry into the same manifest so follow-on tooling can reason about historical results.
+
+Promote an imported `projectM` reference into the checked-in fixture corpus:
+
+```bash
+bun run parity:promote-reference -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music \
+  --strata feedback,shader-supported
+```
+
+That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `assets/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
+The bounded preset universe for that work is tracked separately in `assets/data/milkdrop-parity/certification-corpus.json`, so reference images and measured results stay scoped to an explicit WebGPU certification corpus instead of open-ended imports.
+
+Run the certified suite against that checked-in manifest:
+
+```bash
+bun run parity:suite -- --output ./screenshots/parity --write-diff-images
+```
+
+That suite resolves the latest Stims capture per certified preset, compares it to the checked-in projectM reference image, writes per-preset reports under `./screenshots/parity/suite/`, and ranks results by worst mismatch first.
+
+Promote an individual suite result into the checked-in measured-results manifest:
+
+```bash
+bun run parity:promote-result -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music
+```
+
+That step writes to `assets/data/milkdrop-parity/measured-results.json`, which is the first manifest used by runtime/catalog analysis to prefer measured visual fidelity over compiler-only inference.
+
+Sync the shipped bundled catalog metadata from that measured-results manifest:
+
+```bash
+bun run parity:sync-catalog
+```
+
+That rewrite keeps `public/milkdrop-presets/catalog.json` aligned with measured evidence: certified presets keep their measured labels, and unmeasured bundled presets are downgraded to `partial` / `runtime` instead of shipping as visually certified.
 
 ## Phase 2: make compatibility reporting honest
 

@@ -12,6 +12,8 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
+`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` / `loader` / `bootstrap` / `core` / `ui` / `utils` dependency directions in addition to lint, typecheck, and tests.
+
 ## Main scripts
 
 | Task | Command |
@@ -21,6 +23,9 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 | WebGPU-focused local session | `bun run dev:webgpu` |
 | Full quality gate | `bun run check` |
 | Faster local quality gate | `bun run check:quick` |
+| Toy manifest + generated doc drift check | `bun run check:toys` |
+| SEO surface check | `bun run check:seo` |
+| Architecture boundary check | `bun run check:architecture` |
 | Run tests | `bun run test` |
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
@@ -64,10 +69,50 @@ The diff command writes:
 - an optional diff PNG,
 - a `parity-diff` manifest entry tied back to the source artifact ids.
 
+To promote an imported `projectM` reference into the checked-in fixture corpus:
+
+```bash
+bun run parity:promote-reference -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music \
+  --strata feedback,shader-supported
+```
+
+This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `assets/data/milkdrop-parity/visual-reference-manifest.json`.
+The checked-in certification target set itself lives in `assets/data/milkdrop-parity/certification-corpus.json`; visual references and measured results should only be added for presets in that bounded corpus.
+
+To run the certified parity suite against the checked-in visual reference manifest:
+
+```bash
+bun run parity:suite -- --output ./screenshots/parity --write-diff-images
+```
+
+This reads `assets/data/milkdrop-parity/visual-reference-manifest.json`, resolves the latest Stims captures for each certified preset, writes per-preset reports under `./screenshots/parity/suite/`, and emits a ranked `summary.json` with worst mismatches first.
+
+To promote a suite report into the checked-in measured-results manifest:
+
+```bash
+bun run parity:promote-result -- \
+  --output ./screenshots/parity \
+  --preset eos-glowsticks-v2-03-music
+```
+
+This upserts the preset into `assets/data/milkdrop-parity/measured-results.json`, which is the first repo-tracked source used to override inferred fidelity with measured visual evidence.
+
+To sync the shipped bundled catalog metadata with that measured-results manifest:
+
+```bash
+bun run parity:sync-catalog
+```
+
+This rewrites `public/milkdrop-presets/catalog.json` so presets with measured visual results keep their certified fidelity labels, while unmeasured bundled presets are published as `partial` with `runtime` evidence instead of optimistic `exact`/`visual` metadata.
+
+`bun run check:quick` and `bun run check` now verify that `public/milkdrop-presets/catalog.json` is still synced with `assets/data/milkdrop-parity/measured-results.json`. If that check fails, rerun `bun run parity:sync-catalog`.
+
 ## Product assumptions
 
 - The primary app entrypoint is `milkdrop/index.html` (`/milkdrop/`).
-- `index.html` boots the MilkDrop visualizer in place on load, using the same shared loader/runtime as the dedicated launch route.
+- `index.html` is the editorial homepage shell and links into `/milkdrop/` for query-driven launch states.
 - Presets are part of one visualizer product, not separate first-class toys.
 
 ## Docs to keep aligned

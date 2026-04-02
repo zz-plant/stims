@@ -5,12 +5,120 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 ## Architecture at a Glance
 
 - **Entry shells** (`index.html` and `milkdrop/index.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` is the editorial homepage, `/milkdrop/` is the immersive-first playback route, and the live overlay becomes the in-session workspace for presets and deeper tools.
-- **App + loader orchestration** (`assets/js/app.ts`, `assets/js/loader.ts`, `assets/js/router.ts`) owns page boot, capability preflight, navigation, lifecycle boundaries, and loader state.
-- **View state** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) renders the library, toy container, and status banners.
-- **Runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, and per-frame loop wiring.
-- **Toy module** (`assets/js/toys/milkdrop-toy.ts`) provides the shipped visualizer start/dispose entrypoint.
+- **Shared boot layers** (`assets/js/app.ts`, `assets/js/bootstrap/*`, `assets/js/loader.ts`, `assets/js/router.ts`) own page boot, capability preflight, navigation, lifecycle boundaries, and route/session state.
+- **Visible shell UI** (`assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/ui/*`) renders the library, toy container, status banners, and runtime controls.
+- **Shared runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, runtime sessions, and per-frame loop wiring.
+- **Toy-specific runtime** (`assets/js/toys/milkdrop-toy.ts`, `assets/js/milkdrop/*`) provides the shipped visualizer entrypoint, preset engine, overlay, and compiler path; `assets/js/milkdrop/public/*` is the bootstrap-facing seam for launch intents.
+- **Leaf adapters and data** (`assets/js/utils/*`, `assets/js/data/*`) provide manifest resolution and narrow browser/data helpers used by the shared layers.
 
-Use this section as a quick compass: if you need to change how a toy starts or stops, look at the loader and core runtime; if you need to change UI state or status messaging, look at the views; if you need to change toy behavior, look at the toy modules and `WebToy` helpers.
+Use this section as a quick compass: if you need to change how a session starts or stops, look at the shared boot layers; if you need to change visible shell behavior, look at the UI layer; if you need to change rendering or audio mechanics, look at `core/*`; if you need to change MilkDrop behavior, look at `toys/milkdrop-toy.ts` and `milkdrop/*`.
+
+## High-level architecture diagrams
+
+### 1) Boundary-aware system map
+
+```mermaid
+flowchart LR
+  classDef shellNode fill:#fbf3e4,stroke:#b7791f,color:#3d2d13,stroke-width:1px;
+  classDef checkedNode fill:#eef4ff,stroke:#3867b7,color:#17325c,stroke-width:1px;
+  classDef runtimeNode fill:#ecfdf3,stroke:#2f855a,color:#123524,stroke-width:1px;
+  classDef leafNode fill:#f5f5f5,stroke:#6b7280,color:#1f2937,stroke-width:1px;
+
+  subgraph PublicShells[Public entry shells]
+    Home["index.html<br/>editorial homepage"]
+    MilkdropShell["milkdrop/index.html<br/>immersive launch shell"]
+  end
+
+  App["assets/js/app.ts<br/>page detection + boot handoff"]
+
+  subgraph SharedLayers[Boundary-checked shared layers]
+    Bootstrap["assets/js/bootstrap/*<br/>page-level DOM composition"]
+    Loader["assets/js/loader.ts + loader/* + router.ts<br/>route sync + toy lifecycle"]
+    UI["assets/js/toy-view.ts + library-view.js + ui/*<br/>visible shell + controls"]
+    Core["assets/js/core/*<br/>renderer, audio, runtime sessions"]
+  end
+
+  Utils["assets/js/utils/* + data/*<br/>leaf helpers + manifest/data adapters"]
+
+  subgraph ToyRuntime[Shipped toy runtime]
+    Toy["assets/js/toys/milkdrop-toy.ts<br/>start/dispose entrypoint"]
+    Milkdrop["assets/js/milkdrop/*<br/>preset engine, overlay, compiler"]
+  end
+
+  Home --> App
+  MilkdropShell --> App
+  App --> Bootstrap
+  App --> Loader
+  App -->|boot-safe only| Core
+  App --> Utils
+  Bootstrap --> UI
+  Bootstrap --> Core
+  Bootstrap --> Utils
+  Loader --> UI
+  Loader --> Core
+  Loader --> Utils
+  UI --> Core
+  UI --> Utils
+  Core -. "allowlisted adapter only" .-> Utils
+  Loader -. "dynamic import" .-> Toy
+  Toy --> Core
+  Toy --> Milkdrop
+  Milkdrop --> Core
+
+  class Home,MilkdropShell shellNode;
+  class App,Bootstrap,Loader,UI,Core checkedNode;
+  class Toy,Milkdrop runtimeNode;
+  class Utils leafNode;
+```
+
+Legend:
+- Blue nodes are the shared layers described by the runtime ownership map and guarded by `bun run check:architecture`.
+- Green nodes are the shipped MilkDrop runtime entered through the toy module handoff.
+- The gray `utils/data` node is intentionally leaf-shaped; the `core -> utils` path remains a narrow compatibility exception rather than a general dependency direction.
+
+### 2) Boot and handoff sequence (happy path)
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant S as HTML shell
+  participant A as app.ts
+  participant B as bootstrap/*
+  participant P as capability-preflight.ts
+  participant L as loader.ts
+  participant R as router.ts
+  participant V as toy-view.ts
+  participant M as manifest-client.ts
+  participant T as milkdrop-toy.ts
+  participant RS as toy-runtime-starter.ts
+  participant W as web-toy.ts
+  participant Re as render-service.ts
+  participant Au as audio-service.ts
+  participant Md as milkdrop/runtime.ts
+
+  U->>S: Open /milkdrop/
+  S->>A: Bootstrap shared app entry
+  A->>B: Compose launch shell
+  A->>P: Run capability preflight
+  P-->>A: Capability + hint state
+  A->>L: Create loader/session controller
+  L->>R: Normalize route + history
+  L->>V: Render active toy shell
+  L->>M: Resolve toy module URL
+  M-->>L: Importable module path
+  L->>T: import() + start()
+  T->>RS: Build runtime contract
+  RS->>W: Create WebToy sessions
+  W->>Re: Acquire pooled renderer handle
+  W->>Au: Acquire pooled audio handle
+  T->>Md: Start preset engine + overlay
+  T-->>L: Return dispose-capable session
+```
+
+Legend:
+- **Boot/orchestration**: shell + app + loader/router/view/preflight.
+- **Runtime**: toy module and shared `core/*` systems.
+- **Services**: pooled renderer/audio resources reused across toy loads.
 
 ## Architecture tiers (what is required vs optional)
 
@@ -29,7 +137,33 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 - **Core runtime** (`assets/js/core/*`) initializes the scene, camera, renderer (WebGPU or WebGL), audio pipeline, and quality controls. Helpers such as `animation-loop.ts` and `settings-panel.ts` manage per-frame work and preset propagation.
 - **Capability + startup contracts** (`assets/js/core/renderer-capabilities.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/core/toy-audio-startup.ts`) provide the unified rendering-support probe and typed toy-audio start flow used by both `app.ts` and `loader.ts`.
 - **Shared services** (`assets/js/core/services/*`) pool renderers and microphone streams so toys can hand off resources without re-allocating (and re-prompting for mic access).
+- **MilkDrop public seam** (`assets/js/milkdrop/public/*`) exposes the narrow launch-intent surface consumed by bootstrap code.
 - **Toy module** (`assets/js/toys/milkdrop-toy.ts`) exports the shipped MilkDrop visualizer entrypoint.
+
+## Shell Contract
+
+Both public HTML shells load the same shared CSS bundle and bootstrap `assets/js/app.ts`. The contract is:
+
+- `index.html` owns editorial marketing content, preset discovery teasers, and links into the live visualizer session.
+- `milkdrop/index.html` owns the dedicated launchpad shell, including the audio/settings panel slots needed before or during session start.
+- `assets/js/app.ts` is the only runtime bootstrap entrypoint. It reads `data-page`, chooses the matching page bootstrap, and hands session work to loader/core modules.
+- Query-driven session state belongs on `/milkdrop/`; the homepage should only link into those states, not recreate launch logic inline.
+- Neither HTML shell should contain direct toy/runtime logic beyond declarative slots (`data-top-nav-container`, `data-audio-controls`, `data-settings-panel`) and page identity (`data-page`).
+
+Use this to keep future changes honest: homepage work should stay editorial, launch-route work should stay session-oriented, and cross-shell runtime behavior should be implemented once in JavaScript modules rather than duplicated in HTML.
+
+## Runtime Ownership Map
+
+| Layer | Owns | May depend on | Must not depend on |
+| --- | --- | --- | --- |
+| `app` | page-type detection, top-level bootstrap handoff, global device/telemetry boot | `bootstrap/*`, `loader.ts`, `router.ts`, boot-safe `core/*`, leaf `utils/*` | toy modules, `ui/*` internals beyond bootstrap wiring, `milkdrop/*` runtime internals |
+| `bootstrap` | page-level DOM composition, launch-shell setup, feature-specific launch intent wiring | `bootstrap/*`, `loader.ts`, `router.ts`, `ui/*`, `core/*`, `utils/*`, `data/*`, `milkdrop/public/*` | `app`, toy entry modules, `milkdrop/*` internals outside the public seam |
+| `loader` | route sync, capability gating, toy lifecycle orchestration, dynamic module loading | `loader/*`, `router.ts`, `toy-view.ts`, `core/*`, `utils/*`, `data/*`, toy entry modules, `milkdrop/public/*` | `app`, `bootstrap/*`, page-specific editorial code, direct `milkdrop/*` internal composition |
+| `core` | renderer/audio/runtime systems, shared services, toy runtime starter/quality primitives | `core/*`, `data/*`, leaf `utils/*` adapters that touch browser/platform APIs | `app`, `loader`, `bootstrap`, page-level DOM composition in `ui/*` |
+| `ui` | nav, audio/system controls, DOM-level affordances and control rendering | public `core/*` state/services, leaf `utils/*` helpers | `app`, `loader/*` internals, toy-specific runtime modules |
+| `utils` | pure helpers, manifest adapters, environment/browser convenience wrappers | `utils/*`, `data/*`; narrow `core/*` imports only when acting as a compatibility adapter pending promotion | `app`, `loader`, page bootstraps, toy modules |
+
+Current migration note: runtime-critical starter and quality helpers for the shipped MilkDrop path now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`; additional runtime helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) have also been promoted into `assets/js/core/*`. Homepage/library boot initializers now live under `assets/js/bootstrap/*` and `assets/js/ui/nav-scroll-effects.ts` instead of `utils/`.
 
 ## Source Map (Where Things Live)
 
@@ -37,48 +171,76 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 | --- | --- | --- |
 | Entry points | `index.html`, `milkdrop/index.html` | Public HTML shells are intentionally slim; runtime logic starts in `app.ts`. |
 | App bootstrap | `assets/js/app.ts` | Chooses library vs toy boot flow, connects controls, and runs capability preflight before toy start. |
+| Page bootstraps | `assets/js/bootstrap/*` | Home, library, and experience shells compose page-level DOM wiring without owning runtime internals. |
 | Loader + routing | `assets/js/loader.ts`, `assets/js/router.ts` | Navigation, lifecycle, and dynamic imports live here. |
 | Views | `assets/js/toy-view.ts`, `assets/js/library-view.js` | UI for the library grid, toy container, loading, and error states. |
 | Core runtime | `assets/js/core/web-toy.ts` + `assets/js/core/*` | Rendering, audio, settings, and the animation loop. |
+| MilkDrop public seam | `assets/js/milkdrop/public/*` | Bootstrap-facing launch intents live here; internal feature modules stay behind this seam. |
 | Pools/services | `assets/js/core/services/*` | Renderer and microphone pooling. |
 | Toy registry | `assets/data/toys.json` | Toy metadata and slug registration. |
 | Toy implementation | `assets/js/toys/milkdrop-toy.ts` | Shipped MilkDrop visualizer entrypoint. |
 
-## App Shell and Loader Flow
+## Enforced dependency directions
 
 ```mermaid
-flowchart TD
-  Entry[HTML shell
-  index.html, milkdrop/index.html] --> App[app.ts
-  startApp()]
-  App --> Loader[loader.ts
-  createLoader()]
-  Loader --> Router[router.ts
-  route + path sync]
-  App --> Preflight[capability-preflight.ts
-  gate/start hints]
-  App --> Controls[ui/audio-controls.ts
-  ui/system-controls.ts]
-  Loader --> Views[toy-view.ts /
-  library-view.js]
-  Loader --> Manifest[manifest-client.ts
-  resolve module URL]
-  Loader -->|import| ToyModule[assets/js/toys/<slug>.ts]
-  ToyModule --> WebToy[core/web-toy.ts
-  scene/camera/renderer/audio]
-  WebToy --> Caps[renderer-capabilities.ts
-  detect WebGPU/WebGL]
-  WebToy --> Audio[microphone-flow.ts
-  utils/audio-handler.ts]
-  WebToy --> Settings[settings-panel.ts]
-  Views -->|back/escape| Loader
-  Preflight --> Loader
-  Controls --> Loader
+flowchart LR
+  classDef checkedNode fill:#eef4ff,stroke:#3867b7,color:#17325c,stroke-width:1px;
+  classDef leafNode fill:#f5f5f5,stroke:#6b7280,color:#1f2937,stroke-width:1px;
+  classDef runtimeNode fill:#ecfdf3,stroke:#2f855a,color:#123524,stroke-width:1px;
+
+  App["app"]:::checkedNode
+  Bootstrap["bootstrap"]:::checkedNode
+  Loader["loader"]:::checkedNode
+  UI["ui"]:::checkedNode
+  Core["core"]:::checkedNode
+  Utils["utils"]:::leafNode
+  Data["data"]:::leafNode
+  Toy["toy"]:::runtimeNode
+  MilkdropPublic["milkdrop-public"]:::runtimeNode
+  Milkdrop["milkdrop"]:::runtimeNode
+
+  App -->|page boot| Bootstrap
+  App -->|session orchestration| Loader
+  App -->|boot-safe APIs| Core
+  App -->|leaf helpers| Utils
+  App --> Data
+  Bootstrap --> Loader
+  Bootstrap --> UI
+  Bootstrap --> Core
+  Bootstrap --> Utils
+  Bootstrap --> Data
+  Bootstrap --> MilkdropPublic
+  Loader --> UI
+  Loader --> Core
+  Loader --> Utils
+  Loader --> Data
+  Loader --> Toy
+  Loader --> MilkdropPublic
+  UI --> Core
+  UI --> Utils
+  UI --> Data
+  Core -. "allowlisted compat helper only" .-> Utils
+  Core --> Data
+  Toy --> Core
+  Toy --> Utils
+  Toy --> Data
+  Toy --> MilkdropPublic
+  Toy --> Milkdrop
+  MilkdropPublic --> Core
+  MilkdropPublic --> Utils
+  MilkdropPublic --> Data
+  MilkdropPublic --> Milkdrop
+  Milkdrop --> Core
+  Milkdrop --> Utils
+  Milkdrop --> Data
+  Milkdrop --> MilkdropPublic
 ```
+
+Anything not drawn here is intentionally disallowed by `scripts/check-architecture.ts`. In practice that means `utils` and `data` stay leaf-shaped, `core` stays isolated from page boot code, `loader` is the only shared layer that reaches toy entry modules, and `bootstrap` only touches MilkDrop through `milkdrop/public/*`.
 
 ## Documentation verification status
 
-Last verified against the current runtime structure: **2026-03-16**.
+Last verified against the current runtime structure: **2026-03-31**.
 
 Verification checks performed:
 
@@ -94,13 +256,13 @@ These are the highest-value architecture changes to reduce drift, lower onboardi
 
 Status: ✅ Implemented in code (`renderer-capabilities` now owns rendering support detection, and `toy-audio-startup` centralizes toy audio start orchestration).
 
-- **Unify rendering/capability entry points** by converging legacy capability wrappers into `utils/webgl-check.ts` plus the core-facing APIs in `core/capability-preflight.ts` and `core/renderer-capabilities.ts`.
+- **Unify rendering/capability entry points** by converging legacy capability wrappers into `core/webgl-check.ts` plus the core-facing APIs in `core/capability-preflight.ts` and `core/renderer-capabilities.ts`.
 - **Define one startup contract** from `app.ts` → `loader.ts` → toy module start/dispose so all toy flows (mic/demo/tab/YouTube) follow the same typed path.
 - **Why first:** startup paths are currently split across `app.ts`, loader helpers, and utility wrappers, which increases regression risk whenever permission or renderer logic changes.
 
 ### P1 — Clarify core vs utils boundaries
 
-Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`).
+Status: ✅ Implemented for startup/audio contracts and extended through the broader runtime-helper migration (`ToyAudioRequest`, option resolution, and `startToyAudio` now live in `assets/js/core/toy-audio.ts`; shipped MilkDrop starter/quality helpers now live in `assets/js/core/toy-runtime-starter.ts` and `assets/js/core/toy-quality.ts`; shared runtime helpers such as `audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation now also live in `assets/js/core/*`).
 
 - **Promote runtime-critical utilities into `core/`** (or create a documented `runtime/` namespace) so ownership is obvious for long-lived services.
 - **Keep `utils/` for leaf helpers only** (pure helpers/UI convenience code) and avoid placing lifecycle-critical modules there.
@@ -108,14 +270,16 @@ Status: ✅ Implemented for startup/audio contracts (`ToyAudioRequest`, option r
 
 ### P2 — Shrink shell and toy entry fragmentation
 
+Status: ✅ Documented and aligned in code; `index.html` remains editorial and `milkdrop/index.html` remains the only query-driven launch shell.
+
 - **Standardize shell responsibilities** across `index.html` and `milkdrop/index.html` with a single documented shell contract and minimal per-page variation.
 - **Why this matters:** reducing entry ambiguity helps avoid accidental fixes in generated or non-authoritative pages.
 
 ### Cross-cutting implementation guardrails
 
-- Add an explicit “runtime ownership map” in this doc (`app`, `loader`, `core`, `utils`, `ui`) with allowed dependency directions.
-- Introduce architecture lint checks (import-boundary rules) to enforce the intended layering over time.
-- Track migration progress with a small checklist in `docs/FULL_REFACTOR_PLAN.md` so architecture updates stay visible across PRs.
+- [x] Add an explicit “runtime ownership map” in this doc (`app`, `loader`, `core`, `utils`, `ui`) with allowed dependency directions.
+- [x] Introduce architecture lint checks (import-boundary rules) to enforce the intended layering over time.
+- [ ] Track migration progress with a small checklist in `docs/FULL_REFACTOR_PLAN.md` so architecture updates stay visible across PRs.
 
 ### Loader lifecycle
 
@@ -177,18 +341,43 @@ Keep `milkdrop-webgpu-fallback` enabled while validating each stage so unsupport
 ## WebToy Composition
 
 ```mermaid
-graph LR
-  Canvas[(canvas host)] --> WebToy
-  WebToy --> Scene[scene-setup.ts]
-  WebToy --> Camera[camera-setup.ts]
-  WebToy --> Lighting[lighting-setup.ts /
-  initAmbientLight]
-  WebToy --> Renderer[services/render-service.ts
-  pooled backend + info]
-  WebToy --> Audio[services/audio-service.ts
-  pooled microphone]
-  WebToy --> Loop[animation-loop.ts]
-  Settings[settings-panel.ts] --> WebToy
+flowchart LR
+  classDef sharedNode fill:#eef4ff,stroke:#3867b7,color:#17325c,stroke-width:1px;
+  classDef runtimeNode fill:#ecfdf3,stroke:#2f855a,color:#123524,stroke-width:1px;
+  classDef shellNode fill:#fbf3e4,stroke:#b7791f,color:#3d2d13,stroke-width:1px;
+
+  Host["toy-view.ts<br/>host container"]:::shellNode
+  Toy["toys/milkdrop-toy.ts<br/>toy entrypoint"]:::runtimeNode
+  Starter["toy-runtime-starter.ts<br/>runtime contract assembly"]:::sharedNode
+  WebToy["web-toy.ts<br/>shared scene + loop wrapper"]:::sharedNode
+
+  subgraph Sessions[Reusable WebToy sessions]
+    RendererSession["toy-renderer-session.ts"]
+    AudioSession["toy-audio-session.ts"]
+    ViewportSession["toy-viewport-session.ts"]
+  end
+
+  subgraph Services[Shared services + settings]
+    RenderPool["services/render-service.ts"]
+    AudioPool["services/audio-service.ts"]
+    Quality["renderer-settings.ts + settings-panel.ts"]
+  end
+
+  subgraph MilkdropRuntime[Toy-specific runtime]
+    Runtime["milkdrop/runtime.ts"]
+    Overlay["milkdrop/overlay/*"]
+    Compiler["milkdrop/compiler/*"]
+  end
+
+  Host --> WebToy
+  Toy --> Starter --> WebToy
+  WebToy --> RendererSession --> RenderPool
+  WebToy --> AudioSession --> AudioPool
+  WebToy --> ViewportSession
+  Quality --> RendererSession
+  Runtime --> WebToy
+  Runtime --> Overlay
+  Runtime --> Compiler
 ```
 
 - **Renderer pooling**: `services/render-service.ts` initializes WebGPU/WebGL once, applies the active quality preset from `settings-panel.ts`, and hands a typed handle (`renderer`, `canvas`, `backend`, `applySettings`, `release`) to toys. Returning the handle releases the canvas back into the pool without disposing the renderer, so switching toys avoids expensive re-creation.

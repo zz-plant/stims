@@ -1,0 +1,24 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner
+    - main [ref=e4]:
+      - generic [ref=e6]:
+        - paragraph [ref=e7]: MilkDrop live route
+        - heading "Start the visual fast. Reach for setup only when you need it." [level=1] [ref=e8]
+        - paragraph [ref=e9]: Demo audio gets you into the live session fastest. Mic and capture stay here when you want the visuals to react to your own sound instead.
+        - group "Launch shortcuts" [ref=e10]:
+          - link "Start demo playback" [ref=e11] [cursor=pointer]:
+            - /url: /milkdrop/?audio=demo
+          - link "Show setup controls" [ref=e12] [cursor=pointer]:
+            - /url: "#launch-panels-title"
+        - paragraph [ref=e13]: Once playback starts, the canvas should stay in charge. Presets, tools, and tuning stay close without taking over the whole screen.
+        - group "Launch helpers" [ref=e14]:
+          - link "Back to Stims" [ref=e15] [cursor=pointer]:
+            - /url: /
+      - region "Pick a sound source. Save tuning for when it matters." [ref=e16]:
+        - generic [ref=e17]:
+          - paragraph [ref=e18]: Controls
+          - heading "Pick a sound source. Save tuning for when it matters." [level=2] [ref=e19]
+          - paragraph [ref=e20]: Demo is the clean default. Mic and capture stay ready when you want them, and device defaults are here when your hardware needs a gentler start.

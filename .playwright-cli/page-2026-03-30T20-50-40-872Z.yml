@@ -1,0 +1,92 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Start" [ref=e14] [cursor=pointer]:
+              - /url: "#main-content"
+            - link "Controls" [ref=e15] [cursor=pointer]:
+              - /url: "#launch-panels"
+            - link "GitHub" [ref=e16] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e17]:
+            - link "Back home" [ref=e18] [cursor=pointer]:
+              - /url: /
+            - button "Switch to light mode" [pressed] [ref=e19] [cursor=pointer]:
+              - generic [ref=e20]: ☀️
+              - generic [ref=e21]: Light mode
+    - main: ▾ ▾
+  - generic [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - paragraph [ref=e42]: Live now
+        - paragraph [ref=e43]: MilkDrop Visualizer
+        - generic [ref=e44]: milkdrop
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic "WebGPU renderer active." [ref=e49]: WebGPU
+          - button "Session" [ref=e50]
+        - generic [ref=e51]:
+          - button [ref=e53] [cursor=pointer]: Next
+          - button [ref=e55] [cursor=pointer]: Share
+          - button [ref=e57] [cursor=pointer]: Picture in picture
+          - button [ref=e58] [cursor=pointer]:
+            - generic [ref=e59]: ←
+            - generic [ref=e60]: Back to Stims
+    - complementary [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e65]: MilkDrop Visualizer
+          - generic [ref=e66]: Loading catalog...
+        - generic [ref=e67]:
+          - button "Shortcuts" [ref=e68]
+          - button "Close" [ref=e69]
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - button "Back" [ref=e72]
+          - button "Prev" [ref=e73]
+          - button "Next" [ref=e74]
+          - button "Shuffle" [ref=e75]
+        - generic [ref=e76]:
+          - generic [ref=e77]:
+            - checkbox "Autoplay" [ref=e78]
+            - text: Autoplay
+          - generic [ref=e79]:
+            - generic [ref=e80]: Transition
+            - combobox "Transition" [ref=e81]:
+              - option "Blend" [selected]
+              - option "Hard cut"
+        - generic [ref=e82]:
+          - text: Blend
+          - slider "Blend 2.50s" [ref=e83]: "2.5"
+          - generic [ref=e84]: 2.50s
+      - generic [ref=e85]:
+        - button "Presets" [pressed] [ref=e86]
+        - button "Tools" [ref=e87]
+      - generic [ref=e89]:
+        - generic [ref=e91]:
+          - generic [ref=e92]: No preset selected
+          - status [ref=e93]: 0 shown · Featured · WEBGL
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - generic [ref=e96]: Search
+            - searchbox "Search presets" [ref=e97]
+          - group [ref=e98]:
+            - generic "More filters" [ref=e99] [cursor=pointer]
+            - option "Any fidelity" [selected]
+            - option "Exact"
+            - option "Near exact"
+            - option "Partial"
+            - option "Fallback"
+            - option "Recommended" [selected]
+            - option "Recently used"
+            - option "Top rated"
+            - option "Title"
+        - button "All presets" [ref=e101]
+        - generic [ref=e103]: No presets match the current filters.

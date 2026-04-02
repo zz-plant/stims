@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "presetId": "300-beatdetect-bassmidtreb",
+  "title": "300 Beatdetect Bassmidtreb",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260331203155",
+  "projectmImagePath": "/Users/kanav/Documents/GitHub/stims/tests/fixtures/milkdrop/projectm-reference/300-beatdetect-bassmidtreb.png",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "projectm-fixture",
+  "strata": [
+    "projectm-upstream",
+    "beat-detect",
+    "regression"
+  ],
+  "toleranceProfile": "default",
+  "threshold": 16,
+  "failThreshold": 0.02,
+  "metrics": {
+    "width": 2550,
+    "height": 1794,
+    "totalPixels": 4574700,
+    "mismatchedPixels": 2770834,
+    "mismatchRatio": 0.6056864931033729,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.06770828588209862,
+    "rmse": 0.12316002869704472,
+    "exactMatch": false,
+    "threshold": 16
+  },
+  "status": "fail"
+}

@@ -1,0 +1,165 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Start" [ref=e14] [cursor=pointer]:
+              - /url: "#main-content"
+            - link "Controls" [ref=e15] [cursor=pointer]:
+              - /url: "#launch-panels"
+            - link "GitHub" [ref=e16] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e17]:
+            - link "Back home" [ref=e18] [cursor=pointer]:
+              - /url: /
+            - button "Switch to light mode" [pressed] [ref=e19] [cursor=pointer]:
+              - generic [ref=e20]: ☀️
+              - generic [ref=e21]: Light mode
+    - main: ▾ ▾
+  - generic [ref=e22]:
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - paragraph [ref=e32]: Live now
+        - paragraph [ref=e33]: MilkDrop Visualizer
+        - generic [ref=e34]: milkdrop
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - generic "WebGPU renderer active." [ref=e39]: WebGPU
+          - button "Session" [ref=e40]
+        - generic [ref=e41]:
+          - button [ref=e43] [cursor=pointer]: Next
+          - button [ref=e45] [cursor=pointer]: Share
+          - button [ref=e47] [cursor=pointer]: Picture in picture
+          - button [ref=e48] [cursor=pointer]:
+            - generic [ref=e49]: ←
+            - generic [ref=e50]: Back to Stims
+    - generic [ref=e23]:
+      - generic:
+        - complementary [ref=e51]:
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]: Rovastar - Parallel Universe
+              - generic [ref=e55]: Loaded Rovastar - Parallel Universe.
+            - generic [ref=e56]:
+              - button "Shortcuts" [ref=e57]
+              - button "Close" [ref=e58]
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - button "Back" [ref=e61]
+              - button "Prev" [ref=e62]
+              - button "Next" [ref=e63]
+              - button "Shuffle" [ref=e64]
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - checkbox "Autoplay" [ref=e67]
+                - text: Autoplay
+              - generic [ref=e68]:
+                - generic [ref=e69]: Transition
+                - combobox "Transition" [ref=e70]:
+                  - option "Blend" [selected]
+                  - option "Hard cut"
+            - generic [ref=e71]:
+              - text: Blend
+              - slider "Blend 2.50s" [ref=e72]: "2.5"
+              - generic [ref=e73]: 2.50s
+          - generic [ref=e74]:
+            - button "Presets" [ref=e75]
+            - button "Tools" [pressed] [ref=e76]
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - button "Editor" [pressed] [ref=e80]
+              - button "Inspector" [ref=e81]
+            - generic [ref=e82]:
+              - generic [ref=e83]:
+                - generic [ref=e84]:
+                  - generic [ref=e85]: Live coding
+                  - strong [ref=e86]: Shape the active preset while it stays on beat
+                  - paragraph [ref=e87]: "Strudel-style feedback loop: edits land automatically, the current visual keeps playing, and broken drafts never interrupt the last good frame."
+                - generic [ref=e88]:
+                  - generic [ref=e89]: Live
+                  - generic [ref=e90]: Draft changed
+                  - generic [ref=e91]: Fidelity Exact · WebGL supported · WebGPU supported
+              - generic [ref=e92]: Live preset updated from editor | Fidelity Exact · WebGL supported · WebGPU supported
+              - generic [ref=e93]:
+                - button "Revert to live" [ref=e94]
+                - button "Duplicate" [ref=e95]
+                - button "Import" [ref=e96]
+                - button "Export" [ref=e97]
+              - generic [ref=e98]:
+                - generic [ref=e99]: Quick ideas
+                - generic [ref=e100]:
+                  - button "Pulse zoom Drop in a breathing zoom curve." [ref=e101]:
+                    - strong [ref=e102]: Pulse zoom
+                    - generic [ref=e103]: Drop in a breathing zoom curve.
+                  - button "Hue drift Animate the waveform palette." [ref=e104]:
+                    - strong [ref=e105]: Hue drift
+                    - generic [ref=e106]: Animate the waveform palette.
+                  - button "Warp sway Add a gentle audio-reactive bend." [ref=e107]:
+                    - strong [ref=e108]: Warp sway
+                    - generic [ref=e109]: Add a gentle audio-reactive bend.
+              - generic [ref=e112]:
+                - generic [ref=e114]:
+                  - generic [ref=e115]: "1"
+                  - generic [ref=e116]: "2"
+                  - generic [ref=e117]: "3"
+                  - generic [ref=e118]: "4"
+                  - generic [ref=e119]: "5"
+                  - generic [ref=e120]: "6"
+                  - generic [ref=e121]: "7"
+                  - generic [ref=e122]: "8"
+                  - generic [ref=e123]: "9"
+                  - generic [ref=e124]: "10"
+                  - generic [ref=e125]: "11"
+                  - generic [ref=e126]: "12"
+                  - generic [ref=e127]: "13"
+                  - generic [ref=e128]: "14"
+                  - generic [ref=e129]: "15"
+                  - generic [ref=e130]: "16"
+                  - generic [ref=e131]: "17"
+                  - generic [ref=e132]: "18"
+                  - generic [ref=e133]: "19"
+                  - generic [ref=e134]: "20"
+                  - generic [ref=e135]: "21"
+                  - generic [ref=e136]: "22"
+                  - generic [ref=e137]: "23"
+                  - generic [ref=e138]: "24"
+                  - generic [ref=e139]: "25"
+                - textbox [ref=e140]:
+                  - generic [ref=e141]: "[preset00]"
+                  - generic [ref=e142]: fRating=5.000000
+                  - generic [ref=e143]: fGammaAdj=2.000000
+                  - generic [ref=e144]: fDecay=0.990000
+                  - generic [ref=e145]: fVideoEchoZoom=0.999609
+                  - generic [ref=e146]: fVideoEchoAlpha=0.500000
+                  - generic [ref=e147]: nVideoEchoOrientation=3
+                  - generic [ref=e148]: nWaveMode=0
+                  - generic [ref=e149]: bAdditiveWaves=0
+                  - generic [ref=e150]: bWaveDots=0
+                  - generic [ref=e151]: bWaveThick=1
+                  - generic [ref=e152]: bModWaveAlphaByVolume=0
+                  - generic [ref=e153]: bMaximizeWaveColor=0
+                  - generic [ref=e154]: bTexWrap=1
+                  - generic [ref=e155]: bDarkenCenter=1
+                  - generic [ref=e156]: bRedBlueStereo=0
+                  - generic [ref=e157]: bBrighten=0
+                  - generic [ref=e158]: bDarken=0
+                  - generic [ref=e159]: bSolarize=0
+                  - generic [ref=e160]: bInvert=0
+                  - generic [ref=e161]: fWaveAlpha=4.099998
+                  - generic [ref=e162]: fWaveScale=0.032378
+                  - generic [ref=e163]: fWaveSmoothing=0.630000
+                  - generic [ref=e164]: fWaveParam=-0.400000
+                  - generic [ref=e165]: fModWaveAlphaStart=0.710000
+              - generic [ref=e167]:
+                - generic [ref=e168]: Auto-updates after 220ms of calm typing.
+                - generic [ref=e169]: Errors keep the last stable preset visible.
+                - generic [ref=e170]: Tab indents, undo/redo stays local to the draft.
+        - generic:
+          - generic: Rovastar - Parallel Universe
+          - generic: Imported

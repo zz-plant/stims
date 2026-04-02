@@ -1,23 +1,25 @@
-# Toy Development (Agent Quick Reference)
+# Visualizer Entry Maintenance (Agent Quick Reference)
 
 ## Core locations
 
-- Toy modules: `assets/js/toys/`.
-- Toy registry metadata: `assets/data/toys.json`.
-- Loader shell: `toy.html` + `assets/js/loader.ts`.
+- Shipped entry module: `assets/js/toys/milkdrop-toy.ts`.
+- Toy registry metadata source: `assets/data/toys.json`.
+- Generated manifest artifacts: `assets/js/data/toy-manifest.ts`, `public/toys.json`, `docs/TOY_SCRIPT_INDEX.md`, `docs/toys.md`.
+- Launch shell: `milkdrop/index.html` + `assets/js/loader.ts`.
 - Runtime/audio helpers: `assets/js/core/toy-runtime.ts`, `assets/js/core/toy-audio.ts`.
 
 ## Expected patterns
 
-- Toy modules export `start(...)` and return a disposable cleanup handle.
-- Canvas-heavy toys should prefer shared runtime scaffolding (`createToyRuntime(...)`) over bespoke setup.
-- MilkDrop preset aliases should use `createMilkdropPresetToyStarter(...)` instead of re-implementing a scene.
-- Behavior-backed MilkDrop aliases should keep interaction metadata in `assets/js/toys/milkdrop-behaviors/metadata.ts`; `bun run generate:toys` syncs that metadata back into `assets/data/toys.json`.
-- Audio-reactive toys should integrate with shared audio helpers and support demo-audio fallback when applicable.
+- Visualizer modules export `start(...)` and return a disposable cleanup handle.
+- Canvas-heavy work should prefer shared runtime scaffolding (`createToyRuntime(...)`) over bespoke setup.
+- MilkDrop-facing changes should stay inside the shared runtime and shell instead of introducing parallel toy-specific boot paths.
+- Metadata changes should start in `assets/data/toys.json`, then flow through `bun run generate:toys`.
+- Audio-reactive flows should integrate with shared audio helpers and support demo-audio fallback when applicable.
 
-## Change checklist for toy edits
+## Change checklist for shipped-entry edits
 
-1. Update module in `assets/js/toys/`.
-2. Ensure `assets/data/toys.json` metadata matches slug/capabilities, or update `assets/js/toys/milkdrop-behaviors/metadata.ts` first if the toy is a behavior-backed MilkDrop alias.
-3. Update tests for new behavior.
-4. Run `bun run generate:toys` when metadata changes, then run `bun run check:toys` to validate schema, behavior-metadata parity, slug/entrypoint consistency, and generated artifact parity.
+1. Update the runtime/module code under `assets/js/toys/`, `assets/js/core/`, or `assets/js/milkdrop/`.
+2. Update `assets/data/toys.json` when manifest metadata changes.
+3. Run `bun run generate:toys` to refresh generated manifest and doc artifacts.
+4. Update tests for the behavior or metadata change.
+5. Run `bun run check:toys` and `bun run check`.

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Open the Stims MilkDrop route for a fast immersive demo path, quick checks, and on-demand device tuning."
+      content="Open the Stims launchpad for demo playback or your own audio input."
     />
     <meta name="robots" content="index,follow" />
     <meta name="theme-color" content="#0b0f1a" />
@@ -15,7 +15,7 @@
     <meta property="og:title" content="MilkDrop Visualizer | Stims" />
     <meta
       property="og:description"
-      content="Open the Stims MilkDrop route for a fast immersive demo path, quick checks, and on-demand device tuning."
+      content="Open the Stims launchpad for demo playback or your own audio input."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://no.toil.fyi/milkdrop/" />
@@ -30,7 +30,7 @@
     <meta name="twitter:title" content="MilkDrop Visualizer | Stims" />
     <meta
       name="twitter:description"
-      content="Open the Stims MilkDrop route for a fast immersive demo path, quick checks, and on-demand device tuning."
+      content="Open the Stims launchpad for demo playback or your own audio input."
     />
     <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
     <meta name="twitter:image:alt" content="MilkDrop visualizer preview image" />
@@ -54,7 +54,7 @@
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "name": "MilkDrop Visualizer",
-        "description": "Dedicated Stims MilkDrop route for compatibility checks, immersive demo startup, and on-demand device tuning.",
+        "description": "Dedicated Stims route for demo playback, mic or capture setup, and live tuning.",
         "applicationCategory": "MultimediaApplication",
         "operatingSystem": "Web",
         "url": "https://no.toil.fyi/milkdrop/",
@@ -72,27 +72,59 @@
 
       <main class="launch-shell" id="main-content">
         <section class="intro launch-intro section-shell">
-          <div class="launch-intro__copy">
-            <p class="eyebrow">MilkDrop live route</p>
-            <h1>Start playback fast, then pull controls in when you need them.</h1>
-            <p class="section-description">
-              Demo audio drops into the immersive session fastest. Mic and capture sources stay
-              close by when you want the visuals to react to your own sound.
-            </p>
-            <div class="hero-cta-row launch-intro__actions" role="group" aria-label="Launch shortcuts">
-              <a class="cta-button primary" href="/milkdrop/?audio=demo">
-                Start demo playback
-              </a>
-              <a class="cta-button ghost" href="#launch-panels-title">
-                Open setup controls
-              </a>
+          <div class="launch-intro__grid">
+            <div class="launch-intro__copy">
+              <div class="launch-intro__kicker-row" aria-label="Launch summary">
+                <span class="pill pill--accent">Demo first</span>
+                <span class="pill pill--soft">Mic, tab, YouTube later</span>
+              </div>
+              <p class="eyebrow">MilkDrop launchpad</p>
+              <h1>Start the visual. Then choose your source.</h1>
+              <p class="section-description">
+                Demo audio gets you into playback fastest. The rest of the inputs stay here when
+                you actually need them.
+              </p>
+              <div
+                class="hero-cta-row launch-intro__actions"
+                role="group"
+                aria-label="Launch shortcuts"
+              >
+                <a class="cta-button primary" href="/milkdrop/?audio=demo">
+                  Start demo playback
+                </a>
+              </div>
+              <p class="launch-intro__support">
+                If you already know the source, skip straight to the controls below.
+              </p>
+              <ul class="launch-intro__list" aria-label="Launch benefits">
+                <li><strong>Instant:</strong> the visual starts without a permission prompt.</li>
+                <li><strong>Flexible:</strong> mic, tab capture, and YouTube stay ready below.</li>
+                <li><strong>Live:</strong> once playback starts, presets and tools stay in reach.</li>
+              </ul>
+              <div class="launch-utility-row" role="group" aria-label="Launch helpers">
+                <a class="text-link" href="/">Back to Stims</a>
+              </div>
             </div>
-            <p class="launch-intro__support">
-              Playback stays visual-first once it starts, while presets, tools, and tuning stay one reveal away.
-            </p>
-            <div class="launch-utility-row" role="group" aria-label="Launch helpers">
-              <a class="text-link" href="/">Back to Stims</a>
-            </div>
+            <aside class="launch-intro__aside" aria-label="Session flow">
+              <p class="launch-intro__aside-label">Fast path</p>
+              <h2>Demo first.</h2>
+              <p>
+                Open the visual without setup friction, then switch to mic, tab, or YouTube once
+                the source matters.
+              </p>
+              <div class="launch-intro__route-list" aria-label="Launch sequence">
+                <article class="launch-intro__route-item">
+                  <p class="launch-intro__route-label">Now</p>
+                  <h3>Enter playback immediately.</h3>
+                  <p>Use demo audio for the cleanest first run and the easiest reset.</p>
+                </article>
+                <article class="launch-intro__route-item">
+                  <p class="launch-intro__route-label">Later</p>
+                  <h3>Bring your own audio.</h3>
+                  <p>Drop to the controls for mic, tab capture, or YouTube when you want live input.</p>
+                </article>
+              </div>
+            </aside>
           </div>
         </section>
 
@@ -103,11 +135,8 @@
         >
           <div class="section-heading launch-panels__header">
             <p class="eyebrow">Controls</p>
-            <h2 id="launch-panels-title">Keep audio and startup tuning close, not permanently in the foreground.</h2>
-            <p class="section-description">
-              The audio panel gets motion started. Device tuning stays available for first-run setup
-              and slower hardware without competing with the live canvas.
-            </p>
+            <h2 id="launch-panels-title">Choose a sound source.</h2>
+            <p class="section-description">Demo is the default. Mic, tab, and YouTube are here when you need them.</p>
           </div>
           <div class="shell-panels">
             <section
