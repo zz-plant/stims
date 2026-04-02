@@ -19,7 +19,13 @@ export function createMilkdropCatalogCoordinator({
   let selectionHistory: string[] = [];
   let selectionCursor = -1;
   let catalogSyncPromise: Promise<void> | null = null;
+  let resolveCatalogSyncPromise: (() => void) | null = null;
   let catalogSyncFrameId: number | null = null;
+  let catalogSyncQueuedArgs: {
+    activePresetId: string;
+    activeBackend: MilkdropRenderBackend;
+  } | null = null;
+  let catalogSyncRunning = false;
 
   const syncCatalog = async ({
     activePresetId,
@@ -32,25 +38,66 @@ export function createMilkdropCatalogCoordinator({
     onCatalogChanged(catalogEntries, activePresetId, activeBackend);
   };
 
+  const ensureCatalogSyncPromise = () => {
+    if (!catalogSyncPromise) {
+      catalogSyncPromise = new Promise<void>((resolve) => {
+        resolveCatalogSyncPromise = resolve;
+      });
+    }
+    return catalogSyncPromise;
+  };
+
+  const finishScheduledCatalogSync = () => {
+    const resolve = resolveCatalogSyncPromise;
+    resolveCatalogSyncPromise = null;
+    catalogSyncPromise = null;
+    resolve?.();
+  };
+
+  const flushScheduledCatalogSync = async () => {
+    if (catalogSyncRunning) {
+      return;
+    }
+
+    catalogSyncRunning = true;
+    try {
+      while (catalogSyncQueuedArgs) {
+        const nextArgs = catalogSyncQueuedArgs;
+        catalogSyncQueuedArgs = null;
+        await syncCatalog(nextArgs);
+      }
+    } finally {
+      catalogSyncRunning = false;
+      finishScheduledCatalogSync();
+    }
+  };
+
   const scheduleCatalogSync = (args: {
     activePresetId: string;
     activeBackend: MilkdropRenderBackend;
   }) => {
-    if (catalogSyncPromise || catalogSyncFrameId !== null) {
-      return catalogSyncPromise ?? Promise.resolve();
+    catalogSyncQueuedArgs = args;
+    const scheduledSync = ensureCatalogSyncPromise();
+
+    if (catalogSyncFrameId !== null || catalogSyncRunning) {
+      return scheduledSync;
     }
 
-    catalogSyncPromise = new Promise((resolve) => {
-      catalogSyncFrameId = window.requestAnimationFrame(() => {
-        catalogSyncFrameId = null;
-        void syncCatalog(args).finally(() => {
-          catalogSyncPromise = null;
-          resolve();
-        });
-      });
+    catalogSyncFrameId = window.requestAnimationFrame(() => {
+      catalogSyncFrameId = null;
+      void flushScheduledCatalogSync();
     });
 
-    return catalogSyncPromise;
+    return scheduledSync;
+  };
+
+  const disposeScheduledCatalogSync = () => {
+    if (catalogSyncFrameId !== null) {
+      window.cancelAnimationFrame(catalogSyncFrameId);
+      catalogSyncFrameId = null;
+    }
+    catalogSyncQueuedArgs = null;
+    finishScheduledCatalogSync();
   };
 
   const rememberSelection = async (id: string) => {
@@ -87,11 +134,7 @@ export function createMilkdropCatalogCoordinator({
     getActiveCatalogEntry: (activePresetId: string) =>
       catalogEntries.find((entry) => entry.id === activePresetId) ?? null,
     dispose() {
-      if (catalogSyncFrameId !== null) {
-        window.cancelAnimationFrame(catalogSyncFrameId);
-        catalogSyncFrameId = null;
-      }
-      catalogSyncPromise = null;
+      disposeScheduledCatalogSync();
     },
   };
 }

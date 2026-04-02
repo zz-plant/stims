@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-
-const freshImport = async (path) =>
-  import(`${path}?t=${Date.now()}-${Math.random()}`);
+import { flushTasks, importFresh } from './test-helpers.ts';
 
 let mockLoadToy;
 let mockLoadFromQuery;
@@ -15,9 +13,9 @@ async function loadAppShell() {
     loadFromQuery: mockLoadFromQuery,
   };
 
-  await freshImport('../assets/js/app.ts');
+  await importFresh('../assets/js/app.ts');
   await globalThis.__stimsAppReady;
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flushTasks();
 }
 
 describe('home shell user journeys', () => {

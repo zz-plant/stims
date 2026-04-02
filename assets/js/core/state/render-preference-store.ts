@@ -1,3 +1,4 @@
+import { clearWebGPUCompatibilityGapOverride } from '../renderer-query-override.ts';
 import { getBrowserStorage } from './browser-storage.ts';
 
 export type RenderPreferences = {
@@ -177,6 +178,9 @@ export function clearRenderOverrides() {
 }
 
 export function setCompatibilityMode(enabled: boolean) {
+  if (enabled) {
+    clearWebGPUCompatibilityGapOverride();
+  }
   return setRenderPreferences({ compatibilityMode: enabled });
 }
 

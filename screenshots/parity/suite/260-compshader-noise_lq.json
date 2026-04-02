@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "presetId": "260-compshader-noise_lq",
+  "title": "260 Compshader Noise LQ",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260331203143",
+  "projectmImagePath": "/Users/kanav/Documents/GitHub/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "projectm-fixture",
+  "strata": [
+    "projectm-upstream",
+    "comp-shader",
+    "noise-texture"
+  ],
+  "toleranceProfile": "default",
+  "threshold": 16,
+  "failThreshold": 0.02,
+  "metrics": {
+    "width": 2550,
+    "height": 1794,
+    "totalPixels": 4574700,
+    "mismatchedPixels": 2768303,
+    "mismatchRatio": 0.6051332327802916,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.06655536253600543,
+    "rmse": 0.1211182821443913,
+    "exactMatch": false,
+    "threshold": 16
+  },
+  "status": "fail"
+}

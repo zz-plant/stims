@@ -1,3 +1,12 @@
+import {
+  describeMilkdropScenePickResult,
+  getMilkdropSceneDragFieldUpdates,
+  getMilkdropScenePickResult,
+  getMilkdropSceneSelectionFieldMap,
+  isMilkdropSceneSelectionEditable,
+  type MilkdropScenePickResult,
+  resolveMilkdropScenePointerPoint,
+} from '../runtime/scene-selection.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
@@ -52,11 +61,13 @@ export function formatInspectorMetrics({
   frameState,
   backend,
   presetEntry,
+  selectedObjectLabel = 'None',
 }: {
   compiled: MilkdropCompiledPreset;
   frameState: MilkdropFrameState;
   backend: 'webgl' | 'webgpu';
   presetEntry?: MilkdropCatalogEntry | null;
+  selectedObjectLabel?: string;
 }) {
   const support = compiled.ir.compatibility.backends[backend];
   const parity = compiled.ir.compatibility.parity;
@@ -137,6 +148,7 @@ export function formatInspectorMetrics({
       value: `${frameState.signals.bass.toFixed(2)} / ${frameState.signals.mid.toFixed(2)} / ${frameState.signals.treb.toFixed(2)}`,
     },
     { label: 'Beat pulse', value: frameState.signals.beatPulse.toFixed(2) },
+    { label: 'Selected object', value: selectedObjectLabel },
     {
       label: 'Main wave points',
       value: String(Math.floor(frameState.mainWave.positions.length / 3)),
@@ -144,6 +156,10 @@ export function formatInspectorMetrics({
     { label: 'Custom waves', value: String(frameState.customWaves.length) },
     { label: 'Shapes', value: String(frameState.shapes.length) },
     { label: 'Borders', value: String(frameState.borders.length) },
+    {
+      label: 'Particle count',
+      value: String(frameState.gpuGeometry?.particleField?.instanceCount ?? 0),
+    },
     {
       label: 'Register pressure',
       value: `q${compiled.ir.compatibility.featureAnalysis.registerUsage.q} / t${compiled.ir.compatibility.featureAnalysis.registerUsage.t}`,
@@ -170,30 +186,67 @@ function buildMetricNode(metric: InspectorMetric) {
 
 export class InspectorPanel {
   readonly element: HTMLElement;
+  readonly selectionElement: HTMLElement;
   readonly metricsElement: HTMLElement;
 
   private readonly callbacks: InspectorPanelCallbacks;
   private readonly controlsElement: HTMLElement;
   private visible = false;
+  private lastCompiledPreset: MilkdropCompiledPreset | null = null;
+  private lastFrameState: MilkdropFrameState | null = null;
+  private currentSelection: MilkdropScenePickResult | null = null;
+  private dragState: {
+    pointerId: number;
+    selection: MilkdropScenePickResult;
+    startPoint: { worldX: number; worldY: number };
+    baseFields: Record<string, number>;
+  } | null = null;
   private lastControlsSignature = '';
   private lastMetricsSignature = '';
   private lastMetricsRenderAt = 0;
+  private readonly pointerDownListener = (event: PointerEvent) =>
+    this.handlePointerDown(event);
+  private readonly pointerMoveListener = (event: PointerEvent) =>
+    this.handlePointerMove(event);
+  private readonly pointerUpListener = (event: PointerEvent) =>
+    this.handlePointerUp(event);
+  private readonly pointerCancelListener = (event: PointerEvent) =>
+    this.handlePointerUp(event);
 
   constructor(callbacks: InspectorPanelCallbacks) {
     this.callbacks = callbacks;
     this.element = document.createElement('section');
     this.element.className = 'milkdrop-overlay__tab-panel';
 
+    this.selectionElement = document.createElement('div');
+    this.selectionElement.className = 'milkdrop-overlay__inspector-selection';
+
     this.controlsElement = document.createElement('div');
     this.controlsElement.className = 'milkdrop-overlay__inspector-controls';
     this.metricsElement = document.createElement('div');
     this.metricsElement.className = 'milkdrop-overlay__inspector-metrics';
-    this.element.append(this.controlsElement, this.metricsElement);
+    this.element.append(
+      this.selectionElement,
+      this.controlsElement,
+      this.metricsElement,
+    );
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pointerdown', this.pointerDownListener, true);
+      window.addEventListener('pointermove', this.pointerMoveListener, true);
+      window.addEventListener('pointerup', this.pointerUpListener, true);
+      window.addEventListener(
+        'pointercancel',
+        this.pointerCancelListener,
+        true,
+      );
+    }
   }
 
   setVisible(visible: boolean) {
     this.visible = visible;
     this.element.hidden = !visible;
+    this.syncSceneSelectionSummary();
   }
 
   shouldRenderMetrics(isOpen: boolean) {
@@ -201,8 +254,10 @@ export class InspectorPanel {
   }
 
   setCompiledPreset(compiled: MilkdropCompiledPreset) {
+    this.lastCompiledPreset = compiled;
     const signature = `${compiled.source.id}:${compiled.formattedSource}`;
     if (signature === this.lastControlsSignature) {
+      this.syncSceneSelectionSummary();
       return;
     }
     this.lastControlsSignature = signature;
@@ -301,6 +356,7 @@ export class InspectorPanel {
     });
 
     this.controlsElement.replaceChildren(...fields);
+    this.syncSceneSelectionSummary();
   }
 
   renderMetrics({
@@ -316,14 +372,19 @@ export class InspectorPanel {
     presetEntry?: MilkdropCatalogEntry | null;
     isOpen: boolean;
   }) {
+    this.lastCompiledPreset = compiled;
+    this.lastFrameState = frameState;
+
     if (!frameState || !compiled) {
       if (this.shouldRenderMetrics(isOpen)) {
         this.metricsElement.textContent = 'Waiting for preview frames...';
       }
+      this.syncSceneSelectionSummary();
       return;
     }
 
     if (!this.shouldRenderMetrics(isOpen)) {
+      this.syncSceneSelectionSummary();
       return;
     }
 
@@ -332,6 +393,9 @@ export class InspectorPanel {
       frameState,
       backend,
       presetEntry,
+      selectedObjectLabel: describeMilkdropScenePickResult(
+        this.currentSelection,
+      ).title,
     });
     const metricsSignature = metrics
       .map((metric) => `${metric.label}:${metric.value}`)
@@ -342,11 +406,38 @@ export class InspectorPanel {
       metricsSignature === this.lastMetricsSignature &&
       now - this.lastMetricsRenderAt < 240
     ) {
+      this.syncSceneSelectionSummary();
       return;
     }
     this.lastMetricsSignature = metricsSignature;
     this.lastMetricsRenderAt = now;
     this.metricsElement.replaceChildren(...metrics.map(buildMetricNode));
+    this.syncSceneSelectionSummary();
+  }
+
+  setSceneSelection(selection: MilkdropScenePickResult | null) {
+    this.currentSelection = selection;
+    if (!selection || !isMilkdropSceneSelectionEditable(selection)) {
+      this.dragState = null;
+    }
+    this.syncSceneSelectionSummary();
+  }
+
+  getSceneSelection() {
+    return this.currentSelection;
+  }
+
+  dispose() {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pointerdown', this.pointerDownListener, true);
+      window.removeEventListener('pointermove', this.pointerMoveListener, true);
+      window.removeEventListener('pointerup', this.pointerUpListener, true);
+      window.removeEventListener(
+        'pointercancel',
+        this.pointerCancelListener,
+        true,
+      );
+    }
   }
 
   private buildInspectorField(
@@ -387,5 +478,143 @@ export class InspectorPanel {
     });
     wrap.appendChild(textInput);
     return wrap;
+  }
+
+  private isSceneInteractionActive() {
+    if (!this.visible || typeof document === 'undefined') {
+      return false;
+    }
+
+    return Boolean(document.querySelector('.milkdrop-overlay.is-open'));
+  }
+
+  private getPointerPoint(event: PointerEvent) {
+    return resolveMilkdropScenePointerPoint({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    });
+  }
+
+  private isEventInsideOverlayPanel(target: EventTarget | null) {
+    return (
+      target instanceof HTMLElement &&
+      Boolean(target.closest('.milkdrop-overlay__panel'))
+    );
+  }
+
+  private getDragFieldMap(selection: MilkdropScenePickResult) {
+    const compiled = this.lastCompiledPreset;
+    if (!compiled) {
+      return {};
+    }
+
+    return getMilkdropSceneSelectionFieldMap(compiled, selection);
+  }
+
+  private syncSceneSelectionSummary() {
+    const description = describeMilkdropScenePickResult(this.currentSelection);
+
+    const title = document.createElement('strong');
+    title.textContent = description.title;
+    title.className = 'milkdrop-overlay__inspector-selection-title';
+
+    const detail = document.createElement('div');
+    detail.textContent = description.detail;
+    detail.className = 'milkdrop-overlay__inspector-selection-detail';
+
+    const fieldSummary = document.createElement('div');
+    fieldSummary.textContent =
+      this.currentSelection?.sourceFields.join(', ') ||
+      description.fieldSummary;
+    fieldSummary.className = 'milkdrop-overlay__inspector-selection-fields';
+
+    this.selectionElement.dataset.selectionKind =
+      this.currentSelection?.kind ?? 'none';
+    this.selectionElement.replaceChildren(title, detail, fieldSummary);
+  }
+
+  private handlePointerDown(event: PointerEvent) {
+    if (event.button !== 0 || !this.isSceneInteractionActive()) {
+      return;
+    }
+
+    if (this.isEventInsideOverlayPanel(event.target)) {
+      return;
+    }
+
+    const compiled = this.lastCompiledPreset;
+    const frameState = this.lastFrameState;
+    if (!compiled || !frameState) {
+      return;
+    }
+
+    const point = this.getPointerPoint(event);
+    const selection = getMilkdropScenePickResult({
+      frameState,
+      point,
+    });
+    this.setSceneSelection(selection);
+    if (!selection) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!isMilkdropSceneSelectionEditable(selection)) {
+      return;
+    }
+
+    this.dragState = {
+      pointerId: event.pointerId,
+      selection,
+      startPoint: point,
+      baseFields: this.getDragFieldMap(selection),
+    };
+  }
+
+  private handlePointerMove(event: PointerEvent) {
+    if (
+      !this.dragState ||
+      event.pointerId !== this.dragState.pointerId ||
+      !this.isSceneInteractionActive()
+    ) {
+      return;
+    }
+
+    const compiled = this.lastCompiledPreset;
+    if (!compiled) {
+      return;
+    }
+
+    const currentPoint = this.getPointerPoint(event);
+    const updates = getMilkdropSceneDragFieldUpdates({
+      compiled,
+      selection: this.dragState.selection,
+      currentPoint,
+      startPoint: this.dragState.startPoint,
+      baseFields: this.dragState.baseFields,
+      modifiers: {
+        shiftKey: event.shiftKey,
+        altKey: event.altKey,
+      },
+    });
+
+    const entries = Object.entries(updates);
+    if (entries.length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+    entries.forEach(([key, value]) => {
+      this.callbacks.onInspectorFieldChange(key, value);
+    });
+  }
+
+  private handlePointerUp(event: PointerEvent) {
+    if (this.dragState && event.pointerId === this.dragState.pointerId) {
+      this.dragState = null;
+    }
   }
 }

@@ -34,7 +34,7 @@ Run before commit:
 bun run check
 ```
 
-This runs a no-`@ts-nocheck` guard, Biome checks, TypeScript typechecking, and tests.
+This runs a no-`@ts-nocheck` guard, Biome checks, toy/docs drift validation, SEO surface checks, the architecture boundary guard, TypeScript typechecking, and tests.
 
 Useful fast path while iterating:
 
@@ -51,6 +51,18 @@ It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `
 
   ```bash
   bun run check:toys
+  ```
+
+- Architecture dependency boundaries:
+
+  ```bash
+  bun run check:architecture
+  ```
+
+- SEO surface integrity:
+
+  ```bash
+  bun run check:seo
   ```
 
 - Targeted test execution:

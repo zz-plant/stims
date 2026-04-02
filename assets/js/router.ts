@@ -1,3 +1,5 @@
+import { getToyRouteHref } from './utils/toy-route-href.ts';
+
 type WindowGetter = () => (Window & typeof globalThis) | null;
 
 export type Route =
@@ -10,28 +12,7 @@ const DEFAULT_SLUG_PATHS: SlugPathMap = {
   milkdrop: '/milkdrop/',
 };
 
-export function getToyRouteHref(
-  slug: string,
-  {
-    queryParam = 'experience',
-    routePath = 'milkdrop/',
-    slugPaths = DEFAULT_SLUG_PATHS,
-  }: {
-    queryParam?: string;
-    routePath?: string;
-    slugPaths?: SlugPathMap;
-  } = {},
-) {
-  const mappedPath = slugPaths[slug];
-  if (mappedPath) {
-    return mappedPath;
-  }
-
-  const normalizedRoutePath = routePath.endsWith('/')
-    ? routePath
-    : `${routePath}/`;
-  return `/${normalizedRoutePath}?${queryParam}=${encodeURIComponent(slug)}`;
-}
+export { getToyRouteHref } from './utils/toy-route-href.ts';
 
 const normalizePath = (pathname: string) => {
   const normalized = pathname.replace(/\/index\.html$/u, '/');

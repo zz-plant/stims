@@ -6,7 +6,7 @@ import {
 import type { ToyLifecycle } from '../core/toy-lifecycle.ts';
 import type { ToyEntry } from '../data/toy-schema.ts';
 import { createManifestClient } from '../utils/manifest-client.ts';
-import { loadToyModuleStarter } from '../utils/toy-module-loader.ts';
+import { loadToyModuleStarter } from './toy-module-loader.ts';
 
 export function resolveToySlug(slug: string) {
   return slug.trim().toLowerCase();

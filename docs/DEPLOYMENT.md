@@ -1,19 +1,19 @@
 # Deployment Guide
 
-This guide covers how to build Stims, validate the production bundle locally, and ship it to production. Stims now ships a single MilkDrop-led visualizer product, and the deployment workflow below applies to that surface. Commands reference the scripts in `package.json` so you can copy/paste without drift.
+This guide covers how to build Stims, validate the production bundle locally, and ship it to Cloudflare. Stims now ships a single MilkDrop-led visualizer product, and the deployment workflow below applies to that surface. Commands reference the scripts in `package.json` so you can copy/paste without drift.
 
 ## Choose your deployment track
 
-| Track | Use when | Required commands |
+| Track | Use when | Primary path |
 | --- | --- | --- |
-| **Track A (default): Static site on Cloudflare Pages** | Nearly all toy/site releases. | `bun run check`, `bun run build`, `bun run preview`, `bun run pages:deploy` |
-| **Track B (optional): MCP Worker transport** | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A commands + Worker deploy command(s) in the Track B section |
+| **Track A (default): Static site on Cloudflare Pages** | Nearly all toy/site releases. | Push a branch for preview, merge to `main` for production. Use the manual Wrangler scripts only for fallback/hotfix deploys. |
+| **Track B (optional): MCP Worker transport** | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A flow for the site plus `bun run mcp:check` and `bun run mcp:deploy` when you need the remote MCP endpoint updated. |
 
 If you only need to deploy the toy site, follow Track A and skip the Worker sections.
 
-## Track A quick path (minimum production flow)
+## Track A quick path (default production flow)
 
-Use this baseline sequence when shipping the site:
+The `stims` Pages project is already connected to GitHub, so the normal production path is Git-driven instead of a local `wrangler pages deploy`:
 
 1. Run the quality gate:
 
@@ -39,13 +39,10 @@ Use this baseline sequence when shipping the site:
    bun run preview
    ```
 
-5. Deploy Pages assets:
+5. Push the branch and open or update a pull request. Cloudflare Pages will build a preview deployment automatically.
+6. Merge to `main` after the preview is good. Cloudflare Pages will promote a new production deployment automatically.
 
-   ```bash
-   bun run pages:deploy
-   ```
-
-Advanced variants such as `--reuse` are documented later for prebuilt artifacts and CI restores.
+Use the manual Wrangler deploy scripts later in this guide only when you need to bypass the dashboard build, redeploy an existing `dist/`, or ship from CI outside the built-in Git integration.
 
 ## Build the Site
 
@@ -114,52 +111,78 @@ Cloudflare Pages can read caching rules from `public/_headers`, which Vite copie
 
 ## Cloudflare Pages Configuration
 
-Cloudflare Pages reads the build command from the project settings in the dashboard, so keep `wrangler.toml` limited to the shared metadata (`name`, `compatibility_date`, and `pages_build_output_dir`). Do **not** add a `[build]` table—Pages rejects it and will surface a configuration validation error. Configure the build command (for example, `bun run build`) directly in Pages, or rely on `CF_PAGES=1` with the existing install script to generate `dist/` during install. If the install step already populated `dist/` (the repo’s build script checks for this), the subsequent build command will no-op on Pages to avoid a second Vite build.
+Cloudflare Pages reads the build command from the project settings in the dashboard, so keep [`wrangler.toml`](../wrangler.toml) limited to the shared Pages metadata (`name`, `compatibility_date`, and `pages_build_output_dir`). Do **not** add a `[build]` table there. Configure the build command (for example, `bun run build`) directly in Pages, or rely on `CF_PAGES=1` with the existing install script to generate `dist/` during install. If the install step already populated `dist/` (the repo’s build script checks for this), the subsequent build command will no-op on Pages to avoid a second Vite build.
 
 Pages builders occasionally default to older Bun versions, which causes `bun install` to fail against the `bun.lock` that tracks Bun `1.3.8`. This repository includes a `.bun-version` file that Cloudflare Pages automatically detects, ensuring the install step always runs with a compatible runtime. If you need to override this, you can set the `BUN_VERSION=1.3.8` environment variable.
 
 > **Install step:** Make sure devDependencies are present so `vite` exists at build time. In Cloudflare Pages, set the install command to `bun install` and set `BUN_INSTALL_DEV=true` to mirror local installs.
 
-### Pages CLI flows
+### Automatic Git deploys
 
-Use the dedicated scripts to avoid drift between local and CI deployments:
+The existing Pages project uses Git integration, which means:
+
+- Pull requests get branch previews automatically.
+- Pushes to `main` create production deployments automatically.
+- The Cloudflare dashboard remains the source of truth for the Pages build command and production branch.
+
+That is the default deployment path for this repo.
+
+### Manual Pages CLI fallback flows
+
+Use the dedicated scripts when you intentionally need a manual deploy. They pin the Pages project name to `stims`, attach commit metadata automatically, and make preview vs production explicit:
 
 ```bash
-# Build and serve locally with wrangler pages dev
+# Build and serve locally with Wrangler Pages dev
 bun run pages:dev
 
-# Build and deploy static assets to Cloudflare Pages
-bun run pages:deploy
+# Build and deploy a preview branch to Cloudflare Pages
+bun run pages:deploy:preview
+
+# Build and deploy production assets to Cloudflare Pages
+bun run pages:deploy:production
 ```
 
 If you are deploying an existing build output (for example, after a CI build artifact is restored), use the reuse variant to skip rebuilding:
 
 ```bash
-bun run pages:deploy:reuse
+bun run pages:deploy:preview:reuse
+
+bun run pages:deploy:production:reuse
 ```
 
-Expected artifacts for both commands:
+Manual deploy authentication notes:
+
+- Local interactive deploys can use `bun run cf:whoami` plus Wrangler login state.
+- Non-interactive deploys require `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+
+Expected artifacts for the deploy commands:
 
 - `dist/` with the HTML entry points and hashed assets under `dist/assets/`.
 - `dist/.vite/manifest.json` co-located with the assets (required for debugging and any server-side asset lookups).
-- A Wrangler-generated preview URL during `pages:dev` and a production deployment URL during `pages:deploy` (visible in the command output and the Cloudflare dashboard).
+- A Wrangler-generated preview URL during `pages:dev`, a branch preview URL during `pages:deploy:preview`, and a production deployment URL during `pages:deploy:production` (visible in the command output and the Cloudflare dashboard).
 
 ## Track B (optional): Cloudflare Worker (MCP) deployment
 
-The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Deploy it with Wrangler using the existing [`wrangler.toml`](../wrangler.toml) (name, compatibility date, and Pages output dir are already defined).
+The MCP HTTP/WebSocket endpoint lives in [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). It now has its own Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc), separate from the Pages config in [`wrangler.toml`](../wrangler.toml).
 
 Common commands (Bun-first):
+
+- Validate the Worker deploy config before shipping:
+
+  ```bash
+  bun run mcp:check
+  ```
 
 - Run locally with live reload and the configured compatibility date:
 
   ```bash
-  bunx wrangler dev scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
+  bun run mcp:dev
   ```
 
 - Deploy to Cloudflare Workers:
 
   ```bash
-  bunx wrangler deploy scripts/mcp-worker.ts --name stims --compatibility-date=2024-10-20
+  bun run mcp:deploy
   ```
 
 Expected artifacts and checkpoints:
@@ -167,7 +190,7 @@ Expected artifacts and checkpoints:
 - Worker script bundled by Wrangler (appears as `stims` or the overridden `--name` in the dashboard).
 - Preview URL surfaced by `wrangler dev` for local testing and a production URL after `wrangler deploy`.
 - Compatibility date pinned to `2024-10-20` so WebSocket support is enabled for the MCP server.
-- No KV, Durable Objects, or secrets are required; if you introduce bindings, add them to the deploy commands and `wrangler.toml`.
+- No KV, Durable Objects, or secrets are required today; if you introduce bindings, add them to `wrangler.mcp.jsonc`.
 
 ## Preview-per-PR workflow
 

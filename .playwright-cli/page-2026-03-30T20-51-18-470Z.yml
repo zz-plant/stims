@@ -1,0 +1,113 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Start" [ref=e14] [cursor=pointer]:
+              - /url: "#main-content"
+            - link "Controls" [ref=e15] [cursor=pointer]:
+              - /url: "#launch-panels"
+            - link "GitHub" [ref=e16] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e17]:
+            - link "Back home" [ref=e18] [cursor=pointer]:
+              - /url: /
+            - button "Switch to light mode" [pressed] [ref=e19] [cursor=pointer]:
+              - generic [ref=e20]: ☀️
+              - generic [ref=e21]: Light mode
+    - main [ref=e22]:
+      - generic [ref=e24]:
+        - paragraph [ref=e25]: MilkDrop live route
+        - heading "Start playback fast, then pull controls in when you need them." [level=1] [ref=e26]
+        - paragraph [ref=e27]: Demo audio drops into the immersive session fastest. Mic and capture sources stay close by when you want the visuals to react to your own sound.
+        - group "Launch shortcuts" [ref=e28]:
+          - link "Start demo playback" [ref=e29] [cursor=pointer]:
+            - /url: /milkdrop/?audio=demo
+          - link "Open setup controls" [ref=e30] [cursor=pointer]:
+            - /url: "#launch-panels-title"
+        - paragraph [ref=e31]: Playback stays visual-first once it starts, while presets, tools, and tuning stay one reveal away.
+        - group "Launch helpers" [ref=e32]:
+          - link "Back to Stims" [ref=e33] [cursor=pointer]:
+            - /url: /
+      - region "Keep audio and startup tuning close, not permanently in the foreground." [ref=e34]:
+        - generic [ref=e35]:
+          - paragraph [ref=e36]: Controls
+          - heading "Keep audio and startup tuning close, not permanently in the foreground." [level=2] [ref=e37]
+          - paragraph [ref=e38]: The audio panel gets motion started. Device tuning stays available for first-run setup and slower hardware without competing with the live canvas.
+        - region "Audio" [ref=e40]:
+          - paragraph [ref=e41]: Start
+          - generic [ref=e42]: Start the visualizer
+          - paragraph [ref=e43]: Start with demo for the fastest path in, or use mic for live room sound.
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - generic [ref=e46]: Mic
+              - generic [ref=e47]: Recommended
+              - generic [ref=e48]: Room, voice, or instrument.
+              - generic [ref=e49]: Needs microphone permission.
+            - button "Allow mic" [ref=e50]
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e53]: Demo
+              - generic [ref=e54]: Recommended
+              - generic [ref=e55]: Built-in soundtrack.
+              - generic [ref=e56]: No permission prompt.
+            - button "Use demo" [ref=e57]
+          - group [ref=e58]:
+            - generic "Other audio sources" [ref=e59] [cursor=pointer]
+            - text: ▾ ▾
+          - region "Next steps" [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e62]: Next
+              - button "Apply aurora feedback starter" [ref=e63] [cursor=pointer]
+            - paragraph [ref=e64]: Audio is live. Now tune the look or change how you interact.
+            - paragraph [ref=e65]: Start with the curated preset browser, then toggle autoplay to hear smooth blend transitions.
+            - generic [ref=e66]:
+              - generic [ref=e68]: Desktop controls
+              - paragraph [ref=e69]: "On desktop, try these controls to steer the picture quickly:"
+              - list [ref=e70]:
+                - listitem [ref=e71]: Move to steer the scene.
+                - listitem [ref=e72]: Drag to inject force.
+                - listitem [ref=e73]: Scroll or trackpad pinch for depth and intensity.
+                - listitem [ref=e74]: Press Space for an accent burst.
+                - listitem [ref=e75]: Press R to remix the preset browser.
+                - listitem [ref=e76]: Press Q/E or 1/2/3 for fast mode changes.
+            - generic [ref=e77]:
+              - generic [ref=e79]: What changes first
+              - list [ref=e80]:
+                - listitem [ref=e81]: Browse, favorite, and revisit standout presets
+                - listitem [ref=e82]: Blend between looks with autoplay or random runs
+          - generic [ref=e83]:
+            - generic [ref=e84]: Device defaults
+            - paragraph [ref=e85]: Choose the startup quality and compatibility settings for this device.
+            - generic [ref=e86]:
+              - generic [ref=e87]:
+                - generic [ref=e88]: Startup look
+                - generic [ref=e89]: Sharper output and denser effects for stronger GPUs.
+              - combobox "Startup look" [ref=e90]:
+                - option "Battery saver"
+                - option "Low motion"
+                - option "TV balanced"
+                - option "Balanced (default)"
+                - option "Hi-fi visuals" [selected]
+            - generic [ref=e91]:
+              - generic [ref=e92] [cursor=pointer]:
+                - generic [ref=e93]:
+                  - generic [ref=e94]: Safe mode
+                  - generic [ref=e95]: Use safer rendering for older hardware.
+                - checkbox "Safe mode" [ref=e97]
+              - generic [ref=e98] [cursor=pointer]:
+                - generic [ref=e99]:
+                  - generic [ref=e100]: Tilt
+                  - generic [ref=e101]: Enable tilt controls on supported visualizers.
+                - checkbox "Tilt" [checked] [ref=e103]
+              - group [ref=e104]:
+                - generic "Rendering Fine-tune rendering when needed." [ref=e105] [cursor=pointer]:
+                  - generic [ref=e106]:
+                    - generic [ref=e107]: Rendering
+                    - generic [ref=e108]: Fine-tune rendering when needed.

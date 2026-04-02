@@ -2,11 +2,11 @@ import type { ToyEntry } from '../data/toy-schema.ts';
 import { createLibraryView } from '../library-view.js';
 import type { createLoader } from '../loader.ts';
 import { initNavigation as initTopNav } from '../ui/nav.ts';
-import { initLibraryView } from '../utils/init-library.ts';
-import { initMilkdropShowcase } from '../utils/init-milkdrop-showcase.ts';
-import { initNavScrollEffects } from '../utils/init-nav-scroll.ts';
-import { initQuickstartCta } from '../utils/init-quickstart.ts';
-import { initSystemCheck } from '../utils/init-system-check.ts';
+import { initNavScrollEffects } from '../ui/nav-scroll-effects.ts';
+import { initLibraryView } from './library-page-view.ts';
+import { initMilkdropShowcase } from './milkdrop-showcase.ts';
+import { initQuickstartCta } from './quickstart-cta.ts';
+import { initSystemCheck } from './system-check.ts';
 
 type LoaderApi = ReturnType<typeof createLoader>;
 type Toy = Pick<ToyEntry, 'slug' | 'title'>;

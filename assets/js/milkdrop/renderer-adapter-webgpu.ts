@@ -1,3 +1,4 @@
+import type { Texture } from 'three';
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -10,18 +11,15 @@ import {
   Mesh,
   NormalBlending,
   ShaderMaterial,
-  Texture,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
 import type {
   MilkdropRendererAdapterConfig,
   MilkdropRendererBatcher,
 } from './renderer-adapter.ts';
-import {
-  createMilkdropRendererAdapterCore,
-  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-} from './renderer-adapter.ts';
+import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
@@ -30,11 +28,38 @@ import type {
   MilkdropShapeVisual,
   MilkdropWaveVisual,
 } from './types';
+import {
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+  type MilkdropWebGpuOptimizationFlags,
+} from './webgpu-optimization-flags.ts';
+import { shouldUseSafeMilkdropWebGpuPath } from './webgpu-query-override.ts';
 
 export type MilkdropWebGPURendererAdapterConfig = Omit<
   MilkdropRendererAdapterConfig,
   'backend'
 >;
+
+const SAFE_WEBGPU_BEHAVIOR = {
+  ...WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+  supportsShapeGradient: false,
+  supportsShapeShaderFill: false,
+  supportsFeedbackPass: false,
+} as const;
+
+function buildSafeWebGpuOptimizationFlags(
+  flags: MilkdropWebGpuOptimizationFlags | undefined,
+): MilkdropWebGpuOptimizationFlags {
+  return {
+    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    ...flags,
+    proceduralMainWave: false,
+    proceduralTrailWaves: false,
+    proceduralCustomWaves: false,
+    proceduralMesh: false,
+    proceduralMotionVectors: false,
+    directFeedbackShaders: false,
+  };
+}
 
 type ShapeFillInstance = {
   x: number;
@@ -75,8 +100,7 @@ type BorderRingInstance = {
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
 const SHAPE_OUTLINE_INNER_OFFSET = -0.007;
-const SHAPE_ACCENT_INNER_OFFSET = 0.002;
-const SHAPE_ACCENT_OUTER_OFFSET = 0.009;
+const SHAPE_THICK_OUTLINE_OUTER_OFFSET = 0.009;
 const polygonFillGeometryCache = new Map<number, BufferGeometry>();
 const polygonRingGeometryCache = new Map<number, InstancedBufferGeometry>();
 
@@ -271,10 +295,43 @@ function ensureInstancedAttribute(
   return attribute;
 }
 
+function getBatchedTargetRenderOrder(key: string) {
+  switch (key) {
+    case 'wave:main-wave':
+    case 'procedural-wave:main-wave':
+      return 20;
+    case 'wave:custom-wave':
+    case 'procedural-custom-wave':
+      return 30;
+    case 'line:trails':
+    case 'procedural-wave:trail-waves':
+      return 40;
+    case 'shapes':
+      return 50;
+    case 'borders':
+      return 60;
+    case 'line:motion-vectors':
+      return 70;
+    case 'wave:blend-main-wave':
+      return 80;
+    case 'wave:blend-custom-wave':
+      return 90;
+    case 'blend-shapes':
+      return 100;
+    case 'blend-borders':
+      return 110;
+    case 'line:blend-motion-vectors':
+      return 120;
+    default:
+      return 0;
+  }
+}
+
 class CompactSegmentUploadBuffer {
   private lineData: Float32Array<ArrayBufferLike> = new Float32Array(0);
   private styleData: Float32Array<ArrayBufferLike> = new Float32Array(0);
   private controlData: Float32Array<ArrayBufferLike> = new Float32Array(0);
+  private joinData: Float32Array<ArrayBufferLike> = new Float32Array(0);
   count = 0;
 
   reset() {
@@ -293,6 +350,10 @@ class CompactSegmentUploadBuffer {
     return this.controlData.subarray(0, this.count * 3);
   }
 
+  getJoinData() {
+    return this.joinData.subarray(0, this.count * 4);
+  }
+
   appendSegment(
     startX: number,
     startY: number,
@@ -303,6 +364,17 @@ class CompactSegmentUploadBuffer {
     color: MilkdropColor,
     alpha: number,
     width: number,
+    {
+      startExtension = 1,
+      endExtension = 1,
+      startCap = 1,
+      endCap = 1,
+    }: {
+      startExtension?: number;
+      endExtension?: number;
+      startCap?: number;
+      endCap?: number;
+    } = {},
   ) {
     this.ensureCapacity(this.count + 1);
     const lineOffset = this.count * 4;
@@ -321,6 +393,12 @@ class CompactSegmentUploadBuffer {
     this.controlData[controlOffset] = startZ;
     this.controlData[controlOffset + 1] = endZ;
     this.controlData[controlOffset + 2] = width * 0.5;
+
+    const joinOffset = this.count * 4;
+    this.joinData[joinOffset] = startExtension;
+    this.joinData[joinOffset + 1] = endExtension;
+    this.joinData[joinOffset + 2] = startCap;
+    this.joinData[joinOffset + 3] = endCap;
     this.count += 1;
   }
 
@@ -331,40 +409,69 @@ class CompactSegmentUploadBuffer {
     width: number,
     closeLoop = false,
   ) {
-    for (let index = 0; index + 5 < positions.length; index += 3) {
+    const pointCount = Math.floor(positions.length / 3);
+    const segmentCount = closeLoop ? pointCount : Math.max(0, pointCount - 1);
+
+    for (let segmentIndex = 0; segmentIndex < segmentCount; segmentIndex += 1) {
+      const startPointIndex = segmentIndex;
+      const endPointIndex = closeLoop
+        ? (segmentIndex + 1) % pointCount
+        : segmentIndex + 1;
+      const previousPointIndex = closeLoop
+        ? (startPointIndex - 1 + pointCount) % pointCount
+        : startPointIndex - 1;
+      const nextPointIndex = closeLoop
+        ? (endPointIndex + 1) % pointCount
+        : endPointIndex + 1;
+
+      const startX = positions[startPointIndex * 3] ?? 0;
+      const startY = positions[startPointIndex * 3 + 1] ?? 0;
+      const startZ = positions[startPointIndex * 3 + 2] ?? 0.24;
+      const endX = positions[endPointIndex * 3] ?? 0;
+      const endY = positions[endPointIndex * 3 + 1] ?? 0;
+      const endZ = positions[endPointIndex * 3 + 2] ?? 0.24;
+
+      const currentDirection = normalizeDirection(endX - startX, endY - startY);
+      const previousDirection =
+        previousPointIndex >= 0
+          ? normalizeDirection(
+              startX - (positions[previousPointIndex * 3] ?? 0),
+              startY - (positions[previousPointIndex * 3 + 1] ?? 0),
+            )
+          : null;
+      const nextDirection =
+        nextPointIndex < pointCount
+          ? normalizeDirection(
+              (positions[nextPointIndex * 3] ?? 0) - endX,
+              (positions[nextPointIndex * 3 + 1] ?? 0) - endY,
+            )
+          : null;
+
       this.appendSegment(
-        positions[index] ?? 0,
-        positions[index + 1] ?? 0,
-        positions[index + 2] ?? 0.24,
-        positions[index + 3] ?? 0,
-        positions[index + 4] ?? 0,
-        positions[index + 5] ?? 0.24,
+        startX,
+        startY,
+        startZ,
+        endX,
+        endY,
+        endZ,
         color,
         alpha,
         width,
+        {
+          startExtension: computeJoinExtension(
+            previousDirection,
+            currentDirection,
+          ),
+          endExtension: computeJoinExtension(currentDirection, nextDirection),
+          startCap: !closeLoop && startPointIndex === 0 ? 1 : 0,
+          endCap: !closeLoop && endPointIndex === pointCount - 1 ? 1 : 0,
+        },
       );
     }
-    if (!closeLoop || positions.length < 6) {
-      return;
-    }
-    const lastPointIndex = positions.length - 3;
-    this.appendSegment(
-      positions[lastPointIndex] ?? 0,
-      positions[lastPointIndex + 1] ?? 0,
-      positions[lastPointIndex + 2] ?? 0.24,
-      positions[0] ?? 0,
-      positions[1] ?? 0,
-      positions[2] ?? 0.24,
-      color,
-      alpha,
-      width,
-    );
   }
 
   appendProceduralWave(wave: MilkdropProceduralWaveVisual) {
-    let previousX = 0;
-    let previousY = 0;
-    let hasPrevious = false;
+    const positions: number[] = [];
     const width = 0.0025 * Math.max(1, wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
@@ -374,29 +481,13 @@ class CompactSegmentUploadBuffer {
         wave.samples[index] ?? 0,
         wave.velocities[index] ?? 0,
       );
-      if (hasPrevious) {
-        this.appendSegment(
-          previousX,
-          previousY,
-          0.24,
-          point.x,
-          point.y,
-          0.24,
-          wave.color,
-          wave.alpha,
-          width,
-        );
-      }
-      previousX = point.x;
-      previousY = point.y;
-      hasPrevious = true;
+      positions.push(point.x, point.y, 0.24);
     }
+    this.appendPolyline(positions, wave.color, wave.alpha, width);
   }
 
   appendProceduralCustomWave(wave: MilkdropProceduralCustomWaveVisual) {
-    let previousX = 0;
-    let previousY = 0;
-    let hasPrevious = false;
+    const positions: number[] = [];
     const width = 0.0025 * Math.max(1, wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
@@ -411,29 +502,16 @@ class CompactSegmentUploadBuffer {
           0.18 *
           wave.scaling;
       const pointY = wave.spectrum ? baseY : orbitalY;
-      if (hasPrevious) {
-        this.appendSegment(
-          previousX,
-          previousY,
-          0.28,
-          x,
-          pointY,
-          0.28,
-          wave.color,
-          wave.alpha,
-          width,
-        );
-      }
-      previousX = x;
-      previousY = pointY;
-      hasPrevious = true;
+      positions.push(x, pointY, 0.28);
     }
+    this.appendPolyline(positions, wave.color, wave.alpha, width);
   }
 
   private ensureCapacity(count: number) {
     this.lineData = ensureFloat32Capacity(this.lineData, count * 4);
     this.styleData = ensureFloat32Capacity(this.styleData, count * 4);
     this.controlData = ensureFloat32Capacity(this.controlData, count * 3);
+    this.joinData = ensureFloat32Capacity(this.joinData, count * 4);
   }
 }
 
@@ -448,6 +526,37 @@ function ensureFloat32Capacity(
   const resized = new Float32Array(nextLength);
   resized.set(source);
   return resized;
+}
+
+function normalizeDirection(dx: number, dy: number) {
+  const length = Math.hypot(dx, dy);
+  if (length <= 0.000001) {
+    return { x: 1, y: 0 };
+  }
+  return { x: dx / length, y: dy / length };
+}
+
+function computeJoinExtension(
+  previousDirection: { x: number; y: number } | null,
+  nextDirection: { x: number; y: number } | null,
+) {
+  if (!previousDirection || !nextDirection) {
+    return 1;
+  }
+
+  const bisectorX = previousDirection.x + nextDirection.x;
+  const bisectorY = previousDirection.y + nextDirection.y;
+  const bisectorLength = Math.hypot(bisectorX, bisectorY);
+  if (bisectorLength <= 0.000001) {
+    return 1;
+  }
+
+  const normalizedBisectorX = bisectorX / bisectorLength;
+  const normalizedBisectorY = bisectorY / bisectorLength;
+  const projection =
+    normalizedBisectorX * nextDirection.x +
+    normalizedBisectorY * nextDirection.y;
+  return Math.min(2.5, Math.max(1, 1 / Math.max(0.35, projection)));
 }
 
 function buildProceduralWavePoint(
@@ -546,17 +655,21 @@ function buildProceduralWavePoint(
 
 class InstancedSegmentBatch {
   readonly group = new Group();
-  private readonly normalMesh = this.createMesh(NormalBlending);
-  private readonly additiveMesh = this.createMesh(AdditiveBlending);
+  private readonly normalMesh: Mesh;
+  private readonly additiveMesh: Mesh;
 
-  constructor() {
+  constructor(renderOrder: number) {
+    this.group.renderOrder = renderOrder;
+    this.normalMesh = this.createMesh(NormalBlending, renderOrder);
+    this.additiveMesh = this.createMesh(AdditiveBlending, renderOrder + 1);
     this.group.add(this.normalMesh, this.additiveMesh);
   }
 
   private createMesh(
     blending: typeof NormalBlending | typeof AdditiveBlending,
+    renderOrder: number,
   ) {
-    return new Mesh(
+    const mesh = new Mesh(
       SEGMENT_QUAD_GEOMETRY.clone(),
       new ShaderMaterial({
         transparent: true,
@@ -569,28 +682,72 @@ class InstancedSegmentBatch {
           attribute vec4 instanceLine;
           attribute vec4 instanceColorAlpha;
           attribute vec3 instanceControl;
+          attribute vec4 instanceJoin;
           varying vec4 vColor;
+          varying vec4 vJoin;
+          varying vec2 vSegmentLocal;
+          varying float vSegmentLengthUnits;
 
           void main() {
             vec2 delta = instanceLine.zw;
             float lengthDelta = length(delta);
             vec2 direction = lengthDelta > 0.000001 ? delta / lengthDelta : vec2(1.0, 0.0);
             vec2 normal = vec2(-direction.y, direction.x);
-            vec2 base = instanceLine.xy + delta * segmentCoord.x;
-            vec2 point = base + normal * segmentCoord.y * instanceControl.z;
-            float z = mix(instanceControl.x, instanceControl.y, segmentCoord.x);
+            float halfWidth = max(instanceControl.z, 0.000001);
+            float startExtension = max(instanceJoin.x, 0.0);
+            float endExtension = max(instanceJoin.y, 0.0);
+            float clampedT = clamp(segmentCoord.x, 0.0, 1.0);
+            vec2 base = instanceLine.xy + delta * segmentCoord.x + direction * mix(-startExtension, endExtension, segmentCoord.x) * halfWidth;
+            vec2 point = base + normal * segmentCoord.y * halfWidth;
+            float z = mix(instanceControl.x, instanceControl.y, clampedT);
             vColor = instanceColorAlpha;
+            vJoin = instanceJoin;
+            vSegmentLocal = vec2(
+              mix(
+                -startExtension,
+                lengthDelta / halfWidth + endExtension,
+                segmentCoord.x
+              ),
+              segmentCoord.y
+            );
+            vSegmentLengthUnits = lengthDelta / halfWidth;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(point, z, 1.0);
           }
         `,
         fragmentShader: `
           varying vec4 vColor;
+          varying vec4 vJoin;
+          varying vec2 vSegmentLocal;
+          varying float vSegmentLengthUnits;
           void main() {
-            gl_FragColor = vColor;
+            float edgeDistance = abs(vSegmentLocal.y);
+            if (vSegmentLocal.x < 0.0 && vJoin.z > 0.5) {
+              edgeDistance = length(
+                vec2(
+                  vSegmentLocal.x / max(vJoin.x, 0.000001),
+                  vSegmentLocal.y
+                )
+              );
+            } else if (vSegmentLocal.x > vSegmentLengthUnits && vJoin.w > 0.5) {
+              edgeDistance = length(
+                vec2(
+                  (vSegmentLocal.x - vSegmentLengthUnits) /
+                    max(vJoin.y, 0.000001),
+                  vSegmentLocal.y
+                )
+              );
+            }
+            float alpha = 1.0 - smoothstep(0.88, 1.0, edgeDistance);
+            if (alpha <= 0.0) {
+              discard;
+            }
+            gl_FragColor = vec4(vColor.rgb, vColor.a * alpha);
           }
         `,
       }),
     );
+    mesh.renderOrder = renderOrder;
+    return mesh;
   }
 
   syncSplit(
@@ -623,12 +780,20 @@ class InstancedSegmentBatch {
       3,
       instances.count,
     );
+    const join = ensureInstancedAttribute(
+      geometry,
+      'instanceJoin',
+      4,
+      instances.count,
+    );
     (line.array as Float32Array).set(instances.getLineData());
     (colorAlpha.array as Float32Array).set(instances.getStyleData());
     (control.array as Float32Array).set(instances.getControlData());
+    (join.array as Float32Array).set(instances.getJoinData());
     line.needsUpdate = true;
     colorAlpha.needsUpdate = true;
     control.needsUpdate = true;
+    join.needsUpdate = true;
   }
 
   dispose() {
@@ -641,16 +806,18 @@ class InstancedSegmentBatch {
 
 class InstancedBorderBatch {
   readonly group = new Group();
-  private readonly fillMesh = this.createMesh(0.285);
-  private readonly outlineMesh = this.createMesh(0.3);
-  private readonly accentMesh = this.createMesh(0.31);
+  private readonly fillMesh: Mesh;
+  private readonly outlineMesh: Mesh;
 
-  constructor() {
-    this.group.add(this.fillMesh, this.outlineMesh, this.accentMesh);
+  constructor(renderOrder: number) {
+    this.group.renderOrder = renderOrder;
+    this.fillMesh = this.createMesh(0.285, renderOrder);
+    this.outlineMesh = this.createMesh(0.3, renderOrder);
+    this.group.add(this.fillMesh, this.outlineMesh);
   }
 
-  private createMesh(_defaultZ: number) {
-    return new Mesh(
+  private createMesh(_defaultZ: number, renderOrder: number) {
+    const mesh = new Mesh(
       BORDER_RING_GEOMETRY.clone(),
       new ShaderMaterial({
         transparent: true,
@@ -680,12 +847,13 @@ class InstancedBorderBatch {
         `,
       }),
     );
+    mesh.renderOrder = renderOrder;
+    return mesh;
   }
 
   sync(borders: MilkdropBorderVisual[], alphaMultiplier: number) {
     const fills: BorderRingInstance[] = [];
     const outlines: BorderRingInstance[] = [];
-    const accents: BorderRingInstance[] = [];
     for (const border of borders) {
       const inset = border.key === 'outer' ? border.size : border.size + 0.08;
       fills.push({
@@ -706,22 +874,9 @@ class InstancedBorderBatch {
         color: border.color,
         alpha: border.alpha * alphaMultiplier,
       });
-      if (border.styled) {
-        const scale = border.key === 'outer' ? 0.985 : 1.015;
-        accents.push({
-          inset,
-          outerInset: Math.max(0, inset - 0.003),
-          innerInset: Math.min(0.98, inset + 0.003),
-          scale,
-          z: 0.31,
-          color: border.color,
-          alpha: Math.max(0.15, border.alpha * 0.55) * alphaMultiplier,
-        });
-      }
     }
     this.syncMesh(this.fillMesh, fills);
     this.syncMesh(this.outlineMesh, outlines);
-    this.syncMesh(this.accentMesh, accents);
   }
 
   private syncMesh(mesh: Mesh, instances: BorderRingInstance[]) {
@@ -762,7 +917,7 @@ class InstancedBorderBatch {
   }
 
   dispose() {
-    [this.fillMesh, this.outlineMesh, this.accentMesh].forEach((mesh) => {
+    [this.fillMesh, this.outlineMesh].forEach((mesh) => {
       disposeGeometry(mesh.geometry);
       disposeMaterial(mesh.material);
     });
@@ -777,6 +932,7 @@ class InstancedShapeFillBatch {
     sides: number,
     blending: typeof NormalBlending | typeof AdditiveBlending,
     getShapeTexture: () => Texture | null,
+    renderOrder: number,
   ) {
     this.getShapeTexture = getShapeTexture;
     this.mesh = new Mesh(
@@ -863,6 +1019,7 @@ class InstancedShapeFillBatch {
         `,
       }),
     );
+    this.mesh.renderOrder = renderOrder;
   }
 
   sync(instances: ShapeFillInstance[]) {
@@ -944,6 +1101,8 @@ class InstancedShapeRingBatch {
   constructor(
     sides: number,
     blending: typeof NormalBlending | typeof AdditiveBlending,
+    layerZ: number,
+    renderOrder: number,
   ) {
     this.mesh = new Mesh(
       getUnitPolygonRingGeometry(sides).clone(),
@@ -952,7 +1111,11 @@ class InstancedShapeRingBatch {
         depthWrite: false,
         side: DoubleSide,
         blending,
+        uniforms: {
+          layerZ: { value: layerZ },
+        },
         vertexShader: `
+          uniform float layerZ;
           attribute vec2 unitCorner;
           attribute float innerWeight;
           attribute vec4 instanceTransform;
@@ -972,7 +1135,7 @@ class InstancedShapeRingBatch {
             vColor = instanceColorAlpha;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(
               rotated + instanceTransform.xy,
-              0.16,
+              layerZ,
               1.0
             );
           }
@@ -985,6 +1148,7 @@ class InstancedShapeRingBatch {
         `,
       }),
     );
+    this.mesh.renderOrder = renderOrder;
   }
 
   sync(instances: ShapeRingInstance[]) {
@@ -1042,30 +1206,37 @@ class ShapeBatchBucket {
   readonly group = new Group();
   private readonly fill: InstancedShapeFillBatch;
   private readonly outline: InstancedShapeRingBatch;
-  private readonly accent: InstancedShapeRingBatch;
 
   constructor(
     sides: number,
     additive: boolean,
     getShapeTexture: () => Texture | null,
+    renderOrder: number,
   ) {
+    const bucketRenderOrder = renderOrder + (additive ? 1 : 0);
     const blending = additive ? AdditiveBlending : NormalBlending;
+    this.group.renderOrder = bucketRenderOrder;
     this.fill = new InstancedShapeFillBatch(
       sides,
       blending,
       getShapeTexture,
+      bucketRenderOrder,
     );
-    this.outline = new InstancedShapeRingBatch(sides, blending);
-    this.accent = new InstancedShapeRingBatch(sides, blending);
-    this.group.add(this.fill.mesh, this.outline.mesh, this.accent.mesh);
+    this.outline = new InstancedShapeRingBatch(
+      sides,
+      blending,
+      0.16,
+      bucketRenderOrder,
+    );
+    this.group.add(this.fill.mesh, this.outline.mesh);
   }
 
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
     const fillInstances: ShapeFillInstance[] = [];
     const outlineInstances: ShapeRingInstance[] = [];
-    const accentInstances: ShapeRingInstance[] = [];
     for (const shape of shapes) {
       const outlineScales = createShapeRingScales(shape.radius, {
+        outerOffset: shape.thickOutline ? SHAPE_THICK_OUTLINE_OUTER_OFFSET : 0,
         innerOffset: SHAPE_OUTLINE_INNER_OFFSET,
       });
       fillInstances.push({
@@ -1093,33 +1264,14 @@ class ShapeBatchBucket {
         outerScale: outlineScales.outerScale,
         innerScale: outlineScales.innerScale,
       });
-      if (shape.thickOutline) {
-        const accentScales = createShapeRingScales(shape.radius, {
-          outerOffset: SHAPE_ACCENT_OUTER_OFFSET,
-          innerOffset: SHAPE_ACCENT_INNER_OFFSET,
-        });
-        accentInstances.push({
-          x: shape.x,
-          y: shape.y,
-          radius: shape.radius,
-          rotation: shape.rotation,
-          color: shape.borderColor,
-          alpha:
-            Math.max(0.2, (shape.borderColor.a ?? 1) * 0.45) * alphaMultiplier,
-          outerScale: accentScales.outerScale,
-          innerScale: accentScales.innerScale,
-        });
-      }
     }
     this.fill.sync(fillInstances);
     this.outline.sync(outlineInstances);
-    this.accent.sync(accentInstances);
   }
 
   dispose() {
     this.fill.dispose();
     this.outline.dispose();
-    this.accent.dispose();
   }
 }
 
@@ -1127,9 +1279,12 @@ class ShapeBatchTarget {
   readonly group = new Group();
   private readonly buckets = new Map<string, ShapeBatchBucket>();
   private readonly getShapeTexture: () => Texture | null;
+  private readonly renderOrder: number;
 
-  constructor(getShapeTexture: () => Texture | null) {
+  constructor(getShapeTexture: () => Texture | null, renderOrder: number) {
     this.getShapeTexture = getShapeTexture;
+    this.renderOrder = renderOrder;
+    this.group.renderOrder = renderOrder;
   }
 
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
@@ -1149,6 +1304,7 @@ class ShapeBatchTarget {
           Number(sides),
           mode === 'add',
           this.getShapeTexture,
+          this.renderOrder,
         );
         this.buckets.set(key, bucket);
         this.group.add(bucket.group);
@@ -1199,7 +1355,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getWaveTarget(key: string) {
     let target = this.waveTargets.get(key);
     if (!target) {
-      target = new InstancedSegmentBatch();
+      target = new InstancedSegmentBatch(getBatchedTargetRenderOrder(key));
       this.waveTargets.set(key, target);
       this.root.add(target.group);
     }
@@ -1209,7 +1365,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getShapeTarget(key: string) {
     let target = this.shapeTargets.get(key);
     if (!target) {
-      target = new ShapeBatchTarget(() => this.shapeTexture);
+      target = new ShapeBatchTarget(
+        () => this.shapeTexture,
+        getBatchedTargetRenderOrder(key),
+      );
       this.shapeTargets.set(key, target);
       this.root.add(target.group);
     }
@@ -1229,7 +1388,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private getBorderTarget(key: string) {
     let target = this.borderTargets.get(key);
     if (!target) {
-      target = new InstancedBorderBatch();
+      target = new InstancedBorderBatch(getBatchedTargetRenderOrder(key));
       this.borderTargets.set(key, target);
       this.root.add(target.group);
     }
@@ -1376,11 +1535,19 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
 export function createMilkdropWebGPURendererAdapter(
   config: MilkdropWebGPURendererAdapterConfig,
 ) {
+  const useSafeWebGpuPath = shouldUseSafeMilkdropWebGpuPath();
   return createMilkdropRendererAdapterCore({
     ...config,
     backend: 'webgpu',
-    behavior: WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-    createFeedbackManager: createMilkdropWebGPUFeedbackManager,
-    batcher: new WebGPUBatchingLayer(),
+    behavior: useSafeWebGpuPath
+      ? SAFE_WEBGPU_BEHAVIOR
+      : WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
+    createFeedbackManager: useSafeWebGpuPath
+      ? undefined
+      : createMilkdropWebGPUFeedbackManager,
+    batcher: useSafeWebGpuPath ? null : new WebGPUBatchingLayer(),
+    webgpuOptimizationFlags: useSafeWebGpuPath
+      ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
+      : config.webgpuOptimizationFlags,
   });
 }

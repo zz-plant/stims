@@ -785,12 +785,10 @@ export function createMilkdropIr({
     webgpu: compatibilityHelpers.buildWebGpuDescriptorPlan({
       featureAnalysis,
       webgpu: finalBackends.webgpu,
-      numericFields,
       programs,
       customWaves,
       post,
       lowerGpuFieldProgram,
-      hasLegacyMotionVectorControls,
     }),
   };
 

@@ -80,9 +80,24 @@ export function buildRenderFrameState({
 
   return {
     ...frameState,
-    post: Object.assign(lowQualityPostOverride, frameState.post, {
+    post: Object.assign({}, frameState.post, lowQualityPostOverride, {
       shaderEnabled: false,
       videoEchoEnabled: false,
+      postprocessingProfile: frameState.post.postprocessingProfile
+        ? {
+            ...frameState.post.postprocessingProfile,
+            enabled: false,
+          }
+        : frameState.post.postprocessingProfile,
     }),
+    gpuGeometry: {
+      ...frameState.gpuGeometry,
+      particleField: frameState.gpuGeometry.particleField
+        ? {
+            ...frameState.gpuGeometry.particleField,
+            enabled: false,
+          }
+        : frameState.gpuGeometry.particleField,
+    },
   };
 }

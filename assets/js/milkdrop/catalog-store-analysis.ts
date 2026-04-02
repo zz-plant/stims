@@ -47,6 +47,28 @@ function inferredFidelityWithoutMeasuredVisualResult(
   }
 }
 
+function buildInferredVisualCertificationWithoutMeasuredResult(
+  compiled: MilkdropCompiledPreset,
+): MilkdropCatalogEntry['visualCertification'] {
+  const inferredFidelityClass =
+    inferredFidelityWithoutMeasuredVisualResult(compiled);
+  const inferredVisualEvidenceTier =
+    compiled.ir.compatibility.parity.visualEvidenceTier === 'visual'
+      ? 'runtime'
+      : compiled.ir.compatibility.parity.visualEvidenceTier;
+
+  return {
+    status: 'uncertified',
+    measured: false,
+    source: 'inferred',
+    fidelityClass: inferredFidelityClass,
+    visualEvidenceTier: inferredVisualEvidenceTier,
+    requiredBackend: 'webgpu',
+    actualBackend: null,
+    reasons: ['No measured WebGPU reference capture is recorded yet.'],
+  };
+}
+
 function inferredVisualEvidenceWithoutMeasuredResult(
   compiled: MilkdropCompiledPreset,
 ): {
@@ -70,19 +92,8 @@ function inferredVisualCertificationWithoutMeasuredResult(
   compiled: MilkdropCompiledPreset,
 ): MilkdropCatalogEntry['visualCertification'] {
   return (
-    compiled.ir.compatibility.parity.visualCertification ?? {
-      status: 'uncertified',
-      measured: false,
-      source: 'inferred',
-      fidelityClass: inferredFidelityWithoutMeasuredVisualResult(compiled),
-      visualEvidenceTier:
-        compiled.ir.compatibility.parity.visualEvidenceTier === 'visual'
-          ? 'runtime'
-          : compiled.ir.compatibility.parity.visualEvidenceTier,
-      requiredBackend: 'webgpu',
-      actualBackend: null,
-      reasons: ['No measured WebGPU reference capture is recorded yet.'],
-    }
+    compiled.ir.compatibility.parity.visualCertification ??
+    buildInferredVisualCertificationWithoutMeasuredResult(compiled)
   );
 }
 
@@ -213,6 +224,24 @@ export function getValidatedCatalogOverrides(
   }
 
   return overrides;
+}
+
+export function getConservativeBundledCatalogProjectionDefaults(
+  compiled: MilkdropCompiledPreset,
+): Pick<
+  MilkdropCatalogEntry,
+  'fidelityClass' | 'visualEvidenceTier' | 'visualCertification' | 'evidence'
+> {
+  const visualEvidenceTier =
+    inferredVisualEvidenceWithoutMeasuredResult(compiled);
+
+  return {
+    fidelityClass: inferredFidelityWithoutMeasuredVisualResult(compiled),
+    visualEvidenceTier: visualEvidenceTier.visualEvidenceTier,
+    visualCertification:
+      buildInferredVisualCertificationWithoutMeasuredResult(compiled),
+    evidence: visualEvidenceTier.evidence,
+  };
 }
 
 export function createCatalogAnalysis() {

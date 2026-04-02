@@ -1,0 +1,490 @@
+{
+  "version": 1,
+  "libraryId": "projectm-upstream",
+  "libraryName": "Vendored projectM Upstream",
+  "certification": "exploratory",
+  "corpusTier": "exploratory",
+  "presets": [
+    {
+      "id": "000-empty",
+      "title": "000 Empty",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/000-empty.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1000
+    },
+    {
+      "id": "001-line",
+      "title": "001 Line",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/001-line.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1001
+    },
+    {
+      "id": "100-square",
+      "title": "100 Square",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/100-square.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1002
+    },
+    {
+      "id": "101-per_frame",
+      "title": "101 Per Frame",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/101-per_frame.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1003
+    },
+    {
+      "id": "102-per_frame3",
+      "title": "102 Per Frame3",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/102-per_frame3.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1004
+    },
+    {
+      "id": "103-multiple-eqn",
+      "title": "103 Multiple Eqn",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/103-multiple-eqn.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1005
+    },
+    {
+      "id": "104-continued-eqn",
+      "title": "104 Continued Eqn",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/104-continued-eqn.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1006
+    },
+    {
+      "id": "105-per_frame_init",
+      "title": "105 Per Frame Init",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/105-per_frame_init.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1007
+    },
+    {
+      "id": "110-per_pixel",
+      "title": "110 Per Pixel",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/110-per_pixel.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1008
+    },
+    {
+      "id": "200-wave",
+      "title": "200 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/200-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1009
+    },
+    {
+      "id": "201-wave",
+      "title": "201 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/201-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1010
+    },
+    {
+      "id": "202-wave",
+      "title": "202 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/202-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1011
+    },
+    {
+      "id": "203-wave",
+      "title": "203 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/203-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1012
+    },
+    {
+      "id": "204-wave",
+      "title": "204 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/204-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1013
+    },
+    {
+      "id": "205-wave",
+      "title": "205 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/205-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1014
+    },
+    {
+      "id": "206-wave",
+      "title": "206 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/206-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1015
+    },
+    {
+      "id": "207-wave",
+      "title": "207 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/207-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1016
+    },
+    {
+      "id": "208-wave",
+      "title": "208 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/208-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1017
+    },
+    {
+      "id": "209-wave",
+      "title": "209 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/209-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1018
+    },
+    {
+      "id": "210-wave",
+      "title": "210 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/210-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1019
+    },
+    {
+      "id": "211-wave",
+      "title": "211 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/211-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1020
+    },
+    {
+      "id": "212-wave",
+      "title": "212 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/212-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1021
+    },
+    {
+      "id": "213-wave",
+      "title": "213 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/213-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1022
+    },
+    {
+      "id": "214-wave",
+      "title": "214 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/214-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1023
+    },
+    {
+      "id": "215-wave",
+      "title": "215 Wave",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/215-wave.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1024
+    },
+    {
+      "id": "240-wave-smooth-00",
+      "title": "240 Wave Smooth 00",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/240-wave-smooth-00.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1025
+    },
+    {
+      "id": "241-wave-smooth-01",
+      "title": "241 Wave Smooth 01",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/241-wave-smooth-01.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1026
+    },
+    {
+      "id": "242-wave-smooth-80",
+      "title": "242 Wave Smooth 80",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/242-wave-smooth-80.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1027
+    },
+    {
+      "id": "243-wave-smooth-90",
+      "title": "243 Wave Smooth 90",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/243-wave-smooth-90.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1028
+    },
+    {
+      "id": "244-wave-smooth-99",
+      "title": "244 Wave Smooth 99",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/244-wave-smooth-99.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1029
+    },
+    {
+      "id": "245-wave-smooth-100",
+      "title": "245 Wave Smooth 100",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/245-wave-smooth-100.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1030
+    },
+    {
+      "id": "250-wavecode",
+      "title": "250 Wavecode",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/250-wavecode.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1031
+    },
+    {
+      "id": "251-wavecode-spectrum",
+      "title": "251 Wavecode Spectrum",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/251-wavecode-spectrum.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1032
+    },
+    {
+      "id": "252-wavecode-spectrum2",
+      "title": "252 Wavecode Spectrum2",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/252-wavecode-spectrum2.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1033
+    },
+    {
+      "id": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise Lq",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/260-compshader-noise_lq.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1034
+    },
+    {
+      "id": "261-compshader-noisevol_lq",
+      "title": "261 Compshader Noisevol Lq",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/261-compshader-noisevol_lq.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1035
+    },
+    {
+      "id": "300-beatdetect-bassmidtreb",
+      "title": "300 Beatdetect Bassmidtreb",
+      "file": "/milkdrop-presets/libraries/projectm-upstream/300-beatdetect-bassmidtreb.milk",
+      "tags": [
+        "collection:vendored-projectm",
+        "vendored-library",
+        "projectm-upstream",
+        "projectm-fixture",
+        "preset"
+      ],
+      "order": 1036
+    }
+  ]
+}

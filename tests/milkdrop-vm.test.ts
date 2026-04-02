@@ -40,6 +40,7 @@ function makeSignals({
     treb: 0.4,
     treble: 0.4,
     bassAtt: 0.6,
+    midAtt: 0.45,
     bass_att: 0.6,
     mid_att: 0.45,
     midsAtt: 0.45,
@@ -536,7 +537,7 @@ per_pixel_3=warp=warp+abs(y)*0.1;
     ).toHaveLength(3);
   });
 
-  test('keeps legacy motion-vector controls on the CPU path even when mesh descriptors stay procedural', () => {
+  test('keeps legacy motion-vector controls on webgpu descriptor fields even when mesh descriptors stay procedural', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Legacy Motion Vector CPU Fallback
@@ -559,11 +560,13 @@ warp=0.2
 
     expect(first.mesh.positions).toHaveLength(0);
     expect(first.gpuGeometry.meshField).not.toBeNull();
-    expect(first.gpuGeometry.motionVectorField).toBeNull();
-    expect(first.motionVectors.length).toBeGreaterThan(0);
-    expect(second.motionVectors.length).toBeGreaterThan(0);
-    expect(second.motionVectors[0]?.positions).not.toEqual(
-      first.motionVectors[0]?.positions,
+    expect(first.gpuGeometry.motionVectorField).not.toBeNull();
+    expect(first.gpuGeometry.motionVectorField?.legacyControls).toBe(true);
+    expect(first.motionVectors).toHaveLength(0);
+    expect(second.motionVectors).toHaveLength(0);
+    expect(second.gpuGeometry.motionVectorField?.signals.time).toBeCloseTo(
+      0.4,
+      6,
     );
   });
 
@@ -642,6 +645,8 @@ wavecode_0_r=0.8
 wavecode_0_g=0.4
 wavecode_0_b=1
 wavecode_0_a=0.35
+wave_0_per_point1=x = x + value1 * 0.1;
+wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
       `.trim(),
       { id: 'procedural-custom-wave-hints' },
     );
@@ -656,6 +661,7 @@ wavecode_0_a=0.35
     expect(
       frameState.gpuGeometry.customWaves[0]?.samples.length,
     ).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.customWaves[0]?.fieldProgram).not.toBeNull();
   });
 
   test('keeps cpu geometry on webgl for presets that are procedural on webgpu', () => {

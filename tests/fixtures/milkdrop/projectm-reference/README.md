@@ -23,3 +23,5 @@ Promotion flow:
 1. Import a `projectM` artifact into a local parity output directory with `scripts/import-projectm-reference.ts`.
 2. Promote that imported artifact into this checked-in fixture directory with `scripts/promote-projectm-reference.ts`.
 3. Commit both the copied reference files and the updated visual-reference manifest in the same change.
+
+If you already have a local projectM capture in the repository, you can also promote it directly with `scripts/promote-projectm-reference.ts --source-image <path>` and an explicit preset id. Use that path only for already-reviewed local artifacts; the manifest should still record the provenance label so the source stays clear.

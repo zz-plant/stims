@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { importFresh, replaceProperty } from './test-helpers.ts';
 
 const capabilitiesModule = '../assets/js/core/renderer-capabilities.ts';
-const freshImport = async () =>
-  import(`${capabilitiesModule}?t=${Date.now()}-${Math.random()}`);
 
 let getRendererCapabilities;
 let getRendererOptimizationSupport;
@@ -12,8 +11,8 @@ let rememberRendererFallback;
 let resetRendererCapabilities;
 let summarizeRendererOptimizationSupport;
 
-const originalNavigator = global.navigator;
 const COMPATIBILITY_MODE_KEY = 'stims:compatibility-mode';
+let restoreNavigator = () => {};
 
 async function resetRenderPreferencesState() {
   const { resetRenderPreferencesState: resetPreferences } = await import(
@@ -30,14 +29,11 @@ function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
     requestDevice,
     ...adapter,
   }));
-  Object.defineProperty(global, 'navigator', {
-    writable: true,
-    configurable: true,
-    value: {
-      gpu: {
-        requestAdapter,
-        getPreferredCanvasFormat: () => 'bgra8unorm',
-      },
+  restoreNavigator();
+  restoreNavigator = replaceProperty(global, 'navigator', {
+    gpu: {
+      requestAdapter,
+      getPreferredCanvasFormat: () => 'bgra8unorm',
     },
   });
   return { requestAdapter, requestDevice };
@@ -55,7 +51,7 @@ beforeEach(async () => {
     rememberRendererFallback,
     resetRendererCapabilities,
     summarizeRendererOptimizationSupport,
-  } = await freshImport());
+  } = await importFresh(capabilitiesModule));
 });
 
 afterEach(async () => {
@@ -63,11 +59,8 @@ afterEach(async () => {
   mock.restore();
   window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
   await resetRenderPreferencesState();
-  Object.defineProperty(global, 'navigator', {
-    writable: true,
-    configurable: true,
-    value: originalNavigator,
-  });
+  restoreNavigator();
+  restoreNavigator = () => {};
 });
 
 describe('renderer capabilities', () => {
@@ -131,6 +124,49 @@ describe('renderer capabilities', () => {
     expect(result.forceWebGL).toBe(true);
   });
 
+  test('can prefer WebGL for known live-visualizer compatibility gaps', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'desktop-device' },
+    });
+
+    const result = await getRendererCapabilities({
+      forceRetry: true,
+      preferWebGLForKnownCompatibilityGaps: true,
+    });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(0);
+    expect(requestDevice).toHaveBeenCalledTimes(0);
+    expect(
+      result.preferredBackend === 'webgl' || result.preferredBackend === null,
+    ).toBe(true);
+    expect(result.fallbackReason).toContain(
+      'temporarily disabled for the live visualizer',
+    );
+    expect(result.forceWebGL).toBe(true);
+  });
+
+  test('keeps cache entries distinct when the live-visualizer compatibility flag changes', async () => {
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: { label: 'desktop-device' },
+    });
+
+    const first = await getRendererCapabilities({ forceRetry: true });
+    const second = await getRendererCapabilities({
+      preferWebGLForKnownCompatibilityGaps: true,
+    });
+    const third = await getRendererCapabilities({
+      preferWebGLForKnownCompatibilityGaps: false,
+    });
+
+    expect(first.preferredBackend).toBe('webgpu');
+    expect(
+      second.preferredBackend === 'webgl' || second.preferredBackend === null,
+    ).toBe(true);
+    expect(third.preferredBackend).toBe('webgpu');
+    expect(requestAdapter).toHaveBeenCalledTimes(2);
+    expect(requestDevice).toHaveBeenCalledTimes(2);
+  });
+
   test('falls back when WebGPU device acquisition times out during capability probing', async () => {
     const requestDevice = mock(() => new Promise(() => {}));
     const requestAdapter = mock(async () => ({
@@ -139,14 +175,11 @@ describe('renderer capabilities', () => {
       requestDevice,
     }));
 
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: {
-        gpu: {
-          requestAdapter,
-          getPreferredCanvasFormat: () => 'bgra8unorm',
-        },
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
       },
     });
 
@@ -175,14 +208,11 @@ describe('renderer capabilities', () => {
       requestDevice,
     }));
 
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: {
-        gpu: {
-          requestAdapter,
-          getPreferredCanvasFormat: () => 'bgra8unorm',
-        },
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {
+      gpu: {
+        requestAdapter,
+        getPreferredCanvasFormat: () => 'bgra8unorm',
       },
     });
 
@@ -202,11 +232,8 @@ describe('renderer capabilities', () => {
   });
 
   test('falls back to WebGL when WebGPU is missing', async () => {
-    Object.defineProperty(global, 'navigator', {
-      writable: true,
-      configurable: true,
-      value: {},
-    });
+    restoreNavigator();
+    restoreNavigator = replaceProperty(global, 'navigator', {});
 
     const result = await getRendererCapabilities({ forceRetry: true });
 
@@ -298,6 +325,50 @@ describe('renderer capabilities', () => {
         subgroups: true,
         timestampQuery: true,
       },
+    });
+  });
+
+  test('keeps high-end mobile WebGPU sessions on balanced startup quality', async () => {
+    await resetRenderPreferencesState();
+    mockNavigatorWithGPU({
+      device: { label: 'iphone-device' },
+      adapter: {
+        features: new Set([
+          'shader-f16',
+          'subgroups',
+          'timestamp-query',
+          'float32-blendable',
+          'float32-filterable',
+          'bgra8unorm-storage',
+        ]),
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1024,
+          maxStorageBufferBindingSize: 4294967292,
+          maxTextureDimension2D: 16384,
+        },
+      },
+    });
+
+    Object.defineProperty(global.navigator, 'userAgent', {
+      configurable: true,
+      value:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    });
+    Object.defineProperty(global.navigator, 'platform', {
+      configurable: true,
+      value: 'iPhone',
+    });
+    Object.defineProperty(global.navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    });
+
+    const result = await getRendererCapabilities({ forceRetry: true });
+
+    expect(result.webgpu).toMatchObject({
+      performanceTier: 'high-end',
+      recommendedQualityPreset: 'balanced',
     });
   });
 

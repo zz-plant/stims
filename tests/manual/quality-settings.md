@@ -1,13 +1,13 @@
 # Quality settings manual checklist
 
-Use this checklist to confirm the shared quality panel is wiring into multiple toys without reloading the page.
+Use this checklist to confirm the dedicated `/milkdrop/` settings surface applies quality changes without restarting the active session.
 
-1. Open `toy.html?toy=cube-wave` via the dev server.
-2. In the floating "Grid visualizer" panel, switch Quality preset to **Battery saver**.
-   - Expect the renderer to soften (pixel ratio capped) and the grid to rebuild with fewer items.
-3. Switch Quality preset to **Hi-fi visuals**.
-   - Expect a denser grid and sharper output while audio stays running.
-4. Change the **Shape** dropdown and confirm the grid swaps primitives without stopping audio.
-5. Open `toy.html?toy=cosmic-particles` and verify the panel remembers the last preset.
-6. Toggle between **Orbit** and **Nebula**, then change quality presets.
-   - Expect particle counts to increase/decrease without a page reload, while the active scene reconfigures in place.
+1. Open `/milkdrop/` via the dev server.
+2. Start a session with **Demo audio** so the visualizer is actively animating.
+3. Open the settings surface and switch Quality preset to **Battery saver**.
+   - Expect the renderer to soften and detail density to step down while audio keeps running.
+4. Switch Quality preset to **Hi-fi visuals**.
+   - Expect a sharper image and denser rendering without a page reload or session restart.
+5. Change to a different preset from the browse panel.
+   - Expect the session to stay on `/milkdrop/`, with the chosen quality preset still applied.
+6. Return to the settings surface and confirm the selected quality preset is still reflected in the controls.

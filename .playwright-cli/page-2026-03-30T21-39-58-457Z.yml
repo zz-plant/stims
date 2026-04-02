@@ -1,0 +1,50 @@
+- generic [active] [ref=e1]:
+  - link "Skip to stories" [ref=e2] [cursor=pointer]:
+    - /url: "#home-stories"
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - link "Back to explore" [ref=e6] [cursor=pointer]:
+        - /url: /explore
+        - generic [ref=e7]:
+          - img [ref=e8]
+          - generic [ref=e10]: Back to explore
+      - heading "Opening story…" [level=2] [ref=e11]
+      - paragraph [ref=e12]: We are loading this post from the archive.
+    - region "Opening story…" [ref=e13]:
+      - figure [ref=e15]:
+        - img "Uninhabitable Acts illustration" [ref=e17]
+      - article [ref=e21]:
+        - status [ref=e22]:
+          - paragraph [ref=e23]: We are loading this post from the archive.
+          - paragraph [ref=e24]:
+            - link "Browse all stories" [ref=e25] [cursor=pointer]:
+              - /url: /explore
+      - group [ref=e26]:
+        - generic "Archive history" [ref=e27] [cursor=pointer]
+      - navigation "Story navigation" [ref=e28]:
+        - button "No earlier article in this view" [disabled] [ref=e29]:
+          - generic [ref=e30]: Previous article
+          - generic [ref=e31]: No earlier article in this view
+          - generic [ref=e32]: Unavailable
+          - generic [ref=e33]: You are at the beginning of the current reading path.
+          - generic [ref=e34]: ← Stay here
+        - button "No later article in this view" [disabled] [ref=e35]:
+          - generic [ref=e36]: Next article
+          - generic [ref=e37]: No later article in this view
+          - generic [ref=e38]: Unavailable
+          - generic [ref=e39]: You are at the end of the current reading path.
+          - generic [ref=e40]: Stay here →
+    - region "Get new essays by email" [ref=e42]:
+      - generic [ref=e43]:
+        - paragraph [ref=e44]: Newsletter
+        - heading "Get new essays by email" [level=2] [ref=e45]
+        - paragraph [ref=e46]: Email is easiest? Get an occasional note when a new essay goes live.
+      - generic [ref=e47]:
+        - generic [ref=e48]: Email address
+        - textbox "Email address" [ref=e49]:
+          - /placeholder: pilot@thecrumple.zone
+        - button "Subscribe" [ref=e50] [cursor=pointer]:
+          - generic [ref=e51]:
+            - img [ref=e52]
+            - generic [ref=e54]: Subscribe
+      - paragraph [ref=e55]: No spam, no shared list, unsubscribe any time.

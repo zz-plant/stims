@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import {
   getBundledToyModuleImporter,
   loadToyModuleStarter,
-} from '../assets/js/utils/toy-module-loader.ts';
+} from '../assets/js/loader/toy-module-loader.ts';
 
 const fixtureModulePath = '../../tests/fixtures/toy-modules/fake-module.js';
 

@@ -1,0 +1,90 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - button "Open navigation menu" [ref=e12]:
+          - generic [ref=e13]: Menu
+          - generic [ref=e14]: ☰
+    - main [ref=e15]:
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: Start here
+        - heading "Start fast. Tune later." [level=1] [ref=e19]
+        - paragraph [ref=e20]: Demo audio gets you in fastest. Mic and capture stay below.
+        - group "Launch shortcuts" [ref=e21]:
+          - link "Start demo playback" [ref=e22] [cursor=pointer]:
+            - /url: /milkdrop/?audio=demo
+        - group "Launch helpers" [ref=e23]:
+          - link "Back to Stims" [ref=e24] [cursor=pointer]:
+            - /url: /
+      - region "Choose a sound source." [ref=e25]:
+        - generic [ref=e26]:
+          - paragraph [ref=e27]: Controls
+          - heading "Choose a sound source." [level=2] [ref=e28]
+          - paragraph [ref=e29]: Demo is the default. Mic, tab, and YouTube are here when you need them.
+        - region "Audio" [ref=e31]:
+          - paragraph [ref=e32]: Start
+          - generic [ref=e33]: Pick a sound source
+          - generic [ref=e34]:
+            - generic [ref=e35]:
+              - generic [ref=e36]: Mic
+              - generic [ref=e37]: Recommended
+              - generic [ref=e38]: Room, voice, or instrument.
+              - generic [ref=e39]: Needs microphone permission.
+            - button "Start mic" [ref=e40]
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - generic [ref=e43]: Demo
+              - generic [ref=e44]: Recommended
+              - generic [ref=e45]: Built-in soundtrack.
+              - generic [ref=e46]: No permission prompt.
+            - button "Start demo" [ref=e47]
+          - group [ref=e48]:
+            - generic "Other audio sources" [ref=e49] [cursor=pointer]
+            - text: ▾ ▾
+          - region "Next steps" [ref=e50]:
+            - generic [ref=e51]:
+              - generic [ref=e52]: After start
+              - button "Apply aurora feedback starter" [ref=e53] [cursor=pointer]
+            - paragraph [ref=e54]: Start with the curated preset browser, then toggle autoplay to hear smooth blend transitions.
+            - generic [ref=e55]:
+              - generic [ref=e57]: Try this next
+              - paragraph [ref=e58]: "On desktop, these controls change the scene fastest:"
+            - generic [ref=e59]:
+              - generic [ref=e60]:
+                - generic [ref=e61]: Touch moves
+                - button "Got it" [ref=e62] [cursor=pointer]
+              - paragraph [ref=e63]: "Once audio starts, these gestures reshape the scene fastest:"
+            - generic [ref=e66]: Quick wins
+          - generic [ref=e67]:
+            - generic [ref=e68]: Device defaults
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - generic [ref=e71]: Startup look
+                - generic [ref=e72]: Sharper output and denser effects for stronger GPUs.
+              - combobox "Startup look" [ref=e73]:
+                - option "Battery saver"
+                - option "Low motion"
+                - option "TV balanced"
+                - option "Balanced (default)"
+                - option "Hi-fi visuals" [selected]
+            - generic [ref=e74]:
+              - generic [ref=e75] [cursor=pointer]:
+                - generic [ref=e76]:
+                  - generic [ref=e77]: Safe mode
+                  - generic [ref=e78]: Use safer rendering for older hardware.
+                - checkbox "Safe mode" [ref=e80]
+              - generic [ref=e81] [cursor=pointer]:
+                - generic [ref=e82]:
+                  - generic [ref=e83]: Tilt
+                  - generic [ref=e84]: Enable tilt controls on supported visualizers.
+                - checkbox "Tilt" [checked] [ref=e86]
+              - group [ref=e87]:
+                - generic "Rendering Fine-tune rendering when needed." [ref=e88] [cursor=pointer]:
+                  - generic [ref=e89]:
+                    - generic [ref=e90]: Rendering
+                    - generic [ref=e91]: Fine-tune rendering when needed.

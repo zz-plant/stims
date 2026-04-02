@@ -154,6 +154,13 @@ export function syncWaveObject(
   },
   alphaMultiplier: number,
 ) {
+  if (wave.positions.length === 0) {
+    if (existing) {
+      helpers.disposeObject(existing);
+    }
+    return null;
+  }
+
   const wantsPoints = wave.drawMode === 'dots';
   const wantsLoop =
     wave.closed && !wantsPoints && behavior.useLineLoopPrimitives;
@@ -232,6 +239,13 @@ export function syncLineObject(
     ) => void;
   },
 ) {
+  if (line.positions.length === 0) {
+    if (existing) {
+      helpers.disposeObject(existing);
+    }
+    return null;
+  }
+
   if (!(existing instanceof ThreeLine) || existing instanceof ThreeLineLoop) {
     if (existing) {
       helpers.disposeObject(existing);
@@ -332,7 +346,7 @@ export function renderLineVisualGroup({
       additive: boolean;
     },
     alphaMultiplier: number,
-  ) => Line;
+  ) => Line | null;
 }) {
   if (batcher?.renderLineVisualGroup?.(target, group, lines, alphaMultiplier)) {
     clearGroup(group);
@@ -354,6 +368,12 @@ export function renderLineVisualGroup({
       },
       alphaMultiplier,
     );
+    if (!synced) {
+      if (existing) {
+        group.remove(existing);
+      }
+      continue;
+    }
     if (!existing) {
       group.add(synced);
     } else if (synced !== existing) {

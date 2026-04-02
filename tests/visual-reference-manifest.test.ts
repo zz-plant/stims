@@ -27,6 +27,8 @@ test('visual reference manifest stays internally consistent', () => {
     expect(entry.id.trim().length).toBeGreaterThan(0);
     expect(entry.title.trim().length).toBeGreaterThan(0);
     expect(entry.sourceFamily.trim().length).toBeGreaterThan(0);
+    expect(entry.provenance.label.trim().length).toBeGreaterThan(0);
+    expect(entry.provenance.importedAt.trim().length).toBeGreaterThan(0);
     expect(entry.capture.renderer).toBe('projectm');
     expect(entry.capture.requiredBackend).toBe('webgpu');
     expect(entry.capture.width).toBeGreaterThan(0);

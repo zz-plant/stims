@@ -2,7 +2,7 @@
   "version": 1,
   "parityTarget": "projectm-webgpu-certification-v1",
   "requiredBackend": "webgpu",
-  "presetCount": 26,
+  "presetCount": 27,
   "groups": {
     "bundled-shipped": {
       "minimumCount": 8,
@@ -333,6 +333,18 @@
       "toleranceProfile": "default",
       "strata": ["shader-supported", "volume-sampler", "upstream"],
       "selectionReason": "Upstream volume-sampler comp-shader fixture."
+    },
+    {
+      "id": "300-beatdetect-bassmidtreb",
+      "title": "300 Beatdetect Bassmidtreb",
+      "file": "300-beatdetect-bassmidtreb.milk",
+      "fixtureRoot": "tests/fixtures/milkdrop/projectm-upstream",
+      "corpusGroup": "projectm-upstream",
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "toleranceProfile": "default",
+      "strata": ["beat-detect", "upstream"],
+      "selectionReason": "Upstream beat-detection fixture with distinctive audio-reactive behavior."
     }
   ]
 }

@@ -1091,11 +1091,13 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
       expect(compiled.diagnostics).toEqual([]);
+      expect(compiled.ir.shaderText.compProgram).not.toBeNull();
       expect(compiled.ir.compatibility.warnings).toEqual([]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
         'supported',
       );
+      expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
       );
@@ -1180,7 +1182,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     ).not.toBeNull();
   });
 
-  test('classifies the projectM noisevol fixture as supported volume sampling', () => {
+  test('classifies the projectM noisevol fixture as a pure volume sample that stays direct on WebGPU and translates on WebGL', () => {
     const fixturePath = join(
       process.cwd(),
       'tests',
@@ -1206,9 +1208,24 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
       '3d',
     );
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(
+      compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
+    ).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
     expect(compiled.ir.compatibility.warnings).toEqual([]);
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
   });
 
   test('downgrades non-volume aux tex3D aliases as unsupported shader text', () => {
@@ -1835,7 +1852,7 @@ warp_shader=unsupported(shader)
     });
   });
 
-  test('keeps legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+  test('keeps legacy motion-vector controls on descriptor plans alongside mesh descriptors', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Legacy Motion Vectors
@@ -1855,13 +1872,17 @@ mv_l=0.4
           requiresPerPixelProgram: false,
           fieldProgram: null,
         },
-        proceduralMotionVectors: null,
+        proceduralMotionVectors: {
+          kind: 'procedural-motion-vectors',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
         unsupported: [],
       }),
     );
   });
 
-  test('keeps scripted legacy motion-vector controls on the CPU path while retaining mesh descriptors', () => {
+  test('keeps scripted legacy motion-vector controls on descriptor plans alongside mesh descriptors', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Scripted Legacy Motion Vectors
@@ -1888,9 +1909,41 @@ per_frame_1=mv_dx=0.05;
           requiresPerPixelProgram: false,
           fieldProgram: null,
         },
-        proceduralMotionVectors: null,
+        proceduralMotionVectors: {
+          kind: 'procedural-motion-vectors',
+          requiresPerPixelProgram: false,
+          fieldProgram: null,
+        },
         unsupported: [],
       }),
+    );
+  });
+
+  test('lowers supported custom-wave per-point programs into webgpu descriptor plans', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Lowered Custom Wave Per Point
+wavecode_0_enabled=1
+wavecode_0_samples=32
+wavecode_0_usedots=0
+wave_0_per_point1=x = x + value1 * 0.15;
+wave_0_per_point2=y = y + sin(sample * pi) * 0.08;
+      `.trim(),
+      { id: 'lowered-custom-wave-per-point' },
+    );
+
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.proceduralWaves,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          target: 'custom-wave',
+          slotIndex: 1,
+          fieldProgram: expect.objectContaining({
+            kind: 'gpu-field-program',
+          }),
+        }),
+      ]),
     );
   });
 });

@@ -1,0 +1,132 @@
+- generic [ref=e1]:
+  - link "Skip to main content" [active] [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Primary" [ref=e6]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Stims
+          - paragraph [ref=e11]: Stims ✦
+        - generic [ref=e12]:
+          - generic "Page sections" [ref=e13]:
+            - link "Start" [ref=e14] [cursor=pointer]:
+              - /url: "#main-content"
+            - link "Controls" [ref=e15] [cursor=pointer]:
+              - /url: "#launch-panels"
+            - link "GitHub" [ref=e16] [cursor=pointer]:
+              - /url: https://github.com/zz-plant/stims
+          - generic "Site actions" [ref=e17]:
+            - link "Back home" [ref=e18] [cursor=pointer]:
+              - /url: /
+            - button "Switch to light mode" [pressed] [ref=e19] [cursor=pointer]:
+              - generic [ref=e20]: ☀️
+              - generic [ref=e21]: Light mode
+    - main: ▾ ▾
+  - generic [ref=e22]:
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - paragraph [ref=e32]: Live now
+        - paragraph [ref=e33]: MilkDrop Visualizer
+        - generic [ref=e34]: milkdrop
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - generic "WebGPU renderer active." [ref=e39]: WebGPU
+          - button "Session" [ref=e40]
+        - generic [ref=e41]:
+          - button [ref=e43] [cursor=pointer]: Next
+          - button [ref=e45] [cursor=pointer]: Share
+          - button [ref=e47] [cursor=pointer]: Picture in picture
+          - button [ref=e48] [cursor=pointer]:
+            - generic [ref=e49]: ←
+            - generic [ref=e50]: Back to Stims
+    - generic [ref=e23]:
+      - generic:
+        - complementary [ref=e51]:
+          - generic [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]: Rovastar - Parallel Universe
+              - generic [ref=e55]: Loaded Rovastar - Parallel Universe.
+            - generic [ref=e56]:
+              - button "Shortcuts" [ref=e57]
+              - button "Close" [ref=e58]
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - button "Back" [ref=e61]
+              - button "Prev" [ref=e62]
+              - button "Next" [ref=e63]
+              - button "Shuffle" [ref=e64]
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - checkbox "Autoplay" [ref=e67]
+                - text: Autoplay
+              - generic [ref=e68]:
+                - generic [ref=e69]: Transition
+                - combobox "Transition" [ref=e70]:
+                  - option "Blend" [selected]
+                  - option "Hard cut"
+            - generic [ref=e71]:
+              - text: Blend
+              - slider "Blend 2.50s" [ref=e72]: "2.5"
+              - generic [ref=e73]: 2.50s
+          - generic [ref=e74]:
+            - button "Presets" [pressed] [ref=e75]
+            - button "Tools" [ref=e76]
+          - generic [ref=e78]:
+            - generic [ref=e80]:
+              - generic [ref=e81]: No preset selected
+              - status [ref=e82]: 3 shown · Featured · WEBGL
+            - generic [ref=e83]:
+              - generic [ref=e84]:
+                - generic [ref=e85]: Search
+                - searchbox "Search presets" [ref=e86]
+              - group [ref=e87]:
+                - generic "More filters" [ref=e88] [cursor=pointer]
+                - option "Any fidelity" [selected]
+                - option "Exact"
+                - option "Near exact"
+                - option "Partial"
+                - option "Fallback"
+                - option "Recommended" [selected]
+                - option "Recently used"
+                - option "Top rated"
+                - option "Title"
+            - generic [ref=e89]:
+              - button "All presets" [ref=e90]
+              - button "Classic MilkDrop" [ref=e91]
+              - button "Cream of the Crop" [ref=e92]
+              - button "Feedback Lab" [ref=e93]
+              - button "Low Motion" [ref=e94]
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - button "Rovastar - Parallel Universe Partial Inferred Rovastar · Recent" [ref=e97]:
+                  - generic [ref=e98]:
+                    - generic [ref=e99]: Rovastar - Parallel Universe
+                    - generic [ref=e100]:
+                      - generic [ref=e101]: Partial
+                      - generic [ref=e102]: Inferred
+                  - generic [ref=e103]: Rovastar · Recent
+                - button "Save preset" [ref=e105]: ☆
+                - generic [ref=e106]: No measured WebGPU reference capture is recorded yet.
+              - generic [ref=e107]:
+                - button "Eo.S. + Phat - Cubetrace v2 Partial Inferred Eo.S. + Phat · Recent" [ref=e108]:
+                  - generic [ref=e109]:
+                    - generic [ref=e110]: Eo.S. + Phat - Cubetrace v2
+                    - generic [ref=e111]:
+                      - generic [ref=e112]: Partial
+                      - generic [ref=e113]: Inferred
+                  - generic [ref=e114]: Eo.S. + Phat · Recent
+                - button "Save preset" [ref=e116]: ☆
+                - generic [ref=e117]: No measured WebGPU reference capture is recorded yet.
+              - generic [ref=e118]:
+                - button "Krash & Rovastar - Cerebral Demons (Stars Remix) Partial Inferred Krash & Rovastar · Recent" [ref=e119]:
+                  - generic [ref=e120]:
+                    - generic [ref=e121]: Krash & Rovastar - Cerebral Demons (Stars Remix)
+                    - generic [ref=e122]:
+                      - generic [ref=e123]: Partial
+                      - generic [ref=e124]: Inferred
+                  - generic [ref=e125]: Krash & Rovastar · Recent
+                - button "Save preset" [ref=e127]: ☆
+                - generic [ref=e128]: No measured WebGPU reference capture is recorded yet.
+        - generic:
+          - generic: Rovastar - Parallel Universe
+          - generic: Imported

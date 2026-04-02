@@ -1,7 +1,7 @@
 import {
   AudioAccessError,
   getMicrophonePermissionState,
-} from '../utils/audio-handler';
+} from './audio-handler';
 
 type FlowMode = 'microphone' | 'sample';
 

@@ -1,9 +1,8 @@
+import { WEBGL_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import { createMilkdropWebGLFeedbackManager } from './feedback-manager-webgl.ts';
 import type { MilkdropRendererAdapterConfig } from './renderer-adapter.ts';
-import {
-  createMilkdropRendererAdapterCore,
-  WEBGL_MILKDROP_BACKEND_BEHAVIOR,
-} from './renderer-adapter.ts';
+import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
+import { createMilkdropSegmentBatchingLayer } from './renderer-segment-batching.ts';
 
 export type MilkdropWebGLRendererAdapterConfig = Omit<
   MilkdropRendererAdapterConfig,
@@ -18,5 +17,9 @@ export function createMilkdropWebGLRendererAdapter(
     backend: 'webgl',
     behavior: WEBGL_MILKDROP_BACKEND_BEHAVIOR,
     createFeedbackManager: createMilkdropWebGLFeedbackManager,
+    batcher:
+      config.batcher === undefined
+        ? createMilkdropSegmentBatchingLayer()
+        : config.batcher,
   });
 }

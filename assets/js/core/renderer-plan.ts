@@ -79,14 +79,19 @@ export function deriveRendererPlan({
 
 export async function getRendererPlan({
   forceRetry = false,
+  preferWebGLForKnownCompatibilityGaps = false,
 }: {
   forceRetry?: boolean;
+  preferWebGLForKnownCompatibilityGaps?: boolean;
 } = {}): Promise<{
   plan: RendererPlan;
   capabilities: RendererCapabilities | null;
 }> {
   const [capabilities, support] = await Promise.all([
-    getRendererCapabilities({ forceRetry }).catch(() => null),
+    getRendererCapabilities({
+      forceRetry,
+      preferWebGLForKnownCompatibilityGaps,
+    }).catch(() => null),
     Promise.resolve(getRenderingSupport()),
   ]);
 

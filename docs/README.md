@@ -22,6 +22,10 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 - [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md)
 - [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md)
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md)
+- [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md)
+- [`QA_PLAN.md`](./QA_PLAN.md)
+- [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md)
+- [`toys.md`](./toys.md)
 - [`PAGE_SPECIFICATIONS.md`](./PAGE_SPECIFICATIONS.md)
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md)
 - [`DOCS_MAINTENANCE.md`](./DOCS_MAINTENANCE.md)
@@ -33,8 +37,23 @@ The following docs still describe the retired multi-toy model. Keep them only as
 
 - [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md)
 - [`TOY_TESTING_SPEC.md`](./TOY_TESTING_SPEC.md)
-- [`TOY_SCRIPT_INDEX.md`](./TOY_SCRIPT_INDEX.md)
-- [`toys.md`](./toys.md)
+- [`COMPETITOR_BATTLECARD.md`](./COMPETITOR_BATTLECARD.md)
+- [`SEO_AUDIT.md`](./SEO_AUDIT.md)
+- [`USER_JOURNEY_CRITIQUE.md`](./USER_JOURNEY_CRITIQUE.md)
+- [`USABILITY_AUDIT.md`](./USABILITY_AUDIT.md)
+- [`UX_AUDIT_2026-02.md`](./UX_AUDIT_2026-02.md)
+
+## README synchronization
+
+When docs are added, moved, renamed, archived, or removed, keep the repository entry-point READMEs aligned in the same PR:
+
+- `README.md`
+- `CONTRIBUTING.md`
+- `AGENTS.md`
+- `docs/README.md`
+- `docs/agents/README.md`
+
+Reference [`DOCS_MAINTENANCE.md`](./DOCS_MAINTENANCE.md) for the full synchronization contract and per-change requirements.
 
 ## Conventions
 

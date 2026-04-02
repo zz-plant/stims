@@ -9,6 +9,7 @@ import {
   DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
+  HemisphereLight,
   IcosahedronGeometry,
   InstancedMesh,
   LinearFilter,
@@ -21,6 +22,7 @@ import {
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
+  PMREMGenerator,
   Points,
   PointsMaterial,
   RepeatWrapping,
@@ -35,9 +37,12 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import {
+  createMilkdropPostprocessingComposer,
+  type MilkdropPostprocessingProfile,
+  type PostprocessingPipeline,
+} from '../core/postprocessing.ts';
 
 interface ToyLike {
   capabilities?: {
@@ -68,7 +73,7 @@ type PreviewStyle = {
 };
 
 interface PreviewItem {
-  composer: EffectComposer | null;
+  composer: PostprocessingPipeline | null;
   camera: PerspectiveCamera;
   dispose: () => void;
   group: Group;
@@ -82,6 +87,11 @@ interface PreviewItem {
   scene: Scene;
   style: PreviewStyle;
 }
+
+type EnvironmentBinding = {
+  texture: Texture;
+  dispose: () => void;
+};
 
 type AmbientShardState = {
   drift: number;
@@ -231,6 +241,24 @@ const FALLBACK_PREVIEW_STYLE: PreviewStyle = {
   detailTexture: 'simplex_noise_3d.png',
 };
 
+function disposeSceneResources(root: Object3D) {
+  root.traverse((object) => {
+    if (!(object instanceof Mesh || object instanceof Points)) {
+      return;
+    }
+
+    const geometry = object.geometry as BufferGeometry | undefined;
+    geometry?.dispose();
+
+    const material = object.material as Material | Material[] | undefined;
+    if (Array.isArray(material)) {
+      material.forEach((entry) => entry?.dispose());
+      return;
+    }
+    material?.dispose();
+  });
+}
+
 export function createLibraryThreeEffects() {
   let backgroundRenderer: WebGLRenderer | null = null;
   let backgroundScene: Scene | null = null;
@@ -239,7 +267,8 @@ export function createLibraryThreeEffects() {
   let backgroundShards: InstancedMesh | null = null;
   let backgroundShardStates: AmbientShardState[] = [];
   let ambientBackdrop: Mesh | null = null;
-  let backgroundComposer: EffectComposer | null = null;
+  let backgroundComposer: PostprocessingPipeline | null = null;
+  let backgroundEnvironment: EnvironmentBinding | null = null;
   let animationFrame = 0;
   let pulse = 0;
   let resizeHandler: (() => void) | null = null;
@@ -333,27 +362,67 @@ export function createLibraryThreeEffects() {
     }
   };
 
-  const createComposer = (
-    renderer: WebGLRenderer,
-    scene: Scene,
-    camera: PerspectiveCamera,
-    size: Vector2,
-    bloomStrength: number,
-  ) => {
-    const composer = new EffectComposer(renderer);
-    composer.setPixelRatio(1);
-    composer.setSize(size.x, size.y);
-    composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(
-      new UnrealBloomPass(
-        new Vector2(size.x, size.y),
-        bloomStrength,
-        0.6,
-        0.85,
-      ),
-    );
-    return composer;
+  const createComposer = ({
+    renderer,
+    scene,
+    camera,
+    size,
+    profile,
+  }: {
+    renderer: WebGLRenderer;
+    scene: Scene;
+    camera: PerspectiveCamera;
+    size: Vector2;
+    profile: MilkdropPostprocessingProfile;
+  }) => {
+    const pipeline = createMilkdropPostprocessingComposer({
+      renderer,
+      scene,
+      camera,
+      profile,
+    });
+    if (!pipeline) {
+      throw new Error('Library postprocessing profile should stay enabled.');
+    }
+    pipeline.composer.setPixelRatio(1);
+    pipeline.composer.setSize(size.x, size.y);
+    pipeline.updateSize();
+    return pipeline;
   };
+
+  const createEnvironmentBinding = (renderer: WebGLRenderer) => {
+    const generator = new PMREMGenerator(renderer);
+    const environment = new RoomEnvironment();
+    const target = generator.fromScene(environment, 0.03);
+    disposeSceneResources(environment);
+    generator.dispose();
+    return {
+      texture: target.texture,
+      dispose: () => target.dispose(),
+    } satisfies EnvironmentBinding;
+  };
+
+  const createPreviewPedestal = ({
+    baseColor,
+    detailTexture,
+  }: {
+    baseColor: Color;
+    detailTexture: Texture;
+  }) =>
+    new Mesh(
+      new PlaneGeometry(3.2, 2.2, 1, 1),
+      new MeshStandardMaterial({
+        color: baseColor.clone().lerp(new Color(0xffffff), 0.08),
+        transparent: true,
+        opacity: 0.34,
+        roughness: 0.22,
+        metalness: 0.9,
+        roughnessMap: detailTexture,
+        bumpMap: detailTexture,
+        bumpScale: 0.015,
+        envMapIntensity: 1.6,
+      }),
+    );
 
   const extractToyTerms = (toy: ToyLike) => {
     const parts = [
@@ -485,12 +554,17 @@ export function createLibraryThreeEffects() {
     const count = 96;
     const mesh = new InstancedMesh(
       new IcosahedronGeometry(0.12, 0),
-      new MeshBasicMaterial({
+      new MeshStandardMaterial({
         color: 0x8fb6ff,
+        emissive: new Color(0x4a5cff),
+        emissiveIntensity: 0.3,
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.22,
         blending: AdditiveBlending,
         depthWrite: false,
+        roughness: 0.24,
+        metalness: 0.78,
+        envMapIntensity: 1.35,
       }),
       count,
     );
@@ -726,7 +800,17 @@ export function createLibraryThreeEffects() {
       scene.add(backdrop);
       scene.add(points);
       scene.add(shards);
-      scene.add(new AmbientLight(0x8899ff, 0.45));
+      backgroundEnvironment = createEnvironmentBinding(renderer);
+      scene.environment = backgroundEnvironment.texture;
+      scene.environmentIntensity = 0.8;
+      scene.add(new AmbientLight(0xaabaff, 0.22));
+      scene.add(new HemisphereLight(0x7ea8ff, 0x0d1020, 0.68));
+      const keyLight = new DirectionalLight(0xf6f4ff, 1.35);
+      keyLight.position.set(3.8, 4.6, 5.2);
+      scene.add(keyLight);
+      const rimLight = new DirectionalLight(0x66b8ff, 0.9);
+      rimLight.position.set(-4.2, 1.4, -3.6);
+      scene.add(rimLight);
 
       document.body.appendChild(renderer.domElement);
       backgroundRenderer = renderer;
@@ -736,18 +820,32 @@ export function createLibraryThreeEffects() {
       backgroundShards = shards;
       backgroundShardStates = states;
       ambientBackdrop = backdrop;
-      backgroundComposer = createComposer(
+      backgroundComposer = createComposer({
         renderer,
         scene,
         camera,
-        new Vector2(window.innerWidth, window.innerHeight),
-        0.8,
-      );
+        size: new Vector2(window.innerWidth, window.innerHeight),
+        profile: {
+          enabled: true,
+          bloomStrength: 0.8,
+          bloomRadius: 0.62,
+          bloomThreshold: 0.82,
+          afterimageDamp: 0.84,
+          filmNoise: 0.05,
+          filmScanlines: 0.08,
+          filmScanlineCount: 1180,
+          vignetteStrength: 0.18,
+          chromaOffset: 0.0008,
+          saturation: 1.14,
+          contrast: 1.12,
+          pulseWarp: 0.004,
+        },
+      });
 
       resizeHandler = () => {
         if (!backgroundRenderer || !backgroundCamera) return;
         backgroundRenderer.setSize(window.innerWidth, window.innerHeight);
-        backgroundComposer?.setSize(window.innerWidth, window.innerHeight);
+        backgroundComposer?.updateSize();
         backgroundCamera.aspect =
           window.innerWidth / Math.max(window.innerHeight, 1);
         backgroundCamera.updateProjectionMatrix();
@@ -820,8 +918,12 @@ export function createLibraryThreeEffects() {
     scene.background = new Color(0x090a16);
     const camera = new PerspectiveCamera(55, 180 / 110, 0.1, 100);
     camera.position.z = 2.7;
+    const environmentBinding = createEnvironmentBinding(renderer);
+    scene.environment = environmentBinding.texture;
+    scene.environmentIntensity = 1.15;
 
     const group = new Group();
+    group.position.y = 0.08;
     scene.add(group);
 
     const materialColor = new Color(style.baseColor);
@@ -846,9 +948,18 @@ export function createLibraryThreeEffects() {
       roughnessMap: detailTexture,
       roughness: style.roughness,
       metalness: style.metalness,
+      envMapIntensity: 1.55,
     });
     const mesh = new Mesh(style.geometry(), material);
     group.add(mesh);
+
+    const pedestal = createPreviewPedestal({
+      baseColor: materialColor,
+      detailTexture,
+    });
+    pedestal.position.set(0, -0.92, -0.12);
+    pedestal.rotation.x = -Math.PI / 2;
+    scene.add(pedestal);
 
     const overlay = new Mesh(
       new PlaneGeometry(2.6, 1.8, 1, 1),
@@ -872,18 +983,39 @@ export function createLibraryThreeEffects() {
     overlay.position.z = -0.85;
     scene.add(overlay);
 
-    scene.add(new AmbientLight(0xffffff, 0.48));
-    const light = new DirectionalLight(0xffffff, 1.2);
-    light.position.copy(new Vector3(2, 3, 3));
-    scene.add(light);
+    scene.add(new AmbientLight(0xffffff, 0.2));
+    scene.add(new HemisphereLight(0xb6c7ff, 0x1a1010, 0.9));
+    const keyLight = new DirectionalLight(0xffffff, 1.7);
+    keyLight.position.copy(new Vector3(2.6, 3.2, 4.2));
+    scene.add(keyLight);
+    const fillLight = new DirectionalLight(0xffb88d, 0.55);
+    fillLight.position.copy(new Vector3(-1.8, -0.6, 2.4));
+    scene.add(fillLight);
+    const rimLight = new DirectionalLight(0x78c2ff, 1.05);
+    rimLight.position.copy(new Vector3(-3.1, 1.9, -2.7));
+    scene.add(rimLight);
 
-    const composer = createComposer(
+    const composer = createComposer({
       renderer,
       scene,
       camera,
-      new Vector2(180, 110),
-      0.45,
-    );
+      size: new Vector2(180, 110),
+      profile: {
+        enabled: true,
+        bloomStrength: 0.45,
+        bloomRadius: 0.58,
+        bloomThreshold: 0.86,
+        afterimageDamp: 0.78,
+        filmNoise: 0.02,
+        filmScanlines: 0.04,
+        filmScanlineCount: 960,
+        vignetteStrength: 0.12,
+        chromaOffset: 0.0004,
+        saturation: 1.08,
+        contrast: 1.1,
+        pulseWarp: 0.0025,
+      },
+    });
     composer.render();
 
     const dispose = () => {
@@ -894,8 +1026,11 @@ export function createLibraryThreeEffects() {
       previewRoot.removeEventListener('focusout', deactivate);
       (mesh.geometry as BufferGeometry).dispose();
       (mesh.material as Material).dispose();
+      (pedestal.geometry as BufferGeometry).dispose();
+      (pedestal.material as Material).dispose();
       (overlay.geometry as BufferGeometry).dispose();
       (overlay.material as Material).dispose();
+      environmentBinding.dispose();
       composer.dispose();
       renderer.dispose();
       previewRoot.remove();
@@ -1020,6 +1155,8 @@ export function createLibraryThreeEffects() {
         (ambientBackdrop.geometry as BufferGeometry).dispose();
         (ambientBackdrop.material as Material).dispose();
       }
+      backgroundEnvironment?.dispose();
+      backgroundEnvironment = null;
       backgroundComposer?.dispose();
       backgroundRenderer?.dispose();
       backgroundRenderer?.domElement.remove();

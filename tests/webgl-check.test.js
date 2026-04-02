@@ -1,33 +1,25 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { importFresh, replaceProperty } from './test-helpers.ts';
 
-const freshImport = async () =>
-  import(`../assets/js/utils/webgl-check.ts?ts=${Date.now()}-${Math.random()}`);
-
-const originalGpu = Object.getOwnPropertyDescriptor(navigator, 'gpu');
+let restoreGpu = () => {};
 
 describe('ensureWebGL overlay', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     mock.restore();
-    Object.defineProperty(navigator, 'gpu', {
-      configurable: true,
-      value: undefined,
-    });
+    restoreGpu = replaceProperty(navigator, 'gpu', undefined);
   });
 
   afterEach(() => {
     document.body.innerHTML = '';
     mock.restore();
-    if (originalGpu) {
-      Object.defineProperty(navigator, 'gpu', originalGpu);
-    } else {
-      delete navigator.gpu;
-    }
+    restoreGpu();
+    restoreGpu = () => {};
   });
 
   test('shows capability overlay when neither WebGL nor WebGPU are available', async () => {
     const { ensureWebGL, setRenderingSupportResolverForTests } =
-      await freshImport();
+      await importFresh('../assets/js/core/webgl-check.ts');
     try {
       setRenderingSupportResolverForTests(() => ({
         hasWebGPU: false,

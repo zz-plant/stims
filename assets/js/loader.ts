@@ -9,6 +9,7 @@ import {
   defaultToyLifecycle,
   type ToyLifecycle,
 } from './core/toy-lifecycle.ts';
+import { ensureWebGL } from './core/webgl-check.ts';
 import toyManifest from './data/toy-manifest.ts';
 import type { ToyEntry } from './data/toy-schema.ts';
 import { createLoaderLibraryResetController } from './loader/library-reset-controller.ts';
@@ -22,7 +23,6 @@ import { createToySessionController } from './loader/toy-session-controller.ts';
 import { createRouter } from './router.ts';
 import { createToyView } from './toy-view.ts';
 import { createManifestClient } from './utils/manifest-client';
-import { ensureWebGL } from './utils/webgl-check.ts';
 
 type Toy = ToyEntry;
 

@@ -21,6 +21,7 @@ export type MilkdropProceduralWaveDescriptorPlan = {
   target: 'main-wave' | 'trail-waves' | 'custom-wave';
   slotIndex: number | null;
   sampleSource: 'waveform' | 'spectrum';
+  fieldProgram?: MilkdropGpuFieldProgramDescriptor | null;
 };
 
 export type MilkdropGpuFieldExpression =

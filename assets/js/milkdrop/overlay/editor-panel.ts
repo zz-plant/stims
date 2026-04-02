@@ -12,7 +12,6 @@ import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import type { MilkdropEditorSessionState } from '../types';
 import {
   compatibilityCategoryLabel,
-  fidelityLabel,
   getPrimaryDegradationReason,
 } from './preset-row';
 
@@ -167,12 +166,10 @@ export class EditorPanel {
     editorEyebrow.textContent = 'Live coding';
     const editorHeading = document.createElement('strong');
     editorHeading.className = 'milkdrop-overlay__editor-heading';
-    editorHeading.textContent =
-      'Shape the active preset while it stays on beat';
+    editorHeading.textContent = 'Edit the active look';
     const editorSubheading = document.createElement('p');
     editorSubheading.className = 'milkdrop-overlay__editor-subheading';
-    editorSubheading.textContent =
-      'Strudel-style feedback loop: edits land automatically, the current visual keeps playing, and broken drafts never interrupt the last good frame.';
+    editorSubheading.textContent = 'Edit here. Reset draft takes you back.';
     editorIntroCopy.append(editorEyebrow, editorHeading, editorSubheading);
     const editorBadgeRow = document.createElement('div');
     editorBadgeRow.className = 'milkdrop-overlay__editor-badges';
@@ -183,7 +180,7 @@ export class EditorPanel {
     this.editorSyncBadge = document.createElement('span');
     this.editorSyncBadge.className =
       'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--sync';
-    this.editorSyncBadge.textContent = 'Synced';
+    this.editorSyncBadge.textContent = 'Changes pending';
     this.editorSafetyBadge = document.createElement('span');
     this.editorSafetyBadge.className =
       'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--safety';
@@ -196,14 +193,15 @@ export class EditorPanel {
     editorIntro.append(editorIntroCopy, editorBadgeRow);
     this.editorStatus = document.createElement('div');
     this.editorStatus.className = 'milkdrop-overlay__editor-status';
-    this.editorStatus.textContent = 'Editor ready';
+    this.editorStatus.textContent = '';
+    this.editorStatus.hidden = true;
 
     const editorActions = document.createElement('div');
     editorActions.className = 'milkdrop-overlay__editor-actions';
 
     const revertButton = document.createElement('button');
     revertButton.type = 'button';
-    revertButton.textContent = 'Revert to live';
+    revertButton.textContent = 'Reset draft';
     revertButton.addEventListener('click', () =>
       this.callbacks.onRevertToActive(),
     );
@@ -245,7 +243,7 @@ export class EditorPanel {
     const editorQuickIdeasLabel = document.createElement('span');
     editorQuickIdeasLabel.className =
       'milkdrop-overlay__editor-quick-ideas-label';
-    editorQuickIdeasLabel.textContent = 'Quick ideas';
+    editorQuickIdeasLabel.textContent = 'Quick moves';
     const editorSnippetButtons = document.createElement('div');
     editorSnippetButtons.className = 'milkdrop-overlay__editor-snippet-buttons';
     EDITOR_SNIPPETS.forEach((snippetConfig) => {
@@ -323,37 +321,43 @@ export class EditorPanel {
     const errors = state.diagnostics.filter(
       (diagnostic) => diagnostic.severity === 'error',
     );
+    const hasErrors = errors.length > 0;
     const primaryReason = getPrimaryDegradationReason(state.latestCompiled);
     const activeCompatibility = state.latestCompiled?.ir.compatibility.parity;
     const latestWebglStatus =
       state.latestCompiled?.ir.compatibility.backends.webgl.status;
     const latestWebgpuStatus =
       state.latestCompiled?.ir.compatibility.backends.webgpu.status;
-    const baseStatus = errors.length
-      ? `${errors.length} issue${errors.length === 1 ? '' : 's'} keeping the last good preset live`
+    const isDegraded = Boolean(
+      activeCompatibility &&
+        (activeCompatibility.fidelityClass === 'partial' ||
+          activeCompatibility.fidelityClass === 'fallback' ||
+          latestWebglStatus !== 'supported' ||
+          latestWebgpuStatus !== 'supported'),
+    );
+    const shouldShowStatus = hasErrors || state.dirty;
+    const baseStatus = hasErrors
+      ? `${errors.length} issue${errors.length === 1 ? '' : 's'}. Showing the last good frame.`
       : state.dirty
-        ? 'Live preset updated from editor'
-        : 'Editor synced with live preset';
-    const fidelityStatus = activeCompatibility
-      ? `Fidelity ${fidelityLabel(activeCompatibility.fidelityClass)} · WebGL ${latestWebglStatus} · WebGPU ${latestWebgpuStatus}`
-      : null;
-    this.editorStatus.textContent = [baseStatus, fidelityStatus]
-      .filter(Boolean)
-      .join(' | ');
-    const hasErrors = errors.length > 0;
-    this.editorLiveBadge.textContent = hasErrors
-      ? 'Holding last good frame'
-      : 'Live';
-    this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
-    this.editorSyncBadge.textContent = state.dirty ? 'Draft changed' : 'Synced';
+        ? 'Changes are live'
+        : '';
+    this.editorStatus.textContent = baseStatus;
+    this.editorStatus.hidden = !shouldShowStatus;
+    this.editorLiveBadge.textContent = 'Showing last good frame';
+    this.editorLiveBadge.dataset.tone = 'warning';
+    this.editorLiveBadge.hidden = !hasErrors;
+    this.editorSyncBadge.textContent = 'Changes pending';
     this.editorSyncBadge.dataset.tone = state.dirty ? 'accent' : 'muted';
+    this.editorSyncBadge.hidden = !state.dirty;
+    this.editorSafetyBadge.hidden = !hasErrors && !isDegraded;
     this.editorSafetyBadge.textContent = hasErrors
       ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
-      : (fidelityStatus ?? 'Safety net on');
+      : isDegraded
+        ? 'Showing a simpler look'
+        : 'Stable';
     this.editorSafetyBadge.dataset.tone = hasErrors
       ? 'danger'
-      : activeCompatibility?.fidelityClass === 'partial' ||
-          activeCompatibility?.fidelityClass === 'fallback'
+      : isDegraded
         ? 'warning'
         : 'muted';
 

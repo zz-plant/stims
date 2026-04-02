@@ -15,6 +15,7 @@ export type MilkdropRuntimeSignals = {
   treb: number;
   treble: number;
   bassAtt: number;
+  midAtt: number;
   midsAtt: number;
   trebleAtt: number;
   bass_att: number;

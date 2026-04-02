@@ -4,12 +4,12 @@ import {
   resetMotionPreferenceState,
   setMotionPreference,
 } from '../assets/js/core/motion-preferences';
+import { applyPartyMode } from '../assets/js/core/party-mode';
 import {
   getActiveRenderPreferences,
   resetRenderPreferencesState,
   setRenderPreferences,
 } from '../assets/js/core/render-preferences';
-import { applyPartyMode } from '../assets/js/utils/party-mode';
 
 describe('applyPartyMode', () => {
   beforeEach(() => {

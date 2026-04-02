@@ -7,6 +7,8 @@ import {
   buildManifestModule,
   buildManifestSource,
   buildPublicToysJson,
+  buildToyNotes,
+  buildToyScriptIndex,
 } from '../scripts/generate-toy-manifest.ts';
 
 async function createTempRepo() {
@@ -17,8 +19,12 @@ async function createTempRepo() {
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
   await fs.mkdir(path.join(root, 'public'), { recursive: true });
 
-  const index = `# Toy and Visualizer Script Index\n\n## Query-driven toys (\`toy.html\`)\n| Slug | Entry module | How it loads |\n| --- | --- | --- |\n\n## Generated public toy pages\n`;
+  const index = `# Toy Script Index\n\nplaceholder\n`;
   await fs.writeFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), index);
+  await fs.writeFile(
+    path.join(root, 'docs/toys.md'),
+    '# Toy Manifest Reference\n',
+  );
 
   await fs.writeFile(path.join(root, 'assets/data/toys.json'), '[]\n');
   await fs.writeFile(
@@ -45,6 +51,11 @@ async function writeGeneratedArtifacts(root: string, entries: unknown) {
     path.join(root, 'public/toys.json'),
     buildPublicToysJson(manifest),
   );
+  await fs.writeFile(
+    path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
+    buildToyScriptIndex(manifest),
+  );
+  await fs.writeFile(path.join(root, 'docs/toys.md'), buildToyNotes(manifest));
 }
 
 describe('check-toys script', () => {
@@ -86,16 +97,6 @@ describe('check-toys script', () => {
       `${JSON.stringify(entries, null, 2)}\n`,
     );
     await writeGeneratedArtifacts(root, entries);
-    await fs.appendFile(
-      path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
-      entries
-        .map(
-          (entry) =>
-            `| \`${entry.slug}\` | \`${entry.module}\` | Direct module |\n`,
-        )
-        .join(''),
-    );
-
     const result = await runToyChecks(root);
     expect(result.issues).toHaveLength(0);
   });
@@ -177,6 +178,11 @@ describe('check-toys script', () => {
       'export const toyManifest = [] as const;\n',
     );
     await fs.writeFile(path.join(root, 'public/toys.json'), '[]\n');
+    await fs.writeFile(
+      path.join(root, 'docs/TOY_SCRIPT_INDEX.md'),
+      '# Toy Script Index\n\nout of date\n',
+    );
+    await fs.writeFile(path.join(root, 'docs/toys.md'), '# stale\n');
 
     const result = await runToyChecks(root);
     expect(
@@ -189,6 +195,71 @@ describe('check-toys script', () => {
     expect(
       result.issues.some((issue) =>
         issue.includes('Run: bun run generate:toys'),
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some((issue) =>
+        issue.includes(
+          'Generated artifact out of date: docs/TOY_SCRIPT_INDEX.md',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some((issue) =>
+        issue.includes('Generated artifact out of date: docs/toys.md'),
+      ),
+    ).toBe(true);
+  });
+
+  test('fails when generated docs are missing', async () => {
+    const root = await createTempRepo();
+    const slug = 'missing-docs';
+    await writeToyModule(root, slug);
+
+    const entries = [
+      {
+        slug,
+        title: 'Missing Docs',
+        description: 'ok',
+        module: `assets/js/toys/${slug}.ts`,
+        type: 'module',
+        requiresWebGPU: false,
+        capabilities: {
+          microphone: true,
+          demoAudio: true,
+          motion: false,
+        },
+      },
+    ];
+
+    await fs.writeFile(
+      path.join(root, 'assets/data/toys.json'),
+      `${JSON.stringify(entries, null, 2)}\n`,
+    );
+    await fs.writeFile(
+      path.join(root, 'assets/js/data/toy-manifest.ts'),
+      buildManifestModule(
+        buildManifestSource(entries, 'assets/data/toys.json'),
+      ),
+    );
+    await fs.writeFile(
+      path.join(root, 'public/toys.json'),
+      buildPublicToysJson(
+        buildManifestSource(entries, 'assets/data/toys.json'),
+      ),
+    );
+    await fs.rm(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'));
+    await fs.rm(path.join(root, 'docs/toys.md'));
+
+    const result = await runToyChecks(root);
+    expect(
+      result.issues.some((issue) =>
+        issue.includes('Generated artifact missing: docs/TOY_SCRIPT_INDEX.md'),
+      ),
+    ).toBe(true);
+    expect(
+      result.issues.some((issue) =>
+        issue.includes('Generated artifact missing: docs/toys.md'),
       ),
     ).toBe(true);
   });

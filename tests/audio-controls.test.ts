@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { YouTubeController } from '../assets/js/ui/youtube-controller.ts';
+import { flushTasks, importFresh } from './test-helpers.ts';
 
-const freshImport = async <T>(path: string): Promise<T> =>
-  import(`${path}?t=${Date.now()}-${Math.random()}`) as Promise<T>;
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+const flush = () => flushTasks();
 
 let initAudioControls: typeof import('../assets/js/ui/audio-controls.ts').initAudioControls;
 let buildTryThisFirstRecommendation: typeof import('../assets/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
@@ -63,7 +61,7 @@ describe('audio controls primary emphasis', () => {
         removeEventListener: () => {},
         dispatchEvent: () => false,
       }) as MediaQueryList) as typeof window.matchMedia;
-    const audioControlsModule = await freshImport<
+    const audioControlsModule = await importFresh<
       typeof import('../assets/js/ui/audio-controls.ts')
     >('../assets/js/ui/audio-controls.ts');
     initAudioControls = audioControlsModule.initAudioControls;
@@ -135,7 +133,7 @@ describe('audio controls primary emphasis', () => {
     });
 
     expect(container.textContent).toContain(
-      'Start with demo for the fastest path in, or use mic for live room sound.',
+      'Demo gets you in fastest. Use mic when you want the room to drive the picture.',
     );
 
     const micBadge = container.querySelector('[data-recommended-for="mic"]');
@@ -163,7 +161,7 @@ describe('audio controls primary emphasis', () => {
 
     expect(postStartGuidance.hidden).toBe(true);
     expect(advancedInputs.open).toBe(false);
-    expect(postStartGuidance.textContent).toContain('Next');
+    expect(postStartGuidance.textContent).toContain('After start');
     expect(advancedInputs.textContent).toContain('Other audio sources');
   });
 
@@ -238,7 +236,7 @@ describe('audio controls primary emphasis', () => {
     await flush();
 
     expect(hintPanel.hidden).toBe(false);
-    expect(hintPanel.textContent).toContain('Touch gestures');
+    expect(hintPanel.textContent).toContain('Touch moves');
     expect(hintPanel.textContent).toContain('Pinch/rotate gestures');
   });
 
@@ -297,7 +295,7 @@ describe('audio controls primary emphasis', () => {
       '[data-gesture-hints]',
     ) as HTMLElement | null;
 
-    expect(desktopHints?.textContent).toContain('Desktop controls');
+    expect(desktopHints?.textContent).toContain('Try this next');
     expect(desktopHints?.textContent).toContain('Move to steer');
     expect(touchHints?.hidden).toBe(true);
   });
@@ -408,7 +406,7 @@ describe('audio controls primary emphasis', () => {
         wowControl: 'Q/E mood cycling',
       }),
     ).toEqual({
-      summary: 'Start with demo audio for the fastest path in.',
+      summary: 'Start with demo audio for the fastest first look.',
       detail:
         'Try Aurora starter once the visualizer opens. Then explore Q/E mood cycling.',
     });

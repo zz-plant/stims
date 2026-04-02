@@ -1,5 +1,8 @@
 import type * as THREE from 'three';
-import { isMobileDevice } from '../utils/device-detect';
+import {
+  getDeviceEnvironmentProfile,
+  isMobileDevice,
+} from '../utils/device-detect';
 import { DEFAULT_WEBGPU_INIT_TIMEOUT_MS } from './renderer-init-timeout.ts';
 import type {
   RendererInitConfig,
@@ -12,12 +15,35 @@ const isMobileUserAgent = isMobileDevice();
 export function getRendererBackendMaxPixelRatioCap({
   backend,
   isMobile,
+  browserFamily = 'other',
+  platformFamily = 'other',
 }: {
   backend: 'webgl' | 'webgpu';
   isMobile: boolean;
+  browserFamily?:
+    | 'chrome'
+    | 'edge'
+    | 'firefox'
+    | 'safari'
+    | 'samsung-internet'
+    | 'other';
+  platformFamily?: 'android' | 'ios' | 'linux' | 'macos' | 'windows' | 'other';
 }) {
   if (isMobile) {
-    return backend === 'webgpu' ? 1.5 : 1.25;
+    if (platformFamily === 'ios' && browserFamily === 'safari') {
+      return backend === 'webgpu' ? 1.4 : 1.15;
+    }
+
+    if (
+      platformFamily === 'android' ||
+      browserFamily === 'chrome' ||
+      browserFamily === 'edge' ||
+      browserFamily === 'samsung-internet'
+    ) {
+      return backend === 'webgpu' ? 1.35 : 1.1;
+    }
+
+    return backend === 'webgpu' ? 1.4 : 1.15;
   }
 
   return backend === 'webgpu' ? 2 : 1.35;
@@ -50,6 +76,7 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   alpha: false,
   webgpuInitTimeoutMs: DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
 };
+const deviceEnvironment = getDeviceEnvironmentProfile();
 
 export const DEFAULT_RENDERER_RUNTIME_CONTROLS: RendererRuntimeControls = {
   renderScale: 1,
@@ -159,6 +186,8 @@ export function applyRendererSettings(
   const backendPixelRatioCap = getRendererBackendMaxPixelRatioCap({
     backend: info.backend,
     isMobile: isMobileUserAgent,
+    browserFamily: deviceEnvironment.browserFamily,
+    platformFamily: deviceEnvironment.platformFamily,
   });
   const effectiveMaxPixelRatio = Math.max(
     0.5,
