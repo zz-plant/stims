@@ -247,7 +247,7 @@ integrationTest(
       expect(focusedSessionState.audioControlsHidden).toBe(true);
       expect(focusedSessionState.canvasVisible).toBe(true);
       expect(focusedSessionState.fallbackNotice).toContain(
-        'Using a simpler renderer',
+        'Using a lighter visual mode for this device.',
       );
     } finally {
       await mobile.close();
