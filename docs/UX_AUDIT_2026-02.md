@@ -3,7 +3,7 @@
 > Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical UX audit context rather than the current product-positioning baseline.
 
 Date: 2026-02-11  
-Scope: Library home and toy shell (`/`, `/toy.html?toy=...`) across desktop and mobile.
+Scope: Historical audit of the old browsing home and toy session shell (`/`, `/toy.html?toy=...`) across desktop and mobile. In the current frontend, treat these recommendations as input for the root workspace and live session surfaces.
 
 This file consolidates the baseline audit plus two same-day follow-up iterations. It supersedes the previous split docs and keeps only the most current recommendations.
 
@@ -72,7 +72,7 @@ This file consolidates the baseline audit plus two same-day follow-up iterations
 
 1. Move diagnostics and technical language behind progressive disclosure.
 2. Reorder mobile layout so delight/launch appears before dense controls.
-3. Normalize status taxonomy across home and toy shell (Ready/Fallback/Unsupported).
+3. Normalize status taxonomy across browsing and live session surfaces (Ready/Fallback/Unsupported).
 
 ### Later
 

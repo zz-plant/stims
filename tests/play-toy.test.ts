@@ -13,7 +13,7 @@ test('buildPlayToyUrl includes the requested preset for milkdrop captures', () =
       presetId: 'eos-glowsticks-v2-03-music',
     }),
   ).toBe(
-    'http://127.0.0.1:4173/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=eos-glowsticks-v2-03-music',
+    'http://127.0.0.1:4173/?agent=true&audio=demo&preset=eos-glowsticks-v2-03-music',
   );
 });
 
@@ -23,9 +23,7 @@ test('buildPlayToyUrl omits the preset when none is provided', () => {
       port: 5173,
       slug: 'milkdrop',
     }),
-  ).toBe(
-    'http://127.0.0.1:5173/milkdrop/?experience=milkdrop&agent=true&audio=demo',
-  );
+  ).toBe('http://127.0.0.1:5173/?agent=true&audio=demo');
 });
 
 test('buildPlayToyUrl can force the certification corpus and webgpu runtime', () => {
@@ -38,7 +36,7 @@ test('buildPlayToyUrl can force the certification corpus and webgpu runtime', ()
       catalogMode: 'certification',
     }),
   ).toBe(
-    'http://127.0.0.1:4175/milkdrop/?experience=milkdrop&agent=true&audio=demo&preset=100-square&renderer=webgpu&corpus=certification',
+    'http://127.0.0.1:4175/?agent=true&audio=demo&preset=100-square&renderer=webgpu&corpus=certification',
   );
 });
 

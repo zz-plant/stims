@@ -7,4 +7,4 @@ It reflects the current shipped entries from `assets/data/toys.json`.
 
 | Slug | Entry module | How it loads |
 | --- | --- | --- |
-| `milkdrop` | `assets/js/toys/milkdrop-toy.ts` | `/milkdrop/` (canonical) and `/milkdrop/?experience=milkdrop` (explicit deep link) |
+| `milkdrop` | `assets/js/toys/milkdrop-toy.ts` | `/` (canonical workspace route) and `/milkdrop/` (compatibility alias) |

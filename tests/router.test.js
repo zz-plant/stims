@@ -25,7 +25,7 @@ function createWindowStub(href = 'http://example.com/library') {
 
 describe('router utilities', () => {
   test('returns canonical hrefs for mapped toy routes', () => {
-    expect(getToyRouteHref('milkdrop')).toBe('/milkdrop/');
+    expect(getToyRouteHref('milkdrop')).toBe('/');
     expect(getToyRouteHref('custom-slug')).toBe(
       '/milkdrop/?experience=custom-slug',
     );
@@ -41,7 +41,7 @@ describe('router utilities', () => {
     });
 
     router.pushToyState('milkdrop');
-    expect(location.pathname).toBe('/milkdrop/');
+    expect(location.pathname).toBe('/');
     expect(location.search).toBe('');
 
     router.goToLibrary();

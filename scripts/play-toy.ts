@@ -154,9 +154,12 @@ export function buildPlayToyUrl({
   catalogMode?: PlayToyCatalogMode;
 }) {
   const params = new URLSearchParams({
-    experience: slug,
     agent: 'true',
   });
+  const routePath = slug === 'milkdrop' ? '/' : '/milkdrop/';
+  if (slug !== 'milkdrop') {
+    params.set('experience', slug);
+  }
   if (demoAudio) {
     params.set('audio', 'demo');
   }
@@ -169,7 +172,7 @@ export function buildPlayToyUrl({
   if (catalogMode === 'certification') {
     params.set('corpus', 'certification');
   }
-  return `http://127.0.0.1:${port}/milkdrop/?${params.toString()}`;
+  return `http://127.0.0.1:${port}${routePath}?${params.toString()}`;
 }
 
 async function closeBrowser(browser?: Browser) {

@@ -14,9 +14,9 @@ This launches the Vite dev server at `http://localhost:5173/`. The key URLs for 
 
 | URL | Purpose | When to use |
 |-----|---------|------------|
-| `http://localhost:5173/` | Home page with library view | Testing home page UI, navigation, general layout |
-| `http://localhost:5173/milkdrop/` | Immersive MilkDrop experience | Testing the main visualizer, presets, audio reactivity |
-| `http://localhost:5173/milkdrop/?agent=true` | Agent testing mode | Detailed QA, debugging, state persistence across reloads |
+| `http://localhost:5173/` | Canonical workspace route | Testing launch controls, preset browsing, and live session behavior |
+| `http://localhost:5173/?agent=true` | Agent testing mode on the canonical route | Detailed QA, debugging, and state persistence checks |
+| `http://localhost:5173/milkdrop/?agent=true` | Compatibility-alias verification | Confirming old links redirect into the same root state |
 
 ### Agent testing mode (`?agent=true`)
 
@@ -74,7 +74,7 @@ bun run dev
 ```
 
 **Verification checks**:
-1. Open `http://localhost:5173/` (home) and `http://localhost:5173/milkdrop/` (visualizer)
+1. Open `http://localhost:5173/` and exercise both launch and live-session UI on the same route.
 2. Resize the browser to test responsive behavior:
    - Desktop: 1920px+ width
    - Tablet: 768-1024px width
@@ -91,8 +91,8 @@ bun run dev
 bun run dev
 ```
 
-1. Open `http://localhost:5173/milkdrop/` (not agent mode for initial test)
-2. Load a preset from the library
+1. Open `http://localhost:5173/`
+2. Load a preset from the workspace browser
 3. Wait for audio input to start (click play if needed)
 4. Observe the visualization for:
    - Responsiveness to music/audio
@@ -109,7 +109,7 @@ bun run dev
 ### Audio reactivity or controls
 
 1. Ensure your audio source is active (microphone, speaker output, uploaded file)
-2. Open `http://localhost:5173/milkdrop/?agent=true`
+2. Open `http://localhost:5173/?agent=true`
 3. Start audio (music, voice, etc.)
 4. Verify:
    - Visualizer responds to bass/mid/treble frequencies
@@ -118,14 +118,12 @@ bun run dev
 
 ### Preset loading/library changes
 
-1. Open `http://localhost:5173/` (library view)
+1. Open `http://localhost:5173/`
 2. Verify:
    - Presets are listed and visible
    - Search/filter functionality works
-   - Clicking a preset loads it in the visualizer
-3. Open `http://localhost:5173/milkdrop/` and then:
-   - Use any preset-switching UI (if it exists)
-   - Each preset should load and play correctly
+   - Clicking a preset updates the live session and canonical route state
+3. Open `http://localhost:5173/milkdrop/?preset=signal-bloom` and confirm the alias lands in the same root workspace state
 
 ## Automated visual regression testing
 

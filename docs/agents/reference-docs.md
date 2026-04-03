@@ -13,21 +13,23 @@
 
 ## High-signal code locations
 
-- `assets/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
+- `assets/js/frontend/` — route state, workspace UI, and the React app shell.
+- `assets/js/frontend/engine/` — strict engine seam between the React shell and MilkDrop runtime.
+- `assets/js/core/` — shared renderer, audio, settings, automation, and capability systems.
 - `assets/js/milkdrop/` — preset compiler, VM, runtime, editor, overlay, and catalog behavior.
-- `assets/js/loader.ts` — loader/query param routing into `milkdrop/index.html`.
-- `assets/data/toys.json` — loader manifest source still used for routing and compatibility.
+- `assets/js/loader.ts` and `assets/js/toy-view.ts` — legacy compatibility internals still covered by tests.
+- `assets/data/toys.json` — compatibility manifest source for shipped entry metadata.
 - `public/milkdrop-presets/` — bundled preset corpus and catalog assets.
 
 ## Config and entry points
 
 - `package.json` — scripts, package manager, tool versions.
 - `vite.config.js` — bundling and dev-server behavior.
-- `index.html` and `milkdrop/index.html` — launch page and primary visualizer entry points.
+- `index.html` and `milkdrop/index.html` — canonical app shell and redirect alias.
 
 ## Fast triage
 
-1. Visualizer not loading → inspect loader and app entry behavior in `assets/js/loader.ts`, `assets/js/toy-view.ts`, and `milkdrop/index.html`.
+1. Workspace not loading → inspect `assets/js/app.ts`, `assets/js/frontend/App.tsx`, and `assets/js/frontend/url-state.ts`.
 2. No audio response → inspect shared audio startup and shell wiring under `assets/js/core/`.
 3. Preset compile or playback issue → inspect `assets/js/milkdrop/` plus related fixtures in `public/milkdrop-presets/` and `tests/fixtures/milkdrop/`.
 4. Agent workflow mismatch → update `.agent/*`, `docs/agents/custom-capabilities.md`, `docs/agents/visualizer-workflows.md`, and `docs/MCP_SERVER.md` together.

@@ -197,13 +197,14 @@ describe('toy page query-driven startup', () => {
     expect(requestMilkdropPresetSelection).toHaveBeenCalledWith('signal-bloom');
     expect(initTopNav).toHaveBeenCalledWith(
       document.querySelector('[data-top-nav-container]'),
-      expect.objectContaining({
+      {
         mode: 'library',
-        utilityLink: {
-          href: '/',
-          label: 'Back home',
-        },
-      }),
+        sectionLinks: [
+          { href: '#main-content', label: 'Overview' },
+          { href: '#launch-panels', label: 'Launch' },
+        ],
+        utilityLink: null,
+      },
     );
   });
 

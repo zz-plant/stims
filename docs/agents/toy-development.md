@@ -5,14 +5,16 @@
 - Shipped entry module: `assets/js/toys/milkdrop-toy.ts`.
 - Toy registry metadata source: `assets/data/toys.json`.
 - Generated manifest artifacts: `assets/js/data/toy-manifest.ts`, `public/toys.json`, `docs/TOY_SCRIPT_INDEX.md`, `docs/toys.md`.
-- Launch shell: `milkdrop/index.html` + `assets/js/loader.ts`.
+- Canonical app shell: `index.html` + `assets/js/app.ts`.
+- React workspace and engine seam: `assets/js/frontend/*`.
+- Compatibility alias: `milkdrop/index.html`.
 - Runtime/audio helpers: `assets/js/core/toy-runtime.ts`, `assets/js/core/toy-audio.ts`.
 
 ## Expected patterns
 
 - Visualizer modules export `start(...)` and return a disposable cleanup handle.
 - Canvas-heavy work should prefer shared runtime scaffolding (`createToyRuntime(...)`) over bespoke setup.
-- MilkDrop-facing changes should stay inside the shared runtime and shell instead of introducing parallel toy-specific boot paths.
+- MilkDrop-facing changes should stay inside the shared runtime and adapter seam instead of introducing parallel toy-specific boot paths.
 - Metadata changes should start in `assets/data/toys.json`, then flow through `bun run generate:toys`.
 - Audio-reactive flows should integrate with shared audio helpers and support demo-audio fallback when applicable.
 

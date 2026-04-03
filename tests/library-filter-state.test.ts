@@ -384,7 +384,7 @@ test('renders canonical launch hrefs for mapped toys', async () => {
   await new Promise((resolve) => setTimeout(resolve, 20));
 
   const listMarkup = document.getElementById('toy-list')?.innerHTML ?? '';
-  expect(listMarkup).toContain('/milkdrop/');
+  expect(listMarkup).toContain('href="/"');
   expect(listMarkup).not.toContain('milkdrop/?experience=milkdrop');
 });
 
