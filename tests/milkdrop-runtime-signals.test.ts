@@ -142,6 +142,48 @@ describe('milkdrop runtime signals', () => {
     expect(release.bassAtt).toBeLessThan(pulse.bassAtt);
   });
 
+  test('lets beatPulse decay over multiple frames instead of collapsing immediately', () => {
+    const tracker = createMilkdropSignalTracker();
+
+    tracker.update({
+      time: 0,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: filledData(16),
+      waveformData: waveformData(),
+    });
+
+    const pulse = tracker.update({
+      time: 0.18,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: pulseData({ bass: 1, mid: 0.28, treble: 0.14 }),
+      waveformData: waveformData(),
+    });
+    const decayOne = tracker.update({
+      time: 0.24,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: pulseData({ bass: 0.22, mid: 0.16, treble: 0.09 }),
+      waveformData: waveformData(),
+    });
+    const decayTwo = tracker.update({
+      time: 0.3,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: pulseData({ bass: 0.14, mid: 0.1, treble: 0.06 }),
+      waveformData: waveformData(),
+    });
+
+    expect(pulse.beat).toBe(1);
+    expect(pulse.beatPulse).toBeGreaterThan(0.3);
+    expect(decayOne.beat).toBe(0);
+    expect(decayOne.beatPulse).toBeGreaterThan(0.1);
+    expect(decayOne.beatPulse).toBeLessThan(pulse.beatPulse);
+    expect(decayTwo.beatPulse).toBeLessThan(decayOne.beatPulse);
+    expect(decayTwo.beatPulse).toBeGreaterThan(0.04);
+  });
+
   test('builds MilkDrop spectrum samples from analyser-owned raw data', () => {
     const tracker = createMilkdropSignalTracker();
     const rawSpectrum = pulseData({ bass: 1, mid: 0.18, treble: 0.04 });

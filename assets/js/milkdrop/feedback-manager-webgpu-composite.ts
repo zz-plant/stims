@@ -263,6 +263,7 @@ export function createCompositeUniforms(
     signalMid: uniform(0),
     signalTreb: uniform(0),
     signalBeat: uniform(0),
+    signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),
     signalTime: uniform(0),
     texelSize: uniform(new Vector2(1, 1)),

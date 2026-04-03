@@ -402,7 +402,7 @@ function getShaderEnvValue(
     treble: () => shaderFloat(env.uniforms.signalTreb),
     treble_att: () => shaderFloat(env.uniforms.signalTreb),
     beat: () => shaderFloat(env.uniforms.signalBeat),
-    beat_pulse: () => shaderFloat(env.uniforms.signalBeat),
+    beat_pulse: () => shaderFloat(env.uniforms.signalBeatPulse),
     progress: () => shaderFloat(env.uniforms.signalTime),
     vol: () => shaderFloat(env.uniforms.signalEnergy),
     rms: () => shaderFloat(env.uniforms.signalEnergy),
@@ -1358,6 +1358,8 @@ class WebGPUMilkdropFeedbackManager {
     this.compositeMaterial.uniforms.signalMid.value = state.signalMid;
     this.compositeMaterial.uniforms.signalTreb.value = state.signalTreb;
     this.compositeMaterial.uniforms.signalBeat.value = state.signalBeat;
+    this.compositeMaterial.uniforms.signalBeatPulse.value =
+      state.signalBeatPulse;
     this.compositeMaterial.uniforms.signalEnergy.value = state.signalEnergy;
     this.compositeMaterial.uniforms.signalTime.value = state.signalTime;
   }

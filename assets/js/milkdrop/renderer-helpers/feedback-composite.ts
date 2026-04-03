@@ -127,7 +127,8 @@ export function buildFeedbackCompositeState({
     signalBass: frameState.signals.bass,
     signalMid: frameState.signals.mid,
     signalTreb: frameState.signals.treb,
-    signalBeat: frameState.signals.beatPulse,
+    signalBeat: frameState.signals.beat,
+    signalBeatPulse: frameState.signals.beatPulse,
     signalEnergy: frameState.signals.weightedEnergy,
     signalTime: frameState.signals.time,
   };

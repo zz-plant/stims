@@ -333,6 +333,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         signalMid: { value: 0 },
         signalTreb: { value: 0 },
         signalBeat: { value: 0 },
+        signalBeatPulse: { value: 0 },
         signalEnergy: { value: 0 },
         signalTime: { value: 0 },
         texelSize: {
@@ -406,6 +407,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float signalMid;
         uniform float signalTreb;
         uniform float signalBeat;
+        uniform float signalBeatPulse;
         uniform float signalEnergy;
         uniform float signalTime;
         uniform vec2 texelSize;
@@ -730,6 +732,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.signalMid.value = state.signalMid;
     uniforms.signalTreb.value = state.signalTreb;
     uniforms.signalBeat.value = state.signalBeat;
+    uniforms.signalBeatPulse.value = state.signalBeatPulse;
     uniforms.signalEnergy.value = state.signalEnergy;
     uniforms.signalTime.value = state.signalTime;
   }

@@ -1714,6 +1714,62 @@ bRedBlueStereo=1
     expect(compositeStates[0]?.redBlueStereo).toBe(1);
   });
 
+  test('keeps beat and beat pulse distinct in the feedback composite state', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Beat Routing
+video_echo=1
+comp_shader=mix=0.25 + beat_pulse * 0.2
+      `.trim(),
+      { id: 'feedback-beat-routing' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({
+        beat: 0,
+        beatPulse: 0.37,
+        beat_pulse: 0.37,
+      }),
+    );
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]).toMatchObject({
+      signalBeat: 0,
+      signalBeatPulse: 0.37,
+    });
+  });
+
   test('forwards overlay and warp volume sampling metadata into feedback state', () => {
     const preset = compileMilkdropPresetSource(
       `
