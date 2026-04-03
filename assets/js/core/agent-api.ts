@@ -6,7 +6,7 @@
 export type StimState = {
   currentToy: string | null;
   audioActive: boolean;
-  audioSource: 'microphone' | 'demo' | null;
+  audioSource: 'microphone' | 'demo' | 'tab' | 'youtube' | null;
   toyLoaded: boolean;
   isAgentMode: boolean;
   vibeMode: boolean;
@@ -26,19 +26,19 @@ export type StimAPI = {
   // Event listeners
   onToyLoad: (callback: (slug: string) => void) => () => void;
   onAudioStart: (
-    callback: (source: 'microphone' | 'demo') => void,
+    callback: (source: 'microphone' | 'demo' | 'tab' | 'youtube') => void,
   ) => () => void;
   onAudioStop: (callback: () => void) => () => void;
 
   // Utility
   waitForToyLoad: () => Promise<string>;
-  waitForAudioActive: () => Promise<'microphone' | 'demo'>;
+  waitForAudioActive: () => Promise<'microphone' | 'demo' | 'tab' | 'youtube'>;
   activateVibeMode: (durationMs?: number) => Promise<void>;
 };
 
 type StimEventMap = {
   'toy:load': { slug: string };
-  'audio:start': { source: 'microphone' | 'demo' };
+  'audio:start': { source: 'microphone' | 'demo' | 'tab' | 'youtube' };
   'audio:stop': undefined;
 };
 
@@ -202,7 +202,9 @@ function waitForToyLoad(): Promise<string> {
   return waitForStimEvent('toy:load').then((detail) => detail.slug);
 }
 
-function waitForAudioActive(): Promise<'microphone' | 'demo'> {
+function waitForAudioActive(): Promise<
+  'microphone' | 'demo' | 'tab' | 'youtube'
+> {
   if (state.audioActive && state.audioSource) {
     return Promise.resolve(state.audioSource);
   }
@@ -235,7 +237,7 @@ export function setCurrentToy(slug: string | null) {
 
 export function setAudioActive(
   active: boolean,
-  source: 'microphone' | 'demo' | null = null,
+  source: 'microphone' | 'demo' | 'tab' | 'youtube' | null = null,
 ) {
   state.audioActive = active;
   state.audioSource = source;
@@ -248,6 +250,10 @@ export function setAudioActive(
     if (typeof document !== 'undefined') {
       document.body.dataset.audioActive = 'true';
       document.body.dataset.audioSource = source;
+      document.documentElement.dataset.focusedSession = 'live';
+      document
+        .querySelector('[data-audio-controls]')
+        ?.setAttribute('hidden', '');
     }
   } else {
     eventTarget.dispatchEvent(new CustomEvent('audio:stop'));
@@ -255,6 +261,10 @@ export function setAudioActive(
     if (typeof document !== 'undefined') {
       document.body.dataset.audioActive = 'false';
       delete document.body.dataset.audioSource;
+      document.documentElement.dataset.focusedSession = 'launch';
+      document
+        .querySelector('[data-audio-controls]')
+        ?.removeAttribute('hidden');
     }
   }
 }

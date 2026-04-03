@@ -150,12 +150,40 @@ function clearStageState(container: HTMLElement | null) {
     .forEach((stage) => stage.removeAttribute('data-stage-state'));
 }
 
-function shouldSuppressFloatingAudioPrompt() {
+function hasForegroundedToyContent(activeContainer?: HTMLElement | null) {
+  if (
+    !(activeContainer instanceof HTMLElement) ||
+    activeContainer.hidden ||
+    activeContainer.classList.contains(HIDDEN_CLASS)
+  ) {
+    return false;
+  }
+
+  const activeStage =
+    activeContainer.querySelector<HTMLElement>('[data-stage-slot="primary"]') ??
+    activeContainer.querySelector<HTMLElement>('[data-stage-slot]');
+  if (activeStage instanceof HTMLElement) {
+    return Array.from(activeStage.children).some(
+      (child) =>
+        child instanceof HTMLElement && child.dataset.preserve !== 'toy-ui',
+    );
+  }
+
+  return Array.from(activeContainer.children).some(
+    (child) =>
+      child instanceof HTMLElement && child.dataset.preserve !== 'toy-ui',
+  );
+}
+
+function shouldSuppressFloatingAudioPrompt(
+  activeContainer?: HTMLElement | null,
+) {
   const shellControls = document.querySelector('[data-audio-controls]');
   return (
     document.documentElement.dataset.focusedSession === 'launch' &&
     shellControls instanceof HTMLElement &&
-    !shellControls.hidden
+    !shellControls.hidden &&
+    !hasForegroundedToyContent(activeContainer)
   );
 }
 
@@ -476,7 +504,7 @@ export function createToyView({
     if (
       state.audioPromptActive &&
       state.audioPromptOptions &&
-      !shouldSuppressFloatingAudioPrompt()
+      !shouldSuppressFloatingAudioPrompt(container)
     ) {
       const existingPrompt = container.querySelector('.control-panel');
       if (!(existingPrompt instanceof HTMLElement)) {

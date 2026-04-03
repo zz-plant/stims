@@ -88,20 +88,6 @@ describe('audio controls primary emphasis', () => {
     expect(demoRow?.classList.contains('control-panel__row--primary')).toBe(
       true,
     );
-    expect(
-      (
-        container.querySelector(
-          '[data-recommended-for="demo"]',
-        ) as HTMLElement | null
-      )?.hidden,
-    ).toBe(false);
-    expect(
-      (
-        container.querySelector(
-          '[data-recommended-for="mic"]',
-        ) as HTMLElement | null
-      )?.hidden,
-    ).toBe(true);
     expect(container.querySelector('[data-first-step-source]')).toBeNull();
     expect(container.classList.contains('control-panel--audio')).toBe(true);
   });
@@ -133,15 +119,11 @@ describe('audio controls primary emphasis', () => {
       onRequestDemoAudio: async () => {},
     });
 
-    expect(container.textContent).toContain(
-      'Demo gets you in fastest. Use mic when you want the room to drive the picture.',
-    );
-
-    const micBadge = container.querySelector('[data-recommended-for="mic"]');
-    const demoBadge = container.querySelector('[data-recommended-for="demo"]');
-
-    expect((micBadge as HTMLElement | null)?.hidden).toBe(false);
-    expect((demoBadge as HTMLElement | null)?.hidden).toBe(true);
+    expect(container.textContent).toContain('Pick your input');
+    expect(container.textContent).toContain('Demo');
+    expect(container.textContent).toContain('Built-in audio.');
+    expect(container.textContent).toContain('Live mic');
+    expect(container.textContent).toContain('Room, voice, or instrument.');
   });
 
   test('keeps advanced sources collapsed and post-start guidance hidden by default', () => {
@@ -163,7 +145,7 @@ describe('audio controls primary emphasis', () => {
     expect(postStartGuidance.hidden).toBe(true);
     expect(advancedInputs.open).toBe(false);
     expect(postStartGuidance.textContent).toContain('After start');
-    expect(advancedInputs.textContent).toContain('Other audio sources');
+    expect(advancedInputs.textContent).toContain('Browser audio');
   });
 
   test('persists advanced inputs disclosure state', () => {
@@ -237,7 +219,8 @@ describe('audio controls primary emphasis', () => {
     await flush();
 
     expect(hintPanel.hidden).toBe(false);
-    expect(hintPanel.textContent).toContain('Touch moves');
+    expect(hintPanel.textContent).toContain('Touch');
+    expect(hintPanel.textContent).toContain('After audio starts:');
     expect(hintPanel.textContent).toContain('Pinch/rotate gestures');
   });
 
@@ -296,7 +279,8 @@ describe('audio controls primary emphasis', () => {
       '[data-gesture-hints]',
     ) as HTMLElement | null;
 
-    expect(desktopHints?.textContent).toContain('Try this next');
+    expect(desktopHints?.textContent).toContain('Controls');
+    expect(desktopHints?.textContent).toContain('On desktop:');
     expect(desktopHints?.textContent).toContain('Move to steer');
     expect(touchHints?.hidden).toBe(true);
   });
@@ -1011,18 +995,7 @@ describe('audio controls primary emphasis', () => {
       true,
     );
     expect(
-      (
-        container.querySelector(
-          '[data-recommended-for="demo"]',
-        ) as HTMLElement | null
-      )?.hidden,
-    ).toBe(false);
-    expect(
-      (
-        container.querySelector(
-          '[data-recommended-for="mic"]',
-        ) as HTMLElement | null
-      )?.hidden,
-    ).toBe(true);
+      (container.querySelector('#audio-status') as HTMLElement).textContent,
+    ).toContain('Mic denied');
   });
 });

@@ -1,95 +1,37 @@
+import { createElement, StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { initAgentAPI } from './core/agent-api.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
+import { StimsWorkspaceApp } from './frontend/App.tsx';
 import { isSmartTvDevice } from './utils/device-detect.ts';
+import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
 
-type LoaderModule = typeof import('./loader.ts');
-type LoaderOverrides = {
-  loadToy?: LoaderModule['loadToy'];
-  loadFromQuery?: LoaderModule['loadFromQuery'];
-  initNavigation?: LoaderModule['initNavigation'];
-};
+function ensureRootContainer() {
+  const existing = document.getElementById('app');
+  if (existing instanceof HTMLElement) {
+    return existing;
+  }
+
+  const root = document.createElement('div');
+  root.id = 'app';
+  document.body.replaceChildren(root);
+  return root;
+}
 
 const startApp = async () => {
   installRendererTelemetryPersistence();
+  initAgentAPI();
+  initGamepadNavigation();
 
   if (document.body) {
+    document.body.dataset.page = 'workspace';
     document.body.classList.toggle('tv-mode', isSmartTvDevice());
   }
 
-  const audioControlsContainer = document.querySelector<HTMLElement>(
-    '[data-audio-controls]',
+  const container = ensureRootContainer();
+  createRoot(container).render(
+    createElement(StrictMode, null, createElement(StimsWorkspaceApp, null)),
   );
-  const settingsContainer = document.querySelector<HTMLElement>(
-    '[data-settings-panel]',
-  );
-  const navContainer = document.querySelector<HTMLElement>(
-    '[data-top-nav-container]',
-  );
-  const pageType = document.body?.dataset?.page;
-
-  Promise.resolve().then(async () => {
-    const { initGamepadNavigation } = await import(
-      './utils/gamepad-navigation.ts'
-    );
-    initGamepadNavigation();
-  });
-
-  if (pageType === 'experience' || pageType === 'library') {
-    const [{ createLoader }, { createRouter }] = await Promise.all([
-      import('./loader.ts'),
-      import('./router.ts'),
-    ]);
-    const router = createRouter();
-    const defaultLoader = createLoader({ router });
-    const loaderOverrides =
-      (
-        globalThis as unknown as {
-          __stimsLoaderOverrides?: LoaderOverrides;
-        }
-      ).__stimsLoaderOverrides ?? {};
-    const loader = {
-      ...defaultLoader,
-      ...loaderOverrides,
-    };
-    const loadFromQuery = loader.loadFromQuery ?? defaultLoader.loadFromQuery;
-    const initNavigation =
-      loader.initNavigation ?? defaultLoader.initNavigation;
-
-    if (pageType === 'experience') {
-      const [{ bootToyPage }, { initAgentAPI }] = await Promise.all([
-        import('./bootstrap/toy-page.ts'),
-        import('./core/agent-api.ts'),
-      ]);
-      initAgentAPI();
-      bootToyPage({
-        router,
-        loadFromQuery,
-        initNavigation,
-        navContainer,
-        audioControlsContainer,
-        settingsContainer,
-      });
-      return;
-    }
-
-    if (pageType === 'library') {
-      const { bootLibraryPage } = await import('./bootstrap/library-page.ts');
-      bootLibraryPage({
-        navContainer,
-        loadToy: loader.loadToy ?? defaultLoader.loadToy,
-        initNavigation,
-        loadFromQuery,
-      });
-      return;
-    }
-  }
-
-  if (pageType === 'home') {
-    const { bootHomePage } = await import('./bootstrap/home-page.ts');
-    bootHomePage({
-      navContainer,
-    });
-    return;
-  }
 };
 
 let appStarted = false;

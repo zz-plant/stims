@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
@@ -29,6 +30,7 @@ if (!rollupInputs.index) {
 }
 
 export default defineConfig({
+  plugins: [react()],
   server: {
     // Bind to all interfaces so forwarded browsers (e.g., Playwright) can reach
     // the dev server instead of seeing connection refused.

@@ -82,7 +82,7 @@ This document is the consolidated source for implementation progress across road
 
 - [x] Move diagnostics/technical language behind progressive disclosure.
 - [x] Reorder mobile layout to prioritize delight/launch before utility rails.
-- [x] Normalize status taxonomy across home and toy shell.
+- [x] Normalize status taxonomy across browsing and live session surfaces.
 
 ### Later
 

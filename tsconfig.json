@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "ignoreDeprecations": "6.0",
     "allowImportingTsExtensions": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "types": ["bun", "node"]
   },
   "include": ["assets/**/*", "tests/**/*", "scripts/**/*"],

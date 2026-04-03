@@ -91,6 +91,15 @@ export function createMilkdropExperience({
   };
   initialPresetId?: string;
 }) {
+  type MilkdropExperienceSnapshot = {
+    activePresetId: string | null;
+    backend: 'webgl' | 'webgpu';
+    status: string | null;
+    adaptiveQuality: AdaptiveQualityState | null;
+    catalogEntries: ReturnType<typeof catalogCoordinator.getCatalogEntries>;
+    sessionState: ReturnType<typeof session.getState>;
+  };
+
   const catalogStore = createMilkdropCatalogStore();
   const defaultPreset = compileMilkdropPresetSource(
     DEFAULT_MILKDROP_PRESET_SOURCE,
@@ -137,6 +146,7 @@ export function createMilkdropExperience({
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
   let disposeSessionSubscription: (() => void) | null = null;
   let postprocessingPipeline: PostprocessingPipeline | null = null;
+  const subscribers = new Set<(snapshot: MilkdropExperienceSnapshot) => void>();
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
     shaderEnabled: false,
@@ -191,9 +201,24 @@ export function createMilkdropExperience({
   const updateAgentDebugSnapshot = () =>
     presentationController.updateAgentDebugSnapshot();
 
+  const buildSnapshot = (): MilkdropExperienceSnapshot => ({
+    activePresetId,
+    backend: activeBackend,
+    status: lastStatusMessage,
+    adaptiveQuality: adaptiveQualityState,
+    catalogEntries: catalogCoordinator.getCatalogEntries(),
+    sessionState: session.getState(),
+  });
+
+  const emitChange = () => {
+    const snapshot = buildSnapshot();
+    subscribers.forEach((subscriber) => subscriber(snapshot));
+  };
+
   const setOverlayStatus = (message: string) => {
     lastStatusMessage = message;
     presentationController.setOverlayStatus(message);
+    emitChange();
   };
   const getOverlay = () => {
     if (!overlay) {
@@ -206,6 +231,7 @@ export function createMilkdropExperience({
     transitionMode = mode;
     overlay?.setTransitionMode(mode);
     preferences.setTransitionMode(mode);
+    emitChange();
   };
 
   const applyCompiledPreset = (compiled: MilkdropCompiledPreset) =>
@@ -214,7 +240,11 @@ export function createMilkdropExperience({
   const catalogCoordinator = createMilkdropCatalogCoordinator({
     catalogStore,
     onCatalogChanged(entries, nextActivePresetId, nextActiveBackend) {
-      getOverlay().setCatalog(entries, nextActivePresetId, nextActiveBackend);
+      if (!lifetime.isActive() || !overlay) {
+        return;
+      }
+      overlay.setCatalog(entries, nextActivePresetId, nextActiveBackend);
+      emitChange();
     },
   });
 
@@ -433,6 +463,7 @@ export function createMilkdropExperience({
       activePresetId,
       activeBackend,
     });
+    emitChange();
   });
 
   disposeRequestedPresetListener = installRequestedPresetListener(
@@ -494,6 +525,18 @@ export function createMilkdropExperience({
   })();
 
   return {
+    subscribe(listener: (snapshot: MilkdropExperienceSnapshot) => void) {
+      subscribers.add(listener);
+      listener(buildSnapshot());
+      return () => {
+        subscribers.delete(listener);
+      };
+    },
+
+    getStateSnapshot() {
+      return buildSnapshot();
+    },
+
     applyFields(updates: Record<string, string | number>) {
       return applyFieldValues(updates);
     },
@@ -507,6 +550,71 @@ export function createMilkdropExperience({
     },
 
     selectPreset: navigation.selectPreset,
+
+    setActiveCollectionTag(collectionTag: string | null) {
+      if (!collectionTag) {
+        return;
+      }
+      overlay?.setActiveCollectionTag(collectionTag);
+      emitChange();
+    },
+
+    openTab(tab: 'browse' | 'editor' | 'inspector') {
+      overlay?.openTab(tab);
+      emitChange();
+    },
+
+    setOverlayOpen(open: boolean) {
+      overlay?.toggleOpen(open);
+      emitChange();
+    },
+
+    async importPresetFiles(files: FileList) {
+      await presetFileActions.importFiles(files);
+      emitChange();
+    },
+
+    exportPreset() {
+      presetFileActions.exportPreset();
+    },
+
+    async duplicatePreset() {
+      await presetFileActions.duplicatePreset();
+      emitChange();
+    },
+
+    async deleteActivePreset() {
+      await presetFileActions.deleteActivePreset();
+      emitChange();
+    },
+
+    updateEditorSource(source: string) {
+      session.applySource(source);
+      emitChange();
+    },
+
+    revertEditorSource() {
+      session.resetToActive();
+      emitChange();
+    },
+
+    updateInspectorField(key: string, value: string | number) {
+      session.updateField(key, value);
+      emitChange();
+    },
+
+    setQualityPreset(presetId: string) {
+      const preset = setQualityPresetById(presetId, {
+        presets: qualityControl.presets,
+        storageKey: qualityControl.storageKey,
+      });
+      if (!preset) {
+        return null;
+      }
+      quality.applyQualityPreset(preset);
+      emitChange();
+      return preset;
+    },
 
     setStatus(message: string) {
       setOverlayStatus(message);
@@ -594,6 +702,7 @@ export function createMilkdropExperience({
           activePresetId,
           activeBackend,
         });
+        emitChange();
       });
     },
 
@@ -773,6 +882,7 @@ export function createMilkdropExperience({
       disposeRequestedOverlayTabListener?.();
       disposeRequestedOverlayTabListener = null;
       catalogCoordinator.dispose();
+      subscribers.clear();
     },
   };
 }

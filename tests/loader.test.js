@@ -219,7 +219,7 @@ describe('loadToy', () => {
 
     const backControl = document.querySelector('[data-back-to-library]');
     expect(backControl).not.toBeNull();
-    expect(new URL(window.location.href).pathname).toBe('/milkdrop/');
+    expect(new URL(window.location.href).pathname).toBe('/');
     expect(window.location.search).toBe('');
 
     backControl?.dispatchEvent(new Event('click', { bubbles: true }));

@@ -83,7 +83,7 @@ function formatRendererSummary(entry: ToyEntry) {
 
 function formatLaunchTargets(entry: ToyEntry) {
   if (entry.slug === 'milkdrop') {
-    return '`/milkdrop/` (canonical) and `/milkdrop/?experience=milkdrop` (explicit deep link)';
+    return '`/` (canonical workspace route) and `/milkdrop/` (compatibility alias)';
   }
   return `\`/milkdrop/?experience=${entry.slug}\``;
 }

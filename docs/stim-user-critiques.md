@@ -122,7 +122,7 @@ Success criteria:
 
 ### P0 toy actions
 
-- `geom`: add a visible mic-level meter and an obvious demo-audio path in the toy shell.
+- `geom`: add a visible mic-level meter and an obvious demo-audio path in the live session workspace.
 - `holy`: expose simple first-screen intensity and palette controls.
 - `bubble-harmonics`: add split sensitivity and a manual demo split trigger.
 - `lights`: add curated starter presets and a shuffle option for quick “best-of” looks.

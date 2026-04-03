@@ -8,7 +8,7 @@ It summarizes the shipped visualizer entries from `assets/data/toys.json`.
 Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with blend transitions, live source editing, and import/export flows.
 
 - Entry module: `assets/js/toys/milkdrop-toy.ts`
-- Launch route: `/milkdrop/` (canonical) and `/milkdrop/?experience=milkdrop` (explicit deep link)
+- Launch route: `/` (canonical workspace route) and `/milkdrop/` (compatibility alias)
 - Renderer support: WebGPU preferred with WebGL fallback
 - Lifecycle stage: `featured`
 - Capabilities: microphone, demoAudio

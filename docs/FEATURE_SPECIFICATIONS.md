@@ -1,128 +1,106 @@
-# Feature specifications (current build)
+# Feature Specifications (Current Build)
 
-This document captures the **current, shipped feature set** of Stims as implemented in this repository. Product framing for current public surfaces is MilkDrop-led: Stims is an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop, with a broader collection of related audio-reactive toys.
+This document describes the shipped React workspace frontend and the preserved MilkDrop engine beneath it.
 
 ## Audit snapshot
 
-| Area | Current state | Primary sources in repo |
+| Area | Current state | Primary sources |
 | --- | --- | --- |
-| Homepage (`index.html`) | Product-led homepage with cinematic hero, focused launch cards, preset showcase, and route-aware CTA structure is live. | `index.html`, `assets/js/bootstrap/home-page.ts`, `assets/js/bootstrap/milkdrop-showcase.ts` |
-| System readiness & performance | Launch-route preflight and setup tuning are wired. | `assets/js/readiness-probe.ts`, `assets/js/core/capability-preflight.ts`, `assets/js/ui/system-controls.ts` |
-| Toy runtime shell | Loader, toy nav, status/errors, audio prompt, and settings panel are live. | `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/ui/*` |
-| Audio input options | Mic, demo audio, tab capture, and YouTube capture are available. | `assets/js/ui/audio-controls.ts`, `assets/js/ui/youtube-controller.ts` |
-| Renderer fallback | WebGPU preferred with direct WebGL fallback plus an optional force-WebGL compatibility mode. | `assets/js/core/renderer-capabilities.ts`, `assets/js/core/render-preferences.ts` |
-| Personalization & persistence | Theme, quality presets, render/motion preferences, and search state persist. | `assets/js/library-view.js`, `assets/js/core/settings-panel.ts` |
-| Gamepad + remote navigation | Focus + input support is enabled on library and toy pages for gamepads and keyboard-style TV remotes. | `assets/js/utils/gamepad-navigation.ts`, `assets/js/app.ts` |
-| Toy catalog metadata | Registry includes titles, tags, moods, controls, and lifecycle stage. | `assets/data/toys.json` |
+| Root app route | `/` is the canonical workspace route and owns launch, browse, session, and settings surfaces. | `index.html`, `assets/js/app.ts`, `assets/js/frontend/App.tsx` |
+| Legacy alias | `/milkdrop/` preserves older links by redirecting into `/` with query state intact. | `milkdrop/index.html`, `docs/PAGE_SPECIFICATIONS.md` |
+| URL normalization | Legacy `experience`, `panel`, `collection`, `preset`, `audio`, and `agent` params are read; canonical URLs are written back from typed route state. | `assets/js/frontend/url-state.ts` |
+| Engine seam | The React shell talks to the MilkDrop engine only through the adapter contract. | `assets/js/frontend/engine/milkdrop-engine-adapter.ts` |
+| Preset runtime | MilkDrop compiler, runtime, overlay, editor, and inspector remain live behind the adapter. | `assets/js/milkdrop/runtime.ts`, `assets/js/milkdrop/overlay.ts` |
+| Audio inputs | Demo, microphone, tab capture, and YouTube-backed capture are available from the workspace launch surface. | `assets/js/frontend/App.tsx`, `assets/js/ui/audio-advanced-sources.ts`, `assets/js/ui/youtube-controller.ts` |
+| Quality + fallback | WebGPU is preferred, WebGL fallback is supported, and users can tune quality, render scale, pixel ratio, and compatibility mode. | `assets/js/core/renderer-capabilities.ts`, `assets/js/core/settings-panel.ts`, `assets/js/core/state/render-preference-store.ts` |
+| Automation + QA | Agent mode, canonical route testing, and browser-backed smoke coverage are live on the root route. | `assets/js/core/agent-api.ts`, `tests/agent-integration.test.ts` |
 
-## Homepage and routing
+## Root workspace (`/`)
 
-### Global navigation
-- **Brand + jump links**: The homepage exposes launch options, preset showcase, the Why Stims section, and the launchpad.
-- **Utilities**: Open GitHub and toggle light/dark theme.
-- **Theme toggle**: A dark-mode toggle persists preference in local storage and uses view transitions when available.
+### Launch surface
 
-### Intro hero
-- **Primary CTA**: One homepage CTA deep-links to the live workspace with demo audio.
-- **Secondary CTA**: One homepage CTA opens `/milkdrop/` as the immersive-first MilkDrop route.
-- **Product framing**: Copy emphasizes browser-native playback, live editing, bundled presets, and multiple audio inputs before the route model appears lower on the page.
+- One route owns both entry and live session behavior.
+- Launch controls expose:
+  - demo audio
+  - microphone
+  - tab capture
+  - YouTube capture
+- The shell waits until the engine is mount-ready before enabling interactive launch controls.
 
-### Launch cards
-- **Focused entry points**: Static cards give users two obvious first moves: demo playback or bring-your-own-audio setup.
-- **No in-place runtime boot**: Homepage visuals remain lightweight and do not mount the full live runtime in-place.
+### Preset browsing
 
-### Preset showcase
-- **Curated entry points**: Bundled preset cards and collection filters are hydrated from `public/milkdrop-presets/catalog.json`.
-- **Launch behavior**: Preset cards open the live workspace on `/milkdrop/` and can preselect a preset before playback begins.
+- Presets load from `public/milkdrop-presets/catalog.json`.
+- Search matches title, author, id, and tags.
+- Collection pills normalize onto `collection:*` route state.
+- Preset selection updates canonical route state and the live engine session.
 
-### Why Stims section
-- **Intentional split**: Static copy explains the roles of homepage, `/milkdrop/`, and the live overlay without turning the whole page into route documentation.
-- **Lineage language**: Copy continues to credit Ryan Geiss&rsquo;s MilkDrop without implying official continuation.
+### Session workspace
 
-## Toy runtime shell
+- The stage mounts the live MilkDrop runtime into the React shell.
+- The shell shows:
+  - current preset
+  - renderer backend
+  - audio source
+  - runtime status/fallback copy
+- Live status messaging reuses a single visible status surface instead of spreading error copy across multiple shells.
 
-### Loader & routing
-- **Route entry**: `/milkdrop/` loads the flagship module, and `/milkdrop/?experience=<slug>` supports explicit deep links when needed.
-- **Lifecycle**: Loader handles status states, disposal, and cleanup before switching toys.
-- **WebGPU gating**: Toys can require WebGPU, optionally auto-load with WebGL fallback, and only hard-stop when a WebGPU-only toy cannot run.
-- **Prewarming**: Renderer capabilities and microphone permissions are prewarmed before loading.
+### Tools and settings
 
-### Toy navigation bar
-- **Minimal default chrome**: Live mode keeps visible chrome lean by default and reveals the fuller menu/tray on demand.
-- **Renderer status**: Displays active renderer (WebGPU/WebGL), fallback reason, and a recovery action when the preferred renderer can be retried.
-- **Session actions**: Share link, picture-in-picture, and back navigation remain available from the revealed session menu.
+- The workspace exposes browse, editor, inspector, and settings entry points.
+- In v1, editor and inspector capabilities are still fulfilled by the MilkDrop overlay/runtime internals behind the adapter seam.
+- Session settings include:
+  - quality preset
+  - compatibility mode
+  - motion toggle
+  - render scale
+  - pixel ratio cap
 
-### Audio controls
-- **Primary options**: Live mic or demo audio, with one focused path visually emphasized at a time.
-- **First-run hinting**: A single dismissible “Try this first” recommendation is synthesized from toy metadata (`firstRunHint`, `starterPreset`, `wowControl`, `recommendedCapability`).
-- **Browser audio shortcuts**: A visible utility card exposes one-tap entry points for tab capture and YouTube capture before the advanced disclosure.
-- **Advanced options**:
-  - Tab capture (share current tab audio).
-  - YouTube capture (load a YouTube URL, then capture tab audio).
-- **Status feedback**: Inline status area uses the same launch/status vocabulary as the homepage and preflight flow.
-- **Preference persistence**: Stores last-used source in session storage (`stims-audio-source`), advanced panel state in `stims-audio-advanced-open`.
+## Compatibility behavior
 
-### Capability preflight
-- **Linear launch step**: The toy shell preflight still guards startup, but demo playback can move directly into immersive mode once the check succeeds.
-- **Progressive disclosure**: Technical details remain collapsed behind a disclosure by default.
-- **Fallback path**: Blocking states surface one clear library return path and keep compatible-browsing recovery obvious.
+### Alias route
 
-### YouTube capture
-- **Iframe API loader**: Lazy-loads the YouTube API script.
-- **Video parsing**: Accepts `watch?v=`, `embed`, `youtu.be`, and `shorts` formats.
-- **Recent list**: Stores up to five recent video IDs in local storage (`stims_recent_youtube`).
+- `/milkdrop/` redirects to `/`.
+- Query params survive the redirect.
+- The alias is compatibility-only and not a separate product surface.
 
-### Settings panel (performance controls)
-- **Quality presets** (stored under `stims:quality-preset`):
-  - Battery saver
-  - Low motion
-  - TV balanced
-  - Balanced (default)
-  - Hi-fi visuals
-- **Compatibility mode**: Force WebGL for older GPUs.
-- **Motion toggle**: Enable/disable motion input on supported toys (`stims:motion-enabled`).
-- **Resolution + pixel ratio controls**: Range sliders with live value labels.
-- **Reset**: Clears custom overrides to match the active preset.
+### Legacy query support
 
-### MilkDrop live overlay
-- **Preset-first overlay**: Browsing and transport stay on the primary overlay surface.
-- **Tools one layer deeper**: Editor and inspector remain available from a secondary tools surface and still honor deep-link entry.
-- **Shortcut HUD + preset OSD**: Live mode can surface a transient preset announcement and a dedicated shortcut sheet without making them persistent chrome.
+- The app still accepts older launch shapes like:
+  - `?experience=milkdrop`
+  - `?panel=looks`
+  - `?audio=sample`
+- Canonicalized URLs switch to:
+  - `?tool=browse`
+  - `?audio=demo`
 
-### Gamepad and remote navigation
-- **Focus movement**: D-pad/axes and Arrow keys move focus with spatial direction matching before fallback cycling.
-- **Range input support**: Left/right updates sliders in the settings panel when a range control is focused.
-- **Activation + back handling**: Gamepad A/Enter activate the focused control; gamepad back, Escape, or Backspace dispatch back-to-library/Escape behavior.
+### Invalid experience handling
 
+- Unsupported legacy `experience` slugs render an explicit “Unknown experience” state.
+- The app does not silently fall back to another shell or legacy page.
 
-### TV mode defaults
-- **Quality preset**: Adds a “TV balanced” preset tuned for lower DPI and steadier frame pacing.
-- **Smart TV auto-default**: On Smart TV-class user agents, system controls default to the TV preset.
-- **Conservative renderer defaults**: On first run in TV mode, compatibility mode is enabled and render scale / max pixel ratio are lowered unless user overrides already exist.
-- **Audio startup bias**: TV mode prefers demo audio by default while keeping microphone/tab capture options available.
+## Persistence
 
-## Toy catalog metadata
+| Purpose | Storage |
+| --- | --- |
+| Quality preset | `localStorage` |
+| Compatibility mode | `localStorage` |
+| Render scale | `localStorage` |
+| Max pixel ratio | `localStorage` |
+| Motion enabled | `localStorage` |
+| Recent YouTube list | `localStorage` |
 
-The toy registry is sourced from `assets/data/toys.json` (with an optional JSON override loaded from `./toys.json` on the landing page). Each entry includes:
+## Residual legacy modules
 
-- **Identity**: `slug`, `title`, `description`.
-- **Runtime**: `module` path and `type` (`module` or `page`).
-- **Rendering**: `requiresWebGPU`, `allowWebGLFallback`.
-- **Lifecycle**: `lifecycleStage` (featured/prototype/archived) and `featuredRank`.
-- **Discovery**: `moods`, `tags`, and `controls` for search/filter suggestions.
-- **First-run guidance**: optional `firstRunHint`, `starterPreset`, `wowControl`, and `recommendedCapability` fields let the shell surface faster time-to-delight onboarding.
-- **Capabilities**: `capabilities` object with defaults (mic + demo audio on, motion optional).
+The following modules still exist for compatibility coverage and lower-level tests, but they are not the root frontend architecture anymore:
 
-## Persistence & storage keys
+- `assets/js/loader.ts`
+- `assets/js/toy-view.ts`
+- `assets/js/library-view.js`
+- `assets/js/bootstrap/*`
 
-| Purpose | Storage | Key |
-| --- | --- | --- |
-| Library search state | sessionStorage | `stims-library-state` |
-| Audio source preference | sessionStorage | `stims-audio-source` |
-| Audio advanced panel | sessionStorage | `stims-audio-advanced-open` |
-| YouTube recent list | localStorage | `stims_recent_youtube` |
-| Quality preset | localStorage | `stims:quality-preset` |
-| Compatibility mode | localStorage | `stims:compatibility-mode` |
-| Max pixel ratio | localStorage | `stims:max-pixel-ratio` |
-| Render scale | localStorage | `stims:render-scale` |
-| Motion enabled | localStorage | `stims:motion-enabled` |
+Current product-facing frontend work should prefer:
+
+- `assets/js/app.ts`
+- `assets/js/frontend/*`
+- `assets/js/frontend/engine/milkdrop-engine-adapter.ts`
+

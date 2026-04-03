@@ -44,7 +44,7 @@ I looked for:
    - Suggested behavior: pick from toys tagged for high responsiveness and device compatibility.
    - Success signal: lower time-to-first-toy-start.
 
-2. **Add a global `Party mode` preset in the toy shell**
+2. **Add a global `Party mode` preset in the live session workspace**
    - Why: one-click intensity boost for users seeking immediate stimulation.
    - Suggested default mapping:
      - higher motion/tempo

@@ -17,6 +17,40 @@ type LoaderView = {
 
 export function createToyAudioPromptController({ view }: { view: LoaderView }) {
   const hasActiveAudio = () => document.body.dataset.audioActive === 'true';
+  const hasForegroundedToyContent = (container: HTMLElement | null) => {
+    if (!(container instanceof HTMLElement)) {
+      return false;
+    }
+
+    const activeToyRoot =
+      container.closest('#active-toy-container') ??
+      (container.id === 'active-toy-container' ? container : null);
+    if (
+      !(activeToyRoot instanceof HTMLElement) ||
+      activeToyRoot.hidden ||
+      activeToyRoot.classList.contains('is-hidden')
+    ) {
+      return false;
+    }
+
+    const activeStage =
+      container.dataset.stageSlot !== undefined
+        ? container
+        : activeToyRoot.querySelector<HTMLElement>('[data-stage-slot]');
+    if (activeStage instanceof HTMLElement) {
+      return Array.from(activeStage.children).some(
+        (child) =>
+          child instanceof HTMLElement && child.dataset.preserve !== 'toy-ui',
+      );
+    }
+
+    return Array.from(activeToyRoot.children).some(
+      (child) =>
+        child instanceof HTMLElement &&
+        child.dataset.preserve !== 'toy-ui' &&
+        !child.matches('[data-audio-controls]'),
+    );
+  };
   const hasVisibleShellManagedAudioControls = () => {
     const shellControls = document.querySelector('[data-audio-controls]');
     return shellControls instanceof HTMLElement && !shellControls.hidden;
@@ -72,7 +106,9 @@ export function createToyAudioPromptController({ view }: { view: LoaderView }) {
       !launchResult.startAudio ||
       hasActiveAudio() ||
       hasShellManagedAudioStartupInFlight() ||
-      (isShellLaunchContext() && hasVisibleShellManagedAudioControls())
+      (isShellLaunchContext() &&
+        hasVisibleShellManagedAudioControls() &&
+        !hasForegroundedToyContent(container))
     ) {
       return;
     }

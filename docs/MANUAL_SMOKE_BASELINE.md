@@ -1,6 +1,6 @@
 # Manual Smoke Baseline
 
-This document is the Milestone A sign-off baseline for startup, shell, loader, audio, and preset-playback changes. Use it to pair the existing automated regression suite with a small manual pass and reproducible capture artifacts before deeper architectural refactors.
+This document is the current sign-off baseline for root-route startup, workspace shell behavior, compatibility redirects, audio startup, and preset playback.
 
 ## What counts as the baseline
 
@@ -13,18 +13,16 @@ Milestone A baseline evidence is the combination of:
   bun run check:toys
   ```
 
-- The focused startup and shell regression suite:
+- The focused startup and route-contract regression suite:
 
   ```bash
   bun run test \
     tests/app-shell.test.js \
-    tests/toy-page-bootstrap.test.ts \
-    tests/capability-preflight.test.ts \
-    tests/loader.test.js \
+    tests/frontend-url-state.test.ts \
+    tests/agent-integration.test.ts \
     tests/microphone-flow.test.ts \
     tests/settings-panel.test.ts \
-    tests/toy-module-smoke.test.ts \
-    tests/check-toys.test.ts
+    tests/loader.test.js
   ```
 
 - The checked-in behavior snapshot sources:
@@ -37,10 +35,10 @@ Milestone A baseline evidence is the combination of:
 Run the full baseline when a change touches any of these areas:
 
 - `index.html` or `milkdrop/index.html`
-- `assets/js/app.ts`, `assets/js/loader.ts`, or `assets/js/router.ts`
-- `assets/js/toy-view.ts` or launch/preflight UI
+- `assets/js/app.ts`, `assets/js/frontend/*`, or `assets/js/router.ts`
+- `assets/js/frontend/engine/*` or launch/session UI
 - `assets/js/core/*` startup, renderer, or audio wiring
-- `assets/js/toys/milkdrop-toy.ts`
+- `assets/js/milkdrop/runtime.ts`
 - preset boot, overlay, or renderer-fallback behavior
 
 For narrowly scoped docs-only changes, this baseline is not required.
@@ -86,26 +84,26 @@ These captures are not repo-tracked artifacts. They are sign-off evidence for th
 
 Use demo audio unless the change specifically targets microphone behavior.
 
-1. **Homepage to launch route**
+1. **Canonical root route**
    - Open `/`.
-   - Confirm the homepage keeps one dominant launch path into `/milkdrop/`.
-   - Confirm no dead-end CTA or broken route transition appears.
-2. **Direct visualizer boot**
+   - Confirm the workspace shell renders directly on the root route.
+   - Confirm no transition to a separate old shell appears.
+2. **Compatibility alias**
    - Open `/milkdrop/?agent=true&audio=demo`.
-   - Confirm the shell loads, the session becomes interactive, and a visible canvas or live-session UI appears.
-3. **Preflight and demo-audio success path**
-   - If preflight appears, confirm there is one clear primary happy-path CTA.
-   - Start demo audio and confirm visuals respond without requiring a reload.
+   - Confirm it resolves into the same root workspace state without losing query intent.
+3. **Demo-audio success path**
+   - Start demo audio from `/`.
+   - Confirm visuals respond without requiring a reload and the route remains `/`.
 4. **Preset deep link**
-   - Open `/milkdrop/?agent=true&audio=demo&preset=rovastar-parallel-universe`.
+   - Open `/?agent=true&audio=demo&preset=rovastar-parallel-universe`.
    - Confirm the requested preset loads into the live session rather than falling back to a blank or default state.
-5. **Overlay and settings persistence**
-   - Open the overlay/settings UI.
+5. **Settings persistence**
+   - Open the workspace settings UI.
    - Change a quality preset and confirm the session stays alive.
-   - Reload or switch away and back if the change touched persistence, then confirm the selected preset persists as expected.
+   - Reload and confirm the selected preset persists as expected.
 6. **Cleanup and navigation**
-   - Use the back action or Escape-to-library behavior.
-   - Confirm the active session disposes cleanly and the UI returns to a stable non-playing state.
+   - Stop interacting, reload, or clear active audio state.
+   - Confirm the workspace returns to a stable non-playing launch state.
 7. **Conditional fallback check**
    - If the change touched renderer detection or failover, validate the WebGL fallback/compatibility path on an unsupported or forced-fallback run before sign-off.
 
