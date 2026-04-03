@@ -19,10 +19,11 @@ function getFlagValue(name) {
 }
 
 function runCommand(command, commandArgs, { silent = false } = {}) {
-  return execFileSync(command, commandArgs, {
+  const output = execFileSync(command, commandArgs, {
     encoding: 'utf8',
     stdio: silent ? ['ignore', 'pipe', 'pipe'] : 'inherit',
-  }).trim();
+  });
+  return typeof output === 'string' ? output.trim() : '';
 }
 
 function tryRunCommand(command, commandArgs) {
