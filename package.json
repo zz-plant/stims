@@ -28,6 +28,7 @@
     "test": "bun run scripts/run-tests.ts",
     "test:unit": "bun run scripts/run-tests.ts --profile unit",
     "test:integration": "bun run scripts/run-tests.ts --profile integration",
+    "test:legacy-frontend": "bun run scripts/run-tests.ts --profile legacy-frontend",
     "test:compat": "bun run scripts/run-tests.ts --profile compat",
     "test:compat:full": "bun run scripts/run-tests.ts --profile compat-full",
     "test:watch": "bun run scripts/run-tests.ts --watch",

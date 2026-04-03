@@ -44,7 +44,7 @@ Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the checklist before f
 - `index.html` and `milkdrop/index.html` — canonical app shell and redirect alias.
 - `assets/js/frontend/` — root workspace UI, URL state, and the engine adapter seam.
 - `assets/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
-- `assets/js/bootstrap/` — legacy compatibility/test-support shell wiring, not the root product surface.
+- `assets/js/bootstrap/`, `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, and `assets/js/library-view.js` — legacy compatibility/test-support shell wiring, not the root product surface.
 - `assets/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
 - `assets/data/toys.json` — loader manifest source for the shipped MilkDrop entry.
 - `.github/workflows/ci.yml` — CI quality gate plus the default Cloudflare Pages direct-upload deploy jobs.

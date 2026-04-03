@@ -14,6 +14,7 @@ Milestone A baseline evidence is the combination of:
   ```
 
 - The focused startup and route-contract regression suite:
+  - primary root-workspace coverage:
 
   ```bash
   bun run test \
@@ -21,8 +22,13 @@ Milestone A baseline evidence is the combination of:
     tests/frontend-url-state.test.ts \
     tests/agent-integration.test.ts \
     tests/microphone-flow.test.ts \
-    tests/settings-panel.test.ts \
-    tests/loader.test.js
+    tests/settings-panel.test.ts
+  ```
+
+  - compatibility-only shell coverage when legacy modules change:
+
+  ```bash
+  bun run test:legacy-frontend
   ```
 
 - The checked-in behavior snapshot sources:
@@ -35,11 +41,18 @@ Milestone A baseline evidence is the combination of:
 Run the full baseline when a change touches any of these areas:
 
 - `index.html` or `milkdrop/index.html`
-- `assets/js/app.ts`, `assets/js/frontend/*`, or `assets/js/router.ts`
+- `assets/js/app.ts` or `assets/js/frontend/*`
 - `assets/js/frontend/engine/*` or launch/session UI
 - `assets/js/core/*` startup, renderer, or audio wiring
 - `assets/js/milkdrop/runtime.ts`
 - preset boot, overlay, or renderer-fallback behavior
+
+Run the compatibility-only legacy suite instead when a change is limited to:
+
+- `assets/js/loader.ts`, `assets/js/router.ts`, or `assets/js/loader/*`
+- `assets/js/toy-view.ts`
+- `assets/js/library-view.js` or `assets/js/library-view/*`
+- `assets/js/bootstrap/*`
 
 For narrowly scoped docs-only changes, this baseline is not required.
 
