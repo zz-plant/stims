@@ -332,16 +332,20 @@ export function createMilkdropExperience({
       },
       onToggleFavorite: async (id, favorite) => {
         await catalogStore.setFavorite(id, favorite);
-        await catalogCoordinator.syncCatalog({
+        await catalogCoordinator.patchCatalogEntry({
+          id,
           activePresetId,
           activeBackend,
+          update: { isFavorite: favorite },
         });
       },
       onSetRating: async (id, rating) => {
         await catalogStore.setRating(id, rating);
-        await catalogCoordinator.syncCatalog({
+        await catalogCoordinator.patchCatalogEntry({
+          id,
           activePresetId,
           activeBackend,
+          update: { rating },
         });
       },
       onToggleAutoplay: (enabled) => {
@@ -389,21 +393,25 @@ export function createMilkdropExperience({
         void nudgeNumericField(args);
       },
       toggleFavorite: (id) => {
-        const entry = catalogCoordinator.getActiveCatalogEntry(activePresetId);
+        const entry = catalogCoordinator.getCatalogEntry(id);
         void catalogStore
           .setFavorite(id, !(entry?.isFavorite ?? false))
           .then(() =>
-            catalogCoordinator.syncCatalog({
+            catalogCoordinator.patchCatalogEntry({
+              id,
               activePresetId,
               activeBackend,
+              update: { isFavorite: !(entry?.isFavorite ?? false) },
             }),
           );
       },
       setRating: (id, rating) => {
         void catalogStore.setRating(id, rating).then(() =>
-          catalogCoordinator.syncCatalog({
+          catalogCoordinator.patchCatalogEntry({
+            id,
             activePresetId,
             activeBackend,
+            update: { rating },
           }),
         );
       },

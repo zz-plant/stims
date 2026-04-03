@@ -1,3 +1,4 @@
+import { sortMilkdropCatalogEntries } from '../catalog-sort';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
@@ -35,6 +36,39 @@ export function createMilkdropCatalogCoordinator({
     activeBackend: MilkdropRenderBackend;
   }) => {
     catalogEntries = await catalogStore.listPresets();
+    onCatalogChanged(catalogEntries, activePresetId, activeBackend);
+  };
+
+  const patchCatalogEntry = async ({
+    id,
+    activePresetId,
+    activeBackend,
+    update,
+  }: {
+    id: string;
+    activePresetId: string;
+    activeBackend: MilkdropRenderBackend;
+    update:
+      | Partial<MilkdropCatalogEntry>
+      | ((entry: MilkdropCatalogEntry) => MilkdropCatalogEntry);
+  }) => {
+    const currentEntry = catalogEntries.find((entry) => entry.id === id);
+    if (!currentEntry) {
+      await syncCatalog({ activePresetId, activeBackend });
+      return;
+    }
+
+    const nextEntry =
+      typeof update === 'function'
+        ? update(currentEntry)
+        : { ...currentEntry, ...update };
+    if (nextEntry === currentEntry) {
+      return;
+    }
+
+    catalogEntries = sortMilkdropCatalogEntries(
+      catalogEntries.map((entry) => (entry.id === id ? nextEntry : entry)),
+    );
     onCatalogChanged(catalogEntries, activePresetId, activeBackend);
   };
 
@@ -128,9 +162,12 @@ export function createMilkdropCatalogCoordinator({
   return {
     syncCatalog,
     scheduleCatalogSync,
+    patchCatalogEntry,
     rememberSelection,
     consumePreviousSelection,
     getCatalogEntries: () => catalogEntries,
+    getCatalogEntry: (id: string) =>
+      catalogEntries.find((entry) => entry.id === id) ?? null,
     getActiveCatalogEntry: (activePresetId: string) =>
       catalogEntries.find((entry) => entry.id === activePresetId) ?? null,
     dispose() {

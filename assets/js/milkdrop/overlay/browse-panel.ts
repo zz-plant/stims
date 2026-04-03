@@ -86,6 +86,44 @@ function getBrowseSearchTerms(preset: MilkdropCatalogEntry) {
     .filter(Boolean);
 }
 
+type BrowseSearchIndexEntry = {
+  terms: string[];
+  combinedTerms: string;
+};
+
+function buildBrowseSearchIndexEntry(
+  preset: MilkdropCatalogEntry,
+): BrowseSearchIndexEntry {
+  const terms = getBrowseSearchTerms(preset);
+  return {
+    terms,
+    combinedTerms: terms.join(' '),
+  };
+}
+
+function matchesBrowseQueryWithIndex(
+  searchIndex: BrowseSearchIndexEntry,
+  query: string,
+) {
+  const normalizedQuery = normalizeBrowseSearchValue(query);
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  if (searchIndex.terms.some((term) => term.includes(normalizedQuery))) {
+    return true;
+  }
+
+  const queryTokens = tokenizeBrowseQuery(normalizedQuery);
+  if (queryTokens.length === 0) {
+    return true;
+  }
+
+  return queryTokens.every((token) =>
+    searchIndex.combinedTerms.includes(token),
+  );
+}
+
 function matchesBrowseQuery(preset: MilkdropCatalogEntry, query: string) {
   const normalizedQuery = normalizeBrowseSearchValue(query);
   if (!normalizedQuery) {
@@ -216,6 +254,7 @@ export class BrowsePanel {
   private readonly browseOptionsDisclosure: HTMLDetailsElement;
   private readonly searchInput: HTMLInputElement;
   private readonly collectionFilters: HTMLElement;
+  private readonly browseEmptyState: HTMLElement;
   private readonly browseModeSelect: HTMLSelectElement;
   private readonly browseSortSelect: HTMLSelectElement;
   private presets: MilkdropCatalogEntry[] = [];
@@ -231,6 +270,10 @@ export class BrowsePanel {
   private lastBrowseRenderSignature = '';
   private lastCollectionFilterSignature = '';
   private visible = true;
+  private readonly browseSearchIndex = new Map<
+    string,
+    BrowseSearchIndexEntry
+  >();
 
   constructor(callbacks: BrowsePanelCallbacks) {
     this.rowRenderer = new PresetRowRenderer(callbacks);
@@ -372,6 +415,9 @@ export class BrowsePanel {
 
     this.browseList = document.createElement('div');
     this.browseList.className = 'milkdrop-overlay__browse';
+    this.browseEmptyState = document.createElement('div');
+    this.browseEmptyState.className = 'milkdrop-overlay__browse-empty';
+    this.browseEmptyState.textContent = 'No looks match this search yet.';
     this.element.append(
       browseHero,
       browseControls,
@@ -440,6 +486,7 @@ export class BrowsePanel {
       activeChanged ||
       this.lastCatalogSignature !== catalogSignature;
     this.lastCatalogSignature = catalogSignature;
+    this.syncBrowseSearchIndex(presets);
     this.rowRenderer.syncValidIds(new Set(presets.map((preset) => preset.id)));
     if (this.visible) {
       this.render();
@@ -688,24 +735,14 @@ export class BrowsePanel {
     this.renderCollectionFilters();
     const filtered = sortBrowsePresets({
       presets: this.presets.filter((preset) =>
-        matchesBrowseFilters({
-          preset,
-          query,
-          activeCollectionTag: this.activeCollectionTag,
-          browseMode: this.browseMode,
-          browseSupportFilter: this.browseSupportFilter,
-        }),
+        this.matchesActiveBrowseFilters(preset, query),
       ),
       browseSort: this.browseSort,
     });
 
-    const fragment = document.createDocumentFragment();
     this.renderBrowseSummary(filtered.length);
     if (filtered.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'milkdrop-overlay__browse-empty';
-      empty.textContent = 'No looks match this search yet.';
-      this.browseList.replaceChildren(empty);
+      this.syncBrowseChildren([this.browseEmptyState]);
       return;
     }
 
@@ -717,23 +754,69 @@ export class BrowsePanel {
       this.browseSort === 'recommended';
 
     if (!useSections) {
-      filtered.forEach((preset) => {
-        fragment.appendChild(
+      this.syncBrowseChildren(
+        filtered.map((preset) =>
           this.rowRenderer.render({
             preset,
             activePresetId: this.activePresetId,
             activeBackend: this.activeBackend,
           }),
-        );
-      });
-      this.browseList.replaceChildren(fragment);
+        ),
+      );
       return;
     }
 
+    const fragment = document.createDocumentFragment();
     this.buildFeaturedBrowseSections(filtered).forEach((section) => {
       this.appendPresetSection(section.title, section.presets, fragment);
     });
     this.browseList.replaceChildren(fragment);
+  }
+
+  private matchesActiveBrowseFilters(
+    preset: MilkdropCatalogEntry,
+    query: string,
+  ) {
+    if (
+      this.activeCollectionTag &&
+      !preset.tags.includes(this.activeCollectionTag)
+    ) {
+      return false;
+    }
+
+    if (
+      this.browseSupportFilter !== 'all' &&
+      preset.fidelityClass !== this.browseSupportFilter
+    ) {
+      return false;
+    }
+
+    if (this.browseMode === 'recent' && preset.historyIndex === undefined) {
+      return false;
+    }
+    if (this.browseMode === 'favorites' && !preset.isFavorite) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+
+    return matchesBrowseQueryWithIndex(
+      this.browseSearchIndex.get(preset.id) ??
+        buildBrowseSearchIndexEntry(preset),
+      query,
+    );
+  }
+
+  private syncBrowseChildren(nextChildren: HTMLElement[]) {
+    const currentChildren = [...this.browseList.children] as HTMLElement[];
+    if (
+      currentChildren.length === nextChildren.length &&
+      currentChildren.every((child, index) => child === nextChildren[index])
+    ) {
+      return;
+    }
+    this.browseList.replaceChildren(...nextChildren);
   }
 
   private renderCollectionFilters() {
@@ -784,5 +867,20 @@ export class BrowsePanel {
       fragment.appendChild(button);
     });
     this.collectionFilters.replaceChildren(fragment);
+  }
+
+  private syncBrowseSearchIndex(presets: MilkdropCatalogEntry[]) {
+    const validIds = new Set(presets.map((preset) => preset.id));
+    presets.forEach((preset) => {
+      this.browseSearchIndex.set(
+        preset.id,
+        buildBrowseSearchIndexEntry(preset),
+      );
+    });
+    [...this.browseSearchIndex.keys()].forEach((id) => {
+      if (!validIds.has(id)) {
+        this.browseSearchIndex.delete(id);
+      }
+    });
   }
 }

@@ -230,4 +230,50 @@ describe('milkdrop catalog coordinator', () => {
       { presetId: 'aurora-drift', backend: 'webgpu' },
     ]);
   });
+
+  test('patches cached catalog entries without refetching the full catalog', async () => {
+    const requestedStates: Array<{ presetId: string; backend: string }> = [];
+    let listCalls = 0;
+    const coordinator = createMilkdropCatalogCoordinator({
+      catalogStore: {
+        async listPresets() {
+          listCalls += 1;
+          return [
+            createCatalogEntry('signal-bloom'),
+            createCatalogEntry('aurora-drift'),
+          ];
+        },
+      } as never,
+      onCatalogChanged(entries, activePresetId, activeBackend) {
+        requestedStates.push({
+          presetId: activePresetId,
+          backend: activeBackend,
+        });
+        void entries;
+      },
+    });
+
+    await coordinator.syncCatalog({
+      activePresetId: 'signal-bloom',
+      activeBackend: 'webgl',
+    });
+
+    await coordinator.patchCatalogEntry({
+      id: 'aurora-drift',
+      activePresetId: 'signal-bloom',
+      activeBackend: 'webgl',
+      update: { isFavorite: true },
+    });
+
+    expect(listCalls).toBe(1);
+    expect(coordinator.getCatalogEntries().map((entry) => entry.id)).toEqual([
+      'aurora-drift',
+      'signal-bloom',
+    ]);
+    expect(coordinator.getCatalogEntry('aurora-drift')?.isFavorite).toBe(true);
+    expect(requestedStates).toEqual([
+      { presetId: 'signal-bloom', backend: 'webgl' },
+      { presetId: 'signal-bloom', backend: 'webgl' },
+    ]);
+  });
 });
