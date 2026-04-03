@@ -36,6 +36,9 @@ function tryRunCommand(command, commandArgs) {
 const preview = hasFlag('--preview');
 const production = hasFlag('--production');
 const configPath = getFlagValue('--config') ?? 'wrangler.toml';
+const usesDefaultPagesConfig =
+  (configPath === 'wrangler.toml' || configPath === './wrangler.toml') &&
+  existsSync(join(process.cwd(), 'wrangler.toml'));
 
 if (preview === production) {
   console.error(
@@ -94,10 +97,15 @@ const commitMessage =
 const dirtyWorkspace =
   tryRunCommand('git', ['status', '--porcelain'])?.length > 0;
 
+if (!usesDefaultPagesConfig) {
+  console.error(
+    '[deploy-cloudflare] Cloudflare Pages deploys must use the repo-root wrangler.toml. Custom --config paths are not supported by wrangler pages deploy.',
+  );
+  process.exit(1);
+}
+
 const wranglerArgs = [
   'wrangler',
-  '--config',
-  configPath,
   'pages',
   'deploy',
   directory,
@@ -122,7 +130,7 @@ wranglerArgs.push('--commit-dirty', dirtyWorkspace ? 'true' : 'false');
 console.log(
   [
     `[deploy-cloudflare] Target: ${preview ? 'preview' : 'production'}`,
-    `[deploy-cloudflare] Config: ${configPath}`,
+    `[deploy-cloudflare] Config: ${usesDefaultPagesConfig ? 'wrangler.toml (auto-detected)' : configPath}`,
     `[deploy-cloudflare] Project: ${projectName}`,
     `[deploy-cloudflare] Directory: ${directory}`,
     preview ? `[deploy-cloudflare] Branch: ${branch}` : null,
