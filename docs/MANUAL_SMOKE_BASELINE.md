@@ -57,7 +57,7 @@ Then, in another shell, capture one shipped preset and one parity-sensitive pres
 
 ```bash
 bun run play:toy milkdrop \
-  --preset kinetic-grid-pulse \
+  --preset rovastar-parallel-universe \
   --duration 1500 \
   --debug-snapshot \
   --output ./screenshots/milestone-a
@@ -97,7 +97,7 @@ Use demo audio unless the change specifically targets microphone behavior.
    - If preflight appears, confirm there is one clear primary happy-path CTA.
    - Start demo audio and confirm visuals respond without requiring a reload.
 4. **Preset deep link**
-   - Open `/milkdrop/?agent=true&audio=demo&preset=kinetic-grid-pulse`.
+   - Open `/milkdrop/?agent=true&audio=demo&preset=rovastar-parallel-universe`.
    - Confirm the requested preset loads into the live session rather than falling back to a blank or default state.
 5. **Overlay and settings persistence**
    - Open the overlay/settings UI.

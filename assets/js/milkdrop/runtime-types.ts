@@ -116,6 +116,34 @@ export type MilkdropRuntimeSignals = {
   waveformData?: Uint8Array;
 };
 
+export type MilkdropCapturedVideoReactiveState = {
+  bassPulse: number;
+  midMotion: number;
+  trebleShimmer: number;
+  energyWash: number;
+  beatAccent: number;
+  overlayAmount: number;
+  warpAmount: number;
+  mixAlphaFloor: number;
+  textureScaleX: number;
+  textureScaleY: number;
+  textureOffsetX: number;
+  textureOffsetY: number;
+  warpScaleX: number;
+  warpScaleY: number;
+  warpOffsetX: number;
+  warpOffsetY: number;
+  overlayWidthScale: number;
+  overlayHeightScale: number;
+  overlayDriftX: number;
+  overlayDriftY: number;
+  overlayRotation: number;
+  baseOpacity: number;
+  ghostOpacity: number;
+  ghostOffsetX: number;
+  ghostOffsetY: number;
+};
+
 export type MilkdropEditorSessionState = {
   source: string;
   latestCompiled: MilkdropCompiledPreset | null;

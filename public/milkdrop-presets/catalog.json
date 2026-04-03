@@ -1,46 +1,14 @@
 {
   "version": 2,
-  "generatedAt": "2026-03-28",
+  "generatedAt": "2026-04-02",
   "certification": "bundled",
   "corpusTier": "bundled",
   "presets": [
     {
-      "id": "aurora-feedback-core",
-      "title": "Aurora Feedback Core",
-      "author": "Stims Curated",
-      "order": 1,
-      "file": "/milkdrop-presets/aurora-feedback-core.milk",
-      "preview": true,
-      "tags": [
-        "collection:classic-milkdrop",
-        "feedback",
-        "warp",
-        "preset"
-      ],
-      "expectedFidelityClass": "partial",
-      "visualEvidenceTier": "runtime",
-      "supports": {
-        "webgl": true,
-        "webgpu": true
-      },
-      "visualCertification": {
-        "status": "uncertified",
-        "measured": false,
-        "source": "inferred",
-        "fidelityClass": "partial",
-        "visualEvidenceTier": "runtime",
-        "requiredBackend": "webgpu",
-        "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
-      }
-    },
-    {
       "id": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
       "author": "Eo.S.",
-      "order": 2,
+      "order": 1,
       "file": "/milkdrop-presets/eos-glowsticks-v2-03-music.milk",
       "preview": true,
       "tags": [
@@ -74,7 +42,7 @@
       "id": "rovastar-parallel-universe",
       "title": "Rovastar - Parallel Universe",
       "author": "Rovastar",
-      "order": 3,
+      "order": 2,
       "file": "/milkdrop-presets/rovastar-parallel-universe.milk",
       "preview": true,
       "tags": [
@@ -109,7 +77,7 @@
       "id": "eos-phat-cubetrace-v2",
       "title": "Eo.S. + Phat - Cubetrace v2",
       "author": "Eo.S. + Phat",
-      "order": 4,
+      "order": 3,
       "file": "/milkdrop-presets/eos-phat-cubetrace-v2.milk",
       "preview": true,
       "tags": [
@@ -141,42 +109,10 @@
       }
     },
     {
-      "id": "prism-drum-tunnel",
-      "title": "Prism Drum Tunnel",
-      "author": "Stims Curated",
-      "order": 5,
-      "file": "/milkdrop-presets/prism-drum-tunnel.milk",
-      "preview": true,
-      "tags": [
-        "collection:classic-milkdrop",
-        "tunnel",
-        "drums",
-        "preset"
-      ],
-      "expectedFidelityClass": "partial",
-      "visualEvidenceTier": "runtime",
-      "supports": {
-        "webgl": true,
-        "webgpu": true
-      },
-      "visualCertification": {
-        "status": "uncertified",
-        "measured": false,
-        "source": "inferred",
-        "fidelityClass": "partial",
-        "visualEvidenceTier": "runtime",
-        "requiredBackend": "webgpu",
-        "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
-      }
-    },
-    {
       "id": "krash-rovastar-cerebral-demons-stars",
       "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
       "author": "Krash & Rovastar",
-      "order": 6,
+      "order": 4,
       "file": "/milkdrop-presets/krash-rovastar-cerebral-demons-stars.milk",
       "preview": true,
       "tags": [
@@ -186,70 +122,6 @@
         "popular",
         "comets",
         "cream-of-the-crop",
-        "preset"
-      ],
-      "expectedFidelityClass": "partial",
-      "visualEvidenceTier": "runtime",
-      "supports": {
-        "webgl": true,
-        "webgpu": true
-      },
-      "visualCertification": {
-        "status": "uncertified",
-        "measured": false,
-        "source": "inferred",
-        "fidelityClass": "partial",
-        "visualEvidenceTier": "runtime",
-        "requiredBackend": "webgpu",
-        "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
-      }
-    },
-    {
-      "id": "kinetic-grid-pulse",
-      "title": "Kinetic Grid Pulse",
-      "author": "Stims Curated",
-      "order": 7,
-      "file": "/milkdrop-presets/kinetic-grid-pulse.milk",
-      "preview": true,
-      "tags": [
-        "collection:feedback-lab",
-        "grid",
-        "reactive",
-        "preset"
-      ],
-      "expectedFidelityClass": "partial",
-      "visualEvidenceTier": "runtime",
-      "supports": {
-        "webgl": true,
-        "webgpu": true
-      },
-      "visualCertification": {
-        "status": "uncertified",
-        "measured": false,
-        "source": "inferred",
-        "fidelityClass": "partial",
-        "visualEvidenceTier": "runtime",
-        "requiredBackend": "webgpu",
-        "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
-      }
-    },
-    {
-      "id": "low-motion-halo-drift",
-      "title": "Low Motion Halo Drift",
-      "author": "Stims Curated",
-      "order": 8,
-      "file": "/milkdrop-presets/low-motion-halo-drift.milk",
-      "preview": false,
-      "tags": [
-        "collection:low-motion",
-        "ambient",
-        "halos",
         "preset"
       ],
       "expectedFidelityClass": "partial",

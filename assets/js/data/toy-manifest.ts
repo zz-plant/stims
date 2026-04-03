@@ -37,9 +37,9 @@ export const toyManifest: ToyManifest = [
     ],
     "firstRunHint": "Open presets, then try autoplay.",
     "starterPreset": {
-      "id": "aurora-feedback-core",
+      "id": "rovastar-parallel-universe",
       "label": "starter preset",
-      "description": "Balanced settings for a first run."
+      "description": "Recognizable feedback-heavy first run."
     },
     "wowControl": "Preset browser",
     "recommendedCapability": "demoAudio",

@@ -1,3 +1,4 @@
+import { setMilkdropCapturedVideoStream } from '../core/services/captured-video-texture.ts';
 import {
   type MicrophonePermissionState,
   queryMicrophonePermissionState,
@@ -34,6 +35,7 @@ export interface AudioControlsOptions {
   wowControl?: string;
   recommendedCapability?: 'demoAudio' | 'microphone' | 'motion' | 'touch';
   onApplyStarterPreset?: () => void;
+  onPrepareYouTubeContext?: () => Promise<void> | void;
   autoStartMicrophoneWhenGranted?: boolean;
   autoStartSource?: 'demo';
   initialShortcut?: 'tab' | 'youtube';
@@ -128,7 +130,6 @@ export function initAudioControls(
   container.innerHTML = `
 	    <p class="control-panel__eyebrow">Start</p>
 	    <div class="control-panel__heading">Pick your input</div>
-	    <p class="control-panel__description">Demo is the fastest first look. Switch to live input any time.</p>
 	    ${renderPrimaryAudioChoice()}
 	    ${renderAdvancedAudioSources(options)}
 	    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
@@ -544,11 +545,12 @@ export function initAudioControls(
         const stream = await captureDisplayAudioStream({
           unavailableMessage: 'Tab audio capture unavailable.',
         });
+        await setMilkdropCapturedVideoStream(stream);
         await requestTabAudio(stream);
       },
       'Tab audio capture failed.',
       undefined,
-      'Tab audio connected.',
+      'Tab video is feeding the preset.',
       'Starting tab audio…',
     );
   });
@@ -559,6 +561,7 @@ export function initAudioControls(
       options.onRequestYouTubeAudio,
       updateStatus,
       handleSuccess,
+      options.onPrepareYouTubeContext,
     );
   }
 }
@@ -568,18 +571,14 @@ function renderPrimaryAudioChoice() {
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
         <span class="control-panel__label">Demo</span>
-        <span class="control-panel__pill" data-recommended-for="demo" hidden>Best first look</span>
-        <span class="control-panel__subtext">Built-in soundtrack and instant motion.</span>
-        <span class="control-panel__microcopy">No permission prompt.</span>
+        <span class="control-panel__subtext">Built-in audio.</span>
       </div>
       <button id="use-demo-audio" class="cta-button primary" type="button">Start demo</button>
     </div>
     <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
-        <span class="control-panel__pill" data-recommended-for="mic" hidden>Ready</span>
-        <span class="control-panel__subtext">Your room, voice, or instrument.</span>
-        <span class="control-panel__microcopy">One permission prompt.</span>
+        <span class="control-panel__subtext">Room, voice, or instrument.</span>
       </div>
       <button id="start-audio-btn" class="cta-button ghost" type="button">Use mic</button>
     </div>

@@ -28,31 +28,39 @@ describe('initMilkdropShowcase', () => {
       json: async () => ({
         presets: [
           {
-            id: 'kinetic-grid-pulse',
-            title: 'Kinetic Grid Pulse',
+            id: 'eos-glowsticks-v2-03-music',
+            title: 'Eo.S. - Glowsticks v2 03 Music',
             order: 2,
             preview: true,
-            tags: ['collection:feedback-lab', 'grid'],
+            tags: [
+              'collection:classic-milkdrop',
+              'collection:rovastar-and-collaborators',
+              'glowsticks',
+            ],
           },
           {
-            id: 'aurora-feedback-core',
-            title: 'Aurora Feedback Core',
+            id: 'rovastar-parallel-universe',
+            title: 'Rovastar - Parallel Universe',
             order: 1,
             preview: true,
-            author: 'Stims Curated',
+            author: 'Rovastar',
             tags: [
               'collection:cream-of-the-crop',
               'collection:classic-milkdrop',
               'feedback',
-              'warp',
+              'collection:rovastar-and-collaborators',
             ],
           },
           {
-            id: 'low-motion-halo-drift',
-            title: 'Low Motion Halo Drift',
+            id: 'eos-phat-cubetrace-v2',
+            title: 'Eo.S. + Phat - Cubetrace v2',
             order: 3,
             preview: false,
-            tags: ['collection:low-motion', 'ambient'],
+            tags: [
+              'collection:cream-of-the-crop',
+              'collection:classic-milkdrop',
+              'geometry',
+            ],
           },
         ],
       }),
@@ -71,20 +79,21 @@ describe('initMilkdropShowcase', () => {
     ).map((card) => card.textContent?.trim());
 
     expect(count?.textContent).toBe(
-      '3 bundled presets across 2 quick collections. Showing 1 featured picks from Cream of the Crop.',
+      '3 presets across 3 collections. Showing 1 from Cream of the Crop.',
     );
     expect(filters).toEqual([
       'All presets3',
-      'Cream of the Crop1',
-      'Classic MilkDrop1',
+      'Cream of the Crop2',
+      'Classic MilkDrop3',
+      'Rovastar and collaborators2',
     ]);
-    expect(cards).toEqual(['Aurora Feedback Core']);
+    expect(cards).toEqual(['Rovastar - Parallel Universe']);
     expect(
       document
         .querySelector('[data-milkdrop-preset-list] .cta-button')
         ?.getAttribute('href'),
     ).toBe(
-      '/milkdrop/?audio=demo&panel=browse&preset=aurora-feedback-core&collection=cream-of-the-crop',
+      '/milkdrop/?audio=demo&panel=browse&preset=rovastar-parallel-universe&collection=cream-of-the-crop',
     );
   });
 
@@ -94,11 +103,15 @@ describe('initMilkdropShowcase', () => {
       json: async () => ({
         presets: [
           {
-            id: 'kinetic-grid-pulse',
-            title: 'Kinetic Grid Pulse',
+            id: 'eos-glowsticks-v2-03-music',
+            title: 'Eo.S. - Glowsticks v2 03 Music',
             order: 1,
             preview: true,
-            tags: ['collection:feedback-lab', 'grid'],
+            tags: [
+              'collection:classic-milkdrop',
+              'collection:rovastar-and-collaborators',
+              'glowsticks',
+            ],
           },
         ],
       }),
@@ -111,7 +124,7 @@ describe('initMilkdropShowcase', () => {
         .querySelector('[data-milkdrop-preset-list] .cta-button')
         ?.getAttribute('href'),
     ).toBe(
-      '/milkdrop/?audio=demo&panel=browse&preset=kinetic-grid-pulse&collection=feedback-lab',
+      '/milkdrop/?audio=demo&panel=browse&preset=eos-glowsticks-v2-03-music&collection=classic-milkdrop',
     );
   });
 
@@ -121,8 +134,8 @@ describe('initMilkdropShowcase', () => {
       json: async () => ({
         presets: [
           {
-            id: 'aurora-feedback-core',
-            title: 'Aurora Feedback Core',
+            id: 'rovastar-parallel-universe',
+            title: 'Rovastar - Parallel Universe',
             order: 1,
             preview: true,
             tags: [
@@ -142,7 +155,7 @@ describe('initMilkdropShowcase', () => {
         .querySelector('[data-milkdrop-preset-list] .cta-button')
         ?.getAttribute('href'),
     ).toBe(
-      '/milkdrop/?audio=demo&panel=browse&preset=aurora-feedback-core&collection=cream-of-the-crop',
+      '/milkdrop/?audio=demo&panel=browse&preset=rovastar-parallel-universe&collection=cream-of-the-crop',
     );
   });
 

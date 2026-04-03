@@ -37,6 +37,8 @@ function getDirectShaderSamplerSourceId(
       return 6;
     case 'fractal':
       return 7;
+    case 'video':
+      return 8;
     default:
       return 0;
   }

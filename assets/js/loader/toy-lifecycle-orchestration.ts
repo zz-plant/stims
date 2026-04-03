@@ -1,5 +1,6 @@
 import { setAudioActive, setCurrentToy } from '../core/agent-api.ts';
 import type { getRendererCapabilities } from '../core/renderer-capabilities.ts';
+import { clearMilkdropCapturedVideoStream } from '../core/services/captured-video-texture.ts';
 import type { ToyLifecycle } from '../core/toy-lifecycle.ts';
 import type { createToyView } from '../toy-view.ts';
 import { resetToyPictureInPicture } from '../utils/picture-in-picture';
@@ -37,6 +38,7 @@ export function createToyLifecycleOrchestration({
     }
     lifecycle.disposeActiveToy();
     view?.clearActiveToyContainer?.();
+    clearMilkdropCapturedVideoStream();
     setCurrentToy(null);
     setAudioActive(false);
   };

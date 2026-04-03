@@ -3,6 +3,7 @@ import {
   attachCapabilityPreflight,
   type CapabilityPreflightResult,
 } from '../core/capability-preflight.ts';
+import { clearMilkdropCapturedVideoStream } from '../core/services/captured-video-texture.ts';
 import { startToyAudioFromSource } from '../core/toy-audio-startup.ts';
 import type { ToyWindow } from '../core/toy-globals.ts';
 import toyManifest from '../data/toy-manifest.ts';
@@ -95,6 +96,7 @@ export function bootExperienceShell({
   settingsContainer: HTMLElement | null;
 }) {
   let loaderStarted = false;
+  let loaderStartPromise: Promise<void> | null = null;
   let focusedSessionMode: 'off' | 'launch' | 'live' = 'off';
   let sessionChromeVisibility: 'visible' | 'hidden' = 'visible';
   const searchParams = new URLSearchParams(window.location.search);
@@ -126,12 +128,13 @@ export function bootExperienceShell({
   };
 
   const startLoaderIfNeeded = () => {
-    if (loaderStarted) {
-      return;
+    if (loaderStartPromise) {
+      return loaderStartPromise;
     }
     loaderStarted = true;
     initNavigation();
-    void loadFromQuery();
+    loaderStartPromise = Promise.resolve(loadFromQuery());
+    return loaderStartPromise;
   };
 
   const toyWindow = window as unknown as ToyWindow;
@@ -232,11 +235,13 @@ export function bootExperienceShell({
 
     initAudioControls(audioControlsContainer, {
       onRequestMicrophone: async () => {
+        clearMilkdropCapturedVideoStream();
         startLoaderIfNeeded();
         await startToyAudioFromSource(toyWindow, { source: 'microphone' });
         setAudioActive(true, 'microphone');
       },
       onRequestDemoAudio: async () => {
+        clearMilkdropCapturedVideoStream();
         startLoaderIfNeeded();
         await startToyAudioFromSource(toyWindow, { source: 'demo' });
         setAudioActive(true, 'demo');
@@ -267,6 +272,22 @@ export function bootExperienceShell({
         supportsTouchLikeInput() && !isSmartTvDevice() && touchHints.length > 0
           ? 'touch'
           : toyMeta?.recommendedCapability,
+      onPrepareYouTubeContext: async () => {
+        const shouldStagePresetContext = !loaderStarted;
+        await startLoaderIfNeeded();
+        if (shouldStagePresetContext && starterPresetId) {
+          requestMilkdropPresetSelection(starterPresetId);
+        }
+        if (shouldStagePresetContext && shouldCombineLaunchPanels) {
+          setSessionDisplayMode('setup');
+          setFocusedSessionMode('launch');
+          setSessionChromeVisibility('visible');
+          audioControlsContainer.hidden = false;
+          if (settingsContainer) {
+            settingsContainer.hidden = false;
+          }
+        }
+      },
       initialShortcut:
         requestedAudioSource === 'tab' || requestedAudioSource === 'youtube'
           ? requestedAudioSource
@@ -309,9 +330,9 @@ export function bootExperienceShell({
 
     initSystemControls(host, {
       title: 'Defaults',
-      description: 'Choose startup settings for this device.',
-      qualityLabel: 'Startup look',
-      qualityHint: 'Used before the live view opens.',
+      description: '',
+      qualityLabel: 'Quality',
+      qualityHint: '',
       defaultPresetId:
         result?.performance.recommendedQualityPresetId ?? undefined,
       variant: shouldCombineLaunchPanels ? 'embedded' : 'inline',

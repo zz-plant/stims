@@ -226,8 +226,9 @@ export class YouTubeController {
             this.player?.unMute?.();
             this.player?.setVolume?.(100);
             this.player?.playVideo?.();
-            void this.saveToRecent(reference);
-            resolve();
+            void this.saveToRecent(reference).finally(() => {
+              resolve();
+            });
           },
           onStateChange: (event) => {
             if (loadId !== this.loadSequence) {

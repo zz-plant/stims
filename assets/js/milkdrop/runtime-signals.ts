@@ -1,15 +1,7 @@
 import type { FrequencyAnalyser } from '../core/audio-handler';
 import { createBeatTracker } from '../utils/audio-beat';
-import {
-  getBandLevels,
-  getWeightedEnergy,
-  updateEnergyPeak,
-} from '../utils/audio-reactivity';
+import { createMilkdropAudioSignalProcessor } from './audio-signal-processor';
 import type { MilkdropRuntimeSignals } from './types';
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function smoothLevel(
   current: number,
@@ -24,6 +16,7 @@ function smoothLevel(
 }
 
 export function createMilkdropSignalTracker() {
+  const signalProcessor = createMilkdropAudioSignalProcessor();
   const beatTracker = createBeatTracker({
     threshold: 0.08,
     onsetThreshold: 0.016,
@@ -32,12 +25,11 @@ export function createMilkdropSignalTracker() {
   });
   let frame = 0;
   let rms = 0;
-  let energyPeak = 0.12;
   return {
     reset() {
       frame = 0;
       rms = 0;
-      energyPeak = 0.12;
+      signalProcessor.reset();
       beatTracker.reset();
     },
     update({
@@ -59,29 +51,14 @@ export function createMilkdropSignalTracker() {
           ? analyser.getSampleRate()
           : undefined;
       frame += 1;
-      const bands = getBandLevels({
+      const processedSignals = signalProcessor.update({
         analyser,
-        data: frequencyData,
         sampleRate,
+        frequencyData,
+        deltaMs,
       });
-      const rawWeightedEnergy = getWeightedEnergy(bands, {
-        weights: { bass: 0.56, mid: 0.28, treble: 0.16 },
-        boost: 1.15,
-      });
-      energyPeak = updateEnergyPeak(energyPeak, rawWeightedEnergy, {
-        decay: Math.exp(-Math.max(0, deltaMs) / 720),
-        floor: 0.12,
-      });
-      const normalizedWeightedEnergy = clamp(
-        rawWeightedEnergy / Math.max(energyPeak, 0.12),
-        0,
-        1,
-      );
-      const weightedEnergy = clamp(
-        rawWeightedEnergy * 0.45 + normalizedWeightedEnergy * 0.55,
-        0,
-        1,
-      );
+      const { bands, attenuatedBands, rawWeightedEnergy, weightedEnergy } =
+        processedSignals;
       const update = beatTracker.update(
         {
           bands: {
@@ -89,7 +66,7 @@ export function createMilkdropSignalTracker() {
             mid: bands.mid,
             treble: bands.treble,
           },
-          weightedEnergy: rawWeightedEnergy,
+          weightedEnergy: rawWeightedEnergy * 0.62 + weightedEnergy * 0.38,
           deltaMs,
         },
         time * 1000,
@@ -105,9 +82,9 @@ export function createMilkdropSignalTracker() {
       const bass = bands.bass;
       const mid = bands.mid;
       const treble = bands.treble;
-      const bassAtt = update.smoothedBands.bass;
-      const midsAtt = update.smoothedBands.mid;
-      const trebleAtt = update.smoothedBands.treble;
+      const bassAtt = attenuatedBands.bass;
+      const midsAtt = attenuatedBands.mid;
+      const trebleAtt = attenuatedBands.treble;
       const beatPulse = update.beatIntensity;
 
       return {
@@ -218,7 +195,7 @@ export function createMilkdropSignalTracker() {
         motion_enabled: 0,
         motionStrength: 0,
         motion_strength: 0,
-        frequencyData,
+        frequencyData: processedSignals.frequencyData,
         waveformData: resolvedWaveformData,
       };
     },

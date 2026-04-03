@@ -894,6 +894,7 @@ function createCompositeOutputNode(
     uniforms.causticsTex,
     uniforms.patternTex,
     uniforms.fractalTex,
+    uniforms.videoTex,
   );
 
   return Fn(() => {

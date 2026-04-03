@@ -2,10 +2,10 @@
   "version": 1,
   "parityTarget": "projectm-webgpu-certification-v1",
   "requiredBackend": "webgpu",
-  "presetCount": 27,
+  "presetCount": 23,
   "groups": {
     "bundled-shipped": {
-      "minimumCount": 8,
+      "minimumCount": 4,
       "description": "Every shipped bundled preset, including curated Stims presets and bundled external-pack imports."
     },
     "local-custom-shape": {
@@ -22,18 +22,6 @@
     }
   },
   "presets": [
-    {
-      "id": "aurora-feedback-core",
-      "title": "Aurora Feedback Core",
-      "file": "aurora-feedback-core.milk",
-      "fixtureRoot": "public/milkdrop-presets",
-      "corpusGroup": "bundled-shipped",
-      "sourceFamily": "bundled",
-      "requiredBackend": "webgpu",
-      "toleranceProfile": "default",
-      "strata": ["feedback", "warp", "bundled"],
-      "selectionReason": "Shipped Stims-curated feedback preset."
-    },
     {
       "id": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
@@ -71,18 +59,6 @@
       "selectionReason": "Bundled external-pack preset with shape-heavy geometry."
     },
     {
-      "id": "prism-drum-tunnel",
-      "title": "Prism Drum Tunnel",
-      "file": "prism-drum-tunnel.milk",
-      "fixtureRoot": "public/milkdrop-presets",
-      "corpusGroup": "bundled-shipped",
-      "sourceFamily": "bundled",
-      "requiredBackend": "webgpu",
-      "toleranceProfile": "default",
-      "strata": ["tunnel", "drums", "bundled"],
-      "selectionReason": "Shipped Stims-curated preset with distinct tunnel motion."
-    },
-    {
       "id": "krash-rovastar-cerebral-demons-stars",
       "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
       "file": "krash-rovastar-cerebral-demons-stars.milk",
@@ -93,30 +69,6 @@
       "toleranceProfile": "default",
       "strata": ["comets", "feedback", "external-pack"],
       "selectionReason": "Bundled external-pack preset with star/comet motion and feedback."
-    },
-    {
-      "id": "kinetic-grid-pulse",
-      "title": "Kinetic Grid Pulse",
-      "file": "kinetic-grid-pulse.milk",
-      "fixtureRoot": "public/milkdrop-presets",
-      "corpusGroup": "bundled-shipped",
-      "sourceFamily": "bundled",
-      "requiredBackend": "webgpu",
-      "toleranceProfile": "default",
-      "strata": ["grid", "reactive", "bundled"],
-      "selectionReason": "Shipped Stims-curated preset with explicit reactive grid structure."
-    },
-    {
-      "id": "low-motion-halo-drift",
-      "title": "Low Motion Halo Drift",
-      "file": "low-motion-halo-drift.milk",
-      "fixtureRoot": "public/milkdrop-presets",
-      "corpusGroup": "bundled-shipped",
-      "sourceFamily": "bundled",
-      "requiredBackend": "webgpu",
-      "toleranceProfile": "default",
-      "strata": ["ambient", "halos", "bundled"],
-      "selectionReason": "Shipped low-motion preset that broadens the corpus beyond high-energy captures."
     },
     {
       "id": "shape-legacy-max-slot-orbit",

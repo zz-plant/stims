@@ -150,6 +150,15 @@ function clearStageState(container: HTMLElement | null) {
     .forEach((stage) => stage.removeAttribute('data-stage-state'));
 }
 
+function shouldSuppressFloatingAudioPrompt() {
+  const shellControls = document.querySelector('[data-audio-controls]');
+  return (
+    document.documentElement.dataset.focusedSession === 'launch' &&
+    shellControls instanceof HTMLElement &&
+    !shellControls.hidden
+  );
+}
+
 function renderStatusElement(
   doc: Document,
   container: HTMLElement,
@@ -464,7 +473,11 @@ export function createToyView({
       ? 'true'
       : 'false';
 
-    if (state.audioPromptActive && state.audioPromptOptions) {
+    if (
+      state.audioPromptActive &&
+      state.audioPromptOptions &&
+      !shouldSuppressFloatingAudioPrompt()
+    ) {
       const existingPrompt = container.querySelector('.control-panel');
       if (!(existingPrompt instanceof HTMLElement)) {
         buildAudioPrompt({ container, options: state.audioPromptOptions });

@@ -173,7 +173,8 @@ export type MilkdropShaderTextureSampler =
   | 'aura'
   | 'caustics'
   | 'pattern'
-  | 'fractal';
+  | 'fractal'
+  | 'video';
 
 export type MilkdropShaderTextureBlendMode =
   | 'none'

@@ -21,6 +21,7 @@ import {
   type AdaptiveQualityState,
   createAdaptiveQualityController,
 } from '../core/services/adaptive-quality-controller.ts';
+import { isMilkdropCapturedVideoReady } from '../core/services/captured-video-texture.ts';
 import {
   type QualityPreset,
   setQualityPresetById,
@@ -34,6 +35,9 @@ import { MilkdropOverlay } from './overlay';
 import { consumeRequestedMilkdropOverlayTab } from './overlay-intent';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
 import { createMilkdropBackendFailover } from './runtime/backend-fallback';
+import { applyMilkdropCapturedVideoFrameState } from './runtime/captured-video-frame.ts';
+import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
+import { createMilkdropCapturedVideoReactivityTracker } from './runtime/captured-video-reactivity.ts';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
 import { registerAgentMilkdropRuntimeDebugHandle } from './runtime/debug-snapshot';
 import { DEFAULT_MILKDROP_PRESET_SOURCE } from './runtime/default-preset';
@@ -103,6 +107,8 @@ export function createMilkdropExperience({
     getDisabledMilkdropWebGpuOptimizationFlags(webgpuOptimizationFlags);
   const vm = createMilkdropVM(defaultPreset, webgpuOptimizationFlags);
   const signalTracker = createMilkdropSignalTracker();
+  const capturedVideoReactivityTracker =
+    createMilkdropCapturedVideoReactivityTracker();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
   });
@@ -137,6 +143,7 @@ export function createMilkdropExperience({
     videoEchoEnabled: false,
   };
   const lifetime = createMilkdropRuntimeLifetime();
+  const capturedVideoOverlay = createMilkdropCapturedVideoOverlay();
   const disposePostprocessingPipeline = () => {
     postprocessingPipeline?.dispose();
     postprocessingPipeline = null;
@@ -529,6 +536,7 @@ export function createMilkdropExperience({
         vm.setRenderBackend(activeBackend);
         disposePostprocessingPipeline();
         adapter?.dispose();
+        capturedVideoOverlay.attach(nextRuntime.toy.camera);
         adapter = createMilkdropRendererAdapter({
           scene: nextRuntime.toy.scene,
           camera: nextRuntime.toy.camera,
@@ -626,6 +634,9 @@ export function createMilkdropExperience({
         Object.assign(mergedSignals, options.signalOverrides);
       }
       const signals = mergedSignals as MilkdropRuntimeSignals;
+      const capturedVideoReactivity = capturedVideoReactivityTracker.update({
+        signals,
+      });
 
       if (
         shouldAutoAdvancePreset({
@@ -659,12 +670,20 @@ export function createMilkdropExperience({
 
       const renderFrameState = applyMilkdropEnhancedEffectsPolicy({
         frameState: buildRenderFrameState({
-          frameState: currentFrameState,
+          frameState: applyMilkdropCapturedVideoFrameState({
+            frameState: currentFrameState,
+            capturedVideoReady: isMilkdropCapturedVideoReady(),
+            reactivity: capturedVideoReactivity,
+          }),
           shaderQuality: frame.performance.shaderQuality,
           lowQualityPostOverride,
         }),
         shaderQuality: frame.performance.shaderQuality,
         qualityPresetId: quality.activeQuality.id,
+      });
+      capturedVideoOverlay.update({
+        camera: runtime.toy.camera,
+        reactivity: capturedVideoReactivity,
       });
 
       const renderStartAt = performance.now();
@@ -737,7 +756,9 @@ export function createMilkdropExperience({
       overlay?.dispose();
       overlay = null;
       session.dispose();
+      capturedVideoReactivityTracker.reset();
       disposePostprocessingPipeline();
+      capturedVideoOverlay.dispose();
       adapter?.dispose();
       adapter = null;
       adaptiveQualityUnsubscribe?.();

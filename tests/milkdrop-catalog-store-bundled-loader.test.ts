@@ -27,9 +27,9 @@ test('bundled catalog loader appends certification-only presets when the certifi
           JSON.stringify({
             presets: [
               {
-                id: 'aurora-feedback-core',
-                title: 'Aurora Feedback Core',
-                file: '/milkdrop-presets/aurora-feedback-core.milk',
+                id: 'rovastar-parallel-universe',
+                title: 'Rovastar - Parallel Universe',
+                file: '/milkdrop-presets/rovastar-parallel-universe.milk',
               },
             ],
           }),
@@ -67,9 +67,9 @@ test('bundled catalog loader appends certification-only presets when the certifi
           JSON.stringify({
             presets: [
               {
-                id: 'aurora-feedback-core',
-                title: 'Aurora Feedback Core',
-                file: 'aurora-feedback-core.milk',
+                id: 'rovastar-parallel-universe',
+                title: 'Rovastar - Parallel Universe',
+                file: 'rovastar-parallel-universe.milk',
                 fixtureRoot: 'public/milkdrop-presets',
                 sourceFamily: 'bundled',
                 strata: ['feedback'],
@@ -100,7 +100,7 @@ test('bundled catalog loader appends certification-only presets when the certifi
   const entries = await loader.getBundledCatalog();
 
   expect(entries.map((entry) => entry.id)).toEqual([
-    'aurora-feedback-core',
+    'rovastar-parallel-universe',
     '250-wavecode',
     '100-square',
   ]);
@@ -133,9 +133,9 @@ test('bundled catalog loader stays on the shipped catalog when no certification 
           JSON.stringify({
             presets: [
               {
-                id: 'aurora-feedback-core',
-                title: 'Aurora Feedback Core',
-                file: '/milkdrop-presets/aurora-feedback-core.milk',
+                id: 'rovastar-parallel-universe',
+                title: 'Rovastar - Parallel Universe',
+                file: '/milkdrop-presets/rovastar-parallel-universe.milk',
               },
             ],
           }),
@@ -154,6 +154,8 @@ test('bundled catalog loader stays on the shipped catalog when no certification 
   });
   const entries = await loader.getBundledCatalog();
 
-  expect(entries.map((entry) => entry.id)).toEqual(['aurora-feedback-core']);
+  expect(entries.map((entry) => entry.id)).toEqual([
+    'rovastar-parallel-universe',
+  ]);
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });

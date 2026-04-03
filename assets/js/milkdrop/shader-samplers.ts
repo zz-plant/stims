@@ -13,6 +13,7 @@ export const MILKDROP_SHADER_TEXTURE_SAMPLERS = new Set<
   'caustics',
   'pattern',
   'fractal',
+  'video',
 ]);
 
 const MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS =

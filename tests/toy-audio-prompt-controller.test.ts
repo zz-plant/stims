@@ -4,6 +4,7 @@ import { createToyAudioPromptController } from '../assets/js/loader/toy-audio-pr
 describe('toy audio prompt controller', () => {
   beforeEach(() => {
     delete document.body.dataset.audioActive;
+    delete document.documentElement.dataset.focusedSession;
     document.body.innerHTML = '<div id="active-toy-container"></div>';
   });
 
@@ -58,6 +59,32 @@ describe('toy audio prompt controller', () => {
     expect(active).toBe(true);
     expect(options.preferDemoAudio).toBe(true);
     expect(options.starterTips).toEqual(['Try demo first']);
+  });
+
+  test('suppresses the floating prompt when the launch shell audio controls are already visible', () => {
+    document.documentElement.dataset.focusedSession = 'launch';
+    document.body.innerHTML =
+      '<div id="active-toy-container"></div><div data-audio-controls><div data-existing="true"></div></div>';
+
+    const showAudioPrompt = mock();
+    const controller = createToyAudioPromptController({
+      view: { showAudioPrompt },
+    });
+
+    controller.maybeShowPrompt({
+      launchResult: {
+        instance: {},
+        audioStarterAvailable: true,
+        supportedSources: ['microphone', 'demo'],
+        startAudio: async () => {},
+      },
+      preferDemoAudio: false,
+      container: document.getElementById('active-toy-container'),
+      starterTips: ['Try mic first'],
+    });
+
+    expect(showAudioPrompt).not.toHaveBeenCalled();
+    delete document.documentElement.dataset.focusedSession;
   });
 
   test('suppresses the floating prompt while shell-managed audio startup is already pending', () => {

@@ -11,6 +11,7 @@ import {
 } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { RenderTarget, TSL } from 'three/webgpu';
+import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import {
   WEBGL_MILKDROP_BACKEND_BEHAVIOR,
   WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
@@ -71,6 +72,7 @@ const AUX_TEXTURE_SPECS = {
 >;
 
 type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
+type SharedAuxTextureName = AuxTextureName | 'video';
 
 const sharedMilkdropTextureCache = new Map<string, Texture>();
 const milkdropTextureLoader = new TextureLoader();
@@ -144,7 +146,8 @@ export function getSharedMilkdropAuxTextures() {
       AUX_TEXTURE_SPECS.fractal.fileName,
       AUX_TEXTURE_SPECS.fractal.colorTexture,
     ),
-  } satisfies Record<AuxTextureName, Texture>;
+    video: getSharedMilkdropCapturedVideoTexture(),
+  } satisfies Record<SharedAuxTextureName, Texture>;
 }
 
 export function createFeedbackRenderTarget(
@@ -205,6 +208,7 @@ export function createCompositeUniforms(
     causticsTex: texture(auxTextures.caustics),
     patternTex: texture(auxTextures.pattern),
     fractalTex: texture(auxTextures.fractal),
+    videoTex: texture(auxTextures.video),
     mixAlpha: uniform(0.18),
     videoEchoAlpha: uniform(0),
     zoom: uniform(1.02),
@@ -301,6 +305,7 @@ export function createSampleAuxTextureNode(
   causticsTexNode: ReturnType<typeof texture>,
   patternTexNode: ReturnType<typeof texture>,
   fractalTexNode: ReturnType<typeof texture>,
+  videoTexNode: ReturnType<typeof texture>,
 ) {
   const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
@@ -325,7 +330,11 @@ export function createSampleAuxTextureNode(
                 select(
                   source.lessThan(6.5),
                   patternTexNode.sample(sampleUv),
-                  fractalTexNode.sample(sampleUv),
+                  select(
+                    source.lessThan(7.5),
+                    fractalTexNode.sample(sampleUv),
+                    videoTexNode.sample(sampleUv),
+                  ),
                 ),
               ),
             ),

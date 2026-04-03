@@ -176,6 +176,7 @@ export function initSystemControls(
   } = options;
 
   const resolvedDefaultPresetId = resolveDefaultPresetId(defaultPresetId);
+  const compactCopy = variant === 'embedded';
   applySmartTvDefaults();
 
   const panel = new PersistentSettingsPanel(host);
@@ -191,7 +192,7 @@ export function initSystemControls(
     presets: qualityPresets,
     defaultPresetId: resolvedDefaultPresetId,
     label: qualityLabel,
-    hint: qualityHint,
+    hint: compactCopy ? '' : qualityHint,
     showScopeHint: showDetailedQualitySummary,
     showChangeSummary: showDetailedQualitySummary,
     onChange: onQualityPresetChange,
@@ -232,8 +233,9 @@ export function initSystemControls(
       panel.addToggle({
         label,
         defaultValue: visualBehaviorState[key],
-        description:
-          key === 'idleEnabled'
+        description: compactCopy
+          ? undefined
+          : key === 'idleEnabled'
             ? 'Keep motion active when audio is quiet.'
             : key === 'paletteCycle'
               ? 'Slowly shift colors over time.'
@@ -248,7 +250,9 @@ export function initSystemControls(
 
   panel.addToggle({
     label: 'Safe mode',
-    description: 'Use safer rendering for older hardware.',
+    description: compactCopy
+      ? undefined
+      : 'Use safer rendering for older hardware.',
     defaultValue: renderPreferences.compatibilityMode,
     onChange: (value) => {
       setCompatibilityMode(value);
@@ -257,7 +261,9 @@ export function initSystemControls(
 
   panel.addToggle({
     label: 'Tilt',
-    description: 'Enable tilt controls on supported visualizers.',
+    description: compactCopy
+      ? undefined
+      : 'Enable tilt controls on supported visualizers.',
     defaultValue: getActiveMotionPreference().enabled,
     onChange: (value) => {
       setMotionPreference({ enabled: value });
@@ -268,12 +274,14 @@ export function initSystemControls(
     const advancedHost = createSectionHost(
       panel,
       'Rendering',
-      'Fine-tune rendering when needed.',
+      compactCopy ? undefined : 'Fine-tune rendering when needed.',
       true,
     );
     const resolutionRow = panel.addSection(
       'Resolution scale',
-      'Lower values ease GPU load; higher values sharpen detail.',
+      compactCopy
+        ? undefined
+        : 'Lower values ease GPU load; higher values sharpen detail.',
       undefined,
       advancedHost,
     );
@@ -301,7 +309,9 @@ export function initSystemControls(
 
     const pixelRatioRow = panel.addSection(
       'Pixel ratio cap',
-      'Caps effective DPI to balance clarity and thermal load.',
+      compactCopy
+        ? undefined
+        : 'Caps effective DPI to balance clarity and thermal load.',
       undefined,
       advancedHost,
     );

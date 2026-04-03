@@ -1,4 +1,5 @@
 import { setAudioActive } from '../core/agent-api.ts';
+import { clearMilkdropCapturedVideoStream } from '../core/services/captured-video-texture.ts';
 import type { ToyLaunchResult } from '../core/toy-launch.ts';
 
 type LoaderView = {
@@ -16,6 +17,12 @@ type LoaderView = {
 
 export function createToyAudioPromptController({ view }: { view: LoaderView }) {
   const hasActiveAudio = () => document.body.dataset.audioActive === 'true';
+  const hasVisibleShellManagedAudioControls = () => {
+    const shellControls = document.querySelector('[data-audio-controls]');
+    return shellControls instanceof HTMLElement && !shellControls.hidden;
+  };
+  const isShellLaunchContext = () =>
+    document.documentElement.dataset.focusedSession === 'launch';
   const hasShellManagedAudioStartupInFlight = () =>
     document.querySelector(
       '[data-audio-controls] [data-loading], [data-audio-controls] [aria-busy="true"]',
@@ -64,7 +71,8 @@ export function createToyAudioPromptController({ view }: { view: LoaderView }) {
       !launchResult.audioStarterAvailable ||
       !launchResult.startAudio ||
       hasActiveAudio() ||
-      hasShellManagedAudioStartupInFlight()
+      hasShellManagedAudioStartupInFlight() ||
+      (isShellLaunchContext() && hasVisibleShellManagedAudioControls())
     ) {
       return;
     }
@@ -76,10 +84,12 @@ export function createToyAudioPromptController({ view }: { view: LoaderView }) {
       starterTips,
       onRequestMicrophone: async () => {
         lastAudioSource = 'microphone';
+        clearMilkdropCapturedVideoStream();
         await launchResult.startAudio?.({ source: 'microphone' });
       },
       onRequestDemoAudio: async () => {
         lastAudioSource = 'demo';
+        clearMilkdropCapturedVideoStream();
         await launchResult.startAudio?.({ source: 'demo' });
       },
       onSuccess: () => {

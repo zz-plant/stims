@@ -17,6 +17,7 @@ import {
   Vector2,
   WebGLRenderTarget,
 } from 'three';
+import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { disposeMaterial } from '../utils/three-dispose';
 import type {
   FeedbackBackendProfile,
@@ -69,7 +70,7 @@ const AUX_TEXTURE_SPECS = {
 
 type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
 
-type SharedAuxTextureMap = Record<AuxTextureName, Texture>;
+type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 
 const milkdropTextureLoader = new TextureLoader();
 const sharedMilkdropTextureCache = new Map<string, Texture>();
@@ -135,6 +136,7 @@ function getSharedAuxTextures(): SharedAuxTextureMap {
       AUX_TEXTURE_SPECS.fractal.fileName,
       AUX_TEXTURE_SPECS.fractal.colorTexture,
     ),
+    video: getSharedMilkdropCapturedVideoTexture(),
   };
 }
 
@@ -284,6 +286,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         causticsTex: { value: this.auxTextures.caustics },
         patternTex: { value: this.auxTextures.pattern },
         fractalTex: { value: this.auxTextures.fractal },
+        videoTex: { value: this.auxTextures.video },
         mixAlpha: { value: 0.18 },
         videoEchoAlpha: { value: 0 },
         zoom: { value: 1.02 },
@@ -356,6 +359,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform sampler2D causticsTex;
         uniform sampler2D patternTex;
         uniform sampler2D fractalTex;
+        uniform sampler2D videoTex;
         uniform float mixAlpha;
         uniform float videoEchoAlpha;
         uniform float zoom;
@@ -459,7 +463,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           if (source < 6.5) {
             return texture2D(patternTex, uv);
           }
-          return texture2D(fractalTex, uv);
+          if (source < 7.5) {
+            return texture2D(fractalTex, uv);
+          }
+          return texture2D(videoTex, uv);
         }
 
         vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
