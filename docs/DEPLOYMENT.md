@@ -6,14 +6,14 @@ This guide covers how to build Stims, validate the production bundle locally, an
 
 | Track | Use when | Primary path |
 | --- | --- | --- |
-| **Track A (default): Static site on Cloudflare Pages** | Nearly all toy/site releases. | Push a branch for preview, merge to `main` for production. Use the manual Wrangler scripts only for fallback/hotfix deploys. |
+| **Track A (default): Static site on Cloudflare Pages** | Nearly all toy/site releases. | GitHub Actions builds `dist/` once, uploads it directly to Pages for PR previews and `main` production, and keeps the local Wrangler scripts as fallback/hotfix tools. |
 | **Track B (optional): MCP Worker transport** | You changed MCP HTTP/WebSocket transport behavior or Worker-only MCP deployment settings. | Track A flow for the site plus `bun run mcp:check` and `bun run mcp:deploy` when you need the remote MCP endpoint updated. |
 
 If you only need to deploy the toy site, follow Track A and skip the Worker sections.
 
 ## Track A quick path (default production flow)
 
-The `stims` Pages project is already connected to GitHub, so the normal production path is Git-driven instead of a local `wrangler pages deploy`:
+The default production path is now repo-owned GitHub Actions direct upload instead of relying on the Cloudflare dashboard build:
 
 1. Run the quality gate:
 
@@ -39,10 +39,10 @@ The `stims` Pages project is already connected to GitHub, so the normal producti
    bun run preview
    ```
 
-5. Push the branch and open or update a pull request. Cloudflare Pages will build a preview deployment automatically.
-6. Merge to `main` after the preview is good. Cloudflare Pages will promote a new production deployment automatically.
+5. Push the branch and open or update a pull request. The `Deploy Pages preview` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) will upload the checked build artifact to Cloudflare Pages.
+6. Merge to `main` after the preview is good. The `Deploy Pages production` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) will upload that branch’s checked build artifact to the production Pages project.
 
-Use the manual Wrangler deploy scripts later in this guide only when you need to bypass the dashboard build, redeploy an existing `dist/`, or ship from CI outside the built-in Git integration.
+Use the manual Wrangler deploy scripts later in this guide only when you need to bypass GitHub Actions, redeploy an existing `dist/`, or ship from a local/alternative CI environment.
 
 ## Build the Site
 
@@ -111,7 +111,7 @@ Cloudflare Pages can read caching rules from `public/_headers`, which Vite copie
 
 ## Cloudflare Pages Configuration
 
-The repository now checks in the Pages Wrangler config in [`wrangler.toml`](../wrangler.toml). That file is the source of truth for Pages settings that Wrangler manages for this project, including the checked-in compatibility dates and placement settings. Keep the dashboard build command and production branch aligned with the repo, but do not rely on the dashboard alone for Pages runtime/config drift.
+The repository now checks in the Pages Wrangler config in [`wrangler.toml`](../wrangler.toml). That file is the source of truth for Pages settings that Wrangler manages for this project, including the checked-in compatibility dates and placement settings. Keep the production branch aligned with the repo, but do not rely on the dashboard alone for Pages runtime/config drift.
 
 If you intentionally change Pages configuration in the dashboard, pull the generated config back into the repo before you merge the next deployable change:
 
@@ -121,25 +121,28 @@ bunx wrangler pages download config stims --force
 
 Review the resulting diff before committing it. This prevents the repo from silently drifting away from the live Pages project configuration.
 
-Cloudflare Pages still reads the build command from the project settings in the dashboard, so do **not** add a `[build]` table to [`wrangler.toml`](../wrangler.toml). Configure the build command (for example, `bun run build`) directly in Pages, or rely on `CF_PAGES=1` with the existing install script to generate `dist/` during install. If the install step already populated `dist/` (the repo’s build script checks for this), the subsequent build command will no-op on Pages to avoid a second Vite build.
+The checked-in config intentionally omits the optional `$schema` header because Cloudflare Pages builders can lag the latest local Wrangler parser and reject otherwise valid config when they encounter it.
 
-Pages builders occasionally default to older Bun versions, which causes `bun install` to fail against the `bun.lock` that tracks Bun `1.3.8`. This repository includes a `.bun-version` file that Cloudflare Pages automatically detects, ensuring the install step always runs with a compatible runtime. If you need to override this, you can set the `BUN_VERSION=1.3.8` environment variable.
+### GitHub Actions direct upload
 
-> **Install step:** Make sure devDependencies are present so `vite` exists at build time. In Cloudflare Pages, set the install command to `bun install` and set `BUN_INSTALL_DEV=true` to mirror local installs.
+The default Pages deploy path lives in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml):
 
-### Automatic Git deploys
+- `quality` builds and validates the production `dist/` bundle once.
+- The workflow archives that checked bundle and reuses it for Pages deploys, so preview and production uploads do not rebuild with different dependency state.
+- `deploy_preview` uploads PR builds with `bun run pages:deploy:preview:reuse`.
+- `deploy_production` uploads `main` with `bun run pages:deploy:production:reuse` after both the quality and integration jobs pass.
 
-The existing Pages project uses Git integration, which means:
+One-time setup for the direct-upload path:
 
-- Pull requests get branch previews automatically.
-- Pushes to `main` create production deployments automatically.
-- The Cloudflare dashboard remains the source of truth for the Pages build command and production branch.
+1. Add `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` as GitHub Actions secrets.
+2. Use a Cloudflare API token with `Account / Cloudflare Pages / Edit`.
+3. Once GitHub Actions deploys are confirmed working, disable automatic production deployments in the Cloudflare Pages Git integration settings to avoid duplicate production deploys.
 
-That is the default deployment path for this repo.
+If those secrets are absent, the deploy jobs skip cleanly and the repo falls back to manual/local Wrangler deploys.
 
 ### Manual Pages CLI fallback flows
 
-Use the dedicated scripts when you intentionally need a manual deploy. They now run the same repo-owned Wrangler config as Cloudflare Pages, attach commit metadata automatically, and make preview vs production explicit:
+Use the dedicated scripts when you intentionally need a manual deploy. They run the same repo-owned Wrangler config as the CI flow, attach commit metadata automatically, and make preview vs production explicit:
 
 ```bash
 # Build and serve locally with Wrangler Pages dev
@@ -204,9 +207,9 @@ Expected artifacts and checkpoints:
 
 ## Preview-per-PR workflow
 
-Cloudflare Pages issues a unique preview deployment for each pull request. Every push to the PR rebuilds `dist/` and publishes a new preview URL. Use that URL to validate the production bundle before merging:
+Cloudflare Pages issues a unique preview deployment for each pull request when the GitHub Actions preview job runs. Every push to the PR rebuilds `dist/`, uploads a fresh preview bundle, and publishes a new preview URL. Use that URL to validate the production bundle before merging:
 
-1. Open the Pages preview link from the PR status or Cloudflare dashboard.
+1. Open the Pages preview link from the `Deploy Pages preview` job logs or the Cloudflare dashboard.
 2. Confirm that all static assets load without 404s and that console logs remain clean.
 3. Smoke-test a representative sample of HTML entry points (see below) to ensure routing and asset resolution work in the CDN environment.
 

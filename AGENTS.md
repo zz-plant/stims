@@ -19,6 +19,7 @@ You're about to code on Stims. Before you dive into docs, grab these three thing
 
 - **Package manager:** Bun (use `bun install` for dependency updates, reserve `bun install --frozen-lockfile` for reproducible/CI installs, and run scripts with `bun run ...`).
 - **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing.
+- **Cloudflare Pages deploy default:** GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) own preview and production deploys; keep local `pages:deploy:*` scripts as the manual fallback.
 - **Commit metadata:** use sentence case commit titles with no trailing period.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
 
