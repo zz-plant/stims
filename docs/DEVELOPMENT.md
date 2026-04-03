@@ -12,7 +12,7 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
-`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` / `loader` / `bootstrap` / `core` / `ui` / `utils` dependency directions in addition to lint, typecheck, and tests.
+`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
 
 ## Main scripts
 
@@ -27,6 +27,7 @@ Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer change
 | SEO surface check | `bun run check:seo` |
 | Architecture boundary check | `bun run check:architecture` |
 | Run tests | `bun run test` |
+| Run legacy shell compatibility tests | `bun run test:legacy-frontend` |
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
 
@@ -114,6 +115,13 @@ This rewrites `public/milkdrop-presets/catalog.json` so presets with measured vi
 - The primary app entrypoint is `index.html` (`/`).
 - `milkdrop/index.html` (`/milkdrop/`) is a compatibility alias that redirects into the root app route.
 - Presets are part of one visualizer product, not separate first-class toys.
+
+## Frontend boundaries
+
+- `assets/js/app.ts` and `assets/js/frontend/*` are the active product frontend.
+- `assets/js/milkdrop/*` remains the visual engine behind the adapter seam.
+- `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/library-view/*`, and `assets/js/bootstrap/*` are legacy compatibility modules.
+- New product work should not add fresh route ownership or UI flows to those legacy modules.
 
 ## Docs to keep aligned
 

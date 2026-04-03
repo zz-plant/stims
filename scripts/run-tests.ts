@@ -4,9 +4,28 @@ import path from 'node:path';
 const TEST_DIR = path.resolve('tests');
 const TEST_FILE_PATTERN = /\.test\.(?:ts|js)$/;
 const INTEGRATION_TEST = 'tests/agent-integration.test.ts';
+const LEGACY_FRONTEND_TESTS = [
+  'tests/flow-timer.test.ts',
+  'tests/haptics-controller.test.ts',
+  'tests/init-milkdrop-showcase.test.ts',
+  'tests/init-quickstart.test.ts',
+  'tests/library-dom-cache.test.ts',
+  'tests/library-filter-state.test.ts',
+  'tests/library-view-render-list.test.ts',
+  'tests/library-view-state-controller.test.ts',
+  'tests/loader.test.js',
+  'tests/router.test.js',
+  'tests/session-tracking.test.ts',
+  'tests/toy-audio-prompt-controller.test.ts',
+  'tests/toy-launch.test.ts',
+  'tests/toy-module-loader.test.ts',
+  'tests/toy-page-bootstrap.test.ts',
+  'tests/toy-view.test.js',
+];
 
 const PROFILE_FILE_LISTS: Record<string, string[]> = {
   integration: [INTEGRATION_TEST],
+  'legacy-frontend': LEGACY_FRONTEND_TESTS,
   compat: [
     'tests/milkdrop-corpus-compat.test.ts',
     'tests/milkdrop-parity.test.ts',
@@ -23,11 +42,10 @@ const PROFILE_FILE_LISTS: Record<string, string[]> = {
     'tests/milkdrop-projectm-compat.test.ts',
     'tests/milkdrop-webgpu-optimization-flags.test.ts',
     'tests/milkdrop-webgpu-rollout.test.ts',
-    'tests/loader.test.js',
-    'tests/toy-view.test.js',
     'tests/render-preferences.test.ts',
     'tests/postprocessing.test.ts',
     'tests/party-mode.test.ts',
+    ...LEGACY_FRONTEND_TESTS,
   ],
 };
 
@@ -99,7 +117,7 @@ async function resolveProfileFiles(profile: string): Promise<string[]> {
   }
 
   throw new Error(
-    `Unknown test profile "${profile}". Expected one of: all, unit, integration, compat, compat-full.`,
+    `Unknown test profile "${profile}". Expected one of: all, unit, integration, legacy-frontend, compat, compat-full.`,
   );
 }
 

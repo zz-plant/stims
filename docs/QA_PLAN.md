@@ -45,7 +45,12 @@ Use Bun to match the repository tooling:
 
 - Run the focused workspace/session regression suites:
   ```bash
-  bun run test tests/agent-integration.test.ts tests/audio-controls.test.ts tests/library-filter-state.test.ts
+  bun run test tests/frontend-url-state.test.ts tests/agent-integration.test.ts tests/audio-controls.test.ts
+  ```
+
+- Run the legacy compatibility shell suites only when you touch the old loader/bootstrap/view stack:
+  ```bash
+  bun run test:legacy-frontend
   ```
 
 - For a quick server wiring check before pushing UI changes:

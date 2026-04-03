@@ -94,8 +94,10 @@ This document describes the shipped React workspace frontend and the preserved M
 The following modules still exist for compatibility coverage and lower-level tests, but they are not the root frontend architecture anymore:
 
 - `assets/js/loader.ts`
+- `assets/js/router.ts`
 - `assets/js/toy-view.ts`
 - `assets/js/library-view.js`
+- `assets/js/library-view/*`
 - `assets/js/bootstrap/*`
 
 Current product-facing frontend work should prefer:
@@ -103,4 +105,3 @@ Current product-facing frontend work should prefer:
 - `assets/js/app.ts`
 - `assets/js/frontend/*`
 - `assets/js/frontend/engine/milkdrop-engine-adapter.ts`
-

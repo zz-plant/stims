@@ -14,6 +14,9 @@ describe('architecture boundary rules', () => {
       'app',
     );
     expect(
+      classifyArchitectureLayer(workspacePath('assets/js/frontend/App.tsx')),
+    ).toBe('frontend');
+    expect(
       classifyArchitectureLayer(
         workspacePath('assets/js/data/toy-manifest.ts'),
       ),
@@ -22,7 +25,10 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(
         workspacePath('assets/js/bootstrap/home-page.ts'),
       ),
-    ).toBe('bootstrap');
+    ).toBe('legacy');
+    expect(
+      classifyArchitectureLayer(workspacePath('assets/js/library-view.js')),
+    ).toBe('legacy');
     expect(
       classifyArchitectureLayer(workspacePath('assets/js/core/web-toy.ts')),
     ).toBe('core');
@@ -74,7 +80,7 @@ describe('architecture boundary rules', () => {
   test('treats data as a leaf layer', () => {
     expect(
       isArchitectureDependencyAllowed({
-        sourceLayer: 'bootstrap',
+        sourceLayer: 'legacy',
         targetLayer: 'data',
         targetPath: workspacePath('assets/js/data/toy-manifest.ts'),
       }),
@@ -91,7 +97,7 @@ describe('architecture boundary rules', () => {
   test('keeps the milkdrop seam narrow', () => {
     expect(
       isArchitectureDependencyAllowed({
-        sourceLayer: 'bootstrap',
+        sourceLayer: 'legacy',
         targetLayer: 'milkdrop-public',
         targetPath: workspacePath(
           'assets/js/milkdrop/public/launch-intents.ts',
@@ -100,7 +106,7 @@ describe('architecture boundary rules', () => {
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
-        sourceLayer: 'bootstrap',
+        sourceLayer: 'legacy',
         targetLayer: 'milkdrop',
         targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
       }),
@@ -112,6 +118,23 @@ describe('architecture boundary rules', () => {
         targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
       }),
     ).toBe(true);
+  });
+
+  test('lets the app boot only through the shipped frontend entrypoints', () => {
+    expect(
+      isArchitectureDependencyAllowed({
+        sourceLayer: 'app',
+        targetLayer: 'frontend',
+        targetPath: workspacePath('assets/js/frontend/App.tsx'),
+      }),
+    ).toBe(true);
+    expect(
+      isArchitectureDependencyAllowed({
+        sourceLayer: 'app',
+        targetLayer: 'legacy',
+        targetPath: workspacePath('assets/js/loader.ts'),
+      }),
+    ).toBe(false);
   });
 
   test('rejects utils depending on core or toy runtime code', () => {

@@ -17,7 +17,7 @@
 - `assets/js/frontend/engine/` — strict engine seam between the React shell and MilkDrop runtime.
 - `assets/js/core/` — shared renderer, audio, settings, automation, and capability systems.
 - `assets/js/milkdrop/` — preset compiler, VM, runtime, editor, overlay, and catalog behavior.
-- `assets/js/loader.ts` and `assets/js/toy-view.ts` — legacy compatibility internals still covered by tests.
+- `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, and `assets/js/bootstrap/` — legacy compatibility internals still covered by `bun run test:legacy-frontend`.
 - `assets/data/toys.json` — compatibility manifest source for shipped entry metadata.
 - `public/milkdrop-presets/` — bundled preset corpus and catalog assets.
 

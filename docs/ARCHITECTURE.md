@@ -9,7 +9,7 @@ This document describes the current shipped frontend architecture for Stims afte
 - `assets/js/frontend/*` owns route state, workspace UI, and the engine adapter seam.
 - `assets/js/milkdrop/*` remains the imperative visualizer engine, overlay, compiler, and catalog runtime.
 - `assets/js/core/*` owns shared renderer, audio, quality, persistence, and input systems.
-- `assets/js/loader.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, and `assets/js/bootstrap/*` remain as compatibility and test-support internals for older non-root shell flows. They are not the production root app surface anymore.
+- `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/library-view/*`, and `assets/js/bootstrap/*` are legacy compatibility/test-support internals for older non-root shell flows. They are not the production root app surface anymore.
 
 ## Runtime map
 
@@ -22,7 +22,7 @@ flowchart LR
   Adapter["milkdrop-engine-adapter.ts<br/>strict engine seam"]
   Core["assets/js/core/*<br/>renderer + audio + settings"]
   Milkdrop["assets/js/milkdrop/*<br/>runtime + overlay + compiler"]
-  Legacy["loader.ts / toy-view.ts / bootstrap/*<br/>compatibility internals"]
+  Legacy["loader.ts / router.ts / toy-view.ts / library-view.* / bootstrap/*<br/>compatibility internals"]
 
   Entry --> App
   Alias --> App
@@ -115,8 +115,10 @@ Important boundary rule:
 These modules still exist and are tested, but they are not the production root app surface:
 
 - [`assets/js/loader.ts`](../assets/js/loader.ts)
+- [`assets/js/router.ts`](../assets/js/router.ts)
 - [`assets/js/toy-view.ts`](../assets/js/toy-view.ts)
 - [`assets/js/library-view.js`](../assets/js/library-view.js)
+- [`assets/js/library-view/*`](../assets/js/library-view)
 - [`assets/js/bootstrap/*`](../assets/js/bootstrap)
 
 Treat them as compatibility-support code for:
@@ -140,4 +142,10 @@ The architecture boundary gate remains:
 
 ```bash
 bun run check:architecture
+```
+
+When changing compatibility-only shell code, also run:
+
+```bash
+bun run test:legacy-frontend
 ```
