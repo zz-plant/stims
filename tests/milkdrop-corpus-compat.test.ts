@@ -51,7 +51,6 @@ const LOCAL_SHAPE_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> =
   };
 
 const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
-  'aurora-feedback-core.milk': { webgl: 'supported', webgpu: 'supported' },
   'eos-glowsticks-v2-03-music.milk': {
     webgl: 'supported',
     webgpu: 'supported',
@@ -74,7 +73,6 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
       'nmotionvectorsy',
     ],
   },
-  'kinetic-grid-pulse.milk': { webgl: 'supported', webgpu: 'supported' },
   'krash-rovastar-cerebral-demons-stars.milk': {
     webgl: 'supported',
     webgpu: 'supported',
@@ -86,8 +84,6 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
       'nmotionvectorsy',
     ],
   },
-  'low-motion-halo-drift.milk': { webgl: 'supported', webgpu: 'supported' },
-  'prism-drum-tunnel.milk': { webgl: 'supported', webgpu: 'supported' },
   'rovastar-parallel-universe.milk': {
     webgl: 'supported',
     webgpu: 'supported',
@@ -140,7 +136,7 @@ describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(8);
+    expect(corpus.length).toBe(4);
 
     const unexpected = corpus.filter(({ file, compiled }) => {
       const expectation =

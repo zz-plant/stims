@@ -3,10 +3,12 @@ import { createToyView } from '../assets/js/toy-view.ts';
 
 describe('toy view helpers', () => {
   beforeEach(() => {
+    delete document.documentElement.dataset.focusedSession;
     document.body.innerHTML = '<div id="toy-list"></div>';
   });
 
   afterEach(() => {
+    delete document.documentElement.dataset.focusedSession;
     document.body.innerHTML = '';
   });
 
@@ -152,6 +154,26 @@ describe('toy view helpers', () => {
 
     view.showAudioPrompt(false);
     expect(container?.dataset.audioPromptActive).toBe('false');
+  });
+
+  test('suppresses the floating audio prompt while launch-shell controls are visible', () => {
+    document.documentElement.dataset.focusedSession = 'launch';
+    const shellControls = document.createElement('div');
+    shellControls.dataset.audioControls = 'true';
+    document.body.appendChild(shellControls);
+
+    const view = createToyView();
+    view.showActiveToyView();
+    view.showAudioPrompt(true, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+    });
+
+    const container = document.getElementById('active-toy-container');
+    expect(container?.dataset.audioPromptActive).toBe('true');
+    expect(container?.querySelector('.control-panel')).toBeNull();
+
+    delete document.documentElement.dataset.focusedSession;
   });
 
   test('prepares and completes staged toy transitions', async () => {

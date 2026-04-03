@@ -15,18 +15,18 @@ test('unmeasured bundled presets degrade to non-visual published fidelity', () =
   expect(
     syncBundledCatalogPresetFidelity(
       {
-        id: 'aurora-feedback-core',
-        title: 'Aurora Feedback Core',
-        file: '/milkdrop-presets/aurora-feedback-core.milk',
+        id: 'rovastar-parallel-universe',
+        title: 'Rovastar - Parallel Universe',
+        file: '/milkdrop-presets/rovastar-parallel-universe.milk',
         expectedFidelityClass: 'exact',
         visualEvidenceTier: 'visual',
       },
       undefined,
     ),
   ).toEqual({
-    id: 'aurora-feedback-core',
-    title: 'Aurora Feedback Core',
-    file: '/milkdrop-presets/aurora-feedback-core.milk',
+    id: 'rovastar-parallel-universe',
+    title: 'Rovastar - Parallel Universe',
+    file: '/milkdrop-presets/rovastar-parallel-universe.milk',
     expectedFidelityClass: 'partial',
     visualEvidenceTier: 'runtime',
     visualCertification: {

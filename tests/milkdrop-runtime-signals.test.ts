@@ -111,6 +111,61 @@ describe('milkdrop runtime signals', () => {
     expect(update.rms).toBeLessThan(0.4);
   });
 
+  test('keeps attenuation followers energized after a bass transient', () => {
+    const tracker = createMilkdropSignalTracker();
+
+    tracker.update({
+      time: 0,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: filledData(16),
+      waveformData: waveformData(),
+    });
+
+    const pulse = tracker.update({
+      time: 0.18,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: pulseData({ bass: 1, mid: 0.22, treble: 0.1 }),
+      waveformData: waveformData(),
+    });
+    const release = tracker.update({
+      time: 0.24,
+      deltaMs: 16.7,
+      analyser: null,
+      frequencyData: pulseData({ bass: 0.16, mid: 0.12, treble: 0.08 }),
+      waveformData: waveformData(),
+    });
+
+    expect(pulse.bassAtt).toBeGreaterThan(0.25);
+    expect(release.bassAtt).toBeGreaterThan(release.bass);
+    expect(release.bassAtt).toBeLessThan(pulse.bassAtt);
+  });
+
+  test('builds MilkDrop spectrum samples from analyser-owned raw data', () => {
+    const tracker = createMilkdropSignalTracker();
+    const rawSpectrum = pulseData({ bass: 1, mid: 0.18, treble: 0.04 });
+    const analyserStub = {
+      getMultiBandEnergy: () => ({ bass: 0.68, mid: 0.3, treble: 0.12 }),
+      getRmsLevel: () => 0.55,
+      getSampleRate: () => 48_000,
+      getFrequencyData: () => rawSpectrum,
+    } as unknown as FrequencyAnalyser;
+
+    const update = tracker.update({
+      time: 0.2,
+      deltaMs: 16.7,
+      analyser: analyserStub,
+      frequencyData: new Uint8Array(rawSpectrum.length),
+      waveformData: waveformData(),
+    });
+
+    expect(update.frequencyData[0]).toBeGreaterThan(0);
+    expect(update.frequencyData[0]).toBeGreaterThan(
+      update.frequencyData[update.frequencyData.length - 1] ?? 0,
+    );
+  });
+
   test('normalizes quieter material so weighted energy still stays responsive', () => {
     const tracker = createMilkdropSignalTracker();
     tracker.update({

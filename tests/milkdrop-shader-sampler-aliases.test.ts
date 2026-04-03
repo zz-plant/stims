@@ -94,6 +94,7 @@ describe('milkdrop shader sampler aliases', () => {
       expect(normalizeMilkdropShaderSamplerName(alias)).toBe(canonical);
     }
 
+    expect(normalizeMilkdropShaderSamplerName('sampler_video')).toBe('video');
     expect(normalizeMilkdropShaderSamplerName('sampler_unknown_alias')).toBe(
       null,
     );

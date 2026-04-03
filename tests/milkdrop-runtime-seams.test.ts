@@ -4,6 +4,8 @@ import {
   createMilkdropBackendFailover,
   shouldPresetFallbackToWebgl,
 } from '../assets/js/milkdrop/runtime/backend-fallback.ts';
+import { applyMilkdropCapturedVideoFrameState } from '../assets/js/milkdrop/runtime/captured-video-frame.ts';
+import { createMilkdropCapturedVideoReactivityTracker } from '../assets/js/milkdrop/runtime/captured-video-reactivity.ts';
 import {
   buildBlendStateForRender,
   buildRenderFrameState,
@@ -22,6 +24,46 @@ const gpuBlendState: MilkdropBlendState = {
   previousFrame: { presetId: 'prev' } as MilkdropFrameState,
   alpha: 1,
 };
+
+function resolveCapturedVideoReactivity({
+  weightedEnergy,
+  beatPulse,
+  time,
+  bass,
+  bassAtt,
+  mid,
+  midAtt,
+  midsAtt,
+  treble,
+  trebleAtt,
+}: {
+  weightedEnergy: number;
+  beatPulse: number;
+  time: number;
+  bass: number;
+  bassAtt: number;
+  mid: number;
+  midAtt: number;
+  midsAtt: number;
+  treble: number;
+  trebleAtt: number;
+}) {
+  return createMilkdropCapturedVideoReactivityTracker().update({
+    signals: {
+      weightedEnergy,
+      beatPulse,
+      time,
+      deltaMs: 1000 / 60,
+      bass,
+      bassAtt,
+      mid,
+      midAtt,
+      midsAtt,
+      treble,
+      trebleAtt,
+    },
+  });
+}
 
 describe('milkdrop runtime startup seams', () => {
   test('prefers an explicitly requested preset when the backend can run it', () => {
@@ -150,6 +192,129 @@ describe('milkdrop runtime lifecycle seams', () => {
     expect(downgraded.post.videoEchoEnabled).toBe(false);
     expect(downgraded.post.postprocessingProfile?.enabled).toBe(false);
     expect(downgraded.gpuGeometry.particleField?.enabled).toBe(false);
+  });
+
+  test('injects the captured video texture when shader texture slots are available', () => {
+    const frameState = {
+      post: {
+        shaderEnabled: false,
+        shaderControls: {
+          mixAlpha: 0,
+          textureLayer: {
+            source: 'none',
+            mode: 'none',
+            sampleDimension: '2d',
+            inverted: false,
+            amount: 0,
+            scaleX: 1,
+            scaleY: 1,
+            offsetX: 0,
+            offsetY: 0,
+            volumeSliceZ: null,
+          },
+          warpTexture: {
+            source: 'none',
+            sampleDimension: '2d',
+            amount: 0,
+            scaleX: 1,
+            scaleY: 1,
+            offsetX: 0,
+            offsetY: 0,
+            volumeSliceZ: null,
+          },
+        },
+      },
+      signals: {
+        weightedEnergy: 0.6,
+        beatPulse: 0.4,
+        time: 12,
+      },
+    } as MilkdropFrameState;
+
+    const upgraded = applyMilkdropCapturedVideoFrameState({
+      frameState,
+      capturedVideoReady: true,
+      reactivity: resolveCapturedVideoReactivity({
+        weightedEnergy: 0.6,
+        beatPulse: 0.4,
+        time: 12,
+        bass: 0.7,
+        bassAtt: 0.8,
+        mid: 0.3,
+        midAtt: 0.35,
+        midsAtt: 0.35,
+        treble: 0.45,
+        trebleAtt: 0.5,
+      }),
+    });
+
+    expect(upgraded).not.toBe(frameState);
+    expect(upgraded.post.shaderEnabled).toBe(true);
+    expect(upgraded.post.shaderControls.textureLayer.source).toBe('video');
+    expect(upgraded.post.shaderControls.textureLayer.mode).toBe('mix');
+    expect(upgraded.post.shaderControls.warpTexture.source).toBe('video');
+    expect(upgraded.post.shaderControls.mixAlpha).toBeGreaterThan(0);
+    expect(upgraded.post.shaderControls.textureLayer.scaleX).toBeGreaterThan(1);
+    expect(upgraded.post.shaderControls.warpTexture.amount).toBeGreaterThan(
+      0.028,
+    );
+  });
+
+  test('preserves preset-defined texture slots when captured video is active', () => {
+    const frameState = {
+      post: {
+        shaderEnabled: true,
+        shaderControls: {
+          mixAlpha: 0.2,
+          textureLayer: {
+            source: 'aura',
+            mode: 'add',
+            sampleDimension: '2d',
+            inverted: false,
+            amount: 0.4,
+            scaleX: 1,
+            scaleY: 1,
+            offsetX: 0,
+            offsetY: 0,
+            volumeSliceZ: null,
+          },
+          warpTexture: {
+            source: 'fractal',
+            sampleDimension: '2d',
+            amount: 0.08,
+            scaleX: 1,
+            scaleY: 1,
+            offsetX: 0,
+            offsetY: 0,
+            volumeSliceZ: null,
+          },
+        },
+      },
+      signals: {
+        weightedEnergy: 0.2,
+        beatPulse: 0.1,
+        time: 4,
+      },
+    } as MilkdropFrameState;
+
+    expect(
+      applyMilkdropCapturedVideoFrameState({
+        frameState,
+        capturedVideoReady: true,
+        reactivity: resolveCapturedVideoReactivity({
+          weightedEnergy: 0.2,
+          beatPulse: 0.1,
+          time: 4,
+          bass: 0.2,
+          bassAtt: 0.22,
+          mid: 0.15,
+          midAtt: 0.16,
+          midsAtt: 0.16,
+          treble: 0.1,
+          trebleAtt: 0.12,
+        }),
+      }),
+    ).toBe(frameState);
   });
 });
 

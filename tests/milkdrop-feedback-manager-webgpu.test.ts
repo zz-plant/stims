@@ -29,6 +29,10 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       canonicalSource: 'main',
       sourceId: 0,
     });
+    expect(resolveDirectShaderSamplerBinding('sampler_video', '2d')).toEqual({
+      canonicalSource: 'video',
+      sourceId: 8,
+    });
     expect(
       resolveDirectShaderSamplerBinding('sampler_fw_noisevol_lq', '2d'),
     ).toEqual({
@@ -138,6 +142,7 @@ describe('milkdrop webgpu feedback manager helpers', () => {
 
     expect(first.auxTextures.noise).toBe(second.auxTextures.noise);
     expect(first.auxTextures.aura).toBe(second.auxTextures.aura);
+    expect(first.auxTextures.video).toBe(second.auxTextures.video);
 
     first.dispose();
     second.dispose();

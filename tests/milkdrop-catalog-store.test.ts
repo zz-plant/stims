@@ -196,9 +196,9 @@ describe('milkdrop catalog store', () => {
           json: async () => ({
             presets: [
               {
-                id: 'aurora-feedback-core',
-                title: 'Aurora Feedback Core',
-                file: '/milkdrop-presets/aurora-feedback-core.milk',
+                id: 'rovastar-parallel-universe',
+                title: 'Rovastar - Parallel Universe',
+                file: '/milkdrop-presets/rovastar-parallel-universe.milk',
                 order: 1,
               },
             ],
@@ -229,10 +229,11 @@ describe('milkdrop catalog store', () => {
         };
       }
 
-      if (url.endsWith('/milkdrop-presets/aurora-feedback-core.milk')) {
+      if (url.endsWith('/milkdrop-presets/rovastar-parallel-universe.milk')) {
         return {
           ok: true,
-          text: async () => 'title=Aurora Feedback Core\nvideo_echo=1\n',
+          text: async () =>
+            'title=Rovastar - Parallel Universe\nvideo_echo=1\n',
         };
       }
 

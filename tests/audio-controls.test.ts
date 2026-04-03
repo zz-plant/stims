@@ -624,7 +624,7 @@ describe('audio controls primary emphasis', () => {
     expect(clickCount).toBe(1);
   });
 
-  test('clicking a recent YouTube chip updates stored URL and validity state', () => {
+  test('clicking a recent YouTube chip updates stored URL and validity state', async () => {
     const originalGetRecentVideos = YouTubeController.prototype.getRecentVideos;
     const originalLoadVideo = YouTubeController.prototype.loadVideo;
 
@@ -652,7 +652,14 @@ describe('audio controls primary emphasis', () => {
     ) as HTMLButtonElement;
     const input = container.querySelector('#youtube-url') as HTMLInputElement;
 
+    expect(recentChip.textContent).toContain('Never Gonna Give You Up');
+    expect(recentChip.textContent).toContain('dQw4w9WgXcQ');
+    expect(recentChip.getAttribute('aria-label')).toContain(
+      'Never Gonna Give You Up',
+    );
+
     recentChip.click();
+    await flush();
 
     expect(input.value).toContain('dQw4w9WgXcQ');
     expect(loadButton.disabled).toBe(false);
@@ -828,7 +835,7 @@ describe('audio controls primary emphasis', () => {
     ) as HTMLElement;
 
     expect(input.getAttribute('aria-describedby')).toBe('youtube-url-feedback');
-    expect(feedback.textContent).toContain('Paste a full YouTube link');
+    expect(feedback.textContent).toContain('Paste a YouTube link or video ID');
 
     input.value = 'bad';
     input.dispatchEvent(new Event('input'));
@@ -837,6 +844,145 @@ describe('audio controls primary emphasis', () => {
     input.value = 'https://youtube.com/watch?v=dQw4w9WgXcQ';
     input.dispatchEvent(new Event('input'));
     expect(feedback.textContent).toContain('Link looks good');
+  });
+
+  test('preserves timestamped YouTube links when loading the player', async () => {
+    const originalLoadVideo = YouTubeController.prototype.loadVideo;
+    let capturedVideo:
+      | string
+      | {
+          id: string;
+          startSeconds: number;
+          canonicalUrl: string;
+        }
+      | null = null;
+
+    YouTubeController.prototype.loadVideo = async (
+      _containerId,
+      video,
+      onStateChange,
+    ) => {
+      capturedVideo = video as typeof capturedVideo;
+      onStateChange?.(1);
+    };
+
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const input = container.querySelector('#youtube-url') as HTMLInputElement;
+    const loadButton = container.querySelector(
+      '#load-youtube',
+    ) as HTMLButtonElement;
+
+    input.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=43s';
+    input.dispatchEvent(new Event('input'));
+    loadButton.click();
+    await flush();
+
+    expect(capturedVideo).not.toBeNull();
+    const parsedVideo = capturedVideo as unknown as {
+      id: string;
+      startSeconds: number;
+      canonicalUrl: string;
+    };
+    expect(parsedVideo.id).toBe('dQw4w9WgXcQ');
+    expect(parsedVideo.startSeconds).toBe(43);
+    expect(parsedVideo.canonicalUrl).toBe(
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=43s',
+    );
+
+    YouTubeController.prototype.loadVideo = originalLoadVideo;
+  });
+
+  test('updates YouTube feedback after a player finishes loading', async () => {
+    const originalGetRecentVideos = YouTubeController.prototype.getRecentVideos;
+    const originalLoadVideo = YouTubeController.prototype.loadVideo;
+
+    YouTubeController.prototype.getRecentVideos = () => [
+      {
+        id: 'dQw4w9WgXcQ',
+        title: 'Never Gonna Give You Up',
+        timestamp: Date.now(),
+      },
+    ];
+    YouTubeController.prototype.loadVideo = async (
+      _containerId,
+      _video,
+      onStateChange,
+    ) => {
+      onStateChange?.(1);
+    };
+
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+    });
+
+    const input = container.querySelector('#youtube-url') as HTMLInputElement;
+    const loadButton = container.querySelector(
+      '#load-youtube',
+    ) as HTMLButtonElement;
+    const feedback = container.querySelector(
+      '[data-youtube-url-feedback]',
+    ) as HTMLElement;
+    const captureButton = container.querySelector(
+      '#use-youtube-audio',
+    ) as HTMLButtonElement;
+
+    input.value = 'https://youtube.com/watch?v=dQw4w9WgXcQ';
+    input.dispatchEvent(new Event('input'));
+    loadButton.click();
+    await flush();
+
+    expect(feedback.textContent).toContain('Video is ready');
+    expect(captureButton.disabled).toBe(false);
+
+    YouTubeController.prototype.getRecentVideos = originalGetRecentVideos;
+    YouTubeController.prototype.loadVideo = originalLoadVideo;
+  });
+
+  test('prepares the MilkDrop context before loading YouTube playback', async () => {
+    const originalLoadVideo = YouTubeController.prototype.loadVideo;
+    const prepareContext = mock(() => {});
+
+    YouTubeController.prototype.loadVideo = async (
+      _containerId,
+      _video,
+      onStateChange,
+    ) => {
+      onStateChange?.(1);
+    };
+
+    const container = document.createElement('section');
+
+    initAudioControls(container, {
+      onRequestMicrophone: async () => {},
+      onRequestDemoAudio: async () => {},
+      onRequestYouTubeAudio: async () => {},
+      onPrepareYouTubeContext: prepareContext,
+    });
+
+    const input = container.querySelector('#youtube-url') as HTMLInputElement;
+    const loadButton = container.querySelector(
+      '#load-youtube',
+    ) as HTMLButtonElement;
+
+    input.value = 'https://youtube.com/watch?v=dQw4w9WgXcQ';
+    input.dispatchEvent(new Event('input'));
+    loadButton.click();
+    await flush();
+
+    expect(prepareContext).toHaveBeenCalledTimes(1);
+
+    YouTubeController.prototype.loadVideo = originalLoadVideo;
   });
 
   test('switches emphasis to demo row after microphone failure', async () => {
