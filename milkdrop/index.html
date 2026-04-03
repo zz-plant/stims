@@ -3,156 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta
-      name="description"
-      content="Open the Stims launchpad for demo playback or your own audio input."
-    />
-    <meta name="robots" content="index,follow" />
+    <meta name="robots" content="noindex,follow" />
     <meta name="theme-color" content="#0b0f1a" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="canonical" href="https://no.toil.fyi/milkdrop/" />
-    <meta property="og:title" content="MilkDrop Visualizer | Stims" />
-    <meta
-      property="og:description"
-      content="Open the Stims launchpad for demo playback or your own audio input."
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://no.toil.fyi/milkdrop/" />
-    <meta property="og:image" content="https://no.toil.fyi/og/milkdrop.svg" />
-    <meta property="og:image:type" content="image/svg+xml" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="MilkDrop visualizer preview image" />
-    <meta property="og:site_name" content="Stims" />
-    <meta property="og:locale" content="en_US" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="MilkDrop Visualizer | Stims" />
-    <meta
-      name="twitter:description"
-      content="Open the Stims launchpad for demo playback or your own audio input."
-    />
-    <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
-    <meta name="twitter:image:alt" content="MilkDrop visualizer preview image" />
-    <title>MilkDrop Visualizer | Stims</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="preload" href="/assets/css/base.css" as="style" />
-    <link rel="preload" href="/assets/css/index.css" as="style" />
-    <link rel="stylesheet" href="/assets/css/base.css" />
-    <link rel="stylesheet" href="/assets/css/index.css" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "MilkDrop Visualizer",
-        "description": "Dedicated Stims route for demo playback, mic or capture setup, and live tuning.",
-        "applicationCategory": "MultimediaApplication",
-        "operatingSystem": "Web",
-        "url": "https://no.toil.fyi/milkdrop/",
-        "image": "https://no.toil.fyi/og/milkdrop.svg",
-        "isAccessibleForFree": true
-      }
+    <title>Redirecting to Stims</title>
+    <link rel="canonical" href="https://no.toil.fyi/" />
+    <script>
+      const target = new URL('/', window.location.origin);
+      target.search = window.location.search;
+      target.hash = window.location.hash;
+      window.location.replace(target.toString());
     </script>
   </head>
-  <body data-page="experience">
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <div class="content">
-      <header class="shell-header shell-header--launch-nav">
-        <div data-top-nav-container></div>
-      </header>
-
-      <main class="launch-shell" id="main-content">
-        <section class="intro launch-intro section-shell">
-          <div class="launch-intro__grid">
-            <div class="launch-intro__copy">
-              <div class="launch-intro__kicker-row" aria-label="Launch summary">
-                <span class="pill pill--accent">Demo first</span>
-                <span class="pill pill--soft">Mic, tab, YouTube later</span>
-              </div>
-              <p class="eyebrow">MilkDrop launchpad</p>
-              <h1>Start the visual. Then choose your source.</h1>
-              <p class="section-description">
-                Demo audio gets you into playback fastest. The rest of the inputs stay here when
-                you actually need them.
-              </p>
-              <div
-                class="hero-cta-row launch-intro__actions"
-                role="group"
-                aria-label="Launch shortcuts"
-              >
-                <a class="cta-button primary" href="/milkdrop/?audio=demo">
-                  Start demo playback
-                </a>
-              </div>
-              <p class="launch-intro__support">
-                If you already know the source, skip straight to the controls below.
-              </p>
-              <ul class="launch-intro__list" aria-label="Launch benefits">
-                <li><strong>Instant:</strong> the visual starts without a permission prompt.</li>
-                <li><strong>Flexible:</strong> mic, tab capture, and YouTube stay ready below.</li>
-                <li><strong>Live:</strong> once playback starts, presets and tools stay in reach.</li>
-              </ul>
-              <div class="launch-utility-row" role="group" aria-label="Launch helpers">
-                <a class="text-link" href="/">Back to Stims</a>
-              </div>
-            </div>
-            <aside class="launch-intro__aside" aria-label="Session flow">
-              <p class="launch-intro__aside-label">Fast path</p>
-              <h2>Demo first.</h2>
-              <p>
-                Open the visual without setup friction, then switch to mic, tab, or YouTube once
-                the source matters.
-              </p>
-              <div class="launch-intro__route-list" aria-label="Launch sequence">
-                <article class="launch-intro__route-item">
-                  <p class="launch-intro__route-label">Now</p>
-                  <h3>Enter playback immediately.</h3>
-                  <p>Use demo audio for the cleanest first run and the easiest reset.</p>
-                </article>
-                <article class="launch-intro__route-item">
-                  <p class="launch-intro__route-label">Later</p>
-                  <h3>Bring your own audio.</h3>
-                  <p>Drop to the controls for mic, tab capture, or YouTube when you want live input.</p>
-                </article>
-              </div>
-            </aside>
-          </div>
-        </section>
-
-        <section
-          class="launch-panels section-shell"
-          id="launch-panels"
-          aria-labelledby="launch-panels-title"
-        >
-          <div class="section-heading launch-panels__header">
-            <p class="eyebrow">Controls</p>
-            <h2 id="launch-panels-title">Choose a sound source.</h2>
-            <p class="section-description">Demo is the default. Mic, tab, and YouTube are here when you need them.</p>
-          </div>
-          <div class="shell-panels">
-            <section
-              class="shell-panel shell-panel--start"
-              aria-label="Audio"
-              data-audio-controls
-            ></section>
-            <section
-              class="shell-panel shell-panel--tune"
-              aria-label="Tune"
-              data-settings-panel
-            ></section>
-          </div>
-        </section>
-      </main>
-    </div>
-    <script type="module" src="/assets/js/app.ts"></script>
+  <body>
+    <p>
+      Redirecting to the unified Stims route.
+      <a href="/">Open Stims</a>
+    </p>
   </body>
 </html>

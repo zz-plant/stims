@@ -6,10 +6,10 @@ export type Route =
   | { view: 'library'; slug: null }
   | { view: 'experience'; slug: string | null };
 
-type SlugPathMap = Record<string, string>;
+type SlugPathMap = Record<string, string | string[]>;
 
 const DEFAULT_SLUG_PATHS: SlugPathMap = {
-  milkdrop: '/milkdrop/',
+  milkdrop: ['/', '/milkdrop/'],
 };
 
 export { getToyRouteHref } from './utils/toy-route-href.ts';
@@ -66,8 +66,11 @@ export function createRouter({
 
   const getSlugFromPath = (pathname: string) =>
     Object.entries(slugPaths).find(([, target]) => {
-      return (
-        normalizePath(pathname) === resolveNormalizedPath(pathname, target)
+      const targets = Array.isArray(target) ? target : [target];
+      return targets.some(
+        (candidate) =>
+          normalizePath(pathname) ===
+          resolveNormalizedPath(pathname, candidate),
       );
     })?.[0] ?? null;
 

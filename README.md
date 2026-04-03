@@ -14,8 +14,8 @@ It is built to feel like a first-class browser experience rather than a nostalgi
 
 - Live site: [no.toil.fyi](https://no.toil.fyi)
 - Homepage: [no.toil.fyi/](https://no.toil.fyi/)
-- Launch app: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
-- Product page: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
+- Launch app: [no.toil.fyi/](https://no.toil.fyi/)
+- Legacy alias: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
@@ -48,14 +48,14 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 - A launch flow with readiness checks before microphone prompts and renderer-heavy startup.
 - Multiple audio paths including microphone, demo audio, tab capture, and YouTube-backed tab capture.
 - Renderer preference handling with WebGPU-first startup and direct WebGL fallback when needed.
-- A homepage that explains the product model, a dedicated launch route at `milkdrop/index.html` (`/milkdrop/`) for setup, and a live session overlay for preset browsing and editing once playback begins.
+- One unified launchpad route at `index.html` (`/`) for setup, playback, and live session entry, plus a `/milkdrop/` alias that redirects into the same experience.
 
 ## Shipped experience
 
 At the product level, Stims currently ships one flagship MilkDrop-led visualizer experience with:
 
 - A quick-check preflight that surfaces graphics, microphone, motion, and compatibility status.
-- An immersive-first launch route that can drop straight into demo playback while keeping audio choice and device tuning close at hand.
+- A unified launch route that can drop straight into demo playback while keeping audio choice and device tuning close at hand.
 - A preset-led playback flow designed for immediate experimentation.
 - A settings panel for quality presets, compatibility mode, motion preferences, render scale, and pixel ratio.
 - A live overlay that keeps preset browsing primary and tucks editing and inspection one layer deeper without leaving playback.
@@ -86,10 +86,8 @@ At the product level, Stims currently ships one flagship MilkDrop-led visualizer
 3. Open the visualizer:
 
    ```text
-   http://localhost:5173/milkdrop/
+   http://localhost:5173/
    ```
-
-4. Use `index.html` at the same host if you want to review the homepage surface, or `/milkdrop/` if you want the immersive-first MilkDrop launch route.
 
 If you want to validate the production bundle locally, run `bun run build` and then `bun run preview`.
 
@@ -127,7 +125,7 @@ Use [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md) as the synchronizatio
 - Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
 - If your browser supports WebGPU but visuals fail, switch renderer preference to WebGL in app settings and refresh.
 - Use `bun run preview` after `bun run build` to test the production bundle behavior (including route handling) before deployment.
-- Cloudflare Pages preview and production deploys normally come from the connected GitHub project; the `pages:deploy:*` scripts are the explicit manual fallback path.
+- Cloudflare Pages preview and production deploys default to the GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml); the `pages:deploy:*` scripts are the manual fallback path.
 - [`wrangler.toml`](./wrangler.toml) is checked in as the Pages config source of truth for compatibility and placement settings; keep dashboard-only build settings aligned with it.
 
 ## Contributing at a glance
@@ -142,8 +140,8 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 
 ## Project shape
 
-- `milkdrop/index.html` (`/milkdrop/`) is the immersive-first launch route for the visualizer.
-- `index.html` is the editorial homepage that routes into the MilkDrop launch route and live session.
+- `index.html` (`/`) is the unified launch route for the visualizer.
+- `milkdrop/index.html` (`/milkdrop/`) is a compatibility alias that redirects to `/`.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
 - `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.
 - `tests/` contains unit, integration, and compatibility coverage.

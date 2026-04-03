@@ -160,10 +160,7 @@ export function bootExperienceShell({
         { href: '#main-content', label: 'Start' },
         { href: '#launch-panels', label: 'Controls' },
       ],
-      utilityLink: {
-        href: '/',
-        label: 'Back home',
-      },
+      utilityLink: null,
     });
   }
 
@@ -311,11 +308,10 @@ export function bootExperienceShell({
     }
 
     initSystemControls(host, {
-      title: 'Device defaults',
-      description:
-        'Choose the startup quality and compatibility settings for this device.',
+      title: 'Defaults',
+      description: 'Choose startup settings for this device.',
       qualityLabel: 'Startup look',
-      qualityHint: 'These defaults apply before the live workspace takes over.',
+      qualityHint: 'Used before the live view opens.',
       defaultPresetId:
         result?.performance.recommendedQualityPresetId ?? undefined,
       variant: shouldCombineLaunchPanels ? 'embedded' : 'inline',

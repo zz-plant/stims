@@ -1,6 +1,5 @@
 import { initNavigation as initTopNav } from '../ui/nav.ts';
 import { initNavScrollEffects } from '../ui/nav-scroll-effects.ts';
-import { initMilkdropShowcase } from './milkdrop-showcase.ts';
 
 const runInit = (label: string, init: () => void | Promise<void>) => {
   try {
@@ -20,10 +19,7 @@ export function bootHomePage({
   if (navContainer) {
     initTopNav(navContainer, {
       mode: 'library',
-      sectionLinks: [
-        { href: '#overview', label: 'Start' },
-        { href: '#presets', label: 'Presets' },
-      ],
+      sectionLinks: [{ href: '#overview', label: 'Start' }],
       utilityLink: {
         href: '/milkdrop/',
         label: 'Open launchpad',
@@ -31,6 +27,5 @@ export function bootHomePage({
     });
   }
 
-  runInit('milkdrop showcase', initMilkdropShowcase);
   runInit('nav scroll effects', initNavScrollEffects);
 }

@@ -1,7 +1,7 @@
-type SlugPathMap = Record<string, string>;
+type SlugPathMap = Record<string, string | string[]>;
 
 const DEFAULT_SLUG_PATHS: SlugPathMap = {
-  milkdrop: '/milkdrop/',
+  milkdrop: ['/', '/milkdrop/'],
 };
 
 export function getToyRouteHref(
@@ -18,7 +18,7 @@ export function getToyRouteHref(
 ) {
   const mappedPath = slugPaths[slug];
   if (mappedPath) {
-    return mappedPath;
+    return Array.isArray(mappedPath) ? mappedPath[0] : mappedPath;
   }
 
   const normalizedRoutePath = routePath.endsWith('/')

@@ -24,8 +24,8 @@ export const toyManifest: ToyManifest = [
       "editor"
     ],
     "controls": [
-      "Browse, favorite, and revisit standout presets",
-      "Blend between looks with autoplay or random runs",
+      "Browse presets",
+      "Try autoplay or random",
       "Edit preset code and see the scene respond live",
       "Import or export preset files",
       "Tune quality for smoother or richer playback"
@@ -35,11 +35,11 @@ export const toyManifest: ToyManifest = [
       "Pinch to swell or compress the depth and intensity.",
       "Rotate with two fingers to twist the whole image."
     ],
-    "firstRunHint": "Start with the curated preset browser, then toggle autoplay to hear smooth blend transitions.",
+    "firstRunHint": "Open presets, then try autoplay.",
     "starterPreset": {
       "id": "aurora-feedback-core",
-      "label": "aurora feedback starter",
-      "description": "Balanced feedback and blend settings for a quick first run."
+      "label": "starter preset",
+      "description": "Balanced settings for a first run."
     },
     "wowControl": "Preset browser",
     "recommendedCapability": "demoAudio",

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Stims is a browser-native MilkDrop visualizer with instant demo playback and live preset editing."
+      content="Open the Stims launchpad for demo playback or your own audio input."
     />
     <meta name="application-name" content="Stims" />
     <meta name="robots" content="index,follow" />
@@ -13,7 +13,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://no.toil.fyi/" />
-    <link rel="alternate" href="https://no.toil.fyi/" hreflang="en" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
@@ -21,29 +20,29 @@
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <title>Stims | Live browser visualizer</title>
-    <meta property="og:title" content="Stims | Live browser visualizer" />
+    <title>MilkDrop Visualizer | Stims</title>
+    <meta property="og:title" content="MilkDrop Visualizer | Stims" />
     <meta
       property="og:description"
-      content="A browser-native MilkDrop visualizer with instant demo playback and live preset editing."
+      content="Open the Stims launchpad for demo playback or your own audio input."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://no.toil.fyi/" />
-    <meta property="og:image" content="https://no.toil.fyi/og/default.svg" />
+    <meta property="og:image" content="https://no.toil.fyi/og/milkdrop.svg" />
     <meta property="og:image:type" content="image/svg+xml" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Stims homepage preview image" />
+    <meta property="og:image:alt" content="MilkDrop visualizer preview image" />
     <meta property="og:site_name" content="Stims" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Stims | Live browser visualizer" />
+    <meta name="twitter:title" content="MilkDrop Visualizer | Stims" />
     <meta
       name="twitter:description"
-      content="A browser-native MilkDrop visualizer with instant demo playback and live preset editing."
+      content="Open the Stims launchpad for demo playback or your own audio input."
     />
     <meta name="twitter:image" content="https://no.toil.fyi/icons/icon-512.png" />
-    <meta name="twitter:image:alt" content="Stims homepage preview image" />
+    <meta name="twitter:image:alt" content="MilkDrop visualizer preview image" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
@@ -59,119 +58,79 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "Organization",
-            "@id": "https://no.toil.fyi/#organization",
-            "name": "Stims",
-            "url": "https://no.toil.fyi/",
-            "sameAs": ["https://github.com/zz-plant/stims"]
-          },
-          {
-            "@type": "WebSite",
-            "@id": "https://no.toil.fyi/#website",
-            "url": "https://no.toil.fyi/",
-            "name": "Stims",
-            "publisher": { "@id": "https://no.toil.fyi/#organization" },
-            "inLanguage": "en",
-            "description": "Browser-native MilkDrop visualizer with instant demo playback and a dedicated setup route at /milkdrop/."
-          },
-          {
-            "@type": "WebPage",
-            "@id": "https://no.toil.fyi/#webpage",
-            "url": "https://no.toil.fyi/",
-            "name": "Stims",
-            "headline": "Live browser visualizer in the lineage of MilkDrop",
-            "description": "Stims is a browser-native MilkDrop visualizer with instant demo playback and live preset editing.",
-            "isPartOf": { "@id": "https://no.toil.fyi/#website" },
-            "publisher": { "@id": "https://no.toil.fyi/#organization" },
-            "inLanguage": "en"
-          }
-        ]
+        "@type": "SoftwareApplication",
+        "name": "MilkDrop Visualizer",
+        "description": "Unified Stims launchpad for demo playback, mic or capture setup, and live tuning.",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web",
+        "url": "https://no.toil.fyi/",
+        "image": "https://no.toil.fyi/og/milkdrop.svg",
+        "isAccessibleForFree": true
       }
     </script>
   </head>
-  <body data-page="home">
+  <body data-page="experience">
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="content">
-      <header class="shell-header">
+      <header class="shell-header shell-header--launch-nav">
         <div data-top-nav-container></div>
       </header>
 
-      <main class="home-shell" id="main-content">
-        <header class="hero home-stage" id="overview" aria-label="Stims overview">
-          <div class="home-stage__grid">
-            <div class="home-stage__copy">
-              <p class="eyebrow">Browser-native MilkDrop visualizer</p>
-              <h1>Start Stims.</h1>
-              <p class="tagline">Bundled audio and presets get you into motion fast.</p>
-              <div class="hero-cta-row" role="group" aria-label="Primary action">
-                <a
-                  href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
-                  class="cta-button primary"
-                >
-                  Start demo instantly
-                </a>
+      <main class="launch-shell" id="main-content">
+        <section class="intro launch-intro section-shell">
+          <div class="launch-stage__grid">
+            <div class="launch-stage__copy">
+              <p class="eyebrow">MilkDrop</p>
+              <h1>Make sound visible.</h1>
+              <p class="section-description">
+                Start with demo. Switch to mic, tab capture, or YouTube when you want live input.
+              </p>
+              <div
+                class="hero-cta-row launch-stage__actions"
+                role="group"
+                aria-label="Launch shortcuts"
+              >
+                <a class="cta-button primary" href="/?audio=demo">Start demo</a>
+                <a class="cta-button ghost" href="#launch-panels">Choose source</a>
               </div>
-              <p class="home-stage__aux-link">
-                <a href="/milkdrop/" class="text-link">
-                  Need mic, tab audio, or YouTube? Open the launchpad.
-                </a>
-              </p>
-            </div>
-          </div>
-        </header>
-
-        <section class="home-presets section-shell" id="presets" aria-labelledby="presets-title">
-          <div class="home-presets__intro">
-            <div class="section-heading">
-              <p class="eyebrow">Presets</p>
-              <h2 id="presets-title">Or start with a preset.</h2>
-              <p class="section-description" data-milkdrop-preset-count>
-                Loading bundled preset collections…
-              </p>
-            </div>
-          </div>
-          <div class="home-presets__frame">
-            <div class="milkdrop-showcase__filters" data-milkdrop-preset-filters>
-              <button type="button" class="milkdrop-showcase__filter" data-active="true">
-                Classic MilkDrop
-                <span>0</span>
-              </button>
-            </div>
-            <div class="milkdrop-showcase__grid" data-milkdrop-preset-list>
-              <article class="milkdrop-showcase__card">
-                <p class="milkdrop-showcase__card-eyebrow">Bundled presets</p>
-                <h3 class="milkdrop-showcase__card-title">Loading preset cards</h3>
-                <p class="milkdrop-showcase__card-meta">The bundled catalog will load here once the preset index is ready.</p>
-                <div class="milkdrop-showcase__card-actions">
-                  <a
-                    class="cta-button primary"
-                    href="/milkdrop/?audio=demo&panel=browse&collection=cream-of-the-crop"
-                  >
-                    Start in playback
-                  </a>
-                </div>
-              </article>
+              <a
+                class="text-link"
+                href="https://github.com/zz-plant/stims"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View source
+              </a>
             </div>
           </div>
         </section>
-      </main>
 
-      <footer class="home-footer" id="site-footer">
-        <p class="footer-nav">
-          <a href="/milkdrop/" class="text-link">Launchpad</a>
-          <span aria-hidden="true">·</span>
-          <a
-            href="https://github.com/zz-plant/stims"
-            class="text-link"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            GitHub
-          </a>
-        </p>
-      </footer>
+        <section
+          class="launch-panels section-shell"
+          id="launch-panels"
+          aria-labelledby="launch-panels-title"
+        >
+          <div class="section-heading launch-panels__header">
+            <div>
+              <p class="eyebrow">Source</p>
+              <h2 id="launch-panels-title">Choose a source.</h2>
+            </div>
+            <p class="section-description">Demo is fastest.</p>
+          </div>
+          <div class="shell-panels">
+            <section
+              class="shell-panel shell-panel--start"
+              aria-label="Audio"
+              data-audio-controls
+            ></section>
+            <section
+              class="shell-panel shell-panel--tune"
+              aria-label="Tune"
+              data-settings-panel
+            ></section>
+          </div>
+        </section>
+      </main>
     </div>
     <script type="module" src="/assets/js/app.ts"></script>
   </body>

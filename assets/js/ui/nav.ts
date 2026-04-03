@@ -23,7 +23,7 @@ export interface NavOptions {
   utilityLink?: {
     href: string;
     label: string;
-  };
+  } | null;
   onBack?: () => void;
   onShare?: () => void;
   onNextToy?: () => void | Promise<void>;
@@ -112,6 +112,8 @@ function renderLibraryNav(
     href: '/milkdrop/',
     label: 'Open setup',
   };
+  const resolvedUtilityLink =
+    options.utilityLink === undefined ? utilityLink : options.utilityLink;
 
   container.innerHTML = `
     <nav class="top-nav" data-top-nav aria-label="Primary" data-nav-expanded="false">
@@ -142,7 +144,11 @@ function renderLibraryNav(
           <a class="nav-link" href="https://github.com/zz-plant/stims" target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
         <div class="nav-section nav-section--utilities" aria-label="Site actions">
-          <a class="nav-link nav-link--launch" href="${escapeHtml(utilityLink.href)}">${escapeHtml(utilityLink.label)}</a>
+          ${
+            resolvedUtilityLink
+              ? `<a class="nav-link nav-link--launch" href="${escapeHtml(resolvedUtilityLink.href)}">${escapeHtml(resolvedUtilityLink.label)}</a>`
+              : ''
+          }
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
             <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
             <span class="theme-toggle__label" data-theme-label>Dark mode</span>

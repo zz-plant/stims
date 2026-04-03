@@ -127,8 +127,8 @@ export function initAudioControls(
 
   container.innerHTML = `
 	    <p class="control-panel__eyebrow">Start</p>
-	    <div class="control-panel__heading">Pick a sound source</div>
-	    <p class="control-panel__description">Demo gets you in fastest. Use mic when you want the room to drive the picture.</p>
+	    <div class="control-panel__heading">Choose a source</div>
+	    <p class="control-panel__description">Start with demo. Use mic for live audio.</p>
 	    ${renderPrimaryAudioChoice()}
 	    ${renderAdvancedAudioSources(options)}
 	    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
@@ -185,8 +185,8 @@ export function initAudioControls(
     if (!(firstStepSource instanceof HTMLElement)) return;
     firstStepSource.textContent =
       source === 'microphone'
-        ? 'Mic works best for room audio, voice, and instruments.'
-        : 'Demo is the quickest way to get started.';
+        ? 'Use mic for room audio, voice, or instruments.'
+        : 'Demo is the fastest start.';
   };
 
   const setPending = (button: Element | null, pending: boolean) => {
@@ -606,14 +606,14 @@ function renderPostStartGuidance({
   return `
     <section class="control-panel__post-start" data-post-start-guidance hidden aria-label="Next steps">
       <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">After start</span>
+        <span class="control-panel__label">Next</span>
         ${
           showStarterPresetAction
-            ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Apply ${starterPresetLabel}</button>`
+            ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Use ${starterPresetLabel}</button>`
             : ''
         }
       </div>
-      <p class="control-panel__comparison">You are in. Keep the canvas moving, then tune the session only if you want more control.</p>
+      <p class="control-panel__comparison">You are in. Keep going, or change settings if you need to.</p>
       ${
         firstRunHint
           ? `<p class="control-panel__microcopy">${firstRunHint}</p>`
@@ -624,9 +624,9 @@ function renderPostStartGuidance({
           ? `
       <section class="control-panel__gesture-hints" data-desktop-hints aria-live="polite">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">Try this next</span>
+          <span class="control-panel__label">Controls</span>
         </div>
-        <p class="control-panel__microcopy">On desktop, these controls change the scene fastest:</p>
+        <p class="control-panel__microcopy">On desktop:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${desktopHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>
@@ -639,10 +639,10 @@ function renderPostStartGuidance({
           ? `
       <section class="control-panel__gesture-hints" data-gesture-hints hidden aria-live="polite">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">Touch moves</span>
+          <span class="control-panel__label">Touch</span>
           <button type="button" class="control-panel__dismiss" data-dismiss-gesture-hints>Got it</button>
         </div>
-        <p class="control-panel__microcopy">Once audio starts, these gestures reshape the scene fastest:</p>
+        <p class="control-panel__microcopy">After audio starts:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${touchHints.map((tip) => `<li>${tip}</li>`).join('')}
         </ul>
@@ -655,7 +655,7 @@ function renderPostStartGuidance({
           ? `
       <section class="control-panel__gesture-hints" aria-live="polite">
         <div class="control-panel__first-steps-header">
-          <span class="control-panel__label">Quick wins</span>
+          <span class="control-panel__label">Presets</span>
         </div>
         <ul class="control-panel__tips control-panel__tips--compact">
           ${starterTips
