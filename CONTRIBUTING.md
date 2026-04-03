@@ -25,7 +25,9 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
    bun run dev
    ```
 
-4. Open `http://localhost:5173/milkdrop/`.
+4. Open `http://localhost:5173/`.
+
+   Use `http://localhost:5173/milkdrop/` only when you need to verify the compatibility alias redirect behavior.
 
 ## Where to look first
 
@@ -96,7 +98,7 @@ When workflows or structure change, update docs in the same PR (including deploy
 
 For product-facing work, keep these areas aligned together:
 
-- MilkDrop runtime and shell code in `assets/js/milkdrop/`, `assets/js/core/`, and `assets/js/toys/milkdrop-toy.ts`.
+- Root workspace and engine seam code in `assets/js/frontend/`, `assets/js/core/`, `assets/js/milkdrop/`, and `assets/js/toys/milkdrop-toy.ts`.
 - The shipped manifest entry in `assets/data/toys.json`.
 - Generated artifacts in `assets/js/data/toy-manifest.ts`, `public/toys.json`, `docs/TOY_SCRIPT_INDEX.md`, and `docs/toys.md`.
 - Tests in `tests/` where runtime behavior changed.

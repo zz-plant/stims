@@ -8,7 +8,7 @@ You're about to code on Stims. Before you dive into docs, grab these three thing
 
 1. **Verify your code as you go** — Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) during implementation to catch bugs early. Don't wait until the end for the full quality gate.
 
-2. **Test visually in the browser** — Run `bun run dev` and visit `http://localhost:5173/milkdrop/?agent=true` to test your changes with persistent state. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
+2. **Test visually in the browser** — Run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
 
 3. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
    - `bun run check:quick` — Fast syntax/lint/type check (use often)

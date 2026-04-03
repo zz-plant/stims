@@ -57,9 +57,9 @@ bun run dev
 ```
 
 Then visit:
-- `http://localhost:5173/` — Home page and library
-- `http://localhost:5173/milkdrop/` — MilkDrop immersive experience
-- `http://localhost:5173/milkdrop/?agent=true` — Agent testing mode (persistent state, cleaner UI for QA)
+- `http://localhost:5173/` — Canonical workspace route
+- `http://localhost:5173/?agent=true` — Agent testing mode on the canonical route (persistent state, cleaner UI for QA)
+- `http://localhost:5173/milkdrop/?agent=true` — Compatibility-alias verification
 
 **Visual checklist**:
 - [ ] No console errors (open DevTools F12)

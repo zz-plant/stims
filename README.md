@@ -48,7 +48,7 @@ Stims aims to make MilkDrop-style visual play feel native to the browser instead
 - A launch flow with readiness checks before microphone prompts and renderer-heavy startup.
 - Multiple audio paths including microphone, demo audio, tab capture, and YouTube-backed tab capture.
 - Renderer preference handling with WebGPU-first startup and direct WebGL fallback when needed.
-- One unified launchpad route at `index.html` (`/`) for setup, playback, and live session entry, plus a `/milkdrop/` alias that redirects into the same experience.
+- One unified workspace route at `index.html` (`/`) for setup, playback, and live session entry, plus a `/milkdrop/` alias that redirects into the same experience.
 
 ## Shipped experience
 
@@ -140,8 +140,9 @@ If you change workflows, scripts, or documentation structure, keep the doc entry
 
 ## Project shape
 
-- `index.html` (`/`) is the unified launch route for the visualizer.
+- `index.html` (`/`) is the canonical workspace route for the visualizer.
 - `milkdrop/index.html` (`/milkdrop/`) is a compatibility alias that redirects to `/`.
+- `assets/js/frontend/` contains the product-facing workspace UI, URL state, and engine adapter seam.
 - `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
 - `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.
 - `tests/` contains unit, integration, and compatibility coverage.

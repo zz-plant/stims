@@ -16,7 +16,7 @@ This launches the Vite dev server at `http://localhost:5173/`. The key URLs for 
 |-----|---------|------------|
 | `http://localhost:5173/` | Canonical workspace route | Testing launch controls, preset browsing, and live session behavior |
 | `http://localhost:5173/?agent=true` | Agent testing mode on the canonical route | Detailed QA, debugging, and state persistence checks |
-| `http://localhost:5173/milkdrop/?agent=true` | Compatibility-alias verification | Confirming old links redirect into the same root state |
+| `http://localhost:5173/milkdrop/?agent=true` | Compatibility-alias verification | Confirming old links redirect into the same root workspace state |
 
 ### Agent testing mode (`?agent=true`)
 
