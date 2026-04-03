@@ -47,8 +47,8 @@ export function renderAdvancedAudioSources(
 
   return `
     <details class="control-panel__details" data-advanced-inputs>
-      <summary class="control-panel__label">More sources</summary>
-      <p class="control-panel__advanced-helper">Use these for audio already playing in your browser.</p>
+      <summary class="control-panel__label">Browser audio</summary>
+      <p class="control-panel__advanced-helper">Use these when the sound is already playing in this browser.</p>
       <div id="advanced-audio-panel" class="control-panel__advanced" data-advanced-panel>
         ${
           options.onRequestTabAudio

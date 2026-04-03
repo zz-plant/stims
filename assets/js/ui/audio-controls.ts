@@ -127,8 +127,8 @@ export function initAudioControls(
 
   container.innerHTML = `
 	    <p class="control-panel__eyebrow">Start</p>
-	    <div class="control-panel__heading">Choose a source</div>
-	    <p class="control-panel__description">Start with demo. Use mic for live audio.</p>
+	    <div class="control-panel__heading">Pick your input</div>
+	    <p class="control-panel__description">Demo is the fastest first look. Switch to live input any time.</p>
 	    ${renderPrimaryAudioChoice()}
 	    ${renderAdvancedAudioSources(options)}
 	    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>
@@ -218,7 +218,7 @@ export function initAudioControls(
       return;
     }
 
-    micBtn.textContent = 'Start mic';
+    micBtn.textContent = 'Use mic';
   };
 
   const updateStatus = (
@@ -565,23 +565,23 @@ export function initAudioControls(
 
 function renderPrimaryAudioChoice() {
   return `
-    <div class="control-panel__row" data-audio-row="mic">
-      <div class="control-panel__text">
-        <span class="control-panel__label">Mic</span>
-        <span class="control-panel__pill" data-recommended-for="mic" hidden>Recommended</span>
-        <span class="control-panel__subtext">Room, voice, or instrument.</span>
-        <span class="control-panel__microcopy">Needs microphone permission.</span>
-      </div>
-      <button id="start-audio-btn" class="cta-button ghost" type="button">Start mic</button>
-    </div>
     <div class="control-panel__row" data-audio-row="demo">
       <div class="control-panel__text">
         <span class="control-panel__label">Demo</span>
-        <span class="control-panel__pill" data-recommended-for="demo" hidden>Recommended</span>
-        <span class="control-panel__subtext">Built-in soundtrack.</span>
+        <span class="control-panel__pill" data-recommended-for="demo" hidden>Best first look</span>
+        <span class="control-panel__subtext">Built-in soundtrack and instant motion.</span>
         <span class="control-panel__microcopy">No permission prompt.</span>
       </div>
       <button id="use-demo-audio" class="cta-button primary" type="button">Start demo</button>
+    </div>
+    <div class="control-panel__row" data-audio-row="mic">
+      <div class="control-panel__text">
+        <span class="control-panel__label">Live mic</span>
+        <span class="control-panel__pill" data-recommended-for="mic" hidden>Ready</span>
+        <span class="control-panel__subtext">Your room, voice, or instrument.</span>
+        <span class="control-panel__microcopy">One permission prompt.</span>
+      </div>
+      <button id="start-audio-btn" class="cta-button ghost" type="button">Use mic</button>
     </div>
   `;
 }
@@ -606,14 +606,14 @@ function renderPostStartGuidance({
   return `
     <section class="control-panel__post-start" data-post-start-guidance hidden aria-label="Next steps">
       <div class="control-panel__first-steps-header">
-        <span class="control-panel__label">Next</span>
+        <span class="control-panel__label">After start</span>
         ${
           showStarterPresetAction
             ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Use ${starterPresetLabel}</button>`
             : ''
         }
       </div>
-      <p class="control-panel__comparison">You are in. Keep going, or change settings if you need to.</p>
+      <p class="control-panel__comparison">You are in. Keep exploring, or stop here if it already feels right.</p>
       ${
         firstRunHint
           ? `<p class="control-panel__microcopy">${firstRunHint}</p>`

@@ -76,23 +76,34 @@
         <div data-top-nav-container></div>
       </header>
 
-      <main class="launch-shell" id="main-content">
-        <section class="intro launch-intro section-shell">
+      <main class="launch-shell launch-shell--streamlined" id="main-content">
+        <section class="intro launch-intro section-shell" id="launch-panels">
           <div class="launch-stage__grid">
             <div class="launch-stage__copy">
-              <p class="eyebrow">MilkDrop</p>
-              <h1>Make sound visible.</h1>
+              <p class="eyebrow">MilkDrop visualizer</p>
+              <h1>Start fast. Tune later.</h1>
               <p class="section-description">
-                Start with demo. Switch to mic, tab capture, or YouTube when you want live input.
+                Demo gives you an instant preview. Mic, tab capture, and YouTube are here when you
+                want live input.
               </p>
+              <div class="launch-stage__pill-row" aria-label="Launch highlights">
+                <span class="launch-stage__pill">No install</span>
+                <span class="launch-stage__pill">Demo, mic, tab, or YouTube</span>
+                <span class="launch-stage__pill">Preset browser included</span>
+              </div>
               <div
                 class="hero-cta-row launch-stage__actions"
                 role="group"
                 aria-label="Launch shortcuts"
               >
                 <a class="cta-button primary" href="/?audio=demo">Start demo</a>
-                <a class="cta-button ghost" href="#launch-panels">Choose source</a>
+                <a class="cta-button ghost" href="#launch-options">See all inputs</a>
               </div>
+              <ol class="launch-stage__steps" aria-label="How launch works">
+                <li><strong>Start with demo.</strong> Get motion on screen first.</li>
+                <li><strong>Switch inputs later.</strong> Use mic, tab capture, or YouTube when you are ready.</li>
+                <li><strong>Leave defaults alone.</strong> Only tune if performance or motion feels off.</li>
+              </ol>
               <a
                 class="text-link"
                 href="https://github.com/zz-plant/stims"
@@ -102,32 +113,9 @@
                 View source
               </a>
             </div>
-          </div>
-        </section>
-
-        <section
-          class="launch-panels section-shell"
-          id="launch-panels"
-          aria-labelledby="launch-panels-title"
-        >
-          <div class="section-heading launch-panels__header">
-            <div>
-              <p class="eyebrow">Source</p>
-              <h2 id="launch-panels-title">Choose a source.</h2>
+            <div class="launch-stage__panel-shell" id="launch-options">
+              <section aria-label="Launch controls" data-audio-controls></section>
             </div>
-            <p class="section-description">Demo is fastest.</p>
-          </div>
-          <div class="shell-panels">
-            <section
-              class="shell-panel shell-panel--start"
-              aria-label="Audio"
-              data-audio-controls
-            ></section>
-            <section
-              class="shell-panel shell-panel--tune"
-              aria-label="Tune"
-              data-settings-panel
-            ></section>
           </div>
         </section>
       </main>

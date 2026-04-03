@@ -10973,3 +10973,335 @@ body[data-page="home"] .footer-nav {
     border-radius: 18px;
   }
 }
+
+body[data-page="experience"] .launch-shell--streamlined {
+  gap: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+body[data-page="experience"] .launch-intro {
+  padding: clamp(1.6rem, 2.4vw, 2.4rem);
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 8% 18%, rgba(224, 195, 96, 0.12), transparent 28%),
+    radial-gradient(
+      circle at 88% 12%,
+      rgba(95, 192, 181, 0.14),
+      transparent 26%
+    ),
+    linear-gradient(180deg, rgba(8, 12, 22, 0.96), rgba(10, 18, 28, 0.98));
+  border: 1px solid rgba(198, 219, 214, 0.14);
+  box-shadow:
+    0 26px 56px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body[data-page="experience"] .launch-stage__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
+  gap: clamp(1.4rem, 2.6vw, 2.6rem);
+  align-items: start;
+}
+
+body[data-page="experience"] .launch-stage__copy {
+  display: grid;
+  gap: 1rem;
+  max-width: 42rem;
+}
+
+body[data-page="experience"] .launch-stage__copy h1 {
+  margin: 0;
+  max-width: 11ch;
+  font-size: clamp(2.8rem, 7vw, 5.2rem);
+  line-height: 0.92;
+  letter-spacing: -0.07em;
+}
+
+body[data-page="experience"] .launch-stage__copy .section-description {
+  margin: 0;
+  max-width: 34rem;
+  color: rgba(247, 244, 235, 0.8);
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
+  line-height: 1.6;
+}
+
+body[data-page="experience"] .launch-stage__pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+body[data-page="experience"] .launch-stage__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(207, 222, 219, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(247, 244, 235, 0.82);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+body[data-page="experience"] .launch-stage__actions {
+  margin-top: 0.15rem;
+}
+
+body[data-page="experience"] .launch-stage__steps {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+body[data-page="experience"] .launch-stage__steps li {
+  margin: 0;
+  padding-left: 1.15rem;
+  position: relative;
+  color: rgba(247, 244, 235, 0.72);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+body[data-page="experience"] .launch-stage__steps li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62rem;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    rgba(179, 255, 94, 0.95),
+    rgba(95, 192, 181, 0.92)
+  );
+}
+
+body[data-page="experience"] .launch-stage__steps strong {
+  color: rgba(247, 244, 235, 0.95);
+}
+
+body[data-page="experience"] .launch-stage__panel-shell {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + 5rem);
+}
+
+body[data-page="experience"] .launch-stage__panel-shell > .control-panel {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  border-radius: 30px;
+  padding: 1.35rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
+    rgba(15, 22, 33, 0.9);
+  border: 1px solid rgba(207, 222, 219, 0.13);
+  box-shadow:
+    0 22px 44px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  clip-path: none;
+  overflow: visible;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__heading {
+  margin-bottom: 0.45rem;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__description {
+  margin-bottom: 1rem;
+  color: rgba(247, 244, 235, 0.72);
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(207, 222, 219, 0.1);
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__row
+  + .control-panel__row {
+  margin-top: 0.65rem;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__row--primary {
+  border-color: rgba(179, 255, 94, 0.35);
+  box-shadow: 0 14px 30px rgba(179, 255, 94, 0.08);
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__text {
+  min-width: 0;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__subtext {
+  display: block;
+  color: rgba(247, 244, 235, 0.84);
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__microcopy {
+  color: rgba(247, 244, 235, 0.58);
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__pill {
+  border: 1px solid rgba(179, 255, 94, 0.24);
+  background: rgba(179, 255, 94, 0.12);
+  color: #d7ff9f;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__details {
+  margin-top: 0.8rem;
+  border-radius: 18px;
+  border: 1px solid rgba(207, 222, 219, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__details
+  > summary {
+  padding: 0.95rem 1rem;
+  list-style: none;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__advanced-helper {
+  margin: 0;
+  padding: 0 1rem 0.8rem;
+  color: rgba(247, 244, 235, 0.62);
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__advanced {
+  padding: 0 0.8rem 0.85rem;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel--embedded {
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid rgba(207, 222, 219, 0.1);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel--embedded::before {
+  display: none;
+}
+
+body[data-page="experience"]
+  .launch-stage__panel-shell
+  > .control-panel
+  .control-panel__post-start {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(207, 222, 219, 0.08);
+}
+
+@media (max-width: 1040px) {
+  body[data-page="experience"] .launch-stage__grid {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-page="experience"] .launch-stage__panel-shell {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  body[data-page="experience"] .launch-intro {
+    padding: 1.1rem;
+    border-radius: 24px;
+  }
+
+  body[data-page="experience"] .launch-stage__copy {
+    gap: 0.8rem;
+  }
+
+  body[data-page="experience"] .launch-stage__copy h1 {
+    max-width: none;
+    font-size: clamp(2.8rem, 15vw, 4.2rem);
+  }
+
+  body[data-page="experience"] .launch-stage__actions .cta-button {
+    width: 100%;
+  }
+
+  body[data-page="experience"] .launch-stage__panel-shell > .control-panel {
+    padding: 1rem;
+    border-radius: 22px;
+  }
+
+  body[data-page="experience"]
+    .launch-stage__panel-shell
+    > .control-panel
+    .control-panel__row {
+    grid-template-columns: 1fr;
+  }
+
+  body[data-page="experience"]
+    .launch-stage__panel-shell
+    > .control-panel
+    .control-panel__row
+    .cta-button {
+    width: 100%;
+  }
+}
