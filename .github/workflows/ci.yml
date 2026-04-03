@@ -62,6 +62,16 @@ jobs:
       - name: Validate MCP Worker deploy config
         run: bun run mcp:check
 
+      - name: Archive production bundle
+        run: tar -czf dist-artifact.tgz dist
+
+      - name: Upload production bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist-artifact.tgz
+          if-no-files-found: error
+
   integration:
     name: Agent integration tests
     runs-on: ubuntu-latest
@@ -103,3 +113,136 @@ jobs:
 
       - name: Run agent integration tests
         run: bun run test:integration
+
+  deploy_preview:
+    name: Deploy Pages preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Cloudflare deploy credentials
+        id: cloudflare_creds
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare Pages secrets are missing; skipping preview deploy."
+          fi
+
+      - name: Set up Bun
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Restore Bun cache
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Download production bundle artifact
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-artifact
+
+      - name: Restore production bundle
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        run: tar -xzf dist-artifact.tgz
+
+      - name: Deploy preview bundle to Cloudflare Pages
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PAGES_BRANCH: ${{ github.head_ref }}
+        run: bun run pages:deploy:preview:reuse
+
+  deploy_production:
+    name: Deploy Pages production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - quality
+      - integration
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Cloudflare deploy credentials
+        id: cloudflare_creds
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare Pages secrets are missing; skipping production deploy."
+          fi
+
+      - name: Set up Bun
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Restore Bun cache
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Download production bundle artifact
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-artifact
+
+      - name: Restore production bundle
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        run: tar -xzf dist-artifact.tgz
+
+      - name: Deploy production bundle to Cloudflare Pages
+        if: steps.cloudflare_creds.outputs.available == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bun run pages:deploy:production:reuse

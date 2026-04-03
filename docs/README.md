@@ -60,3 +60,4 @@ Reference [`DOCS_MAINTENANCE.md`](./DOCS_MAINTENANCE.md) for the full synchroniz
 - Package manager: `bun`
 - Main quality gate: `bun run check`
 - Fast iteration gate: `bun run check:quick`
+- Default Cloudflare Pages deploy path: GitHub Actions direct upload from [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
