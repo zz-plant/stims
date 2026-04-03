@@ -14,14 +14,14 @@ Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with 
 - Capabilities: microphone, demoAudio
 - Moods: immersive, psychedelic
 - Tags: feedback, warp, visualizer, retro, presets, editor
-- Starter preset: `aurora-feedback-core` (aurora feedback starter)
-- First-run hint: Start with the curated preset browser, then toggle autoplay to hear smooth blend transitions.
+- Starter preset: `aurora-feedback-core` (starter preset)
+- First-run hint: Open presets, then try autoplay.
 - Highlight control: Preset browser
 - Recommended input: `demoAudio`
 
 ### Controls
-- Browse, favorite, and revisit standout presets
-- Blend between looks with autoplay or random runs
+- Browse presets
+- Try autoplay or random
 - Edit preset code and see the scene respond live
 - Import or export preset files
 - Tune quality for smoother or richer playback

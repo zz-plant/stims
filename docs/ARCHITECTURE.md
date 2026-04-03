@@ -4,7 +4,7 @@ This document summarizes how the Stims app is assembled, from the entry HTML she
 
 ## Architecture at a Glance
 
-- **Entry shells** (`index.html` and `milkdrop/index.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` is the editorial homepage, `/milkdrop/` is the immersive-first playback route, and the live overlay becomes the in-session workspace for presets and deeper tools.
+- **Entry shells** (`index.html` and `milkdrop/index.html`) are the user-facing HTML shells that bootstrap `assets/js/app.ts`; `/` is the unified playback route, `/milkdrop/` is a compatibility alias that redirects into `/`, and the live overlay becomes the in-session workspace for presets and deeper tools.
 - **Shared boot layers** (`assets/js/app.ts`, `assets/js/bootstrap/*`, `assets/js/loader.ts`, `assets/js/router.ts`) own page boot, capability preflight, navigation, lifecycle boundaries, and route/session state.
 - **Visible shell UI** (`assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/ui/*`) renders the library, toy container, status banners, and runtime controls.
 - **Shared runtime core** (`assets/js/core/*`) encapsulates rendering, audio, settings, runtime sessions, and per-frame loop wiring.
@@ -25,8 +25,8 @@ flowchart LR
   classDef leafNode fill:#f5f5f5,stroke:#6b7280,color:#1f2937,stroke-width:1px;
 
   subgraph PublicShells[Public entry shells]
-    Home["index.html<br/>editorial homepage"]
-    MilkdropShell["milkdrop/index.html<br/>immersive launch shell"]
+    Home["index.html<br/>unified launch shell"]
+    MilkdropShell["milkdrop/index.html<br/>redirect alias"]
   end
 
   App["assets/js/app.ts<br/>page detection + boot handoff"]
@@ -96,7 +96,7 @@ sequenceDiagram
   participant Au as audio-service.ts
   participant Md as milkdrop/runtime.ts
 
-  U->>S: Open /milkdrop/
+  U->>S: Open /
   S->>A: Bootstrap shared app entry
   A->>B: Compose launch shell
   A->>P: Run capability preflight
@@ -129,7 +129,7 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Runtime Layers
 
-- **HTML entry points** (`index.html` and `milkdrop/index.html`) load `assets/js/app.ts`; `index.html` is now a pure homepage surface, and query params refine launch state on the dedicated visualizer route.
+- **HTML entry points** (`index.html` and `milkdrop/index.html`) load the user into the same shared experience; `index.html` owns the unified launch shell, and `milkdrop/index.html` preserves older links by redirecting into the root route with query state intact.
 - **App bootstrap** (`assets/js/app.ts`) detects library vs toy pages, wires controls, runs capability preflight, and starts loader flows.
 - **Loader + routing** (`assets/js/loader.ts`, `assets/js/router.ts`) coordinate navigation, history, active toy lifecycle, and dynamic module loading.
 - **UI views** (`assets/js/toy-view.ts`, `assets/js/library-view.js`) render the library grid, active toy container, loading/error states, and renderer status badges.
@@ -142,15 +142,15 @@ Use this split when making trade-offs: keep Tier 0 reliable first, and treat Tie
 
 ## Shell Contract
 
-Both public HTML shells load the same shared CSS bundle and bootstrap `assets/js/app.ts`. The contract is:
+Both public HTML shells participate in the same route model and bootstrap `assets/js/app.ts` or redirect into it. The contract is:
 
-- `index.html` owns editorial marketing content, preset discovery teasers, and links into the live visualizer session.
-- `milkdrop/index.html` owns the dedicated launchpad shell, including the audio/settings panel slots needed before or during session start.
+- `index.html` owns the unified launchpad shell, including the audio/settings panel slots needed before or during session start.
+- `milkdrop/index.html` preserves compatibility for older links and redirects them into `/` while keeping query params intact.
 - `assets/js/app.ts` is the only runtime bootstrap entrypoint. It reads `data-page`, chooses the matching page bootstrap, and hands session work to loader/core modules.
-- Query-driven session state belongs on `/milkdrop/`; the homepage should only link into those states, not recreate launch logic inline.
-- Neither HTML shell should contain direct toy/runtime logic beyond declarative slots (`data-top-nav-container`, `data-audio-controls`, `data-settings-panel`) and page identity (`data-page`).
+- Query-driven session state belongs on `/`; `/milkdrop/` should resolve into that same state instead of becoming a separate product surface.
+- `index.html` should contain only declarative slots (`data-top-nav-container`, `data-audio-controls`, `data-settings-panel`) and page identity (`data-page`); the alias shell should remain redirect-only.
 
-Use this to keep future changes honest: homepage work should stay editorial, launch-route work should stay session-oriented, and cross-shell runtime behavior should be implemented once in JavaScript modules rather than duplicated in HTML.
+Use this to keep future changes honest: root-route work should stay session-oriented, alias-route work should stay compatibility-oriented, and cross-shell runtime behavior should be implemented once in JavaScript modules rather than duplicated in HTML.
 
 ## Runtime Ownership Map
 
