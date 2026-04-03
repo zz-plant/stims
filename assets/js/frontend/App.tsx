@@ -76,22 +76,22 @@ function buildReadinessSummary(
   const renderItem: ReadinessItem = rendering.hasWebGPU
     ? {
         id: 'rendering',
-        label: 'Renderer',
+        label: 'Graphics',
         state: 'ready',
-        summary: 'WebGPU is ready for the full visual stack.',
+        summary: 'High-detail visuals are ready.',
       }
     : rendering.hasWebGL
       ? {
           id: 'rendering',
-          label: 'Renderer',
+          label: 'Graphics',
           state: 'warn',
-          summary: 'WebGL fallback is available if WebGPU is unavailable.',
+          summary: 'Visuals will run in a lighter mode on this device.',
         }
       : {
           id: 'rendering',
-          label: 'Renderer',
+          label: 'Graphics',
           state: 'blocked',
-          summary: 'No supported renderer was detected on this browser.',
+          summary: 'This browser cannot start the visuals.',
         };
 
   const micItem: ReadinessItem =
@@ -163,6 +163,42 @@ function getCollectionTags(entries: PresetCatalogEntry[]) {
     });
   });
   return [...collectionTags].sort((left, right) => left.localeCompare(right));
+}
+
+function formatAudioSourceLabel(
+  source: EngineSnapshot['audioSource'] | undefined,
+) {
+  switch (source) {
+    case 'demo':
+      return 'Demo audio';
+    case 'microphone':
+      return 'Mic';
+    case 'tab':
+      return 'Tab audio';
+    case 'youtube':
+      return 'YouTube tab';
+    default:
+      return 'Waiting for sound';
+  }
+}
+
+function formatPresetSupportLabel(entry: PresetCatalogEntry) {
+  if (
+    entry.expectedFidelityClass === 'exact' ||
+    entry.expectedFidelityClass === 'near-exact'
+  ) {
+    return 'Full look';
+  }
+  if (
+    entry.expectedFidelityClass === 'partial' ||
+    entry.expectedFidelityClass === 'fallback'
+  ) {
+    return 'Adjusted look';
+  }
+  if (entry.supports?.webgpu) {
+    return 'High-detail ready';
+  }
+  return 'Lighter mode';
 }
 
 export function StimsWorkspaceApp() {
@@ -540,10 +576,10 @@ export function StimsWorkspaceApp() {
         <div className="stims-shell__brand">
           <a href="/" className="stims-shell__logo">
             <span>Stims</span>
-            <small>Workspace-first visualizer</small>
+            <small>Audio-reactive visuals</small>
           </a>
         </div>
-        <nav className="stims-shell__nav-links" aria-label="Workspace">
+        <nav className="stims-shell__nav-links" aria-label="Main">
           {TOOL_TABS.map((tool) => (
             <button
               key={tool}
@@ -583,18 +619,18 @@ export function StimsWorkspaceApp() {
           <div className="stims-shell__launch-copy">
             <p className="stims-shell__eyebrow">
               {runtimeReady || routeState.invalidExperienceSlug
-                ? 'MilkDrop runtime, new shell'
-                : 'Preparing session'}
+                ? 'Ready'
+                : 'Getting things ready'}
             </p>
             <h1>
               {runtimeReady || routeState.invalidExperienceSlug
-                ? 'Open a preset. Pick an input. Stay in the workspace.'
-                : 'Booting the MilkDrop workspace.'}
+                ? 'Pick a look and start the sound.'
+                : 'Loading the visualizer.'}
             </h1>
             <p>
               {runtimeReady || routeState.invalidExperienceSlug
-                ? 'The frontend is now route-driven and workspace-first. The visual runtime still runs behind the same engine seam, but the old shell no longer owns this route.'
-                : 'The visual runtime is mounting before input controls go live.'}
+                ? 'Try the demo track, use your mic, or capture a tab.'
+                : 'One moment while the visuals warm up.'}
             </p>
           </div>
 
@@ -675,7 +711,7 @@ export function StimsWorkspaceApp() {
           <section className="preflight-panel stims-shell__quick-check">
             <div className="stims-shell__quick-check-header">
               <h2>Quick check</h2>
-              <p>Keep the first move obvious. Hide the rest behind intent.</p>
+              <p>Graphics, mic, and motion at a glance.</p>
             </div>
             <div className="stims-shell__status-grid">
               {readinessItems.map((item) => (
@@ -693,166 +729,29 @@ export function StimsWorkspaceApp() {
         </section>
 
         <section className="stims-shell__workspace">
-          <aside className="stims-shell__sidebar">
-            <div className="stims-shell__sidebar-header">
-              <p className="stims-shell__eyebrow">Looks</p>
-              <h2>Preset browser</h2>
-            </div>
-
-            <label className="stims-shell__field-label" htmlFor="preset-search">
-              Search presets
-            </label>
-            <input
-              id="preset-search"
-              className="stims-shell__input"
-              type="search"
-              placeholder="Search title, author, or tag"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-
-            <nav className="stims-shell__collections" aria-label="Collections">
-              <button
-                type="button"
-                className="stims-shell__collection-pill"
-                data-active={String(routeState.collectionTag === null)}
-                onClick={() =>
-                  commitRoute({ ...routeState, collectionTag: null })
-                }
-              >
-                All
-              </button>
-              {collectionTags.map((collectionTag) => (
-                <button
-                  key={collectionTag}
-                  type="button"
-                  className="stims-shell__collection-pill"
-                  data-active={String(
-                    routeState.collectionTag === collectionTag,
-                  )}
-                  onClick={() =>
-                    commitRoute({
-                      ...routeState,
-                      collectionTag:
-                        routeState.collectionTag === collectionTag
-                          ? null
-                          : collectionTag,
-                    })
-                  }
-                >
-                  {prettifyCollectionTag(collectionTag)}
-                </button>
-              ))}
-            </nav>
-
-            {!catalogReady && !catalogError ? (
-              <p className="stims-shell__meta-copy">Loading preset catalog…</p>
-            ) : null}
-            {catalogError ? (
-              <p className="stims-shell__meta-copy">{catalogError}</p>
-            ) : null}
-            <ul className="stims-shell__preset-list">
-              {filteredCatalog.map((entry) => (
-                <li key={entry.id}>
-                  <button
-                    type="button"
-                    className="stims-shell__preset-card"
-                    data-active={String(
-                      entry.id === engineSnapshot?.activePresetId,
-                    )}
-                    onClick={() => handlePresetSelection(entry.id)}
-                  >
-                    <span className="stims-shell__preset-title">
-                      {entry.title}
-                    </span>
-                    <span className="stims-shell__preset-meta">
-                      {entry.author || 'Unknown author'}
-                    </span>
-                    <span className="stims-shell__preset-tech">
-                      {(entry.supports?.webgpu ? 'WebGPU' : 'WebGL fallback') +
-                        (entry.expectedFidelityClass
-                          ? ` · ${entry.expectedFidelityClass}`
-                          : '')}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </aside>
-
           <section className="stims-shell__stage-section">
             <div className="stims-shell__stage-header">
-              <div>
-                <p className="stims-shell__eyebrow">Session</p>
-                <h2>{currentPreset?.title ?? 'MilkDrop workspace'}</h2>
+              <div className="stims-shell__stage-copy">
+                <p className="stims-shell__eyebrow">Now playing</p>
+                <h2>{currentPreset?.title ?? 'Pick a look'}</h2>
+                <p className="stims-shell__meta-copy stims-shell__stage-summary">
+                  {currentPreset
+                    ? `${currentPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(currentPreset)}`
+                    : 'Choose a preset from the rail, then start your audio source.'}
+                </p>
               </div>
               <div className="stims-shell__session-meta">
                 <span className="stims-shell__meta-pill">
-                  {engineSnapshot?.backend
-                    ? engineSnapshot.backend.toUpperCase()
-                    : 'Preparing'}
+                  {engineSnapshot?.backend === 'webgpu'
+                    ? 'Full detail'
+                    : engineSnapshot?.backend === 'webgl'
+                      ? 'Lighter mode'
+                      : 'Starting up'}
                 </span>
                 <span className="stims-shell__meta-pill">
-                  {engineSnapshot?.audioSource
-                    ? `Audio: ${engineSnapshot.audioSource}`
-                    : 'Audio idle'}
+                  {formatAudioSourceLabel(engineSnapshot?.audioSource)}
                 </span>
               </div>
-            </div>
-
-            <div className="stims-shell__session-actions">
-              <button
-                type="button"
-                className="cta-button"
-                onClick={() => updatePanel('browse')}
-              >
-                Open looks
-              </button>
-              <button
-                type="button"
-                className="cta-button"
-                onClick={() => updatePanel('editor')}
-              >
-                Open editor
-              </button>
-              <button
-                type="button"
-                className="cta-button"
-                onClick={() => updatePanel('inspector')}
-              >
-                Open inspector
-              </button>
-              <button
-                type="button"
-                className="cta-button"
-                onClick={() => updatePanel('settings')}
-              >
-                Session settings
-              </button>
-              <button
-                type="button"
-                className="cta-button"
-                onClick={() => engineRef.current.exportPreset()}
-              >
-                Export preset
-              </button>
-              <label className="cta-button stims-shell__file-button">
-                Import preset
-                <input
-                  type="file"
-                  accept=".milk,.txt,text/plain"
-                  multiple
-                  onChange={(event) => void handleImport(event.target.files)}
-                />
-              </label>
-              <button
-                type="button"
-                className="cta-button"
-                data-back-to-library="true"
-                onClick={() => commitRoute({ ...routeState, panel: null })}
-              >
-                Focus stage
-              </button>
             </div>
 
             <div className="stims-shell__stage-frame">
@@ -860,11 +759,10 @@ export function StimsWorkspaceApp() {
               {routeState.invalidExperienceSlug ? (
                 <div className="active-toy-status is-error">
                   <div className="active-toy-status__content">
-                    <h2>Unknown experience</h2>
+                    <h2>Older link</h2>
                     <p>
-                      The legacy experience slug "
-                      {routeState.invalidExperienceSlug}" is no longer
-                      available.
+                      This older Stims link points to a view that is no longer
+                      available: "{routeState.invalidExperienceSlug}".
                     </p>
                   </div>
                 </div>
@@ -879,135 +777,296 @@ export function StimsWorkspaceApp() {
                 aria-live="polite"
               >
                 {resolvedBackend === 'webgl'
-                  ? `Using a simpler renderer (WebGL compatibility mode). ${
+                  ? `Using a lighter visual mode for this device. ${
                       statusMessage ?? engineSnapshot?.status ?? ''
                     }`.trim()
                   : (statusMessage ?? engineSnapshot?.status)}
               </output>
             ) : null}
+
+            <div className="stims-shell__stage-dock">
+              <div className="stims-shell__stage-dock-copy">
+                <p className="stims-shell__eyebrow">Controls</p>
+                <h3>Keep the picture in front, open tools when needed.</h3>
+              </div>
+              <div className="stims-shell__session-actions">
+                <button
+                  type="button"
+                  className="cta-button"
+                  onClick={() => updatePanel('browse')}
+                >
+                  Browse looks
+                </button>
+                <button
+                  type="button"
+                  className="cta-button"
+                  onClick={() => updatePanel('editor')}
+                >
+                  Edit code
+                </button>
+                <button
+                  type="button"
+                  className="cta-button"
+                  onClick={() => updatePanel('inspector')}
+                >
+                  View details
+                </button>
+                <button
+                  type="button"
+                  className="cta-button"
+                  onClick={() => updatePanel('settings')}
+                >
+                  Picture settings
+                </button>
+                <button
+                  type="button"
+                  className="cta-button"
+                  onClick={() => engineRef.current.exportPreset()}
+                >
+                  Export preset
+                </button>
+                <label className="cta-button stims-shell__file-button">
+                  Import preset
+                  <input
+                    type="file"
+                    accept=".milk,.txt,text/plain"
+                    multiple
+                    onChange={(event) => void handleImport(event.target.files)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="cta-button"
+                  data-back-to-library="true"
+                  onClick={() => commitRoute({ ...routeState, panel: null })}
+                >
+                  Back to visuals
+                </button>
+              </div>
+            </div>
           </section>
 
-          <aside
-            className="stims-shell__settings"
-            hidden={routeState.panel !== 'settings'}
-          >
-            <div className="stims-shell__sidebar-header">
-              <p className="stims-shell__eyebrow">Settings</p>
-              <h2>Renderer and interaction defaults</h2>
-            </div>
+          <div className="stims-shell__rail">
+            <aside className="stims-shell__sidebar">
+              <div className="stims-shell__sidebar-header">
+                <p className="stims-shell__eyebrow">Looks</p>
+                <h2>Preset browser</h2>
+                <p className="stims-shell__meta-copy">
+                  Search, filter, and swap visuals without losing the stage.
+                </p>
+              </div>
 
-            <label
-              className="stims-shell__field-label"
-              htmlFor="quality-select"
-            >
-              Quality preset
-            </label>
-            <select
-              id="quality-select"
-              className="stims-shell__select"
-              value={qualityPreset.id}
-              onChange={(event) => {
-                engineRef.current.setQualityPreset(event.target.value);
-              }}
-            >
-              {DEFAULT_QUALITY_PRESETS.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.label}
-                </option>
-              ))}
-            </select>
-            <p className="stims-shell__meta-copy">
-              {describeQualityPresetImpact(qualityPreset)}
-            </p>
-
-            <label className="stims-shell__toggle">
+              <label
+                className="stims-shell__field-label"
+                htmlFor="preset-search"
+              >
+                Search looks
+              </label>
               <input
-                type="checkbox"
-                checked={renderPreferences.compatibilityMode}
+                id="preset-search"
+                className="stims-shell__input"
+                type="search"
+                placeholder="Search title, author, or tag"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+
+              <nav
+                className="stims-shell__collections"
+                aria-label="Collections"
+              >
+                <button
+                  type="button"
+                  className="stims-shell__collection-pill"
+                  data-active={String(routeState.collectionTag === null)}
+                  onClick={() =>
+                    commitRoute({ ...routeState, collectionTag: null })
+                  }
+                >
+                  All
+                </button>
+                {collectionTags.map((collectionTag) => (
+                  <button
+                    key={collectionTag}
+                    type="button"
+                    className="stims-shell__collection-pill"
+                    data-active={String(
+                      routeState.collectionTag === collectionTag,
+                    )}
+                    onClick={() =>
+                      commitRoute({
+                        ...routeState,
+                        collectionTag:
+                          routeState.collectionTag === collectionTag
+                            ? null
+                            : collectionTag,
+                      })
+                    }
+                  >
+                    {prettifyCollectionTag(collectionTag)}
+                  </button>
+                ))}
+              </nav>
+
+              {!catalogReady && !catalogError ? (
+                <p className="stims-shell__meta-copy">Loading looks…</p>
+              ) : null}
+              {catalogError ? (
+                <p className="stims-shell__meta-copy">{catalogError}</p>
+              ) : null}
+              <ul className="stims-shell__preset-list">
+                {filteredCatalog.map((entry) => (
+                  <li key={entry.id}>
+                    <button
+                      type="button"
+                      className="stims-shell__preset-card"
+                      data-active={String(
+                        entry.id === engineSnapshot?.activePresetId,
+                      )}
+                      onClick={() => handlePresetSelection(entry.id)}
+                    >
+                      <span className="stims-shell__preset-title">
+                        {entry.title}
+                      </span>
+                      <span className="stims-shell__preset-meta">
+                        {entry.author || 'Unknown author'}
+                      </span>
+                      <span className="stims-shell__preset-tech">
+                        {formatPresetSupportLabel(entry)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+
+            <aside
+              className="stims-shell__settings"
+              hidden={routeState.panel !== 'settings'}
+            >
+              <div className="stims-shell__sidebar-header">
+                <p className="stims-shell__eyebrow">Settings</p>
+                <h2>Picture and controls</h2>
+              </div>
+
+              <label
+                className="stims-shell__field-label"
+                htmlFor="quality-select"
+              >
+                Picture style
+              </label>
+              <select
+                id="quality-select"
+                className="stims-shell__select"
+                value={qualityPreset.id}
                 onChange={(event) => {
-                  setCompatibilityMode(event.target.checked);
+                  engineRef.current.setQualityPreset(event.target.value);
+                }}
+              >
+                {DEFAULT_QUALITY_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+              <p className="stims-shell__meta-copy">
+                {describeQualityPresetImpact(qualityPreset)}
+              </p>
+
+              <label className="stims-shell__toggle">
+                <input
+                  type="checkbox"
+                  checked={renderPreferences.compatibilityMode}
+                  onChange={(event) => {
+                    setCompatibilityMode(event.target.checked);
+                  }}
+                />
+                <span>Safer graphics mode</span>
+              </label>
+
+              <label className="stims-shell__toggle">
+                <input
+                  type="checkbox"
+                  checked={motionPreference.enabled}
+                  onChange={(event) => {
+                    setMotionPreference({ enabled: event.target.checked });
+                  }}
+                />
+                <span>Allow motion controls</span>
+              </label>
+
+              <label
+                className="stims-shell__field-label"
+                htmlFor="render-scale"
+              >
+                Sharpness
+              </label>
+              <input
+                id="render-scale"
+                type="range"
+                min="0.6"
+                max="1.4"
+                step="0.05"
+                value={renderPreferences.renderScale ?? 1}
+                onChange={(event) => {
+                  setRenderPreferences({
+                    renderScale: Number.parseFloat(event.target.value),
+                  });
                 }}
               />
-              <span>Compatibility mode</span>
-            </label>
+              <p className="stims-shell__meta-copy">
+                Current sharpness:{' '}
+                {(renderPreferences.renderScale ?? 1).toFixed(2)}x
+              </p>
 
-            <label className="stims-shell__toggle">
+              <label
+                className="stims-shell__field-label"
+                htmlFor="max-pixel-ratio"
+              >
+                Detail limit
+              </label>
               <input
-                type="checkbox"
-                checked={motionPreference.enabled}
+                id="max-pixel-ratio"
+                type="range"
+                min="0.75"
+                max="3"
+                step="0.05"
+                value={renderPreferences.maxPixelRatio ?? 1.5}
                 onChange={(event) => {
-                  setMotionPreference({ enabled: event.target.checked });
+                  setRenderPreferences({
+                    maxPixelRatio: Number.parseFloat(event.target.value),
+                  });
                 }}
               />
-              <span>Motion-enabled presets</span>
-            </label>
+              <p className="stims-shell__meta-copy">
+                Current limit:{' '}
+                {(renderPreferences.maxPixelRatio ?? 1.5).toFixed(2)}x
+              </p>
 
-            <label className="stims-shell__field-label" htmlFor="render-scale">
-              Render scale
-            </label>
-            <input
-              id="render-scale"
-              type="range"
-              min="0.6"
-              max="1.4"
-              step="0.05"
-              value={renderPreferences.renderScale ?? 1}
-              onChange={(event) => {
-                setRenderPreferences({
-                  renderScale: Number.parseFloat(event.target.value),
-                });
-              }}
-            />
-            <p className="stims-shell__meta-copy">
-              Current render scale:{' '}
-              {(renderPreferences.renderScale ?? 1).toFixed(2)}x
-            </p>
-
-            <label
-              className="stims-shell__field-label"
-              htmlFor="max-pixel-ratio"
-            >
-              Pixel ratio cap
-            </label>
-            <input
-              id="max-pixel-ratio"
-              type="range"
-              min="0.75"
-              max="3"
-              step="0.05"
-              value={renderPreferences.maxPixelRatio ?? 1.5}
-              onChange={(event) => {
-                setRenderPreferences({
-                  maxPixelRatio: Number.parseFloat(event.target.value),
-                });
-              }}
-            />
-            <p className="stims-shell__meta-copy">
-              Current cap: {(renderPreferences.maxPixelRatio ?? 1.5).toFixed(2)}
-              x
-            </p>
-
-            <div className="stims-shell__settings-footer">
-              <button
-                type="button"
-                className="cta-button"
-                onClick={() => updatePanel(null)}
-              >
-                Close settings
-              </button>
-              <button
-                type="button"
-                className="cta-button"
-                onClick={() => {
-                  setStatusMessage(
-                    `Canonical URL: ${buildCanonicalUrl(routeState).pathname}${buildCanonicalUrl(routeState).search}`,
-                  );
-                }}
-              >
-                Show canonical route
-              </button>
-            </div>
-          </aside>
+              <div className="stims-shell__settings-footer">
+                <button
+                  type="button"
+                  className="cta-button"
+                  onClick={() => updatePanel(null)}
+                >
+                  Close settings
+                </button>
+                {routeState.agentMode ? (
+                  <button
+                    type="button"
+                    className="cta-button"
+                    onClick={() => {
+                      setStatusMessage(
+                        `Current link: ${buildCanonicalUrl(routeState).pathname}${buildCanonicalUrl(routeState).search}`,
+                      );
+                    }}
+                  >
+                    Show current link
+                  </button>
+                ) : null}
+              </div>
+            </aside>
+          </div>
         </section>
       </main>
     </div>
