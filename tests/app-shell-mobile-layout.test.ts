@@ -22,4 +22,15 @@ describe('Workspace shell mobile layout regression', () => {
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__readiness-chips\s*\{\s*flex-wrap:\s*nowrap;[\s\S]*?overflow-x:\s*auto;/u,
     );
   });
+
+  test('sizes the mounted visualizer canvas to the stage frame instead of the viewport', () => {
+    const css = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
+      'utf8',
+    );
+
+    expect(css).toMatch(
+      /\.stims-shell__stage-root > canvas\s*\{[\s\S]*?width:\s*100%\s*!important;[\s\S]*?height:\s*100%\s*!important;/u,
+    );
+  });
 });

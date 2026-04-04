@@ -565,6 +565,14 @@ body[data-page="workspace"] {
   inset: 0;
 }
 
+.stims-shell__stage-root > canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
 .stims-shell__readiness-chips {
   display: flex;
   flex-wrap: wrap;
