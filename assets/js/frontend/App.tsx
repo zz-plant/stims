@@ -968,7 +968,7 @@ export function StimsWorkspaceApp() {
             <div className="stims-shell__stage-header">
               <div className="stims-shell__stage-copy">
                 <p className="stims-shell__eyebrow">
-                  {launchControlsHidden ? 'Now playing' : 'Current look'}
+                  {launchControlsHidden ? 'Now playing' : 'Selected look'}
                 </p>
                 <h2>{selectedPreset?.title ?? 'No active look'}</h2>
                 <p className="stims-shell__meta-copy stims-shell__stage-summary">
