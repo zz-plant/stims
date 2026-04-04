@@ -15,7 +15,9 @@ describe('milkdrop catalog store', () => {
     mock.restore();
   });
 
-  test('ignores catalog fidelity metadata when support flags do not match compiled analysis', async () => {
+  test('enriches mismatched catalog metadata after the preset is compiled on demand', async () => {
+    let presetFetchCount = 0;
+
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/milkdrop-presets/catalog.json')) {
@@ -40,6 +42,7 @@ describe('milkdrop catalog store', () => {
       }
 
       if (url.endsWith('/milkdrop-presets/mismatch-pack.milk')) {
+        presetFetchCount += 1;
         return {
           ok: true,
           text: async () =>
@@ -59,14 +62,30 @@ describe('milkdrop catalog store', () => {
     const bundled = entries.find((entry) => entry.id === 'mismatch-pack');
 
     expect(bundled).toBeDefined();
+    expect(presetFetchCount).toBe(0);
     expect(bundled?.supports.webgl.status).toBe('supported');
-    expect(bundled?.supports.webgpu.status).toBe('supported');
-    expect(bundled?.fidelityClass).toBe('partial');
-    expect(bundled?.visualEvidenceTier).toBe('runtime');
-    expect(bundled?.evidence.visual).toBe('not-captured');
+    expect(bundled?.supports.webgpu.status).toBe('unsupported');
+    expect(bundled?.fidelityClass).toBe('fallback');
+    expect(bundled?.visualEvidenceTier).toBe('compile');
+
+    await store.getPresetSource('mismatch-pack');
+
+    const enrichedEntries = await store.listPresets();
+    const enriched = enrichedEntries.find(
+      (entry) => entry.id === 'mismatch-pack',
+    );
+
+    expect(presetFetchCount).toBe(1);
+    expect(enriched?.supports.webgl.status).toBe('supported');
+    expect(enriched?.supports.webgpu.status).toBe('supported');
+    expect(enriched?.fidelityClass).toBe('partial');
+    expect(enriched?.visualEvidenceTier).toBe('runtime');
+    expect(enriched?.evidence.visual).toBe('not-captured');
   });
 
-  test('derives backend support, favorites, ratings, and history from preset analysis', async () => {
+  test('defers bundled analysis until the preset is loaded on demand', async () => {
+    let presetFetchCount = 0;
+
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/milkdrop-presets/catalog.json')) {
@@ -88,6 +107,7 @@ describe('milkdrop catalog store', () => {
       }
 
       if (url.endsWith('/milkdrop-presets/feedback-pack.milk')) {
+        presetFetchCount += 1;
         return {
           ok: true,
           text: async () =>
@@ -110,14 +130,31 @@ describe('milkdrop catalog store', () => {
       (entry) => entry.id === 'feedback-pack',
     );
 
-    expect(bundled?.supports.webgl.status).toBe('supported');
-    expect(bundled?.supports.webgpu.status).toBe('supported');
+    expect(presetFetchCount).toBe(0);
+    expect(bundled?.supports.webgl.status).toBe('partial');
+    expect(bundled?.supports.webgpu.status).toBe('partial');
     expect(bundled?.fidelityClass).toBe('partial');
     expect(bundled?.certification).toBe('bundled');
-    expect(bundled?.visualEvidenceTier).toBe('runtime');
+    expect(bundled?.visualEvidenceTier).toBe('none');
     expect(bundled?.evidence.visual).toBe('not-captured');
-    expect(bundled?.featuresUsed).toContain('video-echo');
-    expect(bundled?.featuresUsed).toContain('custom-waves');
+    expect(bundled?.featuresUsed).toEqual([]);
+    expect(bundled?.warnings).toContain(
+      'Detailed compatibility will be analyzed when this preset loads.',
+    );
+
+    await store.getPresetSource('feedback-pack');
+
+    const enrichedBundledEntries = await store.listPresets();
+    const enrichedBundled = enrichedBundledEntries.find(
+      (entry) => entry.id === 'feedback-pack',
+    );
+
+    expect(presetFetchCount).toBe(1);
+    expect(enrichedBundled?.supports.webgl.status).toBe('supported');
+    expect(enrichedBundled?.supports.webgpu.status).toBe('supported');
+    expect(enrichedBundled?.visualEvidenceTier).toBe('runtime');
+    expect(enrichedBundled?.featuresUsed).toContain('video-echo');
+    expect(enrichedBundled?.featuresUsed).toContain('custom-waves');
 
     await store.savePreset({
       id: 'local-shader',
