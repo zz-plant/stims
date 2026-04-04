@@ -1,7 +1,7 @@
 import type { AdaptiveQualityState } from '../../core/services/adaptive-quality-controller.ts';
 import type { createMilkdropEditorSession } from '../editor-session.ts';
 import type { MilkdropOverlay } from '../overlay.ts';
-import type { createMilkdropRendererAdapter } from '../renderer-adapter-factory.ts';
+import type { MilkdropRendererAdapter } from '../renderer-types.ts';
 import type { MilkdropCompiledPreset, MilkdropFrameState } from '../types.ts';
 import { buildAgentMilkdropDebugSnapshot } from './debug-snapshot.ts';
 import type { ReturnTypeOfCreateMilkdropVM } from './presentation-types.ts';
@@ -28,7 +28,7 @@ export function createMilkdropPresentationController({
   getOverlay: () => MilkdropOverlay | null;
   session: Pick<ReturnType<typeof createMilkdropEditorSession>, 'getState'>;
   vm: ReturnTypeOfCreateMilkdropVM;
-  getAdapter: () => ReturnType<typeof createMilkdropRendererAdapter> | null;
+  getAdapter: () => MilkdropRendererAdapter | null;
   getState: () => PresentationState;
   setCompiledState: (compiled: MilkdropCompiledPreset) => void;
   isAgentMode: () => boolean;

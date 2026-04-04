@@ -27,6 +27,7 @@ import {
   setRenderPreferences,
   subscribeToRenderPreferences,
 } from '../core/state/render-preference-store.ts';
+import type { MilkdropCatalogEntry } from '../milkdrop/types.ts';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
 import { YouTubeController } from '../ui/youtube-controller.ts';
 import type {
@@ -228,6 +229,23 @@ function formatPresetSupportLabel(entry: PresetCatalogEntry) {
   return 'Lighter mode';
 }
 
+function mapRuntimeCatalogEntry(
+  entry: MilkdropCatalogEntry,
+): PresetCatalogEntry {
+  return {
+    id: entry.id,
+    title: entry.title,
+    author: entry.author,
+    file: entry.bundledFile,
+    tags: entry.tags,
+    expectedFidelityClass: entry.fidelityClass,
+    supports: {
+      webgl: entry.supports.webgl.status === 'supported',
+      webgpu: entry.supports.webgpu.status === 'supported',
+    },
+  };
+}
+
 export function StimsWorkspaceApp() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
     readSessionRouteState(),
@@ -235,9 +253,13 @@ export function StimsWorkspaceApp() {
   const [engineSnapshot, setEngineSnapshot] = useState<EngineSnapshot | null>(
     null,
   );
-  const [catalog, setCatalog] = useState<PresetCatalogEntry[]>([]);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [catalogReady, setCatalogReady] = useState(false);
+  const [fallbackCatalog, setFallbackCatalog] = useState<PresetCatalogEntry[]>(
+    [],
+  );
+  const [fallbackCatalogError, setFallbackCatalogError] = useState<
+    string | null
+  >(null);
+  const [fallbackCatalogReady, setFallbackCatalogReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [readinessItems, setReadinessItems] = useState<ReadinessItem[]>([]);
   const [qualityPreset, setQualityPresetState] = useState(() =>
@@ -323,7 +345,13 @@ export function StimsWorkspaceApp() {
   }, []);
 
   useEffect(() => {
+    if (!routeState.invalidExperienceSlug) {
+      return;
+    }
+
     let cancelled = false;
+    setFallbackCatalogError(null);
+    setFallbackCatalogReady(false);
 
     void fetch('/milkdrop-presets/catalog.json')
       .then(async (response) => {
@@ -334,14 +362,14 @@ export function StimsWorkspaceApp() {
         if (cancelled) {
           return;
         }
-        setCatalog(manifest.presets ?? []);
-        setCatalogReady(true);
+        setFallbackCatalog(manifest.presets ?? []);
+        setFallbackCatalogReady(true);
       })
       .catch((error) => {
         if (cancelled) {
           return;
         }
-        setCatalogError(
+        setFallbackCatalogError(
           error instanceof Error ? error.message : 'Unable to load catalog.',
         );
       });
@@ -349,7 +377,7 @@ export function StimsWorkspaceApp() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [routeState.invalidExperienceSlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -486,6 +514,21 @@ export function StimsWorkspaceApp() {
       delete document.documentElement.dataset.agentMode;
     }
   }, [engineSnapshot?.audioActive, routeState.agentMode]);
+
+  const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
+    mapRuntimeCatalogEntry,
+  );
+  const runtimeCatalogReady =
+    (engineSnapshot?.runtimeReady ?? false) || runtimeCatalog.length > 0;
+  const catalog = routeState.invalidExperienceSlug
+    ? fallbackCatalog
+    : runtimeCatalog;
+  const catalogReady = routeState.invalidExperienceSlug
+    ? fallbackCatalogReady
+    : runtimeCatalogReady;
+  const catalogError = routeState.invalidExperienceSlug
+    ? fallbackCatalogError
+    : null;
 
   const filteredCatalog = catalog.filter((entry) => {
     if (

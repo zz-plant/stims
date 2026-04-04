@@ -1,6 +1,5 @@
 import type { QualityPreset } from '../core/settings-panel';
 import { BrowsePanel } from './overlay/browse-panel';
-import { EditorPanel } from './overlay/editor-panel';
 import { InspectorPanel } from './overlay/inspector-panel';
 import type {
   MilkdropCatalogEntry,
@@ -33,6 +32,7 @@ type OverlayCallbacks = {
 type OverlayPrimaryView = 'browse' | 'tools';
 type OverlayToolView = 'editor' | 'inspector';
 type OverlayTab = 'browse' | 'editor' | 'inspector';
+type EditorPanelInstance = import('./overlay/editor-panel').EditorPanel;
 
 function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
   buttons.forEach((button) => {
@@ -61,7 +61,8 @@ export class MilkdropOverlay {
   private readonly fileInput: HTMLInputElement;
   private readonly tabButtons: HTMLButtonElement[];
   private readonly browsePanel: BrowsePanel;
-  private readonly editorPanel: EditorPanel;
+  private readonly editorPanelHost: HTMLElement;
+  private readonly editorPanelLoadingState: HTMLElement;
   private readonly inspectorPanel: InspectorPanel;
   private readonly presetOsd: HTMLElement;
   private readonly presetOsdTitle: HTMLElement;
@@ -72,6 +73,11 @@ export class MilkdropOverlay {
   private activePresetId: string | null = null;
   private activePresetEntry: MilkdropCatalogEntry | null = null;
   private osdHideTimeoutId: number | null = null;
+  private editorPanel: EditorPanelInstance | null = null;
+  private editorPanelPromise: Promise<EditorPanelInstance | null> | null = null;
+  private pendingEditorDeleteEnabled = false;
+  private pendingEditorSessionState: MilkdropEditorSessionState | null = null;
+  private disposed = false;
   private readonly shortcutListener: (event: KeyboardEvent) => void;
 
   constructor({
@@ -275,25 +281,25 @@ export class MilkdropOverlay {
         this.callbacks.onToggleFavorite(id, favorite),
       onSetRating: (id, rating) => this.callbacks.onSetRating(id, rating),
     });
-    this.editorPanel = new EditorPanel({
-      onEditorSourceChange: (source) =>
-        this.callbacks.onEditorSourceChange(source),
-      onRevertToActive: () => this.callbacks.onRevertToActive(),
-      onDuplicatePreset: () => this.callbacks.onDuplicatePreset(),
-      onExport: () => this.callbacks.onExport(),
-      onDeletePreset: () => this.callbacks.onDeletePreset(),
-      onRequestImport: () => this.fileInput.click(),
-    });
     this.inspectorPanel = new InspectorPanel({
       onInspectorFieldChange: (key, value) =>
         this.callbacks.onInspectorFieldChange(key, value),
     });
 
+    this.editorPanelHost = document.createElement('div');
+    this.editorPanelHost.className = 'milkdrop-overlay__editor-host';
+    this.editorPanelHost.hidden = true;
+    this.editorPanelLoadingState = document.createElement('div');
+    this.editorPanelLoadingState.className = 'milkdrop-overlay__editor-loading';
+    this.editorPanelLoadingState.textContent = 'Loading editor...';
+    this.editorPanelLoadingState.hidden = true;
+    this.editorPanelHost.appendChild(this.editorPanelLoadingState);
+
     const panelBody = document.createElement('div');
     panelBody.className = 'milkdrop-overlay__body';
     panelBody.append(
       this.browsePanel.element,
-      this.editorPanel.element,
+      this.editorPanelHost,
       this.inspectorPanel.element,
     );
 
@@ -392,11 +398,10 @@ export class MilkdropOverlay {
     this.activePresetEntry =
       presets.find((entry) => entry.id === activePresetId) ?? null;
     this.browsePanel.setCatalog(presets, activePresetId, backend);
-    this.editorPanel.setDeleteEnabled(
-      Boolean(
-        this.activePresetEntry && this.activePresetEntry.origin !== 'bundled',
-      ),
+    this.pendingEditorDeleteEnabled = Boolean(
+      this.activePresetEntry && this.activePresetEntry.origin !== 'bundled',
     );
+    this.syncEditorPanelState();
     if (this.activePresetEntry && previousActivePresetId !== activePresetId) {
       this.showPresetOsd(this.activePresetEntry, this.activePresetEntry.title);
     }
@@ -417,7 +422,8 @@ export class MilkdropOverlay {
   }
 
   setSessionState(state: MilkdropEditorSessionState) {
-    this.editorPanel.setSessionState(state);
+    this.pendingEditorSessionState = state;
+    this.syncEditorPanelState();
     if (state.activeCompiled) {
       this.inspectorPanel.setCompiledPreset(state.activeCompiled);
     }
@@ -452,7 +458,8 @@ export class MilkdropOverlay {
   }
 
   dispose() {
-    this.editorPanel.dispose();
+    this.disposed = true;
+    this.editorPanel?.dispose();
     this.browsePanel.dispose();
     if (this.osdHideTimeoutId !== null) {
       window.clearTimeout(this.osdHideTimeoutId);
@@ -502,10 +509,79 @@ export class MilkdropOverlay {
     this.activeTab = tab === 'editor' || tab === 'inspector' ? tab : 'browse';
     this.syncOverlayDatasets(this.activeTab);
     this.browsePanel.setVisible(this.activeTab === 'browse');
-    this.editorPanel.setVisible(this.activeTab === 'editor');
+    if (this.activeTab === 'editor') {
+      this.editorPanelHost.hidden = false;
+      this.editorPanelLoadingState.hidden = false;
+      void this.ensureEditorPanel();
+    } else {
+      this.editorPanelHost.hidden = true;
+      this.editorPanelLoadingState.hidden = true;
+      this.editorPanel?.setVisible(false);
+    }
     this.inspectorPanel.setVisible(this.activeTab === 'inspector');
     setButtonActive(this.tabButtons, this.activeTab);
     this.syncRootSessionState();
+  }
+
+  private async ensureEditorPanel() {
+    if (this.editorPanel || this.editorPanelPromise) {
+      return this.editorPanelPromise ?? Promise.resolve(this.editorPanel);
+    }
+    if (this.disposed) {
+      return Promise.resolve(null);
+    }
+
+    const isEditorTabActive = this.activeTab === 'editor';
+    this.editorPanelLoadingState.hidden = false;
+    this.editorPanelPromise = import('./overlay/editor-panel')
+      .then(({ EditorPanel }) => {
+        if (this.disposed) {
+          return null;
+        }
+
+        const panel = new EditorPanel({
+          onEditorSourceChange: (source) =>
+            this.callbacks.onEditorSourceChange(source),
+          onRevertToActive: () => this.callbacks.onRevertToActive(),
+          onDuplicatePreset: () => this.callbacks.onDuplicatePreset(),
+          onExport: () => this.callbacks.onExport(),
+          onDeletePreset: () => this.callbacks.onDeletePreset(),
+          onRequestImport: () => this.fileInput.click(),
+        });
+
+        this.editorPanel = panel;
+        this.editorPanelHost.hidden = !isEditorTabActive;
+        this.editorPanelHost.replaceChildren(
+          this.editorPanelLoadingState,
+          panel.element,
+        );
+        panel.setVisible(isEditorTabActive);
+        panel.setDeleteEnabled(this.pendingEditorDeleteEnabled);
+        if (this.pendingEditorSessionState) {
+          panel.setSessionState(this.pendingEditorSessionState);
+        }
+        this.editorPanelLoadingState.hidden = true;
+        return panel;
+      })
+      .catch((error) => {
+        this.editorPanelPromise = null;
+        throw error;
+      });
+
+    return this.editorPanelPromise;
+  }
+
+  private syncEditorPanelState() {
+    const panel = this.editorPanel;
+    if (!panel || this.disposed) {
+      return;
+    }
+
+    panel.setDeleteEnabled(this.pendingEditorDeleteEnabled);
+    if (this.pendingEditorSessionState) {
+      panel.setSessionState(this.pendingEditorSessionState);
+    }
+    panel.setVisible(this.activeTab === 'editor');
   }
 
   private syncOverlayDatasets(tab: OverlayTab) {

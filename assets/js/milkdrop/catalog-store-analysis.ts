@@ -246,6 +246,7 @@ export function getConservativeBundledCatalogProjectionDefaults(
 
 export function createCatalogAnalysis() {
   const analysisCache = new Map<string, MilkdropCompiledPreset>();
+  const analysisById = new Map<string, MilkdropCompiledPreset>();
   const analysisOptionsKey = 'compat';
 
   const getCompiled = (source: MilkdropPresetSource) => {
@@ -256,10 +257,14 @@ export function createCatalogAnalysis() {
     }
     const compiled = compileMilkdropPresetSource(source.raw, source);
     analysisCache.set(cacheKey, compiled);
+    analysisById.set(source.id, compiled);
     return compiled;
   };
 
   return {
     getCompiled,
+    getCachedCompiled(id: string) {
+      return analysisById.get(id) ?? null;
+    },
   };
 }

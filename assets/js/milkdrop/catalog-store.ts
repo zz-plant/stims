@@ -9,8 +9,8 @@ import {
   type StoredMetaRecord,
 } from './catalog-store-persistence';
 import {
+  toBundledCatalogEntryFromManifest,
   toCatalogEntry,
-  toUnavailableBundledCatalogEntry,
 } from './catalog-store-projection';
 import type { MilkdropCatalogStore, MilkdropPresetSource } from './types';
 
@@ -65,15 +65,14 @@ export function createMilkdropCatalogStore({
         bundled.map(async (entry) => {
           const meta = metaById.get(entry.id) ?? null;
           const historyIndex = history.indexOf(entry.id);
+          const cachedCompiled = analysis.getCachedCompiled(entry.id);
 
-          try {
-            const source = await bundledCatalog.loadBundledSource(entry);
-            const compiled = analysis.getCompiled(source);
+          if (cachedCompiled) {
             const validatedOverrides = getValidatedCatalogOverrides(
               entry,
-              compiled,
+              cachedCompiled,
             );
-            return toCatalogEntry(source, compiled, meta, {
+            return toCatalogEntry(cachedCompiled.source, cachedCompiled, meta, {
               tags: entry.tags ?? [],
               curatedRank: entry.curatedRank,
               bundledFile: entry.file,
@@ -82,9 +81,9 @@ export function createMilkdropCatalogStore({
               corpusTier: entry.corpusTier ?? 'bundled',
               ...validatedOverrides,
             });
-          } catch {
-            return toUnavailableBundledCatalogEntry(entry, meta, historyIndex);
           }
+
+          return toBundledCatalogEntryFromManifest(entry, meta, historyIndex);
         }),
       );
 
@@ -112,7 +111,9 @@ export function createMilkdropCatalogStore({
       if (!entry) {
         return null;
       }
-      return bundledCatalog.loadBundledSource(entry);
+      const source = await bundledCatalog.loadBundledSource(entry);
+      analysis.getCompiled(source);
+      return source;
     },
 
     async savePreset(source) {

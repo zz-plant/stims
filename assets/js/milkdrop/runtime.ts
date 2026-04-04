@@ -34,6 +34,7 @@ import { createMilkdropEditorSession } from './editor-session';
 import { MilkdropOverlay } from './overlay';
 import { consumeRequestedMilkdropOverlayTab } from './overlay-intent';
 import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
+import type { MilkdropRendererAdapter } from './renderer-types';
 import { createMilkdropBackendFailover } from './runtime/backend-fallback';
 import { applyMilkdropCapturedVideoFrameState } from './runtime/captured-video-frame.ts';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
@@ -123,7 +124,7 @@ export function createMilkdropExperience({
   });
 
   let runtime: ToyRuntimeInstance | null = null;
-  let adapter: ReturnType<typeof createMilkdropRendererAdapter> | null = null;
+  let adapter: MilkdropRendererAdapter | null = null;
   let activeCompiled: MilkdropCompiledPreset = defaultPreset;
   let activePresetId = defaultPreset.source.id;
   let activeBackend: 'webgl' | 'webgpu' = 'webgl';
@@ -638,14 +639,40 @@ export function createMilkdropExperience({
         disposeKeyboardShortcuts =
           interactionPresenter.installKeyboardShortcuts();
       }
-      nextRuntime.toy.rendererReady.then((handle) => {
+      nextRuntime.toy.rendererReady.then(async (handle) => {
         if (
           !lifetime.isCurrentAttachment(attachmentRevision) ||
           runtime !== nextRuntime
         ) {
           return;
         }
-        activeBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
+        const nextBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
+        const nextAdapter =
+          nextBackend === 'webgpu'
+            ? await createMilkdropRendererAdapter({
+                scene: nextRuntime.toy.scene,
+                camera: nextRuntime.toy.camera,
+                renderer: handle?.renderer,
+                backend: 'webgpu',
+                preset: activeCompiled,
+                webgpuOptimizationFlags,
+              })
+            : createMilkdropRendererAdapter({
+                scene: nextRuntime.toy.scene,
+                camera: nextRuntime.toy.camera,
+                renderer: handle?.renderer,
+                backend: 'webgl',
+                preset: activeCompiled,
+                webgpuOptimizationFlags,
+              });
+        if (
+          !lifetime.isCurrentAttachment(attachmentRevision) ||
+          runtime !== nextRuntime
+        ) {
+          nextAdapter.dispose();
+          return;
+        }
+        activeBackend = nextBackend;
         if (typeof document !== 'undefined') {
           document.body.dataset.activeBackend = activeBackend;
         }
@@ -653,15 +680,8 @@ export function createMilkdropExperience({
         disposePostprocessingPipeline();
         adapter?.dispose();
         capturedVideoOverlay.attach(nextRuntime.toy.camera);
-        adapter = createMilkdropRendererAdapter({
-          scene: nextRuntime.toy.scene,
-          camera: nextRuntime.toy.camera,
-          renderer: handle?.renderer,
-          backend: activeBackend,
-          preset: activeCompiled,
-          webgpuOptimizationFlags,
-        });
-        adapter.attach();
+        adapter = nextAdapter;
+        nextAdapter.attach();
         adaptiveQualityUnsubscribe?.();
         adaptiveQualityUnsubscribe = null;
         adaptiveQualityController = createAdaptiveQualityController({

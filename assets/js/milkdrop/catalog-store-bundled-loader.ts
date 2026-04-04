@@ -39,7 +39,7 @@ const DEFAULT_LIBRARY_MANIFEST_URLS = [
 ];
 
 export async function loadText(url: string) {
-  const response = await fetch(url, { cache: 'no-store' });
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch preset source: ${url}`);
   }
@@ -61,7 +61,7 @@ function buildCertificationCorpusFileUrl(
 async function loadCertificationCorpusCatalog(): Promise<
   MilkdropBundledCatalogEntry[]
 > {
-  const response = await fetch(CERTIFICATION_CORPUS_URL, { cache: 'no-store' });
+  const response = await fetch(CERTIFICATION_CORPUS_URL);
   if (!response.ok) {
     return [] as MilkdropBundledCatalogEntry[];
   }
@@ -114,7 +114,7 @@ function toBundledCatalogEntries(document: BundledCatalogDocument) {
 async function loadOptionalCatalog(
   catalogUrl: string,
 ): Promise<MilkdropBundledCatalogEntry[]> {
-  return fetch(catalogUrl, { cache: 'no-store' })
+  return fetch(catalogUrl)
     .then(async (response) => {
       if (!response.ok) {
         return [] as MilkdropBundledCatalogEntry[];
