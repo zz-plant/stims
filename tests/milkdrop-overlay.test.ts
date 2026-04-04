@@ -548,7 +548,9 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__browse',
     ) as HTMLElement | null;
 
-    expect(search?.placeholder).toBe('Search looks, authors, or classic names');
+    expect(search?.placeholder).toBe(
+      'Search titles, authors, or classic names',
+    );
     expect(modeTabs.map((tab) => tab.textContent?.trim())).toEqual([
       'Featured',
       'All looks',
@@ -954,7 +956,7 @@ describe('milkdrop overlay browse rendering', () => {
     ).toBe('Signal Bloom');
     expect(
       document.querySelector('.milkdrop-overlay__browse-meta')?.textContent,
-    ).toBe('2 picks');
+    ).toBe('2 results');
 
     const partialRow = rows[1];
     const partialMeta = partialRow?.querySelector(

@@ -327,7 +327,7 @@ describe('editor panel change propagation', () => {
     document.body.innerHTML = '';
   });
 
-  test('debounces editor changes before reporting source updates', async () => {
+  function createEditorPanelHarness() {
     const OriginalMutationObserver = globalThis.MutationObserver;
     globalThis.MutationObserver = class {
       disconnect() {}
@@ -348,14 +348,74 @@ describe('editor panel change propagation', () => {
     });
     document.body.appendChild(panel.element);
 
-    const state = {
+    const state: MilkdropEditorSessionState = {
       source: 'zoom=1\n',
       latestCompiled: null,
       activeCompiled: null,
       diagnostics: [],
       dirty: false,
-    } satisfies MilkdropEditorSessionState;
+    };
     panel.setSessionState(state);
+    return {
+      panel,
+      state,
+      onEditorSourceChange,
+      restore() {
+        panel.dispose();
+        globalThis.MutationObserver = OriginalMutationObserver;
+      },
+    };
+  }
+
+  test('debounces editor changes before reporting source updates', async () => {
+    const harness = createEditorPanelHarness();
+    const snippetButton = document.querySelector(
+      '.milkdrop-overlay__editor-snippet',
+    ) as HTMLButtonElement | null;
+    if (!snippetButton) {
+      throw new Error('Expected a snippet button to exist.');
+    }
+
+    snippetButton.click();
+    expect(harness.onEditorSourceChange).not.toHaveBeenCalled();
+
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+
+    expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
+    expect(harness.onEditorSourceChange.mock.calls[0]?.[0]).toContain(
+      'zoom=1.01',
+    );
+
+    harness.restore();
+  });
+
+  test('update now flushes the current draft immediately and clears the debounce', async () => {
+    const harness = createEditorPanelHarness();
+
+    const snippetButton = document.querySelector(
+      '.milkdrop-overlay__editor-snippet',
+    ) as HTMLButtonElement | null;
+    const applyButton = document.querySelector(
+      '.milkdrop-overlay__editor-apply',
+    ) as HTMLButtonElement | null;
+    if (!snippetButton || !applyButton) {
+      throw new Error('Expected the editor controls to exist.');
+    }
+
+    snippetButton.click();
+    expect(harness.onEditorSourceChange).not.toHaveBeenCalled();
+
+    applyButton.click();
+    expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
+
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
+
+    harness.restore();
+  });
+
+  test('keeps newer buffered typing visible when an older applied state arrives', async () => {
+    const harness = createEditorPanelHarness();
 
     const snippetButton = document.querySelector(
       '.milkdrop-overlay__editor-snippet',
@@ -365,15 +425,20 @@ describe('editor panel change propagation', () => {
     }
 
     snippetButton.click();
-    expect(onEditorSourceChange).not.toHaveBeenCalled();
+    harness.panel.setSessionState(harness.state);
+
+    const editorText = document.querySelector(
+      '.cm-content',
+    ) as HTMLElement | null;
+    expect(editorText?.textContent).toContain('zoom=1.01');
 
     await new Promise((resolve) => window.setTimeout(resolve, 250));
+    expect(harness.onEditorSourceChange).toHaveBeenCalledTimes(1);
+    expect(harness.onEditorSourceChange.mock.calls[0]?.[0]).toContain(
+      'zoom=1.01',
+    );
 
-    expect(onEditorSourceChange).toHaveBeenCalledTimes(1);
-    expect(onEditorSourceChange.mock.calls[0]?.[0]).toContain('zoom=1.01');
-
-    panel.dispose();
-    globalThis.MutationObserver = OriginalMutationObserver;
+    harness.restore();
   });
 });
 
