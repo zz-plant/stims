@@ -55,6 +55,13 @@ type ReadinessItem = {
   summary: string;
 };
 
+type StarterLook = {
+  key: string;
+  label: string;
+  summary: string;
+  preset: PresetCatalogEntry;
+};
+
 const TOOL_TABS: Array<Exclude<PanelState, null>> = [
   'browse',
   'editor',
@@ -113,13 +120,13 @@ function getToolLabel(tool: Exclude<PanelState, null>) {
 function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Search, filter, and swap visuals without losing the stage.';
+      return 'Start with a featured vibe or dive into the full preset library.';
     case 'editor':
       return 'Open the preset editor without moving the visualizer off-center.';
     case 'inspector':
       return 'Inspect the active preset and session details in place.';
     case 'settings':
-      return 'Tune picture quality, motion, and compatibility from one sheet.';
+      return 'Keep the defaults when they feel good, then tune only what you need.';
   }
 }
 
@@ -227,6 +234,96 @@ function getCollectionTags(entries: PresetCatalogEntry[]) {
     });
   });
   return [...collectionTags].sort((left, right) => left.localeCompare(right));
+}
+
+function buildPresetSearchIndex(entry: PresetCatalogEntry) {
+  return [entry.id, entry.title, entry.author, ...(entry.tags ?? [])]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function describePresetMood(entry: PresetCatalogEntry) {
+  const index = buildPresetSearchIndex(entry);
+
+  if (/(glow|sun|flare|star|light|bloom)/u.test(index)) {
+    return 'Bright pulse';
+  }
+  if (/(cube|matrix|square|line|grid|trace)/u.test(index)) {
+    return 'Sharp geometry';
+  }
+  if (/(quasar|ether|parallel|space|mars|radiation|vacuum)/u.test(index)) {
+    return 'Space drift';
+  }
+  if (/(dark|ritual|apocalypse|demon|moon)/u.test(index)) {
+    return 'Moody sweep';
+  }
+  if (/(trippy|psychaos|rotation|spectro|glassworms)/u.test(index)) {
+    return 'Psychedelic spin';
+  }
+  if (entry.tags?.includes('collection:classic-milkdrop')) {
+    return 'Classic rush';
+  }
+  return 'Instant pick';
+}
+
+function buildStarterLooks(entries: PresetCatalogEntry[]) {
+  const usedPresetIds = new Set<string>();
+  const starterLooks: StarterLook[] = [];
+  const definitions = [
+    {
+      key: 'bright-pulse',
+      label: 'Bright pulse',
+      summary: 'Fast payoff with glowing motion and clean contrast.',
+      matchers: [/glowsticks/u, /(sun|flare|star)/u],
+    },
+    {
+      key: 'space-drift',
+      label: 'Space drift',
+      summary: 'Slower cosmic motion with more room to breathe.',
+      matchers: [/(parallel universe|quasar|ether|mars|radiation)/u],
+    },
+    {
+      key: 'sharp-geometry',
+      label: 'Sharp geometry',
+      summary: 'Hard edges, grids, and satisfying symmetry.',
+      matchers: [/(cube|matrix|square|trace|line)/u],
+    },
+    {
+      key: 'classic-rush',
+      label: 'Classic rush',
+      summary: 'A grounded first pick from the classic MilkDrop lineage.',
+      matchers: [/(happy drops|casino|classic milkdrop)/u],
+    },
+  ];
+
+  definitions.forEach((definition) => {
+    const preset = entries.find((entry) => {
+      if (usedPresetIds.has(entry.id)) {
+        return false;
+      }
+      const index = buildPresetSearchIndex(entry);
+      return definition.matchers.some((matcher) => matcher.test(index));
+    });
+
+    if (!preset) {
+      return;
+    }
+
+    usedPresetIds.add(preset.id);
+    starterLooks.push({ ...definition, preset });
+  });
+
+  if (starterLooks.length > 0) {
+    return starterLooks;
+  }
+
+  return entries.slice(0, 3).map((preset, index) => ({
+    key: `starter-${preset.id}`,
+    label: ['First pick', 'Try next', 'Then go wide'][index] ?? 'Starter',
+    summary: 'A quick way into the library without overthinking it.',
+    preset,
+  }));
 }
 
 function formatAudioSourceLabel(
@@ -622,6 +719,8 @@ export function StimsWorkspaceApp() {
     null;
 
   const collectionTags = getCollectionTags(catalog);
+  const starterLooks = buildStarterLooks(catalog);
+  const featuredPreset = starterLooks[0]?.preset ?? catalog[0] ?? null;
   const launchControlsHidden =
     engineSnapshot?.audioActive || document.body.dataset.audioActive === 'true';
   const runtimeReady =
@@ -647,6 +746,45 @@ export function StimsWorkspaceApp() {
 
   const handlePresetSelection = (presetId: string) => {
     commitRoute({ ...routeState, presetId, panel: null });
+  };
+
+  const handleBrowseRecovery = () => {
+    commitRoute({ ...routeState, presetId: null, panel: 'browse' });
+  };
+
+  const handleFeaturedPresetSelection = () => {
+    if (!featuredPreset) {
+      return;
+    }
+
+    handlePresetSelection(featuredPreset.id);
+  };
+
+  const handleShufflePreset = () => {
+    const activePresetId =
+      routeState.presetId ?? engineSnapshot?.activePresetId;
+    const preferredPool =
+      filteredCatalog.length > 1
+        ? filteredCatalog
+        : catalog.length > 1
+          ? catalog
+          : [];
+    const shuffledPool = preferredPool.filter(
+      (entry) => entry.id !== activePresetId,
+    );
+    const fallbackPool = filteredCatalog.length > 0 ? filteredCatalog : catalog;
+    const nextPool = shuffledPool.length > 0 ? shuffledPool : fallbackPool;
+    if (!nextPool.length) {
+      return;
+    }
+
+    const nextPreset =
+      nextPool[Math.floor(Math.random() * nextPool.length)] ?? nextPool[0];
+    if (!nextPreset) {
+      return;
+    }
+
+    handlePresetSelection(nextPreset.id);
   };
 
   const handleAudioStart = async (
@@ -779,6 +917,19 @@ export function StimsWorkspaceApp() {
     catalog.find((entry) => entry.id === routeState.presetId) ??
     currentPreset ??
     null;
+  const missingRequestedPreset = Boolean(
+    routeState.presetId &&
+      catalogReady &&
+      !selectedPreset &&
+      !routeState.invalidExperienceSlug &&
+      pendingPresetIdRef.current !== routeState.presetId,
+  );
+  const loadingRequestedPreset = Boolean(
+    routeState.presetId &&
+      !selectedPreset &&
+      !routeState.invalidExperienceSlug &&
+      !missingRequestedPreset,
+  );
   const readinessAlerts = readinessItems.filter(
     (item) => item.state !== 'ready',
   );
@@ -788,6 +939,44 @@ export function StimsWorkspaceApp() {
   const sheetDescription = routeState.panel
     ? getToolDescription(routeState.panel)
     : null;
+  const launchEyebrow = missingRequestedPreset
+    ? 'Recover your session'
+    : runtimeReady || routeState.invalidExperienceSlug
+      ? 'Start here'
+      : 'Getting things ready';
+  const launchTitle = missingRequestedPreset
+    ? 'That saved link needs a new look.'
+    : runtimeReady || routeState.invalidExperienceSlug
+      ? 'Pick an audio path.'
+      : 'Loading the visualizer.';
+  const launchSummary = missingRequestedPreset
+    ? 'The requested preset is not bundled in this build. Start with demo audio for the quickest recovery, or browse the library before you play.'
+    : runtimeReady || routeState.invalidExperienceSlug
+      ? 'Start demo for the quickest payoff. Mic reacts to your room. Tab capture is best when music is already playing in the browser.'
+      : 'One moment while the visuals warm up.';
+  const stageEyebrow = missingRequestedPreset
+    ? 'Link needs a rescue'
+    : loadingRequestedPreset
+      ? 'Loading requested look'
+      : launchControlsHidden
+        ? 'Now playing'
+        : selectedPreset
+          ? 'Selected look'
+          : 'Start with a look';
+  const stageTitle = missingRequestedPreset
+    ? 'Requested look unavailable'
+    : loadingRequestedPreset
+      ? 'Loading your look'
+      : (selectedPreset?.title ?? 'Pick a look');
+  const stageSummary = missingRequestedPreset
+    ? `"${routeState.presetId}" is not in this build. Load a featured look or open Looks to recover.`
+    : loadingRequestedPreset
+      ? `One moment while we load ${routeState.presetId}.`
+      : selectedPreset
+        ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
+        : featuredPreset
+          ? `Featured first pick: ${featuredPreset.title} · ${describePresetMood(featuredPreset)}. Open Looks for curated starters or shuffle into something new.`
+          : 'Open Looks to pick a preset without losing the stage.';
 
   return (
     <div className="stims-shell">
@@ -838,21 +1027,9 @@ export function StimsWorkspaceApp() {
         >
           <div className="stims-shell__launch-header">
             <div className="stims-shell__launch-copy">
-              <p className="stims-shell__eyebrow">
-                {runtimeReady || routeState.invalidExperienceSlug
-                  ? 'Ready'
-                  : 'Getting things ready'}
-              </p>
-              <h1>
-                {runtimeReady || routeState.invalidExperienceSlug
-                  ? 'Visualizer ready.'
-                  : 'Loading the visualizer.'}
-              </h1>
-              <p>
-                {runtimeReady || routeState.invalidExperienceSlug
-                  ? 'Demo, mic, tab, and YouTube sources are available below.'
-                  : 'One moment while the visuals warm up.'}
-              </p>
+              <p className="stims-shell__eyebrow">{launchEyebrow}</p>
+              <h1>{launchTitle}</h1>
+              <p>{launchSummary}</p>
             </div>
           </div>
 
@@ -860,33 +1037,47 @@ export function StimsWorkspaceApp() {
             <button
               id="use-demo-audio"
               data-demo-audio-btn="true"
-              className="cta-button primary"
+              className="cta-button primary stims-shell__action-button"
               type="button"
               disabled={!engineReady}
               onClick={() => void handleAudioStart('demo')}
             >
-              Start demo
+              <span className="stims-shell__action-label">Start demo</span>
+              <span className="stims-shell__action-hint">Fastest way in</span>
             </button>
             <button
               id="start-audio-btn"
               data-mic-audio-btn="true"
-              className="cta-button"
+              className="cta-button stims-shell__action-button"
               type="button"
               disabled={!engineReady}
               onClick={() => void handleAudioStart('microphone')}
             >
-              Use mic
+              <span className="stims-shell__action-label">Use mic</span>
+              <span className="stims-shell__action-hint">
+                React to the room
+              </span>
             </button>
             <button
               id="use-tab-audio"
-              className="cta-button"
+              className="cta-button stims-shell__action-button"
               type="button"
               disabled={!engineReady}
               onClick={() => void handleAudioStart('tab')}
             >
-              Capture tab
+              <span className="stims-shell__action-label">Capture tab</span>
+              <span className="stims-shell__action-hint">
+                Best for music or video
+              </span>
             </button>
           </div>
+
+          {featuredPreset ? (
+            <p className="stims-shell__launch-note">
+              Recommended first run: start demo, then open Looks and try{' '}
+              <strong>{featuredPreset.title}</strong>.
+            </p>
+          ) : null}
 
           <div className="stims-shell__launch-more">
             <button
@@ -967,14 +1158,10 @@ export function StimsWorkspaceApp() {
           <section className="stims-shell__stage-section">
             <div className="stims-shell__stage-header">
               <div className="stims-shell__stage-copy">
-                <p className="stims-shell__eyebrow">
-                  {launchControlsHidden ? 'Now playing' : 'Selected look'}
-                </p>
-                <h2>{selectedPreset?.title ?? 'No active look'}</h2>
+                <p className="stims-shell__eyebrow">{stageEyebrow}</p>
+                <h2>{stageTitle}</h2>
                 <p className="stims-shell__meta-copy stims-shell__stage-summary">
-                  {selectedPreset
-                    ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
-                    : 'Title, author, and fidelity details appear here.'}
+                  {stageSummary}
                 </p>
               </div>
               <div className="stims-shell__session-meta">
@@ -993,6 +1180,35 @@ export function StimsWorkspaceApp() {
 
             <div className="stims-shell__stage-frame">
               <div ref={stageRef} className="stims-shell__stage-root" />
+              {missingRequestedPreset ? (
+                <div className="stims-shell__stage-recovery">
+                  <p className="stims-shell__eyebrow">Missing preset</p>
+                  <h3>Load a nearby favorite instead</h3>
+                  <p className="stims-shell__meta-copy">
+                    This link points to a preset that is not bundled here
+                    anymore. Recover with a featured look or jump into the full
+                    library.
+                  </p>
+                  <div className="stims-shell__session-actions">
+                    {featuredPreset ? (
+                      <button
+                        type="button"
+                        className="cta-button primary"
+                        onClick={handleFeaturedPresetSelection}
+                      >
+                        Load featured look
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="cta-button"
+                      onClick={handleBrowseRecovery}
+                    >
+                      Browse looks
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               {routeState.invalidExperienceSlug ? (
                 <div className="active-toy-status is-error">
                   <div className="active-toy-status__content">
@@ -1055,6 +1271,45 @@ export function StimsWorkspaceApp() {
             <div className="stims-shell__sheet-body">
               {routeState.panel === 'browse' ? (
                 <div className="stims-shell__sheet-panel">
+                  {starterLooks.length > 0 ? (
+                    <section className="stims-shell__starter-grid">
+                      {starterLooks.map((starterLook) => (
+                        <button
+                          key={starterLook.key}
+                          type="button"
+                          className="stims-shell__starter-card"
+                          onClick={() =>
+                            handlePresetSelection(starterLook.preset.id)
+                          }
+                        >
+                          <span className="stims-shell__starter-label">
+                            {starterLook.label}
+                          </span>
+                          <span className="stims-shell__starter-summary">
+                            {starterLook.summary}
+                          </span>
+                          <span className="stims-shell__starter-preset">
+                            {starterLook.preset.title}
+                          </span>
+                        </button>
+                      ))}
+                    </section>
+                  ) : null}
+
+                  <div className="stims-shell__browse-toolbar">
+                    <p className="stims-shell__meta-copy">
+                      Start with a featured vibe or search the full library.
+                    </p>
+                    <button
+                      type="button"
+                      className="stims-shell__text-button"
+                      onClick={handleShufflePreset}
+                      disabled={catalog.length === 0}
+                    >
+                      Shuffle a look
+                    </button>
+                  </div>
+
                   <label
                     className="stims-shell__field-label"
                     htmlFor="preset-search"
@@ -1065,7 +1320,7 @@ export function StimsWorkspaceApp() {
                     id="preset-search"
                     className="stims-shell__input"
                     type="search"
-                    placeholder="Search title, author, or tag"
+                    placeholder="Search vibe, title, author, or tag"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                   />
@@ -1127,6 +1382,9 @@ export function StimsWorkspaceApp() {
                           <span className="stims-shell__preset-title">
                             {entry.title}
                           </span>
+                          <span className="stims-shell__preset-vibe">
+                            {describePresetMood(entry)}
+                          </span>
                           <span className="stims-shell__preset-meta">
                             {entry.author || 'Unknown author'}
                           </span>
@@ -1142,6 +1400,19 @@ export function StimsWorkspaceApp() {
 
               {routeState.panel === 'settings' ? (
                 <div className="stims-shell__sheet-panel">
+                  <div className="stims-shell__settings-callout">
+                    <p className="stims-shell__eyebrow">Recommended</p>
+                    <strong>
+                      Stay on Balanced unless the picture feels rough.
+                    </strong>
+                    <p className="stims-shell__meta-copy">
+                      Safer graphics mode helps older devices. The sliders below
+                      are only for fine tuning when you need a softer or
+                      steadier picture.
+                    </p>
+                  </div>
+
+                  <p className="stims-shell__section-label">Quick tune</p>
                   <label
                     className="stims-shell__field-label"
                     htmlFor="quality-select"
@@ -1187,6 +1458,12 @@ export function StimsWorkspaceApp() {
                     />
                     <span>Allow motion controls</span>
                   </label>
+
+                  <p className="stims-shell__section-label">Advanced tuning</p>
+                  <p className="stims-shell__meta-copy">
+                    Use these only when you want a sharper image or need to calm
+                    the frame rate on a busy preset.
+                  </p>
 
                   <label
                     className="stims-shell__field-label"
