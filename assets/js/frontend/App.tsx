@@ -743,10 +743,9 @@ export function StimsWorkspaceApp() {
     catalog.find((entry) => entry.id === routeState.presetId) ??
     currentPreset ??
     null;
-  const toolsPanelActive =
-    routeState.panel === 'settings' ||
-    routeState.panel === 'editor' ||
-    routeState.panel === 'inspector';
+  const readinessAlerts = readinessItems.filter(
+    (item) => item.state !== 'ready',
+  );
   const sheetTitle = routeState.panel ? getToolLabel(routeState.panel) : null;
   const sheetDescription = routeState.panel
     ? getToolDescription(routeState.panel)
@@ -775,10 +774,12 @@ export function StimsWorkspaceApp() {
           <button
             type="button"
             className="stims-shell__nav-pill"
-            data-active={String(toolsPanelActive)}
-            onClick={() => updatePanel(toolsPanelActive ? null : 'settings')}
+            data-active={String(routeState.panel === 'settings')}
+            onClick={() =>
+              updatePanel(routeState.panel === 'settings' ? null : 'settings')
+            }
           >
-            Tools
+            Settings
           </button>
           <a
             className="stims-shell__nav-link"
@@ -814,23 +815,6 @@ export function StimsWorkspaceApp() {
                   ? 'Start fast with the demo, use your mic, or capture a tab.'
                   : 'One moment while the visuals warm up.'}
               </p>
-            </div>
-
-            <div className="stims-shell__launch-selection">
-              <p className="stims-shell__eyebrow">Current look</p>
-              <strong>{selectedPreset?.title ?? 'Pick a look'}</strong>
-              <span className="stims-shell__meta-copy">
-                {selectedPreset
-                  ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
-                  : 'Open Looks to choose the preset you want to start with.'}
-              </span>
-              <button
-                type="button"
-                className="stims-shell__nav-pill"
-                onClick={() => updatePanel('browse')}
-              >
-                Browse looks
-              </button>
             </div>
           </div>
 
@@ -925,18 +909,20 @@ export function StimsWorkspaceApp() {
             ) : null}
           </div>
 
-          <section className="stims-shell__readiness-chips">
-            {readinessItems.map((item) => (
-              <article
-                key={item.id}
-                className="stims-shell__readiness-chip"
-                data-state={item.state}
-              >
-                <strong>{item.label}</strong>
-                <span>{item.summary}</span>
-              </article>
-            ))}
-          </section>
+          {readinessAlerts.length > 0 ? (
+            <section className="stims-shell__readiness-chips">
+              {readinessAlerts.map((item) => (
+                <article
+                  key={item.id}
+                  className="stims-shell__readiness-chip"
+                  data-state={item.state}
+                >
+                  <strong>{item.label}</strong>
+                  <span>{item.summary}</span>
+                </article>
+              ))}
+            </section>
+          ) : null}
         </section>
 
         <section className="stims-shell__workspace">
@@ -996,7 +982,6 @@ export function StimsWorkspaceApp() {
           <aside className="stims-shell__sheet" aria-label="Tools">
             <div className="stims-shell__sheet-header">
               <div className="stims-shell__sheet-heading">
-                <p className="stims-shell__eyebrow">Tools</p>
                 <h2>{sheetTitle}</h2>
                 <p className="stims-shell__meta-copy">{sheetDescription}</p>
               </div>

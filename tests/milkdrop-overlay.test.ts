@@ -246,6 +246,46 @@ describe('milkdrop overlay browse simplifications', () => {
     overlay.dispose();
   });
 
+  test('can omit the floating controls toggle when the shell owns tool entry', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = new MilkdropOverlay({
+      host: document.body,
+      showToggle: false,
+      callbacks: {
+        onSelectPreset: mock(),
+        onSelectQualityPreset: mock(),
+        onToggleFavorite: mock(),
+        onSetRating: mock(),
+        onToggleAutoplay: mock(),
+        onTransitionModeChange: mock(),
+        onGoBackPreset: mock(),
+        onNextPreset: mock(),
+        onPreviousPreset: mock(),
+        onRandomize: mock(),
+        onBlendDurationChange: mock(),
+        onImportFiles: mock(),
+        onExport: mock(),
+        onDuplicatePreset: mock(),
+        onDeletePreset: mock(),
+        onEditorSourceChange: mock(),
+        onRevertToActive: mock(),
+        onInspectorFieldChange: mock(),
+      },
+    });
+
+    expect(document.querySelector('.milkdrop-overlay__toggle')).toBeNull();
+    expect(document.querySelector('.milkdrop-overlay__panel')).not.toBeNull();
+
+    overlay.dispose();
+  });
+
   test('uses a single top-level tab row for looks, edit, and inspect', () => {
     globalThis.MutationObserver = class {
       disconnect() {}

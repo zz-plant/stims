@@ -83,9 +83,11 @@ export class MilkdropOverlay {
   constructor({
     host = document.body,
     callbacks,
+    showToggle = true,
   }: {
     host?: HTMLElement;
     callbacks: OverlayCallbacks;
+    showToggle?: boolean;
   }) {
     this.callbacks = callbacks;
     this.root = document.createElement('div');
@@ -304,12 +306,10 @@ export class MilkdropOverlay {
     );
 
     this.panel.append(header, toolbar, tabs, this.shortcutHud, panelBody);
-    this.root.append(
-      this.toggleButton,
-      this.panel,
-      this.presetOsd,
-      this.fileInput,
-    );
+    this.root.append(this.panel, this.presetOsd, this.fileInput);
+    if (showToggle) {
+      this.root.prepend(this.toggleButton);
+    }
     host.appendChild(this.root);
     this.setActiveTab('browse');
 

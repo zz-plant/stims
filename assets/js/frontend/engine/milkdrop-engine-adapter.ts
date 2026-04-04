@@ -150,6 +150,7 @@ export function createMilkdropEngineAdapter() {
           storageKey: QUALITY_STORAGE_KEY,
         },
         initialPresetId: intent.presetId ?? undefined,
+        showOverlayToggle: false,
       });
 
       unsubscribeExperience = experience.subscribe(() => {

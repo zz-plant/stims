@@ -83,6 +83,7 @@ export function createMilkdropExperience({
   quality,
   qualityControl,
   initialPresetId,
+  showOverlayToggle = true,
 }: {
   container?: HTMLElement | null;
   quality: QualityPresetManager;
@@ -91,6 +92,7 @@ export function createMilkdropExperience({
     storageKey: string;
   };
   initialPresetId?: string;
+  showOverlayToggle?: boolean;
 }) {
   type MilkdropExperienceSnapshot = {
     activePresetId: string | null;
@@ -443,6 +445,7 @@ export function createMilkdropExperience({
   overlay = new MilkdropOverlay({
     host: container ?? document.body,
     callbacks: interactionPresenter.overlayCallbacks,
+    showToggle: showOverlayToggle,
   });
 
   overlay.setAutoplay(autoplay);
