@@ -19,9 +19,12 @@ import {
   createSampleUvNode,
   type FeedbackRendererLike,
   getSharedMilkdropAuxTextures,
+  getSharedMilkdropTexture,
   hasOverlayBlendFeedback,
   hasOverlayReplaceFeedback,
   hasWarpTextureFeedback,
+  MILKDROP_TEXTURE_FILES,
+  resolveAuxTextureName,
 } from './feedback-manager-webgpu-composite.ts';
 
 export {
@@ -1279,6 +1282,25 @@ class WebGPUMilkdropFeedbackManager {
     ) {
       this.currentFeedbackResolutionScale = nextResolutionScale;
       this.resize(this.viewportWidth, this.viewportHeight);
+    }
+
+    const overlayTextureName = resolveAuxTextureName(
+      state.overlayTextureSource,
+    );
+    const warpTextureName = resolveAuxTextureName(state.warpTextureSource);
+    if (overlayTextureName) {
+      this.compositeMaterial.uniforms[`${overlayTextureName}Tex`].value =
+        getSharedMilkdropTexture(
+          MILKDROP_TEXTURE_FILES[overlayTextureName],
+          overlayTextureName === 'aura',
+        );
+    }
+    if (warpTextureName) {
+      this.compositeMaterial.uniforms[`${warpTextureName}Tex`].value =
+        getSharedMilkdropTexture(
+          MILKDROP_TEXTURE_FILES[warpTextureName],
+          warpTextureName === 'aura',
+        );
     }
 
     this.compositeMaterial.uniforms.mixAlpha.value = state.mixAlpha;

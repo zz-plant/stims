@@ -66,6 +66,19 @@ function resolveCapturedVideoReactivity({
 }
 
 describe('milkdrop runtime startup seams', () => {
+  test('does not auto-select a preset when nothing was explicitly requested', () => {
+    const startupId = resolveStartupPresetId({
+      requestedPresetId: null,
+      preferredStartupPresetId: null,
+      collectionEntryId: null,
+      isBackendSelectable: () => true,
+      getFirstSelectablePresetId: () => 'fallback',
+      activeBackend: 'webgpu',
+    });
+
+    expect(startupId).toBeNull();
+  });
+
   test('prefers an explicitly requested preset when the backend can run it', () => {
     const startupId = resolveStartupPresetId({
       requestedPresetId: 'requested',

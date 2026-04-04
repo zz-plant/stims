@@ -37,9 +37,9 @@ import type {
   PresetCatalogManifest,
   SessionRouteState,
 } from './contracts.ts';
-import {
-  createMilkdropEngineAdapter,
-  type EngineSnapshot,
+import type {
+  EngineSnapshot,
+  MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
 import {
   buildCanonicalUrl,
@@ -246,6 +246,19 @@ function mapRuntimeCatalogEntry(
   };
 }
 
+function buildLaunchIntent(routeState: SessionRouteState): LaunchIntent {
+  return {
+    presetId: routeState.presetId,
+    collectionTag: routeState.collectionTag,
+    panel:
+      routeState.panel === 'editor' || routeState.panel === 'inspector'
+        ? routeState.panel
+        : null,
+    audioSource: routeState.audioSource,
+    agentMode: routeState.agentMode,
+  };
+}
+
 export function StimsWorkspaceApp() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
     readSessionRouteState(),
@@ -260,6 +273,7 @@ export function StimsWorkspaceApp() {
     string | null
   >(null);
   const [fallbackCatalogReady, setFallbackCatalogReady] = useState(false);
+  const [engineAdapterReady, setEngineAdapterReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [readinessItems, setReadinessItems] = useState<ReadinessItem[]>([]);
   const [qualityPreset, setQualityPresetState] = useState(() =>
@@ -283,20 +297,13 @@ export function StimsWorkspaceApp() {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const youtubeControllerRef = useRef<YouTubeController | null>(null);
   const youtubePreviewRef = useRef<HTMLDivElement | null>(null);
-  const engineRef = useRef(createMilkdropEngineAdapter());
+  const engineRef = useRef<MilkdropEngineAdapter | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const shownToastKeysRef = useRef(new Set<string>());
   const pendingPresetIdRef = useRef<string | null>(null);
-  const initialLaunchIntentRef = useRef<LaunchIntent>({
-    presetId: routeState.presetId,
-    collectionTag: routeState.collectionTag,
-    panel:
-      routeState.panel === 'editor' || routeState.panel === 'inspector'
-        ? routeState.panel
-        : null,
-    audioSource: routeState.audioSource,
-    agentMode: routeState.agentMode,
-  });
+  const initialLaunchIntentRef = useRef<LaunchIntent>(
+    buildLaunchIntent(routeState),
+  );
 
   useEffect(() => {
     replaceCanonicalUrl(routeState);
@@ -316,11 +323,38 @@ export function StimsWorkspaceApp() {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = engineRef.current.subscribe((snapshot) => {
-      setEngineSnapshot(snapshot);
-    });
+    let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
 
-    return unsubscribe;
+    void import('./engine/milkdrop-engine-adapter.ts')
+      .then(({ createMilkdropEngineAdapter }) => {
+        if (cancelled) {
+          return;
+        }
+        const adapter = createMilkdropEngineAdapter();
+        engineRef.current = adapter;
+        unsubscribe = adapter.subscribe((snapshot) => {
+          setEngineSnapshot(snapshot);
+        });
+        setEngineAdapterReady(true);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        setStatusMessage(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load the visualizer runtime.',
+        );
+      });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+      engineRef.current?.dispose();
+      engineRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -395,8 +429,16 @@ export function StimsWorkspaceApp() {
   }, []);
 
   useEffect(() => {
+    if (!engineRef.current?.isMounted()) {
+      initialLaunchIntentRef.current = buildLaunchIntent(routeState);
+    }
+  }, [routeState]);
+
+  useEffect(() => {
     const stage = stageRef.current;
     if (
+      !engineAdapterReady ||
+      !engineRef.current ||
       !stage ||
       routeState.invalidExperienceSlug ||
       engineRef.current.isMounted() ||
@@ -406,11 +448,7 @@ export function StimsWorkspaceApp() {
     }
 
     void engineRef.current.mount(stage, initialLaunchIntentRef.current);
-
-    return () => {
-      engineRef.current.dispose();
-    };
-  }, [routeState.invalidExperienceSlug]);
+  }, [engineAdapterReady, routeState.invalidExperienceSlug]);
 
   useEffect(() => {
     if (!engineSnapshot?.activePresetId) {
@@ -437,7 +475,7 @@ export function StimsWorkspaceApp() {
   }, [engineSnapshot?.activePresetId, routeState.presetId]);
 
   useEffect(() => {
-    if (!engineRef.current.isMounted()) {
+    if (!engineRef.current?.isMounted()) {
       return;
     }
 
@@ -458,7 +496,7 @@ export function StimsWorkspaceApp() {
   }, []);
 
   useEffect(() => {
-    if (!engineRef.current.isMounted() || !routeState.collectionTag) {
+    if (!engineRef.current?.isMounted() || !routeState.collectionTag) {
       return;
     }
 
@@ -467,7 +505,7 @@ export function StimsWorkspaceApp() {
 
   useEffect(() => {
     if (
-      !engineRef.current.isMounted() ||
+      !engineRef.current?.isMounted() ||
       !routeState.presetId ||
       routeState.presetId === engineSnapshot?.activePresetId
     ) {
@@ -487,7 +525,7 @@ export function StimsWorkspaceApp() {
 
   useEffect(() => {
     if (
-      !engineRef.current.isMounted() ||
+      !engineRef.current?.isMounted() ||
       routeState.audioSource !== 'demo' ||
       engineSnapshot?.audioActive
     ) {
@@ -583,13 +621,13 @@ export function StimsWorkspaceApp() {
 
       if (source === 'demo') {
         commitRoute({ ...routeState, audioSource: 'demo', panel: null });
-        await engineRef.current.setAudioSource({ source: 'demo' });
+        await engineRef.current?.setAudioSource({ source: 'demo' });
         return;
       }
 
       if (source === 'microphone') {
         commitRoute({ ...routeState, audioSource: 'microphone', panel: null });
-        await engineRef.current.setAudioSource({ source: 'microphone' });
+        await engineRef.current?.setAudioSource({ source: 'microphone' });
         return;
       }
 
@@ -601,7 +639,7 @@ export function StimsWorkspaceApp() {
             : 'No tab audio track was captured. Choose This tab and enable Share audio.',
       });
       commitRoute({ ...routeState, audioSource: source, panel: null });
-      await engineRef.current.setAudioSource({
+      await engineRef.current?.setAudioSource({
         source,
         stream,
         cropTarget: youtubePreviewRef.current,
@@ -655,7 +693,7 @@ export function StimsWorkspaceApp() {
     if (!files?.length) {
       return;
     }
-    await engineRef.current.importPreset(files);
+    await engineRef.current?.importPreset(files);
     updatePanel('editor');
   };
 
@@ -1086,7 +1124,7 @@ export function StimsWorkspaceApp() {
                     className="stims-shell__select"
                     value={qualityPreset.id}
                     onChange={(event) => {
-                      engineRef.current.setQualityPreset(event.target.value);
+                      engineRef.current?.setQualityPreset(event.target.value);
                     }}
                   >
                     {DEFAULT_QUALITY_PRESETS.map((preset) => (
@@ -1194,7 +1232,7 @@ export function StimsWorkspaceApp() {
                 <button
                   type="button"
                   className="cta-button"
-                  onClick={() => engineRef.current.exportPreset()}
+                  onClick={() => engineRef.current?.exportPreset()}
                 >
                   Export preset
                 </button>

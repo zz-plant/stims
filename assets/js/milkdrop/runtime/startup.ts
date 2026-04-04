@@ -18,6 +18,9 @@ export function resolveStartupPresetId({
 }) {
   const preferredPresetId =
     requestedPresetId ?? preferredStartupPresetId ?? collectionEntryId;
+  if (!preferredPresetId) {
+    return null;
+  }
   if (
     preferredPresetId &&
     isBackendSelectable(preferredPresetId, activeBackend)

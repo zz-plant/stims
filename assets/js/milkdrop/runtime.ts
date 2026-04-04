@@ -121,6 +121,7 @@ export function createMilkdropExperience({
     createMilkdropCapturedVideoReactivityTracker();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
+    initialCompiled: defaultPreset,
   });
 
   let runtime: ToyRuntimeInstance | null = null;
@@ -147,6 +148,7 @@ export function createMilkdropExperience({
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
   let disposeSessionSubscription: (() => void) | null = null;
   let postprocessingPipeline: PostprocessingPipeline | null = null;
+  let deferredCatalogSyncTimeoutId: number | null = null;
   const subscribers = new Set<(snapshot: MilkdropExperienceSnapshot) => void>();
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
@@ -214,6 +216,25 @@ export function createMilkdropExperience({
   const emitChange = () => {
     const snapshot = buildSnapshot();
     subscribers.forEach((subscriber) => subscriber(snapshot));
+  };
+
+  const clearDeferredCatalogSync = () => {
+    if (deferredCatalogSyncTimeoutId === null) {
+      return;
+    }
+    window.clearTimeout(deferredCatalogSyncTimeoutId);
+    deferredCatalogSyncTimeoutId = null;
+  };
+
+  const scheduleDeferredCatalogSync = (delayMs = 180) => {
+    clearDeferredCatalogSync();
+    deferredCatalogSyncTimeoutId = window.setTimeout(() => {
+      deferredCatalogSyncTimeoutId = null;
+      void catalogCoordinator.scheduleCatalogSync({
+        activePresetId,
+        activeBackend,
+      });
+    }, delayMs);
   };
 
   const setOverlayStatus = (message: string) => {
@@ -467,11 +488,8 @@ export function createMilkdropExperience({
     if (didPresetChange) {
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
+      scheduleDeferredCatalogSync();
     }
-    void catalogCoordinator.scheduleCatalogSync({
-      activePresetId,
-      activeBackend,
-    });
     emitChange();
   });
 
@@ -497,18 +515,14 @@ export function createMilkdropExperience({
     if (!lifetime.isActive() || !overlay) {
       return;
     }
-    const {
-      requestedCollectionTag,
-      collectionEntry,
-      startupPresetId,
-      firstSelectablePresetId,
-    } = await selectMilkdropStartupPreset({
-      catalogCoordinator,
-      navigation,
-      preferences,
-      initialPresetId,
-      activeBackend,
-    });
+    const { requestedCollectionTag, collectionEntry, startupPresetId } =
+      await selectMilkdropStartupPreset({
+        catalogCoordinator,
+        navigation,
+        preferences,
+        initialPresetId,
+        activeBackend,
+      });
     if (!lifetime.isActive() || !overlay) {
       return;
     }
@@ -525,11 +539,6 @@ export function createMilkdropExperience({
       if (activePresetId === startupPresetId) {
         return;
       }
-    }
-    if (firstSelectablePresetId) {
-      await navigation.selectPreset(firstSelectablePresetId, {
-        recordHistory: false,
-      });
     }
   })();
 
@@ -893,6 +902,7 @@ export function createMilkdropExperience({
       overlay?.dispose();
       overlay = null;
       session.dispose();
+      clearDeferredCatalogSync();
       capturedVideoReactivityTracker.reset();
       disposePostprocessingPipeline();
       capturedVideoOverlay.dispose();

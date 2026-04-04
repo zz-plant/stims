@@ -302,3 +302,7 @@ export function createMilkdropEngineAdapter() {
     },
   };
 }
+
+export type MilkdropEngineAdapter = ReturnType<
+  typeof createMilkdropEngineAdapter
+>;

@@ -1,6 +1,7 @@
 import {
   type Camera,
   Color,
+  DataTexture,
   HalfFloatType,
   LinearFilter,
   Mesh,
@@ -9,11 +10,13 @@ import {
   PlaneGeometry,
   type RenderTarget,
   RepeatWrapping,
+  RGBAFormat,
   Scene,
   ShaderMaterial,
   SRGBColorSpace,
   type Texture,
   TextureLoader,
+  UnsignedByteType,
   Vector2,
   WebGLRenderTarget,
 } from 'three';
@@ -74,6 +77,17 @@ type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
 
 const milkdropTextureLoader = new TextureLoader();
 const sharedMilkdropTextureCache = new Map<string, Texture>();
+const sharedMilkdropTexturePlaceholder = (() => {
+  const texture = new DataTexture(
+    new Uint8Array([128, 128, 128, 255]),
+    1,
+    1,
+    RGBAFormat,
+    UnsignedByteType,
+  );
+  texture.needsUpdate = true;
+  return configureMilkdropTexture(texture);
+})();
 
 function resolveTextureUrl(fileName: string) {
   const baseUrl =
@@ -106,38 +120,49 @@ function getSharedMilkdropTexture(fileName: string, colorTexture = false) {
   return texture;
 }
 
+function getSharedMilkdropTexturePlaceholder() {
+  return sharedMilkdropTexturePlaceholder;
+}
+
 function getSharedAuxTextures(): SharedAuxTextureMap {
   return {
-    noise: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.noise.fileName,
-      AUX_TEXTURE_SPECS.noise.colorTexture,
-    ),
-    simplex: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.simplex.fileName,
-      AUX_TEXTURE_SPECS.simplex.colorTexture,
-    ),
-    voronoi: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.voronoi.fileName,
-      AUX_TEXTURE_SPECS.voronoi.colorTexture,
-    ),
-    aura: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.aura.fileName,
-      AUX_TEXTURE_SPECS.aura.colorTexture,
-    ),
-    caustics: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.caustics.fileName,
-      AUX_TEXTURE_SPECS.caustics.colorTexture,
-    ),
-    pattern: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.pattern.fileName,
-      AUX_TEXTURE_SPECS.pattern.colorTexture,
-    ),
-    fractal: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.fractal.fileName,
-      AUX_TEXTURE_SPECS.fractal.colorTexture,
-    ),
+    noise: getSharedMilkdropTexturePlaceholder(),
+    simplex: getSharedMilkdropTexturePlaceholder(),
+    voronoi: getSharedMilkdropTexturePlaceholder(),
+    aura: getSharedMilkdropTexturePlaceholder(),
+    caustics: getSharedMilkdropTexturePlaceholder(),
+    pattern: getSharedMilkdropTexturePlaceholder(),
+    fractal: getSharedMilkdropTexturePlaceholder(),
     video: getSharedMilkdropCapturedVideoTexture(),
   };
+}
+
+function resolveAuxTextureName(source: number) {
+  if (source < 0.5) {
+    return null;
+  }
+  if (source < 1.5) {
+    return 'noise';
+  }
+  if (source < 2.5) {
+    return 'simplex';
+  }
+  if (source < 3.5) {
+    return 'voronoi';
+  }
+  if (source < 4.5) {
+    return 'aura';
+  }
+  if (source < 5.5) {
+    return 'caustics';
+  }
+  if (source < 6.5) {
+    return 'pattern';
+  }
+  if (source < 7.5) {
+    return 'fractal';
+  }
+  return null;
 }
 
 function createFeedbackRenderTarget(
@@ -667,6 +692,22 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
     const uniforms = this.compositeMaterial.uniforms;
+    const overlayTextureName = resolveAuxTextureName(
+      state.overlayTextureSource,
+    );
+    const warpTextureName = resolveAuxTextureName(state.warpTextureSource);
+    if (overlayTextureName) {
+      uniforms[`${overlayTextureName}Tex`].value = getSharedMilkdropTexture(
+        AUX_TEXTURE_SPECS[overlayTextureName].fileName,
+        AUX_TEXTURE_SPECS[overlayTextureName].colorTexture,
+      );
+    }
+    if (warpTextureName) {
+      uniforms[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
+        AUX_TEXTURE_SPECS[warpTextureName].fileName,
+        AUX_TEXTURE_SPECS[warpTextureName].colorTexture,
+      );
+    }
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
     uniforms.mixAlpha.value = state.mixAlpha;

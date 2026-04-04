@@ -2,11 +2,14 @@
 import type { Camera, Scene, Texture } from 'three';
 import {
   Color,
+  DataTexture,
   HalfFloatType,
   LinearFilter,
   RepeatWrapping,
+  RGBAFormat,
   SRGBColorSpace,
   TextureLoader,
+  UnsignedByteType,
   Vector2,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
@@ -76,6 +79,17 @@ type SharedAuxTextureName = AuxTextureName | 'video';
 
 const sharedMilkdropTextureCache = new Map<string, Texture>();
 const milkdropTextureLoader = new TextureLoader();
+const sharedMilkdropTexturePlaceholder = (() => {
+  const textureValue = new DataTexture(
+    new Uint8Array([128, 128, 128, 255]),
+    1,
+    1,
+    RGBAFormat,
+    UnsignedByteType,
+  );
+  textureValue.needsUpdate = true;
+  return configureMilkdropTexture(textureValue);
+})();
 
 export function resolveTextureUrl(fileName: string) {
   const baseUrl =
@@ -116,38 +130,49 @@ export function getSharedMilkdropTexture(
   return textureValue;
 }
 
+export function getSharedMilkdropTexturePlaceholder() {
+  return sharedMilkdropTexturePlaceholder;
+}
+
 export function getSharedMilkdropAuxTextures() {
   return {
-    noise: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.noise.fileName,
-      AUX_TEXTURE_SPECS.noise.colorTexture,
-    ),
-    simplex: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.simplex.fileName,
-      AUX_TEXTURE_SPECS.simplex.colorTexture,
-    ),
-    voronoi: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.voronoi.fileName,
-      AUX_TEXTURE_SPECS.voronoi.colorTexture,
-    ),
-    aura: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.aura.fileName,
-      AUX_TEXTURE_SPECS.aura.colorTexture,
-    ),
-    caustics: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.caustics.fileName,
-      AUX_TEXTURE_SPECS.caustics.colorTexture,
-    ),
-    pattern: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.pattern.fileName,
-      AUX_TEXTURE_SPECS.pattern.colorTexture,
-    ),
-    fractal: getSharedMilkdropTexture(
-      AUX_TEXTURE_SPECS.fractal.fileName,
-      AUX_TEXTURE_SPECS.fractal.colorTexture,
-    ),
+    noise: getSharedMilkdropTexturePlaceholder(),
+    simplex: getSharedMilkdropTexturePlaceholder(),
+    voronoi: getSharedMilkdropTexturePlaceholder(),
+    aura: getSharedMilkdropTexturePlaceholder(),
+    caustics: getSharedMilkdropTexturePlaceholder(),
+    pattern: getSharedMilkdropTexturePlaceholder(),
+    fractal: getSharedMilkdropTexturePlaceholder(),
     video: getSharedMilkdropCapturedVideoTexture(),
   } satisfies Record<SharedAuxTextureName, Texture>;
+}
+
+export function resolveAuxTextureName(source: number) {
+  if (source < 0.5) {
+    return null;
+  }
+  if (source < 1.5) {
+    return 'noise';
+  }
+  if (source < 2.5) {
+    return 'simplex';
+  }
+  if (source < 3.5) {
+    return 'voronoi';
+  }
+  if (source < 4.5) {
+    return 'aura';
+  }
+  if (source < 5.5) {
+    return 'caustics';
+  }
+  if (source < 6.5) {
+    return 'pattern';
+  }
+  if (source < 7.5) {
+    return 'fractal';
+  }
+  return null;
 }
 
 export function createFeedbackRenderTarget(

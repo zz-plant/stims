@@ -47,7 +47,5 @@ export async function selectMilkdropStartupPreset({
     requestedCollectionTag,
     collectionEntry,
     startupPresetId,
-    firstSelectablePresetId:
-      navigation.getFirstSelectablePresetId(activeBackend),
   };
 }

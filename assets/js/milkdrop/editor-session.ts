@@ -27,14 +27,18 @@ function hasErrors(compiled: MilkdropCompiledPreset) {
 
 export function createMilkdropEditorSession({
   initialPreset,
+  initialCompiled,
 }: {
   initialPreset: MilkdropPresetSource;
+  initialCompiled?: MilkdropCompiledPreset;
 }): MilkdropEditorSession {
   const listeners = new Set<(state: MilkdropEditorSessionState) => void>();
   let worker: Worker | null = null;
   let requestId = 0;
   let sourceMeta: MilkdropPresetSource = initialPreset;
-  let lastGood = compileMilkdropPresetSource(initialPreset.raw, initialPreset);
+  let lastGood =
+    initialCompiled ??
+    compileMilkdropPresetSource(initialPreset.raw, initialPreset);
   let state: MilkdropEditorSessionState = {
     source: initialPreset.raw,
     latestCompiled: lastGood,
@@ -57,8 +61,14 @@ export function createMilkdropEditorSession({
     return worker;
   };
 
-  const compile = (source: string) => {
-    const activeWorker = ensureWorker();
+  const compile = ({
+    source,
+    useWorker = true,
+  }: {
+    source: string;
+    useWorker?: boolean;
+  }) => {
+    const activeWorker = useWorker ? ensureWorker() : null;
     if (!activeWorker) {
       return Promise.resolve(compileMilkdropPresetSource(source, sourceMeta));
     }
@@ -93,9 +103,13 @@ export function createMilkdropEditorSession({
     source: string,
     options: {
       markClean?: boolean;
+      useWorker?: boolean;
     } = {},
   ) => {
-    const compiled = await compile(source);
+    const compiled = await compile({
+      source,
+      useWorker: options.useWorker,
+    });
     if (!hasErrors(compiled)) {
       lastGood = compiled;
     }
@@ -124,7 +138,7 @@ export function createMilkdropEditorSession({
 
     async loadPreset(source) {
       sourceMeta = source;
-      return commit(source.raw, { markClean: true });
+      return commit(source.raw, { markClean: true, useWorker: false });
     },
 
     async applySource(source) {
