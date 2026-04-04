@@ -50,6 +50,10 @@ function createMatchMediaStub(matches = true) {
   };
 }
 
+function readTrimmedText(node: Element | null) {
+  return node?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+}
+
 describe('site navigation interactions', () => {
   const originalMatchMedia = window.matchMedia;
 
@@ -68,6 +72,7 @@ describe('site navigation interactions', () => {
     delete document.documentElement.dataset.sessionDisplayMode;
     delete document.documentElement.dataset.sessionChrome;
     delete document.documentElement.dataset.toyControlsExpanded;
+    document.documentElement.classList.remove('light');
     document.body.innerHTML = '';
     window.matchMedia = originalMatchMedia;
   });
@@ -81,15 +86,19 @@ describe('site navigation interactions', () => {
 
     const toggle = container.querySelector('.nav-toggle') as HTMLButtonElement;
     const actions = container.querySelector('#nav-actions') as HTMLElement;
+    const readToggleIcon = () =>
+      toggle.querySelector('svg')?.getAttribute('data-icon');
 
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(toggle.getAttribute('aria-label')).toBe('Open navigation menu');
+    expect(readToggleIcon()).toBe('menu');
     expect(actions.getAttribute('aria-hidden')).toBe('true');
     expect(actions.hasAttribute('inert')).toBeTrue();
 
     toggle.click();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('aria-label')).toBe('Close navigation menu');
+    expect(readToggleIcon()).toBe('close');
     expect(actions.getAttribute('aria-hidden')).toBe('false');
     expect(actions.hasAttribute('inert')).toBeFalse();
 
@@ -185,6 +194,32 @@ describe('site navigation interactions', () => {
     initNavigation(container, { mode: 'library' });
     expect(getListenerCount()).toBe(1);
   });
+
+  test('theme toggle swaps vendored icons with the theme state', () => {
+    const { matchMedia } = createMatchMediaStub(false);
+    window.matchMedia = matchMedia;
+    document.documentElement.classList.add('light');
+
+    const container = document.getElementById('nav') as HTMLElement;
+    initNavigation(container, { mode: 'library' });
+
+    const toggle = container.querySelector(
+      '#theme-toggle',
+    ) as HTMLButtonElement;
+    const readThemeIcon = () =>
+      toggle.querySelector('svg')?.getAttribute('data-icon');
+    const themeLabel = toggle.querySelector('[data-theme-label]');
+
+    expect(readTrimmedText(themeLabel)).toBe('Dark mode');
+    expect(readThemeIcon()).toBe('moon');
+    expect(toggle.getAttribute('aria-label')).toBe('Switch to dark mode');
+
+    toggle.click();
+
+    expect(readTrimmedText(themeLabel)).toBe('Light mode');
+    expect(readThemeIcon()).toBe('sun');
+    expect(toggle.getAttribute('aria-label')).toBe('Switch to light mode');
+  });
 });
 
 describe('toy navigation visibility states', () => {
@@ -205,6 +240,7 @@ describe('toy navigation visibility states', () => {
     delete document.documentElement.dataset.sessionDisplayMode;
     delete document.documentElement.dataset.sessionChrome;
     delete document.documentElement.dataset.toyControlsExpanded;
+    document.documentElement.classList.remove('light');
     document.body.innerHTML = '';
     window.matchMedia = originalMatchMedia;
   });
@@ -224,6 +260,7 @@ describe('toy navigation visibility states', () => {
       '[data-toy-actions-toggle="true"]',
     ) as HTMLButtonElement;
     const primary = container.querySelector('.active-toy-nav__actions-primary');
+    const toggleLabel = toggle.querySelector('.toy-nav__button-label');
 
     expect(actions.dataset.toyActionsExpanded).toBe('false');
     expect(actions.hidden).toBe(false);
@@ -232,7 +269,7 @@ describe('toy navigation visibility states', () => {
     expect(secondary.hidden).toBe(true);
     expect(secondary.getAttribute('aria-hidden')).toBe('true');
     expect(secondary.hasAttribute('inert')).toBe(true);
-    expect(toggle.textContent).toBe('Controls');
+    expect(readTrimmedText(toggleLabel)).toBe('Controls');
     expect(primary).toBeTruthy();
     expect(secondary).toBeTruthy();
     expect(document.documentElement.dataset.toyControlsExpanded).toBe('false');
@@ -248,10 +285,11 @@ describe('toy navigation visibility states', () => {
     const toggle = container.querySelector(
       '[data-toy-actions-toggle="true"]',
     ) as HTMLButtonElement;
+    const toggleLabel = toggle.querySelector('.toy-nav__button-label');
 
     toggle.click();
 
-    expect(toggle.textContent).toBe('Hide controls');
+    expect(readTrimmedText(toggleLabel)).toBe('Hide controls');
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(toggle.getAttribute('aria-controls')).toBe(
       'toy-nav-secondary-actions',

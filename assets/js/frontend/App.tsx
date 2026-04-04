@@ -29,6 +29,7 @@ import {
 } from '../core/state/render-preference-store.ts';
 import type { MilkdropCatalogEntry } from '../milkdrop/types.ts';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
+import { getIconNodes, type UiIconName } from '../ui/icon-library.ts';
 import { YouTubeController } from '../ui/youtube-controller.ts';
 import type {
   LaunchIntent,
@@ -60,6 +61,41 @@ const TOOL_TABS: Array<Exclude<PanelState, null>> = [
   'inspector',
   'settings',
 ];
+
+function UiIcon({ name, className }: { name: UiIconName; className: string }) {
+  const nodes = getIconNodes(name);
+  const title = name.replace(/-/g, ' ');
+
+  return (
+    <span className={className} aria-hidden="true">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        focusable="false"
+        data-icon={name}
+      >
+        <title>{title}</title>
+        {nodes.map(({ tag, attrs }) => {
+          const key = `${name}-${tag}-${Object.entries(attrs)
+            .map(([attrName, value]) => `${attrName}:${value}`)
+            .join('|')}`;
+          if (tag === 'path') {
+            return <path key={key} {...attrs} />;
+          }
+          if (tag === 'circle') {
+            return <circle key={key} {...attrs} />;
+          }
+          return <rect key={key} {...attrs} />;
+        })}
+      </svg>
+    </span>
+  );
+}
 
 function getToolLabel(tool: Exclude<PanelState, null>) {
   switch (tool) {
@@ -746,6 +782,8 @@ export function StimsWorkspaceApp() {
   const readinessAlerts = readinessItems.filter(
     (item) => item.state !== 'ready',
   );
+  const stageAnchoredToolOpen =
+    routeState.panel === 'editor' || routeState.panel === 'inspector';
   const sheetTitle = routeState.panel ? getToolLabel(routeState.panel) : null;
   const sheetDescription = routeState.panel
     ? getToolDescription(routeState.panel)
@@ -807,12 +845,12 @@ export function StimsWorkspaceApp() {
               </p>
               <h1>
                 {runtimeReady || routeState.invalidExperienceSlug
-                  ? 'Pick a look and start the sound.'
+                  ? 'Visualizer ready.'
                   : 'Loading the visualizer.'}
               </h1>
               <p>
                 {runtimeReady || routeState.invalidExperienceSlug
-                  ? 'Start fast with the demo, use your mic, or capture a tab.'
+                  ? 'Demo, mic, tab, and YouTube sources are available below.'
                   : 'One moment while the visuals warm up.'}
               </p>
             </div>
@@ -930,13 +968,13 @@ export function StimsWorkspaceApp() {
             <div className="stims-shell__stage-header">
               <div className="stims-shell__stage-copy">
                 <p className="stims-shell__eyebrow">
-                  {launchControlsHidden ? 'Now playing' : 'Selected look'}
+                  {launchControlsHidden ? 'Now playing' : 'Current look'}
                 </p>
-                <h2>{selectedPreset?.title ?? 'Pick a look'}</h2>
+                <h2>{selectedPreset?.title ?? 'No active look'}</h2>
                 <p className="stims-shell__meta-copy stims-shell__stage-summary">
                   {selectedPreset
                     ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
-                    : 'Open Looks to choose a preset, then start your audio source.'}
+                    : 'Title, author, and fidelity details appear here.'}
                 </p>
               </div>
               <div className="stims-shell__session-meta">
@@ -973,12 +1011,14 @@ export function StimsWorkspaceApp() {
 
       {routeState.panel ? (
         <>
-          <button
-            type="button"
-            className="stims-shell__sheet-backdrop"
-            aria-label="Close tools"
-            onClick={() => updatePanel(null)}
-          />
+          {!stageAnchoredToolOpen ? (
+            <button
+              type="button"
+              className="stims-shell__sheet-backdrop"
+              aria-label="Close tools"
+              onClick={() => updatePanel(null)}
+            />
+          ) : null}
           <aside className="stims-shell__sheet" aria-label="Tools">
             <div className="stims-shell__sheet-header">
               <div className="stims-shell__sheet-heading">
@@ -990,7 +1030,11 @@ export function StimsWorkspaceApp() {
                 className="stims-shell__icon-button"
                 onClick={() => updatePanel(null)}
               >
-                Close
+                <UiIcon
+                  name="close"
+                  className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
+                />
+                <span className="stims-shell__button-label">Close</span>
               </button>
             </div>
 
@@ -1015,7 +1059,7 @@ export function StimsWorkspaceApp() {
                     className="stims-shell__field-label"
                     htmlFor="preset-search"
                   >
-                    Search looks
+                    Search
                   </label>
                   <input
                     id="preset-search"
@@ -1064,7 +1108,7 @@ export function StimsWorkspaceApp() {
                   </nav>
 
                   {!catalogReady && !catalogError ? (
-                    <p className="stims-shell__meta-copy">Loading looks…</p>
+                    <p className="stims-shell__meta-copy">Loading catalog…</p>
                   ) : null}
                   {catalogError ? (
                     <p className="stims-shell__meta-copy">{catalogError}</p>

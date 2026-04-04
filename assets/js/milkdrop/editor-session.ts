@@ -35,6 +35,7 @@ export function createMilkdropEditorSession({
   const listeners = new Set<(state: MilkdropEditorSessionState) => void>();
   let worker: Worker | null = null;
   let requestId = 0;
+  let commitId = 0;
   let sourceMeta: MilkdropPresetSource = initialPreset;
   let lastGood =
     initialCompiled ??
@@ -75,16 +76,19 @@ export function createMilkdropEditorSession({
 
     return new Promise<MilkdropCompiledPreset>((resolve, reject) => {
       const currentRequestId = ++requestId;
+      const cleanup = () => {
+        activeWorker.removeEventListener('message', onMessage);
+        activeWorker.removeEventListener('error', onError);
+      };
       const onMessage = (event: MessageEvent<WorkerResponse>) => {
         if (event.data.id !== currentRequestId) {
           return;
         }
-        activeWorker.removeEventListener('message', onMessage);
+        cleanup();
         resolve(event.data.compiled);
       };
       const onError = (error: Event) => {
-        activeWorker.removeEventListener('message', onMessage);
-        activeWorker.removeEventListener('error', onError);
+        cleanup();
         reject(error);
       };
       activeWorker.addEventListener('message', onMessage);
@@ -106,10 +110,14 @@ export function createMilkdropEditorSession({
       useWorker?: boolean;
     } = {},
   ) => {
+    const currentCommitId = ++commitId;
     const compiled = await compile({
       source,
       useWorker: options.useWorker,
     });
+    if (currentCommitId !== commitId) {
+      return state;
+    }
     if (!hasErrors(compiled)) {
       lastGood = compiled;
     }

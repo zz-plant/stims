@@ -11,6 +11,11 @@ import {
   isToyPictureInPictureActive,
   requestToyPictureInPicture,
 } from '../utils/picture-in-picture';
+import {
+  renderIconSvg,
+  replaceIconContents,
+  type UiIconName,
+} from './icon-library.ts';
 
 export interface NavOptions {
   mode: 'library' | 'toy';
@@ -62,6 +67,18 @@ function escapeHtml(value: string) {
         return match;
     }
   });
+}
+
+function renderIconSlot(name: UiIconName, className: string, title?: string) {
+  return `<span class="${className}" aria-hidden="true">${renderIconSvg(name, { title })}</span>`;
+}
+
+function renderIconLabel(
+  name: UiIconName,
+  label: string,
+  className = 'toy-nav__button-icon stims-icon-slot stims-icon-slot--sm',
+) {
+  return `${renderIconSlot(name, className, label)}<span class="toy-nav__button-label">${escapeHtml(label)}</span>`;
 }
 
 export function initNavigation(container: HTMLElement, options: NavOptions) {
@@ -131,7 +148,7 @@ function renderLibraryNav(
         aria-controls="${actionsId}"
       >
         <span data-nav-toggle-label>Menu</span>
-        <span class="nav-toggle__icon" data-nav-toggle-icon aria-hidden="true">☰</span>
+        <span class="nav-toggle__icon stims-icon-slot stims-icon-slot--md" data-nav-toggle-icon aria-hidden="true">${renderIconSvg('menu', { title: 'Menu' })}</span>
       </button>
       <div class="nav-actions" id="${actionsId}">
         <div class="nav-section nav-section--primary nav-section--jump" aria-label="Page sections">
@@ -150,7 +167,7 @@ function renderLibraryNav(
               : ''
           }
           <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">
-            <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+            <span class="theme-toggle__icon stims-icon-slot" aria-hidden="true">${renderIconSvg('moon', { title: 'Dark mode' })}</span>
             <span class="theme-toggle__label" data-theme-label>Dark mode</span>
           </button>
         </div>
@@ -192,7 +209,9 @@ function renderLibraryNav(
       label.textContent = expanded ? 'Close menu' : 'Menu';
     }
     if (icon) {
-      icon.textContent = expanded ? '✕' : '☰';
+      replaceIconContents(icon, expanded ? 'close' : 'menu', {
+        title: expanded ? 'Close menu' : 'Menu',
+      });
     }
   };
 
@@ -331,7 +350,7 @@ function renderToyNav(
           class="toy-nav__back-quick"
           data-back-to-library-quick="true"
         >
-          <span aria-hidden="true">←</span><span>Back to Stims</span>
+          ${renderIconLabel('arrow-left', 'Back to Stims')}
         </button>
       </div>
     </div>
@@ -345,7 +364,7 @@ function renderToyNav(
           aria-controls="toy-nav-secondary-actions"
           aria-expanded="false"
         >
-          Controls
+          ${renderIconLabel('sliders', 'Controls')}
         </button>
       </div>
       <div
@@ -356,7 +375,7 @@ function renderToyNav(
         options.onNextToy
           ? `<div class="toy-nav__next-wrapper">
               <button type="button" class="toy-nav__next" data-next-toy="true">
-                Next look
+                ${renderIconLabel('arrow-right', 'Next look')}
               </button>
               <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
             </div>`
@@ -364,7 +383,7 @@ function renderToyNav(
       }
       <div class="toy-nav__share-wrapper">
         <button type="button" class="toy-nav__share" data-share-toy="true">
-          Copy link
+          ${renderIconLabel('link', 'Copy link')}
         </button>
         <span class="toy-nav__share-status" role="status" aria-live="polite"></span>
       </div>
@@ -372,7 +391,7 @@ function renderToyNav(
         options.onToggleHaptics && options.hapticsSupported
           ? `<div class="toy-nav__flow-wrapper">
               <button type="button" class="toy-nav__flow" data-haptics-toggle="true" aria-pressed="${options.hapticsActive ? 'true' : 'false'}">
-                ${options.hapticsActive ? 'Pulse on' : 'Pulse'}
+                ${renderIconLabel('pulse', options.hapticsActive ? 'Pulse on' : 'Pulse')}
               </button>
               <span class="toy-nav__flow-status" data-haptics-status role="status" aria-live="polite"></span>
             </div>`
@@ -380,12 +399,12 @@ function renderToyNav(
       }
       <div class="toy-nav__pip-wrapper">
         <button type="button" class="toy-nav__pip" data-toy-pip="true" aria-pressed="false">
-          Mini player
+          ${renderIconLabel('picture-in-picture', 'Mini player')}
         </button>
         <span class="toy-nav__pip-status" role="status" aria-live="polite"></span>
       </div>
       <button type="button" class="toy-nav__back" data-back-to-library="true">
-        <span aria-hidden="true">←</span><span>Back to Stims</span>
+        ${renderIconLabel('arrow-left', 'Back to Stims')}
       </button>
       </div>
     </div>
@@ -497,7 +516,18 @@ function renderToyNav(
       expanded ? 'true' : 'false',
     );
     if (actionsToggleBtn) {
-      actionsToggleBtn.textContent = expanded ? 'Hide controls' : 'Controls';
+      const toggleIcon = actionsToggleBtn.querySelector(
+        '.toy-nav__button-icon',
+      );
+      const toggleLabel = actionsToggleBtn.querySelector(
+        '.toy-nav__button-label',
+      );
+      replaceIconContents(toggleIcon, expanded ? 'close' : 'sliders', {
+        title: expanded ? 'Hide controls' : 'Controls',
+      });
+      if (toggleLabel) {
+        toggleLabel.textContent = expanded ? 'Hide controls' : 'Controls';
+      }
     }
     if (expanded) {
       setChromeVisibility('visible');
@@ -572,9 +602,12 @@ function renderToyNav(
   const updateHapticsUI = () => {
     if (!hapticsBtn) return;
     hapticsBtn.setAttribute('aria-pressed', String(hapticsActive));
-    hapticsBtn.textContent = hapticsActive
-      ? 'Pulse feedback on'
-      : 'Pulse feedback';
+    const label = hapticsBtn.querySelector('.toy-nav__button-label');
+    if (label) {
+      label.textContent = hapticsActive
+        ? 'Pulse feedback on'
+        : 'Pulse feedback';
+    }
   };
 
   const handleNextToy = async () => {
@@ -778,8 +811,15 @@ function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
 
   const updateButtonState = () => {
     const active = isToyPictureInPictureActive(doc);
+    const icon = pipButton.querySelector('.toy-nav__button-icon');
+    const label = pipButton.querySelector('.toy-nav__button-label');
     pipButton.setAttribute('aria-pressed', String(active));
-    pipButton.textContent = active ? 'Close mini player' : 'Mini player';
+    replaceIconContents(icon, active ? 'close' : 'picture-in-picture', {
+      title: active ? 'Close mini player' : 'Mini player',
+    });
+    if (label) {
+      label.textContent = active ? 'Close mini player' : 'Mini player';
+    }
   };
 
   const showStatus = (message: string) => {
@@ -877,7 +917,12 @@ function renderRendererStatus(
   container.innerHTML = `
     <div class="renderer-status">
       <span class="renderer-pill ${pillClass}" title="${titleText}">
-        ${fallback ? 'Using a simpler renderer' : 'Best quality'}
+        ${renderIconSlot(
+          fallback ? 'gauge' : 'sparkles',
+          'renderer-pill__icon stims-icon-slot stims-icon-slot--sm',
+          fallback ? 'Fallback renderer' : 'Best quality renderer',
+        )}
+        <span class="renderer-pill__label">${fallback ? 'Using a simpler renderer' : 'Best quality'}</span>
       </span>
       ${status.actionLabel ? `<button type="button" class="renderer-pill__retry">${escapeHtml(status.actionLabel)}</button>` : ''}
     </div>
@@ -903,7 +948,9 @@ function setupThemeToggle(container: HTMLElement) {
       isDark ? 'Switch to light mode' : 'Switch to dark mode',
     );
     if (label) label.textContent = isDark ? 'Light mode' : 'Dark mode';
-    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    replaceIconContents(icon, isDark ? 'sun' : 'moon', {
+      title: isDark ? 'Light mode' : 'Dark mode',
+    });
   };
 
   // Initial state

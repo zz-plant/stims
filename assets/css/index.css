@@ -482,9 +482,13 @@ footer {
 }
 
 .nav-toggle__icon {
-  font-size: 1.2rem;
-  font-weight: 700;
   opacity: 0.9;
+  color: color-mix(in srgb, var(--text-color) 92%, var(--accent-color));
+}
+
+.nav-toggle__icon > svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .nav-section {
@@ -3819,6 +3823,11 @@ footer {
   background: color-mix(in srgb, var(--accent-color) 16%, var(--card-bg));
   color: var(--text-color);
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.12);
+}
+
+.theme-toggle__icon > svg {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .theme-toggle__label {

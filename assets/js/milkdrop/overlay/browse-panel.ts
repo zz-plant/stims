@@ -287,11 +287,11 @@ export class BrowsePanel {
 
     this.browseEyebrowLabel = document.createElement('p');
     this.browseEyebrowLabel.className = 'milkdrop-overlay__browse-eyebrow';
-    this.browseEyebrowLabel.textContent = 'Featured looks';
+    this.browseEyebrowLabel.textContent = 'Featured';
 
     this.browseActiveLabel = document.createElement('div');
     this.browseActiveLabel.className = 'milkdrop-overlay__browse-active';
-    this.browseActiveLabel.textContent = 'Choose a look';
+    this.browseActiveLabel.textContent = 'Catalog';
     this.browseActiveLabel.setAttribute('aria-live', 'polite');
     this.browseActiveLabel.setAttribute('aria-atomic', 'true');
 
@@ -311,10 +311,10 @@ export class BrowsePanel {
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'search';
     this.searchInput.className = 'milkdrop-overlay__search';
-    this.searchInput.placeholder = 'Search looks, authors, or classic names';
+    this.searchInput.placeholder = 'Search titles, authors, or classic names';
     this.searchInput.setAttribute(
       'aria-label',
-      'Search looks, authors, or classic names',
+      'Search titles, authors, or classic names',
     );
     this.searchInput.addEventListener('input', () => this.scheduleRender());
 
@@ -388,7 +388,7 @@ export class BrowsePanel {
     this.browseOptionsDisclosure.className = 'milkdrop-overlay__browse-options';
     const browseOptionsSummary = document.createElement('summary');
     browseOptionsSummary.className = 'milkdrop-overlay__browse-options-summary';
-    browseOptionsSummary.textContent = 'Filter looks';
+    browseOptionsSummary.textContent = 'Filters';
     this.browseOptionsDisclosure.appendChild(browseOptionsSummary);
 
     const browseOptionsBody = document.createElement('div');
@@ -417,7 +417,7 @@ export class BrowsePanel {
     this.browseList.className = 'milkdrop-overlay__browse';
     this.browseEmptyState = document.createElement('div');
     this.browseEmptyState.className = 'milkdrop-overlay__browse-empty';
-    this.browseEmptyState.textContent = 'No looks match this search yet.';
+    this.browseEmptyState.textContent = 'No matches found.';
     this.element.append(
       browseHero,
       browseControls,
@@ -591,11 +591,11 @@ export class BrowsePanel {
           ? 'Back in rotation'
           : this.browseMode === 'all'
             ? currentCollectionLabel || 'All looks'
-            : 'Featured looks';
+            : 'Featured';
     this.browseActiveLabel.textContent = activePreset
       ? activePreset.title
-      : currentCollectionLabel || 'Choose a look';
-    this.browseMetaLabel.textContent = `${filteredCount} ${filteredCount === 1 ? 'pick' : 'picks'}`;
+      : currentCollectionLabel || 'Catalog';
+    this.browseMetaLabel.textContent = `${filteredCount} ${filteredCount === 1 ? 'result' : 'results'}`;
     this.browseMetaLabel.hidden = false;
   }
 

@@ -1,3 +1,5 @@
+import { replaceIconContents } from '../ui/icon-library.ts';
+
 const getThemeController = () => {
   if (window.__stimsTheme) {
     return window.__stimsTheme;
@@ -66,7 +68,9 @@ export function setupDarkModeToggle(themeToggleId = 'theme-toggle') {
       btn.textContent = labelText;
     }
     if (icon) {
-      icon.textContent = isDark ? '☀️' : '🌙';
+      replaceIconContents(icon, isDark ? 'sun' : 'moon', {
+        title: labelText,
+      });
     }
     btn.setAttribute('aria-pressed', String(isDark));
     btn.setAttribute(

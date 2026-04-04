@@ -629,8 +629,19 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 14px;
   box-shadow: var(--stims-shadow-control);
+}
+
+.stims-shell__button-icon {
+  color: currentColor;
+}
+
+.stims-shell__button-label {
+  min-width: 0;
 }
 
 .stims-shell__youtube {
