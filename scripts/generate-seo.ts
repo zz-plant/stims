@@ -1,18 +1,62 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 
-const baseUrl = 'https://toil.fyi';
-const rootDir = process.cwd();
-const publicDir = path.join(rootDir, 'public');
-const ogDir = path.join(publicDir, 'og');
+const execFileAsync = promisify(execFile);
+
+export const DEFAULT_BASE_URL = 'https://toil.fyi';
+export const GENERATED_SITEMAP_CHUNK_PATH = 'public/sitemap-1.xml';
+export const GENERATED_SITEMAP_INDEX_PATH = 'public/sitemap.xml';
+export const GENERATED_ROBOTS_PATH = 'public/robots.txt';
+export const GENERATED_OG_DEFAULT_PATH = 'public/og/default.svg';
+export const GENERATED_OG_MILKDROP_PATH = 'public/og/milkdrop.svg';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, '..');
+
 const generatedDirs = ['toys', 'tags', 'moods', 'capabilities', 'discover'];
 const ogWidth = 1200;
 const ogHeight = 630;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 type ToyEntry = {
   slug: string;
   title: string;
   description: string;
+};
+
+type SitemapRouteSpec = {
+  path: string;
+  imagePath: string;
+  imageTitle: string;
+  imageCaption: string;
+  changefreq: 'weekly' | 'monthly';
+  priority: string;
+  sourcePaths: string[];
+  includeInSitemap: boolean;
+};
+
+export type SitemapEntry = {
+  loc: string;
+  lastmod: string;
+  changefreq: SitemapRouteSpec['changefreq'];
+  priority: string;
+  imageLoc: string;
+  imageTitle: string;
+  imageCaption: string;
+};
+
+type GeneratedFile = {
+  relativePath: string;
+  contents: string;
+};
+
+type SeoArtifacts = {
+  files: GeneratedFile[];
+  sitemapEntries: SitemapEntry[];
 };
 
 const escapeHtml = (value: string) =>
@@ -31,7 +75,7 @@ const escapeXml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-const buildOgSvg = ({
+export const buildOgSvg = ({
   title,
   subtitle,
   eyebrow,
@@ -63,97 +107,276 @@ const buildOgSvg = ({
   <text x="88" y="${chip ? '372' : '318'}" font-size="30" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(subtitle)}</text>
 </svg>`;
 
-const getSitemapMeta = (url: string) => {
-  if (url.endsWith('/milkdrop/')) {
-    return { changefreq: 'weekly', priority: '0.9' };
-  }
+const formatDate = (value: number | Date) =>
+  new Date(value).toISOString().slice(0, 10);
 
-  return { changefreq: 'weekly', priority: '1.0' };
-};
+async function loadToys(rootDir = repoRoot) {
+  const toysRaw = await readFile(
+    path.join(rootDir, 'assets/data/toys.json'),
+    'utf8',
+  );
+  return JSON.parse(toysRaw) as ToyEntry[];
+}
 
-const generateSeo = async () => {
-  const toysRaw = await readFile(path.join(publicDir, 'toys.json'), 'utf8');
-  const toys: ToyEntry[] = JSON.parse(toysRaw);
-  const milkdrop =
+function getMilkdropEntry(toys: ToyEntry[]) {
+  return (
     toys.find((entry) => entry.slug === 'milkdrop') ??
     ({
       slug: 'milkdrop',
       title: 'MilkDrop Visualizer',
       description:
         'Dedicated Stims launch route for compatibility checks, audio setup, quality tuning, preset browsing, and live editing.',
-    } satisfies ToyEntry);
+    } satisfies ToyEntry)
+  );
+}
+
+async function gitCommandSucceeded(
+  rootDir: string,
+  args: string[],
+): Promise<boolean> {
+  try {
+    await execFileAsync('git', args, { cwd: rootDir });
+    return true;
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      return error.code !== 1;
+    }
+    return false;
+  }
+}
+
+async function hasUncommittedChanges(rootDir: string, sourcePaths: string[]) {
+  const diffArgs = ['diff', '--quiet', '--', ...sourcePaths];
+  const cachedDiffArgs = ['diff', '--cached', '--quiet', '--', ...sourcePaths];
+  const worktreeClean = await gitCommandSucceeded(rootDir, diffArgs);
+  const stagedClean = await gitCommandSucceeded(rootDir, cachedDiffArgs);
+  return !worktreeClean || !stagedClean;
+}
+
+async function getGitLastmod(rootDir: string, sourcePaths: string[]) {
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      ['log', '-1', '--format=%cs', '--', ...sourcePaths],
+      { cwd: rootDir },
+    );
+    const value = stdout.trim();
+    return ISO_DATE_PATTERN.test(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getFilesystemLastmod(rootDir: string, sourcePaths: string[]) {
+  const timestamps = await Promise.all(
+    sourcePaths.map(async (relativePath) => {
+      const target = path.join(rootDir, relativePath);
+      return (await stat(target)).mtimeMs;
+    }),
+  );
+
+  return formatDate(Math.max(...timestamps));
+}
+
+export async function resolveLastmodDate(
+  rootDir: string,
+  sourcePaths: string[],
+) {
+  if (!(await hasUncommittedChanges(rootDir, sourcePaths))) {
+    const gitLastmod = await getGitLastmod(rootDir, sourcePaths);
+    if (gitLastmod) {
+      return gitLastmod;
+    }
+  }
+
+  return getFilesystemLastmod(rootDir, sourcePaths);
+}
+
+export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
+  return [
+    {
+      path: '/',
+      imagePath: '/og/milkdrop.svg',
+      imageTitle: `${milkdrop.title} | Stims`,
+      imageCaption: milkdrop.description,
+      changefreq: 'weekly',
+      priority: '1.0',
+      sourcePaths: [
+        'index.html',
+        'assets/data/toys.json',
+        'assets/js/toys/milkdrop-toy.ts',
+      ],
+      includeInSitemap: true,
+    },
+    {
+      path: '/milkdrop/',
+      imagePath: '/og/milkdrop.svg',
+      imageTitle: `${milkdrop.title} | Stims`,
+      imageCaption:
+        'Compatibility alias that immediately redirects to the canonical Stims route.',
+      changefreq: 'monthly',
+      priority: '0.1',
+      sourcePaths: ['milkdrop/index.html'],
+      includeInSitemap: false,
+    },
+  ];
+}
+
+export async function buildSitemapEntries(
+  rootDir = repoRoot,
+  {
+    baseUrl = DEFAULT_BASE_URL,
+    milkdrop,
+    resolveLastmod = (sourcePaths: string[]) =>
+      resolveLastmodDate(rootDir, sourcePaths),
+  }: {
+    baseUrl?: string;
+    milkdrop?: ToyEntry;
+    resolveLastmod?: (sourcePaths: string[]) => Promise<string>;
+  } = {},
+): Promise<SitemapEntry[]> {
+  const toys = milkdrop ? [] : await loadToys(rootDir);
+  const milkdropEntry = milkdrop ?? getMilkdropEntry(toys);
+  const specs = getSitemapRouteSpecs(milkdropEntry).filter(
+    (route) => route.includeInSitemap,
+  );
+
+  return Promise.all(
+    specs.map(async (route) => ({
+      loc: new URL(route.path, `${baseUrl}/`).toString(),
+      lastmod: await resolveLastmod(route.sourcePaths),
+      changefreq: route.changefreq,
+      priority: route.priority,
+      imageLoc: new URL(route.imagePath, `${baseUrl}/`).toString(),
+      imageTitle: route.imageTitle,
+      imageCaption: route.imageCaption,
+    })),
+  );
+}
+
+export function buildSitemapChunk(entries: SitemapEntry[]) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${entries
+  .map(
+    (entry) => `  <url>
+    <loc>${escapeXml(entry.loc)}</loc>
+    <lastmod>${entry.lastmod}</lastmod>
+    <changefreq>${entry.changefreq}</changefreq>
+    <priority>${entry.priority}</priority>
+    <image:image>
+      <image:loc>${escapeXml(entry.imageLoc)}</image:loc>
+      <image:title>${escapeXml(entry.imageTitle)}</image:title>
+      <image:caption>${escapeXml(entry.imageCaption)}</image:caption>
+    </image:image>
+  </url>`,
+  )
+  .join('\n')}
+</urlset>
+`;
+}
+
+export function buildSitemapIndex(
+  entries: SitemapEntry[],
+  baseUrl = DEFAULT_BASE_URL,
+) {
+  const lastmod =
+    entries.reduce(
+      (latest, entry) => (entry.lastmod > latest ? entry.lastmod : latest),
+      entries[0]?.lastmod ?? formatDate(new Date()),
+    ) ?? formatDate(new Date());
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${baseUrl}/sitemap-1.xml</loc>
+    <lastmod>${lastmod}</lastmod>
+  </sitemap>
+</sitemapindex>
+`;
+}
+
+export function buildRobotsTxt(baseUrl = DEFAULT_BASE_URL) {
+  return `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`;
+}
+
+export async function buildSeoArtifacts(
+  rootDir = repoRoot,
+  { baseUrl = DEFAULT_BASE_URL }: { baseUrl?: string } = {},
+): Promise<SeoArtifacts> {
+  const toys = await loadToys(rootDir);
+  const milkdrop = getMilkdropEntry(toys);
+  const sitemapEntries = await buildSitemapEntries(rootDir, {
+    baseUrl,
+    milkdrop,
+  });
+
+  return {
+    sitemapEntries,
+    files: [
+      {
+        relativePath: GENERATED_OG_DEFAULT_PATH,
+        contents: buildOgSvg({
+          title: 'Stims',
+          subtitle: 'Browser-native MilkDrop visualizer',
+          eyebrow: 'Home route',
+          chip: 'Explanation first',
+          accentStart: '#08131b',
+          accentEnd: '#1f5f66',
+        }),
+      },
+      {
+        relativePath: GENERATED_OG_MILKDROP_PATH,
+        contents: buildOgSvg({
+          title: milkdrop.title,
+          subtitle: 'Quick check, audio setup, presets, and live editing',
+          eyebrow: 'Launch route',
+          chip: '/milkdrop/',
+          accentStart: '#150d2e',
+          accentEnd: '#244b9a',
+        }),
+      },
+      {
+        relativePath: GENERATED_SITEMAP_CHUNK_PATH,
+        contents: buildSitemapChunk(sitemapEntries),
+      },
+      {
+        relativePath: GENERATED_SITEMAP_INDEX_PATH,
+        contents: buildSitemapIndex(sitemapEntries, baseUrl),
+      },
+      {
+        relativePath: GENERATED_ROBOTS_PATH,
+        contents: buildRobotsTxt(baseUrl),
+      },
+    ],
+  };
+}
+
+export async function generateSeo(
+  rootDir = repoRoot,
+  { baseUrl = DEFAULT_BASE_URL }: { baseUrl?: string } = {},
+) {
+  const publicDir = path.join(rootDir, 'public');
 
   for (const dir of generatedDirs) {
     await rm(path.join(publicDir, dir), { recursive: true, force: true });
   }
 
-  await mkdir(ogDir, { recursive: true });
+  await mkdir(path.join(publicDir, 'og'), { recursive: true });
 
-  await writeFile(
-    path.join(ogDir, 'default.svg'),
-    buildOgSvg({
-      title: 'Stims',
-      subtitle: 'Browser-native MilkDrop visualizer',
-      eyebrow: 'Home route',
-      chip: 'Explanation first',
-      accentStart: '#08131b',
-      accentEnd: '#1f5f66',
-    }),
+  const { files } = await buildSeoArtifacts(rootDir, { baseUrl });
+  await Promise.all(
+    files.map(({ relativePath, contents }) =>
+      writeFile(path.join(rootDir, relativePath), contents),
+    ),
   );
+}
 
-  await writeFile(
-    path.join(ogDir, 'milkdrop.svg'),
-    buildOgSvg({
-      title: milkdrop.title,
-      subtitle: 'Quick check, audio setup, presets, and live editing',
-      eyebrow: 'Launch route',
-      chip: '/milkdrop/',
-      accentStart: '#150d2e',
-      accentEnd: '#244b9a',
-    }),
-  );
+async function main() {
+  await generateSeo();
+}
 
-  const today = new Date().toISOString().split('T')[0];
-  const urls = [
-    { loc: `${baseUrl}/`, image: `${baseUrl}/og/default.svg` },
-    { loc: `${baseUrl}/milkdrop/`, image: `${baseUrl}/og/milkdrop.svg` },
-  ];
-
-  const sitemapBody = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${urls
-  .map((entry) => {
-    const { changefreq, priority } = getSitemapMeta(entry.loc);
-    return `  <url>
-    <loc>${escapeXml(entry.loc)}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>${changefreq}</changefreq>
-    <priority>${priority}</priority>
-    <image:image>
-      <image:loc>${escapeXml(entry.image)}</image:loc>
-    </image:image>
-  </url>`;
-  })
-  .join('\n')}
-</urlset>
-`;
-
-  await writeFile(path.join(publicDir, 'sitemap-1.xml'), sitemapBody);
-  await writeFile(
-    path.join(publicDir, 'sitemap.xml'),
-    `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${baseUrl}/sitemap-1.xml</loc>
-    <lastmod>${today}</lastmod>
-  </sitemap>
-</sitemapindex>
-`,
-  );
-  await writeFile(
-    path.join(publicDir, 'robots.txt'),
-    `User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`,
-  );
-};
-
-await generateSeo();
+const argvPath = process.argv[1] ? path.resolve(process.argv[1]) : '';
+if (argvPath && import.meta.url === pathToFileURL(argvPath).href) {
+  await main();
+}
