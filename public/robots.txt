@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://no.toil.fyi/sitemap.xml
+Sitemap: https://toil.fyi/sitemap.xml

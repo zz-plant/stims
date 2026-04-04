@@ -4,7 +4,7 @@
 
 ## Scope
 
-This audit reviews the production SEO surface for [https://no.toil.fyi](https://no.toil.fyi):
+This audit reviews the production SEO surface for [https://toil.fyi](https://toil.fyi):
 
 - Homepage metadata and structured data (`/`)
 - Representative toy landing page (`/toys/cube-wave/`)
@@ -73,10 +73,10 @@ The technical SEO baseline is healthy, but these factors may still limit search 
 
 - `bun run generate:seo`
 - `bun run check:seo`
-- `curl -sS https://no.toil.fyi/ -o /tmp/no_toil_home.html`
-- `curl -sS https://no.toil.fyi/toys/cube-wave/ -o /tmp/no_toil_cube_wave.html`
-- `curl -sS https://no.toil.fyi/robots.txt -o /tmp/no_toil_robots.txt`
-- `curl -sS https://no.toil.fyi/sitemap.xml -o /tmp/no_toil_sitemap.xml`
-- `curl -sS https://no.toil.fyi/sitemap-1.xml -o /tmp/no_toil_sitemap1.xml`
-- `curl -sSI https://no.toil.fyi/`
-- `curl -sSI https://no.toil.fyi/index.html`
+- `curl -sS https://toil.fyi/ -o /tmp/toil_home.html`
+- `curl -sS https://toil.fyi/toys/cube-wave/ -o /tmp/toil_cube_wave.html`
+- `curl -sS https://toil.fyi/robots.txt -o /tmp/toil_robots.txt`
+- `curl -sS https://toil.fyi/sitemap.xml -o /tmp/toil_sitemap.xml`
+- `curl -sS https://toil.fyi/sitemap-1.xml -o /tmp/toil_sitemap1.xml`
+- `curl -sSI https://toil.fyi/`
+- `curl -sSI https://toil.fyi/index.html`

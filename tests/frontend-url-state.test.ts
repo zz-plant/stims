@@ -8,7 +8,7 @@ import {
 describe('frontend url state', () => {
   test('reads legacy query params into canonical session state', () => {
     const state = readSessionRouteState(
-      'https://no.toil.fyi/milkdrop/?experience=milkdrop&panel=looks&collection=cream-of-the-crop&audio=sample&preset=signal-bloom&agent=true',
+      'https://toil.fyi/milkdrop/?experience=milkdrop&panel=looks&collection=cream-of-the-crop&audio=sample&preset=signal-bloom&agent=true',
     );
 
     expect(state).toEqual({
@@ -23,7 +23,7 @@ describe('frontend url state', () => {
 
   test('flags unsupported legacy experience slugs', () => {
     const state = readSessionRouteState(
-      'https://no.toil.fyi/milkdrop/?experience=non-existent-toy',
+      'https://toil.fyi/milkdrop/?experience=non-existent-toy',
     );
 
     expect(state.invalidExperienceSlug).toBe('non-existent-toy');
@@ -31,7 +31,7 @@ describe('frontend url state', () => {
 
   test('normalizes supported panel and audio aliases', () => {
     const state = readSessionRouteState(
-      'https://no.toil.fyi/?tool=inspect&audio=mic',
+      'https://toil.fyi/?tool=inspect&audio=mic',
     );
 
     expect(state.panel).toBe('inspector');
@@ -48,7 +48,7 @@ describe('frontend url state', () => {
         agentMode: true,
         invalidExperienceSlug: null,
       },
-      'https://no.toil.fyi/milkdrop/?landing=1&experience=milkdrop',
+      'https://toil.fyi/milkdrop/?landing=1&experience=milkdrop',
     );
 
     expect(url.pathname).toBe('/');
@@ -67,7 +67,7 @@ describe('frontend url state', () => {
         agentMode: false,
         invalidExperienceSlug: 'seary',
       },
-      'https://no.toil.fyi/milkdrop/?experience=seary&panel=browse&audio=demo',
+      'https://toil.fyi/milkdrop/?experience=seary&panel=browse&audio=demo',
     );
 
     expect(url.pathname).toBe('/');
