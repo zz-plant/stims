@@ -75,10 +75,10 @@ export function readSessionRouteState(
 ): SessionRouteState {
   const url =
     typeof input === 'string'
-      ? new URL(input, 'https://no.toil.fyi')
+      ? new URL(input, 'https://toil.fyi')
       : input instanceof URL
         ? input
-        : new URL(input?.href ?? 'https://no.toil.fyi/');
+        : new URL(input?.href ?? 'https://toil.fyi/');
 
   const params = url.searchParams;
   const legacyExperience = params.get('experience');
@@ -104,10 +104,10 @@ export function buildCanonicalUrl(
 ) {
   const url =
     typeof input === 'string'
-      ? new URL(input, 'https://no.toil.fyi')
+      ? new URL(input, 'https://toil.fyi')
       : input instanceof URL
         ? new URL(input.toString())
-        : new URL(input?.href ?? 'https://no.toil.fyi/');
+        : new URL(input?.href ?? 'https://toil.fyi/');
 
   const params = new URLSearchParams(url.search);
   [

@@ -1,6 +1,6 @@
 # Stims
 
-[![Live site](https://img.shields.io/badge/live-no.toil.fyi-5a67d8?style=flat-square&logo=cloudflare)](https://no.toil.fyi)
+[![Live site](https://img.shields.io/badge/live-toil.fyi-5a67d8?style=flat-square&logo=cloudflare)](https://toil.fyi)
 [![GitHub stars](https://img.shields.io/github/stars/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/issues)
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
@@ -12,10 +12,10 @@ It is built to feel like a first-class browser experience rather than a nostalgi
 
 ## Quick links
 
-- Live site: [no.toil.fyi](https://no.toil.fyi)
-- Homepage: [no.toil.fyi/](https://no.toil.fyi/)
-- Launch app: [no.toil.fyi/](https://no.toil.fyi/)
-- Legacy alias: [no.toil.fyi/milkdrop/](https://no.toil.fyi/milkdrop/)
+- Live site: [toil.fyi](https://toil.fyi)
+- Homepage: [toil.fyi/](https://toil.fyi/)
+- Launch app: [toil.fyi/](https://toil.fyi/)
+- Legacy alias: [toil.fyi/milkdrop/](https://toil.fyi/milkdrop/)
 - Docs hub: [docs/README.md](./docs/README.md)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 

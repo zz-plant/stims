@@ -8,7 +8,7 @@
 
 ## Route 1: Homepage ➜ Toys index ➜ first launch
 
-1. Land on `https://no.toil.fyi`.
+1. Land on `https://toil.fyi`.
 2. Click `/toys/` from the hero/primary nav.
 3. Click the first featured toy card and land on capability-check modal.
 

@@ -11,7 +11,7 @@ type CheckResult = {
 };
 
 const requiredInIndexHtml = [
-  '<link rel="canonical" href="https://no.toil.fyi/" />',
+  '<link rel="canonical" href="https://toil.fyi/" />',
   '<meta property="og:title"',
   '<meta property="og:image"',
   '<meta name="twitter:card" content="summary_large_image"',
@@ -33,7 +33,7 @@ const run = async () => {
   const robots = await readFile(path.join(publicDir, 'robots.txt'), 'utf8');
   results.push({
     name: 'robots.txt references sitemap index',
-    passed: robots.includes('Sitemap: https://no.toil.fyi/sitemap.xml'),
+    passed: robots.includes('Sitemap: https://toil.fyi/sitemap.xml'),
     details: 'public/robots.txt',
   });
 
@@ -43,9 +43,7 @@ const run = async () => {
   );
   results.push({
     name: 'Sitemap index contains sitemap-1.xml location',
-    passed: sitemapIndex.includes(
-      '<loc>https://no.toil.fyi/sitemap-1.xml</loc>',
-    ),
+    passed: sitemapIndex.includes('<loc>https://toil.fyi/sitemap-1.xml</loc>'),
     details: 'public/sitemap.xml',
   });
 
@@ -54,7 +52,7 @@ const run = async () => {
     'utf8',
   );
   const hasUrlLastmod =
-    sitemapChunk.includes('<loc>https://no.toil.fyi/milkdrop/</loc>') &&
+    sitemapChunk.includes('<loc>https://toil.fyi/milkdrop/</loc>') &&
     sitemapChunk.includes('<lastmod>');
   results.push({
     name: 'Sitemap chunk includes `/milkdrop/` entry',
@@ -73,9 +71,9 @@ const run = async () => {
   results.push({
     name: 'Sitemap chunk includes OG image entry for the launch route',
     passed:
-      sitemapChunk.includes('<loc>https://no.toil.fyi/milkdrop/</loc>') &&
+      sitemapChunk.includes('<loc>https://toil.fyi/milkdrop/</loc>') &&
       sitemapChunk.includes(
-        '<image:loc>https://no.toil.fyi/og/milkdrop.svg</image:loc>',
+        '<image:loc>https://toil.fyi/og/milkdrop.svg</image:loc>',
       ),
     details: 'public/sitemap-1.xml',
   });

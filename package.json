@@ -3,7 +3,7 @@
   "description": "Browser-native MilkDrop-inspired visualizer with curated presets, live editing, and import/export.",
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://no.toil.fyi",
+  "homepage": "https://toil.fyi",
   "repository": {
     "type": "git",
     "url": "https://github.com/zz-plant/stims.git"

@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const baseUrl = 'https://no.toil.fyi';
+const baseUrl = 'https://toil.fyi';
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'public');
 const ogDir = path.join(publicDir, 'og');

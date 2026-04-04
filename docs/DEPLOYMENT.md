@@ -225,4 +225,4 @@ The project now treats `/` as the canonical workspace route and `/milkdrop/` as 
 
 - Update [`CHANGELOG.md`](../CHANGELOG.md) with user-facing notes for the release.
 - Tag the version in Git after merging (e.g., `git tag vX.Y.Z && git push origin --tags`).
-- Smoke test the production URL at [https://no.toil.fyi](https://no.toil.fyi) after deploy (basic load, a few toys, and audio input checks).
+- Smoke test the production URL at [https://toil.fyi](https://toil.fyi) after deploy (basic load, a few toys, and audio input checks).
