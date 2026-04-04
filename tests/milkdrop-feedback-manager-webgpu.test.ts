@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { TextureLoader } from 'three';
 import {
   createMilkdropWebGPUFeedbackManager,
   resolveDirectShaderConstructorPattern,
@@ -6,6 +7,10 @@ import {
   resolveDirectShaderSwizzle,
 } from '../assets/js/milkdrop/feedback-manager-webgpu.ts';
 import { getSharedMilkdropAuxTextures } from '../assets/js/milkdrop/feedback-manager-webgpu-composite.ts';
+
+afterEach(() => {
+  mock.restore();
+});
 
 describe('milkdrop webgpu feedback manager helpers', () => {
   test('normalizes direct shader sampler aliases onto canonical runtime bindings', () => {
@@ -146,6 +151,19 @@ describe('milkdrop webgpu feedback manager helpers', () => {
 
     first.dispose();
     second.dispose();
+  });
+
+  test('does not eagerly load aux textures when a feedback manager is created', () => {
+    const loadSpy = mock(TextureLoader.prototype.load);
+    const manager = createMilkdropWebGPUFeedbackManager(640, 360) as {
+      dispose: () => void;
+    };
+
+    try {
+      expect(loadSpy).not.toHaveBeenCalled();
+    } finally {
+      manager.dispose();
+    }
   });
 
   test('does not dispose shared aux textures when a WebGPU feedback manager is torn down', () => {
