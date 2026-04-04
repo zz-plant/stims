@@ -172,6 +172,230 @@
         "preset"
       ],
       "order": 911
+    },
+    {
+      "id": "illusion-unchained-new-strategy",
+      "title": "Illusion & Unchained - New Strategy",
+      "author": "Illusion & Unchained",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/illusion-unchained-new-strategy.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "gradient",
+        "preset"
+      ],
+      "order": 912
+    },
+    {
+      "id": "rovastar-dark-ritual-star-of-destiny-denied-mix",
+      "title": "Rovastar - Dark Ritual (Star of Destiny Denied Mix)",
+      "author": "Rovastar",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-dark-ritual-star-of-destiny-denied-mix.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "geometry",
+        "ritual",
+        "preset"
+      ],
+      "order": 913
+    },
+    {
+      "id": "geiss-happy-drops",
+      "title": "Geiss - Happy Drops",
+      "author": "Geiss",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-happy-drops.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "burst",
+        "supernova",
+        "preset"
+      ],
+      "order": 914
+    },
+    {
+      "id": "rovastar-and-idiot24-7-abstract-psychaos",
+      "title": "Rovastar & idiot24-7 - Abstract Psychaos",
+      "author": "Rovastar & idiot24-7",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-and-idiot24-7-abstract-psychaos.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "waveform",
+        "wire",
+        "preset"
+      ],
+      "order": 915
+    },
+    {
+      "id": "shifter-glassworms-flare",
+      "title": "shifter - Glassworms Flare",
+      "author": "shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-glassworms-flare.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "orbit",
+        "worms",
+        "preset"
+      ],
+      "order": 916
+    },
+    {
+      "id": "dbleja-hovering-over-mars",
+      "title": "Dbleja - Hovering Over Mars",
+      "author": "Dbleja",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-mars.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "planetary",
+        "preset"
+      ],
+      "order": 917
+    },
+    {
+      "id": "aderrasi-potion-of-spirits",
+      "title": "Aderrasi - Potion of Spirits",
+      "author": "Aderrasi",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/aderrasi-potion-of-spirits.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "gradient",
+        "preset"
+      ],
+      "order": 918
+    },
+    {
+      "id": "geiss-casino",
+      "title": "Geiss - Casino",
+      "author": "Geiss",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-casino.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "waveform",
+        "dual-wire",
+        "preset"
+      ],
+      "order": 919
+    },
+    {
+      "id": "orb-radiation",
+      "title": "ORB - Radiation",
+      "author": "ORB",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-radiation.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "mirror",
+        "blobby",
+        "preset"
+      ],
+      "order": 920
+    },
+    {
+      "id": "pieturp-sunflare",
+      "title": "PieturP - Sunflare",
+      "author": "PieturP",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/pieturp-sunflare.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "radiate",
+        "supernova",
+        "preset"
+      ],
+      "order": 921
+    },
+    {
+      "id": "evet-proteus-core-element-5",
+      "title": "EVET - Proteus Core Element 5",
+      "author": "EVET",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/evet-proteus-core-element-5.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "orbits",
+        "core",
+        "preset"
+      ],
+      "order": 922
+    },
+    {
+      "id": "shifter-spectro",
+      "title": "shifter - Spectro",
+      "author": "shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-spectro.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "waveform",
+        "spectrum",
+        "preset"
+      ],
+      "order": 923
+    },
+    {
+      "id": "eos-phat-vacuum-deification",
+      "title": "Eo.S. + Phat - Vacuum Deification",
+      "author": "Eo.S. + Phat",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-phat-vacuum-deification.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "lasers",
+        "geometry",
+        "preset"
+      ],
+      "order": 924
+    },
+    {
+      "id": "eos-starburst-05-phasing",
+      "title": "Eo.S. - Starburst 05 Phasing",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-starburst-05-phasing.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "starburst",
+        "shimmer",
+        "preset"
+      ],
+      "order": 925
+    },
+    {
+      "id": "eos-dark-side-of-the-moon-clean-mix",
+      "title": "Eo.S. - Dark Side of the Moon (Clean Mix)",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-dark-side-of-the-moon-clean-mix.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "shapes",
+        "lattice",
+        "preset"
+      ],
+      "order": 926
+    },
+    {
+      "id": "geiss-bipolar-x",
+      "title": "Geiss - Bipolar X",
+      "author": "Geiss",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-bipolar-x.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "waveform",
+        "circular",
+        "preset"
+      ],
+      "order": 927
     }
   ]
 }

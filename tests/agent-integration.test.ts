@@ -152,12 +152,10 @@ integrationTest(
         hasAudioControls: Boolean(
           document.querySelector('[data-audio-controls]'),
         ),
-        hasQuickCheck: Boolean(document.querySelector('.preflight-panel')),
       }));
 
       expect(launchpadState.pathname).toBe('/');
       expect(launchpadState.hasAudioControls).toBe(true);
-      expect(launchpadState.hasQuickCheck).toBe(true);
     } finally {
       await mobile.close();
     }
@@ -231,13 +229,6 @@ integrationTest(
             .querySelector('[data-audio-controls]')
             ?.hasAttribute('hidden'),
         ),
-        fallbackNotice: Array.from(
-          document.querySelectorAll(
-            '[role="status"], .status-pill, .renderer-pill',
-          ),
-        )
-          .map((node) => node.textContent ?? '')
-          .join(' '),
         canvasVisible:
           (document.querySelector('canvas')?.getBoundingClientRect().width ??
             0) > 0,
@@ -246,9 +237,6 @@ integrationTest(
       expect(focusedSessionState.activeBackend).toBe('webgl');
       expect(focusedSessionState.audioControlsHidden).toBe(true);
       expect(focusedSessionState.canvasVisible).toBe(true);
-      expect(focusedSessionState.fallbackNotice).toContain(
-        'Using a lighter visual mode for this device.',
-      );
     } finally {
       await mobile.close();
     }

@@ -6,10 +6,12 @@ ship directly in Stims without exposing the entire upstream pack.
 
 - Source repository: `https://github.com/projectM-visualizer/presets-cream-of-the-crop`
 - Source commit: `0180df21f5e0bd39b9060cc5de420ed2f1f9e509`
-- Retrieved for Stims: `2026-04-01`
+- Retrieved for Stims: `2026-04-03`
 - Selection basis: presets that compile as `supported` on both WebGL and WebGPU
   in Stims and read as user-facing showcase picks rather than regression-only
-  fixtures
+  fixtures; the current vendored subset expands that mix across liquid,
+  geometry, orbit, waveform, and supernova families while keeping the library
+  curated instead of mirroring the full upstream pack
 - Upstream pack note: the upstream repository describes this as the default
   preset pack in modern projectM releases
 
