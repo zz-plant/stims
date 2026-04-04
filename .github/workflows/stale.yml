@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Mark stale
-        uses: actions/stale@v9
+        uses: actions/stale@v10
         with:
           stale-issue-message: 'This issue has been inactive for 45 days and has been marked stale. It will close in 14 days unless there is new activity.'
           stale-pr-message: 'This pull request has been inactive for 30 days and has been marked stale. It will close in 7 days unless there is new activity.'
