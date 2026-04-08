@@ -484,6 +484,20 @@ export function initAudioControls(
     }
   };
 
+  const startDemoAudio = () =>
+    handleRequest(
+      demoBtn,
+      async () => {
+        await options.onRequestDemoAudio();
+        writeStoredSource('demo');
+        setPreferredSource('demo');
+      },
+      'Demo audio failed to load.',
+      undefined,
+      'Demo audio started.',
+      'Starting demo audio…',
+    );
+
   micBtn?.addEventListener('click', () => {
     void handleRequest(
       micBtn,
@@ -507,33 +521,11 @@ export function initAudioControls(
   });
 
   demoBtn?.addEventListener('click', () => {
-    void handleRequest(
-      demoBtn,
-      async () => {
-        await options.onRequestDemoAudio();
-        writeStoredSource('demo');
-        setPreferredSource('demo');
-      },
-      'Demo audio failed to load.',
-      undefined,
-      'Demo audio started.',
-      'Starting demo audio…',
-    );
+    void startDemoAudio();
   });
 
   if (options.autoStartSource === 'demo') {
-    void handleRequest(
-      demoBtn,
-      async () => {
-        await options.onRequestDemoAudio();
-        writeStoredSource('demo');
-        setPreferredSource('demo');
-      },
-      'Demo audio failed to load.',
-      undefined,
-      'Demo audio started.',
-      'Starting demo audio…',
-    );
+    void startDemoAudio();
   }
 
   tabBtn?.addEventListener('click', () => {
