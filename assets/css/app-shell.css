@@ -200,7 +200,7 @@ body[data-page="workspace"] {
 .stims-shell__session-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .stims-shell__nav-actions {
@@ -218,14 +218,14 @@ body[data-page="workspace"] {
 .stims-shell__sheet-tab {
   border: 1px solid var(--stims-line);
   border-radius: var(--stims-radius-control);
-  padding: 10px 14px;
+  padding: 9px 12px;
   background: var(--stims-control-fill);
   color: inherit;
   font: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
+  min-height: 44px;
   box-shadow: var(--stims-shadow-control);
   transition:
     transform 160ms ease,
@@ -329,13 +329,13 @@ body[data-page="workspace"] {
 
 .stims-shell__launch {
   display: grid;
-  gap: 20px;
-  padding: 24px;
+  gap: 14px;
+  padding: 18px;
 }
 
 .stims-shell__launch-header {
   display: grid;
-  gap: 20px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -364,7 +364,7 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-copy {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   max-width: 56rem;
 }
 
@@ -372,8 +372,8 @@ body[data-page="workspace"] {
   margin: 0;
   max-width: 34rem;
   color: color-mix(in srgb, var(--stims-ink) 88%, transparent);
-  font-size: 1.02rem;
-  line-height: 1.6;
+  font-size: 0.98rem;
+  line-height: 1.48;
 }
 
 .stims-shell__launch-note {
@@ -434,63 +434,12 @@ body[data-page="workspace"] {
   padding-right: 4px;
 }
 
-.stims-shell__starter-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.stims-shell__starter-card {
-  display: grid;
-  gap: 6px;
-  padding: 14px;
-  text-align: left;
-  border: 1px solid var(--stims-line);
-  border-radius: var(--stims-radius-card);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.08),
-    rgba(255, 255, 255, 0.03)
-  );
-  color: inherit;
-  font: inherit;
-  box-shadow:
-    0 16px 28px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition:
-    transform 160ms ease,
-    border-color 180ms ease,
-    background 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.stims-shell__starter-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(244, 122, 84, 0.42);
-  background: linear-gradient(
-    180deg,
-    rgba(244, 122, 84, 0.16),
-    rgba(119, 201, 255, 0.08)
-  );
-}
-
-.stims-shell__starter-label,
 .stims-shell__preset-vibe {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--stims-cool) 62%, var(--stims-ink));
-}
-
-.stims-shell__starter-summary,
-.stims-shell__starter-preset {
-  line-height: 1.45;
-}
-
-.stims-shell__starter-preset {
-  color: var(--stims-ink-strong);
-  font-weight: 700;
 }
 
 .stims-shell__browse-toolbar {
@@ -1059,7 +1008,7 @@ body[data-page="workspace"] {
 
   .stims-shell__launch {
     order: 1;
-    gap: 12px;
+    gap: 10px;
   }
 
   .stims-shell__workspace {
@@ -1137,7 +1086,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__launch-header {
-    gap: 10px;
+    gap: 8px;
   }
 
   .stims-shell__launch-copy h1,
@@ -1239,10 +1188,6 @@ body[data-page="workspace"] {
   .stims-shell__stage-frame {
     min-height: clamp(240px, 36svh, 340px);
     border-radius: 14px;
-  }
-
-  .stims-shell__starter-grid {
-    grid-template-columns: 1fr;
   }
 
   .stims-shell__preset-list {

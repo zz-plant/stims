@@ -47,7 +47,7 @@ describe('Workspace shell mobile layout regression', () => {
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__readiness-chips\s*\{\s*flex-wrap:\s*nowrap;[\s\S]*?overflow-x:\s*auto;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__starter-grid\s*\{\s*grid-template-columns:\s*1fr;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-header\s*\{\s*gap:\s*8px;/u,
     );
   });
 });
