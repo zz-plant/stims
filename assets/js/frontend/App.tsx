@@ -950,10 +950,10 @@ export function StimsWorkspaceApp() {
       ? 'Pick an audio path.'
       : 'Loading the visualizer.';
   const launchSummary = missingRequestedPreset
-    ? 'The requested preset is not bundled in this build. Start with demo audio for the quickest recovery, or browse the library before you play.'
+    ? 'This preset is no longer bundled. Start demo to recover quickly, or open Looks before you play.'
     : runtimeReady || routeState.invalidExperienceSlug
-      ? 'Start demo for the quickest payoff. Mic reacts to your room. Tab capture is best when music is already playing in the browser.'
-      : 'One moment while the visuals warm up.';
+      ? 'Start demo fastest. Use mic for room-reactive visuals or capture tab audio when music is already playing.'
+      : 'One moment while visuals warm up.';
   const stageEyebrow = missingRequestedPreset
     ? 'Link needs a rescue'
     : loadingRequestedPreset
@@ -975,7 +975,7 @@ export function StimsWorkspaceApp() {
       : selectedPreset
         ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
         : featuredPreset
-          ? `Featured first pick: ${featuredPreset.title} · ${describePresetMood(featuredPreset)}. Open Looks for curated starters or shuffle into something new.`
+          ? `Featured first pick: ${featuredPreset.title} · ${describePresetMood(featuredPreset)}. Open Looks or shuffle for another vibe.`
           : 'Open Looks to pick a preset without losing the stage.';
 
   return (
@@ -1271,34 +1271,9 @@ export function StimsWorkspaceApp() {
             <div className="stims-shell__sheet-body">
               {routeState.panel === 'browse' ? (
                 <div className="stims-shell__sheet-panel">
-                  {starterLooks.length > 0 ? (
-                    <section className="stims-shell__starter-grid">
-                      {starterLooks.map((starterLook) => (
-                        <button
-                          key={starterLook.key}
-                          type="button"
-                          className="stims-shell__starter-card"
-                          onClick={() =>
-                            handlePresetSelection(starterLook.preset.id)
-                          }
-                        >
-                          <span className="stims-shell__starter-label">
-                            {starterLook.label}
-                          </span>
-                          <span className="stims-shell__starter-summary">
-                            {starterLook.summary}
-                          </span>
-                          <span className="stims-shell__starter-preset">
-                            {starterLook.preset.title}
-                          </span>
-                        </button>
-                      ))}
-                    </section>
-                  ) : null}
-
                   <div className="stims-shell__browse-toolbar">
                     <p className="stims-shell__meta-copy">
-                      Start with a featured vibe or search the full library.
+                      Search the full library or shuffle a surprise.
                     </p>
                     <button
                       type="button"
