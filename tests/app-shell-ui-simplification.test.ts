@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 describe('Workspace shell UI simplification regression', () => {
-  test('keeps the shell copy centered on the launch path, featured looks, and quick tuning', () => {
+  test('keeps the shell copy centered on the launch path and quick tuning', () => {
     const source = readFileSync(
       join(import.meta.dir, '..', 'assets', 'js', 'frontend', 'App.tsx'),
       'utf8',
@@ -13,11 +13,9 @@ describe('Workspace shell UI simplification regression', () => {
       'Start with a featured vibe or dive into the full preset library.',
     );
     expect(source).toContain(
-      'Start demo for the quickest payoff. Mic reacts to your room. Tab capture is best when music is already playing in the browser.',
+      'Start demo fastest. Use mic for room-reactive visuals or capture tab audio when music is already playing.',
     );
-    expect(source).toContain(
-      'Start with a featured vibe or search the full library.',
-    );
+    expect(source).toContain('Search the full library or shuffle a surprise.');
     expect(source).toContain('Shuffle a look');
     expect(source).toContain(
       'Stay on Balanced unless the picture feels rough.',
