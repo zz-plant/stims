@@ -92,13 +92,13 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 export function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Start with a featured preset or dive into the full preset library.';
+      return 'Browse or shuffle presets.';
     case 'editor':
-      return 'Open the preset editor without moving the visualizer off-center.';
+      return 'Edit the active preset.';
     case 'inspector':
-      return 'Inspect the active preset and session details in place.';
+      return 'Inspect the active preset.';
     case 'settings':
-      return 'Keep the defaults when they feel good, then tune only what you need.';
+      return 'Tune only what you need.';
   }
 }
 

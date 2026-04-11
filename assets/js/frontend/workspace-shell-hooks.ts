@@ -156,7 +156,7 @@ export function useWorkspaceShellOrchestration({
       return;
     }
 
-    showToast('Using a lighter visual mode on this device.', 'warn');
+    showToast('Using lighter visual mode.', 'warn');
   }, [shellState.resolvedBackend, shellState.runtimeReady, showToast]);
 
   const updatePanel = (panel: PanelState) => {

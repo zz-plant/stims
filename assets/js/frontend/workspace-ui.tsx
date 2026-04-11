@@ -103,7 +103,7 @@ export function WorkspaceLaunchPanel({
         </div>
         {featuredPreset ? (
           <aside className="stims-shell__launch-spotlight">
-            <p className="stims-shell__section-label">Try first</p>
+            <p className="stims-shell__section-label">Featured</p>
             <strong>{featuredPreset.title}</strong>
             <span className="stims-shell__meta-copy">
               {describePresetMood(featuredPreset)} ·{' '}
@@ -124,7 +124,6 @@ export function WorkspaceLaunchPanel({
             onClick={() => onAudioStart('demo')}
           >
             <span className="stims-shell__action-label">Start demo</span>
-            <span className="stims-shell__action-hint">Fastest way in</span>
           </button>
           <button
             id="start-audio-btn"
@@ -135,13 +134,9 @@ export function WorkspaceLaunchPanel({
             onClick={() => onAudioStart('microphone')}
           >
             <span className="stims-shell__action-label">Use mic</span>
-            <span className="stims-shell__action-hint">React to the room</span>
           </button>
         </div>
         <div className="stims-shell__launch-actions stims-shell__launch-actions--secondary">
-          <p className="stims-shell__meta-copy">
-            More ways to start when audio is already playing elsewhere.
-          </p>
           <button
             id="use-tab-audio"
             className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
@@ -150,19 +145,9 @@ export function WorkspaceLaunchPanel({
             onClick={() => onAudioStart('tab')}
           >
             <span className="stims-shell__action-label">Capture tab</span>
-            <span className="stims-shell__action-hint">
-              Best for music or video
-            </span>
           </button>
         </div>
       </div>
-
-      {featuredPreset ? (
-        <p className="stims-shell__launch-note">
-          Recommended first run: start demo, then open Presets and try{' '}
-          <strong>{featuredPreset.title}</strong>.
-        </p>
-      ) : null}
 
       <div className="stims-shell__launch-more">
         <button
@@ -170,7 +155,7 @@ export function WorkspaceLaunchPanel({
           className="stims-shell__text-button"
           onClick={onToggleExtendedSources}
         >
-          {showExtendedSources ? 'Hide YouTube capture' : 'Add YouTube capture'}
+          {showExtendedSources ? 'Hide YouTube' : 'YouTube capture'}
         </button>
 
         {showExtendedSources ? (
@@ -291,10 +276,9 @@ export function WorkspaceStagePanel({
           {missingRequestedPreset ? (
             <div className="stims-shell__stage-recovery">
               <p className="stims-shell__eyebrow">Missing preset</p>
-              <h3>Load a nearby favorite instead</h3>
+              <h3>Pick a nearby preset</h3>
               <p className="stims-shell__meta-copy">
-                This link points to a preset that is not bundled here anymore.
-                Recover with a featured preset or jump into the full library.
+                This preset is no longer bundled here.
               </p>
               <div className="stims-shell__session-actions">
                 {featuredPreset ? (
@@ -363,16 +347,13 @@ function BrowseSheetPanel({
   return (
     <div className="stims-shell__sheet-panel">
       <div className="stims-shell__browse-toolbar">
-        <p className="stims-shell__meta-copy">
-          Search the full library or shuffle a surprise.
-        </p>
         <button
           type="button"
           className="stims-shell__text-button"
           onClick={onShufflePreset}
           disabled={catalog.length === 0}
         >
-          Shuffle a preset
+          Shuffle
         </button>
       </div>
 
@@ -471,12 +452,7 @@ function SettingsSheetPanel({
   return (
     <div className="stims-shell__sheet-panel">
       <div className="stims-shell__settings-callout">
-        <p className="stims-shell__eyebrow">Recommended</p>
-        <strong>Stay on Balanced unless the picture feels rough.</strong>
-        <p className="stims-shell__meta-copy">
-          Safer graphics mode helps older devices. The sliders below are only
-          for fine tuning when you need a softer or steadier picture.
-        </p>
+        <strong>Balanced is the default.</strong>
       </div>
 
       <p className="stims-shell__section-label">Quick tune</p>
@@ -535,10 +511,6 @@ function SettingsSheetPanel({
       </label>
 
       <p className="stims-shell__section-label">Advanced tuning</p>
-      <p className="stims-shell__meta-copy">
-        Use these only when you want a sharper image or need to calm the frame
-        rate on a busy preset.
-      </p>
 
       <label className="stims-shell__field-label" htmlFor="render-scale">
         Sharpness
@@ -590,16 +562,11 @@ function StageAnchoredToolCallout({
 }) {
   return (
     <div className="stims-shell__sheet-callout">
-      <p className="stims-shell__eyebrow">Advanced tool</p>
       <h3>
         {panel === 'editor'
-          ? 'Editor is open on the stage.'
-          : 'Inspector is open on the stage.'}
+          ? 'Editor stays on the stage.'
+          : 'Inspector stays on the stage.'}
       </h3>
-      <p className="stims-shell__meta-copy">
-        Keep the visualizer in view while the tool stays anchored to the canvas.
-        Use the tabs above to jump back to Presets or Settings.
-      </p>
     </div>
   );
 }

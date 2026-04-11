@@ -112,43 +112,43 @@ export function StimsWorkspaceApp() {
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
   const launchEyebrow = missingRequestedPreset
-    ? 'Recover your session'
+    ? 'Recover session'
     : runtimeReady || routeState.invalidExperienceSlug
-      ? 'Start here'
-      : 'Getting things ready';
+      ? 'Start'
+      : 'Loading';
   const launchTitle = missingRequestedPreset
-    ? 'That saved link needs a new preset.'
+    ? 'Saved preset unavailable.'
     : runtimeReady || routeState.invalidExperienceSlug
-      ? 'Pick an audio path.'
-      : 'Loading the visualizer.';
+      ? 'Choose audio.'
+      : 'Warming up visuals.';
   const launchSummary = missingRequestedPreset
-    ? 'This preset is no longer bundled. Start demo to recover quickly, or open Presets before you play.'
+    ? 'Start demo or open Presets.'
     : runtimeReady || routeState.invalidExperienceSlug
-      ? 'Start demo fastest. Use mic for room-reactive visuals or capture tab audio when music is already playing.'
-      : 'One moment while visuals warm up.';
+      ? 'Start demo, use the mic, or capture a tab.'
+      : 'Just a moment.';
   const stageEyebrow = missingRequestedPreset
-    ? 'Link needs a rescue'
+    ? 'Preset missing'
     : loadingRequestedPreset
-      ? 'Loading requested preset'
+      ? 'Loading preset'
       : launchControlsHidden
         ? 'Now playing'
         : selectedPreset
-          ? 'Selected preset'
-          : 'Start with a preset';
+          ? 'Preset'
+          : 'Choose a preset';
   const stageTitle = missingRequestedPreset
-    ? 'Requested preset unavailable'
+    ? 'Preset unavailable'
     : loadingRequestedPreset
-      ? 'Loading your preset'
+      ? 'Loading preset'
       : (selectedPreset?.title ?? 'Pick a preset');
   const stageSummary = missingRequestedPreset
-    ? `"${routeState.presetId}" is not in this build. Load a featured preset or open Presets to recover.`
+    ? `"${routeState.presetId}" is unavailable in this build.`
     : loadingRequestedPreset
-      ? `One moment while we load ${routeState.presetId}.`
+      ? `Loading ${routeState.presetId}.`
       : selectedPreset
         ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
         : featuredPreset
-          ? `Featured first pick: ${featuredPreset.title} · ${describePresetMood(featuredPreset)}. Open Presets or shuffle for another vibe.`
-          : 'Open Presets to pick a preset without losing the stage.';
+          ? `Try ${featuredPreset.title} · ${describePresetMood(featuredPreset)}.`
+          : 'Open Presets or shuffle.';
 
   return (
     <div className="stims-shell">
