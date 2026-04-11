@@ -15,8 +15,6 @@ import {
 import { getRenderingSupport } from '../core/renderer-capabilities.ts';
 import { probeMicrophoneCapability } from '../core/services/microphone-permission-service.ts';
 import {
-  DEFAULT_QUALITY_PRESETS,
-  describeQualityPresetImpact,
   getActiveQualityPreset,
   QUALITY_STORAGE_KEY,
   subscribeToQualityPreset,
@@ -27,9 +25,7 @@ import {
   setRenderPreferences,
   subscribeToRenderPreferences,
 } from '../core/state/render-preference-store.ts';
-import type { MilkdropCatalogEntry } from '../milkdrop/types.ts';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
-import { getIconNodes, type UiIconName } from '../ui/icon-library.ts';
 import { YouTubeController } from '../ui/youtube-controller.ts';
 import type {
   LaunchIntent,
@@ -47,97 +43,22 @@ import {
   readSessionRouteState,
   replaceCanonicalUrl,
 } from './url-state.ts';
-
-type ReadinessItem = {
-  id: string;
-  label: string;
-  state: 'ready' | 'warn' | 'blocked';
-  summary: string;
-};
-
-type StarterLook = {
-  key: string;
-  label: string;
-  summary: string;
-  preset: PresetCatalogEntry;
-};
-
-const TOOL_TABS: Array<Exclude<PanelState, null>> = [
-  'browse',
-  'editor',
-  'inspector',
-  'settings',
-];
-
-function UiIcon({ name, className }: { name: UiIconName; className: string }) {
-  const nodes = getIconNodes(name);
-  const title = name.replace(/-/g, ' ');
-
-  return (
-    <span className={className} aria-hidden="true">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        focusable="false"
-        data-icon={name}
-      >
-        <title>{title}</title>
-        {nodes.map(({ tag, attrs }) => {
-          const key = `${name}-${tag}-${Object.entries(attrs)
-            .map(([attrName, value]) => `${attrName}:${value}`)
-            .join('|')}`;
-          if (tag === 'path') {
-            return <path key={key} {...attrs} />;
-          }
-          if (tag === 'circle') {
-            return <circle key={key} {...attrs} />;
-          }
-          return <rect key={key} {...attrs} />;
-        })}
-      </svg>
-    </span>
-  );
-}
-
-function getToolLabel(tool: Exclude<PanelState, null>) {
-  switch (tool) {
-    case 'browse':
-      return 'Looks';
-    case 'editor':
-      return 'Edit';
-    case 'inspector':
-      return 'Inspect';
-    case 'settings':
-      return 'Settings';
-  }
-}
-
-function getToolDescription(tool: Exclude<PanelState, null>) {
-  switch (tool) {
-    case 'browse':
-      return 'Start with a featured vibe or dive into the full preset library.';
-    case 'editor':
-      return 'Open the preset editor without moving the visualizer off-center.';
-    case 'inspector':
-      return 'Inspect the active preset and session details in place.';
-    case 'settings':
-      return 'Keep the defaults when they feel good, then tune only what you need.';
-  }
-}
-
-function prettifyCollectionTag(collectionTag: string) {
-  return collectionTag
-    .replace(/^collection:/u, '')
-    .split(/[-_]/u)
-    .filter(Boolean)
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(' ');
-}
+import {
+  buildLaunchIntent,
+  buildStarterLooks,
+  describePresetMood,
+  formatPresetSupportLabel,
+  getCollectionTags,
+  mapRuntimeCatalogEntry,
+  matchesPreset,
+  type ReadinessItem,
+} from './workspace-helpers.ts';
+import {
+  WorkspaceLaunchPanel,
+  WorkspaceStagePanel,
+  WorkspaceToast,
+  WorkspaceToolSheet,
+} from './workspace-ui.tsx';
 
 function buildReadinessSummary(
   micState: Awaited<ReturnType<typeof probeMicrophoneCapability>>,
@@ -209,187 +130,6 @@ function buildReadinessSummary(
       };
 
   return [renderItem, micItem, motionItem];
-}
-
-function matchesPreset(entry: PresetCatalogEntry, query: string) {
-  if (!query) {
-    return true;
-  }
-
-  const haystack = [entry.title, entry.author, entry.id, ...(entry.tags ?? [])]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  return haystack.includes(query.toLowerCase());
-}
-
-function getCollectionTags(entries: PresetCatalogEntry[]) {
-  const collectionTags = new Set<string>();
-  entries.forEach((entry) => {
-    entry.tags?.forEach((tag) => {
-      if (tag.startsWith('collection:')) {
-        collectionTags.add(tag);
-      }
-    });
-  });
-  return [...collectionTags].sort((left, right) => left.localeCompare(right));
-}
-
-function buildPresetSearchIndex(entry: PresetCatalogEntry) {
-  return [entry.id, entry.title, entry.author, ...(entry.tags ?? [])]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
-function describePresetMood(entry: PresetCatalogEntry) {
-  const index = buildPresetSearchIndex(entry);
-
-  if (/(glow|sun|flare|star|light|bloom)/u.test(index)) {
-    return 'Bright pulse';
-  }
-  if (/(cube|matrix|square|line|grid|trace)/u.test(index)) {
-    return 'Sharp geometry';
-  }
-  if (/(quasar|ether|parallel|space|mars|radiation|vacuum)/u.test(index)) {
-    return 'Space drift';
-  }
-  if (/(dark|ritual|apocalypse|demon|moon)/u.test(index)) {
-    return 'Moody sweep';
-  }
-  if (/(trippy|psychaos|rotation|spectro|glassworms)/u.test(index)) {
-    return 'Psychedelic spin';
-  }
-  if (entry.tags?.includes('collection:classic-milkdrop')) {
-    return 'Classic rush';
-  }
-  return 'Instant pick';
-}
-
-function buildStarterLooks(entries: PresetCatalogEntry[]) {
-  const usedPresetIds = new Set<string>();
-  const starterLooks: StarterLook[] = [];
-  const definitions = [
-    {
-      key: 'bright-pulse',
-      label: 'Bright pulse',
-      summary: 'Fast payoff with glowing motion and clean contrast.',
-      matchers: [/glowsticks/u, /(sun|flare|star)/u],
-    },
-    {
-      key: 'space-drift',
-      label: 'Space drift',
-      summary: 'Slower cosmic motion with more room to breathe.',
-      matchers: [/(parallel universe|quasar|ether|mars|radiation)/u],
-    },
-    {
-      key: 'sharp-geometry',
-      label: 'Sharp geometry',
-      summary: 'Hard edges, grids, and satisfying symmetry.',
-      matchers: [/(cube|matrix|square|trace|line)/u],
-    },
-    {
-      key: 'classic-rush',
-      label: 'Classic rush',
-      summary: 'A grounded first pick from the classic MilkDrop lineage.',
-      matchers: [/(happy drops|casino|classic milkdrop)/u],
-    },
-  ];
-
-  definitions.forEach((definition) => {
-    const preset = entries.find((entry) => {
-      if (usedPresetIds.has(entry.id)) {
-        return false;
-      }
-      const index = buildPresetSearchIndex(entry);
-      return definition.matchers.some((matcher) => matcher.test(index));
-    });
-
-    if (!preset) {
-      return;
-    }
-
-    usedPresetIds.add(preset.id);
-    starterLooks.push({ ...definition, preset });
-  });
-
-  if (starterLooks.length > 0) {
-    return starterLooks;
-  }
-
-  return entries.slice(0, 3).map((preset, index) => ({
-    key: `starter-${preset.id}`,
-    label: ['First pick', 'Try next', 'Then go wide'][index] ?? 'Starter',
-    summary: 'A quick way into the library without overthinking it.',
-    preset,
-  }));
-}
-
-function formatAudioSourceLabel(
-  source: EngineSnapshot['audioSource'] | undefined,
-) {
-  switch (source) {
-    case 'demo':
-      return 'Demo audio';
-    case 'microphone':
-      return 'Mic';
-    case 'tab':
-      return 'Tab audio';
-    case 'youtube':
-      return 'YouTube tab';
-    default:
-      return 'Waiting for sound';
-  }
-}
-
-function formatPresetSupportLabel(entry: PresetCatalogEntry) {
-  if (
-    entry.expectedFidelityClass === 'exact' ||
-    entry.expectedFidelityClass === 'near-exact'
-  ) {
-    return 'Full look';
-  }
-  if (
-    entry.expectedFidelityClass === 'partial' ||
-    entry.expectedFidelityClass === 'fallback'
-  ) {
-    return 'Adjusted look';
-  }
-  if (entry.supports?.webgpu) {
-    return 'High-detail ready';
-  }
-  return 'Lighter mode';
-}
-
-function mapRuntimeCatalogEntry(
-  entry: MilkdropCatalogEntry,
-): PresetCatalogEntry {
-  return {
-    id: entry.id,
-    title: entry.title,
-    author: entry.author,
-    file: entry.bundledFile,
-    tags: entry.tags,
-    expectedFidelityClass: entry.fidelityClass,
-    supports: {
-      webgl: entry.supports.webgl.status === 'supported',
-      webgpu: entry.supports.webgpu.status === 'supported',
-    },
-  };
-}
-
-function buildLaunchIntent(routeState: SessionRouteState): LaunchIntent {
-  return {
-    presetId: routeState.presetId,
-    collectionTag: routeState.collectionTag,
-    panel:
-      routeState.panel === 'editor' || routeState.panel === 'inspector'
-        ? routeState.panel
-        : null,
-    audioSource: routeState.audioSource,
-    agentMode: routeState.agentMode,
-  };
 }
 
 export function StimsWorkspaceApp() {
@@ -935,10 +675,6 @@ export function StimsWorkspaceApp() {
   );
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
-  const sheetTitle = routeState.panel ? getToolLabel(routeState.panel) : null;
-  const sheetDescription = routeState.panel
-    ? getToolDescription(routeState.panel)
-    : null;
   const launchEyebrow = missingRequestedPreset
     ? 'Recover your session'
     : runtimeReady || routeState.invalidExperienceSlug
@@ -1020,548 +756,89 @@ export function StimsWorkspaceApp() {
       </header>
 
       <main className="stims-shell__content">
-        <section
-          className="stims-shell__launch"
-          data-audio-controls
+        <WorkspaceLaunchPanel
+          engineReady={engineReady}
+          featuredPreset={featuredPreset}
           hidden={launchControlsHidden}
-        >
-          <div className="stims-shell__launch-header">
-            <div className="stims-shell__launch-copy">
-              <p className="stims-shell__eyebrow">{launchEyebrow}</p>
-              <h1>{launchTitle}</h1>
-              <p>{launchSummary}</p>
-            </div>
-          </div>
+          launchEyebrow={launchEyebrow}
+          launchSummary={launchSummary}
+          launchTitle={launchTitle}
+          onAudioStart={(source) => {
+            void handleAudioStart(source);
+          }}
+          onLoadYouTube={() => {
+            void handleYouTubeLoad();
+          }}
+          onToggleExtendedSources={() =>
+            setShowExtendedSources((current) => !current)
+          }
+          onYoutubeUrlChange={setYoutubeUrl}
+          readinessAlerts={readinessAlerts}
+          showExtendedSources={showExtendedSources}
+          youtubePreviewRef={youtubePreviewRef}
+          youtubeReady={youtubeReady}
+          youtubeUrl={youtubeUrl}
+        />
 
-          <div className="stims-shell__launch-actions">
-            <button
-              id="use-demo-audio"
-              data-demo-audio-btn="true"
-              className="cta-button primary stims-shell__action-button"
-              type="button"
-              disabled={!engineReady}
-              onClick={() => void handleAudioStart('demo')}
-            >
-              <span className="stims-shell__action-label">Start demo</span>
-              <span className="stims-shell__action-hint">Fastest way in</span>
-            </button>
-            <button
-              id="start-audio-btn"
-              data-mic-audio-btn="true"
-              className="cta-button stims-shell__action-button"
-              type="button"
-              disabled={!engineReady}
-              onClick={() => void handleAudioStart('microphone')}
-            >
-              <span className="stims-shell__action-label">Use mic</span>
-              <span className="stims-shell__action-hint">
-                React to the room
-              </span>
-            </button>
-            <button
-              id="use-tab-audio"
-              className="cta-button stims-shell__action-button"
-              type="button"
-              disabled={!engineReady}
-              onClick={() => void handleAudioStart('tab')}
-            >
-              <span className="stims-shell__action-label">Capture tab</span>
-              <span className="stims-shell__action-hint">
-                Best for music or video
-              </span>
-            </button>
-          </div>
-
-          {featuredPreset ? (
-            <p className="stims-shell__launch-note">
-              Recommended first run: start demo, then open Looks and try{' '}
-              <strong>{featuredPreset.title}</strong>.
-            </p>
-          ) : null}
-
-          <div className="stims-shell__launch-more">
-            <button
-              type="button"
-              className="stims-shell__text-button"
-              onClick={() => setShowExtendedSources((current) => !current)}
-            >
-              {showExtendedSources
-                ? 'Hide YouTube capture'
-                : 'Add YouTube capture'}
-            </button>
-
-            {showExtendedSources ? (
-              <div className="stims-shell__youtube">
-                <label
-                  className="stims-shell__field-label"
-                  htmlFor="youtube-url"
-                >
-                  YouTube capture
-                </label>
-                <div className="stims-shell__youtube-row">
-                  <input
-                    id="youtube-url"
-                    className="stims-shell__input"
-                    type="url"
-                    placeholder="https://youtube.com/watch?v=..."
-                    value={youtubeUrl}
-                    onChange={(event) => setYoutubeUrl(event.target.value)}
-                  />
-                  <button
-                    id="load-youtube"
-                    className="cta-button"
-                    type="button"
-                    disabled={!engineReady}
-                    onClick={() => void handleYouTubeLoad()}
-                  >
-                    Load
-                  </button>
-                  <button
-                    id="use-youtube-audio"
-                    className="cta-button"
-                    type="button"
-                    disabled={!engineReady || !youtubeReady}
-                    onClick={() => void handleAudioStart('youtube')}
-                  >
-                    Capture YouTube
-                  </button>
-                </div>
-                <div
-                  id="youtube-player-container"
-                  ref={youtubePreviewRef}
-                  className="stims-shell__youtube-preview"
-                  hidden
-                >
-                  <div id="workspace-youtube-player"></div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          {readinessAlerts.length > 0 ? (
-            <section className="stims-shell__readiness-chips">
-              {readinessAlerts.map((item) => (
-                <article
-                  key={item.id}
-                  className="stims-shell__readiness-chip"
-                  data-state={item.state}
-                >
-                  <strong>{item.label}</strong>
-                  <span>{item.summary}</span>
-                </article>
-              ))}
-            </section>
-          ) : null}
-        </section>
-
-        <section className="stims-shell__workspace">
-          <section className="stims-shell__stage-section">
-            <div className="stims-shell__stage-header">
-              <div className="stims-shell__stage-copy">
-                <p className="stims-shell__eyebrow">{stageEyebrow}</p>
-                <h2>{stageTitle}</h2>
-                <p className="stims-shell__meta-copy stims-shell__stage-summary">
-                  {stageSummary}
-                </p>
-              </div>
-              <div className="stims-shell__session-meta">
-                <span className="stims-shell__meta-pill">
-                  {engineSnapshot?.backend === 'webgpu'
-                    ? 'Full detail'
-                    : engineSnapshot?.backend === 'webgl'
-                      ? 'Lighter mode'
-                      : 'Starting up'}
-                </span>
-                <span className="stims-shell__meta-pill">
-                  {formatAudioSourceLabel(engineSnapshot?.audioSource)}
-                </span>
-              </div>
-            </div>
-
-            <div className="stims-shell__stage-frame">
-              <div ref={stageRef} className="stims-shell__stage-root" />
-              {missingRequestedPreset ? (
-                <div className="stims-shell__stage-recovery">
-                  <p className="stims-shell__eyebrow">Missing preset</p>
-                  <h3>Load a nearby favorite instead</h3>
-                  <p className="stims-shell__meta-copy">
-                    This link points to a preset that is not bundled here
-                    anymore. Recover with a featured look or jump into the full
-                    library.
-                  </p>
-                  <div className="stims-shell__session-actions">
-                    {featuredPreset ? (
-                      <button
-                        type="button"
-                        className="cta-button primary"
-                        onClick={handleFeaturedPresetSelection}
-                      >
-                        Load featured look
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="cta-button"
-                      onClick={handleBrowseRecovery}
-                    >
-                      Browse looks
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-              {routeState.invalidExperienceSlug ? (
-                <div className="active-toy-status is-error">
-                  <div className="active-toy-status__content">
-                    <h2>Older link</h2>
-                    <p>
-                      This older Stims link points to a view that is no longer
-                      available: "{routeState.invalidExperienceSlug}".
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </section>
-        </section>
+        <WorkspaceStagePanel
+          audioSource={engineSnapshot?.audioSource}
+          backend={engineSnapshot?.backend}
+          featuredPreset={featuredPreset}
+          invalidExperienceSlug={routeState.invalidExperienceSlug}
+          missingRequestedPreset={missingRequestedPreset}
+          onBrowseRecovery={handleBrowseRecovery}
+          onFeaturedPresetSelection={handleFeaturedPresetSelection}
+          stageEyebrow={stageEyebrow}
+          stageRef={stageRef}
+          stageSummary={stageSummary}
+          stageTitle={stageTitle}
+        />
       </main>
 
-      {routeState.panel ? (
-        <>
-          {!stageAnchoredToolOpen ? (
-            <button
-              type="button"
-              className="stims-shell__sheet-backdrop"
-              aria-label="Close tools"
-              onClick={() => updatePanel(null)}
-            />
-          ) : null}
-          <aside className="stims-shell__sheet" aria-label="Tools">
-            <div className="stims-shell__sheet-header">
-              <div className="stims-shell__sheet-heading">
-                <h2>{sheetTitle}</h2>
-                <p className="stims-shell__meta-copy">{sheetDescription}</p>
-              </div>
-              <button
-                type="button"
-                className="stims-shell__icon-button"
-                onClick={() => updatePanel(null)}
-              >
-                <UiIcon
-                  name="close"
-                  className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
-                />
-                <span className="stims-shell__button-label">Close</span>
-              </button>
-            </div>
+      <WorkspaceToolSheet
+        catalog={catalog}
+        catalogError={catalogError}
+        catalogReady={catalogReady}
+        collectionTags={collectionTags}
+        currentPresetId={engineSnapshot?.activePresetId ?? null}
+        filteredCatalog={filteredCatalog}
+        motionPreference={motionPreference}
+        onClose={() => updatePanel(null)}
+        onCollectionTagChange={(collectionTag) =>
+          commitRoute({ ...routeState, collectionTag })
+        }
+        onCompatibilityModeChange={setCompatibilityMode}
+        onExportPreset={() => {
+          engineRef.current?.exportPreset();
+        }}
+        onImport={(files) => {
+          void handleImport(files);
+        }}
+        onMotionPreferenceChange={(enabled) => setMotionPreference({ enabled })}
+        onPresetSelection={handlePresetSelection}
+        onQualityPresetChange={(presetId) => {
+          engineRef.current?.setQualityPreset(presetId);
+        }}
+        onRenderPreferenceChange={setRenderPreferences}
+        onSearchQueryChange={setSearchQuery}
+        onShowCurrentLink={() => {
+          const currentUrl = buildCanonicalUrl(routeState);
+          setStatusMessage(
+            `Current link: ${currentUrl.pathname}${currentUrl.search}`,
+          );
+        }}
+        onShufflePreset={handleShufflePreset}
+        onTabChange={updatePanel}
+        panel={routeState.panel}
+        qualityPreset={qualityPreset}
+        renderPreferences={renderPreferences}
+        routeState={routeState}
+        searchQuery={searchQuery}
+        showAgentControls={routeState.agentMode}
+        stageAnchoredToolOpen={stageAnchoredToolOpen}
+      />
 
-            <nav className="stims-shell__tool-tabs" aria-label="Tool sections">
-              {TOOL_TABS.map((tool) => (
-                <button
-                  key={tool}
-                  type="button"
-                  className="stims-shell__sheet-tab"
-                  data-active={String(routeState.panel === tool)}
-                  onClick={() => updatePanel(tool)}
-                >
-                  {getToolLabel(tool)}
-                </button>
-              ))}
-            </nav>
-
-            <div className="stims-shell__sheet-body">
-              {routeState.panel === 'browse' ? (
-                <div className="stims-shell__sheet-panel">
-                  <div className="stims-shell__browse-toolbar">
-                    <p className="stims-shell__meta-copy">
-                      Search the full library or shuffle a surprise.
-                    </p>
-                    <button
-                      type="button"
-                      className="stims-shell__text-button"
-                      onClick={handleShufflePreset}
-                      disabled={catalog.length === 0}
-                    >
-                      Shuffle a look
-                    </button>
-                  </div>
-
-                  <label
-                    className="stims-shell__field-label"
-                    htmlFor="preset-search"
-                  >
-                    Search
-                  </label>
-                  <input
-                    id="preset-search"
-                    className="stims-shell__input"
-                    type="search"
-                    placeholder="Search vibe, title, author, or tag"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                  />
-
-                  <nav
-                    className="stims-shell__collections"
-                    aria-label="Collections"
-                  >
-                    <button
-                      type="button"
-                      className="stims-shell__collection-pill"
-                      data-active={String(routeState.collectionTag === null)}
-                      onClick={() =>
-                        commitRoute({ ...routeState, collectionTag: null })
-                      }
-                    >
-                      All
-                    </button>
-                    {collectionTags.map((collectionTag) => (
-                      <button
-                        key={collectionTag}
-                        type="button"
-                        className="stims-shell__collection-pill"
-                        data-active={String(
-                          routeState.collectionTag === collectionTag,
-                        )}
-                        onClick={() =>
-                          commitRoute({
-                            ...routeState,
-                            collectionTag:
-                              routeState.collectionTag === collectionTag
-                                ? null
-                                : collectionTag,
-                          })
-                        }
-                      >
-                        {prettifyCollectionTag(collectionTag)}
-                      </button>
-                    ))}
-                  </nav>
-
-                  {!catalogReady && !catalogError ? (
-                    <p className="stims-shell__meta-copy">Loading catalog…</p>
-                  ) : null}
-                  {catalogError ? (
-                    <p className="stims-shell__meta-copy">{catalogError}</p>
-                  ) : null}
-                  <ul className="stims-shell__preset-list">
-                    {filteredCatalog.map((entry) => (
-                      <li key={entry.id}>
-                        <button
-                          type="button"
-                          className="stims-shell__preset-card"
-                          data-active={String(
-                            entry.id === engineSnapshot?.activePresetId,
-                          )}
-                          onClick={() => handlePresetSelection(entry.id)}
-                        >
-                          <span className="stims-shell__preset-title">
-                            {entry.title}
-                          </span>
-                          <span className="stims-shell__preset-vibe">
-                            {describePresetMood(entry)}
-                          </span>
-                          <span className="stims-shell__preset-meta">
-                            {entry.author || 'Unknown author'}
-                          </span>
-                          <span className="stims-shell__preset-tech">
-                            {formatPresetSupportLabel(entry)}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              {routeState.panel === 'settings' ? (
-                <div className="stims-shell__sheet-panel">
-                  <div className="stims-shell__settings-callout">
-                    <p className="stims-shell__eyebrow">Recommended</p>
-                    <strong>
-                      Stay on Balanced unless the picture feels rough.
-                    </strong>
-                    <p className="stims-shell__meta-copy">
-                      Safer graphics mode helps older devices. The sliders below
-                      are only for fine tuning when you need a softer or
-                      steadier picture.
-                    </p>
-                  </div>
-
-                  <p className="stims-shell__section-label">Quick tune</p>
-                  <label
-                    className="stims-shell__field-label"
-                    htmlFor="quality-select"
-                  >
-                    Picture style
-                  </label>
-                  <select
-                    id="quality-select"
-                    className="stims-shell__select"
-                    value={qualityPreset.id}
-                    onChange={(event) => {
-                      engineRef.current?.setQualityPreset(event.target.value);
-                    }}
-                  >
-                    {DEFAULT_QUALITY_PRESETS.map((preset) => (
-                      <option key={preset.id} value={preset.id}>
-                        {preset.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="stims-shell__meta-copy">
-                    {describeQualityPresetImpact(qualityPreset)}
-                  </p>
-
-                  <label className="stims-shell__toggle">
-                    <input
-                      type="checkbox"
-                      checked={renderPreferences.compatibilityMode}
-                      onChange={(event) => {
-                        setCompatibilityMode(event.target.checked);
-                      }}
-                    />
-                    <span>Safer graphics mode</span>
-                  </label>
-
-                  <label className="stims-shell__toggle">
-                    <input
-                      type="checkbox"
-                      checked={motionPreference.enabled}
-                      onChange={(event) => {
-                        setMotionPreference({ enabled: event.target.checked });
-                      }}
-                    />
-                    <span>Allow motion controls</span>
-                  </label>
-
-                  <p className="stims-shell__section-label">Advanced tuning</p>
-                  <p className="stims-shell__meta-copy">
-                    Use these only when you want a sharper image or need to calm
-                    the frame rate on a busy preset.
-                  </p>
-
-                  <label
-                    className="stims-shell__field-label"
-                    htmlFor="render-scale"
-                  >
-                    Sharpness
-                  </label>
-                  <input
-                    id="render-scale"
-                    type="range"
-                    min="0.6"
-                    max="1.4"
-                    step="0.05"
-                    value={renderPreferences.renderScale ?? 1}
-                    onChange={(event) => {
-                      setRenderPreferences({
-                        renderScale: Number.parseFloat(event.target.value),
-                      });
-                    }}
-                  />
-                  <p className="stims-shell__meta-copy">
-                    Current sharpness:{' '}
-                    {(renderPreferences.renderScale ?? 1).toFixed(2)}x
-                  </p>
-
-                  <label
-                    className="stims-shell__field-label"
-                    htmlFor="max-pixel-ratio"
-                  >
-                    Detail limit
-                  </label>
-                  <input
-                    id="max-pixel-ratio"
-                    type="range"
-                    min="0.75"
-                    max="3"
-                    step="0.05"
-                    value={renderPreferences.maxPixelRatio ?? 1.5}
-                    onChange={(event) => {
-                      setRenderPreferences({
-                        maxPixelRatio: Number.parseFloat(event.target.value),
-                      });
-                    }}
-                  />
-                  <p className="stims-shell__meta-copy">
-                    Current limit:{' '}
-                    {(renderPreferences.maxPixelRatio ?? 1.5).toFixed(2)}x
-                  </p>
-                </div>
-              ) : null}
-
-              {routeState.panel === 'editor' ||
-              routeState.panel === 'inspector' ? (
-                <div className="stims-shell__sheet-callout">
-                  <p className="stims-shell__eyebrow">Advanced tool</p>
-                  <h3>
-                    {routeState.panel === 'editor'
-                      ? 'Editor is open on the stage.'
-                      : 'Inspector is open on the stage.'}
-                  </h3>
-                  <p className="stims-shell__meta-copy">
-                    Keep the visualizer in view while the tool stays anchored to
-                    the canvas. Use the tabs above to jump back to Looks or
-                    Settings.
-                  </p>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="stims-shell__sheet-footer">
-              <div className="stims-shell__session-actions">
-                <button
-                  type="button"
-                  className="cta-button"
-                  onClick={() => engineRef.current?.exportPreset()}
-                >
-                  Export preset
-                </button>
-                <label className="cta-button stims-shell__file-button">
-                  Import preset
-                  <input
-                    type="file"
-                    accept=".milk,.txt,text/plain"
-                    multiple
-                    onChange={(event) => void handleImport(event.target.files)}
-                  />
-                </label>
-                {routeState.agentMode ? (
-                  <button
-                    type="button"
-                    className="cta-button"
-                    onClick={() => {
-                      const currentUrl = buildCanonicalUrl(routeState);
-                      setStatusMessage(
-                        `Current link: ${currentUrl.pathname}${currentUrl.search}`,
-                      );
-                    }}
-                  >
-                    Show current link
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </aside>
-        </>
-      ) : null}
-
-      {toast ? (
-        <output
-          className="stims-shell__toast"
-          data-tone={toast.tone}
-          aria-live="polite"
-        >
-          <span>{toast.message}</span>
-          <button
-            type="button"
-            className="stims-shell__toast-dismiss"
-            onClick={() => setToast(null)}
-          >
-            Dismiss
-          </button>
-        </output>
-      ) : null}
+      <WorkspaceToast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }
