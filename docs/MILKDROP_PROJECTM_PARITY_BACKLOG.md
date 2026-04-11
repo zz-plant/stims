@@ -3,6 +3,7 @@
 This backlog turns the parity roadmap into concrete milestones for the repository.
 
 Use [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for the high-level direction. Use this file for implementation order, ownership boundaries, concrete file targets, and acceptance criteria.
+Use [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md) when you need to see how parity work is coordinated with runtime, product, and proof tracks.
 
 ## Operating rule
 

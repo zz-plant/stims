@@ -4,6 +4,8 @@ This is the day-to-day implementation guide for Stims.
 
 Stims is now a single browser-native MilkDrop-inspired visualizer. Prefer changes that strengthen the shared runtime, preset workflows, and app shell over adding parallel product surfaces.
 
+For a concise parallel execution map across parity, runtime performance, browser-native product work, and proof/release work, see [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md).
+
 ## Core workflow
 
 1. Install dependencies with `bun install`.

@@ -19,6 +19,7 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 - [`visual-testing.md`](./visual-testing.md) (browser-based testing, DevTools, agent-mode URL)
 - [`visualizer-workflows.md`](./visualizer-workflows.md) (includes `/ship-visualizer-change` for end-to-end product updates)
 - [`reference-docs.md`](./reference-docs.md)
+- [`../MILKDROP_SUCCESSOR_WORKSTREAMS.md`](../MILKDROP_SUCCESSOR_WORKSTREAMS.md) (parallel successor execution map)
 
 ### Documentation or metadata changes
 
