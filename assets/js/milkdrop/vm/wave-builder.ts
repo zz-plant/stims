@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import { buildMainWaveFrame } from './frame-generation';
 import {
+  type CustomWaveChannelSample,
   clamp,
   color,
   MAX_TRAILS,
@@ -18,13 +19,6 @@ import {
 } from './shared';
 
 const MAX_CUSTOM_WAVE_SAMPLES = 512;
-
-function syncSamples(target: number[], samples: number[], count: number) {
-  target.length = count;
-  for (let index = 0; index < count; index += 1) {
-    target[index] = samples[index] ?? 0;
-  }
-}
 
 export function buildMainWave({
   state,
@@ -49,16 +43,8 @@ export function buildMainWave({
     buffers: waveState.buffers,
     useProcedural: supportsProceduralWave(drawMode),
   });
-  syncSamples(
-    waveState.lastWaveSamples,
-    built.nextSamples,
-    built.nextSamples.length,
-  );
-  syncSamples(
-    waveState.lastWaveMomentum,
-    built.nextMomentum,
-    built.nextMomentum.length,
-  );
+  waveState.lastWaveSamples = built.nextSamples;
+  waveState.lastWaveMomentum = built.nextMomentum;
   return {
     visual: built.visual,
     procedural: built.procedural,
@@ -126,15 +112,14 @@ export function buildCustomWaves({
   const proceduralWaves: MilkdropProceduralCustomWaveVisual[] = [];
 
   preset.ir.customWaves.forEach((wave, index) => {
-    const persistent =
+    const frameLocals =
       waveState.customWaveLocals[index] ?? seedCustomWaveState(wave);
-    const frameLocals = { ...persistent };
     runProgram(
       wave.programs.perFrame,
       createEnv(signals, frameLocals),
       frameLocals,
     );
-    waveState.customWaveLocals[index] = { ...frameLocals };
+    waveState.customWaveLocals[index] = frameLocals;
 
     if ((frameLocals.enabled ?? 0) < 0.5) {
       return;
@@ -170,10 +155,20 @@ export function buildCustomWaves({
       ? new Array<number>(sampleCount)
       : null;
     const pointLocals: MutableState = { ...frameLocals };
+    const channelSample: CustomWaveChannelSample = {
+      sample: 0,
+      value: 0,
+      value1: 0,
+      value2: 0,
+    };
 
     for (let point = 0; point < sampleCount; point += 1) {
       const sample = point / Math.max(1, sampleCount - 1);
-      const waveChannels = sampleCustomWaveChannels(signals, sample);
+      const waveChannels = sampleCustomWaveChannels(
+        signals,
+        sample,
+        channelSample,
+      );
       const spectrumValue = waveChannels.value1;
       const baseY =
         centerY +
@@ -191,7 +186,10 @@ export function buildCustomWaves({
       }
 
       Object.assign(pointLocals, frameLocals, {
-        ...waveChannels,
+        sample: waveChannels.sample,
+        value: waveChannels.value,
+        value1: waveChannels.value1,
+        value2: waveChannels.value2,
         x: centerX + (-1 + sample * 2) * 0.85,
         y:
           (frameLocals.spectrum ?? 0) >= 0.5

@@ -30,6 +30,7 @@ Avoid language like:
 - If you reuse projectM code, assets, or corpora, keep license obligations and acknowledgments explicit.
 - If a public page or README calls Stims a "successor," pair that claim with explicit lineage language and avoid implying official affiliation.
 - Prefer precise compatibility claims over broad parity claims.
+- If you organize successor workstreams, keep the current evidence and ownership map in [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md) so claims stay synchronized with proof.
 
 ## Public-facing copy guidance
 

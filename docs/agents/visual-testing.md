@@ -140,6 +140,8 @@ These tools help you:
 2. Compare future visual changes against the baseline
 3. Detect unintended visual regressions
 
+For coordinated successor work, keep browser QA aligned with [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](../MILKDROP_SUCCESSOR_WORKSTREAMS.md) so proof, parity, and product claims stay synchronized.
+
 See the Parity docs for details:
 - [`../../docs/MILKDROP_PROJECTM_PARITY_PLAN.md`](../../docs/MILKDROP_PROJECTM_PARITY_PLAN.md)
 - [`../../docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md`](../../docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md)

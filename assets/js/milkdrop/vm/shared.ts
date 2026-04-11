@@ -66,6 +66,13 @@ export type WaveBuilderState = {
   buffers: WaveFrameBuffers;
 };
 
+export type CustomWaveChannelSample = {
+  sample: number;
+  value: number;
+  value1: number;
+  value2: number;
+};
+
 export type GeometryBuilderState = {
   lastMotionVectorField: MotionVectorFieldHistory | null;
   frameTransformCache: Map<number, { x: number; y: number }>;
@@ -116,14 +123,20 @@ export function sampleFrequencyData(
 export function sampleCustomWaveChannels(
   signals: MilkdropRuntimeSignals,
   sample: number,
+  target?: CustomWaveChannelSample,
 ) {
   const normalizedSample = sampleFrequencyData(signals, sample);
-  return {
+  const next = target ?? {
     sample,
     value: normalizedSample,
     value1: normalizedSample,
     value2: normalizedSample,
   };
+  next.sample = sample;
+  next.value = normalizedSample;
+  next.value1 = normalizedSample;
+  next.value2 = normalizedSample;
+  return next;
 }
 
 export function normalizeTransformCenter(value: number) {

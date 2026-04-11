@@ -30,8 +30,9 @@ You're about to code on Stims. Before you dive into docs, grab these three thing
 3. **Verify during dev**: Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) after each change to validate quickly.
 4. **Test visually**: Use [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) when you need browser-based verification.
 5. **Finalize**: Use [`docs/agents/metadata-and-docs.md`](./docs/agents/metadata-and-docs.md) before commit/PR text.
-6. **Docs changes**: Use [`docs/README.md`](./docs/README.md) as the canonical index when restructuring docs.
-7. **Synchronize**: Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) for cross-link alignment.
+6. **Coordinate successor work**: Use [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md) when a task spans parity, runtime performance, browser-native UX, or proof/release claims.
+7. **Docs changes**: Use [`docs/README.md`](./docs/README.md) as the canonical index when restructuring docs.
+8. **Synchronize**: Follow [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md) for cross-link alignment.
 
 ## Alignment requirements
 
