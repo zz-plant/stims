@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
+import { saveMeasuredVisualResultsManifest } from '../scripts/measured-visual-results.ts';
 import { appendParityArtifactEntry } from '../scripts/parity-artifacts.ts';
 import { runParityDiffSuite } from '../scripts/run-parity-diff-suite.ts';
 import { saveVisualReferenceManifest } from '../scripts/visual-reference-manifest.ts';
@@ -324,4 +325,143 @@ test('runParityDiffSuite reports certified backend mismatches before diffing', a
   expect(result.summary.backendMismatchCount).toBe(1);
   expect(result.summary.results[0]?.status).toBe('backend-mismatch');
   expect(result.summary.results[0]?.actualBackend).toBe('webgl');
+});
+
+test('runParityDiffSuite surfaces measured source report provenance drift', async () => {
+  const repoRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stims-parity-suite-provenance-'),
+  );
+  const fixtureRoot = path.join(
+    repoRoot,
+    'tests',
+    'fixtures',
+    'milkdrop',
+    'projectm-reference',
+  );
+  const outputDir = path.join(repoRoot, 'screenshots', 'parity');
+  const suiteDir = path.join(outputDir, 'suite');
+  fs.mkdirSync(fixtureRoot, { recursive: true });
+  fs.mkdirSync(suiteDir, { recursive: true });
+
+  await sharp({
+    create: {
+      width: 1,
+      height: 1,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
+    },
+  })
+    .png()
+    .toFile(path.join(fixtureRoot, 'reference.png'));
+  await sharp({
+    create: {
+      width: 1,
+      height: 1,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
+    },
+  })
+    .png()
+    .toFile(path.join(outputDir, 'capture.png'));
+
+  saveVisualReferenceManifest(repoRoot, {
+    version: 1,
+    parityTarget: 'projectm-visual-reference',
+    fixtureRoot: 'tests/fixtures/milkdrop/projectm-reference',
+    minimumPresetCount: 0,
+    presetCount: 1,
+    defaults: {
+      renderer: 'projectm',
+      requiredBackend: 'webgpu',
+      width: 1,
+      height: 1,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      toleranceProfile: 'default',
+      threshold: 16,
+      failThreshold: 0.02,
+    },
+    presets: [
+      {
+        id: 'provenance-preset',
+        title: 'Provenance Preset',
+        image: 'reference.png',
+        sourceFamily: 'bundled',
+        strata: ['feedback'],
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'projectm',
+          requiredBackend: 'webgpu',
+          width: 1,
+          height: 1,
+          warmupMs: 5000,
+          captureOffsetMs: 0,
+        },
+        provenance: {
+          label: 'fixture',
+          importedAt: '2026-03-28T00:00:00.000Z',
+        },
+      },
+    ],
+  });
+
+  appendParityArtifactEntry(outputDir, {
+    kind: 'stims-capture',
+    slug: 'milkdrop',
+    presetId: 'provenance-preset',
+    files: { image: path.join(outputDir, 'capture.png') },
+    capture: { backend: 'webgpu' },
+    createdAt: '2026-03-28T01:00:00.000Z',
+  });
+
+  saveMeasuredVisualResultsManifest(repoRoot, {
+    version: 1,
+    updatedAt: '2026-03-28T01:00:00.000Z',
+    presets: [
+      {
+        id: 'provenance-preset',
+        title: 'Provenance Preset',
+        fidelityClass: 'exact',
+        visualEvidenceTier: 'visual',
+        suiteStatus: 'pass',
+        certificationStatus: 'certified',
+        certificationReason: null,
+        requiredBackend: 'webgpu',
+        actualBackend: 'webgpu',
+        sourceFamily: 'bundled',
+        strata: ['feedback'],
+        toleranceProfile: 'default',
+        mismatchRatio: 0,
+        threshold: 16,
+        failThreshold: 0.02,
+        updatedAt: '2026-03-28T01:00:00.000Z',
+        sourceReport: 'screenshots/parity/suite/missing-report.json',
+      },
+    ],
+  });
+
+  const result = await runParityDiffSuite({
+    repoRoot,
+    outputDir,
+    writeDiffImages: false,
+    strict: false,
+  });
+
+  expect(result.summary.measuredPresetCount).toBe(1);
+  expect(result.summary.measuredSourceReportMissingCount).toBe(1);
+  expect(result.summary.measuredSourceReportMismatchCount).toBe(0);
+  expect(result.summary.results[0]?.status).toBe('pass');
+
+  await expect(
+    runParityDiffSuite({
+      repoRoot,
+      outputDir,
+      writeDiffImages: false,
+      strict: true,
+    }),
+  ).rejects.toThrow('measured-result provenance issues');
 });

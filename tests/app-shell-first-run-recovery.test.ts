@@ -20,10 +20,10 @@ describe('Workspace shell first-run and recovery regression', () => {
       'utf8',
     );
 
-    expect(appSource).toContain('That saved link needs a new look.');
-    expect(appSource).toContain('Requested look unavailable');
-    expect(uiSource).toContain('Load featured look');
-    expect(uiSource).toContain('Browse looks');
+    expect(appSource).toContain('That saved link needs a new preset.');
+    expect(appSource).toContain('Requested preset unavailable');
+    expect(uiSource).toContain('Load featured preset');
+    expect(uiSource).toContain('Browse presets');
     expect(uiSource).toContain('Missing preset');
     expect(uiSource).toMatch(
       /This link points to a preset that is not bundled here[\s\S]*?library\./u,

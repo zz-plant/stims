@@ -6,6 +6,10 @@ import {
   writeDiffImage,
 } from './diff-parity-artifacts.ts';
 import {
+  loadMeasuredVisualResultsManifest,
+  validateMeasuredVisualResultsManifest,
+} from './measured-visual-results.ts';
+import {
   loadParityArtifactManifest,
   type ParityArtifactEntry,
 } from './parity-artifacts.ts';
@@ -43,6 +47,10 @@ type SuiteSummary = {
   outputDir: string;
   suiteDir: string;
   certifiedPresetCount: number;
+  measuredPresetCount: number;
+  measuredValidationIssueCount: number;
+  measuredSourceReportMissingCount: number;
+  measuredSourceReportMismatchCount: number;
   backendMismatchCount: number;
   passCount: number;
   failCount: number;
@@ -137,6 +145,13 @@ function compareSuiteResults(
 
 export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
   const referenceManifest = loadVisualReferenceManifest(options.repoRoot);
+  const measuredResultsManifest = loadMeasuredVisualResultsManifest(
+    options.repoRoot,
+  );
+  const measuredResultsValidation = validateMeasuredVisualResultsManifest(
+    options.repoRoot,
+    measuredResultsManifest,
+  );
   const artifactManifest = loadParityArtifactManifest(options.outputDir);
   const suiteDir = path.join(options.outputDir, 'suite');
   fs.mkdirSync(suiteDir, { recursive: true });
@@ -327,6 +342,12 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
     outputDir: options.outputDir,
     suiteDir,
     certifiedPresetCount: referenceManifest.presets.length,
+    measuredPresetCount: measuredResultsManifest.presets.length,
+    measuredValidationIssueCount: measuredResultsValidation.issueCount,
+    measuredSourceReportMissingCount:
+      measuredResultsValidation.missingSourceReportCount,
+    measuredSourceReportMismatchCount:
+      measuredResultsValidation.mismatchedSourceReportCount,
     backendMismatchCount: results.filter(
       (result) => result.status === 'backend-mismatch',
     ).length,
@@ -347,10 +368,11 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
     (summary.backendMismatchCount > 0 ||
       summary.failCount > 0 ||
       summary.missingCount > 0 ||
-      summary.errorCount > 0)
+      summary.errorCount > 0 ||
+      summary.measuredValidationIssueCount > 0)
   ) {
     throw new Error(
-      `Parity suite failed with ${summary.backendMismatchCount} backend mismatches, ${summary.failCount} failing, ${summary.missingCount} missing, and ${summary.errorCount} errored presets.`,
+      `Parity suite failed with ${summary.backendMismatchCount} backend mismatches, ${summary.failCount} failing, ${summary.missingCount} missing, ${summary.errorCount} errored presets, and ${summary.measuredValidationIssueCount} measured-result provenance issues.`,
     );
   }
 
