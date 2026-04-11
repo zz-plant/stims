@@ -3329,9 +3329,11 @@ video_echo=1
     ).feedback;
 
     expect(feedback).not.toBeNull();
-    expect(feedback?.compositeMaterial.uniforms.feedbackSoftness.value).toBe(0);
+    expect(feedback?.compositeMaterial.uniforms.feedbackSoftness.value).toBe(
+      0.65,
+    );
     expect(feedback?.compositeMaterial.uniforms.currentFrameBoost.value).toBe(
-      0,
+      0.1,
     );
   });
 

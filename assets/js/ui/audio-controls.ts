@@ -57,7 +57,7 @@ export function buildTryThisFirstRecommendation({
   if (recommendedCapability === 'microphone') {
     steps.push('Start with live mic for the most responsive visuals.');
   } else if (recommendedCapability === 'demoAudio') {
-    steps.push('Start with demo audio for the fastest first look.');
+    steps.push('Start with demo audio for the fastest first run.');
   } else if (recommendedCapability === 'touch') {
     steps.push(
       'Start audio, then use touch gestures to bend, scale, and twist the scene.',

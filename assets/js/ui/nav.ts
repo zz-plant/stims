@@ -375,7 +375,7 @@ function renderToyNav(
         options.onNextToy
           ? `<div class="toy-nav__next-wrapper">
               <button type="button" class="toy-nav__next" data-next-toy="true">
-                ${renderIconLabel('arrow-right', 'Next look')}
+                ${renderIconLabel('arrow-right', 'Next preset')}
               </button>
               <span class="toy-nav__next-status" role="status" aria-live="polite"></span>
             </div>`
@@ -614,11 +614,11 @@ function renderToyNav(
     if (!options.onNextToy || !nextBtn) return;
     nextBtn.disabled = true;
     nextBtn.setAttribute('aria-busy', 'true');
-    showNextStatus('Loading next look…');
+    showNextStatus('Loading next preset…');
     try {
       await options.onNextToy();
     } catch (_error) {
-      showNextStatus('Unable to load the next look.');
+      showNextStatus('Unable to load the next preset.');
     } finally {
       nextBtn.disabled = false;
       nextBtn.removeAttribute('aria-busy');

@@ -164,7 +164,7 @@ export function initSystemControls(
     description = 'Adjust quality, motion, and compatibility for this visualizer session.',
     qualityPresets = DEFAULT_QUALITY_PRESETS,
     defaultPresetId,
-    qualityLabel = 'Look',
+    qualityLabel = 'Preset',
     qualityHint = 'Balance fidelity and frame rate.',
     variant = 'floating',
     includeAdvancedControls = true,

@@ -8,7 +8,7 @@ import type {
 import type { EngineSnapshot } from './engine/milkdrop-engine-adapter.ts';
 import { buildCanonicalUrl } from './url-state.ts';
 import {
-  buildStarterLooks,
+  buildStarterPresets,
   getCollectionTags,
   mapRuntimeCatalogEntry,
   matchesPreset,
@@ -85,8 +85,8 @@ export function useWorkspaceShellOrchestration({
       catalog.find((entry) => entry.id === engineSnapshot?.activePresetId) ??
       null;
 
-    const starterLooks = buildStarterLooks(catalog);
-    const featuredPreset = starterLooks[0]?.preset ?? catalog[0] ?? null;
+    const starterPresets = buildStarterPresets(catalog);
+    const featuredPreset = starterPresets[0]?.preset ?? catalog[0] ?? null;
     const launchControlsHidden =
       engineSnapshot?.audioActive ||
       document.body.dataset.audioActive === 'true';

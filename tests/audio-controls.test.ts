@@ -391,7 +391,7 @@ describe('audio controls primary emphasis', () => {
         wowControl: 'Q/E mood cycling',
       }),
     ).toEqual({
-      summary: 'Start with demo audio for the fastest first look.',
+      summary: 'Start with demo audio for the fastest first run.',
       detail:
         'Try Aurora starter once the visualizer opens. Then explore Q/E mood cycling.',
     });

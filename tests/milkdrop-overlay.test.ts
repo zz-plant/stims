@@ -222,7 +222,7 @@ describe('milkdrop overlay browse simplifications', () => {
     expect(
       document.querySelector('.milkdrop-overlay__quality-select'),
     ).toBeNull();
-    expect(document.body.textContent).not.toContain('Live look');
+    expect(document.body.textContent).not.toContain('Live preset');
     expect(onSelectQualityPreset).not.toHaveBeenCalled();
 
     overlay.dispose();
@@ -286,7 +286,7 @@ describe('milkdrop overlay browse simplifications', () => {
     overlay.dispose();
   });
 
-  test('uses a single top-level tab row for looks, edit, and inspect', () => {
+  test('uses a single top-level tab row for presets, edit, and inspect', () => {
     globalThis.MutationObserver = class {
       disconnect() {}
       observe() {}
@@ -300,7 +300,7 @@ describe('milkdrop overlay browse simplifications', () => {
       document.querySelectorAll('.milkdrop-overlay__tabs button'),
     ).map((button) => button.textContent?.trim());
 
-    expect(tabLabels).toEqual(['Looks', 'Edit', 'Inspect']);
+    expect(tabLabels).toEqual(['Presets', 'Edit', 'Inspect']);
     expect(document.querySelector('.milkdrop-overlay__tools-tabs')).toBeNull();
 
     overlay.dispose();
@@ -553,7 +553,7 @@ describe('milkdrop overlay browse rendering', () => {
     );
     expect(modeTabs.map((tab) => tab.textContent?.trim())).toEqual([
       'Featured',
-      'All looks',
+      'All presets',
       'Recent',
       'Favorites',
     ]);

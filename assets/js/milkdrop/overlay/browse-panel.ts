@@ -323,7 +323,7 @@ export class BrowsePanel {
     (
       [
         ['featured', 'Featured'],
-        ['all', 'All looks'],
+        ['all', 'All presets'],
         ['recent', 'Recent'],
         ['favorites', 'Favorites'],
       ] satisfies Array<[BrowseMode, string]>
@@ -360,14 +360,14 @@ export class BrowsePanel {
     const browseModeTabs = document.createElement('div');
     browseModeTabs.className = 'milkdrop-overlay__browse-mode-tabs';
     browseModeTabs.setAttribute('role', 'tablist');
-    browseModeTabs.setAttribute('aria-label', 'Look browse modes');
+    browseModeTabs.setAttribute('aria-label', 'Preset browse modes');
     browseModeTabs.addEventListener('keydown', (event) =>
       this.handleBrowseModeTabsKeydown(event),
     );
     (
       [
         ['featured', 'Featured'],
-        ['all', 'All looks'],
+        ['all', 'All presets'],
         ['recent', 'Recent'],
         ['favorites', 'Favorites'],
       ] satisfies Array<[BrowseMode, string]>
@@ -586,11 +586,11 @@ export class BrowsePanel {
     this.browseEyebrowLabel.textContent = activePreset
       ? 'Live preset'
       : this.browseMode === 'favorites'
-        ? 'Saved looks'
+        ? 'Saved presets'
         : this.browseMode === 'recent'
           ? 'Back in rotation'
           : this.browseMode === 'all'
-            ? currentCollectionLabel || 'All looks'
+            ? currentCollectionLabel || 'All presets'
             : 'Featured';
     this.browseActiveLabel.textContent = activePreset
       ? activePreset.title
@@ -844,7 +844,7 @@ export class BrowsePanel {
 
     const fragment = document.createDocumentFragment();
     const options = [
-      { tag: '', label: 'All looks' },
+      { tag: '', label: 'All presets' },
       ...collectionTags.map((tag) => ({
         tag,
         label: collectionLabel(tag),

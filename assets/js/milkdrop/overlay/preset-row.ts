@@ -145,15 +145,15 @@ export function formatPrimaryCompatibilityMessage({
 }) {
   if (primaryReason) {
     if (primaryReason.blocking && support.status === 'unsupported') {
-      return `This look needs a feature Stims cannot render yet. ${primaryReason.message}`;
+      return `This preset needs a feature Stims cannot render yet. ${primaryReason.message}`;
     }
     return `Showing a simpler version. ${primaryReason.message}`;
   }
 
   if (support.status === 'unsupported') {
     return support.reasons[0]
-      ? `This look needs a feature Stims cannot render yet. ${support.reasons[0]}`
-      : 'This look needs a feature Stims cannot render yet.';
+      ? `This preset needs a feature Stims cannot render yet. ${support.reasons[0]}`
+      : 'This preset needs a feature Stims cannot render yet.';
   }
 
   return support.reasons[0]

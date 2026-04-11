@@ -73,16 +73,11 @@ export function shouldUseTranslatedControlsForDirectVolumeSample(
   }
 
   const directSample = getShaderSampleInfo(statement.expression);
-  if (
-    !directSample ||
-    directSample.sampleDimension !== '3d' ||
-    directSample.source === 'main' ||
-    directSample.source === 'none'
-  ) {
+  if (!directSample || directSample.source === 'none') {
     return false;
   }
 
-  return !isUnsupportedVolumeSampleSource(directSample.source);
+  return directSample.source !== 'main';
 }
 
 export function isUnsupportedParsedShaderStatement({
@@ -214,7 +209,6 @@ export function shouldPreferDirectProgramExecution(
   const directSample = getShaderSampleInfo(expression);
   if (
     directSample &&
-    directSample.sampleDimension === '3d' &&
     directSample.source !== 'main' &&
     directSample.source !== 'none'
   ) {

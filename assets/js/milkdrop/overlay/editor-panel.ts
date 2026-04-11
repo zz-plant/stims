@@ -303,7 +303,7 @@ export class EditorPanel {
     editorEyebrow.textContent = 'Live code REPL';
     const editorHeading = document.createElement('strong');
     editorHeading.className = 'milkdrop-overlay__editor-heading';
-    editorHeading.textContent = 'Patch the active look';
+    editorHeading.textContent = 'Patch the active preset';
     const editorSubheading = document.createElement('p');
     editorSubheading.className = 'milkdrop-overlay__editor-subheading';
     editorSubheading.textContent =
@@ -583,7 +583,7 @@ export class EditorPanel {
     this.editorSafetyBadge.textContent = hasErrors
       ? `${errors.length} issue${errors.length === 1 ? '' : 's'}`
       : isDegraded
-        ? 'Showing a simpler look'
+        ? 'Showing a simpler preset'
         : 'Stable';
     this.editorSafetyBadge.dataset.tone = hasErrors
       ? 'danger'

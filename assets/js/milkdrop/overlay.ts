@@ -257,7 +257,7 @@ export class MilkdropOverlay {
       button.type = 'button';
       button.dataset.tab = tab;
       button.textContent =
-        tab === 'browse' ? 'Looks' : tab === 'editor' ? 'Edit' : 'Inspect';
+        tab === 'browse' ? 'Presets' : tab === 'editor' ? 'Edit' : 'Inspect';
       button.addEventListener('click', () => this.setActiveTab(tab));
       tabs.appendChild(button);
       return button;

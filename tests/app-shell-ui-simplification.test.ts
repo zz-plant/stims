@@ -32,7 +32,7 @@ describe('Workspace shell UI simplification regression', () => {
     );
 
     expect(helperSource).toContain(
-      'Start with a featured vibe or dive into the full preset library.',
+      'Start with a featured preset or dive into the full preset library.',
     );
     expect(appSource).toContain(
       'Start demo fastest. Use mic for room-reactive visuals or capture tab audio when music is already playing.',
@@ -40,7 +40,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).toContain(
       'Search the full library or shuffle a surprise.',
     );
-    expect(uiSource).toContain('Shuffle a look');
+    expect(uiSource).toContain('Shuffle a preset');
     expect(uiSource).toContain(
       'Stay on Balanced unless the picture feels rough.',
     );

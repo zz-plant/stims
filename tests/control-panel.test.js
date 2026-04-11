@@ -86,7 +86,7 @@ describe('control panel mobile affordances', () => {
       title: 'Device defaults',
       description:
         'Choose the startup quality and compatibility settings for this device.',
-      qualityLabel: 'Startup look',
+      qualityLabel: 'Startup preset',
       qualityHint: 'These defaults apply before the live workspace takes over.',
     });
 
@@ -100,6 +100,6 @@ describe('control panel mobile affordances', () => {
     expect(panel.element.textContent).toContain(
       'Choose the startup quality and compatibility settings for this device.',
     );
-    expect(panel.element.textContent).toContain('Startup look');
+    expect(panel.element.textContent).toContain('Startup preset');
   });
 });

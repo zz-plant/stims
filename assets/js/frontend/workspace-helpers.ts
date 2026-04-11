@@ -21,7 +21,7 @@ export type ReadinessItem = {
   summary: string;
 };
 
-export type StarterLook = {
+export type StarterPreset = {
   key: string;
   label: string;
   summary: string;
@@ -79,7 +79,7 @@ export const TOOL_TABS: Array<Exclude<PanelState, null>> = [
 export function getToolLabel(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Looks';
+      return 'Presets';
     case 'editor':
       return 'Edit';
     case 'inspector':
@@ -92,7 +92,7 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 export function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Start with a featured vibe or dive into the full preset library.';
+      return 'Start with a featured preset or dive into the full preset library.';
     case 'editor':
       return 'Open the preset editor without moving the visualizer off-center.';
     case 'inspector':
@@ -167,9 +167,9 @@ export function describePresetMood(entry: PresetCatalogEntry) {
   return 'Instant pick';
 }
 
-export function buildStarterLooks(entries: PresetCatalogEntry[]) {
+export function buildStarterPresets(entries: PresetCatalogEntry[]) {
   const usedPresetIds = new Set<string>();
-  const starterLooks: StarterLook[] = [];
+  const starterPresets: StarterPreset[] = [];
   const definitions = [
     {
       key: 'bright-pulse',
@@ -211,11 +211,11 @@ export function buildStarterLooks(entries: PresetCatalogEntry[]) {
     }
 
     usedPresetIds.add(preset.id);
-    starterLooks.push({ ...definition, preset });
+    starterPresets.push({ ...definition, preset });
   });
 
-  if (starterLooks.length > 0) {
-    return starterLooks;
+  if (starterPresets.length > 0) {
+    return starterPresets;
   }
 
   return entries.slice(0, 3).map((preset, index) => ({
@@ -246,13 +246,13 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
     entry.expectedFidelityClass === 'exact' ||
     entry.expectedFidelityClass === 'near-exact'
   ) {
-    return 'Full look';
+    return 'Full preset';
   }
   if (
     entry.expectedFidelityClass === 'partial' ||
     entry.expectedFidelityClass === 'fallback'
   ) {
-    return 'Adjusted look';
+    return 'Adjusted preset';
   }
   if (entry.supports?.webgpu) {
     return 'High-detail ready';

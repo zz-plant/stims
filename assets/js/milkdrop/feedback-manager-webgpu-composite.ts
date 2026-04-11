@@ -15,10 +15,7 @@ import {
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { RenderTarget, TSL } from 'three/webgpu';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
-import {
-  WEBGL_MILKDROP_BACKEND_BEHAVIOR,
-  WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-} from './backend-behavior';
+import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
@@ -260,15 +257,13 @@ export function createCompositeUniforms(
     invertBoost: uniform(0),
     solarizeBoost: uniform(0),
     tint: uniform(new Color(1, 1, 1)),
-    // Keep the feedback blur/boost seed aligned with the compatibility renderer.
-    // Frame state does not overwrite these uniforms, so a backend-specific seed
-    // would create a persistent visual drift even when both paths otherwise
-    // receive the same composite state.
+    // Seed the WebGPU path from its backend profile so feedback blur and
+    // current-frame weighting stay in the same lane as the WebGPU renderer.
     feedbackSoftness: uniform(
-      WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.feedbackSoftness,
+      WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.feedbackSoftness,
     ),
     currentFrameBoost: uniform(
-      WEBGL_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.currentFrameBoost,
+      WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile.currentFrameBoost,
     ),
     overlayTextureSource: uniform(0),
     overlayTextureMode: uniform(0),

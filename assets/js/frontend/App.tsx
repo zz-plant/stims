@@ -117,38 +117,38 @@ export function StimsWorkspaceApp() {
       ? 'Start here'
       : 'Getting things ready';
   const launchTitle = missingRequestedPreset
-    ? 'That saved link needs a new look.'
+    ? 'That saved link needs a new preset.'
     : runtimeReady || routeState.invalidExperienceSlug
       ? 'Pick an audio path.'
       : 'Loading the visualizer.';
   const launchSummary = missingRequestedPreset
-    ? 'This preset is no longer bundled. Start demo to recover quickly, or open Looks before you play.'
+    ? 'This preset is no longer bundled. Start demo to recover quickly, or open Presets before you play.'
     : runtimeReady || routeState.invalidExperienceSlug
       ? 'Start demo fastest. Use mic for room-reactive visuals or capture tab audio when music is already playing.'
       : 'One moment while visuals warm up.';
   const stageEyebrow = missingRequestedPreset
     ? 'Link needs a rescue'
     : loadingRequestedPreset
-      ? 'Loading requested look'
+      ? 'Loading requested preset'
       : launchControlsHidden
         ? 'Now playing'
         : selectedPreset
-          ? 'Selected look'
-          : 'Start with a look';
+          ? 'Selected preset'
+          : 'Start with a preset';
   const stageTitle = missingRequestedPreset
-    ? 'Requested look unavailable'
+    ? 'Requested preset unavailable'
     : loadingRequestedPreset
-      ? 'Loading your look'
-      : (selectedPreset?.title ?? 'Pick a look');
+      ? 'Loading your preset'
+      : (selectedPreset?.title ?? 'Pick a preset');
   const stageSummary = missingRequestedPreset
-    ? `"${routeState.presetId}" is not in this build. Load a featured look or open Looks to recover.`
+    ? `"${routeState.presetId}" is not in this build. Load a featured preset or open Presets to recover.`
     : loadingRequestedPreset
       ? `One moment while we load ${routeState.presetId}.`
       : selectedPreset
         ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
         : featuredPreset
-          ? `Featured first pick: ${featuredPreset.title} · ${describePresetMood(featuredPreset)}. Open Looks or shuffle for another vibe.`
-          : 'Open Looks to pick a preset without losing the stage.';
+          ? `Featured first pick: ${featuredPreset.title} · ${describePresetMood(featuredPreset)}. Open Presets or shuffle for another vibe.`
+          : 'Open Presets to pick a preset without losing the stage.';
 
   return (
     <div className="stims-shell">
@@ -168,7 +168,7 @@ export function StimsWorkspaceApp() {
               updatePanel(routeState.panel === 'browse' ? null : 'browse')
             }
           >
-            Looks
+            Presets
           </button>
           <button
             type="button"

@@ -536,6 +536,19 @@ comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('noise');
     expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('replace');
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(
+      compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
+    ).toBe(true);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);

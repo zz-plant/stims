@@ -159,7 +159,7 @@ export function WorkspaceLaunchPanel({
 
       {featuredPreset ? (
         <p className="stims-shell__launch-note">
-          Recommended first run: start demo, then open Looks and try{' '}
+          Recommended first run: start demo, then open Presets and try{' '}
           <strong>{featuredPreset.title}</strong>.
         </p>
       ) : null}
@@ -294,7 +294,7 @@ export function WorkspaceStagePanel({
               <h3>Load a nearby favorite instead</h3>
               <p className="stims-shell__meta-copy">
                 This link points to a preset that is not bundled here anymore.
-                Recover with a featured look or jump into the full library.
+                Recover with a featured preset or jump into the full library.
               </p>
               <div className="stims-shell__session-actions">
                 {featuredPreset ? (
@@ -303,7 +303,7 @@ export function WorkspaceStagePanel({
                     className="cta-button primary"
                     onClick={onFeaturedPresetSelection}
                   >
-                    Load featured look
+                    Load featured preset
                   </button>
                 ) : null}
                 <button
@@ -311,7 +311,7 @@ export function WorkspaceStagePanel({
                   className="cta-button"
                   onClick={onBrowseRecovery}
                 >
-                  Browse looks
+                  Browse presets
                 </button>
               </div>
             </div>
@@ -372,7 +372,7 @@ function BrowseSheetPanel({
           onClick={onShufflePreset}
           disabled={catalog.length === 0}
         >
-          Shuffle a look
+          Shuffle a preset
         </button>
       </div>
 
@@ -598,7 +598,7 @@ function StageAnchoredToolCallout({
       </h3>
       <p className="stims-shell__meta-copy">
         Keep the visualizer in view while the tool stays anchored to the canvas.
-        Use the tabs above to jump back to Looks or Settings.
+        Use the tabs above to jump back to Presets or Settings.
       </p>
     </div>
   );
