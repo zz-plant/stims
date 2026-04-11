@@ -142,6 +142,15 @@ These tools help you:
 
 For coordinated successor work, keep browser QA aligned with [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](../MILKDROP_SUCCESSOR_WORKSTREAMS.md) so proof, parity, and product claims stay synchronized.
 
+For the bundled shipped presets, test them in the same order used by the parity corpus so evidence stays easy to compare:
+
+- `eos-glowsticks-v2-03-music`
+- `rovastar-parallel-universe`
+- `eos-phat-cubetrace-v2`
+- `krash-rovastar-cerebral-demons-stars`
+
+For each one, confirm the capture, reference import, and measured-result promotion steps complete before treating the preset as certified in docs or catalog labels.
+
 See the Parity docs for details:
 - [`../../docs/MILKDROP_PROJECTM_PARITY_PLAN.md`](../../docs/MILKDROP_PROJECTM_PARITY_PLAN.md)
 - [`../../docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md`](../../docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md)

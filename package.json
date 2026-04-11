@@ -69,6 +69,8 @@
     "mcp:dev": "bunx wrangler dev --config wrangler.mcp.jsonc",
     "parity:diff": "bun run scripts/diff-parity-artifacts.ts",
     "parity:capture": "bun run scripts/capture-visual-reference-suite.ts",
+    "parity:capture:corpus": "bun run scripts/capture-certification-corpus.ts",
+    "parity:capture:bundled": "bun run scripts/capture-certification-corpus.ts --group bundled-shipped",
     "parity:promote-reference": "bun run scripts/promote-projectm-reference.ts",
     "parity:promote-result": "bun run scripts/promote-parity-suite-result.ts",
     "parity:sync-catalog": "bun run scripts/sync-bundled-catalog-fidelity.ts",

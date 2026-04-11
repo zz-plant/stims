@@ -22,6 +22,21 @@ to:
 Completed foundation:
 - Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, measured-result promotion, and honest fidelity labeling are all wired.
 
+Bundled shipped preset lane:
+- The four shipped bundled IDs in `public/milkdrop-presets/catalog.json` are the first corpus to push through reference import and measured-result promotion:
+  - `eos-glowsticks-v2-03-music`
+  - `rovastar-parallel-universe`
+  - `eos-phat-cubetrace-v2`
+  - `krash-rovastar-cerebral-demons-stars`
+- Each of those presets should move through the same sequence:
+  - capture a Stims artifact,
+  - import the matching `projectM` reference,
+  - promote the reference into `tests/fixtures/milkdrop/projectm-reference/`,
+  - run `bun run parity:suite`,
+  - promote the suite result into `assets/data/milkdrop-parity/measured-results.json`,
+  - sync `public/milkdrop-presets/catalog.json`.
+- Do not treat any of the four as measured or certified in prose until both the checked-in reference and the measured suite report exist for that preset id.
+
 Completed parity slices:
 - Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.
 - Milestone 6 has partial completion: unsupported `tex3D(sampler_main, ...)` and non-volume aux `tex3D(...)` paths are now downgraded instead of silently treated as full support, overlay replace mode is distinct from overlay mix mode, textured-shape sampling now wraps instead of clamping, warp textures now sample in warp-stage UV space instead of raw screen UV space, and textured custom shapes can now stay on the native WebGPU batched path when a shape texture is available instead of forcing an unconditional fallback.
