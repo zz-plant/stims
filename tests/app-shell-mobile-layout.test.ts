@@ -30,7 +30,10 @@ describe('Workspace shell mobile layout regression', () => {
     );
 
     expect(css).toMatch(
-      /\.stims-shell__stage-root > canvas\s*\{[\s\S]*?width:\s*100%\s*!important;[\s\S]*?height:\s*100%\s*!important;/u,
+      /\.stims-shell__stage-root\s*\{[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;/u,
+    );
+    expect(css).toMatch(
+      /\.stims-shell__stage-root > canvas\s*\{[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;/u,
     );
   });
 

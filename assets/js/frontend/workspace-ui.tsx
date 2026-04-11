@@ -101,43 +101,60 @@ export function WorkspaceLaunchPanel({
           <h1>{launchTitle}</h1>
           <p>{launchSummary}</p>
         </div>
+        {featuredPreset ? (
+          <aside className="stims-shell__launch-spotlight">
+            <p className="stims-shell__section-label">Try first</p>
+            <strong>{featuredPreset.title}</strong>
+            <span className="stims-shell__meta-copy">
+              {describePresetMood(featuredPreset)} ·{' '}
+              {formatPresetSupportLabel(featuredPreset)}
+            </span>
+          </aside>
+        ) : null}
       </div>
 
-      <div className="stims-shell__launch-actions">
-        <button
-          id="use-demo-audio"
-          data-demo-audio-btn="true"
-          className="cta-button primary stims-shell__action-button"
-          type="button"
-          disabled={!engineReady}
-          onClick={() => onAudioStart('demo')}
-        >
-          <span className="stims-shell__action-label">Start demo</span>
-          <span className="stims-shell__action-hint">Fastest way in</span>
-        </button>
-        <button
-          id="start-audio-btn"
-          data-mic-audio-btn="true"
-          className="cta-button stims-shell__action-button"
-          type="button"
-          disabled={!engineReady}
-          onClick={() => onAudioStart('microphone')}
-        >
-          <span className="stims-shell__action-label">Use mic</span>
-          <span className="stims-shell__action-hint">React to the room</span>
-        </button>
-        <button
-          id="use-tab-audio"
-          className="cta-button stims-shell__action-button"
-          type="button"
-          disabled={!engineReady}
-          onClick={() => onAudioStart('tab')}
-        >
-          <span className="stims-shell__action-label">Capture tab</span>
-          <span className="stims-shell__action-hint">
-            Best for music or video
-          </span>
-        </button>
+      <div className="stims-shell__launch-action-groups">
+        <div className="stims-shell__launch-actions stims-shell__launch-actions--primary">
+          <button
+            id="use-demo-audio"
+            data-demo-audio-btn="true"
+            className="cta-button primary stims-shell__action-button"
+            type="button"
+            disabled={!engineReady}
+            onClick={() => onAudioStart('demo')}
+          >
+            <span className="stims-shell__action-label">Start demo</span>
+            <span className="stims-shell__action-hint">Fastest way in</span>
+          </button>
+          <button
+            id="start-audio-btn"
+            data-mic-audio-btn="true"
+            className="cta-button stims-shell__action-button"
+            type="button"
+            disabled={!engineReady}
+            onClick={() => onAudioStart('microphone')}
+          >
+            <span className="stims-shell__action-label">Use mic</span>
+            <span className="stims-shell__action-hint">React to the room</span>
+          </button>
+        </div>
+        <div className="stims-shell__launch-actions stims-shell__launch-actions--secondary">
+          <p className="stims-shell__meta-copy">
+            More ways to start when audio is already playing elsewhere.
+          </p>
+          <button
+            id="use-tab-audio"
+            className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
+            type="button"
+            disabled={!engineReady}
+            onClick={() => onAudioStart('tab')}
+          >
+            <span className="stims-shell__action-label">Capture tab</span>
+            <span className="stims-shell__action-hint">
+              Best for music or video
+            </span>
+          </button>
+        </div>
       </div>
 
       {featuredPreset ? (
@@ -449,6 +466,8 @@ function SettingsSheetPanel({
   qualityPreset: QualityPreset;
   renderPreferences: RenderPreferences;
 }) {
+  const guidedPresets = getSettingsPresetOptions().slice(0, 3);
+
   return (
     <div className="stims-shell__sheet-panel">
       <div className="stims-shell__settings-callout">
@@ -461,8 +480,25 @@ function SettingsSheetPanel({
       </div>
 
       <p className="stims-shell__section-label">Quick tune</p>
+      <ul className="stims-shell__preset-guides">
+        {guidedPresets.map((preset) => (
+          <li key={preset.id}>
+            <button
+              type="button"
+              className="stims-shell__preset-guide"
+              data-active={String(preset.id === qualityPreset.id)}
+              onClick={() => onQualityPresetChange(preset.id)}
+            >
+              <strong>{preset.label}</strong>
+              <span className="stims-shell__meta-copy">
+                {getQualityImpactSummary(preset)}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
       <label className="stims-shell__field-label" htmlFor="quality-select">
-        Picture style
+        Picture style details
       </label>
       <select
         id="quality-select"

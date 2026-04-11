@@ -337,6 +337,7 @@ body[data-page="workspace"] {
   display: grid;
   gap: 14px;
   align-items: start;
+  grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
 }
 
 .stims-shell__launch-copy h1,
@@ -376,10 +377,41 @@ body[data-page="workspace"] {
   line-height: 1.48;
 }
 
+.stims-shell__launch-spotlight {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-card);
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(119, 201, 255, 0.16),
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.03)
+    );
+  box-shadow: var(--stims-shadow-soft);
+}
+
+.stims-shell__launch-spotlight strong {
+  color: var(--stims-ink-strong);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.12rem;
+}
+
 .stims-shell__launch-note {
   margin: -4px 0 0;
   color: var(--stims-muted);
   line-height: 1.5;
+}
+
+.stims-shell__launch-action-groups {
+  display: grid;
+  gap: 14px;
 }
 
 .stims-shell__stage-section {
@@ -586,6 +618,8 @@ body[data-page="workspace"] {
 .stims-shell__stage-root {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .stims-shell__stage-recovery {
@@ -620,10 +654,10 @@ body[data-page="workspace"] {
 
 .stims-shell__stage-root > canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
 }
 
 .stims-shell__readiness-chips {
@@ -676,6 +710,10 @@ body[data-page="workspace"] {
   align-items: flex-start;
   justify-content: center;
   gap: 2px;
+}
+
+.stims-shell__action-button--secondary {
+  min-height: 52px;
 }
 
 .stims-shell__action-label {
@@ -791,6 +829,56 @@ body[data-page="workspace"] {
 
 .stims-shell__settings-callout p {
   margin: 0;
+}
+
+.stims-shell__preset-guides {
+  display: grid;
+  gap: 10px;
+}
+
+.stims-shell__preset-guide {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--stims-radius-card);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.025)
+  );
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  box-shadow: var(--stims-shadow-soft);
+  transition:
+    transform 160ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.stims-shell__preset-guide:hover {
+  transform: translateY(-1px);
+  border-color: var(--stims-line-strong);
+}
+
+.stims-shell__preset-guide[data-active="true"] {
+  border-color: color-mix(in srgb, var(--stims-accent) 62%, white);
+  background:
+    radial-gradient(
+      circle at top right,
+      var(--stims-accent-soft),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.09),
+      rgba(255, 255, 255, 0.04)
+    );
+}
+
+.stims-shell__preset-guide strong {
+  color: var(--stims-ink-strong);
 }
 
 .stims-shell__section-label {
@@ -1087,6 +1175,7 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-header {
     gap: 8px;
+    grid-template-columns: 1fr;
   }
 
   .stims-shell__launch-copy h1,

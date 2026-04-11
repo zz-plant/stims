@@ -60,6 +60,7 @@ import { createMilkdropPresentationController } from './runtime/presentation-con
 import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
 import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
+import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import {
@@ -150,8 +151,6 @@ export function createMilkdropExperience({
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
   let disposeSessionSubscription: (() => void) | null = null;
   let postprocessingPipeline: PostprocessingPipeline | null = null;
-  let deferredCatalogSyncTimeoutId: number | null = null;
-  const subscribers = new Set<(snapshot: MilkdropExperienceSnapshot) => void>();
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
     shaderEnabled: false,
@@ -215,29 +214,21 @@ export function createMilkdropExperience({
     sessionState: session.getState(),
   });
 
-  const emitChange = () => {
-    const snapshot = buildSnapshot();
-    subscribers.forEach((subscriber) => subscriber(snapshot));
-  };
-
-  const clearDeferredCatalogSync = () => {
-    if (deferredCatalogSyncTimeoutId === null) {
-      return;
-    }
-    window.clearTimeout(deferredCatalogSyncTimeoutId);
-    deferredCatalogSyncTimeoutId = null;
-  };
-
-  const scheduleDeferredCatalogSync = (delayMs = 180) => {
-    clearDeferredCatalogSync();
-    deferredCatalogSyncTimeoutId = window.setTimeout(() => {
-      deferredCatalogSyncTimeoutId = null;
-      void catalogCoordinator.scheduleCatalogSync({
+  const runtimeSignalHub = createMilkdropRuntimeSignalHub({
+    getSnapshot: buildSnapshot,
+    scheduleCatalogSync: () =>
+      catalogCoordinator.scheduleCatalogSync({
         activePresetId,
         activeBackend,
-      });
-    }, delayMs);
-  };
+      }),
+  });
+  const {
+    emitChange,
+    clearDeferredCatalogSync,
+    scheduleDeferredCatalogSync,
+    subscribe,
+    dispose: disposeRuntimeSignalHub,
+  } = runtimeSignalHub;
 
   const setOverlayStatus = (message: string) => {
     lastStatusMessage = message;
@@ -547,11 +538,7 @@ export function createMilkdropExperience({
 
   return {
     subscribe(listener: (snapshot: MilkdropExperienceSnapshot) => void) {
-      subscribers.add(listener);
-      listener(buildSnapshot());
-      return () => {
-        subscribers.delete(listener);
-      };
+      return subscribe(listener);
     },
 
     getStateSnapshot() {
@@ -923,7 +910,7 @@ export function createMilkdropExperience({
       disposeRequestedOverlayTabListener?.();
       disposeRequestedOverlayTabListener = null;
       catalogCoordinator.dispose();
-      subscribers.clear();
+      disposeRuntimeSignalHub();
     },
   };
 }
