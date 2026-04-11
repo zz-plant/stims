@@ -10,6 +10,11 @@ Stims is an independent browser-native visualizer in the MilkDrop lineage. The g
 
 Own the compiler, VM, renderer, and measured reference corpus needed to make support claims honest.
 
+Primary requirement:
+
+- Stims itself must compile and run `.milk` presets imported from the broader projectM ecosystem.
+- External `projectM` reference images are proof inputs, not a client runtime dependency.
+
 Primary files:
 
 - `assets/js/milkdrop/compiler/*`
@@ -21,8 +26,18 @@ Primary files:
 
 Exit signal:
 
+- certification-corpus presets compile and step inside Stims
 - measured visual results exist for the certified corpus
 - shipped fidelity labels are derived from evidence, not optimism
+
+Bundled shipped preset lane:
+
+- `eos-glowsticks-v2-03-music`
+- `rovastar-parallel-universe`
+- `eos-phat-cubetrace-v2`
+- `krash-rovastar-cerebral-demons-stars`
+
+These four presets are the current bundled proof loop. They should be pushed through capture, `projectM` reference import, checked-in reference promotion, suite diffing, and measured-result promotion in that order.
 
 ### 2. Runtime performance
 

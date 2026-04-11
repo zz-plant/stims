@@ -21,6 +21,20 @@ const PUBLIC_DIR = path.join(
   LIBRARY_ID,
 );
 const MANIFEST_PATH = path.join(PUBLIC_DIR, 'catalog.json');
+const RECENT_EXPANSION_IDS = new Set([
+  'rovastar-harlequins-liquid-dragon',
+  'rovastar-mosaics-of-ages',
+  'rovastar-oozing-resistance',
+  'orb-acid-in-my-eyes',
+  'shifter-curlique',
+  'shifter-snakeskin',
+  'shifter-swarm',
+  'evet-responsive-acid-iris',
+  'dbleja-hovering-over-pluto',
+  'dbleja-inside-the-tree-blue-mix',
+  'orb-cloud-scope',
+  'orbasonic',
+]);
 
 test('projectM Cream of the Crop library manifest stays aligned with the shipped preset files', () => {
   const manifest = JSON.parse(
@@ -62,9 +76,40 @@ test('projectM Cream of the Crop picks stay fully supported on both backends', (
       fileName: basename(entry.file),
       origin: 'bundled',
     });
-
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
   });
+});
+
+test('recent projectM cream expansion picks compile without parser errors', () => {
+  const manifest = JSON.parse(
+    readFileSync(MANIFEST_PATH, 'utf8'),
+  ) as LibraryManifest;
+
+  manifest.presets
+    .filter((entry) => RECENT_EXPANSION_IDS.has(entry.id))
+    .forEach((entry) => {
+      const raw = readFileSync(
+        join(process.cwd(), 'public', entry.file.replace(/^\/+/, '')),
+        'utf8',
+      );
+      const compiled = compileMilkdropPresetSource(raw, {
+        id: entry.id,
+        title: entry.title,
+        fileName: basename(entry.file),
+        origin: 'bundled',
+      });
+
+      expect(
+        compiled.diagnostics.filter(
+          (diagnostic) => diagnostic.severity === 'error',
+        ),
+      ).toEqual([]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'supported',
+      );
+      expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
+    });
 });

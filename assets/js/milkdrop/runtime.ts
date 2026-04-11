@@ -735,9 +735,9 @@ export function createMilkdropExperience({
 
     update(
       frame: ToyRuntimeFrame,
-      options: {
+      options?: {
         signalOverrides?: Partial<MilkdropRuntimeSignals>;
-      } = {},
+      },
     ) {
       if (!runtime || !adapter) {
         return;
@@ -766,7 +766,7 @@ export function createMilkdropExperience({
       });
       Object.assign(mergedSignals, baseSignals);
       buildMilkdropInputSignalOverrides(frame.input, mergedSignals);
-      if (options.signalOverrides) {
+      if (options?.signalOverrides) {
         Object.assign(mergedSignals, options.signalOverrides);
       }
       const signals = mergedSignals as MilkdropRuntimeSignals;

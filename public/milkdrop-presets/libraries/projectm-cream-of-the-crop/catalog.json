@@ -396,6 +396,173 @@
         "preset"
       ],
       "order": 927
+    },
+    {
+      "id": "rovastar-harlequins-liquid-dragon",
+      "title": "Rovastar - Harlequin's Liquid Dragon",
+      "author": "Rovastar",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-harlequins-liquid-dragon.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "dragon",
+        "preset"
+      ],
+      "order": 928
+    },
+    {
+      "id": "rovastar-mosaics-of-ages",
+      "title": "Rovastar - Mosaics Of Ages",
+      "author": "Rovastar",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-mosaics-of-ages.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "mosaic",
+        "gradient",
+        "preset"
+      ],
+      "order": 929
+    },
+    {
+      "id": "rovastar-oozing-resistance",
+      "title": "Rovastar - Oozing Resistance",
+      "author": "Rovastar",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-oozing-resistance.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "distortion",
+        "preset"
+      ],
+      "order": 930
+    },
+    {
+      "id": "orb-acid-in-my-eyes",
+      "title": "ORB - Acid in my eyes",
+      "author": "ORB",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-acid-in-my-eyes.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "acid",
+        "preset"
+      ],
+      "order": 931
+    },
+    {
+      "id": "shifter-curlique",
+      "title": "shifter - curlique",
+      "author": "shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-curlique.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "swirl",
+        "filigree",
+        "preset"
+      ],
+      "order": 932
+    },
+    {
+      "id": "shifter-snakeskin",
+      "title": "shifter - snakeskin",
+      "author": "shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-snakeskin.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "texture",
+        "organic",
+        "preset"
+      ],
+      "order": 933
+    },
+    {
+      "id": "shifter-swarm",
+      "title": "shifter - swarm",
+      "author": "shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-swarm.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "feedback",
+        "particles",
+        "preset"
+      ],
+      "order": 934
+    },
+    {
+      "id": "evet-responsive-acid-iris",
+      "title": "EVET - Responsive Acid Iris",
+      "author": "EVET",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/evet-responsive-acid-iris.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "iris",
+        "preset"
+      ],
+      "order": 935
+    },
+    {
+      "id": "dbleja-hovering-over-pluto",
+      "title": "Dbleja - Hovering Over Pluto",
+      "author": "Dbleja",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-hovering-over-pluto.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "planetary",
+        "preset"
+      ],
+      "order": 936
+    },
+    {
+      "id": "dbleja-inside-the-tree-blue-mix",
+      "title": "Dbleja - Inside The Tree (Blue Mix)",
+      "author": "Dbleja",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/dbleja-inside-the-tree-blue-mix.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "organic",
+        "preset"
+      ],
+      "order": 937
+    },
+    {
+      "id": "orb-cloud-scope",
+      "title": "ORB - Cloud Scope",
+      "author": "ORB",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-cloud-scope.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "clouds",
+        "mirror",
+        "preset"
+      ],
+      "order": 938
+    },
+    {
+      "id": "orbasonic",
+      "title": "Orbasonic",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orbasonic.milk",
+      "tags": [
+        "collection:cream-of-the-crop",
+        "projectm-github",
+        "liquid",
+        "audio-reactive",
+        "preset"
+      ],
+      "order": 939
     }
   ]
 }

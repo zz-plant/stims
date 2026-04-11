@@ -97,6 +97,95 @@ describe('initMilkdropShowcase', () => {
     );
   });
 
+  test('merges the projectM cream library into the showcase catalog', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: 'signal-bloom',
+                title: 'Signal Bloom',
+                order: 1,
+                preview: true,
+                tags: ['collection:classic-milkdrop'],
+              },
+            ],
+          }),
+        };
+      }
+
+      if (
+        url.endsWith(
+          '/milkdrop-presets/libraries/projectm-cream-of-the-crop/catalog.json',
+        )
+      ) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: 'rovastar-harlequins-liquid-dragon',
+                title: "Rovastar - Harlequin's Liquid Dragon",
+                author: 'Rovastar',
+                order: 928,
+                preview: true,
+                tags: ['collection:cream-of-the-crop', 'projectm-github'],
+              },
+              {
+                id: 'shifter-curlique',
+                title: 'shifter - curlique',
+                author: 'shifter',
+                order: 932,
+                preview: true,
+                tags: ['collection:cream-of-the-crop', 'projectm-github'],
+              },
+            ],
+          }),
+        };
+      }
+
+      return {
+        ok: false,
+      };
+    }) as unknown as typeof fetch;
+
+    await initMilkdropShowcase();
+
+    const count = document.querySelector('[data-milkdrop-preset-count]');
+    const filters = Array.from(
+      document.querySelectorAll('[data-milkdrop-preset-filters] button'),
+    ).map((button) => button.textContent?.replace(/\s+/gu, ' ').trim());
+    const cards = Array.from(
+      document.querySelectorAll(
+        '[data-milkdrop-preset-list] .milkdrop-showcase__card-title',
+      ),
+    ).map((card) => card.textContent?.trim());
+
+    expect(count?.textContent).toBe(
+      '3 presets across 2 collections. Showing 2 from Cream of the Crop.',
+    );
+    expect(filters).toEqual([
+      'All presets3',
+      'Classic MilkDrop1',
+      'Cream of the Crop2',
+    ]);
+    expect(cards).toEqual([
+      "Rovastar - Harlequin's Liquid Dragon",
+      'shifter - curlique',
+    ]);
+    expect(
+      document
+        .querySelector('[data-milkdrop-preset-list] .cta-button')
+        ?.getAttribute('href'),
+    ).toBe(
+      '/milkdrop/?audio=demo&panel=browse&preset=rovastar-harlequins-liquid-dragon&collection=cream-of-the-crop',
+    );
+  });
+
   test('builds launch links from the rendered preset collection instead of a hardcoded default', async () => {
     globalThis.fetch = mock(async () => ({
       ok: true,

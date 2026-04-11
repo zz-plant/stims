@@ -48,6 +48,14 @@ bun scripts/play-toy.ts milkdrop \
 
 This keeps the capture focused on one preset and saves both the screenshot and the runtime debug snapshot for later comparison.
 
+To capture the certification corpus directly from `assets/data/milkdrop-parity/certification-corpus.json` instead of the checked-in visual-reference manifest, use:
+
+```bash
+bun run parity:capture:corpus -- --group bundled-shipped
+```
+
+This is the fastest way to refresh Stims-side capture artifacts for the four shipped bundled presets before importing matching `projectM` references.
+
 You can import an external `projectM` reference render into the same artifact directory:
 
 ```bash
@@ -111,6 +119,31 @@ bun run parity:sync-catalog
 This rewrites `public/milkdrop-presets/catalog.json` so presets with measured visual results keep their certified fidelity labels, while unmeasured bundled presets are published as `partial` with `runtime` evidence instead of optimistic `exact`/`visual` metadata.
 
 `bun run check:quick` and `bun run check` now verify that `public/milkdrop-presets/catalog.json` is still synced with `assets/data/milkdrop-parity/measured-results.json`. If that check fails, rerun `bun run parity:sync-catalog`.
+
+### Bundled shipped preset lane
+
+The four bundled shipped presets in `public/milkdrop-presets/catalog.json` are the first parity/proof targets that should move from certification-corpus membership to checked-in `projectM` references and then to measured results:
+
+- `eos-glowsticks-v2-03-music`
+- `rovastar-parallel-universe`
+- `eos-phat-cubetrace-v2`
+- `krash-rovastar-cerebral-demons-stars`
+
+For each preset, use the same evidence chain:
+
+1. First prove the preset runs inside Stims with `bun run parity:capture:bundled -- --preset <id>`.
+2. Capture a Stims artifact with `bun scripts/play-toy.ts milkdrop --preset <id> --duration 1500 --debug-snapshot --no-vibe-mode --output ./screenshots/parity` if you need a one-off run outside the corpus script.
+3. Import the matching external `projectM` reference with `bun scripts/import-projectm-reference.ts --preset <id> --image /absolute/path/to/projectm-frame.png --meta /absolute/path/to/projectm-frame.json --output ./screenshots/parity`.
+4. Promote the imported reference into `tests/fixtures/milkdrop/projectm-reference/` with `bun run parity:promote-reference -- --output ./screenshots/parity --preset <id> --strata <subsystem-tags>`.
+5. Run `bun run parity:suite -- --output ./screenshots/parity --write-diff-images` and then promote the report with `bun run parity:promote-result -- --output ./screenshots/parity --preset <id>`.
+6. Sync the bundled catalog with `bun run parity:sync-catalog`.
+
+Keep the bundled shipped presets in evidence order:
+
+- `eos-glowsticks-v2-03-music` for waveform and glowsticks behavior.
+- `rovastar-parallel-universe` for feedback and laser-heavy behavior.
+- `eos-phat-cubetrace-v2` for geometry and shape-heavy behavior.
+- `krash-rovastar-cerebral-demons-stars` for comet, feedback, and motion-heavy behavior.
 
 ## Product assumptions
 

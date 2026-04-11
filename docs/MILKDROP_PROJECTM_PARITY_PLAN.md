@@ -7,6 +7,17 @@ For how parity work fits alongside runtime, browser UX, and proof/release work, 
 
 The immediate goal is not to claim broad `projectM` parity. It is to build a repeatable visual oracle, downgrade over-optimistic compatibility labels, and then close the largest rendering gaps in order of impact.
 
+Before visual parity claims, the first requirement is simpler: Stims must be able to compile and run `.milk` presets imported from the projectM ecosystem inside the browser runtime. External `projectM` captures are proof inputs for comparison, not a shipped dependency or client runtime requirement.
+
+The first bundled shipped presets to carry through that flow are:
+
+- `eos-glowsticks-v2-03-music`
+- `rovastar-parallel-universe`
+- `eos-phat-cubetrace-v2`
+- `krash-rovastar-cerebral-demons-stars`
+
+These four IDs are the smallest evidence loop that can move the shipped catalog from inferred runtime labels to checked-in `projectM` references and measured results without expanding the corpus prematurely.
+
 ## Current state
 
 - Upstream `projectM` fixtures are used for parser/compiler/VM compatibility coverage, not frame-by-frame render parity.
@@ -72,6 +83,8 @@ bun run parity:promote-reference -- \
 That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `assets/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
 The bounded preset universe for that work is tracked separately in `assets/data/milkdrop-parity/certification-corpus.json`, so reference images and measured results stay scoped to an explicit WebGPU certification corpus instead of open-ended imports.
 
+For the bundled shipped presets, repeat the same capture/import/promote sequence one preset at a time and do not move to `measured-results.json` until the corresponding `projectM` reference is checked in for that same preset id.
+
 Run the certified suite against that checked-in manifest:
 
 ```bash
@@ -79,6 +92,8 @@ bun run parity:suite -- --output ./screenshots/parity --write-diff-images
 ```
 
 That suite resolves the latest Stims capture per certified preset, compares it to the checked-in projectM reference image, writes per-preset reports under `./screenshots/parity/suite/`, and ranks results by worst mismatch first.
+
+For the four bundled shipped presets, a successful suite result should be promoted only after the checked-in reference is present and the report points at the same preset id.
 
 Promote an individual suite result into the checked-in measured-results manifest:
 

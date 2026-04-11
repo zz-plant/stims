@@ -15,6 +15,10 @@ type MilkdropCatalogDocument =
       presets?: MilkdropCatalogEntry[];
     };
 
+const SHOWCASE_LIBRARY_MANIFEST_URLS = [
+  '/milkdrop-presets/libraries/projectm-cream-of-the-crop/catalog.json',
+];
+
 function resolveEntries(document: MilkdropCatalogDocument) {
   const entries = Array.isArray(document) ? document : (document.presets ?? []);
   return [...entries].sort(
@@ -22,6 +26,20 @@ function resolveEntries(document: MilkdropCatalogDocument) {
       (left.order ?? Number.MAX_SAFE_INTEGER) -
       (right.order ?? Number.MAX_SAFE_INTEGER),
   );
+}
+
+function mergeUniqueEntries(...catalogs: MilkdropCatalogEntry[][]) {
+  const entriesById = new Map<string, MilkdropCatalogEntry>();
+
+  catalogs.forEach((catalog) => {
+    catalog.forEach((entry) => {
+      if (!entriesById.has(entry.id)) {
+        entriesById.set(entry.id, entry);
+      }
+    });
+  });
+
+  return resolveEntries([...entriesById.values()]);
 }
 
 const COLLECTION_LABELS: Record<string, string> = {
@@ -168,15 +186,32 @@ export async function initMilkdropShowcase() {
   }
 
   try {
-    const response = await fetch('/milkdrop-presets/catalog.json', {
-      cache: 'no-store',
-    });
-    if (!response.ok) {
+    const [primaryResponse, ...libraryResponses] = await Promise.all([
+      fetch('/milkdrop-presets/catalog.json', {
+        cache: 'no-store',
+      }),
+      ...SHOWCASE_LIBRARY_MANIFEST_URLS.map((url) =>
+        fetch(url, { cache: 'no-store' }).catch(() => null),
+      ),
+    ]);
+    if (!primaryResponse.ok) {
       return;
     }
 
-    const catalog = (await response.json()) as MilkdropCatalogDocument;
-    const entries = resolveEntries(catalog);
+    const primaryCatalog = resolveEntries(
+      (await primaryResponse.json()) as MilkdropCatalogDocument,
+    );
+    const libraryCatalogs = await Promise.all(
+      libraryResponses.map(async (response) => {
+        if (!response?.ok) {
+          return [] as MilkdropCatalogEntry[];
+        }
+        return resolveEntries(
+          (await response.json()) as MilkdropCatalogDocument,
+        );
+      }),
+    );
+    const entries = mergeUniqueEntries(primaryCatalog, ...libraryCatalogs);
     if (!entries.length) {
       return;
     }
