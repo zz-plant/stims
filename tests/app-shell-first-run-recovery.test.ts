@@ -20,14 +20,13 @@ describe('Workspace shell first-run and recovery regression', () => {
       'utf8',
     );
 
-    expect(appSource).toContain('That saved link needs a new preset.');
-    expect(appSource).toContain('Requested preset unavailable');
+    expect(appSource).toContain('Saved preset unavailable.');
+    expect(appSource).toContain('Preset unavailable');
     expect(uiSource).toContain('Load featured preset');
     expect(uiSource).toContain('Browse presets');
     expect(uiSource).toContain('Missing preset');
-    expect(uiSource).toMatch(
-      /This link points to a preset that is not bundled here[\s\S]*?library\./u,
-    );
+    expect(uiSource).toContain('Pick a nearby preset');
+    expect(uiSource).toContain('This preset is no longer bundled here.');
     expect(appSource).toMatch(
       /const missingRequestedPreset = Boolean\([\s\S]*?catalogReady[\s\S]*?\);/u,
     );
