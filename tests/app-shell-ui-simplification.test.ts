@@ -42,24 +42,30 @@ describe('Workspace shell UI simplification regression', () => {
       'utf8',
     );
 
-    expect(helperSource).toContain('Browse or shuffle presets.');
-    expect(helperSource).toContain('Tune only what you need.');
+    expect(helperSource).toContain(
+      'Start with guided picks, then open the full library.',
+    );
+    expect(helperSource).toContain(
+      'Pick a look first, then fine-tune only if needed.',
+    );
     expect(appSource).toContain("'Start demo, use the mic, or capture a tab.'");
     expect(sessionHookSource).toContain("'Using lighter visual mode.'");
-    expect(appSource).toMatch(
-      /const launchEyebrow = missingRequestedPreset\s*\? 'Recover session'/u,
-    );
     expect(appSource).toContain(": 'Loading';");
     expect(appSource).toContain(": 'Warming up visuals.';");
     expect(appSource).toContain(": 'Open Presets or shuffle.';");
     expect(uiSource).toContain('Featured');
     expect(uiSource).toMatch(/>\s*Shuffle\s*</u);
-    expect(uiSource).toContain('Balanced is the default.');
+    expect(uiSource).toContain('Start with a mood, not a filename.');
+    expect(uiSource).toContain('Four quick ways into the catalog.');
+    expect(uiSource).toContain('Full library');
+    expect(uiSource).toContain('Start with Balanced.');
+    expect(uiSource).toContain('Choose a visual profile');
+    expect(uiSource).toContain('Keep visuals steadier on tricky hardware');
+    expect(uiSource).toContain('Use motion controls on supported devices');
+    expect(uiSource).toContain('Fine-tune the picture');
+    expect(uiSource).toContain('Copy link');
     expect(uiSource).toContain('Editor stays on the stage.');
     expect(uiSource).toContain('Inspector stays on the stage.');
-    expect(appSource).toMatch(
-      /const stageEyebrow = missingRequestedPreset\s*\? 'Preset missing'/u,
-    );
     expect(uiSource).toMatch(/<p>\s*\{launchSummary\}\s*<\/p>/u);
     expect(uiSource).toMatch(
       /className="stims-shell__meta-copy stims-shell__stage-summary">\s*\{stageSummary\}\s*<\/p>/u,
@@ -77,5 +83,6 @@ describe('Workspace shell UI simplification regression', () => {
       'More ways to start when audio is already playing elsewhere.',
     );
     expect(uiSource).not.toContain('Recommended first run: start demo');
+    expect(uiSource).not.toContain('Show current link');
   });
 });

@@ -2623,7 +2623,7 @@
         "proceduralMotionVectors": null,
         "feedback": {
           "kind": "feedback-post-effect",
-          "shaderExecution": "controls",
+          "shaderExecution": "direct",
           "usesFeedbackTexture": false,
           "usesVideoEcho": false,
           "usesPostEffects": false,
