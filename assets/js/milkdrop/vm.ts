@@ -46,6 +46,37 @@ class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
   private state: MutableState = {};
   private registers: MutableState = {};
+  private readonly signalEnv: MutableState = {
+    time: 0,
+    frame: 0,
+    fps: 60,
+    bass: 0,
+    mid: 0,
+    mids: 0,
+    treb: 0,
+    treble: 0,
+    bass_att: 0,
+    mid_att: 0,
+    mids_att: 0,
+    treb_att: 0,
+    treble_att: 0,
+    bassAtt: 0,
+    midsAtt: 0,
+    trebleAtt: 0,
+    beat: 0,
+    beat_pulse: 0,
+    beatPulse: 0,
+    rms: 0,
+    vol: 0,
+    music: 0,
+    weighted_energy: 0,
+    progress: 0,
+    pi: Math.PI,
+    e: Math.E,
+  };
+  private lastPreparedSignalSource: MilkdropRuntimeSignals | null = null;
+  private lastPreparedSignalFrame = Number.NaN;
+  private lastPreparedSignalTime = Number.NaN;
   private randomState = 1;
   private detailScale = 1;
   private renderBackend: 'webgl' | 'webgpu' = 'webgl';
@@ -108,7 +139,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
   reset() {
     this.state = { ...DEFAULT_MILKDROP_STATE, ...this.preset.ir.numericFields };
-    this.registers = {};
+    this.registers = Object.create(this.state) as MutableState;
     for (let index = 1; index <= 32; index += 1) {
       this.registers[`q${index}`] = 0;
     }
@@ -135,6 +166,10 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.buffers.smoothedSamples.length = 0;
     this.waveState.buffers.momentumSamples.length = 0;
     this.geometryState.frameTransformCache.clear();
+    Object.setPrototypeOf(this.signalEnv, this.registers);
+    this.lastPreparedSignalSource = null;
+    this.lastPreparedSignalFrame = Number.NaN;
+    this.lastPreparedSignalTime = Number.NaN;
 
     const zeroSignals = defaultSignalEnv();
     this.runProgram(this.preset.ir.programs.init, this.createEnv(zeroSignals));
@@ -276,40 +311,65 @@ class MilkdropPresetVM implements MilkdropVM {
     };
   }
 
+  private prepareSignalEnv(signals: MilkdropRuntimeSignals) {
+    if (
+      this.lastPreparedSignalSource === signals &&
+      this.lastPreparedSignalFrame === signals.frame &&
+      this.lastPreparedSignalTime === signals.time
+    ) {
+      return;
+    }
+
+    this.lastPreparedSignalSource = signals;
+    this.lastPreparedSignalFrame = signals.frame;
+    this.lastPreparedSignalTime = signals.time;
+
+    this.signalEnv.time = signals.time;
+    this.signalEnv.frame = signals.frame;
+    this.signalEnv.fps = signals.fps;
+    this.signalEnv.bass = signals.bass;
+    this.signalEnv.mid = signals.mid;
+    this.signalEnv.mids = signals.mids;
+    this.signalEnv.treb = signals.treb;
+    this.signalEnv.treble = signals.treble;
+    this.signalEnv.bass_att = signals.bass_att;
+    this.signalEnv.mid_att = signals.mid_att;
+    this.signalEnv.mids_att = signals.mids_att;
+    this.signalEnv.treb_att = signals.treb_att;
+    this.signalEnv.treble_att = signals.treble_att;
+    this.signalEnv.bassAtt = signals.bassAtt;
+    this.signalEnv.midsAtt = signals.midsAtt;
+    this.signalEnv.trebleAtt = signals.trebleAtt;
+    this.signalEnv.beat = signals.beat;
+    this.signalEnv.beat_pulse = signals.beat_pulse;
+    this.signalEnv.beatPulse = signals.beatPulse;
+    this.signalEnv.rms = signals.rms;
+    this.signalEnv.vol = signals.vol;
+    this.signalEnv.music = signals.music;
+    this.signalEnv.weighted_energy = signals.weightedEnergy;
+    this.signalEnv.progress = signals.frame;
+  }
+
   private createEnv(
     signals: MilkdropRuntimeSignals,
     extra: Record<string, number> = {},
   ) {
+    this.prepareSignalEnv(signals);
+    const env = Object.create(this.signalEnv) as MutableState;
+    Object.assign(env, extra);
+    return env;
+  }
+
+  private createFlatEnv(
+    signals: MilkdropRuntimeSignals,
+    extra: Record<string, number> = {},
+  ) {
+    this.prepareSignalEnv(signals);
     return {
       ...this.state,
       ...this.registers,
       ...extra,
-      time: signals.time,
-      frame: signals.frame,
-      fps: signals.fps,
-      bass: signals.bass,
-      mid: signals.mid,
-      mids: signals.mids,
-      treb: signals.treb,
-      treble: signals.treble,
-      bass_att: signals.bass_att,
-      mid_att: signals.mid_att,
-      mids_att: signals.mids_att,
-      treb_att: signals.treb_att,
-      treble_att: signals.treble_att,
-      bassAtt: signals.bassAtt,
-      midsAtt: signals.midsAtt,
-      trebleAtt: signals.trebleAtt,
-      beat: signals.beat,
-      beat_pulse: signals.beat_pulse,
-      beatPulse: signals.beatPulse,
-      rms: signals.rms,
-      vol: signals.vol,
-      music: signals.music,
-      weighted_energy: signals.weightedEnergy,
-      progress: signals.frame,
-      pi: Math.PI,
-      e: Math.E,
+      ...this.signalEnv,
     };
   }
 
@@ -461,7 +521,7 @@ class MilkdropPresetVM implements MilkdropVM {
       preset: this.preset,
       state: this.state,
       signals,
-      createEnv: this.createEnv.bind(this),
+      createEnv: this.createFlatEnv.bind(this),
     });
 
     let variablesSnapshot: Record<string, number> | null = null;

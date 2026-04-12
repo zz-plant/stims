@@ -180,6 +180,37 @@ per_pixel_1=rot = rot + 0.001;
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
   });
 
+  test('refreshes runtime signal lookups when the same signals object is reused', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Signal Refresh
+per_frame_1=q1 = q1 + beat_pulse;
+per_frame_2=wave_a = beat_pulse;
+      `.trim(),
+      { id: 'signal-refresh' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    const signals = makeSignals({ frame: 1, time: 0.1, beatPulse: 0.1 });
+
+    const first = vm.step(signals);
+    const firstQ1 = first.variables.q1;
+    const firstAlpha = first.mainWave.alpha;
+
+    signals.frame = 2;
+    signals.time = 0.2;
+    signals.beat = 0;
+    signals.beatPulse = 0.35;
+    signals.beat_pulse = 0.35;
+
+    const second = vm.step(signals);
+
+    expect(firstQ1).toBeCloseTo(0.1, 6);
+    expect(second.variables.q1).toBeCloseTo(0.45, 6);
+    expect(firstAlpha).toBeCloseTo(0.1, 6);
+    expect(second.mainWave.alpha).toBeCloseTo(0.35, 6);
+  });
+
   test('preserves 512-sample custom waves for imported projectM presets', () => {
     const preset = compileMilkdropPresetSource(
       `
