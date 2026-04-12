@@ -8,7 +8,10 @@ import type {
 import type { FrequencyAnalyser } from '../assets/js/core/audio-handler.ts';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../assets/js/core/audio-handler.ts';
 import { resetRenderPreferencesState } from '../assets/js/core/render-preferences.ts';
-import type { RendererInitConfig } from '../assets/js/core/renderer-setup.ts';
+import type {
+  RendererInitConfig,
+  RendererInitResult,
+} from '../assets/js/core/renderer-setup.ts';
 import {
   acquireAudioHandle,
   resetAudioPool,
@@ -21,6 +24,7 @@ import {
   subscribeToRendererRuntimeControls,
 } from '../assets/js/core/services/render-service.ts';
 import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
+import { flushTasks } from './test-helpers.ts';
 
 describe('render-service pooling', () => {
   beforeEach(() => {
@@ -189,7 +193,7 @@ describe('render-service pooling', () => {
     expect(setPixelRatioMock).toHaveBeenLastCalledWith(1.35);
   });
 
-  test('refreshes the active webgpu renderer before each animation frame', async () => {
+  test('keeps the active webgpu renderer stable across animation frames', async () => {
     const originalRequestAnimationFrame = window.requestAnimationFrame;
     const originalCancelAnimationFrame = window.cancelAnimationFrame;
     const originalGlobalRequestAnimationFrame =
@@ -232,6 +236,68 @@ describe('render-service pooling', () => {
         }
       };
 
+      const stableRenderer = {
+        setPixelRatio: mock(),
+        setSize: mock(),
+        setAnimationLoop: mock(),
+        render: mock(),
+        dispose: mock(),
+        toneMappingExposure: 1,
+      } as unknown as WebGLRenderer;
+      const initRendererImpl = mock(async () => ({
+        renderer: stableRenderer,
+        backend: 'webgpu' as const,
+        adapter: null,
+        device: null,
+        maxPixelRatio: 1.75,
+        renderScale: 1,
+        adaptiveMaxPixelRatioMultiplier: 1,
+        adaptiveRenderScaleMultiplier: 1,
+        adaptiveDensityMultiplier: 1,
+        exposure: 1,
+      }));
+
+      const handle = await requestRenderer({ initRendererImpl });
+      const frameCallback = mock(() => {
+        handle.renderer.render({} as never, {} as never);
+      });
+
+      expect(initRendererImpl).toHaveBeenCalledTimes(1);
+      expect(handle.renderer).not.toBe(stableRenderer);
+
+      handle.renderer.setAnimationLoop?.(frameCallback);
+      await waitForScheduledFrame();
+      await flushFrame(16);
+      await waitForScheduledFrame();
+      await flushFrame(32);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(initRendererImpl).toHaveBeenCalledTimes(1);
+      expect(stableRenderer.dispose).toHaveBeenCalledTimes(0);
+      expect(stableRenderer.render).toHaveBeenCalledTimes(2);
+      expect(frameCallback).toHaveBeenCalledTimes(2);
+
+      handle.renderer.setAnimationLoop?.(null);
+    } finally {
+      window.requestAnimationFrame = originalRequestAnimationFrame;
+      window.cancelAnimationFrame = originalCancelAnimationFrame;
+      globalThis.requestAnimationFrame = originalGlobalRequestAnimationFrame;
+      globalThis.cancelAnimationFrame = originalGlobalCancelAnimationFrame;
+    }
+  });
+
+  test('recovers the active webgpu renderer after device loss', async () => {
+    const originalConsoleWarn = console.warn;
+    const consoleWarn = mock(() => {});
+    console.warn = consoleWarn;
+
+    try {
+      let resolveLost: ((value: { message: string }) => void) | undefined;
+      const lost = new Promise<{ message: string }>((resolve) => {
+        resolveLost = resolve;
+      });
+
       const firstRenderer = {
         setPixelRatio: mock(),
         setSize: mock(),
@@ -248,61 +314,54 @@ describe('render-service pooling', () => {
         dispose: mock(),
         toneMappingExposure: 1,
       } as unknown as WebGLRenderer;
-      const thirdRenderer = {
-        setPixelRatio: mock(),
-        setSize: mock(),
-        setAnimationLoop: mock(),
-        render: mock(),
-        dispose: mock(),
-        toneMappingExposure: 1,
-      } as unknown as WebGLRenderer;
-
-      const initResults = [firstRenderer, secondRenderer, thirdRenderer].map(
-        (renderer) => ({
-          renderer,
+      const initResults: RendererInitResult[] = [
+        {
+          renderer: firstRenderer,
           backend: 'webgpu' as const,
-          adapter: null,
-          device: null,
+          adapter: {
+            requestDevice: mock(async () => ({ label: 'first-next' })),
+          } as unknown as GPUAdapter,
+          device: { lost } as unknown as GPUDevice,
           maxPixelRatio: 1.75,
           renderScale: 1,
           adaptiveMaxPixelRatioMultiplier: 1,
           adaptiveRenderScaleMultiplier: 1,
           adaptiveDensityMultiplier: 1,
           exposure: 1,
-        }),
-      );
+        },
+        {
+          renderer: secondRenderer,
+          backend: 'webgpu' as const,
+          adapter: {
+            requestDevice: mock(async () => ({ label: 'second-next' })),
+          } as unknown as GPUAdapter,
+          device: {
+            lost: new Promise(() => {}),
+          } as unknown as GPUDevice,
+          maxPixelRatio: 1.75,
+          renderScale: 1,
+          adaptiveMaxPixelRatioMultiplier: 1,
+          adaptiveRenderScaleMultiplier: 1,
+          adaptiveDensityMultiplier: 1,
+          exposure: 1,
+        },
+      ];
       const initRendererImpl = mock(async () => initResults.shift() ?? null);
 
       const handle = await requestRenderer({ initRendererImpl });
-      const frameCallback = mock(() => {
-        handle.renderer.render({} as never, {} as never);
-      });
-
       expect(initRendererImpl).toHaveBeenCalledTimes(1);
-      expect(handle.renderer).not.toBe(firstRenderer);
+      const triggerLost = resolveLost;
+      triggerLost?.({ message: 'mock device loss' });
+      await flushTasks(4);
 
-      handle.renderer.setAnimationLoop?.(frameCallback);
-      await waitForScheduledFrame();
-      await flushFrame(16);
-      await waitForScheduledFrame();
-      await flushFrame(32);
-      await Promise.resolve();
-      await Promise.resolve();
+      handle.renderer.render({} as never, {} as never);
 
-      expect(initRendererImpl).toHaveBeenCalledTimes(3);
+      expect(initRendererImpl).toHaveBeenCalledTimes(2);
       expect(firstRenderer.dispose).toHaveBeenCalledTimes(1);
-      expect(secondRenderer.dispose).toHaveBeenCalledTimes(1);
-      expect(thirdRenderer.dispose).toHaveBeenCalledTimes(0);
       expect(secondRenderer.render).toHaveBeenCalledTimes(1);
-      expect(thirdRenderer.render).toHaveBeenCalledTimes(1);
-      expect(frameCallback).toHaveBeenCalledTimes(2);
-
-      handle.renderer.setAnimationLoop?.(null);
+      expect(handle.backend).toBe('webgpu');
     } finally {
-      window.requestAnimationFrame = originalRequestAnimationFrame;
-      window.cancelAnimationFrame = originalCancelAnimationFrame;
-      globalThis.requestAnimationFrame = originalGlobalRequestAnimationFrame;
-      globalThis.cancelAnimationFrame = originalGlobalCancelAnimationFrame;
+      console.warn = originalConsoleWarn;
     }
   });
 });
