@@ -30,14 +30,14 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-    const shellHookSource = readFileSync(
+    const sessionHookSource = readFileSync(
       join(
         import.meta.dir,
         '..',
         'assets',
         'js',
         'frontend',
-        'workspace-shell-hooks.ts',
+        'workspace-hooks.ts',
       ),
       'utf8',
     );
@@ -45,7 +45,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(helperSource).toContain('Browse or shuffle presets.');
     expect(helperSource).toContain('Tune only what you need.');
     expect(appSource).toContain("'Start demo, use the mic, or capture a tab.'");
-    expect(shellHookSource).toContain("'Using lighter visual mode.'");
+    expect(sessionHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toMatch(
       /const launchEyebrow = missingRequestedPreset\s*\? 'Recover session'/u,
     );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
 import type {
   PanelState,
@@ -27,7 +27,6 @@ type WorkspaceShellOrchestrationArgs = {
   readinessItems: ReadinessItem[];
   routeState: SessionRouteState;
   setStatusMessage: (message: string | null) => void;
-  showToast: (message: string, tone?: 'info' | 'warn' | 'error') => void;
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
     source: 'demo' | 'microphone' | 'tab' | 'youtube';
@@ -48,7 +47,6 @@ export function useWorkspaceShellOrchestration({
   readinessItems,
   routeState,
   setStatusMessage,
-  showToast,
   startAudioSource,
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
@@ -150,14 +148,6 @@ export function useWorkspaceShellOrchestration({
     () => readinessItems.filter((item) => item.state !== 'ready'),
     [readinessItems],
   );
-
-  useEffect(() => {
-    if (!shellState.runtimeReady || shellState.resolvedBackend !== 'webgl') {
-      return;
-    }
-
-    showToast('Using lighter visual mode.', 'warn');
-  }, [shellState.resolvedBackend, shellState.runtimeReady, showToast]);
 
   const updatePanel = (panel: PanelState) => {
     commitRoute({ ...routeState, panel });

@@ -160,9 +160,7 @@ export function useWorkspaceRouteState() {
   }, []);
 
   const commitRoute = (nextState: SessionRouteState) => {
-    startTransition(() => {
-      setRouteState(nextState);
-    });
+    setRouteState(nextState);
   };
 
   return {
@@ -215,6 +213,7 @@ export function useWorkspaceSessionState({
   const youtubePreviewRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
   const toastTimerRef = useRef<number | null>(null);
+  const webglWarningShownRef = useRef(false);
   const shownToastKeysRef = useRef(new Set<string>());
   const pendingPresetIdRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
@@ -415,6 +414,15 @@ export function useWorkspaceSessionState({
     };
   }, []);
 
+  const clearToastTimer = () => {
+    if (toastTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = null;
+  };
+
   useEffect(() => {
     if (!engineRef.current?.isMounted() || !routeState.collectionTag) {
       return;
@@ -473,12 +481,35 @@ export function useWorkspaceSessionState({
     }
   }, [engineSnapshot?.audioActive, routeState.agentMode]);
 
+  useEffect(() => {
+    if (
+      !engineSnapshot?.runtimeReady ||
+      engineSnapshot.backend !== 'webgl' ||
+      routeState.invalidExperienceSlug ||
+      webglWarningShownRef.current
+    ) {
+      return;
+    }
+
+    webglWarningShownRef.current = true;
+    setToast({ message: 'Using lighter visual mode.', tone: 'warn' });
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 4200);
+  }, [
+    engineSnapshot?.backend,
+    engineSnapshot?.runtimeReady,
+    routeState.invalidExperienceSlug,
+  ]);
+
   const showToast = useEffectEvent(
     (message: string, tone: 'info' | 'warn' | 'error' = 'info') => {
       setToast({ message, tone });
-      if (toastTimerRef.current !== null) {
-        window.clearTimeout(toastTimerRef.current);
-      }
+      clearToastTimer();
       toastTimerRef.current = window.setTimeout(() => {
         setToast(null);
         toastTimerRef.current = null;
@@ -541,7 +572,10 @@ export function useWorkspaceSessionState({
 
   return {
     deferredSearch,
-    dismissToast: () => setToast(null),
+    dismissToast: () => {
+      clearToastTimer();
+      setToast(null);
+    },
     engineAdapterReady,
     engineSnapshot,
     exportPreset: () => {
@@ -571,7 +605,6 @@ export function useWorkspaceSessionState({
     setStatusMessage,
     setYoutubeUrl,
     showExtendedSources,
-    showToast,
     stageRef,
     startAudioSource: async (request: {
       cropTarget?: HTMLElement | null;

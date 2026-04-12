@@ -997,6 +997,7 @@ body[data-page="workspace"] {
   bottom: 20px;
   z-index: 40;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   max-width: min(420px, calc(100vw - 40px));
@@ -1011,6 +1012,11 @@ body[data-page="workspace"] {
   box-shadow:
     0 24px 54px rgba(0, 0, 0, 0.34),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.stims-shell__toast > span {
+  flex: 1 1 220px;
+  min-width: 0;
 }
 
 .stims-shell__toast[data-tone="warn"] {
@@ -1029,6 +1035,7 @@ body[data-page="workspace"] {
   background: transparent;
   color: inherit;
   font: inherit;
+  cursor: pointer;
   text-decoration: underline;
 }
 
@@ -1088,6 +1095,10 @@ body[data-page="workspace"] {
 @media (max-width: 720px) {
   .stims-shell {
     padding: 10px;
+  }
+
+  .stims-shell[data-has-toast="true"] {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
   .stims-shell__content {
@@ -1308,9 +1319,10 @@ body[data-page="workspace"] {
 
   .stims-shell__toast {
     right: 10px;
-    bottom: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
     left: 10px;
     max-width: none;
+    align-items: flex-start;
     padding: 12px;
   }
 }

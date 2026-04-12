@@ -43,7 +43,6 @@ export function StimsWorkspaceApp() {
     setStatusMessage,
     setYoutubeUrl,
     showExtendedSources,
-    showToast,
     stageRef,
     startAudioSource,
     toast,
@@ -87,7 +86,6 @@ export function StimsWorkspaceApp() {
     readinessItems,
     routeState,
     setStatusMessage,
-    showToast,
     startAudioSource,
     youtubePreviewRef,
   });
@@ -151,7 +149,7 @@ export function StimsWorkspaceApp() {
           : 'Open Presets or shuffle.';
 
   return (
-    <div className="stims-shell">
+    <div className="stims-shell" data-has-toast={toast ? 'true' : undefined}>
       <header className="top-nav stims-shell__nav">
         <div className="stims-shell__brand">
           <a href="/" className="stims-shell__logo">
