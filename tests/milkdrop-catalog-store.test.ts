@@ -306,6 +306,57 @@ describe('milkdrop catalog store', () => {
     );
   });
 
+  test('resolves bundled preset aliases from titles and filenames', async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return {
+          ok: true,
+          json: async () => ({
+            presets: [
+              {
+                id: 'rovastar-parallel-universe',
+                title: 'Rovastar - Parallel Universe',
+                file: '/milkdrop-presets/rovastar-parallel-universe.milk',
+              },
+            ],
+          }),
+        };
+      }
+
+      if (url.endsWith('/milkdrop-presets/rovastar-parallel-universe.milk')) {
+        return {
+          ok: true,
+          text: async () => 'title=Rovastar - Parallel Universe\n',
+        };
+      }
+
+      return { ok: false };
+    }) as unknown as typeof fetch;
+
+    const store = createMilkdropCatalogStore({
+      dbName: 'milkdrop-catalog-store-alias-test',
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+
+    await expect(
+      store.getPresetSource('Rovastar / Parallel Universe'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'rovastar-parallel-universe',
+      }),
+    );
+    await expect(
+      store.getPresetSource(
+        '/milkdrop-presets/rovastar-parallel-universe.milk',
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'rovastar-parallel-universe',
+      }),
+    );
+  });
+
   test('falls back to memory storage when indexedDB open stalls', async () => {
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
       const url = String(input);
