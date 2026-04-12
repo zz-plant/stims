@@ -105,21 +105,114 @@ export function WorkspaceLaunchPanel({
       data-audio-controls
       hidden={hidden}
     >
-      <div className="stims-shell__launch-header">
-        <div className="stims-shell__launch-copy">
-          <p className="stims-shell__eyebrow">{launchEyebrow}</p>
-          <h1>{launchTitle}</h1>
-          <p>{launchSummary}</p>
-          {featuredPreset ? (
-            <div className="stims-shell__launch-recommendation">
-              <span className="stims-shell__section-label">Featured</span>
-              <strong>{featuredPreset.title}</strong>
-              <span className="stims-shell__meta-copy">
-                {describePresetMood(featuredPreset)} ·{' '}
-                {formatPresetSupportLabel(featuredPreset)}
-              </span>
-            </div>
-          ) : null}
+      <div className="stims-shell__launch-hero">
+        <div className="stims-shell__launch-header">
+          <div className="stims-shell__launch-copy">
+            <p className="stims-shell__eyebrow">{launchEyebrow}</p>
+            <h1>{launchTitle}</h1>
+            <p>{launchSummary}</p>
+            {featuredPreset ? (
+              <div className="stims-shell__launch-recommendation">
+                <span className="stims-shell__section-label">Featured</span>
+                <strong>{featuredPreset.title}</strong>
+                <span className="stims-shell__meta-copy">
+                  {describePresetMood(featuredPreset)} ·{' '}
+                  {formatPresetSupportLabel(featuredPreset)}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="stims-shell__launch-stack">
+          <div className="stims-shell__launch-actions">
+            <button
+              id="use-demo-audio"
+              data-demo-audio-btn="true"
+              className="cta-button primary stims-shell__action-button"
+              type="button"
+              disabled={!engineReady}
+              onClick={() => onAudioStart('demo')}
+            >
+              <span className="stims-shell__action-label">Start demo</span>
+            </button>
+            <button
+              id="start-audio-btn"
+              data-mic-audio-btn="true"
+              className="cta-button stims-shell__action-button"
+              type="button"
+              disabled={!engineReady}
+              onClick={() => onAudioStart('microphone')}
+            >
+              <span className="stims-shell__action-label">Use mic</span>
+            </button>
+            <button
+              id="use-tab-audio"
+              className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
+              type="button"
+              disabled={!engineReady}
+              onClick={() => onAudioStart('tab')}
+            >
+              <span className="stims-shell__action-label">Capture tab</span>
+            </button>
+          </div>
+
+          <div className="stims-shell__launch-more">
+            <button
+              type="button"
+              className="stims-shell__text-button"
+              onClick={onToggleExtendedSources}
+            >
+              {showExtendedSources ? 'Hide YouTube' : 'YouTube capture'}
+            </button>
+
+            {showExtendedSources ? (
+              <div className="stims-shell__youtube">
+                <label
+                  className="stims-shell__field-label"
+                  htmlFor="youtube-url"
+                >
+                  YouTube capture
+                </label>
+                <div className="stims-shell__youtube-row">
+                  <input
+                    id="youtube-url"
+                    className="stims-shell__input"
+                    type="url"
+                    placeholder="https://youtube.com/watch?v=..."
+                    value={youtubeUrl}
+                    onChange={(event) => onYoutubeUrlChange(event.target.value)}
+                  />
+                  <button
+                    id="load-youtube"
+                    className="cta-button"
+                    type="button"
+                    disabled={!engineReady}
+                    onClick={onLoadYouTube}
+                  >
+                    Load
+                  </button>
+                  <button
+                    id="use-youtube-audio"
+                    className="cta-button"
+                    type="button"
+                    disabled={!engineReady || !youtubeReady}
+                    onClick={() => onAudioStart('youtube')}
+                  >
+                    Capture YouTube
+                  </button>
+                </div>
+                <div
+                  id="youtube-player-container"
+                  ref={youtubePreviewRef}
+                  className="stims-shell__youtube-preview"
+                  hidden
+                >
+                  <div id="workspace-youtube-player"></div>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -160,92 +253,6 @@ export function WorkspaceLaunchPanel({
           </div>
         </section>
       ) : null}
-
-      <div className="stims-shell__launch-actions">
-        <button
-          id="use-demo-audio"
-          data-demo-audio-btn="true"
-          className="cta-button primary stims-shell__action-button"
-          type="button"
-          disabled={!engineReady}
-          onClick={() => onAudioStart('demo')}
-        >
-          <span className="stims-shell__action-label">Start demo</span>
-        </button>
-        <button
-          id="start-audio-btn"
-          data-mic-audio-btn="true"
-          className="cta-button stims-shell__action-button"
-          type="button"
-          disabled={!engineReady}
-          onClick={() => onAudioStart('microphone')}
-        >
-          <span className="stims-shell__action-label">Use mic</span>
-        </button>
-        <button
-          id="use-tab-audio"
-          className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
-          type="button"
-          disabled={!engineReady}
-          onClick={() => onAudioStart('tab')}
-        >
-          <span className="stims-shell__action-label">Capture tab</span>
-        </button>
-      </div>
-
-      <div className="stims-shell__launch-more">
-        <button
-          type="button"
-          className="stims-shell__text-button"
-          onClick={onToggleExtendedSources}
-        >
-          {showExtendedSources ? 'Hide YouTube' : 'YouTube capture'}
-        </button>
-
-        {showExtendedSources ? (
-          <div className="stims-shell__youtube">
-            <label className="stims-shell__field-label" htmlFor="youtube-url">
-              YouTube capture
-            </label>
-            <div className="stims-shell__youtube-row">
-              <input
-                id="youtube-url"
-                className="stims-shell__input"
-                type="url"
-                placeholder="https://youtube.com/watch?v=..."
-                value={youtubeUrl}
-                onChange={(event) => onYoutubeUrlChange(event.target.value)}
-              />
-              <button
-                id="load-youtube"
-                className="cta-button"
-                type="button"
-                disabled={!engineReady}
-                onClick={onLoadYouTube}
-              >
-                Load
-              </button>
-              <button
-                id="use-youtube-audio"
-                className="cta-button"
-                type="button"
-                disabled={!engineReady || !youtubeReady}
-                onClick={() => onAudioStart('youtube')}
-              >
-                Capture YouTube
-              </button>
-            </div>
-            <div
-              id="youtube-player-container"
-              ref={youtubePreviewRef}
-              className="stims-shell__youtube-preview"
-              hidden
-            >
-              <div id="workspace-youtube-player"></div>
-            </div>
-          </div>
-        ) : null}
-      </div>
 
       {readinessAlerts.length > 0 ? (
         <section className="stims-shell__readiness-chips">
@@ -320,54 +327,63 @@ export function WorkspaceStagePanel({
         <div className="stims-shell__stage-frame">
           <div ref={stageRef} className="stims-shell__stage-root" />
           {!missingRequestedPreset && !invalidExperienceSlug ? (
-            <div className="stims-shell__stage-quick-actions">
-              <p className="stims-shell__section-label">Quick actions</p>
-              <div className="stims-shell__stage-action-grid">
-                <button
-                  type="button"
-                  className="stims-shell__stage-action"
-                  onClick={onOpenBrowse}
-                >
-                  <UiIcon
-                    name="sparkles"
-                    className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
-                  />
-                  <span>Presets</span>
-                </button>
-                <button
-                  type="button"
-                  className="stims-shell__stage-action"
-                  onClick={onShufflePreset}
-                >
-                  <UiIcon
-                    name="pulse"
-                    className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
-                  />
-                  <span>Shuffle</span>
-                </button>
-                <button
-                  type="button"
-                  className="stims-shell__stage-action"
-                  onClick={onOpenSettings}
-                >
-                  <UiIcon
-                    name="sliders"
-                    className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
-                  />
-                  <span>Settings</span>
-                </button>
-                <button
-                  type="button"
-                  className="stims-shell__stage-action"
-                  onClick={onShowCurrentLink}
-                >
-                  <UiIcon
-                    name="link"
-                    className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
-                  />
-                  <span>Copy link</span>
-                </button>
-              </div>
+            <div
+              className="stims-shell__stage-dock"
+              role="toolbar"
+              aria-label="Stage tools"
+            >
+              <button
+                type="button"
+                className="stims-shell__stage-tool"
+                aria-label="Open presets"
+                title="Open presets"
+                onClick={onOpenBrowse}
+              >
+                <UiIcon
+                  name="sparkles"
+                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                />
+                <span className="sr-only">Open presets</span>
+              </button>
+              <button
+                type="button"
+                className="stims-shell__stage-tool"
+                aria-label="Shuffle preset"
+                title="Shuffle preset"
+                onClick={onShufflePreset}
+              >
+                <UiIcon
+                  name="pulse"
+                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                />
+                <span className="sr-only">Shuffle preset</span>
+              </button>
+              <button
+                type="button"
+                className="stims-shell__stage-tool"
+                aria-label="Open settings"
+                title="Open settings"
+                onClick={onOpenSettings}
+              >
+                <UiIcon
+                  name="sliders"
+                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                />
+                <span className="sr-only">Open settings</span>
+              </button>
+              <button
+                type="button"
+                className="stims-shell__stage-tool"
+                aria-label="Copy link"
+                title="Copy link"
+                onClick={onShowCurrentLink}
+              >
+                <UiIcon
+                  name="link"
+                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                />
+                <span className="sr-only">Copy link</span>
+              </button>
             </div>
           ) : null}
           {invalidExperienceSlug ? (

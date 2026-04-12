@@ -292,8 +292,8 @@ body[data-page="workspace"] {
 .stims-shell__sheet-tab:focus-visible,
 .stims-shell__nav-link:focus-visible,
 .stims-shell__text-button:focus-visible,
+.stims-shell__stage-tool:focus-visible,
 .stims-shell__starter-card:focus-visible,
-.stims-shell__stage-action:focus-visible,
 .stims-shell__icon-button:focus-visible,
 .stims-shell .cta-button:focus-visible,
 .stims-shell__input:focus,
@@ -335,8 +335,24 @@ body[data-page="workspace"] {
   padding: 20px;
 }
 
+.stims-shell__launch-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.9fr);
+  gap: 20px;
+  align-items: end;
+}
+
 .stims-shell__launch-header {
   display: block;
+  min-width: 0;
+}
+
+.stims-shell__launch-stack {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 28rem;
+  justify-self: end;
 }
 
 .stims-shell__launch-copy h1,
@@ -721,43 +737,26 @@ body[data-page="workspace"] {
   height: 100%;
 }
 
-.stims-shell__stage-quick-actions {
+.stims-shell__stage-dock {
   position: absolute;
   top: 18px;
-  left: 18px;
+  right: 18px;
   z-index: 2;
-  display: grid;
-  gap: 10px;
-  width: min(26rem, calc(100% - 36px));
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: var(--stims-radius-card);
-  background: linear-gradient(
-    180deg,
-    rgba(12, 16, 26, 0.86),
-    rgba(8, 12, 20, 0.8)
-  );
-  box-shadow:
-    0 20px 44px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   backdrop-filter: blur(16px);
 }
 
-.stims-shell__stage-action-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.stims-shell__stage-action {
+.stims-shell__stage-tool {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
   border: 1px solid var(--stims-line);
-  border-radius: var(--stims-radius-control);
+  border-radius: 999px;
   background: var(--stims-control-fill);
   color: inherit;
   font: inherit;
@@ -765,13 +764,21 @@ body[data-page="workspace"] {
   transition:
     transform 160ms ease,
     border-color 180ms ease,
-    background 180ms ease;
+    background 180ms ease,
+    box-shadow 180ms ease;
 }
 
-.stims-shell__stage-action:hover {
+.stims-shell__stage-tool:hover {
   transform: translateY(-1px);
   border-color: var(--stims-line-strong);
   background: var(--stims-control-fill-hover);
+  box-shadow:
+    0 16px 26px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.stims-shell__stage-tool-icon {
+  color: currentColor;
 }
 
 .stims-shell__stage-recovery {
@@ -880,9 +887,13 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  max-width: 42rem;
+  max-width: none;
+}
+
+.stims-shell__launch-actions > :first-child {
+  grid-column: 1 / -1;
 }
 
 .stims-shell__launch-actions > * {
@@ -1429,6 +1440,16 @@ body[data-page="workspace"] {
     grid-template-columns: 1fr;
   }
 
+  .stims-shell__launch-hero {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stims-shell__launch-stack {
+    max-width: none;
+    justify-self: stretch;
+  }
+
   .stims-shell__launch-copy h1,
   .stims-shell__stage-header h2,
   .stims-shell__sheet-heading h2 {
@@ -1464,8 +1485,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__browse-toolbar,
-  .stims-shell__starter-grid,
-  .stims-shell__stage-action-grid {
+  .stims-shell__starter-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1536,11 +1556,30 @@ body[data-page="workspace"] {
     border-radius: 14px;
   }
 
-  .stims-shell__stage-quick-actions {
-    top: 12px;
+  .stims-shell__stage-dock {
+    top: auto;
+    right: 12px;
+    bottom: 12px;
     left: 12px;
-    width: calc(100% - 24px);
-    padding: 12px;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: linear-gradient(
+      180deg,
+      rgba(12, 16, 26, 0.88),
+      rgba(8, 12, 20, 0.82)
+    );
+    box-shadow:
+      0 20px 44px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .stims-shell__stage-tool {
+    flex: 1 1 0;
+    width: auto;
+    height: 44px;
   }
 
   .stims-shell__preset-list {
