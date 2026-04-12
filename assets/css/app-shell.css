@@ -329,15 +329,12 @@ body[data-page="workspace"] {
 
 .stims-shell__launch {
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  gap: 16px;
+  padding: 20px;
 }
 
 .stims-shell__launch-header {
-  display: grid;
-  gap: 14px;
-  align-items: start;
-  grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
+  display: block;
 }
 
 .stims-shell__launch-copy h1,
@@ -365,8 +362,8 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-copy {
   display: grid;
-  gap: 10px;
-  max-width: 56rem;
+  gap: 12px;
+  max-width: 42rem;
 }
 
 .stims-shell__launch-copy p:last-child {
@@ -377,41 +374,32 @@ body[data-page="workspace"] {
   line-height: 1.48;
 }
 
-.stims-shell__launch-spotlight {
-  display: grid;
-  gap: 8px;
-  padding: 18px;
-  border: 1px solid var(--stims-line);
-  border-radius: var(--stims-radius-card);
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(119, 201, 255, 0.16),
-      transparent 38%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.07),
-      rgba(255, 255, 255, 0.03)
-    );
-  box-shadow: var(--stims-shadow-soft);
+.stims-shell__launch-recommendation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: calc(var(--stims-radius-control) + 2px);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.stims-shell__launch-spotlight strong {
+.stims-shell__launch-recommendation .stims-shell__section-label {
+  margin: 0;
+}
+
+.stims-shell__launch-recommendation strong {
   color: var(--stims-ink-strong);
   font-family: "Space Grotesk", sans-serif;
-  font-size: 1.12rem;
+  font-size: 1rem;
 }
 
 .stims-shell__launch-note {
   margin: -4px 0 0;
   color: var(--stims-muted);
   line-height: 1.5;
-}
-
-.stims-shell__launch-action-groups {
-  display: grid;
-  gap: 14px;
 }
 
 .stims-shell__stage-section {
@@ -486,8 +474,8 @@ body[data-page="workspace"] {
 .stims-shell__preset-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px;
+  gap: 5px;
+  padding: 12px 14px;
   text-align: left;
   border: 1px solid var(--stims-line);
   border-radius: var(--stims-radius-card);
@@ -663,23 +651,32 @@ body[data-page="workspace"] {
 .stims-shell__readiness-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stims-shell__readiness-chip {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  padding: 14px;
-  border: 1px solid var(--stims-line);
-  border-radius: var(--stims-radius-card);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.025)
-  );
-  flex: 1 1 210px;
-  box-shadow: var(--stims-shadow-soft);
+  padding: 8px 12px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  flex: 0 1 auto;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.stims-shell__readiness-chip strong,
+.stims-shell__preset-tech {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stims-shell__readiness-chip span {
+  color: var(--stims-muted);
+  font-size: 0.9rem;
 }
 
 .stims-shell__readiness-chip[data-state="ready"] strong {
@@ -704,26 +701,88 @@ body[data-page="workspace"] {
   display: block;
 }
 
-.stims-shell__action-button {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-}
-
-.stims-shell__action-button--secondary {
-  min-height: 52px;
-}
-
 .stims-shell__action-label {
   font-weight: 700;
 }
 
-.stims-shell__action-hint {
-  color: color-mix(in srgb, currentColor 72%, transparent);
-  font-size: 0.84rem;
-  letter-spacing: 0.01em;
+.stims-shell__action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.stims-shell__launch-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 42rem;
+}
+
+.stims-shell__launch-actions > * {
+  width: 100%;
+}
+
+.stims-shell__preset-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.stims-shell__preset-tech {
+  padding: 4px 8px;
+  border: 1px solid var(--stims-line-soft);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: color-mix(in srgb, var(--stims-cool) 58%, var(--stims-ink));
+}
+
+.stims-shell__settings-advanced {
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--stims-radius-card);
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stims-shell__settings-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.stims-shell__settings-summary::-webkit-details-marker {
+  display: none;
+}
+
+.stims-shell__settings-summary::after {
+  content: "+";
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--stims-ink-strong);
+}
+
+.stims-shell__settings-advanced[open] .stims-shell__settings-summary::after {
+  content: "−";
+}
+
+.stims-shell__settings-advanced-body {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--stims-line-soft);
+}
+
+.stims-shell__action-button--secondary {
+  min-height: 52px;
 }
 
 .stims-shell__text-button,
@@ -807,24 +866,25 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__settings-callout {
-  display: grid;
+  display: flex;
+  align-items: center;
   gap: 10px;
-  padding: 16px 18px;
+  padding: 10px 12px;
   border: 1px solid rgba(125, 224, 162, 0.18);
   border-radius: var(--stims-radius-card);
   background: linear-gradient(
     180deg,
-    rgba(125, 224, 162, 0.12),
-    rgba(119, 201, 255, 0.06)
+    rgba(125, 224, 162, 0.1),
+    rgba(119, 201, 255, 0.04)
   );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 14px 28px rgba(0, 0, 0, 0.16);
+    0 10px 22px rgba(0, 0, 0, 0.14);
 }
 
 .stims-shell__settings-callout strong {
   color: var(--stims-ink-strong);
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .stims-shell__settings-callout p {

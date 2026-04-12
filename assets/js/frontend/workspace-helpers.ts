@@ -260,6 +260,11 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
   return 'Lighter mode';
 }
 
+export function getPresetCardSupportLabel(entry: PresetCatalogEntry) {
+  const label = formatPresetSupportLabel(entry);
+  return label === 'Adjusted preset' ? null : label;
+}
+
 export function mapRuntimeCatalogEntry(
   entry: MilkdropCatalogEntry,
 ): PresetCatalogEntry {

@@ -12,6 +12,7 @@ import {
   describePresetMood,
   formatAudioSourceLabel,
   formatPresetSupportLabel,
+  getPresetCardSupportLabel,
   getQualityImpactSummary,
   getSettingsPresetOptions,
   getToolDescription,
@@ -100,53 +101,49 @@ export function WorkspaceLaunchPanel({
           <p className="stims-shell__eyebrow">{launchEyebrow}</p>
           <h1>{launchTitle}</h1>
           <p>{launchSummary}</p>
+          {featuredPreset ? (
+            <div className="stims-shell__launch-recommendation">
+              <span className="stims-shell__section-label">Featured</span>
+              <strong>{featuredPreset.title}</strong>
+              <span className="stims-shell__meta-copy">
+                {describePresetMood(featuredPreset)} ·{' '}
+                {formatPresetSupportLabel(featuredPreset)}
+              </span>
+            </div>
+          ) : null}
         </div>
-        {featuredPreset ? (
-          <aside className="stims-shell__launch-spotlight">
-            <p className="stims-shell__section-label">Featured</p>
-            <strong>{featuredPreset.title}</strong>
-            <span className="stims-shell__meta-copy">
-              {describePresetMood(featuredPreset)} ·{' '}
-              {formatPresetSupportLabel(featuredPreset)}
-            </span>
-          </aside>
-        ) : null}
       </div>
 
-      <div className="stims-shell__launch-action-groups">
-        <div className="stims-shell__launch-actions stims-shell__launch-actions--primary">
-          <button
-            id="use-demo-audio"
-            data-demo-audio-btn="true"
-            className="cta-button primary stims-shell__action-button"
-            type="button"
-            disabled={!engineReady}
-            onClick={() => onAudioStart('demo')}
-          >
-            <span className="stims-shell__action-label">Start demo</span>
-          </button>
-          <button
-            id="start-audio-btn"
-            data-mic-audio-btn="true"
-            className="cta-button stims-shell__action-button"
-            type="button"
-            disabled={!engineReady}
-            onClick={() => onAudioStart('microphone')}
-          >
-            <span className="stims-shell__action-label">Use mic</span>
-          </button>
-        </div>
-        <div className="stims-shell__launch-actions stims-shell__launch-actions--secondary">
-          <button
-            id="use-tab-audio"
-            className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
-            type="button"
-            disabled={!engineReady}
-            onClick={() => onAudioStart('tab')}
-          >
-            <span className="stims-shell__action-label">Capture tab</span>
-          </button>
-        </div>
+      <div className="stims-shell__launch-actions">
+        <button
+          id="use-demo-audio"
+          data-demo-audio-btn="true"
+          className="cta-button primary stims-shell__action-button"
+          type="button"
+          disabled={!engineReady}
+          onClick={() => onAudioStart('demo')}
+        >
+          <span className="stims-shell__action-label">Start demo</span>
+        </button>
+        <button
+          id="start-audio-btn"
+          data-mic-audio-btn="true"
+          className="cta-button stims-shell__action-button"
+          type="button"
+          disabled={!engineReady}
+          onClick={() => onAudioStart('microphone')}
+        >
+          <span className="stims-shell__action-label">Use mic</span>
+        </button>
+        <button
+          id="use-tab-audio"
+          className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
+          type="button"
+          disabled={!engineReady}
+          onClick={() => onAudioStart('tab')}
+        >
+          <span className="stims-shell__action-label">Capture tab</span>
+        </button>
       </div>
 
       <div className="stims-shell__launch-more">
@@ -404,27 +401,35 @@ function BrowseSheetPanel({
         <p className="stims-shell__meta-copy">{catalogError}</p>
       ) : null}
       <ul className="stims-shell__preset-list">
-        {filteredCatalog.map((entry) => (
-          <li key={entry.id}>
-            <button
-              type="button"
-              className="stims-shell__preset-card"
-              data-active={String(entry.id === currentPresetId)}
-              onClick={() => onPresetSelection(entry.id)}
-            >
-              <span className="stims-shell__preset-title">{entry.title}</span>
-              <span className="stims-shell__preset-vibe">
-                {describePresetMood(entry)}
-              </span>
-              <span className="stims-shell__preset-meta">
-                {entry.author || 'Unknown author'}
-              </span>
-              <span className="stims-shell__preset-tech">
-                {formatPresetSupportLabel(entry)}
-              </span>
-            </button>
-          </li>
-        ))}
+        {filteredCatalog.map((entry) => {
+          const supportLabel = getPresetCardSupportLabel(entry);
+
+          return (
+            <li key={entry.id}>
+              <button
+                type="button"
+                className="stims-shell__preset-card"
+                data-active={String(entry.id === currentPresetId)}
+                onClick={() => onPresetSelection(entry.id)}
+              >
+                <span className="stims-shell__preset-title">{entry.title}</span>
+                <span className="stims-shell__preset-vibe">
+                  {describePresetMood(entry)}
+                </span>
+                <span className="stims-shell__preset-meta-row">
+                  <span className="stims-shell__preset-meta">
+                    {entry.author || 'Unknown author'}
+                  </span>
+                  {supportLabel ? (
+                    <span className="stims-shell__preset-tech">
+                      {supportLabel}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -510,47 +515,57 @@ function SettingsSheetPanel({
         <span>Allow motion controls</span>
       </label>
 
-      <p className="stims-shell__section-label">Advanced tuning</p>
+      <details className="stims-shell__settings-advanced">
+        <summary className="stims-shell__settings-summary">
+          <span>Advanced tuning</span>
+          <span className="stims-shell__meta-copy">
+            Sharpness and detail limits
+          </span>
+        </summary>
+        <div className="stims-shell__settings-advanced-body">
+          <label className="stims-shell__field-label" htmlFor="render-scale">
+            Sharpness
+          </label>
+          <input
+            id="render-scale"
+            type="range"
+            min="0.6"
+            max="1.4"
+            step="0.05"
+            value={renderPreferences.renderScale ?? 1}
+            onChange={(event) =>
+              onRenderPreferenceChange({
+                renderScale: Number.parseFloat(event.target.value),
+              })
+            }
+          />
+          <p className="stims-shell__meta-copy">
+            Current sharpness: {(renderPreferences.renderScale ?? 1).toFixed(2)}
+            x
+          </p>
 
-      <label className="stims-shell__field-label" htmlFor="render-scale">
-        Sharpness
-      </label>
-      <input
-        id="render-scale"
-        type="range"
-        min="0.6"
-        max="1.4"
-        step="0.05"
-        value={renderPreferences.renderScale ?? 1}
-        onChange={(event) =>
-          onRenderPreferenceChange({
-            renderScale: Number.parseFloat(event.target.value),
-          })
-        }
-      />
-      <p className="stims-shell__meta-copy">
-        Current sharpness: {(renderPreferences.renderScale ?? 1).toFixed(2)}x
-      </p>
-
-      <label className="stims-shell__field-label" htmlFor="max-pixel-ratio">
-        Detail limit
-      </label>
-      <input
-        id="max-pixel-ratio"
-        type="range"
-        min="0.75"
-        max="3"
-        step="0.05"
-        value={renderPreferences.maxPixelRatio ?? 1.5}
-        onChange={(event) =>
-          onRenderPreferenceChange({
-            maxPixelRatio: Number.parseFloat(event.target.value),
-          })
-        }
-      />
-      <p className="stims-shell__meta-copy">
-        Current limit: {(renderPreferences.maxPixelRatio ?? 1.5).toFixed(2)}x
-      </p>
+          <label className="stims-shell__field-label" htmlFor="max-pixel-ratio">
+            Detail limit
+          </label>
+          <input
+            id="max-pixel-ratio"
+            type="range"
+            min="0.75"
+            max="3"
+            step="0.05"
+            value={renderPreferences.maxPixelRatio ?? 1.5}
+            onChange={(event) =>
+              onRenderPreferenceChange({
+                maxPixelRatio: Number.parseFloat(event.target.value),
+              })
+            }
+          />
+          <p className="stims-shell__meta-copy">
+            Current limit: {(renderPreferences.maxPixelRatio ?? 1.5).toFixed(2)}
+            x
+          </p>
+        </div>
+      </details>
     </div>
   );
 }
