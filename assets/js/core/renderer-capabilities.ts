@@ -130,6 +130,7 @@ let cachedCapabilities: RendererCapabilities | null = null;
 let cachedEnvironmentKey: unknown = null;
 let telemetryHandler: RendererTelemetryHandler | null = null;
 let telemetryReportedKey: unknown = null;
+const observedCapabilityDevices = new WeakSet<GPUDevice>();
 
 const buildFallback = (
   fallbackReason: string,
@@ -389,6 +390,33 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
   } satisfies WebGPUCapabilitySummary;
 }
 
+function observeCapabilityDevice(device: GPUDevice) {
+  if (observedCapabilityDevices.has(device)) {
+    return;
+  }
+  observedCapabilityDevices.add(device);
+  void device.lost
+    ?.then((info) => {
+      observedCapabilityDevices.delete(device);
+      const message =
+        info &&
+        typeof info === 'object' &&
+        'message' in info &&
+        typeof info.message === 'string' &&
+        info.message.trim().length > 0
+          ? `WebGPU device was lost (${info.message.trim()}).`
+          : 'WebGPU device was lost.';
+      console.warn(message);
+      rememberRendererFallback(message, {
+        backend: getFallbackBackend(),
+        shouldRetryWebGPU: true,
+      });
+    })
+    .catch(() => {
+      observedCapabilityDevices.delete(device);
+    });
+}
+
 export function getRendererOptimizationSupport(
   capabilities: RendererCapabilities | null | undefined,
 ): RendererOptimizationSupport {
@@ -552,6 +580,8 @@ async function probeRendererCapabilities({
         }),
       );
     }
+
+    observeCapabilityDevice(device);
 
     return cacheResult({
       preferredBackend: 'webgpu',

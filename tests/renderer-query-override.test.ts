@@ -4,6 +4,7 @@ import {
   setWebGPUCompatibilityGapOverride,
   shouldPreferWebGLForKnownCompatibilityGaps,
 } from '../assets/js/core/renderer-query-override.ts';
+import { shouldUseSafeMilkdropWebGpuPath } from '../assets/js/milkdrop/webgpu-query-override.ts';
 import { replaceProperty } from './test-helpers.ts';
 
 let restoreLocation = () => {};
@@ -51,4 +52,20 @@ test('explicit user WebGPU override bypasses the live visualizer webgl preferenc
   setWebGPUCompatibilityGapOverride(true);
 
   expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(false);
+});
+
+test('safe MilkDrop WebGPU path stays disabled for certification sessions', () => {
+  expect(
+    shouldUseSafeMilkdropWebGpuPath(
+      new URL('http://localhost/?renderer=webgpu&corpus=certification'),
+    ),
+  ).toBe(false);
+});
+
+test('safe MilkDrop WebGPU path stays enabled for live query-forced sessions', () => {
+  expect(
+    shouldUseSafeMilkdropWebGpuPath(
+      new URL('http://localhost/?renderer=webgpu'),
+    ),
+  ).toBe(true);
 });

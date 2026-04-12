@@ -52,6 +52,7 @@ export type RendererInitConfig = {
   adaptiveRenderScaleMultiplier?: number;
   adaptiveDensityMultiplier?: number;
   webgpuInitTimeoutMs?: number;
+  forceRetryCapabilities?: boolean;
 };
 
 async function loadWebGPURenderer() {
@@ -99,6 +100,7 @@ export async function initRenderer(
     adaptiveRenderScaleMultiplier = 1,
     adaptiveDensityMultiplier = 1,
     webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+    forceRetryCapabilities = false,
   } = config;
 
   const finalize = (
@@ -165,6 +167,7 @@ export async function initRenderer(
   };
 
   const capabilities = await getRendererCapabilities({
+    forceRetry: forceRetryCapabilities,
     preferWebGLForKnownCompatibilityGaps:
       shouldPreferWebGLForKnownCompatibilityGaps(),
     webgpuInitTimeoutMs,

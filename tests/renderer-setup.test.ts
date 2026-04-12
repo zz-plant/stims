@@ -98,6 +98,7 @@ describe('renderer setup WebGPU fallback safety', () => {
 
     expect(result?.backend).toBe('webgl');
     expect(getRendererCapabilities).toHaveBeenCalledWith({
+      forceRetry: false,
       preferWebGLForKnownCompatibilityGaps: true,
       webgpuInitTimeoutMs: 5,
     });

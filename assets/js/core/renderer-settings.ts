@@ -75,6 +75,7 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   antialias: true,
   alpha: false,
   webgpuInitTimeoutMs: DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+  forceRetryCapabilities: false,
 };
 const deviceEnvironment = getDeviceEnvironmentProfile();
 
@@ -168,6 +169,10 @@ export function resolveRendererSettings(
       options.webgpuInitTimeoutMs ??
       defaults.webgpuInitTimeoutMs ??
       BASE_RENDERER_SETTINGS.webgpuInitTimeoutMs,
+    forceRetryCapabilities:
+      options.forceRetryCapabilities ??
+      defaults.forceRetryCapabilities ??
+      BASE_RENDERER_SETTINGS.forceRetryCapabilities,
   };
 }
 

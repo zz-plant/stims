@@ -231,6 +231,36 @@ describe('renderer capabilities', () => {
     expect(result.forceWebGL).toBe(false);
   });
 
+  test('records a retryable fallback when the cached WebGPU device is lost', async () => {
+    let resolveLost;
+    const lost = new Promise((resolve) => {
+      resolveLost = resolve;
+    });
+    const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
+      device: {
+        label: 'device',
+        lost,
+      },
+    });
+
+    const first = await getRendererCapabilities({ forceRetry: true });
+    expect(first.preferredBackend).toBe('webgpu');
+
+    resolveLost?.({ message: 'mock loss' });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const replay = await getRendererCapabilities();
+
+    expect(requestAdapter).toHaveBeenCalledTimes(1);
+    expect(requestDevice).toHaveBeenCalledTimes(1);
+    expect(
+      replay.preferredBackend === 'webgl' || replay.preferredBackend === null,
+    ).toBe(true);
+    expect(replay.fallbackReason).toContain('WebGPU device was lost');
+    expect(replay.shouldRetryWebGPU).toBe(true);
+  });
+
   test('falls back to WebGL when WebGPU is missing', async () => {
     restoreNavigator();
     restoreNavigator = replaceProperty(global, 'navigator', {});

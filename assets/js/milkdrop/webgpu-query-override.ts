@@ -6,5 +6,7 @@ export function shouldUseSafeMilkdropWebGpuPath(
   }
 
   const searchParams = new URLSearchParams(location.search);
-  return searchParams.get('renderer')?.trim().toLowerCase() === 'webgpu';
+  const renderer = searchParams.get('renderer')?.trim().toLowerCase();
+  const corpus = searchParams.get('corpus')?.trim().toLowerCase();
+  return renderer === 'webgpu' && corpus !== 'certification';
 }

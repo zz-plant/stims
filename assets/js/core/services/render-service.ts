@@ -1,5 +1,4 @@
 import type * as THREE from 'three';
-import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 import {
   getRendererCapabilities,
   type RendererBackend,
@@ -34,6 +33,12 @@ import {
 import type { WebGPURenderer } from '../webgpu-renderer.ts';
 
 type RendererInstance = THREE.WebGLRenderer | WebGPURenderer;
+
+type WebGpuUncapturedErrorEventLike = {
+  error?: {
+    message?: string;
+  } | null;
+};
 
 export type RendererHandle = {
   renderer: RendererInstance;
@@ -123,12 +128,45 @@ function applyRendererOverrides(
   });
 }
 
+function describeWebGpuDeviceLoss(info: unknown) {
+  const reason =
+    info &&
+    typeof info === 'object' &&
+    'reason' in info &&
+    typeof info.reason === 'string'
+      ? info.reason
+      : null;
+  const message =
+    info &&
+    typeof info === 'object' &&
+    'message' in info &&
+    typeof info.message === 'string'
+      ? info.message.trim()
+      : '';
+
+  const detail = message || reason;
+  return detail
+    ? `WebGPU device was lost (${detail}). Attempting renderer recovery.`
+    : 'WebGPU device was lost. Attempting renderer recovery.';
+}
+
+function describeWebGpuUncapturedError(
+  event: WebGpuUncapturedErrorEventLike | null | undefined,
+) {
+  const message = event?.error?.message?.trim();
+  return message
+    ? `WebGPU emitted an uncaptured device error: ${message}`
+    : 'WebGPU emitted an uncaptured device error.';
+}
+
 function createWebGpuRendererFacade({
   getRenderer,
-  recreateRenderer,
+  getRendererRecovery,
+  onDispose,
 }: {
   getRenderer: () => RendererInstance;
-  recreateRenderer: () => Promise<void>;
+  getRendererRecovery?: () => Promise<void> | null;
+  onDispose?: () => void;
 }) {
   let animationLoop: (() => void) | null = null;
   let animationFrameId: number | null = null;
@@ -155,22 +193,33 @@ function createWebGpuRendererFacade({
         return;
       }
 
-      void recreateRenderer()
-        .then(() => {
-          if (animationLoop === callback) {
-            callback();
-          }
-        })
-        .catch((error) => {
-          console.warn('WebGPU renderer refresh failed.', error);
-        })
-        .finally(() => {
-          if (animationLoop === callback) {
-            scheduleNextFrame();
-          } else {
-            animationFrameId = null;
-          }
-        });
+      const recovery = getRendererRecovery?.();
+      if (recovery) {
+        void recovery
+          .catch((error) => {
+            console.warn('WebGPU renderer recovery failed.', error);
+          })
+          .finally(() => {
+            if (animationLoop === callback) {
+              scheduleNextFrame();
+            } else {
+              animationFrameId = null;
+            }
+          });
+        return;
+      }
+
+      try {
+        callback();
+      } catch (error) {
+        console.warn('WebGPU animation loop callback failed.', error);
+      } finally {
+        if (animationLoop === callback) {
+          scheduleNextFrame();
+        } else {
+          animationFrameId = null;
+        }
+      }
     });
   };
 
@@ -191,6 +240,7 @@ function createWebGpuRendererFacade({
         return () => {
           animationLoop = null;
           cancelScheduledFrame();
+          onDispose?.();
           getRenderer().dispose?.();
         };
       }
@@ -235,55 +285,52 @@ async function createRendererHandle(
   let stopRendererAnimationLoop: (() => void) | null = null;
   let applyFacadeOverrides: ((renderer: RendererInstance) => void) | null =
     null;
+  let webGpuRecovery: Promise<void> | null = null;
+  let observedWebGpuDeviceRevision = 0;
+  let cleanupObservedWebGpuDeviceError: (() => void) | null = null;
 
-  const recreateRenderer = async () => {
-    activeRenderer.setAnimationLoop?.(null);
+  const clearObservedWebGpuDevice = () => {
+    observedWebGpuDeviceRevision += 1;
+    cleanupObservedWebGpuDeviceError?.();
+    cleanupObservedWebGpuDeviceError = null;
+  };
 
-    if (initResult.backend === 'webgpu' && initResult.device) {
-      const settings = buildSettings(activeOptions, initResult);
-      const { WebGPURenderer: WebGPURendererConstructor } = await import(
-        '../webgpu-renderer.ts'
-      );
-      const nextRenderer = new WebGPURendererConstructor({
-        canvas,
-        antialias: settings.antialias ?? true,
-        alpha: settings.alpha ?? false,
-        device: initResult.device,
-      });
-      if ('init' in nextRenderer && typeof nextRenderer.init === 'function') {
-        await nextRenderer.init();
-      }
-      nextRenderer.outputColorSpace = SRGBColorSpace;
-      nextRenderer.toneMapping = ACESFilmicToneMapping;
-
-      const nextResult: RendererInitResult = {
-        ...initResult,
-        renderer: nextRenderer,
-      };
-      activeRenderer = nextRenderer;
-      applyFacadeOverrides?.(activeRenderer);
-      applyPoolSettings(
-        activeRenderer,
-        nextResult,
-        activeOptions,
-        activeViewport,
-      );
-      initResult = nextResult;
-      handle.info = nextResult;
-      return;
-    }
-
-    activeRenderer.dispose?.();
-
+  const recreateRenderer = async ({
+    allowBackendSwitch = true,
+  }: {
+    allowBackendSwitch?: boolean;
+  } = {}) => {
+    const previousRenderer = activeRenderer;
+    const previousBackend = initResult.backend;
     const nextResult = await initRendererImpl(
       canvas,
-      buildSettings(activeOptions, initResult),
+      buildSettings(
+        {
+          ...activeOptions,
+          forceRetryCapabilities: true,
+        },
+        initResult,
+      ),
     );
     if (!nextResult) {
       rememberRendererFallback('Renderer recreation failed.');
       throw new Error('Unable to recreate renderer.');
     }
+    if (!allowBackendSwitch && nextResult.backend !== previousBackend) {
+      nextResult.renderer.dispose?.();
+      rememberRendererFallback(
+        'WebGPU renderer recovery could not keep the WebGPU backend active.',
+        {
+          backend: 'webgl',
+          shouldRetryWebGPU: true,
+        },
+      );
+      throw new Error('WebGPU renderer recovery switched backends.');
+    }
 
+    clearObservedWebGpuDevice();
+    previousRenderer.setAnimationLoop?.(null);
+    previousRenderer.dispose?.();
     activeRenderer = nextResult.renderer;
     applyFacadeOverrides?.(activeRenderer);
     applyPoolSettings(
@@ -295,14 +342,101 @@ async function createRendererHandle(
     initResult = nextResult;
     handle.backend = nextResult.backend;
     handle.info = nextResult;
+    observeActiveWebGpuDevice();
   };
+
+  const queueWebGpuRecovery = (reason: string) => {
+    if (webGpuRecovery) {
+      return webGpuRecovery;
+    }
+
+    const recovery = recreateRenderer({
+      allowBackendSwitch: false,
+    }).catch((error) => {
+      rememberRendererFallback(reason, {
+        backend: 'webgl',
+        shouldRetryWebGPU: true,
+      });
+      throw error;
+    });
+    webGpuRecovery = recovery.finally(() => {
+      if (webGpuRecovery === recovery) {
+        webGpuRecovery = null;
+      }
+    });
+    return webGpuRecovery;
+  };
+
+  function observeActiveWebGpuDevice() {
+    clearObservedWebGpuDevice();
+
+    if (initResult.backend !== 'webgpu' || !initResult.device) {
+      return;
+    }
+
+    const observedRevision = observedWebGpuDeviceRevision;
+    const device = initResult.device as GPUDevice & {
+      addEventListener?: (
+        type: 'uncapturederror',
+        listener: (event: WebGpuUncapturedErrorEventLike) => void,
+      ) => void;
+      removeEventListener?: (
+        type: 'uncapturederror',
+        listener: (event: WebGpuUncapturedErrorEventLike) => void,
+      ) => void;
+      onuncapturederror?:
+        | ((event: WebGpuUncapturedErrorEventLike) => void)
+        | null;
+    };
+
+    void device.lost
+      ?.then((info) => {
+        if (observedRevision !== observedWebGpuDeviceRevision) {
+          return;
+        }
+        const message = describeWebGpuDeviceLoss(info);
+        console.warn(message);
+        void queueWebGpuRecovery(message).catch((error) => {
+          console.warn('WebGPU renderer recovery failed.', error);
+        });
+      })
+      .catch(() => {});
+
+    const handleUncapturedError = (event: WebGpuUncapturedErrorEventLike) => {
+      if (observedRevision !== observedWebGpuDeviceRevision) {
+        return;
+      }
+      console.warn(describeWebGpuUncapturedError(event), event);
+    };
+
+    if (
+      typeof device.addEventListener === 'function' &&
+      typeof device.removeEventListener === 'function'
+    ) {
+      device.addEventListener('uncapturederror', handleUncapturedError);
+      cleanupObservedWebGpuDeviceError = () => {
+        device.removeEventListener?.('uncapturederror', handleUncapturedError);
+      };
+      return;
+    }
+
+    if ('onuncapturederror' in device) {
+      device.onuncapturederror = handleUncapturedError;
+      cleanupObservedWebGpuDeviceError = () => {
+        if (device.onuncapturederror === handleUncapturedError) {
+          device.onuncapturederror = null;
+        }
+      };
+    }
+  }
 
   const renderer =
     initResult.backend === 'webgpu'
       ? (() => {
           const facade = createWebGpuRendererFacade({
             getRenderer: () => activeRenderer,
-            recreateRenderer,
+            getRendererRecovery: () => webGpuRecovery,
+            onDispose: clearObservedWebGpuDevice,
           });
           stopRendererAnimationLoop = facade.stopAnimationLoop;
           applyFacadeOverrides = facade.applyOverrides;
@@ -336,6 +470,8 @@ async function createRendererHandle(
       stopRendererAnimationLoop?.();
     },
   };
+
+  observeActiveWebGpuDevice();
 
   return handle;
 }
