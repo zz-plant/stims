@@ -75,6 +75,7 @@ export function StimsWorkspaceApp() {
     readinessAlerts,
     runtimeReady,
     selectedPreset,
+    starterPresets,
     updatePanel,
   } = useWorkspaceShellOrchestration({
     commitRoute,
@@ -94,41 +95,36 @@ export function StimsWorkspaceApp() {
 
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
-  const launchEyebrow = missingRequestedPreset
-    ? 'Recover session'
-    : runtimeReady || routeState.invalidExperienceSlug
-      ? 'Start'
-      : 'Loading';
-  const launchTitle = missingRequestedPreset
-    ? 'Saved preset unavailable.'
-    : runtimeReady || routeState.invalidExperienceSlug
+  const launchEyebrow =
+    runtimeReady || routeState.invalidExperienceSlug ? 'Start' : 'Loading';
+  const launchTitle =
+    runtimeReady || routeState.invalidExperienceSlug
       ? 'Choose audio.'
       : 'Warming up visuals.';
-  const launchSummary = missingRequestedPreset
-    ? 'Start demo or open Presets.'
-    : runtimeReady || routeState.invalidExperienceSlug
+  const launchSummary =
+    runtimeReady || routeState.invalidExperienceSlug
       ? 'Start demo, use the mic, or capture a tab.'
       : 'Just a moment.';
-  const stageEyebrow = missingRequestedPreset
-    ? 'Preset missing'
-    : loadingRequestedPreset
-      ? 'Loading preset'
-      : launchControlsHidden
-        ? 'Now playing'
-        : selectedPreset
-          ? 'Preset'
-          : 'Choose a preset';
-  const stageTitle = missingRequestedPreset
-    ? 'Preset unavailable'
-    : loadingRequestedPreset
-      ? 'Loading preset'
-      : (selectedPreset?.title ?? 'Pick a preset');
-  const stageSummary = missingRequestedPreset
-    ? `"${routeState.presetId}" is unavailable in this build.`
-    : loadingRequestedPreset
-      ? `Loading ${routeState.presetId}.`
+  const stageEyebrow = loadingRequestedPreset
+    ? 'Loading preset'
+    : launchControlsHidden
+      ? 'Now playing'
       : selectedPreset
-        ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
+        ? 'Preset'
+        : 'Choose a preset';
+  const stageTitle = loadingRequestedPreset
+    ? 'Loading preset'
+    : selectedPreset
+      ? selectedPreset.title
+      : missingRequestedPreset
+        ? 'Pick a preset'
+        : 'Pick a preset';
+  const stageSummary = loadingRequestedPreset
+    ? `Loading ${routeState.presetId}.`
+    : selectedPreset
+      ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
+      : missingRequestedPreset
+        ? 'Start with the featured pick or open Presets.'
         : featuredPreset
           ? `Try ${featuredPreset.title} · ${describePresetMood(featuredPreset)}.`
           : 'Open Presets or shuffle.';
@@ -182,15 +178,19 @@ export function StimsWorkspaceApp() {
           launchEyebrow={launchEyebrow}
           launchSummary={launchSummary}
           launchTitle={launchTitle}
+          missingRequestedPreset={missingRequestedPreset}
           onAudioStart={(source) => {
             void handleAudioStart(source);
           }}
+          onBrowseRecovery={handleBrowseRecovery}
+          onFeaturedPresetSelection={handleFeaturedPresetSelection}
           onLoadYouTube={() => {
             void loadYouTubePreview();
           }}
           onToggleExtendedSources={toggleExtendedSources}
           onYoutubeUrlChange={setYoutubeUrl}
           readinessAlerts={readinessAlerts}
+          requestedPresetId={routeState.presetId}
           showExtendedSources={showExtendedSources}
           youtubePreviewRef={youtubePreviewRef}
           youtubeReady={youtubeReady}
@@ -200,11 +200,14 @@ export function StimsWorkspaceApp() {
         <WorkspaceStagePanel
           audioSource={engineSnapshot?.audioSource}
           backend={engineSnapshot?.backend}
-          featuredPreset={featuredPreset}
           invalidExperienceSlug={routeState.invalidExperienceSlug}
           missingRequestedPreset={missingRequestedPreset}
-          onBrowseRecovery={handleBrowseRecovery}
-          onFeaturedPresetSelection={handleFeaturedPresetSelection}
+          onOpenBrowse={() => updatePanel('browse')}
+          onOpenSettings={() => updatePanel('settings')}
+          onShowCurrentLink={() => {
+            void handleShowCurrentLink();
+          }}
+          onShufflePreset={handleShufflePreset}
           stageEyebrow={stageEyebrow}
           stageRef={stageRef}
           stageSummary={stageSummary}
@@ -234,7 +237,9 @@ export function StimsWorkspaceApp() {
         onQualityPresetChange={setQualityPreset}
         onRenderPreferenceChange={setRenderPreferences}
         onSearchQueryChange={setSearchQuery}
-        onShowCurrentLink={handleShowCurrentLink}
+        onShowCurrentLink={() => {
+          void handleShowCurrentLink();
+        }}
         onShufflePreset={handleShufflePreset}
         onTabChange={updatePanel}
         panel={routeState.panel}
@@ -242,7 +247,7 @@ export function StimsWorkspaceApp() {
         renderPreferences={renderPreferences}
         routeState={routeState}
         searchQuery={searchQuery}
-        showAgentControls={routeState.agentMode}
+        starterPresets={starterPresets}
         stageAnchoredToolOpen={stageAnchoredToolOpen}
       />
 

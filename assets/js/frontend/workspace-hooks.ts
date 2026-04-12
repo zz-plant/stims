@@ -375,24 +375,37 @@ export function useWorkspaceSessionState({
       return;
     }
 
+    const shareableActivePresetId = resolvePresetId(
+      engineSnapshot.catalogEntries,
+      engineSnapshot.activePresetId,
+    );
+    if (!shareableActivePresetId) {
+      return;
+    }
+
     if (pendingPresetIdRef.current) {
-      if (engineSnapshot.activePresetId === pendingPresetIdRef.current) {
+      if (shareableActivePresetId === pendingPresetIdRef.current) {
         pendingPresetIdRef.current = null;
       }
       return;
     }
 
-    if (routeState.presetId === engineSnapshot.activePresetId) {
+    if (routeState.presetId === shareableActivePresetId) {
       return;
     }
 
     startTransition(() => {
       setRouteState((current) => ({
         ...current,
-        presetId: engineSnapshot.activePresetId,
+        presetId: shareableActivePresetId,
       }));
     });
-  }, [engineSnapshot?.activePresetId, routeState.presetId, setRouteState]);
+  }, [
+    engineSnapshot?.activePresetId,
+    engineSnapshot?.catalogEntries,
+    routeState.presetId,
+    setRouteState,
+  ]);
 
   useEffect(() => {
     if (!routeState.presetId || routeState.invalidExperienceSlug) {
@@ -567,6 +580,20 @@ export function useWorkspaceSessionState({
       return;
     }
 
+    const unresolvedRequestedPreset = routeState.presetId
+      ? !resolvePresetId(
+          engineSnapshot?.catalogEntries ?? [],
+          routeState.presetId,
+        )
+      : false;
+    if (
+      unresolvedRequestedPreset &&
+      routeState.presetId &&
+      runtimeMessage.includes(routeState.presetId)
+    ) {
+      return;
+    }
+
     const key = `${statusMessage ? 'error' : 'info'}:${runtimeMessage}`;
     if (shownToastKeysRef.current.has(key)) {
       return;
@@ -574,7 +601,12 @@ export function useWorkspaceSessionState({
 
     shownToastKeysRef.current.add(key);
     showToast(runtimeMessage, statusMessage ? 'error' : 'info');
-  }, [engineSnapshot?.status, statusMessage]);
+  }, [
+    engineSnapshot?.catalogEntries,
+    engineSnapshot?.status,
+    routeState.presetId,
+    statusMessage,
+  ]);
 
   const loadYouTubePreview = async () => {
     const previewHost = youtubePreviewRef.current;

@@ -132,6 +132,7 @@ export function useWorkspaceShellOrchestration({
       resolvedBackend,
       runtimeReady,
       selectedPreset,
+      starterPresets,
       stageAnchoredToolOpen:
         routeState.panel === 'editor' || routeState.panel === 'inspector',
     };
@@ -205,9 +206,24 @@ export function useWorkspaceShellOrchestration({
   ) => {
     try {
       setStatusMessage(null);
+      const healedPresetId = shellState.missingRequestedPreset
+        ? (shellState.featuredPreset?.id ?? null)
+        : routeState.presetId;
+      const nextRouteState = {
+        ...routeState,
+        audioSource: source,
+        panel: null,
+        presetId: healedPresetId,
+      };
+
+      if (shellState.missingRequestedPreset && shellState.featuredPreset) {
+        setStatusMessage(
+          `Requested preset unavailable. Starting with ${shellState.featuredPreset.title}.`,
+        );
+      }
 
       if (source === 'demo' || source === 'microphone') {
-        commitRoute({ ...routeState, audioSource: source, panel: null });
+        commitRoute(nextRouteState);
         await startAudioSource({ source });
         return;
       }
@@ -219,7 +235,7 @@ export function useWorkspaceShellOrchestration({
             ? 'No YouTube audio track was captured. Choose This tab and enable Share audio.'
             : 'No tab audio track was captured. Choose This tab and enable Share audio.',
       });
-      commitRoute({ ...routeState, audioSource: source, panel: null });
+      commitRoute(nextRouteState);
       await startAudioSource({
         source,
         stream,
@@ -237,11 +253,20 @@ export function useWorkspaceShellOrchestration({
     updatePanel('editor');
   };
 
-  const handleShowCurrentLink = () => {
-    const currentUrl = buildCanonicalUrl(routeState);
-    setStatusMessage(
-      `Current link: ${currentUrl.pathname}${currentUrl.search}`,
+  const handleShowCurrentLink = async () => {
+    const currentUrl = buildCanonicalUrl(
+      { ...routeState, agentMode: false },
+      window.location,
     );
+    const href = currentUrl.toString();
+    try {
+      await navigator.clipboard.writeText(href);
+      setStatusMessage('Link copied.');
+    } catch (_error) {
+      setStatusMessage(
+        `Current link: ${currentUrl.pathname}${currentUrl.search}`,
+      );
+    }
   };
 
   return {

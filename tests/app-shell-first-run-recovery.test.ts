@@ -30,19 +30,37 @@ describe('Workspace shell first-run and recovery regression', () => {
       ),
       'utf8',
     );
+    const sessionHookSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'workspace-hooks.ts',
+      ),
+      'utf8',
+    );
 
-    expect(appSource).toContain('Saved preset unavailable.');
-    expect(appSource).toContain('Preset unavailable');
+    expect(appSource).toContain('Pick a preset');
+    expect(appSource).toContain(
+      'Start with the featured pick or open Presets.',
+    );
     expect(uiSource).toContain('Load featured preset');
     expect(uiSource).toContain('Browse presets');
-    expect(uiSource).toContain('Missing preset');
-    expect(uiSource).toContain('Pick a nearby preset');
-    expect(uiSource).toContain('This preset is no longer bundled here.');
+    expect(uiSource).toContain('Requested preset missing');
+    expect(uiSource).toContain('is no longer bundled here.');
+    expect(uiSource).not.toContain('This preset is no longer bundled here.');
     expect(shellHookSource).toMatch(
       /const missingRequestedPreset = Boolean\([\s\S]*?catalogReady[\s\S]*?\);/u,
     );
-    expect(appSource).toMatch(
-      /const stageSummary = missingRequestedPreset\s*\?/u,
+    expect(sessionHookSource).toContain(
+      'const shareableActivePresetId = resolvePresetId(',
+    );
+    expect(sessionHookSource).toContain('if (!shareableActivePresetId) {');
+    expect(sessionHookSource).toContain('presetId: shareableActivePresetId');
+    expect(sessionHookSource).toContain(
+      'const unresolvedRequestedPreset = routeState.presetId',
     );
   });
 });
