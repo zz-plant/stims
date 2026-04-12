@@ -12,6 +12,7 @@ import {
   toBundledCatalogEntryFromManifest,
   toCatalogEntry,
 } from './catalog-store-projection';
+import { resolvePresetCatalogEntry } from './preset-id-resolution';
 import type { MilkdropCatalogStore, MilkdropPresetSource } from './types';
 
 const HISTORY_RECORD_ID = '__history__';
@@ -101,13 +102,35 @@ export function createMilkdropCatalogStore({
     },
 
     async getPresetSource(id) {
-      const stored = await persistence.getPreset(id);
+      const normalizedId = id.trim();
+      if (!normalizedId) {
+        return null;
+      }
+
+      const stored = await persistence.getPreset(normalizedId);
       if (stored) {
         return stored;
       }
 
       const bundled = await bundledCatalog.getBundledCatalog();
-      const entry = bundled.find((candidate) => candidate.id === id);
+      const bundledExactEntry =
+        bundled.find((candidate) => candidate.id === normalizedId) ?? null;
+      if (bundledExactEntry) {
+        const source =
+          await bundledCatalog.loadBundledSource(bundledExactEntry);
+        analysis.getCompiled(source);
+        return source;
+      }
+
+      const storedAliasMatch = resolvePresetCatalogEntry(
+        await persistence.listPresets(),
+        normalizedId,
+      );
+      if (storedAliasMatch) {
+        return storedAliasMatch;
+      }
+
+      const entry = resolvePresetCatalogEntry(bundled, normalizedId);
       if (!entry) {
         return null;
       }

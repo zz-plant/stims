@@ -23,6 +23,7 @@ import {
   getActiveRenderPreferences,
   subscribeToRenderPreferences,
 } from '../core/state/render-preference-store.ts';
+import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import { YouTubeController } from '../ui/youtube-controller.ts';
 import type {
   PresetCatalogEntry,
@@ -394,6 +395,38 @@ export function useWorkspaceSessionState({
   }, [engineSnapshot?.activePresetId, routeState.presetId, setRouteState]);
 
   useEffect(() => {
+    if (!routeState.presetId || routeState.invalidExperienceSlug) {
+      return;
+    }
+
+    const resolvedPresetId = resolvePresetId(
+      engineSnapshot?.catalogEntries ?? [],
+      routeState.presetId,
+    );
+    if (!resolvedPresetId || resolvedPresetId === routeState.presetId) {
+      return;
+    }
+
+    startTransition(() => {
+      setRouteState((current) => {
+        if (current.presetId !== routeState.presetId) {
+          return current;
+        }
+
+        return {
+          ...current,
+          presetId: resolvedPresetId,
+        };
+      });
+    });
+  }, [
+    engineSnapshot?.catalogEntries,
+    routeState.invalidExperienceSlug,
+    routeState.presetId,
+    setRouteState,
+  ]);
+
+  useEffect(() => {
     if (!engineRef.current?.isMounted()) {
       return;
     }
@@ -432,24 +465,35 @@ export function useWorkspaceSessionState({
   }, [routeState.collectionTag]);
 
   useEffect(() => {
+    const requestedPresetId = routeState.presetId
+      ? (resolvePresetId(
+          engineSnapshot?.catalogEntries ?? [],
+          routeState.presetId,
+        ) ?? routeState.presetId)
+      : null;
+
     if (
       !engineRef.current?.isMounted() ||
-      !routeState.presetId ||
-      routeState.presetId === engineSnapshot?.activePresetId
+      !requestedPresetId ||
+      requestedPresetId === engineSnapshot?.activePresetId
     ) {
-      if (routeState.presetId === engineSnapshot?.activePresetId) {
+      if (requestedPresetId === engineSnapshot?.activePresetId) {
         pendingPresetIdRef.current = null;
       }
       return;
     }
 
-    pendingPresetIdRef.current = routeState.presetId;
-    void engineRef.current.loadPreset(routeState.presetId).catch(() => {
-      if (pendingPresetIdRef.current === routeState.presetId) {
+    pendingPresetIdRef.current = requestedPresetId;
+    void engineRef.current.loadPreset(requestedPresetId).catch(() => {
+      if (pendingPresetIdRef.current === requestedPresetId) {
         pendingPresetIdRef.current = null;
       }
     });
-  }, [engineSnapshot?.activePresetId, routeState.presetId]);
+  }, [
+    engineSnapshot?.activePresetId,
+    engineSnapshot?.catalogEntries,
+    routeState.presetId,
+  ]);
 
   useEffect(() => {
     if (

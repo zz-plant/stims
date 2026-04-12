@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
 import type {
   PanelState,
@@ -98,14 +99,14 @@ export function useWorkspaceShellOrchestration({
         : document.body.dataset.activeBackend === 'webgpu'
           ? 'webgpu'
           : null);
-    const selectedPreset =
-      catalog.find((entry) => entry.id === routeState.presetId) ??
-      currentPreset ??
-      null;
+    const resolvedRequestedPreset = routeState.presetId
+      ? resolvePresetCatalogEntry(catalog, routeState.presetId)
+      : null;
+    const selectedPreset = resolvedRequestedPreset ?? currentPreset ?? null;
     const missingRequestedPreset = Boolean(
       routeState.presetId &&
         catalogReady &&
-        !selectedPreset &&
+        !resolvedRequestedPreset &&
         !routeState.invalidExperienceSlug &&
         pendingPresetIdRef.current !== routeState.presetId,
     );

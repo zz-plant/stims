@@ -19,6 +19,17 @@ describe('Workspace shell first-run and recovery regression', () => {
       ),
       'utf8',
     );
+    const shellHookSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'workspace-shell-hooks.ts',
+      ),
+      'utf8',
+    );
 
     expect(appSource).toContain('Saved preset unavailable.');
     expect(appSource).toContain('Preset unavailable');
@@ -27,7 +38,7 @@ describe('Workspace shell first-run and recovery regression', () => {
     expect(uiSource).toContain('Missing preset');
     expect(uiSource).toContain('Pick a nearby preset');
     expect(uiSource).toContain('This preset is no longer bundled here.');
-    expect(appSource).toMatch(
+    expect(shellHookSource).toMatch(
       /const missingRequestedPreset = Boolean\([\s\S]*?catalogReady[\s\S]*?\);/u,
     );
     expect(appSource).toMatch(

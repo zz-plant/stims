@@ -59,7 +59,6 @@ export function StimsWorkspaceApp() {
     catalogError,
     catalogReady,
     collectionTags,
-    currentPreset,
     engineReady,
     featuredPreset,
     filteredCatalog,
@@ -71,8 +70,11 @@ export function StimsWorkspaceApp() {
     handleShowCurrentLink,
     handleShufflePreset,
     launchControlsHidden,
+    loadingRequestedPreset,
+    missingRequestedPreset,
     readinessAlerts,
     runtimeReady,
+    selectedPreset,
     updatePanel,
   } = useWorkspaceShellOrchestration({
     commitRoute,
@@ -90,23 +92,6 @@ export function StimsWorkspaceApp() {
     youtubePreviewRef,
   });
 
-  const selectedPreset =
-    catalog.find((entry) => entry.id === routeState.presetId) ??
-    currentPreset ??
-    null;
-  const missingRequestedPreset = Boolean(
-    routeState.presetId &&
-      catalogReady &&
-      !selectedPreset &&
-      !routeState.invalidExperienceSlug &&
-      pendingPresetIdRef.current !== routeState.presetId,
-  );
-  const loadingRequestedPreset = Boolean(
-    routeState.presetId &&
-      !selectedPreset &&
-      !routeState.invalidExperienceSlug &&
-      !missingRequestedPreset,
-  );
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
   const launchEyebrow = missingRequestedPreset
