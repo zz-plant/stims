@@ -2201,6 +2201,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] {
+    min-height: 88svh;
     min-height: max(88svh, 640px);
   }
 
@@ -2261,6 +2262,11 @@ body[data-page="workspace"] {
 
   .stims-shell__stage-copy {
     max-width: 100%;
+  }
+
+  .stims-shell__stage-hero {
+    inset: 10px;
+    align-content: end;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {

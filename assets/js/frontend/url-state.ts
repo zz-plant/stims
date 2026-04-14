@@ -17,8 +17,37 @@ const VALID_AUDIO_SOURCES = new Set<AudioSource>([
   'youtube',
 ]);
 
-function normalizePanel(value: string | null) {
-  const normalized = value?.trim().toLowerCase() ?? '';
+function readSearchValue(value: unknown) {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    const firstValue = value.find(
+      (entry) =>
+        typeof entry === 'string' ||
+        typeof entry === 'number' ||
+        typeof entry === 'boolean',
+    );
+    if (
+      typeof firstValue === 'string' ||
+      typeof firstValue === 'number' ||
+      typeof firstValue === 'boolean'
+    ) {
+      return String(firstValue);
+    }
+  }
+
+  return null;
+}
+
+function normalizePanel(value: unknown) {
+  const parsedValue = readSearchValue(value);
+  const normalized = parsedValue?.trim().toLowerCase() ?? '';
   if (!normalized) {
     return null;
   }
@@ -37,8 +66,9 @@ function normalizePanel(value: string | null) {
   return mappedValue as Exclude<PanelState, null>;
 }
 
-function normalizeAudioSource(value: string | null) {
-  const normalized = value?.trim().toLowerCase() ?? '';
+function normalizeAudioSource(value: unknown) {
+  const parsedValue = readSearchValue(value);
+  const normalized = parsedValue?.trim().toLowerCase() ?? '';
   if (!normalized) {
     return null;
   }
@@ -57,8 +87,9 @@ function normalizeAudioSource(value: string | null) {
   return mappedValue as AudioSource;
 }
 
-export function normalizeCollectionTag(value: string | null | undefined) {
-  const normalized = value?.trim().toLowerCase() ?? '';
+export function normalizeCollectionTag(value: unknown) {
+  const parsedValue = readSearchValue(value);
+  const normalized = parsedValue?.trim().toLowerCase() ?? '';
   if (!normalized) {
     return null;
   }
@@ -66,6 +97,24 @@ export function normalizeCollectionTag(value: string | null | undefined) {
   return normalized.startsWith('collection:')
     ? normalized
     : `collection:${normalized}`;
+}
+
+export function readSessionRouteStateFromSearch(
+  search: Record<string, unknown>,
+): SessionRouteState {
+  const legacyExperience = readSearchValue(search.experience);
+
+  return {
+    presetId: readSearchValue(search.preset)?.trim() || null,
+    collectionTag: normalizeCollectionTag(search.collection),
+    panel: normalizePanel(search.tool ?? search.panel),
+    audioSource: normalizeAudioSource(search.audio),
+    agentMode: readSearchValue(search.agent) === 'true',
+    invalidExperienceSlug:
+      legacyExperience && legacyExperience !== 'milkdrop'
+        ? legacyExperience
+        : null,
+  };
 }
 
 export function readSessionRouteState(
@@ -80,20 +129,15 @@ export function readSessionRouteState(
         ? input
         : new URL(input?.href ?? 'https://toil.fyi/');
 
-  const params = url.searchParams;
-  const legacyExperience = params.get('experience');
-
-  return {
-    presetId: params.get('preset')?.trim() || null,
-    collectionTag: normalizeCollectionTag(params.get('collection')),
-    panel: normalizePanel(params.get('tool') ?? params.get('panel')),
-    audioSource: normalizeAudioSource(params.get('audio')),
-    agentMode: params.get('agent') === 'true',
-    invalidExperienceSlug:
-      legacyExperience && legacyExperience !== 'milkdrop'
-        ? legacyExperience
-        : null,
-  };
+  return readSessionRouteStateFromSearch({
+    preset: url.searchParams.get('preset'),
+    collection: url.searchParams.get('collection'),
+    tool: url.searchParams.get('tool'),
+    panel: url.searchParams.get('panel'),
+    audio: url.searchParams.get('audio'),
+    agent: url.searchParams.get('agent'),
+    experience: url.searchParams.get('experience'),
+  });
 }
 
 export function buildCanonicalUrl(

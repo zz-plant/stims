@@ -2,7 +2,7 @@ import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
-import { StimsWorkspaceApp } from './frontend/App.tsx';
+import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/device-detect.ts';
 import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
 
@@ -30,7 +30,11 @@ const startApp = async () => {
 
   const container = ensureRootContainer();
   createRoot(container).render(
-    createElement(StrictMode, null, createElement(StimsWorkspaceApp, null)),
+    createElement(
+      StrictMode,
+      null,
+      createElement(StimsWorkspaceRouterProvider, null),
+    ),
   );
 };
 
