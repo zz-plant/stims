@@ -265,7 +265,6 @@ export function WorkspaceLaunchPanel({
   readinessAlerts,
   requestedPresetId,
   showExtendedSources,
-  starterPresets,
   youtubePreviewRef,
   youtubeReady,
   youtubeUrl,
@@ -289,7 +288,6 @@ export function WorkspaceLaunchPanel({
   readinessAlerts: ReadinessItem[];
   requestedPresetId: string | null;
   showExtendedSources: boolean;
-  starterPresets: StarterPreset[];
   youtubePreviewRef: RefObject<HTMLDivElement | null>;
   youtubeReady: boolean;
   youtubeUrl: string;
@@ -297,11 +295,6 @@ export function WorkspaceLaunchPanel({
   const rootClassName = embedded
     ? 'stims-shell__launch-panel'
     : 'stims-shell__launch';
-  const highlightEntries = starterPresets.slice(0, 3).map((starter) => ({
-    entry: starter.preset,
-    label: starter.label,
-    summary: starter.summary,
-  }));
   const jumpBackInEntries = [
     ...favoritePresets.map((entry) => ({
       entry,
@@ -354,17 +347,7 @@ export function WorkspaceLaunchPanel({
             >
               <span className="stims-shell__action-label">Use my music</span>
             </button>
-            <button
-              type="button"
-              className="cta-button stims-shell__action-button stims-shell__action-button--ghost"
-              onClick={onBrowseRecovery}
-            >
-              <span className="stims-shell__action-label">Browse presets</span>
-            </button>
           </div>
-          <p className="stims-shell__meta-copy">
-            Demo starts instantly. Your own audio is optional.
-          </p>
           <div className="stims-shell__confidence-note">
             <strong>Runs best on desktop and laptop.</strong>
             <span>
@@ -387,26 +370,6 @@ export function WorkspaceLaunchPanel({
             ) : null}
           </div>
         </div>
-
-        {featuredPreset ? (
-          <button
-            type="button"
-            className="stims-shell__launch-recommendation"
-            onClick={onFeaturedPresetSelection}
-          >
-            <PresetArtwork entry={featuredPreset} />
-            <span className="stims-shell__launch-recommendation-copy">
-              <span className="stims-shell__section-label">
-                Try this look first
-              </span>
-              <strong>{featuredPreset.title}</strong>
-              <span className="stims-shell__meta-copy">
-                {describePresetMood(featuredPreset)} ·{' '}
-                {formatPresetSupportNote(featuredPreset)}
-              </span>
-            </span>
-          </button>
-        ) : null}
       </div>
 
       {missingRequestedPreset ? (
@@ -468,32 +431,6 @@ export function WorkspaceLaunchPanel({
         title="Jump back in"
         onSelect={onPresetSelection}
       />
-
-      <PresetShelfSection
-        entries={highlightEntries}
-        summary="A few reliable first picks so the app feels good before you start digging."
-        title="Preset highlights"
-        onSelect={onPresetSelection}
-      />
-
-      <section className="stims-shell__launch-proof">
-        <div className="stims-shell__section-heading">
-          <p className="stims-shell__section-label">Before you start</p>
-          <p className="stims-shell__meta-copy">
-            See what runs best, what lighter mode means, and what to expect on
-            phones, tablets, and laptops.
-          </p>
-        </div>
-        <a className="stims-shell__proof-card" href="/performance/">
-          <span className="stims-shell__starter-label">
-            Compatibility and performance
-          </span>
-          <strong>What works best and how fallback behaves</strong>
-          <span className="stims-shell__meta-copy">
-            Honest expectations for browsers, hardware, and first-run setup.
-          </span>
-        </a>
-      </section>
     </div>
   );
 }
@@ -760,12 +697,7 @@ function BrowseSheetPanel({
   return (
     <div className="stims-shell__sheet-panel">
       <div className="stims-shell__browse-toolbar">
-        <div className="stims-shell__browse-toolbar-copy">
-          <strong>Pick a look and press play.</strong>
-          <p className="stims-shell__meta-copy">
-            Start with a quick pick, then open the full preset library.
-          </p>
-        </div>
+        <strong>Pick a look and press play.</strong>
         <button
           type="button"
           className="stims-shell__text-button"
@@ -952,13 +884,6 @@ function SettingsSheetPanel({
 
   return (
     <div className="stims-shell__sheet-panel">
-      <div className="stims-shell__settings-callout">
-        <strong>Change the vibe, keep the momentum.</strong>
-        <p className="stims-shell__meta-copy">
-          Most people only need one quick look and nothing else.
-        </p>
-      </div>
-
       <p className="stims-shell__section-label">Quick looks</p>
       <ul className="stims-shell__preset-guides">
         {guidedPresets.map((preset) => (

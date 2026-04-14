@@ -207,11 +207,6 @@ export function StimsWorkspaceApp() {
           </button>
         </nav>
         <div className="stims-shell__nav-utility">
-          {selectedPreset ? (
-            <span className="stims-shell__nav-status">
-              {selectedPreset.title}
-            </span>
-          ) : null}
           <a
             className="stims-shell__nav-link"
             href="https://github.com/zz-plant/stims"
@@ -255,7 +250,6 @@ export function StimsWorkspaceApp() {
               requestedPresetId={routeState.presetId}
               recentPresets={recentPresets}
               showExtendedSources={showExtendedSources}
-              starterPresets={starterPresets}
               youtubePreviewRef={youtubePreviewRef}
               youtubeReady={youtubeReady}
               youtubeUrl={youtubeUrl}
