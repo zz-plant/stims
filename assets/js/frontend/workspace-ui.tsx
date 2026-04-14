@@ -147,6 +147,104 @@ function PresetShelfSection({
   );
 }
 
+function AudioSourcePanel({
+  engineReady,
+  onAudioStart,
+  onLoadYouTube,
+  onYoutubeUrlChange,
+  youtubePreviewRef,
+  youtubeReady,
+  youtubeUrl,
+}: {
+  engineReady: boolean;
+  onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
+  onLoadYouTube: () => void;
+  onYoutubeUrlChange: (value: string) => void;
+  youtubePreviewRef: RefObject<HTMLDivElement | null>;
+  youtubeReady: boolean;
+  youtubeUrl: string;
+}) {
+  return (
+    <div className="stims-shell__source-panel">
+      <div className="stims-shell__source-heading">
+        <p className="stims-shell__section-label">Use my music</p>
+        <p className="stims-shell__meta-copy">
+          Pick a live source only when you want the visuals to follow your own
+          sound.
+        </p>
+      </div>
+      <div className="stims-shell__source-grid">
+        <button
+          id="start-audio-btn"
+          type="button"
+          className="stims-shell__source-card"
+          disabled={!engineReady}
+          onClick={() => onAudioStart('microphone')}
+        >
+          <strong>Microphone</strong>
+          <span>
+            Needs mic permission. React to the room, your speakers, or live
+            sound.
+          </span>
+        </button>
+        <button
+          type="button"
+          id="use-tab-audio"
+          className="stims-shell__source-card"
+          disabled={!engineReady}
+          onClick={() => onAudioStart('tab')}
+        >
+          <strong>This tab</strong>
+          <span>
+            Share this tab when prompted to capture audio already playing here.
+          </span>
+        </button>
+      </div>
+      <div className="stims-shell__youtube">
+        <label className="stims-shell__field-label" htmlFor="youtube-url">
+          Paste a YouTube link, then start capture
+        </label>
+        <div className="stims-shell__youtube-row">
+          <input
+            id="youtube-url"
+            className="stims-shell__input"
+            type="url"
+            placeholder="https://youtube.com/watch?v=..."
+            value={youtubeUrl}
+            onChange={(event) => onYoutubeUrlChange(event.target.value)}
+          />
+          <button
+            id="load-youtube"
+            className="cta-button"
+            type="button"
+            disabled={!engineReady}
+            onClick={onLoadYouTube}
+          >
+            Load
+          </button>
+          <button
+            id="use-youtube-audio"
+            className="cta-button"
+            type="button"
+            disabled={!engineReady || !youtubeReady}
+            onClick={() => onAudioStart('youtube')}
+          >
+            Start capture
+          </button>
+        </div>
+        <div
+          id="youtube-player-container"
+          ref={youtubePreviewRef}
+          className="stims-shell__youtube-preview"
+          hidden
+        >
+          <div id="workspace-youtube-player"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WorkspaceLaunchPanel({
   embedded = false,
   engineReady,
@@ -267,90 +365,25 @@ export function WorkspaceLaunchPanel({
           <p className="stims-shell__meta-copy">
             Demo starts instantly. Your own audio is optional.
           </p>
+          <div className="stims-shell__confidence-note">
+            <strong>Runs best on desktop and laptop.</strong>
+            <span>
+              Phones and older browsers can fall back to lighter visuals
+              automatically.
+            </span>
+          </div>
 
           <div className="stims-shell__launch-more">
             {showExtendedSources ? (
-              <div className="stims-shell__source-panel">
-                <div className="stims-shell__source-heading">
-                  <p className="stims-shell__section-label">Use my music</p>
-                  <p className="stims-shell__meta-copy">
-                    Pick a live source only when you want the visuals to follow
-                    your own sound.
-                  </p>
-                </div>
-                <div className="stims-shell__source-grid">
-                  <button
-                    id="start-audio-btn"
-                    type="button"
-                    className="stims-shell__source-card"
-                    disabled={!engineReady}
-                    onClick={() => onAudioStart('microphone')}
-                  >
-                    <strong>Microphone</strong>
-                    <span>
-                      React to the room, your speakers, or live sound.
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    id="use-tab-audio"
-                    className="stims-shell__source-card"
-                    disabled={!engineReady}
-                    onClick={() => onAudioStart('tab')}
-                  >
-                    <strong>This tab</strong>
-                    <span>
-                      Use the audio already playing in your browser tab.
-                    </span>
-                  </button>
-                </div>
-                <div className="stims-shell__youtube">
-                  <label
-                    className="stims-shell__field-label"
-                    htmlFor="youtube-url"
-                  >
-                    Add a YouTube link first
-                  </label>
-                  <div className="stims-shell__youtube-row">
-                    <input
-                      id="youtube-url"
-                      className="stims-shell__input"
-                      type="url"
-                      placeholder="https://youtube.com/watch?v=..."
-                      value={youtubeUrl}
-                      onChange={(event) =>
-                        onYoutubeUrlChange(event.target.value)
-                      }
-                    />
-                    <button
-                      id="load-youtube"
-                      className="cta-button"
-                      type="button"
-                      disabled={!engineReady}
-                      onClick={onLoadYouTube}
-                    >
-                      Load
-                    </button>
-                    <button
-                      id="use-youtube-audio"
-                      className="cta-button"
-                      type="button"
-                      disabled={!engineReady || !youtubeReady}
-                      onClick={() => onAudioStart('youtube')}
-                    >
-                      Start capture
-                    </button>
-                  </div>
-                  <div
-                    id="youtube-player-container"
-                    ref={youtubePreviewRef}
-                    className="stims-shell__youtube-preview"
-                    hidden
-                  >
-                    <div id="workspace-youtube-player"></div>
-                  </div>
-                </div>
-              </div>
+              <AudioSourcePanel
+                engineReady={engineReady}
+                onAudioStart={onAudioStart}
+                onLoadYouTube={onLoadYouTube}
+                onYoutubeUrlChange={onYoutubeUrlChange}
+                youtubePreviewRef={youtubePreviewRef}
+                youtubeReady={youtubeReady}
+                youtubeUrl={youtubeUrl}
+              />
             ) : null}
           </div>
         </div>
@@ -468,37 +501,55 @@ export function WorkspaceLaunchPanel({
 export function WorkspaceStagePanel({
   audioSource,
   backend,
+  engineReady,
   invalidExperienceSlug,
   isFullscreen,
   launchPanel,
   liveMode,
   missingRequestedPreset,
+  onAudioStart,
+  onLoadYouTube,
   onOpenBrowse,
   onOpenSettings,
   onShowCurrentLink,
   onShufflePreset,
+  onToggleExtendedSources,
   onToggleFullscreen,
+  onYoutubeUrlChange,
   stageEyebrow,
   stageRef,
   stageSummary,
   stageTitle,
+  showExtendedSources,
+  youtubePreviewRef,
+  youtubeReady,
+  youtubeUrl,
 }: {
   audioSource: 'demo' | 'microphone' | 'tab' | 'youtube' | null | undefined;
   backend: 'webgl' | 'webgpu' | null | undefined;
+  engineReady: boolean;
   invalidExperienceSlug: string | null;
   isFullscreen: boolean;
   launchPanel: ReactNode;
   liveMode: boolean;
   missingRequestedPreset: boolean;
+  onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
+  onLoadYouTube: () => void;
   onOpenBrowse: () => void;
   onOpenSettings: () => void;
   onShowCurrentLink: () => void;
   onShufflePreset: () => void;
+  onToggleExtendedSources: () => void;
   onToggleFullscreen: () => void;
+  onYoutubeUrlChange: (value: string) => void;
   stageEyebrow: string;
   stageRef: RefObject<HTMLDivElement | null>;
   stageSummary: string;
   stageTitle: string;
+  showExtendedSources: boolean;
+  youtubePreviewRef: RefObject<HTMLDivElement | null>;
+  youtubeReady: boolean;
+  youtubeUrl: string;
 }) {
   return (
     <section
@@ -528,6 +579,37 @@ export function WorkspaceStagePanel({
               </span>
             </div>
           </div>
+        ) : null}
+        {liveMode && audioSource === 'demo' ? (
+          <section className="stims-shell__audio-bridge">
+            <div className="stims-shell__audio-bridge-copy">
+              <p className="stims-shell__section-label">Switch to your music</p>
+              <p className="stims-shell__meta-copy">
+                Demo audio is running. Bring in your microphone, this tab, or a
+                YouTube link when you want the visuals to follow your own sound.
+              </p>
+            </div>
+            <div className="stims-shell__audio-bridge-actions">
+              <button
+                type="button"
+                className="cta-button"
+                onClick={onToggleExtendedSources}
+              >
+                {showExtendedSources ? 'Hide sources' : 'Use my music'}
+              </button>
+            </div>
+            {showExtendedSources ? (
+              <AudioSourcePanel
+                engineReady={engineReady}
+                onAudioStart={onAudioStart}
+                onLoadYouTube={onLoadYouTube}
+                onYoutubeUrlChange={onYoutubeUrlChange}
+                youtubePreviewRef={youtubePreviewRef}
+                youtubeReady={youtubeReady}
+                youtubeUrl={youtubeUrl}
+              />
+            ) : null}
+          </section>
         ) : null}
 
         <div

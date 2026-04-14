@@ -49,11 +49,12 @@ describe('Workspace shell UI simplification regression', () => {
       'Pick a look first, then fine-tune only if needed.',
     );
     expect(appSource).toContain(
-      "'Start with demo audio now. Bring in your own room, mic, or tab audio only when you want the visuals to follow live sound.'",
+      "'Press play for demo audio now, then switch to your own music only when you want the visuals to follow live sound.'",
     );
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain(": 'Loading';");
     expect(appSource).toContain(": 'Warming up visuals.';");
+    expect(appSource).toContain("? 'Demo is playing'");
     expect(appSource).toContain(
       ": 'Press play with demo audio, or open the preset library first.';",
     );
@@ -70,7 +71,22 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).toContain(
       'Demo starts instantly. Your own audio is optional.',
     );
+    expect(uiSource).toContain('Runs best on desktop and laptop.');
+    expect(uiSource).toMatch(
+      /Phones and older browsers can fall back to lighter visuals\s+automatically\./u,
+    );
     expect(uiSource).toContain('Use my music');
+    expect(uiSource).toMatch(
+      /Needs mic permission\.\s+React to the room, your speakers, or live\s+sound\./u,
+    );
+    expect(uiSource).toContain(
+      'Share this tab when prompted to capture audio already playing here.',
+    );
+    expect(uiSource).toContain('Paste a YouTube link, then start capture');
+    expect(uiSource).toContain('Switch to your music');
+    expect(uiSource).toMatch(
+      /Demo audio is running\.\s+Bring in your microphone, this tab, or a\s+YouTube link when you want the visuals to follow your own\s+sound\./u,
+    );
     expect(uiSource).toContain('Copy link');
     expect(uiSource).toContain('Editor stays on the stage.');
     expect(uiSource).toContain('Inspector stays on the stage.');

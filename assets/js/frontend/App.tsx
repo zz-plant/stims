@@ -101,22 +101,26 @@ export function StimsWorkspaceApp() {
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
   const liveMode = launchControlsHidden;
+  const currentAudioSource =
+    engineSnapshot?.audioSource ?? routeState.audioSource;
   const launchEyebrow =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Instant browser music visualizer'
+      ? 'Browser music visualizer'
       : 'Loading';
   const launchTitle =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Play reactive visuals in one click.'
+      ? 'Start instant reactive visuals.'
       : 'Warming up visuals.';
   const launchSummary =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Start with demo audio now. Bring in your own room, mic, or tab audio only when you want the visuals to follow live sound.'
+      ? 'Press play for demo audio now, then switch to your own music only when you want the visuals to follow live sound.'
       : 'Getting the visual engine ready.';
   const stageEyebrow = loadingRequestedPreset
     ? 'Loading preset'
     : liveMode
-      ? 'Now playing'
+      ? currentAudioSource === 'demo'
+        ? 'Demo is playing'
+        : 'Now playing'
       : 'Ready when you are';
   const stageTitle = loadingRequestedPreset
     ? 'Loading preset'
@@ -221,8 +225,9 @@ export function StimsWorkspaceApp() {
 
       <main className="stims-shell__content">
         <WorkspaceStagePanel
-          audioSource={engineSnapshot?.audioSource}
+          audioSource={currentAudioSource}
           backend={engineSnapshot?.backend}
+          engineReady={engineReady}
           invalidExperienceSlug={routeState.invalidExperienceSlug}
           isFullscreen={isFullscreen}
           launchPanel={
@@ -258,17 +263,29 @@ export function StimsWorkspaceApp() {
           }
           liveMode={liveMode}
           missingRequestedPreset={missingRequestedPreset}
+          onAudioStart={(source) => {
+            void handleAudioStart(source);
+          }}
+          onLoadYouTube={() => {
+            void loadYouTubePreview();
+          }}
           onOpenBrowse={() => updatePanel('browse')}
           onOpenSettings={() => updatePanel('settings')}
           onShowCurrentLink={() => {
             void handleShowCurrentLink();
           }}
           onShufflePreset={handleShufflePreset}
+          onToggleExtendedSources={toggleExtendedSources}
           onToggleFullscreen={handleToggleFullscreen}
+          onYoutubeUrlChange={setYoutubeUrl}
           stageEyebrow={stageEyebrow}
           stageRef={stageRef}
           stageSummary={stageSummary}
           stageTitle={stageTitle}
+          showExtendedSources={showExtendedSources}
+          youtubePreviewRef={youtubePreviewRef}
+          youtubeReady={youtubeReady}
+          youtubeUrl={youtubeUrl}
         />
       </main>
 

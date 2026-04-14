@@ -399,6 +399,37 @@ body[data-page="workspace"] {
   max-width: 29rem;
 }
 
+.stims-shell__confidence-note,
+.stims-shell__audio-bridge {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.02)
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(119, 201, 255, 0.1),
+      transparent 32%
+    );
+  box-shadow: var(--stims-shadow-soft);
+}
+
+.stims-shell__confidence-note strong,
+.stims-shell__audio-bridge strong {
+  color: var(--stims-ink-strong);
+}
+
+.stims-shell__confidence-note span {
+  color: var(--stims-muted);
+  line-height: 1.45;
+}
+
 .stims-shell__launch-copy h1,
 .stims-shell__stage-header h2,
 .stims-shell__sheet-heading h2 {
@@ -816,6 +847,25 @@ body[data-page="workspace"] {
   margin: 0;
   max-width: 48ch;
   line-height: 1.55;
+}
+
+.stims-shell__audio-bridge {
+  margin-bottom: 16px;
+}
+
+.stims-shell__audio-bridge-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.stims-shell__audio-bridge-copy p {
+  margin: 0;
+}
+
+.stims-shell__audio-bridge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .stims-shell__stage-frame {
