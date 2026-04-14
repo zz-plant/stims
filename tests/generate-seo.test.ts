@@ -32,13 +32,13 @@ describe('generate-seo sitemap routes', () => {
       expect.objectContaining({
         loc: 'https://toil.fyi/',
         lastmod: '2026-04-04',
-        imageLoc: 'https://toil.fyi/og/milkdrop.svg',
+        imageLoc: 'https://toil.fyi/og/milkdrop.png',
         imageTitle: 'MilkDrop Visualizer | Stims',
       }),
       expect.objectContaining({
         loc: 'https://toil.fyi/performance/',
         lastmod: '2026-04-04',
-        imageLoc: 'https://toil.fyi/og/milkdrop.svg',
+        imageLoc: 'https://toil.fyi/og/performance.png',
         imageTitle: 'Compatibility and Performance | Stims',
       }),
     ]);
@@ -51,7 +51,7 @@ describe('generate-seo sitemap routes', () => {
         lastmod: '2026-04-04',
         changefreq: 'weekly',
         priority: '1.0',
-        imageLoc: 'https://toil.fyi/og/milkdrop.svg',
+        imageLoc: 'https://toil.fyi/og/milkdrop.png',
         imageTitle: 'MilkDrop Visualizer | Stims',
         imageCaption: milkdrop.description,
       },
@@ -60,7 +60,7 @@ describe('generate-seo sitemap routes', () => {
         lastmod: '2026-04-04',
         changefreq: 'monthly',
         priority: '0.7',
-        imageLoc: 'https://toil.fyi/og/milkdrop.svg',
+        imageLoc: 'https://toil.fyi/og/performance.png',
         imageTitle: 'Compatibility and Performance | Stims',
         imageCaption:
           'Guide to browser support, lighter visual modes, and what to expect on older devices.',
@@ -70,10 +70,16 @@ describe('generate-seo sitemap routes', () => {
     expect(xml).toContain('<loc>https://toil.fyi/</loc>');
     expect(xml).toContain('<loc>https://toil.fyi/performance/</loc>');
     expect(xml).toContain(
-      '<image:loc>https://toil.fyi/og/milkdrop.svg</image:loc>',
+      '<image:loc>https://toil.fyi/og/milkdrop.png</image:loc>',
+    );
+    expect(xml).toContain(
+      '<image:loc>https://toil.fyi/og/performance.png</image:loc>',
     );
     expect(xml).toContain(
       '<image:title>MilkDrop Visualizer | Stims</image:title>',
+    );
+    expect(xml).toContain(
+      '<image:title>Compatibility and Performance | Stims</image:title>',
     );
     expect(xml).not.toContain('https://toil.fyi/milkdrop/');
   });

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Compatibility and Performance">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a1328" />
+      <stop offset="100%" stop-color="#0d8b8f" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1060" cy="520" r="210" fill="rgba(255,255,255,0.08)" />
+  <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.08)" />
+  <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.18)" />
+  <rect x="88" y="86" width="280" height="52" rx="26" fill="rgba(255,255,255,0.12)" />
+  <text x="116" y="120" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">Performance guide</text>
+  <text x="88" y="206" font-size="34" fill="#d8e2ff" font-family="Space Grotesk, Arial, sans-serif">What to expect before you start</text>
+  <text x="88" y="306" font-size="72" font-weight="700" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif">Compatibility and Performance</text>
+  <text x="88" y="372" font-size="30" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">Browser support, lighter modes, and first-run guidance</text>
+</svg>

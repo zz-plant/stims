@@ -6,7 +6,7 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://toil.fyi/og/milkdrop.svg</image:loc>
+      <image:loc>https://toil.fyi/og/milkdrop.png</image:loc>
       <image:title>MilkDrop Visualizer | Stims</image:title>
       <image:caption>MilkDrop-inspired browser music visualizer with demo audio, hand-picked presets, and ways to react to your own music.</image:caption>
     </image:image>
@@ -17,7 +17,7 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
-      <image:loc>https://toil.fyi/og/milkdrop.svg</image:loc>
+      <image:loc>https://toil.fyi/og/performance.png</image:loc>
       <image:title>Compatibility and Performance | Stims</image:title>
       <image:caption>Guide to browser support, lighter visual modes, and what to expect on older devices.</image:caption>
     </image:image>

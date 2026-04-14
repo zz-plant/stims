@@ -4,9 +4,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   buildSeoArtifacts,
   DEFAULT_BASE_URL,
+  GENERATED_ICON_192_PATH,
+  GENERATED_ICON_512_PATH,
+  GENERATED_ICON_FAVICON_32_PATH,
+  GENERATED_ICON_FAVICON_SVG_PATH,
   GENERATED_OG_DEFAULT_PATH,
+  GENERATED_OG_DEFAULT_PNG_PATH,
   GENERATED_OG_MILKDROP_PATH,
+  GENERATED_OG_MILKDROP_PNG_PATH,
+  GENERATED_OG_PERFORMANCE_PATH,
+  GENERATED_OG_PERFORMANCE_PNG_PATH,
   GENERATED_ROBOTS_PATH,
+  GENERATED_SCREENSHOT_HERO_NARROW_PATH,
+  GENERATED_SCREENSHOT_HERO_WIDE_PATH,
   GENERATED_SITEMAP_CHUNK_PATH,
   GENERATED_SITEMAP_INDEX_PATH,
 } from './generate-seo.ts';
@@ -25,9 +35,18 @@ type CheckResult = {
 const requiredInIndexHtml = [
   '<link rel="canonical" href="https://toil.fyi/" />',
   '<meta property="og:title"',
-  '<meta property="og:image"',
+  '<meta property="og:image" content="https://toil.fyi/og/milkdrop.png" />',
+  '<meta property="og:image:type" content="image/png" />',
   '<meta name="twitter:card" content="summary_large_image"',
+  '<meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />',
   '<script type="application/ld+json">',
+];
+
+const requiredInPerformanceHtml = [
+  '<link rel="canonical" href="https://toil.fyi/performance/" />',
+  '<meta property="og:image" content="https://toil.fyi/og/performance.png" />',
+  '<meta property="og:image:type" content="image/png" />',
+  '<meta name="twitter:image" content="https://toil.fyi/og/performance.png" />',
 ];
 
 const normalizeSitemapXml = (value: string) =>
@@ -39,7 +58,7 @@ const normalizeSitemapXml = (value: string) =>
 async function compareGeneratedFile(
   rootDir: string,
   relativePath: string,
-  expected: string,
+  expected: string | Uint8Array,
   results: CheckResult[],
   {
     normalize,
@@ -47,17 +66,29 @@ async function compareGeneratedFile(
     normalize?: (value: string) => string;
   } = {},
 ) {
-  const actual = await fs.readFile(path.join(rootDir, relativePath), 'utf8');
-  const actualValue = normalize ? normalize(actual) : actual;
-  const expectedValue = normalize ? normalize(expected) : expected;
+  const actual = await fs.readFile(path.join(rootDir, relativePath));
+  let passed = false;
+  let returnValue: string | Buffer = actual;
+
+  if (typeof expected === 'string') {
+    const actualText = actual.toString('utf8');
+    const expectedText = expected;
+    passed =
+      (normalize ? normalize(actualText) : actualText) ===
+      (normalize ? normalize(expectedText) : expectedText);
+    returnValue = actualText;
+  } else {
+    const expectedBuffer = Buffer.from(expected);
+    passed = Buffer.compare(actual, expectedBuffer) === 0;
+  }
 
   results.push({
     name: `Generated SEO artifact is up to date: ${relativePath}`,
-    passed: actualValue === expectedValue,
+    passed,
     details: relativePath,
   });
 
-  return actual;
+  return returnValue;
 }
 
 export async function runSeoChecks(rootDir = repoRoot) {
@@ -71,6 +102,27 @@ export async function runSeoChecks(rootDir = repoRoot) {
       details: 'index.html',
     });
   }
+
+  const performancePage = await fs.readFile(
+    path.join(rootDir, 'performance/index.html'),
+    'utf8',
+  );
+  for (const snippet of requiredInPerformanceHtml) {
+    results.push({
+      name: `Performance page contains ${snippet}`,
+      passed: performancePage.includes(snippet),
+      details: 'performance/index.html',
+    });
+  }
+
+  const manifestRaw = await fs.readFile(
+    path.join(rootDir, 'public/manifest.json'),
+    'utf8',
+  );
+  const manifest = JSON.parse(manifestRaw) as {
+    icons?: Array<{ src: string }>;
+    screenshots?: Array<{ src: string }>;
+  };
 
   const { files } = await buildSeoArtifacts(rootDir, {
     baseUrl: DEFAULT_BASE_URL,
@@ -108,8 +160,68 @@ export async function runSeoChecks(rootDir = repoRoot) {
   );
   await compareGeneratedFile(
     rootDir,
+    GENERATED_OG_DEFAULT_PNG_PATH,
+    expectedFiles.get(GENERATED_OG_DEFAULT_PNG_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
     GENERATED_OG_MILKDROP_PATH,
     expectedFiles.get(GENERATED_OG_MILKDROP_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_OG_MILKDROP_PNG_PATH,
+    expectedFiles.get(GENERATED_OG_MILKDROP_PNG_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_OG_PERFORMANCE_PATH,
+    expectedFiles.get(GENERATED_OG_PERFORMANCE_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_OG_PERFORMANCE_PNG_PATH,
+    expectedFiles.get(GENERATED_OG_PERFORMANCE_PNG_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_ICON_FAVICON_SVG_PATH,
+    expectedFiles.get(GENERATED_ICON_FAVICON_SVG_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_ICON_FAVICON_32_PATH,
+    expectedFiles.get(GENERATED_ICON_FAVICON_32_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_ICON_192_PATH,
+    expectedFiles.get(GENERATED_ICON_192_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_ICON_512_PATH,
+    expectedFiles.get(GENERATED_ICON_512_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_SCREENSHOT_HERO_WIDE_PATH,
+    expectedFiles.get(GENERATED_SCREENSHOT_HERO_WIDE_PATH) ?? '',
+    results,
+  );
+  await compareGeneratedFile(
+    rootDir,
+    GENERATED_SCREENSHOT_HERO_NARROW_PATH,
+    expectedFiles.get(GENERATED_SCREENSHOT_HERO_NARROW_PATH) ?? '',
     results,
   );
 
@@ -154,12 +266,47 @@ export async function runSeoChecks(rootDir = repoRoot) {
     passed:
       sitemapChunk.includes(`<loc>${DEFAULT_BASE_URL}/</loc>`) &&
       sitemapChunk.includes(
-        `<image:loc>${DEFAULT_BASE_URL}/og/milkdrop.svg</image:loc>`,
+        `<image:loc>${DEFAULT_BASE_URL}/og/milkdrop.png</image:loc>`,
       ) &&
       sitemapChunk.includes(
         '<image:title>MilkDrop Visualizer | Stims</image:title>',
       ),
     details: GENERATED_SITEMAP_CHUNK_PATH,
+  });
+
+  results.push({
+    name: 'Sitemap chunk includes dedicated performance OG image metadata',
+    passed:
+      sitemapChunk.includes(`<loc>${DEFAULT_BASE_URL}/performance/</loc>`) &&
+      sitemapChunk.includes(
+        `<image:loc>${DEFAULT_BASE_URL}/og/performance.png</image:loc>`,
+      ) &&
+      sitemapChunk.includes(
+        '<image:title>Compatibility and Performance | Stims</image:title>',
+      ),
+    details: GENERATED_SITEMAP_CHUNK_PATH,
+  });
+
+  results.push({
+    name: 'Manifest references generated icon assets',
+    passed:
+      manifest.icons?.some((icon) => icon.src === '/icons/icon-192.png') ===
+        true &&
+      manifest.icons?.some((icon) => icon.src === '/icons/icon-512.png') ===
+        true,
+    details: 'public/manifest.json',
+  });
+
+  results.push({
+    name: 'Manifest references generated screenshot assets',
+    passed:
+      manifest.screenshots?.some(
+        (screenshot) => screenshot.src === '/screenshots/hero-wide.png',
+      ) === true &&
+      manifest.screenshots?.some(
+        (screenshot) => screenshot.src === '/screenshots/hero-narrow.png',
+      ) === true,
+    details: 'public/manifest.json',
   });
 
   return results;
