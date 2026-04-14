@@ -673,7 +673,10 @@ export function buildMotionVectors({
     hasLegacyMotionVectorControls ? 0 : 0.02,
     1,
   );
-  const vectors: MilkdropMotionVectorVisual[] = [];
+  const nextVisualFrameIndex = (geometryState.motionVectorFrameIndex ^ 1) as
+    | 0
+    | 1;
+  const vectors = geometryState.motionVectorVisualFrames[nextVisualFrameIndex];
   const nextBufferIndex = (geometryState.motionVectorHistoryBufferIndex ^ 1) as
     | 0
     | 1;
@@ -688,6 +691,7 @@ export function buildMotionVectors({
     Math.min(2 / Math.max(countX, 1), 2 / Math.max(countY, 1)) * 0.625;
   const explicitLegacyMagnitude =
     legacyLength <= 1 ? legacyLength : legacyLength * legacyCellScale;
+  let vectorCount = 0;
 
   for (let row = 0; row < countY; row += 1) {
     for (let col = 0; col < countX; col += 1) {
@@ -756,32 +760,40 @@ export function buildMotionVectors({
       if (magnitude < 0.002) {
         continue;
       }
-      vectors.push({
-        positions: [
-          currentPoint.x - dx * 0.45,
-          currentPoint.y - dy * 0.45,
-          0.18,
-          currentPoint.x + dx,
-          currentPoint.y + dy,
-          0.18,
-        ],
+      const vector = vectors[vectorCount] ?? {
+        positions: [0, 0, 0, 0, 0, 0],
         color: colorValue,
-        alpha: hasLegacyMotionVectorControls
-          ? alpha
-          : clamp(alpha * (0.75 + magnitude * 2.2), 0.02, 1),
-        thickness: hasLegacyMotionVectorControls
-          ? clamp(1 + magnitude * 10, 1, 4)
-          : clamp(1 + magnitude * 18, 1, 4),
+        alpha: 0,
+        thickness: 1,
         additive: false,
-      });
+      };
+      const positions = vector.positions;
+      positions[0] = currentPoint.x - dx * 0.45;
+      positions[1] = currentPoint.y - dy * 0.45;
+      positions[2] = 0.18;
+      positions[3] = currentPoint.x + dx;
+      positions[4] = currentPoint.y + dy;
+      positions[5] = 0.18;
+      vector.color = colorValue;
+      vector.alpha = hasLegacyMotionVectorControls
+        ? alpha
+        : clamp(alpha * (0.75 + magnitude * 2.2), 0.02, 1);
+      vector.thickness = hasLegacyMotionVectorControls
+        ? clamp(1 + magnitude * 10, 1, 4)
+        : clamp(1 + magnitude * 18, 1, 4);
+      vector.additive = false;
+      vectors[vectorCount] = vector;
+      vectorCount += 1;
     }
   }
 
+  vectors.length = vectorCount;
   geometryState.lastMotionVectorField = {
     countX,
     countY,
     points: nextHistoryPoints,
   };
+  geometryState.motionVectorFrameIndex = nextVisualFrameIndex;
   geometryState.motionVectorHistoryBufferIndex = nextBufferIndex;
   return vectors;
 }

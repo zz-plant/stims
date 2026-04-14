@@ -73,7 +73,6 @@ export function StimsWorkspaceApp() {
     loadingRequestedPreset,
     missingRequestedPreset,
     readinessAlerts,
-    runtimeReady,
     selectedPreset,
     starterPresets,
     updatePanel,
@@ -96,13 +95,13 @@ export function StimsWorkspaceApp() {
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
   const launchEyebrow =
-    runtimeReady || routeState.invalidExperienceSlug ? 'Start' : 'Loading';
+    engineReady || routeState.invalidExperienceSlug ? 'Start' : 'Loading';
   const launchTitle =
-    runtimeReady || routeState.invalidExperienceSlug
+    engineReady || routeState.invalidExperienceSlug
       ? 'Choose audio.'
       : 'Warming up visuals.';
   const launchSummary =
-    runtimeReady || routeState.invalidExperienceSlug
+    engineReady || routeState.invalidExperienceSlug
       ? 'Start demo, use the mic, or capture a tab.'
       : 'Just a moment.';
   const stageEyebrow = loadingRequestedPreset

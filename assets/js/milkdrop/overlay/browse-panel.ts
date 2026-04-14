@@ -267,6 +267,8 @@ export class BrowsePanel {
   private browseRenderDebounceId: number | null = null;
   private browseDirty = true;
   private lastCatalogSignature = '';
+  private lastFilteredPresetSignature = '';
+  private lastFilteredPresets: MilkdropCatalogEntry[] = [];
   private lastBrowseRenderSignature = '';
   private lastCollectionFilterSignature = '';
   private visible = true;
@@ -713,15 +715,18 @@ export class BrowsePanel {
 
   private render() {
     const query = this.searchInput.value.trim().toLowerCase();
-    const renderSignature = [
+    const filteredPresetSignature = [
       this.lastCatalogSignature,
-      this.activePresetId ?? '',
-      this.activeBackend,
       this.activeCollectionTag,
       this.browseMode,
       this.browseSupportFilter,
       this.browseSort,
       query,
+    ].join('|');
+    const renderSignature = [
+      filteredPresetSignature,
+      this.activePresetId ?? '',
+      this.activeBackend,
     ].join('|');
     if (
       renderSignature === this.lastBrowseRenderSignature &&
@@ -733,12 +738,16 @@ export class BrowsePanel {
     this.browseDirty = false;
     this.updateBrowseFilterVisibility();
     this.renderCollectionFilters();
-    const filtered = sortBrowsePresets({
-      presets: this.presets.filter((preset) =>
-        this.matchesActiveBrowseFilters(preset, query),
-      ),
-      browseSort: this.browseSort,
-    });
+    if (filteredPresetSignature !== this.lastFilteredPresetSignature) {
+      this.lastFilteredPresetSignature = filteredPresetSignature;
+      this.lastFilteredPresets = sortBrowsePresets({
+        presets: this.presets.filter((preset) =>
+          this.matchesActiveBrowseFilters(preset, query),
+        ),
+        browseSort: this.browseSort,
+      });
+    }
+    const filtered = this.lastFilteredPresets;
 
     this.renderBrowseSummary(filtered.length);
     if (filtered.length === 0) {

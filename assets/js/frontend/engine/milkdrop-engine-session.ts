@@ -1,17 +1,12 @@
 import { setAudioActive, setCurrentToy } from '../../core/agent-api.ts';
 import {
-  clearMilkdropCapturedVideoStream,
-  setMilkdropCapturedVideoStream,
-} from '../../core/services/captured-video-texture.ts';
-import {
   DEFAULT_QUALITY_PRESETS,
   QUALITY_STORAGE_KEY,
 } from '../../core/settings-panel.ts';
 import { createRendererQualityManager } from '../../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../../core/toy-runtime.ts';
-import { createToyRuntimeStarter } from '../../core/toy-runtime-starter.ts';
 import { requestMilkdropCollectionSelection } from '../../milkdrop/collection-intent.ts';
-import { createMilkdropExperience } from '../../milkdrop/runtime.ts';
+import type { createMilkdropExperience } from '../../milkdrop/runtime.ts';
 import type {
   AudioSource,
   EngineAudioRequest,
@@ -25,7 +20,40 @@ import {
 import { toFileList } from './file-list.ts';
 import { waitForRuntime } from './runtime-wait.ts';
 
+type RuntimeFactories = {
+  createMilkdropExperience: typeof import('../../milkdrop/runtime.ts').createMilkdropExperience;
+  createToyRuntimeStarter: typeof import('../../core/toy-runtime-starter.ts').createToyRuntimeStarter;
+};
 type ExperienceController = ReturnType<typeof createMilkdropExperience>;
+
+let runtimeFactoriesPromise: Promise<RuntimeFactories> | null = null;
+let capturedVideoModulePromise: Promise<
+  typeof import('../../core/services/captured-video-texture.ts')
+> | null = null;
+
+const loadRuntimeFactories = () => {
+  if (!runtimeFactoriesPromise) {
+    runtimeFactoriesPromise = Promise.all([
+      import('../../milkdrop/runtime.ts'),
+      import('../../core/toy-runtime-starter.ts'),
+    ]).then(([runtimeModule, starterModule]) => ({
+      createMilkdropExperience: runtimeModule.createMilkdropExperience,
+      createToyRuntimeStarter: starterModule.createToyRuntimeStarter,
+    }));
+  }
+
+  return runtimeFactoriesPromise;
+};
+
+const loadCapturedVideoModule = () => {
+  if (!capturedVideoModulePromise) {
+    capturedVideoModulePromise = import(
+      '../../core/services/captured-video-texture.ts'
+    );
+  }
+
+  return capturedVideoModulePromise;
+};
 
 export function createMilkdropEngineAdapter() {
   let container: HTMLElement | null = null;
@@ -63,7 +91,12 @@ export function createMilkdropEngineAdapter() {
     container = null;
     audioActive = false;
     audioSource = null;
-    clearMilkdropCapturedVideoStream();
+    if (capturedVideoModulePromise) {
+      void capturedVideoModulePromise.then(
+        ({ clearMilkdropCapturedVideoStream }) =>
+          clearMilkdropCapturedVideoStream(),
+      );
+    }
     setCurrentToy(null);
     setAudioActive(false, null);
     emit();
@@ -82,6 +115,8 @@ export function createMilkdropEngineAdapter() {
         requestMilkdropCollectionSelection(intent.collectionTag);
       }
 
+      const { createMilkdropExperience, createToyRuntimeStarter } =
+        await loadRuntimeFactories();
       experience = createMilkdropExperience({
         container: nextContainer,
         quality,
@@ -157,7 +192,11 @@ export function createMilkdropEngineAdapter() {
       }
 
       if (request.source === 'demo') {
-        clearMilkdropCapturedVideoStream();
+        if (capturedVideoModulePromise) {
+          const { clearMilkdropCapturedVideoStream } =
+            await loadCapturedVideoModule();
+          clearMilkdropCapturedVideoStream();
+        }
         await activeRuntime.startAudio('sample');
         audioActive = true;
         audioSource = 'demo';
@@ -167,7 +206,11 @@ export function createMilkdropEngineAdapter() {
       }
 
       if (request.source === 'microphone') {
-        clearMilkdropCapturedVideoStream();
+        if (capturedVideoModulePromise) {
+          const { clearMilkdropCapturedVideoStream } =
+            await loadCapturedVideoModule();
+          clearMilkdropCapturedVideoStream();
+        }
         await activeRuntime.startAudio('microphone');
         audioActive = true;
         audioSource = 'microphone';
@@ -176,6 +219,8 @@ export function createMilkdropEngineAdapter() {
         return;
       }
 
+      const { setMilkdropCapturedVideoStream } =
+        await loadCapturedVideoModule();
       await setMilkdropCapturedVideoStream(request.stream, {
         cropTarget: request.cropTarget ?? container,
       });

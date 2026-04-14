@@ -12,6 +12,13 @@ type CaptureDrawSurface = {
   context: CanvasRenderingContext2D;
 };
 
+type VideoFrameCallbackVideo = HTMLVideoElement & {
+  cancelVideoFrameCallback?: (handle: number) => void;
+  requestVideoFrameCallback?: (
+    callback: (now: DOMHighResTimeStamp) => void,
+  ) => number;
+};
+
 const MIN_CAPTURE_SIZE = 64;
 const MAX_CAPTURE_WIDTH = 960;
 const MAX_CAPTURE_HEIGHT = 540;
@@ -23,6 +30,7 @@ let captureSurface: CaptureDrawSurface | null = null;
 let captureTexture: Texture | null = null;
 let captureCropTarget: Element | null = null;
 let captureFrameId: number | null = null;
+let captureVideoFrameId: number | null = null;
 let activeTrackCleanup: (() => void) | null = null;
 
 function configureTexture<T extends Texture>(
@@ -90,13 +98,20 @@ function ensureCaptureTexture() {
 }
 
 function stopCaptureLoop() {
-  if (captureFrameId === null || typeof cancelAnimationFrame !== 'function') {
-    captureFrameId = null;
-    return;
+  if (captureFrameId !== null && typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(captureFrameId);
   }
-
-  cancelAnimationFrame(captureFrameId);
   captureFrameId = null;
+
+  const video = captureVideo as VideoFrameCallbackVideo | null;
+  if (
+    captureVideoFrameId !== null &&
+    video &&
+    typeof video.cancelVideoFrameCallback === 'function'
+  ) {
+    video.cancelVideoFrameCallback(captureVideoFrameId);
+  }
+  captureVideoFrameId = null;
 }
 
 function resolveViewportRect(target: Element | null) {
@@ -197,6 +212,22 @@ function drawCaptureFrame() {
 
 function startCaptureLoop() {
   stopCaptureLoop();
+  const video = captureVideo as VideoFrameCallbackVideo | null;
+  if (video && typeof video.requestVideoFrameCallback === 'function') {
+    const step = () => {
+      drawCaptureFrame();
+      if (!activeStream || captureVideo !== video) {
+        captureVideoFrameId = null;
+        return;
+      }
+      captureVideoFrameId =
+        video.requestVideoFrameCallback?.(() => step()) ?? null;
+    };
+
+    captureVideoFrameId = video.requestVideoFrameCallback(() => step());
+    return;
+  }
+
   if (typeof requestAnimationFrame !== 'function') {
     return;
   }

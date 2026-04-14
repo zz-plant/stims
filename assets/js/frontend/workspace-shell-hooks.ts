@@ -30,6 +30,7 @@ type WorkspaceShellOrchestrationArgs = {
   setStatusMessage: (message: string | null) => void;
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
+    launchState?: SessionRouteState;
     source: 'demo' | 'microphone' | 'tab' | 'youtube';
     stream?: MediaStream;
   }) => Promise<void>;
@@ -59,10 +60,12 @@ export function useWorkspaceShellOrchestration({
       (engineSnapshot?.runtimeReady ?? false) || runtimeCatalog.length > 0;
     const catalog = routeState.invalidExperienceSlug
       ? fallbackCatalog
-      : runtimeCatalog;
+      : runtimeCatalogReady
+        ? runtimeCatalog
+        : fallbackCatalog;
     const catalogReady = routeState.invalidExperienceSlug
       ? fallbackCatalogReady
-      : runtimeCatalogReady;
+      : runtimeCatalogReady || fallbackCatalogReady;
     const catalogError = routeState.invalidExperienceSlug
       ? fallbackCatalogError
       : null;
@@ -92,6 +95,8 @@ export function useWorkspaceShellOrchestration({
     const runtimeReady =
       Boolean(engineSnapshot?.runtimeReady) &&
       !routeState.invalidExperienceSlug;
+    const engineReady =
+      !routeState.invalidExperienceSlug && fallbackCatalogError === null;
     const resolvedBackend =
       engineSnapshot?.backend ??
       (document.body.dataset.activeBackend === 'webgl'
@@ -123,7 +128,7 @@ export function useWorkspaceShellOrchestration({
       catalogReady,
       collectionTags: getCollectionTags(catalog),
       currentPreset,
-      engineReady: runtimeReady,
+      engineReady,
       featuredPreset,
       filteredCatalog,
       launchControlsHidden,
@@ -224,7 +229,7 @@ export function useWorkspaceShellOrchestration({
 
       if (source === 'demo' || source === 'microphone') {
         commitRoute(nextRouteState);
-        await startAudioSource({ source });
+        await startAudioSource({ source, launchState: nextRouteState });
         return;
       }
 
@@ -240,6 +245,7 @@ export function useWorkspaceShellOrchestration({
         source,
         stream,
         cropTarget: youtubePreviewRef.current,
+        launchState: nextRouteState,
       });
     } catch (error) {
       setStatusMessage(

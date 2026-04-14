@@ -1,6 +1,8 @@
 import type {
   MilkdropColor,
   MilkdropGpuFieldSignalInputs,
+  MilkdropMotionVectorVisual,
+  MilkdropProceduralCustomWaveVisual,
   MilkdropProceduralMeshDescriptorPlan,
   MilkdropProceduralWaveVisual,
   MilkdropRuntimeSignals,
@@ -62,6 +64,12 @@ export type WaveBuilderState = {
   lastWaveSamples: number[];
   lastWaveMomentum: number[];
   customWaveLocals: MutableState[];
+  customWaveFrameIndex: 0 | 1;
+  customWaveVisualFrames: [MilkdropWaveVisual[], MilkdropWaveVisual[]];
+  proceduralCustomWaveFrames: [
+    MilkdropProceduralCustomWaveVisual[],
+    MilkdropProceduralCustomWaveVisual[],
+  ];
   proceduralTrailWaves: MilkdropProceduralWaveVisual[];
   channelSample: CustomWaveChannelSample;
   buffers: WaveFrameBuffers;
@@ -79,6 +87,11 @@ export type GeometryBuilderState = {
   frameTransformCache: Map<number, { x: number; y: number }>;
   pointScratch: MutableState;
   meshPoints: MeshFieldPoint[];
+  motionVectorFrameIndex: 0 | 1;
+  motionVectorVisualFrames: [
+    MilkdropMotionVectorVisual[],
+    MilkdropMotionVectorVisual[],
+  ];
   motionVectorHistoryBuffers: [
     MotionVectorHistoryPoint[],
     MotionVectorHistoryPoint[],

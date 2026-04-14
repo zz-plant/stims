@@ -4,6 +4,7 @@ import {
   startTransition,
   useDeferredValue,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
 } from 'react';
@@ -12,8 +13,10 @@ import {
   subscribeToMotionPreference,
 } from '../core/motion-preferences.ts';
 import {
+  DEFAULT_QUALITY_PRESETS,
   getActiveQualityPreset,
   QUALITY_STORAGE_KEY,
+  setQualityPresetById,
   subscribeToQualityPreset,
 } from '../core/settings-panel.ts';
 import {
@@ -22,6 +25,7 @@ import {
 } from '../core/state/render-preference-store.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import type {
+  LaunchIntent,
   PresetCatalogEntry,
   PresetCatalogManifest,
   SessionRouteState,
@@ -131,6 +135,11 @@ export function useWorkspaceSessionState({
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
+  const sessionDisposedRef = useRef(false);
+  const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
+    null,
+  );
+  const engineUnsubscribeRef = useRef<(() => void) | null>(null);
   const pendingPresetIdRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
   const readinessItems = useWorkspaceReadiness();
@@ -148,6 +157,54 @@ export function useWorkspaceSessionState({
     routeState,
     statusMessage,
   });
+
+  const ensureEngineAdapter = useEffectEvent(async () => {
+    if (engineRef.current) {
+      return engineRef.current;
+    }
+
+    if (!engineAdapterPromiseRef.current) {
+      engineAdapterPromiseRef.current = import(
+        './engine/milkdrop-engine-adapter.ts'
+      )
+        .then(({ createMilkdropEngineAdapter }) => {
+          const adapter = createMilkdropEngineAdapter();
+          if (sessionDisposedRef.current) {
+            adapter.dispose();
+            throw new Error('Visualizer session has already been disposed.');
+          }
+          engineRef.current = adapter;
+          engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
+            setEngineSnapshot(snapshot);
+          });
+          setEngineAdapterReady(true);
+          return adapter;
+        })
+        .catch((error) => {
+          engineAdapterPromiseRef.current = null;
+          throw error;
+        });
+    }
+
+    return engineAdapterPromiseRef.current;
+  });
+
+  const ensureEngineMounted = useEffectEvent(
+    async (launchIntent: LaunchIntent = initialLaunchIntentRef.current) => {
+      const stage = stageRef.current;
+      if (!stage) {
+        throw new Error('Visualizer stage is not ready yet.');
+      }
+
+      const adapter = await ensureEngineAdapter();
+      if (adapter.isMounted()) {
+        return adapter;
+      }
+
+      await adapter.mount(stage, launchIntent);
+      return adapter;
+    },
+  );
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -173,20 +230,14 @@ export function useWorkspaceSessionState({
   }, []);
 
   useEffect(() => {
+    sessionDisposedRef.current = false;
     let cancelled = false;
-    let unsubscribe: (() => void) | null = null;
 
-    void import('./engine/milkdrop-engine-adapter.ts')
-      .then(({ createMilkdropEngineAdapter }) => {
+    void ensureEngineAdapter()
+      .then(() => {
         if (cancelled) {
           return;
         }
-        const adapter = createMilkdropEngineAdapter();
-        engineRef.current = adapter;
-        unsubscribe = adapter.subscribe((snapshot) => {
-          setEngineSnapshot(snapshot);
-        });
-        setEngineAdapterReady(true);
       })
       .catch((error) => {
         if (cancelled) {
@@ -201,9 +252,13 @@ export function useWorkspaceSessionState({
 
     return () => {
       cancelled = true;
-      unsubscribe?.();
+      sessionDisposedRef.current = true;
+      engineUnsubscribeRef.current?.();
+      engineUnsubscribeRef.current = null;
       engineRef.current?.dispose();
       engineRef.current = null;
+      engineAdapterPromiseRef.current = null;
+      setEngineAdapterReady(false);
     };
   }, []);
 
@@ -229,10 +284,6 @@ export function useWorkspaceSessionState({
   }, []);
 
   useEffect(() => {
-    if (!routeState.invalidExperienceSlug) {
-      return;
-    }
-
     let cancelled = false;
     setFallbackCatalogError(null);
     setFallbackCatalogReady(false);
@@ -261,7 +312,7 @@ export function useWorkspaceSessionState({
     return () => {
       cancelled = true;
     };
-  }, [routeState.invalidExperienceSlug]);
+  }, []);
 
   useEffect(() => {
     if (!engineRef.current?.isMounted()) {
@@ -270,20 +321,34 @@ export function useWorkspaceSessionState({
   }, [routeState]);
 
   useEffect(() => {
-    const stage = stageRef.current;
     if (
       !engineAdapterReady ||
-      !engineRef.current ||
-      !stage ||
       routeState.invalidExperienceSlug ||
-      engineRef.current.isMounted() ||
-      typeof MutationObserver !== 'function'
+      engineSnapshot?.runtimeReady ||
+      (routeState.audioSource !== 'demo' &&
+        routeState.panel !== 'editor' &&
+        routeState.panel !== 'inspector')
     ) {
       return;
     }
 
-    void engineRef.current.mount(stage, initialLaunchIntentRef.current);
-  }, [engineAdapterReady, routeState.invalidExperienceSlug]);
+    const launchIntent = buildLaunchIntent(routeState);
+    initialLaunchIntentRef.current = launchIntent;
+    void ensureEngineMounted(launchIntent).catch((error) => {
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to start the visualizer runtime.',
+      );
+    });
+  }, [
+    engineAdapterReady,
+    engineSnapshot?.runtimeReady,
+    routeState,
+    routeState.audioSource,
+    routeState.invalidExperienceSlug,
+    routeState.panel,
+  ]);
 
   useEffect(() => {
     if (!engineSnapshot?.activePresetId) {
@@ -451,7 +516,8 @@ export function useWorkspaceSessionState({
       if (!files?.length) {
         return;
       }
-      await engineRef.current?.importPreset(files);
+      const adapter = await ensureEngineMounted();
+      await adapter.importPreset(files);
     },
     loadYouTubePreview,
     motionPreference,
@@ -461,7 +527,14 @@ export function useWorkspaceSessionState({
     renderPreferences,
     searchQuery,
     setQualityPreset: (presetId: string) => {
-      engineRef.current?.setQualityPreset(presetId);
+      if (engineRef.current?.isMounted()) {
+        engineRef.current.setQualityPreset(presetId);
+        return;
+      }
+      setQualityPresetById(presetId, {
+        presets: DEFAULT_QUALITY_PRESETS,
+        storageKey: QUALITY_STORAGE_KEY,
+      });
     },
     setSearchQuery,
     setShowExtendedSources,
@@ -471,11 +544,16 @@ export function useWorkspaceSessionState({
     stageRef,
     startAudioSource: async (request: {
       cropTarget?: HTMLElement | null;
+      launchState?: SessionRouteState;
       source: 'demo' | 'microphone' | 'tab' | 'youtube';
       stream?: MediaStream;
     }) => {
+      const launchIntent = buildLaunchIntent(request.launchState ?? routeState);
+      initialLaunchIntentRef.current = launchIntent;
+      const adapter = await ensureEngineMounted(launchIntent);
+
       if (request.source === 'demo' || request.source === 'microphone') {
-        await engineRef.current?.setAudioSource({
+        await adapter.setAudioSource({
           source: request.source,
         });
         return;
@@ -485,7 +563,7 @@ export function useWorkspaceSessionState({
         throw new Error('A captured media stream is required for tab audio.');
       }
 
-      await engineRef.current?.setAudioSource({
+      await adapter.setAudioSource({
         source: request.source,
         stream: request.stream,
         cropTarget: request.cropTarget,

@@ -1,8 +1,46 @@
 import type {
   MilkdropBlendState,
   MilkdropCatalogEntry,
+  MilkdropColor,
   MilkdropFrameState,
+  MilkdropMotionVectorVisual,
+  MilkdropProceduralCustomWaveVisual,
+  MilkdropWaveVisual,
 } from '../types';
+
+function cloneColor(color: MilkdropColor): MilkdropColor {
+  return { ...color };
+}
+
+function cloneWaveVisual(wave: MilkdropWaveVisual): MilkdropWaveVisual {
+  return {
+    ...wave,
+    positions: wave.positions.slice(),
+    color: cloneColor(wave.color),
+  };
+}
+
+function cloneProceduralCustomWaveVisual(
+  wave: MilkdropProceduralCustomWaveVisual,
+): MilkdropProceduralCustomWaveVisual {
+  return {
+    ...wave,
+    samples: wave.samples.slice(),
+    sampleValues2: wave.sampleValues2?.slice(),
+    signals: wave.signals ? { ...wave.signals } : wave.signals,
+    color: cloneColor(wave.color),
+  };
+}
+
+function cloneMotionVectorVisual(
+  vector: MilkdropMotionVectorVisual,
+): MilkdropMotionVectorVisual {
+  return {
+    ...vector,
+    positions: vector.positions.slice(),
+    color: cloneColor(vector.color),
+  };
+}
 
 export function cloneBlendState(
   frameState: MilkdropFrameState | null,
@@ -12,7 +50,17 @@ export function cloneBlendState(
   }
   return {
     mode: 'gpu',
-    previousFrame: frameState,
+    previousFrame: {
+      ...frameState,
+      customWaves: frameState.customWaves.map(cloneWaveVisual),
+      motionVectors: frameState.motionVectors.map(cloneMotionVectorVisual),
+      gpuGeometry: {
+        ...frameState.gpuGeometry,
+        customWaves: frameState.gpuGeometry.customWaves.map(
+          cloneProceduralCustomWaveVisual,
+        ),
+      },
+    },
     alpha: 1,
   };
 }

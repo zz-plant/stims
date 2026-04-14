@@ -96,6 +96,9 @@ class MilkdropPresetVM implements MilkdropVM {
     lastWaveSamples: [],
     lastWaveMomentum: [],
     customWaveLocals: [],
+    customWaveFrameIndex: 0,
+    customWaveVisualFrames: [[], []],
+    proceduralCustomWaveFrames: [[], []],
     proceduralTrailWaves: [],
     channelSample: {
       sample: 0,
@@ -115,6 +118,8 @@ class MilkdropPresetVM implements MilkdropVM {
     frameTransformCache: new Map<number, { x: number; y: number }>(),
     pointScratch: {},
     meshPoints: [],
+    motionVectorFrameIndex: 0,
+    motionVectorVisualFrames: [[], []],
     motionVectorHistoryBuffers: [[], []],
     motionVectorHistoryBufferIndex: 0,
   };
@@ -172,11 +177,19 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.customWaveLocals = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
     );
+    this.waveState.customWaveFrameIndex = 0;
+    this.waveState.customWaveVisualFrames[0].length = 0;
+    this.waveState.customWaveVisualFrames[1].length = 0;
+    this.waveState.proceduralCustomWaveFrames[0].length = 0;
+    this.waveState.proceduralCustomWaveFrames[1].length = 0;
     this.shapeState.customShapeLocals = this.preset.ir.customShapes.map(
       (shape) => this.seedCustomShapeState(shape),
     );
     this.waveState.proceduralTrailWaves = [];
     this.geometryState.lastMotionVectorField = null;
+    this.geometryState.motionVectorFrameIndex = 0;
+    this.geometryState.motionVectorVisualFrames[0].length = 0;
+    this.geometryState.motionVectorVisualFrames[1].length = 0;
     this.waveState.buffers.liveSamples.length = 0;
     this.waveState.buffers.previousSamples.length = 0;
     this.waveState.buffers.smoothedSamples.length = 0;
