@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
+import { shareOrCopyLink } from '../utils/share-link.ts';
 import type {
   PanelState,
   PresetCatalogEntry,
@@ -277,14 +278,28 @@ export function useWorkspaceShellOrchestration({
       window.location,
     );
     const href = currentUrl.toString();
-    try {
-      await navigator.clipboard.writeText(href);
-      setStatusMessage('Link copied.');
-    } catch (_error) {
-      setStatusMessage(
-        `Current link: ${currentUrl.pathname}${currentUrl.search}`,
-      );
+    const result = await shareOrCopyLink(href, {
+      title: 'Stims visualizer',
+      text: 'Open this Stims visualizer view.',
+    });
+
+    if (result === 'shared') {
+      setStatusMessage('Link shared.');
+      return;
     }
+
+    if (result === 'copied') {
+      setStatusMessage('Link copied.');
+      return;
+    }
+
+    if (result === 'cancelled') {
+      return;
+    }
+
+    setStatusMessage(
+      `Current link: ${currentUrl.pathname}${currentUrl.search}`,
+    );
   };
 
   return {

@@ -4,6 +4,7 @@ import {
   isBelowBreakpoint,
   maxWidthQuery,
 } from '../utils/breakpoints';
+import { shareOrCopyLink } from '../utils/share-link.ts';
 import { renderIconSvg, replaceIconContents } from './icon-library.ts';
 import { setupPictureInPictureControls } from './nav-picture-in-picture.ts';
 import { renderRendererStatus } from './nav-renderer-status.ts';
@@ -601,25 +602,29 @@ function renderToyNav(
   const copyShareLink = async () => {
     const win = doc.defaultView ?? window;
     const url = win.location.href;
-    showShareStatus('Copying link…');
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        const helper = doc.createElement('textarea');
-        helper.value = url;
-        helper.setAttribute('readonly', 'true');
-        helper.style.position = 'fixed';
-        helper.style.top = '-1000px';
-        doc.body.appendChild(helper);
-        helper.select();
-        doc.execCommand('copy');
-        helper.remove();
-      }
-      showShareStatus('Link copied.');
-    } catch (_error) {
-      showShareStatus('Unable to copy link.');
+    showShareStatus('Preparing share…');
+    const result = await shareOrCopyLink(url, {
+      doc,
+      title: doc.title || 'Stims',
+      text: 'Open this Stims visualizer view.',
+    });
+
+    if (result === 'shared') {
+      showShareStatus('Link shared.');
+      return;
     }
+
+    if (result === 'copied') {
+      showShareStatus('Link copied.');
+      return;
+    }
+
+    if (result === 'cancelled') {
+      showShareStatus('Share cancelled.');
+      return;
+    }
+
+    showShareStatus('Unable to share link.');
   };
 
   shareBtn?.addEventListener('click', () => {
