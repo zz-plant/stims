@@ -5,17 +5,27 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 ## Read order
 
 1. Root [`AGENTS.md`](../../AGENTS.md) for non-negotiable defaults.
-2. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
-3. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
+2. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
+3. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
 4. [`metadata-and-docs.md`](./metadata-and-docs.md) before commit/PR finalization.
 5. [`reference-docs.md`](./reference-docs.md) when triaging unfamiliar areas.
 
 ## Task routing
 
+Use [`custom-capabilities.md`](./custom-capabilities.md) first when the task matches a repeatable repo-local workflow. Fast path:
+
+| If the task is mainly about... | Start here |
+| --- | --- |
+| shared runtime, loader, renderer, shell, controls, audio, or routing | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](../../.agent/skills/modify-visualizer-runtime/SKILL.md) |
+| bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](../../.agent/skills/modify-preset-workflow/SKILL.md) |
+| browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](../../.agent/skills/play-visualizer/SKILL.md) and [`visual-testing.md`](./visual-testing.md) |
+| quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](../../.agent/skills/verify-visualizer-work/SKILL.md) |
+| end-to-end product-facing change that should go to PR-ready | [`.agent/skills/ship-visualizer-change/SKILL.md`](../../.agent/skills/ship-visualizer-change/SKILL.md) |
+
 ### Code changes
 
-- [`tooling-and-quality.md`](./tooling-and-quality.md)
 - [`custom-capabilities.md`](./custom-capabilities.md)
+- [`tooling-and-quality.md`](./tooling-and-quality.md)
 - [`visual-testing.md`](./visual-testing.md) (browser-based testing, DevTools, agent-mode URL)
 - [`visualizer-workflows.md`](./visualizer-workflows.md) (includes `/ship-visualizer-change` for end-to-end product updates)
 - [`reference-docs.md`](./reference-docs.md)

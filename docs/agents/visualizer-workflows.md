@@ -4,11 +4,11 @@
 
 The repository includes markdown workflows under `.agent/workflows/`:
 
-- `/modify-visualizer-runtime` — update shared runtime, loader, renderer, shell, audio, or capability behavior.
-- `/modify-preset-workflow` — update bundled presets, catalog/editor flows, import/export, or compatibility behavior.
-- `/play-visualizer` — run and manually verify the flagship visualizer.
-- `/test-visualizer` — execute visualizer-focused tests.
-- `/ship-visualizer-change` — orchestrate implementation, checks, and PR-ready docs alignment.
+- [`/modify-visualizer-runtime`](../../.agent/workflows/modify-visualizer-runtime.md) — update shared runtime, loader, renderer, shell, audio, or capability behavior.
+- [`/modify-preset-workflow`](../../.agent/workflows/modify-preset-workflow.md) — update bundled presets, catalog/editor flows, import/export, or compatibility behavior.
+- [`/play-visualizer`](../../.agent/workflows/play-visualizer.md) — run and manually verify the flagship visualizer.
+- [`/test-visualizer`](../../.agent/workflows/test-visualizer.md) — execute visualizer-focused tests.
+- [`/ship-visualizer-change`](../../.agent/workflows/ship-visualizer-change.md) — orchestrate implementation, checks, and PR-ready docs alignment.
 
 For the matching repo-local skills plus “when do I use which one?” guidance, see [`custom-capabilities.md`](./custom-capabilities.md).
 

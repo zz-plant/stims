@@ -113,6 +113,7 @@
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.40.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "@tanstack/react-router": "^1.168.21",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sharp": "^0.34.5",
