@@ -3,23 +3,20 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 describe('Workspace shell mobile layout regression', () => {
-  test('keeps the launch setup ahead of playback on phones until the session is live', () => {
+  test('turns the home state into a stage-first hero on phones', () => {
     const css = readFileSync(
       join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
       'utf8',
     );
 
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch\s*\{\s*order:\s*1;/u,
+      /\.stims-shell__workspace\[data-mode="home"\]\s*\{[\s\S]*?padding:\s*0;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__workspace\s*\{\s*order:\s*2;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*88svh;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?:root\[data-focused-session="live"\][\s\S]*?\.stims-shell__workspace\s*\{\s*order:\s*1;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?:root\[data-focused-session="live"\][\s\S]*?\.stims-shell__launch\s*\{\s*order:\s*2;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-hero\s*\{[\s\S]*?inset:\s*10px;[\s\S]*?align-content:\s*end;/u,
     );
   });
 
@@ -50,7 +47,7 @@ describe('Workspace shell mobile layout regression', () => {
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__readiness-chips\s*\{\s*flex-wrap:\s*nowrap;[\s\S]*?overflow-x:\s*auto;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-header\s*\{\s*gap:\s*8px;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-panel\s*\{[\s\S]*?width:\s*min\(100%, calc\(100vw - 20px\)\);/u,
     );
   });
 });

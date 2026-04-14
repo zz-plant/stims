@@ -48,21 +48,29 @@ describe('Workspace shell UI simplification regression', () => {
     expect(helperSource).toContain(
       'Pick a look first, then fine-tune only if needed.',
     );
-    expect(appSource).toContain("'Start demo, use the mic, or capture a tab.'");
+    expect(appSource).toContain(
+      "'Start with demo audio now. Bring in your own room, mic, or tab audio only when you want the visuals to follow live sound.'",
+    );
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain(": 'Loading';");
     expect(appSource).toContain(": 'Warming up visuals.';");
-    expect(appSource).toContain(": 'Open Presets or shuffle.';");
-    expect(uiSource).toContain('Featured');
+    expect(appSource).toContain(
+      ": 'Press play with demo audio, or open the preset library first.';",
+    );
+    expect(uiSource).toContain('Try this look first');
     expect(uiSource).toMatch(/>\s*Shuffle\s*</u);
-    expect(uiSource).toContain('Start with a mood, not a filename.');
+    expect(uiSource).toContain('Pick a look and press play.');
     expect(uiSource).toContain('Four quick ways into the catalog.');
     expect(uiSource).toContain('Full library');
-    expect(uiSource).toContain('Start with Balanced.');
-    expect(uiSource).toContain('Choose a visual profile');
+    expect(uiSource).toContain('Change the vibe, keep the momentum.');
+    expect(uiSource).toContain('Or pick a specific visual profile');
     expect(uiSource).toContain('Keep visuals steadier on tricky hardware');
     expect(uiSource).toContain('Use motion controls on supported devices');
-    expect(uiSource).toContain('Fine-tune the picture');
+    expect(uiSource).toContain('Advanced tuning');
+    expect(uiSource).toContain(
+      'Demo starts instantly. Your own audio is optional.',
+    );
+    expect(uiSource).toContain('Use my music');
     expect(uiSource).toContain('Copy link');
     expect(uiSource).toContain('Editor stays on the stage.');
     expect(uiSource).toContain('Inspector stays on the stage.');
@@ -73,9 +81,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain(
       'Search the full library or shuffle a surprise.',
     );
-    expect(uiSource).not.toContain(
-      'Stay on Balanced unless the picture feels rough.',
-    );
+    expect(uiSource).not.toContain('Start with Balanced.');
     expect(uiSource).not.toContain(
       'Use these only when you want a sharper image or need to calm',
     );
