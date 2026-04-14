@@ -9,7 +9,7 @@ const milkdrop = {
   slug: 'milkdrop',
   title: 'MilkDrop Visualizer',
   description:
-    'Preset-driven feedback visualizer with demo playback, live editing, and import/export flows.',
+    'MilkDrop-inspired browser visualizer with demo audio, hand-picked presets, live editing, and preset import/export.',
 };
 
 describe('generate-seo sitemap routes', () => {
@@ -63,7 +63,7 @@ describe('generate-seo sitemap routes', () => {
         imageLoc: 'https://toil.fyi/og/milkdrop.svg',
         imageTitle: 'Compatibility and Performance | Stims',
         imageCaption:
-          'Public guide for browser support, lighter-mode fallback behavior, and first-run expectations.',
+          'Guide to browser support, lighter visual modes, and what to expect on older devices.',
       },
     ]);
 

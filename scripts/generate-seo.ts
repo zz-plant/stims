@@ -198,7 +198,8 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
       path: '/',
       imagePath: '/og/milkdrop.svg',
       imageTitle: `${milkdrop.title} | Stims`,
-      imageCaption: milkdrop.description,
+      imageCaption:
+        'MilkDrop-inspired browser music visualizer with demo audio, hand-picked presets, and ways to react to your own music.',
       changefreq: 'weekly',
       priority: '1.0',
       sourcePaths: [
@@ -213,7 +214,7 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
       imagePath: '/og/milkdrop.svg',
       imageTitle: 'Compatibility and Performance | Stims',
       imageCaption:
-        'Public guide for browser support, lighter-mode fallback behavior, and first-run expectations.',
+        'Guide to browser support, lighter visual modes, and what to expect on older devices.',
       changefreq: 'monthly',
       priority: '0.7',
       sourcePaths: ['performance/index.html', 'assets/css/performance.css'],
@@ -329,9 +330,9 @@ export async function buildSeoArtifacts(
         relativePath: GENERATED_OG_DEFAULT_PATH,
         contents: buildOgSvg({
           title: 'Stims',
-          subtitle: 'Browser-native MilkDrop visualizer',
-          eyebrow: 'Home route',
-          chip: 'Explanation first',
+          subtitle: 'MilkDrop-inspired visuals for your music',
+          eyebrow: 'Music-reactive in the browser',
+          chip: 'Instant visuals',
           accentStart: '#08131b',
           accentEnd: '#1f5f66',
         }),
@@ -340,9 +341,9 @@ export async function buildSeoArtifacts(
         relativePath: GENERATED_OG_MILKDROP_PATH,
         contents: buildOgSvg({
           title: milkdrop.title,
-          subtitle: 'Quick check, audio setup, presets, and live editing',
-          eyebrow: 'Launch route',
-          chip: '/milkdrop/',
+          subtitle: 'Demo audio, presets, and your own music',
+          eyebrow: 'Browser music visualizer',
+          chip: 'Start fast',
           accentStart: '#150d2e',
           accentEnd: '#244b9a',
         }),

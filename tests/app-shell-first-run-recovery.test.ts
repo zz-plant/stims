@@ -55,12 +55,12 @@ describe('Workspace shell first-run and recovery regression', () => {
 
     expect(appSource).toContain('Choose a new look');
     expect(appSource).toContain(
-      'Start with the featured look or open the library.',
+      'Start with the featured look or open the preset library.',
     );
-    expect(uiSource).toContain('Load featured preset');
+    expect(uiSource).toContain('Try featured preset');
     expect(uiSource).toContain('Browse presets');
-    expect(uiSource).toContain('Requested preset missing');
-    expect(uiSource).toContain('is no longer bundled here.');
+    expect(uiSource).toContain('Preset not found');
+    expect(uiSource).toContain("isn't available here anymore.");
     expect(uiSource).not.toContain('This preset is no longer bundled here.');
     expect(shellHookSource).toMatch(
       /const missingRequestedPreset = Boolean\([\s\S]*?catalogReady[\s\S]*?\);/u,

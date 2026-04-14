@@ -10,8 +10,8 @@
   <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.08)" />
   <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.18)" />
   <rect x="88" y="86" width="280" height="52" rx="26" fill="rgba(255,255,255,0.12)" />
-  <text x="116" y="120" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">Explanation first</text>
-  <text x="88" y="206" font-size="34" fill="#d8e2ff" font-family="Space Grotesk, Arial, sans-serif">Home route</text>
+  <text x="116" y="120" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">Instant visuals</text>
+  <text x="88" y="206" font-size="34" fill="#d8e2ff" font-family="Space Grotesk, Arial, sans-serif">Music-reactive in the browser</text>
   <text x="88" y="306" font-size="72" font-weight="700" fill="#ffffff" font-family="Space Grotesk, Arial, sans-serif">Stims</text>
-  <text x="88" y="372" font-size="30" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">Browser-native MilkDrop visualizer</text>
+  <text x="88" y="372" font-size="30" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">MilkDrop-inspired visuals for your music</text>
 </svg>

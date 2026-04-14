@@ -56,7 +56,7 @@ describe('capability probe service', () => {
     expect(result.warnings).toEqual([
       'WebGPU unsupported',
       'Microphone access is blocked; visuals will fall back to demo audio.',
-      'Performance mode recommended for smoother visuals on this device.',
+      'A lighter visual mode is recommended for smoother playback on this device.',
     ]);
     expect(result.canProceed).toBe(true);
     expect(result.rendering).toMatchObject({

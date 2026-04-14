@@ -5,7 +5,7 @@ It summarizes the shipped visualizer entries from `assets/data/toys.json`.
 
 ## MilkDrop Visualizer (`milkdrop`)
 
-Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with blend transitions, live source editing, and import/export flows.
+MilkDrop-inspired browser visualizer with demo audio, hand-picked presets, live editing, and preset import/export.
 
 - Entry module: `assets/js/toys/milkdrop-toy.ts`
 - Launch route: `/` (canonical workspace route) and `/milkdrop/` (compatibility alias)
@@ -15,8 +15,8 @@ Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with 
 - Moods: immersive, psychedelic
 - Tags: feedback, warp, visualizer, retro, presets, editor
 - Starter preset: `rovastar-parallel-universe` (starter preset)
-- First-run hint: Open presets, then try autoplay.
-- Highlight control: Preset browser
+- First-run hint: Open the preset library, then try autoplay.
+- Highlight control: Preset library
 - Recommended input: `demoAudio`
 
 ### Controls

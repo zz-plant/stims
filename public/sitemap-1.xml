@@ -8,7 +8,7 @@
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.svg</image:loc>
       <image:title>MilkDrop Visualizer | Stims</image:title>
-      <image:caption>Preset-driven feedback visualizer in the lineage of Ryan Geiss&apos;s MilkDrop, with blend transitions, live source editing, and import/export flows.</image:caption>
+      <image:caption>MilkDrop-inspired browser music visualizer with demo audio, hand-picked presets, and ways to react to your own music.</image:caption>
     </image:image>
   </url>
   <url>
@@ -19,7 +19,7 @@
     <image:image>
       <image:loc>https://toil.fyi/og/milkdrop.svg</image:loc>
       <image:title>Compatibility and Performance | Stims</image:title>
-      <image:caption>Public guide for browser support, lighter-mode fallback behavior, and first-run expectations.</image:caption>
+      <image:caption>Guide to browser support, lighter visual modes, and what to expect on older devices.</image:caption>
     </image:image>
   </url>
 </urlset>

@@ -2,7 +2,7 @@
   {
     "slug": "milkdrop",
     "title": "MilkDrop Visualizer",
-    "description": "Preset-driven feedback visualizer in the lineage of Ryan Geiss's MilkDrop, with blend transitions, live source editing, and import/export flows.",
+    "description": "MilkDrop-inspired browser visualizer with demo audio, hand-picked presets, live editing, and preset import/export.",
     "module": "assets/js/toys/milkdrop-toy.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -32,13 +32,13 @@
       "Pinch to swell or compress the depth and intensity.",
       "Rotate with two fingers to twist the whole image."
     ],
-    "firstRunHint": "Open presets, then try autoplay.",
+    "firstRunHint": "Open the preset library, then try autoplay.",
     "starterPreset": {
       "id": "rovastar-parallel-universe",
       "label": "starter preset",
-      "description": "Recognizable feedback-heavy first run."
+      "description": "An easy first preset with the classic feedback glow."
     },
-    "wowControl": "Preset browser",
+    "wowControl": "Preset library",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,
