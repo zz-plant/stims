@@ -63,6 +63,7 @@ export type WaveBuilderState = {
   lastWaveMomentum: number[];
   customWaveLocals: MutableState[];
   proceduralTrailWaves: MilkdropProceduralWaveVisual[];
+  channelSample: CustomWaveChannelSample;
   buffers: WaveFrameBuffers;
 };
 
@@ -76,6 +77,13 @@ export type CustomWaveChannelSample = {
 export type GeometryBuilderState = {
   lastMotionVectorField: MotionVectorFieldHistory | null;
   frameTransformCache: Map<number, { x: number; y: number }>;
+  pointScratch: MutableState;
+  meshPoints: MeshFieldPoint[];
+  motionVectorHistoryBuffers: [
+    MotionVectorHistoryPoint[],
+    MotionVectorHistoryPoint[],
+  ];
+  motionVectorHistoryBufferIndex: 0 | 1;
 };
 
 export type ShapeBuilderState = {

@@ -51,12 +51,9 @@ export function buildBlendStateForRender({
     return null;
   }
 
-  return {
-    ...blendState,
-    alpha:
-      1 -
-      (now - (blendEndAtMs - blendDuration * 1000)) / (blendDuration * 1000),
-  };
+  blendState.alpha =
+    1 - (now - (blendEndAtMs - blendDuration * 1000)) / (blendDuration * 1000);
+  return blendState;
 }
 
 export function buildRenderFrameState({

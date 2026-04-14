@@ -6,6 +6,7 @@ import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,
 } from '../types.ts';
+import type { MilkdropRuntimePerformanceSnapshot } from './performance-tracker.ts';
 
 function sanitizeRuntimeSignals(signals: MilkdropRuntimeSignals) {
   const {
@@ -22,18 +23,21 @@ export function buildAgentMilkdropDebugSnapshot({
   frameState,
   status,
   adaptiveQuality,
+  performance,
 }: {
   activePresetId: string | null;
   compiledPreset: MilkdropCompiledPreset | null;
   frameState: MilkdropFrameState | null;
   status: string | null;
   adaptiveQuality?: AdaptiveQualityState | null;
+  performance?: MilkdropRuntimePerformanceSnapshot | null;
 }) {
   if (!frameState) {
     return {
       activePresetId,
       status,
       adaptiveQuality,
+      performance,
       frameState: null,
       title: compiledPreset?.title ?? null,
     };
@@ -43,6 +47,7 @@ export function buildAgentMilkdropDebugSnapshot({
     activePresetId,
     status,
     adaptiveQuality,
+    performance,
     title: compiledPreset?.title ?? frameState.title,
     frameState: {
       presetId: frameState.presetId,
@@ -61,6 +66,8 @@ export function registerAgentMilkdropRuntimeDebugHandle({
   getRuntime,
   getAdapter,
   getState,
+  getAdaptiveQuality,
+  getPerformance,
 }: {
   isAgentMode: () => boolean;
   getRuntime: () => ToyRuntimeInstance | null;
@@ -70,6 +77,8 @@ export function registerAgentMilkdropRuntimeDebugHandle({
     backend: 'webgl' | 'webgpu';
     status: string | null;
   };
+  getAdaptiveQuality: () => AdaptiveQualityState | null;
+  getPerformance: () => MilkdropRuntimePerformanceSnapshot | null;
 }) {
   if (typeof window === 'undefined' || !isAgentMode()) {
     return;
@@ -85,11 +94,15 @@ export function registerAgentMilkdropRuntimeDebugHandle({
           backend: 'webgl' | 'webgpu';
           status: string | null;
         };
+        getAdaptiveQuality: () => AdaptiveQualityState | null;
+        getPerformance: () => MilkdropRuntimePerformanceSnapshot | null;
       };
     }
   ).__milkdropRuntimeDebug = {
     getRuntime,
     getAdapter,
     getState,
+    getAdaptiveQuality,
+    getPerformance,
   };
 }

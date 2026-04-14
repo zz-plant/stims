@@ -97,6 +97,12 @@ class MilkdropPresetVM implements MilkdropVM {
     lastWaveMomentum: [],
     customWaveLocals: [],
     proceduralTrailWaves: [],
+    channelSample: {
+      sample: 0,
+      value: 0,
+      value1: 0,
+      value2: 0,
+    },
     buffers: {
       liveSamples: [],
       previousSamples: [],
@@ -107,6 +113,10 @@ class MilkdropPresetVM implements MilkdropVM {
   private readonly geometryState: GeometryBuilderState = {
     lastMotionVectorField: null,
     frameTransformCache: new Map<number, { x: number; y: number }>(),
+    pointScratch: {},
+    meshPoints: [],
+    motionVectorHistoryBuffers: [[], []],
+    motionVectorHistoryBufferIndex: 0,
   };
   private readonly shapeState: ShapeBuilderState = {
     customShapeLocals: [],
@@ -215,8 +225,10 @@ class MilkdropPresetVM implements MilkdropVM {
       if (!waveState) {
         continue;
       }
-      for (const [key, value] of Object.entries(waveState)) {
-        snapshot[`wave${index + 1}_${key}`] = value;
+      for (const key in waveState) {
+        if (objectHasOwn(waveState, key)) {
+          snapshot[`wave${index + 1}_${key}`] = waveState[key] ?? 0;
+        }
       }
     }
     for (
@@ -228,8 +240,10 @@ class MilkdropPresetVM implements MilkdropVM {
       if (!shapeState) {
         continue;
       }
-      for (const [key, value] of Object.entries(shapeState)) {
-        snapshot[`shape${index + 1}_${key}`] = value;
+      for (const key in shapeState) {
+        if (objectHasOwn(shapeState, key)) {
+          snapshot[`shape${index + 1}_${key}`] = shapeState[key] ?? 0;
+        }
       }
     }
     return snapshot;
@@ -378,12 +392,9 @@ class MilkdropPresetVM implements MilkdropVM {
     extra: Record<string, number> = {},
   ) {
     this.prepareSignalEnv(signals);
-    return {
-      ...this.state,
-      ...this.registers,
-      ...extra,
-      ...this.signalEnv,
-    };
+    const env = Object.create(this.signalEnv) as MutableState;
+    Object.assign(env, this.state, this.registers, this.signalEnv, extra);
+    return env;
   }
 
   private setValue(
@@ -408,13 +419,17 @@ class MilkdropPresetVM implements MilkdropVM {
     env: MutableState,
     locals: MutableState | null = null,
   ) {
-    block.statements.forEach((statement) => {
+    for (let index = 0; index < block.statements.length; index += 1) {
+      const statement = block.statements[index];
+      if (!statement) {
+        continue;
+      }
       const value = evaluateMilkdropExpression(statement.expression, env, {
         nextRandom: this.nextRandom,
       });
       this.setValue(statement.target, value, locals);
       env[statement.target] = value;
-    });
+    }
   }
 
   private supportsProceduralWave(drawMode: 'line' | 'dots') {

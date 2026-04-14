@@ -22,6 +22,7 @@ export function createMilkdropPresetNavigationController({
   getBlendDuration,
   getTransitionMode,
   applyCompiledPreset,
+  applyPresetPerformanceOverride,
   setOverlayStatus,
   shouldFallbackToWebgl,
   triggerWebglFallback,
@@ -38,6 +39,7 @@ export function createMilkdropPresetNavigationController({
   getBlendDuration: () => number;
   getTransitionMode: () => 'blend' | 'cut';
   applyCompiledPreset: (compiled: MilkdropCompiledPreset) => void;
+  applyPresetPerformanceOverride: (presetId: string) => void;
   setOverlayStatus: (message: string) => void;
   shouldFallbackToWebgl: (compiled: MilkdropCompiledPreset) => boolean;
   triggerWebglFallback: (args: { presetId: string; reason: string }) => void;
@@ -95,6 +97,8 @@ export function createMilkdropPresetNavigationController({
       });
       return;
     }
+
+    applyPresetPerformanceOverride(nextCompiled.source.id);
 
     const currentFrameState = getCurrentFrameState();
     const canBlend =

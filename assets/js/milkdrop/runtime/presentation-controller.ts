@@ -4,6 +4,7 @@ import type { MilkdropOverlay } from '../overlay.ts';
 import type { MilkdropRendererAdapter } from '../renderer-types.ts';
 import type { MilkdropCompiledPreset, MilkdropFrameState } from '../types.ts';
 import { buildAgentMilkdropDebugSnapshot } from './debug-snapshot.ts';
+import type { MilkdropRuntimePerformanceSnapshot } from './performance-tracker.ts';
 import type { ReturnTypeOfCreateMilkdropVM } from './presentation-types.ts';
 
 type PresentationState = {
@@ -24,6 +25,7 @@ export function createMilkdropPresentationController({
   setCompiledState,
   isAgentMode,
   setDebugSnapshot,
+  getPerformanceMetrics,
 }: {
   getOverlay: () => MilkdropOverlay | null;
   session: Pick<ReturnType<typeof createMilkdropEditorSession>, 'getState'>;
@@ -33,11 +35,21 @@ export function createMilkdropPresentationController({
   setCompiledState: (compiled: MilkdropCompiledPreset) => void;
   isAgentMode: () => boolean;
   setDebugSnapshot: (tool: string, snapshot: unknown) => void;
+  getPerformanceMetrics: () => MilkdropRuntimePerformanceSnapshot | null;
 }) {
-  const updateAgentDebugSnapshot = () => {
+  const DEBUG_SNAPSHOT_INTERVAL_MS = 120;
+  let lastDebugSnapshotAt = 0;
+
+  const updateAgentDebugSnapshot = (force = false) => {
     if (!isAgentMode()) {
       return;
     }
+
+    const now = performance.now();
+    if (!force && now - lastDebugSnapshotAt < DEBUG_SNAPSHOT_INTERVAL_MS) {
+      return;
+    }
+    lastDebugSnapshotAt = now;
 
     const state = getState();
     setDebugSnapshot(
@@ -48,13 +60,14 @@ export function createMilkdropPresentationController({
         frameState: state.frameState,
         status: state.status,
         adaptiveQuality: state.adaptiveQuality,
+        performance: getPerformanceMetrics(),
       }),
     );
   };
 
   const setOverlayStatus = (message: string) => {
     getOverlay()?.setStatus(message);
-    updateAgentDebugSnapshot();
+    updateAgentDebugSnapshot(true);
   };
 
   const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
@@ -72,7 +85,7 @@ export function createMilkdropPresentationController({
       frameState: state.frameState,
       backend: state.backend,
     });
-    updateAgentDebugSnapshot();
+    updateAgentDebugSnapshot(true);
   };
 
   const syncInspectorState = () => {

@@ -1,9 +1,3 @@
-export {
-  applyMilkdropInteractionResponse,
-  buildMilkdropInputSignalOverrides,
-  getMilkdropDetailScale,
-} from './runtime/interaction-response';
-
 import {
   clearDebugSnapshot,
   isAgentMode,
@@ -56,9 +50,11 @@ import {
   shouldAutoAdvancePreset,
 } from './runtime/lifecycle';
 import { createMilkdropRuntimeLifetime } from './runtime/lifetime';
+import { createMilkdropRuntimePerformanceTracker } from './runtime/performance-tracker';
 import { createMilkdropPresentationController } from './runtime/presentation-controller';
 import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
 import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
+import { resolvePresetPerformanceOverride } from './runtime/preset-performance-overrides';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
@@ -78,6 +74,12 @@ import {
   getDisabledMilkdropWebGpuOptimizationFlags,
   resolveMilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
+
+export {
+  applyMilkdropInteractionResponse,
+  buildMilkdropInputSignalOverrides,
+  getMilkdropDetailScale,
+} from './runtime/interaction-response';
 
 export function createMilkdropExperience({
   container,
@@ -119,6 +121,7 @@ export function createMilkdropExperience({
   const disabledWebGpuOptimizationFlags =
     getDisabledMilkdropWebGpuOptimizationFlags(webgpuOptimizationFlags);
   const vm = createMilkdropVM(defaultPreset, webgpuOptimizationFlags);
+  const performanceTracker = createMilkdropRuntimePerformanceTracker();
   const signalTracker = createMilkdropSignalTracker();
   const capturedVideoReactivityTracker =
     createMilkdropCapturedVideoReactivityTracker();
@@ -139,7 +142,10 @@ export function createMilkdropExperience({
   let blendDuration = preferences.getBlendDuration(
     activeCompiled.ir.numericFields.blend_duration,
   );
-  let transitionMode = preferences.getTransitionMode();
+  let preferredTransitionMode = preferences.getTransitionMode();
+  let transitionMode = preferredTransitionMode;
+  let preferredQualityPresetId = quality.activeQuality.id;
+  const agentModeEnabled = isAgentMode();
   let lastPresetSwitchAt = performance.now();
   let lastStatusMessage: string | null = null;
   let disposeKeyboardShortcuts: (() => void) | null = null;
@@ -158,13 +164,78 @@ export function createMilkdropExperience({
   };
   const lifetime = createMilkdropRuntimeLifetime();
   const capturedVideoOverlay = createMilkdropCapturedVideoOverlay();
+  const getQualityPresetById = (presetId: string) =>
+    qualityControl.presets.find((preset) => preset.id === presetId) ?? null;
+
+  const setEffectiveTransitionMode = (
+    mode: 'blend' | 'cut',
+    options: { rememberPreferred?: boolean } = {},
+  ) => {
+    const { rememberPreferred = true } = options;
+    transitionMode = mode;
+    overlay?.setTransitionMode(mode);
+    if (rememberPreferred) {
+      preferredTransitionMode = mode;
+      preferences.setTransitionMode(mode);
+    }
+  };
+
+  const applyQualityPreset = (
+    preset: QualityPreset,
+    options: { rememberPreferred?: boolean } = {},
+  ) => {
+    const { rememberPreferred = true } = options;
+    quality.applyQualityPreset(preset);
+    if (rememberPreferred) {
+      preferredQualityPresetId = preset.id;
+    }
+  };
+
+  const restorePreferredPerformanceState = () => {
+    const preferredQualityPreset = getQualityPresetById(
+      preferredQualityPresetId,
+    );
+    if (
+      preferredQualityPreset &&
+      quality.activeQuality.id !== preferredQualityPreset.id
+    ) {
+      applyQualityPreset(preferredQualityPreset, {
+        rememberPreferred: false,
+      });
+    }
+    setEffectiveTransitionMode(preferredTransitionMode, {
+      rememberPreferred: false,
+    });
+  };
+
+  const applyPresetPerformanceOverride = (presetId: string) => {
+    const override = resolvePresetPerformanceOverride(presetId);
+    if (!override) {
+      restorePreferredPerformanceState();
+      return null;
+    }
+
+    if (override.qualityPresetId) {
+      const preset = getQualityPresetById(override.qualityPresetId);
+      if (preset && quality.activeQuality.id !== preset.id) {
+        applyQualityPreset(preset, { rememberPreferred: false });
+      }
+    }
+
+    setEffectiveTransitionMode(
+      override.disableBlendTransitions ? 'cut' : preferredTransitionMode,
+      { rememberPreferred: false },
+    );
+    return override;
+  };
+
   const disposePostprocessingPipeline = () => {
     postprocessingPipeline?.dispose();
     postprocessingPipeline = null;
   };
 
   registerAgentMilkdropRuntimeDebugHandle({
-    isAgentMode,
+    isAgentMode: () => agentModeEnabled,
     getRuntime: () => runtime,
     getAdapter: () => adapter,
     getState: () => ({
@@ -172,6 +243,8 @@ export function createMilkdropExperience({
       backend: activeBackend,
       status: lastStatusMessage,
     }),
+    getAdaptiveQuality: () => adaptiveQualityState,
+    getPerformance: () => performanceTracker.getSnapshot(),
   });
 
   const backendFailover = createMilkdropBackendFailover({
@@ -194,16 +267,17 @@ export function createMilkdropExperience({
       status: lastStatusMessage,
       adaptiveQuality: adaptiveQualityState,
     }),
+    getPerformanceMetrics: () => performanceTracker.getSnapshot(),
     setCompiledState: (compiled) => {
       activeCompiled = compiled;
       activePresetId = compiled.source.id;
     },
-    isAgentMode,
+    isAgentMode: () => agentModeEnabled,
     setDebugSnapshot,
   });
 
-  const updateAgentDebugSnapshot = () =>
-    presentationController.updateAgentDebugSnapshot();
+  const updateAgentDebugSnapshot = (force = false) =>
+    presentationController.updateAgentDebugSnapshot(force);
 
   const buildSnapshot = (): MilkdropExperienceSnapshot => ({
     activePresetId,
@@ -243,9 +317,7 @@ export function createMilkdropExperience({
   };
 
   const setTransitionMode = (mode: 'blend' | 'cut') => {
-    transitionMode = mode;
-    overlay?.setTransitionMode(mode);
-    preferences.setTransitionMode(mode);
+    setEffectiveTransitionMode(mode, { rememberPreferred: true });
     emitChange();
   };
 
@@ -294,6 +366,7 @@ export function createMilkdropExperience({
     getBlendDuration: () => blendDuration,
     getTransitionMode: () => transitionMode,
     applyCompiledPreset,
+    applyPresetPerformanceOverride,
     setOverlayStatus,
     shouldFallbackToWebgl,
     triggerWebglFallback,
@@ -343,7 +416,7 @@ export function createMilkdropExperience({
         if (!preset) {
           return;
         }
-        quality.applyQualityPreset(preset);
+        applyQualityPreset(preset);
       },
       onToggleFavorite: async (id, favorite) => {
         await catalogStore.setFavorite(id, favorite);
@@ -480,6 +553,7 @@ export function createMilkdropExperience({
       nextCompiled.source.id !== activeCompiled.source.id ||
       nextCompiled.formattedSource !== activeCompiled.formattedSource;
     if (didPresetChange) {
+      applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
       scheduleDeferredCatalogSync();
@@ -619,7 +693,7 @@ export function createMilkdropExperience({
       if (!preset) {
         return null;
       }
-      quality.applyQualityPreset(preset);
+      applyQualityPreset(preset);
       emitChange();
       return preset;
     },
@@ -709,7 +783,7 @@ export function createMilkdropExperience({
             adapter?.setAdaptiveQuality?.({
               feedbackResolutionMultiplier: state.feedbackResolutionMultiplier,
             });
-            updateAgentDebugSnapshot();
+            updateAgentDebugSnapshot(true);
           },
         );
         if (shouldFallbackToWebgl(activeCompiled)) {
@@ -791,7 +865,9 @@ export function createMilkdropExperience({
         frame.input,
         activeBackend,
       );
-      updateAgentDebugSnapshot();
+      if (agentModeEnabled) {
+        updateAgentDebugSnapshot();
+      }
       const canBlendCurrentFrame =
         estimateFrameBlendWorkload(currentFrameState) < 900;
       const activeBlendState = buildBlendStateForRender({
@@ -868,6 +944,11 @@ export function createMilkdropExperience({
         disposePostprocessingPipeline();
       }
       const frameEndAt = performance.now();
+      performanceTracker.recordFrame({
+        frameMs: frameEndAt - frameStartAt,
+        simulationMs: renderStartAt - frameStartAt,
+        renderMs: frameEndAt - renderStartAt,
+      });
       adaptiveQualityController?.recordFrame({
         frameMs: frameEndAt - frameStartAt,
         phases: {
@@ -898,6 +979,7 @@ export function createMilkdropExperience({
       capturedVideoOverlay.dispose();
       adapter?.dispose();
       adapter = null;
+      performanceTracker.reset();
       adaptiveQualityUnsubscribe?.();
       adaptiveQualityUnsubscribe = null;
       adaptiveQualityController = null;

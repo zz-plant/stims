@@ -21,6 +21,7 @@ import {
   MAX_MOTION_VECTOR_COLUMNS,
   MAX_MOTION_VECTOR_ROWS,
   type MeshField,
+  type MeshFieldPoint,
   type MotionVectorDescriptorContext,
   type MotionVectorHistoryPoint,
   type MutableState,
@@ -177,6 +178,7 @@ function transformMeshPoint({
   geometryState,
   runProgram,
   createEnv,
+  scratch,
 }: {
   signals: MilkdropRuntimeSignals;
   gridX: number;
@@ -196,6 +198,7 @@ function transformMeshPoint({
       reuseExtraAsEnv?: boolean;
     },
   ) => MutableState;
+  scratch: MutableState;
 }) {
   const cacheKey = getTransformCacheKey(gridX, gridY);
   const cached = geometryState.frameTransformCache.get(cacheKey);
@@ -203,22 +206,21 @@ function transformMeshPoint({
     return cached;
   }
 
-  const local: MutableState = {
-    x: gridX,
-    y: gridY,
-    rad: Math.sqrt(gridX * gridX + gridY * gridY),
-    ang: Math.atan2(gridY, gridX),
-    zoom: state.zoom ?? 1,
-    zoomexp: state.zoomexp ?? 1,
-    rot: state.rot ?? 0,
-    warp: state.warp ?? 0,
-    cx: state.cx ?? 0.5,
-    cy: state.cy ?? 0.5,
-    sx: state.sx ?? 1,
-    sy: state.sy ?? 1,
-    dx: state.dx ?? 0,
-    dy: state.dy ?? 0,
-  };
+  const local = scratch;
+  local.x = gridX;
+  local.y = gridY;
+  local.rad = Math.sqrt(gridX * gridX + gridY * gridY);
+  local.ang = Math.atan2(gridY, gridX);
+  local.zoom = state.zoom ?? 1;
+  local.zoomexp = state.zoomexp ?? 1;
+  local.rot = state.rot ?? 0;
+  local.warp = state.warp ?? 0;
+  local.cx = state.cx ?? 0.5;
+  local.cy = state.cy ?? 0.5;
+  local.sx = state.sx ?? 1;
+  local.sy = state.sy ?? 1;
+  local.dx = state.dx ?? 0;
+  local.dy = state.dy ?? 0;
   runProgram(
     preset.ir.programs.perPixel,
     createEnv(signals, local, { reuseExtraAsEnv: true }),
@@ -375,15 +377,17 @@ export function buildMeshField({
 }): MeshField {
   const density = getMeshDensity(state, detailScale);
   if (proceduralMeshPlan) {
+    geometryState.meshPoints.length = 0;
     return {
       density,
-      points: [],
+      points: geometryState.meshPoints,
       program: proceduralMeshPlan.fieldProgram,
       signals: buildProceduralFieldSignals(signals),
     };
   }
 
-  const points = new Array<MeshField['points'][number]>(density * density);
+  const points = geometryState.meshPoints;
+  points.length = density * density;
 
   for (let row = 0; row < density; row += 1) {
     for (let col = 0; col < density; col += 1) {
@@ -398,13 +402,20 @@ export function buildMeshField({
         geometryState,
         runProgram,
         createEnv,
+        scratch: geometryState.pointScratch,
       });
-      points[row * density + col] = {
-        sourceX: x,
-        sourceY: y,
-        x: point.x,
-        y: point.y,
+      const pointIndex = row * density + col;
+      const pointEntry: MeshFieldPoint = points[pointIndex] ?? {
+        sourceX: 0,
+        sourceY: 0,
+        x: 0,
+        y: 0,
       };
+      pointEntry.sourceX = x;
+      pointEntry.sourceY = y;
+      pointEntry.x = point.x;
+      pointEntry.y = point.y;
+      points[pointIndex] = pointEntry;
     }
   }
 
@@ -640,6 +651,7 @@ export function buildMotionVectors({
     return [];
   }
 
+  const historyBuffers = geometryState.motionVectorHistoryBuffers;
   if (proceduralMotionVectorPlan && meshField.signals) {
     geometryState.lastMotionVectorField = null;
     return [];
@@ -662,9 +674,11 @@ export function buildMotionVectors({
     1,
   );
   const vectors: MilkdropMotionVectorVisual[] = [];
-  const nextHistoryPoints = new Array<MotionVectorHistoryPoint>(
-    countX * countY,
-  );
+  const nextBufferIndex = (geometryState.motionVectorHistoryBufferIndex ^ 1) as
+    | 0
+    | 1;
+  const nextHistoryPoints = historyBuffers[nextBufferIndex];
+  nextHistoryPoints.length = countX * countY;
   const previousField = geometryState.lastMotionVectorField;
   const hasPerPixelPrograms = preset.ir.programs.perPixel.statements.length > 0;
   const legacyOffsetX = clamp(state.mv_dx ?? 0, -1, 1);
@@ -695,13 +709,19 @@ export function buildMotionVectors({
         geometryState,
         runProgram,
         createEnv,
+        scratch: geometryState.pointScratch,
       });
-      nextHistoryPoints[index] = {
-        sourceX,
-        sourceY,
-        x: currentPoint.x,
-        y: currentPoint.y,
+      const pointEntry: MotionVectorHistoryPoint = nextHistoryPoints[index] ?? {
+        sourceX: 0,
+        sourceY: 0,
+        x: 0,
+        y: 0,
       };
+      pointEntry.sourceX = sourceX;
+      pointEntry.sourceY = sourceY;
+      pointEntry.x = currentPoint.x;
+      pointEntry.y = currentPoint.y;
+      nextHistoryPoints[index] = pointEntry;
       const previous = previousField?.points[index] ?? {
         sourceX,
         sourceY,
@@ -762,5 +782,6 @@ export function buildMotionVectors({
     countY,
     points: nextHistoryPoints,
   };
+  geometryState.motionVectorHistoryBufferIndex = nextBufferIndex;
   return vectors;
 }

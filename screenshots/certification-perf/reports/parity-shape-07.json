@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "presetId": "parity-shape-07",
+  "title": "Parity Shape 07",
+  "corpusGroup": "parity-corpus",
+  "strata": [
+    "custom-shape",
+    "borders"
+  ],
+  "sourceFamily": "parity-corpus",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -15.698773006208103,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 326,
+    "averageFrameMs": 1.001226993791896,
+    "p95FrameMs": 2.200000047683716,
+    "averageSimulationMs": 0.5576687104131547,
+    "averageRenderMs": 0.4435582833787415,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "enhanced",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 2,
+      "qualityStepCount": 5,
+      "averageFrameMs": 1.9493181032704305,
+      "averageRenderMs": 0.9408271194043649,
+      "sampleCount": 201,
+      "adaptation": "steady",
+      "reasons": [
+        "shader-f16 is unavailable.",
+        "timestamp-query is available for future GPU timing upgrades."
+      ],
+      "renderScaleMultiplier": 0.88,
+      "maxPixelRatioMultiplier": 0.92,
+      "densityMultiplier": 0.82,
+      "feedbackResolutionMultiplier": 0.8
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/parity-shape-07.json"
+}

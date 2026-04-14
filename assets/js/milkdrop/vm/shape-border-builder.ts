@@ -106,27 +106,35 @@ export function buildShapes({
   createEnv: (
     signals: MilkdropRuntimeSignals,
     extra?: Record<string, number>,
+    options?: {
+      reuseExtraAsEnv?: boolean;
+    },
   ) => MutableState;
   seedCustomShapeState: (shape: MilkdropShapeDefinition) => MutableState;
 }): MilkdropShapeVisual[] {
-  const builtFromCustom = preset.ir.customShapes.map((shape, index) => {
-    const locals = {
-      ...(shapeState.customShapeLocals[index] ?? seedCustomShapeState(shape)),
-    };
-    runProgram(shape.programs.perFrame, createEnv(signals, locals), locals);
-    shapeState.customShapeLocals[index] = { ...locals };
-    if ((locals.enabled ?? 0) < 0.5) {
-      return null;
-    }
-    return shapeVisualFromLocals(`shape_${shape.index}`, locals, signals);
-  });
+  const built: MilkdropShapeVisual[] = [];
+  const customShapeIndices = new Set<number>();
 
-  const customShapeIndices = new Set(
-    preset.ir.customShapes.map((shape) => shape.index),
-  );
-  const built = builtFromCustom.filter(
-    (shape): shape is MilkdropShapeVisual => shape !== null,
-  );
+  for (let index = 0; index < preset.ir.customShapes.length; index += 1) {
+    const shape = preset.ir.customShapes[index];
+    if (!shape) {
+      continue;
+    }
+
+    customShapeIndices.add(shape.index);
+    const locals =
+      shapeState.customShapeLocals[index] ?? seedCustomShapeState(shape);
+    runProgram(
+      shape.programs.perFrame,
+      createEnv(signals, locals, { reuseExtraAsEnv: true }),
+      locals,
+    );
+    shapeState.customShapeLocals[index] = locals;
+    if ((locals.enabled ?? 0) < 0.5) {
+      continue;
+    }
+    built.push(shapeVisualFromLocals(`shape_${shape.index}`, locals, signals));
+  }
 
   for (let index = 1; index <= MAX_CUSTOM_SHAPE_SLOTS; index += 1) {
     if (customShapeIndices.has(index)) {

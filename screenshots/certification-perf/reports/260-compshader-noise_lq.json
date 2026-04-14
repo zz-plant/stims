@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "presetId": "260-compshader-noise_lq",
+  "title": "260 Compshader Noise LQ",
+  "corpusGroup": "projectm-upstream",
+  "strata": [
+    "shader-supported",
+    "samplers",
+    "upstream"
+  ],
+  "sourceFamily": "projectm-fixture",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -15.533443707977698,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 302,
+    "averageFrameMs": 1.166556292022301,
+    "p95FrameMs": 2.6999999284744263,
+    "averageSimulationMs": 0.6715231802289849,
+    "averageRenderMs": 0.49503311179331594,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "enhanced",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 2,
+      "qualityStepCount": 5,
+      "averageFrameMs": 2.071539389191981,
+      "averageRenderMs": 0.9239760011306372,
+      "sampleCount": 186,
+      "adaptation": "steady",
+      "reasons": [
+        "shader-f16 is unavailable.",
+        "timestamp-query is available for future GPU timing upgrades."
+      ],
+      "renderScaleMultiplier": 0.88,
+      "maxPixelRatioMultiplier": 0.92,
+      "densityMultiplier": 0.82,
+      "feedbackResolutionMultiplier": 0.8
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/260-compshader-noise_lq.json"
+}

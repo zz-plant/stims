@@ -75,6 +75,7 @@
     "parity:promote-result": "bun run scripts/promote-parity-suite-result.ts",
     "parity:sync-catalog": "bun run scripts/sync-bundled-catalog-fidelity.ts",
     "parity:suite": "bun run scripts/run-parity-diff-suite.ts",
+    "perf:certification-corpus": "bun run scripts/run-certification-corpus-perf-suite.ts",
     "test:agent": "bun run test:integration",
     "prepare": "husky install",
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",

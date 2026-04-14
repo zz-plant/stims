@@ -19,10 +19,29 @@ export type PlayToyResult = {
   consoleErrors?: string[];
   audioActive?: boolean;
   vibeModeActivated?: boolean;
+  fallbackOccurred?: boolean;
+  performance?: PlayToyPerformanceMetrics;
 };
 
 export type PlayToyRendererProfile = 'compatibility' | 'webgpu';
 export type PlayToyCatalogMode = 'bundled' | 'certification';
+
+export type PlayToyPerformanceCaptureOptions = {
+  warmupMs: number;
+};
+
+export type PlayToyPerformanceMetrics = {
+  durationMs: number;
+  warmupMs: number;
+  sampleCount: number;
+  averageFrameMs: number | null;
+  p95FrameMs: number | null;
+  averageSimulationMs: number | null;
+  averageRenderMs: number | null;
+  actualBackend: 'webgl' | 'webgpu' | null;
+  fallbackOccurred: boolean;
+  terminalAdaptiveQuality: unknown | null;
+};
 
 export type PlayToyOptions = {
   slug: string;
@@ -39,6 +58,8 @@ export type PlayToyOptions = {
   vibeMode?: boolean;
   rendererProfile?: PlayToyRendererProfile;
   catalogMode?: PlayToyCatalogMode;
+  perfCapture?: PlayToyPerformanceCaptureOptions;
+  recordParityArtifact?: boolean;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
@@ -51,6 +72,8 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   vibeMode: boolean;
   rendererProfile: PlayToyRendererProfile;
   catalogMode: PlayToyCatalogMode;
+  perfCapture?: PlayToyPerformanceCaptureOptions;
+  recordParityArtifact: boolean;
 };
 
 const DEFAULT_OPTIONS = {
@@ -74,15 +97,112 @@ const COMPATIBILITY_RENDERER_ARGS = [
   '--enable-webgl',
   '--enable-unsafe-swiftshader',
   '--ignore-gpu-blocklist',
+  '--disable-background-timer-throttling',
+  '--disable-renderer-backgrounding',
+  '--disable-backgrounding-occluded-windows',
 ];
 const WEBGPU_RENDERER_ARGS = [
   '--enable-unsafe-webgpu',
   '--ignore-gpu-blocklist',
   '--enable-features=Vulkan',
+  '--disable-background-timer-throttling',
+  '--disable-renderer-backgrounding',
+  '--disable-backgrounding-occluded-windows',
 ];
 const INITIAL_SHELL_TIMEOUT_MS = 60000;
 const TOY_LOAD_TIMEOUT_MS = 30000;
 const AUDIO_ACTIVATION_TIMEOUT_MS = 5000;
+
+type PlayToyPerformanceSample = {
+  frameMs: number;
+  renderMs: number;
+  simulationMs: number;
+};
+
+type PlayToyPerformanceSampleSummary = {
+  sampleCount: number;
+  averageFrameMs: number | null;
+  p95FrameMs: number | null;
+  averageSimulationMs: number | null;
+  averageRenderMs: number | null;
+};
+
+type PlayToyRuntimePerformanceSnapshotLike = Partial<
+  Pick<
+    PlayToyPerformanceMetrics,
+    | 'sampleCount'
+    | 'averageFrameMs'
+    | 'p95FrameMs'
+    | 'averageSimulationMs'
+    | 'averageRenderMs'
+  >
+>;
+
+type PlayToyAdaptiveQualitySnapshotLike = Partial<{
+  sampleCount: number;
+  averageFrameMs: number | null;
+  averageRenderMs: number | null;
+}>;
+
+function average(values: readonly number[]) {
+  if (values.length === 0) {
+    return null;
+  }
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function percentile(values: readonly number[], percentileValue: number) {
+  if (values.length === 0) {
+    return null;
+  }
+  const sorted = [...values].sort((left, right) => left - right);
+  const clampedPercentile = Math.min(Math.max(percentileValue, 0), 1);
+  const index = Math.min(
+    sorted.length - 1,
+    Math.max(0, Math.ceil(clampedPercentile * sorted.length) - 1),
+  );
+  return sorted[index] ?? null;
+}
+
+export function summarizePlayToyPerformanceSamples(
+  samples: readonly PlayToyPerformanceSample[],
+): PlayToyPerformanceSampleSummary {
+  return {
+    sampleCount: samples.length,
+    averageFrameMs: average(samples.map((sample) => sample.frameMs)),
+    p95FrameMs: percentile(
+      samples.map((sample) => sample.frameMs),
+      0.95,
+    ),
+    averageSimulationMs: average(samples.map((sample) => sample.simulationMs)),
+    averageRenderMs: average(samples.map((sample) => sample.renderMs)),
+  };
+}
+
+export function buildPlayToyPerformanceMetrics({
+  samples,
+  durationMs,
+  warmupMs,
+  actualBackend,
+  fallbackOccurred,
+  terminalAdaptiveQuality,
+}: {
+  samples: readonly PlayToyPerformanceSample[];
+  durationMs: number;
+  warmupMs: number;
+  actualBackend: 'webgl' | 'webgpu' | null;
+  fallbackOccurred: boolean;
+  terminalAdaptiveQuality: unknown | null;
+}): PlayToyPerformanceMetrics {
+  return {
+    ...summarizePlayToyPerformanceSamples(samples),
+    durationMs,
+    warmupMs,
+    actualBackend,
+    fallbackOccurred,
+    terminalAdaptiveQuality,
+  };
+}
 
 function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
   return {
@@ -96,6 +216,8 @@ function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
     vibeMode: options.vibeMode !== false,
     rendererProfile: options.rendererProfile ?? 'compatibility',
     catalogMode: options.catalogMode ?? 'bundled',
+    perfCapture: options.perfCapture,
+    recordParityArtifact: options.recordParityArtifact !== false,
   };
 }
 
@@ -425,6 +547,287 @@ async function getActiveRenderBackend(page: Page) {
     .catch(() => null);
 }
 
+async function waitForPerformanceSamplerTarget(page: Page, timeout = 5000) {
+  try {
+    await page.waitForFunction(
+      () => {
+        const win = window as Window & {
+          __milkdropRuntimeDebug?: {
+            getRuntime?: () => {
+              toy?: {
+                render?: () => void;
+              };
+            } | null;
+            getAdapter?: () => {
+              render?: (...args: unknown[]) => unknown;
+            } | null;
+          };
+        };
+        const runtime = win.__milkdropRuntimeDebug?.getRuntime?.();
+        const adapter = win.__milkdropRuntimeDebug?.getAdapter?.();
+        return Boolean(runtime?.toy && typeof adapter?.render === 'function');
+      },
+      undefined,
+      { timeout },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function installPerformanceSampler(page: Page, warmupMs: number) {
+  return page
+    .evaluate((warmupDurationMs) => {
+      const win = window as Window & {
+        __stimsPlayToyPerfSampler?: {
+          warmupMs: number;
+          startedAtMs: number;
+          fallbackOccurred: boolean;
+          samples: PlayToyPerformanceSample[];
+          currentFrameRenderMs: number;
+          requestAnimationFramePatched: boolean;
+          adapterRenderPatched: boolean;
+          toyRenderPatched: boolean;
+        };
+        __milkdropRuntimeDebug?: {
+          getRuntime?: () => {
+            toy?: {
+              render?: () => void;
+            };
+          } | null;
+          getAdapter?: () => {
+            render?: (...args: unknown[]) => unknown;
+          } | null;
+        };
+      };
+
+      if (win.__stimsPlayToyPerfSampler) {
+        return true;
+      }
+
+      const runtimeDebug = win.__milkdropRuntimeDebug;
+      const runtime = runtimeDebug?.getRuntime?.();
+      const adapter = runtimeDebug?.getAdapter?.();
+      if (!runtime || !adapter || !runtime.toy) {
+        return false;
+      }
+
+      const sampler: {
+        warmupMs: number;
+        startedAtMs: number;
+        fallbackOccurred: boolean;
+        samples: PlayToyPerformanceSample[];
+        currentFrameRenderMs: number;
+        requestAnimationFramePatched: boolean;
+        adapterRenderPatched: boolean;
+        toyRenderPatched: boolean;
+      } = {
+        warmupMs: warmupDurationMs,
+        startedAtMs: performance.now(),
+        fallbackOccurred: false,
+        samples: [],
+        currentFrameRenderMs: 0,
+        requestAnimationFramePatched: false,
+        adapterRenderPatched: false,
+        toyRenderPatched: false,
+      };
+
+      const originalRequestAnimationFrame =
+        window.requestAnimationFrame.bind(window);
+      window.requestAnimationFrame = ((callback) =>
+        originalRequestAnimationFrame((timestamp) => {
+          const frameStartMs = performance.now();
+          sampler.currentFrameRenderMs = 0;
+          try {
+            callback(timestamp);
+          } finally {
+            const frameMs = performance.now() - frameStartMs;
+            if (frameStartMs - sampler.startedAtMs >= sampler.warmupMs) {
+              sampler.samples.push({
+                frameMs,
+                renderMs: sampler.currentFrameRenderMs,
+                simulationMs: Math.max(
+                  0,
+                  frameMs - sampler.currentFrameRenderMs,
+                ),
+              });
+            }
+          }
+        })) as typeof window.requestAnimationFrame;
+      sampler.requestAnimationFramePatched = true;
+
+      const patchRender = <
+        TTarget extends {
+          render?: (...args: unknown[]) => unknown;
+        },
+      >(
+        target: TTarget,
+      ) => {
+        if (typeof target.render !== 'function') {
+          return false;
+        }
+
+        const originalRender = target.render.bind(target);
+        target.render = ((...args: unknown[]) => {
+          const renderStartMs = performance.now();
+          try {
+            return originalRender(...args);
+          } finally {
+            sampler.currentFrameRenderMs += performance.now() - renderStartMs;
+          }
+        }) as TTarget['render'];
+        return true;
+      };
+
+      sampler.adapterRenderPatched = patchRender(adapter);
+      sampler.toyRenderPatched = patchRender(runtime.toy);
+      win.__stimsPlayToyPerfSampler = sampler;
+      return true;
+    }, warmupMs)
+    .catch(() => false);
+}
+
+export function buildPlayToyPerformanceMetricsFromDebugSnapshot({
+  snapshot,
+  durationMs,
+  warmupMs,
+  actualBackend,
+  fallbackOccurred,
+  runtimePerformance,
+  runtimeAdaptiveQuality,
+}: {
+  snapshot: unknown;
+  durationMs: number;
+  warmupMs: number;
+  actualBackend: 'webgl' | 'webgpu' | null;
+  fallbackOccurred: boolean;
+  runtimePerformance?: PlayToyRuntimePerformanceSnapshotLike | null;
+  runtimeAdaptiveQuality?: PlayToyAdaptiveQualitySnapshotLike | null;
+}) {
+  if (
+    !(snapshot && typeof snapshot === 'object') &&
+    !runtimePerformance &&
+    !runtimeAdaptiveQuality
+  ) {
+    return null;
+  }
+
+  const snapshotRecord = snapshot as {
+    adaptiveQuality?: unknown;
+    performance?: {
+      sampleCount?: number;
+      averageFrameMs?: number | null;
+      p95FrameMs?: number | null;
+      averageSimulationMs?: number | null;
+      averageRenderMs?: number | null;
+    } | null;
+  };
+  const performance = runtimePerformance ?? snapshotRecord?.performance ?? null;
+  const adaptiveQuality =
+    runtimeAdaptiveQuality ??
+    (snapshotRecord?.adaptiveQuality &&
+    typeof snapshotRecord.adaptiveQuality === 'object'
+      ? (snapshotRecord.adaptiveQuality as {
+          sampleCount?: number;
+          averageFrameMs?: number | null;
+          averageRenderMs?: number | null;
+        })
+      : null);
+  if (!(performance && typeof performance === 'object') && !adaptiveQuality) {
+    return null;
+  }
+
+  return {
+    durationMs,
+    warmupMs,
+    sampleCount: performance?.sampleCount ?? adaptiveQuality?.sampleCount ?? 0,
+    averageFrameMs:
+      performance?.averageFrameMs ?? adaptiveQuality?.averageFrameMs ?? null,
+    p95FrameMs: performance?.p95FrameMs ?? null,
+    averageSimulationMs:
+      performance?.averageSimulationMs ??
+      (adaptiveQuality?.averageFrameMs !== null &&
+      adaptiveQuality?.averageFrameMs !== undefined &&
+      adaptiveQuality?.averageRenderMs !== null &&
+      adaptiveQuality?.averageRenderMs !== undefined
+        ? Math.max(
+            0,
+            adaptiveQuality.averageFrameMs - adaptiveQuality.averageRenderMs,
+          )
+        : null),
+    averageRenderMs:
+      performance?.averageRenderMs ?? adaptiveQuality?.averageRenderMs ?? null,
+    actualBackend,
+    fallbackOccurred,
+    terminalAdaptiveQuality: adaptiveQuality ?? null,
+  } satisfies PlayToyPerformanceMetrics;
+}
+
+async function collectPerformanceSampler(page: Page) {
+  return page
+    .evaluate(() => {
+      const win = window as Window & {
+        __stimsPlayToyPerfSampler?: {
+          fallbackOccurred: boolean;
+          startedAtMs: number;
+          warmupMs: number;
+          samples: PlayToyPerformanceSample[];
+        };
+        __milkdropRuntimeDebug?: {
+          getState?: () => {
+            activePresetId: string;
+            backend: 'webgl' | 'webgpu';
+            status: string | null;
+          };
+          getAdaptiveQuality?: () => unknown | null;
+          getPerformance?: () => unknown | null;
+        };
+        stimState?: {
+          getDebugSnapshot?: (key: string) => unknown | null;
+        };
+      };
+
+      const sampler = win.__stimsPlayToyPerfSampler;
+      const debugSnapshot = win.stimState?.getDebugSnapshot?.('milkdrop');
+      const backend = win.__milkdropRuntimeDebug?.getState?.().backend ?? null;
+      const actualBackend =
+        backend === 'webgl' || backend === 'webgpu' ? backend : null;
+      const liveAdaptiveQuality =
+        win.__milkdropRuntimeDebug?.getAdaptiveQuality?.() ?? null;
+      const livePerformance =
+        win.__milkdropRuntimeDebug?.getPerformance?.() ?? null;
+
+      if (
+        !sampler &&
+        !actualBackend &&
+        !liveAdaptiveQuality &&
+        !livePerformance
+      ) {
+        return null;
+      }
+
+      return {
+        warmupMs: sampler?.warmupMs ?? 0,
+        fallbackOccurred:
+          (sampler?.fallbackOccurred ?? false) ||
+          (actualBackend !== null && actualBackend !== 'webgpu'),
+        actualBackend,
+        terminalAdaptiveQuality:
+          debugSnapshot &&
+          typeof debugSnapshot === 'object' &&
+          'adaptiveQuality' in debugSnapshot
+            ? ((debugSnapshot as { adaptiveQuality?: unknown })
+                .adaptiveQuality ?? null)
+            : null,
+        liveAdaptiveQuality,
+        livePerformance,
+        samples: sampler?.samples ?? [],
+      };
+    })
+    .catch(() => null);
+}
+
 async function captureActiveToyCanvas(
   page: Page,
   screenshotPath: string,
@@ -476,7 +879,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   ensureOutputDir(normalizedOptions.outputDir);
 
   let browser: Browser | undefined;
+  let page: Page | undefined;
   const consoleErrors: string[] = [];
+  let fallbackOccurred = false;
 
   try {
     browser = await chromium.launch({
@@ -494,7 +899,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       permissions: ['microphone'], // Auto-grant microphone if needed
     });
 
-    const page = await context.newPage();
+    page = await context.newPage();
 
     page.on('console', (msg: ConsoleMessage) => {
       if (msg.type() === 'error') {
@@ -650,6 +1055,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         .catch(() => false);
 
       if (!allowWebglFallback && webglFallbackVisible) {
+        fallbackOccurred = true;
         throw new Error(
           'MilkDrop requested WebGL fallback while the capture runner required a WebGPU-certified session.',
         );
@@ -660,6 +1066,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         (await clickVisibleButtonByText(page, WEBGL_FALLBACK_LABEL))
       ) {
         console.log('Continuing with WebGL fallback...');
+        fallbackOccurred = true;
       }
 
       if (
@@ -742,15 +1149,65 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
           .catch(() => false)
       : false;
 
+    let samplerInstalled = false;
+    if (normalizedOptions.perfCapture) {
+      samplerInstalled =
+        (await waitForPerformanceSamplerTarget(page)) &&
+        (await installPerformanceSampler(
+          page,
+          normalizedOptions.perfCapture.warmupMs,
+        ));
+    }
+
     // Wait for visualization to run
     console.log(`Watching for ${normalizedOptions.duration}ms...`);
     await page.waitForTimeout(normalizedOptions.duration);
+
+    const runtimeDebugSnapshot = normalizedOptions.perfCapture
+      ? await getMilkdropDebugSnapshot(page)
+      : null;
+    const perfCapture = normalizedOptions.perfCapture
+      ? await collectPerformanceSampler(page)
+      : null;
+    const actualBackend =
+      perfCapture?.actualBackend ?? (await getActiveRenderBackend(page));
+    const performance =
+      perfCapture &&
+      Array.isArray(perfCapture.samples) &&
+      perfCapture.samples.length > 0
+        ? buildPlayToyPerformanceMetrics({
+            samples: perfCapture.samples,
+            durationMs: normalizedOptions.duration,
+            warmupMs: perfCapture.warmupMs,
+            actualBackend: perfCapture.actualBackend,
+            fallbackOccurred: perfCapture.fallbackOccurred,
+            terminalAdaptiveQuality: perfCapture.terminalAdaptiveQuality,
+          })
+        : runtimeDebugSnapshot && normalizedOptions.perfCapture
+          ? buildPlayToyPerformanceMetricsFromDebugSnapshot({
+              snapshot: runtimeDebugSnapshot,
+              durationMs: normalizedOptions.duration,
+              warmupMs: normalizedOptions.perfCapture.warmupMs,
+              actualBackend,
+              fallbackOccurred:
+                fallbackOccurred ||
+                (!samplerInstalled &&
+                  actualBackend !== null &&
+                  actualBackend !== 'webgpu'),
+              runtimePerformance: perfCapture?.livePerformance ?? null,
+              runtimeAdaptiveQuality: perfCapture?.liveAdaptiveQuality ?? null,
+            })
+          : undefined;
 
     const result: PlayToyResult = {
       slug: options.slug,
       success: true,
       presetId: normalizedOptions.presetId,
       consoleErrors: consoleErrors.length > 0 ? consoleErrors : undefined,
+      fallbackOccurred:
+        fallbackOccurred ||
+        (actualBackend !== null && actualBackend !== 'webgpu'),
+      performance: performance ?? undefined,
     };
 
     // Check audio state
@@ -778,7 +1235,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     }
 
     if (options.debugSnapshot) {
-      const snapshot = await getMilkdropDebugSnapshot(page);
+      const snapshot =
+        runtimeDebugSnapshot ?? (await getMilkdropDebugSnapshot(page));
       const snapshotName = `${artifactStem}-${artifactTimestamp}.debug.json`;
       const snapshotPath = path.join(normalizedOptions.outputDir, snapshotName);
       fs.writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
@@ -786,7 +1244,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       console.log(`Debug snapshot saved to ${snapshotPath}`);
     }
 
-    if (result.screenshot || result.debugSnapshot) {
+    if (
+      normalizedOptions.recordParityArtifact &&
+      (result.screenshot || result.debugSnapshot)
+    ) {
       const captureBackend = await getActiveRenderBackend(page);
       const { manifestPath } = appendParityArtifactEntry(
         normalizedOptions.outputDir,
@@ -818,6 +1279,40 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     return result;
   } catch (error) {
+    let performance: PlayToyPerformanceMetrics | undefined;
+    try {
+      if (normalizedOptions.perfCapture && page) {
+        const runtimeDebugSnapshot = await getMilkdropDebugSnapshot(page);
+        const perfCapture = await collectPerformanceSampler(page);
+        if (
+          perfCapture &&
+          Array.isArray(perfCapture.samples) &&
+          perfCapture.samples.length > 0
+        ) {
+          performance = buildPlayToyPerformanceMetrics({
+            samples: perfCapture.samples,
+            durationMs: normalizedOptions.duration,
+            warmupMs: perfCapture.warmupMs,
+            actualBackend: perfCapture.actualBackend,
+            fallbackOccurred: perfCapture.fallbackOccurred,
+            terminalAdaptiveQuality: perfCapture.terminalAdaptiveQuality,
+          });
+        } else {
+          performance =
+            buildPlayToyPerformanceMetricsFromDebugSnapshot({
+              snapshot: runtimeDebugSnapshot,
+              durationMs: normalizedOptions.duration,
+              warmupMs: normalizedOptions.perfCapture.warmupMs,
+              actualBackend: await getActiveRenderBackend(page),
+              fallbackOccurred,
+              runtimePerformance: perfCapture?.livePerformance ?? null,
+              runtimeAdaptiveQuality: perfCapture?.liveAdaptiveQuality ?? null,
+            }) ?? undefined;
+        }
+      }
+    } catch (_perfError) {
+      // Ignore perf capture errors on failure paths.
+    }
     console.error(`Error playing toy ${options.slug}:`, error);
     await closeBrowser(browser);
     return {
@@ -825,6 +1320,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       success: false,
       error: error instanceof Error ? error.message : String(error),
       consoleErrors: consoleErrors.length > 0 ? consoleErrors : undefined,
+      fallbackOccurred,
+      performance,
     };
   }
 }

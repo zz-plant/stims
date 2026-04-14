@@ -1,0 +1,1390 @@
+{
+  "version": 1,
+  "generatedAt": "2026-04-14T04:29:39.375Z",
+  "outputDir": "./screenshots/certification-perf",
+  "reportDir": "screenshots/certification-perf/reports",
+  "targetFrameMs": 16.7,
+  "warmupMs": 1000,
+  "durationMs": 4500,
+  "presetCount": 23,
+  "passCount": 23,
+  "failCount": 0,
+  "errorCount": 0,
+  "outlierGroups": {},
+  "outlierStrata": {},
+  "reports": [
+    {
+      "version": 1,
+      "presetId": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "corpusGroup": "bundled-shipped",
+      "strata": [
+        "comets",
+        "feedback",
+        "external-pack"
+      ],
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -10.842715231077559,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 302,
+        "averageFrameMs": 5.857284768922439,
+        "p95FrameMs": 12.300000071525574,
+        "averageSimulationMs": 5.332781456953643,
+        "averageRenderMs": 0.5245033119687971,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 11.187965661793793,
+          "averageRenderMs": 1.0530349853478782,
+          "sampleCount": 179,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/krash-rovastar-cerebral-demons-stars.json"
+    },
+    {
+      "version": 1,
+      "presetId": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "corpusGroup": "bundled-shipped",
+      "strata": [
+        "feedback",
+        "lasers",
+        "external-pack"
+      ],
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -14.939473682092991,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 304,
+        "averageFrameMs": 1.7605263179070072,
+        "p95FrameMs": 3.700000047683716,
+        "averageSimulationMs": 1.3286184194056612,
+        "averageRenderMs": 0.431907898501346,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 3.1718478241041526,
+          "averageRenderMs": 0.7937664944140552,
+          "sampleCount": 198,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/rovastar-parallel-universe.json"
+    },
+    {
+      "version": 1,
+      "presetId": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "corpusGroup": "bundled-shipped",
+      "strata": [
+        "geometry",
+        "shapes",
+        "external-pack"
+      ],
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -10.885855264726437,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 304,
+        "averageFrameMs": 5.814144735273562,
+        "p95FrameMs": 11.899999976158142,
+        "averageSimulationMs": 5.37335526080508,
+        "averageRenderMs": 0.44078947446848216,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 11.483009796247877,
+          "averageRenderMs": 0.9151314061198786,
+          "sampleCount": 197,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/eos-phat-cubetrace-v2.json"
+    },
+    {
+      "version": 1,
+      "presetId": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "corpusGroup": "bundled-shipped",
+      "strata": [
+        "waveform",
+        "glowsticks",
+        "external-pack"
+      ],
+      "sourceFamily": "external-pack",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -7.822875815123513,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 306,
+        "averageFrameMs": 8.877124184876486,
+        "p95FrameMs": 18.100000023841858,
+        "averageSimulationMs": 8.483333333255418,
+        "averageRenderMs": 0.3937908516210668,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 4,
+          "qualityStepCount": 5,
+          "averageFrameMs": 17.90623244472142,
+          "averageRenderMs": 0.8196802806517036,
+          "sampleCount": 198,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "Coarse frame timing pushed the controller below the baseline budget."
+          ],
+          "renderScaleMultiplier": 0.72,
+          "maxPixelRatioMultiplier": 0.8,
+          "densityMultiplier": 0.6,
+          "feedbackResolutionMultiplier": 0.56
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/eos-glowsticks-v2-03-music.json"
+    },
+    {
+      "version": 1,
+      "presetId": "shape-projectm-dual-lattice",
+      "title": "Shape projectM Dual Lattice",
+      "corpusGroup": "local-custom-shape",
+      "strata": [
+        "custom-shape",
+        "borders",
+        "shape-texture"
+      ],
+      "sourceFamily": "local-custom-shape",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.62608695926133,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 322,
+        "averageFrameMs": 1.0739130407386686,
+        "p95FrameMs": 2.3000000715255737,
+        "averageSimulationMs": 0.6385093142527231,
+        "averageRenderMs": 0.43540372648594544,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.897550050861135,
+          "averageRenderMs": 0.7910735347535518,
+          "sampleCount": 194,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/shape-projectm-dual-lattice.json"
+    },
+    {
+      "version": 1,
+      "presetId": "shape-legacy-max-slot-orbit",
+      "title": "Shape Legacy Max Slot Orbit",
+      "corpusGroup": "local-custom-shape",
+      "strata": [
+        "custom-shape",
+        "legacy-slot",
+        "shape-texture"
+      ],
+      "sourceFamily": "local-custom-shape",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.711111110080907,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 324,
+        "averageFrameMs": 0.9888888899190926,
+        "p95FrameMs": 2.200000047683716,
+        "averageSimulationMs": 0.5558641987082399,
+        "averageRenderMs": 0.43302469121085274,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.7326994402116438,
+          "averageRenderMs": 0.7471859880995543,
+          "sampleCount": 192,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/shape-legacy-max-slot-orbit.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-shape-07",
+      "title": "Parity Shape 07",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "custom-shape",
+        "borders"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.698773006208103,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 326,
+        "averageFrameMs": 1.001226993791896,
+        "p95FrameMs": 2.200000047683716,
+        "averageSimulationMs": 0.5576687104131547,
+        "averageRenderMs": 0.4435582833787415,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.9493181032704305,
+          "averageRenderMs": 0.9408271194043649,
+          "sampleCount": 201,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-shape-07.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-legacy-shape-01",
+      "title": "Parity Legacy Shape 01",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "custom-shape",
+        "legacy-slot"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.807228914298205,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 332,
+        "averageFrameMs": 0.8927710857017931,
+        "p95FrameMs": 2,
+        "averageSimulationMs": 0.5319277105561222,
+        "averageRenderMs": 0.3608433751456709,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.5880182466609143,
+          "averageRenderMs": 0.6512111340961335,
+          "sampleCount": 200,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-legacy-shape-01.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-legacy-wave-01",
+      "title": "Parity Legacy Wave 01",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "custom-wave",
+        "legacy-slot"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.797272725177534,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 330,
+        "averageFrameMs": 0.9027272748224663,
+        "p95FrameMs": 2,
+        "averageSimulationMs": 0.5309090917760676,
+        "averageRenderMs": 0.37181818304639874,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.6445692110361687,
+          "averageRenderMs": 0.7131783217696902,
+          "sampleCount": 203,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-legacy-wave-01.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-wave-02",
+      "title": "Parity Wave 02",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "custom-wave",
+        "registers"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.721987949509218,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 332,
+        "averageFrameMs": 0.9780120504907814,
+        "p95FrameMs": 2.1999999284744263,
+        "averageSimulationMs": 0.5490963864757354,
+        "averageRenderMs": 0.4289156640150461,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.8812668514735167,
+          "averageRenderMs": 0.8972944306027801,
+          "sampleCount": 205,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-wave-02.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-feedback-orientation-01",
+      "title": "Parity Feedback Orientation 01",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "feedback",
+        "video-echo",
+        "orientation"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.683461537116612,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 780,
+        "averageFrameMs": 1.016538462883387,
+        "p95FrameMs": 2.399999976158142,
+        "averageSimulationMs": 0.5338461536627549,
+        "averageRenderMs": 0.48269230922063194,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "high-end",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 0,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.7026477657259396,
+          "averageRenderMs": 0.8899242056049866,
+          "sampleCount": 402,
+          "adaptation": "steady",
+          "reasons": [
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 1,
+          "maxPixelRatioMultiplier": 1,
+          "densityMultiplier": 1,
+          "feedbackResolutionMultiplier": 1
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-feedback-orientation-01.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-hybrid-09",
+      "title": "Parity Hybrid 09",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "hybrid",
+        "custom-wave",
+        "custom-shape",
+        "video-echo"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.342168674483355,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 332,
+        "averageFrameMs": 1.3578313255166432,
+        "p95FrameMs": 3,
+        "averageSimulationMs": 0.8987951817282711,
+        "averageRenderMs": 0.45903614378837215,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 2.6531086478523855,
+          "averageRenderMs": 0.9735628676672368,
+          "sampleCount": 200,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-hybrid-09.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-motion-04",
+      "title": "Parity Motion 04",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "motion-vectors",
+        "per-frame"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.713225801529422,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 310,
+        "averageFrameMs": 0.9867741984705771,
+        "p95FrameMs": 2.200000047683716,
+        "averageSimulationMs": 0.5067741986243955,
+        "averageRenderMs": 0.4799999998461816,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.7180236297965117,
+          "averageRenderMs": 0.8837322439383892,
+          "sampleCount": 189,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-motion-04.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-per-pixel-03",
+      "title": "Parity Per Pixel 03",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "per-pixel",
+        "per-frame"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.772611465575588,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 314,
+        "averageFrameMs": 0.9273885344244113,
+        "p95FrameMs": 2.100000023841858,
+        "averageSimulationMs": 0.48439490529382306,
+        "averageRenderMs": 0.4429936291305882,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.5981139229700527,
+          "averageRenderMs": 0.8061634773951826,
+          "sampleCount": 193,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-per-pixel-03.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-registers-05",
+      "title": "Parity Registers 05",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "registers",
+        "per-frame"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.74348341449742,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 844,
+        "averageFrameMs": 0.9565165855025793,
+        "p95FrameMs": 2.100000023841858,
+        "averageSimulationMs": 0.512796205225714,
+        "averageRenderMs": 0.4437203802768653,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "high-end",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 0,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.8193109909265452,
+          "averageRenderMs": 0.9124836196146161,
+          "sampleCount": 544,
+          "adaptation": "steady",
+          "reasons": [
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 1,
+          "maxPixelRatioMultiplier": 1,
+          "densityMultiplier": 1,
+          "feedbackResolutionMultiplier": 1
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-registers-05.json"
+    },
+    {
+      "version": 1,
+      "presetId": "parity-shader-08",
+      "title": "Parity Shader 08",
+      "corpusGroup": "parity-corpus",
+      "strata": [
+        "shader-supported",
+        "feedback"
+      ],
+      "sourceFamily": "parity-corpus",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.539939024390243,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 328,
+        "averageFrameMs": 1.1600609756097562,
+        "p95FrameMs": 2.5,
+        "averageSimulationMs": 0.7353658545307997,
+        "averageRenderMs": 0.4246951210789564,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 2.18886593614395,
+          "averageRenderMs": 0.8168558937441834,
+          "sampleCount": 201,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/parity-shader-08.json"
+    },
+    {
+      "version": 1,
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": "300 Beatdetect Bassmidtreb",
+      "corpusGroup": "projectm-upstream",
+      "strata": [
+        "beat-detect",
+        "upstream"
+      ],
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.367549665005791,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 302,
+        "averageFrameMs": 1.3324503349942087,
+        "p95FrameMs": 3,
+        "averageSimulationMs": 0.8168874177711689,
+        "averageRenderMs": 0.5155629172230398,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 2.3624042541210537,
+          "averageRenderMs": 0.9287405485220129,
+          "sampleCount": 186,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/300-beatdetect-bassmidtreb.json"
+    },
+    {
+      "version": 1,
+      "presetId": "250-wavecode",
+      "title": "250 Wavecode",
+      "corpusGroup": "projectm-upstream",
+      "strata": [
+        "custom-wave",
+        "upstream"
+      ],
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.613815786964015,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 304,
+        "averageFrameMs": 1.0861842130359851,
+        "p95FrameMs": 2.399999976158142,
+        "averageSimulationMs": 0.5924342153103728,
+        "averageRenderMs": 0.49374999772561223,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.946631086575033,
+          "averageRenderMs": 0.9144983599389264,
+          "sampleCount": 187,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/250-wavecode.json"
+    },
+    {
+      "version": 1,
+      "presetId": "110-per_pixel",
+      "title": "110 Per Pixel",
+      "corpusGroup": "projectm-upstream",
+      "strata": [
+        "per-pixel",
+        "upstream"
+      ],
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.636842105890574,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 304,
+        "averageFrameMs": 1.0631578941094249,
+        "p95FrameMs": 2.5,
+        "averageSimulationMs": 0.540131576359272,
+        "averageRenderMs": 0.5230263177501527,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.8296715391549392,
+          "averageRenderMs": 0.9352890746097284,
+          "sampleCount": 177,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/110-per_pixel.json"
+    },
+    {
+      "version": 1,
+      "presetId": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "corpusGroup": "projectm-upstream",
+      "strata": [
+        "shader-supported",
+        "samplers",
+        "upstream"
+      ],
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.533443707977698,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 302,
+        "averageFrameMs": 1.166556292022301,
+        "p95FrameMs": 2.6999999284744263,
+        "averageSimulationMs": 0.6715231802289849,
+        "averageRenderMs": 0.49503311179331594,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 2.071539389191981,
+          "averageRenderMs": 0.9239760011306372,
+          "sampleCount": 186,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/260-compshader-noise_lq.json"
+    },
+    {
+      "version": 1,
+      "presetId": "261-compshader-noisevol_lq",
+      "title": "261 Compshader Noisevol LQ",
+      "corpusGroup": "projectm-upstream",
+      "strata": [
+        "shader-supported",
+        "volume-sampler",
+        "upstream"
+      ],
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.568092105969,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 304,
+        "averageFrameMs": 1.1319078940309977,
+        "p95FrameMs": 2.5,
+        "averageSimulationMs": 0.6549342074676564,
+        "averageRenderMs": 0.4769736865633412,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 2.0463465708118793,
+          "averageRenderMs": 0.8838291204492726,
+          "sampleCount": 186,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/261-compshader-noisevol_lq.json"
+    },
+    {
+      "version": 1,
+      "presetId": "100-square",
+      "title": "100 Square",
+      "corpusGroup": "projectm-upstream",
+      "strata": [
+        "shapes",
+        "upstream"
+      ],
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.58999999920527,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 300,
+        "averageFrameMs": 1.1100000007947286,
+        "p95FrameMs": 2.399999976158142,
+        "averageSimulationMs": 0.559666668176651,
+        "averageRenderMs": 0.5503333326180776,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.737823049036553,
+          "averageRenderMs": 0.8907625127285884,
+          "sampleCount": 180,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/100-square.json"
+    },
+    {
+      "version": 1,
+      "presetId": "001-line",
+      "title": "001 Line",
+      "corpusGroup": "projectm-upstream",
+      "strata": [
+        "waveform",
+        "upstream"
+      ],
+      "sourceFamily": "projectm-fixture",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "status": "pass",
+      "targetFrameMs": 16.7,
+      "overBudgetMs": -15.655033554326767,
+      "consoleErrors": [
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+        "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+      ],
+      "error": null,
+      "fallbackOccurred": false,
+      "performance": {
+        "sampleCount": 298,
+        "averageFrameMs": 1.0449664456732322,
+        "p95FrameMs": 2.4000000953674316,
+        "averageSimulationMs": 0.5090604052447633,
+        "averageRenderMs": 0.5359060404284689,
+        "durationMs": 4500,
+        "warmupMs": 1000,
+        "actualBackend": "webgpu",
+        "fallbackOccurred": false,
+        "terminalAdaptiveQuality": {
+          "enabled": true,
+          "backend": "webgpu",
+          "timingMode": "coarse-frame",
+          "supportsGpuTimestamps": true,
+          "profile": "enhanced",
+          "frameBudgetMs": 16.7,
+          "qualityStep": 2,
+          "qualityStepCount": 5,
+          "averageFrameMs": 1.9451816271428064,
+          "averageRenderMs": 1.0904464241641942,
+          "sampleCount": 180,
+          "adaptation": "steady",
+          "reasons": [
+            "shader-f16 is unavailable.",
+            "timestamp-query is available for future GPU timing upgrades."
+          ],
+          "renderScaleMultiplier": 0.88,
+          "maxPixelRatioMultiplier": 0.92,
+          "densityMultiplier": 0.82,
+          "feedbackResolutionMultiplier": 0.8
+        }
+      },
+      "playToySuccess": true,
+      "reportPath": "screenshots/certification-perf/reports/001-line.json"
+    }
+  ]
+}

@@ -1,8 +1,11 @@
 import { expect, test } from 'bun:test';
 import {
   buildPlayToyArtifactStem,
+  buildPlayToyPerformanceMetrics,
+  buildPlayToyPerformanceMetricsFromDebugSnapshot,
   buildPlayToyUrl,
   resolveChromiumRendererArgs,
+  summarizePlayToyPerformanceSamples,
 } from '../scripts/play-toy.ts';
 
 test('buildPlayToyUrl includes the requested preset for milkdrop captures', () => {
@@ -62,4 +65,95 @@ test('resolveChromiumRendererArgs keeps compatibility and webgpu launch profiles
   expect(resolveChromiumRendererArgs('webgpu')).not.toContain(
     '--enable-unsafe-swiftshader',
   );
+});
+
+test('summarizePlayToyPerformanceSamples computes average and p95 frame timings', () => {
+  expect(
+    summarizePlayToyPerformanceSamples([
+      { frameMs: 10, renderMs: 4, simulationMs: 6 },
+      { frameMs: 20, renderMs: 7, simulationMs: 13 },
+      { frameMs: 15, renderMs: 5, simulationMs: 10 },
+      { frameMs: 30, renderMs: 12, simulationMs: 18 },
+    ]),
+  ).toEqual({
+    sampleCount: 4,
+    averageFrameMs: 18.75,
+    p95FrameMs: 30,
+    averageSimulationMs: 11.75,
+    averageRenderMs: 7,
+  });
+});
+
+test('buildPlayToyPerformanceMetrics preserves terminal state alongside summarized timings', () => {
+  expect(
+    buildPlayToyPerformanceMetrics({
+      samples: [
+        { frameMs: 10, renderMs: 4, simulationMs: 6 },
+        { frameMs: 14, renderMs: 5, simulationMs: 9 },
+      ],
+      durationMs: 4500,
+      warmupMs: 1000,
+      actualBackend: 'webgpu',
+      fallbackOccurred: false,
+      terminalAdaptiveQuality: { qualityPresetId: 'balanced' },
+    }),
+  ).toEqual({
+    sampleCount: 2,
+    averageFrameMs: 12,
+    p95FrameMs: 14,
+    averageSimulationMs: 7.5,
+    averageRenderMs: 4.5,
+    durationMs: 4500,
+    warmupMs: 1000,
+    actualBackend: 'webgpu',
+    fallbackOccurred: false,
+    terminalAdaptiveQuality: { qualityPresetId: 'balanced' },
+  });
+});
+
+test('debug snapshot perf fallback prefers live runtime metrics when available', () => {
+  expect(
+    buildPlayToyPerformanceMetricsFromDebugSnapshot({
+      snapshot: {
+        performance: {
+          sampleCount: 4,
+          averageFrameMs: 38.4,
+          p95FrameMs: 141.9,
+          averageSimulationMs: 2.85,
+          averageRenderMs: 35.55,
+        },
+      },
+      durationMs: 4500,
+      warmupMs: 1000,
+      actualBackend: 'webgpu',
+      fallbackOccurred: false,
+      runtimePerformance: {
+        sampleCount: 120,
+        averageFrameMs: 9.5,
+        p95FrameMs: 14,
+        averageSimulationMs: 2,
+        averageRenderMs: 7.5,
+      },
+      runtimeAdaptiveQuality: {
+        sampleCount: 120,
+        averageFrameMs: 10,
+        averageRenderMs: 8,
+      },
+    }),
+  ).toEqual({
+    sampleCount: 120,
+    averageFrameMs: 9.5,
+    p95FrameMs: 14,
+    averageSimulationMs: 2,
+    averageRenderMs: 7.5,
+    durationMs: 4500,
+    warmupMs: 1000,
+    actualBackend: 'webgpu',
+    fallbackOccurred: false,
+    terminalAdaptiveQuality: {
+      sampleCount: 120,
+      averageFrameMs: 10,
+      averageRenderMs: 8,
+    },
+  });
 });

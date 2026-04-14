@@ -9,7 +9,6 @@ import type {
 } from '../types';
 import { buildMainWaveFrame } from './frame-generation';
 import {
-  type CustomWaveChannelSample,
   clamp,
   color,
   MAX_TRAILS,
@@ -113,19 +112,25 @@ export function buildCustomWaves({
 } {
   const waves: MilkdropWaveVisual[] = [];
   const proceduralWaves: MilkdropProceduralCustomWaveVisual[] = [];
+  const channelSample = waveState.channelSample;
 
-  preset.ir.customWaves.forEach((wave, index) => {
+  for (let index = 0; index < preset.ir.customWaves.length; index += 1) {
+    const wave = preset.ir.customWaves[index];
+    if (!wave) {
+      continue;
+    }
+
     const frameLocals =
       waveState.customWaveLocals[index] ?? seedCustomWaveState(wave);
     runProgram(
       wave.programs.perFrame,
-      createEnv(signals, frameLocals),
+      createEnv(signals, frameLocals, { reuseExtraAsEnv: true }),
       frameLocals,
     );
     waveState.customWaveLocals[index] = frameLocals;
 
     if ((frameLocals.enabled ?? 0) < 0.5) {
-      return;
+      continue;
     }
 
     const sampleCount = clamp(
@@ -158,13 +163,13 @@ export function buildCustomWaves({
       ? new Array<number>(sampleCount)
       : null;
     const pointLocals: MutableState = { ...frameLocals };
-    const pointEnv = useProcedural ? null : createEnv(signals, pointLocals);
-    const channelSample: CustomWaveChannelSample = {
-      sample: 0,
-      value: 0,
-      value1: 0,
-      value2: 0,
-    };
+    const pointEnv = useProcedural
+      ? null
+      : createEnv(signals, pointLocals, { reuseExtraAsEnv: true });
+    channelSample.sample = 0;
+    channelSample.value = 0;
+    channelSample.value1 = 0;
+    channelSample.value2 = 0;
 
     for (let point = 0; point < sampleCount; point += 1) {
       const sample = point / Math.max(1, sampleCount - 1);
@@ -211,7 +216,6 @@ export function buildCustomWaves({
       );
       pointLocals.ang = Math.atan2(pointLocals.y, pointLocals.x);
       if (pointEnv) {
-        Object.assign(pointEnv, pointLocals);
         runProgram(wave.programs.perPoint, pointEnv, pointLocals);
       }
       const writeIndex = point * 3;
@@ -269,7 +273,7 @@ export function buildCustomWaves({
         thickness: clamp(frameLocals.thick ?? 1, 1, 6),
       });
     }
-  });
+  }
 
   return {
     visual: waves,
