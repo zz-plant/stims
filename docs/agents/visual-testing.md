@@ -178,6 +178,7 @@ DevTools in most browsers can simulate mobile devices without a phone. In Chrome
 
 ## Next steps
 
-- Use [`./test-visualizer.md`](./test-visualizer.md) for automated testing approaches
-- Use [`./ship-visualizer-change.md`](./ship-visualizer-change.md) for the full implementation→visibility→PR workflow
+- Use [`../../.agent/workflows/test-visualizer.md`](../../.agent/workflows/test-visualizer.md) for the repo-local testing workflow
+- Use [`../../.agent/workflows/ship-visualizer-change.md`](../../.agent/workflows/ship-visualizer-change.md) for the full implementation→validation→PR-ready workflow
+- Use [`./custom-capabilities.md`](./custom-capabilities.md) when you need to choose the right repo-local skill or workflow first
 - See [Tooling and Quality](./tooling-and-quality.md) for all available verification commands

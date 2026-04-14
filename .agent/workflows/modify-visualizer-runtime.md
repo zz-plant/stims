@@ -46,4 +46,4 @@ bun run check
 bun run dev
 ```
 
-Then open `http://localhost:5173/toy.html?agent=true` and confirm shell load, audio entry, preset startup, and navigation stability.
+Then open `http://localhost:5173/?agent=true` and confirm shell load, audio entry, preset startup, and navigation stability.

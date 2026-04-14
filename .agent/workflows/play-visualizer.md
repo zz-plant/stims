@@ -21,7 +21,7 @@ bun run dev
 Open:
 
 ```text
-http://localhost:5173/toy.html?agent=true
+http://localhost:5173/?agent=true
 ```
 
 ## 2. Start playback

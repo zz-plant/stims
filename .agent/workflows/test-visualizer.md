@@ -38,7 +38,7 @@ Use:
 bun run play:toy milkdrop
 ```
 
-or start `bun run dev` and open `http://localhost:5173/toy.html?agent=true`.
+or start `bun run dev` and open `http://localhost:5173/?agent=true`.
 
 ## 4. Notes
 

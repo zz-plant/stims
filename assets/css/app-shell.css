@@ -2201,7 +2201,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] {
-    min-height: 88svh;
+    min-height: max(88svh, 640px);
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-root::before {
@@ -2231,6 +2231,21 @@ body[data-page="workspace"] {
     flex-direction: column;
   }
 
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
+    bottom: 64px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .stims-shell__audio-bridge-copy
+    .stims-shell__meta-copy {
+    display: none;
+  }
+
   .stims-shell__corner-actions,
   .stims-shell__frame-sidecar {
     width: 100%;
@@ -2248,11 +2263,28 @@ body[data-page="workspace"] {
     max-width: 100%;
   }
 
-  .stims-shell__stage-hero {
-    inset: 10px;
-    align-content: end;
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
+    top: 72px;
+    right: 10px;
+    bottom: 86px;
+    left: 10px;
     width: auto;
-    padding-bottom: 74px;
+    align-content: start;
+    justify-items: stretch;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px 0 12px;
+    scrollbar-width: thin;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero > * {
+    width: 100%;
+    max-width: none;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
+    width: 100%;
+    max-width: none;
   }
 
   .stims-shell__stage-dock {
@@ -2274,14 +2306,33 @@ body[data-page="workspace"] {
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    width: calc(100% - 24px);
+    max-width: none;
+    border-radius: 20px;
+  }
+
   .stims-shell__stage-tool {
     flex: 1 1 calc(50% - 6px);
     min-height: 40px;
     padding: 0 8px;
   }
 
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool {
+    min-height: 42px;
+    padding: 0;
+    flex: initial;
+  }
+
   .stims-shell__stage-tool-label {
     font-size: 0.82rem;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool-label {
+    display: none;
   }
 
   .stims-shell__preset-list {
@@ -2312,5 +2363,103 @@ body[data-page="workspace"] {
     max-width: none;
     align-items: flex-start;
     padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
+    top: 68px;
+    bottom: 82px;
+  }
+
+  .stims-shell__launch-panel {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
+    bottom: 56px;
+    top: 60px;
+    gap: 6px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy,
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
+    gap: 8px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy {
+    padding: 10px 12px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-summary {
+    display: none;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__session-meta {
+    gap: 4px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__meta-pill {
+    min-height: 38px;
+    padding: 6px 10px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
+    padding: 10px 12px;
+  }
+
+  .stims-shell__launch-hero {
+    gap: 14px;
+  }
+
+  .stims-shell__launch-stack {
+    gap: 12px;
+  }
+
+  .stims-shell__confidence-note,
+  .stims-shell__audio-bridge,
+  .stims-shell__launch-recommendation,
+  .stims-shell__source-panel {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .stims-shell__launch-copy h1 {
+    font-size: clamp(1.25rem, 6.8vw, 1.7rem);
+    line-height: 0.96;
+  }
+
+  .stims-shell__launch-copy p {
+    font-size: 0.94rem;
+    line-height: 1.48;
+  }
+
+  .stims-shell__launch-actions {
+    gap: 8px;
+  }
+
+  .stims-shell__launch-actions > * {
+    min-height: 46px;
+  }
+
+  .stims-shell__audio-bridge-copy .stims-shell__meta-copy {
+    font-size: 0.82rem;
+    line-height: 1.38;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .stims-shell__audio-bridge-actions
+    .cta-button {
+    min-height: 40px;
+    padding: 0.68rem 0.9rem;
+  }
+
+  .stims-shell__preset-art {
+    min-height: 126px;
+  }
+
+  .stims-shell__launch-recommendation strong {
+    font-size: 1.04rem;
   }
 }
