@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "presetId": "parity-feedback-orientation-01",
+  "title": "Parity Feedback Orientation 01",
+  "corpusGroup": "parity-corpus",
+  "strata": [
+    "feedback",
+    "video-echo",
+    "orientation"
+  ],
+  "sourceFamily": "parity-corpus",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -15.683461537116612,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 780,
+    "averageFrameMs": 1.016538462883387,
+    "p95FrameMs": 2.399999976158142,
+    "averageSimulationMs": 0.5338461536627549,
+    "averageRenderMs": 0.48269230922063194,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "high-end",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 0,
+      "qualityStepCount": 5,
+      "averageFrameMs": 1.7026477657259396,
+      "averageRenderMs": 0.8899242056049866,
+      "sampleCount": 402,
+      "adaptation": "steady",
+      "reasons": [
+        "timestamp-query is available for future GPU timing upgrades."
+      ],
+      "renderScaleMultiplier": 1,
+      "maxPixelRatioMultiplier": 1,
+      "densityMultiplier": 1,
+      "feedbackResolutionMultiplier": 1
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/parity-feedback-orientation-01.json"
+}

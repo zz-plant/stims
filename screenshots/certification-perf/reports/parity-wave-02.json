@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "presetId": "parity-wave-02",
+  "title": "Parity Wave 02",
+  "corpusGroup": "parity-corpus",
+  "strata": [
+    "custom-wave",
+    "registers"
+  ],
+  "sourceFamily": "parity-corpus",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -15.721987949509218,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 332,
+    "averageFrameMs": 0.9780120504907814,
+    "p95FrameMs": 2.1999999284744263,
+    "averageSimulationMs": 0.5490963864757354,
+    "averageRenderMs": 0.4289156640150461,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "enhanced",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 2,
+      "qualityStepCount": 5,
+      "averageFrameMs": 1.8812668514735167,
+      "averageRenderMs": 0.8972944306027801,
+      "sampleCount": 205,
+      "adaptation": "steady",
+      "reasons": [
+        "shader-f16 is unavailable.",
+        "timestamp-query is available for future GPU timing upgrades."
+      ],
+      "renderScaleMultiplier": 0.88,
+      "maxPixelRatioMultiplier": 0.92,
+      "densityMultiplier": 0.82,
+      "feedbackResolutionMultiplier": 0.8
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/parity-wave-02.json"
+}

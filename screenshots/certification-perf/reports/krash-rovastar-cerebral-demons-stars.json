@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "presetId": "krash-rovastar-cerebral-demons-stars",
+  "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+  "corpusGroup": "bundled-shipped",
+  "strata": [
+    "comets",
+    "feedback",
+    "external-pack"
+  ],
+  "sourceFamily": "external-pack",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -10.842715231077559,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 302,
+    "averageFrameMs": 5.857284768922439,
+    "p95FrameMs": 12.300000071525574,
+    "averageSimulationMs": 5.332781456953643,
+    "averageRenderMs": 0.5245033119687971,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "enhanced",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 2,
+      "qualityStepCount": 5,
+      "averageFrameMs": 11.187965661793793,
+      "averageRenderMs": 1.0530349853478782,
+      "sampleCount": 179,
+      "adaptation": "steady",
+      "reasons": [
+        "shader-f16 is unavailable.",
+        "timestamp-query is available for future GPU timing upgrades."
+      ],
+      "renderScaleMultiplier": 0.88,
+      "maxPixelRatioMultiplier": 0.92,
+      "densityMultiplier": 0.82,
+      "feedbackResolutionMultiplier": 0.8
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/krash-rovastar-cerebral-demons-stars.json"
+}

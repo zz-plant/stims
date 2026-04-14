@@ -177,6 +177,7 @@ describe('milkdrop preset navigation controller', () => {
       getBlendDuration: () => 1,
       getTransitionMode: () => 'blend',
       applyCompiledPreset: () => undefined,
+      applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
       triggerWebglFallback: () => undefined,
@@ -250,6 +251,7 @@ describe('milkdrop preset navigation controller', () => {
         activePresetId = compiled.source.id;
         selected.push(compiled.source.id);
       },
+      applyPresetPerformanceOverride: () => undefined,
       setOverlayStatus: () => undefined,
       shouldFallbackToWebgl: () => false,
       triggerWebglFallback: () => undefined,

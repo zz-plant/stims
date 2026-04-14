@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "presetId": "shape-legacy-max-slot-orbit",
+  "title": "Shape Legacy Max Slot Orbit",
+  "corpusGroup": "local-custom-shape",
+  "strata": [
+    "custom-shape",
+    "legacy-slot",
+    "shape-texture"
+  ],
+  "sourceFamily": "local-custom-shape",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -15.711111110080907,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 324,
+    "averageFrameMs": 0.9888888899190926,
+    "p95FrameMs": 2.200000047683716,
+    "averageSimulationMs": 0.5558641987082399,
+    "averageRenderMs": 0.43302469121085274,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "enhanced",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 2,
+      "qualityStepCount": 5,
+      "averageFrameMs": 1.7326994402116438,
+      "averageRenderMs": 0.7471859880995543,
+      "sampleCount": 192,
+      "adaptation": "steady",
+      "reasons": [
+        "shader-f16 is unavailable.",
+        "timestamp-query is available for future GPU timing upgrades."
+      ],
+      "renderScaleMultiplier": 0.88,
+      "maxPixelRatioMultiplier": 0.92,
+      "densityMultiplier": 0.82,
+      "feedbackResolutionMultiplier": 0.8
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/shape-legacy-max-slot-orbit.json"
+}

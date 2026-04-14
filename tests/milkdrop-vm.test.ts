@@ -143,6 +143,33 @@ function makeSignals({
 }
 
 describe('milkdrop vm', () => {
+  test('defers variable snapshot construction until the frame state is read', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Lazy Snapshot
+per_frame_1=q1=q1+1;
+      `.trim(),
+      { id: 'lazy-snapshot' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    let snapshotCalls = 0;
+    const originalGetStateSnapshot = vm.getStateSnapshot.bind(vm);
+    vm.getStateSnapshot = () => {
+      snapshotCalls += 1;
+      return originalGetStateSnapshot();
+    };
+
+    const frameState = vm.step(makeSignals({ frame: 1 }));
+    expect(snapshotCalls).toBe(0);
+
+    expect(frameState.variables.q1).toBeCloseTo(1, 6);
+    expect(snapshotCalls).toBe(1);
+
+    expect(frameState.variables.q1).toBeCloseTo(1, 6);
+    expect(snapshotCalls).toBe(1);
+  });
+
   test('generates parity-oriented frame state with custom waves, shapes, borders, and post state', () => {
     const preset = compileMilkdropPresetSource(
       `

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "presetId": "parity-registers-05",
+  "title": "Parity Registers 05",
+  "corpusGroup": "parity-corpus",
+  "strata": [
+    "registers",
+    "per-frame"
+  ],
+  "sourceFamily": "parity-corpus",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -15.74348341449742,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 844,
+    "averageFrameMs": 0.9565165855025793,
+    "p95FrameMs": 2.100000023841858,
+    "averageSimulationMs": 0.512796205225714,
+    "averageRenderMs": 0.4437203802768653,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "high-end",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 0,
+      "qualityStepCount": 5,
+      "averageFrameMs": 1.8193109909265452,
+      "averageRenderMs": 0.9124836196146161,
+      "sampleCount": 544,
+      "adaptation": "steady",
+      "reasons": [
+        "timestamp-query is available for future GPU timing upgrades."
+      ],
+      "renderScaleMultiplier": 1,
+      "maxPixelRatioMultiplier": 1,
+      "densityMultiplier": 1,
+      "feedbackResolutionMultiplier": 1
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/parity-registers-05.json"
+}

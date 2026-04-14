@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "presetId": "eos-glowsticks-v2-03-music",
+  "title": "Eo.S. - Glowsticks v2 03 Music",
+  "corpusGroup": "bundled-shipped",
+  "strata": [
+    "waveform",
+    "glowsticks",
+    "external-pack"
+  ],
+  "sourceFamily": "external-pack",
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "status": "pass",
+  "targetFrameMs": 16.7,
+  "overBudgetMs": -7.822875815123513,
+  "consoleErrors": [
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible.",
+    "THREE.NodeMaterial: Material \"ShaderMaterial\" is not compatible."
+  ],
+  "error": null,
+  "fallbackOccurred": false,
+  "performance": {
+    "sampleCount": 306,
+    "averageFrameMs": 8.877124184876486,
+    "p95FrameMs": 18.100000023841858,
+    "averageSimulationMs": 8.483333333255418,
+    "averageRenderMs": 0.3937908516210668,
+    "durationMs": 4500,
+    "warmupMs": 1000,
+    "actualBackend": "webgpu",
+    "fallbackOccurred": false,
+    "terminalAdaptiveQuality": {
+      "enabled": true,
+      "backend": "webgpu",
+      "timingMode": "coarse-frame",
+      "supportsGpuTimestamps": true,
+      "profile": "enhanced",
+      "frameBudgetMs": 16.7,
+      "qualityStep": 4,
+      "qualityStepCount": 5,
+      "averageFrameMs": 17.90623244472142,
+      "averageRenderMs": 0.8196802806517036,
+      "sampleCount": 198,
+      "adaptation": "steady",
+      "reasons": [
+        "shader-f16 is unavailable.",
+        "Coarse frame timing pushed the controller below the baseline budget."
+      ],
+      "renderScaleMultiplier": 0.72,
+      "maxPixelRatioMultiplier": 0.8,
+      "densityMultiplier": 0.6,
+      "feedbackResolutionMultiplier": 0.56
+    }
+  },
+  "playToySuccess": true,
+  "reportPath": "screenshots/certification-perf/reports/eos-glowsticks-v2-03-music.json"
+}
