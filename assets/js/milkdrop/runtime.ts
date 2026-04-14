@@ -3,52 +3,34 @@ import {
   isAgentMode,
   setDebugSnapshot,
 } from '../core/agent-api.ts';
-import {
-  createMilkdropPostprocessingComposer,
-  type PostprocessingPipeline,
-  resolveWebGLRenderer,
-  shouldRenderMilkdropPostprocessing,
-} from '../core/postprocessing.ts';
-import { getCachedRendererCapabilities } from '../core/renderer-capabilities.ts';
-import {
-  type AdaptiveQualityController,
-  type AdaptiveQualityState,
-  createAdaptiveQualityController,
+import type { PostprocessingPipeline } from '../core/postprocessing.ts';
+import type {
+  AdaptiveQualityController,
+  AdaptiveQualityState,
 } from '../core/services/adaptive-quality-controller.ts';
-import { isMilkdropCapturedVideoReady } from '../core/services/captured-video-texture.ts';
 import {
   type QualityPreset,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
-import type { ToyRuntimeFrame, ToyRuntimeInstance } from '../core/toy-runtime';
+import type { ToyRuntimeInstance } from '../core/toy-runtime';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
 import { MilkdropOverlay } from './overlay';
 import { consumeRequestedMilkdropOverlayTab } from './overlay-intent';
-import { createMilkdropRendererAdapter } from './renderer-adapter-factory';
 import type { MilkdropRendererAdapter } from './renderer-types';
 import { createMilkdropBackendFailover } from './runtime/backend-fallback';
-import { applyMilkdropCapturedVideoFrameState } from './runtime/captured-video-frame.ts';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
 import { createMilkdropCapturedVideoReactivityTracker } from './runtime/captured-video-reactivity.ts';
+import { createMilkdropCatalogActions } from './runtime/catalog-actions.ts';
 import { createMilkdropCatalogCoordinator } from './runtime/catalog-coordinator';
 import { registerAgentMilkdropRuntimeDebugHandle } from './runtime/debug-snapshot';
 import { DEFAULT_MILKDROP_PRESET_SOURCE } from './runtime/default-preset';
 import { createMilkdropEditorActions } from './runtime/editor-actions';
-import { applyMilkdropEnhancedEffectsPolicy } from './runtime/enhanced-effects-policy';
+import { createMilkdropExperienceAttachmentController } from './runtime/experience-attachment.ts';
+import { createMilkdropExperienceFrameLoop } from './runtime/experience-frame-loop.ts';
 import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
-import {
-  applyMilkdropInteractionResponse,
-  buildMilkdropInputSignalOverrides,
-  getMilkdropDetailScale,
-} from './runtime/interaction-response';
-import {
-  buildBlendStateForRender,
-  buildRenderFrameState,
-  shouldAutoAdvancePreset,
-} from './runtime/lifecycle';
 import { createMilkdropRuntimeLifetime } from './runtime/lifetime';
 import { createMilkdropRuntimePerformanceTracker } from './runtime/performance-tracker';
 import { createMilkdropPresentationController } from './runtime/presentation-controller';
@@ -57,7 +39,7 @@ import { createMilkdropPresetNavigationController } from './runtime/preset-navig
 import { resolvePresetPerformanceOverride } from './runtime/preset-performance-overrides';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
-import { cloneBlendState, estimateFrameBlendWorkload } from './runtime/session';
+import { cloneBlendState } from './runtime/session';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import {
   installRequestedOverlayTabListener,
@@ -334,6 +316,12 @@ export function createMilkdropExperience({
       emitChange();
     },
   });
+  const catalogActions = createMilkdropCatalogActions({
+    catalogStore,
+    catalogCoordinator,
+    getActivePresetId: () => activePresetId,
+    getActiveBackend: () => activeBackend,
+  });
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
     backendFailover.shouldFallback({
@@ -419,22 +407,10 @@ export function createMilkdropExperience({
         applyQualityPreset(preset);
       },
       onToggleFavorite: async (id, favorite) => {
-        await catalogStore.setFavorite(id, favorite);
-        await catalogCoordinator.patchCatalogEntry({
-          id,
-          activePresetId,
-          activeBackend,
-          update: { isFavorite: favorite },
-        });
+        await catalogActions.setFavorite(id, favorite);
       },
       onSetRating: async (id, rating) => {
-        await catalogStore.setRating(id, rating);
-        await catalogCoordinator.patchCatalogEntry({
-          id,
-          activePresetId,
-          activeBackend,
-          update: { rating },
-        });
+        await catalogActions.setRating(id, rating);
       },
       onToggleAutoplay: (enabled) => {
         autoplay = enabled;
@@ -481,27 +457,10 @@ export function createMilkdropExperience({
         void nudgeNumericField(args);
       },
       toggleFavorite: (id) => {
-        const entry = catalogCoordinator.getCatalogEntry(id);
-        void catalogStore
-          .setFavorite(id, !(entry?.isFavorite ?? false))
-          .then(() =>
-            catalogCoordinator.patchCatalogEntry({
-              id,
-              activePresetId,
-              activeBackend,
-              update: { isFavorite: !(entry?.isFavorite ?? false) },
-            }),
-          );
+        void catalogActions.toggleFavorite(id);
       },
       setRating: (id, rating) => {
-        void catalogStore.setRating(id, rating).then(() =>
-          catalogCoordinator.patchCatalogEntry({
-            id,
-            activePresetId,
-            activeBackend,
-            update: { rating },
-          }),
-        );
+        void catalogActions.setRating(id, rating);
       },
     },
   });
@@ -532,6 +491,95 @@ export function createMilkdropExperience({
       getCompiled: () => session.getState().activeCompiled ?? activeCompiled,
       setOverlayStatus,
     });
+  const attachmentController = createMilkdropExperienceAttachmentController({
+    lifetime,
+    getRuntime: () => runtime,
+    setRuntime: (nextRuntime) => {
+      runtime = nextRuntime;
+    },
+    getAdapter: () => adapter,
+    setAdapter: (nextAdapter) => {
+      adapter = nextAdapter;
+    },
+    activeCompiled: () => activeCompiled,
+    setActiveBackend: (backend) => {
+      activeBackend = backend;
+    },
+    setDocumentActiveBackend: (backend) => {
+      if (typeof document !== 'undefined') {
+        document.body.dataset.activeBackend = backend;
+      }
+    },
+    vm,
+    disposePostprocessingPipeline,
+    capturedVideoOverlay,
+    setAdaptiveQualityController: (controller) => {
+      adaptiveQualityController = controller;
+    },
+    setAdaptiveQualityUnsubscribe: (unsubscribe) => {
+      adaptiveQualityUnsubscribe?.();
+      adaptiveQualityUnsubscribe = unsubscribe;
+    },
+    setAdaptiveQualityState: (state) => {
+      adaptiveQualityState = state as AdaptiveQualityState;
+    },
+    updateAgentDebugSnapshot,
+    shouldFallbackToWebgl,
+    triggerWebglFallback,
+    scheduleCatalogSync: () => {
+      void catalogCoordinator.scheduleCatalogSync({
+        activePresetId,
+        activeBackend,
+      });
+    },
+    emitChange,
+    setOverlayStatus,
+    disabledWebGpuOptimizationFlags,
+    webgpuOptimizationFlags,
+    ensureKeyboardShortcuts: () => {
+      if (!disposeKeyboardShortcuts) {
+        disposeKeyboardShortcuts =
+          interactionPresenter.installKeyboardShortcuts();
+      }
+    },
+  });
+  const frameLoop = createMilkdropExperienceFrameLoop({
+    getRuntime: () => runtime,
+    getAdapter: () => adapter,
+    getActiveBackend: () => activeBackend,
+    setCurrentFrameState: (frameState) => {
+      currentFrameState = frameState;
+    },
+    getBlendState: () => blendState,
+    getBlendEndAtMs: () => blendEndAtMs,
+    getBlendDuration: () => blendDuration,
+    getTransitionMode: () => transitionMode,
+    getAutoplay: () => autoplay,
+    getLastPresetSwitchAt: () => lastPresetSwitchAt,
+    updateAgentDebugSnapshot,
+    agentModeEnabled,
+    quality,
+    vm,
+    signalTracker,
+    capturedVideoReactivityTracker,
+    navigation,
+    catalogCoordinator,
+    performanceTracker,
+    getAdaptiveQualityController: () => adaptiveQualityController,
+    overlay,
+    getLastInspectorOverlaySyncAt: () => lastInspectorOverlaySyncAt,
+    setLastInspectorOverlaySyncAt: (value) => {
+      lastInspectorOverlaySyncAt = value;
+    },
+    presentationController,
+    lowQualityPostOverride,
+    mergedSignals,
+    getPostprocessingPipeline: () => postprocessingPipeline,
+    setPostprocessingPipeline: (pipeline) => {
+      postprocessingPipeline = pipeline;
+    },
+    capturedVideoOverlay,
+  });
 
   disposeSessionSubscription = session.subscribe((state) => {
     if (!lifetime.isActive() || !overlay) {
@@ -702,268 +750,9 @@ export function createMilkdropExperience({
       setOverlayStatus(message);
     },
 
-    attachRuntime(nextRuntime: ToyRuntimeInstance) {
-      if (!lifetime.isActive()) {
-        return;
-      }
-      runtime = nextRuntime;
-      const attachmentRevision = lifetime.beginAttachment();
-      if (!disposeKeyboardShortcuts) {
-        disposeKeyboardShortcuts =
-          interactionPresenter.installKeyboardShortcuts();
-      }
-      nextRuntime.toy.rendererReady.then(async (handle) => {
-        if (
-          !lifetime.isCurrentAttachment(attachmentRevision) ||
-          runtime !== nextRuntime
-        ) {
-          return;
-        }
-        const nextBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
-        const nextAdapter =
-          nextBackend === 'webgpu'
-            ? await createMilkdropRendererAdapter({
-                scene: nextRuntime.toy.scene,
-                camera: nextRuntime.toy.camera,
-                renderer: handle?.renderer,
-                backend: 'webgpu',
-                preset: activeCompiled,
-                webgpuOptimizationFlags,
-              })
-            : createMilkdropRendererAdapter({
-                scene: nextRuntime.toy.scene,
-                camera: nextRuntime.toy.camera,
-                renderer: handle?.renderer,
-                backend: 'webgl',
-                preset: activeCompiled,
-                webgpuOptimizationFlags,
-              });
-        if (
-          !lifetime.isCurrentAttachment(attachmentRevision) ||
-          runtime !== nextRuntime
-        ) {
-          nextAdapter.dispose();
-          return;
-        }
-        activeBackend = nextBackend;
-        if (typeof document !== 'undefined') {
-          document.body.dataset.activeBackend = activeBackend;
-        }
-        vm.setRenderBackend(activeBackend);
-        disposePostprocessingPipeline();
-        adapter?.dispose();
-        capturedVideoOverlay.attach(nextRuntime.toy.camera);
-        adapter = nextAdapter;
-        nextAdapter.attach();
-        adaptiveQualityUnsubscribe?.();
-        adaptiveQualityUnsubscribe = null;
-        adaptiveQualityController = createAdaptiveQualityController({
-          backend: activeBackend,
-          capabilities:
-            activeBackend === 'webgpu'
-              ? (getCachedRendererCapabilities()?.webgpu ?? null)
-              : null,
-        });
-        if (
-          activeBackend === 'webgpu' &&
-          disabledWebGpuOptimizationFlags.length > 0
-        ) {
-          setOverlayStatus(
-            `WebGPU rollout flags active: ${disabledWebGpuOptimizationFlags.join(', ')}.`,
-          );
-        }
-        adaptiveQualityUnsubscribe = adaptiveQualityController.subscribe(
-          (state) => {
-            adaptiveQualityState = state;
-            nextRuntime.toy.updateRendererSettings({
-              adaptiveRenderScaleMultiplier: state.renderScaleMultiplier,
-              adaptiveMaxPixelRatioMultiplier: state.maxPixelRatioMultiplier,
-              adaptiveDensityMultiplier: state.densityMultiplier,
-            });
-            adapter?.setAdaptiveQuality?.({
-              feedbackResolutionMultiplier: state.feedbackResolutionMultiplier,
-            });
-            updateAgentDebugSnapshot(true);
-          },
-        );
-        if (shouldFallbackToWebgl(activeCompiled)) {
-          triggerWebglFallback({
-            presetId: activeCompiled.source.id,
-            reason: `${activeCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
-          });
-          return;
-        }
-        if (
-          !lifetime.isCurrentAttachment(attachmentRevision) ||
-          runtime !== nextRuntime
-        ) {
-          return;
-        }
-        void catalogCoordinator.scheduleCatalogSync({
-          activePresetId,
-          activeBackend,
-        });
-        emitChange();
-      });
-    },
+    attachRuntime: attachmentController.attachRuntime,
 
-    update(
-      frame: ToyRuntimeFrame,
-      options?: {
-        signalOverrides?: Partial<MilkdropRuntimeSignals>;
-      },
-    ) {
-      if (!runtime || !adapter) {
-        return;
-      }
-
-      const now = performance.now();
-      const frameStartAt = now;
-
-      const detailScale = getMilkdropDetailScale({
-        backend: activeBackend,
-        particleScale: quality.activeQuality.particleScale,
-        particleBudget: frame.performance.particleBudget,
-        shaderQuality: frame.performance.shaderQuality,
-      });
-      const adaptiveDensityMultiplier =
-        activeBackend === 'webgpu'
-          ? (runtime.toy.rendererInfo?.adaptiveDensityMultiplier ?? 1)
-          : 1;
-      vm.setDetailScale(detailScale * adaptiveDensityMultiplier);
-      const baseSignals = signalTracker.update({
-        time: frame.time,
-        deltaMs: frame.deltaMs,
-        analyser: frame.analyser,
-        frequencyData: frame.frequencyData,
-        waveformData: frame.waveformData,
-      });
-      Object.assign(mergedSignals, baseSignals);
-      buildMilkdropInputSignalOverrides(frame.input, mergedSignals);
-      if (options?.signalOverrides) {
-        Object.assign(mergedSignals, options.signalOverrides);
-      }
-      const signals = mergedSignals as MilkdropRuntimeSignals;
-      const capturedVideoReactivity = capturedVideoReactivityTracker.update({
-        signals,
-      });
-
-      if (
-        shouldAutoAdvancePreset({
-          autoplay,
-          catalogSize: catalogCoordinator.getCatalogEntries().length,
-          now,
-          lastPresetSwitchAt,
-          blendDuration,
-        })
-      ) {
-        void navigation.selectRandomPreset();
-      }
-
-      currentFrameState = applyMilkdropInteractionResponse(
-        vm.step(signals),
-        frame.input,
-        activeBackend,
-      );
-      if (agentModeEnabled) {
-        updateAgentDebugSnapshot();
-      }
-      const canBlendCurrentFrame =
-        estimateFrameBlendWorkload(currentFrameState) < 900;
-      const activeBlendState = buildBlendStateForRender({
-        transitionMode,
-        shaderQuality: frame.performance.shaderQuality,
-        canBlendCurrentFrame,
-        blendState,
-        now,
-        blendEndAtMs,
-        blendDuration,
-      });
-
-      const renderFrameState = applyMilkdropEnhancedEffectsPolicy({
-        frameState: buildRenderFrameState({
-          frameState: applyMilkdropCapturedVideoFrameState({
-            frameState: currentFrameState,
-            capturedVideoReady: isMilkdropCapturedVideoReady(),
-            reactivity: capturedVideoReactivity,
-          }),
-          shaderQuality: frame.performance.shaderQuality,
-          lowQualityPostOverride,
-        }),
-        shaderQuality: frame.performance.shaderQuality,
-        qualityPresetId: quality.activeQuality.id,
-      });
-      capturedVideoOverlay.update({
-        camera: runtime.toy.camera,
-        reactivity: capturedVideoReactivity,
-      });
-
-      const renderStartAt = performance.now();
-      const adapterPresentedFrame = adapter.render({
-        frameState: renderFrameState,
-        blendState: activeBlendState,
-      });
-      if (!adapterPresentedFrame) {
-        const profile = renderFrameState.post.postprocessingProfile ?? null;
-        const webglRenderer = resolveWebGLRenderer(
-          activeBackend,
-          runtime.toy.renderer,
-        );
-
-        if (
-          profile &&
-          shouldRenderMilkdropPostprocessing({
-            backend: activeBackend,
-            renderer: runtime.toy.renderer,
-            profile,
-          }) &&
-          webglRenderer
-        ) {
-          if (!postprocessingPipeline) {
-            postprocessingPipeline = createMilkdropPostprocessingComposer({
-              renderer: webglRenderer,
-              scene: runtime.toy.scene,
-              camera: runtime.toy.camera,
-              profile,
-            });
-          } else {
-            postprocessingPipeline.applyProfile(profile);
-          }
-
-          if (postprocessingPipeline) {
-            postprocessingPipeline.updateSize();
-            postprocessingPipeline.render();
-          } else {
-            runtime.toy.render();
-          }
-        } else {
-          disposePostprocessingPipeline();
-          runtime.toy.render();
-        }
-      } else {
-        disposePostprocessingPipeline();
-      }
-      const frameEndAt = performance.now();
-      performanceTracker.recordFrame({
-        frameMs: frameEndAt - frameStartAt,
-        simulationMs: renderStartAt - frameStartAt,
-        renderMs: frameEndAt - renderStartAt,
-      });
-      adaptiveQualityController?.recordFrame({
-        frameMs: frameEndAt - frameStartAt,
-        phases: {
-          simulationMs: renderStartAt - frameStartAt,
-          renderMs: frameEndAt - renderStartAt,
-        },
-      });
-      if (
-        overlay?.shouldRenderInspectorMetrics() &&
-        now - lastInspectorOverlaySyncAt >= 180
-      ) {
-        lastInspectorOverlaySyncAt = now;
-        presentationController.syncInspectorState();
-      }
-    },
+    update: frameLoop.update,
 
     dispose() {
       lifetime.dispose();

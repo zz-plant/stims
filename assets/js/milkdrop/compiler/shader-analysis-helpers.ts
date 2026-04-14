@@ -3,6 +3,7 @@ import {
   parseMilkdropExpression,
 } from '../expression';
 import { evaluateMilkdropShaderExpression } from '../shader-ast';
+import { normalizeMilkdropShaderCallName } from '../shader-expression-shared.ts';
 import {
   isMilkdropShaderSamplerName,
   isMilkdropVolumeShaderSamplerName,
@@ -120,22 +121,7 @@ export function isShaderScalarValue(
 }
 
 export function normalizeShaderCallName(value: string) {
-  const normalized = value.toLowerCase();
-  switch (normalized) {
-    case 'float2':
-      return 'vec2';
-    case 'float3':
-      return 'vec3';
-    case 'texture':
-    case 'texture2d':
-    case 'tex2d':
-      return 'tex2d';
-    case 'texture3d':
-    case 'tex3d':
-      return 'tex3d';
-    default:
-      return normalized;
-  }
+  return normalizeMilkdropShaderCallName(value);
 }
 
 export function normalizeShaderSyntax(value: string) {

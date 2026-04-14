@@ -45,6 +45,10 @@ import {
   resolveDirectShaderSamplerBinding,
   resolveDirectShaderSwizzle,
 } from './feedback-manager-webgpu-bindings.ts';
+import {
+  type MilkdropShaderValueKind,
+  resolveMilkdropShaderConstructorPattern,
+} from './shader-expression-shared.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -108,13 +112,6 @@ type ShaderNodeEnv = {
 };
 
 type DirectShaderSwizzleComponent = 'x' | 'y' | 'z';
-type DirectShaderConstructorPattern =
-  | 'vec2-pair'
-  | 'vec2-splat'
-  | 'vec3-triple'
-  | 'vec3-splat'
-  | 'vec3-vec2-scalar'
-  | 'vec3-scalar-vec2';
 
 function hueRotateNode(colorValue: any, angle: any) {
   return Fn(() => {
@@ -229,44 +226,11 @@ function buildDirectShaderSwizzleValue(
 export function resolveDirectShaderConstructorPattern(
   name: string,
   argKinds: Array<ShaderNodeValue['kind']>,
-): DirectShaderConstructorPattern | null {
-  const normalizedName =
-    name.toLowerCase() === 'float2'
-      ? 'vec2'
-      : name.toLowerCase() === 'float3'
-        ? 'vec3'
-        : name.toLowerCase();
-
-  if (normalizedName === 'vec2') {
-    if (argKinds[0] === 'scalar' && argKinds[1] === 'scalar') {
-      return 'vec2-pair';
-    }
-    if (argKinds[0] === 'scalar') {
-      return 'vec2-splat';
-    }
-    return null;
-  }
-
-  if (normalizedName === 'vec3') {
-    if (
-      argKinds[0] === 'scalar' &&
-      argKinds[1] === 'scalar' &&
-      argKinds[2] === 'scalar'
-    ) {
-      return 'vec3-triple';
-    }
-    if (argKinds[0] === 'vec2' && argKinds[1] === 'scalar') {
-      return 'vec3-vec2-scalar';
-    }
-    if (argKinds[0] === 'scalar' && argKinds[1] === 'vec2') {
-      return 'vec3-scalar-vec2';
-    }
-    if (argKinds[0] === 'scalar') {
-      return 'vec3-splat';
-    }
-  }
-
-  return null;
+) {
+  return resolveMilkdropShaderConstructorPattern(
+    name,
+    argKinds as MilkdropShaderValueKind[],
+  );
 }
 
 function coerceShaderValue(

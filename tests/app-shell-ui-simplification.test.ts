@@ -30,14 +30,14 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-    const sessionHookSource = readFileSync(
+    const toastHookSource = readFileSync(
       join(
         import.meta.dir,
         '..',
         'assets',
         'js',
         'frontend',
-        'workspace-hooks.ts',
+        'workspace-toast.ts',
       ),
       'utf8',
     );
@@ -49,7 +49,7 @@ describe('Workspace shell UI simplification regression', () => {
       'Pick a look first, then fine-tune only if needed.',
     );
     expect(appSource).toContain("'Start demo, use the mic, or capture a tab.'");
-    expect(sessionHookSource).toContain("'Using lighter visual mode.'");
+    expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain(": 'Loading';");
     expect(appSource).toContain(": 'Warming up visuals.';");
     expect(appSource).toContain(": 'Open Presets or shuffle.';");

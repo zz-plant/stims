@@ -4,18 +4,11 @@ import {
   isBelowBreakpoint,
   maxWidthQuery,
 } from '../utils/breakpoints';
-import {
-  exitToyPictureInPicture,
-  getToyPictureInPictureVideo,
-  isPictureInPictureSupported,
-  isToyPictureInPictureActive,
-  requestToyPictureInPicture,
-} from '../utils/picture-in-picture';
-import {
-  renderIconSvg,
-  replaceIconContents,
-  type UiIconName,
-} from './icon-library.ts';
+import { renderIconSvg, replaceIconContents } from './icon-library.ts';
+import { setupPictureInPictureControls } from './nav-picture-in-picture.ts';
+import { renderRendererStatus } from './nav-renderer-status.ts';
+import { escapeHtml, renderIconLabel } from './nav-shared.ts';
+import { setupThemeToggle } from './nav-theme-toggle.ts';
 
 export interface NavOptions {
   mode: 'library' | 'toy';
@@ -49,37 +42,6 @@ type ToyNavContainer = HTMLElement & {
   __toyNavDetachCleanup?: () => void;
   __libraryNavCleanup?: () => void;
 };
-
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (match) => {
-    switch (match) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      case "'":
-        return '&#39;';
-      default:
-        return match;
-    }
-  });
-}
-
-function renderIconSlot(name: UiIconName, className: string, title?: string) {
-  return `<span class="${className}" aria-hidden="true">${renderIconSvg(name, { title })}</span>`;
-}
-
-function renderIconLabel(
-  name: UiIconName,
-  label: string,
-  className = 'toy-nav__button-icon stims-icon-slot stims-icon-slot--sm',
-) {
-  return `${renderIconSlot(name, className, label)}<span class="toy-nav__button-label">${escapeHtml(label)}</span>`;
-}
 
 export function initNavigation(container: HTMLElement, options: NavOptions) {
   const doc = container.ownerDocument;
@@ -419,7 +381,6 @@ function renderToyNav(
     if (statusContainer) {
       renderRendererStatus(
         statusContainer as HTMLElement,
-        doc,
         options.rendererStatus,
       );
     }
@@ -797,188 +758,4 @@ function setupToyNavFloatingOffset(container: ToyNavContainer, doc: Document) {
     win?.visualViewport?.removeEventListener('resize', updateOffset);
     win?.visualViewport?.removeEventListener('scroll', updateOffset);
   };
-}
-
-function setupPictureInPictureControls(container: HTMLElement, doc: Document) {
-  const pipButton = container.querySelector<HTMLButtonElement>(
-    '[data-toy-pip="true"]',
-  );
-  const pipStatus = container.querySelector<HTMLElement>(
-    '.toy-nav__pip-status',
-  );
-
-  if (!pipButton || !pipStatus) return;
-
-  const updateButtonState = () => {
-    const active = isToyPictureInPictureActive(doc);
-    const icon = pipButton.querySelector('.toy-nav__button-icon');
-    const label = pipButton.querySelector('.toy-nav__button-label');
-    pipButton.setAttribute('aria-pressed', String(active));
-    replaceIconContents(icon, active ? 'close' : 'picture-in-picture', {
-      title: active ? 'Close mini player' : 'Mini player',
-    });
-    if (label) {
-      label.textContent = active ? 'Close mini player' : 'Mini player';
-    }
-  };
-
-  const showStatus = (message: string) => {
-    pipStatus.textContent = message;
-    if (!message) return;
-    const win = doc.defaultView ?? window;
-    win.setTimeout(() => {
-      if (pipStatus.textContent === message) {
-        pipStatus.textContent = '';
-      }
-    }, 3200);
-  };
-
-  let pipPermanentlyDisabled = false;
-
-  const disablePip = (message: string) => {
-    pipButton.disabled = true;
-    pipButton.setAttribute('aria-disabled', 'true');
-    pipButton.setAttribute('title', message);
-    pipButton.removeAttribute('aria-busy');
-    showStatus(message);
-    pipPermanentlyDisabled = true;
-  };
-
-  if (!isPictureInPictureSupported(doc)) {
-    disablePip('Picture-in-picture is not available in this browser.');
-    return;
-  }
-
-  updateButtonState();
-
-  const video = getToyPictureInPictureVideo(doc);
-  video.onenterpictureinpicture = () => updateButtonState();
-  video.onleavepictureinpicture = () => updateButtonState();
-
-  pipButton.addEventListener('click', async () => {
-    const wasActive = isToyPictureInPictureActive(doc);
-    pipButton.disabled = true;
-    pipButton.setAttribute('aria-busy', 'true');
-    showStatus(
-      wasActive ? 'Closing picture in picture…' : 'Opening picture in picture…',
-    );
-
-    try {
-      if (wasActive) {
-        await exitToyPictureInPicture(doc);
-      } else {
-        await requestToyPictureInPicture(doc);
-      }
-      updateButtonState();
-      showStatus(wasActive ? 'Mini player closed.' : 'Mini player enabled.');
-    } catch (_error) {
-      const error = _error as Error | DOMException;
-      const errorName = 'name' in error ? error.name : '';
-      if (errorName === 'NotSupportedError') {
-        disablePip('Picture-in-picture is not available in this browser.');
-      } else {
-        showStatus('Unable to open the mini player.');
-      }
-      updateButtonState();
-    } finally {
-      if (!pipPermanentlyDisabled) {
-        pipButton.disabled = false;
-        pipButton.removeAttribute('aria-busy');
-      }
-    }
-  });
-}
-
-function renderRendererStatus(
-  container: HTMLElement,
-  _doc: Document,
-  status: NonNullable<NavOptions['rendererStatus']>,
-) {
-  const fallback = status.backend !== 'webgpu';
-  const fallbackReason = status.fallbackReason
-    ? escapeHtml(status.fallbackReason)
-    : null;
-  if (!fallback && !fallbackReason && !status.actionLabel) {
-    container.innerHTML = '';
-    container.hidden = true;
-    return;
-  }
-  container.hidden = false;
-  const pillClass = fallback
-    ? 'renderer-pill--fallback'
-    : 'renderer-pill--success';
-  const titleText = escapeHtml(
-    status.fallbackReason ??
-      (fallback
-        ? 'Using a simpler renderer on this device.'
-        : 'Using the highest-quality renderer available on this device.'),
-  );
-
-  container.innerHTML = `
-    <div class="renderer-status">
-      <span class="renderer-pill ${pillClass}" title="${titleText}">
-        ${renderIconSlot(
-          fallback ? 'gauge' : 'sparkles',
-          'renderer-pill__icon stims-icon-slot stims-icon-slot--sm',
-          fallback ? 'Fallback renderer' : 'Best quality renderer',
-        )}
-        <span class="renderer-pill__label">${fallback ? 'Using a simpler renderer' : 'Best quality'}</span>
-      </span>
-      ${status.actionLabel ? `<button type="button" class="renderer-pill__retry">${escapeHtml(status.actionLabel)}</button>` : ''}
-    </div>
-  `;
-
-  const retryBtn = container.querySelector('.renderer-pill__retry');
-  retryBtn?.addEventListener('click', () => status.onAction?.());
-}
-
-function setupThemeToggle(container: HTMLElement) {
-  const doc = container.ownerDocument;
-  const toggle = container.querySelector('#theme-toggle');
-  if (!toggle) return;
-
-  const label = toggle.querySelector('[data-theme-label]');
-  const icon = toggle.querySelector('.theme-toggle__icon');
-
-  const updateUI = (theme: string) => {
-    const isDark = theme === 'dark';
-    toggle.setAttribute('aria-pressed', String(isDark));
-    toggle.setAttribute(
-      'aria-label',
-      isDark ? 'Switch to light mode' : 'Switch to dark mode',
-    );
-    if (label) label.textContent = isDark ? 'Light mode' : 'Dark mode';
-    replaceIconContents(icon, isDark ? 'sun' : 'moon', {
-      title: isDark ? 'Light mode' : 'Dark mode',
-    });
-  };
-
-  // Initial state
-  const root = doc.documentElement;
-  const currentTheme = root.classList.contains('light') ? 'light' : 'dark';
-  updateUI(currentTheme);
-
-  toggle.addEventListener('click', () => {
-    const isLight = root.classList.contains('light');
-    const nextTheme = isLight ? 'dark' : 'light';
-    const win = doc.defaultView ?? window;
-
-    // Use the global helper if available
-    if (win.__stimsTheme) {
-      win.__stimsTheme.applyTheme(nextTheme, true);
-    } else {
-      if (nextTheme === 'light') {
-        root.classList.add('light');
-      } else {
-        root.classList.remove('light');
-      }
-      try {
-        win.localStorage.setItem('theme', nextTheme);
-      } catch (_error) {
-        // Ignore storage errors.
-      }
-    }
-
-    updateUI(nextTheme);
-  });
 }

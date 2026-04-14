@@ -41,6 +41,17 @@ describe('Workspace shell first-run and recovery regression', () => {
       ),
       'utf8',
     );
+    const toastHookSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'workspace-toast.ts',
+      ),
+      'utf8',
+    );
 
     expect(appSource).toContain('Pick a preset');
     expect(appSource).toContain(
@@ -59,7 +70,7 @@ describe('Workspace shell first-run and recovery regression', () => {
     );
     expect(sessionHookSource).toContain('if (!shareableActivePresetId) {');
     expect(sessionHookSource).toContain('presetId: shareableActivePresetId');
-    expect(sessionHookSource).toContain(
+    expect(toastHookSource).toContain(
       'const unresolvedRequestedPreset = routeState.presetId',
     );
   });

@@ -4,42 +4,44 @@ import { join } from 'node:path';
 
 describe('Workspace shell toast regression', () => {
   test('shows the lighter-mode warning only once per session', () => {
-    const hookSource = readFileSync(
+    const toastHookSource = readFileSync(
       join(
         import.meta.dir,
         '..',
         'assets',
         'js',
         'frontend',
-        'workspace-hooks.ts',
+        'workspace-toast.ts',
       ),
       'utf8',
     );
 
-    expect(hookSource).toContain('const webglWarningShownRef = useRef(false);');
-    expect(hookSource).toMatch(
+    expect(toastHookSource).toContain(
+      'const webglWarningShownRef = useRef(false);',
+    );
+    expect(toastHookSource).toMatch(
       /useEffect\(\(\) => \{[\s\S]*?engineSnapshot\.backend !== 'webgl'[\s\S]*?webglWarningShownRef\.current = true;[\s\S]*?setToast\(\{ message: 'Using lighter visual mode\.', tone: 'warn' \}\);[\s\S]*?window\.setTimeout\([\s\S]*?4200\);\s*\}, \[\s*engineSnapshot\?\.backend,\s*engineSnapshot\?\.runtimeReady,\s*routeState\.invalidExperienceSlug,\s*\]\);/u,
     );
   });
 
   test('clears any active toast timer when dismissing a toast', () => {
-    const hookSource = readFileSync(
+    const toastHookSource = readFileSync(
       join(
         import.meta.dir,
         '..',
         'assets',
         'js',
         'frontend',
-        'workspace-hooks.ts',
+        'workspace-toast.ts',
       ),
       'utf8',
     );
 
-    expect(hookSource).toContain('const clearToastTimer = () => {');
-    expect(hookSource).toMatch(
+    expect(toastHookSource).toContain('const clearToastTimer = () => {');
+    expect(toastHookSource).toMatch(
       /showToast = useEffectEvent\([\s\S]*?clearToastTimer\(\);[\s\S]*?window\.setTimeout/u,
     );
-    expect(hookSource).toMatch(
+    expect(toastHookSource).toMatch(
       /dismissToast:\s*\(\)\s*=>\s*\{[\s\S]*?clearToastTimer\(\);[\s\S]*?setToast\(null\);[\s\S]*?\}/u,
     );
   });
