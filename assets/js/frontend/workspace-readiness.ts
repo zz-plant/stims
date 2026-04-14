@@ -44,8 +44,8 @@ function buildReadinessSummary(
             state: 'ready',
             summary:
               micState.state === 'granted'
-                ? 'Microphone access is ready.'
-                : 'The browser can prompt for microphone access when needed.',
+                ? 'Microphone access is ready if you want live input.'
+                : 'The browser can ask for microphone access when you want it.',
           }
         : {
             id: 'microphone',

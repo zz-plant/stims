@@ -35,6 +35,9 @@ export type PresetCatalogEntry = {
   file?: string;
   tags?: string[];
   preview?: boolean;
+  isFavorite?: boolean;
+  historyIndex?: number;
+  lastOpenedAt?: number;
   expectedFidelityClass?: string;
   supports?: {
     webgl?: boolean;

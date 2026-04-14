@@ -209,6 +209,17 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
       includeInSitemap: true,
     },
     {
+      path: '/performance/',
+      imagePath: '/og/milkdrop.svg',
+      imageTitle: 'Compatibility and Performance | Stims',
+      imageCaption:
+        'Public guide for browser support, lighter-mode fallback behavior, and first-run expectations.',
+      changefreq: 'monthly',
+      priority: '0.7',
+      sourcePaths: ['performance/index.html', 'assets/css/performance.css'],
+      includeInSitemap: true,
+    },
+    {
       path: '/milkdrop/',
       imagePath: '/og/milkdrop.svg',
       imageTitle: `${milkdrop.title} | Stims`,

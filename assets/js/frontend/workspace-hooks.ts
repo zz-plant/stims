@@ -23,6 +23,10 @@ import {
   getActiveRenderPreferences,
   subscribeToRenderPreferences,
 } from '../core/state/render-preference-store.ts';
+import type {
+  MilkdropCatalogEntry,
+  MilkdropCatalogStore,
+} from '../milkdrop/catalog-types.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
 import type {
   LaunchIntent,
@@ -35,7 +39,10 @@ import type {
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
 import { readSessionRouteState, replaceCanonicalUrl } from './url-state.ts';
-import { buildLaunchIntent } from './workspace-helpers.ts';
+import {
+  buildLaunchIntent,
+  mapRuntimeCatalogEntry,
+} from './workspace-helpers.ts';
 import { useWorkspaceReadiness } from './workspace-readiness.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
@@ -119,6 +126,9 @@ export function useWorkspaceSessionState({
     string | null
   >(null);
   const [fallbackCatalogReady, setFallbackCatalogReady] = useState(false);
+  const [activityCatalog, setActivityCatalog] = useState<PresetCatalogEntry[]>(
+    [],
+  );
   const [engineAdapterReady, setEngineAdapterReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [qualityPreset, setQualityPresetState] = useState(() =>
@@ -135,6 +145,7 @@ export function useWorkspaceSessionState({
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
+  const catalogStoreRef = useRef<MilkdropCatalogStore | null>(null);
   const sessionDisposedRef = useRef(false);
   const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
     null,
@@ -156,6 +167,33 @@ export function useWorkspaceSessionState({
     engineSnapshot,
     routeState,
     statusMessage,
+  });
+
+  const ensureCatalogStore = useEffectEvent(async () => {
+    if (catalogStoreRef.current) {
+      return catalogStoreRef.current;
+    }
+
+    const { createMilkdropCatalogStore } = await import(
+      '../milkdrop/catalog-store.ts'
+    );
+    const store = createMilkdropCatalogStore();
+    catalogStoreRef.current = store;
+    return store;
+  });
+
+  const refreshCatalogActivity = useEffectEvent(async () => {
+    try {
+      const store = await ensureCatalogStore();
+      const entries = await store.listPresets();
+      setActivityCatalog(
+        entries.map((entry: MilkdropCatalogEntry) =>
+          mapRuntimeCatalogEntry(entry),
+        ),
+      );
+    } catch (_error) {
+      setActivityCatalog([]);
+    }
   });
 
   const ensureEngineAdapter = useEffectEvent(async () => {
@@ -315,6 +353,32 @@ export function useWorkspaceSessionState({
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    void ensureCatalogStore()
+      .then((store) => store.listPresets())
+      .then((entries) => {
+        if (cancelled) {
+          return;
+        }
+        setActivityCatalog(
+          entries.map((entry: MilkdropCatalogEntry) =>
+            mapRuntimeCatalogEntry(entry),
+          ),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setActivityCatalog([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!engineRef.current?.isMounted()) {
       initialLaunchIntentRef.current = buildLaunchIntent(routeState);
     }
@@ -354,6 +418,8 @@ export function useWorkspaceSessionState({
     if (!engineSnapshot?.activePresetId) {
       return;
     }
+
+    void refreshCatalogActivity();
 
     const shareableActivePresetId = resolvePresetId(
       engineSnapshot.catalogEntries,
@@ -512,6 +578,7 @@ export function useWorkspaceSessionState({
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    activityCatalog,
     importPresetFiles: async (files: FileList | null) => {
       if (!files?.length) {
         return;
@@ -524,6 +591,7 @@ export function useWorkspaceSessionState({
     pendingPresetIdRef,
     qualityPreset,
     readinessItems,
+    refreshCatalogActivity,
     renderPreferences,
     searchQuery,
     setQualityPreset: (presetId: string) => {
@@ -571,6 +639,11 @@ export function useWorkspaceSessionState({
     },
     statusMessage,
     toast,
+    toggleFavoritePreset: async (presetId: string, favorite: boolean) => {
+      const store = await ensureCatalogStore();
+      await store.setFavorite(presetId, favorite);
+      await refreshCatalogActivity();
+    },
     toggleExtendedSources: () => setShowExtendedSources((current) => !current),
     youtubePreviewRef,
     youtubeReady,

@@ -48,19 +48,29 @@ export function cloneBlendState(
   if (!frameState) {
     return null;
   }
+
+  const hasReusableBlendBuffers =
+    Array.isArray((frameState as Partial<MilkdropFrameState>).customWaves) &&
+    Array.isArray((frameState as Partial<MilkdropFrameState>).motionVectors) &&
+    typeof frameState.gpuGeometry === 'object' &&
+    frameState.gpuGeometry !== null &&
+    Array.isArray(frameState.gpuGeometry.customWaves);
+
   return {
     mode: 'gpu',
-    previousFrame: {
-      ...frameState,
-      customWaves: frameState.customWaves.map(cloneWaveVisual),
-      motionVectors: frameState.motionVectors.map(cloneMotionVectorVisual),
-      gpuGeometry: {
-        ...frameState.gpuGeometry,
-        customWaves: frameState.gpuGeometry.customWaves.map(
-          cloneProceduralCustomWaveVisual,
-        ),
-      },
-    },
+    previousFrame: hasReusableBlendBuffers
+      ? {
+          ...frameState,
+          customWaves: frameState.customWaves.map(cloneWaveVisual),
+          motionVectors: frameState.motionVectors.map(cloneMotionVectorVisual),
+          gpuGeometry: {
+            ...frameState.gpuGeometry,
+            customWaves: frameState.gpuGeometry.customWaves.map(
+              cloneProceduralCustomWaveVisual,
+            ),
+          },
+        }
+      : frameState,
     alpha: 1,
   };
 }

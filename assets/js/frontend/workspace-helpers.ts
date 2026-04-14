@@ -246,23 +246,42 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
     entry.expectedFidelityClass === 'exact' ||
     entry.expectedFidelityClass === 'near-exact'
   ) {
-    return 'Full preset';
+    return 'Reference match';
   }
   if (
     entry.expectedFidelityClass === 'partial' ||
     entry.expectedFidelityClass === 'fallback'
   ) {
-    return 'Adjusted preset';
+    return 'Performance tuned';
   }
   if (entry.supports?.webgpu) {
     return 'High-detail ready';
   }
-  return 'Lighter mode';
+  return 'Performance mode';
+}
+
+export function formatPresetSupportNote(entry: PresetCatalogEntry) {
+  if (
+    entry.expectedFidelityClass === 'exact' ||
+    entry.expectedFidelityClass === 'near-exact'
+  ) {
+    return 'Closest to the original look on capable hardware.';
+  }
+  if (
+    entry.expectedFidelityClass === 'partial' ||
+    entry.expectedFidelityClass === 'fallback'
+  ) {
+    return 'Optimized to stay expressive across more browsers.';
+  }
+  if (entry.supports?.webgpu) {
+    return 'Pushes extra detail when newer GPU features are available.';
+  }
+  return 'Leans toward smoother playback on lighter hardware.';
 }
 
 export function getPresetCardSupportLabel(entry: PresetCatalogEntry) {
   const label = formatPresetSupportLabel(entry);
-  return label === 'Adjusted preset' ? null : label;
+  return label === 'Performance tuned' ? null : label;
 }
 
 export function mapRuntimeCatalogEntry(
@@ -274,12 +293,92 @@ export function mapRuntimeCatalogEntry(
     author: entry.author,
     file: entry.bundledFile,
     tags: entry.tags,
+    isFavorite: entry.isFavorite,
+    historyIndex:
+      entry.historyIndex !== undefined && entry.historyIndex >= 0
+        ? entry.historyIndex
+        : undefined,
+    lastOpenedAt: entry.lastOpenedAt,
     expectedFidelityClass: entry.fidelityClass,
     supports: {
       webgl: entry.supports.webgl.status === 'supported',
       webgpu: entry.supports.webgpu.status === 'supported',
     },
   };
+}
+
+export function mergeCatalogActivity(
+  baseEntries: PresetCatalogEntry[],
+  activityEntries: PresetCatalogEntry[],
+) {
+  const activityById = new Map(
+    activityEntries.map((entry) => [entry.id, entry] as const),
+  );
+  const merged = baseEntries.map((entry) => {
+    const activityEntry = activityById.get(entry.id);
+    if (!activityEntry) {
+      return entry;
+    }
+
+    return {
+      ...entry,
+      isFavorite: activityEntry.isFavorite ?? entry.isFavorite,
+      historyIndex: activityEntry.historyIndex ?? entry.historyIndex,
+      lastOpenedAt: activityEntry.lastOpenedAt ?? entry.lastOpenedAt,
+    };
+  });
+
+  const seenIds = new Set(merged.map((entry) => entry.id));
+  activityEntries.forEach((entry) => {
+    if (!seenIds.has(entry.id)) {
+      merged.push(entry);
+    }
+  });
+
+  return merged;
+}
+
+export function pickRecentPresets(
+  entries: PresetCatalogEntry[],
+  limit = 3,
+): PresetCatalogEntry[] {
+  return entries
+    .filter(
+      (entry) => entry.historyIndex !== undefined && entry.historyIndex >= 0,
+    )
+    .sort((left, right) => {
+      const leftHistory = left.historyIndex ?? Number.MAX_SAFE_INTEGER;
+      const rightHistory = right.historyIndex ?? Number.MAX_SAFE_INTEGER;
+      if (leftHistory !== rightHistory) {
+        return leftHistory - rightHistory;
+      }
+      const leftOpenedAt = left.lastOpenedAt ?? 0;
+      const rightOpenedAt = right.lastOpenedAt ?? 0;
+      return rightOpenedAt - leftOpenedAt;
+    })
+    .slice(0, limit);
+}
+
+export function pickFavoritePresets(
+  entries: PresetCatalogEntry[],
+  limit = 3,
+): PresetCatalogEntry[] {
+  return entries
+    .filter((entry) => entry.isFavorite)
+    .sort((left, right) => {
+      const leftOpenedAt = left.lastOpenedAt ?? 0;
+      const rightOpenedAt = right.lastOpenedAt ?? 0;
+      if (leftOpenedAt !== rightOpenedAt) {
+        return rightOpenedAt - leftOpenedAt;
+      }
+      const leftHistory = left.historyIndex ?? Number.MAX_SAFE_INTEGER;
+      const rightHistory = right.historyIndex ?? Number.MAX_SAFE_INTEGER;
+      if (leftHistory !== rightHistory) {
+        return leftHistory - rightHistory;
+      }
+      return left.title.localeCompare(right.title);
+    })
+    .slice(0, limit);
 }
 
 export function buildLaunchIntent(routeState: SessionRouteState): LaunchIntent {

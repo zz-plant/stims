@@ -162,21 +162,21 @@ export function buildCustomWaves({
     const pointEnv = useProcedural
       ? null
       : createEnv(signals, pointLocals, { reuseExtraAsEnv: true });
-    const visualWave = !useProcedural
-      ? (waves[visualWaveCount] ?? {
-          positions: [],
-          color: waveColor,
-          alpha: waveAlpha,
-          thickness: 1,
-          drawMode,
-          additive,
-          pointSize: 1,
-          spectrum: false,
-        })
-      : null;
-    const positions = visualWave?.positions ?? null;
+    const visualWave = waves[visualWaveCount] ?? {
+      positions: [],
+      color: waveColor,
+      alpha: waveAlpha,
+      thickness: 1,
+      drawMode,
+      additive,
+      pointSize: 1,
+      spectrum: false,
+    };
+    const positions = useProcedural ? null : visualWave.positions;
     if (positions) {
       positions.length = sampleCount * 3;
+    } else {
+      visualWave.positions.length = 0;
     }
     const proceduralWave = useProcedural
       ? (proceduralWaves[proceduralWaveCount] ?? {
@@ -283,7 +283,7 @@ export function buildCustomWaves({
       }
     }
 
-    if (visualWave && positions) {
+    if (visualWave && (positions || useProcedural)) {
       visualWave.color = waveColor;
       visualWave.alpha = waveAlpha;
       visualWave.thickness = clamp(frameLocals.thick ?? 1, 1, 6);

@@ -53,9 +53,9 @@ describe('Workspace shell first-run and recovery regression', () => {
       'utf8',
     );
 
-    expect(appSource).toContain('Pick a preset');
+    expect(appSource).toContain('Choose a new look');
     expect(appSource).toContain(
-      'Start with the featured pick or open Presets.',
+      'Start with the featured look or open the library.',
     );
     expect(uiSource).toContain('Load featured preset');
     expect(uiSource).toContain('Browse presets');

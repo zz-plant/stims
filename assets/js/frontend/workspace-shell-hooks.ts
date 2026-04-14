@@ -13,6 +13,9 @@ import {
   getCollectionTags,
   mapRuntimeCatalogEntry,
   matchesPreset,
+  mergeCatalogActivity,
+  pickFavoritePresets,
+  pickRecentPresets,
   type ReadinessItem,
 } from './workspace-helpers.ts';
 
@@ -23,6 +26,7 @@ type WorkspaceShellOrchestrationArgs = {
   fallbackCatalog: PresetCatalogEntry[];
   fallbackCatalogError: string | null;
   fallbackCatalogReady: boolean;
+  activityCatalog: PresetCatalogEntry[];
   importPresetFiles: (files: FileList | null) => Promise<void>;
   pendingPresetIdRef: { current: string | null };
   readinessItems: ReadinessItem[];
@@ -44,6 +48,7 @@ export function useWorkspaceShellOrchestration({
   fallbackCatalog,
   fallbackCatalogError,
   fallbackCatalogReady,
+  activityCatalog,
   importPresetFiles,
   pendingPresetIdRef,
   readinessItems,
@@ -63,6 +68,7 @@ export function useWorkspaceShellOrchestration({
       : runtimeCatalogReady
         ? runtimeCatalog
         : fallbackCatalog;
+    const enrichedCatalog = mergeCatalogActivity(catalog, activityCatalog);
     const catalogReady = routeState.invalidExperienceSlug
       ? fallbackCatalogReady
       : runtimeCatalogReady || fallbackCatalogReady;
@@ -70,7 +76,7 @@ export function useWorkspaceShellOrchestration({
       ? fallbackCatalogError
       : null;
 
-    const filteredCatalog = catalog.filter((entry) => {
+    const filteredCatalog = enrichedCatalog.filter((entry) => {
       if (
         routeState.collectionTag &&
         !entry.tags?.includes(routeState.collectionTag)
@@ -84,11 +90,14 @@ export function useWorkspaceShellOrchestration({
       filteredCatalog.find(
         (entry) => entry.id === engineSnapshot?.activePresetId,
       ) ??
-      catalog.find((entry) => entry.id === engineSnapshot?.activePresetId) ??
+      enrichedCatalog.find(
+        (entry) => entry.id === engineSnapshot?.activePresetId,
+      ) ??
       null;
 
-    const starterPresets = buildStarterPresets(catalog);
-    const featuredPreset = starterPresets[0]?.preset ?? catalog[0] ?? null;
+    const starterPresets = buildStarterPresets(enrichedCatalog);
+    const featuredPreset =
+      starterPresets[0]?.preset ?? enrichedCatalog[0] ?? null;
     const launchControlsHidden =
       engineSnapshot?.audioActive ||
       document.body.dataset.audioActive === 'true';
@@ -105,7 +114,7 @@ export function useWorkspaceShellOrchestration({
           ? 'webgpu'
           : null);
     const resolvedRequestedPreset = routeState.presetId
-      ? resolvePresetCatalogEntry(catalog, routeState.presetId)
+      ? resolvePresetCatalogEntry(enrichedCatalog, routeState.presetId)
       : null;
     const selectedPreset = resolvedRequestedPreset ?? currentPreset ?? null;
     const missingRequestedPreset = Boolean(
@@ -123,17 +132,19 @@ export function useWorkspaceShellOrchestration({
     );
 
     return {
-      catalog,
+      catalog: enrichedCatalog,
       catalogError,
       catalogReady,
-      collectionTags: getCollectionTags(catalog),
+      collectionTags: getCollectionTags(enrichedCatalog),
       currentPreset,
       engineReady,
+      favoritePresets: pickFavoritePresets(enrichedCatalog),
       featuredPreset,
       filteredCatalog,
       launchControlsHidden,
       loadingRequestedPreset,
       missingRequestedPreset,
+      recentPresets: pickRecentPresets(enrichedCatalog),
       resolvedBackend,
       runtimeReady,
       selectedPreset,
@@ -147,6 +158,7 @@ export function useWorkspaceShellOrchestration({
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    activityCatalog,
     pendingPresetIdRef,
     routeState,
   ]);

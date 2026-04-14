@@ -16,6 +16,16 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'm6 6 12 12' } },
     { tag: 'path', attrs: { d: 'M18 6 6 18' } },
   ],
+  expand: [
+    { tag: 'path', attrs: { d: 'M9 3H3v6' } },
+    { tag: 'path', attrs: { d: 'm3 3 7 7' } },
+    { tag: 'path', attrs: { d: 'M15 21h6v-6' } },
+    { tag: 'path', attrs: { d: 'm21 21-7-7' } },
+    { tag: 'path', attrs: { d: 'M21 9V3h-6' } },
+    { tag: 'path', attrs: { d: 'm14 10 7-7' } },
+    { tag: 'path', attrs: { d: 'M3 15v6h6' } },
+    { tag: 'path', attrs: { d: 'm10 14-7 7' } },
+  ],
   gauge: [
     { tag: 'path', attrs: { d: 'M4.5 14a7.5 7.5 0 1 1 15 0' } },
     { tag: 'path', attrs: { d: 'm12 14 4-4' } },

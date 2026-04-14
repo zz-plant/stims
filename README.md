@@ -6,9 +6,9 @@
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=flat-square&logo=bun)](https://bun.sh)
 
-Stims is an independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop. It centers on one shared runtime with curated presets, live source editing, and preset import/export, delivered through a responsive Three.js/WebGL app with WebGPU support where available.
+Stims is an instant browser music visualizer inspired by Ryan Geiss's MilkDrop. You can start with demo audio in one click, switch to your own sound when you want to, and move through curated presets without leaving the main stage.
 
-It is built to feel like a first-class browser experience rather than a nostalgic desktop clone: quick preflight checks, multiple audio input paths, renderer fallback, and a visualizer shell that stays usable across desktop, laptop, touch, and TV-style setups.
+It is designed to feel like a real browser product instead of a desktop port: fast first play, live preset browsing, optional deeper controls, and a shell that stays usable across desktop, laptop, touch, and TV-style setups.
 
 ## Quick links
 
@@ -36,28 +36,25 @@ It is built to feel like a first-class browser experience rather than a nostalgi
 
 ## Why Stims exists
 
-Stims aims to make MilkDrop-style visual play feel native to the browser instead of a desktop nostalgia port. The repository is organized around a single flagship visualizer experience rather than a broad toy catalog, so most implementation work lands in the shared runtime, preset workflows, and app shell.
+Stims exists to make reactive music visuals feel immediate on the web. The product is centered on a single flagship experience: press play, get moving visuals fast, then go deeper into presets, editing, and input choices only if you want to.
 
 ## What you get
 
-- A browser-native visualizer runtime built with Three.js, WebGL, and optional WebGPU rendering.
-- Curated presets with a preset browser and smooth visual transitions.
-- Live preset source editing without interrupting playback.
-- Preset import/export flows for compatibility and experimentation.
-- Shared controls for audio input, rendering capability, and performance.
-- A launch flow with readiness checks before microphone prompts and renderer-heavy startup.
-- Multiple audio paths including microphone, demo audio, tab capture, and YouTube-backed tab capture.
-- Renderer preference handling with WebGPU-first startup and direct WebGL fallback when needed.
-- One unified workspace route at `index.html` (`/`) for setup, playback, and live session entry, plus a `/milkdrop/` alias that redirects into the same experience.
+- One-click demo playback so first-time users can start immediately.
+- Curated presets with a browser for quick discovery and smooth transitions.
+- Optional live audio input from microphone, tab audio, or YouTube-backed tab capture.
+- Live preset editing plus import/export for people who want to customize deeper.
+- Shared playback, browse, and settings surfaces that work across desktop, touch, and TV-style setups.
+- One unified workspace route at `index.html` (`/`) for launch, playback, and live session entry, plus a `/milkdrop/` alias that redirects into the same experience.
 
 ## Shipped experience
 
 At the product level, Stims currently ships one flagship MilkDrop-led visualizer experience with:
 
-- A quick-check preflight that surfaces graphics, microphone, motion, and compatibility status.
-- A unified launch route that can drop straight into demo playback while keeping audio choice and device tuning close at hand.
-- A preset-led playback flow designed for immediate experimentation.
-- A settings panel for quality presets, compatibility mode, motion preferences, render scale, and pixel ratio.
+- An instant-start launch route that makes demo playback the default first run.
+- A preset-led playback flow designed for quick experimentation and repeat browsing.
+- Optional audio-source upgrades when users want the visuals to follow their own sound.
+- A settings panel built around quick looks first, with advanced tuning hidden until needed.
 - A live overlay that keeps preset browsing primary and tucks editing and inspection one layer deeper without leaving playback.
 - Session-shell behavior that supports keyboard, gamepad, and TV-style remote navigation.
 - Persistent session and local settings so the app can recover your last-used audio and rendering preferences.

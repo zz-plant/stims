@@ -224,11 +224,10 @@ integrationTest(
       const focusedSessionState = await mobile.page.evaluate(() => ({
         focusedSession: document.documentElement.dataset.focusedSession ?? null,
         activeBackend: document.body.dataset.activeBackend ?? null,
-        audioControlsHidden: Boolean(
-          document
-            .querySelector('[data-audio-controls]')
-            ?.hasAttribute('hidden'),
-        ),
+        audioControlsHidden: (() => {
+          const controls = document.querySelector('[data-audio-controls]');
+          return !controls || controls.hasAttribute('hidden');
+        })(),
         canvasVisible:
           (document.querySelector('canvas')?.getBoundingClientRect().width ??
             0) > 0,

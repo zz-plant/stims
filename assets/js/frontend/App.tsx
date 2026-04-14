@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import '../../css/app-shell.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
@@ -21,8 +22,10 @@ import {
 } from './workspace-ui.tsx';
 
 export function StimsWorkspaceApp() {
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
   const {
+    activityCatalog,
     deferredSearch,
     dismissToast,
     engineSnapshot,
@@ -60,6 +63,7 @@ export function StimsWorkspaceApp() {
     catalogReady,
     collectionTags,
     engineReady,
+    favoritePresets,
     featuredPreset,
     filteredCatalog,
     handleAudioStart,
@@ -72,6 +76,7 @@ export function StimsWorkspaceApp() {
     launchControlsHidden,
     loadingRequestedPreset,
     missingRequestedPreset,
+    recentPresets,
     readinessAlerts,
     selectedPreset,
     starterPresets,
@@ -83,6 +88,7 @@ export function StimsWorkspaceApp() {
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    activityCatalog,
     importPresetFiles,
     pendingPresetIdRef,
     readinessItems,
@@ -94,42 +100,79 @@ export function StimsWorkspaceApp() {
 
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
+  const liveMode = launchControlsHidden;
   const launchEyebrow =
-    engineReady || routeState.invalidExperienceSlug ? 'Start' : 'Loading';
+    engineReady || routeState.invalidExperienceSlug
+      ? 'Instant browser music visualizer'
+      : 'Loading';
   const launchTitle =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Choose audio.'
+      ? 'Play reactive visuals in one click.'
       : 'Warming up visuals.';
   const launchSummary =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Start demo, use the mic, or capture a tab.'
-      : 'Just a moment.';
+      ? 'Start with demo audio now. Bring in your own room, mic, or tab audio only when you want the visuals to follow live sound.'
+      : 'Getting the visual engine ready.';
   const stageEyebrow = loadingRequestedPreset
     ? 'Loading preset'
-    : launchControlsHidden
+    : liveMode
       ? 'Now playing'
-      : selectedPreset
-        ? 'Preset'
-        : 'Choose a preset';
+      : 'Ready when you are';
   const stageTitle = loadingRequestedPreset
     ? 'Loading preset'
     : selectedPreset
       ? selectedPreset.title
       : missingRequestedPreset
-        ? 'Pick a preset'
-        : 'Pick a preset';
+        ? 'Choose a new look'
+        : (featuredPreset?.title ?? 'Featured visual');
   const stageSummary = loadingRequestedPreset
     ? `Loading ${routeState.presetId}.`
     : selectedPreset
       ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
       : missingRequestedPreset
-        ? 'Start with the featured pick or open Presets.'
+        ? 'Start with the recommended look or open the preset library.'
         : featuredPreset
-          ? `Try ${featuredPreset.title} · ${describePresetMood(featuredPreset)}.`
-          : 'Open Presets or shuffle.';
+          ? `${describePresetMood(featuredPreset)} · ${formatPresetSupportLabel(featuredPreset)}`
+          : 'Press play with demo audio, or open the preset library first.';
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    handleFullscreenChange();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const handleToggleFullscreen = () => {
+    const stageElement = stageRef.current?.parentElement;
+    if (!stageElement) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+          return;
+        }
+
+        await stageElement.requestFullscreen();
+      } catch (_error) {
+        setStatusMessage('Full screen is unavailable in this browser.');
+      }
+    })();
+  };
 
   return (
-    <div className="stims-shell" data-has-toast={toast ? 'true' : undefined}>
+    <div
+      className="stims-shell"
+      data-has-toast={toast ? 'true' : undefined}
+      data-mode={liveMode ? 'live' : 'home'}
+    >
       <header className="top-nav stims-shell__nav">
         <div className="stims-shell__brand">
           <a href="/" className="stims-shell__logo">
@@ -146,7 +189,7 @@ export function StimsWorkspaceApp() {
               updatePanel(routeState.panel === 'browse' ? null : 'browse')
             }
           >
-            Presets
+            Library
           </button>
           <button
             type="button"
@@ -156,8 +199,15 @@ export function StimsWorkspaceApp() {
               updatePanel(routeState.panel === 'settings' ? null : 'settings')
             }
           >
-            Settings
+            Look
           </button>
+        </nav>
+        <div className="stims-shell__nav-utility">
+          {selectedPreset ? (
+            <span className="stims-shell__nav-status">
+              {selectedPreset.title}
+            </span>
+          ) : null}
           <a
             className="stims-shell__nav-link"
             href="https://github.com/zz-plant/stims"
@@ -166,40 +216,47 @@ export function StimsWorkspaceApp() {
           >
             GitHub
           </a>
-        </nav>
+        </div>
       </header>
 
       <main className="stims-shell__content">
-        <WorkspaceLaunchPanel
-          engineReady={engineReady}
-          featuredPreset={featuredPreset}
-          hidden={launchControlsHidden}
-          launchEyebrow={launchEyebrow}
-          launchSummary={launchSummary}
-          launchTitle={launchTitle}
-          missingRequestedPreset={missingRequestedPreset}
-          onAudioStart={(source) => {
-            void handleAudioStart(source);
-          }}
-          onBrowseRecovery={handleBrowseRecovery}
-          onFeaturedPresetSelection={handleFeaturedPresetSelection}
-          onLoadYouTube={() => {
-            void loadYouTubePreview();
-          }}
-          onToggleExtendedSources={toggleExtendedSources}
-          onYoutubeUrlChange={setYoutubeUrl}
-          readinessAlerts={readinessAlerts}
-          requestedPresetId={routeState.presetId}
-          showExtendedSources={showExtendedSources}
-          youtubePreviewRef={youtubePreviewRef}
-          youtubeReady={youtubeReady}
-          youtubeUrl={youtubeUrl}
-        />
-
         <WorkspaceStagePanel
           audioSource={engineSnapshot?.audioSource}
           backend={engineSnapshot?.backend}
           invalidExperienceSlug={routeState.invalidExperienceSlug}
+          isFullscreen={isFullscreen}
+          launchPanel={
+            <WorkspaceLaunchPanel
+              embedded
+              engineReady={engineReady}
+              favoritePresets={favoritePresets}
+              featuredPreset={featuredPreset}
+              launchEyebrow={launchEyebrow}
+              launchSummary={launchSummary}
+              launchTitle={launchTitle}
+              missingRequestedPreset={missingRequestedPreset}
+              onAudioStart={(source) => {
+                void handleAudioStart(source);
+              }}
+              onBrowseRecovery={handleBrowseRecovery}
+              onFeaturedPresetSelection={handleFeaturedPresetSelection}
+              onLoadYouTube={() => {
+                void loadYouTubePreview();
+              }}
+              onPresetSelection={handlePresetSelection}
+              onToggleExtendedSources={toggleExtendedSources}
+              onYoutubeUrlChange={setYoutubeUrl}
+              readinessAlerts={readinessAlerts}
+              requestedPresetId={routeState.presetId}
+              recentPresets={recentPresets}
+              showExtendedSources={showExtendedSources}
+              starterPresets={starterPresets}
+              youtubePreviewRef={youtubePreviewRef}
+              youtubeReady={youtubeReady}
+              youtubeUrl={youtubeUrl}
+            />
+          }
+          liveMode={liveMode}
           missingRequestedPreset={missingRequestedPreset}
           onOpenBrowse={() => updatePanel('browse')}
           onOpenSettings={() => updatePanel('settings')}
@@ -207,6 +264,7 @@ export function StimsWorkspaceApp() {
             void handleShowCurrentLink();
           }}
           onShufflePreset={handleShufflePreset}
+          onToggleFullscreen={handleToggleFullscreen}
           stageEyebrow={stageEyebrow}
           stageRef={stageRef}
           stageSummary={stageSummary}
@@ -246,6 +304,8 @@ export function StimsWorkspaceApp() {
         renderPreferences={renderPreferences}
         routeState={routeState}
         searchQuery={searchQuery}
+        favoritePresets={favoritePresets}
+        recentPresets={recentPresets}
         starterPresets={starterPresets}
         stageAnchoredToolOpen={stageAnchoredToolOpen}
       />

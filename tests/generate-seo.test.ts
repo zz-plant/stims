@@ -19,7 +19,7 @@ describe('generate-seo sitemap routes', () => {
       .filter((route) => route.includeInSitemap)
       .map((route) => route.path);
 
-    expect(canonicalPaths).toEqual(['/']);
+    expect(canonicalPaths).toEqual(['/', '/performance/']);
   });
 
   test('builds sitemap entries for the canonical route with the launch OG image', async () => {
@@ -35,6 +35,12 @@ describe('generate-seo sitemap routes', () => {
         imageLoc: 'https://toil.fyi/og/milkdrop.svg',
         imageTitle: 'MilkDrop Visualizer | Stims',
       }),
+      expect.objectContaining({
+        loc: 'https://toil.fyi/performance/',
+        lastmod: '2026-04-04',
+        imageLoc: 'https://toil.fyi/og/milkdrop.svg',
+        imageTitle: 'Compatibility and Performance | Stims',
+      }),
     ]);
   });
 
@@ -49,9 +55,20 @@ describe('generate-seo sitemap routes', () => {
         imageTitle: 'MilkDrop Visualizer | Stims',
         imageCaption: milkdrop.description,
       },
+      {
+        loc: 'https://toil.fyi/performance/',
+        lastmod: '2026-04-04',
+        changefreq: 'monthly',
+        priority: '0.7',
+        imageLoc: 'https://toil.fyi/og/milkdrop.svg',
+        imageTitle: 'Compatibility and Performance | Stims',
+        imageCaption:
+          'Public guide for browser support, lighter-mode fallback behavior, and first-run expectations.',
+      },
     ]);
 
     expect(xml).toContain('<loc>https://toil.fyi/</loc>');
+    expect(xml).toContain('<loc>https://toil.fyi/performance/</loc>');
     expect(xml).toContain(
       '<image:loc>https://toil.fyi/og/milkdrop.svg</image:loc>',
     );
