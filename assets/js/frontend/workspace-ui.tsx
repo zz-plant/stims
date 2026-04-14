@@ -299,7 +299,7 @@ export function WorkspaceLaunchPanel({
     ...favoritePresets.map((entry) => ({
       entry,
       label: 'Saved pick',
-      summary: 'A look you already marked to come back to.',
+      summary: 'A look you saved for an easy return.',
     })),
     ...recentPresets
       .filter(
@@ -351,7 +351,7 @@ export function WorkspaceLaunchPanel({
           <div className="stims-shell__confidence-note">
             <strong>Runs best on desktop and laptop.</strong>
             <span>
-              Phones and older browsers can fall back to lighter visuals
+              Phones and older browsers may switch to lighter visuals
               automatically.
             </span>
           </div>
@@ -370,22 +370,38 @@ export function WorkspaceLaunchPanel({
             ) : null}
           </div>
         </div>
+
+        {featuredPreset ? (
+          <button
+            type="button"
+            className="stims-shell__launch-recommendation"
+            onClick={() => onPresetSelection(featuredPreset.id)}
+          >
+            <PresetArtwork entry={featuredPreset} />
+            <div className="stims-shell__launch-recommendation-copy">
+              <p className="stims-shell__section-label">Try this look first</p>
+              <strong>{featuredPreset.title}</strong>
+              <span className="stims-shell__meta-copy">
+                {describePresetMood(featuredPreset)} ·{' '}
+                {formatPresetSupportNote(featuredPreset)}
+              </span>
+            </div>
+          </button>
+        ) : null}
       </div>
 
       {missingRequestedPreset ? (
         <section className="stims-shell__launch-alert" data-tone="warn">
           <div className="stims-shell__launch-alert-copy">
-            <p className="stims-shell__section-label">
-              Requested preset missing
-            </p>
+            <p className="stims-shell__section-label">Preset not found</p>
             <strong>
               {requestedPresetId
-                ? `"${requestedPresetId}" is no longer bundled here.`
-                : 'That preset is no longer bundled here.'}
+                ? `"${requestedPresetId}" isn't available here anymore.`
+                : "That preset isn't available here anymore."}
             </strong>
             <p className="stims-shell__meta-copy">
               {featuredPreset
-                ? `Start with ${featuredPreset.title} or open the full library.`
+                ? `Try ${featuredPreset.title} instead, or browse the full library.`
                 : 'Open the preset library to pick another one.'}
             </p>
           </div>
@@ -396,7 +412,7 @@ export function WorkspaceLaunchPanel({
                 className="cta-button primary"
                 onClick={onFeaturedPresetSelection}
               >
-                Load featured preset
+                Try featured preset
               </button>
             ) : null}
             <button
@@ -427,7 +443,7 @@ export function WorkspaceLaunchPanel({
 
       <PresetShelfSection
         entries={jumpBackInEntries}
-        summary="Saved and recent presets stay close so repeat sessions start faster."
+        summary="Saved and recent presets stay close so you can start faster next time."
         title="Jump back in"
         onSelect={onPresetSelection}
       />
@@ -453,6 +469,7 @@ export function WorkspaceStagePanel({
   onToggleExtendedSources,
   onToggleFullscreen,
   onYoutubeUrlChange,
+  panel,
   stageEyebrow,
   stageRef,
   stageSummary,
@@ -479,6 +496,7 @@ export function WorkspaceStagePanel({
   onToggleExtendedSources: () => void;
   onToggleFullscreen: () => void;
   onYoutubeUrlChange: (value: string) => void;
+  panel: PanelState;
   stageEyebrow: string;
   stageRef: RefObject<HTMLDivElement | null>;
   stageSummary: string;
@@ -494,66 +512,93 @@ export function WorkspaceStagePanel({
       data-mode={liveMode ? 'live' : 'home'}
     >
       <section className="stims-shell__stage-section">
-        {liveMode ? (
-          <div className="stims-shell__stage-header">
-            <div className="stims-shell__stage-copy">
-              <p className="stims-shell__eyebrow">{stageEyebrow}</p>
-              <h2>{stageTitle}</h2>
-              <p className="stims-shell__meta-copy stims-shell__stage-summary">
-                {stageSummary}
-              </p>
-            </div>
-            <div className="stims-shell__session-meta">
-              <span className="stims-shell__meta-pill">
-                {backend === 'webgpu'
-                  ? 'Full detail'
-                  : backend === 'webgl'
-                    ? 'Performance mode'
-                    : 'Starting up'}
-              </span>
-              <span className="stims-shell__meta-pill">
-                {formatAudioSourceLabel(audioSource)}
-              </span>
-            </div>
-          </div>
-        ) : null}
-        {liveMode && audioSource === 'demo' ? (
-          <section className="stims-shell__audio-bridge">
-            <div className="stims-shell__audio-bridge-copy">
-              <p className="stims-shell__section-label">Switch to your music</p>
-              <p className="stims-shell__meta-copy">
-                Demo audio is running. Bring in your microphone, this tab, or a
-                YouTube link when you want the visuals to follow your own sound.
-              </p>
-            </div>
-            <div className="stims-shell__audio-bridge-actions">
-              <button
-                type="button"
-                className="cta-button"
-                onClick={onToggleExtendedSources}
-              >
-                {showExtendedSources ? 'Hide sources' : 'Use my music'}
-              </button>
-            </div>
-            {showExtendedSources ? (
-              <AudioSourcePanel
-                engineReady={engineReady}
-                onAudioStart={onAudioStart}
-                onLoadYouTube={onLoadYouTube}
-                onYoutubeUrlChange={onYoutubeUrlChange}
-                youtubePreviewRef={youtubePreviewRef}
-                youtubeReady={youtubeReady}
-                youtubeUrl={youtubeUrl}
-              />
-            ) : null}
-          </section>
-        ) : null}
-
         <div
           className="stims-shell__stage-frame"
           data-mode={liveMode ? 'live' : 'home'}
         >
           <div ref={stageRef} className="stims-shell__stage-root" />
+          <div className="stims-shell__frame-chrome">
+            <div className="stims-shell__corner-brand">
+              <a href="/" className="stims-shell__logo">
+                <span>Stims</span>
+                <small>Audio-reactive visuals</small>
+              </a>
+            </div>
+            <div className="stims-shell__corner-actions">
+              {panel ? (
+                <span className="stims-shell__corner-pill">
+                  {getToolLabel(panel)} open
+                </span>
+              ) : null}
+              <a
+                className="stims-shell__corner-link"
+                href="https://github.com/zz-plant/stims"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
+          {liveMode ? (
+            <div className="stims-shell__frame-header">
+              <div className="stims-shell__stage-copy">
+                <p className="stims-shell__eyebrow">{stageEyebrow}</p>
+                <h2>{stageTitle}</h2>
+                <p className="stims-shell__meta-copy stims-shell__stage-summary">
+                  {stageSummary}
+                </p>
+              </div>
+              <div className="stims-shell__frame-sidecar">
+                <div className="stims-shell__session-meta">
+                  <span className="stims-shell__meta-pill">
+                    {backend === 'webgpu'
+                      ? 'Full detail'
+                      : backend === 'webgl'
+                        ? 'Lighter mode'
+                        : 'Starting up'}
+                  </span>
+                  <span className="stims-shell__meta-pill">
+                    {formatAudioSourceLabel(audioSource)}
+                  </span>
+                </div>
+                {audioSource === 'demo' ? (
+                  <section className="stims-shell__audio-bridge">
+                    <div className="stims-shell__audio-bridge-copy">
+                      <p className="stims-shell__section-label">
+                        Switch to your music
+                      </p>
+                      <p className="stims-shell__meta-copy">
+                        Demo audio is running. Bring in your microphone, this
+                        tab, or a YouTube link when you want the visuals to
+                        follow your own sound.
+                      </p>
+                    </div>
+                    <div className="stims-shell__audio-bridge-actions">
+                      <button
+                        type="button"
+                        className="cta-button"
+                        onClick={onToggleExtendedSources}
+                      >
+                        {showExtendedSources ? 'Hide sources' : 'Use my music'}
+                      </button>
+                    </div>
+                    {showExtendedSources ? (
+                      <AudioSourcePanel
+                        engineReady={engineReady}
+                        onAudioStart={onAudioStart}
+                        onLoadYouTube={onLoadYouTube}
+                        onYoutubeUrlChange={onYoutubeUrlChange}
+                        youtubePreviewRef={youtubePreviewRef}
+                        youtubeReady={youtubeReady}
+                        youtubeUrl={youtubeUrl}
+                      />
+                    ) : null}
+                  </section>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           {!liveMode ? (
             <div className="stims-shell__stage-hero">{launchPanel}</div>
           ) : null}
@@ -563,21 +608,34 @@ export function WorkspaceStagePanel({
               role="toolbar"
               aria-label={liveMode ? 'Live controls' : 'Launch controls'}
             >
-              {liveMode ? (
-                <button
-                  type="button"
-                  className="stims-shell__stage-tool"
-                  aria-label="Open library"
-                  title="Open library"
-                  onClick={onOpenBrowse}
-                >
-                  <UiIcon
-                    name="sparkles"
-                    className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                  />
-                  <span className="stims-shell__stage-tool-label">Library</span>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className="stims-shell__stage-tool"
+                data-active={String(panel === 'browse')}
+                aria-label="Open preset library"
+                title="Open preset library"
+                onClick={onOpenBrowse}
+              >
+                <UiIcon
+                  name="sparkles"
+                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                />
+                <span className="stims-shell__stage-tool-label">Presets</span>
+              </button>
+              <button
+                type="button"
+                className="stims-shell__stage-tool"
+                data-active={String(panel === 'settings')}
+                aria-label="Open look settings"
+                title="Open look settings"
+                onClick={onOpenSettings}
+              >
+                <UiIcon
+                  name="sliders"
+                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                />
+                <span className="stims-shell__stage-tool-label">Look</span>
+              </button>
               <button
                 type="button"
                 className="stims-shell__stage-tool"
@@ -593,21 +651,6 @@ export function WorkspaceStagePanel({
                   Surprise me
                 </span>
               </button>
-              {liveMode ? (
-                <button
-                  type="button"
-                  className="stims-shell__stage-tool"
-                  aria-label="Open look settings"
-                  title="Open look settings"
-                  onClick={onOpenSettings}
-                >
-                  <UiIcon
-                    name="sliders"
-                    className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                  />
-                  <span className="stims-shell__stage-tool-label">Look</span>
-                </button>
-              ) : null}
               <button
                 type="button"
                 className="stims-shell__stage-tool"
@@ -643,10 +686,10 @@ export function WorkspaceStagePanel({
           {invalidExperienceSlug ? (
             <div className="active-toy-status is-error">
               <div className="active-toy-status__content">
-                <h2>Older link</h2>
+                <h2>Link no longer works</h2>
                 <p>
-                  This older Stims link points to a view that is no longer
-                  available: "{invalidExperienceSlug}".
+                  This Stims link points to a view that is no longer available:
+                  "{invalidExperienceSlug}".
                 </p>
               </div>
             </div>
@@ -695,65 +738,67 @@ function BrowseSheetPanel({
   const showActivitySections = showStarterPresets;
 
   return (
-    <div className="stims-shell__sheet-panel">
-      <div className="stims-shell__browse-toolbar">
-        <strong>Pick a look and press play.</strong>
-        <button
-          type="button"
-          className="stims-shell__text-button"
-          onClick={onShufflePreset}
-          disabled={catalog.length === 0}
-        >
-          Shuffle
-        </button>
-      </div>
-
-      <label className="stims-shell__field-label" htmlFor="preset-search">
-        Search
-      </label>
-      <input
-        id="preset-search"
-        className="stims-shell__input"
-        type="search"
-        placeholder="Search by preset, mood, creator, or collection"
-        value={searchQuery}
-        onChange={(event) => onSearchQueryChange(event.target.value)}
-      />
-
-      <nav className="stims-shell__collections" aria-label="Collections">
-        <button
-          type="button"
-          className="stims-shell__collection-pill"
-          data-active={String(routeState.collectionTag === null)}
-          onClick={() => onCollectionTagChange(null)}
-        >
-          All
-        </button>
-        {collectionTags.map((collectionTag) => (
+    <div className="stims-shell__sheet-panel stims-shell__sheet-panel--browse">
+      <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
+        <div className="stims-shell__browse-toolbar">
+          <strong>Pick a look and press play.</strong>
           <button
-            key={collectionTag}
+            type="button"
+            className="stims-shell__text-button"
+            onClick={onShufflePreset}
+            disabled={catalog.length === 0}
+          >
+            Shuffle
+          </button>
+        </div>
+
+        <label className="stims-shell__field-label" htmlFor="preset-search">
+          Search
+        </label>
+        <input
+          id="preset-search"
+          className="stims-shell__input"
+          type="search"
+          placeholder="Search by preset, mood, creator, or collection"
+          value={searchQuery}
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+        />
+
+        <nav className="stims-shell__collections" aria-label="Collections">
+          <button
             type="button"
             className="stims-shell__collection-pill"
-            data-active={String(routeState.collectionTag === collectionTag)}
-            onClick={() =>
-              onCollectionTagChange(
-                routeState.collectionTag === collectionTag
-                  ? null
-                  : collectionTag,
-              )
-            }
+            data-active={String(routeState.collectionTag === null)}
+            onClick={() => onCollectionTagChange(null)}
           >
-            {prettifyCollectionTag(collectionTag)}
+            All
           </button>
-        ))}
-      </nav>
+          {collectionTags.map((collectionTag) => (
+            <button
+              key={collectionTag}
+              type="button"
+              className="stims-shell__collection-pill"
+              data-active={String(routeState.collectionTag === collectionTag)}
+              onClick={() =>
+                onCollectionTagChange(
+                  routeState.collectionTag === collectionTag
+                    ? null
+                    : collectionTag,
+                )
+              }
+            >
+              {prettifyCollectionTag(collectionTag)}
+            </button>
+          ))}
+        </nav>
+      </section>
 
       {showStarterPresets && starterPresets.length > 0 ? (
         <section className="stims-shell__starter-section">
           <div className="stims-shell__section-heading">
             <p className="stims-shell__section-label">Start here</p>
             <p className="stims-shell__meta-copy">
-              Four quick ways into the catalog.
+              Four easy ways to get started.
             </p>
           </div>
           <div className="stims-shell__starter-grid">
@@ -783,7 +828,7 @@ function BrowseSheetPanel({
           entries={recentPresets.map((entry) => ({
             entry,
             label: 'Recent',
-            summary: 'Reopen a preset you touched in an earlier session.',
+            summary: 'Open a preset you used earlier.',
           }))}
           summary="Recent presets help you resume a session without hunting."
           title="Recent"
@@ -796,7 +841,7 @@ function BrowseSheetPanel({
           entries={favoritePresets.map((entry) => ({
             entry,
             label: 'Saved',
-            summary: 'Pinned for quick return the next time you open Stims.',
+            summary: 'Saved for a quick return the next time you open Stims.',
           }))}
           summary="Saved presets stay visible even before the visualizer is live."
           title="Saved"
@@ -804,61 +849,63 @@ function BrowseSheetPanel({
         />
       ) : null}
 
-      {!catalogReady && !catalogError ? (
-        <p className="stims-shell__meta-copy">Loading catalog…</p>
-      ) : null}
-      {catalogError ? (
-        <p className="stims-shell__meta-copy">{catalogError}</p>
-      ) : null}
-      <div className="stims-shell__section-heading">
-        <p className="stims-shell__section-label">Full library</p>
-        <p className="stims-shell__meta-copy">
-          {filteredCatalog.length} preset
-          {filteredCatalog.length === 1 ? '' : 's'}
-          {searchQuery.trim().length > 0 || routeState.collectionTag
-            ? ' match the current filters.'
-            : ' ready to explore.'}
-        </p>
-      </div>
-      <ul className="stims-shell__preset-list">
-        {filteredCatalog.map((entry) => {
-          const supportLabel = getPresetCardSupportLabel(entry);
+      <section className="stims-shell__sheet-surface">
+        {!catalogReady && !catalogError ? (
+          <p className="stims-shell__meta-copy">Loading catalog…</p>
+        ) : null}
+        {catalogError ? (
+          <p className="stims-shell__meta-copy">{catalogError}</p>
+        ) : null}
+        <div className="stims-shell__section-heading">
+          <p className="stims-shell__section-label">Full library</p>
+          <p className="stims-shell__meta-copy">
+            {filteredCatalog.length} preset
+            {filteredCatalog.length === 1 ? '' : 's'}
+            {searchQuery.trim().length > 0 || routeState.collectionTag
+              ? ' match the current filters.'
+              : ' ready to explore.'}
+          </p>
+        </div>
+        <ul className="stims-shell__preset-list">
+          {filteredCatalog.map((entry) => {
+            const supportLabel = getPresetCardSupportLabel(entry);
 
-          return (
-            <li key={entry.id}>
-              <button
-                type="button"
-                className="stims-shell__preset-card"
-                data-active={String(entry.id === currentPresetId)}
-                onClick={() => onPresetSelection(entry.id)}
-              >
-                <PresetArtwork entry={entry} compact />
-                <span className="stims-shell__preset-card-copy">
-                  <span className="stims-shell__preset-title">
-                    {entry.title}
-                  </span>
-                  <span className="stims-shell__preset-vibe">
-                    {describePresetMood(entry)}
-                  </span>
-                  <span className="stims-shell__preset-meta-row">
-                    <span className="stims-shell__preset-meta">
-                      {entry.author || 'Unknown author'}
+            return (
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  className="stims-shell__preset-card"
+                  data-active={String(entry.id === currentPresetId)}
+                  onClick={() => onPresetSelection(entry.id)}
+                >
+                  <PresetArtwork entry={entry} compact />
+                  <span className="stims-shell__preset-card-copy">
+                    <span className="stims-shell__preset-title">
+                      {entry.title}
                     </span>
-                    {supportLabel ? (
-                      <span className="stims-shell__preset-tech">
-                        {supportLabel}
+                    <span className="stims-shell__preset-vibe">
+                      {describePresetMood(entry)}
+                    </span>
+                    <span className="stims-shell__preset-meta-row">
+                      <span className="stims-shell__preset-meta">
+                        {entry.author || 'Unknown author'}
                       </span>
-                    ) : null}
+                      {supportLabel ? (
+                        <span className="stims-shell__preset-tech">
+                          {supportLabel}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="stims-shell__meta-copy">
+                      {formatPresetSupportNote(entry)}
+                    </span>
                   </span>
-                  <span className="stims-shell__meta-copy">
-                    {formatPresetSupportNote(entry)}
-                  </span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }
@@ -883,49 +930,51 @@ function SettingsSheetPanel({
   const guidedPresets = getSettingsPresetOptions().slice(0, 3);
 
   return (
-    <div className="stims-shell__sheet-panel">
-      <p className="stims-shell__section-label">Quick looks</p>
-      <ul className="stims-shell__preset-guides">
-        {guidedPresets.map((preset) => (
-          <li key={preset.id}>
-            <button
-              type="button"
-              className="stims-shell__preset-guide"
-              data-active={String(preset.id === qualityPreset.id)}
-              onClick={() => onQualityPresetChange(preset.id)}
-            >
-              <strong>{preset.label}</strong>
-              <span className="stims-shell__meta-copy">
-                {getQualityImpactSummary(preset)}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <label className="stims-shell__field-label" htmlFor="quality-select">
-        Or pick a specific visual profile
-      </label>
-      <select
-        id="quality-select"
-        className="stims-shell__select"
-        value={qualityPreset.id}
-        onChange={(event) => onQualityPresetChange(event.target.value)}
-      >
-        {getSettingsPresetOptions().map((preset) => (
-          <option key={preset.id} value={preset.id}>
-            {preset.label}
-          </option>
-        ))}
-      </select>
-      <p className="stims-shell__meta-copy">
-        {qualityPreset.description ?? getQualityImpactSummary(qualityPreset)}
-      </p>
+    <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
+      <section className="stims-shell__sheet-surface">
+        <p className="stims-shell__section-label">Quick looks</p>
+        <ul className="stims-shell__preset-guides">
+          {guidedPresets.map((preset) => (
+            <li key={preset.id}>
+              <button
+                type="button"
+                className="stims-shell__preset-guide"
+                data-active={String(preset.id === qualityPreset.id)}
+                onClick={() => onQualityPresetChange(preset.id)}
+              >
+                <strong>{preset.label}</strong>
+                <span className="stims-shell__meta-copy">
+                  {getQualityImpactSummary(preset)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <label className="stims-shell__field-label" htmlFor="quality-select">
+          Or pick a specific visual profile
+        </label>
+        <select
+          id="quality-select"
+          className="stims-shell__select"
+          value={qualityPreset.id}
+          onChange={(event) => onQualityPresetChange(event.target.value)}
+        >
+          {getSettingsPresetOptions().map((preset) => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
+        </select>
+        <p className="stims-shell__meta-copy">
+          {qualityPreset.description ?? getQualityImpactSummary(qualityPreset)}
+        </p>
+      </section>
 
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
-          <span>Advanced tuning</span>
+          <span>Advanced controls</span>
           <span className="stims-shell__meta-copy">
-            Open this only when you want device-specific controls
+            Open this only if you want manual controls
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
@@ -1017,8 +1066,8 @@ function StageAnchoredToolCallout({
     <div className="stims-shell__sheet-callout">
       <h3>
         {panel === 'editor'
-          ? 'Editor stays on the stage.'
-          : 'Inspector stays on the stage.'}
+          ? 'The editor opens on the stage.'
+          : 'The inspector opens on the stage.'}
       </h3>
     </div>
   );
@@ -1103,7 +1152,11 @@ export function WorkspaceToolSheet({
           onClick={onClose}
         />
       ) : null}
-      <aside className="stims-shell__sheet" aria-label="Tools">
+      <aside
+        className="stims-shell__sheet"
+        data-panel={panel}
+        aria-label="Tools"
+      >
         <div className="stims-shell__sheet-header">
           <div className="stims-shell__sheet-heading">
             <h2>{getToolLabel(panel)}</h2>
@@ -1178,12 +1231,10 @@ export function WorkspaceToolSheet({
 
         <div className="stims-shell__sheet-footer">
           <div className="stims-shell__section-heading">
-            <p className="stims-shell__section-label">
-              Share or bring your own
-            </p>
+            <p className="stims-shell__section-label">Share, save, or import</p>
             <p className="stims-shell__meta-copy">
-              Import and export stay here so the main experience can stay
-              focused.
+              Copy a link, export the current preset, or bring in one of your
+              own.
             </p>
           </div>
           <div className="stims-shell__session-actions">

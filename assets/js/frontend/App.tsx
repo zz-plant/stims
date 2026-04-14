@@ -105,16 +105,16 @@ export function StimsWorkspaceApp() {
     engineSnapshot?.audioSource ?? routeState.audioSource;
   const launchEyebrow =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Browser music visualizer'
+      ? 'MilkDrop-inspired visualizer'
       : 'Loading';
   const launchTitle =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Start instant reactive visuals.'
-      : 'Warming up visuals.';
+      ? 'Start music-reactive visuals in seconds.'
+      : 'Loading the visualizer.';
   const launchSummary =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Press play for demo audio now, then switch to your own music only when you want the visuals to follow live sound.'
-      : 'Getting the visual engine ready.';
+      ? 'Start with demo audio now, then switch to your own music whenever you want the visuals to follow live sound.'
+      : 'Getting everything ready.';
   const stageEyebrow = loadingRequestedPreset
     ? 'Loading preset'
     : liveMode
@@ -134,7 +134,7 @@ export function StimsWorkspaceApp() {
     : selectedPreset
       ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
       : missingRequestedPreset
-        ? 'Start with the recommended look or open the preset library.'
+        ? 'Start with the featured look or open the preset library.'
         : featuredPreset
           ? `${describePresetMood(featuredPreset)} · ${formatPresetSupportLabel(featuredPreset)}`
           : 'Press play with demo audio, or open the preset library first.';
@@ -177,111 +177,73 @@ export function StimsWorkspaceApp() {
       data-has-toast={toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
     >
-      <header className="top-nav stims-shell__nav">
-        <div className="stims-shell__brand">
-          <a href="/" className="stims-shell__logo">
-            <span>Stims</span>
-            <small>Audio-reactive visuals</small>
-          </a>
-        </div>
-        <nav className="stims-shell__nav-actions" aria-label="Main">
-          <button
-            type="button"
-            className="stims-shell__nav-pill"
-            data-active={String(routeState.panel === 'browse')}
-            onClick={() =>
-              updatePanel(routeState.panel === 'browse' ? null : 'browse')
-            }
-          >
-            Library
-          </button>
-          <button
-            type="button"
-            className="stims-shell__nav-pill"
-            data-active={String(routeState.panel === 'settings')}
-            onClick={() =>
-              updatePanel(routeState.panel === 'settings' ? null : 'settings')
-            }
-          >
-            Look
-          </button>
-        </nav>
-        <div className="stims-shell__nav-utility">
-          <a
-            className="stims-shell__nav-link"
-            href="https://github.com/zz-plant/stims"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub
-          </a>
-        </div>
-      </header>
-
-      <main className="stims-shell__content">
-        <WorkspaceStagePanel
-          audioSource={currentAudioSource}
-          backend={engineSnapshot?.backend}
-          engineReady={engineReady}
-          invalidExperienceSlug={routeState.invalidExperienceSlug}
-          isFullscreen={isFullscreen}
-          launchPanel={
-            <WorkspaceLaunchPanel
-              embedded
-              engineReady={engineReady}
-              favoritePresets={favoritePresets}
-              featuredPreset={featuredPreset}
-              launchEyebrow={launchEyebrow}
-              launchSummary={launchSummary}
-              launchTitle={launchTitle}
-              missingRequestedPreset={missingRequestedPreset}
-              onAudioStart={(source) => {
-                void handleAudioStart(source);
-              }}
-              onBrowseRecovery={handleBrowseRecovery}
-              onFeaturedPresetSelection={handleFeaturedPresetSelection}
-              onLoadYouTube={() => {
-                void loadYouTubePreview();
-              }}
-              onPresetSelection={handlePresetSelection}
-              onToggleExtendedSources={toggleExtendedSources}
-              onYoutubeUrlChange={setYoutubeUrl}
-              readinessAlerts={readinessAlerts}
-              requestedPresetId={routeState.presetId}
-              recentPresets={recentPresets}
-              showExtendedSources={showExtendedSources}
-              youtubePreviewRef={youtubePreviewRef}
-              youtubeReady={youtubeReady}
-              youtubeUrl={youtubeUrl}
-            />
-          }
-          liveMode={liveMode}
-          missingRequestedPreset={missingRequestedPreset}
-          onAudioStart={(source) => {
-            void handleAudioStart(source);
-          }}
-          onLoadYouTube={() => {
-            void loadYouTubePreview();
-          }}
-          onOpenBrowse={() => updatePanel('browse')}
-          onOpenSettings={() => updatePanel('settings')}
-          onShowCurrentLink={() => {
-            void handleShowCurrentLink();
-          }}
-          onShufflePreset={handleShufflePreset}
-          onToggleExtendedSources={toggleExtendedSources}
-          onToggleFullscreen={handleToggleFullscreen}
-          onYoutubeUrlChange={setYoutubeUrl}
-          stageEyebrow={stageEyebrow}
-          stageRef={stageRef}
-          stageSummary={stageSummary}
-          stageTitle={stageTitle}
-          showExtendedSources={showExtendedSources}
-          youtubePreviewRef={youtubePreviewRef}
-          youtubeReady={youtubeReady}
-          youtubeUrl={youtubeUrl}
-        />
-      </main>
+      <WorkspaceStagePanel
+        audioSource={currentAudioSource}
+        backend={engineSnapshot?.backend}
+        engineReady={engineReady}
+        invalidExperienceSlug={routeState.invalidExperienceSlug}
+        isFullscreen={isFullscreen}
+        launchPanel={
+          <WorkspaceLaunchPanel
+            embedded
+            engineReady={engineReady}
+            favoritePresets={favoritePresets}
+            featuredPreset={featuredPreset}
+            launchEyebrow={launchEyebrow}
+            launchSummary={launchSummary}
+            launchTitle={launchTitle}
+            missingRequestedPreset={missingRequestedPreset}
+            onAudioStart={(source) => {
+              void handleAudioStart(source);
+            }}
+            onBrowseRecovery={handleBrowseRecovery}
+            onFeaturedPresetSelection={handleFeaturedPresetSelection}
+            onLoadYouTube={() => {
+              void loadYouTubePreview();
+            }}
+            onPresetSelection={handlePresetSelection}
+            onToggleExtendedSources={toggleExtendedSources}
+            onYoutubeUrlChange={setYoutubeUrl}
+            readinessAlerts={readinessAlerts}
+            requestedPresetId={routeState.presetId}
+            recentPresets={recentPresets}
+            showExtendedSources={showExtendedSources}
+            youtubePreviewRef={youtubePreviewRef}
+            youtubeReady={youtubeReady}
+            youtubeUrl={youtubeUrl}
+          />
+        }
+        liveMode={liveMode}
+        missingRequestedPreset={missingRequestedPreset}
+        onAudioStart={(source) => {
+          void handleAudioStart(source);
+        }}
+        onLoadYouTube={() => {
+          void loadYouTubePreview();
+        }}
+        onOpenBrowse={() =>
+          updatePanel(routeState.panel === 'browse' ? null : 'browse')
+        }
+        onOpenSettings={() =>
+          updatePanel(routeState.panel === 'settings' ? null : 'settings')
+        }
+        onShowCurrentLink={() => {
+          void handleShowCurrentLink();
+        }}
+        onShufflePreset={handleShufflePreset}
+        onToggleExtendedSources={toggleExtendedSources}
+        onToggleFullscreen={handleToggleFullscreen}
+        onYoutubeUrlChange={setYoutubeUrl}
+        panel={routeState.panel}
+        stageEyebrow={stageEyebrow}
+        stageRef={stageRef}
+        stageSummary={stageSummary}
+        stageTitle={stageTitle}
+        showExtendedSources={showExtendedSources}
+        youtubePreviewRef={youtubePreviewRef}
+        youtubeReady={youtubeReady}
+        youtubeUrl={youtubeUrl}
+      />
 
       <WorkspaceToolSheet
         catalog={catalog}

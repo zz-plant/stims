@@ -135,7 +135,7 @@ export function buildCapabilityPreflightResult({
 
   if (performanceProfile.lowPower) {
     warnings.push(
-      'Performance mode recommended for smoother visuals on this device.',
+      'A lighter visual mode is recommended for smoother playback on this device.',
     );
   }
 

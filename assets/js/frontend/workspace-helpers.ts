@@ -92,13 +92,13 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 export function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Start with guided picks, then open the full library.';
+      return 'Start with a few strong picks, then browse the full library.';
     case 'editor':
       return 'Edit the active preset.';
     case 'inspector':
       return 'Inspect the active preset.';
     case 'settings':
-      return 'Pick a look first, then fine-tune only if needed.';
+      return 'Pick a look first, then fine-tune only if you want more control.';
   }
 }
 
@@ -246,18 +246,18 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
     entry.expectedFidelityClass === 'exact' ||
     entry.expectedFidelityClass === 'near-exact'
   ) {
-    return 'Reference match';
+    return 'Closest to original';
   }
   if (
     entry.expectedFidelityClass === 'partial' ||
     entry.expectedFidelityClass === 'fallback'
   ) {
-    return 'Performance tuned';
+    return 'Smooth on more devices';
   }
   if (entry.supports?.webgpu) {
-    return 'High-detail ready';
+    return 'Extra detail ready';
   }
-  return 'Performance mode';
+  return 'Smooth playback';
 }
 
 export function formatPresetSupportNote(entry: PresetCatalogEntry) {
@@ -265,23 +265,23 @@ export function formatPresetSupportNote(entry: PresetCatalogEntry) {
     entry.expectedFidelityClass === 'exact' ||
     entry.expectedFidelityClass === 'near-exact'
   ) {
-    return 'Closest to the original look on capable hardware.';
+    return 'Best match for the original look on capable hardware.';
   }
   if (
     entry.expectedFidelityClass === 'partial' ||
     entry.expectedFidelityClass === 'fallback'
   ) {
-    return 'Optimized to stay expressive across more browsers.';
+    return 'Adjusted to run well across more browsers and devices.';
   }
   if (entry.supports?.webgpu) {
-    return 'Pushes extra detail when newer GPU features are available.';
+    return 'Adds extra detail when newer GPU features are available.';
   }
-  return 'Leans toward smoother playback on lighter hardware.';
+  return 'Prioritizes smooth playback on lighter hardware.';
 }
 
 export function getPresetCardSupportLabel(entry: PresetCatalogEntry) {
   const label = formatPresetSupportLabel(entry);
-  return label === 'Performance tuned' ? null : label;
+  return label === 'Smooth on more devices' ? null : label;
 }
 
 export function mapRuntimeCatalogEntry(
