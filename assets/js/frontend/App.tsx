@@ -6,6 +6,11 @@ import {
   setRenderPreferences,
 } from '../core/state/render-preference-store.ts';
 import {
+  getFullscreenElement,
+  subscribeToFullscreenChange,
+  toggleElementFullscreen,
+} from './fullscreen.ts';
+import {
   describePresetMood,
   formatPresetSupportLabel,
 } from './workspace-helpers.ts';
@@ -141,14 +146,11 @@ export function StimsWorkspaceApp() {
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
+      setIsFullscreen(Boolean(getFullscreenElement(document)));
     };
 
     handleFullscreenChange();
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    return subscribeToFullscreenChange(handleFullscreenChange, document);
   }, []);
 
   const handleToggleFullscreen = () => {
@@ -159,12 +161,10 @@ export function StimsWorkspaceApp() {
 
     void (async () => {
       try {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen();
-          return;
+        const toggled = await toggleElementFullscreen(stageElement, document);
+        if (!toggled) {
+          setStatusMessage('Full screen is unavailable in this browser.');
         }
-
-        await stageElement.requestFullscreen();
       } catch (_error) {
         setStatusMessage('Full screen is unavailable in this browser.');
       }
