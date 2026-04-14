@@ -98,6 +98,9 @@ export function buildCustomWaves({
   createEnv: (
     signals: MilkdropRuntimeSignals,
     extra?: Record<string, number>,
+    options?: {
+      reuseExtraAsEnv?: boolean;
+    },
   ) => MutableState;
   seedCustomWaveState: (wave: MilkdropWaveDefinition) => MutableState;
   getProceduralCustomWaveDescriptor: (
@@ -155,6 +158,7 @@ export function buildCustomWaves({
       ? new Array<number>(sampleCount)
       : null;
     const pointLocals: MutableState = { ...frameLocals };
+    const pointEnv = useProcedural ? null : createEnv(signals, pointLocals);
     const channelSample: CustomWaveChannelSample = {
       sample: 0,
       value: 0,
@@ -206,11 +210,10 @@ export function buildCustomWaves({
         pointLocals.x * pointLocals.x + pointLocals.y * pointLocals.y,
       );
       pointLocals.ang = Math.atan2(pointLocals.y, pointLocals.x);
-      runProgram(
-        wave.programs.perPoint,
-        createEnv(signals, pointLocals),
-        pointLocals,
-      );
+      if (pointEnv) {
+        Object.assign(pointEnv, pointLocals);
+        runProgram(wave.programs.perPoint, pointEnv, pointLocals);
+      }
       const writeIndex = point * 3;
       positions[writeIndex] = pointLocals.x;
       positions[writeIndex + 1] = pointLocals.y;

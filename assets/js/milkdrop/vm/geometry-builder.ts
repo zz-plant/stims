@@ -192,6 +192,9 @@ function transformMeshPoint({
   createEnv: (
     signals: MilkdropRuntimeSignals,
     extra?: Record<string, number>,
+    options?: {
+      reuseExtraAsEnv?: boolean;
+    },
   ) => MutableState;
 }) {
   const cacheKey = getTransformCacheKey(gridX, gridY);
@@ -216,7 +219,11 @@ function transformMeshPoint({
     dx: state.dx ?? 0,
     dy: state.dy ?? 0,
   };
-  runProgram(preset.ir.programs.perPixel, createEnv(signals, local), local);
+  runProgram(
+    preset.ir.programs.perPixel,
+    createEnv(signals, local, { reuseExtraAsEnv: true }),
+    local,
+  );
 
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
   const angle = local.ang + local.rot;
@@ -360,6 +367,9 @@ export function buildMeshField({
   createEnv: (
     signals: MilkdropRuntimeSignals,
     extra?: Record<string, number>,
+    options?: {
+      reuseExtraAsEnv?: boolean;
+    },
   ) => MutableState;
   proceduralMeshPlan: MilkdropProceduralMeshDescriptorPlan | null;
 }): MeshField {
@@ -615,6 +625,9 @@ export function buildMotionVectors({
   createEnv: (
     signals: MilkdropRuntimeSignals,
     extra?: Record<string, number>,
+    options?: {
+      reuseExtraAsEnv?: boolean;
+    },
   ) => MutableState;
   proceduralMotionVectorPlan: MilkdropProceduralMotionVectorDescriptorPlan | null;
 }): MilkdropMotionVectorVisual[] {

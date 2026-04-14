@@ -42,6 +42,12 @@ import {
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
 
+const objectHasOwn = (
+  Object as ObjectConstructor & {
+    hasOwn(object: object, property: PropertyKey): boolean;
+  }
+).hasOwn;
+
 class MilkdropPresetVM implements MilkdropVM {
   private preset: MilkdropCompiledPreset;
   private state: MutableState = {};
@@ -353,8 +359,15 @@ class MilkdropPresetVM implements MilkdropVM {
   private createEnv(
     signals: MilkdropRuntimeSignals,
     extra: Record<string, number> = {},
+    options: {
+      reuseExtraAsEnv?: boolean;
+    } = {},
   ) {
     this.prepareSignalEnv(signals);
+    if (options.reuseExtraAsEnv) {
+      Object.setPrototypeOf(extra, this.signalEnv);
+      return extra as MutableState;
+    }
     const env = Object.create(this.signalEnv) as MutableState;
     Object.assign(env, extra);
     return env;
@@ -383,7 +396,7 @@ class MilkdropPresetVM implements MilkdropVM {
       this.registers[target.toLowerCase()] = value;
       return;
     }
-    if (locals && target in locals) {
+    if (locals && objectHasOwn(locals, target)) {
       locals[target] = value;
       return;
     }
