@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import {
   buildCanonicalUrl,
+  buildSessionRouteSearch,
   normalizeCollectionTag,
+  parsePlainSearch,
   readSessionRouteState,
+  stringifyPlainSearch,
 } from '../assets/js/frontend/url-state.ts';
 
 describe('frontend url state', () => {
@@ -82,5 +85,28 @@ describe('frontend url state', () => {
       'collection:classic-milkdrop',
     );
     expect(normalizeCollectionTag('   ')).toBeNull();
+  });
+
+  test('parses and rewrites plain search params without json encoding', () => {
+    expect(parsePlainSearch('?landing=1&agent=true')).toEqual({
+      landing: '1',
+      agent: 'true',
+    });
+
+    expect(
+      stringifyPlainSearch(
+        buildSessionRouteSearch(
+          {
+            presetId: 'signal-bloom',
+            collectionTag: null,
+            panel: null,
+            audioSource: null,
+            agentMode: true,
+            invalidExperienceSlug: null,
+          },
+          parsePlainSearch('?landing=1&experience=milkdrop'),
+        ),
+      ),
+    ).toBe('?landing=1&preset=signal-bloom&agent=true');
   });
 });
