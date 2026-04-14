@@ -1,6 +1,6 @@
 ---
 name: modify-visualizer-runtime
-description: "Modify the flagship visualizer runtime safely. Use when changing the shared runtime, loader, renderer, shell, controls, audio flows, capability checks, or routing around toy.html."
+description: "Modify the flagship visualizer runtime safely. Use when changing the shared runtime, loader, renderer, shell, controls, audio flows, capability checks, or canonical-route behavior."
 ---
 
 # Modify the visualizer runtime
@@ -17,7 +17,7 @@ Use this skill when the request changes how the main visualizer product behaves,
 ## Focus areas
 
 - shared runtime and lifecycle under `assets/js/core/`
-- loader, route, and launch behavior around `toy.html`
+- loader, route, and launch behavior around the canonical workspace entry
 - renderer selection, performance controls, and capability/preflight flows
 - audio startup, shell controls, and app-level interaction behavior
 
@@ -54,7 +54,7 @@ bun run dev
 Open:
 
 ```text
-http://localhost:5173/toy.html?agent=true
+http://localhost:5173/?agent=true
 ```
 
 Confirm the shell loads, audio entry still works, presets can start, and cleanup/navigation remain stable.

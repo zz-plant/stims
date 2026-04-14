@@ -1,6 +1,6 @@
 ---
 name: play-visualizer
-description: "Launch and inspect the flagship visualizer in a real browser. Use when reproducing runtime behavior manually, checking audio-reactive playback, or capturing visual evidence from toy.html."
+description: "Launch and inspect the flagship visualizer in a real browser. Use when reproducing runtime behavior manually, checking audio-reactive playback, or capturing visual evidence from the canonical workspace route."
 ---
 
 # Play the visualizer locally
@@ -26,7 +26,7 @@ bun run dev
 Open:
 
 ```text
-http://localhost:5173/toy.html?agent=true
+http://localhost:5173/?agent=true
 ```
 
 ## What to verify

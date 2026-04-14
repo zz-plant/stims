@@ -15,10 +15,23 @@ You're about to code on Stims. Before you dive into docs, grab these three thing
    - `bun run test tests/path/to/file.test.ts` — Test a specific file
    - `bun run check` — Full quality gate before committing
 
+## Task routing
+
+Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md) when the task maps to a repeatable workflow. Fast path:
+
+| If the task is mainly about... | Start here |
+| --- | --- |
+| shared runtime, loader, renderer, shell, controls, audio, or routing | [`.agent/skills/modify-visualizer-runtime/SKILL.md`](./.agent/skills/modify-visualizer-runtime/SKILL.md) |
+| bundled presets, catalog/editor behavior, import/export, or compatibility | [`.agent/skills/modify-preset-workflow/SKILL.md`](./.agent/skills/modify-preset-workflow/SKILL.md) |
+| browser QA or visual confirmation | [`.agent/skills/play-visualizer/SKILL.md`](./.agent/skills/play-visualizer/SKILL.md) and [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) |
+| quick implementation-time verification | [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) |
+| end-to-end product-facing change that should go to PR-ready | [`.agent/skills/ship-visualizer-change/SKILL.md`](./.agent/skills/ship-visualizer-change/SKILL.md) |
+
 ## Essentials
 
 - **Package manager:** Bun (use `bun install` for dependency updates, reserve `bun install --frozen-lockfile` for reproducible/CI installs, and run scripts with `bun run ...`).
 - **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing.
+- **Done criteria by change type:** JS/TS changes need `bun run check`; runtime, preset, audio, shell, or routing changes also need browser verification on `http://localhost:5173/?agent=true`; docs-only edits can skip typecheck/tests unless commands, paths, or workflow-critical instructions changed.
 - **Cloudflare Pages deploy default:** GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) own preview and production deploys; keep local `pages:deploy:*` scripts as the manual fallback.
 - **Commit metadata:** use sentence case commit titles with no trailing period.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
@@ -26,7 +39,7 @@ You're about to code on Stims. Before you dive into docs, grab these three thing
 ## Recommended execution order
 
 1. **Understand the task**: Open [`docs/agents/README.md`](./docs/agents/README.md) for progressive-disclosure guidance.
-2. **Plan and implement**: Use [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md) before editing code.
+2. **Plan and route**: Use [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md) when the task maps to a repo-local skill/workflow, then use [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md) before editing code.
 3. **Verify during dev**: Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) after each change to validate quickly.
 4. **Test visually**: Use [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) when you need browser-based verification.
 5. **Finalize**: Use [`docs/agents/metadata-and-docs.md`](./docs/agents/metadata-and-docs.md) before commit/PR text.
@@ -37,3 +50,4 @@ You're about to code on Stims. Before you dive into docs, grab these three thing
 ## Alignment requirements
 
 - Keep links and workflow docs aligned according to [`docs/DOCS_MAINTENANCE.md`](./docs/DOCS_MAINTENANCE.md).
+- If `.agent/skills/*` or `.agent/workflows/*` changes, update [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md) and any route/command docs that mention the changed capability in the same change.

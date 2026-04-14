@@ -55,7 +55,7 @@ bun run dev
 Open:
 
 ```text
-http://localhost:5173/toy.html?agent=true
+http://localhost:5173/?agent=true
 ```
 
 Confirm preset selection, playback, editor feedback, and any changed import/export flow behave as intended.

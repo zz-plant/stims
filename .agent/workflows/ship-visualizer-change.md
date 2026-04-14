@@ -33,7 +33,7 @@ bun run check
 bun run dev
 ```
 
-Inspect `http://localhost:5173/toy.html?agent=true` when runtime, preset, audio, or shell behavior changed.
+Inspect `http://localhost:5173/?agent=true` when runtime, preset, audio, or shell behavior changed.
 
 ## 5. Finalize
 

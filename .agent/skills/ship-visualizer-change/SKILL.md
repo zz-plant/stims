@@ -36,7 +36,7 @@ Add browser verification when runtime, preset, or shell behavior changed:
 bun run dev
 ```
 
-Then inspect `http://localhost:5173/toy.html?agent=true`.
+Then inspect `http://localhost:5173/?agent=true`.
 
 ## Finalize
 
