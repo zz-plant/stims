@@ -1,3 +1,4 @@
+import { useRouter } from '@tanstack/react-router';
 import {
   type Dispatch,
   type SetStateAction,
@@ -38,7 +39,11 @@ import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
-import { readSessionRouteState, replaceCanonicalUrl } from './url-state.ts';
+import {
+  buildSessionRouteSearch,
+  readSessionRouteState,
+  readSessionRouteStateFromSearch,
+} from './url-state.ts';
 import {
   buildLaunchIntent,
   mapRuntimeCatalogEntry,
@@ -77,26 +82,46 @@ function syncStageCanvasStyle(stage: HTMLDivElement | null) {
 }
 
 export function useWorkspaceRouteState() {
+  const router = useRouter();
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
-    readSessionRouteState(),
+    readSessionRouteStateFromSearch(router.state.location.search),
   );
 
   useEffect(() => {
-    replaceCanonicalUrl(routeState);
-  }, [routeState]);
+    const nextSearch = buildSessionRouteSearch(
+      routeState,
+      router.state.location.search,
+    );
+    // The router validates these raw query params back into SessionRouteState.
+    const nextSearchInput = nextSearch as never;
+    const nextLocation = router.buildLocation({
+      to: '/',
+      hash: router.state.location.hash,
+      search: nextSearchInput,
+    });
+    if (nextLocation.href === router.state.location.href) {
+      return;
+    }
+
+    void router.navigate({
+      to: '/',
+      hash: router.state.location.hash,
+      replace: true,
+      search: nextSearchInput,
+    });
+  }, [routeState, router]);
 
   useEffect(() => {
-    const handlePopstate = () => {
+    const unsubscribe = router.history.subscribe(({ location }) => {
       startTransition(() => {
-        setRouteState(readSessionRouteState());
+        setRouteState(readSessionRouteState(location.href));
       });
-    };
+    });
 
-    window.addEventListener('popstate', handlePopstate);
     return () => {
-      window.removeEventListener('popstate', handlePopstate);
+      unsubscribe();
     };
-  }, []);
+  }, [router]);
 
   const commitRoute = (nextState: SessionRouteState) => {
     setRouteState(nextState);

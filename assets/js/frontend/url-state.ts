@@ -16,6 +16,15 @@ const VALID_AUDIO_SOURCES = new Set<AudioSource>([
   'tab',
   'youtube',
 ]);
+const SESSION_ROUTE_SEARCH_KEYS = [
+  'experience',
+  'panel',
+  'tool',
+  'preset',
+  'collection',
+  'audio',
+  'agent',
+] as const;
 
 function readSearchValue(value: unknown) {
   if (typeof value === 'string') {
@@ -117,6 +126,80 @@ export function readSessionRouteStateFromSearch(
   };
 }
 
+export function parsePlainSearch(searchStr: string) {
+  const params = new URLSearchParams(
+    searchStr.startsWith('?') ? searchStr.slice(1) : searchStr,
+  );
+  const search: Record<string, unknown> = {};
+
+  for (const [key, value] of params) {
+    const previousValue = search[key];
+    if (typeof previousValue === 'undefined') {
+      search[key] = value;
+      continue;
+    }
+
+    search[key] = Array.isArray(previousValue)
+      ? [...previousValue, value]
+      : [previousValue, value];
+  }
+
+  return search;
+}
+
+export function stringifyPlainSearch(search: Record<string, unknown>) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(search)) {
+    if (value == null) {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((entry) => {
+        if (entry != null) {
+          params.append(key, String(entry));
+        }
+      });
+      continue;
+    }
+
+    params.set(key, String(value));
+  }
+
+  const serializedSearch = params.toString();
+  return serializedSearch ? `?${serializedSearch}` : '';
+}
+
+export function buildSessionRouteSearch(
+  state: SessionRouteState,
+  search: Record<string, unknown>,
+) {
+  const nextSearch = { ...search };
+
+  SESSION_ROUTE_SEARCH_KEYS.forEach((key) => {
+    delete nextSearch[key];
+  });
+
+  if (state.presetId) {
+    nextSearch.preset = state.presetId;
+  }
+  if (state.collectionTag) {
+    nextSearch.collection = state.collectionTag;
+  }
+  if (state.panel) {
+    nextSearch.tool = state.panel;
+  }
+  if (state.audioSource) {
+    nextSearch.audio = state.audioSource;
+  }
+  if (state.agentMode) {
+    nextSearch.agent = 'true';
+  }
+
+  return nextSearch;
+}
+
 export function readSessionRouteState(
   input: string | URL | Location | undefined = typeof window !== 'undefined'
     ? window.location
@@ -129,15 +212,7 @@ export function readSessionRouteState(
         ? input
         : new URL(input?.href ?? 'https://toil.fyi/');
 
-  return readSessionRouteStateFromSearch({
-    preset: url.searchParams.get('preset'),
-    collection: url.searchParams.get('collection'),
-    tool: url.searchParams.get('tool'),
-    panel: url.searchParams.get('panel'),
-    audio: url.searchParams.get('audio'),
-    agent: url.searchParams.get('agent'),
-    experience: url.searchParams.get('experience'),
-  });
+  return readSessionRouteStateFromSearch(parsePlainSearch(url.search));
 }
 
 export function buildCanonicalUrl(
@@ -153,50 +228,9 @@ export function buildCanonicalUrl(
         ? new URL(input.toString())
         : new URL(input?.href ?? 'https://toil.fyi/');
 
-  const params = new URLSearchParams(url.search);
-  [
-    'experience',
-    'panel',
-    'tool',
-    'preset',
-    'collection',
-    'audio',
-    'agent',
-  ].forEach((key) => {
-    params.delete(key);
-  });
-
-  if (state.presetId) {
-    params.set('preset', state.presetId);
-  }
-  if (state.collectionTag) {
-    params.set('collection', state.collectionTag);
-  }
-  if (state.panel) {
-    params.set('tool', state.panel);
-  }
-  if (state.audioSource) {
-    params.set('audio', state.audioSource);
-  }
-  if (state.agentMode) {
-    params.set('agent', 'true');
-  }
-
   url.pathname = '/';
-  url.search = params.toString();
+  url.search = stringifyPlainSearch(
+    buildSessionRouteSearch(state, parsePlainSearch(url.search)),
+  );
   return url;
-}
-
-export function replaceCanonicalUrl(state: SessionRouteState) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const nextUrl = buildCanonicalUrl(state, window.location);
-  const currentUrl = new URL(window.location.href);
-  if (nextUrl.toString() === currentUrl.toString()) {
-    return;
-  }
-
-  window.history.replaceState({}, '', nextUrl);
 }

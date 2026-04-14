@@ -6,6 +6,11 @@ import {
   RouterProvider,
 } from '@tanstack/react-router';
 import { StimsWorkspaceApp } from './App.tsx';
+import {
+  parsePlainSearch,
+  readSessionRouteStateFromSearch,
+  stringifyPlainSearch,
+} from './url-state.ts';
 
 function createWorkspaceHistory() {
   if (typeof window === 'undefined') {
@@ -26,12 +31,15 @@ function createWorkspaceHistory() {
 }
 
 const rootRoute = createRootRoute({
+  validateSearch: readSessionRouteStateFromSearch,
   component: StimsWorkspaceApp,
 });
 
 export const workspaceRouter = createRouter({
   routeTree: rootRoute,
   history: createWorkspaceHistory(),
+  parseSearch: parsePlainSearch,
+  stringifySearch: stringifyPlainSearch,
 });
 
 declare module '@tanstack/react-router' {
