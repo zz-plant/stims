@@ -650,20 +650,20 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
                 },
                 syncAlphaMultiplier,
               ),
-              syncShapeOutline: (
+            syncShapeOutline: (
+              object,
+              nextShape,
+              syncAlphaMultiplier,
+              opacity,
+            ) =>
+              syncShapeOutlineHelper(
                 object,
                 nextShape,
-                syncAlphaMultiplier,
-                opacity,
-              ) =>
-                syncShapeOutlineHelper(
-                  object,
-                  nextShape,
-                  this.behavior,
-                  {
-                    getUnitPolygonOutlineGeometry,
-                    getUnitPolygonClosedLineGeometry,
-                    setMaterialColor,
+                this.behavior,
+                {
+                  getUnitPolygonOutlineGeometry,
+                  getUnitPolygonClosedLineGeometry,
+                  setMaterialColor,
                 },
                 syncAlphaMultiplier,
                 opacity,

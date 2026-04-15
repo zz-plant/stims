@@ -43,40 +43,44 @@ describe('Workspace shell UI simplification regression', () => {
     );
 
     expect(helperSource).toContain(
-      'Start with a few strong picks, then browse the full library.',
+      'Start with a few strong picks, then roam the full list.',
     );
     expect(helperSource).toContain(
-      'Pick a look first, then fine-tune only if you want more control.',
+      'Pick a feel first, then fine-tune only if you want more control.',
     );
     expect(appSource).toContain(
-      "'Start with demo audio now, then switch to your own music whenever you want the visuals to follow live sound.'",
+      "'Start with demo audio now, then switch to your own music whenever you want the motion to track live sound.'",
     );
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain(": 'Loading';");
     expect(appSource).toContain(": 'Loading the visualizer.';");
     expect(appSource).toContain("? 'Demo is playing'");
     expect(appSource).toContain(
-      ": 'Press play with demo audio, or open the preset library first.';",
+      ": 'Press play with demo audio, or open the full list first.';",
     );
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
-    expect(uiSource).toContain('Featured preset');
+    expect(uiSource).toContain('Launch deck');
+    expect(uiSource).toContain('Single-route workspace');
+    expect(uiSource).toContain('className="stims-shell__rail-actions"');
+    expect(uiSource).toContain('className="stims-shell__stage-dock"');
+    expect(uiSource).toContain('Featured pick');
     expect(uiSource).toMatch(/>\s*Shuffle\s*</u);
-    expect(uiSource).toContain('Pick a look and press play.');
+    expect(uiSource).toContain('Pick something and press play.');
     expect(uiSource).toContain('Four easy ways to get started.');
-    expect(uiSource).toContain('Full library');
+    expect(uiSource).toContain('Everything');
     expect(uiSource).toContain('className="stims-shell__frame-chrome"');
     expect(uiSource).toContain('className="stims-shell__frame-header"');
     expect(uiSource).toContain('className="stims-shell__corner-link"');
-    expect(uiSource).toContain('Presets</span>');
+    expect(uiSource).toMatch(/>\s*Browse\s*</u);
     expect(uiSource).toContain('Look</span>');
-    expect(uiSource).toContain('Or pick a specific visual profile');
-    expect(uiSource).toContain('Keep visuals steadier on tricky hardware');
+    expect(uiSource).toContain('Or pick an exact render profile');
+    expect(uiSource).toContain('Keep things steadier on tricky hardware');
     expect(uiSource).toContain('Use motion controls on supported devices');
     expect(uiSource).toContain('Advanced controls');
     expect(uiSource).toContain('Fast start');
     expect(uiSource).toContain('Tuned feel');
     expect(uiSource).toContain(
-      'Desktop-first visuals with lighter fallback when needed.',
+      'Desktop-first rendering with a lighter fallback when needed.',
     );
     expect(uiSource).toContain('Start with demo audio first.');
     expect(uiSource).toContain(
@@ -93,7 +97,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).toContain('Switch to your music');
     expect(uiSource).toContain('Demo audio is running.');
     expect(uiSource).toMatch(
-      /YouTube link when you want the visuals to\s+follow your own sound\./u,
+      /YouTube link when you want the canvas to\s+follow your own sound\./u,
     );
     expect(uiSource).toContain('Copy link');
     expect(uiSource).toContain('The editor opens on the stage.');
