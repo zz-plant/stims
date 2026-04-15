@@ -126,6 +126,8 @@ export function createMilkdropEngineAdapter() {
         },
         initialPresetId: intent.presetId ?? undefined,
         showOverlayToggle: false,
+        enableOverlay: !intent.previewMode,
+        previewMode: Boolean(intent.previewMode),
       });
 
       unsubscribeExperience = experience.subscribe(() => {

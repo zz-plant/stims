@@ -13,12 +13,15 @@ import {
   setQualityPresetById,
 } from '../core/settings-panel.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
+import { createRendererQualityManager } from '../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
+import { createToyRuntimeStarter } from '../core/toy-runtime-starter.ts';
 import { createMilkdropCatalogStore } from './catalog-store';
 import { compileMilkdropPresetSource } from './compiler';
 import { createMilkdropEditorSession } from './editor-session';
 import { MilkdropOverlay } from './overlay';
 import { consumeRequestedMilkdropOverlayTab } from './overlay-intent';
+import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
 import type { MilkdropRendererAdapter } from './renderer-types';
 import { createMilkdropBackendFailover } from './runtime/backend-fallback';
 import { createMilkdropCapturedVideoOverlay } from './runtime/captured-video-overlay.ts';
@@ -37,6 +40,7 @@ import { createMilkdropPresentationController } from './runtime/presentation-con
 import { createMilkdropPresetFileActions } from './runtime/preset-file-actions';
 import { createMilkdropPresetNavigationController } from './runtime/preset-navigation-controller';
 import { resolvePresetPerformanceOverride } from './runtime/preset-performance-overrides';
+import { createMilkdropPresetPreviewService } from './runtime/preset-preview-service.ts';
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState } from './runtime/session';
@@ -69,6 +73,8 @@ export function createMilkdropExperience({
   qualityControl,
   initialPresetId,
   showOverlayToggle = true,
+  enableOverlay = true,
+  previewMode = false,
 }: {
   container?: HTMLElement | null;
   quality: QualityPresetManager;
@@ -78,6 +84,8 @@ export function createMilkdropExperience({
   };
   initialPresetId?: string;
   showOverlayToggle?: boolean;
+  enableOverlay?: boolean;
+  previewMode?: boolean;
 }) {
   type MilkdropExperienceSnapshot = {
     activePresetId: string | null;
@@ -285,6 +293,10 @@ export function createMilkdropExperience({
     subscribe,
     dispose: disposeRuntimeSignalHub,
   } = runtimeSignalHub;
+  let previewCaptureRevision = 0;
+  let previewService: ReturnType<
+    typeof createMilkdropPresetPreviewService
+  > | null = null;
 
   const setOverlayStatus = (message: string) => {
     lastStatusMessage = message;
@@ -309,10 +321,10 @@ export function createMilkdropExperience({
   const catalogCoordinator = createMilkdropCatalogCoordinator({
     catalogStore,
     onCatalogChanged(entries, nextActivePresetId, nextActiveBackend) {
-      if (!lifetime.isActive() || !overlay) {
+      if (!lifetime.isActive()) {
         return;
       }
-      overlay.setCatalog(entries, nextActivePresetId, nextActiveBackend);
+      overlay?.setCatalog(entries, nextActivePresetId, nextActiveBackend);
       emitChange();
     },
   });
@@ -344,6 +356,114 @@ export function createMilkdropExperience({
     });
   };
 
+  const waitForPreviewFrameBudget = (durationMs: number) =>
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, durationMs);
+    });
+
+  const capturePresetPreview = async (
+    presetId: string,
+  ): Promise<Omit<MilkdropPresetRenderPreview, 'presetId' | 'status'>> => {
+    if (typeof document === 'undefined') {
+      throw new Error('Runtime preview capture requires a browser document.');
+    }
+
+    previewCaptureRevision += 1;
+    const revision = previewCaptureRevision;
+    const previewHost = document.createElement('div');
+    previewHost.className = 'milkdrop-overlay__preview-capture-host';
+    previewHost.setAttribute('aria-hidden', 'true');
+    const previewCanvas = document.createElement('canvas');
+    previewCanvas.width = 360;
+    previewCanvas.height = 203;
+    previewCanvas.className = 'milkdrop-overlay__preview-capture-canvas';
+    previewHost.appendChild(previewCanvas);
+    document.body.appendChild(previewHost);
+
+    let previewRuntime: ToyRuntimeInstance | null = null;
+    let previewDisposed = false;
+    const previewQuality = createRendererQualityManager({
+      presets: qualityControl.presets,
+      defaultPresetId: quality.activeQuality.id,
+      storageKey: qualityControl.storageKey,
+      getRuntime: () => previewRuntime,
+    });
+    const previewExperience = createMilkdropExperience({
+      container: previewHost,
+      quality: previewQuality,
+      qualityControl,
+      initialPresetId: presetId,
+      showOverlayToggle: false,
+      enableOverlay: false,
+      previewMode: true,
+    });
+    const startPreviewRuntime = createToyRuntimeStarter({
+      toyOptions: {
+        cameraOptions: { position: { x: 0, y: 0, z: 5 } },
+        rendererOptions: { antialias: false },
+      },
+      audio: {
+        fftSize: 512,
+      },
+      plugins: [
+        {
+          name: 'milkdrop-preview-capture',
+          setup: (runtimeInstance) => {
+            previewRuntime = runtimeInstance;
+            previewExperience.attachRuntime(runtimeInstance);
+          },
+          update: (frame) => {
+            previewExperience.update(frame);
+          },
+          dispose: () => {
+            previewExperience.dispose();
+          },
+        },
+      ],
+    });
+
+    const disposePreview = () => {
+      if (previewDisposed) {
+        return;
+      }
+      previewDisposed = true;
+      previewRuntime?.dispose();
+      previewRuntime = null;
+      previewHost.remove();
+    };
+
+    try {
+      previewRuntime = startPreviewRuntime({ container: previewHost });
+      await previewExperience.selectPreset(presetId, {
+        recordHistory: false,
+      });
+      await waitForPreviewFrameBudget(750);
+
+      if (revision !== previewCaptureRevision) {
+        throw new Error('Preview capture was superseded by a newer request.');
+      }
+
+      const backend = previewExperience.getStateSnapshot().backend;
+      const canvas =
+        previewHost.querySelector('canvas') ??
+        previewRuntime?.toy.canvas ??
+        null;
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        throw new Error('Preview canvas was not available.');
+      }
+
+      return {
+        imageUrl: canvas.toDataURL('image/webp', 0.82),
+        actualBackend: backend,
+        updatedAt: Date.now(),
+        error: null,
+        source: 'runtime-snapshot',
+      };
+    } finally {
+      disposePreview();
+    }
+  };
+
   const navigation = createMilkdropPresetNavigationController({
     catalogStore,
     catalogCoordinator,
@@ -359,7 +479,9 @@ export function createMilkdropExperience({
     shouldFallbackToWebgl,
     triggerWebglFallback,
     rememberLastPreset: (id) => {
-      preferences.rememberLastPreset(id);
+      if (!previewMode) {
+        preferences.rememberLastPreset(id);
+      }
     },
     preparePresetTransition(nextBlendState) {
       blendState = nextBlendState;
@@ -388,12 +510,18 @@ export function createMilkdropExperience({
   });
 
   const interactionPresenter = createMilkdropRuntimeInteractionPresenter({
-    overlay: {
-      isOpen: () => getOverlay().isOpen(),
-      toggleOpen: (open?: boolean) => getOverlay().toggleOpen(open),
-      toggleShortcutHud: (open?: boolean) =>
-        getOverlay().toggleShortcutHud(open),
-    },
+    overlay: enableOverlay
+      ? {
+          isOpen: () => getOverlay().isOpen(),
+          toggleOpen: (open?: boolean) => getOverlay().toggleOpen(open),
+          toggleShortcutHud: (open?: boolean) =>
+            getOverlay().toggleShortcutHud(open),
+        }
+      : {
+          isOpen: () => false,
+          toggleOpen: () => {},
+          toggleShortcutHud: () => {},
+        },
     overlayActions: {
       onSelectPreset: navigation.selectPreset,
       onSelectQualityPreset: (presetId) => {
@@ -411,6 +539,12 @@ export function createMilkdropExperience({
       },
       onSetRating: async (id, rating) => {
         await catalogActions.setRating(id, rating);
+      },
+      onRequestPresetPreviews: (presetIds) => {
+        previewService?.requestPreviews(presetIds);
+      },
+      onRefreshPresetPreviews: (presetIds) => {
+        previewService?.refreshPreviews(presetIds);
       },
       onToggleAutoplay: (enabled) => {
         autoplay = enabled;
@@ -465,22 +599,35 @@ export function createMilkdropExperience({
     },
   });
 
-  overlay = new MilkdropOverlay({
-    host: container ?? document.body,
-    callbacks: interactionPresenter.overlayCallbacks,
-    showToggle: showOverlayToggle,
-  });
+  if (!previewMode) {
+    previewService = createMilkdropPresetPreviewService({
+      capturePreview: capturePresetPreview,
+      onPreviewChanged: (preview) => {
+        overlay?.setPresetPreview(preview);
+      },
+    });
+  }
 
-  overlay.setAutoplay(autoplay);
-  overlay.setBlendDuration(blendDuration);
-  overlay.setTransitionMode(transitionMode);
-  overlay.setQualityPresets({
-    presets: qualityControl.presets,
-    activePresetId: quality.activeQuality.id,
-    storageKey: qualityControl.storageKey,
-  });
-  overlay.setSessionState(session.getState());
-  const fallbackNotice = preferences.consumeFallbackNotice();
+  if (enableOverlay) {
+    overlay = new MilkdropOverlay({
+      host: container ?? document.body,
+      callbacks: interactionPresenter.overlayCallbacks,
+      showToggle: showOverlayToggle,
+    });
+
+    overlay.setAutoplay(autoplay);
+    overlay.setBlendDuration(blendDuration);
+    overlay.setTransitionMode(transitionMode);
+    overlay.setQualityPresets({
+      presets: qualityControl.presets,
+      activePresetId: quality.activeQuality.id,
+      storageKey: qualityControl.storageKey,
+    });
+    overlay.setSessionState(session.getState());
+  }
+  const fallbackNotice = !previewMode
+    ? preferences.consumeFallbackNotice()
+    : null;
   if (fallbackNotice) {
     setOverlayStatus(fallbackNotice);
   }
@@ -582,10 +729,10 @@ export function createMilkdropExperience({
   });
 
   disposeSessionSubscription = session.subscribe((state) => {
-    if (!lifetime.isActive() || !overlay) {
+    if (!lifetime.isActive()) {
       return;
     }
-    overlay.setSessionState(state);
+    overlay?.setSessionState(state);
     const nextCompiled = state.activeCompiled;
     if (!nextCompiled) {
       return;
@@ -609,26 +756,28 @@ export function createMilkdropExperience({
     emitChange();
   });
 
-  disposeRequestedPresetListener = installRequestedPresetListener(
-    (presetId) => {
-      void navigation.selectPreset(presetId);
-    },
-  );
-  disposeRequestedOverlayTabListener = installRequestedOverlayTabListener(
-    (tab) => {
-      overlay?.openTab(tab);
-    },
-  );
-  const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
-  if (requestedOverlayTab) {
-    overlay?.openTab(requestedOverlayTab);
+  if (!previewMode) {
+    disposeRequestedPresetListener = installRequestedPresetListener(
+      (presetId) => {
+        void navigation.selectPreset(presetId);
+      },
+    );
+    disposeRequestedOverlayTabListener = installRequestedOverlayTabListener(
+      (tab) => {
+        overlay?.openTab(tab);
+      },
+    );
+    const requestedOverlayTab = consumeRequestedMilkdropOverlayTab();
+    if (requestedOverlayTab) {
+      overlay?.openTab(requestedOverlayTab);
+    }
   }
   void (async () => {
     await catalogCoordinator.scheduleCatalogSync({
       activePresetId,
       activeBackend,
     });
-    if (!lifetime.isActive() || !overlay) {
+    if (!lifetime.isActive()) {
       return;
     }
     const { requestedCollectionTag, collectionEntry, startupPresetId } =
@@ -639,11 +788,11 @@ export function createMilkdropExperience({
         initialPresetId,
         activeBackend,
       });
-    if (!lifetime.isActive() || !overlay) {
+    if (!lifetime.isActive()) {
       return;
     }
     if (collectionEntry && requestedCollectionTag) {
-      overlay.setActiveCollectionTag(requestedCollectionTag);
+      overlay?.setActiveCollectionTag(requestedCollectionTag);
     }
     if (startupPresetId) {
       await navigation.selectPreset(startupPresetId, {
@@ -759,6 +908,9 @@ export function createMilkdropExperience({
       clearDebugSnapshot('milkdrop');
       disposeSessionSubscription?.();
       disposeSessionSubscription = null;
+      previewService?.dispose();
+      previewService = null;
+      previewCaptureRevision += 1;
       overlay?.dispose();
       overlay = null;
       session.dispose();

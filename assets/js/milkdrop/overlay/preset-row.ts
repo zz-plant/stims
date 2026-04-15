@@ -1,3 +1,4 @@
+import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCompatibilityIssueCategory,
@@ -208,10 +209,12 @@ function buildPresetRowSignature({
   preset,
   activePresetId,
   activeBackend,
+  preview,
 }: {
   preset: MilkdropCatalogEntry;
   activePresetId: string | null;
   activeBackend: 'webgl' | 'webgpu';
+  preview: MilkdropPresetRenderPreview | null;
 }) {
   const support = preset.supports[activeBackend];
   const primaryReason = [...preset.parity.degradationReasons].sort(
@@ -246,28 +249,82 @@ function buildPresetRowSignature({
     preset.visualCertification?.requiredBackend ?? '',
     preset.visualCertification?.actualBackend ?? '',
     preset.visualCertification?.reasons[0] ?? '',
+    preview?.status ?? '',
+    preview?.actualBackend ?? '',
+    preview?.updatedAt ?? 0,
+    preview?.error ?? '',
   ].join('|');
+}
+
+function previewStatusLabel(
+  preview: MilkdropPresetRenderPreview | null,
+): string | null {
+  if (!preview) {
+    return 'Preview queued';
+  }
+
+  switch (preview.status) {
+    case 'queued':
+      return 'Preview queued';
+    case 'capturing':
+      return 'Capturing';
+    case 'failed':
+      return 'Preview failed';
+    default:
+      return preview.actualBackend === 'webgpu'
+        ? 'WebGPU preview'
+        : preview.actualBackend === 'webgl'
+          ? 'WebGL preview'
+          : 'Runtime preview';
+  }
 }
 
 function buildPresetRow({
   preset,
   activePresetId,
   activeBackend,
+  preview,
   callbacks,
 }: {
   preset: MilkdropCatalogEntry;
   activePresetId: string | null;
   activeBackend: 'webgl' | 'webgpu';
+  preview: MilkdropPresetRenderPreview | null;
   callbacks: PresetRowCallbacks;
 }) {
   const row = document.createElement('div');
   row.className = 'milkdrop-overlay__preset';
   row.dataset.active = String(preset.id === activePresetId);
+  row.dataset.previewStatus = preview?.status ?? 'queued';
 
   const launch = document.createElement('button');
   launch.type = 'button';
   launch.className = 'milkdrop-overlay__preset-launch';
   launch.addEventListener('click', () => callbacks.onSelectPreset(preset.id));
+
+  const previewFrame = document.createElement('div');
+  previewFrame.className = 'milkdrop-overlay__preset-preview';
+
+  if (preview?.imageUrl) {
+    const previewImage = document.createElement('img');
+    previewImage.className = 'milkdrop-overlay__preset-preview-image';
+    previewImage.alt = `${preset.title} runtime preview`;
+    previewImage.src = preview.imageUrl;
+    previewFrame.appendChild(previewImage);
+  } else {
+    const previewFallback = document.createElement('div');
+    previewFallback.className = 'milkdrop-overlay__preset-preview-fallback';
+    previewFallback.textContent = preset.title
+      .split(/\s+/u)
+      .slice(0, 2)
+      .join(' ');
+    previewFrame.appendChild(previewFallback);
+  }
+
+  const previewStatus = document.createElement('div');
+  previewStatus.className = 'milkdrop-overlay__preset-preview-status';
+  previewStatus.textContent = previewStatusLabel(preview) ?? 'Runtime preview';
+  previewFrame.appendChild(previewStatus);
 
   const titleRow = document.createElement('div');
   titleRow.className = 'milkdrop-overlay__preset-header';
@@ -295,7 +352,7 @@ function buildPresetRow({
   const metaQualifier = getPresetMetaQualifier(preset);
   meta.textContent = [preset.author, metaQualifier].filter(Boolean).join(' · ');
 
-  launch.append(titleRow, meta);
+  launch.append(previewFrame, titleRow, meta);
 
   const actions = document.createElement('div');
   actions.className = 'milkdrop-overlay__preset-actions';
@@ -368,15 +425,18 @@ export class PresetRowRenderer {
     preset,
     activePresetId,
     activeBackend,
+    preview,
   }: {
     preset: MilkdropCatalogEntry;
     activePresetId: string | null;
     activeBackend: 'webgl' | 'webgpu';
+    preview: MilkdropPresetRenderPreview | null;
   }) {
     const signature = buildPresetRowSignature({
       preset,
       activePresetId,
       activeBackend,
+      preview,
     });
     const cached = this.cache.get(preset.id);
     if (cached && cached.signature === signature) {
@@ -386,6 +446,7 @@ export class PresetRowRenderer {
       preset,
       activePresetId,
       activeBackend,
+      preview,
       callbacks: this.callbacks,
     });
     this.cache.set(preset.id, { row, signature });

@@ -1,6 +1,7 @@
 import type { QualityPreset } from '../core/settings-panel';
 import { BrowsePanel } from './overlay/browse-panel';
 import { InspectorPanel } from './overlay/inspector-panel';
+import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
@@ -13,6 +14,8 @@ type OverlayCallbacks = {
   onSelectQualityPreset: (presetId: string) => void;
   onToggleFavorite: (id: string, favorite: boolean) => void;
   onSetRating: (id: string, rating: number) => void;
+  onRequestPresetPreviews: (presetIds: string[]) => void;
+  onRefreshPresetPreviews: (presetIds: string[]) => void;
   onToggleAutoplay: (enabled: boolean) => void;
   onTransitionModeChange: (mode: 'blend' | 'cut') => void;
   onGoBackPreset: () => void;
@@ -282,6 +285,10 @@ export class MilkdropOverlay {
       onToggleFavorite: (id, favorite) =>
         this.callbacks.onToggleFavorite(id, favorite),
       onSetRating: (id, rating) => this.callbacks.onSetRating(id, rating),
+      onRequestPresetPreviews: (presetIds) =>
+        this.callbacks.onRequestPresetPreviews(presetIds),
+      onRefreshPresetPreviews: (presetIds) =>
+        this.callbacks.onRefreshPresetPreviews(presetIds),
     });
     this.inspectorPanel = new InspectorPanel({
       onInspectorFieldChange: (key, value) =>
@@ -405,6 +412,10 @@ export class MilkdropOverlay {
     if (this.activePresetEntry && previousActivePresetId !== activePresetId) {
       this.showPresetOsd(this.activePresetEntry, this.activePresetEntry.title);
     }
+  }
+
+  setPresetPreview(preview: MilkdropPresetRenderPreview) {
+    this.browsePanel.setPresetPreview(preview);
   }
 
   setAutoplay(enabled: boolean) {

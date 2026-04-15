@@ -23,6 +23,8 @@ export type MilkdropOverlayActionHandlers = {
   onSelectQualityPreset: (presetId: string) => void;
   onToggleFavorite: (id: string, favorite: boolean) => void;
   onSetRating: (id: string, rating: number) => void;
+  onRequestPresetPreviews: (presetIds: string[]) => void;
+  onRefreshPresetPreviews: (presetIds: string[]) => void;
   onToggleAutoplay: (enabled: boolean) => void;
   onTransitionModeChange: (mode: 'blend' | 'cut') => void;
   onGoBackPreset: () => void;
@@ -52,6 +54,12 @@ export function createMilkdropOverlayCallbacks(
     },
     onSetRating: (id: string, rating: number) => {
       void actions.onSetRating(id, rating);
+    },
+    onRequestPresetPreviews: (presetIds: string[]) => {
+      void actions.onRequestPresetPreviews(presetIds);
+    },
+    onRefreshPresetPreviews: (presetIds: string[]) => {
+      void actions.onRefreshPresetPreviews(presetIds);
     },
     onToggleAutoplay: actions.onToggleAutoplay,
     onTransitionModeChange: actions.onTransitionModeChange,

@@ -26,6 +26,7 @@ export type PlayToyResult = {
 
 export type PlayToyRendererProfile = 'compatibility' | 'webgpu';
 export type PlayToyCatalogMode = 'bundled' | 'certification';
+export type PlayToyScreenshotSurface = 'canvas' | 'page';
 
 export type PlayToyPerformanceCaptureOptions = {
   warmupMs: number;
@@ -65,6 +66,7 @@ export type PlayToyOptions = {
   vibeMode?: boolean;
   rendererProfile?: PlayToyRendererProfile;
   catalogMode?: PlayToyCatalogMode;
+  screenshotSurface?: PlayToyScreenshotSurface;
   perfCapture?: PlayToyPerformanceCaptureOptions;
   recordParityArtifact?: boolean;
   browserSession?: PlayToyBrowserSession;
@@ -80,6 +82,7 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
   vibeMode: boolean;
   rendererProfile: PlayToyRendererProfile;
   catalogMode: PlayToyCatalogMode;
+  screenshotSurface: PlayToyScreenshotSurface;
   perfCapture?: PlayToyPerformanceCaptureOptions;
   recordParityArtifact: boolean;
 };
@@ -224,6 +227,7 @@ function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
     vibeMode: options.vibeMode !== false,
     rendererProfile: options.rendererProfile ?? 'compatibility',
     catalogMode: options.catalogMode ?? 'bundled',
+    screenshotSurface: options.screenshotSurface ?? 'canvas',
     perfCapture: options.perfCapture,
     recordParityArtifact: options.recordParityArtifact !== false,
   };
@@ -346,6 +350,7 @@ async function createPlayToyContext({
       width: options.viewportWidth,
       height: options.viewportHeight,
     },
+    deviceScaleFactor: 1,
     recordVideo: options.video ? { dir: options.outputDir } : undefined,
     permissions: ['microphone'],
   });
@@ -876,11 +881,34 @@ async function collectPerformanceSampler(page: Page) {
     .catch(() => null);
 }
 
-async function captureActiveToyCanvas(
+export function shouldUseCanvasBitmapCapture({
+  bitmapWidth,
+  bitmapHeight,
+  rectWidth,
+  rectHeight,
+  viewportWidth,
+  viewportHeight,
+}: {
+  bitmapWidth: number;
+  bitmapHeight: number;
+  rectWidth: number;
+  rectHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}) {
+  return (
+    bitmapWidth === viewportWidth &&
+    bitmapHeight === viewportHeight &&
+    rectWidth === viewportWidth &&
+    rectHeight === viewportHeight
+  );
+}
+
+export async function captureActiveToyCanvas(
   page: Page,
   screenshotPath: string,
 ): Promise<boolean> {
-  const canvasDataUrl = await page
+  const canvasInfo = await page
     .evaluate(() => {
       const canvas =
         document.querySelector<HTMLCanvasElement>(
@@ -895,6 +923,93 @@ async function captureActiveToyCanvas(
         return null;
       }
 
+      return {
+        bitmapWidth: canvas.width,
+        bitmapHeight: canvas.height,
+        rectWidth: Math.round(rect.width),
+        rectHeight: Math.round(rect.height),
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+      };
+    })
+    .catch(() => null);
+
+  if (!canvasInfo) {
+    return false;
+  }
+
+  const canvasLocator = page
+    .locator('#active-toy-container canvas')
+    .or(page.locator('canvas'))
+    .first();
+
+  if (
+    !shouldUseCanvasBitmapCapture({
+      bitmapWidth: canvasInfo.bitmapWidth,
+      bitmapHeight: canvasInfo.bitmapHeight,
+      rectWidth: canvasInfo.rectWidth,
+      rectHeight: canvasInfo.rectHeight,
+      viewportWidth: canvasInfo.viewportWidth,
+      viewportHeight: canvasInfo.viewportHeight,
+    })
+  ) {
+    const previousStyle = await page
+      .evaluate(({ viewportWidth, viewportHeight }) => {
+        const canvas =
+          document.querySelector<HTMLCanvasElement>(
+            '#active-toy-container canvas',
+          ) ?? document.querySelector<HTMLCanvasElement>('canvas');
+        if (!(canvas instanceof HTMLCanvasElement)) {
+          return null;
+        }
+
+        const previous = {
+          width: canvas.style.width,
+          height: canvas.style.height,
+          maxWidth: canvas.style.maxWidth,
+          maxHeight: canvas.style.maxHeight,
+        };
+        canvas.style.width = `${viewportWidth}px`;
+        canvas.style.height = `${viewportHeight}px`;
+        canvas.style.maxWidth = 'none';
+        canvas.style.maxHeight = 'none';
+        return previous;
+      }, canvasInfo)
+      .catch(() => null);
+
+    try {
+      await canvasLocator.screenshot({ path: screenshotPath });
+    } finally {
+      await page
+        .evaluate((previous) => {
+          const canvas =
+            document.querySelector<HTMLCanvasElement>(
+              '#active-toy-container canvas',
+            ) ?? document.querySelector<HTMLCanvasElement>('canvas');
+          if (!(canvas instanceof HTMLCanvasElement) || previous === null) {
+            return;
+          }
+
+          canvas.style.width = previous.width;
+          canvas.style.height = previous.height;
+          canvas.style.maxWidth = previous.maxWidth;
+          canvas.style.maxHeight = previous.maxHeight;
+        }, previousStyle)
+        .catch(() => undefined);
+    }
+    return true;
+  }
+
+  const canvasDataUrl = await page
+    .evaluate(() => {
+      const canvas =
+        document.querySelector<HTMLCanvasElement>(
+          '#active-toy-container canvas',
+        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        return null;
+      }
+
       try {
         return canvas.toDataURL('image/png');
       } catch (_error) {
@@ -903,11 +1018,7 @@ async function captureActiveToyCanvas(
     })
     .catch(() => null);
 
-  if (!canvasDataUrl) {
-    return false;
-  }
-
-  const [, base64Data = ''] = canvasDataUrl.split(',', 2);
+  const [, base64Data = ''] = canvasDataUrl?.split(',', 2) ?? [];
   if (!base64Data) {
     return false;
   }
@@ -1297,7 +1408,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         normalizedOptions.outputDir,
         screenshotName,
       );
-      const capturedCanvas = await captureActiveToyCanvas(page, screenshotPath);
+      const capturedCanvas =
+        normalizedOptions.screenshotSurface === 'canvas'
+          ? await captureActiveToyCanvas(page, screenshotPath)
+          : false;
       if (!capturedCanvas) {
         await page.screenshot({ path: screenshotPath });
       }

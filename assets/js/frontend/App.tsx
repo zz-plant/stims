@@ -42,9 +42,12 @@ export function StimsWorkspaceApp() {
     loadYouTubePreview,
     motionPreference,
     pendingPresetIdRef,
+    presetPreviews,
     qualityPreset,
+    refreshPresetPreviews,
     readinessItems,
     renderPreferences,
+    requestPresetPreviews,
     searchQuery,
     setQualityPreset,
     setSearchQuery,
@@ -204,6 +207,7 @@ export function StimsWorkspaceApp() {
             onPresetSelection={handlePresetSelection}
             onToggleExtendedSources={toggleExtendedSources}
             onYoutubeUrlChange={setYoutubeUrl}
+            presetPreviews={presetPreviews}
             readinessAlerts={readinessAlerts}
             requestedPresetId={routeState.presetId}
             recentPresets={recentPresets}
@@ -264,6 +268,9 @@ export function StimsWorkspaceApp() {
         }}
         onMotionPreferenceChange={(enabled) => setMotionPreference({ enabled })}
         onPresetSelection={handlePresetSelection}
+        onRefreshPresetPreviews={(presetIds) => {
+          void refreshPresetPreviews(presetIds);
+        }}
         onQualityPresetChange={setQualityPreset}
         onRenderPreferenceChange={setRenderPreferences}
         onSearchQueryChange={setSearchQuery}
@@ -273,8 +280,12 @@ export function StimsWorkspaceApp() {
         onShufflePreset={handleShufflePreset}
         onTabChange={updatePanel}
         panel={routeState.panel}
+        presetPreviews={presetPreviews}
         qualityPreset={qualityPreset}
         renderPreferences={renderPreferences}
+        onVisiblePresetIdsChange={(presetIds) => {
+          void requestPresetPreviews(presetIds);
+        }}
         routeState={routeState}
         searchQuery={searchQuery}
         favoritePresets={favoritePresets}

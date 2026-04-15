@@ -1,7 +1,9 @@
 import type { ReactNode, RefObject } from 'react';
+import { useEffect } from 'react';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import type { RenderPreferences } from '../core/state/render-preference-store.ts';
+import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import { getIconNodes, type UiIconName } from '../ui/icon-library.ts';
 import type {
   PanelState,
@@ -82,9 +84,11 @@ function getPresetArtworkTone(entry: PresetCatalogEntry) {
 function PresetArtwork({
   entry,
   compact = false,
+  preview = null,
 }: {
   entry: PresetCatalogEntry;
   compact?: boolean;
+  preview?: MilkdropPresetRenderPreview | null;
 }) {
   const mood = describePresetMood(entry);
 
@@ -93,12 +97,33 @@ function PresetArtwork({
       className="stims-shell__preset-art"
       data-tone={getPresetArtworkTone(entry)}
       data-compact={String(compact)}
+      data-preview-status={preview?.status ?? 'queued'}
       aria-hidden="true"
     >
+      {preview?.imageUrl ? (
+        <img
+          className="stims-shell__preset-preview-image"
+          src={preview.imageUrl}
+          alt=""
+        />
+      ) : null}
       <span className="stims-shell__preset-art-grid" />
       <span className="stims-shell__preset-art-orbit" />
       <span className="stims-shell__preset-art-core" />
       <span className="stims-shell__preset-art-caption">{mood}</span>
+      <span className="stims-shell__preset-art-status">
+        {preview?.status === 'ready'
+          ? preview.actualBackend === 'webgpu'
+            ? 'WebGPU preview'
+            : preview.actualBackend === 'webgl'
+              ? 'WebGL preview'
+              : 'Runtime preview'
+          : preview?.status === 'capturing'
+            ? 'Capturing'
+            : preview?.status === 'failed'
+              ? 'Preview failed'
+              : 'Preview queued'}
+      </span>
     </div>
   );
 }
@@ -108,6 +133,7 @@ function PresetShelfSection({
   summary,
   title,
   onSelect,
+  presetPreviews,
 }: {
   entries: Array<{
     entry: PresetCatalogEntry;
@@ -117,6 +143,7 @@ function PresetShelfSection({
   summary: string;
   title: string;
   onSelect: (presetId: string) => void;
+  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
 }) {
   if (entries.length === 0) {
     return null;
@@ -136,7 +163,10 @@ function PresetShelfSection({
             className="stims-shell__starter-card"
             onClick={() => onSelect(entry.id)}
           >
-            <PresetArtwork entry={entry} />
+            <PresetArtwork
+              entry={entry}
+              preview={presetPreviews[entry.id] ?? null}
+            />
             <span className="stims-shell__starter-label">{label}</span>
             <strong>{entry.title}</strong>
             <span className="stims-shell__meta-copy">{cardSummary}</span>
@@ -261,6 +291,7 @@ export function WorkspaceLaunchPanel({
   onPresetSelection,
   onToggleExtendedSources,
   onYoutubeUrlChange,
+  presetPreviews,
   recentPresets,
   readinessAlerts,
   requestedPresetId,
@@ -284,6 +315,7 @@ export function WorkspaceLaunchPanel({
   onPresetSelection: (presetId: string) => void;
   onToggleExtendedSources: () => void;
   onYoutubeUrlChange: (value: string) => void;
+  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
   recentPresets: PresetCatalogEntry[];
   readinessAlerts: ReadinessItem[];
   requestedPresetId: string | null;
@@ -446,6 +478,7 @@ export function WorkspaceLaunchPanel({
         summary="Saved and recent presets stay close so you can start faster next time."
         title="Jump back in"
         onSelect={onPresetSelection}
+        presetPreviews={presetPreviews}
       />
     </div>
   );
@@ -710,8 +743,11 @@ function BrowseSheetPanel({
   filteredCatalog,
   onCollectionTagChange,
   onPresetSelection,
+  onRefreshPresetPreviews,
   onSearchQueryChange,
   onShufflePreset,
+  onVisiblePresetIdsChange,
+  presetPreviews,
   recentPresets,
   routeState,
   searchQuery,
@@ -726,8 +762,11 @@ function BrowseSheetPanel({
   filteredCatalog: PresetCatalogEntry[];
   onCollectionTagChange: (collectionTag: string | null) => void;
   onPresetSelection: (presetId: string) => void;
+  onRefreshPresetPreviews: (presetIds: string[]) => void;
   onSearchQueryChange: (query: string) => void;
   onShufflePreset: () => void;
+  onVisiblePresetIdsChange: (presetIds: string[]) => void;
+  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
   recentPresets: PresetCatalogEntry[];
   routeState: SessionRouteState;
   searchQuery: string;
@@ -736,20 +775,72 @@ function BrowseSheetPanel({
   const showStarterPresets =
     searchQuery.trim().length === 0 && routeState.collectionTag === null;
   const showActivitySections = showStarterPresets;
+  const previewTargetIds = [
+    ...starterPresets.map((starter) => starter.preset.id),
+    ...recentPresets.map((entry) => entry.id),
+    ...favoritePresets.map((entry) => entry.id),
+    ...filteredCatalog.map((entry) => entry.id),
+  ].filter((presetId, index, ids) => ids.indexOf(presetId) === index);
+  const previewCounts = previewTargetIds.reduce(
+    (summary, presetId) => {
+      const preview = presetPreviews[presetId];
+      if (!preview || preview.status === 'queued') {
+        summary.queued += 1;
+        return summary;
+      }
+
+      summary[preview.status] += 1;
+      return summary;
+    },
+    {
+      queued: 0,
+      capturing: 0,
+      ready: 0,
+      failed: 0,
+    },
+  );
+  const previewSummary = [
+    previewCounts.ready ? `${previewCounts.ready} ready` : '',
+    previewCounts.capturing ? `${previewCounts.capturing} capturing` : '',
+    previewCounts.queued ? `${previewCounts.queued} queued` : '',
+    previewCounts.failed ? `${previewCounts.failed} failed` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const visiblePreviewIds = previewTargetIds.slice(0, 18);
+
+  useEffect(() => {
+    onVisiblePresetIdsChange(visiblePreviewIds);
+  }, [onVisiblePresetIdsChange, visiblePreviewIds]);
 
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--browse">
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
         <div className="stims-shell__browse-toolbar">
-          <strong>Pick a look and press play.</strong>
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            onClick={onShufflePreset}
-            disabled={catalog.length === 0}
-          >
-            Shuffle
-          </button>
+          <div className="stims-shell__browse-toolbar-copy">
+            <strong>Pick a look and press play.</strong>
+            <p className="stims-shell__meta-copy">
+              Preview QA: {previewSummary || 'Waiting on captures'}
+            </p>
+          </div>
+          <div className="stims-shell__browse-toolbar-actions">
+            <button
+              type="button"
+              className="stims-shell__text-button"
+              onClick={() => onRefreshPresetPreviews(visiblePreviewIds)}
+              disabled={previewTargetIds.length === 0}
+            >
+              Refresh previews
+            </button>
+            <button
+              type="button"
+              className="stims-shell__text-button"
+              onClick={onShufflePreset}
+              disabled={catalog.length === 0}
+            >
+              Shuffle
+            </button>
+          </div>
         </div>
 
         <label className="stims-shell__field-label" htmlFor="preset-search">
@@ -809,7 +900,10 @@ function BrowseSheetPanel({
                 className="stims-shell__starter-card"
                 onClick={() => onPresetSelection(starter.preset.id)}
               >
-                <PresetArtwork entry={starter.preset} />
+                <PresetArtwork
+                  entry={starter.preset}
+                  preview={presetPreviews[starter.preset.id] ?? null}
+                />
                 <span className="stims-shell__starter-label">
                   {starter.label}
                 </span>
@@ -833,6 +927,7 @@ function BrowseSheetPanel({
           summary="Recent presets help you resume a session without hunting."
           title="Recent"
           onSelect={onPresetSelection}
+          presetPreviews={presetPreviews}
         />
       ) : null}
 
@@ -846,6 +941,7 @@ function BrowseSheetPanel({
           summary="Saved presets stay visible even before the visualizer is live."
           title="Saved"
           onSelect={onPresetSelection}
+          presetPreviews={presetPreviews}
         />
       ) : null}
 
@@ -878,7 +974,11 @@ function BrowseSheetPanel({
                   data-active={String(entry.id === currentPresetId)}
                   onClick={() => onPresetSelection(entry.id)}
                 >
-                  <PresetArtwork entry={entry} compact />
+                  <PresetArtwork
+                    entry={entry}
+                    compact
+                    preview={presetPreviews[entry.id] ?? null}
+                  />
                   <span className="stims-shell__preset-card-copy">
                     <span className="stims-shell__preset-title">
                       {entry.title}
@@ -1089,13 +1189,16 @@ export function WorkspaceToolSheet({
   onMotionPreferenceChange,
   onPresetSelection,
   onQualityPresetChange,
+  onRefreshPresetPreviews,
   onRenderPreferenceChange,
   onSearchQueryChange,
   onShowCurrentLink,
   onShufflePreset,
   onTabChange,
+  onVisiblePresetIdsChange,
   onExportPreset,
   panel,
+  presetPreviews,
   qualityPreset,
   recentPresets,
   renderPreferences,
@@ -1119,13 +1222,16 @@ export function WorkspaceToolSheet({
   onMotionPreferenceChange: (enabled: boolean) => void;
   onPresetSelection: (presetId: string) => void;
   onQualityPresetChange: (presetId: string) => void;
+  onRefreshPresetPreviews: (presetIds: string[]) => void;
   onRenderPreferenceChange: (update: Partial<RenderPreferences>) => void;
   onSearchQueryChange: (query: string) => void;
   onShowCurrentLink: () => void;
   onShufflePreset: () => void;
   onTabChange: (panel: PanelState) => void;
+  onVisiblePresetIdsChange: (presetIds: string[]) => void;
   onExportPreset: () => void;
   panel: PanelState;
+  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
   qualityPreset: QualityPreset;
   recentPresets: PresetCatalogEntry[];
   renderPreferences: RenderPreferences;
@@ -1203,8 +1309,11 @@ export function WorkspaceToolSheet({
               filteredCatalog={filteredCatalog}
               onCollectionTagChange={onCollectionTagChange}
               onPresetSelection={onPresetSelection}
+              onRefreshPresetPreviews={onRefreshPresetPreviews}
               onSearchQueryChange={onSearchQueryChange}
               onShufflePreset={onShufflePreset}
+              onVisiblePresetIdsChange={onVisiblePresetIdsChange}
+              presetPreviews={presetPreviews}
               recentPresets={recentPresets}
               routeState={routeState}
               searchQuery={searchQuery}

@@ -29,6 +29,7 @@ import type {
   MilkdropCatalogStore,
 } from '../milkdrop/catalog-types.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
+import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type {
   LaunchIntent,
   PresetCatalogEntry,
@@ -167,6 +168,9 @@ export function useWorkspaceSessionState({
   );
   const [showExtendedSources, setShowExtendedSources] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [presetPreviews, setPresetPreviews] = useState<
+    Record<string, MilkdropPresetRenderPreview>
+  >({});
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
@@ -176,6 +180,11 @@ export function useWorkspaceSessionState({
     null,
   );
   const engineUnsubscribeRef = useRef<(() => void) | null>(null);
+  const previewServiceRef = useRef<{
+    dispose: () => void;
+    refreshPreviews: (presetIds: string[]) => void;
+    requestPreviews: (presetIds: string[]) => void;
+  } | null>(null);
   const pendingPresetIdRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
   const readinessItems = useWorkspaceReadiness();
@@ -252,6 +261,84 @@ export function useWorkspaceSessionState({
     return engineAdapterPromiseRef.current;
   });
 
+  const ensurePresetPreviewService = useEffectEvent(async () => {
+    if (previewServiceRef.current) {
+      return previewServiceRef.current;
+    }
+
+    const [
+      { createMilkdropPresetPreviewService },
+      { createMilkdropEngineAdapter },
+    ] = await Promise.all([
+      import('../milkdrop/runtime/preset-preview-service.ts'),
+      import('./engine/milkdrop-engine-adapter.ts'),
+    ]);
+
+    previewServiceRef.current = createMilkdropPresetPreviewService({
+      capturePreview: async (presetId) => {
+        if (typeof document === 'undefined') {
+          throw new Error('Preset previews require a browser document.');
+        }
+
+        const previewHost = document.createElement('div');
+        previewHost.className = 'stims-shell__preset-preview-host';
+        previewHost.setAttribute('aria-hidden', 'true');
+        const previewCanvas = document.createElement('canvas');
+        previewCanvas.width = 360;
+        previewCanvas.height = 203;
+        previewCanvas.className = 'stims-shell__preset-preview-host-canvas';
+        previewHost.appendChild(previewCanvas);
+        document.body.appendChild(previewHost);
+
+        let lastBackend: EngineSnapshot['backend'] = null;
+        const adapter = createMilkdropEngineAdapter();
+        const unsubscribe = adapter.subscribe((snapshot: EngineSnapshot) => {
+          lastBackend = snapshot.backend;
+        });
+
+        try {
+          await adapter.mount(previewHost, {
+            presetId,
+            collectionTag: null,
+            panel: 'browse',
+            audioSource: null,
+            agentMode: true,
+            previewMode: true,
+          });
+          await adapter.loadPreset(presetId);
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, 750);
+          });
+
+          const canvas = previewHost.querySelector('canvas') ?? previewCanvas;
+          if (!(canvas instanceof HTMLCanvasElement)) {
+            throw new Error('Preview canvas was not available.');
+          }
+
+          return {
+            imageUrl: canvas.toDataURL('image/webp', 0.82),
+            actualBackend: lastBackend,
+            updatedAt: Date.now(),
+            error: null,
+            source: 'runtime-snapshot' as const,
+          };
+        } finally {
+          unsubscribe();
+          adapter.dispose();
+          previewHost.remove();
+        }
+      },
+      onPreviewChanged: (preview) => {
+        setPresetPreviews((current) => ({
+          ...current,
+          [preview.presetId]: preview,
+        }));
+      },
+    });
+
+    return previewServiceRef.current;
+  });
+
   const ensureEngineMounted = useEffectEvent(
     async (launchIntent: LaunchIntent = initialLaunchIntentRef.current) => {
       const stage = stageRef.current;
@@ -316,6 +403,8 @@ export function useWorkspaceSessionState({
     return () => {
       cancelled = true;
       sessionDisposedRef.current = true;
+      previewServiceRef.current?.dispose();
+      previewServiceRef.current = null;
       engineUnsubscribeRef.current?.();
       engineUnsubscribeRef.current = null;
       engineRef.current?.dispose();
@@ -619,6 +708,7 @@ export function useWorkspaceSessionState({
     refreshCatalogActivity,
     renderPreferences,
     searchQuery,
+    presetPreviews,
     setQualityPreset: (presetId: string) => {
       if (engineRef.current?.isMounted()) {
         engineRef.current.setQualityPreset(presetId);
@@ -635,6 +725,10 @@ export function useWorkspaceSessionState({
     setYoutubeUrl,
     showExtendedSources,
     stageRef,
+    refreshPresetPreviews: async (presetIds: string[]) => {
+      const service = await ensurePresetPreviewService();
+      service.refreshPreviews(presetIds);
+    },
     startAudioSource: async (request: {
       cropTarget?: HTMLElement | null;
       launchState?: SessionRouteState;
@@ -670,6 +764,10 @@ export function useWorkspaceSessionState({
       await refreshCatalogActivity();
     },
     toggleExtendedSources: () => setShowExtendedSources((current) => !current),
+    requestPresetPreviews: async (presetIds: string[]) => {
+      const service = await ensurePresetPreviewService();
+      service.requestPreviews(presetIds);
+    },
     youtubePreviewRef,
     youtubeReady,
     youtubeUrl,

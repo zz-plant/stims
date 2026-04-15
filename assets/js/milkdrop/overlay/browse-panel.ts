@@ -1,4 +1,5 @@
 import type { QualityPreset } from '../../core/settings-panel';
+import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';
 import type { MilkdropCatalogEntry, MilkdropFidelityClass } from '../types';
 import { type PresetRowCallbacks, PresetRowRenderer } from './preset-row';
 
@@ -155,6 +156,8 @@ type BrowseSection = {
 
 type BrowsePanelCallbacks = PresetRowCallbacks & {
   onSelectQualityPreset: (presetId: string) => void;
+  onRequestPresetPreviews: (presetIds: string[]) => void;
+  onRefreshPresetPreviews: (presetIds: string[]) => void;
 };
 
 export function matchesBrowseFilters({
@@ -245,13 +248,16 @@ export function sortBrowsePresets({
 export class BrowsePanel {
   readonly element: HTMLElement;
 
+  private readonly callbacks: BrowsePanelCallbacks;
   private readonly rowRenderer: PresetRowRenderer;
   private readonly browseList: HTMLElement;
   private readonly browseEyebrowLabel: HTMLElement;
   private readonly browseActiveLabel: HTMLElement;
   private readonly browseMetaLabel: HTMLElement;
+  private readonly browseQaLabel: HTMLElement;
   private readonly browseModeButtons: HTMLButtonElement[] = [];
   private readonly browseOptionsDisclosure: HTMLDetailsElement;
+  private readonly refreshPreviewsButton: HTMLButtonElement;
   private readonly searchInput: HTMLInputElement;
   private readonly collectionFilters: HTMLElement;
   private readonly browseEmptyState: HTMLElement;
@@ -271,13 +277,20 @@ export class BrowsePanel {
   private lastFilteredPresets: MilkdropCatalogEntry[] = [];
   private lastBrowseRenderSignature = '';
   private lastCollectionFilterSignature = '';
+  private lastPreviewRequestSignature = '';
   private visible = true;
+  private displayedPresetIds: string[] = [];
+  private readonly previewStates = new Map<
+    string,
+    MilkdropPresetRenderPreview
+  >();
   private readonly browseSearchIndex = new Map<
     string,
     BrowseSearchIndexEntry
   >();
 
   constructor(callbacks: BrowsePanelCallbacks) {
+    this.callbacks = callbacks;
     this.rowRenderer = new PresetRowRenderer(callbacks);
     this.element = document.createElement('section');
     this.element.className = 'milkdrop-overlay__tab-panel';
@@ -303,12 +316,28 @@ export class BrowsePanel {
     this.browseMetaLabel.setAttribute('aria-live', 'polite');
     this.browseMetaLabel.setAttribute('role', 'status');
     this.browseMetaLabel.hidden = true;
+    this.browseQaLabel = document.createElement('p');
+    this.browseQaLabel.className = 'milkdrop-overlay__browse-qa';
+    this.browseQaLabel.hidden = true;
     browseCopy.append(
       this.browseEyebrowLabel,
       this.browseActiveLabel,
       this.browseMetaLabel,
+      this.browseQaLabel,
     );
     browseHero.append(browseCopy);
+
+    this.refreshPreviewsButton = document.createElement('button');
+    this.refreshPreviewsButton.type = 'button';
+    this.refreshPreviewsButton.className = 'milkdrop-overlay__browse-refresh';
+    this.refreshPreviewsButton.textContent = 'Refresh previews';
+    this.refreshPreviewsButton.addEventListener('click', () => {
+      if (this.displayedPresetIds.length === 0) {
+        return;
+      }
+      callbacks.onRefreshPresetPreviews(this.displayedPresetIds);
+    });
+    browseHero.appendChild(this.refreshPreviewsButton);
 
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'search';
@@ -495,6 +524,14 @@ export class BrowsePanel {
     }
   }
 
+  setPresetPreview(preview: MilkdropPresetRenderPreview) {
+    this.previewStates.set(preview.presetId, preview);
+    this.browseDirty = true;
+    if (this.visible) {
+      this.render();
+    }
+  }
+
   dispose() {
     if (this.browseRenderDebounceId !== null) {
       window.clearTimeout(this.browseRenderDebounceId);
@@ -625,6 +662,7 @@ export class BrowsePanel {
           preset,
           activePresetId: this.activePresetId,
           activeBackend: this.activeBackend,
+          preview: this.previewStates.get(preset.id) ?? null,
         }),
       );
     });
@@ -748,9 +786,12 @@ export class BrowsePanel {
       });
     }
     const filtered = this.lastFilteredPresets;
+    const displayedPresetIds = filtered.map((preset) => preset.id);
 
     this.renderBrowseSummary(filtered.length);
     if (filtered.length === 0) {
+      this.displayedPresetIds = [];
+      this.renderPreviewQaSummary([]);
       this.syncBrowseChildren([this.browseEmptyState]);
       return;
     }
@@ -763,12 +804,16 @@ export class BrowsePanel {
       this.browseSort === 'recommended';
 
     if (!useSections) {
+      this.displayedPresetIds = displayedPresetIds;
+      this.renderPreviewQaSummary(this.displayedPresetIds);
+      this.requestPresetPreviews(this.displayedPresetIds);
       this.syncBrowseChildren(
         filtered.map((preset) =>
           this.rowRenderer.render({
             preset,
             activePresetId: this.activePresetId,
             activeBackend: this.activeBackend,
+            preview: this.previewStates.get(preset.id) ?? null,
           }),
         ),
       );
@@ -776,7 +821,13 @@ export class BrowsePanel {
     }
 
     const fragment = document.createDocumentFragment();
-    this.buildFeaturedBrowseSections(filtered).forEach((section) => {
+    const sections = this.buildFeaturedBrowseSections(filtered);
+    this.displayedPresetIds = sections.flatMap((section) =>
+      section.presets.map((preset) => preset.id),
+    );
+    this.renderPreviewQaSummary(this.displayedPresetIds);
+    this.requestPresetPreviews(this.displayedPresetIds);
+    sections.forEach((section) => {
       this.appendPresetSection(section.title, section.presets, fragment);
     });
     this.browseList.replaceChildren(fragment);
@@ -826,6 +877,53 @@ export class BrowsePanel {
       return;
     }
     this.browseList.replaceChildren(...nextChildren);
+  }
+
+  private renderPreviewQaSummary(presetIds: string[]) {
+    if (presetIds.length === 0) {
+      this.browseQaLabel.hidden = true;
+      return;
+    }
+
+    const counts = presetIds.reduce(
+      (summary, presetId) => {
+        const preview = this.previewStates.get(presetId);
+        if (!preview || preview.status === 'queued') {
+          summary.queued += 1;
+          return summary;
+        }
+
+        summary[preview.status] += 1;
+        return summary;
+      },
+      {
+        queued: 0,
+        capturing: 0,
+        ready: 0,
+        failed: 0,
+      },
+    );
+
+    const parts = [
+      counts.ready ? `${counts.ready} ready` : '',
+      counts.capturing ? `${counts.capturing} capturing` : '',
+      counts.queued ? `${counts.queued} queued` : '',
+      counts.failed ? `${counts.failed} failed` : '',
+    ].filter(Boolean);
+
+    this.browseQaLabel.textContent = `Preview QA: ${parts.join(' · ')}`;
+    this.browseQaLabel.hidden = parts.length === 0;
+  }
+
+  private requestPresetPreviews(presetIds: string[]) {
+    const nextIds = presetIds.slice(0, 18);
+    const signature = nextIds.join('|');
+    if (signature === this.lastPreviewRequestSignature) {
+      return;
+    }
+    this.lastPreviewRequestSignature = signature;
+    // Capture only the visible/top browse results so the QA queue stays responsive.
+    this.callbacks.onRequestPresetPreviews(nextIds);
   }
 
   private renderCollectionFilters() {

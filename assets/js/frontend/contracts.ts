@@ -10,6 +10,7 @@ export type LaunchIntent = {
   panel: Exclude<PanelState, 'settings'> | null;
   audioSource: AudioSource | null;
   agentMode: boolean;
+  previewMode?: boolean;
 };
 
 export type SessionRouteState = {

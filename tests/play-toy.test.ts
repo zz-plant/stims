@@ -5,6 +5,7 @@ import {
   buildPlayToyPerformanceMetricsFromDebugSnapshot,
   buildPlayToyUrl,
   resolveChromiumRendererArgs,
+  shouldUseCanvasBitmapCapture,
   summarizePlayToyPerformanceSamples,
 } from '../scripts/play-toy.ts';
 
@@ -65,6 +66,30 @@ test('resolveChromiumRendererArgs keeps compatibility and webgpu launch profiles
   expect(resolveChromiumRendererArgs('webgpu')).not.toContain(
     '--enable-unsafe-swiftshader',
   );
+});
+
+test('shouldUseCanvasBitmapCapture only keeps bitmap capture when the live canvas already matches the viewport', () => {
+  expect(
+    shouldUseCanvasBitmapCapture({
+      bitmapWidth: 2550,
+      bitmapHeight: 1794,
+      rectWidth: 2550,
+      rectHeight: 1794,
+      viewportWidth: 2550,
+      viewportHeight: 1794,
+    }),
+  ).toBe(true);
+
+  expect(
+    shouldUseCanvasBitmapCapture({
+      bitmapWidth: 2207,
+      bitmapHeight: 1541,
+      rectWidth: 2508,
+      rectHeight: 1752,
+      viewportWidth: 2550,
+      viewportHeight: 1794,
+    }),
+  ).toBe(false);
 });
 
 test('summarizePlayToyPerformanceSamples computes average and p95 frame timings', () => {
