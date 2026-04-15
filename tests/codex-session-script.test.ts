@@ -148,6 +148,28 @@ test('codex session script prints a review profile plan', () => {
   expect(result.stdout).toContain('Watcher: skipped');
 });
 
+test('codex session script maps compat profile to the compatibility watcher', () => {
+  const result = spawnSync(
+    'bash',
+    [
+      'scripts/codex-session.sh',
+      '--print-plan',
+      '--profile',
+      'compat',
+      '--skip-models',
+      '--skip-dev-server',
+    ],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    },
+  );
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain('Profile: compat');
+  expect(result.stdout).toContain('Watcher: compatibility watcher');
+});
+
 test('codex session status reports persisted session metadata instead of CLI defaults', async () => {
   const rootDir = await mkdtemp(path.join(tmpdir(), 'stims-codex-session-'));
   cleanupTasks.push(async () => {

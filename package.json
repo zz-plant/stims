@@ -44,6 +44,7 @@
     "play:toy": "bun run scripts/play-toy.ts",
     "setup:codex": "bash scripts/codex-setup.sh",
     "session:codex": "bash scripts/codex-session.sh",
+    "model:codex": "bash scripts/codex-model-route.sh",
     "check": "bun run scripts/run-quality-gate.ts",
     "check:architecture": "bun run scripts/check-architecture.ts",
     "check:catalog-fidelity": "bun run scripts/check-bundled-catalog-fidelity.ts",

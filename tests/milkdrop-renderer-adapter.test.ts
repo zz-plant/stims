@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import type { Vector2 } from 'three';
 import {
   AdditiveBlending,
+  Group,
   HalfFloatType,
   LinearFilter,
   LineBasicMaterial,
@@ -21,6 +22,7 @@ import {
   createMilkdropRendererAdapterCore,
 } from '../assets/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../assets/js/milkdrop/renderer-adapter-factory.ts';
+import { createWebGPUBatchingLayer } from '../assets/js/milkdrop/renderer-adapter-webgpu-batching.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -1052,6 +1054,47 @@ ob_border=1
     expect(outline?.material).toBeInstanceOf(LineBasicMaterial);
     expect(outline?.material?.opacity).toBeCloseTo(0.8, 6);
     expect(outerBorder?.children).toHaveLength(2);
+  });
+
+  test('keeps zero-alpha border fills invisible on webgpu batches', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Invisible Outer Border
+ob_size=0.2
+ob_a=0
+ib_size=0.1
+ib_a=1
+      `.trim(),
+      { id: 'invisible-outer-border' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const borderBatchNodes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceColorAlpha') !== undefined,
+    );
+    const borderAlphaArrays = borderBatchNodes
+      .map((node) => getFloat32AttributeArray(node, 'instanceColorAlpha'))
+      .filter((entry): entry is Float32Array => entry !== null);
+
+    expect(borderAlphaArrays.length).toBeGreaterThan(0);
+    expect(
+      borderAlphaArrays.some((array) => Math.abs(array[3] ?? 1) < 0.0001),
+    ).toBe(true);
   });
 
   test('reuses shape groups and wave position attributes across renders', async () => {
@@ -2383,6 +2426,41 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
     expect(renderedWaveChildren.length).toBeGreaterThan(0);
     expect(frameState.gpuGeometry.customWaves[0]?.thickness).toBe(5);
     expect(frameState.gpuGeometry.customWaves[0]?.fieldProgram).not.toBeNull();
+  });
+
+  test('falls back from the WebGPU custom-wave batcher when a field program is present', () => {
+    const batcher = createWebGPUBatchingLayer();
+    const root = new Group();
+    const targetGroup = new Group();
+    batcher.attach(root);
+
+    const rendered = batcher.renderProceduralCustomWaveGroup?.(targetGroup, [
+      {
+        samples: [0.2, 0.4, 0.6],
+        sampleValues2: [0.1, 0.3, 0.5],
+        spectrum: false,
+        centerX: 0,
+        centerY: 0,
+        scaling: 1,
+        mystery: 0,
+        time: 0,
+        fieldProgram: {
+          kind: 'gpu-field-program',
+          statements: [
+            { target: 'x', expression: { type: 'literal', value: 0 } },
+          ],
+          temporaries: [],
+          signature: 'field-program',
+        },
+        color: { r: 1, g: 1, b: 1, a: 1 },
+        alpha: 1,
+        additive: false,
+        thickness: 1,
+      },
+    ]);
+
+    expect(rendered).toBe(false);
+    batcher.dispose();
   });
 
   test('keeps procedural blend interaction alpha separate from blend alpha on webgpu', async () => {

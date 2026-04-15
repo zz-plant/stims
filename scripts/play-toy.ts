@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   type Browser,
+  type BrowserContext,
   type ConsoleMessage,
   chromium,
   type Page,
@@ -43,6 +44,12 @@ export type PlayToyPerformanceMetrics = {
   terminalAdaptiveQuality: unknown | null;
 };
 
+export type PlayToyBrowserSession = {
+  browser: Browser;
+  headless: boolean;
+  rendererProfile: PlayToyRendererProfile;
+};
+
 export type PlayToyOptions = {
   slug: string;
   presetId?: string;
@@ -60,6 +67,7 @@ export type PlayToyOptions = {
   catalogMode?: PlayToyCatalogMode;
   perfCapture?: PlayToyPerformanceCaptureOptions;
   recordParityArtifact?: boolean;
+  browserSession?: PlayToyBrowserSession;
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
@@ -301,6 +309,46 @@ async function closeBrowser(browser?: Browser) {
   if (browser) {
     await browser.close();
   }
+}
+
+export async function createPlayToyBrowserSession({
+  headless = true,
+  rendererProfile = 'compatibility',
+}: {
+  headless?: boolean;
+  rendererProfile?: PlayToyRendererProfile;
+} = {}): Promise<PlayToyBrowserSession> {
+  return {
+    browser: await chromium.launch({
+      headless,
+      args: resolveChromiumRendererArgs(rendererProfile),
+    }),
+    headless,
+    rendererProfile,
+  };
+}
+
+export async function closePlayToyBrowserSession(
+  session?: PlayToyBrowserSession,
+) {
+  await closeBrowser(session?.browser);
+}
+
+async function createPlayToyContext({
+  browser,
+  options,
+}: {
+  browser: Browser;
+  options: NormalizedPlayToyOptions;
+}): Promise<BrowserContext> {
+  return await browser.newContext({
+    viewport: {
+      width: options.viewportWidth,
+      height: options.viewportHeight,
+    },
+    recordVideo: options.video ? { dir: options.outputDir } : undefined,
+    permissions: ['microphone'],
+  });
 }
 
 async function clickVisibleButton(page: Page, selector: string) {
@@ -870,33 +918,50 @@ async function captureActiveToyCanvas(
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
   const normalizedOptions = normalizeOptions(options);
-  const chromiumArgs = resolveChromiumRendererArgs(
-    normalizedOptions.rendererProfile,
-  );
   const allowWebglFallback = normalizedOptions.rendererProfile !== 'webgpu';
 
   // Ensure output directory exists
   ensureOutputDir(normalizedOptions.outputDir);
 
   let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
   let page: Page | undefined;
   const consoleErrors: string[] = [];
   let fallbackOccurred = false;
+  const ownsBrowser = !normalizedOptions.browserSession;
 
   try {
-    browser = await chromium.launch({
-      headless: normalizedOptions.headless,
-      args: chromiumArgs,
-    });
-    const context = await browser.newContext({
-      viewport: {
-        width: normalizedOptions.viewportWidth,
-        height: normalizedOptions.viewportHeight,
-      },
-      recordVideo: options.video
-        ? { dir: normalizedOptions.outputDir }
-        : undefined,
-      permissions: ['microphone'], // Auto-grant microphone if needed
+    if (
+      normalizedOptions.browserSession &&
+      normalizedOptions.browserSession.rendererProfile !==
+        normalizedOptions.rendererProfile
+    ) {
+      throw new Error(
+        `PlayToy browser session uses renderer profile "${normalizedOptions.browserSession.rendererProfile}" but request needs "${normalizedOptions.rendererProfile}".`,
+      );
+    }
+
+    if (
+      normalizedOptions.browserSession &&
+      normalizedOptions.browserSession.headless !== normalizedOptions.headless
+    ) {
+      throw new Error(
+        `PlayToy browser session uses headless=${normalizedOptions.browserSession.headless} but request needs headless=${normalizedOptions.headless}.`,
+      );
+    }
+
+    browser =
+      normalizedOptions.browserSession?.browser ??
+      (
+        await createPlayToyBrowserSession({
+          headless: normalizedOptions.headless,
+          rendererProfile: normalizedOptions.rendererProfile,
+        })
+      ).browser;
+
+    context = await createPlayToyContext({
+      browser,
+      options: normalizedOptions,
     });
 
     page = await context.newPage();
@@ -985,7 +1050,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     if (initialErrorStatus) {
       await page.close();
       await context.close();
-      await closeBrowser(browser);
+      if (ownsBrowser) {
+        await closeBrowser(browser);
+      }
       return {
         slug: options.slug,
         success: false,
@@ -1025,7 +1092,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     if (statusAfterAudioRequest) {
       await page.close();
       await context.close();
-      await closeBrowser(browser);
+      if (ownsBrowser) {
+        await closeBrowser(browser);
+      }
       return {
         slug: options.slug,
         success: false,
@@ -1102,7 +1171,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     if (loadErrorStatus) {
       await page.close();
       await context.close();
-      await closeBrowser(browser);
+      if (ownsBrowser) {
+        await closeBrowser(browser);
+      }
       return {
         slug: options.slug,
         success: false,
@@ -1275,7 +1346,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     await page.close();
     await context.close(); // Saves video if enabled
-    await closeBrowser(browser);
+    if (ownsBrowser) {
+      await closeBrowser(browser);
+    }
 
     return result;
   } catch (error) {
@@ -1314,7 +1387,15 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       // Ignore perf capture errors on failure paths.
     }
     console.error(`Error playing toy ${options.slug}:`, error);
-    await closeBrowser(browser);
+    if (page) {
+      await page.close().catch(() => {});
+    }
+    if (context) {
+      await context.close().catch(() => {});
+    }
+    if (ownsBrowser) {
+      await closeBrowser(browser);
+    }
     return {
       slug: options.slug,
       success: false,

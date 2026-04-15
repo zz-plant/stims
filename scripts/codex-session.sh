@@ -13,16 +13,22 @@ Profiles:
   fast     Warm fast local model role and start the dev server.
   review   Warm fast + quality local model roles, start the dev server,
            and start a background typecheck watcher.
+  compat   Warm fast + quality local model roles, start the dev server,
+           and start a background compatibility watcher.
+  integration Warm fast + quality local model roles, start the dev server,
+           and start a background integration watcher.
+  parity   Warm fast + quality local model roles, start the dev server,
+           and leave the session ready for parity and perf capture runs.
   visual   Warm fast local model role and start the dev server for browser QA.
   full     Warm fast + quality local model roles, start the dev server,
            and start a background unit-test watcher.
 
 Options:
-  --profile <name>    Session profile: fast, review, visual, or full.
-                      Default: fast.
+  --profile <name>    Session profile: fast, review, compat, integration,
+                      parity, visual, or full. Default: fast.
   --port <port>       Dev server port. Default: 5173.
   --host <host>       Dev server host. Default: 127.0.0.1.
-  --watch <mode>      Override watcher mode: none, typecheck, unit,
+  --watch <mode>      Override watcher mode: none, typecheck, unit, compat,
                       integration, or all.
   --skip-models       Skip local model warmup.
   --skip-dev-server   Skip dev server startup.
@@ -387,6 +393,18 @@ case "$PROFILE" in
     MODEL_ROLES=("fast" "quality")
     WATCH_MODE="typecheck"
     ;;
+  compat)
+    MODEL_ROLES=("fast" "quality")
+    WATCH_MODE="compat"
+    ;;
+  integration)
+    MODEL_ROLES=("fast" "quality")
+    WATCH_MODE="integration"
+    ;;
+  parity)
+    MODEL_ROLES=("fast" "quality")
+    WATCH_MODE="none"
+    ;;
   visual)
     MODEL_ROLES=("fast")
     WATCH_MODE="none"
@@ -396,7 +414,7 @@ case "$PROFILE" in
     WATCH_MODE="unit"
     ;;
   *)
-    fail "unknown profile '$PROFILE'. Expected fast, review, visual, or full."
+    fail "unknown profile '$PROFILE'. Expected fast, review, compat, integration, parity, visual, or full."
     ;;
 esac
 
@@ -405,10 +423,10 @@ if [[ -n "$WATCH_MODE_OVERRIDE" ]]; then
 fi
 
 case "$WATCH_MODE" in
-  none|typecheck|unit|integration|all)
+  none|typecheck|unit|compat|integration|all)
     ;;
   *)
-    fail "unknown watch mode '$WATCH_MODE'. Expected none, typecheck, unit, integration, or all."
+    fail "unknown watch mode '$WATCH_MODE'. Expected none, typecheck, unit, compat, integration, or all."
     ;;
 esac
 
@@ -436,6 +454,12 @@ case "$WATCH_MODE" in
     WATCH_COMMAND=(bun run typecheck:watch)
     WATCH_PIDFILE="$SESSION_DIR/typecheck-watch.pid"
     WATCH_LOGFILE="$SESSION_DIR/typecheck-watch.log"
+    ;;
+  compat)
+    WATCH_NAME="compatibility watcher"
+    WATCH_COMMAND=(bun run scripts/run-tests.ts --profile compat --watch)
+    WATCH_PIDFILE="$SESSION_DIR/compat-watch.pid"
+    WATCH_LOGFILE="$SESSION_DIR/compat-watch.log"
     ;;
   unit)
     WATCH_NAME="unit-test watcher"

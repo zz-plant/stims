@@ -17,6 +17,12 @@ When you want to keep the dev server, local model roles, and a background watche
 bun run session:codex -- --profile review
 ```
 
+Higher-throughput session profiles:
+
+- `compat` for compatibility-focused watcher loops
+- `integration` for browser-backed integration watcher loops
+- `parity` for capture and perf runs with a warm dev server and local model roles
+
 Useful controls:
 
 ```bash
@@ -59,6 +65,12 @@ bun run session:codex -- --port 4173 --stop
   bun run setup:codex
   ```
 
+- For task-to-model routing on machines with LM Studio helpers, prefer:
+
+  ```bash
+  bun run model:codex -- --mode auto --task "triage a preset crash" --no-exec
+  ```
+
 ## Linting and formatting
 
 - Biome is the formatter/linter of record.
@@ -82,6 +94,7 @@ bun run check:quick
 
 `check:quick` also includes the no-`@ts-nocheck` guard.
 It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `assets/data/milkdrop-parity/measured-results.json`.
+Its independent checks run in parallel by default; add `-- --serial` when debugging a specific failing step.
 
 ## Task-specific checks
 
@@ -147,6 +160,9 @@ Common commands to keep nearby while implementing:
 ```bash
 # Warm long-lived agent session
 bun run session:codex -- --profile review
+
+# Route a task to the local LM Studio helper stack
+bun run model:codex -- --mode auto --task "review a loader bug" --no-exec
 
 # Start the dev server
 bun run dev

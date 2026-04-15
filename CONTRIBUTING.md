@@ -78,6 +78,7 @@ Use these commands before opening a PR:
 
 - `bun run dev` — start local Vite server.
 - `bun run session:codex -- --profile review` — keep the dev server, local model roles, and a verification watcher warm for agent sessions.
+- `bun run model:codex -- --mode triage --no-exec` — route a task onto the fast or quality local model helper stack.
 - `bun run dev:host` — start Vite on LAN.
 - `bun run build` — production build.
 - `bun run preview` — preview built output.

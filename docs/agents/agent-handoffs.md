@@ -38,6 +38,9 @@ Use the profile that matches the work:
 
 - `fast`: warm the fast local model role and keep the dev server hot
 - `review`: warm fast and quality local model roles, keep the dev server hot, and run a background typecheck watcher
+- `compat`: keep the dev server hot and run a compatibility watcher
+- `integration`: keep the dev server hot and run an integration watcher
+- `parity`: keep the dev server hot for parity and perf capture runs
 - `visual`: keep the dev server hot for browser QA without extra watchers
 - `full`: keep the dev server hot and run a unit-test watcher
 
@@ -48,6 +51,12 @@ bun run session:codex -- --status
 bun run session:codex -- --stop
 # If you started a non-default port, repeat it here:
 bun run session:codex -- --port 4173 --stop
+```
+
+For local model routing before you split work, use:
+
+```bash
+bun run model:codex -- --mode auto --task "triage a runtime regression" --no-exec
 ```
 
 ## Safe ownership slices

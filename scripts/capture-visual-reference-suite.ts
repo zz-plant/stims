@@ -1,4 +1,9 @@
-import { type PlayToyOptions, playToy } from './play-toy.ts';
+import {
+  closePlayToyBrowserSession,
+  createPlayToyBrowserSession,
+  type PlayToyOptions,
+  playToy,
+} from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 type CaptureVisualReferenceSuiteOptions = {
@@ -64,9 +69,22 @@ export async function captureVisualReferenceSuite(
 ) {
   const requests = buildVisualReferenceCaptureRequests(options);
   const results = [];
+  const browserSession = await createPlayToyBrowserSession({
+    headless: options.headless,
+    rendererProfile: 'webgpu',
+  });
 
-  for (const request of requests) {
-    results.push(await playToy(request));
+  try {
+    for (const request of requests) {
+      results.push(
+        await playToy({
+          ...request,
+          browserSession,
+        }),
+      );
+    }
+  } finally {
+    await closePlayToyBrowserSession(browserSession);
   }
 
   return {

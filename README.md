@@ -94,6 +94,7 @@ If you want to validate the production bundle locally, run `bun run build` and t
 | --- | --- |
 | Start dev server | `bun run dev` |
 | Warm an agent session stack | `bun run session:codex -- --profile review` |
+| Route onto a local model role | `bun run model:codex -- --mode triage --no-exec` |
 | Start dev server on all interfaces | `bun run dev:host` |
 | Start a WebGPU-focused local session | `bun run dev:webgpu` |
 | Run the fast local quality gate | `bun run check:quick` |
@@ -122,6 +123,8 @@ Use [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md) as the synchronizatio
 
 - Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
 - Use `bun run session:codex -- --profile review` to keep a local agent stack warm with the dev server, LM Studio model roles when available, and a background verification watcher.
+- Use `bun run model:codex -- --mode auto --task "review a renderer regression" --no-exec` to choose the right local LM Studio helper before a triage or review pass.
+- `bun run check:quick` now runs its independent checks in parallel; use `bun run check:quick -- --serial` only when you need deterministic one-step-at-a-time debugging.
 - If your browser supports WebGPU but visuals fail, switch renderer preference to WebGL in app settings and refresh.
 - Use `bun run preview` after `bun run build` to test the production bundle behavior (including route handling) before deployment.
 - Cloudflare Pages preview and production deploys default to the GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml); the `pages:deploy:*` scripts are the manual fallback path.
