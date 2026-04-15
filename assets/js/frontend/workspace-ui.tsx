@@ -448,31 +448,9 @@ export function WorkspaceLaunchPanel({
               <span className="stims-shell__action-label">Use my music</span>
             </button>
           </div>
-          <div className="stims-shell__launch-promise-strip">
-            <article className="stims-shell__launch-promise">
-              <span className="stims-shell__launch-promise-label">
-                First move
-              </span>
-              <strong>
-                See the visualizer before making any setup choices.
-              </strong>
-            </article>
-            <article className="stims-shell__launch-promise">
-              <span className="stims-shell__launch-promise-label">
-                Bring your sound
-              </span>
-              <strong>
-                Switch to microphone, tab audio, or YouTube any time.
-              </strong>
-            </article>
-            <article className="stims-shell__launch-promise">
-              <span className="stims-shell__launch-promise-label">
-                Hardware aware
-              </span>
-              <strong>
-                Older devices fall back gracefully instead of stalling.
-              </strong>
-            </article>
+          <div className="stims-shell__launch-footnote">
+            <span>Start with demo audio first.</span>
+            <span>Bring in your own music only when you want it.</span>
           </div>
 
           <div className="stims-shell__launch-more">
@@ -523,9 +501,7 @@ export function WorkspaceLaunchPanel({
             onClick={() => onPresetSelection(featuredPreset.id)}
           >
             <div className="stims-shell__launch-recommendation-top">
-              <p className="stims-shell__section-label">
-                Featured opening move
-              </p>
+              <p className="stims-shell__section-label">Featured preset</p>
               <div className="stims-shell__launch-badge-row">
                 <span className="stims-shell__launch-badge">Curated</span>
                 {featuredPresetSupportLabel ? (
@@ -544,7 +520,7 @@ export function WorkspaceLaunchPanel({
               </span>
             </div>
             <div className="stims-shell__launch-recommendation-footer">
-              <span>Opens well with demo audio</span>
+              <span>Opens well on demo audio</span>
               <span>Switch to live input later</span>
             </div>
           </button>

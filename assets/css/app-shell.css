@@ -43,6 +43,7 @@
   --stims-radius-control: 10px;
   --stims-radius-stage: 18px;
   --stims-radius-mobile-panel: 16px;
+  --stims-display: "Cormorant Garamond", "Iowan Old Style", serif;
 }
 
 body[data-page="workspace"] {
@@ -363,7 +364,7 @@ body[data-page="workspace"] {
 .stims-shell__launch-panel {
   position: relative;
   width: min(62rem, 100%);
-  padding: 30px;
+  padding: 44px 30px 30px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 32px;
   background:
@@ -469,10 +470,11 @@ body[data-page="workspace"] {
 .stims-shell__stage-header h2,
 .stims-shell__sheet-heading h2 {
   margin: 0 0 10px;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: clamp(1.95rem, 4.4vw, 3.75rem);
-  line-height: 0.92;
-  letter-spacing: -0.04em;
+  font-family: var(--stims-display);
+  font-size: clamp(2.65rem, 5vw, 5.35rem);
+  font-weight: 600;
+  line-height: 0.88;
+  letter-spacing: -0.035em;
   color: var(--stims-ink-strong);
   text-wrap: balance;
 }
@@ -508,10 +510,10 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-copy p {
   margin: 0;
-  max-width: 46ch;
-  color: color-mix(in srgb, var(--stims-ink) 88%, transparent);
-  font-size: 1.05rem;
-  line-height: 1.62;
+  max-width: 42ch;
+  color: color-mix(in srgb, var(--stims-ink) 84%, transparent);
+  font-size: 1.02rem;
+  line-height: 1.7;
 }
 
 .stims-shell__launch-signals {
@@ -526,38 +528,39 @@ body[data-page="workspace"] {
 .stims-shell__launch-promise {
   display: grid;
   gap: 8px;
-  padding: 14px 16px;
+  padding: 15px 16px 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border-radius: 22px;
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.02)
+      rgba(255, 255, 255, 0.045),
+      rgba(255, 255, 255, 0.018)
     ),
     radial-gradient(
       circle at top right,
-      rgba(119, 201, 255, 0.1),
+      rgba(119, 201, 255, 0.08),
       transparent 34%
     );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 14px 28px rgba(0, 0, 0, 0.16);
+    0 12px 24px rgba(0, 0, 0, 0.16);
 }
 
 .stims-shell__launch-signal strong,
 .stims-shell__launch-promise strong {
   color: var(--stims-ink-strong);
-  line-height: 1.38;
+  font-size: 1.15rem;
+  line-height: 1.28;
 }
 
 .stims-shell__launch-signal-label,
 .stims-shell__launch-promise-label,
 .stims-shell__launch-badge {
   font-family: var(--font-family-mono);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -566,10 +569,32 @@ body[data-page="workspace"] {
   color: color-mix(in srgb, var(--stims-cool) 68%, var(--stims-ink));
 }
 
-.stims-shell__launch-promise-strip {
+.stims-shell__launch-footnote {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  color: color-mix(in srgb, var(--stims-ink) 72%, transparent);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.stims-shell__launch-footnote span {
+  position: relative;
+  padding-left: 15px;
+}
+
+.stims-shell__launch-footnote span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--stims-cool) 64%, var(--stims-ink));
+  box-shadow: 0 0 18px rgba(119, 201, 255, 0.24);
 }
 
 .stims-shell__launch-recommendation {
@@ -582,22 +607,22 @@ body[data-page="workspace"] {
   min-height: 100%;
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 24px;
+  border-radius: 28px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.04), transparent 46%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.03), transparent 46%),
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.07),
-      rgba(255, 255, 255, 0.025)
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.022)
     ),
     radial-gradient(
       circle at top right,
-      rgba(244, 122, 84, 0.2),
+      rgba(244, 122, 84, 0.14),
       transparent 34%
     ),
     radial-gradient(
       circle at bottom left,
-      rgba(119, 201, 255, 0.14),
+      rgba(119, 201, 255, 0.1),
       transparent 30%
     );
   color: inherit;
@@ -630,9 +655,10 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-recommendation strong {
   color: var(--stims-ink-strong);
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 1.34rem;
-  line-height: 1.02;
+  font-family: var(--stims-display);
+  font-size: 2.05rem;
+  font-weight: 600;
+  line-height: 0.95;
 }
 
 .stims-shell__launch-badge-row,
@@ -650,7 +676,7 @@ body[data-page="workspace"] {
   padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.035);
   color: color-mix(in srgb, var(--stims-ink) 92%, transparent);
 }
 
@@ -660,8 +686,8 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__launch-recommendation .stims-shell__preset-art {
-  min-height: 208px;
-  border-radius: 22px;
+  min-height: 224px;
+  border-radius: 24px;
 }
 
 .stims-shell__launch-alert {
@@ -1280,6 +1306,10 @@ body[data-page="workspace"] {
   pointer-events: auto;
 }
 
+.stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
+  margin-top: 68px;
+}
+
 .stims-shell__stage-dock {
   position: absolute;
   left: 50%;
@@ -1304,6 +1334,32 @@ body[data-page="workspace"] {
     0 18px 34px rgba(0, 0, 0, 0.26),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(16px);
+}
+
+.stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-dock {
+  padding: 6px;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(10, 14, 22, 0.58),
+    rgba(7, 10, 16, 0.5)
+  );
+  box-shadow:
+    0 18px 30px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-tool {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 18px rgba(0, 0, 0, 0.14);
+}
+
+.stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-tool-label {
+  font-size: 0.94rem;
 }
 
 .stims-shell__stage-tool {
@@ -2249,14 +2305,14 @@ body[data-page="workspace"] {
 .stims-shell .cta-button.primary {
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, #c8ff85 74%, #f8ffdc),
-    color-mix(in srgb, var(--stims-cool) 18%, #7ddf74)
+    color-mix(in srgb, #e8f5c8 78%, #fff9e9),
+    color-mix(in srgb, #9fd98b 74%, #d9efc4)
   );
-  border-color: color-mix(in srgb, #ffffff 20%, rgba(125, 224, 162, 0.62));
-  color: #07120f;
+  border-color: color-mix(in srgb, #ffffff 24%, rgba(166, 207, 138, 0.64));
+  color: #101610;
   box-shadow:
     0 18px 32px rgba(0, 0, 0, 0.24),
-    0 0 32px rgba(125, 224, 162, 0.16),
+    0 0 28px rgba(202, 230, 170, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
@@ -2270,7 +2326,7 @@ body[data-page="workspace"] {
 .stims-shell .cta-button.primary:hover {
   box-shadow:
     0 22px 36px rgba(0, 0, 0, 0.26),
-    0 0 40px rgba(125, 224, 162, 0.18),
+    0 0 34px rgba(202, 230, 170, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
@@ -2384,10 +2440,13 @@ body[data-page="workspace"] {
   .stims-shell__launch-header,
   .stims-shell__launch-stack,
   .stims-shell__launch-signals,
-  .stims-shell__launch-promise-strip,
   .stims-shell__launch-hero,
   .stims-shell__source-grid,
   .stims-shell__launch-recommendation {
+    grid-template-columns: 1fr;
+  }
+
+  .stims-shell__launch-footnote {
     grid-template-columns: 1fr;
   }
 
