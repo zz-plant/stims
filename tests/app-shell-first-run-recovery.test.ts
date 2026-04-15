@@ -53,13 +53,13 @@ describe('Workspace shell first-run and recovery regression', () => {
       'utf8',
     );
 
-    expect(appSource).toContain('Choose a new look');
+    expect(appSource).toContain('Choose something new');
     expect(appSource).toContain(
-      'Start with the featured look or open the preset library.',
+      'Start with the featured pick or open the full list.',
     );
-    expect(uiSource).toContain('Try featured preset');
-    expect(uiSource).toContain('Browse presets');
-    expect(uiSource).toContain('Preset not found');
+    expect(uiSource).toContain('Try featured pick');
+    expect(uiSource).toContain('Browse everything');
+    expect(uiSource).toContain('Saved pick not found');
     expect(uiSource).toContain("isn't available here anymore.");
     expect(uiSource).not.toContain('This preset is no longer bundled here.');
     expect(shellHookSource).toMatch(

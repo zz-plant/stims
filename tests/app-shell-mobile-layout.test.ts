@@ -16,7 +16,10 @@ describe('Workspace shell mobile layout regression', () => {
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*88svh;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-hero\s*\{[\s\S]*?inset:\s*10px;[\s\S]*?align-content:\s*end;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-hero\s*\{[\s\S]*?inset:\s*352px 10px 18px;[\s\S]*?align-content:\s*start;/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__frame-chrome\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?align-items:\s*stretch;/u,
     );
   });
 
