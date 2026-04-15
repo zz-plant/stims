@@ -48,7 +48,7 @@ export function buildGatePlan(
     concurrent: [
       {
         label: 'Biome check',
-        cmd: ['bunx', 'biome', 'check', 'assets', 'scripts', 'tests'],
+        cmd: ['bun', 'run', 'biome:check'],
       },
       {
         label: 'Bundled catalog fidelity',
