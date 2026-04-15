@@ -944,8 +944,9 @@ describe('milkdrop overlay browse rendering', () => {
       activeRow?.querySelector('.milkdrop-overlay__rating-select'),
     ).toBeNull();
     expect(
-      activeRow?.querySelector('.milkdrop-overlay__preset-warning'),
-    ).toBeNull();
+      activeRow?.querySelector('.milkdrop-overlay__preset-warning')
+        ?.textContent,
+    ).toBe('Measured WebGPU parity exists; current session is using WebGL.');
     expect(activeRow?.textContent).not.toContain('slow-burn');
     expect(activeRow?.textContent).not.toContain('bundled');
     expect(
@@ -970,6 +971,30 @@ describe('milkdrop overlay browse rendering', () => {
     expect(partialWarning?.textContent).toBe(
       'Showing a simpler version. Wave mesh falls back to a simpler path.',
     );
+
+    overlay.dispose();
+  });
+
+  test('shows runtime-only parity messaging for uncertified WebGPU preset rows', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const overlay = createOverlay();
+    const runtimeOnlyPreset = createCatalogEntry(
+      'noise-runtime',
+      'Noise Runtime',
+    );
+
+    overlay.setCatalog([runtimeOnlyPreset], null, 'webgpu');
+
+    expect(
+      document.querySelector('.milkdrop-overlay__preset-warning')?.textContent,
+    ).toBe('Runs on WebGPU, but measured parity is still pending.');
 
     overlay.dispose();
   });
