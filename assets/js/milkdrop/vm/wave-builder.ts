@@ -11,6 +11,7 @@ import { buildMainWaveFrame } from './frame-generation';
 import {
   clamp,
   color,
+  MAIN_WAVE_FRAME_HISTORY_SIZE,
   MAX_TRAILS,
   type MutableState,
   sampleCustomWaveChannels,
@@ -33,6 +34,8 @@ export function buildMainWave({
   supportsProceduralWave: (drawMode: 'line' | 'dots') => boolean;
 }) {
   const drawMode = (state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
+  const nextFrameIndex =
+    (waveState.mainWaveFrameIndex + 1) % MAIN_WAVE_FRAME_HISTORY_SIZE;
   const built = buildMainWaveFrame({
     state,
     signals,
@@ -41,7 +44,14 @@ export function buildMainWave({
     previousMomentum: waveState.lastWaveMomentum,
     buffers: waveState.buffers,
     useProcedural: supportsProceduralWave(drawMode),
+    reusableVisual: waveState.mainWaveVisualFrames[nextFrameIndex],
+    reusableProcedural: waveState.proceduralMainWaveFrames[nextFrameIndex],
   });
+  waveState.mainWaveFrameIndex = nextFrameIndex;
+  waveState.mainWaveVisualFrames[nextFrameIndex] = built.visual;
+  if (built.procedural) {
+    waveState.proceduralMainWaveFrames[nextFrameIndex] = built.procedural;
+  }
   waveState.lastWaveSamples = built.nextSamples;
   waveState.lastWaveMomentum = built.nextMomentum;
   return {

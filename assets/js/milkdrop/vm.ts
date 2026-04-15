@@ -95,6 +95,9 @@ class MilkdropPresetVM implements MilkdropVM {
     lastProceduralWave: null,
     lastWaveSamples: [],
     lastWaveMomentum: [],
+    mainWaveFrameIndex: -1,
+    mainWaveVisualFrames: [],
+    proceduralMainWaveFrames: [],
     customWaveLocals: [],
     customWaveFrameIndex: 0,
     customWaveVisualFrames: [[], []],
@@ -174,6 +177,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.lastProceduralWave = null;
     this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
     this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
+    this.waveState.mainWaveFrameIndex = -1;
     this.waveState.customWaveLocals = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
     );

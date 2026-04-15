@@ -189,7 +189,14 @@ export function useWorkspaceSessionState({
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
   const readinessItems = useWorkspaceReadiness();
   const {
+    handleYoutubeUrlKeyDown,
+    loadRecentYouTubeVideo,
     loadYouTubePreview,
+    recentYouTubeVideos,
+    youtubeCanLoad,
+    youtubeFeedback,
+    youtubeInputInvalid,
+    youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
     youtubeUrl,
@@ -692,6 +699,7 @@ export function useWorkspaceSessionState({
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    handleYoutubeUrlKeyDown,
     activityCatalog,
     importPresetFiles: async (files: FileList | null) => {
       if (!files?.length) {
@@ -701,10 +709,12 @@ export function useWorkspaceSessionState({
       await adapter.importPreset(files);
     },
     loadYouTubePreview,
+    loadRecentYouTubeVideo,
     motionPreference,
     pendingPresetIdRef,
     qualityPreset,
     readinessItems,
+    recentYouTubeVideos,
     refreshCatalogActivity,
     renderPreferences,
     searchQuery,
@@ -768,6 +778,10 @@ export function useWorkspaceSessionState({
       const service = await ensurePresetPreviewService();
       service.requestPreviews(presetIds);
     },
+    youtubeCanLoad,
+    youtubeFeedback,
+    youtubeInputInvalid,
+    youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
     youtubeUrl,

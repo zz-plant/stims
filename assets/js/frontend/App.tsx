@@ -38,7 +38,9 @@ export function StimsWorkspaceApp() {
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    handleYoutubeUrlKeyDown,
     importPresetFiles,
+    loadRecentYouTubeVideo,
     loadYouTubePreview,
     motionPreference,
     pendingPresetIdRef,
@@ -46,6 +48,7 @@ export function StimsWorkspaceApp() {
     qualityPreset,
     refreshPresetPreviews,
     readinessItems,
+    recentYouTubeVideos,
     renderPreferences,
     requestPresetPreviews,
     searchQuery,
@@ -58,6 +61,10 @@ export function StimsWorkspaceApp() {
     startAudioSource,
     toast,
     toggleExtendedSources,
+    youtubeCanLoad,
+    youtubeFeedback,
+    youtubeInputInvalid,
+    youtubeLoading,
     youtubePreviewRef,
     youtubeReady,
     youtubeUrl,
@@ -201,17 +208,24 @@ export function StimsWorkspaceApp() {
             }}
             onBrowseRecovery={handleBrowseRecovery}
             onFeaturedPresetSelection={handleFeaturedPresetSelection}
+            onLoadRecentYouTubeVideo={loadRecentYouTubeVideo}
             onLoadYouTube={() => {
               void loadYouTubePreview();
             }}
             onPresetSelection={handlePresetSelection}
             onToggleExtendedSources={toggleExtendedSources}
             onYoutubeUrlChange={setYoutubeUrl}
+            onYoutubeUrlKeyDown={handleYoutubeUrlKeyDown}
             presetPreviews={presetPreviews}
             readinessAlerts={readinessAlerts}
+            recentYouTubeVideos={recentYouTubeVideos}
             requestedPresetId={routeState.presetId}
             recentPresets={recentPresets}
             showExtendedSources={showExtendedSources}
+            youtubeCanLoad={youtubeCanLoad}
+            youtubeFeedback={youtubeFeedback}
+            youtubeInputInvalid={youtubeInputInvalid}
+            youtubeLoading={youtubeLoading}
             youtubePreviewRef={youtubePreviewRef}
             youtubeReady={youtubeReady}
             youtubeUrl={youtubeUrl}
@@ -225,6 +239,7 @@ export function StimsWorkspaceApp() {
         onLoadYouTube={() => {
           void loadYouTubePreview();
         }}
+        onLoadRecentYouTubeVideo={loadRecentYouTubeVideo}
         onOpenBrowse={() =>
           updatePanel(routeState.panel === 'browse' ? null : 'browse')
         }
@@ -238,12 +253,18 @@ export function StimsWorkspaceApp() {
         onToggleExtendedSources={toggleExtendedSources}
         onToggleFullscreen={handleToggleFullscreen}
         onYoutubeUrlChange={setYoutubeUrl}
+        onYoutubeUrlKeyDown={handleYoutubeUrlKeyDown}
         panel={routeState.panel}
         stageEyebrow={stageEyebrow}
         stageRef={stageRef}
         stageSummary={stageSummary}
         stageTitle={stageTitle}
         showExtendedSources={showExtendedSources}
+        recentYouTubeVideos={recentYouTubeVideos}
+        youtubeCanLoad={youtubeCanLoad}
+        youtubeFeedback={youtubeFeedback}
+        youtubeInputInvalid={youtubeInputInvalid}
+        youtubeLoading={youtubeLoading}
         youtubePreviewRef={youtubePreviewRef}
         youtubeReady={youtubeReady}
         youtubeUrl={youtubeUrl}

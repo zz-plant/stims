@@ -10,6 +10,7 @@ import type {
 } from '../types';
 
 export const MAX_TRAILS = 5;
+export const MAIN_WAVE_FRAME_HISTORY_SIZE = MAX_TRAILS + 1;
 export const MAX_CUSTOM_WAVE_SLOTS = 32;
 export const MAX_CUSTOM_SHAPE_SLOTS = 32;
 export const MAX_MOTION_VECTOR_COLUMNS = 96;
@@ -63,6 +64,9 @@ export type WaveBuilderState = {
   lastProceduralWave: MilkdropProceduralWaveVisual | null;
   lastWaveSamples: number[];
   lastWaveMomentum: number[];
+  mainWaveFrameIndex: number;
+  mainWaveVisualFrames: MilkdropWaveVisual[];
+  proceduralMainWaveFrames: MilkdropProceduralWaveVisual[];
   customWaveLocals: MutableState[];
   customWaveFrameIndex: 0 | 1;
   customWaveVisualFrames: [MilkdropWaveVisual[], MilkdropWaveVisual[]];

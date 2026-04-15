@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from 'react';
+import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import { useEffect } from 'react';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
@@ -180,16 +180,30 @@ function PresetShelfSection({
 function AudioSourcePanel({
   engineReady,
   onAudioStart,
+  onLoadRecentYouTubeVideo,
   onLoadYouTube,
   onYoutubeUrlChange,
+  onYoutubeUrlKeyDown,
+  recentYouTubeVideos,
+  youtubeCanLoad,
+  youtubeFeedback,
+  youtubeInputInvalid,
+  youtubeLoading,
   youtubePreviewRef,
   youtubeReady,
   youtubeUrl,
 }: {
   engineReady: boolean;
   onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
+  onLoadRecentYouTubeVideo: (videoId: string) => void;
   onLoadYouTube: () => void;
   onYoutubeUrlChange: (value: string) => void;
+  onYoutubeUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  recentYouTubeVideos: Array<{ id: string; title: string }>;
+  youtubeCanLoad: boolean;
+  youtubeFeedback: string;
+  youtubeInputInvalid: boolean;
+  youtubeLoading: boolean;
   youtubePreviewRef: RefObject<HTMLDivElement | null>;
   youtubeReady: boolean;
   youtubeUrl: string;
@@ -240,17 +254,24 @@ function AudioSourcePanel({
             className="stims-shell__input"
             type="url"
             placeholder="https://youtube.com/watch?v=..."
+            autoComplete="off"
+            inputMode="url"
+            aria-describedby="youtube-url-feedback"
+            aria-invalid={youtubeInputInvalid}
             value={youtubeUrl}
             onChange={(event) => onYoutubeUrlChange(event.target.value)}
+            onKeyDown={onYoutubeUrlKeyDown}
           />
           <button
             id="load-youtube"
             className="cta-button"
             type="button"
-            disabled={!engineReady}
+            disabled={!engineReady || !youtubeCanLoad}
+            aria-disabled={!engineReady || !youtubeCanLoad}
+            aria-busy={youtubeLoading}
             onClick={onLoadYouTube}
           >
-            Load
+            {youtubeLoading ? 'Loading…' : 'Load'}
           </button>
           <button
             id="use-youtube-audio"
@@ -262,6 +283,36 @@ function AudioSourcePanel({
             Start capture
           </button>
         </div>
+        <p
+          id="youtube-url-feedback"
+          className="stims-shell__youtube-feedback"
+          data-state={
+            youtubeInputInvalid ? 'invalid' : youtubeReady ? 'ready' : 'idle'
+          }
+          aria-live="polite"
+        >
+          {youtubeFeedback}
+        </p>
+        {recentYouTubeVideos.length > 0 ? (
+          <div className="stims-shell__youtube-recent">
+            <p className="stims-shell__field-label">Recent videos</p>
+            <div className="stims-shell__chip-list">
+              {recentYouTubeVideos.map((video) => (
+                <button
+                  key={video.id}
+                  type="button"
+                  className="stims-shell__chip"
+                  onClick={() => onLoadRecentYouTubeVideo(video.id)}
+                >
+                  <span className="stims-shell__chip-copy">
+                    <strong>{video.title}</strong>
+                    <span>{video.id}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div
           id="youtube-player-container"
           ref={youtubePreviewRef}
@@ -287,15 +338,22 @@ export function WorkspaceLaunchPanel({
   onAudioStart,
   onBrowseRecovery,
   onFeaturedPresetSelection,
+  onLoadRecentYouTubeVideo,
   onLoadYouTube,
   onPresetSelection,
   onToggleExtendedSources,
   onYoutubeUrlChange,
+  onYoutubeUrlKeyDown,
   presetPreviews,
+  recentYouTubeVideos,
   recentPresets,
   readinessAlerts,
   requestedPresetId,
   showExtendedSources,
+  youtubeCanLoad,
+  youtubeFeedback,
+  youtubeInputInvalid,
+  youtubeLoading,
   youtubePreviewRef,
   youtubeReady,
   youtubeUrl,
@@ -311,15 +369,22 @@ export function WorkspaceLaunchPanel({
   onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
   onBrowseRecovery: () => void;
   onFeaturedPresetSelection: () => void;
+  onLoadRecentYouTubeVideo: (videoId: string) => void;
   onLoadYouTube: () => void;
   onPresetSelection: (presetId: string) => void;
   onToggleExtendedSources: () => void;
   onYoutubeUrlChange: (value: string) => void;
+  onYoutubeUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
+  recentYouTubeVideos: Array<{ id: string; title: string }>;
   recentPresets: PresetCatalogEntry[];
   readinessAlerts: ReadinessItem[];
   requestedPresetId: string | null;
   showExtendedSources: boolean;
+  youtubeCanLoad: boolean;
+  youtubeFeedback: string;
+  youtubeInputInvalid: boolean;
+  youtubeLoading: boolean;
   youtubePreviewRef: RefObject<HTMLDivElement | null>;
   youtubeReady: boolean;
   youtubeUrl: string;
@@ -346,6 +411,9 @@ export function WorkspaceLaunchPanel({
         summary: 'A preset you opened recently and can jump back into.',
       })),
   ].slice(0, 3);
+  const featuredPresetSupportLabel = featuredPreset
+    ? getPresetCardSupportLabel(featuredPreset)
+    : null;
 
   return (
     <div className={rootClassName} data-audio-controls>
@@ -380,12 +448,31 @@ export function WorkspaceLaunchPanel({
               <span className="stims-shell__action-label">Use my music</span>
             </button>
           </div>
-          <div className="stims-shell__confidence-note">
-            <strong>Runs best on desktop and laptop.</strong>
-            <span>
-              Phones and older browsers may switch to lighter visuals
-              automatically.
-            </span>
+          <div className="stims-shell__launch-promise-strip">
+            <article className="stims-shell__launch-promise">
+              <span className="stims-shell__launch-promise-label">
+                First move
+              </span>
+              <strong>
+                See the visualizer before making any setup choices.
+              </strong>
+            </article>
+            <article className="stims-shell__launch-promise">
+              <span className="stims-shell__launch-promise-label">
+                Bring your sound
+              </span>
+              <strong>
+                Switch to microphone, tab audio, or YouTube any time.
+              </strong>
+            </article>
+            <article className="stims-shell__launch-promise">
+              <span className="stims-shell__launch-promise-label">
+                Hardware aware
+              </span>
+              <strong>
+                Older devices fall back gracefully instead of stalling.
+              </strong>
+            </article>
           </div>
 
           <div className="stims-shell__launch-more">
@@ -393,8 +480,15 @@ export function WorkspaceLaunchPanel({
               <AudioSourcePanel
                 engineReady={engineReady}
                 onAudioStart={onAudioStart}
+                onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
                 onLoadYouTube={onLoadYouTube}
                 onYoutubeUrlChange={onYoutubeUrlChange}
+                onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
+                recentYouTubeVideos={recentYouTubeVideos}
+                youtubeCanLoad={youtubeCanLoad}
+                youtubeFeedback={youtubeFeedback}
+                youtubeInputInvalid={youtubeInputInvalid}
+                youtubeLoading={youtubeLoading}
                 youtubePreviewRef={youtubePreviewRef}
                 youtubeReady={youtubeReady}
                 youtubeUrl={youtubeUrl}
@@ -403,20 +497,55 @@ export function WorkspaceLaunchPanel({
           </div>
         </div>
 
+        <div className="stims-shell__launch-signals">
+          <article className="stims-shell__launch-signal">
+            <span className="stims-shell__launch-signal-label">Fast start</span>
+            <strong>Demo audio gets the stage moving right away.</strong>
+          </article>
+          <article className="stims-shell__launch-signal">
+            <span className="stims-shell__launch-signal-label">
+              Live switch
+            </span>
+            <strong>Bring in your own music only when you want it.</strong>
+          </article>
+          <article className="stims-shell__launch-signal">
+            <span className="stims-shell__launch-signal-label">Tuned feel</span>
+            <strong>
+              Desktop-first visuals with lighter fallback when needed.
+            </strong>
+          </article>
+        </div>
+
         {featuredPreset ? (
           <button
             type="button"
             className="stims-shell__launch-recommendation"
             onClick={() => onPresetSelection(featuredPreset.id)}
           >
+            <div className="stims-shell__launch-recommendation-top">
+              <p className="stims-shell__section-label">
+                Featured opening move
+              </p>
+              <div className="stims-shell__launch-badge-row">
+                <span className="stims-shell__launch-badge">Curated</span>
+                {featuredPresetSupportLabel ? (
+                  <span className="stims-shell__launch-badge">
+                    {featuredPresetSupportLabel}
+                  </span>
+                ) : null}
+              </div>
+            </div>
             <PresetArtwork entry={featuredPreset} />
             <div className="stims-shell__launch-recommendation-copy">
-              <p className="stims-shell__section-label">Try this look first</p>
               <strong>{featuredPreset.title}</strong>
               <span className="stims-shell__meta-copy">
                 {describePresetMood(featuredPreset)} ·{' '}
                 {formatPresetSupportNote(featuredPreset)}
               </span>
+            </div>
+            <div className="stims-shell__launch-recommendation-footer">
+              <span>Opens well with demo audio</span>
+              <span>Switch to live input later</span>
             </div>
           </button>
         ) : null}
@@ -494,6 +623,7 @@ export function WorkspaceStagePanel({
   liveMode,
   missingRequestedPreset,
   onAudioStart,
+  onLoadRecentYouTubeVideo,
   onLoadYouTube,
   onOpenBrowse,
   onOpenSettings,
@@ -502,12 +632,18 @@ export function WorkspaceStagePanel({
   onToggleExtendedSources,
   onToggleFullscreen,
   onYoutubeUrlChange,
+  onYoutubeUrlKeyDown,
   panel,
+  recentYouTubeVideos,
   stageEyebrow,
   stageRef,
   stageSummary,
   stageTitle,
   showExtendedSources,
+  youtubeCanLoad,
+  youtubeFeedback,
+  youtubeInputInvalid,
+  youtubeLoading,
   youtubePreviewRef,
   youtubeReady,
   youtubeUrl,
@@ -521,6 +657,7 @@ export function WorkspaceStagePanel({
   liveMode: boolean;
   missingRequestedPreset: boolean;
   onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
+  onLoadRecentYouTubeVideo: (videoId: string) => void;
   onLoadYouTube: () => void;
   onOpenBrowse: () => void;
   onOpenSettings: () => void;
@@ -529,12 +666,18 @@ export function WorkspaceStagePanel({
   onToggleExtendedSources: () => void;
   onToggleFullscreen: () => void;
   onYoutubeUrlChange: (value: string) => void;
+  onYoutubeUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
   panel: PanelState;
+  recentYouTubeVideos: Array<{ id: string; title: string }>;
   stageEyebrow: string;
   stageRef: RefObject<HTMLDivElement | null>;
   stageSummary: string;
   stageTitle: string;
   showExtendedSources: boolean;
+  youtubeCanLoad: boolean;
+  youtubeFeedback: string;
+  youtubeInputInvalid: boolean;
+  youtubeLoading: boolean;
   youtubePreviewRef: RefObject<HTMLDivElement | null>;
   youtubeReady: boolean;
   youtubeUrl: string;
@@ -620,8 +763,15 @@ export function WorkspaceStagePanel({
                       <AudioSourcePanel
                         engineReady={engineReady}
                         onAudioStart={onAudioStart}
+                        onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
                         onLoadYouTube={onLoadYouTube}
                         onYoutubeUrlChange={onYoutubeUrlChange}
+                        onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
+                        recentYouTubeVideos={recentYouTubeVideos}
+                        youtubeCanLoad={youtubeCanLoad}
+                        youtubeFeedback={youtubeFeedback}
+                        youtubeInputInvalid={youtubeInputInvalid}
+                        youtubeLoading={youtubeLoading}
                         youtubePreviewRef={youtubePreviewRef}
                         youtubeReady={youtubeReady}
                         youtubeUrl={youtubeUrl}

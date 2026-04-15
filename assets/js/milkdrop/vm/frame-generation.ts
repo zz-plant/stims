@@ -1,4 +1,5 @@
 import type {
+  MilkdropColor,
   MilkdropFrameState,
   MilkdropProceduralWaveVisual,
   MilkdropRuntimeSignals,
@@ -70,6 +71,18 @@ function brightenWaveColor(waveColor: {
     clamp(waveColor.b * gain, 0, 1),
     waveColor.a,
   );
+}
+
+function assignColor(target: MilkdropColor | undefined, source: MilkdropColor) {
+  if (!target) {
+    return source;
+  }
+
+  target.r = source.r;
+  target.g = source.g;
+  target.b = source.b;
+  target.a = source.a;
+  return target;
 }
 
 function isClosedMainWaveMode(mode: number) {
@@ -229,6 +242,8 @@ export function buildMainWaveFrame({
     momentumSamples: [],
   },
   useProcedural,
+  reusableVisual,
+  reusableProcedural,
 }: {
   state: Record<string, number>;
   signals: MilkdropRuntimeSignals;
@@ -241,6 +256,8 @@ export function buildMainWaveFrame({
     momentumSamples: number[];
   };
   useProcedural: boolean;
+  reusableVisual?: MilkdropWaveVisual;
+  reusableProcedural?: MilkdropProceduralWaveVisual;
 }): {
   visual: MilkdropWaveVisual;
   procedural: MilkdropProceduralWaveVisual | null;
@@ -285,11 +302,48 @@ export function buildMainWaveFrame({
   }
 
   const drawMode = (state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
-  const positions = useProcedural ? [] : new Array<number>(samples * 3);
-  const proceduralSamples = useProcedural ? new Array<number>(samples) : null;
-  const proceduralVelocities = useProcedural
-    ? new Array<number>(samples)
+  const visual = reusableVisual ?? {
+    positions: [],
+    color: color(1, 1, 1, 1),
+    alpha: 1,
+    thickness: 1,
+    drawMode,
+    additive: false,
+    pointSize: 1,
+    closed: false,
+  };
+  const positions = visual.positions;
+  if (useProcedural) {
+    positions.length = 0;
+  } else {
+    positions.length = samples * 3;
+  }
+  const procedural = useProcedural
+    ? (reusableProcedural ?? {
+        samples: [],
+        velocities: [],
+        mode,
+        centerX,
+        centerY,
+        scale,
+        mystery,
+        time: signals.time,
+        beatPulse: signals.beatPulse,
+        trebleAtt: signals.trebleAtt,
+        color: color(1, 1, 1, 1),
+        alpha: 1,
+        additive: false,
+        thickness: 1,
+      })
     : null;
+  const proceduralSamples = procedural?.samples ?? null;
+  const proceduralVelocities = procedural?.velocities ?? null;
+  if (proceduralSamples) {
+    proceduralSamples.length = samples;
+  }
+  if (proceduralVelocities) {
+    proceduralVelocities.length = samples;
+  }
 
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
@@ -445,36 +499,31 @@ export function buildMainWaveFrame({
   const pointSize = clamp((state.wave_thick ?? 1) * 3, 1, 12);
   const closed = drawMode === 'line' && isClosedMainWaveMode(mode);
 
-  const procedural = useProcedural
-    ? ({
-        samples: proceduralSamples ?? [],
-        velocities: proceduralVelocities ?? [],
-        mode,
-        centerX,
-        centerY,
-        scale,
-        mystery,
-        time: signals.time,
-        beatPulse: signals.beatPulse,
-        trebleAtt: signals.trebleAtt,
-        color: finalWaveColor,
-        alpha,
-        additive,
-        thickness,
-      } satisfies MilkdropProceduralWaveVisual)
-    : null;
+  if (procedural) {
+    procedural.mode = mode;
+    procedural.centerX = centerX;
+    procedural.centerY = centerY;
+    procedural.scale = scale;
+    procedural.mystery = mystery;
+    procedural.time = signals.time;
+    procedural.beatPulse = signals.beatPulse;
+    procedural.trebleAtt = signals.trebleAtt;
+    procedural.color = assignColor(procedural.color, finalWaveColor);
+    procedural.alpha = alpha;
+    procedural.additive = additive;
+    procedural.thickness = thickness;
+  }
+
+  visual.color = assignColor(visual.color, finalWaveColor);
+  visual.alpha = alpha;
+  visual.thickness = thickness;
+  visual.drawMode = drawMode;
+  visual.additive = additive;
+  visual.pointSize = pointSize;
+  visual.closed = closed;
 
   return {
-    visual: {
-      positions,
-      color: finalWaveColor,
-      alpha,
-      thickness,
-      drawMode,
-      additive,
-      pointSize,
-      closed,
-    },
+    visual,
     procedural,
     nextSamples: smoothedSamples,
     nextMomentum,
