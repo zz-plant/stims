@@ -8,6 +8,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 
 - Human contributors: [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
 - Agent contributors: [`../AGENTS.md`](../AGENTS.md) then [`agents/README.md`](./agents/README.md)
+- Agent bootstrap and handoffs: [`agents/agent-handoffs.md`](./agents/agent-handoffs.md)
 - Day-to-day implementation: [`DEVELOPMENT.md`](./DEVELOPMENT.md)
 - Runtime details: [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 - Successor workstreams: [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md)
@@ -32,6 +33,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md)
 - [`DOCS_MAINTENANCE.md`](./DOCS_MAINTENANCE.md)
 - [`FRONTEND_PERFORMANCE_BOTTLENECKS.md`](./FRONTEND_PERFORMANCE_BOTTLENECKS.md)
+- [`agents/agent-handoffs.md`](./agents/agent-handoffs.md)
 
 ## Historical or transitional docs
 

@@ -14,6 +14,7 @@ import agentPlayVisualizerWorkflow from '../.agent/workflows/play-visualizer.md'
 import agentShipVisualizerChangeWorkflow from '../.agent/workflows/ship-visualizer-change.md';
 import agentTestVisualizerWorkflow from '../.agent/workflows/test-visualizer.md';
 import toyManifest from '../assets/js/data/toy-manifest.ts';
+import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
 import docsDevelopment from '../docs/DEVELOPMENT.md';
 import docsMcpServer from '../docs/MCP_SERVER.md';
@@ -35,6 +36,7 @@ const markdownSources = {
   'docs/TOY_SCRIPT_INDEX.md': docsToyScriptIndex,
   'docs/toys.md': docsToys,
   'docs/agents/README.md': docsAgentsReadme,
+  'docs/agents/agent-handoffs.md': docsAgentsAgentHandoffs,
   '.agent/skills/modify-preset-workflow/SKILL.md':
     agentModifyPresetWorkflowSkill,
   '.agent/skills/modify-visualizer-runtime/SKILL.md':

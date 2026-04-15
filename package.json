@@ -43,6 +43,7 @@
     "dev:check": "bun scripts/dev-check.mjs || node scripts/dev-check.mjs",
     "play:toy": "bun run scripts/play-toy.ts",
     "setup:codex": "bash scripts/codex-setup.sh",
+    "session:codex": "bash scripts/codex-session.sh",
     "check": "bun run scripts/run-quality-gate.ts",
     "check:architecture": "bun run scripts/check-architecture.ts",
     "check:catalog-fidelity": "bun run scripts/check-bundled-catalog-fidelity.ts",

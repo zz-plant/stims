@@ -1,5 +1,29 @@
 # Tooling and Quality Checks
 
+## Bootstrap the repo state
+
+When you are dropped into the repo without confidence about install state or recent drift, start with:
+
+```bash
+bun run setup:codex --print-plan
+bun run setup:codex
+```
+
+`setup:codex` is the repo bootstrap for agent sessions. By default it installs dependencies and runs `bun run check:quick`.
+
+When you want to keep the dev server, local model roles, and a background watcher warm between edits, use:
+
+```bash
+bun run session:codex -- --profile review
+```
+
+Useful controls:
+
+```bash
+bun run session:codex -- --status
+bun run session:codex -- --stop
+```
+
 ## Package manager and script execution
 
 - Use **Bun** for installs and scripts.
@@ -19,6 +43,18 @@
 
   ```bash
   bun run <script>
+  ```
+
+- For a warm long-lived session on higher-memory local machines, prefer:
+
+  ```bash
+  bun run session:codex -- --profile review
+  ```
+
+- For install/check bootstrap specifically, prefer:
+
+  ```bash
+  bun run setup:codex
   ```
 
 ## Linting and formatting
@@ -107,6 +143,9 @@ Common commands to keep nearby while implementing:
 ### Development
 
 ```bash
+# Warm long-lived agent session
+bun run session:codex -- --profile review
+
 # Start the dev server
 bun run dev
 

@@ -9,7 +9,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 ## Core workflow
 
 1. Install dependencies with `bun install`.
-2. Start local development with `bun run dev`.
+2. Start local development with `bun run dev` or `bun run session:codex -- --profile review` for a warmer agent session.
 3. Open `http://localhost:5173/`.
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
@@ -21,6 +21,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 | Task | Command |
 | --- | --- |
 | Start dev server | `bun run dev` |
+| Warm an agent session stack | `bun run session:codex -- --profile review` |
 | Start dev server on all interfaces | `bun run dev:host` |
 | WebGPU-focused local session | `bun run dev:webgpu` |
 | Full quality gate | `bun run check` |
@@ -32,6 +33,30 @@ For a concise parallel execution map across parity, runtime performance, browser
 | Run legacy shell compatibility tests | `bun run test:legacy-frontend` |
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
+
+## Hardware-aware agent sessions
+
+Use the dedicated session helper when you want to take advantage of a higher-memory local machine with warm local inference and long-lived background processes:
+
+```bash
+bun run session:codex -- --profile review
+```
+
+Profiles:
+
+- `fast` warms the fast local model role and starts the dev server
+- `review` warms the fast and quality local model roles, starts the dev server, and starts `bun run typecheck:watch`
+- `visual` warms the fast local model role and starts the dev server for browser QA
+- `full` warms the fast and quality local model roles, starts the dev server, and starts a unit-test watcher
+
+Useful controls:
+
+```bash
+bun run session:codex -- --status
+bun run session:codex -- --stop
+```
+
+The session helper only warms models when local LM Studio helper commands are available. If they are not present, it degrades cleanly to just the long-lived Bun processes.
 
 ## Compatibility capture workflow
 
