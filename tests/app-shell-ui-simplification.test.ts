@@ -59,7 +59,7 @@ describe('Workspace shell UI simplification regression', () => {
       ": 'Press play with demo audio, or open the preset library first.';",
     );
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
-    expect(uiSource).toContain('Try this look first');
+    expect(uiSource).toContain('Featured opening move');
     expect(uiSource).toMatch(/>\s*Shuffle\s*</u);
     expect(uiSource).toContain('Pick a look and press play.');
     expect(uiSource).toContain('Four easy ways to get started.');
@@ -73,9 +73,12 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).toContain('Keep visuals steadier on tricky hardware');
     expect(uiSource).toContain('Use motion controls on supported devices');
     expect(uiSource).toContain('Advanced controls');
-    expect(uiSource).toContain('Runs best on desktop and laptop.');
-    expect(uiSource).toMatch(
-      /Phones and older browsers may switch to lighter visuals\s+automatically\./u,
+    expect(uiSource).toContain('Fast start');
+    expect(uiSource).toContain('First move');
+    expect(uiSource).toContain('Bring your sound');
+    expect(uiSource).toContain('Tuned feel');
+    expect(uiSource).toContain(
+      'Desktop-first visuals with lighter fallback when needed.',
     );
     expect(uiSource).toContain('Use my music');
     expect(uiSource).toMatch(
