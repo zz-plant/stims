@@ -5,7 +5,7 @@ It summarizes the shipped visualizer entries from `assets/data/toys.json`.
 
 ## MilkDrop Visualizer (`milkdrop`)
 
-MilkDrop-inspired browser visualizer with demo audio, hand-picked presets, live editing, and preset import/export.
+MilkDrop-inspired browser visualizer with demo audio, hand-picked favorites, live editing, and preset import/export.
 
 - Entry module: `assets/js/toys/milkdrop-toy.ts`
 - Launch route: `/` (canonical workspace route) and `/milkdrop/` (compatibility alias)
@@ -14,16 +14,16 @@ MilkDrop-inspired browser visualizer with demo audio, hand-picked presets, live 
 - Capabilities: microphone, demoAudio
 - Moods: immersive, psychedelic
 - Tags: feedback, warp, visualizer, retro, presets, editor
-- Starter preset: `rovastar-parallel-universe` (starter preset)
-- First-run hint: Open the preset library, then try autoplay.
-- Highlight control: Preset library
+- Starter preset: `rovastar-parallel-universe` (easy opener)
+- First-run hint: Open the lineup, then try autoplay.
+- Highlight control: Browse looks
 - Recommended input: `demoAudio`
 
 ### Controls
-- Browse presets
+- Browse the lineup
 - Try autoplay or random
 - Edit preset code and see the scene respond live
-- Import or export preset files
+- Bring in or save preset files
 - Tune quality for smoother or richer playback
 
 ### Touch hints
