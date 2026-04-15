@@ -16,11 +16,12 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 When the repo state is unknown, start here:
 
 ```bash
+bun run setup:codex --status
 bun run setup:codex --print-plan
 bun run setup:codex
 ```
 
-The default setup path installs dependencies and runs `bun run check:quick`, which is usually enough to establish a safe starting point before targeted work.
+The default setup path installs dependencies and runs `bun run check:quick`, which is usually enough to establish a safe starting point before targeted work. Repeated setup runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint already look current.
 
 If you want a warmer long-lived session on a machine that exposes the local helper commands, use:
 

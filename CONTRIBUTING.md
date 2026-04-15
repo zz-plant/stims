@@ -5,13 +5,15 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 ## Quick start
 
 1. Install **Bun 1.3+** (the repo declares `bun@1.3.8` in `package.json`).
-2. Install dependencies:
+2. Bootstrap the local workspace:
 
    ```bash
-   bun install
+   bun run doctor
+   bun run setup -- --print-plan
+   bun run setup
    ```
 
-   If you are updating dependencies, run:
+   `bun run doctor` prints the local readiness summary without changing the workspace. If you only need dependencies and are not ready to run the quick validation pass, use:
 
    ```bash
    bun install
@@ -76,6 +78,9 @@ Use these commands before opening a PR:
 
 ## Common dev commands
 
+- `bun run doctor` — print a local readiness summary for Bun, dependencies, and LM Studio helper availability.
+- `bun run setup -- --print-plan` — preview the local bootstrap plan without changing the workspace.
+- `bun run setup` — install dependencies and run `bun run check:quick`.
 - `bun run dev` — start local Vite server.
 - `bun run session:codex -- --profile review` — keep the dev server, local model roles, and a verification watcher warm for agent sessions.
 - `bun run model:codex -- --mode triage --no-exec` — route a task onto the fast or quality local model helper stack.

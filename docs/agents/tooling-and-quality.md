@@ -5,11 +5,12 @@
 When you are dropped into the repo without confidence about install state or recent drift, start with:
 
 ```bash
+bun run setup:codex --status
 bun run setup:codex --print-plan
 bun run setup:codex
 ```
 
-`setup:codex` is the repo bootstrap for agent sessions. By default it installs dependencies and runs `bun run check:quick`.
+`setup:codex` is the repo bootstrap for agent sessions. By default it installs dependencies and runs `bun run check:quick`. Repeated runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint already look current.
 
 When you want to keep the dev server, local model roles, and a background watcher warm between edits, use:
 

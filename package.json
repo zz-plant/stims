@@ -44,6 +44,8 @@
     "dev:host": "vite --host",
     "dev:check": "bun scripts/dev-check.mjs || node scripts/dev-check.mjs",
     "play:toy": "bun run scripts/play-toy.ts",
+    "doctor": "bun run setup:codex --status",
+    "setup": "bun run setup:codex",
     "setup:codex": "bash scripts/codex-setup.sh",
     "session:codex": "bash scripts/codex-session.sh",
     "model:codex": "bash scripts/codex-model-route.sh",
