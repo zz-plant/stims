@@ -4,7 +4,11 @@ Use this page when you need the fastest safe repo entry or when work may be spli
 
 ## 60-second bootstrap
 
-1. Print the repo bootstrap plan:
+1. Check local readiness, then print the repo bootstrap plan:
+
+   ```bash
+   bun run setup:codex --status
+   ```
 
    ```bash
    bun run setup:codex --print-plan
@@ -16,7 +20,7 @@ Use this page when you need the fastest safe repo entry or when work may be spli
    bun run setup:codex
    ```
 
-   This installs dependencies and runs `bun run check:quick`.
+   This installs dependencies and runs `bun run check:quick`. Repeated runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint already look current.
 
    When you want a warmer long-lived session on a machine that exposes the local helper commands, use:
 

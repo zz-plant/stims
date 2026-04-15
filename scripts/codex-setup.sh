@@ -9,11 +9,13 @@ Bootstrap this repository for Codex or local contributor sessions.
 
 Options:
   --frozen-lockfile   Use bun install --frozen-lockfile.
+  --force-install     Run dependency installation even if local install state looks current.
   --skip-install      Skip dependency installation.
   --skip-check        Skip all quality checks.
   --quick-check       Run bun run check:quick (default).
   --full-check        Run bun run check.
-  --print-plan        Print the selected install/check plan before running.
+  --status            Print local setup status and exit.
+  --print-plan        Print the selected install/check plan and exit.
   -h, --help          Show this help message.
 USAGE
 }
@@ -41,6 +43,17 @@ require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
     fail "'$1' is required but not installed or not on PATH."
   fi
+}
+
+metadata_value() {
+  local metadata_file="$1"
+  local key="$2"
+
+  if [[ ! -f "$metadata_file" ]]; then
+    return 1
+  fi
+
+  awk -F= -v key="$key" '$1 == key { print substr($0, index($0, "=") + 1); exit }' "$metadata_file"
 }
 
 resolve_repo_root() {
@@ -74,16 +87,115 @@ validate_bun_version() {
   fi
 }
 
+install_state_dir() {
+  echo "$REPO_ROOT/.codex/setup"
+}
+
+install_state_file() {
+  echo "$(install_state_dir)/install-state.meta"
+}
+
+manifest_fingerprint() {
+  {
+    local rel
+    for rel in package.json bun.lock bunfig.toml .bun-version; do
+      if [[ -f "$rel" ]]; then
+        printf '%s ' "$rel"
+        cksum "$rel"
+      fi
+    done
+  } | cksum | awk '{print $1 ":" $2}'
+}
+
+install_artifacts_present() {
+  [[ -d "$REPO_ROOT/node_modules" ]]
+}
+
+saved_install_fingerprint() {
+  metadata_value "$(install_state_file)" "fingerprint"
+}
+
+install_state_label() {
+  if ! install_artifacts_present; then
+    echo "missing"
+    return 0
+  fi
+
+  local saved_fingerprint
+  saved_fingerprint="$(saved_install_fingerprint || true)"
+
+  if [[ -z "$saved_fingerprint" ]]; then
+    echo "uncached"
+    return 0
+  fi
+
+  if [[ "$saved_fingerprint" == "$CURRENT_MANIFEST_FINGERPRINT" ]]; then
+    echo "current"
+    return 0
+  fi
+
+  echo "stale"
+}
+
+write_install_state() {
+  local state_file
+  state_file="$(install_state_file)"
+  mkdir -p "$(dirname -- "$state_file")"
+  cat >"$state_file" <<EOF
+fingerprint=$CURRENT_MANIFEST_FINGERPRINT
+bun_version=$CURRENT_BUN_VERSION
+installed_at=$(date '+%Y-%m-%dT%H:%M:%S%z')
+EOF
+}
+
+helper_status() {
+  if command -v "$1" >/dev/null 2>&1; then
+    echo "available"
+  else
+    echo "unavailable"
+  fi
+}
+
+print_setup_status() {
+  local install_state
+  install_state="$(install_state_label)"
+
+  echo "Local setup status for stims"
+  echo "- Repository root: $REPO_ROOT"
+  echo "- Bun version: $CURRENT_BUN_VERSION"
+  echo "- node_modules: $(if install_artifacts_present; then echo present; else echo missing; fi)"
+  echo "- Dependency install: $install_state"
+  echo "- Install cache file: $(if [[ -f "$(install_state_file)" ]]; then echo present; else echo missing; fi)"
+  echo "- Local model routing helper: $(helper_status lmstudio-route)"
+  echo "- Local model warmup helper: $(helper_status lmstudio-ensure-model)"
+  echo "- LM Studio agent stack helper: $(helper_status lms-agent-stack)"
+
+  case "$install_state" in
+    current)
+      echo "- Suggested next step: bun run dev"
+      ;;
+    *)
+      echo "- Suggested next step: bun run setup"
+      ;;
+  esac
+}
+
 INSTALL_MODE="normal"
 DO_INSTALL=1
 DO_CHECK=1
 CHECK_MODE="quick"
+FORCE_INSTALL=0
 PRINT_PLAN=0
+STATUS_ONLY=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --frozen-lockfile)
       INSTALL_MODE="frozen"
+      shift
+      ;;
+    --force-install)
+      FORCE_INSTALL=1
       shift
       ;;
     --skip-install)
@@ -100,6 +212,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --full-check)
       CHECK_MODE="full"
+      shift
+      ;;
+    --status)
+      STATUS_ONLY=1
       shift
       ;;
     --print-plan)
@@ -129,15 +245,25 @@ cd "$REPO_ROOT"
 
 require_command bun
 validate_bun_version
+CURRENT_BUN_VERSION="$(bun --version)"
+CURRENT_MANIFEST_FINGERPRINT="$(manifest_fingerprint)"
+CURRENT_INSTALL_STATE="$(install_state_label)"
 
 log "Starting Codex setup for stims"
 log "Repository root: $REPO_ROOT"
-log "Bun version: $(bun --version)"
+log "Bun version: $CURRENT_BUN_VERSION"
+
+if [[ "$STATUS_ONLY" -eq 1 ]]; then
+  print_setup_status
+  exit 0
+fi
 
 if [[ "$PRINT_PLAN" -eq 1 ]]; then
   log "Plan"
   if [[ "$DO_INSTALL" -eq 1 ]]; then
-    if [[ "$INSTALL_MODE" == "frozen" ]]; then
+    if [[ "$FORCE_INSTALL" -eq 0 && "$CURRENT_INSTALL_STATE" == "current" ]]; then
+      echo "- Install: skipped (node_modules and manifest fingerprint are current)"
+    elif [[ "$INSTALL_MODE" == "frozen" ]]; then
       echo "- Install: bun install --frozen-lockfile"
     else
       echo "- Install: bun install"
@@ -155,15 +281,21 @@ if [[ "$PRINT_PLAN" -eq 1 ]]; then
   else
     echo "- Checks: skipped"
   fi
+
+  exit 0
 fi
 
 if [[ "$DO_INSTALL" -eq 1 ]]; then
-  if [[ "$INSTALL_MODE" == "frozen" ]]; then
+  if [[ "$FORCE_INSTALL" -eq 0 && "$CURRENT_INSTALL_STATE" == "current" ]]; then
+    log "Skipping dependency installation; node_modules and manifest fingerprint are current"
+  elif [[ "$INSTALL_MODE" == "frozen" ]]; then
     log "Installing dependencies with frozen lockfile"
     bun install --frozen-lockfile
+    write_install_state
   else
     log "Installing dependencies"
     bun install
+    write_install_state
   fi
 else
   log "Skipping dependency installation"

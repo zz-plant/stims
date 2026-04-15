@@ -68,11 +68,15 @@ At the product level, Stims currently ships one flagship MilkDrop-led visualizer
 
 ### Run locally
 
-1. Install dependencies:
+1. Bootstrap the local workspace:
 
    ```bash
-   bun install
+   bun run doctor
+   bun run setup -- --print-plan
+   bun run setup
    ```
+
+   `bun run doctor` gives you a fast local readiness summary. If you only need dependencies and do not want the quick validation pass yet, run `bun install` instead.
 
 2. Start the local dev server:
 
@@ -92,6 +96,9 @@ If you want to validate the production bundle locally, run `bun run build` and t
 
 | Task | Command |
 | --- | --- |
+| Check local readiness | `bun run doctor` |
+| Preview local bootstrap plan | `bun run setup -- --print-plan` |
+| Bootstrap local workspace | `bun run setup` |
 | Start dev server | `bun run dev` |
 | Warm an agent session stack | `bun run session:codex -- --profile review` |
 | Route onto a local model role | `bun run model:codex -- --mode triage --no-exec` |
@@ -121,6 +128,9 @@ Use [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md) as the synchronizatio
 
 ## Development notes
 
+- Use `bun run doctor` when you want a fast local readiness summary before changing anything.
+- Prefer `bun run setup` when the workspace state is unknown; it installs dependencies and runs `bun run check:quick`.
+- Repeated `bun run setup` runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint are already current.
 - Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
 - Use `bun run session:codex -- --profile review` to keep a local agent stack warm with the dev server, LM Studio model roles when available, and a background verification watcher.
 - Use `bun run model:codex -- --mode auto --task "review a renderer regression" --no-exec` to choose the right local LM Studio helper before a triage or review pass.

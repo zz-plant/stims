@@ -8,7 +8,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 
 ## Core workflow
 
-1. Install dependencies with `bun install`.
+1. Run `bun run doctor` for a fast readiness summary, then bootstrap with `bun run setup` when state is unknown. Use `bun install` only if you need dependencies without the quick validation pass.
 2. Start local development with `bun run dev` or `bun run session:codex -- --profile review` for a warmer agent session.
 3. Open `http://localhost:5173/`.
 4. Run `bun run check:quick` while iterating.
@@ -20,6 +20,9 @@ For a concise parallel execution map across parity, runtime performance, browser
 
 | Task | Command |
 | --- | --- |
+| Check local readiness | `bun run doctor` |
+| Preview local bootstrap plan | `bun run setup -- --print-plan` |
+| Bootstrap local workspace | `bun run setup` |
 | Start dev server | `bun run dev` |
 | Warm an agent session stack | `bun run session:codex -- --profile review` |
 | Route a task to a local model helper | `bun run model:codex -- --mode auto --task "triage a preset bug" --no-exec` |

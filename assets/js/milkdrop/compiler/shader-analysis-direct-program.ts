@@ -12,6 +12,7 @@ import {
   getShaderSampleInfo,
   isAuxShaderSamplerName,
   isKnownShaderScalarKey,
+  isShaderMainSampleExpression,
   isShaderSampleRgbExpression,
   isUnsupportedVolumeSampleSource,
   normalizeShaderSamplerName,
@@ -36,8 +37,8 @@ export function buildShaderProgramPayload({
   requiresControlFallback: boolean;
   supportedBackends: MilkdropRenderBackend[];
 }): MilkdropShaderProgramPayload {
-  const hasPureVolumeSampleControlFallback = statements.some((statement) =>
-    shouldUseTranslatedControlsForDirectVolumeSample(statement),
+  const hasTranslatedControlFallback = statements.some((statement) =>
+    shouldUseTranslatedControlsForDirectAuxSample(statement),
   );
   const entryTarget = stage === 'warp' ? 'uv' : 'ret';
   const programStatements = statements.map((statement) => ({
@@ -58,13 +59,13 @@ export function buildShaderProgramPayload({
       entryTarget,
       supportedBackends,
       requiresControlFallback:
-        requiresControlFallback || hasPureVolumeSampleControlFallback,
+        requiresControlFallback || hasTranslatedControlFallback,
       statementTargets: programStatements.map((statement) => statement.target),
     },
   };
 }
 
-export function shouldUseTranslatedControlsForDirectVolumeSample(
+export function shouldUseTranslatedControlsForDirectAuxSample(
   statement: MilkdropShaderStatement,
 ) {
   const key = statement.target.toLowerCase();
@@ -74,6 +75,54 @@ export function shouldUseTranslatedControlsForDirectVolumeSample(
 
   const directSample = getShaderSampleInfo(statement.expression);
   if (!directSample || directSample.source === 'none') {
+    const expression = statement.expression;
+
+    if (
+      expression.type === 'call' &&
+      expression.name.toLowerCase() === 'mix' &&
+      expression.args.length >= 3 &&
+      isShaderSampleRgbExpression(
+        expression.args[0] as MilkdropShaderExpressionNode,
+      )
+    ) {
+      const baseSample = getShaderSampleInfo(
+        expression.args[0] as MilkdropShaderExpressionNode,
+      );
+      if (baseSample?.source !== 'main') {
+        return false;
+      }
+
+      const targetNode = expression.args[1] as MilkdropShaderExpressionNode;
+      const auxSample = getShaderSampleInfo(targetNode);
+      if (
+        auxSample &&
+        auxSample.source !== 'main' &&
+        auxSample.source !== 'none'
+      ) {
+        return true;
+      }
+
+      const invertedSample = extractShaderInvertedSampleExpression(targetNode);
+      return Boolean(invertedSample && invertedSample !== 'main');
+    }
+
+    if (
+      expression.type === 'binary' &&
+      ['+', '*'].includes(expression.operator) &&
+      (isShaderMainSampleExpression(expression.left) ||
+        isShaderMainSampleExpression(expression.right))
+    ) {
+      const auxNode = isShaderMainSampleExpression(expression.left)
+        ? expression.right
+        : expression.left;
+      const auxSample = extractScaledShaderSampleExpression(auxNode);
+      return Boolean(
+        auxSample &&
+          auxSample.sample.source !== 'main' &&
+          auxSample.sample.source !== 'none',
+      );
+    }
+
     return false;
   }
 
@@ -204,6 +253,19 @@ export function shouldPreferDirectProgramExecution(
   const key = target.toLowerCase();
   if (key !== 'ret' && key !== 'return' && key !== 'shader_body') {
     return false;
+  }
+
+  if (
+    shouldUseTranslatedControlsForDirectAuxSample({
+      declaration: null,
+      target,
+      operator: '=',
+      rawValue: '',
+      expression,
+      source: '',
+    })
+  ) {
+    return true;
   }
 
   const directSample = getShaderSampleInfo(expression);

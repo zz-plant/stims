@@ -553,6 +553,79 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 
       -0.2,
       6,
     );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 + vec2(0.1, -0.2)).rgb, 0.35)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: true,
+        }),
+      }),
+    );
+  });
+
+  test('keeps additive aux texture overlays direct on WebGPU while preserving translated controls', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Texture Add
+comp_shader=ret = tex2d(sampler_main, uv).rgb + tex2d(sampler_aura, uv * 1.2 + vec2(0.05, -0.1)).rgb * 0.4
+      `.trim(),
+      { id: 'shader-texture-add' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('aura');
+    expect(compiled.ir.post.shaderControls.textureLayer.mode).toBe('add');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '2d',
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.amount).toBeCloseTo(
+      0.4,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleX).toBeCloseTo(
+      1.2,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.scaleY).toBeCloseTo(
+      1.2,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetX).toBeCloseTo(
+      0.05,
+      6,
+    );
+    expect(compiled.ir.post.shaderControls.textureLayer.offsetY).toBeCloseTo(
+      -0.1,
+      6,
+    );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = tex2d(sampler_main, uv).rgb + tex2d(sampler_aura, uv * 1.2 + vec2(0.05, -0.1)).rgb * 0.4',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: true,
+        }),
+      }),
+    );
   });
 
   test('supports MilkDrop2 framebuffer noise sampler aliases in shader text', () => {
@@ -1177,7 +1250,24 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(compiled.ir.compatibility.warnings).toEqual([]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-    expect(compiled.ir.shaderText.compProgram).toBeNull();
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz, 0.35)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: true,
+        }),
+      }),
+    );
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );
@@ -1224,6 +1314,24 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(
       compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
     ).not.toBeNull();
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'translated',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq, float3(uv * 1.5 + vec2(0.1, -0.2), time / 10.0)).xyz, 0.35)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: true,
+        }),
+      }),
+    );
   });
 
   test('classifies the projectM noisevol fixture as a pure volume sample that stays direct on WebGPU and translates on WebGL', () => {
