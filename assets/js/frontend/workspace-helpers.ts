@@ -244,7 +244,10 @@ export function formatAudioSourceLabel(source: AudioSource | undefined | null) {
 export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
   const visualCertification = entry.visualCertification;
 
-  if (visualCertification?.status === 'certified' && visualCertification.measured) {
+  if (
+    visualCertification?.status === 'certified' &&
+    visualCertification.measured
+  ) {
     if (
       entry.expectedFidelityClass === 'exact' ||
       entry.expectedFidelityClass === 'near-exact'
@@ -277,7 +280,10 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
 export function formatPresetSupportNote(entry: PresetCatalogEntry) {
   const visualCertification = entry.visualCertification;
 
-  if (visualCertification?.status === 'certified' && visualCertification.measured) {
+  if (
+    visualCertification?.status === 'certified' &&
+    visualCertification.measured
+  ) {
     if (
       entry.expectedFidelityClass === 'exact' ||
       entry.expectedFidelityClass === 'near-exact'

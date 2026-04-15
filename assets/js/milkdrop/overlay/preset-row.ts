@@ -161,6 +161,49 @@ export function formatPrimaryCompatibilityMessage({
     : 'Showing a simpler version.';
 }
 
+function formatBackendName(backend: 'webgl' | 'webgpu') {
+  return backend === 'webgpu' ? 'WebGPU' : 'WebGL';
+}
+
+function formatVisualCertificationNotice({
+  preset,
+  activeBackend,
+}: {
+  preset: MilkdropCatalogEntry;
+  activeBackend: 'webgl' | 'webgpu';
+}) {
+  const visualCertification = preset.visualCertification;
+  if (
+    !visualCertification ||
+    visualCertification.requiredBackend !== 'webgpu'
+  ) {
+    return null;
+  }
+
+  if (visualCertification.status !== 'certified') {
+    if (visualCertification.measured) {
+      return (
+        visualCertification.reasons[0] ??
+        'Measured WebGPU parity did not pass. Showing the runtime output.'
+      );
+    }
+
+    return activeBackend === 'webgpu'
+      ? 'Runs on WebGPU, but measured parity is still pending.'
+      : 'Current session is using WebGL fallback while measured WebGPU parity is still pending.';
+  }
+
+  if (
+    visualCertification.measured &&
+    visualCertification.requiredBackend !== null &&
+    activeBackend !== visualCertification.requiredBackend
+  ) {
+    return `Measured ${formatBackendName(visualCertification.requiredBackend)} parity exists; current session is using ${formatBackendName(activeBackend)}.`;
+  }
+
+  return null;
+}
+
 function buildPresetRowSignature({
   preset,
   activePresetId,
@@ -201,6 +244,8 @@ function buildPresetRowSignature({
     preset.visualCertification?.status ?? '',
     preset.visualCertification?.measured ? 1 : 0,
     preset.visualCertification?.requiredBackend ?? '',
+    preset.visualCertification?.actualBackend ?? '',
+    preset.visualCertification?.reasons[0] ?? '',
   ].join('|');
 }
 
@@ -273,9 +318,14 @@ function buildPresetRow({
 
   row.append(launch, actions);
 
+  const visualCertificationNotice = formatVisualCertificationNotice({
+    preset,
+    activeBackend,
+  });
   const hasCompatibilityWarning =
     support.status !== 'supported' ||
-    preset.parity.degradationReasons.length > 0;
+    preset.parity.degradationReasons.length > 0 ||
+    visualCertificationNotice !== null;
   if (hasCompatibilityWarning) {
     const reasons = document.createElement('div');
     reasons.className = 'milkdrop-overlay__preset-warning';
@@ -290,10 +340,13 @@ function buildPresetRow({
         );
       },
     )[0];
-    reasons.textContent = formatPrimaryCompatibilityMessage({
-      primaryReason,
-      support,
-    });
+    reasons.textContent =
+      primaryReason || support.status !== 'supported'
+        ? formatPrimaryCompatibilityMessage({
+            primaryReason,
+            support,
+          })
+        : (visualCertificationNotice ?? 'Showing a simpler version.');
     row.appendChild(reasons);
   }
 
