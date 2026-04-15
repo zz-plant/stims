@@ -83,7 +83,7 @@ test('samples warp textures in warp-stage UV space inside the shared feedback sh
   }
 });
 
-test('does not turn feedback_texture into extra video echo in the shared feedback shader', () => {
+test('keeps the shared legacy echo path projectM-like by avoiding extra frame-mix fusion', () => {
   const manager = createSharedMilkdropFeedbackManager(
     320,
     180,
@@ -98,7 +98,10 @@ test('does not turn feedback_texture into extra video echo in the shared feedbac
       'clamp(videoEchoAlpha, 0.0, 1.0)',
     );
     expect(manager.compositeMaterial.fragmentShader).not.toContain(
-      'videoEchoAlpha + feedbackTexture * 0.2',
+      'clamp(mixAlpha, 0.0, 1.0)',
+    );
+    expect(manager.compositeMaterial.fragmentShader).not.toContain(
+      'color = mix(color, current.rgb, clamp(currentFrameBoost',
     );
   } finally {
     manager.dispose();

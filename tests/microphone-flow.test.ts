@@ -97,6 +97,8 @@ describe('setupMicrophonePermissionFlow', () => {
 
     const toast = document.querySelector('[data-audio-toast="true"]');
     expect(toast).not.toBeNull();
+    expect(toast?.classList.contains('audio-toast')).toBe(true);
+    expect(toast?.getAttribute('style')).toBeNull();
     expect(toast?.textContent).toContain('permissions');
     expect(toast?.getAttribute('role')).toBe('alert');
   });

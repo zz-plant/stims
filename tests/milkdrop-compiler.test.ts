@@ -222,6 +222,37 @@ fZoomExponent=0.75
     expect(compiled.ir.numericFields.zoomexp).toBeCloseTo(0.75, 6);
   });
 
+  test('keeps warp and fWarpScale distinct in compiled numeric fields', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+warp=0.21
+fWarpScale=0.75
+      `.trim(),
+      { id: 'warp-scale-distinct' },
+    );
+
+    expect(compiled.ir.numericFields.warp).toBeCloseTo(0.21, 6);
+    expect(compiled.ir.numericFields.warp_scale).toBeCloseTo(0.75, 6);
+  });
+
+  test('preserves projectM shader-version fields instead of dropping them', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+[preset00]
+MILKDROP_PRESET_VERSION=201
+PSVERSION_WARP=3
+PSVERSION_COMP=2
+      `.trim(),
+      { id: 'projectm-shader-versions' },
+    );
+
+    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+    expect(compiled.ir.numericFields.milkdrop_preset_version).toBe(201);
+    expect(compiled.ir.numericFields.psversion_warp).toBe(3);
+    expect(compiled.ir.numericFields.psversion_comp).toBe(2);
+  });
+
   test('classifies backend support and feature usage for feedback presets', () => {
     const compiled = compileMilkdropPresetSource(
       `

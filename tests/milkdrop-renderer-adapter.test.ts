@@ -696,7 +696,17 @@ shapecode_1_thickoutline=1
     const outlineScales = ringMeshes
       .map((mesh) => getFloat32AttributeArray(mesh, 'instanceScales'))
       .filter((scales): scales is Float32Array => scales !== null)
-      .map((scales) => Array.from(scales).map((value) => Number(value)))
+      .flatMap((scales) => {
+        const values = Array.from(scales).map((value) => Number(value));
+        const pairs: number[][] = [];
+        for (let index = 0; index < values.length; index += 2) {
+          const pair = values.slice(index, index + 2);
+          if (pair.length === 2) {
+            pairs.push(pair);
+          }
+        }
+        return pairs;
+      })
       .sort((left, right) => (left[0] ?? 0) - (right[0] ?? 0));
 
     expect(frameState.shapes).toHaveLength(2);
@@ -1040,20 +1050,20 @@ ob_border=1
       children: Array<{
         children?: Array<{
           children?: Array<{
-            material?: LineBasicMaterial | MeshBasicMaterial;
+            material?: MeshBasicMaterial;
           }>;
         }>;
       }>;
     };
     const borderGroup = root.children[7];
     const outerBorder = borderGroup?.children?.[0];
-    const outline = outerBorder?.children?.[1] as
-      | { material?: LineBasicMaterial }
+    const fill = outerBorder?.children?.[0] as
+      | { material?: MeshBasicMaterial }
       | undefined;
 
-    expect(outline?.material).toBeInstanceOf(LineBasicMaterial);
-    expect(outline?.material?.opacity).toBeCloseTo(0.8, 6);
-    expect(outerBorder?.children).toHaveLength(2);
+    expect(fill?.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(fill?.material?.opacity).toBeCloseTo(0.8, 6);
+    expect(outerBorder?.children).toHaveLength(1);
   });
 
   test('keeps zero-alpha border fills invisible on webgpu batches', async () => {
@@ -1651,7 +1661,7 @@ video_echo=1
     ).toBe(true);
     expect(renderCalls).toBe(1);
     expect(compositeStates[0]?.mixAlpha).toBe(0);
-    expect(compositeStates[0]?.videoEchoAlpha).toBeGreaterThan(0);
+    expect(compositeStates[0]?.videoEchoAlpha).toBe(0);
     expect(compositeStates[0]?.videoEchoOrientation).toBe(0);
     expect(compositeStates[0]?.signalTime).toBeCloseTo(
       frameState.signals.time,
@@ -3244,14 +3254,13 @@ mv_a=0.7
     expect(joinArray?.[3]).toBe(1);
   });
 
-  test('skips feedback composite rendering when shader mode is disabled', async () => {
+  test('skips feedback composite rendering when no composite features are active', async () => {
     const preset = compileMilkdropPresetSource(
       `
-title=Shader Off
+title=Composite Off
 fShader=0
-video_echo=1
       `.trim(),
-      { id: 'shader-off' },
+      { id: 'composite-off' },
     );
 
     const frameState = createMilkdropVM(preset).step(makeSignals());
