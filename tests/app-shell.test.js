@@ -5,6 +5,10 @@ let mockLoadToy;
 let mockLoadFromQuery;
 let mockInitNavigation;
 const originalFetch = globalThis.fetch;
+const originalScreenDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  'screen',
+);
 
 async function loadAppShell() {
   globalThis.__stimsLoaderOverrides = {
@@ -23,6 +27,15 @@ describe('home shell user journeys', () => {
     mock.restore();
     window.location.href = 'https://example.com/';
     globalThis.fetch = mock(async () => ({ ok: false }));
+    Object.defineProperty(globalThis, 'screen', {
+      configurable: true,
+      value: window.screen ?? {
+        orientation: {
+          addEventListener() {},
+          removeEventListener() {},
+        },
+      },
+    });
     document.body.innerHTML = `
       <div data-top-nav-container></div>
       <div data-milkdrop-preset-count></div>
@@ -38,6 +51,11 @@ describe('home shell user journeys', () => {
   afterEach(() => {
     mock.restore();
     globalThis.fetch = originalFetch;
+    if (originalScreenDescriptor) {
+      Object.defineProperty(globalThis, 'screen', originalScreenDescriptor);
+    } else {
+      delete globalThis.screen;
+    }
     document.body.innerHTML = '';
     document.body.removeAttribute('data-page');
     delete globalThis.__stimsLoaderOverrides;

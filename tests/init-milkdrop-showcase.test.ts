@@ -82,7 +82,7 @@ describe('initMilkdropShowcase', () => {
       '3 presets across 3 collections. Showing 1 from Cream of the Crop.',
     );
     expect(filters).toEqual([
-      'All presets3',
+      'All picks3',
       'Cream of the Crop2',
       'Classic MilkDrop3',
       'Rovastar and collaborators2',
@@ -169,7 +169,7 @@ describe('initMilkdropShowcase', () => {
       '3 presets across 2 collections. Showing 2 from Cream of the Crop.',
     );
     expect(filters).toEqual([
-      'All presets3',
+      'All picks3',
       'Classic MilkDrop1',
       'Cream of the Crop2',
     ]);
@@ -287,7 +287,7 @@ describe('initMilkdropShowcase', () => {
     ).map((button) => button.textContent?.replace(/\s+/gu, ' ').trim());
 
     expect(filters).toEqual([
-      'All presets2',
+      'All picks2',
       'Classic MilkDrop2',
       'Cream of the Crop1',
       'Rovastar and collaborators2',

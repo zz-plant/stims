@@ -521,7 +521,7 @@ test('renders guidance and feel signals instead of setup-heavy badges', async ()
   const card = document.querySelector('.webtoy-card');
   const cardText = card?.textContent ?? '';
 
-  expect(cardText).toContain('Start with: Halo glow starter • Halo intensity');
+  expect(cardText).toContain('Try: Halo glow starter • Halo intensity');
   expect(cardText).toContain('Serene');
   expect(cardText).toContain('Ethereal');
   expect(cardText).toContain('Open controls');
@@ -564,7 +564,7 @@ test('falls back to interaction guidance for motion-led toys', async () => {
     (card) => card.textContent?.includes('Tilt Wave'),
   );
 
-  expect(motionCard?.textContent).toContain('Start with: Tilt your device');
+  expect(motionCard?.textContent).toContain('Try: Tilt your device');
   expect(motionCard?.textContent).toContain('Tilt');
   expect(motionCard?.textContent).toContain('Energetic');
 });

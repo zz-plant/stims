@@ -1157,6 +1157,21 @@ body[data-page="workspace"] {
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
+}
+
+.stims-shell__stage-ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.96;
+}
+
+.stims-shell__stage-ambient > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .stims-shell__frame-chrome,
@@ -1837,11 +1852,24 @@ body[data-page="workspace"] {
 .stims-shell__preset-preview-image {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.95;
+  opacity: 0.88;
+}
+
+.stims-shell__preset-art-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.stims-shell__preset-art-scene > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .stims-shell__preset-art[data-compact="true"] {
@@ -1954,7 +1982,7 @@ body[data-page="workspace"] {
 .stims-shell__preset-art-caption {
   left: 12px;
   bottom: 10px;
-  z-index: 2;
+  z-index: 3;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -1965,7 +1993,7 @@ body[data-page="workspace"] {
 .stims-shell__preset-art-status {
   right: 10px;
   top: 10px;
-  z-index: 2;
+  z-index: 3;
   padding: 0.3rem 0.48rem;
   border-radius: 999px;
   background: rgba(7, 14, 24, 0.82);

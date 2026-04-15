@@ -515,7 +515,7 @@ export function syncShapeOutline(
 export function syncShapeObject(
   existing: Group | undefined,
   shape: MilkdropShapeVisual,
-  behavior: MilkdropBackendBehavior,
+  _behavior: MilkdropBackendBehavior,
   helpers: {
     disposeObject: (object: { children?: unknown[] }) => void;
     createShapeObject: (

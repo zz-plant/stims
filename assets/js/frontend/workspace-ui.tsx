@@ -24,6 +24,11 @@ import {
   type StarterPreset,
   TOOL_TABS,
 } from './workspace-helpers.ts';
+import {
+  PresetArtworkBackdrop,
+  type PresetArtworkTone,
+  StageAmbientBackdrop,
+} from './workspace-three-scenes.tsx';
 
 function UiIcon({ name, className }: { name: UiIconName; className: string }) {
   const nodes = getIconNodes(name);
@@ -60,7 +65,7 @@ function UiIcon({ name, className }: { name: UiIconName; className: string }) {
   );
 }
 
-function getPresetArtworkTone(entry: PresetCatalogEntry) {
+function getPresetArtworkTone(entry: PresetCatalogEntry): PresetArtworkTone {
   const mood = describePresetMood(entry);
 
   switch (mood) {
@@ -100,6 +105,14 @@ function PresetArtwork({
       data-preview-status={preview?.status ?? 'queued'}
       aria-hidden="true"
     >
+      {!compact ? (
+        <div className="stims-shell__preset-art-scene">
+          <PresetArtworkBackdrop
+            compact={compact}
+            tone={getPresetArtworkTone(entry)}
+          />
+        </div>
+      ) : null}
       {preview?.imageUrl ? (
         <img
           className="stims-shell__preset-preview-image"
@@ -107,9 +120,13 @@ function PresetArtwork({
           alt=""
         />
       ) : null}
-      <span className="stims-shell__preset-art-grid" />
-      <span className="stims-shell__preset-art-orbit" />
-      <span className="stims-shell__preset-art-core" />
+      {compact ? (
+        <>
+          <span className="stims-shell__preset-art-grid" />
+          <span className="stims-shell__preset-art-orbit" />
+          <span className="stims-shell__preset-art-core" />
+        </>
+      ) : null}
       <span className="stims-shell__preset-art-caption">{mood}</span>
       <span className="stims-shell__preset-art-status">
         {preview?.status === 'ready'
@@ -668,6 +685,9 @@ export function WorkspaceStagePanel({
           className="stims-shell__stage-frame"
           data-mode={liveMode ? 'live' : 'home'}
         >
+          <div className="stims-shell__stage-ambient" aria-hidden="true">
+            <StageAmbientBackdrop liveMode={liveMode} />
+          </div>
           <div ref={stageRef} className="stims-shell__stage-root" />
           <div className="stims-shell__frame-chrome">
             <div className="stims-shell__corner-brand">

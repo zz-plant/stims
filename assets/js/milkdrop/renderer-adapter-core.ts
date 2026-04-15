@@ -15,6 +15,7 @@ import {
   WEBGL_MILKDROP_BACKEND_BEHAVIOR,
   WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
 } from './backend-behavior';
+import { createMilkdropRendererAdapterSceneOwner } from './renderer-adapter-scene.tsx';
 import {
   BACKGROUND_GEOMETRY,
   clearGroup,
@@ -312,6 +313,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     getMilkdropLayerRenderOrder('blend-motion-vectors'),
   );
   private readonly feedback: MilkdropFeedbackManager | null;
+  private readonly sceneOwner: ReturnType<
+    typeof createMilkdropRendererAdapterSceneOwner
+  >;
   private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
   private readonly webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags;
 
@@ -342,6 +346,31 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.createFeedbackManager = createFeedbackManager;
     this.batcher = batcher;
     this.webgpuOptimizationFlags = { ...webgpuOptimizationFlags };
+    this.sceneOwner = createMilkdropRendererAdapterSceneOwner({
+      renderer: this.renderer,
+      objects: {
+        root: this.root,
+        background: this.background,
+        meshLines: this.meshLines,
+        mainWaveGroup: this.mainWaveGroup,
+        customWaveGroup: this.customWaveGroup,
+        trailGroup: this.trailGroup,
+        particleFieldGroup: this.particleFieldGroup,
+        shapesGroup: this.shapesGroup,
+        borderGroup: this.borderGroup,
+        motionVectorGroup: this.motionVectorGroup,
+        motionVectorCpuGroup: this.motionVectorCpuGroup,
+        proceduralMotionVectors: this.proceduralMotionVectors,
+        blendWaveGroup: this.blendWaveGroup,
+        blendCustomWaveGroup: this.blendCustomWaveGroup,
+        blendParticleFieldGroup: this.blendParticleFieldGroup,
+        blendShapeGroup: this.blendShapeGroup,
+        blendBorderGroup: this.blendBorderGroup,
+        blendMotionVectorGroup: this.blendMotionVectorGroup,
+        blendMotionVectorCpuGroup: this.blendMotionVectorCpuGroup,
+        blendProceduralMotionVectors: this.blendProceduralMotionVectors,
+      },
+    });
     this.root.frustumCulled = false;
     this.meshLines.geometry.userData.skipDynamicBounds = true;
     this.proceduralMotionVectors.geometry.userData.skipDynamicBounds = true;
@@ -388,6 +417,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   attach() {
+    this.sceneOwner?.attach();
     if (!this.scene.children.includes(this.root)) {
       this.scene.add(this.root);
     }
@@ -1184,6 +1214,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.batcher?.dispose();
     this.feedback?.dispose();
     this.scene.remove(this.root);
+    this.sceneOwner?.dispose();
   }
 }
 
