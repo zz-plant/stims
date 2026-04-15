@@ -217,7 +217,7 @@ Cloudflare Pages issues a unique preview deployment for each pull request when t
 
 The project now treats `/` as the canonical workspace route and `/milkdrop/` as the compatibility alias. Validate representative routes locally and on the PR preview:
 
-1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/`, `http://localhost:4173/?preset=signal-bloom`, and `http://localhost:4173/milkdrop/?audio=demo`).
+1. Run `bun run build` followed by `bun run preview` and open representative routes manually (for example, `http://localhost:4173/`, `http://localhost:4173/?preset=eos-glowsticks-v2-03-music`, and `http://localhost:4173/milkdrop/?audio=demo`).
 2. Repeat the checks against the PR’s Cloudflare Pages preview URL to ensure CDN caching and hashed asset references behave the same as local preview.
 3. If any route relies on audio or interaction-specific features, perform at least one interaction test (mic input, pointer/touch) to confirm runtime permissions and event handling.
 

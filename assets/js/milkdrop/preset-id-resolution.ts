@@ -10,6 +10,10 @@ type PresetLookupValues = {
   slug: Set<string>;
 };
 
+const LEGACY_PRESET_ID_ALIASES = new Map<string, string>([
+  ['signal-bloom', 'eos-glowsticks-v2-03-music'],
+]);
+
 function normalizeExactCandidate(value: string) {
   return value.trim().toLowerCase();
 }
@@ -147,6 +151,21 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     ) ?? null;
   if (exactIdMatch) {
     return exactIdMatch;
+  }
+
+  const legacyAliasTarget =
+    LEGACY_PRESET_ID_ALIASES.get(normalizedRequestedId) ??
+    LEGACY_PRESET_ID_ALIASES.get(slugifyPresetCandidate(requested));
+  if (legacyAliasTarget) {
+    const exactAliasMatch =
+      entries.find(
+        (entry) =>
+          normalizeExactCandidate(entry.id) ===
+          normalizeExactCandidate(legacyAliasTarget),
+      ) ?? null;
+    if (exactAliasMatch) {
+      return exactAliasMatch;
+    }
   }
 
   const requestedLookup = buildLookupValues({

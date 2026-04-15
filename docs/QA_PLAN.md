@@ -24,7 +24,7 @@ When you touch the root workspace or session UI, run this short manual pass:
 1. **Root boot**: Open `/` and confirm the workspace shell, launch controls, and preset browser render cleanly.
 2. **Canonical state**: Start demo audio from `/` and confirm the route stays on `/`, not `/milkdrop/`.
 3. **Preset deep link**: Open `/?preset=rovastar-parallel-universe&audio=demo` and confirm the requested preset becomes the live session.
-4. **Alias compatibility**: Open `/milkdrop/?preset=signal-bloom&audio=demo` and confirm it lands in the same root workspace state.
+4. **Alias compatibility**: Open `/milkdrop/?preset=eos-glowsticks-v2-03-music&audio=demo` and confirm it lands in the same root workspace state.
 5. **Settings persistence**: Change a quality preset or compatibility toggle and verify it persists after reload.
 
 If the change is part of architecture or runtime refactor work, also run the artifact-capture and sign-off flow in [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md).

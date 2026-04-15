@@ -185,6 +185,11 @@ export function useWorkspaceSessionState({
     refreshPreviews: (presetIds: string[]) => void;
     requestPreviews: (presetIds: string[]) => void;
   } | null>(null);
+  const previewServicePromiseRef = useRef<Promise<{
+    dispose: () => void;
+    refreshPreviews: (presetIds: string[]) => void;
+    requestPreviews: (presetIds: string[]) => void;
+  }> | null>(null);
   const pendingPresetIdRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
   const readinessItems = useWorkspaceReadiness();
@@ -273,77 +278,93 @@ export function useWorkspaceSessionState({
       return previewServiceRef.current;
     }
 
-    const [
-      { createMilkdropPresetPreviewService },
-      { createMilkdropEngineAdapter },
-    ] = await Promise.all([
-      import('../milkdrop/runtime/preset-preview-service.ts'),
-      import('./engine/milkdrop-engine-adapter.ts'),
-    ]);
+    if (!previewServicePromiseRef.current) {
+      previewServicePromiseRef.current = Promise.all([
+        import('../milkdrop/runtime/preset-preview-service.ts'),
+        import('./engine/milkdrop-engine-adapter.ts'),
+      ])
+        .then(
+          ([
+            { createMilkdropPresetPreviewService },
+            { createMilkdropEngineAdapter },
+          ]) => {
+            const service = createMilkdropPresetPreviewService({
+              capturePreview: async (presetId) => {
+                if (typeof document === 'undefined') {
+                  throw new Error(
+                    'Preset previews require a browser document.',
+                  );
+                }
 
-    previewServiceRef.current = createMilkdropPresetPreviewService({
-      capturePreview: async (presetId) => {
-        if (typeof document === 'undefined') {
-          throw new Error('Preset previews require a browser document.');
-        }
+                const previewHost = document.createElement('div');
+                previewHost.className = 'stims-shell__preset-preview-host';
+                previewHost.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(previewHost);
 
-        const previewHost = document.createElement('div');
-        previewHost.className = 'stims-shell__preset-preview-host';
-        previewHost.setAttribute('aria-hidden', 'true');
-        const previewCanvas = document.createElement('canvas');
-        previewCanvas.width = 360;
-        previewCanvas.height = 203;
-        previewCanvas.className = 'stims-shell__preset-preview-host-canvas';
-        previewHost.appendChild(previewCanvas);
-        document.body.appendChild(previewHost);
+                let lastBackend: EngineSnapshot['backend'] = null;
+                const adapter = createMilkdropEngineAdapter();
+                const unsubscribe = adapter.subscribe(
+                  (snapshot: EngineSnapshot) => {
+                    lastBackend = snapshot.backend;
+                  },
+                );
 
-        let lastBackend: EngineSnapshot['backend'] = null;
-        const adapter = createMilkdropEngineAdapter();
-        const unsubscribe = adapter.subscribe((snapshot: EngineSnapshot) => {
-          lastBackend = snapshot.backend;
+                try {
+                  await adapter.mount(previewHost, {
+                    presetId,
+                    collectionTag: null,
+                    panel: 'browse',
+                    audioSource: null,
+                    agentMode: true,
+                    previewMode: true,
+                  });
+                  await adapter.loadPreset(presetId);
+                  await new Promise<void>((resolve) => {
+                    window.setTimeout(resolve, 750);
+                  });
+
+                  const canvas = previewHost.querySelector('canvas');
+                  if (!(canvas instanceof HTMLCanvasElement)) {
+                    throw new Error('Preview canvas was not available.');
+                  }
+
+                  return {
+                    imageUrl: canvas.toDataURL('image/webp', 0.82),
+                    actualBackend: lastBackend,
+                    updatedAt: Date.now(),
+                    error: null,
+                    source: 'runtime-snapshot' as const,
+                  };
+                } finally {
+                  unsubscribe();
+                  adapter.dispose();
+                  previewHost.remove();
+                }
+              },
+              onPreviewChanged: (preview) => {
+                setPresetPreviews((current) => ({
+                  ...current,
+                  [preview.presetId]: preview,
+                }));
+              },
+            });
+
+            if (sessionDisposedRef.current) {
+              service.dispose();
+              throw new Error('Visualizer session has already been disposed.');
+            }
+
+            previewServiceRef.current = service;
+            return service;
+          },
+        )
+        .catch((error) => {
+          previewServicePromiseRef.current = null;
+          throw error;
         });
+    }
 
-        try {
-          await adapter.mount(previewHost, {
-            presetId,
-            collectionTag: null,
-            panel: 'browse',
-            audioSource: null,
-            agentMode: true,
-            previewMode: true,
-          });
-          await adapter.loadPreset(presetId);
-          await new Promise<void>((resolve) => {
-            window.setTimeout(resolve, 750);
-          });
-
-          const canvas = previewHost.querySelector('canvas') ?? previewCanvas;
-          if (!(canvas instanceof HTMLCanvasElement)) {
-            throw new Error('Preview canvas was not available.');
-          }
-
-          return {
-            imageUrl: canvas.toDataURL('image/webp', 0.82),
-            actualBackend: lastBackend,
-            updatedAt: Date.now(),
-            error: null,
-            source: 'runtime-snapshot' as const,
-          };
-        } finally {
-          unsubscribe();
-          adapter.dispose();
-          previewHost.remove();
-        }
-      },
-      onPreviewChanged: (preview) => {
-        setPresetPreviews((current) => ({
-          ...current,
-          [preview.presetId]: preview,
-        }));
-      },
-    });
-
-    return previewServiceRef.current;
+    return previewServicePromiseRef.current;
   });
 
   const ensureEngineMounted = useEffectEvent(
@@ -412,6 +433,7 @@ export function useWorkspaceSessionState({
       sessionDisposedRef.current = true;
       previewServiceRef.current?.dispose();
       previewServiceRef.current = null;
+      previewServicePromiseRef.current = null;
       engineUnsubscribeRef.current?.();
       engineUnsubscribeRef.current = null;
       engineRef.current?.dispose();

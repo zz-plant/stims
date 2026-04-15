@@ -1,5 +1,8 @@
 import type { QualityPreset } from '../../core/settings-panel';
-import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';
+import {
+  type MilkdropPresetRenderPreview,
+  PRESET_PREVIEW_REQUEST_LIMIT,
+} from '../preset-preview.ts';
 import type { MilkdropCatalogEntry, MilkdropFidelityClass } from '../types';
 import { type PresetRowCallbacks, PresetRowRenderer } from './preset-row';
 
@@ -805,8 +808,11 @@ export class BrowsePanel {
 
     if (!useSections) {
       this.displayedPresetIds = displayedPresetIds;
-      this.renderPreviewQaSummary(this.displayedPresetIds);
-      this.requestPresetPreviews(this.displayedPresetIds);
+      const previewTargetIds = this.getPreviewTargetIds(
+        this.displayedPresetIds,
+      );
+      this.renderPreviewQaSummary(previewTargetIds);
+      this.requestPresetPreviews(previewTargetIds);
       this.syncBrowseChildren(
         filtered.map((preset) =>
           this.rowRenderer.render({
@@ -825,8 +831,9 @@ export class BrowsePanel {
     this.displayedPresetIds = sections.flatMap((section) =>
       section.presets.map((preset) => preset.id),
     );
-    this.renderPreviewQaSummary(this.displayedPresetIds);
-    this.requestPresetPreviews(this.displayedPresetIds);
+    const previewTargetIds = this.getPreviewTargetIds(this.displayedPresetIds);
+    this.renderPreviewQaSummary(previewTargetIds);
+    this.requestPresetPreviews(previewTargetIds);
     sections.forEach((section) => {
       this.appendPresetSection(section.title, section.presets, fragment);
     });
@@ -916,7 +923,7 @@ export class BrowsePanel {
   }
 
   private requestPresetPreviews(presetIds: string[]) {
-    const nextIds = presetIds.slice(0, 18);
+    const nextIds = presetIds.slice(0, PRESET_PREVIEW_REQUEST_LIMIT);
     const signature = nextIds.join('|');
     if (signature === this.lastPreviewRequestSignature) {
       return;
@@ -924,6 +931,10 @@ export class BrowsePanel {
     this.lastPreviewRequestSignature = signature;
     // Capture only the visible/top browse results so the QA queue stays responsive.
     this.callbacks.onRequestPresetPreviews(nextIds);
+  }
+
+  private getPreviewTargetIds(presetIds: string[]) {
+    return presetIds.slice(0, PRESET_PREVIEW_REQUEST_LIMIT);
   }
 
   private renderCollectionFilters() {

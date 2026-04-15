@@ -42,6 +42,12 @@ describe('preset id resolution', () => {
     );
   });
 
+  test('maps legacy public preset aliases onto shipped presets', () => {
+    expect(resolvePresetId(catalog, 'signal-bloom')).toBe(
+      'eos-glowsticks-v2-03-music',
+    );
+  });
+
   test('returns null when a slug alias is ambiguous', () => {
     const ambiguousCatalog = [
       ...catalog,

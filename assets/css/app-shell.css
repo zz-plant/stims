@@ -2577,7 +2577,12 @@ body[data-page="workspace"] {
 
   .stims-shell__stage-frame[data-mode="home"] {
     min-height: 88svh;
-    min-height: max(88svh, 640px);
+  }
+
+  @supports (min-height: max(88svh, 640px)) {
+    .stims-shell__stage-frame[data-mode="home"] {
+      min-height: max(88svh, 640px);
+    }
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-root::before {

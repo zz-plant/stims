@@ -3,7 +3,10 @@ import { useEffect } from 'react';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import type { RenderPreferences } from '../core/state/render-preference-store.ts';
-import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
+import {
+  type MilkdropPresetRenderPreview,
+  PRESET_PREVIEW_REQUEST_LIMIT,
+} from '../milkdrop/preset-preview.ts';
 import { getIconNodes, type UiIconName } from '../ui/icon-library.ts';
 import type {
   PanelState,
@@ -25,7 +28,6 @@ import {
   TOOL_TABS,
 } from './workspace-helpers.ts';
 import {
-  PresetArtworkBackdrop,
   type PresetArtworkTone,
   StageAmbientBackdrop,
 } from './workspace-three-scenes.tsx';
@@ -105,14 +107,6 @@ function PresetArtwork({
       data-preview-status={preview?.status ?? 'queued'}
       aria-hidden="true"
     >
-      {!compact ? (
-        <div className="stims-shell__preset-art-scene">
-          <PresetArtworkBackdrop
-            compact={compact}
-            tone={getPresetArtworkTone(entry)}
-          />
-        </div>
-      ) : null}
       {preview?.imageUrl ? (
         <img
           className="stims-shell__preset-preview-image"
@@ -120,13 +114,9 @@ function PresetArtwork({
           alt=""
         />
       ) : null}
-      {compact ? (
-        <>
-          <span className="stims-shell__preset-art-grid" />
-          <span className="stims-shell__preset-art-orbit" />
-          <span className="stims-shell__preset-art-core" />
-        </>
-      ) : null}
+      <span className="stims-shell__preset-art-grid" />
+      <span className="stims-shell__preset-art-orbit" />
+      <span className="stims-shell__preset-art-core" />
       <span className="stims-shell__preset-art-caption">{mood}</span>
       <span className="stims-shell__preset-art-status">
         {preview?.status === 'ready'
@@ -945,7 +935,11 @@ function BrowseSheetPanel({
     ...favoritePresets.map((entry) => entry.id),
     ...filteredCatalog.map((entry) => entry.id),
   ].filter((presetId, index, ids) => ids.indexOf(presetId) === index);
-  const previewCounts = previewTargetIds.reduce(
+  const visiblePreviewIds = previewTargetIds.slice(
+    0,
+    PRESET_PREVIEW_REQUEST_LIMIT,
+  );
+  const previewCounts = visiblePreviewIds.reduce(
     (summary, presetId) => {
       const preview = presetPreviews[presetId];
       if (!preview || preview.status === 'queued') {
@@ -971,7 +965,6 @@ function BrowseSheetPanel({
   ]
     .filter(Boolean)
     .join(' · ');
-  const visiblePreviewIds = previewTargetIds.slice(0, 18);
 
   useEffect(() => {
     onVisiblePresetIdsChange(visiblePreviewIds);
@@ -992,7 +985,7 @@ function BrowseSheetPanel({
               type="button"
               className="stims-shell__text-button"
               onClick={() => onRefreshPresetPreviews(visiblePreviewIds)}
-              disabled={previewTargetIds.length === 0}
+              disabled={visiblePreviewIds.length === 0}
             >
               Refresh previews
             </button>

@@ -4,10 +4,12 @@ import {
   historyKeymap,
   indentWithTab,
 } from '@codemirror/commands';
+import type { StreamParser } from '@codemirror/language';
 import { StreamLanguage } from '@codemirror/language';
 import { properties } from '@codemirror/legacy-modes/mode/properties';
 import { Compartment, EditorState, RangeSetBuilder } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
+import type { KeyBinding } from '@codemirror/view';
 import { Decoration, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import {
@@ -78,6 +80,13 @@ const EDITOR_CUES: EditorCue[] = [
     snippet: 'warp=0.01 + sin(frame*0.02)*0.01\n',
   },
 ];
+
+// Bun's isolated installs can surface duplicate CodeMirror declaration paths
+// even when the runtime package versions are aligned.
+const propertiesParser = properties as unknown as StreamParser<unknown>;
+const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
+const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
+const indentWithTabKeybinding = indentWithTab as KeyBinding;
 
 const EDITOR_FLOW_TIPS = [
   'Queued edits patch the stage after 220ms of calm typing.',
@@ -214,7 +223,7 @@ function createEditorView({
       extensions: [
         lineNumbers(),
         history(),
-        StreamLanguage.define(properties),
+        StreamLanguage.define(propertiesParser),
         oneDark,
         createEditorTheme(),
         diagnosticsCompartment.of(
@@ -225,9 +234,9 @@ function createEditorView({
             key: 'Mod-Enter',
             run: () => flushDocChange(),
           },
-          ...defaultKeymap,
-          ...historyKeymap,
-          indentWithTab,
+          ...defaultEditorKeymap,
+          ...historyEditorKeymap,
+          indentWithTabKeybinding,
         ]),
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
