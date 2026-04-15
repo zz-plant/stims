@@ -5,6 +5,7 @@ import {
   LineBasicMaterial,
   NormalBlending,
   PointsMaterial,
+  Group as ThreeGroup,
   Line as ThreeLine,
   LineLoop as ThreeLineLoop,
   Points as ThreePoints,
@@ -14,6 +15,162 @@ import type {
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
 import type { MilkdropColor, MilkdropWaveVisual } from '../types';
+
+type WaveLayerObject = Line | LineLoop | Points;
+
+const THICK_WAVE_PASS_OFFSET = 1 / 1024;
+
+function getWaveLayerCount(wave: MilkdropWaveVisual) {
+  return wave.drawMode === 'dots' || wave.thickness > 1 ? 4 : 1;
+}
+
+function getWaveLayerOffsets(layerCount: number) {
+  if (layerCount < 4) {
+    return [{ x: 0, y: 0 }];
+  }
+  return [
+    { x: 0, y: 0 },
+    { x: THICK_WAVE_PASS_OFFSET, y: 0 },
+    { x: THICK_WAVE_PASS_OFFSET, y: THICK_WAVE_PASS_OFFSET },
+    { x: 0, y: THICK_WAVE_PASS_OFFSET },
+  ];
+}
+
+function createWaveLayerObject(
+  wave: MilkdropWaveVisual,
+  behavior: MilkdropBackendBehavior,
+  helpers: {
+    ensureGeometryPositions: (
+      geometry: BufferGeometry,
+      positions: number[],
+    ) => void;
+    getWaveLinePositions: (
+      wave: MilkdropWaveVisual,
+      behavior: MilkdropBackendBehavior,
+    ) => number[];
+    setMaterialColor: (
+      material: LineBasicMaterial | PointsMaterial,
+      color: MilkdropColor,
+      alpha: number,
+    ) => void;
+  },
+  alphaMultiplier: number,
+  offsetX: number,
+  offsetY: number,
+) {
+  const positions = helpers.getWaveLinePositions(wave, behavior);
+  if (wave.drawMode === 'dots') {
+    const object = new ThreePoints(
+      new BufferGeometry(),
+      new PointsMaterial({
+        size: 1,
+        transparent: true,
+        opacity: wave.alpha * alphaMultiplier,
+        ...(wave.additive ? { blending: AdditiveBlending } : {}),
+      }),
+    );
+    object.geometry.userData.skipDynamicBounds = true;
+    helpers.ensureGeometryPositions(object.geometry, positions);
+    helpers.setMaterialColor(
+      object.material,
+      wave.color,
+      wave.alpha * alphaMultiplier,
+    );
+    object.position.set(offsetX, offsetY, 0.24);
+    return object;
+  }
+
+  const ObjectType =
+    wave.closed && behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine;
+  const object = new ObjectType(
+    new BufferGeometry(),
+    new LineBasicMaterial({
+      linewidth: 1,
+      transparent: true,
+      opacity: wave.alpha * alphaMultiplier,
+      ...(wave.additive ? { blending: AdditiveBlending } : {}),
+    }),
+  );
+  object.geometry.userData.skipDynamicBounds = true;
+  helpers.ensureGeometryPositions(object.geometry, positions);
+  helpers.setMaterialColor(
+    object.material,
+    wave.color,
+    wave.alpha * alphaMultiplier,
+  );
+  object.position.set(offsetX, offsetY, 0.24);
+  return object;
+}
+
+function syncWaveLayerObject(
+  existing: WaveLayerObject | undefined,
+  wave: MilkdropWaveVisual,
+  behavior: MilkdropBackendBehavior,
+  helpers: {
+    ensureGeometryPositions: (
+      geometry: BufferGeometry,
+      positions: number[],
+    ) => void;
+    getWaveLinePositions: (
+      wave: MilkdropWaveVisual,
+      behavior: MilkdropBackendBehavior,
+    ) => number[];
+    setMaterialColor: (
+      material: LineBasicMaterial | PointsMaterial,
+      color: MilkdropColor,
+      alpha: number,
+    ) => void;
+  },
+  alphaMultiplier: number,
+  offsetX: number,
+  offsetY: number,
+) {
+  const needsPoints = wave.drawMode === 'dots';
+  const expectsLoop =
+    wave.closed && !needsPoints && behavior.useLineLoopPrimitives;
+  const matches =
+    !!existing &&
+    ((needsPoints && existing instanceof ThreePoints) ||
+      (expectsLoop && existing instanceof ThreeLineLoop) ||
+      (!needsPoints && !expectsLoop && existing instanceof ThreeLine));
+
+  if (!matches) {
+    return createWaveLayerObject(
+      wave,
+      behavior,
+      helpers,
+      alphaMultiplier,
+      offsetX,
+      offsetY,
+    );
+  }
+
+  helpers.ensureGeometryPositions(
+    existing.geometry,
+    helpers.getWaveLinePositions(wave, behavior),
+  );
+  if (existing instanceof ThreePoints) {
+    const material = existing.material as PointsMaterial;
+    material.size = 1;
+    material.blending = wave.additive ? AdditiveBlending : NormalBlending;
+    helpers.setMaterialColor(
+      material,
+      wave.color,
+      wave.alpha * alphaMultiplier,
+    );
+  } else {
+    const material = existing.material as LineBasicMaterial;
+    material.linewidth = 1;
+    material.blending = wave.additive ? AdditiveBlending : NormalBlending;
+    helpers.setMaterialColor(
+      material,
+      wave.color,
+      wave.alpha * alphaMultiplier,
+    );
+  }
+  existing.position.set(offsetX, offsetY, 0.24);
+  return existing;
+}
 
 export function createWaveObject(
   wave: MilkdropWaveVisual | null,
@@ -38,58 +195,22 @@ export function createWaveObject(
   if (!wave || wave.positions.length === 0) {
     return null;
   }
-
-  if (wave.drawMode === 'dots') {
-    const object = new ThreePoints(
-      new BufferGeometry(),
-      new PointsMaterial({
-        size: wave.pointSize,
-        transparent: true,
-        opacity: wave.alpha * alphaMultiplier,
-        ...(wave.additive ? { blending: AdditiveBlending } : {}),
-      }),
+  const layerCount = getWaveLayerCount(wave);
+  const group = new ThreeGroup();
+  for (const { x, y } of getWaveLayerOffsets(layerCount)) {
+    group.add(
+      createWaveLayerObject(wave, behavior, helpers, alphaMultiplier, x, y),
     );
-    object.geometry.userData.skipDynamicBounds = true;
-    helpers.ensureGeometryPositions(object.geometry, wave.positions);
-    helpers.setMaterialColor(
-      object.material,
-      wave.color,
-      wave.alpha * alphaMultiplier,
-    );
-    object.position.z = 0.24;
-    return object;
   }
-
-  const ObjectType =
-    wave.closed && behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine;
-  const object = new ObjectType(
-    new BufferGeometry(),
-    new LineBasicMaterial({
-      linewidth: Math.max(1, wave.thickness),
-      transparent: true,
-      opacity: wave.alpha * alphaMultiplier,
-      ...(wave.additive ? { blending: AdditiveBlending } : {}),
-    }),
-  );
-  object.geometry.userData.skipDynamicBounds = true;
-  helpers.ensureGeometryPositions(
-    object.geometry,
-    helpers.getWaveLinePositions(wave, behavior),
-  );
-  helpers.setMaterialColor(
-    object.material,
-    wave.color,
-    wave.alpha * alphaMultiplier,
-  );
-  object.position.z = 0.24;
-  return object;
+  return group;
 }
 
 export function updateWaveObject(
-  object: Line | LineLoop | Points,
+  object: Group,
   wave: MilkdropWaveVisual,
   behavior: MilkdropBackendBehavior,
   helpers: {
+    disposeObject: (object: { children?: unknown[] }) => void;
     ensureGeometryPositions: (
       geometry: BufferGeometry,
       positions: number[],
@@ -106,34 +227,42 @@ export function updateWaveObject(
   },
   alphaMultiplier: number,
 ) {
-  helpers.ensureGeometryPositions(
-    object.geometry,
-    helpers.getWaveLinePositions(wave, behavior),
-  );
-  if (object instanceof ThreePoints) {
-    const material = object.material as PointsMaterial;
-    material.size = wave.pointSize;
-    material.blending = wave.additive ? AdditiveBlending : NormalBlending;
-    helpers.setMaterialColor(
-      material,
-      wave.color,
-      wave.alpha * alphaMultiplier,
+  const layerCount = getWaveLayerCount(wave);
+  const offsets = getWaveLayerOffsets(layerCount);
+
+  for (let index = 0; index < offsets.length; index += 1) {
+    const { x, y } = offsets[index] as { x: number; y: number };
+    const existing = object.children[index] as WaveLayerObject | undefined;
+    const synced = syncWaveLayerObject(
+      existing,
+      wave,
+      behavior,
+      helpers,
+      alphaMultiplier,
+      x,
+      y,
     );
-  } else {
-    const material = object.material as LineBasicMaterial;
-    material.linewidth = Math.max(1, wave.thickness);
-    material.blending = wave.additive ? AdditiveBlending : NormalBlending;
-    helpers.setMaterialColor(
-      material,
-      wave.color,
-      wave.alpha * alphaMultiplier,
-    );
+    if (!existing) {
+      object.add(synced);
+    } else if (synced !== existing) {
+      object.remove(existing);
+      helpers.disposeObject(existing);
+      object.add(synced);
+    }
   }
-  object.position.z = 0.24;
+  for (
+    let index = object.children.length - 1;
+    index >= offsets.length;
+    index -= 1
+  ) {
+    const child = object.children[index];
+    object.remove(child);
+    helpers.disposeObject(child as { children?: unknown[] });
+  }
 }
 
 export function syncWaveObject(
-  existing: Line | LineLoop | Points | undefined,
+  existing: Group | undefined,
   wave: MilkdropWaveVisual,
   behavior: MilkdropBackendBehavior,
   helpers: {
@@ -161,16 +290,7 @@ export function syncWaveObject(
     return null;
   }
 
-  const wantsPoints = wave.drawMode === 'dots';
-  const wantsLoop =
-    wave.closed && !wantsPoints && behavior.useLineLoopPrimitives;
-  const matches =
-    !!existing &&
-    ((wantsPoints && existing instanceof ThreePoints) ||
-      (wantsLoop && existing instanceof ThreeLineLoop) ||
-      (!wantsPoints && !wantsLoop && existing instanceof ThreeLine));
-
-  if (!matches) {
+  if (!(existing instanceof ThreeGroup)) {
     if (existing) {
       helpers.disposeObject(existing);
     }
@@ -285,10 +405,10 @@ export function renderWaveGroup({
   clearGroup: (group: Group) => void;
   trimGroupChildren: (group: Group, keepCount: number) => void;
   syncWaveObject: (
-    existing: Line | LineLoop | Points | undefined,
+    existing: Group | undefined,
     wave: MilkdropWaveVisual,
     alphaMultiplier: number,
-  ) => Line | LineLoop | Points | null;
+  ) => Group | null;
 }) {
   if (batcher?.renderWaveGroup?.(target, group, waves, alphaMultiplier)) {
     clearGroup(group);
@@ -296,11 +416,7 @@ export function renderWaveGroup({
   }
   for (let index = 0; index < waves.length; index += 1) {
     const wave = waves[index] as MilkdropWaveVisual;
-    const existing = group.children[index] as
-      | Line
-      | LineLoop
-      | Points
-      | undefined;
+    const existing = group.children[index] as Group | undefined;
     const synced = syncWaveObject(existing, wave, alphaMultiplier);
     if (!synced) {
       continue;

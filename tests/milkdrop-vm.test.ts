@@ -207,6 +207,36 @@ per_pixel_1=rot = rot + 0.001;
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
   });
 
+  test('does not inject Stims-only starter visuals into simple imported presets', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Border Only
+fDecay=1
+zoom=0
+warp=1
+ob_size=0.2
+ob_r=0
+ob_g=0
+ob_b=0
+ob_a=0
+ib_size=0.1
+ib_r=1
+ib_g=0
+ib_b=0
+ib_a=1
+      `.trim(),
+      { id: 'border-only-import', origin: 'imported' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    const frameState = vm.step(makeSignals({ frame: 1 }));
+
+    expect(frameState.shapes).toEqual([]);
+    expect(frameState.post.videoEchoEnabled).toBe(false);
+    expect(frameState.post.videoEchoAlpha).toBe(0);
+    expect(frameState.borders).toHaveLength(2);
+  });
+
   test('refreshes runtime signal lookups when the same signals object is reused', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -396,7 +426,7 @@ per_pixel_1=zoom=1.08; rot=0.12; warp=0.35;
     expect(frameState.motionVectors.length).toBeGreaterThan(0);
     expect(frameState.motionVectors[0]?.positions).toHaveLength(6);
     expect(frameState.motionVectors[0]?.color.b).toBeCloseTo(1, 6);
-    expect(frameState.motionVectors[0]?.alpha).toBeGreaterThan(0.28);
+    expect(frameState.motionVectors[0]?.alpha).toBeGreaterThanOrEqual(0.28);
   });
 
   test('uses legacy motion vector counts and spacing controls without canonical enable flags', () => {

@@ -1,90 +1,44 @@
+import {
+  getFocusableElements,
+  restoreFocusIfPresent,
+  trapFocusWithin,
+  updateModalQueryParam,
+} from './modal-utils.ts';
 import type { RenderingSupport } from './renderer-capabilities.ts';
 import { getRenderingSupport } from './renderer-capabilities.ts';
 
 const OVERLAY_ID = 'rendering-capability-overlay';
 const MODAL_PARAM = 'modal';
 const MODAL_VALUE = 'rendering-capability';
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 let restoreFocusTarget: HTMLElement | null = null;
 let overlayCleanup: (() => void) | null = null;
 let renderingSupportResolver: () => RenderingSupport = getRenderingSupport;
 
-function getFocusableElements(container: HTMLElement) {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter((el) => !el.hasAttribute('aria-hidden'));
-}
-
-function trapFocus(panel: HTMLElement) {
-  const focusable = () => getFocusableElements(panel);
-
-  const handleKeydown = (event: KeyboardEvent) => {
-    if (event.key !== 'Tab') return;
-
-    const items = focusable();
-    if (items.length === 0) {
-      event.preventDefault();
-      panel.focus();
-      return;
-    }
-
-    const first = items[0];
-    const last = items[items.length - 1];
-    const active = panel.ownerDocument.activeElement;
-
-    if (event.shiftKey && active === first) {
-      event.preventDefault();
-      last.focus();
-      return;
-    }
-    if (!event.shiftKey && active === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
-  const handleFocusIn = (event: FocusEvent) => {
-    if (!(event.target instanceof Node) || panel.contains(event.target)) {
-      return;
-    }
-
-    const items = focusable();
-    if (items.length > 0) {
-      items[0].focus();
-    } else {
-      panel.focus();
-    }
-  };
-
-  panel.addEventListener('keydown', handleKeydown);
-  panel.ownerDocument.addEventListener('focusin', handleFocusIn);
-
-  return () => {
-    panel.removeEventListener('keydown', handleKeydown);
-    panel.ownerDocument.removeEventListener('focusin', handleFocusIn);
-  };
-}
-
 function updateModalUrlState(open: boolean) {
-  if (typeof window === 'undefined') return;
-  const url = new URL(window.location.href);
-  const hasParam = url.searchParams.get(MODAL_PARAM) === MODAL_VALUE;
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const hasParam =
+    new URLSearchParams(window.location.search).get(MODAL_PARAM) ===
+    MODAL_VALUE;
 
   if (open && !hasParam) {
-    url.searchParams.set(MODAL_PARAM, MODAL_VALUE);
-    window.history.pushState(
-      { ...window.history.state, [MODAL_PARAM]: MODAL_VALUE },
-      '',
-      url,
-    );
+    updateModalQueryParam({
+      modalParam: MODAL_PARAM,
+      nextValue: MODAL_VALUE,
+      usePush: true,
+    });
     return;
   }
 
   if (!open && hasParam) {
-    url.searchParams.delete(MODAL_PARAM);
-    window.history.replaceState({ ...window.history.state }, '', url);
+    updateModalQueryParam({
+      modalParam: MODAL_PARAM,
+      nextValue: null,
+      usePush: false,
+    });
   }
 }
 
@@ -114,9 +68,7 @@ function removeExistingOverlay() {
   overlayCleanup?.();
   overlayCleanup = null;
   updateModalUrlState(false);
-  if (restoreFocusTarget && document?.contains(restoreFocusTarget)) {
-    restoreFocusTarget.focus();
-  }
+  restoreFocusIfPresent(restoreFocusTarget);
   restoreFocusTarget = null;
 }
 
@@ -232,7 +184,7 @@ function addCapabilityOverlay(content: OverlayContent) {
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    const focusCleanup = panel ? trapFocus(panel) : null;
+    const focusCleanup = panel ? trapFocusWithin(panel) : null;
     overlayCleanup = () => {
       focusCleanup?.();
       window.removeEventListener('popstate', handlePopState);

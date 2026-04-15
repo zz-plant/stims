@@ -80,22 +80,9 @@ function track(
 function createToastHost(host: HTMLElement | null | undefined) {
   if (!host) return null;
   const toast = host.ownerDocument.createElement('div');
+  toast.className = 'audio-toast';
   toast.dataset.audioToast = 'true';
   toast.setAttribute('role', 'alert');
-  toast.style.position = 'fixed';
-  toast.style.bottom = '16px';
-  toast.style.left = '50%';
-  toast.style.transform = 'translateX(-50%)';
-  toast.style.padding = '12px 14px';
-  toast.style.maxWidth = '420px';
-  toast.style.background = 'rgba(20, 24, 34, 0.95)';
-  toast.style.border = '1px solid rgba(255, 82, 130, 0.8)';
-  toast.style.borderRadius = '12px';
-  toast.style.color = '#f9f9f9';
-  toast.style.boxShadow = '0 8px 30px rgba(0, 0, 0, 0.45)';
-  toast.style.zIndex = '9999';
-  toast.style.lineHeight = '1.4';
-  toast.style.textAlign = 'center';
   return toast;
 }
 

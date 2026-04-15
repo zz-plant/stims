@@ -6,6 +6,11 @@ import {
 } from './capability-preflight-content.ts';
 import { bindLibraryBackLink } from './library-back-navigation.ts';
 import {
+  getFocusableElements,
+  restoreFocusIfPresent,
+  updateModalQueryParam,
+} from './modal-utils.ts';
+import {
   getActiveRenderPreferences,
   setRenderPreferences,
 } from './render-preferences.ts';
@@ -71,48 +76,17 @@ export function attachCapabilityPreflight({
 
   const MODAL_PARAM = 'modal';
   const MODAL_VALUE = 'capability-check';
-  const FOCUSABLE_SELECTOR =
-    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  const getFocusableElements = (container: HTMLElement) =>
-    Array.from(
-      container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-    ).filter((el) => !el.hasAttribute('aria-hidden'));
 
   let restoreFocusTarget: HTMLElement | null = null;
   let closingFromHistory = false;
   let isAttached = false;
 
-  const resolvePathname = () => {
-    if (window.location?.pathname) return window.location.pathname;
-    if (window.location?.href) {
-      try {
-        return new URL(window.location.href).pathname;
-      } catch (_error) {
-        return '/';
-      }
-    }
-    return '/';
-  };
-
   const updateModalParam = (nextValue: string | null, usePush = true) => {
-    const params = new URLSearchParams(window.location.search);
-    if (nextValue) {
-      params.set(MODAL_PARAM, nextValue);
-    } else {
-      params.delete(MODAL_PARAM);
-    }
-    const nextUrl = `${resolvePathname()}${
-      params.toString() ? `?${params.toString()}` : ''
-    }`;
-    try {
-      if (usePush) {
-        window.history.pushState({ modal: nextValue }, '', nextUrl);
-      } else {
-        window.history.replaceState({ modal: nextValue }, '', nextUrl);
-      }
-    } catch (_error) {
-      // Ignore history errors in non-browser environments.
-    }
+    updateModalQueryParam({
+      modalParam: MODAL_PARAM,
+      nextValue,
+      usePush,
+    });
   };
 
   const isPanelOpen = () => panel.open || panel.hasAttribute('open');
@@ -449,12 +423,7 @@ export function attachCapabilityPreflight({
   });
 
   panel.addEventListener('close', () => {
-    if (
-      restoreFocusTarget &&
-      panel.ownerDocument.contains(restoreFocusTarget)
-    ) {
-      restoreFocusTarget.focus();
-    }
+    restoreFocusIfPresent(restoreFocusTarget, panel.ownerDocument);
     if (closingFromHistory) {
       closingFromHistory = false;
       return;

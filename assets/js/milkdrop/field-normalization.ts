@@ -1,5 +1,8 @@
 const aliasMap: Record<string, string | null> = {
-  milkdrop_preset_version: null,
+  milkdrop_preset_version: 'milkdrop_preset_version',
+  psversion: 'psversion',
+  psversion_comp: 'psversion_comp',
+  psversion_warp: 'psversion_warp',
   frating: 'fRating',
   fdecay: 'decay',
   fgammaadj: 'gammaadj',
@@ -17,7 +20,7 @@ const aliasMap: Record<string, string | null> = {
   fmodwavealphaend: 'modwavealphaend',
   modwavealphabyvolume: 'bmodwavealphabyvolume',
   bmodwavealphabyvolume: 'bmodwavealphabyvolume',
-  fwarpscale: 'warp',
+  fwarpscale: 'warp_scale',
   fwarpanimspeed: 'warpanimspeed',
   fzoomexponent: 'zoomexp',
   fshader: 'shader',

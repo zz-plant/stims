@@ -1,15 +1,10 @@
-import type { Group, Line, LineLoop, Mesh } from 'three';
+import type { Group, Line, LineBasicMaterial, LineLoop, Mesh } from 'three';
 import {
   BufferGeometry,
   DoubleSide,
-  LineBasicMaterial,
+  Float32BufferAttribute,
   MeshBasicMaterial,
-  Path,
-  Shape,
-  ShapeGeometry,
   Group as ThreeGroup,
-  Line as ThreeLine,
-  LineLoop as ThreeLineLoop,
   Mesh as ThreeMesh,
 } from 'three';
 import { disposeGeometry } from '../../utils/three-dispose';
@@ -18,6 +13,199 @@ import type {
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
 import type { MilkdropBorderVisual } from '../types';
+
+const BORDER_TRIANGLE_INDICES = [
+  0, 1, 4, 1, 4, 5, 2, 3, 6, 3, 7, 6, 2, 0, 6, 0, 4, 6, 3, 7, 5, 1, 3, 5,
+];
+
+function clampRadius(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function getBorderGeometryKey(
+  border: MilkdropBorderVisual,
+  outerBorderSize: number | null,
+) {
+  return `${border.key}:${outerBorderSize ?? 'self'}:${border.size}`;
+}
+
+function buildBorderGeometry(
+  border: MilkdropBorderVisual,
+  outerBorderSize: number | null = null,
+) {
+  const outerRadius =
+    border.key === 'outer'
+      ? 1
+      : clampRadius(1 - (outerBorderSize ?? border.size));
+  const innerRadius =
+    border.key === 'outer'
+      ? clampRadius(1 - border.size)
+      : clampRadius(outerRadius - border.size);
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute(
+    'position',
+    new Float32BufferAttribute(
+      [
+        outerRadius,
+        outerRadius,
+        0,
+        outerRadius,
+        -outerRadius,
+        0,
+        -outerRadius,
+        outerRadius,
+        0,
+        -outerRadius,
+        -outerRadius,
+        0,
+        innerRadius,
+        innerRadius,
+        0,
+        innerRadius,
+        -innerRadius,
+        0,
+        -innerRadius,
+        innerRadius,
+        0,
+        -innerRadius,
+        -innerRadius,
+        0,
+      ],
+      3,
+    ),
+  );
+  geometry.setIndex(BORDER_TRIANGLE_INDICES);
+  geometry.userData.borderGeometryKey = getBorderGeometryKey(
+    border,
+    outerBorderSize,
+  );
+  return geometry;
+}
+
+function syncBorderGeometry(
+  object: Mesh,
+  border: MilkdropBorderVisual,
+  outerBorderSize: number | null,
+) {
+  const nextGeometryKey = getBorderGeometryKey(border, outerBorderSize);
+  if (object.userData.borderGeometryKey === nextGeometryKey) {
+    return;
+  }
+
+  disposeGeometry(object.geometry);
+  object.geometry = buildBorderGeometry(border, outerBorderSize);
+  object.userData.borderGeometryKey = nextGeometryKey;
+}
+
+function setBorderMaterialAppearance(
+  material: MeshBasicMaterial,
+  color: MilkdropBorderVisual['color'],
+  alpha: number,
+) {
+  material.transparent = true;
+  material.opacity = alpha;
+  material.side = DoubleSide;
+  material.color.setRGB(color.r, color.g, color.b);
+}
+
+function createBorderGroupObjectRaw(
+  border: MilkdropBorderVisual,
+  outerBorderSize: number | null,
+  alphaMultiplier: number,
+) {
+  const group = new ThreeGroup();
+  const fill = new ThreeMesh(
+    buildBorderGeometry(border, outerBorderSize),
+    new MeshBasicMaterial({
+      transparent: true,
+      opacity: border.alpha * alphaMultiplier,
+      side: DoubleSide,
+    }),
+  );
+  fill.userData.borderGeometryKey = getBorderGeometryKey(
+    border,
+    outerBorderSize,
+  );
+  setBorderMaterialAppearance(
+    fill.material as MeshBasicMaterial,
+    border.color,
+    border.alpha * alphaMultiplier,
+  );
+  fill.position.z = 0.3;
+  group.add(fill);
+  return group;
+}
+
+function createBorderGroupObject(
+  border: MilkdropBorderVisual,
+  outerBorderSize: number | null,
+  helpers: {
+    markAlwaysOnscreen: <T extends ThreeGroup | ThreeMesh>(object: T) => T;
+    setMaterialColor: (
+      material: MeshBasicMaterial | LineBasicMaterial,
+      color: MilkdropBorderVisual['color'],
+      alpha: number,
+    ) => void;
+  },
+  alphaMultiplier: number,
+) {
+  const group = helpers.markAlwaysOnscreen(new ThreeGroup());
+  const fill = helpers.markAlwaysOnscreen(
+    new ThreeMesh(
+      buildBorderGeometry(border, outerBorderSize),
+      new MeshBasicMaterial({
+        transparent: true,
+        opacity: border.alpha * alphaMultiplier,
+        side: DoubleSide,
+      }),
+    ),
+  );
+  fill.userData.borderGeometryKey = getBorderGeometryKey(
+    border,
+    outerBorderSize,
+  );
+  helpers.setMaterialColor(
+    fill.material,
+    border.color,
+    border.alpha * alphaMultiplier,
+  );
+  fill.position.z = 0.3;
+  group.add(fill);
+  return group;
+}
+
+function syncBorderGroupObject(
+  existing: Group | undefined,
+  border: MilkdropBorderVisual,
+  outerBorderSize: number | null,
+  alphaMultiplier: number,
+  helpers: {
+    disposeObject: (object: { children?: unknown[] }) => void;
+  },
+) {
+  if (!(existing instanceof ThreeGroup)) {
+    if (existing) {
+      helpers.disposeObject(existing);
+    }
+    return createBorderGroupObjectRaw(border, outerBorderSize, alphaMultiplier);
+  }
+
+  const fill = existing.children[0];
+  if (!(fill instanceof ThreeMesh) || existing.children.length !== 1) {
+    helpers.disposeObject(existing);
+    return createBorderGroupObjectRaw(border, outerBorderSize, alphaMultiplier);
+  }
+
+  syncBorderGeometry(fill, border, outerBorderSize);
+  setBorderMaterialAppearance(
+    fill.material as MeshBasicMaterial,
+    border.color,
+    border.alpha * alphaMultiplier,
+  );
+  fill.position.z = 0.3;
+  return existing;
+}
 
 export function createBorderObject(
   border: MilkdropBorderVisual,
@@ -32,11 +220,7 @@ export function createBorderObject(
       z: number,
       behavior: MilkdropBackendBehavior,
     ) => number[];
-    markAlwaysOnscreen: <
-      T extends ThreeGroup | ThreeMesh | ThreeLine | ThreeLineLoop,
-    >(
-      object: T,
-    ) => T;
+    markAlwaysOnscreen: <T extends ThreeGroup | ThreeMesh>(object: T) => T;
     setMaterialColor: (
       material: MeshBasicMaterial | LineBasicMaterial,
       color: MilkdropBorderVisual['color'],
@@ -45,67 +229,10 @@ export function createBorderObject(
   },
   alphaMultiplier = 1,
 ) {
-  const inset = border.key === 'outer' ? border.size : border.size + 0.08;
-  const left = -1 + inset * 2;
-  const right = 1 - inset * 2;
-  const top = 1 - inset * 2;
-  const bottom = -1 + inset * 2;
-  const group = helpers.markAlwaysOnscreen(new ThreeGroup());
-  const fillShape = new Shape();
-  fillShape.moveTo(-1, 1);
-  fillShape.lineTo(1, 1);
-  fillShape.lineTo(1, -1);
-  fillShape.lineTo(-1, -1);
-  fillShape.lineTo(-1, 1);
-  const hole = new Path();
-  hole.moveTo(left, top);
-  hole.lineTo(left, bottom);
-  hole.lineTo(right, bottom);
-  hole.lineTo(right, top);
-  hole.lineTo(left, top);
-  fillShape.holes.push(hole);
-
-  const fill = helpers.markAlwaysOnscreen(
-    new ThreeMesh(
-      new ShapeGeometry(fillShape),
-      new MeshBasicMaterial({
-        transparent: true,
-        opacity: border.alpha * 0.45 * alphaMultiplier,
-        side: DoubleSide,
-      }),
-    ),
-  );
-  helpers.setMaterialColor(
-    fill.material,
-    border.color,
-    border.alpha * 0.45 * alphaMultiplier,
-  );
-  fill.position.z = 0.285;
-  group.add(fill);
-
-  const outline = new (
-    behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
-  )(
-    new BufferGeometry(),
-    new LineBasicMaterial({
-      transparent: true,
-      opacity: border.alpha * alphaMultiplier,
-    }),
-  );
-  outline.frustumCulled = false;
-  helpers.ensureGeometryPositions(
-    outline.geometry,
-    helpers.getBorderLinePositions(border, 0.3, behavior),
-  );
-  helpers.setMaterialColor(
-    outline.material,
-    border.color,
-    border.alpha * alphaMultiplier,
-  );
-  outline.position.z = 0.3;
-  group.add(outline);
-
-  return group;
+  void behavior;
+  void helpers.ensureGeometryPositions;
+  void helpers.getBorderLinePositions;
+  return createBorderGroupObject(border, null, helpers, alphaMultiplier);
 }
 
 export function updateBorderLine(
@@ -130,27 +257,17 @@ export function updateBorderLine(
   },
   alphaMultiplier: number,
 ) {
-  const inset = border.key === 'outer' ? border.size : border.size + 0.08;
-  const previousInset = object.userData.borderInset as number | undefined;
-  if (previousInset !== inset) {
-    helpers.ensureGeometryPositions(
-      object.geometry,
-      helpers.getBorderLinePositions(border, 0.3, behavior),
-    );
-    object.userData.borderInset = inset;
-  }
-  helpers.setMaterialColor(
-    object.material as LineBasicMaterial,
-    border.color,
-    border.alpha * alphaMultiplier,
-  );
+  void object;
+  void border;
+  void behavior;
+  void helpers;
+  void alphaMultiplier;
 }
 
 export function updateBorderFill(
   object: Mesh,
   border: MilkdropBorderVisual,
   helpers: {
-    isSharedGeometry: (geometry: BufferGeometry) => boolean;
     setMaterialColor: (
       material: MeshBasicMaterial,
       color: MilkdropBorderVisual['color'],
@@ -158,40 +275,15 @@ export function updateBorderFill(
     ) => void;
   },
   alphaMultiplier: number,
+  outerBorderSize: number | null = null,
 ) {
-  const inset = border.key === 'outer' ? border.size : border.size + 0.08;
-  const previousInset = object.userData.borderInset as number | undefined;
-  if (previousInset !== inset) {
-    const left = -1 + inset * 2;
-    const right = 1 - inset * 2;
-    const top = 1 - inset * 2;
-    const bottom = -1 + inset * 2;
-    const fillShape = new Shape();
-    fillShape.moveTo(-1, 1);
-    fillShape.lineTo(1, 1);
-    fillShape.lineTo(1, -1);
-    fillShape.lineTo(-1, -1);
-    fillShape.lineTo(-1, 1);
-    const hole = new Path();
-    hole.moveTo(left, top);
-    hole.lineTo(left, bottom);
-    hole.lineTo(right, bottom);
-    hole.lineTo(right, top);
-    hole.lineTo(left, top);
-    fillShape.holes.push(hole);
-
-    if (!helpers.isSharedGeometry(object.geometry)) {
-      disposeGeometry(object.geometry);
-    }
-    object.geometry = new ShapeGeometry(fillShape);
-    object.userData.borderInset = inset;
-  }
+  syncBorderGeometry(object, border, outerBorderSize);
   helpers.setMaterialColor(
     object.material as MeshBasicMaterial,
     border.color,
-    border.alpha * 0.45 * alphaMultiplier,
+    border.alpha * alphaMultiplier,
   );
-  object.position.z = 0.285;
+  object.position.z = 0.3;
 }
 
 export function syncBorderObject(
@@ -217,28 +309,12 @@ export function syncBorderObject(
   },
   alphaMultiplier: number,
 ) {
-  if (!(existing instanceof ThreeGroup)) {
-    if (existing) {
-      helpers.disposeObject(existing);
-    }
-    return helpers.createBorderObject(border, alphaMultiplier);
-  }
+  void behavior;
+  void helpers.updateBorderLine;
 
-  const fill = existing.children[0];
-  const outline = existing.children[1];
-  const expectsLoop = behavior.useLineLoopPrimitives;
-  const hasSupportedOutline = expectsLoop
-    ? outline instanceof ThreeLineLoop
-    : outline instanceof ThreeLine;
-  if (!(fill instanceof ThreeMesh) || !hasSupportedOutline) {
-    helpers.disposeObject(existing);
-    return helpers.createBorderObject(border, alphaMultiplier);
-  }
-
-  helpers.updateBorderFill(fill, border, alphaMultiplier);
-  helpers.updateBorderLine(outline as Line | LineLoop, border, alphaMultiplier);
-  outline.position.z = 0.3;
-  return existing;
+  return syncBorderGroupObject(existing, border, null, alphaMultiplier, {
+    disposeObject: helpers.disposeObject,
+  });
 }
 
 export function renderBorderGroup({
@@ -249,7 +325,8 @@ export function renderBorderGroup({
   batcher,
   clearGroup,
   trimGroupChildren,
-  syncBorderObject,
+  disposeObject,
+  syncBorderObject: _syncBorderObject,
 }: {
   target: 'borders' | 'blend-borders';
   group: Group;
@@ -258,6 +335,7 @@ export function renderBorderGroup({
   batcher: MilkdropRendererBatcher | null;
   clearGroup: (group: Group) => void;
   trimGroupChildren: (group: Group, keepCount: number) => void;
+  disposeObject: (object: { children?: unknown[] }) => void;
   syncBorderObject: (
     existing: Group | undefined,
     border: MilkdropBorderVisual,
@@ -268,13 +346,25 @@ export function renderBorderGroup({
     clearGroup(group);
     return;
   }
+
+  const outerBorderSize =
+    borders.find((candidate) => candidate?.key === 'outer')?.size ?? null;
+
   for (let index = 0; index < borders.length; index += 1) {
     const border = borders[index];
     if (!border) {
       continue;
     }
     const existing = group.children[index] as Group | undefined;
-    const synced = syncBorderObject(existing, border, alphaMultiplier);
+    const synced = syncBorderGroupObject(
+      existing,
+      border,
+      outerBorderSize,
+      alphaMultiplier,
+      {
+        disposeObject,
+      },
+    );
     if (!existing) {
       group.add(synced);
     } else if (synced !== existing) {
@@ -283,4 +373,5 @@ export function renderBorderGroup({
     }
   }
   trimGroupChildren(group, borders.length);
+  void _syncBorderObject;
 }

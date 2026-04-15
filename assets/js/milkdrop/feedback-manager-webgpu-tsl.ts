@@ -38,7 +38,6 @@ import {
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
-  MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
 } from './feedback-composite-profile.ts';
 import {
@@ -1014,18 +1013,6 @@ function createCompositeOutputNode(
     ).toVar();
 
     if (!hasDirectCompProgram) {
-      color.assign(mix(color, previousColor, clamp(uniforms.mixAlpha, 0, 1)));
-      color.assign(
-        mix(
-          color,
-          current.rgb,
-          clamp(
-            uniforms.currentFrameBoost,
-            0,
-            MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
-          ),
-        ),
-      );
       color.assign(hueRotateNode(color, uniforms.hueShift));
       color.assign(applySaturationNode(color, uniforms.saturation));
       color.assign(applyContrastNode(color, uniforms.contrast));
@@ -1132,13 +1119,14 @@ function createCompositeOutputNode(
       ).rgb;
       const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
       color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
+      const gammaAdjusted = pow(
+        max(color, vec3(0)),
+        vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
+      );
+      return vec4(gammaAdjusted, 1);
     }
 
-    const gammaAdjusted = pow(
-      max(color, vec3(0)),
-      vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
-    );
-    return vec4(gammaAdjusted, 1);
+    return vec4(color, 1);
   })();
 }
 

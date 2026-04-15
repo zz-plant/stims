@@ -11,6 +11,52 @@ import {
   normalizeVideoEchoOrientation,
 } from './shared';
 
+const POST_PASS_EPSILON = 0.0001;
+const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
+
+function hasNonNeutralShaderControls(
+  controls: MilkdropPostVisual['shaderControls'],
+) {
+  return (
+    Math.abs(controls.warpScale) > POST_PASS_EPSILON ||
+    Math.abs(controls.offsetX) > POST_PASS_EPSILON ||
+    Math.abs(controls.offsetY) > POST_PASS_EPSILON ||
+    Math.abs(controls.rotation) > POST_PASS_EPSILON ||
+    Math.abs(controls.zoom - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.saturation - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.contrast - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.colorScale.r - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.colorScale.g - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.colorScale.b - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.hueShift) > POST_PASS_EPSILON ||
+    Math.abs(controls.mixAlpha) > POST_PASS_EPSILON ||
+    Math.abs(controls.brightenBoost) > POST_PASS_EPSILON ||
+    Math.abs(controls.invertBoost) > POST_PASS_EPSILON ||
+    Math.abs(controls.solarizeBoost) > POST_PASS_EPSILON ||
+    Math.abs(controls.tint.r - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.tint.g - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.tint.b - 1) > POST_PASS_EPSILON ||
+    controls.textureLayer.source !== 'none' ||
+    controls.textureLayer.mode !== 'none' ||
+    controls.textureLayer.sampleDimension !== '2d' ||
+    controls.textureLayer.inverted ||
+    Math.abs(controls.textureLayer.amount) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.scaleX - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.scaleY - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.offsetX) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.offsetY) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.volumeSliceZ ?? 0) > POST_PASS_EPSILON ||
+    controls.warpTexture.source !== 'none' ||
+    controls.warpTexture.sampleDimension !== '2d' ||
+    Math.abs(controls.warpTexture.amount) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.scaleX - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.scaleY - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.offsetX) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.offsetY) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.volumeSliceZ ?? 0) > POST_PASS_EPSILON
+  );
+}
+
 export function buildShaderControls({
   preset,
   signals,
@@ -190,22 +236,47 @@ export function buildPost({
     extra?: Record<string, number>,
   ) => MutableState;
 }): MilkdropPostVisual {
+  const shaderControls = buildShaderControls({ preset, signals, createEnv });
+  const brighten = (state.brighten ?? 0) > 0.5;
+  const darken = (state.darken ?? 0) > 0.5;
+  const darkenCenter = (state.darken_center ?? 0) > 0.5;
+  const solarize = (state.solarize ?? 0) > 0.5;
+  const invert = (state.invert ?? 0) > 0.5;
+  const gammaAdj = clamp(state.gammaadj ?? 1, 0.25, 4);
+  const videoEchoEnabled = (state.video_echo_enabled ?? 0) > 0.5;
+  const redBlueStereo =
+    (state.red_blue_stereo ?? state.redbluestereo ?? 0) > 0.5;
+  const shaderEnabled =
+    (state.shader ?? 1) > 0.5 ||
+    videoEchoEnabled ||
+    brighten ||
+    darken ||
+    darkenCenter ||
+    solarize ||
+    invert ||
+    redBlueStereo ||
+    Math.abs(gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON ||
+    preset.ir.shaderText.warp !== null ||
+    preset.ir.shaderText.comp !== null ||
+    preset.ir.post.shaderPrograms.warp !== null ||
+    preset.ir.post.shaderPrograms.comp !== null ||
+    hasNonNeutralShaderControls(shaderControls);
   const post: MilkdropPostVisual = {
-    shaderEnabled: (state.shader ?? 1) > 0.5,
+    shaderEnabled,
     textureWrap: (state.texture_wrap ?? 0) > 0.5,
     feedbackTexture: (state.feedback_texture ?? 0) > 0.5,
     outerBorderStyle: (state.ob_border ?? 0) > 0.5,
     innerBorderStyle: (state.ib_border ?? 0) > 0.5,
-    redBlueStereo: (state.red_blue_stereo ?? state.redbluestereo ?? 0) > 0.5,
-    shaderControls: buildShaderControls({ preset, signals, createEnv }),
+    redBlueStereo,
+    shaderControls,
     shaderPrograms: preset.ir.post.shaderPrograms,
-    brighten: (state.brighten ?? 0) > 0.5,
-    darken: (state.darken ?? 0) > 0.5,
-    darkenCenter: (state.darken_center ?? 0) > 0.5,
-    solarize: (state.solarize ?? 0) > 0.5,
-    invert: (state.invert ?? 0) > 0.5,
-    gammaAdj: clamp(state.gammaadj ?? 1, 0.25, 4),
-    videoEchoEnabled: (state.video_echo_enabled ?? 0) > 0.5,
+    brighten,
+    darken,
+    darkenCenter,
+    solarize,
+    invert,
+    gammaAdj,
+    videoEchoEnabled,
     videoEchoAlpha: clamp(state.video_echo_alpha ?? 0.18, 0, 1),
     videoEchoZoom: clamp(state.video_echo_zoom ?? 1, 0.85, 1.3),
     videoEchoOrientation: normalizeVideoEchoOrientation(

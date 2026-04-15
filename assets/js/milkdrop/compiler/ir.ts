@@ -27,6 +27,50 @@ export type PendingHardUnsupportedField = HardUnsupportedFieldSpec & {
   line: number;
 };
 
+const POST_PASS_EPSILON = 0.0001;
+const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
+
+function hasNonNeutralShaderControls(controls: MilkdropShaderControls) {
+  return (
+    Math.abs(controls.warpScale) > POST_PASS_EPSILON ||
+    Math.abs(controls.offsetX) > POST_PASS_EPSILON ||
+    Math.abs(controls.offsetY) > POST_PASS_EPSILON ||
+    Math.abs(controls.rotation) > POST_PASS_EPSILON ||
+    Math.abs(controls.zoom - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.saturation - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.contrast - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.colorScale.r - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.colorScale.g - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.colorScale.b - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.hueShift) > POST_PASS_EPSILON ||
+    Math.abs(controls.mixAlpha) > POST_PASS_EPSILON ||
+    Math.abs(controls.brightenBoost) > POST_PASS_EPSILON ||
+    Math.abs(controls.invertBoost) > POST_PASS_EPSILON ||
+    Math.abs(controls.solarizeBoost) > POST_PASS_EPSILON ||
+    Math.abs(controls.tint.r - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.tint.g - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.tint.b - 1) > POST_PASS_EPSILON ||
+    controls.textureLayer.source !== 'none' ||
+    controls.textureLayer.mode !== 'none' ||
+    controls.textureLayer.sampleDimension !== '2d' ||
+    controls.textureLayer.inverted ||
+    Math.abs(controls.textureLayer.amount) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.scaleX - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.scaleY - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.offsetX) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.offsetY) > POST_PASS_EPSILON ||
+    Math.abs(controls.textureLayer.volumeSliceZ ?? 0) > POST_PASS_EPSILON ||
+    controls.warpTexture.source !== 'none' ||
+    controls.warpTexture.sampleDimension !== '2d' ||
+    Math.abs(controls.warpTexture.amount) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.scaleX - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.scaleY - 1) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.offsetX) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.offsetY) > POST_PASS_EPSILON ||
+    Math.abs(controls.warpTexture.volumeSliceZ ?? 0) > POST_PASS_EPSILON
+  );
+}
+
 type ProgramBlock = MilkdropPresetIR['programs']['init'];
 
 type ShaderControlAnalysis = {
@@ -845,6 +889,30 @@ export function createMilkdropIr({
   const mainWave = Object.fromEntries(
     Object.entries(numericFields).filter(([key]) => key.startsWith('wave_')),
   );
+  const brighten = (numericFields.brighten ?? 0) > 0.5;
+  const darken = (numericFields.darken ?? 0) > 0.5;
+  const darkenCenter = (numericFields.darken_center ?? 0) > 0.5;
+  const solarize = (numericFields.solarize ?? 0) > 0.5;
+  const invert = (numericFields.invert ?? 0) > 0.5;
+  const videoEchoEnabled = (numericFields.video_echo_enabled ?? 0) > 0.5;
+  const redBlueStereo =
+    (numericFields.red_blue_stereo ?? numericFields.redbluestereo ?? 0) > 0.5;
+  const gammaAdj = numericFields.gammaadj ?? 1;
+  const shaderEnabled =
+    (numericFields.shader ?? 1) > 0.5 ||
+    videoEchoEnabled ||
+    brighten ||
+    darken ||
+    darkenCenter ||
+    solarize ||
+    invert ||
+    redBlueStereo ||
+    Math.abs(gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON ||
+    warpShaderText !== null ||
+    compShaderText !== null ||
+    warpShaderProgram !== null ||
+    compShaderProgram !== null ||
+    hasNonNeutralShaderControls(mergedShaderControls.controls);
 
   return {
     title,
@@ -886,12 +954,12 @@ export function createMilkdropIr({
       },
     },
     post: {
-      brighten: (numericFields.brighten ?? 0) > 0.5,
-      darken: (numericFields.darken ?? 0) > 0.5,
-      darkenCenter: (numericFields.darken_center ?? 0) > 0.5,
-      solarize: (numericFields.solarize ?? 0) > 0.5,
-      invert: (numericFields.invert ?? 0) > 0.5,
-      shaderEnabled: (numericFields.shader ?? 1) > 0.5,
+      brighten,
+      darken,
+      darkenCenter,
+      solarize,
+      invert,
+      shaderEnabled,
       textureWrap: (numericFields.texture_wrap ?? 0) > 0.5,
       feedbackTexture: (numericFields.feedback_texture ?? 0) > 0.5,
       outerBorderStyle: (numericFields.ob_border ?? 0) > 0.5,
@@ -902,8 +970,8 @@ export function createMilkdropIr({
         warp: warpShaderProgram,
         comp: compShaderProgram,
       },
-      gammaAdj: numericFields.gammaadj ?? 1,
-      videoEchoEnabled: (numericFields.video_echo_enabled ?? 0) > 0.5,
+      gammaAdj,
+      videoEchoEnabled,
       videoEchoAlpha: numericFields.video_echo_alpha ?? 0,
       videoEchoZoom: numericFields.video_echo_zoom ?? 1,
       videoEchoOrientation: fieldHelpers.normalizeVideoEchoOrientation(

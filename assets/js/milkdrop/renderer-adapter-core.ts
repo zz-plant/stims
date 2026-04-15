@@ -692,6 +692,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,
+      disposeObject,
       syncBorderObject: (existing, border, nextAlphaMultiplier) =>
         syncBorderObjectHelper(
           existing,
@@ -716,7 +717,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
                 object,
                 nextBorder,
                 {
-                  isSharedGeometry,
                   setMaterialColor,
                 },
                 syncAlphaMultiplier,

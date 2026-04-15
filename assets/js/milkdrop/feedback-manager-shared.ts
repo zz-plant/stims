@@ -31,7 +31,6 @@ import {
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
-  MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
 } from './feedback-composite-profile.ts';
 import {
@@ -45,7 +44,6 @@ import type {
 
 export type MilkdropCompositeShaderConfig = {
   enhancedFeedbackBlur?: boolean;
-  currentFrameBoostCap?: number;
 };
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
@@ -195,10 +193,7 @@ function createFeedbackRenderTarget(
 
 export function createCompositeFragmentShaderVariant(
   source: string,
-  {
-    enhancedFeedbackBlur = false,
-    currentFrameBoostCap = MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
-  }: MilkdropCompositeShaderConfig = {},
+  { enhancedFeedbackBlur = false }: MilkdropCompositeShaderConfig = {},
 ) {
   const blurBlock = enhancedFeedbackBlur
     ? `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
@@ -243,12 +238,7 @@ export function createCompositeFragmentShaderVariant(
     )
     .replace(
       /color = mix\(\s*current\.rgb,\s*previousColor,\s*clamp\(mixAlpha \+ feedbackTexture \* 0\.2, 0\.0, 1\.0\)\s*\);/,
-      `color = mix(current.rgb, previousColor, clamp(videoEchoAlpha, 0.0, 1.0));
-          color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));`,
-    )
-    .replace(
-      /color = mix\(color, current\.rgb, clamp\(currentFrameBoost, 0\.0, 0\.3\)\);/,
-      `color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, ${currentFrameBoostCap.toFixed(1)}));`,
+      `color = mix(current.rgb, previousColor, clamp(videoEchoAlpha, 0.0, 1.0));`,
     );
 }
 
@@ -600,8 +590,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             previousColor,
             clamp(videoEchoAlpha, 0.0, 1.0)
           );
-          color = mix(color, previousColor, clamp(mixAlpha, 0.0, 1.0));
-          color = mix(color, current.rgb, clamp(currentFrameBoost, 0.0, ${MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP.toFixed(1)}));
           color = hueRotate(color, hueShift);
           color = applySaturation(color, saturation);
           color = applyContrast(color, contrast);
