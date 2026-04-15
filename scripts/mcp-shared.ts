@@ -451,32 +451,7 @@ function registerTools(server: McpServer) {
         .strict(),
     },
     async ({ scope }) => {
-      const readmeContent = await loadReadme();
-      const quickStart = extractSection(readmeContent, 'Quick Start');
-      const localSetup = extractSection(readmeContent, 'Local Setup');
-      const helpfulScripts = extractSection(
-        readmeContent,
-        'Helpful Scripts (Bun-first)',
-      );
-      const tests = extractSection(readmeContent, 'Running Tests');
-      const linting = extractSection(readmeContent, 'Linting and Formatting');
-
-      const sections: Record<string, string | null> = {
-        setup:
-          quickStart && localSetup
-            ? `${quickStart}\n\n${localSetup}`
-            : (quickStart ?? localSetup),
-        dev: helpfulScripts,
-        build: helpfulScripts,
-        test: tests,
-        lint: linting,
-      };
-
-      const text = scope
-        ? sections[scope]
-        : [quickStart, localSetup, helpfulScripts, tests, linting]
-            .filter(Boolean)
-            .join('\n\n');
+      const text = await getReadmeDevCommands(scope);
 
       return asTextResponse(
         text || 'No development guidance was found in README.md.',
@@ -632,7 +607,7 @@ function registerTools(server: McpServer) {
 }
 
 async function loadReadme() {
-  return markdownSources['README.md'];
+  return await loadMarkdownFile('README.md');
 }
 
 async function loadReadmeLines() {
@@ -649,16 +624,16 @@ type SectionExcerpt = {
 async function buildDocPointers() {
   const lines = await loadReadmeLines();
 
-  const quickStart = extractSectionWithRange(lines, 'Quick Start');
-  const layout = extractSectionWithRange(lines, 'Repository Layout');
-  const toys = extractSectionWithRange(lines, 'Toys in the Collection');
-  const runtime = extractRuntimeRange(lines);
+  const quickStart = extractSectionWithRange(lines, 'Quickstart');
+  const commands = extractSectionWithRange(lines, 'Common commands');
+  const layout = extractSectionWithRange(lines, 'Project shape');
+  const docs = extractSectionWithRange(lines, 'Docs');
 
   const entries = [
-    quickStart && formatPointer('Quick start steps', quickStart),
-    runtime && formatPointer('Runtime options (Bun)', runtime),
+    quickStart && formatPointer('Quickstart', quickStart),
+    commands && formatPointer('Common commands', commands),
     layout && formatPointer('Repository layout', layout),
-    toys && formatPointer('Toy catalog link targets', toys),
+    docs && formatPointer('Docs entry points', docs),
   ].filter(Boolean) as string[];
 
   return entries.join('\n\n');
@@ -723,6 +698,29 @@ function extractRuntimeRange(lines: string[]): SectionExcerpt | null {
 
 function extractSection(markdown: string, heading: string) {
   return extractMarkdownSection(markdown, heading)?.content ?? null;
+}
+
+async function getReadmeDevCommands(
+  scope?: 'setup' | 'dev' | 'build' | 'test' | 'lint',
+) {
+  const readmeContent = await loadReadme();
+  const quickstart = extractSection(readmeContent, 'Quickstart');
+  const commonCommands = extractSection(readmeContent, 'Common commands');
+  const developmentNotes = extractSection(readmeContent, 'Development notes');
+
+  const sections: Record<string, string> = {
+    setup: quickstart ?? 'README.md does not currently expose setup guidance.',
+    dev: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
+    build: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
+    test: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
+    lint: 'README.md does not currently list lint-only commands. Use `bun run check` or see docs/agents/tooling-and-quality.md.',
+  };
+
+  const combined = [quickstart, commonCommands, developmentNotes]
+    .filter(Boolean)
+    .join('\n\n');
+
+  return scope ? sections[scope] : combined;
 }
 
 function escapeForRegex(input: string) {
@@ -958,6 +956,7 @@ export {
   extractSection,
   extractSectionWithRange,
   getDocSectionContent,
+  getReadmeDevCommands,
   getMarkdownSections,
   loadReadme,
   loadReadmeLines,

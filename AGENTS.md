@@ -4,7 +4,7 @@ Stims is a browser-native MilkDrop-inspired visualizer built with Three.js/WebGL
 
 ## Quick start (yes, read this first)
 
-You're about to code on Stims. Before you dive into docs, grab these three things:
+You're about to code on Stims. Before you dive into docs, grab these four things:
 
 1. **Bootstrap the repo state first** — Run `bun run setup:codex --print-plan` to see the install/check plan, then `bun run setup:codex` when the workspace state is unknown. See [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md) for the fast-start and delegation contract.
    On higher-memory local machines, use `bun run session:codex -- --profile review` when you want to keep the dev server, local model roles, and a verification watcher warm between edits.
