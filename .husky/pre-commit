@@ -1,5 +1,5 @@
 if command -v bun >/dev/null 2>&1; then
-  bun run lint && bun run format
+  bun run biome:staged
 else
-  npm run lint && npm run format
+  npm run biome:staged
 fi

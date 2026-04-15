@@ -75,6 +75,8 @@ bun run session:codex -- --port 4173 --stop
 
 - Biome is the formatter/linter of record.
 - Use the package scripts rather than ad-hoc commands where possible.
+- The shared Biome scripts cover the main code paths plus repo-root config and
+  HTML surfaces that used to sit outside the quality gate.
 
 ## Required gates for JS/TS changes
 
@@ -145,6 +147,8 @@ Its independent checks run in parallel by default; add `-- --serial` when debugg
   In normal development this runs automatically during `bun install`.
 - `.husky/*` files (for example, `.husky/pre-commit`) are the user-maintained hook sources and should be committed.
 - `.husky/_/*` shim wrappers are generated artifacts from `husky install`; do not hand-edit or commit them.
+- The pre-commit hook runs a staged-file Biome check so it does not rewrite files
+  after they have already been staged.
 - If wrappers are missing or stale, reinstall dependencies (or run `bun run prepare`) to regenerate them locally.
 
 ## Docs-only updates
