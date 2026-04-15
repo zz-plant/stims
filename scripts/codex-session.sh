@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+shopt -s nullglob
+
 usage() {
   cat <<'USAGE'
 Usage: scripts/codex-session.sh [options]
@@ -26,7 +28,8 @@ Options:
   --skip-dev-server   Skip dev server startup.
   --skip-watch        Skip watcher startup.
   --status            Print managed session status and exit.
-  --stop              Stop managed background processes and exit.
+  --stop              Stop managed background processes for the selected
+                      host/port and exit.
   --print-plan        Print the selected plan before running it.
   -h, --help          Show this help message.
 USAGE
@@ -70,6 +73,19 @@ resolve_repo_root() {
   echo "$repo_root"
 }
 
+sanitize_session_key() {
+  local host="$1"
+  local port="$2"
+  local combined="${host}-${port}"
+  echo "${combined//[^A-Za-z0-9._-]/_}"
+}
+
+session_url() {
+  local host="$1"
+  local port="$2"
+  echo "http://${host}:${port}/"
+}
+
 process_is_running() {
   local pid="$1"
   [[ -n "$pid" ]] && kill -0 "$pid" >/dev/null 2>&1
@@ -90,6 +106,39 @@ cleanup_pidfile_if_stale() {
   if [[ -n "$pid" ]] && ! process_is_running "$pid"; then
     rm -f "$pidfile"
   fi
+}
+
+cleanup_session_dir_if_empty() {
+  local session_dir="$1"
+  if [[ -d "$session_dir" ]] && [[ -z "$(ls -A "$session_dir")" ]]; then
+    rmdir "$session_dir" >/dev/null 2>&1 || true
+  fi
+}
+
+metadata_value() {
+  local metadata_file="$1"
+  local key="$2"
+
+  if [[ ! -f "$metadata_file" ]]; then
+    return 1
+  fi
+
+  awk -F= -v key="$key" '$1 == key { print substr($0, index($0, "=") + 1); exit }' "$metadata_file"
+}
+
+write_session_metadata() {
+  local metadata_file="$1"
+  shift
+
+  mkdir -p "$(dirname -- "$metadata_file")"
+  : >"$metadata_file"
+
+  while [[ $# -gt 1 ]]; do
+    local key="$1"
+    local value="$2"
+    printf '%s=%s\n' "$key" "$value" >>"$metadata_file"
+    shift 2
+  done
 }
 
 url_is_ready() {
@@ -208,6 +257,62 @@ warm_local_models() {
   warn "LM Studio warmup helpers not found; skipping local model warmup."
 }
 
+print_session_status_from_metadata() {
+  local metadata_file="$1"
+  local session_dir
+  session_dir="$(dirname -- "$metadata_file")"
+
+  local metadata_key metadata_host metadata_port metadata_profile metadata_watch_mode
+  local metadata_url metadata_dev_pidfile metadata_dev_logfile metadata_watch_name
+  local metadata_watch_pidfile metadata_watch_logfile metadata_dev_managed
+  local metadata_watcher_managed metadata_model_roles
+
+  metadata_key="$(metadata_value "$metadata_file" "session_key")"
+  metadata_host="$(metadata_value "$metadata_file" "host")"
+  metadata_port="$(metadata_value "$metadata_file" "port")"
+  metadata_profile="$(metadata_value "$metadata_file" "profile")"
+  metadata_watch_mode="$(metadata_value "$metadata_file" "watch_mode")"
+  metadata_url="$(metadata_value "$metadata_file" "url")"
+  metadata_dev_pidfile="$(metadata_value "$metadata_file" "dev_pidfile")"
+  metadata_dev_logfile="$(metadata_value "$metadata_file" "dev_logfile")"
+  metadata_dev_managed="$(metadata_value "$metadata_file" "dev_server_managed")"
+  metadata_watch_name="$(metadata_value "$metadata_file" "watch_name")"
+  metadata_watch_pidfile="$(metadata_value "$metadata_file" "watch_pidfile")"
+  metadata_watch_logfile="$(metadata_value "$metadata_file" "watch_logfile")"
+  metadata_watcher_managed="$(metadata_value "$metadata_file" "watcher_managed")"
+  metadata_model_roles="$(metadata_value "$metadata_file" "model_roles")"
+
+  echo "Session: ${metadata_host}:${metadata_port}"
+  echo "- Key: ${metadata_key}"
+  echo "- Profile: ${metadata_profile}"
+  echo "- Watcher mode: ${metadata_watch_mode}"
+  echo "- Local model roles: ${metadata_model_roles:-none}"
+
+  if [[ "$metadata_dev_managed" == "true" ]]; then
+    print_managed_process_status "dev server" "$metadata_dev_pidfile" "$metadata_dev_logfile"
+  else
+    echo "- dev server: external or unmanaged"
+    echo "  log: ${metadata_dev_logfile}"
+  fi
+
+  if [[ "$metadata_watch_mode" == "none" ]]; then
+    echo "- watcher: disabled"
+  elif [[ "$metadata_watcher_managed" == "true" ]]; then
+    print_managed_process_status "${metadata_watch_name}" "$metadata_watch_pidfile" "$metadata_watch_logfile"
+  else
+    echo "- ${metadata_watch_name}: stopped"
+    echo "  log: ${metadata_watch_logfile}"
+  fi
+
+  if url_is_ready "$metadata_url"; then
+    echo "- URL: reachable at ${metadata_url}"
+  else
+    echo "- URL: not reachable at ${metadata_url}"
+  fi
+
+  echo "- Session dir: ${session_dir}"
+}
+
 PROFILE="fast"
 DEV_PORT="5173"
 DEV_HOST="127.0.0.1"
@@ -308,21 +413,23 @@ case "$WATCH_MODE" in
 esac
 
 REPO_ROOT="$(resolve_repo_root)"
-SESSION_DIR="$REPO_ROOT/.codex/session"
+SESSION_ROOT_DIR="${CODEX_SESSION_DIR:-$REPO_ROOT/.codex/session}"
+SESSION_KEY="$(sanitize_session_key "$DEV_HOST" "$DEV_PORT")"
+SESSION_DIR="$SESSION_ROOT_DIR/$SESSION_KEY"
+SESSION_METADATA_FILE="$SESSION_DIR/session.meta"
+DEV_URL="$(session_url "$DEV_HOST" "$DEV_PORT")"
 DEV_PIDFILE="$SESSION_DIR/dev-server.pid"
 DEV_LOGFILE="$SESSION_DIR/dev-server.log"
 
 WATCH_NAME="watcher"
 WATCH_COMMAND=()
-WATCH_PIDFILE=""
-WATCH_LOGFILE=""
+WATCH_PIDFILE="$SESSION_DIR/watcher.pid"
+WATCH_LOGFILE="$SESSION_DIR/watcher.log"
 
 case "$WATCH_MODE" in
   none)
     WATCH_NAME="watcher"
     WATCH_COMMAND=()
-    WATCH_PIDFILE="$SESSION_DIR/watch-none.pid"
-    WATCH_LOGFILE="$SESSION_DIR/watch-none.log"
     ;;
   typecheck)
     WATCH_NAME="typecheck watcher"
@@ -366,7 +473,7 @@ if [[ "$PRINT_PLAN" -eq 1 ]]; then
   fi
 
   if [[ "$DO_DEV_SERVER" -eq 1 ]]; then
-    echo "- Dev server: http://${DEV_HOST}:${DEV_PORT}/"
+    echo "- Dev server: ${DEV_URL}"
   else
     echo "- Dev server: skipped"
   fi
@@ -376,44 +483,45 @@ if [[ "$PRINT_PLAN" -eq 1 ]]; then
   else
     echo "- Watcher: skipped"
   fi
+  exit 0
 fi
 
 if [[ "$STATUS_ONLY" -eq 1 ]]; then
+  local_sessions=("$SESSION_ROOT_DIR"/*/session.meta)
   echo "Managed session status for ${REPO_ROOT}"
-  print_managed_process_status "dev server" "$DEV_PIDFILE" "$DEV_LOGFILE"
-  print_managed_process_status \
-    "typecheck watcher" \
-    "$SESSION_DIR/typecheck-watch.pid" \
-    "$SESSION_DIR/typecheck-watch.log"
-  print_managed_process_status \
-    "unit-test watcher" \
-    "$SESSION_DIR/unit-test-watch.pid" \
-    "$SESSION_DIR/unit-test-watch.log"
-  print_managed_process_status \
-    "integration-test watcher" \
-    "$SESSION_DIR/integration-test-watch.pid" \
-    "$SESSION_DIR/integration-test-watch.log"
-  print_managed_process_status \
-    "test watcher" \
-    "$SESSION_DIR/test-watch.pid" \
-    "$SESSION_DIR/test-watch.log"
-  echo "- Selected profile: ${PROFILE}"
-  echo "- Selected watcher mode: ${WATCH_MODE}"
 
-  if url_is_ready "http://${DEV_HOST}:${DEV_PORT}/"; then
-    echo "- URL: reachable at http://${DEV_HOST}:${DEV_PORT}/"
-  else
-    echo "- URL: not reachable at http://${DEV_HOST}:${DEV_PORT}/"
+  if [[ "${#local_sessions[@]}" -eq 0 ]]; then
+    echo "No managed sessions were found in ${SESSION_ROOT_DIR}."
+    exit 0
   fi
+
+  for metadata_file in "${local_sessions[@]}"; do
+    print_session_status_from_metadata "$metadata_file"
+    echo
+  done
+
   exit 0
 fi
 
 if [[ "$STOP_ONLY" -eq 1 ]]; then
-  stop_managed_process "dev server" "$DEV_PIDFILE"
-  stop_managed_process "typecheck watcher" "$SESSION_DIR/typecheck-watch.pid"
-  stop_managed_process "unit-test watcher" "$SESSION_DIR/unit-test-watch.pid"
-  stop_managed_process "integration-test watcher" "$SESSION_DIR/integration-test-watch.pid"
-  stop_managed_process "test watcher" "$SESSION_DIR/test-watch.pid"
+  if [[ ! -f "$SESSION_METADATA_FILE" ]]; then
+    echo "No managed session metadata found for ${DEV_HOST}:${DEV_PORT}."
+    exit 0
+  fi
+
+  if [[ "$(metadata_value "$SESSION_METADATA_FILE" "dev_server_managed")" == "true" ]]; then
+    stop_managed_process "dev server" "$(metadata_value "$SESSION_METADATA_FILE" "dev_pidfile")"
+  fi
+
+  if [[ "$(metadata_value "$SESSION_METADATA_FILE" "watcher_managed")" == "true" ]]; then
+    stop_managed_process \
+      "$(metadata_value "$SESSION_METADATA_FILE" "watch_name")" \
+      "$(metadata_value "$SESSION_METADATA_FILE" "watch_pidfile")"
+  fi
+
+  rm -f "$SESSION_METADATA_FILE"
+  cleanup_session_dir_if_empty "$SESSION_DIR"
+  log "Stopped managed session for ${DEV_HOST}:${DEV_PORT}"
   exit 0
 fi
 
@@ -427,9 +535,12 @@ else
   log "Skipping local model warmup"
 fi
 
+DEV_SERVER_MANAGED="false"
+WATCHER_MANAGED="false"
+
 if [[ "$DO_DEV_SERVER" -eq 1 ]]; then
-  if url_is_ready "http://${DEV_HOST}:${DEV_PORT}/"; then
-    log "Dev server already reachable at http://${DEV_HOST}:${DEV_PORT}/"
+  if url_is_ready "$DEV_URL"; then
+    log "Dev server already reachable at ${DEV_URL}"
   else
     start_managed_process \
       "dev server" \
@@ -437,11 +548,12 @@ if [[ "$DO_DEV_SERVER" -eq 1 ]]; then
       "$DEV_LOGFILE" \
       bun run dev -- --host "$DEV_HOST" --port "$DEV_PORT"
 
-    if ! wait_for_url "http://${DEV_HOST}:${DEV_PORT}/" 30; then
-      fail "dev server did not become reachable at http://${DEV_HOST}:${DEV_PORT}/ within 30 seconds. See ${DEV_LOGFILE}."
+    if ! wait_for_url "$DEV_URL" 30; then
+      fail "dev server did not become reachable at ${DEV_URL} within 30 seconds. See ${DEV_LOGFILE}."
     fi
 
-    log "Dev server ready at http://${DEV_HOST}:${DEV_PORT}/?agent=true"
+    DEV_SERVER_MANAGED="true"
+    log "Dev server ready at ${DEV_URL}?agent=true"
   fi
 else
   log "Skipping dev server startup"
@@ -453,11 +565,29 @@ if [[ "$DO_WATCH" -eq 1 && "$WATCH_MODE" != "none" ]]; then
     "$WATCH_PIDFILE" \
     "$WATCH_LOGFILE" \
     "${WATCH_COMMAND[@]}"
+  WATCHER_MANAGED="true"
 else
   log "Skipping watcher startup"
 fi
 
+write_session_metadata \
+  "$SESSION_METADATA_FILE" \
+  session_key "$SESSION_KEY" \
+  host "$DEV_HOST" \
+  port "$DEV_PORT" \
+  profile "$PROFILE" \
+  watch_mode "$WATCH_MODE" \
+  model_roles "$(IFS=,; echo "${MODEL_ROLES[*]}")" \
+  url "$DEV_URL" \
+  dev_server_managed "$DEV_SERVER_MANAGED" \
+  dev_pidfile "$DEV_PIDFILE" \
+  dev_logfile "$DEV_LOGFILE" \
+  watcher_managed "$WATCHER_MANAGED" \
+  watch_name "$WATCH_NAME" \
+  watch_pidfile "$WATCH_PIDFILE" \
+  watch_logfile "$WATCH_LOGFILE"
+
 log "Session ready"
-echo "- Agent URL: http://${DEV_HOST}:${DEV_PORT}/?agent=true"
+echo "- Agent URL: ${DEV_URL}?agent=true"
 echo "- Session state: bun run session:codex -- --status"
-echo "- Stop managed processes: bun run session:codex -- --stop"
+echo "- Stop managed processes: bun run session:codex -- --port ${DEV_PORT} --stop"

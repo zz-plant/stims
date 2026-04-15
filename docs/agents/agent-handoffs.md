@@ -46,6 +46,8 @@ Useful controls:
 ```bash
 bun run session:codex -- --status
 bun run session:codex -- --stop
+# If you started a non-default port, repeat it here:
+bun run session:codex -- --port 4173 --stop
 ```
 
 ## Safe ownership slices

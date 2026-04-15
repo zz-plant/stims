@@ -54,6 +54,8 @@ Useful controls:
 ```bash
 bun run session:codex -- --status
 bun run session:codex -- --stop
+# If you started a non-default port, repeat it here:
+bun run session:codex -- --port 4173 --stop
 ```
 
 The session helper only warms models when local LM Studio helper commands are available. If they are not present, it degrades cleanly to just the long-lived Bun processes.

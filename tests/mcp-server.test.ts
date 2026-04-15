@@ -2,8 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import {
+  buildDocPointers,
   defaultQualityGateTimeoutMs,
   getDocSectionContent,
+  getReadmeDevCommands,
   markdownSources,
   normalizeToys,
   resolveQualityGateCommand,
@@ -90,6 +92,29 @@ describe('searchMarkdownSources', () => {
     const results = await searchMarkdownSources('this should not match');
 
     expect(results).toHaveLength(0);
+  });
+});
+
+describe('README-derived MCP guidance', () => {
+  test('builds doc pointers from the current README headings', async () => {
+    const pointers = await buildDocPointers();
+
+    expect(pointers).toContain('Quickstart');
+    expect(pointers).toContain('Common commands');
+    expect(pointers).toContain('Repository layout');
+  });
+
+  test('surfaces the current session-oriented dev workflow', async () => {
+    const commands = await getReadmeDevCommands('dev');
+
+    expect(commands).toContain('bun run session:codex -- --profile review');
+    expect(commands).toContain('bun run dev');
+  });
+
+  test('returns an explicit lint fallback when README omits lint-only commands', async () => {
+    const commands = await getReadmeDevCommands('lint');
+
+    expect(commands).toContain('does not currently list lint-only commands');
   });
 });
 

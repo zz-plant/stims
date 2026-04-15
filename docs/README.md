@@ -56,6 +56,7 @@ When docs are added, moved, renamed, archived, or removed, keep the repository e
 - `AGENTS.md`
 - `docs/README.md`
 - `docs/agents/README.md`
+- `docs/agents/agent-handoffs.md`
 
 Reference [`DOCS_MAINTENANCE.md`](./DOCS_MAINTENANCE.md) for the full synchronization contract and per-change requirements.
 
