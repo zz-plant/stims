@@ -107,7 +107,7 @@ export function createLibraryFilterPresenter({
 
     if (baseActiveLabels.length === 0) {
       note.textContent =
-        'Press / to search, then press Enter to launch a single matching visual.';
+        'Press / to search, then press Enter to open the only match.';
       return;
     }
 
@@ -259,8 +259,7 @@ export function createLibraryFilterPresenter({
 
     const status = ensureActiveFiltersStatus();
     if (status instanceof HTMLElement) {
-      status.textContent =
-        summaryTextParts.join(' • ') || 'Showing all visualizers';
+      status.textContent = summaryTextParts.join(' • ') || 'Showing everything';
     }
 
     const chips = ensureActiveFiltersChips();

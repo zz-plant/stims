@@ -5,7 +5,7 @@ export const toyManifest: ToyManifest = [
   {
     "slug": "milkdrop",
     "title": "MilkDrop Visualizer",
-    "description": "MilkDrop-inspired browser visualizer with demo audio, hand-picked presets, live editing, and preset import/export.",
+    "description": "MilkDrop-inspired browser visualizer with demo audio, hand-picked favorites, live editing, and preset import/export.",
     "module": "assets/js/toys/milkdrop-toy.ts",
     "type": "module",
     "requiresWebGPU": true,
@@ -24,10 +24,10 @@ export const toyManifest: ToyManifest = [
       "editor"
     ],
     "controls": [
-      "Browse presets",
+      "Browse the lineup",
       "Try autoplay or random",
       "Edit preset code and see the scene respond live",
-      "Import or export preset files",
+      "Bring in or save preset files",
       "Tune quality for smoother or richer playback"
     ],
     "touchHints": [
@@ -35,13 +35,13 @@ export const toyManifest: ToyManifest = [
       "Pinch to swell or compress the depth and intensity.",
       "Rotate with two fingers to twist the whole image."
     ],
-    "firstRunHint": "Open the preset library, then try autoplay.",
+    "firstRunHint": "Open the lineup, then try autoplay.",
     "starterPreset": {
       "id": "rovastar-parallel-universe",
-      "label": "starter preset",
-      "description": "An easy first preset with the classic feedback glow."
+      "label": "easy opener",
+      "description": "An easy first pick with the classic feedback glow."
     },
-    "wowControl": "Preset library",
+    "wowControl": "Browse looks",
     "recommendedCapability": "demoAudio",
     "capabilities": {
       "microphone": true,

@@ -47,7 +47,7 @@ function getPerformanceCheckSummary(
 
   if (result.performance.lowPower) {
     return {
-      value: 'Recommended: lighter visuals',
+      value: 'Recommended: lighter rendering',
       note: 'Use reduced quality for smoother playback on this device.',
       variant: 'warn',
     };
@@ -55,22 +55,22 @@ function getPerformanceCheckSummary(
 
   if (result.performance.recommendedQualityPresetId === 'hi-fi') {
     return {
-      value: 'Ready for hi-fi visuals',
-      note: 'This GPU can handle the richer WebGPU preset by default.',
+      value: 'Ready for hi-fi rendering',
+      note: 'This GPU can handle the richer WebGPU setup by default.',
       variant: 'ok',
     };
   }
 
   if (result.rendering.rendererBackend === 'webgl') {
     return {
-      value: 'Ready in compatibility mode',
+      value: 'Ready with compatibility rendering',
       note: 'WebGL is active and optimized for compatibility.',
       variant: 'warn',
     };
   }
 
   return {
-    value: 'Ready for full visuals',
+    value: 'Ready for the richest rendering',
     note: 'WebGPU is available for best-quality rendering.',
     variant: 'ok',
   };
@@ -140,7 +140,7 @@ function getNextStepContent(
   if (result.microphone.state === 'granted') {
     return {
       title: 'Best next step',
-      steps: ['Continue to audio setup.', 'Mic mode is ready immediately.'],
+      steps: ['Continue to audio setup.', 'Mic input is ready immediately.'],
       showGrantAction: false,
     };
   }
@@ -213,7 +213,7 @@ export function updatePreflightStatusList(
     className: string;
   }> = [
     {
-      label: 'Visuals',
+      label: 'Rendering',
       summary: getPerformanceCheckSummary(result),
       className: 'preflight-status--primary',
     },
@@ -246,12 +246,12 @@ export function updatePreflightWhyDetails(
   const items: string[] = [];
 
   if (result.rendering.rendererBackend === 'webgpu') {
-    items.push('High-fidelity visuals are available on this device.');
+    items.push('High-detail rendering is available on this device.');
   } else if (result.rendering.rendererBackend === 'webgl') {
     items.push(
       result.rendering.webgpuFallbackReason
-        ? `Compatibility mode is active because ${result.rendering.webgpuFallbackReason}.`
-        : 'Compatibility mode is active for broader browser support.',
+        ? `Compatibility rendering is active because ${result.rendering.webgpuFallbackReason}.`
+        : 'Compatibility rendering is active for broader browser support.',
     );
   } else {
     items.push('Graphics acceleration was not detected on this device.');
@@ -290,10 +290,10 @@ export function updatePreflightWhyDetails(
 
   items.push(
     result.performance.recommendedQualityPresetId === 'hi-fi'
-      ? 'Hi-fi visuals are recommended for this device.'
+      ? 'Hi-fi rendering is recommended for this device.'
       : result.performance.recommendedQualityPresetId === 'performance'
-        ? 'Lighter visuals are recommended for smoother playback.'
-        : 'Balanced visuals are recommended for this device.',
+        ? 'Lighter rendering is recommended for smoother playback.'
+        : 'Balanced rendering is recommended for this device.',
   );
 
   const list = document.createElement('ul');
@@ -350,7 +350,7 @@ export function renderPreflightIssueList(
     const supportText = document.createElement('p');
     supportText.className = 'preflight-panel__support-text';
     supportText.textContent =
-      'This device cannot access WebGL/WebGPU, so 3D visuals cannot render. Try a supported browser or head back to Stims for the browser requirements and launch notes.';
+      'This device cannot access WebGL/WebGPU, so the 3D scene cannot render. Try a supported browser or head back to Stims for the browser requirements and launch notes.';
     support.appendChild(supportText);
 
     const linkList = document.createElement('ul');

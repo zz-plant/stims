@@ -79,7 +79,7 @@ export const TOOL_TABS: Array<Exclude<PanelState, null>> = [
 export function getToolLabel(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Presets';
+      return 'Browse';
     case 'editor':
       return 'Edit';
     case 'inspector':
@@ -92,13 +92,13 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 export function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Start with a few strong picks, then browse the full library.';
+      return 'Start with a few strong picks, then roam the full list.';
     case 'editor':
       return 'Edit the active preset.';
     case 'inspector':
       return 'Inspect the active preset.';
     case 'settings':
-      return 'Pick a look first, then fine-tune only if you want more control.';
+      return 'Pick a feel first, then fine-tune only if you want more control.';
   }
 }
 
@@ -221,7 +221,7 @@ export function buildStarterPresets(entries: PresetCatalogEntry[]) {
   return entries.slice(0, 3).map((preset, index) => ({
     key: `starter-${preset.id}`,
     label: ['First pick', 'Try next', 'Then go wide'][index] ?? 'Starter',
-    summary: 'A quick way into the library without overthinking it.',
+    summary: 'A quick way in without overthinking it.',
     preset,
   }));
 }
@@ -260,7 +260,7 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
     entry.expectedFidelityClass === 'fallback' ||
     entry.supports?.webgpu === false
   ) {
-    return 'Fallback path';
+    return 'Simplified render';
   }
   if (
     visualCertification?.requiredBackend === 'webgpu' &&
@@ -296,7 +296,7 @@ export function formatPresetSupportNote(entry: PresetCatalogEntry) {
     entry.expectedFidelityClass === 'fallback' ||
     entry.supports?.webgpu === false
   ) {
-    return 'Uses a fallback renderer or a simplified path until WebGPU parity improves.';
+    return 'Uses a fallback renderer or a simplified version until WebGPU parity improves.';
   }
   if (
     visualCertification?.requiredBackend === 'webgpu' &&

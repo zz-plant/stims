@@ -1,7 +1,7 @@
 {
   "name": "Stims",
   "short_name": "Stims",
-  "description": "Browser-native MilkDrop-inspired visualizer with curated presets, live editing, and preset import/export. Open-source, no accounts required.",
+  "description": "Browser-native MilkDrop-inspired visualizer with curated favorites, live editing, and preset import/export. Open-source, no accounts required.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0f1a",

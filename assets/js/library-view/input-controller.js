@@ -79,11 +79,11 @@ export const createLibraryInputController = ({
 
     if (search instanceof HTMLInputElement) {
       if (!search.placeholder) {
-        search.placeholder = 'Search visuals, moods, audio modes, or controls';
+        search.placeholder = 'Search titles, moods, audio options, or controls';
       }
       search.setAttribute(
         'aria-label',
-        'Search visuals by title, mood, audio mode, or interaction',
+        'Search by title, mood, audio option, or interaction',
       );
       search.setAttribute('list', ensureSearchSuggestions()?.id ?? '');
     }

@@ -120,15 +120,15 @@ export function StimsWorkspaceApp() {
     engineSnapshot?.audioSource ?? routeState.audioSource;
   const launchEyebrow =
     engineReady || routeState.invalidExperienceSlug
-      ? 'MilkDrop-inspired visualizer'
+      ? 'MilkDrop in the browser'
       : 'Loading';
   const launchTitle =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Start music-reactive visuals in seconds.'
+      ? 'Start music-reactive color and motion in seconds.'
       : 'Loading the visualizer.';
   const launchSummary =
     engineReady || routeState.invalidExperienceSlug
-      ? 'Start with demo audio now, then switch to your own music whenever you want the visuals to follow live sound.'
+      ? 'Start with demo audio now, then switch to your own music whenever you want the motion to track live sound.'
       : 'Getting everything ready.';
   const stageEyebrow = loadingRequestedPreset
     ? 'Loading preset'
@@ -142,17 +142,17 @@ export function StimsWorkspaceApp() {
     : selectedPreset
       ? selectedPreset.title
       : missingRequestedPreset
-        ? 'Choose a new look'
-        : (featuredPreset?.title ?? 'Featured visual');
+        ? 'Choose something new'
+        : (featuredPreset?.title ?? 'Featured pick');
   const stageSummary = loadingRequestedPreset
     ? `Loading ${routeState.presetId}.`
     : selectedPreset
       ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
       : missingRequestedPreset
-        ? 'Start with the featured look or open the preset library.'
+        ? 'Start with the featured pick or open the full list.'
         : featuredPreset
           ? `${describePresetMood(featuredPreset)} · ${formatPresetSupportLabel(featuredPreset)}`
-          : 'Press play with demo audio, or open the preset library first.';
+          : 'Press play with demo audio, or open the full list first.';
 
   useEffect(() => {
     const handleFullscreenChange = () => {

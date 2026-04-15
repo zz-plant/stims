@@ -1227,17 +1227,21 @@ shapecode_0_thickoutline=0
     const shapesGroup = getRootChildByRenderOrder(root, 50);
     const shapeGroup = shapesGroup?.children?.[0];
     const fill = shapeGroup?.children?.[0] as Mesh | undefined;
-    const border = shapeGroup?.children?.[1] as
+    const borderGroup = shapeGroup?.children?.[1] as
       | {
-          material?: LineBasicMaterial;
-          position?: { x: number; y: number; z: number };
-          scale?: { x: number; y: number; z: number };
-          rotation?: { z: number };
+          children?: Array<{
+            material?: LineBasicMaterial;
+            position?: { x: number; y: number; z: number };
+            scale?: { x: number; y: number; z: number };
+            rotation?: { z: number };
+          }>;
         }
       | undefined;
+    const border = borderGroup?.children?.[0];
 
     expect(shapeGroup?.children).toHaveLength(2);
     expect(fill?.type).toBe('Mesh');
+    expect(borderGroup?.children).toHaveLength(1);
     expect(border?.material).toBeInstanceOf(LineBasicMaterial);
     expect(border?.material?.opacity).toBeCloseTo(0.25, 6);
     expect(border?.position?.x).toBeCloseTo(fill?.position.x ?? NaN, 6);
@@ -2768,8 +2772,14 @@ shapecode_0_border_a=0.25
     const fill = blendedShape?.children?.[0] as
       | { material?: ShaderMaterial }
       | undefined;
-    const borderChildren = blendedShape?.children ?? [];
-    const border = borderChildren[borderChildren.length - 1] as
+    const borderGroup = blendedShape?.children?.[1] as
+      | {
+          children?: Array<{
+            material?: LineBasicMaterial;
+          }>;
+        }
+      | undefined;
+    const border = borderGroup?.children?.[0] as
       | { material?: LineBasicMaterial }
       | undefined;
 
@@ -2782,6 +2792,7 @@ shapecode_0_border_a=0.25
       (fill?.material as ShaderMaterial | undefined)?.uniforms.secondaryAlpha
         .value,
     ).toBeCloseTo(0.21, 6);
+    expect(borderGroup?.children).toHaveLength(1);
     expect(border?.material).toBeInstanceOf(LineBasicMaterial);
     expect(border?.material?.opacity).toBeCloseTo(0.2625, 6);
   });

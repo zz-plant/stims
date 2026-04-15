@@ -113,7 +113,7 @@ const getCardGuidance = (toy) => {
   const guides = [primaryGuide, secondaryGuide].filter(Boolean);
 
   if (guides.length > 0) {
-    return `Start with: ${guides.join(' • ')}`;
+    return `Try: ${guides.join(' • ')}`;
   }
 
   if (toy.firstRunHint) {

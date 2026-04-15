@@ -316,6 +316,37 @@ describe('milkdrop webgpu feedback manager helpers', () => {
     expect(compositeState.overlayTextureVolumeSliceZ).toBe(0);
   });
 
+  test('keeps gamma adjustment on the direct WebGPU composite branch', () => {
+    const manager = createMilkdropWebGPUFeedbackManager(
+      640,
+      360,
+    ) as unknown as {
+      compositeMaterial: {
+        outputNode: {
+          node: {
+            shaderNode?: {
+              jsFunc?: () => unknown;
+            };
+          };
+        };
+      };
+      dispose: () => void;
+    };
+
+    try {
+      const source =
+        manager.compositeMaterial.outputNode.node.shaderNode?.jsFunc?.toString() ??
+        '';
+      const directBranchIndex = source.indexOf('if (hasDirectCompProgram) {');
+      const controlBranchIndex = source.indexOf('if (!hasDirectCompProgram) {');
+      expect(directBranchIndex).toBeGreaterThanOrEqual(0);
+      expect(controlBranchIndex).toBeGreaterThan(directBranchIndex);
+      expect(source).toContain('return vec4(gammaAdjusted, 1);');
+    } finally {
+      manager.dispose();
+    }
+  });
+
   test('wraps aux texture configuration for repeat sampling and color textures', () => {
     const linearTexture = configureMilkdropTexture(new Texture());
     const colorTexture = configureMilkdropTexture(new Texture(), true);

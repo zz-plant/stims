@@ -152,7 +152,7 @@ function createPresetCard(
   meta.className = 'milkdrop-showcase__card-meta';
   meta.textContent = entry.author
     ? `By ${entry.author}`
-    : 'Bundled Stims preset';
+    : 'Bundled Stims favorite';
 
   const actions = documentRef.createElement('div');
   actions.className = 'milkdrop-showcase__card-actions';
@@ -160,7 +160,7 @@ function createPresetCard(
   const launch = documentRef.createElement('a');
   launch.href = buildPresetLaunchHref(entry, collectionTag);
   launch.className = 'cta-button primary';
-  launch.textContent = 'Open preset';
+  launch.textContent = 'Open this pick';
   launch.addEventListener('click', () => {
     requestMilkdropPresetSelection(entry.id);
   });
@@ -241,7 +241,7 @@ export async function initMilkdropShowcase() {
       ).slice(0, 2);
       const collectionLabel = collectionTag
         ? formatCollectionLabel(collectionTag)
-        : 'All presets';
+        : 'All picks';
 
       presetList.replaceChildren(
         ...featuredEntries.map((entry) =>
@@ -254,7 +254,7 @@ export async function initMilkdropShowcase() {
       presetFilters.replaceChildren(
         createCollectionButton(document, {
           tag: '',
-          label: 'All presets',
+          label: 'All picks',
           count: entries.length,
           active: collectionTag === '',
           onSelect: renderCollection,

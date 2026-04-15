@@ -1012,6 +1012,14 @@ function createCompositeOutputNode(
         : mix(current.rgb, previousColor, clamp(uniforms.videoEchoAlpha, 0, 1))
     ).toVar();
 
+    if (hasDirectCompProgram) {
+      const gammaAdjusted = pow(
+        max(color, vec3(0)),
+        vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
+      );
+      return vec4(gammaAdjusted, 1);
+    }
+
     if (!hasDirectCompProgram) {
       color.assign(hueRotateNode(color, uniforms.hueShift));
       color.assign(applySaturationNode(color, uniforms.saturation));

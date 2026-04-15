@@ -65,6 +65,7 @@ function createWaveLayerObject(
       new PointsMaterial({
         size: 1,
         transparent: true,
+        depthWrite: false,
         opacity: wave.alpha * alphaMultiplier,
         ...(wave.additive ? { blending: AdditiveBlending } : {}),
       }),
@@ -87,6 +88,7 @@ function createWaveLayerObject(
     new LineBasicMaterial({
       linewidth: 1,
       transparent: true,
+      depthWrite: false,
       opacity: wave.alpha * alphaMultiplier,
       ...(wave.additive ? { blending: AdditiveBlending } : {}),
     }),
@@ -324,6 +326,7 @@ export function createLineObject(
       new BufferGeometry(),
       new LineBasicMaterial({
         transparent: true,
+        depthWrite: false,
         opacity: alpha,
         ...(additive ? { blending: AdditiveBlending } : {}),
       }),

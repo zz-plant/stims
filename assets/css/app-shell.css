@@ -38,6 +38,11 @@
   --stims-shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.22);
   --stims-shadow-control:
     0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --stims-rail-fill: linear-gradient(
+    180deg,
+    rgba(9, 13, 21, 0.9),
+    rgba(5, 8, 15, 0.76)
+  );
   --stims-radius-panel: 18px;
   --stims-radius-card: 14px;
   --stims-radius-control: 10px;
@@ -70,7 +75,7 @@ body[data-page="workspace"] {
 
 .stims-shell {
   min-height: 100vh;
-  padding: 20px;
+  padding: 24px;
   position: relative;
   isolation: isolate;
 }
@@ -345,7 +350,13 @@ body[data-page="workspace"] {
   min-height: calc(100vh - 40px);
   border: 1px solid var(--stims-line);
   border-radius: var(--stims-radius-panel);
-  background: var(--stims-panel-fill);
+  background:
+    linear-gradient(180deg, rgba(8, 12, 20, 0.84), rgba(5, 8, 14, 0.92)),
+    radial-gradient(
+      circle at top right,
+      rgba(119, 201, 255, 0.1),
+      transparent 28%
+    );
   backdrop-filter: blur(20px);
   box-shadow:
     var(--stims-shadow),
@@ -363,23 +374,23 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-panel {
   position: relative;
-  width: min(62rem, 100%);
-  padding: 44px 30px 30px;
+  width: min(74rem, 100%);
+  padding: 36px 32px 28px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 32px;
+  border-radius: 34px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 48%),
-    linear-gradient(180deg, rgba(8, 12, 20, 0.92), rgba(6, 9, 16, 0.8)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 50%),
+    linear-gradient(180deg, rgba(8, 12, 20, 0.9), rgba(5, 8, 15, 0.82)),
     radial-gradient(
       circle at top right,
-      rgba(119, 201, 255, 0.18),
+      rgba(119, 201, 255, 0.16),
       transparent 34%
     ),
-    radial-gradient(circle at 24% 8%, rgba(244, 122, 84, 0.1), transparent 24%),
+    radial-gradient(circle at 24% 8%, rgba(244, 122, 84, 0.14), transparent 24%),
     radial-gradient(
       circle at 86% 88%,
-      rgba(125, 224, 162, 0.12),
-      transparent 26%
+      rgba(125, 224, 162, 0.14),
+      transparent 28%
     );
   backdrop-filter: blur(24px);
   box-shadow:
@@ -391,31 +402,31 @@ body[data-page="workspace"] {
 .stims-shell__launch-panel::after {
   content: "";
   position: absolute;
-  inset: auto -8% -20% 48%;
-  height: 18rem;
+  inset: auto -10% -22% 46%;
+  height: 20rem;
   background:
     radial-gradient(
       circle at 22% 34%,
-      rgba(244, 122, 84, 0.22),
-      transparent 28%
+      rgba(244, 122, 84, 0.24),
+      transparent 30%
     ),
     radial-gradient(
       circle at 76% 30%,
-      rgba(119, 201, 255, 0.2),
-      transparent 32%
+      rgba(119, 201, 255, 0.22),
+      transparent 34%
     );
   filter: blur(40px);
-  opacity: 0.58;
+  opacity: 0.52;
   pointer-events: none;
 }
 
 .stims-shell__launch-hero {
   position: relative;
   z-index: 1;
-  grid-template-columns: minmax(0, 1.18fr) minmax(18rem, 0.82fr);
+  grid-template-columns: minmax(0, 1.16fr) minmax(18rem, 0.84fr);
   align-items: stretch;
-  column-gap: 22px;
-  row-gap: 22px;
+  column-gap: 20px;
+  row-gap: 18px;
 }
 
 .stims-shell__launch-header {
@@ -428,11 +439,28 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-stack {
   display: grid;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
   max-width: none;
   grid-column: 1;
   grid-row: 2;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.018)
+    ),
+    radial-gradient(
+      circle at top right,
+      rgba(119, 201, 255, 0.08),
+      transparent 34%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 32px rgba(0, 0, 0, 0.16);
 }
 
 .stims-shell__confidence-note,
@@ -504,8 +532,8 @@ body[data-page="workspace"] {
 
 .stims-shell__launch-copy {
   display: grid;
-  gap: 10px;
-  max-width: none;
+  gap: 12px;
+  max-width: min(42rem, 100%);
 }
 
 .stims-shell__launch-copy p {
@@ -528,7 +556,7 @@ body[data-page="workspace"] {
 .stims-shell__launch-promise {
   display: grid;
   gap: 8px;
-  padding: 15px 16px 16px;
+  padding: 16px 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 22px;
   background:
@@ -603,9 +631,9 @@ body[data-page="workspace"] {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 16px;
   align-items: start;
-  align-self: end;
+  align-self: stretch;
   min-height: 100%;
-  padding: 18px;
+  padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 28px;
   background:
@@ -656,7 +684,7 @@ body[data-page="workspace"] {
 .stims-shell__launch-recommendation strong {
   color: var(--stims-ink-strong);
   font-family: var(--stims-display);
-  font-size: 2.05rem;
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
   font-weight: 600;
   line-height: 0.95;
 }

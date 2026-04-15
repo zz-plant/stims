@@ -25,6 +25,10 @@ type ShapeFillHelpers = {
   getShapeTexture: () => Texture | null;
 };
 
+type ShapeOutlineLayerObject = Line | LineLoop;
+
+const THICK_SHAPE_PASS_OFFSET = 1 / 1024;
+
 function shouldUseShapeShaderFill(
   shape: MilkdropShapeVisual,
   behavior: MilkdropBackendBehavior,
@@ -48,6 +52,19 @@ function getTextureAspectY(texture: Texture | null) {
     return height / width;
   }
   return 1;
+}
+
+function getShapeOutlineOffsets(shape: MilkdropShapeVisual) {
+  if (!shape.thickOutline) {
+    return [{ x: 0, y: 0 }];
+  }
+
+  return [
+    { x: 0, y: 0 },
+    { x: THICK_SHAPE_PASS_OFFSET, y: 0 },
+    { x: THICK_SHAPE_PASS_OFFSET, y: THICK_SHAPE_PASS_OFFSET },
+    { x: 0, y: THICK_SHAPE_PASS_OFFSET },
+  ];
 }
 
 function syncShapeShaderUniforms(
@@ -205,6 +222,172 @@ function createShapeFillMaterial(
   });
 }
 
+function createShapeOutlineLayerObject(
+  shape: MilkdropShapeVisual,
+  behavior: MilkdropBackendBehavior,
+  helpers: {
+    getUnitPolygonOutlineGeometry: (sides: number) => ThreeLine['geometry'];
+    getUnitPolygonClosedLineGeometry: (sides: number) => ThreeLine['geometry'];
+    setMaterialColor: (
+      material: LineBasicMaterial,
+      color: MilkdropShapeVisual['color'],
+      alpha: number,
+    ) => void;
+  },
+  alphaMultiplier: number,
+  opacity: number,
+  offsetX: number,
+  offsetY: number,
+) {
+  const nextGeometry = behavior.useLineLoopPrimitives
+    ? helpers.getUnitPolygonOutlineGeometry(shape.sides)
+    : helpers.getUnitPolygonClosedLineGeometry(shape.sides);
+  const object = new (
+    behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
+  )(
+    nextGeometry,
+    new LineBasicMaterial({
+      color: new Color(
+        shape.borderColor.r,
+        shape.borderColor.g,
+        shape.borderColor.b,
+      ),
+      opacity: opacity * alphaMultiplier,
+      transparent: true,
+      ...(shape.additive ? { blending: AdditiveBlending } : {}),
+    }),
+  );
+  object.position.set(shape.x + offsetX, shape.y + offsetY, 0.16);
+  object.scale.set(shape.radius, shape.radius, 1);
+  object.rotation.z = shape.rotation;
+  helpers.setMaterialColor(
+    object.material as LineBasicMaterial,
+    shape.borderColor,
+    opacity * alphaMultiplier,
+  );
+  return object;
+}
+
+function syncShapeOutlineLayerObject(
+  existing: ShapeOutlineLayerObject | undefined,
+  shape: MilkdropShapeVisual,
+  behavior: MilkdropBackendBehavior,
+  helpers: {
+    getUnitPolygonOutlineGeometry: (sides: number) => ThreeLine['geometry'];
+    getUnitPolygonClosedLineGeometry: (sides: number) => ThreeLine['geometry'];
+    setMaterialColor: (
+      material: LineBasicMaterial,
+      color: MilkdropShapeVisual['color'],
+      alpha: number,
+    ) => void;
+  },
+  alphaMultiplier: number,
+  opacity: number,
+  offsetX: number,
+  offsetY: number,
+) {
+  const expectsLoop = behavior.useLineLoopPrimitives;
+  const matches =
+    !!existing &&
+    ((expectsLoop && existing instanceof ThreeLineLoop) ||
+      (!expectsLoop && existing instanceof ThreeLine));
+
+  if (!matches) {
+    return createShapeOutlineLayerObject(
+      shape,
+      behavior,
+      helpers,
+      alphaMultiplier,
+      opacity,
+      offsetX,
+      offsetY,
+    );
+  }
+
+  const nextGeometry = expectsLoop
+    ? helpers.getUnitPolygonOutlineGeometry(shape.sides)
+    : helpers.getUnitPolygonClosedLineGeometry(shape.sides);
+  if (existing.geometry !== nextGeometry) {
+    existing.geometry = nextGeometry;
+  }
+  existing.position.set(shape.x + offsetX, shape.y + offsetY, 0.16);
+  existing.scale.set(shape.radius, shape.radius, 1);
+  existing.rotation.z = shape.rotation;
+  const material = existing.material as LineBasicMaterial;
+  material.blending = shape.additive ? AdditiveBlending : NormalBlending;
+  helpers.setMaterialColor(
+    material,
+    shape.borderColor,
+    opacity * alphaMultiplier,
+  );
+  return existing;
+}
+
+function syncShapeOutlineGroup(
+  existing: Group | undefined,
+  shape: MilkdropShapeVisual,
+  behavior: MilkdropBackendBehavior,
+  helpers: {
+    disposeObject?: (object: { children?: unknown[] }) => void;
+    getUnitPolygonOutlineGeometry: (sides: number) => ThreeLine['geometry'];
+    getUnitPolygonClosedLineGeometry: (sides: number) => ThreeLine['geometry'];
+    setMaterialColor: (
+      material: LineBasicMaterial,
+      color: MilkdropShapeVisual['color'],
+      alpha: number,
+    ) => void;
+  },
+  alphaMultiplier: number,
+  opacity: number,
+) {
+  const group = existing instanceof ThreeGroup ? existing : new ThreeGroup();
+  if (group !== existing && existing) {
+    helpers.disposeObject?.(existing);
+  }
+
+  const offsets = getShapeOutlineOffsets(shape);
+  for (let index = 0; index < offsets.length; index += 1) {
+    const offset = offsets[index] as { x: number; y: number };
+    const current = group.children[index] as
+      | ShapeOutlineLayerObject
+      | undefined;
+    const synced = syncShapeOutlineLayerObject(
+      current,
+      shape,
+      behavior,
+      {
+        getUnitPolygonOutlineGeometry: helpers.getUnitPolygonOutlineGeometry,
+        getUnitPolygonClosedLineGeometry:
+          helpers.getUnitPolygonClosedLineGeometry,
+        setMaterialColor: helpers.setMaterialColor,
+      },
+      alphaMultiplier,
+      opacity,
+      offset.x,
+      offset.y,
+    );
+    if (!current) {
+      group.add(synced);
+    } else if (synced !== current) {
+      group.remove(current);
+      helpers.disposeObject?.(current);
+      group.add(synced);
+    }
+  }
+
+  for (
+    let index = group.children.length - 1;
+    index >= offsets.length;
+    index -= 1
+  ) {
+    const child = group.children[index];
+    group.remove(child);
+    helpers.disposeObject?.(child as { children?: unknown[] });
+  }
+
+  return group;
+}
+
 export function createShapeObject(
   shape: MilkdropShapeVisual,
   behavior: MilkdropBackendBehavior,
@@ -225,31 +408,21 @@ export function createShapeObject(
   fill.rotation.z = shape.rotation;
   group.add(fill);
 
-  const border = new (
-    behavior.useLineLoopPrimitives ? ThreeLineLoop : ThreeLine
-  )(
-    behavior.useLineLoopPrimitives
-      ? helpers.getUnitPolygonOutlineGeometry(shape.sides)
-      : helpers.getUnitPolygonClosedLineGeometry(shape.sides),
-    new LineBasicMaterial({
-      color: new Color(
-        shape.borderColor.r,
-        shape.borderColor.g,
-        shape.borderColor.b,
-      ),
-      opacity: (shape.borderColor.a ?? 1) * alphaMultiplier,
-      transparent: true,
-      ...(shape.additive ? { blending: AdditiveBlending } : {}),
-    }),
+  const borderGroup = syncShapeOutlineGroup(
+    undefined,
+    shape,
+    behavior,
+    {
+      disposeObject: () => {},
+      getUnitPolygonOutlineGeometry: helpers.getUnitPolygonOutlineGeometry,
+      getUnitPolygonClosedLineGeometry:
+        helpers.getUnitPolygonClosedLineGeometry,
+      setMaterialColor: () => {},
+    },
+    alphaMultiplier,
+    shape.borderColor.a ?? 1,
   );
-  border.position.set(shape.x, shape.y, 0.16);
-  border.scale.set(
-    shape.radius * (shape.thickOutline ? 1.022 : 1),
-    shape.radius * (shape.thickOutline ? 1.022 : 1),
-    1,
-  );
-  border.rotation.z = shape.rotation;
-  group.add(border);
+  group.add(borderGroup);
 
   return group;
 }
@@ -313,10 +486,11 @@ export function syncShapeFillMaterial(
 }
 
 export function syncShapeOutline(
-  object: Line | LineLoop,
+  object: Group | undefined,
   shape: MilkdropShapeVisual,
   behavior: MilkdropBackendBehavior,
   helpers: {
+    disposeObject?: (object: { children?: unknown[] }) => void;
     getUnitPolygonOutlineGeometry: (sides: number) => ThreeLine['geometry'];
     getUnitPolygonClosedLineGeometry: (sides: number) => ThreeLine['geometry'];
     setMaterialColor: (
@@ -328,25 +502,13 @@ export function syncShapeOutline(
   alphaMultiplier: number,
   opacity: number,
 ) {
-  const nextGeometry = behavior.useLineLoopPrimitives
-    ? helpers.getUnitPolygonOutlineGeometry(shape.sides)
-    : helpers.getUnitPolygonClosedLineGeometry(shape.sides);
-  if (object.geometry !== nextGeometry) {
-    object.geometry = nextGeometry;
-  }
-  object.position.set(shape.x, shape.y, 0.16);
-  object.scale.set(
-    shape.radius * (shape.thickOutline ? 1.022 : 1),
-    shape.radius * (shape.thickOutline ? 1.022 : 1),
-    1,
-  );
-  object.rotation.z = shape.rotation;
-  const material = object.material as LineBasicMaterial;
-  material.blending = shape.additive ? AdditiveBlending : NormalBlending;
-  helpers.setMaterialColor(
-    material,
-    shape.borderColor,
-    opacity * alphaMultiplier,
+  return syncShapeOutlineGroup(
+    object,
+    shape,
+    behavior,
+    helpers,
+    alphaMultiplier,
+    opacity,
   );
 }
 
@@ -366,11 +528,11 @@ export function syncShapeObject(
       alphaMultiplier: number,
     ) => void;
     syncShapeOutline: (
-      object: Line | LineLoop,
+      object: Group | undefined,
       shape: MilkdropShapeVisual,
       alphaMultiplier: number,
       opacity: number,
-    ) => void;
+    ) => Group;
     getUnitPolygonFillGeometry: (sides: number) => ThreeMesh['geometry'];
   },
   alphaMultiplier: number,
@@ -387,10 +549,10 @@ export function syncShapeObject(
 
   const fill = existing.children[0];
   const border = existing.children[1];
-  const expectsLoop = behavior.useLineLoopPrimitives;
-  const hasSupportedBorder = expectsLoop
-    ? border instanceof ThreeLineLoop
-    : border instanceof ThreeLine;
+  const hasSupportedBorder =
+    border instanceof ThreeGroup &&
+    (border.children[0] instanceof ThreeLineLoop ||
+      border.children[0] instanceof ThreeLine);
 
   if (!(fill instanceof ThreeMesh) || !hasSupportedBorder) {
     helpers.disposeObject(existing);
@@ -405,13 +567,17 @@ export function syncShapeObject(
   fill.rotation.z = shape.rotation;
   helpers.syncShapeFillMaterial(fill, shape, alphaMultiplier);
 
-  helpers.syncShapeOutline(
-    border as Line | LineLoop,
+  const outlineGroup = helpers.syncShapeOutline(
+    border as Group,
     shape,
     alphaMultiplier,
     shape.borderColor.a ?? 1,
   );
-  border.position.z = borderZ;
+  if (outlineGroup !== border) {
+    existing.remove(border);
+    existing.add(outlineGroup);
+  }
+  outlineGroup.position.z = borderZ;
 
   return existing;
 }

@@ -213,7 +213,7 @@ function AudioSourcePanel({
       <div className="stims-shell__source-heading">
         <p className="stims-shell__section-label">Use my music</p>
         <p className="stims-shell__meta-copy">
-          Pick a live source only when you want the visuals to follow your own
+          Pick a live source only when you want the motion to follow your own
           sound.
         </p>
       </div>
@@ -396,7 +396,7 @@ export function WorkspaceLaunchPanel({
     ...favoritePresets.map((entry) => ({
       entry,
       label: 'Saved pick',
-      summary: 'A look you saved for an easy return.',
+      summary: 'A favorite you saved for an easy return.',
     })),
     ...recentPresets
       .filter(
@@ -408,7 +408,7 @@ export function WorkspaceLaunchPanel({
       .map((entry) => ({
         entry,
         label: 'Recent',
-        summary: 'A preset you opened recently and can jump back into.',
+        summary: 'Something you opened recently and can jump back into.',
       })),
   ].slice(0, 3);
   const featuredPresetSupportLabel = featuredPreset
@@ -450,7 +450,7 @@ export function WorkspaceLaunchPanel({
           </div>
           <div className="stims-shell__launch-footnote">
             <span>Start with demo audio first.</span>
-            <span>Bring in your own music only when you want it.</span>
+            <span>Bring in your own sound only when you want it.</span>
           </div>
 
           <div className="stims-shell__launch-more">
@@ -478,7 +478,7 @@ export function WorkspaceLaunchPanel({
         <div className="stims-shell__launch-signals">
           <article className="stims-shell__launch-signal">
             <span className="stims-shell__launch-signal-label">Fast start</span>
-            <strong>Demo audio gets the stage moving right away.</strong>
+            <strong>Demo audio gets everything moving right away.</strong>
           </article>
           <article className="stims-shell__launch-signal">
             <span className="stims-shell__launch-signal-label">
@@ -489,7 +489,7 @@ export function WorkspaceLaunchPanel({
           <article className="stims-shell__launch-signal">
             <span className="stims-shell__launch-signal-label">Tuned feel</span>
             <strong>
-              Desktop-first visuals with lighter fallback when needed.
+              Desktop-first rendering with a lighter fallback when needed.
             </strong>
           </article>
         </div>
@@ -501,7 +501,7 @@ export function WorkspaceLaunchPanel({
             onClick={() => onPresetSelection(featuredPreset.id)}
           >
             <div className="stims-shell__launch-recommendation-top">
-              <p className="stims-shell__section-label">Featured preset</p>
+              <p className="stims-shell__section-label">Featured pick</p>
               <div className="stims-shell__launch-badge-row">
                 <span className="stims-shell__launch-badge">Curated</span>
                 {featuredPresetSupportLabel ? (
@@ -520,7 +520,7 @@ export function WorkspaceLaunchPanel({
               </span>
             </div>
             <div className="stims-shell__launch-recommendation-footer">
-              <span>Opens well on demo audio</span>
+              <span>Easy on demo audio</span>
               <span>Switch to live input later</span>
             </div>
           </button>
@@ -530,16 +530,16 @@ export function WorkspaceLaunchPanel({
       {missingRequestedPreset ? (
         <section className="stims-shell__launch-alert" data-tone="warn">
           <div className="stims-shell__launch-alert-copy">
-            <p className="stims-shell__section-label">Preset not found</p>
+            <p className="stims-shell__section-label">Saved pick not found</p>
             <strong>
               {requestedPresetId
                 ? `"${requestedPresetId}" isn't available here anymore.`
-                : "That preset isn't available here anymore."}
+                : "That saved pick isn't available here anymore."}
             </strong>
             <p className="stims-shell__meta-copy">
               {featuredPreset
-                ? `Try ${featuredPreset.title} instead, or browse the full library.`
-                : 'Open the preset library to pick another one.'}
+                ? `Try ${featuredPreset.title} instead, or browse everything.`
+                : 'Open the full list to pick another one.'}
             </p>
           </div>
           <div className="stims-shell__session-actions">
@@ -549,7 +549,7 @@ export function WorkspaceLaunchPanel({
                 className="cta-button primary"
                 onClick={onFeaturedPresetSelection}
               >
-                Try featured preset
+                Try featured pick
               </button>
             ) : null}
             <button
@@ -557,7 +557,7 @@ export function WorkspaceLaunchPanel({
               className="cta-button"
               onClick={onBrowseRecovery}
             >
-              Browse presets
+              Browse everything
             </button>
           </div>
         </section>
@@ -580,7 +580,7 @@ export function WorkspaceLaunchPanel({
 
       <PresetShelfSection
         entries={jumpBackInEntries}
-        summary="Saved and recent presets stay close so you can start faster next time."
+        summary="Saved picks and recent stops stay close so you can start faster next time."
         title="Jump back in"
         onSelect={onPresetSelection}
         presetPreviews={presetPreviews}
@@ -673,14 +673,111 @@ export function WorkspaceStagePanel({
             <div className="stims-shell__corner-brand">
               <a href="/" className="stims-shell__logo">
                 <span>Stims</span>
-                <small>Audio-reactive visuals</small>
+                <small>Sound into motion</small>
               </a>
+              <div className="stims-shell__corner-status">
+                <span className="stims-shell__corner-pill">
+                  {liveMode ? 'Live session' : 'Launch deck'}
+                </span>
+                <span className="stims-shell__corner-pill">
+                  {liveMode
+                    ? backend === 'webgpu'
+                      ? 'WebGPU active'
+                      : backend === 'webgl'
+                        ? 'WebGL active'
+                        : 'Renderer loading'
+                    : 'Single-route workspace'}
+                </span>
+              </div>
             </div>
-            <div className="stims-shell__corner-actions">
+            <div className="stims-shell__rail-actions">
               {panel ? (
                 <span className="stims-shell__corner-pill">
                   {getToolLabel(panel)} open
                 </span>
+              ) : null}
+              {!missingRequestedPreset && !invalidExperienceSlug ? (
+                <div
+                  className="stims-shell__stage-dock"
+                  role="toolbar"
+                  aria-label={liveMode ? 'Live controls' : 'Launch controls'}
+                >
+                  <button
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    data-active={String(panel === 'browse')}
+                    aria-label="Open browse panel"
+                    title="Open browse panel"
+                    onClick={onOpenBrowse}
+                  >
+                    <UiIcon
+                      name="sparkles"
+                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                    />
+                    <span className="stims-shell__stage-tool-label">Browse</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    data-active={String(panel === 'settings')}
+                    aria-label="Open look settings"
+                    title="Open look settings"
+                    onClick={onOpenSettings}
+                  >
+                    <UiIcon
+                      name="sliders"
+                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                    />
+                    <span className="stims-shell__stage-tool-label">Look</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    aria-label="Surprise me"
+                    title="Surprise me"
+                    onClick={onShufflePreset}
+                  >
+                    <UiIcon
+                      name="pulse"
+                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                    />
+                    <span className="stims-shell__stage-tool-label">
+                      Surprise me
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    aria-label={
+                      isFullscreen ? 'Exit full screen' : 'Enter full screen'
+                    }
+                    title={
+                      isFullscreen ? 'Exit full screen' : 'Enter full screen'
+                    }
+                    onClick={onToggleFullscreen}
+                  >
+                    <UiIcon
+                      name="expand"
+                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                    />
+                    <span className="stims-shell__stage-tool-label">
+                      {isFullscreen ? 'Exit full screen' : 'Full screen'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    aria-label="Share current link"
+                    title="Share current link"
+                    onClick={onShowCurrentLink}
+                  >
+                    <UiIcon
+                      name="link"
+                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                    />
+                    <span className="stims-shell__stage-tool-label">Share</span>
+                  </button>
+                </div>
               ) : null}
               <a
                 className="stims-shell__corner-link"
@@ -707,7 +804,7 @@ export function WorkspaceStagePanel({
                     {backend === 'webgpu'
                       ? 'Full detail'
                       : backend === 'webgl'
-                        ? 'Lighter mode'
+                        ? 'Lighter render'
                         : 'Starting up'}
                   </span>
                   <span className="stims-shell__meta-pill">
@@ -722,7 +819,7 @@ export function WorkspaceStagePanel({
                       </p>
                       <p className="stims-shell__meta-copy">
                         Demo audio is running. Bring in your microphone, this
-                        tab, or a YouTube link when you want the visuals to
+                        tab, or a YouTube link when you want the canvas to
                         follow your own sound.
                       </p>
                     </div>
@@ -760,87 +857,6 @@ export function WorkspaceStagePanel({
           ) : null}
           {!liveMode ? (
             <div className="stims-shell__stage-hero">{launchPanel}</div>
-          ) : null}
-          {!missingRequestedPreset && !invalidExperienceSlug ? (
-            <div
-              className="stims-shell__stage-dock"
-              role="toolbar"
-              aria-label={liveMode ? 'Live controls' : 'Launch controls'}
-            >
-              <button
-                type="button"
-                className="stims-shell__stage-tool"
-                data-active={String(panel === 'browse')}
-                aria-label="Open preset library"
-                title="Open preset library"
-                onClick={onOpenBrowse}
-              >
-                <UiIcon
-                  name="sparkles"
-                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                />
-                <span className="stims-shell__stage-tool-label">Presets</span>
-              </button>
-              <button
-                type="button"
-                className="stims-shell__stage-tool"
-                data-active={String(panel === 'settings')}
-                aria-label="Open look settings"
-                title="Open look settings"
-                onClick={onOpenSettings}
-              >
-                <UiIcon
-                  name="sliders"
-                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                />
-                <span className="stims-shell__stage-tool-label">Look</span>
-              </button>
-              <button
-                type="button"
-                className="stims-shell__stage-tool"
-                aria-label="Surprise me"
-                title="Surprise me"
-                onClick={onShufflePreset}
-              >
-                <UiIcon
-                  name="pulse"
-                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                />
-                <span className="stims-shell__stage-tool-label">
-                  Surprise me
-                </span>
-              </button>
-              <button
-                type="button"
-                className="stims-shell__stage-tool"
-                aria-label={
-                  isFullscreen ? 'Exit full screen' : 'Enter full screen'
-                }
-                title={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
-                onClick={onToggleFullscreen}
-              >
-                <UiIcon
-                  name="expand"
-                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                />
-                <span className="stims-shell__stage-tool-label">
-                  {isFullscreen ? 'Exit full screen' : 'Full screen'}
-                </span>
-              </button>
-              <button
-                type="button"
-                className="stims-shell__stage-tool"
-                aria-label="Share current link"
-                title="Share current link"
-                onClick={onShowCurrentLink}
-              >
-                <UiIcon
-                  name="link"
-                  className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                />
-                <span className="stims-shell__stage-tool-label">Share</span>
-              </button>
-            </div>
           ) : null}
           {invalidExperienceSlug ? (
             <div className="active-toy-status is-error">
@@ -944,7 +960,7 @@ function BrowseSheetPanel({
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
         <div className="stims-shell__browse-toolbar">
           <div className="stims-shell__browse-toolbar-copy">
-            <strong>Pick a look and press play.</strong>
+            <strong>Pick something and press play.</strong>
             <p className="stims-shell__meta-copy">
               Preview QA: {previewSummary || 'Waiting on captures'}
             </p>
@@ -976,7 +992,7 @@ function BrowseSheetPanel({
           id="preset-search"
           className="stims-shell__input"
           type="search"
-          placeholder="Search by preset, mood, creator, or collection"
+          placeholder="Search by title, mood, creator, or collection"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
         />
@@ -1048,9 +1064,9 @@ function BrowseSheetPanel({
           entries={recentPresets.map((entry) => ({
             entry,
             label: 'Recent',
-            summary: 'Open a preset you used earlier.',
+            summary: 'Open something you used earlier.',
           }))}
-          summary="Recent presets help you resume a session without hunting."
+          summary="Recent picks help you resume without hunting."
           title="Recent"
           onSelect={onPresetSelection}
           presetPreviews={presetPreviews}
@@ -1064,7 +1080,7 @@ function BrowseSheetPanel({
             label: 'Saved',
             summary: 'Saved for a quick return the next time you open Stims.',
           }))}
-          summary="Saved presets stay visible even before the visualizer is live."
+          summary="Saved picks stay visible even before anything is playing."
           title="Saved"
           onSelect={onPresetSelection}
           presetPreviews={presetPreviews}
@@ -1073,15 +1089,15 @@ function BrowseSheetPanel({
 
       <section className="stims-shell__sheet-surface">
         {!catalogReady && !catalogError ? (
-          <p className="stims-shell__meta-copy">Loading catalog…</p>
+          <p className="stims-shell__meta-copy">Loading the list…</p>
         ) : null}
         {catalogError ? (
           <p className="stims-shell__meta-copy">{catalogError}</p>
         ) : null}
         <div className="stims-shell__section-heading">
-          <p className="stims-shell__section-label">Full library</p>
+          <p className="stims-shell__section-label">Everything</p>
           <p className="stims-shell__meta-copy">
-            {filteredCatalog.length} preset
+            {filteredCatalog.length} result
             {filteredCatalog.length === 1 ? '' : 's'}
             {searchQuery.trim().length > 0 || routeState.collectionTag
               ? ' match the current filters.'
@@ -1177,7 +1193,7 @@ function SettingsSheetPanel({
           ))}
         </ul>
         <label className="stims-shell__field-label" htmlFor="quality-select">
-          Or pick a specific visual profile
+          Or pick an exact render profile
         </label>
         <select
           id="quality-select"
@@ -1213,7 +1229,7 @@ function SettingsSheetPanel({
               }
             />
             <span className="stims-shell__toggle-copy">
-              <strong>Keep visuals steadier on tricky hardware</strong>
+              <strong>Keep things steadier on tricky hardware</strong>
               <small>
                 Back off riskier graphics paths when the browser gets unstable.
               </small>
@@ -1468,8 +1484,7 @@ export function WorkspaceToolSheet({
           <div className="stims-shell__section-heading">
             <p className="stims-shell__section-label">Share, save, or import</p>
             <p className="stims-shell__meta-copy">
-              Copy a link, export the current preset, or bring in one of your
-              own.
+              Copy a link, export what is playing, or bring in one of your own.
             </p>
           </div>
           <div className="stims-shell__session-actions">
