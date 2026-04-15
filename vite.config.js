@@ -31,6 +31,9 @@ if (!rollupInputs.index) {
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    dedupe: ['react', 'react-dom', 'three'],
+  },
   server: {
     // Bind to all interfaces so forwarded browsers (e.g., Playwright) can reach
     // the dev server instead of seeing connection refused.

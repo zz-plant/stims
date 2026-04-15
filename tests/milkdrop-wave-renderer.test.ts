@@ -78,9 +78,9 @@ describe('milkdrop wave renderer', () => {
     expect(group).not.toBeNull();
     expectLayerPositions(group as Group);
 
-    const firstLayer = (group as Group).children[0];
+    const firstLayer = (group as Group).children[0] as Line;
     expect(firstLayer).toBeInstanceOf(Line);
-    expect((firstLayer?.material as LineBasicMaterial).depthWrite).toBe(false);
+    expect((firstLayer.material as LineBasicMaterial).depthWrite).toBe(false);
     expect(helpers.getWaveLinePositions).toHaveBeenCalledTimes(4);
   });
 
@@ -100,10 +100,10 @@ describe('milkdrop wave renderer', () => {
     expect(group).not.toBeNull();
     expectLayerPositions(group as Group);
 
-    const firstLayer = (group as Group).children[0];
+    const firstLayer = (group as Group).children[0] as Points;
     expect(firstLayer).toBeInstanceOf(Points);
-    expect((firstLayer?.material as PointsMaterial).depthWrite).toBe(false);
-    expect((firstLayer?.material as PointsMaterial).size).toBe(1);
+    expect((firstLayer.material as PointsMaterial).depthWrite).toBe(false);
+    expect((firstLayer.material as PointsMaterial).size).toBe(1);
   });
 
   test('keeps existing thick wave groups stable across sync updates', () => {
@@ -128,7 +128,8 @@ describe('milkdrop wave renderer', () => {
     expect(synced).toBe(existing);
     expectLayerPositions(synced as Group);
     expect(
-      (synced?.children[0]?.material as LineBasicMaterial).opacity,
+      (((synced as Group).children[0] as Line).material as LineBasicMaterial)
+        .opacity,
     ).toBeCloseTo(0.5, 6);
   });
 });
