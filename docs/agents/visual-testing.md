@@ -123,7 +123,7 @@ bun run dev
    - Presets are listed and visible
    - Search/filter functionality works
    - Clicking a preset updates the live session and canonical route state
-3. Open `http://localhost:5173/milkdrop/?preset=signal-bloom` and confirm the alias lands in the same root workspace state
+3. Open `http://localhost:5173/milkdrop/?preset=eos-glowsticks-v2-03-music` and confirm the alias lands in the same root workspace state
 
 ## Automated visual regression testing
 

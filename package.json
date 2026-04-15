@@ -89,20 +89,20 @@
     "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.15",
-    "@playwright/test": "^1.58.2",
-    "@types/bun": "^1.3.9",
-    "@types/node": "^25.2.3",
+    "@biomejs/biome": "^2.4.12",
+    "@playwright/test": "^1.59.1",
+    "@types/bun": "^1.3.12",
+    "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.182.0",
+    "@types/three": "^0.183.1",
     "@vitejs/plugin-react": "^6.0.1",
-    "happy-dom": "^20.6.1",
+    "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
-    "playwright": "^1.58.2",
+    "playwright": "^1.59.1",
     "typescript": "^6.0.2",
-    "vite": "8.0.3",
-    "wrangler": "^4.65.0"
+    "vite": "8.0.8",
+    "wrangler": "^4.83.0"
   },
   "engines": {
     "node": "^22",
@@ -111,22 +111,26 @@
   "dependencies": {
     "@cfworker/json-schema": "^4.1.1",
     "@codemirror/commands": "^6.10.3",
-    "@codemirror/language": "^6.12.2",
+    "@codemirror/language": "6.12.3",
     "@codemirror/legacy-modes": "^6.5.2",
     "@codemirror/lint": "^6.9.5",
     "@codemirror/search": "^6.6.0",
     "@codemirror/state": "^6.6.0",
     "@codemirror/theme-one-dark": "^6.1.3",
-    "@codemirror/view": "^6.40.0",
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@codemirror/view": "6.41.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@react-three/fiber": "^9.6.0",
-    "@tanstack/react-router": "^1.168.21",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "@tanstack/react-router": "^1.168.22",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "sharp": "^0.34.5",
     "three": "^0.183.2",
     "web-haptics": "^0.0.6",
-    "yaml": "^2.8.2",
+    "yaml": "^2.8.3",
     "zod": "^4.3.6"
+  },
+  "overrides": {
+    "@codemirror/language": "6.12.3",
+    "@codemirror/view": "6.41.0"
   }
 }
