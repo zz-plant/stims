@@ -25,6 +25,12 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
    bun run dev
    ```
 
+   For a warmer agent-oriented session on machines that expose the local helper commands, use:
+
+   ```bash
+   bun run session:codex -- --profile review
+   ```
+
 4. Open `http://localhost:5173/`.
 
    Use `http://localhost:5173/milkdrop/` only when you need to verify the compatibility alias redirect behavior.
@@ -35,6 +41,7 @@ Thanks for contributing. This guide covers the current Bun-first workflow for hu
 - MilkDrop runtime guidance: [`docs/MILKDROP_PRESET_RUNTIME.md`](./docs/MILKDROP_PRESET_RUNTIME.md)
 - Successor workstream map: [`docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)
 - Canonical docs index: [`docs/README.md`](./docs/README.md)
+- Agent bootstrap and delegation guide: [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md)
 - Repo-local agent capabilities in `.agent/`: [`docs/agents/custom-capabilities.md`](./docs/agents/custom-capabilities.md)
 
 ## Quality checks
@@ -70,6 +77,7 @@ Use these commands before opening a PR:
 ## Common dev commands
 
 - `bun run dev` — start local Vite server.
+- `bun run session:codex -- --profile review` — keep the dev server, local model roles, and a verification watcher warm for agent sessions.
 - `bun run dev:host` — start Vite on LAN.
 - `bun run build` — production build.
 - `bun run preview` — preview built output.

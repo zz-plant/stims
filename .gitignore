@@ -21,3 +21,6 @@ yarn-error.log*
 
 # Husky generated shims (recreated by `husky install` via `bun install`/`bun run prepare`)
 .husky/_/*
+
+# Local Codex session state
+.codex/

@@ -19,6 +19,17 @@ In practice:
 - reach for `.agent/skills/*/SKILL.md` first,
 - open the matching `.agent/workflows/*.md` when the task spans multiple phases or needs a more explicit runbook.
 
+## Delegation guidance
+
+When the work may be split across multiple agents, start with [`agent-handoffs.md`](./agent-handoffs.md) before assigning ownership. Use these boundaries:
+
+- runtime and shell work: prefer one owner across `assets/js/core/`, `assets/js/frontend/`, and routing/bootstrap files that must evolve together
+- preset and compatibility work: keep `assets/js/milkdrop/`, preset fixtures, and catalog metadata with one owner
+- docs and MCP-facing metadata: keep `docs/`, `AGENTS.md`, `.agent/`, and `scripts/mcp-shared.ts` together when the change is about discoverability or workflow guidance
+- browser QA: keep Playwright helpers, integration tests, and QA docs together when the task is primarily verification
+
+If a task cannot be described with a clean file boundary and a small validation set, it is usually a bad candidate for delegation.
+
 ## Skills
 
 | Skill | Use when | Primary validation |
@@ -46,6 +57,7 @@ In practice:
 - Visualizer runtime and preset details: [`../MILKDROP_PRESET_RUNTIME.md`](../MILKDROP_PRESET_RUNTIME.md)
 - Runtime architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Agent overlay index: [`./README.md`](./README.md)
+- Agent bootstrap and handoffs: [`./agent-handoffs.md`](./agent-handoffs.md)
 - Visualizer workflow quick reference: [`./visualizer-workflows.md`](./visualizer-workflows.md)
 - MCP capability discovery for `.agent/*`: [`../MCP_SERVER.md`](../MCP_SERVER.md)
 

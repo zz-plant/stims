@@ -5,10 +5,28 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 ## Read order
 
 1. Root [`AGENTS.md`](../../AGENTS.md) for non-negotiable defaults.
-2. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
-3. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
-4. [`metadata-and-docs.md`](./metadata-and-docs.md) before commit/PR finalization.
-5. [`reference-docs.md`](./reference-docs.md) when triaging unfamiliar areas.
+2. [`agent-handoffs.md`](./agent-handoffs.md) for the fastest safe bootstrap plus delegation and return-contract guidance.
+3. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
+4. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
+5. [`metadata-and-docs.md`](./metadata-and-docs.md) before commit/PR finalization.
+6. [`reference-docs.md`](./reference-docs.md) when triaging unfamiliar areas.
+
+## 60-second bootstrap
+
+When the repo state is unknown, start here:
+
+```bash
+bun run setup:codex --print-plan
+bun run setup:codex
+```
+
+The default setup path installs dependencies and runs `bun run check:quick`, which is usually enough to establish a safe starting point before targeted work.
+
+If you want a warmer long-lived session on a machine that exposes the local helper commands, use:
+
+```bash
+bun run session:codex -- --profile review
+```
 
 ## Task routing
 
@@ -24,6 +42,7 @@ Use [`custom-capabilities.md`](./custom-capabilities.md) first when the task mat
 
 ### Code changes
 
+- [`agent-handoffs.md`](./agent-handoffs.md) (bootstrap, task slicing, subagent return contract)
 - [`custom-capabilities.md`](./custom-capabilities.md)
 - [`tooling-and-quality.md`](./tooling-and-quality.md)
 - [`visual-testing.md`](./visual-testing.md) (browser-based testing, DevTools, agent-mode URL)
@@ -33,6 +52,7 @@ Use [`custom-capabilities.md`](./custom-capabilities.md) first when the task mat
 
 ### Documentation or metadata changes
 
+- [`agent-handoffs.md`](./agent-handoffs.md) when task ownership or delegation guidance changed
 - [`metadata-and-docs.md`](./metadata-and-docs.md)
 - [`custom-capabilities.md`](./custom-capabilities.md) when `.agent/` assets or agent-facing docs change
 - [`../README.md`](../README.md) (canonical docs index)

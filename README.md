@@ -93,6 +93,7 @@ If you want to validate the production bundle locally, run `bun run build` and t
 | Task | Command |
 | --- | --- |
 | Start dev server | `bun run dev` |
+| Warm an agent session stack | `bun run session:codex -- --profile review` |
 | Start dev server on all interfaces | `bun run dev:host` |
 | Start a WebGPU-focused local session | `bun run dev:webgpu` |
 | Run the fast local quality gate | `bun run check:quick` |
@@ -120,6 +121,7 @@ Use [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md) as the synchronizatio
 ## Development notes
 
 - Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
+- Use `bun run session:codex -- --profile review` to keep a local agent stack warm with the dev server, LM Studio model roles when available, and a background verification watcher.
 - If your browser supports WebGPU but visuals fail, switch renderer preference to WebGL in app settings and refresh.
 - Use `bun run preview` after `bun run build` to test the production bundle behavior (including route handling) before deployment.
 - Cloudflare Pages preview and production deploys default to the GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml); the `pages:deploy:*` scripts are the manual fallback path.
@@ -157,6 +159,7 @@ Use [docs/README.md](./docs/README.md) as the canonical docs index.
 
 Start with:
 
+- [docs/agents/agent-handoffs.md](./docs/agents/agent-handoffs.md)
 - [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
 - [docs/MILKDROP_PRESET_RUNTIME.md](./docs/MILKDROP_PRESET_RUNTIME.md)
 - [docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)

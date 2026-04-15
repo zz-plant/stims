@@ -96,6 +96,9 @@ describe('searchMarkdownSources', () => {
 describe('agent capability markdown availability', () => {
   test('exposes skill and workflow markdown files for MCP reads', () => {
     expect(
+      markdownSources['docs/agents/agent-handoffs.md'].length,
+    ).toBeGreaterThan(0);
+    expect(
       markdownSources['.agent/skills/play-visualizer/SKILL.md'].length,
     ).toBeGreaterThan(0);
     expect(
@@ -118,6 +121,16 @@ describe('agent capability markdown availability', () => {
 
     expect(results.length).toBeGreaterThan(0);
     expect(results[0]?.file).toBe('docs/agents/README.md');
+  });
+
+  test('searches bootstrap and handoff guidance through shared markdown index', async () => {
+    const results = await searchMarkdownSources('Return contract', {
+      file: 'docs/agents/agent-handoffs.md',
+      limit: 3,
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]?.file).toBe('docs/agents/agent-handoffs.md');
   });
 });
 

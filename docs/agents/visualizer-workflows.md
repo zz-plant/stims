@@ -12,11 +12,16 @@ The repository includes markdown workflows under `.agent/workflows/`:
 
 For the matching repo-local skills plus “when do I use which one?” guidance, see [`custom-capabilities.md`](./custom-capabilities.md).
 
+For task slicing, file ownership boundaries, and subagent return expectations, see [`agent-handoffs.md`](./agent-handoffs.md).
+
 ## Common commands
 
 ```bash
 # Local development server
 bun run dev
+
+# Warm long-lived agent session
+bun run session:codex -- --profile review
 
 # Scripted visualizer smoke run
 bun run play:toy milkdrop
@@ -33,7 +38,7 @@ bun run check
 
 ## Manual verification flow
 
-1. Run `bun run dev`.
+1. Run `bun run dev` or `bun run session:codex -- --profile review`.
 2. Open `http://localhost:5173/?agent=true`.
 3. Use demo audio if microphone access is unavailable or repeatability matters.
 4. Confirm shell load, preset playback, changed controls, and cleanup behavior work as expected.

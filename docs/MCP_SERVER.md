@@ -2,7 +2,7 @@
 
 The repository includes a Model Context Protocol (MCP) stdio server at [`scripts/mcp-server.ts`](../scripts/mcp-server.ts) and a Cloudflare Worker transport at [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Both expose documentation, toy metadata, loader behavior, and development command references so MCP-compatible clients can retrieve structured information without scraping markdown. The stdio server is the baseline path for local/tooling use; the Worker transport is an optional deployment target when remote MCP access is needed.
 
-For the human-readable overview of repo-local `.agent/skills/*` and `.agent/workflows/*`, see [`agents/custom-capabilities.md`](./agents/custom-capabilities.md).
+For the human-readable overview of repo-local `.agent/skills/*` and `.agent/workflows/*`, see [`agents/custom-capabilities.md`](./agents/custom-capabilities.md). For fast bootstrap and delegation guidance, see [`agents/agent-handoffs.md`](./agents/agent-handoffs.md).
 
 ## Starting the server
 
@@ -24,7 +24,7 @@ All tools are registered on the logical MCP server name `stim-webtoys-mcp` and u
   - **Input:** optional `slug` (string) to fetch a single toy and optional `requiresWebGPU` (boolean) to filter by WebGPU requirements.
   - **Output:** `json` array of `{ slug, title, description, requiresWebGPU, controls, module, type, allowWebGLFallback, url }` entries. Returns a helpful text message when no toys match the filters. Optional fields default to sensible fallbacks when missing from `assets/data/toys.json`.
 - **`read_doc_section`**
-  - **Input:** required `file` enum (e.g., `README.md`, `docs/MCP_SERVER.md`, `docs/agents/README.md`, `.agent/skills/play-visualizer/SKILL.md`, `.agent/skills/modify-visualizer-runtime/SKILL.md`) and optional `heading` string.
+  - **Input:** required `file` enum (e.g., `README.md`, `docs/MCP_SERVER.md`, `docs/agents/README.md`, `docs/agents/agent-handoffs.md`, `.agent/skills/play-visualizer/SKILL.md`, `.agent/skills/modify-visualizer-runtime/SKILL.md`) and optional `heading` string.
   - **Output:** `text` response containing the full markdown file when no heading is provided, or the matching section beginning at the requested heading. Returns a friendly error when the file or heading cannot be found.
 - **`search_docs`**
   - **Input:** required `query` string plus optional `file` enum to limit search scope and optional `limit` (1-20) for result count.
