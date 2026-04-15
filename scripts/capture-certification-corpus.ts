@@ -38,6 +38,7 @@ type CertificationCorpusCaptureRequest = Required<
     | 'vibeMode'
     | 'rendererProfile'
     | 'catalogMode'
+    | 'screenshotSurface'
   >
 >;
 
@@ -73,6 +74,7 @@ export function buildCertificationCorpusCaptureRequests({
       vibeMode,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
+      screenshotSurface: 'page',
     }));
 }
 

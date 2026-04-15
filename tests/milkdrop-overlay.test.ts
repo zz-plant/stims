@@ -1,12 +1,17 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { DEFAULT_QUALITY_PRESETS } from '../assets/js/core/settings-panel.ts';
 import { MilkdropOverlay } from '../assets/js/milkdrop/overlay.ts';
+import type { MilkdropPresetRenderPreview } from '../assets/js/milkdrop/preset-preview.ts';
 import type { MilkdropCatalogEntry } from '../assets/js/milkdrop/types.ts';
 
 function createOverlay({
   onSelectQualityPreset = mock(),
+  onRequestPresetPreviews = mock(),
+  onRefreshPresetPreviews = mock(),
 }: {
   onSelectQualityPreset?: ReturnType<typeof mock>;
+  onRequestPresetPreviews?: ReturnType<typeof mock>;
+  onRefreshPresetPreviews?: ReturnType<typeof mock>;
 } = {}) {
   return new MilkdropOverlay({
     host: document.body,
@@ -15,6 +20,8 @@ function createOverlay({
       onSelectQualityPreset,
       onToggleFavorite: mock(),
       onSetRating: mock(),
+      onRequestPresetPreviews,
+      onRefreshPresetPreviews,
       onToggleAutoplay: mock(),
       onTransitionModeChange: mock(),
       onGoBackPreset: mock(),
@@ -193,6 +200,22 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
   } as MilkdropCatalogEntry;
 }
 
+function createPresetPreview(
+  presetId: string,
+  overrides: Partial<MilkdropPresetRenderPreview> = {},
+): MilkdropPresetRenderPreview {
+  return {
+    presetId,
+    status: 'ready',
+    imageUrl: 'data:image/webp;base64,AAAA',
+    actualBackend: 'webgl',
+    updatedAt: Date.now(),
+    error: null,
+    source: 'runtime-snapshot',
+    ...overrides,
+  };
+}
+
 describe('milkdrop overlay browse simplifications', () => {
   const OriginalMutationObserver = globalThis.MutationObserver;
 
@@ -263,6 +286,8 @@ describe('milkdrop overlay browse simplifications', () => {
         onSelectQualityPreset: mock(),
         onToggleFavorite: mock(),
         onSetRating: mock(),
+        onRequestPresetPreviews: mock(),
+        onRefreshPresetPreviews: mock(),
         onToggleAutoplay: mock(),
         onTransitionModeChange: mock(),
         onGoBackPreset: mock(),
@@ -566,6 +591,52 @@ describe('milkdrop overlay browse rendering', () => {
     expect(collectionFilters?.hidden).toBe(true);
     expect(browse?.textContent).toContain('Signal Bloom');
     expect(browse?.textContent).toContain('Aurora Drift');
+
+    overlay.dispose();
+  });
+
+  test('requests preview captures for the visible browse cards and shows QA progress', () => {
+    globalThis.MutationObserver = class {
+      disconnect() {}
+      observe() {}
+      takeRecords() {
+        return [];
+      }
+    } as unknown as typeof MutationObserver;
+
+    const onRequestPresetPreviews = mock();
+    const overlay = createOverlay({ onRequestPresetPreviews });
+    const activePreset = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    activePreset.historyIndex = 0;
+    const secondaryPreset = createCatalogEntry('aurora-drift', 'Aurora Drift');
+
+    overlay.setCatalog(
+      [activePreset, secondaryPreset],
+      'signal-bloom',
+      'webgl',
+    );
+
+    expect(onRequestPresetPreviews).toHaveBeenCalled();
+    expect(
+      onRequestPresetPreviews.mock.calls[
+        onRequestPresetPreviews.mock.calls.length - 1
+      ]?.[0],
+    ).toEqual(['signal-bloom', 'aurora-drift']);
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-qa')?.textContent,
+    ).toBe('Preview QA: 2 queued');
+
+    overlay.setPresetPreview(
+      createPresetPreview('signal-bloom', {
+        status: 'capturing',
+        imageUrl: null,
+        actualBackend: null,
+      }),
+    );
+
+    expect(
+      document.querySelector('.milkdrop-overlay__browse-qa')?.textContent,
+    ).toBe('Preview QA: 1 capturing · 1 queued');
 
     overlay.dispose();
   });
@@ -916,6 +987,15 @@ describe('milkdrop overlay browse rendering', () => {
     };
 
     overlay.setCatalog([activePreset, partialPreset], 'signal-bloom', 'webgl');
+    overlay.setPresetPreview(createPresetPreview('signal-bloom'));
+    overlay.setPresetPreview(
+      createPresetPreview('aurora-drift', {
+        status: 'failed',
+        imageUrl: null,
+        actualBackend: null,
+        error: 'Capture timed out.',
+      }),
+    );
 
     const rows = [
       ...document.querySelectorAll('.milkdrop-overlay__preset'),
@@ -934,8 +1014,12 @@ describe('milkdrop overlay browse rendering', () => {
     const activeFavorite = activeRow?.querySelector(
       '.milkdrop-overlay__favorite',
     ) as HTMLButtonElement | null;
+    const activePreviewStatus = activeRow?.querySelector(
+      '.milkdrop-overlay__preset-preview-status',
+    );
     expect(activeMeta?.textContent).toBe('Stims · Recent');
     expect(activeBadges).toEqual(['Live']);
+    expect(activePreviewStatus?.textContent).toBe('WebGL preview');
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(
       'Remove saved preset',
@@ -966,8 +1050,12 @@ describe('milkdrop overlay browse rendering', () => {
     const partialWarning = partialRow?.querySelector(
       '.milkdrop-overlay__preset-warning',
     );
+    const partialPreviewStatus = partialRow?.querySelector(
+      '.milkdrop-overlay__preset-preview-status',
+    );
 
     expect(partialMeta?.textContent).toBe('Guest');
+    expect(partialPreviewStatus?.textContent).toBe('Preview failed');
     expect(partialWarning?.textContent).toBe(
       'Showing a simpler version. Wave mesh falls back to a simpler path.',
     );

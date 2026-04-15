@@ -31,6 +31,7 @@ type VisualReferenceCaptureRequest = Required<
     | 'vibeMode'
     | 'rendererProfile'
     | 'catalogMode'
+    | 'screenshotSurface'
   >
 >;
 
@@ -61,6 +62,7 @@ export function buildVisualReferenceCaptureRequests({
       vibeMode,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
+      screenshotSurface: 'page',
     }));
 }
 

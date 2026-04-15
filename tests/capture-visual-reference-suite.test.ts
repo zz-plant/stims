@@ -102,6 +102,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       vibeMode: false,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
+      screenshotSurface: 'page',
     },
     {
       slug: 'milkdrop',
@@ -117,6 +118,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       vibeMode: false,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
+      screenshotSurface: 'page',
     },
   ]);
 });
