@@ -378,10 +378,11 @@ export function createSampleAuxTextureNode(
   });
 
   return Fn(
-    ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) =>
-      select(
+    ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
+      const wrappedUv = fract(sampleUv);
+      return select(
         sampleDimension.lessThan(0.5),
-        sampleAuxTexture2dNode(source, sampleUv),
+        sampleAuxTexture2dNode(source, wrappedUv),
         (() => {
           const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
           const wrappedSlice = fract(sliceZ);
@@ -393,14 +394,15 @@ export function createSampleAuxTextureNode(
           const blend = fract(scaledSlice);
           const lowerSample = sampleAuxTexture2dNode(
             source,
-            atlasSliceUvNode(sampleUv, lowerSlice),
+            atlasSliceUvNode(wrappedUv, lowerSlice),
           );
           const upperSample = sampleAuxTexture2dNode(
             source,
-            atlasSliceUvNode(sampleUv, upperSlice),
+            atlasSliceUvNode(wrappedUv, upperSlice),
           );
           return mix(lowerSample, upperSample, blend);
         })(),
-      ),
+      );
+    },
   );
 }

@@ -865,6 +865,8 @@ function createCompositeOutputNode(
   );
 
   return Fn(() => {
+    const hasDirectWarpProgram = shaderPrograms.warp !== null;
+    const hasDirectCompProgram = shaderPrograms.comp !== null;
     const shaderEnv: ShaderNodeEnv = {
       values: new Map<string, ShaderNodeValue>(),
       uniforms,
@@ -883,43 +885,53 @@ function createCompositeOutputNode(
       .div(max(uniforms.zoomMul, 0.0001))
       .add(vec2(uniforms.offsetX, uniforms.offsetY));
 
-    const programWarpUv = applyDirectWarpProgram(
-      shaderPrograms.warp,
-      shaderEnv,
-      transformedUv.add(0.5),
-    );
-    const currentUv = applyFeedbackWarpNode(
-      programWarpUv,
-      uniforms.warpScale,
-      uniforms.rotation,
+    const currentUv = (
+      hasDirectWarpProgram
+        ? applyDirectWarpProgram(shaderPrograms.warp, shaderEnv, baseUv)
+        : applyFeedbackWarpNode(
+            transformedUv.add(0.5),
+            uniforms.warpScale,
+            uniforms.rotation,
+          )
     ).toVar();
-    const previousUv = applyFeedbackWarpNode(
-      currentUv.sub(0.5).div(max(uniforms.zoom, 0.0001)).add(0.5),
-      uniforms.warpScale.mul(0.8),
-      uniforms.rotation.mul(0.6),
+    const previousUv = (
+      hasDirectWarpProgram
+        ? currentUv.sub(0.5).div(max(uniforms.zoom, 0.0001)).add(0.5)
+        : applyFeedbackWarpNode(
+            currentUv.sub(0.5).div(max(uniforms.zoom, 0.0001)).add(0.5),
+            uniforms.warpScale.mul(0.8),
+            uniforms.rotation.mul(0.6),
+          )
     ).toVar();
-    const warpTextureBaseUv = currentUv.toVar();
 
-    const warpTextureMask = step(0.5, uniforms.warpTextureSource).mul(
-      step(0.0001, uniforms.warpTextureAmount),
-    );
-    const warpUv = warpTextureBaseUv
-      .mul(uniforms.warpTextureScale)
-      .add(uniforms.warpTextureOffset);
-    const warpVector = sampleAuxTextureNode(
-      uniforms.warpTextureSource,
-      uniforms.warpTextureSampleDimension,
-      warpUv,
-      uniforms.warpTextureVolumeSliceZ,
-    )
-      .rg.sub(0.5)
-      .toVar();
-    currentUv.addAssign(
-      warpVector.mul(uniforms.warpTextureAmount).mul(0.12).mul(warpTextureMask),
-    );
-    previousUv.addAssign(
-      warpVector.mul(uniforms.warpTextureAmount).mul(0.08).mul(warpTextureMask),
-    );
+    if (!hasDirectWarpProgram) {
+      const warpTextureMask = step(0.5, uniforms.warpTextureSource).mul(
+        step(0.0001, uniforms.warpTextureAmount),
+      );
+      const warpUv = currentUv
+        .mul(uniforms.warpTextureScale)
+        .add(uniforms.warpTextureOffset);
+      const warpVector = sampleAuxTextureNode(
+        uniforms.warpTextureSource,
+        uniforms.warpTextureSampleDimension,
+        warpUv,
+        uniforms.warpTextureVolumeSliceZ,
+      )
+        .rg.sub(0.5)
+        .toVar();
+      currentUv.addAssign(
+        warpVector
+          .mul(uniforms.warpTextureAmount)
+          .mul(0.12)
+          .mul(warpTextureMask),
+      );
+      previousUv.addAssign(
+        warpVector
+          .mul(uniforms.warpTextureAmount)
+          .mul(0.08)
+          .mul(warpTextureMask),
+      );
+    }
     previousUv.assign(
       applyVideoEchoOrientationNode(previousUv, uniforms.videoEchoOrientation),
     );
@@ -990,126 +1002,137 @@ function createCompositeOutputNode(
       },
     );
 
-    let color = mix(
-      current.rgb,
-      previousColor,
-      clamp(uniforms.videoEchoAlpha, 0, 1),
+    const color = (
+      hasDirectCompProgram
+        ? applyDirectCompProgram(
+            shaderPrograms.comp,
+            shaderEnv,
+            currentUv,
+            current.rgb,
+          )
+        : mix(current.rgb, previousColor, clamp(uniforms.videoEchoAlpha, 0, 1))
     ).toVar();
-    color.assign(mix(color, previousColor, clamp(uniforms.mixAlpha, 0, 1)));
-    color.assign(
-      mix(
-        color,
-        current.rgb,
-        clamp(
-          uniforms.currentFrameBoost,
-          0,
-          MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
-        ),
-      ),
-    );
-    color = applyDirectCompProgram(
-      shaderPrograms.comp,
-      shaderEnv,
-      currentUv,
-      color,
-    ).toVar();
-    color.assign(hueRotateNode(color, uniforms.hueShift));
-    color.assign(applySaturationNode(color, uniforms.saturation));
-    color.assign(applyContrastNode(color, uniforms.contrast));
-    color.assign(color.mul(uniforms.colorScale));
-    color.assign(color.mul(uniforms.tint));
 
-    const overlaySourceMask = step(0.5, uniforms.overlayTextureSource);
-    const overlayReplaceMask = step(0.5, uniforms.overlayTextureMode).mul(
-      float(1).sub(step(1.5, uniforms.overlayTextureMode)),
-    );
-    const overlayBlendMask = step(1.5, uniforms.overlayTextureMode).mul(
-      step(0.0001, uniforms.overlayTextureAmount),
-    );
-    const overlayMask = overlaySourceMask.mul(
-      max(overlayReplaceMask, overlayBlendMask),
-    );
-    const overlayUv = baseUv
-      .mul(uniforms.overlayTextureScale)
-      .add(uniforms.overlayTextureOffset);
-    const overlaySample = sampleAuxTextureNode(
-      uniforms.overlayTextureSource,
-      uniforms.overlayTextureSampleDimension,
-      overlayUv,
-      uniforms.overlayTextureVolumeSliceZ,
-    ).rgb;
-    const overlayColor = mix(
-      overlaySample,
-      vec3(1).sub(overlaySample),
-      step(0.5, uniforms.overlayTextureInvert),
-    );
-    const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
-    const overlayReplace = overlayColor;
-    const overlayMixAmount = clamp(overlayAmount, 0, 1);
-    const overlayMix = mix(color, overlayColor, overlayMixAmount);
-    const overlayAdd = min(vec3(1), color.add(overlayColor.mul(overlayAmount)));
-    const overlayMultiply = color.mul(
-      mix(vec3(1), overlayColor, overlayMixAmount),
-    );
-    const overlayResult = select(
-      uniforms.overlayTextureMode.lessThan(1.5),
-      overlayReplace,
-      select(
-        uniforms.overlayTextureMode.lessThan(2.5),
-        overlayMix,
-        select(
-          uniforms.overlayTextureMode.lessThan(3.5),
-          overlayAdd,
-          overlayMultiply,
-        ),
-      ),
-    );
-    color.assign(mix(color, overlayResult, overlayMask));
-
-    const brightenMask = max(
-      step(0.01, uniforms.brighten),
-      step(0.01, uniforms.brightenBoost),
-    );
-    const brightened = min(
-      vec3(1),
-      color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
-    );
-    color.assign(mix(color, brightened, brightenMask));
-    color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
-    const centerMask = clamp(baseUv.sub(0.5).length().mul(400), 0, 1);
-    color.assign(
-      color.mul(
+    if (!hasDirectCompProgram) {
+      color.assign(mix(color, previousColor, clamp(uniforms.mixAlpha, 0, 1)));
+      color.assign(
         mix(
-          float(1),
-          float(0.97).add(centerMask.mul(0.03)),
-          step(0.5, uniforms.darkenCenter),
+          color,
+          current.rgb,
+          clamp(
+            uniforms.currentFrameBoost,
+            0,
+            MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
+          ),
         ),
-      ),
-    );
-    color.assign(
-      mix(
-        color,
-        abs(color.sub(0.5)).mul(1.5),
-        clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
-      ),
-    );
-    color.assign(
-      mix(
-        color,
-        vec3(1).sub(color),
-        clamp(max(uniforms.invert, uniforms.invertBoost), 0, 1),
-      ),
-    );
-    const stereoEnabled = step(0.5, uniforms.redBlueStereo);
-    const stereoOffset = float(0.003).add(uniforms.signalEnergy.mul(0.003));
-    const leftStereo = uniforms.previousTex.sample(
-      sampleUvNode(previousUv.sub(vec2(stereoOffset, 0)), uniforms.textureWrap),
-    ).rgb;
-    const rightStereo = uniforms.previousTex.sample(
-      sampleUvNode(previousUv.add(vec2(stereoOffset, 0)), uniforms.textureWrap),
-    ).rgb;
-    const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
-    color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
+      );
+      color.assign(hueRotateNode(color, uniforms.hueShift));
+      color.assign(applySaturationNode(color, uniforms.saturation));
+      color.assign(applyContrastNode(color, uniforms.contrast));
+      color.assign(color.mul(uniforms.colorScale));
+      color.assign(color.mul(uniforms.tint));
+
+      const overlaySourceMask = step(0.5, uniforms.overlayTextureSource);
+      const overlayReplaceMask = step(0.5, uniforms.overlayTextureMode).mul(
+        float(1).sub(step(1.5, uniforms.overlayTextureMode)),
+      );
+      const overlayBlendMask = step(1.5, uniforms.overlayTextureMode).mul(
+        step(0.0001, uniforms.overlayTextureAmount),
+      );
+      const overlayMask = overlaySourceMask.mul(
+        max(overlayReplaceMask, overlayBlendMask),
+      );
+      const overlayUv = baseUv
+        .mul(uniforms.overlayTextureScale)
+        .add(uniforms.overlayTextureOffset);
+      const overlaySample = sampleAuxTextureNode(
+        uniforms.overlayTextureSource,
+        uniforms.overlayTextureSampleDimension,
+        overlayUv,
+        uniforms.overlayTextureVolumeSliceZ,
+      ).rgb;
+      const overlayColor = mix(
+        overlaySample,
+        vec3(1).sub(overlaySample),
+        step(0.5, uniforms.overlayTextureInvert),
+      );
+      const overlayAmount = clamp(uniforms.overlayTextureAmount, 0, 1.5);
+      const overlayReplace = overlayColor;
+      const overlayMixAmount = clamp(overlayAmount, 0, 1);
+      const overlayMix = mix(color, overlayColor, overlayMixAmount);
+      const overlayAdd = min(
+        vec3(1),
+        color.add(overlayColor.mul(overlayAmount)),
+      );
+      const overlayMultiply = color.mul(
+        mix(vec3(1), overlayColor, overlayMixAmount),
+      );
+      const overlayResult = select(
+        uniforms.overlayTextureMode.lessThan(1.5),
+        overlayReplace,
+        select(
+          uniforms.overlayTextureMode.lessThan(2.5),
+          overlayMix,
+          select(
+            uniforms.overlayTextureMode.lessThan(3.5),
+            overlayAdd,
+            overlayMultiply,
+          ),
+        ),
+      );
+      color.assign(mix(color, overlayResult, overlayMask));
+
+      const brightenMask = max(
+        step(0.01, uniforms.brighten),
+        step(0.01, uniforms.brightenBoost),
+      );
+      const brightened = min(
+        vec3(1),
+        color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
+      );
+      color.assign(mix(color, brightened, brightenMask));
+      color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
+      const centerMask = clamp(baseUv.sub(0.5).length().mul(400), 0, 1);
+      color.assign(
+        color.mul(
+          mix(
+            float(1),
+            float(0.97).add(centerMask.mul(0.03)),
+            step(0.5, uniforms.darkenCenter),
+          ),
+        ),
+      );
+      color.assign(
+        mix(
+          color,
+          abs(color.sub(0.5)).mul(1.5),
+          clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
+        ),
+      );
+      color.assign(
+        mix(
+          color,
+          vec3(1).sub(color),
+          clamp(max(uniforms.invert, uniforms.invertBoost), 0, 1),
+        ),
+      );
+      const stereoEnabled = step(0.5, uniforms.redBlueStereo);
+      const stereoOffset = float(0.003).add(uniforms.signalEnergy.mul(0.003));
+      const leftStereo = uniforms.previousTex.sample(
+        sampleUvNode(
+          previousUv.sub(vec2(stereoOffset, 0)),
+          uniforms.textureWrap,
+        ),
+      ).rgb;
+      const rightStereo = uniforms.previousTex.sample(
+        sampleUvNode(
+          previousUv.add(vec2(stereoOffset, 0)),
+          uniforms.textureWrap,
+        ),
+      ).rgb;
+      const stereoColor = vec3(leftStereo.r, rightStereo.g, rightStereo.b);
+      color.assign(mix(color, stereoColor, stereoEnabled.mul(0.85)));
+    }
 
     const gammaAdjusted = pow(
       max(color, vec3(0)),

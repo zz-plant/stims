@@ -22,6 +22,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 | --- | --- |
 | Start dev server | `bun run dev` |
 | Warm an agent session stack | `bun run session:codex -- --profile review` |
+| Route a task to a local model helper | `bun run model:codex -- --mode auto --task "triage a preset bug" --no-exec` |
 | Start dev server on all interfaces | `bun run dev:host` |
 | WebGPU-focused local session | `bun run dev:webgpu` |
 | Full quality gate | `bun run check` |
@@ -46,6 +47,9 @@ Profiles:
 
 - `fast` warms the fast local model role and starts the dev server
 - `review` warms the fast and quality local model roles, starts the dev server, and starts `bun run typecheck:watch`
+- `compat` warms the fast and quality local model roles, starts the dev server, and starts `bun run test:compat --watch`
+- `integration` warms the fast and quality local model roles, starts the dev server, and starts `bun run test:integration --watch`
+- `parity` warms the fast and quality local model roles and keeps the dev server hot for capture and perf runs
 - `visual` warms the fast local model role and starts the dev server for browser QA
 - `full` warms the fast and quality local model roles, starts the dev server, and starts a unit-test watcher
 
@@ -59,6 +63,27 @@ bun run session:codex -- --port 4173 --stop
 ```
 
 The session helper only warms models when local LM Studio helper commands are available. If they are not present, it degrades cleanly to just the long-lived Bun processes.
+
+## Local model routing
+
+Use the dedicated routing helper when you want a repo-local bridge into the machine's LM Studio helper stack:
+
+```bash
+bun run model:codex -- --mode auto --task "review a renderer regression" --no-exec
+```
+
+Modes:
+
+- `triage` prefers the fast local model role
+- `review` prefers the quality local model role
+- `embed` prefers the embedding local model role
+- `auto` uses `lmstudio-route` when available, then falls back to `triage`
+
+Check helper availability with:
+
+```bash
+bun run model:codex -- --status
+```
 
 ## Compatibility capture workflow
 

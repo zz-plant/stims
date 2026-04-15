@@ -6,6 +6,8 @@ import {
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
 import {
+  closePlayToyBrowserSession,
+  createPlayToyBrowserSession,
   type PlayToyOptions,
   type PlayToyPerformanceMetrics,
   type PlayToyResult,
@@ -337,16 +339,27 @@ export async function runCertificationCorpusPerfSuite({
 
   const reportDir = path.join(outputDir, PERF_REPORT_DIR);
   fs.mkdirSync(reportDir, { recursive: true });
+  const browserSession = await createPlayToyBrowserSession({
+    headless,
+    rendererProfile: 'webgpu',
+  });
 
-  for (const request of requests) {
-    const result = await playToy(request.playToy);
-    const reportPath = buildPerfReportPath(outputDir, request.id);
-    const report = buildPerfReport({
-      request,
-      result,
-      reportPath,
-    });
-    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+  try {
+    for (const request of requests) {
+      const result = await playToy({
+        ...request.playToy,
+        browserSession,
+      });
+      const reportPath = buildPerfReportPath(outputDir, request.id);
+      const report = buildPerfReport({
+        request,
+        result,
+        reportPath,
+      });
+      fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+    }
+  } finally {
+    await closePlayToyBrowserSession(browserSession);
   }
 
   const rankedReports = rankCertificationCorpusPerfReports(

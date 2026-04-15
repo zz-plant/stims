@@ -242,17 +242,31 @@ export function formatAudioSourceLabel(source: AudioSource | undefined | null) {
 }
 
 export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
-  if (
-    entry.expectedFidelityClass === 'exact' ||
-    entry.expectedFidelityClass === 'near-exact'
-  ) {
-    return 'Closest to original';
+  const visualCertification = entry.visualCertification;
+
+  if (visualCertification?.status === 'certified' && visualCertification.measured) {
+    if (
+      entry.expectedFidelityClass === 'exact' ||
+      entry.expectedFidelityClass === 'near-exact'
+    ) {
+      return 'Measured parity';
+    }
+    return 'Measured approximation';
   }
   if (
-    entry.expectedFidelityClass === 'partial' ||
-    entry.expectedFidelityClass === 'fallback'
+    entry.expectedFidelityClass === 'fallback' ||
+    entry.supports?.webgpu === false
   ) {
-    return 'Smooth on more devices';
+    return 'Fallback path';
+  }
+  if (
+    visualCertification?.requiredBackend === 'webgpu' &&
+    visualCertification.status !== 'certified'
+  ) {
+    return 'Runtime checked';
+  }
+  if (entry.expectedFidelityClass === 'partial') {
+    return 'Approximate match';
   }
   if (entry.supports?.webgpu) {
     return 'Extra detail ready';
@@ -261,17 +275,34 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
 }
 
 export function formatPresetSupportNote(entry: PresetCatalogEntry) {
-  if (
-    entry.expectedFidelityClass === 'exact' ||
-    entry.expectedFidelityClass === 'near-exact'
-  ) {
-    return 'Best match for the original look on capable hardware.';
+  const visualCertification = entry.visualCertification;
+
+  if (visualCertification?.status === 'certified' && visualCertification.measured) {
+    if (
+      entry.expectedFidelityClass === 'exact' ||
+      entry.expectedFidelityClass === 'near-exact'
+    ) {
+      return 'Measured against the reference render on WebGPU.';
+    }
+    return 'Measured against the reference render, with known approximations.';
   }
   if (
-    entry.expectedFidelityClass === 'partial' ||
-    entry.expectedFidelityClass === 'fallback'
+    entry.expectedFidelityClass === 'fallback' ||
+    entry.supports?.webgpu === false
   ) {
-    return 'Adjusted to run well across more browsers and devices.';
+    return 'Uses a fallback renderer or a simplified path until WebGPU parity improves.';
+  }
+  if (
+    visualCertification?.requiredBackend === 'webgpu' &&
+    visualCertification.status !== 'certified'
+  ) {
+    return visualCertification.measured
+      ? (visualCertification.reasons[0] ??
+          'Measured WebGPU parity did not pass yet; this is the current runtime output.')
+      : 'Runs on WebGPU, but measured parity is still pending.';
+  }
+  if (entry.expectedFidelityClass === 'partial') {
+    return 'Runs in the browser with visible approximations.';
   }
   if (entry.supports?.webgpu) {
     return 'Adds extra detail when newer GPU features are available.';
@@ -281,7 +312,7 @@ export function formatPresetSupportNote(entry: PresetCatalogEntry) {
 
 export function getPresetCardSupportLabel(entry: PresetCatalogEntry) {
   const label = formatPresetSupportLabel(entry);
-  return label === 'Smooth on more devices' ? null : label;
+  return label === 'Smooth playback' ? null : label;
 }
 
 export function mapRuntimeCatalogEntry(
@@ -300,6 +331,7 @@ export function mapRuntimeCatalogEntry(
         : undefined,
     lastOpenedAt: entry.lastOpenedAt,
     expectedFidelityClass: entry.fidelityClass,
+    visualCertification: entry.visualCertification,
     supports: {
       webgl: entry.supports.webgl.status === 'supported',
       webgpu: entry.supports.webgpu.status === 'supported',

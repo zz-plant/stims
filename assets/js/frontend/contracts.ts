@@ -1,3 +1,5 @@
+import type { MilkdropVisualCertification } from '../milkdrop/types.ts';
+
 export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube';
 
 export type PanelState = 'browse' | 'editor' | 'inspector' | 'settings' | null;
@@ -39,6 +41,7 @@ export type PresetCatalogEntry = {
   historyIndex?: number;
   lastOpenedAt?: number;
   expectedFidelityClass?: string;
+  visualCertification?: MilkdropVisualCertification;
   supports?: {
     webgl?: boolean;
     webgpu?: boolean;

@@ -168,7 +168,7 @@ export function buildBorders(state: MutableState): MilkdropBorderVisual[] {
         state.ob_b ?? 1,
         state.ob_a ?? 0.8,
       ),
-      alpha: clamp(state.ob_a ?? 0.8, 0.02, 1),
+      alpha: clamp(state.ob_a ?? 0.8, 0, 1),
       styled: (state.ob_border ?? 0) > 0.5,
     });
   }
@@ -182,7 +182,7 @@ export function buildBorders(state: MutableState): MilkdropBorderVisual[] {
         state.ib_b ?? 1,
         state.ib_a ?? 0.76,
       ),
-      alpha: clamp(state.ib_a ?? 0.76, 0.02, 1),
+      alpha: clamp(state.ib_a ?? 0.76, 0, 1),
       styled: (state.ib_border ?? 0) > 0.5,
     });
   }

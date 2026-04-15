@@ -2,7 +2,12 @@ import {
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
-import { type PlayToyOptions, playToy } from './play-toy.ts';
+import {
+  closePlayToyBrowserSession,
+  createPlayToyBrowserSession,
+  type PlayToyOptions,
+  playToy,
+} from './play-toy.ts';
 
 type CaptureCertificationCorpusOptions = {
   repoRoot: string;
@@ -76,9 +81,22 @@ export async function captureCertificationCorpus(
 ) {
   const requests = buildCertificationCorpusCaptureRequests(options);
   const results = [];
+  const browserSession = await createPlayToyBrowserSession({
+    headless: options.headless,
+    rendererProfile: 'webgpu',
+  });
 
-  for (const request of requests) {
-    results.push(await playToy(request));
+  try {
+    for (const request of requests) {
+      results.push(
+        await playToy({
+          ...request,
+          browserSession,
+        }),
+      );
+    }
+  } finally {
+    await closePlayToyBrowserSession(browserSession);
   }
 
   return {

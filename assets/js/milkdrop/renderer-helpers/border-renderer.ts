@@ -70,7 +70,7 @@ export function createBorderObject(
       new ShapeGeometry(fillShape),
       new MeshBasicMaterial({
         transparent: true,
-        opacity: Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+        opacity: border.alpha * 0.45 * alphaMultiplier,
         side: DoubleSide,
       }),
     ),
@@ -78,7 +78,7 @@ export function createBorderObject(
   helpers.setMaterialColor(
     fill.material,
     border.color,
-    Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+    border.alpha * 0.45 * alphaMultiplier,
   );
   fill.position.z = 0.285;
   group.add(fill);
@@ -189,7 +189,7 @@ export function updateBorderFill(
   helpers.setMaterialColor(
     object.material as MeshBasicMaterial,
     border.color,
-    Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+    border.alpha * 0.45 * alphaMultiplier,
   );
   object.position.z = 0.285;
 }

@@ -824,7 +824,7 @@ class InstancedBorderBatch {
         scale: 1,
         z: 0.285,
         color: border.color,
-        alpha: Math.max(0.08, border.alpha * 0.45) * alphaMultiplier,
+        alpha: border.alpha * 0.45 * alphaMultiplier,
       });
       outlines.push({
         inset,
@@ -1323,6 +1323,16 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     return target;
   }
 
+  private clearWaveTarget(key: string) {
+    const target = this.waveTargets.get(key);
+    if (!target) {
+      return;
+    }
+    target.dispose();
+    this.root.remove(target.group);
+    this.waveTargets.delete(key);
+  }
+
   private getShapeTarget(key: string) {
     let target = this.shapeTargets.get(key);
     if (!target) {
@@ -1408,6 +1418,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     _group: Group,
     waves: MilkdropProceduralCustomWaveVisual[],
   ) {
+    if (waves.some((wave) => wave.fieldProgram !== null)) {
+      this.clearWaveTarget('procedural-custom-wave');
+      return false;
+    }
     this.resetSegmentUploads();
     for (const wave of waves) {
       (wave.additive
