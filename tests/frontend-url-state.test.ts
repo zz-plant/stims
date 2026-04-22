@@ -41,6 +41,23 @@ describe('frontend url state', () => {
     expect(state.audioSource).toBe('microphone');
   });
 
+  test('prefers canonical tool over legacy panel when both are present', () => {
+    const state = readSessionRouteState(
+      'https://toil.fyi/?tool=settings&panel=looks',
+    );
+
+    expect(state.panel).toBe('settings');
+  });
+
+  test('normalizes canonical values case-insensitively', () => {
+    const state = readSessionRouteState(
+      'https://toil.fyi/?tool=EDITOR&audio=YOUTUBE',
+    );
+
+    expect(state.panel).toBe('editor');
+    expect(state.audioSource).toBe('youtube');
+  });
+
   test('preserves unrelated query params while writing canonical urls', () => {
     const url = buildCanonicalUrl(
       {

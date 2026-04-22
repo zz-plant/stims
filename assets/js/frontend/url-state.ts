@@ -16,6 +16,17 @@ const VALID_AUDIO_SOURCES = new Set<AudioSource>([
   'tab',
   'youtube',
 ]);
+
+const LEGACY_PANEL_ALIASES: Record<string, Exclude<PanelState, null>> = {
+  looks: 'browse',
+  inspect: 'inspector',
+};
+
+const LEGACY_AUDIO_ALIASES: Record<string, AudioSource> = {
+  sample: 'demo',
+  mic: 'microphone',
+};
+
 const SESSION_ROUTE_SEARCH_KEYS = [
   'experience',
   'panel',
@@ -54,46 +65,31 @@ function readSearchValue(value: unknown) {
   return null;
 }
 
-function normalizePanel(value: unknown) {
+function normalizeSearchEnum<T extends string>(
+  value: unknown,
+  validValues: Set<T>,
+  aliases: Record<string, T> = {},
+) {
   const parsedValue = readSearchValue(value);
   const normalized = parsedValue?.trim().toLowerCase() ?? '';
   if (!normalized) {
     return null;
   }
 
-  const mappedValue =
-    normalized === 'looks'
-      ? 'browse'
-      : normalized === 'inspect'
-        ? 'inspector'
-        : normalized;
-
-  if (!VALID_PANELS.has(mappedValue as Exclude<PanelState, null>)) {
+  const mappedValue = aliases[normalized] ?? normalized;
+  if (!validValues.has(mappedValue as T)) {
     return null;
   }
 
-  return mappedValue as Exclude<PanelState, null>;
+  return mappedValue as T;
+}
+
+function normalizePanel(value: unknown) {
+  return normalizeSearchEnum(value, VALID_PANELS, LEGACY_PANEL_ALIASES);
 }
 
 function normalizeAudioSource(value: unknown) {
-  const parsedValue = readSearchValue(value);
-  const normalized = parsedValue?.trim().toLowerCase() ?? '';
-  if (!normalized) {
-    return null;
-  }
-
-  const mappedValue =
-    normalized === 'sample'
-      ? 'demo'
-      : normalized === 'mic'
-        ? 'microphone'
-        : normalized;
-
-  if (!VALID_AUDIO_SOURCES.has(mappedValue as AudioSource)) {
-    return null;
-  }
-
-  return mappedValue as AudioSource;
+  return normalizeSearchEnum(value, VALID_AUDIO_SOURCES, LEGACY_AUDIO_ALIASES);
 }
 
 export function normalizeCollectionTag(value: unknown) {
