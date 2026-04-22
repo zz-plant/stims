@@ -62,6 +62,27 @@ export function createLibraryView({
     return cleanup;
   };
 
+  const registerEventListener = (target, type, listener, options) => {
+    if (!target || typeof target.addEventListener !== 'function') {
+      return;
+    }
+
+    if (typeof AbortController === 'function') {
+      const controller = new AbortController();
+      target.addEventListener(type, listener, {
+        ...options,
+        signal: controller.signal,
+      });
+      registerCleanup(() => controller.abort());
+      return;
+    }
+
+    target.addEventListener(type, listener, options);
+    registerCleanup(() => {
+      target.removeEventListener(type, listener, options);
+    });
+  };
+
   const runCleanupStack = () => {
     while (cleanupStack.length > 0) {
       const cleanup = cleanupStack.pop();
@@ -502,10 +523,7 @@ export function createLibraryView({
       handleOpenToy(toy, event);
     };
 
-    list.addEventListener('click', handleCardClick);
-    registerCleanup(() => {
-      list.removeEventListener('click', handleCardClick);
-    });
+    registerEventListener(list, 'click', handleCardClick);
 
     if (enableKeyboardHandlers) {
       const handleCardKeydown = (event) => {
@@ -534,10 +552,7 @@ export function createLibraryView({
         handleOpenToy(toy, event);
       };
 
-      list.addEventListener('keydown', handleCardKeydown);
-      registerCleanup(() => {
-        list.removeEventListener('keydown', handleCardKeydown);
-      });
+      registerEventListener(list, 'keydown', handleCardKeydown);
     }
 
     return null;
@@ -659,10 +674,7 @@ export function createLibraryView({
         applyState(nextState, { render: true });
         filterPresenter.syncRefineDisclosure();
       };
-      window.addEventListener('popstate', handlePopState);
-      registerCleanup(() => {
-        window.removeEventListener('popstate', handlePopState);
-      });
+      registerEventListener(window, 'popstate', handlePopState);
 
       if (
         typeof window !== 'undefined' &&
@@ -672,13 +684,11 @@ export function createLibraryView({
         const handleViewportChange = () =>
           filterPresenter.syncRefineDisclosure();
         if (typeof narrowViewportQuery.addEventListener === 'function') {
-          narrowViewportQuery.addEventListener('change', handleViewportChange);
-          registerCleanup(() => {
-            narrowViewportQuery.removeEventListener(
-              'change',
-              handleViewportChange,
-            );
-          });
+          registerEventListener(
+            narrowViewportQuery,
+            'change',
+            handleViewportChange,
+          );
         } else if (typeof narrowViewportQuery.addListener === 'function') {
           narrowViewportQuery.addListener(handleViewportChange);
           registerCleanup(() => {
