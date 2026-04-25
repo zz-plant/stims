@@ -19,6 +19,7 @@ test('tracks rolling performance metrics and exposes p95 frame time', () => {
     averageRenderMs: 14,
     p95FrameMs: 30,
     maxFrameMs: 30,
+    gpuTimings: null,
   });
 });
 
@@ -36,6 +37,7 @@ test('buildAgentMilkdropDebugSnapshot carries performance metrics', () => {
       averageRenderMs: 10,
       p95FrameMs: 17,
       maxFrameMs: 18,
+      gpuTimings: null,
     },
   });
 
@@ -47,6 +49,7 @@ test('buildAgentMilkdropDebugSnapshot carries performance metrics', () => {
     averageRenderMs: 10,
     p95FrameMs: 17,
     maxFrameMs: 18,
+    gpuTimings: null,
   });
 });
 
@@ -108,6 +111,7 @@ test('presentation controller throttles agent debug snapshot refreshes', () => {
       averageRenderMs: 8,
       p95FrameMs: 12,
       maxFrameMs: 12,
+      gpuTimings: null,
     }),
   });
 

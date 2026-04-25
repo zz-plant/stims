@@ -11,6 +11,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 - Agent bootstrap and handoffs: [`agents/agent-handoffs.md`](./agents/agent-handoffs.md)
 - Day-to-day implementation: [`DEVELOPMENT.md`](./DEVELOPMENT.md)
 - Runtime details: [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
+- Rendering and verification matrix: [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md)
 - Successor workstreams: [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md)
 - projectM parity roadmap: [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md)
 - projectM parity backlog: [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md)
@@ -21,6 +22,7 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 
 - [`DEVELOPMENT.md`](./DEVELOPMENT.md)
 - [`MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
+- [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md)
 - [`MILKDROP_SUCCESSOR_WORKSTREAMS.md`](./MILKDROP_SUCCESSOR_WORKSTREAMS.md)
 - [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md)
 - [`MILKDROP_PROJECTM_PARITY_BACKLOG.md`](./MILKDROP_PROJECTM_PARITY_BACKLOG.md)

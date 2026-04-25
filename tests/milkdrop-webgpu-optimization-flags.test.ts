@@ -115,6 +115,7 @@ describe('milkdrop webgpu descriptor gating', () => {
       proceduralMotionVectors: false,
       directFeedbackShaders: false,
       descriptorFallbackToWebgl: true,
+      gpuComputeVM: true,
     });
 
     expect(gated).toEqual({
