@@ -3071,3 +3071,15 @@ details.stims-shell__sheet-footer .stims-shell__session-actions {
   gap: 8px;
   padding: 0 0 8px;
 }
+
+.stims-shell__audio-bridge-link {
+  align-self: flex-start;
+  padding: 6px 10px;
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.stims-shell__audio-bridge-link:hover,
+.stims-shell__audio-bridge-link:focus-visible {
+  opacity: 1;
+}

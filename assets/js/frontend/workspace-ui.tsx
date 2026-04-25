@@ -15,7 +15,6 @@ import type {
 } from './contracts.ts';
 import {
   describePresetMood,
-  formatAudioSourceLabel,
   formatPresetSupportNote,
   getPresetCardSupportLabel,
   getQualityImpactSummary,
@@ -27,6 +26,10 @@ import {
   type StarterPreset,
   TOOL_TABS,
 } from './workspace-helpers.ts';
+
+function describeQuickLook(preset: QualityPreset): string {
+  return getQualityImpactSummary(preset).replace(/^What changes:\s*/u, '');
+}
 
 type PresetArtworkTone =
   | 'bright'
@@ -423,9 +426,6 @@ export function WorkspaceLaunchPanel({
         summary: 'Something you opened recently and can jump back into.',
       })),
   ].slice(0, 3);
-  const featuredPresetSupportLabel = featuredPreset
-    ? getPresetCardSupportLabel(featuredPreset)
-    : null;
 
   return (
     <div className={rootClassName} data-audio-controls>
@@ -495,26 +495,13 @@ export function WorkspaceLaunchPanel({
           >
             <div className="stims-shell__launch-recommendation-top">
               <p className="stims-shell__section-label">Featured pick</p>
-              <div className="stims-shell__launch-badge-row">
-                <span className="stims-shell__launch-badge">Curated</span>
-                {featuredPresetSupportLabel ? (
-                  <span className="stims-shell__launch-badge">
-                    {featuredPresetSupportLabel}
-                  </span>
-                ) : null}
-              </div>
             </div>
             <PresetArtwork entry={featuredPreset} />
             <div className="stims-shell__launch-recommendation-copy">
               <strong>{featuredPreset.title}</strong>
               <span className="stims-shell__meta-copy">
-                {describePresetMood(featuredPreset)} ·{' '}
-                {formatPresetSupportNote(featuredPreset)}
+                {describePresetMood(featuredPreset)}
               </span>
-            </div>
-            <div className="stims-shell__launch-recommendation-footer">
-              <span>Easy on demo audio</span>
-              <span>Switch to live input later</span>
             </div>
           </button>
         ) : null}
@@ -800,61 +787,37 @@ export function WorkspaceStagePanel({
                   {stageSummary}
                 </p>
               </div>
-              <div className="stims-shell__frame-sidecar">
-                <div className="stims-shell__session-meta">
-                  <span className="stims-shell__meta-pill">
-                    {backend === 'webgpu'
-                      ? 'Full detail'
-                      : backend === 'webgl'
-                        ? 'Lighter render'
-                        : 'Starting up'}
-                  </span>
-                  <span className="stims-shell__meta-pill">
-                    {formatAudioSourceLabel(audioSource)}
-                  </span>
+              {audioSource === 'demo' ? (
+                <div className="stims-shell__frame-sidecar">
+                  <button
+                    type="button"
+                    className="stims-shell__text-button stims-shell__audio-bridge-link"
+                    onClick={onToggleExtendedSources}
+                  >
+                    {showExtendedSources
+                      ? 'Hide sources'
+                      : 'Switch to your music →'}
+                  </button>
+                  {showExtendedSources ? (
+                    <AudioSourcePanel
+                      engineReady={engineReady}
+                      onAudioStart={onAudioStart}
+                      onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
+                      onLoadYouTube={onLoadYouTube}
+                      onYoutubeUrlChange={onYoutubeUrlChange}
+                      onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
+                      recentYouTubeVideos={recentYouTubeVideos}
+                      youtubeCanLoad={youtubeCanLoad}
+                      youtubeFeedback={youtubeFeedback}
+                      youtubeInputInvalid={youtubeInputInvalid}
+                      youtubeLoading={youtubeLoading}
+                      youtubePreviewRef={youtubePreviewRef}
+                      youtubeReady={youtubeReady}
+                      youtubeUrl={youtubeUrl}
+                    />
+                  ) : null}
                 </div>
-                {audioSource === 'demo' ? (
-                  <section className="stims-shell__audio-bridge">
-                    <div className="stims-shell__audio-bridge-copy">
-                      <p className="stims-shell__section-label">
-                        Switch to your music
-                      </p>
-                      <p className="stims-shell__meta-copy">
-                        Demo audio is running. Bring in your microphone, this
-                        tab, or a YouTube link when you want the canvas to
-                        follow your own sound.
-                      </p>
-                    </div>
-                    <div className="stims-shell__audio-bridge-actions">
-                      <button
-                        type="button"
-                        className="cta-button"
-                        onClick={onToggleExtendedSources}
-                      >
-                        {showExtendedSources ? 'Hide sources' : 'Use my music'}
-                      </button>
-                    </div>
-                    {showExtendedSources ? (
-                      <AudioSourcePanel
-                        engineReady={engineReady}
-                        onAudioStart={onAudioStart}
-                        onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
-                        onLoadYouTube={onLoadYouTube}
-                        onYoutubeUrlChange={onYoutubeUrlChange}
-                        onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
-                        recentYouTubeVideos={recentYouTubeVideos}
-                        youtubeCanLoad={youtubeCanLoad}
-                        youtubeFeedback={youtubeFeedback}
-                        youtubeInputInvalid={youtubeInputInvalid}
-                        youtubeLoading={youtubeLoading}
-                        youtubePreviewRef={youtubePreviewRef}
-                        youtubeReady={youtubeReady}
-                        youtubeUrl={youtubeUrl}
-                      />
-                    ) : null}
-                  </section>
-                ) : null}
-              </div>
+              ) : null}
             </div>
           ) : null}
           {!liveMode ? (
@@ -1207,7 +1170,7 @@ function SettingsSheetPanel({
               >
                 <strong>{preset.label}</strong>
                 <span className="stims-shell__meta-copy">
-                  {getQualityImpactSummary(preset)}
+                  {describeQuickLook(preset)}
                 </span>
               </button>
             </li>
@@ -1229,7 +1192,7 @@ function SettingsSheetPanel({
           ))}
         </select>
         <p className="stims-shell__meta-copy">
-          {qualityPreset.description ?? getQualityImpactSummary(qualityPreset)}
+          {qualityPreset.description ?? describeQuickLook(qualityPreset)}
         </p>
       </section>
 

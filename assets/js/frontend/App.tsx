@@ -10,10 +10,7 @@ import {
   subscribeToFullscreenChange,
   toggleElementFullscreen,
 } from './fullscreen.ts';
-import {
-  describePresetMood,
-  formatPresetSupportLabel,
-} from './workspace-helpers.ts';
+import { describePresetMood } from './workspace-helpers.ts';
 import {
   useWorkspaceRouteState,
   useWorkspaceSessionState,
@@ -133,9 +130,7 @@ export function StimsWorkspaceApp() {
   const stageEyebrow = loadingRequestedPreset
     ? 'Loading preset'
     : liveMode
-      ? currentAudioSource === 'demo'
-        ? 'Demo is playing'
-        : 'Now playing'
+      ? 'Now playing'
       : 'Ready when you are';
   const stageTitle = loadingRequestedPreset
     ? 'Loading preset'
@@ -147,11 +142,11 @@ export function StimsWorkspaceApp() {
   const stageSummary = loadingRequestedPreset
     ? `Loading ${routeState.presetId}.`
     : selectedPreset
-      ? `${selectedPreset.author || 'Unknown author'} · ${formatPresetSupportLabel(selectedPreset)}`
+      ? selectedPreset.author || 'Unknown author'
       : missingRequestedPreset
         ? 'Start with the featured pick or open the full list.'
         : featuredPreset
-          ? `${describePresetMood(featuredPreset)} · ${formatPresetSupportLabel(featuredPreset)}`
+          ? describePresetMood(featuredPreset)
           : 'Press play with demo audio, or open the full list first.';
 
   useEffect(() => {
