@@ -173,8 +173,7 @@ describe('architecture boundary rules', () => {
       expect(violations).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            source:
-              'assets/js/utils/__tmp-architecture-violation-fixture.tsx',
+            source: 'assets/js/utils/__tmp-architecture-violation-fixture.tsx',
             sourceLayer: 'utils',
             target: 'assets/js/core/render-preferences.ts',
             targetLayer: 'core',
