@@ -59,32 +59,37 @@ describe('Workspace shell UI simplification regression', () => {
       ": 'Press play with demo audio, or open the full list first.';",
     );
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
-    expect(uiSource).toContain('Launch deck');
-    expect(uiSource).toContain('Single-route workspace');
+    expect(uiSource).not.toContain('Launch deck');
+    expect(uiSource).not.toContain('Single-route workspace');
     expect(uiSource).toContain('className="stims-shell__rail-actions"');
     expect(uiSource).toContain('className="stims-shell__stage-dock"');
     expect(uiSource).toContain('Featured pick');
     expect(uiSource).toMatch(/>\s*Shuffle\s*</u);
     expect(uiSource).toContain('Pick something and press play.');
+    expect(uiSource).toContain(
+      'Tap any card to play it. Previews update as they finish loading.',
+    );
+    expect(uiSource).not.toContain("'Preview QA: '");
+    expect(uiSource).not.toContain('Preview QA: {previewSummary');
     expect(uiSource).toContain('Four easy ways to get started.');
     expect(uiSource).toContain('Everything');
     expect(uiSource).toContain('className="stims-shell__frame-chrome"');
     expect(uiSource).toContain('className="stims-shell__frame-header"');
     expect(uiSource).toContain('className="stims-shell__corner-link"');
     expect(uiSource).toMatch(/>\s*Browse\s*</u);
-    expect(uiSource).toContain('Look</span>');
+    expect(uiSource).toContain('Style</span>');
+    expect(uiSource).not.toContain('>Look</span>');
     expect(uiSource).toContain('Or pick an exact render profile');
     expect(uiSource).toContain('Keep things steadier on tricky hardware');
     expect(uiSource).toContain('Use motion controls on supported devices');
     expect(uiSource).toContain('Advanced controls');
-    expect(uiSource).toContain('Fast start');
-    expect(uiSource).toContain('Tuned feel');
-    expect(uiSource).toContain(
+    expect(uiSource).not.toContain('launch-signal-label');
+    expect(uiSource).not.toContain(
       'Desktop-first rendering with a lighter fallback when needed.',
     );
     expect(uiSource).toContain('Start with demo audio first.');
     expect(uiSource).toContain(
-      'Bring in your own music only when you want it.',
+      'Bring in your own sound only when you want it.',
     );
     expect(uiSource).toContain('Use my music');
     expect(uiSource).toMatch(

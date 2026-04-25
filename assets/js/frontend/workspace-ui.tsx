@@ -487,25 +487,6 @@ export function WorkspaceLaunchPanel({
           </div>
         </div>
 
-        <div className="stims-shell__launch-signals">
-          <article className="stims-shell__launch-signal">
-            <span className="stims-shell__launch-signal-label">Fast start</span>
-            <strong>Demo audio gets everything moving right away.</strong>
-          </article>
-          <article className="stims-shell__launch-signal">
-            <span className="stims-shell__launch-signal-label">
-              Live switch
-            </span>
-            <strong>Bring in your own music only when you want it.</strong>
-          </article>
-          <article className="stims-shell__launch-signal">
-            <span className="stims-shell__launch-signal-label">Tuned feel</span>
-            <strong>
-              Desktop-first rendering with a lighter fallback when needed.
-            </strong>
-          </article>
-        </div>
-
         {featuredPreset ? (
           <button
             type="button"
@@ -696,20 +677,18 @@ export function WorkspaceStagePanel({
                 <span>Stims</span>
                 <small>Sound into motion</small>
               </a>
-              <div className="stims-shell__corner-status">
-                <span className="stims-shell__corner-pill">
-                  {liveMode ? 'Live session' : 'Launch deck'}
-                </span>
-                <span className="stims-shell__corner-pill">
-                  {liveMode
-                    ? backend === 'webgpu'
+              {liveMode ? (
+                <div className="stims-shell__corner-status">
+                  <span className="stims-shell__corner-pill">Live session</span>
+                  <span className="stims-shell__corner-pill">
+                    {backend === 'webgpu'
                       ? 'WebGPU active'
                       : backend === 'webgl'
                         ? 'WebGL active'
-                        : 'Renderer loading'
-                    : 'Single-route workspace'}
-                </span>
-              </div>
+                        : 'Renderer loading'}
+                  </span>
+                </div>
+              ) : null}
             </div>
             <div className="stims-shell__rail-actions">
               {panel ? (
@@ -751,7 +730,7 @@ export function WorkspaceStagePanel({
                       name="sliders"
                       className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
                     />
-                    <span className="stims-shell__stage-tool-label">Look</span>
+                    <span className="stims-shell__stage-tool-label">Style</span>
                   </button>
                   <button
                     type="button"
@@ -988,18 +967,10 @@ function BrowseSheetPanel({
           <div className="stims-shell__browse-toolbar-copy">
             <strong>Pick something and press play.</strong>
             <p className="stims-shell__meta-copy">
-              Preview QA: {previewSummary || 'Waiting on captures'}
+              Tap any card to play it. Previews update as they finish loading.
             </p>
           </div>
           <div className="stims-shell__browse-toolbar-actions">
-            <button
-              type="button"
-              className="stims-shell__text-button"
-              onClick={() => onRefreshPresetPreviews(visiblePreviewIds)}
-              disabled={visiblePreviewIds.length === 0}
-            >
-              Refresh previews
-            </button>
             <button
               type="button"
               className="stims-shell__text-button"
@@ -1008,6 +979,30 @@ function BrowseSheetPanel({
             >
               Shuffle
             </button>
+            <details className="stims-shell__browse-toolbar-extras">
+              <summary
+                className="stims-shell__text-button"
+                aria-label="More browse tools"
+              >
+                More
+              </summary>
+              <div className="stims-shell__browse-toolbar-extras-body">
+                <p
+                  className="stims-shell__meta-copy"
+                  data-testid="browse-preview-summary"
+                >
+                  Previews: {previewSummary || 'waiting on captures'}
+                </p>
+                <button
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={() => onRefreshPresetPreviews(visiblePreviewIds)}
+                  disabled={visiblePreviewIds.length === 0}
+                >
+                  Refresh previews
+                </button>
+              </div>
+            </details>
           </div>
         </div>
 
@@ -1451,19 +1446,43 @@ export function WorkspaceToolSheet({
           </button>
         </div>
 
-        <nav className="stims-shell__tool-tabs" aria-label="Tool sections">
-          {visibleTabs.map((tool) => (
-            <button
-              key={tool}
-              type="button"
-              className="stims-shell__sheet-tab"
-              data-active={String(panel === tool)}
-              onClick={() => onTabChange(tool)}
-            >
-              {getToolLabel(tool)}
-            </button>
-          ))}
-        </nav>
+        {visibleTabs.length > 2 ? (
+          <nav className="stims-shell__tool-tabs" aria-label="Tool sections">
+            {visibleTabs.map((tool) => (
+              <button
+                key={tool}
+                type="button"
+                className="stims-shell__sheet-tab"
+                data-active={String(panel === tool)}
+                onClick={() => onTabChange(tool)}
+              >
+                {getToolLabel(tool)}
+              </button>
+            ))}
+          </nav>
+        ) : (
+          <nav
+            className="stims-shell__tool-jumplink"
+            aria-label="Tool sections"
+          >
+            {visibleTabs
+              .filter((tool) => tool !== panel)
+              .map((tool) => (
+                <button
+                  key={tool}
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={() => onTabChange(tool)}
+                >
+                  {panel === 'browse' && tool === 'settings'
+                    ? 'Open settings →'
+                    : panel === 'settings' && tool === 'browse'
+                      ? '← Browse presets'
+                      : `Open ${getToolLabel(tool).toLowerCase()}`}
+                </button>
+              ))}
+          </nav>
+        )}
 
         <div className="stims-shell__sheet-body">
           {panel === 'browse' ? (
@@ -1506,13 +1525,15 @@ export function WorkspaceToolSheet({
           ) : null}
         </div>
 
-        <div className="stims-shell__sheet-footer">
-          <div className="stims-shell__section-heading">
-            <p className="stims-shell__section-label">Share, save, or import</p>
-            <p className="stims-shell__meta-copy">
+        <details className="stims-shell__sheet-footer">
+          <summary className="stims-shell__sheet-footer-summary">
+            <span className="stims-shell__section-label">
+              Share, save, or import
+            </span>
+            <span className="stims-shell__meta-copy">
               Copy a link, export what is playing, or bring in one of your own.
-            </p>
-          </div>
+            </span>
+          </summary>
           <div className="stims-shell__session-actions">
             <button
               type="button"
@@ -1538,7 +1559,7 @@ export function WorkspaceToolSheet({
               Copy link
             </button>
           </div>
-        </div>
+        </details>
       </aside>
     </>
   );

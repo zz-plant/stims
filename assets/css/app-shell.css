@@ -3008,3 +3008,66 @@ body[data-page="workspace"] {
     width: 100%;
   }
 }
+
+/* UX critique implementation: collapsible footer + browse extras + jumplink */
+details.stims-shell__sheet-footer {
+  display: block;
+}
+
+.stims-shell__sheet-footer-summary {
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+  list-style: none;
+  padding: 8px 0;
+}
+
+.stims-shell__sheet-footer-summary::-webkit-details-marker {
+  display: none;
+}
+
+.stims-shell__sheet-footer-summary::after {
+  content: "▾";
+  position: absolute;
+  right: 0;
+  margin-top: -22px;
+  opacity: 0.6;
+}
+
+details.stims-shell__sheet-footer[open]
+  .stims-shell__sheet-footer-summary::after {
+  content: "▴";
+}
+
+details.stims-shell__sheet-footer .stims-shell__session-actions {
+  margin-top: 10px;
+}
+
+.stims-shell__browse-toolbar-extras {
+  position: relative;
+}
+
+.stims-shell__browse-toolbar-extras > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.stims-shell__browse-toolbar-extras > summary::-webkit-details-marker {
+  display: none;
+}
+
+.stims-shell__browse-toolbar-extras-body {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.stims-shell__tool-jumplink {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 0 8px;
+}
