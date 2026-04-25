@@ -54,7 +54,8 @@ describe('Workspace shell UI simplification regression', () => {
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain(": 'Loading';");
     expect(appSource).toContain(": 'Loading the visualizer.';");
-    expect(appSource).toContain("? 'Demo is playing'");
+    expect(appSource).toContain("? 'Now playing'");
+    expect(appSource).not.toContain("'Demo is playing'");
     expect(appSource).toContain(
       ": 'Press play with demo audio, or open the full list first.';",
     );
@@ -99,11 +100,16 @@ describe('Workspace shell UI simplification regression', () => {
       'Share this tab when prompted to capture audio already playing here.',
     );
     expect(uiSource).toContain('Paste a YouTube link, then start capture');
-    expect(uiSource).toContain('Switch to your music');
-    expect(uiSource).toContain('Demo audio is running.');
-    expect(uiSource).toMatch(
-      /YouTube link when you want the canvas to\s+follow your own sound\./u,
-    );
+    expect(uiSource).toContain('Switch to your music →');
+    expect(uiSource).not.toContain('Demo audio is running.');
+    expect(uiSource).not.toContain('Easy on demo audio');
+    expect(uiSource).not.toContain('Switch to live input later');
+    expect(uiSource).not.toContain('Lighter render');
+    expect(uiSource).not.toContain('Runtime checked');
+    expect(uiSource).not.toContain('launch-badge-row');
+    expect(uiSource).not.toContain('launch-recommendation-footer');
+    expect(uiSource).not.toContain('stims-shell__session-meta');
+    expect(uiSource).not.toContain('stims-shell__audio-bridge"');
     expect(uiSource).toContain('Copy link');
     expect(uiSource).toContain('The editor opens on the stage.');
     expect(uiSource).toContain('The inspector opens on the stage.');
