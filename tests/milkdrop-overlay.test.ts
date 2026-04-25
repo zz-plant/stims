@@ -1018,7 +1018,7 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__preset-preview-status',
     );
     expect(activeMeta?.textContent).toBe('Stims · Recent');
-    expect(activeBadges).toEqual(['Live']);
+    expect(activeBadges).toEqual(['Live', 'projectM verified']);
     expect(activePreviewStatus?.textContent).toBe('WebGL preview');
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(

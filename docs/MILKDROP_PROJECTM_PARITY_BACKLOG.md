@@ -309,13 +309,18 @@ Acceptance criteria:
 
 ## Milestone 9: UI and reporting honesty
 
+Status:
+- In progress
+
 Goal:
 - Make the product surface tell the truth about what is measured and what is inferred.
 
 Primary files to change:
 - [`assets/js/milkdrop/overlay.ts`](../assets/js/milkdrop/overlay.ts)
 - [`assets/js/milkdrop/overlay/inspector-panel.ts`](../assets/js/milkdrop/overlay/inspector-panel.ts)
+- [`assets/js/milkdrop/overlay/preset-row.ts`](../assets/js/milkdrop/overlay/preset-row.ts)
 - [`assets/js/milkdrop/catalog-store-analysis.ts`](../assets/js/milkdrop/catalog-store-analysis.ts)
+- [`assets/js/milkdrop/common-types.ts`](../assets/js/milkdrop/common-types.ts)
 - [`docs/MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 
 Implementation tasks:
@@ -324,6 +329,17 @@ Implementation tasks:
    - measured against projectM
    - inferred from semantic analysis only
 3. Add a preset-level pointer to diff artifacts or parity status when available.
+
+Completed slices:
+- `MilkdropVisualCertification` now carries the measured `mismatchRatio` and `failThreshold` so downstream UI can surface drift figures without re-loading the suite manifest.
+- Catalog projection (`catalog-store-analysis.ts`) plumbs measured ratio/threshold from the suite manifest into each catalog entry's visual certification.
+- Preset rows render a "projectM verified" badge when measured parity passes and a "Drifts from projectM (~X%)" badge when measured parity fails, with the certification reason exposed via tooltip.
+- Inspector panel adds a "Measured drift" metric that shows the measured pixel-mismatch percentage for measured presets and reads "not measured" for inferred-only presets.
+
+Current remaining focus:
+- Expose a per-preset link to checked-in diff/reference artifacts (currently only the certification reason text is surfaced).
+- Reflect the same measured-vs-inferred distinction in catalog rollups and exported diagnostics, not just the row + inspector.
+- Once Milestones 4-8 land more measured passes, audit copy in the inspector + browse list to ensure no remaining wording implies visual parity from semantic-only success.
 
 Acceptance criteria:
 - The UI never implies visual parity when only semantic compatibility is known.

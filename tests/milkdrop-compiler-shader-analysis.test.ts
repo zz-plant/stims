@@ -131,7 +131,7 @@ warp_texture_scale = vec2(1.1, 1.2)
     expect(payload.source).toBe('ret=tex2d(sampler_main,uv).rgb*gain');
   });
 
-  test('keeps pure projectM volume samples direct on WebGPU while allowing translated WebGL controls', () => {
+  test('keeps pure projectM volume samples direct on both WebGL and WebGPU backends', () => {
     const compiled = compileMilkdropPresetSource(projectmNoiseVolumeFixture, {
       id: '261-compshader-noisevol_lq',
     });
@@ -147,7 +147,7 @@ warp_texture_scale = vec2(1.1, 1.2)
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');

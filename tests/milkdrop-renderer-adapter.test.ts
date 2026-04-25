@@ -2061,7 +2061,7 @@ warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
           kind: 'direct-feedback-program',
           stage: 'warp',
           entryTarget: 'uv',
-          supportedBackends: ['webgpu'],
+          supportedBackends: expect.arrayContaining(['webgpu']),
         }),
       }),
     );

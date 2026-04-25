@@ -52,6 +52,8 @@ test('measured visual results override inferred fidelity and evidence tier', () 
         requiredBackend: 'webgpu',
         actualBackend: 'webgpu',
         reasons: [],
+        mismatchRatio: null,
+        failThreshold: null,
       },
     }),
   );
