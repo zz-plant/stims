@@ -22,6 +22,8 @@ type MeasuredVisualPresetResult = {
   certificationReason: string | null;
   requiredBackend: 'webgl' | 'webgpu';
   actualBackend: 'webgl' | 'webgpu' | null;
+  mismatchRatio?: number | null;
+  failThreshold?: number | null;
 };
 
 type MeasuredVisualResultsManifest = {
@@ -179,6 +181,14 @@ export function getValidatedCatalogOverrides(
         reasons: measuredResult.certificationReason
           ? [measuredResult.certificationReason]
           : [],
+        mismatchRatio:
+          typeof measuredResult.mismatchRatio === 'number'
+            ? measuredResult.mismatchRatio
+            : null,
+        failThreshold:
+          typeof measuredResult.failThreshold === 'number'
+            ? measuredResult.failThreshold
+            : null,
       },
     };
   }

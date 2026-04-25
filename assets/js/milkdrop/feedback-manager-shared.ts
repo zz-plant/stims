@@ -27,6 +27,10 @@ import type {
   MilkdropBackendBehavior,
 } from './backend-behavior';
 import {
+  generateGlslFromShaderStatements,
+  injectDirectShaderGlsl,
+} from './compiler/shader-analysis-glsl.ts';
+import {
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
@@ -40,6 +44,7 @@ import {
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
+  MilkdropShaderProgramPayload,
 } from './types';
 
 export type MilkdropCompositeShaderConfig = {
@@ -242,130 +247,7 @@ export function createCompositeFragmentShaderVariant(
     );
 }
 
-class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
-  readonly compositeScene = new Scene();
-  readonly presentScene = new Scene();
-  readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
-  readonly compositeMaterial: ShaderMaterial;
-  readonly presentMaterial: MeshBasicMaterial;
-  readonly sceneTarget: WebGLRenderTarget;
-  readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
-  readonly sceneResolutionScale: number;
-  readonly feedbackResolutionScale: number;
-  readonly profile: FeedbackBackendProfile;
-  readonly auxTextures: SharedAuxTextureMap;
-  adaptiveFeedbackResolutionMultiplier = 1;
-  currentFeedbackResolutionScale: number;
-  viewportWidth: number;
-  viewportHeight: number;
-  private index = 0;
-
-  constructor(
-    width: number,
-    height: number,
-    behavior: MilkdropBackendBehavior,
-  ) {
-    this.camera.position.z = 1;
-    this.viewportWidth = width;
-    this.viewportHeight = height;
-    this.profile = behavior.feedbackProfile;
-    this.sceneResolutionScale = this.profile.sceneResolutionScale;
-    this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
-    this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
-    this.auxTextures = getSharedAuxTextures();
-    this.sceneTarget = createFeedbackRenderTarget(width, height, {
-      resolutionScale: this.sceneResolutionScale,
-      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
-      samples: this.profile.samples,
-    });
-    this.targets = [
-      createFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale,
-        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
-        samples: this.profile.samples,
-      }),
-      createFeedbackRenderTarget(width, height, {
-        resolutionScale: this.currentFeedbackResolutionScale,
-        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
-        samples: this.profile.samples,
-      }),
-    ];
-    this.compositeMaterial = new ShaderMaterial({
-      uniforms: {
-        currentTex: { value: this.sceneTarget.texture },
-        previousTex: { value: this.targets[0].texture },
-        noiseTex: { value: this.auxTextures.noise },
-        simplexTex: { value: this.auxTextures.simplex },
-        voronoiTex: { value: this.auxTextures.voronoi },
-        auraTex: { value: this.auxTextures.aura },
-        causticsTex: { value: this.auxTextures.caustics },
-        patternTex: { value: this.auxTextures.pattern },
-        fractalTex: { value: this.auxTextures.fractal },
-        videoTex: { value: this.auxTextures.video },
-        mixAlpha: { value: 0.18 },
-        videoEchoAlpha: { value: 0 },
-        zoom: { value: 1.02 },
-        videoEchoOrientation: { value: 0 },
-        brighten: { value: 0 },
-        darken: { value: 0 },
-        darkenCenter: { value: 0 },
-        solarize: { value: 0 },
-        invert: { value: 0 },
-        redBlueStereo: { value: 0 },
-        gammaAdj: { value: 1 },
-        textureWrap: { value: 0 },
-        feedbackTexture: { value: 0 },
-        warpScale: { value: 0 },
-        offsetX: { value: 0 },
-        offsetY: { value: 0 },
-        rotation: { value: 0 },
-        zoomMul: { value: 1 },
-        saturation: { value: 1 },
-        contrast: { value: 1 },
-        colorScale: { value: new Color(1, 1, 1) },
-        hueShift: { value: 0 },
-        brightenBoost: { value: 0 },
-        invertBoost: { value: 0 },
-        solarizeBoost: { value: 0 },
-        tint: { value: new Color(1, 1, 1) },
-        feedbackSoftness: { value: this.profile.feedbackSoftness },
-        currentFrameBoost: { value: this.profile.currentFrameBoost },
-        overlayTextureSource: { value: 0 },
-        overlayTextureMode: { value: 0 },
-        overlayTextureSampleDimension: { value: 0 },
-        overlayTextureInvert: { value: 0 },
-        overlayTextureAmount: { value: 0 },
-        overlayTextureScale: { value: new Vector2(1, 1) },
-        overlayTextureOffset: { value: new Vector2(0, 0) },
-        overlayTextureVolumeSliceZ: { value: 0 },
-        warpTextureSource: { value: 0 },
-        warpTextureSampleDimension: { value: 0 },
-        warpTextureAmount: { value: 0 },
-        warpTextureScale: { value: new Vector2(1, 1) },
-        warpTextureOffset: { value: new Vector2(0, 0) },
-        warpTextureVolumeSliceZ: { value: 0 },
-        signalBass: { value: 0 },
-        signalMid: { value: 0 },
-        signalTreb: { value: 0 },
-        signalBeat: { value: 0 },
-        signalBeatPulse: { value: 0 },
-        signalEnergy: { value: 0 },
-        signalTime: { value: 0 },
-        texelSize: {
-          value: new Vector2(
-            1 / Math.max(1, this.sceneTarget.width),
-            1 / Math.max(1, this.sceneTarget.height),
-          ),
-        },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = vec4(position.xy, 0.0, 1.0);
-        }
-      `,
-      fragmentShader: `
+const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
         uniform sampler2D noiseTex;
@@ -501,8 +383,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             return sampleAuxTexture2d(source, wrappedUv);
           }
           float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
-          // Keep tex3D phases fully periodic so modulo-equivalent values stay aligned while the
-          // last atlas segment blends the final slice back to slice 0.
           float wrappedSliceZ = fract(sliceZ);
           float scaledSlice = wrappedSliceZ * sliceCount;
           float sliceIndexA = mod(floor(scaledSlice), sliceCount);
@@ -532,6 +412,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           );
         }
 
+        // --- DIRECT_WARP_START ---
+        // --- DIRECT_WARP_END ---
+
+        // --- DIRECT_COMP_START ---
+        // --- DIRECT_COMP_END ---
+
         void main() {
           vec2 centeredUv = vUv - 0.5;
           float rotSin = sin(rotation);
@@ -541,6 +427,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             centeredUv.x * rotSin + centeredUv.y * rotCos
           );
           vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+
+          // --- DIRECT_WARP_START ---
+          // --- DIRECT_WARP_END ---
+
           vec2 currentUv = applyFeedbackWarp(
             transformedUv + 0.5,
             warpScale,
@@ -620,20 +510,23 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             }
           }
           if (brighten > 0.01 || brightenBoost > 0.01) {
-            color = min(vec3(1.0), color * (1.0 + 0.18 + brightenBoost * 0.35));
+            color = min(vec3(1.0), mix(color, color * (1.0 + 0.18 + brightenBoost * 0.35), clamp(max(brighten, brightenBoost), 0.0, 1.0)));
           }
           if (darken > 0.5) {
-            color = color * 0.82;
+            color = mix(color, color * 0.82, 1.0);
           }
           if (darkenCenter > 0.5) {
-            float centerMask = clamp(length(vUv - vec2(0.5)) * 400.0, 0.0, 1.0);
-            color *= 0.97 + 0.03 * centerMask;
+            float centerDist = length(vUv - vec2(0.5));
+            float centerMask = clamp(1.0 - centerDist * 1.4, 0.0, 1.0);
+            color = mix(color, color * 0.97, smoothstep(0.0, 0.35, centerMask));
           }
           if (solarize > 0.01 || solarizeBoost > 0.01) {
-            color = mix(color, abs(color - 0.5) * 1.5, clamp(max(solarize, solarizeBoost), 0.0, 1.0));
+            float amount = clamp(max(solarize, solarizeBoost), 0.0, 1.0);
+            color = mix(color, abs(color - 0.5) * 2.0, amount);
           }
           if (invert > 0.01 || invertBoost > 0.01) {
-            color = mix(color, 1.0 - color, clamp(max(invert, invertBoost), 0.0, 1.0));
+            float amount = clamp(max(invert, invertBoost), 0.0, 1.0);
+            color = mix(color, 1.0 - color, amount);
           }
           if (redBlueStereo > 0.5) {
             float stereoOffset = 0.003 + signalEnergy * 0.003;
@@ -645,9 +538,61 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
         }
-      `,
-    });
+      `;
 
+class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
+  readonly compositeScene = new Scene();
+  readonly presentScene = new Scene();
+  readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+  readonly compositeMaterial: ShaderMaterial;
+  readonly presentMaterial: MeshBasicMaterial;
+  readonly sceneTarget: WebGLRenderTarget;
+  readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
+  readonly sceneResolutionScale: number;
+  readonly feedbackResolutionScale: number;
+  readonly profile: FeedbackBackendProfile;
+  readonly auxTextures: SharedAuxTextureMap;
+  adaptiveFeedbackResolutionMultiplier = 1;
+  currentFeedbackResolutionScale: number;
+  viewportWidth: number;
+  viewportHeight: number;
+  private lastWarpGlsl: string | null = null;
+  private lastCompGlsl: string | null = null;
+  private index = 0;
+
+  constructor(
+    width: number,
+    height: number,
+    behavior: MilkdropBackendBehavior,
+  ) {
+    this.camera.position.z = 1;
+    this.viewportWidth = width;
+    this.viewportHeight = height;
+    this.profile = behavior.feedbackProfile;
+    this.sceneResolutionScale = this.profile.sceneResolutionScale;
+    this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
+    this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
+    this.auxTextures = getSharedAuxTextures();
+    this.sceneTarget = createFeedbackRenderTarget(width, height, {
+      resolutionScale: this.sceneResolutionScale,
+      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: this.profile.samples,
+    });
+    this.targets = [
+      createFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
+      createFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
+    ];
+    this.compositeMaterial = this.createCompositeMaterial(
+      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+    );
     this.presentMaterial = new MeshBasicMaterial({
       map: this.targets[0].texture,
     });
@@ -658,6 +603,86 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     this.compositeScene.add(quad);
     this.presentScene.add(presentQuad);
+  }
+
+  private createCompositeMaterial(fragmentShader: string): ShaderMaterial {
+    return new ShaderMaterial({
+      uniforms: {
+        currentTex: { value: this.sceneTarget.texture },
+        previousTex: { value: this.targets[0].texture },
+        noiseTex: { value: this.auxTextures.noise },
+        simplexTex: { value: this.auxTextures.simplex },
+        voronoiTex: { value: this.auxTextures.voronoi },
+        auraTex: { value: this.auxTextures.aura },
+        causticsTex: { value: this.auxTextures.caustics },
+        patternTex: { value: this.auxTextures.pattern },
+        fractalTex: { value: this.auxTextures.fractal },
+        videoTex: { value: this.auxTextures.video },
+        mixAlpha: { value: 0.18 },
+        videoEchoAlpha: { value: 0 },
+        zoom: { value: 1.02 },
+        videoEchoOrientation: { value: 0 },
+        brighten: { value: 0 },
+        darken: { value: 0 },
+        darkenCenter: { value: 0 },
+        solarize: { value: 0 },
+        invert: { value: 0 },
+        redBlueStereo: { value: 0 },
+        gammaAdj: { value: 1 },
+        textureWrap: { value: 0 },
+        feedbackTexture: { value: 0 },
+        warpScale: { value: 0 },
+        offsetX: { value: 0 },
+        offsetY: { value: 0 },
+        rotation: { value: 0 },
+        zoomMul: { value: 1 },
+        saturation: { value: 1 },
+        contrast: { value: 1 },
+        colorScale: { value: new Color(1, 1, 1) },
+        hueShift: { value: 0 },
+        brightenBoost: { value: 0 },
+        invertBoost: { value: 0 },
+        solarizeBoost: { value: 0 },
+        tint: { value: new Color(1, 1, 1) },
+        feedbackSoftness: { value: this.profile.feedbackSoftness },
+        currentFrameBoost: { value: this.profile.currentFrameBoost },
+        overlayTextureSource: { value: 0 },
+        overlayTextureMode: { value: 0 },
+        overlayTextureSampleDimension: { value: 0 },
+        overlayTextureInvert: { value: 0 },
+        overlayTextureAmount: { value: 0 },
+        overlayTextureScale: { value: new Vector2(1, 1) },
+        overlayTextureOffset: { value: new Vector2(0, 0) },
+        overlayTextureVolumeSliceZ: { value: 0 },
+        warpTextureSource: { value: 0 },
+        warpTextureSampleDimension: { value: 0 },
+        warpTextureAmount: { value: 0 },
+        warpTextureScale: { value: new Vector2(1, 1) },
+        warpTextureOffset: { value: new Vector2(0, 0) },
+        warpTextureVolumeSliceZ: { value: 0 },
+        signalBass: { value: 0 },
+        signalMid: { value: 0 },
+        signalTreb: { value: 0 },
+        signalBeat: { value: 0 },
+        signalBeatPulse: { value: 0 },
+        signalEnergy: { value: 0 },
+        signalTime: { value: 0 },
+        texelSize: {
+          value: new Vector2(
+            1 / Math.max(1, this.sceneTarget.width),
+            1 / Math.max(1, this.sceneTarget.height),
+          ),
+        },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader,
+    });
   }
 
   get readTarget() {
@@ -678,7 +703,58 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
   }
 
+  setDirectShaderPrograms(
+    warp: MilkdropShaderProgramPayload | null,
+    comp: MilkdropShaderProgramPayload | null,
+  ) {
+    const warpGlsl = warp
+      ? generateGlslFromShaderStatements(warp.statements, 'warp')
+      : null;
+    const compGlsl = comp
+      ? generateGlslFromShaderStatements(comp.statements, 'comp')
+      : null;
+
+    // Skip rebuild if nothing changed
+    if (this.lastWarpGlsl === warpGlsl && this.lastCompGlsl === compGlsl) {
+      return;
+    }
+
+    this.lastWarpGlsl = warpGlsl;
+    this.lastCompGlsl = compGlsl;
+
+    const injectedShader = injectDirectShaderGlsl(
+      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+      warpGlsl,
+      compGlsl,
+    );
+
+    // Preserve current uniform values before disposing old material
+    const oldUniforms = this.compositeMaterial.uniforms;
+    disposeMaterial(this.compositeMaterial);
+
+    // Find and replace the composite mesh material
+    const oldQuad = this.compositeScene.children[0] as Mesh | undefined;
+    if (oldQuad) {
+      this.compositeScene.remove(oldQuad);
+    }
+
+    const newMaterial = this.createCompositeMaterial(injectedShader);
+    // Restore uniform values from old material
+    Object.assign(newMaterial.uniforms, oldUniforms);
+
+    (this as { compositeMaterial: ShaderMaterial }).compositeMaterial =
+      newMaterial;
+    const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
+    this.compositeScene.add(quad);
+  }
+
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
+    // Apply direct shader programs if they changed
+    this.setDirectShaderPrograms(
+      state.shaderPrograms.warp,
+      state.shaderPrograms.comp,
+    );
+
     const uniforms = this.compositeMaterial.uniforms;
     const overlayTextureName = resolveAuxTextureName(
       state.overlayTextureSource,

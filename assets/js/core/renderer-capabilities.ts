@@ -705,3 +705,76 @@ export async function getRendererCapabilities({
 export function getCachedRendererCapabilities() {
   return cachedCapabilities;
 }
+
+/**
+ * Perform a lightweight WebGPU health check suitable for UI diagnostics
+ * and error recovery flows. Returns a structured snapshot without
+ * re-probing the adapter.
+ */
+export type WebGpuHealthSnapshot = {
+  /** Whether WebGPU was the preferred backend on last probe. */
+  optedIntoWebgpu: boolean;
+  /** Whether the current session has an active WebGPU device. */
+  hasDevice: boolean;
+  /** Whether the device was lost and we fell back. */
+  deviceWasLost: boolean;
+  /** The fallback reason code, if applicable. */
+  fallbackReasonCode: RendererFallbackReasonCode | null;
+  /** Human-readable fallback message. */
+  fallbackMessage: string | null;
+  /** Whether we should retry WebGPU on the next session/refresh. */
+  shouldRetry: boolean;
+  /** Whether the environment is force-WebGL (compatibility or gap-guard). */
+  forceWebGL: boolean;
+  /** Capability tier if we have a valid WebGPU summary. */
+  tier: WebGPUCapabilityTier | null;
+  /** Recommended quality preset. */
+  recommendedQuality: 'balanced' | 'hi-fi' | null;
+  /** Known optimization features available. */
+  optimizationFeatures: {
+    shaderF16: boolean;
+    subgroups: boolean;
+    timestampQuery: boolean;
+  };
+};
+
+export function getWebGpuHealthSnapshot(): WebGpuHealthSnapshot {
+  const caps = cachedCapabilities;
+  const optedIntoWebgpu = caps?.preferredBackend === 'webgpu' || false;
+  const hasDevice = Boolean(caps?.device);
+  const deviceWasLost =
+    Boolean(caps?.fallbackReason) &&
+    caps?.fallbackReason?.includes('device was lost') === true;
+  const shouldRetry = caps?.shouldRetryWebGPU ?? false;
+  const forceWebGL = caps?.forceWebGL ?? false;
+
+  return {
+    optedIntoWebgpu,
+    hasDevice,
+    deviceWasLost,
+    fallbackReasonCode: caps?.fallbackReasonCode ?? null,
+    fallbackMessage: caps?.fallbackReason ?? null,
+    shouldRetry,
+    forceWebGL,
+    tier: caps?.webgpu?.performanceTier ?? null,
+    recommendedQuality: caps?.webgpu?.recommendedQualityPreset ?? null,
+    optimizationFeatures: {
+      shaderF16: caps?.webgpu?.features.shaderF16 ?? false,
+      subgroups: caps?.webgpu?.features.subgroups ?? false,
+      timestampQuery: caps?.webgpu?.features.timestampQuery ?? false,
+    },
+  };
+}
+
+/**
+ * Check whether the current environment supports WebGPU at all
+ * (ignoring policy decisions like compatibility mode or gap guards).
+ */
+export function isBrowserWebGpuCapable(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    Boolean((navigator as Navigator & { gpu?: GPU }).gpu) &&
+    typeof (navigator as Navigator & { gpu?: GPU }).gpu?.requestAdapter ===
+      'function'
+  );
+}

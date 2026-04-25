@@ -1083,16 +1083,21 @@ function createCompositeOutputNode(
       );
       const brightened = min(
         vec3(1),
-        color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
+        mix(
+          color,
+          color.mul(float(1.18).add(uniforms.brightenBoost.mul(0.35))),
+          clamp(max(uniforms.brighten, uniforms.brightenBoost), 0, 1),
+        ),
       );
       color.assign(mix(color, brightened, brightenMask));
       color.assign(mix(color, color.mul(0.82), step(0.5, uniforms.darken)));
-      const centerMask = clamp(baseUv.sub(0.5).length().mul(400), 0, 1);
+      const centerDist = baseUv.sub(0.5).length();
+      centerMask = clamp(float(1).sub(centerDist.mul(1.4)), 0, 1);
       color.assign(
         color.mul(
           mix(
             float(1),
-            float(0.97).add(centerMask.mul(0.03)),
+            float(0.97).add(smoothstep(0, 0.35, centerMask).mul(0.03)),
             step(0.5, uniforms.darkenCenter),
           ),
         ),
@@ -1100,7 +1105,7 @@ function createCompositeOutputNode(
       color.assign(
         mix(
           color,
-          abs(color.sub(0.5)).mul(1.5),
+          abs(color.sub(0.5)).mul(2.0),
           clamp(max(uniforms.solarize, uniforms.solarizeBoost), 0, 1),
         ),
       );

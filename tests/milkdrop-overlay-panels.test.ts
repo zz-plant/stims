@@ -9,7 +9,11 @@ import {
   formatInspectorMetrics,
   InspectorPanel,
 } from '../assets/js/milkdrop/overlay/inspector-panel.ts';
-import { getPresetMetaQualifier } from '../assets/js/milkdrop/overlay/preset-row.ts';
+import {
+  formatMeasuredMismatchPercent,
+  getPresetMetaQualifier,
+  getPresetParityBadgeStatus,
+} from '../assets/js/milkdrop/overlay/preset-row.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
@@ -489,5 +493,93 @@ describe('inspector panel formatting', () => {
     expect(panel.metricsElement.textContent).toContain(
       'Primary note: Showing a simpler version. Wave mesh falls back to a simpler path.',
     );
+  });
+
+  test('reports "not measured" drift when no measured certification exists', () => {
+    const compiled = createCompiledPreset();
+    const frameState = createFrameState();
+    const metrics = formatInspectorMetrics({
+      compiled,
+      frameState,
+      backend: 'webgpu',
+    });
+    expect(
+      metrics.find((metric) => metric.label === 'Measured drift')?.value,
+    ).toBe('not measured');
+  });
+
+  test('surfaces the measured drift percentage when a measurement is recorded', () => {
+    const compiled = createCompiledPreset();
+    const frameState = createFrameState();
+    const presetEntry = createCatalogEntry('signal-bloom', 'Signal Bloom');
+    presetEntry.visualCertification = {
+      ...presetEntry.visualCertification,
+      status: 'uncertified',
+      measured: true,
+      source: 'reference-suite',
+      mismatchRatio: 0.62,
+      failThreshold: 0.02,
+      requiredBackend: 'webgpu',
+      actualBackend: 'webgpu',
+      reasons: ['Pixel mismatch ratio 0.62 exceeds tolerance 0.02.'],
+    };
+
+    const metrics = formatInspectorMetrics({
+      compiled,
+      frameState,
+      backend: 'webgpu',
+      presetEntry,
+    });
+    expect(
+      metrics.find((metric) => metric.label === 'Measured drift')?.value,
+    ).toBe('62%');
+    expect(
+      metrics.find((metric) => metric.label === 'Visual certification')?.value,
+    ).toBe('uncertified (measured)');
+  });
+});
+
+describe('preset row parity badges', () => {
+  test('formats measured mismatch ratios as compact percent strings', () => {
+    expect(formatMeasuredMismatchPercent(null)).toBeNull();
+    expect(formatMeasuredMismatchPercent(undefined)).toBeNull();
+    expect(formatMeasuredMismatchPercent(Number.NaN)).toBeNull();
+    expect(formatMeasuredMismatchPercent(0)).toBe('0%');
+    expect(formatMeasuredMismatchPercent(0.0001)).toBe('<1%');
+    expect(formatMeasuredMismatchPercent(0.234)).toBe('23%');
+    expect(formatMeasuredMismatchPercent(0.999)).toBe('100%');
+    expect(formatMeasuredMismatchPercent(2)).toBe('100%');
+    expect(formatMeasuredMismatchPercent(-1)).toBe('0%');
+  });
+
+  test('returns no badge status for inferred-only presets', () => {
+    const preset = createCatalogEntry('inferred', 'Inferred');
+    expect(getPresetParityBadgeStatus(preset)).toBeNull();
+  });
+
+  test('marks measured-and-certified presets as verified', () => {
+    const preset = createCatalogEntry('verified', 'Verified');
+    preset.visualCertification = {
+      ...preset.visualCertification,
+      measured: true,
+      status: 'certified',
+      source: 'reference-suite',
+      mismatchRatio: 0.005,
+      failThreshold: 0.02,
+    };
+    expect(getPresetParityBadgeStatus(preset)).toBe('verified');
+  });
+
+  test('marks measured-but-failing presets as drift', () => {
+    const preset = createCatalogEntry('drift', 'Drift');
+    preset.visualCertification = {
+      ...preset.visualCertification,
+      measured: true,
+      status: 'uncertified',
+      source: 'reference-suite',
+      mismatchRatio: 0.55,
+      failThreshold: 0.02,
+    };
+    expect(getPresetParityBadgeStatus(preset)).toBe('drift');
   });
 });

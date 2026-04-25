@@ -183,6 +183,20 @@ export type MilkdropVisualCertification = {
   requiredBackend: MilkdropRenderBackend | null;
   actualBackend: MilkdropRenderBackend | null;
   reasons: string[];
+  /**
+   * Measured pixel mismatch ratio against the projectM reference image, when a
+   * reference-suite capture exists. Values are in [0, 1] where 0 means a
+   * perfect pixel match and 1 means every measured pixel differed beyond the
+   * tolerance threshold. `null` when no measurement has been recorded yet.
+   */
+  mismatchRatio?: number | null;
+  /**
+   * Pixel-difference tolerance threshold (e.g. 0.02 for "two percent of
+   * pixels are allowed to differ before the preset fails the parity gate")
+   * applied when the suite produced this measurement. `null` when no
+   * measurement has been recorded yet.
+   */
+  failThreshold?: number | null;
 };
 
 export type MilkdropBackendSupportEvidenceCode =

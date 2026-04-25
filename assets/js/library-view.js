@@ -559,8 +559,15 @@ export function createLibraryView({
     resolveChipToken: filterPresenter.resolveChipToken,
     filterLabelCache: new Map(),
     onSearchInput(query) {
-      filterToys(query);
-      stateController.commitState({ replace: true });
+      // Debounce to avoid DOM thrash per keystroke — critical on mobile
+      if (this._searchDebounceTimer) {
+        clearTimeout(this._searchDebounceTimer);
+      }
+      this._searchDebounceTimer = setTimeout(() => {
+        this._searchDebounceTimer = null;
+        filterToys(query);
+        stateController.commitState({ replace: true });
+      }, 150);
     },
     onSearchBlur() {
       if (getState().query.trim() !== lastCommittedQuery) {

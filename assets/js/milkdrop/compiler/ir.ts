@@ -559,7 +559,9 @@ export function createMilkdropIr({
           shaderWarpAnalysis.directProgramStatements.length !==
           shaderWarpAnalysis.statements.length,
         supportedBackends:
-          shaderWarpAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
+          shaderWarpAnalysis.unsupportedLines.length === 0
+            ? ['webgl', 'webgpu']
+            : [],
       })
     : null;
   const compShaderProgram = shaderCompAnalysis.directProgramRequired
@@ -571,7 +573,9 @@ export function createMilkdropIr({
           shaderCompAnalysis.directProgramStatements.length !==
           shaderCompAnalysis.statements.length,
         supportedBackends:
-          shaderCompAnalysis.unsupportedLines.length === 0 ? ['webgpu'] : [],
+          shaderCompAnalysis.unsupportedLines.length === 0
+            ? ['webgl', 'webgpu']
+            : [],
       })
     : null;
   const ignoredFields = [
@@ -640,29 +644,35 @@ export function createMilkdropIr({
       'Shader-text sections include lines outside the supported subset.',
     );
   }
+  const webglCanExecuteDirect =
+    hasDirectShaderPrograms &&
+    (warpShaderProgram === null ||
+      warpShaderProgram.execution.supportedBackends.includes('webgl')) &&
+    (compShaderProgram === null ||
+      compShaderProgram.execution.supportedBackends.includes('webgl'));
+  const webgpuCanExecuteDirect =
+    hasDirectShaderPrograms &&
+    (warpShaderProgram === null ||
+      warpShaderProgram.execution.supportedBackends.includes('webgpu')) &&
+    (compShaderProgram === null ||
+      compShaderProgram.execution.supportedBackends.includes('webgpu'));
   const shaderTextExecution: MilkdropFeatureAnalysis['shaderTextExecution'] =
     hasShaderText
       ? unsupportedShaderText
         ? { webgl: 'unsupported', webgpu: 'unsupported' }
         : {
             webgl: hasDirectShaderPrograms
-              ? webglCanRelyOnTranslatedShaderControls
-                ? 'translated'
-                : 'unsupported'
+              ? webglCanExecuteDirect
+                ? 'direct'
+                : webglCanRelyOnTranslatedShaderControls
+                  ? 'translated'
+                  : 'unsupported'
               : 'translated',
-            webgpu:
-              (warpShaderProgram === null ||
-                warpShaderProgram.execution.supportedBackends.includes(
-                  'webgpu',
-                )) &&
-              (compShaderProgram === null ||
-                compShaderProgram.execution.supportedBackends.includes(
-                  'webgpu',
-                ))
-                ? hasDirectShaderPrograms
-                  ? 'direct'
-                  : 'translated'
-                : 'translated',
+            webgpu: hasDirectShaderPrograms
+              ? webgpuCanExecuteDirect
+                ? 'direct'
+                : 'translated'
+              : 'translated',
           }
       : { webgl: 'none', webgpu: 'none' };
   const featureAnalysis = compatibilityHelpers.buildFeatureAnalysis({
