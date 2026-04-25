@@ -3,11 +3,7 @@
   "presetId": "parity-feedback-orientation-01",
   "title": "Parity Feedback Orientation 01",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "feedback",
-    "video-echo",
-    "orientation"
-  ],
+  "strata": ["feedback", "video-echo", "orientation"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

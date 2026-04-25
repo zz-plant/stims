@@ -65,10 +65,6 @@ export function hasWebGPUCompatibilityGapOverride() {
 export function shouldPreferWebGLForKnownCompatibilityGaps() {
   const requestedRenderer = getRequestedRenderer();
 
-  if (hasWebGPUCompatibilityGapOverride()) {
-    return true;
-  }
-
   if (requestedRenderer === 'webgl') {
     return true;
   }
@@ -77,5 +73,10 @@ export function shouldPreferWebGLForKnownCompatibilityGaps() {
     return !isCertificationSession();
   }
 
-  return false;
+  // Default: prefer WebGL for compatibility
+  if (hasWebGPUCompatibilityGapOverride()) {
+    return false;
+  }
+
+  return true;
 }

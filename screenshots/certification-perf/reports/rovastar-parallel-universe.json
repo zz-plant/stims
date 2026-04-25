@@ -3,11 +3,7 @@
   "presetId": "rovastar-parallel-universe",
   "title": "Rovastar - Parallel Universe",
   "corpusGroup": "bundled-shipped",
-  "strata": [
-    "feedback",
-    "lasers",
-    "external-pack"
-  ],
+  "strata": ["feedback", "lasers", "external-pack"],
   "sourceFamily": "external-pack",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

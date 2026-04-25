@@ -14,9 +14,7 @@
     "averageRenderMs": 0.8792138304363855,
     "sampleCount": 823,
     "adaptation": "steady",
-    "reasons": [
-      "timestamp-query is available for future GPU timing upgrades."
-    ],
+    "reasons": ["timestamp-query is available for future GPU timing upgrades."],
     "renderScaleMultiplier": 1,
     "maxPixelRatioMultiplier": 1,
     "densityMultiplier": 1,

@@ -3,11 +3,7 @@
   "presetId": "eos-glowsticks-v2-03-music",
   "title": "Eo.S. - Glowsticks v2 03 Music",
   "corpusGroup": "bundled-shipped",
-  "strata": [
-    "waveform",
-    "glowsticks",
-    "external-pack"
-  ],
+  "strata": ["waveform", "glowsticks", "external-pack"],
   "sourceFamily": "external-pack",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

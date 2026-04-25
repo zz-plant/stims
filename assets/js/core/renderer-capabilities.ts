@@ -199,21 +199,22 @@ function isGuardedMobileWebGPUEnvironment() {
     return false;
   }
 
+  const nav = navigator as Navigator & { gpu?: GPU; userAgent?: string };
   const hasWebGPU =
-    Boolean((navigator as Navigator & { gpu?: GPU }).gpu) &&
-    typeof (navigator as Navigator & { gpu?: GPU }).gpu?.requestAdapter ===
-      'function';
+    Boolean(nav.gpu) && typeof nav.gpu?.requestAdapter === 'function';
+  const userAgent = nav.userAgent?.toLowerCase() ?? '';
 
-  if (!hasWebGPU) {
-    const userAgent = navigator.userAgent?.toLowerCase() ?? '';
-    return (
-      userAgent.includes('samsungbrowser/') ||
-      userAgent.includes('; wv') ||
-      userAgent.includes('miuibrowser/')
-    );
+  // Guard against known unstable WebGPU implementations even when the API is present
+  if (
+    userAgent.includes('samsungbrowser/') ||
+    userAgent.includes('; wv') ||
+    userAgent.includes('miuibrowser/')
+  ) {
+    return true;
   }
 
-  return false;
+  // Also guard if WebGPU is unavailable on mobile
+  return !hasWebGPU;
 }
 
 function resetCache() {

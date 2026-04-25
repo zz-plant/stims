@@ -3,11 +3,7 @@
   "presetId": "261-compshader-noisevol_lq",
   "title": "261 Compshader Noisevol LQ",
   "corpusGroup": "projectm-upstream",
-  "strata": [
-    "shader-supported",
-    "volume-sampler",
-    "upstream"
-  ],
+  "strata": ["shader-supported", "volume-sampler", "upstream"],
   "sourceFamily": "projectm-fixture",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

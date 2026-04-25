@@ -3,10 +3,7 @@
   "presetId": "parity-shape-07",
   "title": "Parity Shape 07",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "custom-shape",
-    "borders"
-  ],
+  "strata": ["custom-shape", "borders"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

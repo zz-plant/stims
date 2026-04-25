@@ -3,11 +3,7 @@
   "presetId": "shape-projectm-dual-lattice",
   "title": "Shape projectM Dual Lattice",
   "corpusGroup": "local-custom-shape",
-  "strata": [
-    "custom-shape",
-    "borders",
-    "shape-texture"
-  ],
+  "strata": ["custom-shape", "borders", "shape-texture"],
   "sourceFamily": "local-custom-shape",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

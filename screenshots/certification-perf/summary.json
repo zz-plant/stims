@@ -18,11 +18,7 @@
       "presetId": "krash-rovastar-cerebral-demons-stars",
       "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
       "corpusGroup": "bundled-shipped",
-      "strata": [
-        "comets",
-        "feedback",
-        "external-pack"
-      ],
+      "strata": ["comets", "feedback", "external-pack"],
       "sourceFamily": "external-pack",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -78,11 +74,7 @@
       "presetId": "rovastar-parallel-universe",
       "title": "Rovastar - Parallel Universe",
       "corpusGroup": "bundled-shipped",
-      "strata": [
-        "feedback",
-        "lasers",
-        "external-pack"
-      ],
+      "strata": ["feedback", "lasers", "external-pack"],
       "sourceFamily": "external-pack",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -138,11 +130,7 @@
       "presetId": "eos-phat-cubetrace-v2",
       "title": "Eo.S. + Phat - Cubetrace v2",
       "corpusGroup": "bundled-shipped",
-      "strata": [
-        "geometry",
-        "shapes",
-        "external-pack"
-      ],
+      "strata": ["geometry", "shapes", "external-pack"],
       "sourceFamily": "external-pack",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -199,11 +187,7 @@
       "presetId": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
       "corpusGroup": "bundled-shipped",
-      "strata": [
-        "waveform",
-        "glowsticks",
-        "external-pack"
-      ],
+      "strata": ["waveform", "glowsticks", "external-pack"],
       "sourceFamily": "external-pack",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -260,11 +244,7 @@
       "presetId": "shape-projectm-dual-lattice",
       "title": "Shape projectM Dual Lattice",
       "corpusGroup": "local-custom-shape",
-      "strata": [
-        "custom-shape",
-        "borders",
-        "shape-texture"
-      ],
+      "strata": ["custom-shape", "borders", "shape-texture"],
       "sourceFamily": "local-custom-shape",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -321,11 +301,7 @@
       "presetId": "shape-legacy-max-slot-orbit",
       "title": "Shape Legacy Max Slot Orbit",
       "corpusGroup": "local-custom-shape",
-      "strata": [
-        "custom-shape",
-        "legacy-slot",
-        "shape-texture"
-      ],
+      "strata": ["custom-shape", "legacy-slot", "shape-texture"],
       "sourceFamily": "local-custom-shape",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -382,10 +358,7 @@
       "presetId": "parity-shape-07",
       "title": "Parity Shape 07",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "custom-shape",
-        "borders"
-      ],
+      "strata": ["custom-shape", "borders"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -441,10 +414,7 @@
       "presetId": "parity-legacy-shape-01",
       "title": "Parity Legacy Shape 01",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "custom-shape",
-        "legacy-slot"
-      ],
+      "strata": ["custom-shape", "legacy-slot"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -500,10 +470,7 @@
       "presetId": "parity-legacy-wave-01",
       "title": "Parity Legacy Wave 01",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "custom-wave",
-        "legacy-slot"
-      ],
+      "strata": ["custom-wave", "legacy-slot"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -559,10 +526,7 @@
       "presetId": "parity-wave-02",
       "title": "Parity Wave 02",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "custom-wave",
-        "registers"
-      ],
+      "strata": ["custom-wave", "registers"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -618,11 +582,7 @@
       "presetId": "parity-feedback-orientation-01",
       "title": "Parity Feedback Orientation 01",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "feedback",
-        "video-echo",
-        "orientation"
-      ],
+      "strata": ["feedback", "video-echo", "orientation"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -677,12 +637,7 @@
       "presetId": "parity-hybrid-09",
       "title": "Parity Hybrid 09",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "hybrid",
-        "custom-wave",
-        "custom-shape",
-        "video-echo"
-      ],
+      "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -738,10 +693,7 @@
       "presetId": "parity-motion-04",
       "title": "Parity Motion 04",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "motion-vectors",
-        "per-frame"
-      ],
+      "strata": ["motion-vectors", "per-frame"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -798,10 +750,7 @@
       "presetId": "parity-per-pixel-03",
       "title": "Parity Per Pixel 03",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "per-pixel",
-        "per-frame"
-      ],
+      "strata": ["per-pixel", "per-frame"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -857,10 +806,7 @@
       "presetId": "parity-registers-05",
       "title": "Parity Registers 05",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "registers",
-        "per-frame"
-      ],
+      "strata": ["registers", "per-frame"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -915,10 +861,7 @@
       "presetId": "parity-shader-08",
       "title": "Parity Shader 08",
       "corpusGroup": "parity-corpus",
-      "strata": [
-        "shader-supported",
-        "feedback"
-      ],
+      "strata": ["shader-supported", "feedback"],
       "sourceFamily": "parity-corpus",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -974,10 +917,7 @@
       "presetId": "300-beatdetect-bassmidtreb",
       "title": "300 Beatdetect Bassmidtreb",
       "corpusGroup": "projectm-upstream",
-      "strata": [
-        "beat-detect",
-        "upstream"
-      ],
+      "strata": ["beat-detect", "upstream"],
       "sourceFamily": "projectm-fixture",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -1033,10 +973,7 @@
       "presetId": "250-wavecode",
       "title": "250 Wavecode",
       "corpusGroup": "projectm-upstream",
-      "strata": [
-        "custom-wave",
-        "upstream"
-      ],
+      "strata": ["custom-wave", "upstream"],
       "sourceFamily": "projectm-fixture",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -1092,10 +1029,7 @@
       "presetId": "110-per_pixel",
       "title": "110 Per Pixel",
       "corpusGroup": "projectm-upstream",
-      "strata": [
-        "per-pixel",
-        "upstream"
-      ],
+      "strata": ["per-pixel", "upstream"],
       "sourceFamily": "projectm-fixture",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -1152,11 +1086,7 @@
       "presetId": "260-compshader-noise_lq",
       "title": "260 Compshader Noise LQ",
       "corpusGroup": "projectm-upstream",
-      "strata": [
-        "shader-supported",
-        "samplers",
-        "upstream"
-      ],
+      "strata": ["shader-supported", "samplers", "upstream"],
       "sourceFamily": "projectm-fixture",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -1212,11 +1142,7 @@
       "presetId": "261-compshader-noisevol_lq",
       "title": "261 Compshader Noisevol LQ",
       "corpusGroup": "projectm-upstream",
-      "strata": [
-        "shader-supported",
-        "volume-sampler",
-        "upstream"
-      ],
+      "strata": ["shader-supported", "volume-sampler", "upstream"],
       "sourceFamily": "projectm-fixture",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -1272,10 +1198,7 @@
       "presetId": "100-square",
       "title": "100 Square",
       "corpusGroup": "projectm-upstream",
-      "strata": [
-        "shapes",
-        "upstream"
-      ],
+      "strata": ["shapes", "upstream"],
       "sourceFamily": "projectm-fixture",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",
@@ -1332,10 +1255,7 @@
       "presetId": "001-line",
       "title": "001 Line",
       "corpusGroup": "projectm-upstream",
-      "strata": [
-        "waveform",
-        "upstream"
-      ],
+      "strata": ["waveform", "upstream"],
       "sourceFamily": "projectm-fixture",
       "requiredBackend": "webgpu",
       "actualBackend": "webgpu",

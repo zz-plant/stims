@@ -3,10 +3,7 @@
   "presetId": "parity-per-pixel-03",
   "title": "Parity Per Pixel 03",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "per-pixel",
-    "per-frame"
-  ],
+  "strata": ["per-pixel", "per-frame"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

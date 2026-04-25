@@ -3,10 +3,7 @@
   "presetId": "parity-motion-04",
   "title": "Parity Motion 04",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "motion-vectors",
-    "per-frame"
-  ],
+  "strata": ["motion-vectors", "per-frame"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

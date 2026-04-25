@@ -3,12 +3,7 @@
   "presetId": "parity-hybrid-09",
   "title": "Parity Hybrid 09",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "hybrid",
-    "custom-wave",
-    "custom-shape",
-    "video-echo"
-  ],
+  "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

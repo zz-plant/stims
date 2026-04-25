@@ -51,7 +51,9 @@ async function main() {
   });
 
   await page.waitForTimeout(150);
-  await page.screenshot({ path: 'output/playwright/milkdrop-overlay-fresh-renderer.png' });
+  await page.screenshot({
+    path: 'output/playwright/milkdrop-overlay-fresh-renderer.png',
+  });
   await browser.close();
 }
 
