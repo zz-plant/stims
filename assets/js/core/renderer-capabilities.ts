@@ -199,12 +199,21 @@ function isGuardedMobileWebGPUEnvironment() {
     return false;
   }
 
-  const userAgent = navigator.userAgent?.toLowerCase() ?? '';
-  return (
-    userAgent.includes('samsungbrowser/') ||
-    userAgent.includes('; wv') ||
-    userAgent.includes('miuibrowser/')
-  );
+  const hasWebGPU =
+    Boolean((navigator as Navigator & { gpu?: GPU }).gpu) &&
+    typeof (navigator as Navigator & { gpu?: GPU }).gpu?.requestAdapter ===
+      'function';
+
+  if (!hasWebGPU) {
+    const userAgent = navigator.userAgent?.toLowerCase() ?? '';
+    return (
+      userAgent.includes('samsungbrowser/') ||
+      userAgent.includes('; wv') ||
+      userAgent.includes('miuibrowser/')
+    );
+  }
+
+  return false;
 }
 
 function resetCache() {
@@ -390,6 +399,26 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
   } satisfies WebGPUCapabilitySummary;
 }
 
+function describeCapabilityDeviceLoss(info: unknown) {
+  const reason =
+    info &&
+    typeof info === 'object' &&
+    'reason' in info &&
+    typeof info.reason === 'string'
+      ? info.reason
+      : 'unknown';
+  const message =
+    info &&
+    typeof info === 'object' &&
+    'message' in info &&
+    typeof info.message === 'string' &&
+    info.message.trim().length > 0
+      ? info.message.trim()
+      : null;
+  const detail = message ? `${reason}: ${message}` : reason;
+  return `WebGPU device was lost (${detail}).`;
+}
+
 function observeCapabilityDevice(device: GPUDevice) {
   if (observedCapabilityDevices.has(device)) {
     return;
@@ -398,14 +427,7 @@ function observeCapabilityDevice(device: GPUDevice) {
   void device.lost
     ?.then((info) => {
       observedCapabilityDevices.delete(device);
-      const message =
-        info &&
-        typeof info === 'object' &&
-        'message' in info &&
-        typeof info.message === 'string' &&
-        info.message.trim().length > 0
-          ? `WebGPU device was lost (${info.message.trim()}).`
-          : 'WebGPU device was lost.';
+      const message = describeCapabilityDeviceLoss(info);
       console.warn(message);
       rememberRendererFallback(message, {
         backend: getFallbackBackend(),

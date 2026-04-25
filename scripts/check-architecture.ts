@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const SOURCE_ROOT = path.resolve('assets/js');
-const JS_SOURCE_PATTERN = /\.(?:ts|js)$/;
+const JS_SOURCE_PATTERN = /\.(?:ts|tsx|js)$/;
 const IGNORED_SEGMENTS = new Set(['lib']);
 const CORE_TO_UTILS_ALLOWLIST = new Set([
   'assets/js/utils/device-detect.ts',
@@ -216,8 +216,10 @@ function resolveLocalImport(importer: string, specifier: string) {
   const candidates = [
     resolvedBase,
     `${resolvedBase}.ts`,
+    `${resolvedBase}.tsx`,
     `${resolvedBase}.js`,
     path.join(resolvedBase, 'index.ts'),
+    path.join(resolvedBase, 'index.tsx'),
     path.join(resolvedBase, 'index.js'),
   ];
 

@@ -30,6 +30,7 @@ bun run play:toy milkdrop
 bun run test tests/path/to/spec.test.ts
 bun run test:integration
 bun run test:compat
+bun run test:legacy-frontend
 
 # Type safety and full repo gate
 bun run typecheck
@@ -42,3 +43,15 @@ bun run check
 2. Open `http://localhost:5173/?agent=true`.
 3. Use demo audio if microphone access is unavailable or repeatability matters.
 4. Confirm shell load, preset playback, changed controls, and cleanup behavior work as expected.
+
+## Command selection
+
+Use the narrowest test command that matches the layer you changed. The short
+matrix in [`../VERIFICATION_MATRIX.md`](../VERIFICATION_MATRIX.md) is the
+source of truth for:
+
+- unit and logic specs
+- DOM-sim and environment coverage
+- browser integration coverage
+- compatibility and parity coverage
+- manual browser proof

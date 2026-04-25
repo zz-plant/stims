@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
   classifyArchitectureLayer,
+  collectArchitectureViolations,
   isArchitectureDependencyAllowed,
 } from '../scripts/check-architecture.ts';
 
@@ -152,5 +154,36 @@ describe('architecture boundary rules', () => {
         targetPath: workspacePath('assets/js/toys/milkdrop-toy.ts'),
       }),
     ).toBe(false);
+  });
+
+  test('scans tsx files when collecting architecture violations', async () => {
+    const fixturePath = workspacePath(
+      'assets/js/utils/__tmp-architecture-violation-fixture.tsx',
+    );
+
+    await fs.writeFile(
+      fixturePath,
+      "import '../core/render-preferences.ts';\nexport function TmpArchitectureViolationFixture() { return null; }\n",
+      'utf8',
+    );
+
+    try {
+      const violations = await collectArchitectureViolations();
+
+      expect(violations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source:
+              'assets/js/utils/__tmp-architecture-violation-fixture.tsx',
+            sourceLayer: 'utils',
+            target: 'assets/js/core/render-preferences.ts',
+            targetLayer: 'core',
+            specifier: '../core/render-preferences.ts',
+          }),
+        ]),
+      );
+    } finally {
+      await fs.rm(fixturePath, { force: true });
+    }
   });
 });

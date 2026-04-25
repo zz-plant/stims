@@ -49,6 +49,7 @@ export function createMilkdropExperienceAttachmentController({
   setDocumentActiveBackend: (backend: 'webgl' | 'webgpu') => void;
   vm: {
     setRenderBackend: (backend: 'webgl' | 'webgpu') => void;
+    setGpuDevice: (device: GPUDevice | null) => void;
   };
   disposePostprocessingPipeline: () => void;
   capturedVideoOverlay: {
@@ -117,6 +118,9 @@ export function createMilkdropExperienceAttachmentController({
         setActiveBackend(nextBackend);
         setDocumentActiveBackend(nextBackend);
         vm.setRenderBackend(nextBackend);
+        vm.setGpuDevice(
+          nextBackend === 'webgpu' ? (handle?.info.device ?? null) : null,
+        );
         disposePostprocessingPipeline();
         getAdapter()?.dispose();
         capturedVideoOverlay.attach(nextRuntime.toy.camera);

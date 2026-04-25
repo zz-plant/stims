@@ -1,3 +1,5 @@
+/* global GPUDevice */
+
 import { DEFAULT_MILKDROP_STATE } from './compiler';
 import { evaluateMilkdropExpression } from './expression';
 import type {
@@ -36,6 +38,7 @@ import {
   buildMainWave,
   commitMainWaveFrame,
 } from './vm/wave-builder';
+import { createGpuVmRunner } from './vm-gpu';
 import {
   applyMilkdropWebGpuOptimizationFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
@@ -89,6 +92,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = {
     ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   };
+  private gpuRunner = createGpuVmRunner();
   private readonly waveState: WaveBuilderState = {
     trails: [],
     lastWaveform: null,
@@ -150,6 +154,19 @@ class MilkdropPresetVM implements MilkdropVM {
 
   setRenderBackend(backend: 'webgl' | 'webgpu') {
     this.renderBackend = backend;
+  }
+
+  setGpuDevice(device: GPUDevice | null) {
+    if (!device) {
+      this.gpuRunner.dispose();
+      return;
+    }
+    this.gpuRunner.init(
+      device,
+      this.preset.ir.programs.perFrame,
+      this.state,
+      this.randomState,
+    );
   }
 
   private getEffectiveWebGpuDescriptorPlan() {
@@ -486,10 +503,35 @@ class MilkdropPresetVM implements MilkdropVM {
     );
   }
 
+  async stepAsync(
+    signals: MilkdropRuntimeSignals,
+  ): Promise<MilkdropFrameState> {
+    if (
+      this.renderBackend === 'webgpu' &&
+      this.webgpuOptimizationFlags.gpuComputeVM &&
+      this.gpuRunner.isInitialized()
+    ) {
+      const result = await this.gpuRunner.dispatch(signals);
+      this.state = { ...this.state, ...result.state };
+      this.randomState = result.randomState;
+      this.prepareSignalEnv(signals);
+    } else {
+      this.runProgram(
+        this.preset.ir.programs.perFrame,
+        this.createEnv(signals),
+      );
+    }
+    return this.buildFrame(signals);
+  }
+
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
     this.geometryState.frameTransformCache.clear();
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
+    return this.buildFrame(signals);
+  }
+
+  private buildFrame(signals: MilkdropRuntimeSignals): MilkdropFrameState {
     const { visual: mainWave, procedural: proceduralMainWave } = buildMainWave({
       state: this.state,
       signals,

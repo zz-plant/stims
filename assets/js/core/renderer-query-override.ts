@@ -66,12 +66,16 @@ export function shouldPreferWebGLForKnownCompatibilityGaps() {
   const requestedRenderer = getRequestedRenderer();
 
   if (hasWebGPUCompatibilityGapOverride()) {
-    return false;
+    return true;
+  }
+
+  if (requestedRenderer === 'webgl') {
+    return true;
   }
 
   if (requestedRenderer === 'webgpu') {
     return !isCertificationSession();
   }
 
-  return true;
+  return false;
 }

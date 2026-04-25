@@ -27,10 +27,15 @@ import {
   type StarterPreset,
   TOOL_TABS,
 } from './workspace-helpers.ts';
-import {
-  type PresetArtworkTone,
-  StageAmbientBackdrop,
-} from './workspace-three-scenes.tsx';
+
+type PresetArtworkTone =
+  | 'bright'
+  | 'geometry'
+  | 'space'
+  | 'moody'
+  | 'psychedelic'
+  | 'classic'
+  | 'instant';
 
 function UiIcon({ name, className }: { name: UiIconName; className: string }) {
   const nodes = getIconNodes(name);
@@ -676,7 +681,13 @@ export function WorkspaceStagePanel({
           data-mode={liveMode ? 'live' : 'home'}
         >
           <div className="stims-shell__stage-ambient" aria-hidden="true">
-            <StageAmbientBackdrop liveMode={liveMode} />
+            <span className="stims-shell__stage-ambient-grid" />
+            <span className="stims-shell__stage-ambient-beam" />
+            <span className="stims-shell__stage-ambient-beam stims-shell__stage-ambient-beam--secondary" />
+            <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--ember" />
+            <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--sky" />
+            <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--mint" />
+            <span className="stims-shell__stage-ambient-ring" />
           </div>
           <div ref={stageRef} className="stims-shell__stage-root" />
           <div className="stims-shell__frame-chrome">

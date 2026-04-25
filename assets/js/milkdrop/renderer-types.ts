@@ -382,12 +382,16 @@ export interface MilkdropFeedbackManager {
   dispose(): void;
 }
 
+/* global GPUDevice */
+
 export interface MilkdropVM {
   setPreset(preset: MilkdropCompiledPreset): void;
   setDetailScale(scale: number): void;
   setRenderBackend(backend: 'webgl' | 'webgpu'): void;
+  setGpuDevice(device: GPUDevice | null): void;
   reset(): void;
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState;
+  stepAsync?(signals: MilkdropRuntimeSignals): Promise<MilkdropFrameState>;
   getStateSnapshot(): Record<string, number>;
 }
 

@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
@@ -852,7 +853,30 @@ async function loadMarkdownFile(file: MarkdownSourceKey) {
     return await readFile(resolved, 'utf8');
   }
 
+  if (
+    typeof resolved === 'string' &&
+    looksLikeRenderedHtml(resolved) &&
+    canReadLocalMarkdown()
+  ) {
+    try {
+      const localPath = fileURLToPath(new URL(`../${file}`, import.meta.url));
+      return await readFile(localPath, 'utf8');
+    } catch {
+      // Fall through to the bundled string when local file access is unavailable.
+    }
+  }
+
   return resolved;
+}
+
+function canReadLocalMarkdown() {
+  return typeof process !== 'undefined' && typeof process.cwd === 'function';
+}
+
+function looksLikeRenderedHtml(content: string) {
+  const trimmed = content.trimStart();
+
+  return /^<(?:h\d|p|ul|ol|li|pre|code|blockquote|table)\b/i.test(trimmed);
 }
 
 async function getDocSectionContent(

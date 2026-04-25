@@ -1028,7 +1028,7 @@ comp_shader=vec3 wash = vec3(1 + bass_att * 0.2, 0.8 + mid * 0.1, 0.6 + beat_pul
     expect(frameState.post.shaderControls.colorScale.b).toBeCloseTo(0.66, 6);
   });
 
-  test('keeps translated shader controls available in post visuals', () => {
+  test('keeps translated shader controls available alongside direct comp programs', () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Direct Shader Program VM
@@ -1042,7 +1042,18 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     );
 
     expect(frameState.post.shaderPrograms.warp).toBeNull();
-    expect(frameState.post.shaderPrograms.comp).toBeNull();
+    expect(frameState.post.shaderPrograms.comp).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz, 0.35)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          supportedBackends: ['webgpu'],
+          requiresControlFallback: true,
+        }),
+      }),
+    );
     expect(frameState.post.shaderControls.textureLayer.source).toBe('simplex');
     expect(frameState.post.shaderControls.textureLayer.mode).toBe('mix');
     expect(frameState.post.shaderControls.textureLayer.inverted).toBe(true);

@@ -1166,12 +1166,144 @@ body[data-page="workspace"] {
   z-index: 0;
   pointer-events: none;
   opacity: 0.96;
+  overflow: hidden;
 }
 
-.stims-shell__stage-ambient > canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
+.stims-shell__stage-ambient-grid,
+.stims-shell__stage-ambient-beam,
+.stims-shell__stage-ambient-orb,
+.stims-shell__stage-ambient-ring {
+  position: absolute;
+  inset: 0;
+}
+
+.stims-shell__stage-ambient-grid {
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(100% - 1px),
+      rgba(119, 201, 255, 0.08) calc(100% - 1px)
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0,
+      transparent calc(100% - 1px),
+      rgba(119, 201, 255, 0.06) calc(100% - 1px)
+    );
+  background-size:
+    120px 120px,
+    120px 120px;
+  mask-image: radial-gradient(circle at 50% 42%, black, transparent 82%);
+  opacity: 0.32;
+}
+
+.stims-shell__stage-ambient-beam {
+  inset: -12% 28% 18% -18%;
+  background: linear-gradient(
+    125deg,
+    rgba(244, 122, 84, 0.2),
+    rgba(244, 122, 84, 0.02) 42%,
+    transparent 70%
+  );
+  filter: blur(18px);
+  transform: rotate(-7deg);
+}
+
+.stims-shell__stage-ambient-beam--secondary {
+  inset: 18% -22% -18% 42%;
+  background: linear-gradient(
+    155deg,
+    rgba(119, 201, 255, 0.18),
+    rgba(125, 224, 162, 0.08) 38%,
+    transparent 72%
+  );
+  transform: rotate(9deg);
+}
+
+.stims-shell__stage-ambient-orb {
+  border-radius: 999px;
+  filter: blur(0);
+  opacity: 0.9;
+  animation: stims-stage-float 18s ease-in-out infinite;
+}
+
+.stims-shell__stage-ambient-orb--ember {
+  inset: 14% auto auto 8%;
+  width: 18rem;
+  height: 18rem;
+  background: radial-gradient(
+    circle,
+    rgba(244, 122, 84, 0.42),
+    rgba(244, 122, 84, 0.08) 52%,
+    transparent 74%
+  );
+}
+
+.stims-shell__stage-ambient-orb--sky {
+  inset: 10% 6% auto auto;
+  width: 15rem;
+  height: 15rem;
+  background: radial-gradient(
+    circle,
+    rgba(119, 201, 255, 0.34),
+    rgba(119, 201, 255, 0.08) 54%,
+    transparent 78%
+  );
+  animation-delay: -6s;
+}
+
+.stims-shell__stage-ambient-orb--mint {
+  inset: auto 16% 10% auto;
+  width: 20rem;
+  height: 20rem;
+  background: radial-gradient(
+    circle,
+    rgba(125, 224, 162, 0.22),
+    rgba(125, 224, 162, 0.05) 50%,
+    transparent 76%
+  );
+  animation-delay: -11s;
+}
+
+.stims-shell__stage-ambient-ring {
+  inset: auto auto 8% 50%;
+  width: 34rem;
+  height: 34rem;
+  border-radius: 999px;
+  border: 1px solid rgba(119, 201, 255, 0.14);
+  transform: translateX(-50%) rotate(16deg);
+  box-shadow:
+    0 0 0 16px rgba(119, 201, 255, 0.02),
+    0 0 80px rgba(119, 201, 255, 0.08);
+  mask-image: radial-gradient(circle, transparent 58%, black 60%);
+  opacity: 0.52;
+  animation: stims-stage-drift 22s linear infinite;
+}
+
+@keyframes stims-stage-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.04);
+  }
+}
+
+@keyframes stims-stage-drift {
+  0% {
+    transform: translateX(-50%) rotate(16deg);
+  }
+
+  50% {
+    transform: translateX(-49%) rotate(22deg);
+  }
+
+  100% {
+    transform: translateX(-50%) rotate(16deg);
+  }
 }
 
 .stims-shell__frame-chrome,

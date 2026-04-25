@@ -4,6 +4,14 @@ export type MilkdropRuntimePerformanceSample = {
   renderMs: number;
 };
 
+export type MilkdropRuntimeGpuTimings = {
+  gpuSimulationMs: number | null;
+  gpuRenderMs: number | null;
+  gpuPostprocessMs: number | null;
+  gpuTotalMs: number | null;
+  available: boolean;
+};
+
 export type MilkdropRuntimePerformanceSnapshot = {
   sampleCount: number;
   windowSize: number;
@@ -12,6 +20,7 @@ export type MilkdropRuntimePerformanceSnapshot = {
   averageRenderMs: number | null;
   p95FrameMs: number | null;
   maxFrameMs: number | null;
+  gpuTimings: MilkdropRuntimeGpuTimings | null;
 };
 
 export function createMilkdropRuntimePerformanceTracker(windowSize = 120) {
@@ -25,6 +34,7 @@ export function createMilkdropRuntimePerformanceTracker(windowSize = 120) {
   let totalFrameMs = 0;
   let totalSimulationMs = 0;
   let totalRenderMs = 0;
+  let latestGpuTimings: MilkdropRuntimeGpuTimings | null = null;
 
   const recordFrame = (sample: MilkdropRuntimePerformanceSample) => {
     const removed = samples[nextIndex];
@@ -44,6 +54,10 @@ export function createMilkdropRuntimePerformanceTracker(windowSize = 120) {
     totalRenderMs += sample.renderMs;
   };
 
+  const recordGpuTimings = (timings: MilkdropRuntimeGpuTimings) => {
+    latestGpuTimings = timings;
+  };
+
   const getSnapshot = (): MilkdropRuntimePerformanceSnapshot => {
     if (sampleCountInWindow === 0) {
       return {
@@ -54,6 +68,7 @@ export function createMilkdropRuntimePerformanceTracker(windowSize = 120) {
         averageRenderMs: null,
         p95FrameMs: null,
         maxFrameMs: null,
+        gpuTimings: latestGpuTimings,
       };
     }
 
@@ -76,6 +91,7 @@ export function createMilkdropRuntimePerformanceTracker(windowSize = 120) {
       averageRenderMs: totalRenderMs / sampleCountInWindow,
       p95FrameMs: frameSamples[p95Index] ?? null,
       maxFrameMs: frameSamples[frameSamples.length - 1] ?? null,
+      gpuTimings: latestGpuTimings,
     };
   };
 
@@ -87,10 +103,12 @@ export function createMilkdropRuntimePerformanceTracker(windowSize = 120) {
     totalFrameMs = 0;
     totalSimulationMs = 0;
     totalRenderMs = 0;
+    latestGpuTimings = null;
   };
 
   return {
     recordFrame,
+    recordGpuTimings,
     getSnapshot,
     reset,
   };

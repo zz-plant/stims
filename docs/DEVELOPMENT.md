@@ -16,6 +16,8 @@ For a concise parallel execution map across parity, runtime performance, browser
 
 `bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
 
+For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md).
+
 ## Main scripts
 
 | Task | Command |
@@ -34,6 +36,9 @@ For a concise parallel execution map across parity, runtime performance, browser
 | SEO surface check | `bun run check:seo` |
 | Architecture boundary check | `bun run check:architecture` |
 | Run tests | `bun run test` |
+| Run a specific test file | `bun run test tests/path/to/spec.test.ts` |
+| Run browser integration tests | `bun run test:integration` |
+| Run compatibility/preset tests | `bun run test:compat` |
 | Run legacy shell compatibility tests | `bun run test:legacy-frontend` |
 | Build production assets | `bun run build` |
 | Preview production build | `bun run preview` |
@@ -210,8 +215,20 @@ Keep the bundled shipped presets in evidence order:
 
 - `assets/js/app.ts` and `assets/js/frontend/*` are the active product frontend.
 - `assets/js/milkdrop/*` remains the visual engine behind the adapter seam.
+- `assets/js/frontend/workspace-three-scenes.tsx` is allowed to use React Three Fiber for small workspace-scene layers, but it should stay decorative and never absorb the main visualizer runtime.
 - `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/library-view/*`, and `assets/js/bootstrap/*` are legacy compatibility modules.
 - New product work should not add fresh route ownership or UI flows to those legacy modules.
+
+## Testing layers
+
+Use the narrowest command that fits the change:
+
+- `bun run test tests/path/to/spec.test.ts` for a single unit or logic spec.
+- `bun run test` for the full non-browser suite, including DOM-sim coverage.
+- `bun run test:integration` for browser-backed routing, renderer, audio, or shell behavior.
+- `bun run test:compat` for preset and renderer compatibility coverage.
+- `bun run test:legacy-frontend` when you touch the legacy shell modules listed above.
+- `bun run dev` and `http://localhost:5173/?agent=true` for manual visual verification when the UI, runtime, or renderer changes.
 
 ## Docs to keep aligned
 

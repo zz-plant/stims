@@ -347,29 +347,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.batcher = batcher;
     this.webgpuOptimizationFlags = { ...webgpuOptimizationFlags };
     this.sceneOwner = createMilkdropRendererAdapterSceneOwner({
-      renderer: this.renderer,
-      objects: {
-        root: this.root,
-        background: this.background,
-        meshLines: this.meshLines,
-        mainWaveGroup: this.mainWaveGroup,
-        customWaveGroup: this.customWaveGroup,
-        trailGroup: this.trailGroup,
-        particleFieldGroup: this.particleFieldGroup,
-        shapesGroup: this.shapesGroup,
-        borderGroup: this.borderGroup,
-        motionVectorGroup: this.motionVectorGroup,
-        motionVectorCpuGroup: this.motionVectorCpuGroup,
-        proceduralMotionVectors: this.proceduralMotionVectors,
-        blendWaveGroup: this.blendWaveGroup,
-        blendCustomWaveGroup: this.blendCustomWaveGroup,
-        blendParticleFieldGroup: this.blendParticleFieldGroup,
-        blendShapeGroup: this.blendShapeGroup,
-        blendBorderGroup: this.blendBorderGroup,
-        blendMotionVectorGroup: this.blendMotionVectorGroup,
-        blendMotionVectorCpuGroup: this.blendMotionVectorCpuGroup,
-        blendProceduralMotionVectors: this.blendProceduralMotionVectors,
-      },
+      scene: this.scene,
+      root: this.root,
     });
     this.root.frustumCulled = false;
     this.meshLines.geometry.userData.skipDynamicBounds = true;
