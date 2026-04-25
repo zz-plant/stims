@@ -7,11 +7,7 @@
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
   "sourceFamily": "projectm-fixture",
-  "strata": [
-    "projectm-upstream",
-    "geometry",
-    "regression"
-  ],
+  "strata": ["projectm-upstream", "geometry", "regression"],
   "toleranceProfile": "default",
   "threshold": 16,
   "failThreshold": 0.02,

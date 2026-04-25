@@ -3,11 +3,7 @@
   "presetId": "260-compshader-noise_lq",
   "title": "260 Compshader Noise LQ",
   "corpusGroup": "projectm-upstream",
-  "strata": [
-    "shader-supported",
-    "samplers",
-    "upstream"
-  ],
+  "strata": ["shader-supported", "samplers", "upstream"],
   "sourceFamily": "projectm-fixture",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

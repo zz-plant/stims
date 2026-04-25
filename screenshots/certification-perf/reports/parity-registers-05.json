@@ -3,10 +3,7 @@
   "presetId": "parity-registers-05",
   "title": "Parity Registers 05",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "registers",
-    "per-frame"
-  ],
+  "strata": ["registers", "per-frame"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

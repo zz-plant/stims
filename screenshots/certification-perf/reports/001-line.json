@@ -3,10 +3,7 @@
   "presetId": "001-line",
   "title": "001 Line",
   "corpusGroup": "projectm-upstream",
-  "strata": [
-    "waveform",
-    "upstream"
-  ],
+  "strata": ["waveform", "upstream"],
   "sourceFamily": "projectm-fixture",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

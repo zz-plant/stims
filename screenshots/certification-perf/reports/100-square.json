@@ -3,10 +3,7 @@
   "presetId": "100-square",
   "title": "100 Square",
   "corpusGroup": "projectm-upstream",
-  "strata": [
-    "shapes",
-    "upstream"
-  ],
+  "strata": ["shapes", "upstream"],
   "sourceFamily": "projectm-fixture",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

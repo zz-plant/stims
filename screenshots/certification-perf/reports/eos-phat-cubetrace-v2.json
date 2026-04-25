@@ -3,11 +3,7 @@
   "presetId": "eos-phat-cubetrace-v2",
   "title": "Eo.S. + Phat - Cubetrace v2",
   "corpusGroup": "bundled-shipped",
-  "strata": [
-    "geometry",
-    "shapes",
-    "external-pack"
-  ],
+  "strata": ["geometry", "shapes", "external-pack"],
   "sourceFamily": "external-pack",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

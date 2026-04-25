@@ -8,18 +8,8 @@
     "requiresWebGPU": true,
     "allowWebGLFallback": true,
     "lifecycleStage": "featured",
-    "moods": [
-      "immersive",
-      "psychedelic"
-    ],
-    "tags": [
-      "feedback",
-      "warp",
-      "visualizer",
-      "retro",
-      "presets",
-      "editor"
-    ],
+    "moods": ["immersive", "psychedelic"],
+    "tags": ["feedback", "warp", "visualizer", "retro", "presets", "editor"],
     "controls": [
       "Browse the lineup",
       "Try autoplay or random",

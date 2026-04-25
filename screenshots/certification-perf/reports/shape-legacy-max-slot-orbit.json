@@ -3,11 +3,7 @@
   "presetId": "shape-legacy-max-slot-orbit",
   "title": "Shape Legacy Max Slot Orbit",
   "corpusGroup": "local-custom-shape",
-  "strata": [
-    "custom-shape",
-    "legacy-slot",
-    "shape-texture"
-  ],
+  "strata": ["custom-shape", "legacy-slot", "shape-texture"],
   "sourceFamily": "local-custom-shape",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

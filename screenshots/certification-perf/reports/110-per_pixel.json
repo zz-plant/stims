@@ -3,10 +3,7 @@
   "presetId": "110-per_pixel",
   "title": "110 Per Pixel",
   "corpusGroup": "projectm-upstream",
-  "strata": [
-    "per-pixel",
-    "upstream"
-  ],
+  "strata": ["per-pixel", "upstream"],
   "sourceFamily": "projectm-fixture",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

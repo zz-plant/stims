@@ -3,10 +3,7 @@
   "presetId": "parity-legacy-shape-01",
   "title": "Parity Legacy Shape 01",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "custom-shape",
-    "legacy-slot"
-  ],
+  "strata": ["custom-shape", "legacy-slot"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

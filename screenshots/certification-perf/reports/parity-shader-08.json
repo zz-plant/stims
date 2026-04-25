@@ -3,10 +3,7 @@
   "presetId": "parity-shader-08",
   "title": "Parity Shader 08",
   "corpusGroup": "parity-corpus",
-  "strata": [
-    "shader-supported",
-    "feedback"
-  ],
+  "strata": ["shader-supported", "feedback"],
   "sourceFamily": "parity-corpus",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

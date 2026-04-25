@@ -3,10 +3,7 @@
   "presetId": "250-wavecode",
   "title": "250 Wavecode",
   "corpusGroup": "projectm-upstream",
-  "strata": [
-    "custom-wave",
-    "upstream"
-  ],
+  "strata": ["custom-wave", "upstream"],
   "sourceFamily": "projectm-fixture",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

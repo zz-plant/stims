@@ -3,11 +3,7 @@
   "presetId": "krash-rovastar-cerebral-demons-stars",
   "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
   "corpusGroup": "bundled-shipped",
-  "strata": [
-    "comets",
-    "feedback",
-    "external-pack"
-  ],
+  "strata": ["comets", "feedback", "external-pack"],
   "sourceFamily": "external-pack",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",

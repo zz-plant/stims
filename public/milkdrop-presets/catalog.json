@@ -33,9 +33,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -68,9 +66,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -103,9 +99,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -138,9 +132,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     }
   ]

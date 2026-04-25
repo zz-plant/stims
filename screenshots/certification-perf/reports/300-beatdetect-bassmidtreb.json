@@ -3,10 +3,7 @@
   "presetId": "300-beatdetect-bassmidtreb",
   "title": "300 Beatdetect Bassmidtreb",
   "corpusGroup": "projectm-upstream",
-  "strata": [
-    "beat-detect",
-    "upstream"
-  ],
+  "strata": ["beat-detect", "upstream"],
   "sourceFamily": "projectm-fixture",
   "requiredBackend": "webgpu",
   "actualBackend": "webgpu",
