@@ -32,8 +32,8 @@ describe('milkdrop vm frame generation', () => {
       },
       signals,
       detailScale: 1,
-      previousSamples: Array.from({ length: 176 }, () => 0),
-      previousMomentum: Array.from({ length: 176 }, () => 0),
+      previousSamples: new Float32Array(176),
+      previousMomentum: new Float32Array(176),
       useProcedural: false,
     });
 
@@ -55,8 +55,10 @@ describe('milkdrop vm frame generation', () => {
     waveformData.fill(160);
     signals.waveformData = waveformData;
 
-    const sharedSamples = new Array<number>(96).fill(0);
-    const sharedMomentum = new Array<number>(96).fill(0);
+    // mode=1 with 96-source-length produces 136 samples.
+    // Float32Array is fixed-size, so allocate the correct size for reuse to work.
+    const sharedSamples = new Float32Array(136);
+    const sharedMomentum = new Float32Array(136);
     const frameState = {
       wave_mode: 1,
       wave_x: 0.5,
@@ -73,7 +75,7 @@ describe('milkdrop vm frame generation', () => {
       previousSamples: sharedSamples,
       previousMomentum: sharedMomentum,
       buffers: {
-        liveSamples: [],
+        liveSamples: sharedSamples,
         smoothedSamples: sharedSamples,
         momentumSamples: sharedMomentum,
       },
@@ -86,7 +88,7 @@ describe('milkdrop vm frame generation', () => {
       previousSamples: first.nextSamples,
       previousMomentum: first.nextMomentum,
       buffers: {
-        liveSamples: [],
+        liveSamples: first.nextSamples,
         smoothedSamples: first.nextSamples,
         momentumSamples: first.nextMomentum,
       },
@@ -151,8 +153,8 @@ describe('milkdrop vm frame generation', () => {
       },
       signals,
       detailScale: 1,
-      previousSamples: new Array<number>(96).fill(0),
-      previousMomentum: new Array<number>(96).fill(0),
+      previousSamples: new Float32Array(96),
+      previousMomentum: new Float32Array(96),
       useProcedural: false,
       reusableVisual,
     });
@@ -172,8 +174,8 @@ describe('milkdrop vm frame generation', () => {
       },
       signals,
       detailScale: 1,
-      previousSamples: new Array<number>(96).fill(0),
-      previousMomentum: new Array<number>(96).fill(0),
+      previousSamples: new Float32Array(96),
+      previousMomentum: new Float32Array(96),
       useProcedural: true,
       reusableVisual,
       reusableProcedural,
