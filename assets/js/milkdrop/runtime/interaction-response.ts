@@ -15,7 +15,7 @@ function normalizeSceneTranslation(value: number) {
   return clamp(value, -0.22, 0.22);
 }
 
-function transformScenePositions(
+function transformScenePositionsInPlace(
   positions: number[],
   {
     offsetX,
@@ -31,30 +31,27 @@ function transformScenePositions(
       Math.abs(rotation) < 0.0001 &&
       Math.abs(scale - 1) < 0.0001)
   ) {
-    return positions;
+    return;
   }
 
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
-  const transformed = [...positions];
 
-  for (let index = 0; index < transformed.length; index += 3) {
-    const x = transformed[index] ?? 0;
-    const y = transformed[index + 1] ?? 0;
+  for (let index = 0; index < positions.length; index += 3) {
+    const x = positions[index] ?? 0;
+    const y = positions[index + 1] ?? 0;
     const scaledX = x * scale;
     const scaledY = y * scale;
-    transformed[index] = scaledX * cos - scaledY * sin + offsetX;
-    transformed[index + 1] = scaledX * sin + scaledY * cos + offsetY;
+    positions[index] = scaledX * cos - scaledY * sin + offsetX;
+    positions[index + 1] = scaledX * sin + scaledY * cos + offsetY;
   }
-
-  return transformed;
 }
 
 function nudgeCenter(value: number, offset: number) {
   return clamp(value + offset * 0.5, 0, 1);
 }
 
-function enhancePostEffects(
+function enhancePostEffectsInPlace(
   post: MilkdropPostVisual,
   {
     offsetX,
@@ -69,35 +66,45 @@ function enhancePostEffects(
     pinchDelta: number;
     dragBoost: number;
   },
-): MilkdropPostVisual {
-  return {
-    ...post,
-    warp: clamp(
-      post.warp + dragBoost * 0.28 + Math.abs(pinchDelta) * 0.12,
-      0,
-      1,
-    ),
-    videoEchoZoom: clamp(post.videoEchoZoom + pinchDelta * 0.12, 0.85, 1.35),
-    shaderControls: {
-      ...post.shaderControls,
-      offsetX: clamp(post.shaderControls.offsetX + offsetX * 0.5, -0.3, 0.3),
-      offsetY: clamp(post.shaderControls.offsetY + offsetY * 0.5, -0.3, 0.3),
-      rotation: clamp(
-        post.shaderControls.rotation + rotation * 0.85,
-        -1.6,
-        1.6,
-      ),
-      zoom: clamp(post.shaderControls.zoom + pinchDelta * 0.3, 0.72, 1.45),
-      warpScale: clamp(
-        post.shaderControls.warpScale + pinchDelta * 0.24 + dragBoost * 0.16,
-        0,
-        2,
-      ),
-    },
-  };
+): void {
+  post.warp = clamp(
+    post.warp + dragBoost * 0.28 + Math.abs(pinchDelta) * 0.12,
+    0,
+    1,
+  );
+  post.videoEchoZoom = clamp(
+    post.videoEchoZoom + pinchDelta * 0.12,
+    0.85,
+    1.35,
+  );
+  post.shaderControls.offsetX = clamp(
+    post.shaderControls.offsetX + offsetX * 0.5,
+    -0.3,
+    0.3,
+  );
+  post.shaderControls.offsetY = clamp(
+    post.shaderControls.offsetY + offsetY * 0.5,
+    -0.3,
+    0.3,
+  );
+  post.shaderControls.rotation = clamp(
+    post.shaderControls.rotation + rotation * 0.85,
+    -1.6,
+    1.6,
+  );
+  post.shaderControls.zoom = clamp(
+    post.shaderControls.zoom + pinchDelta * 0.3,
+    0.72,
+    1.45,
+  );
+  post.shaderControls.warpScale = clamp(
+    post.shaderControls.warpScale + pinchDelta * 0.24 + dragBoost * 0.16,
+    0,
+    2,
+  );
 }
 
-function enhanceGpuGeometry(
+function enhanceGpuGeometryInPlace(
   gpuGeometry: MilkdropGpuGeometryHints,
   {
     offsetX,
@@ -112,58 +119,64 @@ function enhanceGpuGeometry(
     scale: number;
     pinchDelta: number;
   },
-): MilkdropGpuGeometryHints {
-  return {
-    ...gpuGeometry,
-    mainWave: gpuGeometry.mainWave
-      ? {
-          ...gpuGeometry.mainWave,
-          centerX: nudgeCenter(gpuGeometry.mainWave.centerX, offsetX),
-          centerY: nudgeCenter(gpuGeometry.mainWave.centerY, -offsetY),
-          scale: clamp(gpuGeometry.mainWave.scale * scale, 0.45, 2.4),
-        }
-      : null,
-    trailWaves: gpuGeometry.trailWaves.map((wave) => ({
-      ...wave,
-      centerX: nudgeCenter(wave.centerX, offsetX),
-      centerY: nudgeCenter(wave.centerY, -offsetY),
-      scale: clamp(wave.scale * scale, 0.45, 2.4),
-    })),
-    customWaves: gpuGeometry.customWaves.map((wave) => ({
-      ...wave,
-      centerX: nudgeCenter(wave.centerX, offsetX),
-      centerY: nudgeCenter(wave.centerY, -offsetY),
-      scaling: clamp(wave.scaling * scale, 0.45, 2.4),
-    })),
-    meshField: gpuGeometry.meshField
-      ? {
-          ...gpuGeometry.meshField,
-          rotation: gpuGeometry.meshField.rotation + rotation * 0.9,
-          zoom: clamp(gpuGeometry.meshField.zoom - pinchDelta * 0.2, 0.5, 2.6),
-          warp: clamp(
-            gpuGeometry.meshField.warp + Math.abs(pinchDelta) * 0.1,
-            0,
-            1.4,
-          ),
-        }
-      : null,
-    motionVectorField: gpuGeometry.motionVectorField
-      ? {
-          ...gpuGeometry.motionVectorField,
-          rotation: gpuGeometry.motionVectorField.rotation + rotation * 0.9,
-          zoom: clamp(
-            gpuGeometry.motionVectorField.zoom - pinchDelta * 0.2,
-            0.5,
-            2.6,
-          ),
-          warp: clamp(
-            gpuGeometry.motionVectorField.warp + Math.abs(pinchDelta) * 0.1,
-            0,
-            1.4,
-          ),
-        }
-      : null,
-  };
+): void {
+  if (gpuGeometry.mainWave) {
+    gpuGeometry.mainWave.centerX = nudgeCenter(
+      gpuGeometry.mainWave.centerX,
+      offsetX,
+    );
+    gpuGeometry.mainWave.centerY = nudgeCenter(
+      gpuGeometry.mainWave.centerY,
+      -offsetY,
+    );
+    gpuGeometry.mainWave.scale = clamp(
+      gpuGeometry.mainWave.scale * scale,
+      0.45,
+      2.4,
+    );
+  }
+  for (let wi = 0; wi < gpuGeometry.trailWaves.length; wi += 1) {
+    const wave = gpuGeometry.trailWaves[wi];
+    if (!wave) continue;
+    wave.centerX = nudgeCenter(wave.centerX, offsetX);
+    wave.centerY = nudgeCenter(wave.centerY, -offsetY);
+    wave.scale = clamp(wave.scale * scale, 0.45, 2.4);
+  }
+  for (let ci = 0; ci < gpuGeometry.customWaves.length; ci += 1) {
+    const wave = gpuGeometry.customWaves[ci];
+    if (!wave) continue;
+    wave.centerX = nudgeCenter(wave.centerX, offsetX);
+    wave.centerY = nudgeCenter(wave.centerY, -offsetY);
+    wave.scaling = clamp(wave.scaling * scale, 0.45, 2.4);
+  }
+  if (gpuGeometry.meshField) {
+    gpuGeometry.meshField.rotation =
+      gpuGeometry.meshField.rotation + rotation * 0.9;
+    gpuGeometry.meshField.zoom = clamp(
+      gpuGeometry.meshField.zoom - pinchDelta * 0.2,
+      0.5,
+      2.6,
+    );
+    gpuGeometry.meshField.warp = clamp(
+      gpuGeometry.meshField.warp + Math.abs(pinchDelta) * 0.1,
+      0,
+      1.4,
+    );
+  }
+  if (gpuGeometry.motionVectorField) {
+    gpuGeometry.motionVectorField.rotation =
+      gpuGeometry.motionVectorField.rotation + rotation * 0.9;
+    gpuGeometry.motionVectorField.zoom = clamp(
+      gpuGeometry.motionVectorField.zoom - pinchDelta * 0.2,
+      0.5,
+      2.6,
+    );
+    gpuGeometry.motionVectorField.warp = clamp(
+      gpuGeometry.motionVectorField.warp + Math.abs(pinchDelta) * 0.1,
+      0,
+      1.4,
+    );
+  }
 }
 
 export function applyMilkdropInteractionResponse(
@@ -236,118 +249,119 @@ export function applyMilkdropInteractionResponse(
         }
       : null;
 
-  if (usesGpuInteractionPayload) {
-    return {
-      ...frameState,
-      interaction,
-      mainWave: {
-        ...frameState.mainWave,
-        thickness: clamp(
-          frameState.mainWave.thickness + dragBoost * 0.8,
-          1,
-          12,
-        ),
-      },
-      mesh: {
-        ...frameState.mesh,
-        alpha: clamp(frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12, 0, 1),
-      },
-      shapes: frameState.shapes.map((shape) => ({
-        ...shape,
-        x: nudgeCenter(shape.x, offsetX),
-        y: nudgeCenter(shape.y, -offsetY),
-        radius: clamp(shape.radius * scale, 0.02, 0.6),
-        rotation: shape.rotation + rotation,
-      })),
-      post: enhancePostEffects(frameState.post, {
-        offsetX,
-        offsetY,
-        rotation,
-        pinchDelta,
-        dragBoost,
-      }),
-      gpuGeometry: enhanceGpuGeometry(frameState.gpuGeometry, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-        pinchDelta,
-      }),
-    };
-  }
+  frameState.interaction = interaction;
 
-  return {
-    ...frameState,
-    interaction,
-    mainWave: {
-      ...frameState.mainWave,
-      positions: transformScenePositions(frameState.mainWave.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
-      thickness: clamp(frameState.mainWave.thickness + dragBoost * 0.8, 1, 12),
-    },
-    customWaves: frameState.customWaves.map((wave) => ({
-      ...wave,
-      positions: transformScenePositions(wave.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
-    })),
-    trails: frameState.trails.map((trail) => ({
-      ...trail,
-      positions: transformScenePositions(trail.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
-    })),
-    mesh: {
-      ...frameState.mesh,
-      positions: transformScenePositions(frameState.mesh.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
-      alpha: clamp(frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12, 0, 1),
-    },
-    shapes: frameState.shapes.map((shape) => ({
-      ...shape,
-      x: nudgeCenter(shape.x, offsetX),
-      y: nudgeCenter(shape.y, -offsetY),
-      radius: clamp(shape.radius * scale, 0.02, 0.6),
-      rotation: shape.rotation + rotation,
-    })),
-    motionVectors: frameState.motionVectors.map((vector) => ({
-      ...vector,
-      positions: transformScenePositions(vector.positions, {
-        offsetX,
-        offsetY,
-        rotation,
-        scale,
-      }),
-    })),
-    post: enhancePostEffects(frameState.post, {
+  if (usesGpuInteractionPayload) {
+    frameState.mainWave.thickness = clamp(
+      frameState.mainWave.thickness + dragBoost * 0.8,
+      1,
+      12,
+    );
+    frameState.mesh.alpha = clamp(
+      frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12,
+      0,
+      1,
+    );
+    for (let si = 0; si < frameState.shapes.length; si += 1) {
+      const shape = frameState.shapes[si];
+      if (!shape) continue;
+      shape.x = nudgeCenter(shape.x, offsetX);
+      shape.y = nudgeCenter(shape.y, -offsetY);
+      shape.radius = clamp(shape.radius * scale, 0.02, 0.6);
+      shape.rotation = shape.rotation + rotation;
+    }
+    enhancePostEffectsInPlace(frameState.post, {
       offsetX,
       offsetY,
       rotation,
       pinchDelta,
       dragBoost,
-    }),
-    gpuGeometry: enhanceGpuGeometry(frameState.gpuGeometry, {
+    });
+    enhanceGpuGeometryInPlace(frameState.gpuGeometry, {
       offsetX,
       offsetY,
       rotation,
       scale,
       pinchDelta,
-    }),
-  };
+    });
+    return frameState;
+  }
+
+  frameState.mainWave.thickness = clamp(
+    frameState.mainWave.thickness + dragBoost * 0.8,
+    1,
+    12,
+  );
+  transformScenePositionsInPlace(frameState.mainWave.positions, {
+    offsetX,
+    offsetY,
+    rotation,
+    scale,
+  });
+  for (let wi = 0; wi < frameState.customWaves.length; wi += 1) {
+    const wave = frameState.customWaves[wi];
+    if (!wave) continue;
+    transformScenePositionsInPlace(wave.positions, {
+      offsetX,
+      offsetY,
+      rotation,
+      scale,
+    });
+  }
+  for (let ti = 0; ti < frameState.trails.length; ti += 1) {
+    const trail = frameState.trails[ti];
+    if (!trail) continue;
+    transformScenePositionsInPlace(trail.positions, {
+      offsetX,
+      offsetY,
+      rotation,
+      scale,
+    });
+  }
+  transformScenePositionsInPlace(frameState.mesh.positions, {
+    offsetX,
+    offsetY,
+    rotation,
+    scale,
+  });
+  frameState.mesh.alpha = clamp(
+    frameState.mesh.alpha + Math.abs(pinchDelta) * 0.12,
+    0,
+    1,
+  );
+  for (let si = 0; si < frameState.shapes.length; si += 1) {
+    const shape = frameState.shapes[si];
+    if (!shape) continue;
+    shape.x = nudgeCenter(shape.x, offsetX);
+    shape.y = nudgeCenter(shape.y, -offsetY);
+    shape.radius = clamp(shape.radius * scale, 0.02, 0.6);
+    shape.rotation = shape.rotation + rotation;
+  }
+  for (let vi = 0; vi < frameState.motionVectors.length; vi += 1) {
+    const vec = frameState.motionVectors[vi];
+    if (!vec) continue;
+    transformScenePositionsInPlace(vec.positions, {
+      offsetX,
+      offsetY,
+      rotation,
+      scale,
+    });
+  }
+  enhancePostEffectsInPlace(frameState.post, {
+    offsetX,
+    offsetY,
+    rotation,
+    pinchDelta,
+    dragBoost,
+  });
+  enhanceGpuGeometryInPlace(frameState.gpuGeometry, {
+    offsetX,
+    offsetY,
+    rotation,
+    scale,
+    pinchDelta,
+  });
+  return frameState;
 }
 
 export function getMilkdropDetailScale({

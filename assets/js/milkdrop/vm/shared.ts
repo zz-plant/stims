@@ -77,6 +77,7 @@ export type WaveBuilderState = {
   proceduralTrailWaves: MilkdropProceduralWaveVisual[];
   channelSample: CustomWaveChannelSample;
   buffers: WaveFrameBuffers;
+  pointLocalsScratch: MutableState;
 };
 
 export type CustomWaveChannelSample = {

@@ -445,9 +445,8 @@ export function buildMesh({
     };
   }
 
-  const positions = new Array<number>(
-    meshField.density * Math.max(0, meshField.density - 1) * 12,
-  );
+  const capacity = meshField.density * Math.max(0, meshField.density - 1) * 12;
+  const positions = new Array<number>(capacity);
   let writeIndex = 0;
 
   for (let row = 0; row < meshField.density; row += 1) {
@@ -486,11 +485,9 @@ export function buildMesh({
     }
   }
 
+  positions.length = writeIndex;
   return {
-    positions:
-      writeIndex === positions.length
-        ? positions
-        : positions.slice(0, writeIndex),
+    positions,
     color: colorValue,
     alpha,
   };

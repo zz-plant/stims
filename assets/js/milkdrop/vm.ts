@@ -119,6 +119,7 @@ class MilkdropPresetVM implements MilkdropVM {
       smoothedSamples: new Float32Array(0),
       momentumSamples: new Float32Array(0),
     },
+    pointLocalsScratch: {},
   };
   private readonly geometryState: GeometryBuilderState = {
     lastMotionVectorField: null,
@@ -207,6 +208,7 @@ class MilkdropPresetVM implements MilkdropVM {
       (shape) => this.seedCustomShapeState(shape),
     );
     this.waveState.proceduralTrailWaves = [];
+    this.waveState.pointLocalsScratch = {};
     this.geometryState.lastMotionVectorField = null;
     this.geometryState.motionVectorFrameIndex = 0;
     this.geometryState.motionVectorVisualFrames[0].length = 0;
