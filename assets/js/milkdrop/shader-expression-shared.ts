@@ -8,37 +8,63 @@ export type MilkdropShaderConstructorPattern =
   | 'vec3-vec2-scalar'
   | 'vec3-scalar-vec2';
 
-export function normalizeMilkdropShaderCallName(value: string) {
-  const normalized = value.toLowerCase();
-  switch (normalized) {
-    case 'float2':
-      return 'vec2';
-    case 'float3':
-      return 'vec3';
-    case 'texture':
-    case 'texture2d':
-    case 'tex2d':
-      return 'tex2d';
-    case 'texture3d':
-    case 'tex3d':
-      return 'tex3d';
-    default:
-      return normalized;
+/**
+ * Fast case-insensitive check that avoids creating a new string when the
+ * value is already known to be lowercase (the overwhelmingly common case).
+ */
+function isLowerAlphaEquals(value: string, target: string): boolean {
+  if (value.length !== target.length) {
+    return false;
   }
+  for (let i = 0; i < value.length; i += 1) {
+    const c = value.charCodeAt(i);
+    // Fast path: exact match
+    if (c === target.charCodeAt(i)) {
+      continue;
+    }
+    // Lowercase comparison: if c is uppercase, convert
+    if (c >= 65 && c <= 90) {
+      if (c + 32 === target.charCodeAt(i)) {
+        continue;
+      }
+    }
+    return false;
+  }
+  return true;
+}
+
+export function normalizeMilkdropShaderCallName(value: string) {
+  // Fast path: most calls are already lowercase
+  if (isLowerAlphaEquals(value, 'float2')) return 'vec2';
+  if (isLowerAlphaEquals(value, 'float3')) return 'vec3';
+  if (
+    isLowerAlphaEquals(value, 'texture') ||
+    isLowerAlphaEquals(value, 'texture2d') ||
+    isLowerAlphaEquals(value, 'tex2d')
+  )
+    return 'tex2d';
+  if (
+    isLowerAlphaEquals(value, 'texture3d') ||
+    isLowerAlphaEquals(value, 'tex3d')
+  )
+    return 'tex3d';
+  return value;
 }
 
 export function resolveMilkdropShaderConstructorPattern(
   name: string,
   argKinds: MilkdropShaderValueKind[],
 ): MilkdropShaderConstructorPattern | null {
-  const normalizedName =
-    name.toLowerCase() === 'float2'
-      ? 'vec2'
-      : name.toLowerCase() === 'float3'
-        ? 'vec3'
-        : name.toLowerCase();
+  let normalizedName: string;
+  if (isLowerAlphaEquals(name, 'float2')) {
+    normalizedName = 'vec2';
+  } else if (isLowerAlphaEquals(name, 'float3')) {
+    normalizedName = 'vec3';
+  } else {
+    normalizedName = name;
+  }
 
-  if (normalizedName === 'vec2') {
+  if (isLowerAlphaEquals(normalizedName, 'vec2')) {
     if (argKinds[0] === 'scalar' && argKinds[1] === 'scalar') {
       return 'vec2-pair';
     }
@@ -48,7 +74,7 @@ export function resolveMilkdropShaderConstructorPattern(
     return null;
   }
 
-  if (normalizedName === 'vec3') {
+  if (isLowerAlphaEquals(normalizedName, 'vec3')) {
     if (
       argKinds[0] === 'scalar' &&
       argKinds[1] === 'scalar' &&

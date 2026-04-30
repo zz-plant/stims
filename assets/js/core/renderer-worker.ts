@@ -55,6 +55,9 @@ const state: WorkerRendererState = {
   latestFrame: null,
 };
 
+/** Reusable Color buffer to avoid per-frame heap allocations. */
+const _reusableColor = new Color();
+
 function postMessage(message: RendererWorkerResponseMessage) {
   scope.postMessage(message);
 }
@@ -251,11 +254,12 @@ function handlePreset(payload: RendererWorkerPresetPayload) {
     accumulator =
       (accumulator + titleHash.charCodeAt(index) * (index + 1)) % 255;
   }
-  scene.background = new Color(
+  _reusableColor.set(
     accumulator / 255,
     Math.max(0.05, accumulator / 510),
     Math.max(0.1, 1 - accumulator / 320),
   );
+  scene.background = _reusableColor;
   postMessage({
     type: RENDERER_WORKER_MESSAGE_TYPES.status,
     payload: { phase: 'preset-applied' },
@@ -272,11 +276,12 @@ function handleFrame(payload: RendererWorkerFramePayload) {
   const pointerX = payload.pointer?.x ?? 0.5;
   const pointerY = payload.pointer?.y ?? 0.5;
 
-  scene.background = new Color(
+  _reusableColor.set(
     Math.min(1, 0.04 + bass * 0.65 + pointerX * 0.12),
     Math.min(1, 0.05 + mids * 0.55 + pointerY * 0.1),
     Math.min(1, 0.1 + treble * 0.65 + (payload.pointer?.down ? 0.1 : 0)),
   );
+  scene.background = _reusableColor;
 
   renderer.render(scene, camera);
   postMessage({

@@ -97,8 +97,8 @@ class MilkdropPresetVM implements MilkdropVM {
     trails: [],
     lastWaveform: null,
     lastProceduralWave: null,
-    lastWaveSamples: [],
-    lastWaveMomentum: [],
+    lastWaveSamples: new Float32Array(0),
+    lastWaveMomentum: new Float32Array(0),
     mainWaveFrameIndex: -1,
     mainWaveVisualFrames: [],
     proceduralMainWaveFrames: [],
@@ -114,10 +114,10 @@ class MilkdropPresetVM implements MilkdropVM {
       value2: 0,
     },
     buffers: {
-      liveSamples: [],
-      previousSamples: [],
-      smoothedSamples: [],
-      momentumSamples: [],
+      liveSamples: new Float32Array(0),
+      previousSamples: new Float32Array(0),
+      smoothedSamples: new Float32Array(0),
+      momentumSamples: new Float32Array(0),
     },
   };
   private readonly geometryState: GeometryBuilderState = {
@@ -211,10 +211,10 @@ class MilkdropPresetVM implements MilkdropVM {
     this.geometryState.motionVectorFrameIndex = 0;
     this.geometryState.motionVectorVisualFrames[0].length = 0;
     this.geometryState.motionVectorVisualFrames[1].length = 0;
-    this.waveState.buffers.liveSamples.length = 0;
-    this.waveState.buffers.previousSamples.length = 0;
-    this.waveState.buffers.smoothedSamples.length = 0;
-    this.waveState.buffers.momentumSamples.length = 0;
+    this.waveState.buffers.liveSamples = new Float32Array(0);
+    this.waveState.buffers.previousSamples = new Float32Array(0);
+    this.waveState.buffers.smoothedSamples = new Float32Array(0);
+    this.waveState.buffers.momentumSamples = new Float32Array(0);
     this.geometryState.frameTransformCache.clear();
     Object.setPrototypeOf(this.signalEnv, this.registers);
     this.lastPreparedSignalSource = null;

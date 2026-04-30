@@ -52,18 +52,18 @@ export type MotionVectorDescriptorContext = {
 };
 
 export type WaveFrameBuffers = {
-  liveSamples: number[];
-  previousSamples: number[];
-  smoothedSamples: number[];
-  momentumSamples: number[];
+  liveSamples: Float32Array;
+  previousSamples: Float32Array;
+  smoothedSamples: Float32Array;
+  momentumSamples: Float32Array;
 };
 
 export type WaveBuilderState = {
   trails: MilkdropWaveVisual[];
   lastWaveform: MilkdropWaveVisual | null;
   lastProceduralWave: MilkdropProceduralWaveVisual | null;
-  lastWaveSamples: number[];
-  lastWaveMomentum: number[];
+  lastWaveSamples: Float32Array;
+  lastWaveMomentum: Float32Array;
   mainWaveFrameIndex: number;
   mainWaveVisualFrames: MilkdropWaveVisual[];
   proceduralMainWaveFrames: MilkdropProceduralWaveVisual[];

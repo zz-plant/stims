@@ -237,9 +237,9 @@ export function buildMainWaveFrame({
   previousSamples,
   previousMomentum,
   buffers = {
-    liveSamples: [],
-    smoothedSamples: [],
-    momentumSamples: [],
+    liveSamples: new Float32Array(0),
+    smoothedSamples: new Float32Array(0),
+    momentumSamples: new Float32Array(0),
   },
   useProcedural,
   reusableVisual,
@@ -248,12 +248,12 @@ export function buildMainWaveFrame({
   state: Record<string, number>;
   signals: MilkdropRuntimeSignals;
   detailScale: number;
-  previousSamples: number[];
-  previousMomentum: number[];
+  previousSamples: Float32Array;
+  previousMomentum: Float32Array;
   buffers?: {
-    liveSamples: number[];
-    smoothedSamples: number[];
-    momentumSamples: number[];
+    liveSamples: Float32Array;
+    smoothedSamples: Float32Array;
+    momentumSamples: Float32Array;
   };
   useProcedural: boolean;
   reusableVisual?: MilkdropWaveVisual;
@@ -261,8 +261,8 @@ export function buildMainWaveFrame({
 }): {
   visual: MilkdropWaveVisual;
   procedural: MilkdropProceduralWaveVisual | null;
-  nextSamples: number[];
-  nextMomentum: number[];
+  nextSamples: Float32Array;
+  nextMomentum: Float32Array;
 } {
   const mode = normalizeWaveMode(state.wave_mode ?? 0);
   const waveformData =
@@ -283,12 +283,25 @@ export function buildMainWaveFrame({
   const modWaveAlphaStart = clamp(state.modwavealphastart ?? 1, 0, 2);
   const modWaveAlphaEnd = clamp(state.modwavealphaend ?? 1, 0, 2);
   const alphaByVolume = (state.bmodwavealphabyvolume ?? 0) >= 0.5;
-  const liveSamples = buffers.liveSamples;
-  const smoothedSamples = buffers.smoothedSamples;
-  const nextMomentum = buffers.momentumSamples;
-  liveSamples.length = samples;
-  smoothedSamples.length = samples;
-  nextMomentum.length = samples;
+  // Reuse Float32Arrays when size matches; allocate fresh only when needed
+  let liveSamples: Float32Array;
+  let smoothedSamples: Float32Array;
+  let nextMomentum: Float32Array;
+  if (buffers.liveSamples.length === samples) {
+    liveSamples = buffers.liveSamples;
+  } else {
+    liveSamples = new Float32Array(samples);
+  }
+  if (buffers.smoothedSamples.length === samples) {
+    smoothedSamples = buffers.smoothedSamples;
+  } else {
+    smoothedSamples = new Float32Array(samples);
+  }
+  if (buffers.momentumSamples.length === samples) {
+    nextMomentum = buffers.momentumSamples;
+  } else {
+    nextMomentum = new Float32Array(samples);
+  }
   const smoothingBlend = clamp(1 - smoothing, 0.04, 1);
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
