@@ -80,6 +80,13 @@ body[data-page="workspace"] {
   isolation: isolate;
 }
 
+@supports (min-height: 100svh) {
+  #app,
+  .stims-shell {
+    min-height: 100svh;
+  }
+}
+
 .stims-shell::before,
 .stims-shell::after {
   content: "";
@@ -142,6 +149,7 @@ body[data-page="workspace"] {
       rgba(119, 201, 255, 0.08),
       transparent 28%
     );
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   box-shadow:
     var(--stims-shadow),
@@ -392,6 +400,7 @@ body[data-page="workspace"] {
       rgba(125, 224, 162, 0.14),
       transparent 28%
     );
+  -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.42),
@@ -1194,6 +1203,11 @@ body[data-page="workspace"] {
   background-size:
     120px 120px,
     120px 120px;
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 42%,
+    black,
+    transparent 82%
+  );
   mask-image: radial-gradient(circle at 50% 42%, black, transparent 82%);
   opacity: 0.32;
 }
@@ -1276,6 +1290,7 @@ body[data-page="workspace"] {
   box-shadow:
     0 0 0 16px rgba(119, 201, 255, 0.02),
     0 0 80px rgba(119, 201, 255, 0.08);
+  -webkit-mask-image: radial-gradient(circle, transparent 58%, black 60%);
   mask-image: radial-gradient(circle, transparent 58%, black 60%);
   opacity: 0.52;
   animation: stims-stage-drift 22s linear infinite;
@@ -1379,6 +1394,7 @@ body[data-page="workspace"] {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 18px;
   background: var(--stims-rail-fill);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   box-shadow:
     0 20px 44px rgba(0, 0, 0, 0.28),
@@ -2264,6 +2280,7 @@ body[data-page="workspace"] {
       transparent 24%
     ),
     rgba(3, 5, 11, 0.42);
+  -webkit-backdrop-filter: blur(12px) saturate(118%);
   backdrop-filter: blur(12px) saturate(118%);
 }
 
@@ -2514,9 +2531,21 @@ body[data-page="workspace"] {
     width: min(62rem, 100%);
   }
 
-  .stims-shell__launch-header {
+  .stims-shell__launch-hero,
+  .stims-shell__source-grid,
+  .stims-shell__launch-recommendation {
+    grid-template-columns: 1fr;
+  }
+
+  .stims-shell__launch-header,
+  .stims-shell__launch-stack,
+  .stims-shell__launch-recommendation {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .stims-shell__launch-recommendation {
+    min-height: 0;
   }
 
   .stims-shell__frame-header {
@@ -2535,6 +2564,179 @@ body[data-page="workspace"] {
 
   .stims-shell__stage-hero {
     width: min(62rem, calc(100% - 64px));
+  }
+}
+
+@media (max-height: 720px) {
+  .stims-shell {
+    padding-block: 14px;
+  }
+
+  .stims-shell__stage-frame,
+  .stims-shell__stage-frame[data-mode="home"] {
+    min-height: calc(100vh - 28px);
+  }
+
+  .stims-shell__frame-chrome {
+    top: 14px;
+  }
+
+  .stims-shell__stage-hero {
+    inset: 106px 18px 16px;
+    width: auto;
+    align-content: start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+  }
+
+  .stims-shell__launch-panel {
+    width: min(62rem, 100%);
+    padding: 22px;
+    border-radius: 26px;
+  }
+
+  .stims-shell__launch-hero,
+  .stims-shell__source-grid,
+  .stims-shell__launch-recommendation {
+    grid-template-columns: 1fr;
+  }
+
+  .stims-shell__launch-header,
+  .stims-shell__launch-stack,
+  .stims-shell__launch-recommendation {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .stims-shell__launch-copy h1,
+  .stims-shell__stage-header h2,
+  .stims-shell__sheet-heading h2 {
+    font-size: clamp(1.9rem, 5.4vw, 3.4rem);
+    line-height: 0.94;
+  }
+
+  .stims-shell__launch-copy p {
+    line-height: 1.55;
+  }
+}
+
+@media (max-height: 480px) {
+  .stims-shell__stage-frame,
+  .stims-shell__stage-frame[data-mode="home"] {
+    min-height: calc(100vh - 20px);
+  }
+
+  .stims-shell__frame-chrome {
+    top: 10px;
+  }
+
+  .stims-shell__corner-brand {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+  }
+
+  .stims-shell__logo small,
+  .stims-shell__launch-summary {
+    display: none;
+  }
+
+  .stims-shell__stage-dock {
+    gap: 5px;
+    padding: 4px;
+  }
+
+  .stims-shell__stage-tool {
+    min-height: 38px;
+    padding: 0 9px;
+  }
+
+  .stims-shell__stage-hero {
+    inset: 76px 12px 12px;
+  }
+
+  .stims-shell__launch-panel {
+    padding: 14px;
+  }
+
+  .stims-shell__launch-hero,
+  .stims-shell__launch-stack {
+    gap: 10px;
+  }
+
+  .stims-shell__launch-copy h1,
+  .stims-shell__stage-header h2,
+  .stims-shell__sheet-heading h2 {
+    font-size: clamp(1.35rem, 4.6vw, 2.25rem);
+    line-height: 0.96;
+    margin-bottom: 0;
+  }
+
+  .stims-shell__launch-actions > * {
+    min-height: 42px;
+  }
+}
+
+@supports not (color: color-mix(in srgb, white, black)) {
+  .stims-shell::after {
+    background:
+      radial-gradient(
+        circle at 18% 40%,
+        rgba(244, 122, 84, 0.24),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 82% 18%,
+        rgba(119, 201, 255, 0.26),
+        transparent 36%
+      );
+  }
+
+  .stims-shell__launch-copy p,
+  .stims-shell__launch-footnote {
+    color: rgba(246, 239, 228, 0.78);
+  }
+
+  .stims-shell__launch-signal-label,
+  .stims-shell__launch-promise-label,
+  .stims-shell__starter-label,
+  .stims-shell__preset-vibe,
+  .stims-shell__preset-tech {
+    color: #a9ddff;
+  }
+
+  .stims-shell__launch-footnote span::before {
+    background: #9bd8ff;
+  }
+
+  .stims-shell__stage-tool[data-active="true"] {
+    background: linear-gradient(135deg, #f6a673, #ffc07b);
+  }
+
+  .stims-shell__preset-guide[data-active="true"] {
+    border-color: rgba(244, 122, 84, 0.62);
+  }
+
+  .stims-shell__section-label {
+    color: #ffae8c;
+  }
+
+  .stims-shell__youtube-feedback[data-state="invalid"] {
+    color: #ffb7bd;
+  }
+
+  .stims-shell__youtube-feedback[data-state="ready"] {
+    color: #a9f7c6;
+  }
+
+  .stims-shell .cta-button {
+    border-color: rgba(119, 201, 255, 0.24);
+  }
+
+  .stims-shell .cta-button.primary {
+    background: linear-gradient(135deg, #e8f5c8, #b8e2a3);
+    border-color: rgba(255, 255, 255, 0.24);
   }
 }
 
