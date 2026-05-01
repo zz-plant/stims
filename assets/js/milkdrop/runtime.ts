@@ -744,14 +744,22 @@ export function createMilkdropExperience({
       });
       return;
     }
-    const didPresetChange =
-      nextCompiled.source.id !== activeCompiled.source.id ||
+    const didPresetIdChange =
+      nextCompiled.source.id !== activeCompiled.source.id;
+    const didSourceChange =
       nextCompiled.formattedSource !== activeCompiled.formattedSource;
-    if (didPresetChange) {
+    if (didPresetIdChange) {
       applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
       scheduleDeferredCatalogSync();
+      emitChange();
+      return;
+    }
+    if (didSourceChange) {
+      applyPresetPerformanceOverride(nextCompiled.source.id);
+      applyCompiledPreset(nextCompiled);
+      void catalogStore.saveDraft(nextCompiled.source.id, state.source);
     }
     emitChange();
   });

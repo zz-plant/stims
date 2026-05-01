@@ -13,6 +13,7 @@ export const MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS = {
   directFeedbackShaders: 'milkdrop-webgpu-feedback',
   descriptorFallbackToWebgl: 'milkdrop-webgpu-fallback',
   gpuComputeVM: 'milkdrop-webgpu-compute-vm',
+  renderBundles: 'milkdrop-webgpu-render-bundles',
 } as const;
 
 export const MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS = {
@@ -24,6 +25,7 @@ export const MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS = {
   directFeedbackShaders: 'stims:experiments:milkdrop-webgpu-feedback',
   descriptorFallbackToWebgl: 'stims:experiments:milkdrop-webgpu-fallback',
   gpuComputeVM: 'stims:experiments:milkdrop-webgpu-compute-vm',
+  renderBundles: 'stims:experiments:milkdrop-webgpu-render-bundles',
 } as const;
 
 export type MilkdropWebGpuOptimizationFlags = {
@@ -35,6 +37,7 @@ export type MilkdropWebGpuOptimizationFlags = {
   directFeedbackShaders: boolean;
   descriptorFallbackToWebgl: boolean;
   gpuComputeVM: boolean;
+  renderBundles: boolean;
 };
 
 export type MilkdropWebGpuOptimizationFlagName =
@@ -49,6 +52,7 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   directFeedbackShaders: true,
   descriptorFallbackToWebgl: true,
   gpuComputeVM: true,
+  renderBundles: false,
 }) satisfies MilkdropWebGpuOptimizationFlags;
 
 const ENABLED_FLAG_VALUES = new Set(['1', 'true', 'on', 'yes', 'enabled']);

@@ -11,47 +11,48 @@ function buildReadinessSummary(
   const renderItem: ReadinessItem = rendering.hasWebGPU
     ? {
         id: 'rendering',
-        label: 'Graphics',
+        label: 'Runs at full detail',
         state: 'ready',
-        summary: 'High-detail visuals are ready.',
+        summary: 'Your browser supports the richest visuals.',
       }
     : rendering.hasWebGL
       ? {
           id: 'rendering',
-          label: 'Graphics',
+          label: 'Runs in compatible mode',
           state: 'warn',
-          summary: 'Visuals will run in a lighter mode on this device.',
+          summary: 'Visuals will use a lighter, more compatible setup here.',
         }
       : {
           id: 'rendering',
-          label: 'Graphics',
+          label: 'Graphics unavailable',
           state: 'blocked',
-          summary: 'This browser cannot start the visuals.',
+          summary: 'This browser cannot start 3D visuals.',
         };
 
   const micItem: ReadinessItem =
     micState.state === 'denied'
       ? {
           id: 'microphone',
-          label: 'Microphone',
+          label: 'Mic access is off',
           state: 'warn',
           summary: micState.reason ?? 'Microphone access is blocked.',
         }
       : micState.supported
         ? {
             id: 'microphone',
-            label: 'Microphone',
+            label: 'Mic input available',
             state: 'ready',
             summary:
               micState.state === 'granted'
-                ? 'Microphone access is ready if you want live input.'
-                : 'The browser can ask for microphone access when you want it.',
+                ? 'You can use live microphone input right away.'
+                : 'The browser can ask for mic access when you want it.',
           }
         : {
             id: 'microphone',
-            label: 'Microphone',
+            label: 'Mic not supported',
             state: 'blocked',
-            summary: micState.reason ?? 'Microphone capture is unavailable.',
+            summary:
+              micState.reason ?? 'Microphone capture is not available here.',
           };
 
   const motionSupported =
@@ -60,16 +61,15 @@ function buildReadinessSummary(
   const motionItem: ReadinessItem = motionSupported
     ? {
         id: 'motion',
-        label: 'Motion',
+        label: 'Motion controls supported',
         state: 'ready',
-        summary:
-          'Tilt and motion-reactive presets can run on supported devices.',
+        summary: 'Tilt and motion-reactive presets can run on your device.',
       }
     : {
         id: 'motion',
-        label: 'Motion',
+        label: 'Motion controls unavailable',
         state: 'warn',
-        summary: 'Motion controls are unavailable on this device.',
+        summary: 'Tilt reactive effects are not available here.',
       };
 
   return [renderItem, micItem, motionItem];

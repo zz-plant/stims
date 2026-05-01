@@ -95,6 +95,7 @@ describe('milkdrop webgpu descriptor gating', () => {
       proceduralMainWave: false,
       proceduralTrailWaves: false,
       directFeedbackShaders: false,
+      renderBundles: false,
     });
 
     expect(gated.routing).toBe('descriptor-plan');
@@ -116,6 +117,7 @@ describe('milkdrop webgpu descriptor gating', () => {
       directFeedbackShaders: false,
       descriptorFallbackToWebgl: true,
       gpuComputeVM: true,
+      renderBundles: false,
     });
 
     expect(gated).toEqual({

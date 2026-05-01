@@ -1,3 +1,4 @@
+#version 100
 precision highp float;
 
 uniform float time;
@@ -11,8 +12,11 @@ varying vec3 vNormal;
 varying vec3 vViewDir;
 varying vec2 vUv;
 
-float noise(vec2 uv) {
-  return fract(sin(dot(uv.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+// Mobile-safe hash — avoids sin() precision artifacts on Mali / Adreno.
+float hash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
 
 void main() {
@@ -23,13 +27,16 @@ void main() {
   float rim = smoothstep(0.0, 1.0, fresnel);
 
   // Thin-film shimmer using layered noise.
-  float shimmer = noise(vUv * 8.0 + time * 0.25);
-  float swirl = noise((vUv + shimmer) * 3.5 + time * 0.15);
+  float shimmer = hash(vUv * 8.0 + time * 0.25);
+  float swirl = hash((vUv + shimmer) * 3.5 + time * 0.15);
   float refraction = refractionStrength * (shimmer * 0.5 + swirl * 0.5);
 
-  vec3 color = mix(baseColor, highlightColor, rim + refraction * 0.25);
+  // refraction: adds color variation through the highlight blend
+  //           + a subtle overall brightness boost from the thin film.
+  vec3 color = mix(baseColor, highlightColor, clamp(rim + refraction * 0.25, 0.0, 1.0));
   color += vec3(refraction * 0.4);
 
-  float alpha = opacity * mix(0.35, 1.0, rim + shimmer * 0.2);
+  // Clamp the rim-shimmer term so alpha never overshoots opacity.
+  float alpha = opacity * mix(0.35, 1.0, clamp(rim + shimmer * 0.2, 0.0, 1.0));
   gl_FragColor = vec4(color, alpha);
 }

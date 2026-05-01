@@ -434,7 +434,7 @@ export function WorkspaceLaunchPanel({
           <div className="stims-shell__launch-copy">
             <p className="stims-shell__eyebrow">{launchEyebrow}</p>
             <h1>{launchTitle}</h1>
-            <p>{launchSummary}</p>
+            <p className="stims-shell__launch-summary">{launchSummary}</p>
           </div>
         </div>
 
@@ -451,6 +451,9 @@ export function WorkspaceLaunchPanel({
               <span className="stims-shell__action-label">
                 Play with demo audio
               </span>
+              <span className="stims-shell__action-hint">
+                No setup, just motion
+              </span>
             </button>
             <button
               type="button"
@@ -458,13 +461,9 @@ export function WorkspaceLaunchPanel({
               onClick={onToggleExtendedSources}
             >
               <span className="stims-shell__action-label">Use my music</span>
+              <span className="stims-shell__action-hint">Or try it</span>
             </button>
           </div>
-          <div className="stims-shell__launch-footnote">
-            <span>Start with demo audio first.</span>
-            <span>Bring in your own sound only when you want it.</span>
-          </div>
-
           <div className="stims-shell__launch-more">
             {showExtendedSources ? (
               <AudioSourcePanel
@@ -980,6 +979,20 @@ function BrowseSheetPanel({
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
         />
+
+        {searchQuery.trim().length > 0 || routeState.collectionTag ? (
+          <p className="stims-shell__active-filters" aria-live="polite">
+            Showing{' '}
+            {[
+              searchQuery.trim().length > 0 ? `"${searchQuery.trim()}"` : '',
+              routeState.collectionTag
+                ? prettifyCollectionTag(routeState.collectionTag)
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' in ')}
+          </p>
+        ) : null}
 
         <nav className="stims-shell__collections" aria-label="Collections">
           <button

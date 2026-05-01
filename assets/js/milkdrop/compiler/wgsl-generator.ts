@@ -387,9 +387,12 @@ function buildWgslProgram(
     return `  state.${target} = ${expression};`;
   });
 
-  const registerDeclarations = registerKeys
-    .map((key) => `  var<private> reg_${key}: f32 = 0.0;`)
-    .join('\n');
+  const registerDeclarationLines = registerKeys.length
+    ? [
+        '',
+        ...registerKeys.map((key) => `  var<private> reg_${key}: f32 = 0.0;`),
+      ]
+    : [];
 
   const body = [
     `@group(0) @binding(0) var<storage, read_write> state: VmState;`,
@@ -397,7 +400,7 @@ function buildWgslProgram(
     randomFn,
     `@compute @workgroup_size(1)`,
     `fn main() {`,
-    ...registerDeclarations,
+    ...registerDeclarationLines,
     ...statementLines,
     `}`,
   ].join('\n');

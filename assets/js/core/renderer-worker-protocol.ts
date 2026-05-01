@@ -97,7 +97,7 @@ export type RendererWorkerRequestMessage =
 export type RendererWorkerReadyMessage = {
   type: typeof RENDERER_WORKER_MESSAGE_TYPES.ready;
   payload: {
-    backend: 'webgpu';
+    backend: 'webgl' | 'webgpu';
     width: number;
     height: number;
   };

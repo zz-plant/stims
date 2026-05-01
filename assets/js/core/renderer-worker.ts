@@ -6,6 +6,7 @@ import {
   PerspectiveCamera,
   Scene,
   SRGBColorSpace,
+  WebGLRenderer,
 } from 'three';
 import type { RendererInitConfig } from './renderer-setup.ts';
 import {
@@ -30,7 +31,7 @@ const scope = globalThis as typeof globalThis & {
 };
 
 type WorkerRendererState = {
-  renderer: WebGPURenderer | null;
+  renderer: WebGLRenderer | WebGPURenderer | null;
   scene: Scene | null;
   camera: PerspectiveCamera | null;
   canvas: OffscreenCanvas | null;
@@ -40,6 +41,7 @@ type WorkerRendererState = {
   options: Partial<RendererInitConfig>;
   latestPreset: RendererWorkerPresetPayload | null;
   latestFrame: RendererWorkerFramePayload | null;
+  backend: 'webgl' | 'webgpu' | null;
 };
 
 const state: WorkerRendererState = {
@@ -53,6 +55,7 @@ const state: WorkerRendererState = {
   options: {},
   latestPreset: null,
   latestFrame: null,
+  backend: null,
 };
 
 /** Reusable Color buffer to avoid per-frame heap allocations. */
@@ -75,7 +78,7 @@ function resolveEffectivePixelRatio({
 }
 
 function applyRendererOptions(
-  renderer: WebGPURenderer,
+  renderer: WebGLRenderer | WebGPURenderer,
   {
     width,
     height,
@@ -101,6 +104,188 @@ function applyRendererOptions(
   renderer.toneMappingExposure = options.exposure ?? 1;
 }
 
+async function initWebGPURenderer({
+  canvas,
+  width,
+  height,
+  devicePixelRatio,
+  options = {},
+}: {
+  canvas: OffscreenCanvas;
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+  options?: Partial<RendererInitConfig>;
+}): Promise<
+  { backend: 'webgpu'; success: true } | { success: false; error: string }
+> {
+  const gpu = (navigator as Navigator & { gpu?: GPU }).gpu;
+  if (!gpu?.requestAdapter) {
+    return {
+      success: false,
+      error:
+        'WebGPU is unavailable inside the renderer worker. Will attempt WebGL fallback.',
+    };
+  }
+
+  let adapter: GPUAdapter | null = null;
+  try {
+    adapter = await gpu.requestAdapter();
+  } catch (_error) {
+    return {
+      success: false,
+      error:
+        'Unable to acquire a WebGPU adapter inside the renderer worker. Will attempt WebGL fallback.',
+    };
+  }
+  if (!adapter) {
+    return {
+      success: false,
+      error:
+        'No WebGPU adapter available in the renderer worker. Will attempt WebGL fallback.',
+    };
+  }
+
+  if (
+    (
+      adapter as GPUAdapter & {
+        isFallbackAdapter?: boolean;
+      }
+    ).isFallbackAdapter
+  ) {
+    return {
+      success: false,
+      error:
+        'Renderer worker rejected a fallback WebGPU adapter. Will attempt WebGL fallback.',
+    };
+  }
+
+  let device: GPUDevice | null = null;
+  try {
+    device = await adapter.requestDevice();
+  } catch (_error) {
+    return {
+      success: false,
+      error:
+        'Unable to acquire a WebGPU device in the renderer worker. Will attempt WebGL fallback.',
+    };
+  }
+
+  try {
+    const renderer = new WebGPURenderer({
+      canvas,
+      antialias: options.antialias ?? true,
+      alpha: options.alpha ?? false,
+      device,
+    });
+    if ('init' in renderer && typeof renderer.init === 'function') {
+      await renderer.init();
+    }
+
+    const scene = new Scene();
+    scene.background = new Color(0x05070d);
+    const camera = new PerspectiveCamera(45, width / height, 0.1, 10);
+    camera.position.z = 1;
+
+    state.renderer = renderer;
+    state.scene = scene;
+    state.camera = camera;
+    state.canvas = canvas;
+    state.width = width;
+    state.height = height;
+    state.devicePixelRatio = devicePixelRatio;
+    state.options = options;
+    state.backend = 'webgpu';
+
+    applyRendererOptions(renderer, {
+      width,
+      height,
+      devicePixelRatio,
+      options,
+    });
+
+    return { backend: 'webgpu', success: true };
+  } catch (_error) {
+    return {
+      success: false,
+      error:
+        'WebGPU renderer creation failed in the worker. Will attempt WebGL fallback.',
+    };
+  }
+}
+
+function initWebGLRenderer({
+  canvas,
+  width,
+  height,
+  devicePixelRatio,
+  options = {},
+}: {
+  canvas: OffscreenCanvas;
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+  options?: Partial<RendererInitConfig>;
+}): { backend: 'webgl'; success: true } | { success: false; error: string } {
+  try {
+    const glContext = canvas.getContext('webgl2', {
+      antialias: options.antialias ?? true,
+      alpha: options.alpha ?? false,
+      powerPreference: 'default',
+      failIfMajorPerformanceCaveat: false,
+      stencil: true,
+      preserveDrawingBuffer: false,
+    }) as WebGL2RenderingContext | null;
+
+    if (!glContext) {
+      return {
+        success: false,
+        error: 'WebGL2 context is unavailable in the renderer worker.',
+      };
+    }
+
+    const renderer = new WebGLRenderer({
+      canvas,
+      context: glContext,
+      antialias: options.antialias ?? true,
+      alpha: options.alpha ?? false,
+      powerPreference: 'default',
+      failIfMajorPerformanceCaveat: false,
+      stencil: true,
+      preserveDrawingBuffer: false,
+    });
+
+    const scene = new Scene();
+    scene.background = new Color(0x05070d);
+    const camera = new PerspectiveCamera(45, width / height, 0.1, 10);
+    camera.position.z = 1;
+
+    state.renderer = renderer;
+    state.scene = scene;
+    state.camera = camera;
+    state.canvas = canvas;
+    state.width = width;
+    state.height = height;
+    state.devicePixelRatio = devicePixelRatio;
+    state.options = options;
+    state.backend = 'webgl';
+
+    applyRendererOptions(renderer, {
+      width,
+      height,
+      devicePixelRatio,
+      options,
+    });
+
+    return { backend: 'webgl', success: true };
+  } catch (_error) {
+    return {
+      success: false,
+      error: 'Failed to initialize WebGL renderer in the worker.',
+    };
+  }
+}
+
 async function initRenderer({
   canvas,
   width,
@@ -114,74 +299,63 @@ async function initRenderer({
   devicePixelRatio: number;
   options?: Partial<RendererInitConfig>;
 }) {
-  const gpu = (navigator as Navigator & { gpu?: GPU }).gpu;
-  if (!gpu?.requestAdapter) {
-    throw new Error('WebGPU is unavailable inside the renderer worker.');
-  }
-
-  const adapter = await gpu.requestAdapter();
-  if (!adapter) {
-    throw new Error(
-      'Unable to acquire a WebGPU adapter inside the renderer worker.',
-    );
-  }
-
-  if (
-    (
-      adapter as GPUAdapter & {
-        isFallbackAdapter?: boolean;
-      }
-    ).isFallbackAdapter
-  ) {
-    throw new Error(
-      'Renderer worker rejected a fallback WebGPU adapter. Use the main-thread WebGL fallback instead.',
-    );
-  }
-
-  const device = await adapter.requestDevice();
-  const renderer = new WebGPURenderer({
+  // Attempt WebGPU first
+  const webgpuResult = await initWebGPURenderer({
     canvas,
-    antialias: options.antialias ?? true,
-    alpha: options.alpha ?? false,
-    device,
-  });
-  if ('init' in renderer && typeof renderer.init === 'function') {
-    await renderer.init();
-  }
-
-  const scene = new Scene();
-  scene.background = new Color(0x05070d);
-  const camera = new PerspectiveCamera(45, width / height, 0.1, 10);
-  camera.position.z = 1;
-
-  state.renderer = renderer;
-  state.scene = scene;
-  state.camera = camera;
-  state.canvas = canvas;
-  state.width = width;
-  state.height = height;
-  state.devicePixelRatio = devicePixelRatio;
-  state.options = options;
-
-  applyRendererOptions(renderer, {
     width,
     height,
     devicePixelRatio,
     options,
   });
 
-  postMessage({
-    type: RENDERER_WORKER_MESSAGE_TYPES.ready,
-    payload: {
-      backend: 'webgpu',
-      width,
-      height,
-    },
+  if (webgpuResult.success) {
+    postMessage({
+      type: RENDERER_WORKER_MESSAGE_TYPES.ready,
+      payload: {
+        backend: webgpuResult.backend,
+        width,
+        height,
+      },
+    });
+    postMessage({
+      type: RENDERER_WORKER_MESSAGE_TYPES.status,
+      payload: { phase: 'initialized' },
+    });
+    return;
+  }
+
+  // Fallback to WebGL
+  console.info(
+    `Renderer worker WebGPU init failed: ${webgpuResult.error} Falling back to WebGL.`,
+  );
+
+  const webglResult = initWebGLRenderer({
+    canvas,
+    width,
+    height,
+    devicePixelRatio,
+    options,
   });
-  postMessage({
-    type: RENDERER_WORKER_MESSAGE_TYPES.status,
-    payload: { phase: 'initialized' },
-  });
+
+  if (webglResult.success) {
+    postMessage({
+      type: RENDERER_WORKER_MESSAGE_TYPES.ready,
+      payload: {
+        backend: webglResult.backend,
+        width,
+        height,
+      },
+    });
+    postMessage({
+      type: RENDERER_WORKER_MESSAGE_TYPES.status,
+      payload: { phase: 'initialized' },
+    });
+    return;
+  }
+
+  throw new Error(
+    `Renderer worker failed to initialize with either backend. WebGPU error: ${webgpuResult.error}. WebGL error: ${webglResult.error}`,
+  );
 }
 
 function ensureRendererReady() {
@@ -195,6 +369,7 @@ function ensureRendererReady() {
     renderer: state.renderer,
     scene: state.scene,
     camera: state.camera,
+    backend: state.backend as 'webgl' | 'webgpu',
   };
 }
 
