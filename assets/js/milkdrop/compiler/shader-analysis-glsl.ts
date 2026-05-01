@@ -135,6 +135,10 @@ export function createCompositeGlslEmitter(): GlslEmitter {
 
     emitBinary(left: string, op: string, right: string): string {
       const glslOp = op === '&&' ? '*' : op === '||' ? '+' : op;
+      // Emit saturating OR via a+b-a*b to keep values in [0,1] when both operands are truthy.
+      if (op === '||') {
+        return `(${left} + ${right} - ${left} * ${right})`;
+      }
       return `(${left} ${glslOp} ${right})`;
     },
 
