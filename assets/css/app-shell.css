@@ -1408,8 +1408,21 @@ body[data-page="workspace"] {
   color: var(--stims-muted);
 }
 
+.stims-shell__audio-meter {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--stims-good);
+  box-shadow: 0 0 8px rgba(125, 224, 162, 0.5);
+  transition:
+    transform 130ms ease-out,
+    opacity 160ms ease;
+  flex-shrink: 0;
+}
+
 .stims-shell__corner-link {
-  color: var(--stims-ink);
+  color: var(--stims-muted);
   text-decoration: none;
   display: inline-flex;
   align-items: center;

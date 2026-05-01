@@ -113,6 +113,7 @@ export function StimsWorkspaceApp() {
   const stageAnchoredToolOpen =
     routeState.panel === 'editor' || routeState.panel === 'inspector';
   const liveMode = launchControlsHidden;
+  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const currentAudioSource =
     engineSnapshot?.audioSource ?? routeState.audioSource;
   const launchEyebrow =
@@ -183,6 +184,7 @@ export function StimsWorkspaceApp() {
       data-mode={liveMode ? 'live' : 'home'}
     >
       <WorkspaceStagePanel
+        audioEnergy={audioEnergy}
         audioSource={currentAudioSource}
         backend={engineSnapshot?.backend}
         engineReady={engineReady}

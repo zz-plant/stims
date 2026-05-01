@@ -138,12 +138,18 @@ export function createMilkdropSignalTracker() {
     waveformData: null as Uint8Array | null,
   } as unknown as MilkdropRuntimeSignals;
 
+  let latestWeightedEnergy = 0;
+
   return {
     reset() {
       frame = 0;
       rms = 0;
+      latestWeightedEnergy = 0;
       signalProcessor.reset();
       beatTracker.reset();
+    },
+    getLatestAudioEnergy() {
+      return latestWeightedEnergy;
     },
     update({
       time,
@@ -219,6 +225,7 @@ export function createMilkdropSignalTracker() {
       signalCache.weightedEnergy = weightedEnergy;
       signalCache.frequencyData = processedSignals.frequencyData;
       signalCache.waveformData = resolvedWaveformData;
+      latestWeightedEnergy = weightedEnergy;
 
       return signalCache;
     },

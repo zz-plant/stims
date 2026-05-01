@@ -15,6 +15,7 @@ export type EngineSnapshot = {
   runtimeReady: boolean;
   audioActive: boolean;
   audioSource: AudioSource | null;
+  audioEnergy: number;
 };
 
 export function createEmptyEngineSnapshot(): EngineSnapshot {
@@ -28,6 +29,7 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     runtimeReady: false,
     audioActive: false,
     audioSource: null,
+    audioEnergy: 0,
   };
 }
 
@@ -53,5 +55,6 @@ export function buildEngineSnapshot({
     runtimeReady: Boolean(runtime),
     audioActive,
     audioSource,
+    audioEnergy: snapshot?.audioEnergy ?? 0,
   };
 }

@@ -94,6 +94,7 @@ export function createMilkdropExperience({
     adaptiveQuality: AdaptiveQualityState | null;
     catalogEntries: ReturnType<typeof catalogCoordinator.getCatalogEntries>;
     sessionState: ReturnType<typeof session.getState>;
+    audioEnergy: number;
   };
 
   const catalogStore = createMilkdropCatalogStore();
@@ -276,6 +277,7 @@ export function createMilkdropExperience({
     adaptiveQuality: adaptiveQualityState,
     catalogEntries: catalogCoordinator.getCatalogEntries(),
     sessionState: session.getState(),
+    audioEnergy: signalTracker.getLatestAudioEnergy(),
   });
 
   const runtimeSignalHub = createMilkdropRuntimeSignalHub({

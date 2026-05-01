@@ -605,6 +605,7 @@ export function WorkspaceLaunchPanel({
 }
 
 export function WorkspaceStagePanel({
+  audioEnergy = 0,
   audioSource,
   backend,
   engineReady,
@@ -639,6 +640,7 @@ export function WorkspaceStagePanel({
   youtubeReady,
   youtubeUrl,
 }: {
+  audioEnergy?: number;
   audioSource: 'demo' | 'microphone' | 'tab' | 'youtube' | null | undefined;
   backend: 'webgl' | 'webgpu' | null | undefined;
   engineReady: boolean;
@@ -709,6 +711,16 @@ export function WorkspaceStagePanel({
                         ? 'WebGL active'
                         : 'Renderer loading'}
                   </span>
+                  {audioEnergy > 0 ? (
+                    <span
+                      className="stims-shell__audio-meter"
+                      style={{
+                        transform: `scale(${0.82 + audioEnergy * 0.36})`,
+                        opacity: 0.3 + audioEnergy * 0.55,
+                      }}
+                      aria-hidden="true"
+                    />
+                  ) : null}
                 </div>
               ) : null}
             </div>
