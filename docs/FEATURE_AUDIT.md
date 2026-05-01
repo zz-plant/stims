@@ -1,6 +1,6 @@
 # Feature audit vs docs
 
-> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical audit context rather than the current product-positioning baseline.
+> Updated 2026-03 for the MilkDrop-led repositioning. The flagship pathway is `/milkdrop/`. Remaining toy catalog entries are secondary visualizers under the same product surface.
 
 This audit maps product features to their current documentation so we can spot gaps and keep references aligned with the live experience.
 

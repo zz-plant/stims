@@ -341,6 +341,20 @@ function AudioSourcePanel({
   );
 }
 
+export const STIMS_FIRST_VISIT_KEY = 'stims:visited_before';
+
+function useFirstVisitDismissed() {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return [true, () => {}] as const;
+  }
+  const stored = localStorage.getItem(STIMS_FIRST_VISIT_KEY);
+  const dismissed = stored === 'true';
+  const dismiss = () => {
+    localStorage.setItem(STIMS_FIRST_VISIT_KEY, 'true');
+  };
+  return [dismissed, dismiss] as const;
+}
+
 export function WorkspaceLaunchPanel({
   embedded = false,
   engineReady,
@@ -407,6 +421,7 @@ export function WorkspaceLaunchPanel({
   const rootClassName = embedded
     ? 'stims-shell__launch-panel'
     : 'stims-shell__launch';
+  const [firstVisitDismissed, dismissFirstVisit] = useFirstVisitDismissed();
   const jumpBackInEntries = [
     ...favoritePresets.map((entry) => ({
       entry,
@@ -539,6 +554,27 @@ export function WorkspaceLaunchPanel({
               Browse everything
             </button>
           </div>
+        </section>
+      ) : null}
+
+      {!firstVisitDismissed ? (
+        <section className="stims-shell__confidence-note">
+          <strong>A browser-native visualizer in the MilkDrop lineage</strong>
+          <span>
+            This is an independent, actively measured visualizer inspired by
+            Ryan Geiss&rsquo;s MilkDrop. It runs live presets in the browser
+            with WebGPU or WebGL. Every shipped preset is checked against
+            projectM reference renders&mdash;fidelity badges tell you exactly
+            how close each one gets. Press play with demo audio, then switch to
+            your own music whenever you want.
+          </span>
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={dismissFirstVisit}
+          >
+            Got it
+          </button>
         </section>
       ) : null}
 

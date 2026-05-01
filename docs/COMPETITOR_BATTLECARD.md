@@ -1,8 +1,8 @@
 # Competitor battlecard (Stims)
 
-> Historical context note (2026-03): This document started under the broader multi-toy positioning. Keep it as strategy context only, and align any reused public copy with the current MilkDrop-led `/milkdrop/` product model before shipping it.
+> Updated 2026-03 for the MilkDrop-led repositioning. The external angle bank below is aligned with the current `/milkdrop/` flagship product model. Internal competitor comparisons remain strategy-only context.
 
-This doc intentionally separates **internal strategy content** from **external-safe messaging** so teams can reuse the same research without leaking direct competitor framing into public copy.
+This doc separates **internal strategy content** from **external-safe messaging** so teams can reuse the same research without leaking direct competitor framing into public copy.
 
 ## Internal use: competitor battlecard table
 
