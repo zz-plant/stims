@@ -14,7 +14,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
-`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
+`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` (root entry point `assets/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
 
 For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md).
 

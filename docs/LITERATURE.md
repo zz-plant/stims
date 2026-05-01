@@ -1,8 +1,8 @@
 # Scientific literature reference map
 
-> Historical context note (2026-03): This document predates the MilkDrop-led repositioning. Treat it as historical reference context rather than the current product-positioning baseline.
+> Updated 2026-03 for the MilkDrop-led positioning. References below remain applicable to audio-reactive visualizer research and multisensory UX rationale.
 
-This guide collects published scientific literature that can serve as grounding references for the historical **Stims** positioning: interactive, audio-reactive visuals for playful sensory stimulation and exploration, with particular relevance to neurodiverse audiences. Use these references when documenting the rationale for audio-visual mappings, multisensory experiences, or sensory processing considerations. It also links literature themes to product features so citations are specific rather than generic.
+This guide collects published scientific literature that serves as grounding for the Stims audio-reactive visualizer: browser-native, preset-driven visuals with audio, motion, and performance controls. Use these references when documenting the rationale for audio-visual mappings or multisensory experiences. It also links literature themes to product features so citations are specific rather than generic.
 
 ## How to use this list
 

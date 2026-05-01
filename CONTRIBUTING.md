@@ -74,7 +74,7 @@ Use these commands before opening a PR:
   bun run test tests/path/to/spec.test.ts
   ```
 
-> Use `bun run test` (not raw `bun test`) so preload/importmap flags from `package.json` are always applied.
+> Use `bun run test` (not raw `bun test`) so the beforeEach/preload setup in `bunfig.toml` is always applied.
 
 ## Common dev commands
 
