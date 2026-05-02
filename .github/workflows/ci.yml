@@ -162,7 +162,7 @@ jobs:
 
       - name: Download production bundle artifact
         if: steps.cloudflare_creds.outputs.available == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist-artifact
 
@@ -231,7 +231,7 @@ jobs:
 
       - name: Download production bundle artifact
         if: steps.cloudflare_creds.outputs.available == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist-artifact
 
