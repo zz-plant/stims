@@ -30,4 +30,4 @@ targets=(
   ".vscode/tasks.json"
 )
 
-exec biome "$command" "${targets[@]}" --files-ignore-unknown=true "$@"
+exec ./node_modules/@biomejs/cli-darwin-arm64/biome "$command" "${targets[@]}" --files-ignore-unknown=true "$@"
