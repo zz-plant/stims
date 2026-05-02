@@ -4,6 +4,28 @@ import path from 'node:path';
 const TEST_DIR = path.resolve('tests');
 const TEST_FILE_PATTERN = /\.test\.(?:ts|js)$/;
 const INTEGRATION_TEST = 'tests/agent-integration.test.ts';
+
+/**
+ * Slow tests excluded from the `fast` profile.
+ *
+ * These are either corpus/certification runs (long I/O), visual-diff captures
+ * (require a built dist), or the Playwright-backed agent integration harness.
+ * They are still included in the `all` and `unit` profiles.
+ */
+const SLOW_TESTS = new Set([
+  'tests/agent-integration.test.ts',
+  'tests/capture-certification-corpus.test.ts',
+  'tests/capture-visual-reference-suite.test.ts',
+  'tests/certification-corpus.test.ts',
+  'tests/certification-corpus-perf-suite.test.ts',
+  'tests/certification-corpus-runtime.test.ts',
+  'tests/milkdrop-corpus-compat.test.ts',
+  'tests/milkdrop-parity.test.ts',
+  'tests/milkdrop-projectm-compat.test.ts',
+  'tests/run-certification-corpus-perf-suite.test.ts',
+  'tests/run-parity-diff-suite.test.ts',
+]);
+
 const LEGACY_FRONTEND_TESTS = [
   'tests/flow-timer.test.ts',
   'tests/haptics-controller.test.ts',
@@ -111,13 +133,20 @@ async function resolveProfileFiles(profile: string): Promise<string[]> {
     return allTests.filter((file) => file !== INTEGRATION_TEST);
   }
 
+  if (profile === 'fast') {
+    // All tests except slow corpus/certification/integration runs.
+    // This is the profile used by `bun run check` so it completes in ~30s.
+    const allTests = await listTestFiles(TEST_DIR);
+    return allTests.filter((file) => !SLOW_TESTS.has(file));
+  }
+
   const files = PROFILE_FILE_LISTS[profile];
   if (files) {
     return files;
   }
 
   throw new Error(
-    `Unknown test profile "${profile}". Expected one of: all, unit, integration, legacy-frontend, compat, compat-full.`,
+    `Unknown test profile "${profile}". Expected one of: all, unit, fast, integration, legacy-frontend, compat, compat-full.`,
   );
 }
 
