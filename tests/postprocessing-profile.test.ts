@@ -78,6 +78,8 @@ function createSignals(
     beat: 1,
     beatPulse: 0.28,
     beat_pulse: 0.28,
+    transient: 0,
+    spectralFlux: 0,
     weightedEnergy: 0.82,
     inputX: 0,
     inputY: 0,
