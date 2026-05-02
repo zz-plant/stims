@@ -89,7 +89,7 @@
     "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
+    "@biomejs/biome": "^2.4.14",
     "@playwright/test": "^1.59.1",
     "@types/bun": "^1.3.12",
     "@types/node": "^25.6.0",

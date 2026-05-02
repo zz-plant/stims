@@ -441,6 +441,83 @@ body[data-page="workspace"] {
   border-radius: 50%;
 }
 
+/* Scroll anchoring for smooth user experience */
+.stims-shell__preset-list,
+.stims-shell__sheet-body {
+  scroll-behavior: smooth;
+}
+
+/* Confirmation dialog styling */
+.stims-shell__confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stims-shell__confirm-dialog {
+  background: var(--stims-panel-strong);
+  border: 1px solid var(--stims-line-strong);
+  border-radius: var(--stims-radius-panel);
+  padding: 24px;
+  max-width: 420px;
+  width: calc(100% - 48px);
+  box-shadow: var(--stims-shadow);
+}
+
+.stims-shell__confirm-dialog h3 {
+  margin: 0 0 12px;
+  color: var(--stims-ink-strong);
+}
+
+.stims-shell__confirm-dialog p {
+  margin: 0 0 20px;
+  color: var(--stims-muted);
+  line-height: 1.5;
+}
+
+.stims-shell__confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* Breadcrumb navigation */
+.stims-shell__breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: var(--text-sm);
+  color: var(--stims-muted);
+}
+
+.stims-shell__breadcrumb {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.stims-shell__breadcrumb:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--stims-ink);
+}
+
+.stims-shell__breadcrumb[aria-current="page"] {
+  color: var(--stims-ink-strong);
+  font-weight: 600;
+}
+
+.stims-shell__breadcrumb-separator {
+  opacity: 0.4;
+}
+
 /* Touch target size guarantees for accessibility */
 .stims-shell button,
 .stims-shell a,
@@ -3529,4 +3606,75 @@ details.stims-shell__sheet-footer .stims-shell__session-actions {
 .stims-shell__audio-bridge-link:hover,
 .stims-shell__audio-bridge-link:focus-visible {
   opacity: 1;
+}
+
+/* Print styles for readable output */
+@media print {
+  .stims-shell {
+    background: white;
+    color: black;
+  }
+
+  .stims-shell__sheet-backdrop,
+  .stims-shell__sheet,
+  .stims-shell__stage-dock,
+  .stims-shell__frame-chrome,
+  .stims-shell__frame-header,
+  .stims-shell__toast,
+  .stims-shell__stage-ambient,
+  .stims-shell__stage-ambient-grid,
+  .stims-shell__stage-ambient-beam,
+  .stims-shell__stage-ambient-orb,
+  .stims-shell__stage-ambient-ring {
+    display: none;
+  }
+
+  .stims-shell__stage-frame {
+    border: 1px solid #ccc;
+    background: white;
+  }
+
+  .stims-shell__preset-art {
+    background: #f5f5f5;
+  }
+
+  a {
+    color: #0000ee;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .stims-shell {
+    --stims-ink: #ffffff;
+    --stims-ink-strong: #ffffff;
+    --stims-muted: #e0e0e0;
+    --stims-line: #ffffff;
+    --stims-line-strong: #ffffff;
+    --stims-line-soft: #cccccc;
+    --stims-accent: #ffcc00;
+    --stims-cool: #00ccff;
+    --stims-good: #00ff00;
+    --stims-warn: #ffff00;
+    --stims-bad: #ff0000;
+    background: black;
+  }
+
+  .stims-shell__nav-pill,
+  .stims-shell__collection-pill,
+  .stims-shell__meta-pill,
+  .stims-shell__sheet-tab,
+  .stims-shell__stage-tool,
+  .stims-shell__starter-card,
+  .stims-shell__preset-card,
+  .stims-shell__source-card {
+    border: 2px solid currentColor;
+  }
+
+  .stims-shell__nav-pill[data-active="true"],
+  .stims-shell__sheet-tab[data-active="true"],
+  .stims-shell__collection-pill[data-active="true"] {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 2px;
+  }
 }

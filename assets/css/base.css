@@ -419,10 +419,10 @@ body {
   }
 
   .shell-panel:has(
-      > .control-panel,
-      > [data-audio-controls]:not(:empty),
-      > [data-settings-panel]:not(:empty)
-    ) {
+    > .control-panel,
+    > [data-audio-controls]:not(:empty),
+    > [data-settings-panel]:not(:empty)
+  ) {
     filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
   }
 }

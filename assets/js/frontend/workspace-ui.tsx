@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactNode, RefObject } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import type { RenderPreferences } from '../core/state/render-preference-store.ts';
@@ -335,6 +335,7 @@ function AudioSourcePanel({
             youtubeInputInvalid ? 'invalid' : youtubeReady ? 'ready' : 'idle'
           }
           aria-live="polite"
+          aria-atomic="true"
         >
           {youtubeFeedback}
         </p>
@@ -653,6 +654,7 @@ export function WorkspaceStagePanel({
   onShufflePreset,
   onToggleExtendedSources,
   onToggleFullscreen,
+  onToggleTheme,
   onYoutubeUrlChange,
   onYoutubeUrlKeyDown,
   panel,
@@ -690,6 +692,7 @@ export function WorkspaceStagePanel({
   onShufflePreset: () => void;
   onToggleExtendedSources: () => void;
   onToggleFullscreen: () => void;
+  onToggleTheme: () => void;
   onYoutubeUrlChange: (value: string) => void;
   onYoutubeUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
   panel: PanelState;
@@ -850,6 +853,23 @@ export function WorkspaceStagePanel({
                     />
                     <span className="stims-shell__stage-tool-label">Share</span>
                   </button>
+                  {onToggleTheme ? (
+                    <button
+                      type="button"
+                      className="stims-shell__stage-tool"
+                      aria-label="Toggle theme"
+                      title="Toggle theme"
+                      onClick={onToggleTheme}
+                    >
+                      <UiIcon
+                        name="moon"
+                        className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                      />
+                      <span className="stims-shell__stage-tool-label">
+                        Theme
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
               <a
@@ -1066,7 +1086,11 @@ function BrowseSheetPanel({
         />
 
         {searchQuery.trim().length > 0 || routeState.collectionTag ? (
-          <p className="stims-shell__active-filters" aria-live="polite">
+          <p
+            className="stims-shell__active-filters"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             Showing{' '}
             {[
               searchQuery.trim().length > 0 ? `"${searchQuery.trim()}"` : '',
@@ -1171,7 +1195,11 @@ function BrowseSheetPanel({
 
       <section className="stims-shell__sheet-surface">
         {!catalogReady && !catalogError ? (
-          <ul className="stims-shell__preset-list" style={{ opacity: 0.7 }}>
+          <ul
+            className="stims-shell__preset-list"
+            style={{ opacity: 0.7 }}
+            aria-busy={true}
+          >
             {Array.from({ length: 8 }).map((_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have fixed order
               <li key={i}>
@@ -1471,6 +1499,54 @@ export function WorkspaceToolSheet({
   starterPresets: StarterPreset[];
   stageAnchoredToolOpen: boolean;
 }) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (event.key === 'Tab' && sheetRef.current) {
+        const focusableElements = sheetRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[
+          focusableElements.length - 1
+        ] as HTMLElement;
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement?.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    const sheetElement = sheetRef.current;
+    sheetElement?.addEventListener('keydown', handleKeyDown as EventListener);
+    sheetElement?.focus();
+
+    return () => {
+      sheetElement?.removeEventListener(
+        'keydown',
+        handleKeyDown as EventListener,
+      );
+    };
+  }, [onClose]);
+
   if (!panel) {
     return null;
   }
@@ -1490,9 +1566,11 @@ export function WorkspaceToolSheet({
         />
       ) : null}
       <aside
+        ref={sheetRef}
         className="stims-shell__sheet"
         data-panel={panel}
         aria-label="Tools"
+        tabIndex={-1}
       >
         <div className="stims-shell__sheet-header">
           <div className="stims-shell__sheet-heading">
@@ -1652,6 +1730,7 @@ export function WorkspaceToast({
       className="stims-shell__toast"
       data-tone={toast.tone}
       aria-live="polite"
+      aria-atomic="true"
     >
       <span>{toast.message}</span>
       <button

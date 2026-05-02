@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import '../../css/app-shell.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   setCompatibilityMode,
   setRenderPreferences,
 } from '../core/state/render-preference-store.ts';
+import {
+  applyTheme,
+  getActiveThemePreference,
+  setThemePreference,
+} from '../core/theme-preferences.ts';
 import {
   getFullscreenElement,
   subscribeToFullscreenChange,
@@ -119,6 +124,24 @@ export function StimsWorkspaceApp() {
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
 
+  const handleToggleFullscreen = useCallback(() => {
+    const stageElement = stageRef.current?.parentElement;
+    if (!stageElement) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        const toggled = await toggleElementFullscreen(stageElement, document);
+        if (!toggled) {
+          setStatusMessage('Full screen is unavailable in this browser.');
+        }
+      } catch (_error) {
+        setStatusMessage('Full screen is unavailable in this browser.');
+      }
+    })();
+  }, [stageRef, setStatusMessage]);
+
   useEffect(() => {
     if (
       !liveMode ||
@@ -196,30 +219,101 @@ export function StimsWorkspaceApp() {
     return subscribeToFullscreenChange(handleFullscreenChange, document);
   }, []);
 
-  const handleToggleFullscreen = () => {
-    const stageElement = stageRef.current?.parentElement;
-    if (!stageElement) {
-      return;
+  useEffect(() => {
+    let title = 'Stims';
+    if (loadingRequestedPreset) {
+      title = `Loading… · ${title}`;
+    } else if (selectedPreset) {
+      title = `${selectedPreset.title} · ${title}`;
+    } else if (routeState.panel) {
+      const panelLabel =
+        routeState.panel === 'browse'
+          ? 'Browse'
+          : routeState.panel === 'settings'
+            ? 'Settings'
+            : routeState.panel === 'editor'
+              ? 'Editor'
+              : 'Inspector';
+      title = `${panelLabel} · ${title}`;
+    } else if (liveMode) {
+      title = `Now Playing · ${title}`;
+    } else if (!engineReady) {
+      title = `Loading… · ${title}`;
     }
+    document.title = title;
+  }, [
+    loadingRequestedPreset,
+    selectedPreset,
+    routeState.panel,
+    liveMode,
+    engineReady,
+  ]);
 
-    void (async () => {
-      try {
-        const toggled = await toggleElementFullscreen(stageElement, document);
-        if (!toggled) {
-          setStatusMessage('Full screen is unavailable in this browser.');
-        }
-      } catch (_error) {
-        setStatusMessage('Full screen is unavailable in this browser.');
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
+        return;
       }
-    })();
+
+      const key = event.key.toLowerCase();
+      if (key === ' ' && liveMode && engineReady) {
+        event.preventDefault();
+        handleAudioStart('demo');
+      } else if (key === 'f') {
+        event.preventDefault();
+        handleToggleFullscreen();
+      } else if (key === 'b') {
+        event.preventDefault();
+        updatePanel(routeState.panel === 'browse' ? null : 'browse');
+      } else if (key === 's') {
+        event.preventDefault();
+        updatePanel(routeState.panel === 'settings' ? null : 'settings');
+      } else if (key === 'e') {
+        event.preventDefault();
+        updatePanel(routeState.panel === 'editor' ? null : 'editor');
+      } else if (key === 'i') {
+        event.preventDefault();
+        updatePanel(routeState.panel === 'inspector' ? null : 'inspector');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown as EventListener);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown as EventListener);
+    };
+  }, [
+    liveMode,
+    engineReady,
+    routeState.panel,
+    updatePanel,
+    handleAudioStart,
+    handleToggleFullscreen,
+  ]);
+
+  useEffect(() => {
+    const preference = getActiveThemePreference();
+    applyTheme(preference.theme);
+  }, []);
+
+  const handleToggleTheme = () => {
+    const current = getActiveThemePreference();
+    const next = current.theme === 'dark' ? 'light' : 'dark';
+    setThemePreference({ theme: next });
+    applyTheme(next);
   };
 
   return (
     <div
       className="stims-shell"
-      data-has-toast={toast ? 'true' : undefined}
+      data-has_toast={toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
     >
+      <a href="#stims-main" className="skip-link">
+        Skip to main content
+      </a>
       <WorkspaceStagePanel
         audioEnergy={audioEnergy}
         audioSource={currentAudioSource}
@@ -302,6 +396,7 @@ export function StimsWorkspaceApp() {
         youtubePreviewRef={youtubePreviewRef}
         youtubeReady={youtubeReady}
         youtubeUrl={youtubeUrl}
+        onToggleTheme={handleToggleTheme}
       />
 
       <WorkspaceToolSheet

@@ -6479,8 +6479,8 @@ section.intro::after {
   }
 
   .milkdrop-showcase__filters:has(
-      .milkdrop-showcase__filter[data-active="true"]
-    ) {
+    .milkdrop-showcase__filter[data-active="true"]
+  ) {
     align-items: center;
   }
 
