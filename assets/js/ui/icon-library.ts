@@ -103,6 +103,7 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'm4.93 19.07 1.6-1.6' } },
     { tag: 'path', attrs: { d: 'm17.47 6.53 1.6-1.6' } },
   ],
+  spinner: [{ tag: 'path', attrs: { d: 'M21 12a9 9 0 1 1-6.219-8.56' } }],
 } as const satisfies Record<string, readonly IconNode[]>;
 
 export type UiIconName = keyof typeof ICON_NODES;

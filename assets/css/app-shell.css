@@ -29,6 +29,7 @@
   /* Interactive states */
   --focus-ring: 0 0 0 3px rgba(244, 122, 84, 0.42);
   --focus-ring-offset: 0 0 0 2px rgba(5, 8, 14, 0.8);
+  --touch-target-min: 44px;
   --stims-panel: rgba(10, 13, 20, 0.74);
   --stims-panel-strong: rgba(12, 16, 26, 0.92);
   --stims-panel-fill: linear-gradient(
@@ -316,6 +317,17 @@ body[data-page="workspace"] {
     0 0 28px rgba(244, 122, 84, 0.18);
 }
 
+.stims-shell__nav-pill:disabled,
+.stims-shell__collection-pill:disabled,
+.stims-shell__meta-pill:disabled,
+.stims-shell__sheet-tab:disabled,
+.stims-shell__starter-card:disabled,
+.stims-shell__source-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .stims-shell__nav-link {
   color: var(--stims-muted);
   text-decoration: none;
@@ -429,6 +441,42 @@ body[data-page="workspace"] {
   border-radius: 50%;
 }
 
+/* Touch target size guarantees for accessibility */
+.stims-shell button,
+.stims-shell a,
+.stims-shell input,
+.stims-shell select {
+  min-height: var(--touch-target-min, 44px);
+}
+
+@media (pointer: coarse) {
+  .stims-shell button,
+  .stims-shell a,
+  .stims-shell input,
+  .stims-shell select {
+    min-height: max(var(--touch-target-min, 44px), 44px);
+  }
+}
+
+/* Spinner animation for loading states */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stims-shell__button-icon.stims-icon-slot--sm svg,
+.stims-shell .cta-button [data-icon="spinner"] svg {
+  animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stims-shell__button-icon.stims-icon-slot--sm svg,
+  .stims-shell .cta-button [data-icon="spinner"] svg {
+    animation: none;
+  }
+}
+
 /* Toast animations with spring physics */
 @keyframes toast-enter {
   0% {
@@ -461,6 +509,16 @@ body[data-page="workspace"] {
 
 .stims-shell__toast[data-exit="true"] {
   animation: toast-exit 0.25s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stims-shell__toast {
+    animation: toast-enter 0.2s ease-out;
+  }
+
+  .stims-shell__toast[data-exit="true"] {
+    animation: toast-exit 0.15s ease-out forwards;
+  }
 }
 
 .stims-shell__workspace {
@@ -955,6 +1013,22 @@ body[data-page="workspace"] {
 .stims-shell input[type="range"] {
   width: 100%;
   accent-color: var(--stims-cool);
+}
+
+.stims-shell__input[aria-invalid="true"],
+.stims-shell__input[data-invalid="true"] {
+  border-color: rgba(255, 123, 114, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 22px rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(255, 123, 114, 0.2);
+}
+
+.stims-shell__input:disabled,
+.stims-shell__select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .stims-shell__preset-list {
@@ -2640,6 +2714,25 @@ body[data-page="workspace"] {
     0 22px 36px rgba(0, 0, 0, 0.26),
     0 0 34px rgba(202, 230, 170, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.stims-shell .cta-button:disabled,
+.stims-shell .cta-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.stims-shell .cta-button.primary:disabled,
+.stims-shell .cta-button.primary[disabled] {
+  background: linear-gradient(
+    135deg,
+    rgba(232, 245, 200, 0.4),
+    rgba(159, 217, 139, 0.4)
+  );
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(16, 22, 16, 0.5);
 }
 
 @media (max-width: 1120px) {

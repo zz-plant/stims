@@ -309,7 +309,14 @@ function AudioSourcePanel({
             aria-busy={youtubeLoading}
             onClick={onLoadYouTube}
           >
-            {youtubeLoading ? 'Loading…' : 'Load'}
+            {youtubeLoading ? (
+              <>
+                <UiIcon name="spinner" className="stims-shell__button-icon" />
+                Loading…
+              </>
+            ) : (
+              'Load'
+            )}
           </button>
           <button
             id="use-youtube-audio"
