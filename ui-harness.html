@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Stims UI Iteration Harness</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/app-shell.css" />
+    <style>
+      html, body {
+        margin: 0;
+        min-height: 100vh;
+        background: #05070d;
+        color: #f6efe4;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+      }
+      #ui-harness {
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body data-page="workspace">
+    <div id="ui-harness"></div>
+    <script type="module" src="/assets/js/frontend/ui-harness.tsx"></script>
+  </body>
+</html>

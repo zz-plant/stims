@@ -49,6 +49,8 @@
     "setup:codex": "bash scripts/codex-setup.sh",
     "session:codex": "bash scripts/codex-session.sh",
     "model:codex": "bash scripts/codex-model-route.sh",
+    "agent:status": "bash scripts/codex-setup.sh --status && echo && bash scripts/codex-session.sh --status",
+    "agent:verify": "bash scripts/codex-setup.sh --status && bun run check:quick",
     "check": "bun run scripts/run-quality-gate.ts",
     "check:architecture": "bun run scripts/check-architecture.ts",
     "check:catalog-fidelity": "bun run scripts/check-bundled-catalog-fidelity.ts",
@@ -86,6 +88,8 @@
     "prepare": "husky install",
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
     "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs",
+    "dev:ui": "vite --config vite.config.ui.js",
+    "ui:diff": "bun scripts/ui-diff.ts",
     "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh"
   },
   "devDependencies": {
