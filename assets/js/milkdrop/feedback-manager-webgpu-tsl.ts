@@ -1102,6 +1102,21 @@ function createCompositeOutputNode(
           ),
         ),
       );
+      const vigEnabled = step(0.01, uniforms.vignette);
+      const vigDist = baseUv.sub(0.5).length();
+      const vigAmount = clamp(
+        float(1).sub(vigDist.mul(float(1).add(uniforms.vignette.mul(0.8)))),
+        0,
+        1,
+      );
+      color.assign(color.mul(mix(vec3(1), vec3(vigAmount), vigEnabled)));
+      const chromaEnabled = step(0.01, uniforms.chromaticAberration);
+      const chromaDir = baseUv
+        .sub(0.5)
+        .mul(uniforms.chromaticAberration.mul(0.02));
+      const chromaR = uniforms.currentTex.sample(baseUv.add(chromaDir)).r;
+      const chromaB = uniforms.currentTex.sample(baseUv.sub(chromaDir)).b;
+      color.assign(mix(color, vec3(chromaR, color.g, chromaB), chromaEnabled));
       color.assign(
         mix(
           color,
@@ -1323,6 +1338,9 @@ class WebGPUMilkdropFeedbackManager {
     this.compositeMaterial.uniforms.brightenBoost.value = state.brightenBoost;
     this.compositeMaterial.uniforms.invertBoost.value = state.invertBoost;
     this.compositeMaterial.uniforms.solarizeBoost.value = state.solarizeBoost;
+    this.compositeMaterial.uniforms.vignette.value = state.vignette ?? 0;
+    this.compositeMaterial.uniforms.chromaticAberration.value =
+      state.chromaticAberration ?? 0;
     this.compositeMaterial.uniforms.tint.value.setRGB(
       state.tint.r,
       state.tint.g,

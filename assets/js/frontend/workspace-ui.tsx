@@ -705,7 +705,12 @@ export function WorkspaceStagePanel({
               </a>
               {liveMode ? (
                 <div className="stims-shell__corner-status">
-                  <span className="stims-shell__corner-pill">Live session</span>
+                  <span
+                    className="stims-shell__corner-pill"
+                    title="Visualizer is running with live audio"
+                  >
+                    Live session
+                  </span>
                   <span className="stims-shell__corner-pill">
                     {backend === 'webgpu'
                       ? 'WebGPU active'
@@ -1501,7 +1506,7 @@ export function WorkspaceToolSheet({
                   onClick={() => onTabChange(tool)}
                 >
                   {panel === 'browse' && tool === 'settings'
-                    ? 'Open settings →'
+                    ? 'Style →'
                     : panel === 'settings' && tool === 'browse'
                       ? '← Browse presets'
                       : `Open ${getToolLabel(tool).toLowerCase()}`}

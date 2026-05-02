@@ -72,6 +72,8 @@ export function buildCompositeUniformDefaults(): Record<string, unknown> {
     brightenBoost: 0,
     invertBoost: 0,
     solarizeBoost: 0,
+    vignette: 0,
+    chromaticAberration: 0,
     tint: { r: 1, g: 1, b: 1 },
     feedbackSoftness: 0,
     currentFrameBoost: 0,

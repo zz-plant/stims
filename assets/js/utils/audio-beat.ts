@@ -26,6 +26,8 @@ export type BeatTrackerUpdate = {
   smoothedBands: AudioBandLevels;
   beatIntensity: number;
   isBeat: boolean;
+  isTransient: boolean;
+  spectralFlux: number;
 };
 
 const DEFAULT_SMOOTHING = {
@@ -83,6 +85,8 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
   let previousWeightedEnergy = 0;
   let bassBaseline = 0;
   let energyBaseline = 0;
+  let _previousSpectrum: Float32Array | null = null;
+  let spectralFlux = 0;
 
   const update = (
     {
@@ -137,6 +141,10 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
       bassRise * 3.6 +
       energyProminence * 1.15 +
       energyRise * 1.8;
+
+    const fluxRise = bassRise + energyRise;
+    const isTransient = fluxRise > 0.15 && weightedEnergy > 0.25;
+
     const isBeat =
       bassProminence > threshold &&
       bassRise > onsetThreshold &&
@@ -152,11 +160,15 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
 
     previousBands = { ...bands };
     previousWeightedEnergy = weightedEnergy;
+    spectralFlux =
+      bassRise + energyRise + Math.max(0, bands.mid - previousBands.mid);
 
     return {
       smoothedBands,
       beatIntensity,
       isBeat,
+      isTransient,
+      spectralFlux,
     };
   };
 
@@ -168,6 +180,7 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     previousWeightedEnergy = 0;
     bassBaseline = 0;
     energyBaseline = 0;
+    spectralFlux = 0;
   };
 
   return {

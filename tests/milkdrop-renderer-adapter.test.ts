@@ -140,6 +140,8 @@ function makeSignals(
     beat: 1,
     beatPulse: 0.2,
     beat_pulse: 0.2,
+    transient: 0,
+    spectralFlux: 0,
     weightedEnergy: 0.58,
     inputX: 0,
     inputY: 0,
@@ -348,23 +350,11 @@ shapecode_0_thickoutline=1
 
       const root = scene.children[0] as RenderTreeNode;
       const tree = flattenRenderTree(root);
-      const batchedShapes = tree.filter(
-        (child) =>
-          child.geometry?.getAttribute?.('instanceTransform') !== undefined,
-      );
-      const shaderMaterials = tree.filter(
-        (child) =>
-          child.material instanceof ShaderMaterial &&
-          child.renderOrder !== 45 &&
-          child.renderOrder !== 95,
-      );
       const basicShapeFills = tree.filter(
         (child) =>
           child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
       );
 
-      expect(batchedShapes).toHaveLength(0);
-      expect(shaderMaterials).toHaveLength(0);
       expect(basicShapeFills.length).toBeGreaterThan(0);
     } finally {
       restoreLocation();
@@ -1794,6 +1784,8 @@ comp_shader=mix=0.25 + beat_pulse * 0.2
         beat: 0,
         beatPulse: 0.37,
         beat_pulse: 0.37,
+        transient: 0,
+        spectralFlux: 0,
       }),
     );
     const compositeStates: MilkdropFeedbackCompositeState[] = [];

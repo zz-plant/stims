@@ -44,6 +44,8 @@ function makeSignals(
     beat: 1,
     beatPulse: 0.2,
     beat_pulse: 0.2,
+    transient: 0,
+    spectralFlux: 0,
     weightedEnergy: 0.58,
     inputX: 0,
     inputY: 0,

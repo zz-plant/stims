@@ -51,6 +51,8 @@ export function createMilkdropSignalTracker() {
     beat: 0,
     beatPulse: 0,
     beat_pulse: 0,
+    transient: 0,
+    spectralFlux: 0,
     weightedEnergy: 0,
     inputX: 0,
     inputY: 0,
@@ -222,6 +224,8 @@ export function createMilkdropSignalTracker() {
       signalCache.beat = update.isBeat ? 1 : 0;
       signalCache.beatPulse = update.beatIntensity;
       signalCache.beat_pulse = update.beatIntensity;
+      signalCache.transient = update.isTransient ? 1 : 0;
+      signalCache.spectralFlux = update.spectralFlux;
       signalCache.weightedEnergy = weightedEnergy;
       signalCache.frequencyData = processedSignals.frequencyData;
       signalCache.waveformData = resolvedWaveformData;

@@ -1381,7 +1381,7 @@ body[data-page="workspace"] {
 
 .stims-shell__rail-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
@@ -1523,7 +1523,7 @@ body[data-page="workspace"] {
   position: relative;
   z-index: 1;
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   justify-content: center;
   width: fit-content;
@@ -2303,6 +2303,7 @@ body[data-page="workspace"] {
   right: 24px;
   z-index: 31;
   width: min(540px, calc(100vw - 48px));
+  height: calc(100vh - 48px);
   max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
@@ -2345,6 +2346,7 @@ body[data-page="workspace"] {
 .stims-shell__sheet-body {
   display: grid;
   gap: 16px;
+  flex: 1;
   min-height: 0;
   overflow: auto;
   padding-right: 4px;
@@ -2563,6 +2565,7 @@ body[data-page="workspace"] {
 
   .stims-shell__frame-header {
     flex-direction: column;
+    justify-content: flex-start;
     top: 138px;
   }
 
@@ -2583,6 +2586,32 @@ body[data-page="workspace"] {
 @media (max-height: 720px) {
   .stims-shell {
     padding-block: 14px;
+  }
+
+  /* Hide the sheet subtitle to give the body more vertical space */
+  .stims-shell__sheet-heading p {
+    display: none;
+  }
+
+  /* Tighten the sticky toolbar so preset cards are reachable below it */
+  .stims-shell__sheet-surface--sticky {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  /* Hide browse toolbar description ("Tap any card to play it…") — redundant at small heights */
+  .stims-shell__browse-toolbar-copy .stims-shell__meta-copy {
+    display: none;
+  }
+
+  /* Hide "Search" field label — the input placeholder is sufficient */
+  .stims-shell__sheet-surface--sticky .stims-shell__field-label {
+    display: none;
+  }
+
+  /* Tighten overall sheet gap to reclaim vertical space */
+  .stims-shell__sheet {
+    gap: 8px;
   }
 
   .stims-shell__stage-frame,
@@ -3079,6 +3108,7 @@ body[data-page="workspace"] {
     bottom: 10px;
     left: 10px;
     width: auto;
+    height: auto;
     max-height: calc(100vh - 20px);
     gap: 12px;
     padding: 12px;

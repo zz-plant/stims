@@ -283,6 +283,8 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float brightenBoost;
         uniform float invertBoost;
         uniform float solarizeBoost;
+        uniform float vignette;
+        uniform float chromaticAberration;
         uniform vec3 tint;
         uniform float feedbackSoftness;
         uniform float currentFrameBoost;
@@ -334,6 +336,34 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
 
         vec3 applyContrast(vec3 color, float amount) {
           return clamp((color - 0.5) * amount + 0.5, 0.0, 1.0);
+        }
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453;
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+
+        float fbm(vec2 p, int octaves) {
+          float value = 0.0;
+          float amplitude = 0.5;
+          float frequency = 1.0;
+          for (int i = 0; i < 8; i++) {
+            if (i >= octaves) break;
+            value += amplitude * noise(p * frequency);
+            amplitude *= 0.5;
+            frequency *= 2.0;
+          }
+          return value;
         }
 
         vec2 sampleUv(vec2 uv, float wrapMode) {
@@ -520,6 +550,18 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
             float centerMask = clamp(1.0 - centerDist * 1.4, 0.0, 1.0);
             color = mix(color, color * 0.97, smoothstep(0.0, 0.35, centerMask));
           }
+          if (vignette > 0.01) {
+            float dist = length(vUv - vec2(0.5));
+            float vig = clamp(1.0 - dist * (1.0 + vignette * 0.8), 0.0, 1.0);
+            color *= mix(vec3(1.0), vec3(vig), clamp(vignette, 0.0, 1.0));
+          }
+          if (chromaticAberration > 0.01) {
+            float amount = clamp(chromaticAberration, 0.0, 1.0);
+            vec2 dir = (vUv - vec2(0.5)) * amount * 0.02;
+            float r = texture2D(currentTex, sampleUv(vUv + dir, textureWrap)).r;
+            float b = texture2D(currentTex, sampleUv(vUv - dir, textureWrap)).b;
+            color = vec3(r, color.g, b);
+          }
           if (solarize > 0.01 || solarizeBoost > 0.01) {
             float amount = clamp(max(solarize, solarizeBoost), 0.0, 1.0);
             color = mix(color, abs(color - 0.5) * 2.0, amount);
@@ -643,6 +685,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         brightenBoost: { value: 0 },
         invertBoost: { value: 0 },
         solarizeBoost: { value: 0 },
+        vignette: { value: 0 },
+        chromaticAberration: { value: 0 },
         tint: { value: new Color(1, 1, 1) },
         feedbackSoftness: { value: this.profile.feedbackSoftness },
         currentFrameBoost: { value: this.profile.currentFrameBoost },
@@ -803,6 +847,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.brightenBoost.value = state.brightenBoost;
     uniforms.invertBoost.value = state.invertBoost;
     uniforms.solarizeBoost.value = state.solarizeBoost;
+    uniforms.vignette.value = state.vignette ?? 0;
+    uniforms.chromaticAberration.value = state.chromaticAberration ?? 0;
     uniforms.tint.value.setRGB(state.tint.r, state.tint.g, state.tint.b);
     uniforms.overlayTextureSource.value = state.overlayTextureSource;
     uniforms.overlayTextureMode.value = state.overlayTextureMode;

@@ -256,6 +256,8 @@ export function createCompositeUniforms(
     brightenBoost: uniform(0),
     invertBoost: uniform(0),
     solarizeBoost: uniform(0),
+    vignette: uniform(0),
+    chromaticAberration: uniform(0),
     tint: uniform(new Color(1, 1, 1)),
     // Seed the WebGPU path from its backend profile so feedback blur and
     // current-frame weighting stay in the same lane as the WebGPU renderer.

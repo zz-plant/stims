@@ -317,6 +317,8 @@ export type MilkdropFeedbackCompositeState = {
   brightenBoost: number;
   invertBoost: number;
   solarizeBoost: number;
+  vignette?: number;
+  chromaticAberration?: number;
   tint: {
     r: number;
     g: number;

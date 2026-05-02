@@ -85,7 +85,7 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
     case 'inspector':
       return 'Inspect';
     case 'settings':
-      return 'Settings';
+      return 'Style';
   }
 }
 

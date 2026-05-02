@@ -1,4 +1,5 @@
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
+import { createMilkdropWebGLFeedbackManager } from './feedback-manager-webgl.ts';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
 import type { MilkdropRendererAdapterConfig } from './renderer-adapter.ts';
 import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
@@ -16,9 +17,9 @@ export type MilkdropWebGPURendererAdapterConfig = Omit<
 
 const SAFE_WEBGPU_BEHAVIOR = {
   ...WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-  supportsShapeGradient: false,
-  supportsShapeShaderFill: false,
-  supportsFeedbackPass: false,
+  supportsShapeGradient: true,
+  supportsShapeShaderFill: true,
+  supportsFeedbackPass: true,
 } as const;
 
 function buildSafeWebGpuOptimizationFlags(
@@ -47,9 +48,11 @@ export function createMilkdropWebGPURendererAdapter(
       ? SAFE_WEBGPU_BEHAVIOR
       : WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
     createFeedbackManager: useSafeWebGpuPath
-      ? undefined
+      ? createMilkdropWebGLFeedbackManager
       : createMilkdropWebGPUFeedbackManager,
-    batcher: useSafeWebGpuPath ? null : createWebGPUBatchingLayer(),
+    batcher: useSafeWebGpuPath
+      ? createWebGPUBatchingLayer()
+      : createWebGPUBatchingLayer(),
     webgpuOptimizationFlags: useSafeWebGpuPath
       ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
       : config.webgpuOptimizationFlags,
