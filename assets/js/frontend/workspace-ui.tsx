@@ -559,13 +559,13 @@ export function WorkspaceLaunchPanel({
 
       {!firstVisitDismissed ? (
         <section className="stims-shell__confidence-note">
-          <strong>A browser-native visualizer in the MilkDrop lineage</strong>
+          <strong>The browser-native visualizer in the MilkDrop lineage</strong>
           <span>
-            This is an independent, actively measured visualizer inspired by
-            Ryan Geiss&rsquo;s MilkDrop. It runs live presets in the browser
-            with WebGPU or WebGL. Every shipped preset is checked against
-            projectM reference renders&mdash;fidelity badges tell you exactly
-            how close each one gets. Press play with demo audio, then switch to
+            Stims runs authentic MilkDrop presets (.milk files) live in the
+            browser with WebGPU or WebGL. Each bundled preset is captured
+            against a Stims reference render and certified for rendering
+            consistency. Certified presets carry a &ldquo;Stims certified&rdquo;
+            badge in the preset list. Press play with demo audio, then switch to
             your own music whenever you want.
           </span>
           <button
@@ -641,7 +641,7 @@ export function WorkspaceStagePanel({
   youtubeUrl,
 }: {
   audioEnergy?: number;
-  audioSource: 'demo' | 'microphone' | 'tab' | 'youtube' | null | undefined;
+  audioSource: 'demo' | 'microphone' | 'tab' | 'youtube' | 'null' | 'undefined';
   backend: 'webgl' | 'webgpu' | null | undefined;
   engineReady: boolean;
   invalidExperienceSlug: string | null;
@@ -649,7 +649,9 @@ export function WorkspaceStagePanel({
   launchPanel: ReactNode;
   liveMode: boolean;
   missingRequestedPreset: boolean;
-  onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
+  onAudioStart: (
+    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
+  ) => void;
   onLoadRecentYouTubeVideo: (videoId: string) => void;
   onLoadYouTube: () => void;
   onOpenBrowse: () => void;

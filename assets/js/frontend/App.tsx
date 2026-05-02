@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import '../../css/app-shell.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
@@ -116,6 +116,43 @@ export function StimsWorkspaceApp() {
   const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const currentAudioSource =
     engineSnapshot?.audioSource ?? routeState.audioSource;
+  const quietAtRef = useRef<number | null>(null);
+  const quietDemoSuggestedRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !liveMode ||
+      !engineSnapshot?.audioActive ||
+      currentAudioSource === 'demo'
+    ) {
+      quietAtRef.current = null;
+      quietDemoSuggestedRef.current = false;
+      return;
+    }
+
+    if (audioEnergy < 0.04) {
+      if (quietAtRef.current === null) {
+        quietAtRef.current = performance.now();
+      } else if (
+        performance.now() - quietAtRef.current >= 3000 &&
+        !quietDemoSuggestedRef.current
+      ) {
+        quietDemoSuggestedRef.current = true;
+        setStatusMessage(
+          'Not hearing much? Switch to demo audio for guaranteed motion.',
+        );
+      }
+    } else {
+      quietAtRef.current = null;
+      quietDemoSuggestedRef.current = false;
+    }
+  }, [
+    audioEnergy,
+    currentAudioSource,
+    engineSnapshot?.audioActive,
+    liveMode,
+    setStatusMessage,
+  ]);
   const launchEyebrow =
     engineReady || routeState.invalidExperienceSlug
       ? 'MilkDrop in the browser'

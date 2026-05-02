@@ -188,25 +188,25 @@ export function formatMeasuredMismatchPercent(
 }
 
 /**
- * Classify a preset's projectM parity badge status. The result is the
- * single-source-of-truth for whether a preset has measured-and-passed
- * parity, has been measured but failed, or has no measurement yet.
+ * Classify a preset's Stims certification badge status. The result is the
+ * single-source-of-truth for whether a preset has been measured and certified
+ * by the Stims reference suite, has been measured but is uncertified, or has
+ * no measurement yet.
  *
- * Returning `null` means we should not show a parity badge at all (e.g.
- * for presets without a measured visual certification slot, where adding a
- * "no measurement yet" badge to every row would just add noise).
+ * Returning `null` means we should not show a certification badge at all
+ * (e.g. for presets without a measured visual certification slot).
  */
-export function getPresetParityBadgeStatus(
+export function getPresetCertificationBadgeStatus(
   preset: MilkdropCatalogEntry,
-): 'verified' | 'drift' | null {
+): 'certified' | 'uncertified' | null {
   const visualCertification = preset.visualCertification;
   if (!visualCertification?.measured) {
     return null;
   }
   if (visualCertification.status === 'certified') {
-    return 'verified';
+    return 'certified';
   }
-  return 'drift';
+  return 'uncertified';
 }
 
 function formatVisualCertificationNotice({
@@ -293,7 +293,7 @@ function buildPresetRowSignature({
     preset.visualCertification?.actualBackend ?? '',
     preset.visualCertification?.reasons[0] ?? '',
     preset.visualCertification?.mismatchRatio ?? '',
-    getPresetParityBadgeStatus(preset) ?? '',
+    getPresetCertificationBadgeStatus(preset) ?? '',
     preview?.status ?? '',
     preview?.actualBackend ?? '',
     preview?.updatedAt ?? 0,
@@ -390,30 +390,25 @@ function buildPresetRow({
     badges.appendChild(activeBadge);
   }
 
-  const parityBadgeStatus = getPresetParityBadgeStatus(preset);
-  if (parityBadgeStatus !== null) {
-    const parityBadge = document.createElement('span');
-    if (parityBadgeStatus === 'verified') {
-      parityBadge.className =
-        'milkdrop-overlay__preset-tag milkdrop-overlay__preset-tag--verified';
-      parityBadge.textContent = 'projectM verified';
-      parityBadge.title =
-        preset.visualCertification?.reasons[0] ??
-        'Measured projectM reference parity passed.';
-    } else {
-      parityBadge.className =
-        'milkdrop-overlay__preset-tag milkdrop-overlay__preset-tag--drift';
-      const mismatchPercent = formatMeasuredMismatchPercent(
-        preset.visualCertification?.mismatchRatio,
-      );
-      parityBadge.textContent = mismatchPercent
-        ? `Drifts from projectM (~${mismatchPercent})`
-        : 'Drifts from projectM';
-      parityBadge.title =
-        preset.visualCertification?.reasons[0] ??
-        'Measured projectM reference parity did not pass; rendering is best-effort.';
-    }
-    badges.appendChild(parityBadge);
+  const certificationBadgeStatus = getPresetCertificationBadgeStatus(preset);
+  if (certificationBadgeStatus === 'certified') {
+    const certifiedBadge = document.createElement('span');
+    certifiedBadge.className =
+      'milkdrop-overlay__preset-tag milkdrop-overlay__preset-tag--verified';
+    certifiedBadge.textContent = 'Stims certified';
+    certifiedBadge.title =
+      preset.visualCertification?.reasons[0] ??
+      'Stims reference capture recorded. Certified against the bundled reference corpus.';
+    badges.appendChild(certifiedBadge);
+  } else if (preset.visualCertification?.measured) {
+    const uncertifiedBadge = document.createElement('span');
+    uncertifiedBadge.className =
+      'milkdrop-overlay__preset-tag milkdrop-overlay__preset-tag--drift';
+    uncertifiedBadge.textContent = 'Uncertified';
+    uncertifiedBadge.title =
+      preset.visualCertification?.reasons[0] ??
+      'Measured against Stims reference but did not pass certification.';
+    badges.appendChild(uncertifiedBadge);
   }
 
   titleRow.append(title, badges);

@@ -139,6 +139,8 @@ export function installMilkdropRuntimeKeybindings({
   }) => void;
   toggleFavorite: (id: string) => void;
   setRating: (id: string, rating: number) => void;
+  togglePresetLock?: () => void;
+  isPresetLocked?: () => boolean;
 }) {
   const keyboardHandler = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
@@ -306,6 +308,18 @@ export function installMilkdropRuntimeKeybindings({
     const activePresetId = getActivePresetId();
     if (event.key === 'f' && activePresetId && getActiveCatalogEntry()) {
       toggleFavorite(activePresetId);
+      event.preventDefault();
+      return;
+    }
+    if (
+      (event.key === 'l' || event.key === 'L') &&
+      togglePresetLock &&
+      isPresetLocked
+    ) {
+      togglePresetLock();
+      setOverlayStatus(
+        isPresetLocked() ? 'Preset locked.' : 'Preset unlocked.',
+      );
       event.preventDefault();
       return;
     }

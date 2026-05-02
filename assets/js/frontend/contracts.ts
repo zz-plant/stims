@@ -1,6 +1,6 @@
 import type { MilkdropVisualCertification } from '../milkdrop/types.ts';
 
-export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube';
+export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
 
 export type PanelState = 'browse' | 'editor' | 'inspector' | 'settings' | null;
 
@@ -25,6 +25,7 @@ export type SessionRouteState = {
 export type EngineAudioRequest =
   | { source: 'demo' }
   | { source: 'microphone' }
+  | { source: 'file'; stream: MediaStream }
   | {
       source: 'tab' | 'youtube';
       stream: MediaStream;

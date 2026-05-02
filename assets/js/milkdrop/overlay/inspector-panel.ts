@@ -16,7 +16,6 @@ import type {
 import {
   compatibilityCategoryLabel,
   fidelityLabel,
-  formatMeasuredMismatchPercent,
   formatPrimaryCompatibilityMessage,
   getPrimaryDegradationReason,
   supportLabel,
@@ -93,7 +92,7 @@ export function formatInspectorMetrics({
           : parity.visualEvidenceTier,
       requiredBackend: 'webgpu',
       actualBackend: null,
-      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+      reasons: ['No measured Stims reference capture is recorded yet.'],
     };
   const compatibilitySummary = formatCompatibilitySummary({
     support,
@@ -117,11 +116,13 @@ export function formatInspectorMetrics({
       value: `${visualCertification.status} (${visualCertification.measured ? 'measured' : 'inferred'})`,
     },
     {
-      label: 'Measured drift',
-      value: visualCertification.measured
-        ? (formatMeasuredMismatchPercent(visualCertification.mismatchRatio) ??
-          'unknown')
-        : 'not measured',
+      label: 'Certification state',
+      value:
+        visualCertification.status === 'certified'
+          ? 'Certified (reference captured)'
+          : visualCertification.measured
+            ? 'Measured, not certified'
+            : 'Pending',
     },
     {
       label: 'Required backend',
@@ -177,8 +178,8 @@ export function formatInspectorMetrics({
       value:
         visualCertification.reasons[0] ??
         (visualCertification.status === 'certified'
-          ? 'Measured WebGPU reference capture passed.'
-          : 'Awaiting measured WebGPU certification.'),
+          ? 'Stims reference capture recorded. Certified against the bundled reference corpus.'
+          : 'Awaiting Stims reference capture.'),
     },
     { label: 'Primary note', value: compatibilitySummary.primaryNote },
   ] satisfies InspectorMetric[];

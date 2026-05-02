@@ -36,7 +36,7 @@ type WorkspaceShellOrchestrationArgs = {
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
     launchState?: SessionRouteState;
-    source: 'demo' | 'microphone' | 'tab' | 'youtube';
+    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
     stream?: MediaStream;
   }) => Promise<void>;
   youtubePreviewRef: { current: HTMLDivElement | null };
@@ -209,9 +209,23 @@ export function useWorkspaceShellOrchestration({
     if (!nextPool.length) {
       return;
     }
+    const fidelityScore = (entry: PresetCatalogEntry) => {
+      const fidelityClass = entry.visualCertification?.fidelityClass;
+      if (fidelityClass === 'exact') return 4;
+      if (fidelityClass === 'near-exact') return 3;
+      if (fidelityClass === 'partial') return 2;
+      return 1;
+    };
+    const scoredPool = nextPool.map((entry) => ({
+      entry,
+      weight: fidelityScore(entry),
+    }));
+    const highestScore = Math.max(...scoredPool.map((s) => s.weight), 1);
+    const topPool = scoredPool.filter((s) => s.weight >= highestScore);
+    const drawPool = topPool.length > 0 ? topPool : scoredPool;
 
-    const nextPreset =
-      nextPool[Math.floor(Math.random() * nextPool.length)] ?? nextPool[0];
+    const picked = drawPool[Math.floor(Math.random() * drawPool.length)];
+    const nextPreset = picked?.entry ?? nextPool[0];
     if (!nextPreset) {
       return;
     }
@@ -219,8 +233,57 @@ export function useWorkspaceShellOrchestration({
     handlePresetSelection(nextPreset.id);
   };
 
+  const handleAudioFile = async (file: File) => {
+    if (
+      !file.type.startsWith('audio/') &&
+      !file.name.match(/\.(mp3|wav|flac|ogg|m4a|aac|opus|webm)$/i)
+    ) {
+      return;
+    }
+    try {
+      setStatusMessage(null);
+      const audioContext = new AudioContext();
+      const arrayBuffer = await file.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      const destination = audioContext.createMediaStreamDestination();
+      source.connect(destination);
+      source.connect(audioContext.destination);
+      source.start(0);
+
+      const healedPresetId = shellState.missingRequestedPreset
+        ? (shellState.featuredPreset?.id ?? null)
+        : routeState.presetId;
+      const nextRouteState = {
+        ...routeState,
+        audioSource: 'file' as const,
+        panel: null,
+        presetId: healedPresetId,
+      };
+
+      if (shellState.missingRequestedPreset && shellState.featuredPreset) {
+        setStatusMessage(
+          `Requested preset unavailable. Starting with ${shellState.featuredPreset.title}.`,
+        );
+      }
+
+      commitRoute(nextRouteState);
+      await startAudioSource({
+        source: 'file',
+        stream: destination.stream,
+        launchState: nextRouteState,
+      });
+      setStatusMessage(`Playing: ${file.name}`);
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : 'Unable to play audio file.',
+      );
+    }
+  };
+
   const handleAudioStart = async (
-    source: 'demo' | 'microphone' | 'tab' | 'youtube',
+    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
   ) => {
     try {
       setStatusMessage(null);
@@ -310,6 +373,7 @@ export function useWorkspaceShellOrchestration({
     handleImport,
     handlePresetSelection,
     handleShowCurrentLink,
+    handleAudioFile,
     handleShufflePreset,
     readinessAlerts,
     updatePanel,

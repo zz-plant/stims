@@ -130,6 +130,7 @@ export function createMilkdropExperience({
   let blendState = cloneBlendState(currentFrameState);
   let blendEndAtMs = 0;
   let autoplay = preferences.getAutoplay();
+  let lockedPreset = false;
   let blendDuration = preferences.getBlendDuration(
     activeCompiled.ir.numericFields.blend_duration,
   );
@@ -598,6 +599,11 @@ export function createMilkdropExperience({
       setRating: (id, rating) => {
         void catalogActions.setRating(id, rating);
       },
+      togglePresetLock: () => {
+        lockedPreset = !lockedPreset;
+        setOverlayStatus(lockedPreset ? 'Preset locked.' : 'Preset unlocked.');
+      },
+      isPresetLocked: () => lockedPreset,
     },
   });
 
@@ -703,7 +709,7 @@ export function createMilkdropExperience({
     getBlendEndAtMs: () => blendEndAtMs,
     getBlendDuration: () => blendDuration,
     getTransitionMode: () => transitionMode,
-    getAutoplay: () => autoplay,
+    getAutoplay: () => autoplay && !lockedPreset,
     getLastPresetSwitchAt: () => lastPresetSwitchAt,
     updateAgentDebugSnapshot,
     agentModeEnabled,

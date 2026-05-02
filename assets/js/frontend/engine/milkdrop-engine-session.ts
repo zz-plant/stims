@@ -207,6 +207,20 @@ export function createMilkdropEngineAdapter() {
         return;
       }
 
+      if (request.source === 'file') {
+        if (capturedVideoModulePromise) {
+          const { clearMilkdropCapturedVideoStream } =
+            await loadCapturedVideoModule();
+          clearMilkdropCapturedVideoStream();
+        }
+        await activeRuntime.startAudio({ stream: request.stream });
+        audioActive = true;
+        audioSource = 'file';
+        setAudioActive(true, 'file');
+        emit();
+        return;
+      }
+
       if (request.source === 'microphone') {
         if (capturedVideoModulePromise) {
           const { clearMilkdropCapturedVideoStream } =
