@@ -40,6 +40,14 @@ If a task cannot be described with a clean file boundary and a small validation 
 | `.agent/skills/test-visualizer/SKILL.md` | Running visualizer-focused validation or full repo quality gates. | `bun run test …`, `bun run test:integration`, `bun run test:compat`, `bun run check` |
 | `.agent/skills/verify-visualizer-work/SKILL.md` | Quick validation checks during implementation; iterative testing without full quality gate. | `bun run check:quick`, `bun run test`, `bun run dev` with browser testing |
 | `.agent/skills/ship-visualizer-change/SKILL.md` | End-to-end product-facing implementation + docs + PR-ready validation flow. | targeted checks as needed, then `bun run check` |
+| `.agent/skills/review-webgpu-parity/SKILL.md` | Reviewing PRs that touch WebGPU/WebGL dual-backend parity (feedback, shaders, renderer adapters). | `bun run test:compat`, targeted parity tests, reference preset visual check |
+| `.agent/skills/review-renderer-fallback/SKILL.md` | Reviewing PRs that touch renderer capability probing, fallback chains, timeout logic, or audio worklet init. | `bun run test:integration`, trace renderScale end-to-end, validate fallback paths |
+| `.agent/skills/review-test-harness/SKILL.md` | Reviewing PRs that add, modify, or remove tests, fixtures, or integration harness code. | `bun run test`, behavior-based assertion review, fixture determinism check |
+| `.agent/skills/review-workspace-ui-state/SKILL.md` | Reviewing PRs that touch React workspace UI state, URL routing, toast/panel behavior, or engine adapter boundary. | `bun run test tests/frontend-url-state.test.ts`, adapter boundary inspection |
+| `.agent/skills/audit-recurring-fixes/SKILL.md` | Auditing commit history to find recurring fix patterns and updating prevention skills. | `git log` analysis, cross-reference with `docs/RECURRING_FIX_PATTERNS_AUDIT_*.md` |
+| `.agent/skills/iterate-visualizer-ui/SKILL.md` | Iterating on workspace UI, shell chrome, and CSS with fast feedback loops and component isolation. | `bun run dev:ui`, isolated component playground, screenshot diff, responsive grid |
+| `.agent/skills/quick-start/SKILL.md` | First entry into the repo or after a long gap; fastest safe path to productive work. | `bun run agent:status`, `bun run setup:codex` |
+| `.agent/skills/agent-ergonomics/SKILL.md` | Understanding how skills, workflows, sessions, and gates fit together; improving agent infrastructure. | Read-only, then apply changes |
 
 ## Workflows
 

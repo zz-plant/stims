@@ -5,11 +5,12 @@ Use this folder as a focused, progressive-disclosure overlay for agent tasks.
 ## Read order
 
 1. Root [`AGENTS.md`](../../AGENTS.md) for non-negotiable defaults.
-2. [`agent-handoffs.md`](./agent-handoffs.md) for the fastest safe bootstrap plus delegation and return-contract guidance.
-3. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
-4. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
-5. [`metadata-and-docs.md`](./metadata-and-docs.md) before commit/PR finalization.
-6. [`reference-docs.md`](./reference-docs.md) when triaging unfamiliar areas.
+2. [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) for the single-page Cline quick start.
+3. [`agent-handoffs.md`](./agent-handoffs.md) for the fastest safe bootstrap plus delegation and return-contract guidance.
+4. [`custom-capabilities.md`](./custom-capabilities.md) when the task may map to repo-local `.agent` skills/workflows.
+5. [`tooling-and-quality.md`](./tooling-and-quality.md) before code edits.
+6. [`metadata-and-docs.md`](./metadata-and-docs.md) before commit/PR finalization.
+7. [`reference-docs.md`](./reference-docs.md) when triaging unfamiliar areas.
 
 ## 60-second bootstrap
 

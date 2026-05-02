@@ -4,9 +4,17 @@ import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { jsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/types.js';
 import { z } from 'zod';
+import agentAgentErgonomicsSkill from '../.agent/skills/agent-ergonomics/SKILL.md';
+import agentAuditRecurringFixesSkill from '../.agent/skills/audit-recurring-fixes/SKILL.md';
+import agentIterateVisualizerUiSkill from '../.agent/skills/iterate-visualizer-ui/SKILL.md';
 import agentModifyPresetWorkflowSkill from '../.agent/skills/modify-preset-workflow/SKILL.md';
 import agentModifyVisualizerRuntimeSkill from '../.agent/skills/modify-visualizer-runtime/SKILL.md';
 import agentPlayVisualizerSkill from '../.agent/skills/play-visualizer/SKILL.md';
+import agentQuickStartSkill from '../.agent/skills/quick-start/SKILL.md';
+import agentReviewRendererFallbackSkill from '../.agent/skills/review-renderer-fallback/SKILL.md';
+import agentReviewTestHarnessSkill from '../.agent/skills/review-test-harness/SKILL.md';
+import agentReviewWebgpuParitySkill from '../.agent/skills/review-webgpu-parity/SKILL.md';
+import agentReviewWorkspaceUiStateSkill from '../.agent/skills/review-workspace-ui-state/SKILL.md';
 import agentShipVisualizerChangeSkill from '../.agent/skills/ship-visualizer-change/SKILL.md';
 import agentTestVisualizerSkill from '../.agent/skills/test-visualizer/SKILL.md';
 import agentModifyPresetWorkflowWorkflow from '../.agent/workflows/modify-preset-workflow.md';
@@ -14,6 +22,7 @@ import agentModifyVisualizerRuntimeWorkflow from '../.agent/workflows/modify-vis
 import agentPlayVisualizerWorkflow from '../.agent/workflows/play-visualizer.md';
 import agentShipVisualizerChangeWorkflow from '../.agent/workflows/ship-visualizer-change.md';
 import agentTestVisualizerWorkflow from '../.agent/workflows/test-visualizer.md';
+import docsClaudeReadme from '../.claude/CLAUDE.md';
 import toyManifest from '../assets/js/data/toy-manifest.ts';
 import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
@@ -38,6 +47,7 @@ const markdownSources = {
   'docs/toys.md': docsToys,
   'docs/agents/README.md': docsAgentsReadme,
   'docs/agents/agent-handoffs.md': docsAgentsAgentHandoffs,
+  '.claude/CLAUDE.md': docsClaudeReadme,
   '.agent/skills/modify-preset-workflow/SKILL.md':
     agentModifyPresetWorkflowSkill,
   '.agent/skills/modify-visualizer-runtime/SKILL.md':
@@ -46,6 +56,8 @@ const markdownSources = {
   '.agent/skills/ship-visualizer-change/SKILL.md':
     agentShipVisualizerChangeSkill,
   '.agent/skills/test-visualizer/SKILL.md': agentTestVisualizerSkill,
+  '.agent/skills/quick-start/SKILL.md': agentQuickStartSkill,
+  '.agent/skills/agent-ergonomics/SKILL.md': agentAgentErgonomicsSkill,
   '.agent/workflows/modify-preset-workflow.md':
     agentModifyPresetWorkflowWorkflow,
   '.agent/workflows/modify-visualizer-runtime.md':
@@ -54,6 +66,14 @@ const markdownSources = {
   '.agent/workflows/ship-visualizer-change.md':
     agentShipVisualizerChangeWorkflow,
   '.agent/workflows/test-visualizer.md': agentTestVisualizerWorkflow,
+  '.agent/skills/review-webgpu-parity/SKILL.md': agentReviewWebgpuParitySkill,
+  '.agent/skills/review-renderer-fallback/SKILL.md':
+    agentReviewRendererFallbackSkill,
+  '.agent/skills/review-test-harness/SKILL.md': agentReviewTestHarnessSkill,
+  '.agent/skills/review-workspace-ui-state/SKILL.md':
+    agentReviewWorkspaceUiStateSkill,
+  '.agent/skills/audit-recurring-fixes/SKILL.md': agentAuditRecurringFixesSkill,
+  '.agent/skills/iterate-visualizer-ui/SKILL.md': agentIterateVisualizerUiSkill,
 } as const;
 
 type MarkdownSourceKey = keyof typeof markdownSources;
@@ -137,6 +157,21 @@ const agentCapabilities: AgentCapability[] = [
     command: '/test-visualizer',
   },
   {
+    name: 'quick-start',
+    kind: 'skill',
+    path: '.agent/skills/quick-start/SKILL.md',
+    description: 'Fastest safe path into the repo when dropped in cold.',
+    command: '/quick-start',
+  },
+  {
+    name: 'agent-ergonomics',
+    kind: 'skill',
+    path: '.agent/skills/agent-ergonomics/SKILL.md',
+    description:
+      'Understanding how skills, workflows, sessions, and gates fit together; improving agent infrastructure.',
+    command: '/agent-ergonomics',
+  },
+  {
     name: 'modify-preset-workflow',
     kind: 'workflow',
     path: '.agent/workflows/modify-preset-workflow.md',
@@ -174,6 +209,54 @@ const agentCapabilities: AgentCapability[] = [
     path: '.agent/workflows/test-visualizer.md',
     description: 'Workflow checklist for visualizer-specific automated checks.',
     command: '/test-visualizer',
+  },
+  {
+    name: 'review-webgpu-parity',
+    kind: 'skill',
+    path: '.agent/skills/review-webgpu-parity/SKILL.md',
+    description:
+      'Review PRs touching WebGPU/WebGL dual-backend parity (feedback, shaders, renderer adapters).',
+    command: '/review-webgpu-parity',
+  },
+  {
+    name: 'review-renderer-fallback',
+    kind: 'skill',
+    path: '.agent/skills/review-renderer-fallback/SKILL.md',
+    description:
+      'Review PRs touching renderer capability probing, fallback chains, timeout logic, or audio worklet init.',
+    command: '/review-renderer-fallback',
+  },
+  {
+    name: 'review-test-harness',
+    kind: 'skill',
+    path: '.agent/skills/review-test-harness/SKILL.md',
+    description:
+      'Review PRs adding or modifying tests, fixtures, or integration harness code.',
+    command: '/review-test-harness',
+  },
+  {
+    name: 'review-workspace-ui-state',
+    kind: 'skill',
+    path: '.agent/skills/review-workspace-ui-state/SKILL.md',
+    description:
+      'Review PRs touching React workspace UI state, URL routing, toast/panel behavior, or engine adapter boundary.',
+    command: '/review-workspace-ui-state',
+  },
+  {
+    name: 'audit-recurring-fixes',
+    kind: 'skill',
+    path: '.agent/skills/audit-recurring-fixes/SKILL.md',
+    description:
+      'Audit commit history to find recurring fix patterns and update prevention skills.',
+    command: '/audit-recurring-fixes',
+  },
+  {
+    name: 'iterate-visualizer-ui',
+    kind: 'skill',
+    path: '.agent/skills/iterate-visualizer-ui/SKILL.md',
+    description:
+      'Iterate on workspace UI, shell chrome, and CSS with fast feedback loops and component isolation.',
+    command: '/iterate-visualizer-ui',
   },
 ];
 
@@ -352,7 +435,7 @@ function registerTools(server: McpServer) {
         '- `loadToy` clears any active toy, shows the active container, and gates WebGPU-only entries before importing modules.',
         '- Imports are resolved through Vite manifest entries when available, with fallbacks for relative and absolute module paths.',
         '- Visible status blocks appear while loading; errors render actionable messages for missing dev server, MIME mismatches, or file:// access.',
-        '- A reusable “Back to Library” control and history updates let users return to the catalog without reloads.',
+        '- A reusable "Back to Library" control and history updates let users return to the catalog without reloads.',
       ];
 
       return asTextResponse(loaderDetails.join('\n'));

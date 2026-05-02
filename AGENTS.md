@@ -4,16 +4,18 @@ Stims is a browser-native MilkDrop-inspired visualizer built with Three.js/WebGL
 
 ## Quick start (yes, read this first)
 
-You're about to code on Stims. Before you dive into docs, grab these four things:
+You're about to code on Stims. Before you dive into docs, grab these five things:
 
-1. **Bootstrap the repo state first** — Run `bun run setup:codex --status` for a quick local readiness read, then `bun run setup:codex --print-plan` to see the install/check plan, then `bun run setup:codex` when the workspace state is unknown. See [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md) for the fast-start and delegation contract.
+1. **Cline fast path** — If you're using Cline, start with [`.claude/CLAUDE.md`](./.claude/CLAUDE.md) for a single-page quick start, then return here for non-negotiable defaults.
+
+2. **Bootstrap the repo state first** — Run `bun run setup:codex --status` for a quick local readiness read, then `bun run setup:codex --print-plan` to see the install/check plan, then `bun run setup:codex` when the workspace state is unknown. See [`docs/agents/agent-handoffs.md`](./docs/agents/agent-handoffs.md) for the fast-start and delegation contract.
    On higher-memory local machines, use `bun run session:codex -- --profile review` when you want to keep the dev server, local model roles, and a verification watcher warm between edits.
 
-2. **Verify your code as you go** — Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) during implementation to catch bugs early. Don't wait until the end for the full quality gate.
+3. **Verify your code as you go** — Use [`.agent/skills/verify-visualizer-work/SKILL.md`](./.agent/skills/verify-visualizer-work/SKILL.md) during implementation to catch bugs early. Don't wait until the end for the full quality gate.
 
-3. **Test visually in the browser** — Run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
+4. **Test visually in the browser** — Run `bun run dev` and visit `http://localhost:5173/?agent=true` to test your changes with persistent state on the canonical workspace route. Use `http://localhost:5173/milkdrop/?agent=true` only when verifying the compatibility alias redirect. See [`docs/agents/visual-testing.md`](./docs/agents/visual-testing.md) for the full visual testing guide.
 
-4. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
+5. **Know your commands** — Bookmark the CLI quick reference in [`docs/agents/tooling-and-quality.md`](./docs/agents/tooling-and-quality.md#quick-cli-reference-for-agents). The three you'll use most:
    - `bun run check:quick` — Fast syntax/lint/type check (use often)
    - `bun run test tests/path/to/file.test.ts` — Test a specific file
    - `bun run check` — Full quality gate before committing

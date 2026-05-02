@@ -25,6 +25,86 @@
       "type": "shell",
       "command": "bun run test",
       "problemMatcher": []
+    },
+    {
+      "label": "agent:check:quick",
+      "type": "shell",
+      "command": "bun run check:quick",
+      "problemMatcher": []
+    },
+    {
+      "label": "agent:test:integration",
+      "type": "shell",
+      "command": "bun run test:integration",
+      "problemMatcher": []
+    },
+    {
+      "label": "agent:test:compat",
+      "type": "shell",
+      "command": "bun run test:compat",
+      "problemMatcher": []
+    },
+    {
+      "label": "agent:session:start",
+      "type": "shell",
+      "command": "bun run session:codex -- --profile review",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "vite v",
+          "endsPattern": "Session ready"
+        }
+      }
+    },
+    {
+      "label": "agent:session:stop",
+      "type": "shell",
+      "command": "bun run session:codex -- --stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "agent:session:status",
+      "type": "shell",
+      "command": "bun run session:codex -- --status",
+      "problemMatcher": []
+    },
+    {
+      "label": "agent:dev",
+      "type": "shell",
+      "command": "bun run dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "vite v",
+          "endsPattern": "ready in"
+        }
+      }
+    },
+    {
+      "label": "agent:status",
+      "type": "shell",
+      "command": "bun run agent:status",
+      "problemMatcher": []
+    },
+    {
+      "label": "agent:verify",
+      "type": "shell",
+      "command": "bun run agent:verify",
+      "problemMatcher": []
     }
   ]
 }
