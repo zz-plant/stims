@@ -143,6 +143,29 @@ function PresetArtwork({
   );
 }
 
+function SkeletonPresetCard() {
+  return (
+    <div className="stims-shell__starter-card stims-shell__skeleton--card stims-shell__skeleton">
+      <div
+        className="stims-shell__preset-art stims-shell__skeleton"
+        style={{ minHeight: 164 }}
+      />
+      <span
+        className="stims-shell__starter-label stims-shell__skeleton stims-shell__skeleton--text stims-shell__skeleton--text-sm"
+        style={{ height: 14, width: '40%' }}
+      />
+      <strong
+        className="stims-shell__skeleton stims-shell__skeleton--text stims-shell__skeleton--text-md"
+        style={{ height: 18 }}
+      />
+      <span
+        className="stims-shell__meta-copy stims-shell__skeleton stims-shell__skeleton--text stims-shell__skeleton--text-sm"
+        style={{ height: 14, width: '70%' }}
+      />
+    </div>
+  );
+}
+
 function PresetShelfSection({
   entries,
   summary,
@@ -1141,7 +1164,14 @@ function BrowseSheetPanel({
 
       <section className="stims-shell__sheet-surface">
         {!catalogReady && !catalogError ? (
-          <p className="stims-shell__meta-copy">Loading the list…</p>
+          <ul className="stims-shell__preset-list" style={{ opacity: 0.7 }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders have fixed order
+              <li key={i}>
+                <SkeletonPresetCard />
+              </li>
+            ))}
+          </ul>
         ) : null}
         {catalogError ? (
           <p className="stims-shell__meta-copy">{catalogError}</p>

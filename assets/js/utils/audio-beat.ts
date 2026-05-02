@@ -85,7 +85,7 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
   let previousWeightedEnergy = 0;
   let bassBaseline = 0;
   let energyBaseline = 0;
-  let _previousSpectrum: Float32Array | null = null;
+  const _previousSpectrum: Float32Array | null = null;
   let spectralFlux = 0;
 
   const update = (
