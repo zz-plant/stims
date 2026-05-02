@@ -11,8 +11,8 @@ import {
 } from '../assets/js/milkdrop/overlay/inspector-panel.ts';
 import {
   formatMeasuredMismatchPercent,
+  getPresetCertificationBadgeStatus,
   getPresetMetaQualifier,
-  getPresetParityBadgeStatus,
 } from '../assets/js/milkdrop/overlay/preset-row.ts';
 import type {
   MilkdropCatalogEntry,
@@ -504,8 +504,8 @@ describe('inspector panel formatting', () => {
       backend: 'webgpu',
     });
     expect(
-      metrics.find((metric) => metric.label === 'Measured drift')?.value,
-    ).toBe('not measured');
+      metrics.find((metric) => metric.label === 'Certification state')?.value,
+    ).toBe('Pending');
   });
 
   test('surfaces the measured drift percentage when a measurement is recorded', () => {
@@ -531,8 +531,8 @@ describe('inspector panel formatting', () => {
       presetEntry,
     });
     expect(
-      metrics.find((metric) => metric.label === 'Measured drift')?.value,
-    ).toBe('62%');
+      metrics.find((metric) => metric.label === 'Certification state')?.value,
+    ).toBe('Measured, not certified');
     expect(
       metrics.find((metric) => metric.label === 'Visual certification')?.value,
     ).toBe('uncertified (measured)');
@@ -554,7 +554,7 @@ describe('preset row parity badges', () => {
 
   test('returns no badge status for inferred-only presets', () => {
     const preset = createCatalogEntry('inferred', 'Inferred');
-    expect(getPresetParityBadgeStatus(preset)).toBeNull();
+    expect(getPresetCertificationBadgeStatus(preset)).toBeNull();
   });
 
   test('marks measured-and-certified presets as verified', () => {
@@ -567,7 +567,7 @@ describe('preset row parity badges', () => {
       mismatchRatio: 0.005,
       failThreshold: 0.02,
     };
-    expect(getPresetParityBadgeStatus(preset)).toBe('verified');
+    expect(getPresetCertificationBadgeStatus(preset)).toBe('certified');
   });
 
   test('marks measured-but-failing presets as drift', () => {
@@ -580,6 +580,6 @@ describe('preset row parity badges', () => {
       mismatchRatio: 0.55,
       failThreshold: 0.02,
     };
-    expect(getPresetParityBadgeStatus(preset)).toBe('drift');
+    expect(getPresetCertificationBadgeStatus(preset)).toBe('uncertified');
   });
 });

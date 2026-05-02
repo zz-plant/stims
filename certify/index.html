@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Stims Certification Suite</title>
+    <style>
+      :root {
+        --ink: #f6efe4;
+        --muted: rgba(246, 239, 228, 0.7);
+        --line: rgba(255, 255, 255, 0.12);
+        --cool: #77c9ff;
+        --good: #7de0a2;
+        --warn: #ffd166;
+        --bad: #ff7b72;
+        --bg: #080c16;
+        --panel: rgba(10, 14, 23, 0.94);
+        --radius: 12px;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: 'Space Grotesk', system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        padding: 24px;
+      }
+      .cert-shell {
+        max-width: 900px;
+        margin: 0 auto;
+        display: grid;
+        gap: 20px;
+      }
+      .cert-header {
+        display: grid;
+        gap: 8px;
+      }
+      .cert-header h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+      }
+      .cert-header p {
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      .cert-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+      }
+      .cert-controls button {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        font: inherit;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: border-color 150ms ease, background 150ms ease;
+      }
+      .cert-controls button:hover {
+        border-color: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .cert-controls button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .cert-controls select {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        font: inherit;
+        padding: 10px 14px;
+        min-width: 200px;
+      }
+      .cert-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .cert-pane {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+      }
+      .cert-pane h3 {
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--cool);
+      }
+      .cert-pane canvas,
+      .cert-pane .cert-placeholder {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #000;
+        display: block;
+      }
+      .cert-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .cert-results {
+        display: grid;
+        gap: 12px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+      }
+      .cert-results h3 {
+        font-size: 1rem;
+      }
+      .cert-metrics {
+        display: grid;
+        gap: 6px;
+        font-size: 0.9rem;
+        font-family: 'Space Mono', monospace;
+      }
+      .cert-metric {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .cert-metric:last-child {
+        border-bottom: 0;
+      }
+      .cert-metric span:first-child {
+        color: var(--muted);
+      }
+      .cert-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .cert-status--pass {
+        background: rgba(125, 224, 162, 0.15);
+        color: var(--good);
+      }
+      .cert-status--fail {
+        background: rgba(255, 123, 114, 0.15);
+        color: var(--bad);
+      }
+      .cert-status--pending {
+        background: rgba(119, 201, 255, 0.1);
+        color: var(--cool);
+      }
+      .cert-diff-img {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #000;
+      }
+      .cert-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .cert-submit {
+        border: 1px solid var(--cool);
+        border-radius: 8px;
+        background: rgba(119, 201, 255, 0.12);
+        color: var(--cool);
+        font: inherit;
+        padding: 10px 18px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .cert-submit:hover {
+        background: rgba(119, 201, 255, 0.2);
+      }
+      @media (max-width: 720px) {
+        .cert-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cert-shell">
+      <div class="cert-header">
+        <h1>Stims Certification Suite</h1>
+        <p>
+          Client-side certification compares WebGPU and WebGL rendering for
+          each bundled preset. Captured frames are diffed pixel-by-pixel to
+          verify backend consistency on your device.
+        </p>
+      </div>
+      <div class="cert-controls">
+        <select id="preset-select">
+          <option value="">Loading presets…</option>
+        </select>
+        <button type="button" id="certify-all-btn">Certify all (4 presets)</button>
+        <button type="button" id="certify-one-btn">Certify selected</button>
+        <button type="button" id="submit-results-btn" disabled>Submit results</button>
+      </div>
+      <div class="cert-grid">
+        <div class="cert-pane">
+          <h3>WebGPU</h3>
+          <div id="webgpu-canvas-target" class="cert-placeholder">
+            Waiting for renderer…
+          </div>
+        </div>
+        <div class="cert-pane">
+          <h3>WebGL</h3>
+          <div id="webgl-canvas-target" class="cert-placeholder">
+            Waiting for renderer…
+          </div>
+        </div>
+      </div>
+      <div class="cert-results" id="results-panel" hidden>
+        <h3>Results — <span id="results-preset-name"></span></h3>
+        <span class="cert-status cert-status--pending" id="results-status">
+          Pending
+        </span>
+        <div class="cert-metrics" id="results-metrics"></div>
+        <canvas class="cert-diff-img" id="diff-canvas" hidden></canvas>
+      </div>
+      <div class="cert-actions" id="results-actions" hidden>
+        <button type="button" class="cert-submit" id="submit-single-btn">
+          Submit this result
+        </button>
+      </div>
+    </div>
+    <script type="module" src="./certify.js"></script>
+  </body>
+</html>
