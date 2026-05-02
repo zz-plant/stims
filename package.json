@@ -101,7 +101,7 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.183.1",
+    "@types/three": "^0.184.0",
     "@vitejs/plugin-react": "^6.0.1",
     "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
