@@ -1,4 +1,16 @@
-type GateMode = 'quick' | 'full';
+/**
+ * Quality gate modes:
+ *
+ * - `quick`  — lint + typecheck only, no tests (~10s). Use constantly during
+ *              development to catch type/style errors early.
+ * - `full`   — lint + typecheck + fast test suite (~2min). This is the default
+ *              `bun run check` mode. Excludes slow corpus/certification/integration
+ *              tests so it remains a fast feedback loop.
+ * - `all`    — lint + typecheck + full test suite including corpus/certification
+ *              tests (~5min+). Use before merging changes to the MilkDrop
+ *              compiler, renderer adapter, or parity pipeline.
+ */
+type GateMode = 'quick' | 'full' | 'all';
 
 type GateExecutionMode = 'parallel' | 'serial';
 
@@ -25,7 +37,9 @@ type GateStepResult = {
 const noTsNoCheckLabel = ['No ', '@ts-', 'nocheck', ' guard'].join('');
 
 export function parseMode(argv: string[]): GateMode {
-  return argv.includes('--quick') ? 'quick' : 'full';
+  if (argv.includes('--quick')) return 'quick';
+  if (argv.includes('--all')) return 'all';
+  return 'full';
 }
 
 export function parseExecutionMode(argv: string[]): GateExecutionMode {
@@ -72,14 +86,23 @@ export function buildGatePlan(
       },
     ],
     postflight:
-      mode === 'full'
-        ? [
-            {
-              label: 'Test suite',
-              cmd: ['bun', 'run', 'test'],
-            },
-          ]
-        : [],
+      mode === 'quick'
+        ? []
+        : mode === 'full'
+          ? [
+              {
+                // fast profile: all tests except slow corpus/certification/integration
+                label: 'Fast test suite',
+                cmd: ['bun', 'run', 'test:fast'],
+              },
+            ]
+          : [
+              {
+                // all profile: full suite including corpus/certification tests
+                label: 'Full test suite (all profiles)',
+                cmd: ['bun', 'run', 'test'],
+              },
+            ],
   };
 }
 

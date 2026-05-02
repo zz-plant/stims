@@ -2,6 +2,8 @@
 
 This guide captures the highest-impact flows to validate and how we keep them covered with automation. QA should protect the canonical root workspace on `/`, the `/milkdrop/` compatibility alias, the engine adapter seam, and the MilkDrop runtime contracts that sit beneath the React shell.
 
+For the full testing reference — speed tiers, quality gate commands, per-change checklists, and CI behavior — see [`TESTING.md`](./TESTING.md).
+
 For Milestone A refactor sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMOKE_BASELINE.md) as the authoritative manual baseline and artifact-capture checklist.
 
 ## High-value flows
@@ -33,9 +35,14 @@ If the change is part of architecture or runtime refactor work, also run the art
 
 Use Bun to match the repository tooling:
 
-- For a single command that mirrors CI (lint + typecheck + tests):
+- For the standard pre-commit check (lint + typecheck + fast tests):
   ```bash
   bun run check
+  ```
+
+- For lint and typecheck only (fastest, use constantly):
+  ```bash
+  bun run check:quick
   ```
 
 - Run the happy-dom suites for the app shell, route contract, settings panel, and microphone flows:
@@ -46,6 +53,11 @@ Use Bun to match the repository tooling:
 - Run the focused workspace/session regression suites:
   ```bash
   bun run test tests/frontend-url-state.test.ts tests/agent-integration.test.ts tests/audio-controls.test.ts
+  ```
+
+- Run the integration harness (real Chromium — also runs in CI on every PR):
+  ```bash
+  bun run test:integration
   ```
 
 - Run the legacy compatibility shell suites only when you touch the old loader/bootstrap/view stack:
