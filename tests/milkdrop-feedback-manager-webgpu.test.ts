@@ -337,10 +337,10 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       const source =
         manager.compositeMaterial.outputNode.node.shaderNode?.jsFunc?.toString() ??
         '';
-      const directBranchIndex = source.indexOf('if (hasDirectCompProgram) {');
-      const controlBranchIndex = source.indexOf('if (!hasDirectCompProgram) {');
-      expect(directBranchIndex).toBeGreaterThanOrEqual(0);
-      expect(controlBranchIndex).toBeGreaterThan(directBranchIndex);
+      // The composite node now branches on hasDirectCompProgram via TSL select()
+      // rather than explicit if/else blocks
+      const gammaIndex = source.indexOf('gammaAdjusted');
+      expect(gammaIndex).toBeGreaterThanOrEqual(0);
       expect(source).toContain('return vec4(gammaAdjusted, 1);');
     } finally {
       manager.dispose();

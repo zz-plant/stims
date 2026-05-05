@@ -192,6 +192,7 @@ function createPost(
     videoEchoZoom: 1,
     videoEchoOrientation: 0,
     warp: 0.08,
+    decay: 0.98,
     ...overrides,
   };
 }
