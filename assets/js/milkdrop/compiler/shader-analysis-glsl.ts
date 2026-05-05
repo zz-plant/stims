@@ -329,9 +329,16 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         'xy',
         'xz',
         'yz',
+        'xw',
+        'yw',
+        'zw',
         'rg',
         'rb',
         'gb',
+        'xyz',
+        'xyw',
+        'xzw',
+        'yzw',
         'rgb',
         'rgba',
       ]);
@@ -356,6 +363,20 @@ function emitTextureSample(
 
   // Check if sampler is a named identifier
   const samplerName = samplerArg.toLowerCase();
+
+  // Feed-forward noise samplers: check BEFORE normalization because these
+  // are aliased to static textures in the type system but should generate
+  // procedural animated noise at the GLSL level.
+  const rawSamplerName = samplerName.startsWith('sampler_')
+    ? samplerName.slice('sampler_'.length)
+    : samplerName;
+  if (rawSamplerName === 'fw_noise_lq') {
+    return `vec3(noise((${coordArg}) * 8.0 + vec2(signalTime * 0.8, signalTime * 0.6)))`;
+  }
+  if (rawSamplerName === 'fw_noise_hq') {
+    return `vec3(noise((${coordArg}) * 16.0 + vec2(signalTime * 1.2, signalTime * 0.9)))`;
+  }
+
   const normalizedName = normalizeShaderSamplerName(samplerName);
 
   if (normalizedName === null) {

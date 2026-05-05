@@ -40,6 +40,8 @@ export function createMilkdropRuntimeInteractionPresenter({
     }) => void;
     toggleFavorite: (id: string) => void;
     setRating: (id: string, rating: number) => void;
+    togglePresetLock: () => void;
+    isPresetLocked: () => boolean;
   };
   sceneInteractionActions?: {
     isSceneInteractionEnabled: () => boolean;

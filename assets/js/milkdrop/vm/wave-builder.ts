@@ -247,6 +247,7 @@ export function buildCustomWaves({
       const waveChannels = sampleCustomWaveChannels(
         signals,
         sample,
+        (frameLocals.spectrum ?? 0) >= 0.5 ? 'spectrum' : 'waveform',
         channelSample,
       );
       const spectrumValue = waveChannels.value1;

@@ -309,6 +309,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalBeatPulse;
         uniform float signalEnergy;
         uniform float signalTime;
+        uniform float decay;
         uniform vec2 texelSize;
         varying vec2 vUv;
 
@@ -505,6 +506,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
               clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
             );
           }
+          previousColor *= decay;
           vec3 color = mix(
             current.rgb,
             previousColor,
@@ -711,6 +713,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         signalBeatPulse: { value: 0 },
         signalEnergy: { value: 0 },
         signalTime: { value: 0 },
+        decay: { value: 0.98 },
         texelSize: {
           value: new Vector2(
             1 / Math.max(1, this.sceneTarget.width),
@@ -831,6 +834,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.gammaAdj.value = state.gammaAdj;
     uniforms.textureWrap.value = state.textureWrap;
     uniforms.feedbackTexture.value = state.feedbackTexture;
+    uniforms.decay.value = state.decay;
     uniforms.warpScale.value = state.warpScale;
     uniforms.offsetX.value = state.offsetX;
     uniforms.offsetY.value = state.offsetY;

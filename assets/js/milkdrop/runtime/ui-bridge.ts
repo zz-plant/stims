@@ -113,6 +113,8 @@ export function installMilkdropRuntimeKeybindings({
   nudgeNumericField,
   toggleFavorite,
   setRating,
+  togglePresetLock,
+  isPresetLocked,
 }: {
   overlay: {
     isOpen: () => boolean;

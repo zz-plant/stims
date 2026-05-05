@@ -246,9 +246,9 @@ function transformMeshPoint({
     0.08;
   const radiusNormalized = clamp(local.rad / Math.SQRT2, 0, 1);
   const zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
+  const zoom = Math.max(local.zoom ?? 1, 0);
   const zoomScale =
-    Math.max(local.zoom ?? 1, 0.0001) **
-    (zoomExponent ** (radiusNormalized * 2 - 1));
+    zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1));
   const px = (transformedX + Math.cos(angle * 3) * ripple) * zoomScale;
   const py = (transformedY + Math.sin(angle * 4) * ripple) * zoomScale;
   const cos = Math.cos(local.rot);

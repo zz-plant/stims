@@ -9,6 +9,7 @@ import {
 } from '../milkdrop/preset-preview.ts';
 import { getIconNodes, type UiIconName } from '../ui/icon-library.ts';
 import type {
+  AudioSource,
   PanelState,
   PresetCatalogEntry,
   SessionRouteState,
@@ -673,7 +674,7 @@ export function WorkspaceStagePanel({
   youtubeUrl,
 }: {
   audioEnergy?: number;
-  audioSource: 'demo' | 'microphone' | 'tab' | 'youtube' | 'null' | 'undefined';
+  audioSource: AudioSource | null | undefined;
   backend: 'webgl' | 'webgpu' | null | undefined;
   engineReady: boolean;
   invalidExperienceSlug: string | null;
@@ -1536,13 +1537,16 @@ export function WorkspaceToolSheet({
     };
 
     const sheetElement = sheetRef.current;
-    sheetElement?.addEventListener('keydown', handleKeyDown as EventListener);
+    sheetElement?.addEventListener(
+      'keydown',
+      handleKeyDown as unknown as EventListener,
+    );
     sheetElement?.focus();
 
     return () => {
       sheetElement?.removeEventListener(
         'keydown',
-        handleKeyDown as EventListener,
+        handleKeyDown as unknown as EventListener,
       );
     };
   }, [onClose]);

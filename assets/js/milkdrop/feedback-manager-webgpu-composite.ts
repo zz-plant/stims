@@ -288,6 +288,7 @@ export function createCompositeUniforms(
     signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),
     signalTime: uniform(0),
+    decay: uniform(0.98),
     texelSize: uniform(new Vector2(1, 1)),
   } satisfies CompositeUniformBag;
 }

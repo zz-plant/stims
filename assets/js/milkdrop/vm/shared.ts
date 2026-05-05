@@ -149,9 +149,25 @@ export function sampleFrequencyData(
 export function sampleCustomWaveChannels(
   signals: MilkdropRuntimeSignals,
   sample: number,
+  mode: 'spectrum' | 'waveform' = 'spectrum',
   target?: CustomWaveChannelSample,
 ) {
-  const normalizedSample = sampleFrequencyData(signals, sample);
+  const normalizedSample =
+    mode === 'waveform' &&
+    signals.waveformData &&
+    signals.waveformData.length > 0
+      ? (() => {
+          const waveformData = signals.waveformData;
+          const scaledIndex =
+            clamp(sample, 0, 1) * Math.max(0, waveformData.length - 1);
+          const lowerIndex = Math.floor(scaledIndex);
+          const upperIndex = Math.min(waveformData.length - 1, lowerIndex + 1);
+          const amount = scaledIndex - lowerIndex;
+          const lower = ((waveformData[lowerIndex] ?? 128) - 128) / 128;
+          const upper = ((waveformData[upperIndex] ?? 128) - 128) / 128;
+          return lower + (upper - lower) * amount;
+        })()
+      : sampleFrequencyData(signals, sample);
   const next = target ?? {
     sample,
     value: normalizedSample,

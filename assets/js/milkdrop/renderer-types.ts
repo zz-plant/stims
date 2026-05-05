@@ -232,6 +232,7 @@ export type MilkdropPostVisual = {
   videoEchoZoom: number;
   videoEchoOrientation: MilkdropVideoEchoOrientation;
   warp: number;
+  decay: number;
   postprocessingProfile?: MilkdropPostprocessingProfile | null;
 };
 
@@ -357,6 +358,7 @@ export type MilkdropFeedbackCompositeState = {
   signalBeatPulse: number;
   signalEnergy: number;
   signalTime: number;
+  decay: number;
 };
 
 export type MilkdropFeedbackSetRenderTarget = {

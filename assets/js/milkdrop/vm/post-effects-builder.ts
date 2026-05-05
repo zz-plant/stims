@@ -283,6 +283,7 @@ export function buildPost({
       state.video_echo_orientation ?? 0,
     ),
     warp: clamp(state.warp ?? 0.08, 0, 1),
+    decay: clamp(state.decay ?? 0.98, 0, 1),
   };
   post.postprocessingProfile = deriveMilkdropPostprocessingProfile({
     post,
