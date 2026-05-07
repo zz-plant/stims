@@ -495,11 +495,9 @@ export function WorkspaceLaunchPanel({
               disabled={!engineReady}
               onClick={() => onAudioStart('demo')}
             >
-              <span className="stims-shell__action-label">
-                Play with demo audio
-              </span>
+              <span className="stims-shell__action-label">See visuals now</span>
               <span className="stims-shell__action-hint">
-                No setup, just motion
+                Starts instantly with built-in sound
               </span>
             </button>
             <button
@@ -507,11 +505,16 @@ export function WorkspaceLaunchPanel({
               className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
               onClick={onToggleExtendedSources}
             >
-              <span className="stims-shell__action-label">Use my music</span>
-              <span className="stims-shell__action-hint">Or try it</span>
+              <span className="stims-shell__action-label">Explore modes</span>
+              <span className="stims-shell__action-hint">
+                Microphone, tab audio, or YouTube
+              </span>
             </button>
           </div>
-          <div className="stims-shell__launch-more">
+          <div
+            className="stims-shell__launch-more"
+            data-launch-secondary="true"
+          >
             {showExtendedSources ? (
               <AudioSourcePanel
                 engineReady={engineReady}
