@@ -92,7 +92,7 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 export function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'browse':
-      return 'Start with a few strong picks, then roam the full list.';
+      return 'Start with one fast launch, then roam the full list when you want more modes.';
     case 'editor':
       return 'Edit the active preset.';
     case 'inspector':
