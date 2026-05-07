@@ -43,7 +43,7 @@ describe('Workspace shell UI simplification regression', () => {
     );
 
     expect(helperSource).toContain(
-      'Start with a few strong picks, then roam the full list.',
+      'Start with one fast launch, then roam the full list when you want more modes.',
     );
     expect(helperSource).toContain(
       'Pick a feel first, then fine-tune only if you want more control.',
@@ -88,10 +88,8 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain(
       'Desktop-first rendering with a lighter fallback when needed.',
     );
-    expect(uiSource).toContain('Start with demo audio first.');
-    expect(uiSource).toContain(
-      'Bring in your own sound only when you want it.',
-    );
+    expect(uiSource).toContain('See visuals now');
+    expect(uiSource).toContain('Explore modes');
     expect(uiSource).toContain('Use my music');
     expect(uiSource).toMatch(
       /Needs mic permission\.\s+React to the room, your speakers, or live\s+sound\./u,
@@ -113,7 +111,9 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).toContain('Copy link');
     expect(uiSource).toContain('The editor opens on the stage.');
     expect(uiSource).toContain('The inspector opens on the stage.');
-    expect(uiSource).toMatch(/<p>\s*\{launchSummary\}\s*<\/p>/u);
+    expect(uiSource).toContain(
+      'className="stims-shell__launch-summary">{launchSummary}</p>',
+    );
     expect(uiSource).toMatch(
       /className="stims-shell__meta-copy stims-shell__stage-summary">\s*\{stageSummary\}\s*<\/p>/u,
     );
