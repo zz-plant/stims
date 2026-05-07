@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactNode, RefObject } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import type { RenderPreferences } from '../core/state/render-preference-store.ts';
@@ -15,8 +15,10 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 import {
+  buildAppliedFilterSummary,
   describePresetMood,
   formatPresetSupportNote,
+  getFeaturedCollectionTags,
   getPresetCardSupportLabel,
   getQualityImpactSummary,
   getSettingsPresetOptions,
@@ -984,9 +986,17 @@ function BrowseSheetPanel({
   searchQuery: string;
   starterPresets: StarterPreset[];
 }) {
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const showStarterPresets =
     searchQuery.trim().length === 0 && routeState.collectionTag === null;
   const showActivitySections = showStarterPresets;
+  const featuredCollectionTags = getFeaturedCollectionTags(collectionTags);
+  const hiddenCollectionTags = collectionTags.filter(
+    (tag) => !featuredCollectionTags.includes(tag),
+  );
+  const usingHiddenCollectionFilter =
+    routeState.collectionTag !== null &&
+    !featuredCollectionTags.includes(routeState.collectionTag);
   const previewTargetIds = [
     ...starterPresets.map((starter) => starter.preset.id),
     ...recentPresets.map((entry) => entry.id),
@@ -1027,6 +1037,12 @@ function BrowseSheetPanel({
   useEffect(() => {
     onVisiblePresetIdsChange(visiblePreviewIds);
   }, [onVisiblePresetIdsChange, visiblePreviewIds]);
+
+  useEffect(() => {
+    if (usingHiddenCollectionFilter) {
+      setShowAdvancedFilters(true);
+    }
+  }, [usingHiddenCollectionFilter]);
 
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--browse">
@@ -1086,25 +1102,21 @@ function BrowseSheetPanel({
           onChange={(event) => onSearchQueryChange(event.target.value)}
         />
 
-        {searchQuery.trim().length > 0 || routeState.collectionTag ? (
-          <p
-            className="stims-shell__active-filters"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            Showing{' '}
-            {[
-              searchQuery.trim().length > 0 ? `"${searchQuery.trim()}"` : '',
-              routeState.collectionTag
-                ? prettifyCollectionTag(routeState.collectionTag)
-                : '',
-            ]
-              .filter(Boolean)
-              .join(' in ')}
-          </p>
-        ) : null}
+        <p
+          className="stims-shell__active-filters"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {buildAppliedFilterSummary({
+            searchQuery,
+            collectionTag: routeState.collectionTag,
+          })}
+        </p>
 
-        <nav className="stims-shell__collections" aria-label="Collections">
+        <nav
+          className="stims-shell__collections"
+          aria-label="Popular collections"
+        >
           <button
             type="button"
             className="stims-shell__collection-pill"
@@ -1113,7 +1125,7 @@ function BrowseSheetPanel({
           >
             All
           </button>
-          {collectionTags.map((collectionTag) => (
+          {featuredCollectionTags.map((collectionTag) => (
             <button
               key={collectionTag}
               type="button"
@@ -1131,6 +1143,48 @@ function BrowseSheetPanel({
             </button>
           ))}
         </nav>
+        <div
+          className="stims-shell__browse-toolbar-extras"
+          data-open={String(showAdvancedFilters)}
+        >
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={() => {
+              setShowAdvancedFilters((current) => !current);
+            }}
+          >
+            Advanced filters
+          </button>
+          {showAdvancedFilters && hiddenCollectionTags.length > 0 ? (
+            <nav
+              className="stims-shell__collections"
+              aria-label="All collections"
+            >
+              {hiddenCollectionTags.map((collectionTag) => (
+                <button
+                  key={collectionTag}
+                  type="button"
+                  className="stims-shell__collection-pill"
+                  data-active={String(
+                    routeState.collectionTag === collectionTag,
+                  )}
+                  onClick={() =>
+                    onCollectionTagChange(
+                      routeState.collectionTag === collectionTag
+                        ? null
+                        : collectionTag,
+                    )
+                  }
+                >
+                  {prettifyCollectionTag(collectionTag)}
+                </button>
+              ))}
+            </nav>
+          ) : showAdvancedFilters ? (
+            <p className="stims-shell__meta-copy">No additional filters.</p>
+          ) : null}
+        </div>
       </section>
 
       {showStarterPresets && starterPresets.length > 0 ? (
@@ -1217,9 +1271,7 @@ function BrowseSheetPanel({
           <p className="stims-shell__meta-copy">
             {filteredCatalog.length} result
             {filteredCatalog.length === 1 ? '' : 's'}
-            {searchQuery.trim().length > 0 || routeState.collectionTag
-              ? ' match the current filters.'
-              : ' ready to explore.'}
+            ready to explore.
           </p>
         </div>
         <ul className="stims-shell__preset-list">

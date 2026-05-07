@@ -136,6 +136,40 @@ export function getCollectionTags(entries: PresetCatalogEntry[]) {
   return [...collectionTags].sort((left, right) => left.localeCompare(right));
 }
 
+export function getFeaturedCollectionTags(collectionTags: string[]) {
+  const featuredHints = [
+    'collection:classic-milkdrop',
+    'collection:bright',
+    'collection:space',
+  ];
+  const featured = featuredHints.filter((tag) => collectionTags.includes(tag));
+  if (featured.length > 0) {
+    return featured;
+  }
+  return collectionTags.slice(0, 3);
+}
+
+export function buildAppliedFilterSummary({
+  searchQuery,
+  collectionTag,
+}: {
+  searchQuery: string;
+  collectionTag: string | null;
+}) {
+  const appliedFilters = [
+    searchQuery.trim().length > 0 ? `Search: "${searchQuery.trim()}"` : null,
+    collectionTag
+      ? `Collection: ${prettifyCollectionTag(collectionTag)}`
+      : null,
+  ].filter(Boolean);
+
+  if (appliedFilters.length === 0) {
+    return 'Applied filters: none';
+  }
+
+  return `Applied filters: ${appliedFilters.join(' · ')}`;
+}
+
 export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
   return [entry.id, entry.title, entry.author, ...(entry.tags ?? [])]
     .filter(Boolean)
