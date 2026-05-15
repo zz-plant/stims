@@ -1423,20 +1423,21 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
       { id: 'shader-non-volume-3d-alias' },
     );
 
-    expect(compiled.ir.shaderText.supported).toBe(false);
-    expect(compiled.ir.shaderText.unsupportedLines).toEqual([
-      'ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz',
+    // fw_noise_lq aliases to noise, which is now a runtime volume sampler,
+    // so tex3D is supported via atlas slice lookup
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toEqual([
+      'base-globals',
+      'borders',
+      'motion-vectors',
+      'post-effects',
     ]);
-    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
-      'unsupported-shader-text',
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+      [],
     );
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
-    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
-      'ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz',
-    ]);
   });
 
   test('downgrades tex3D sampler_main usage as unsupported shader text', () => {
@@ -1456,28 +1457,13 @@ comp_shader=ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz
       'unsupported-shader-text',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
       'ret = tex3D(sampler_main, float3(uv, time / 10.0)).xyz',
     ]);
-    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual({
-      routing: 'fallback-webgl',
-      proceduralWaves: [],
-      proceduralMesh: null,
-      proceduralMotionVectors: null,
-      feedback: null,
-      unsupported: [
-        {
-          kind: 'unsupported-feature',
-          feature: 'unsupported-shader-text',
-          reason:
-            'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
-          recommendedFallback: 'webgl',
-        },
-      ],
-    });
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing).toBe(
+      'descriptor-plan',
+    );
   });
 
   test('supports resolved temp shader outputs for invert and runtime tint mixes', () => {
@@ -1642,15 +1628,13 @@ warp_shader=this is unsupported
       'unsupported-shader-text',
     );
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'unsupported-shader-text-gap',
           feature: 'unsupported-shader-text',
-          status: 'unsupported',
+          status: 'partial',
         }),
       ]),
     );
@@ -1864,18 +1848,13 @@ warp_shader=unsupported(shader)
     );
 
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual([
       'unsupported(shader)',
     ]);
     expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
       'shader:unsupported(shader)',
     ]);
-    expect(compiled.ir.compatibility.parity.visualFallbacks).toContain(
-      'webgpu:unsupported-shader-text-gap:unsupported-shader-text',
-    );
     expect(compiled.ir.compatibility.parity.visualFallbacks).toContain(
       'shader-text-control-extraction',
     );
@@ -2011,7 +1990,7 @@ per_pixel_3=zoom=zoom+abs(y)*0.1;
     });
   });
 
-  test('keeps unsupported shader text explicit in WebGPU descriptor fallback markers', () => {
+  test('treats unsupported shader text as partial on WebGPU instead of blocking fallback', () => {
     const compiled = compileMilkdropPresetSource(
       `
 title=Descriptor Plan Fallback
@@ -2020,22 +1999,10 @@ warp_shader=unsupported(shader)
       { id: 'descriptor-plan-fallback' },
     );
 
-    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual({
-      routing: 'fallback-webgl',
-      proceduralWaves: [],
-      proceduralMesh: null,
-      proceduralMotionVectors: null,
-      feedback: null,
-      unsupported: [
-        {
-          kind: 'unsupported-feature',
-          feature: 'unsupported-shader-text',
-          reason:
-            'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
-          recommendedFallback: 'webgl',
-        },
-      ],
-    });
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
+    ).not.toBe('fallback-webgl');
   });
 
   test('keeps legacy motion-vector controls on descriptor plans alongside mesh descriptors', () => {

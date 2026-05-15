@@ -182,11 +182,11 @@ describe('milkdrop shader sampler aliases', () => {
     ).toEqual({ webgl: 'direct', webgpu: 'direct' });
   });
 
-  test('identifies only simplex as a runtime volume sampler', () => {
+  test('identifies all aux samplers as runtime volume samplers', () => {
     expect(isVolumeSamplerName('simplex')).toBe(true);
-    expect(isVolumeSamplerName('noise')).toBe(false);
-    expect(isVolumeSamplerName('perlin')).toBe(false);
-    expect(isVolumeSamplerName('voronoi')).toBe(false);
+    expect(isVolumeSamplerName('noise')).toBe(true);
+    expect(isVolumeSamplerName('perlin')).toBe(true);
+    expect(isVolumeSamplerName('voronoi')).toBe(true);
   });
 
   test('keeps AST shader sampling aligned with compiler shader extraction', () => {
