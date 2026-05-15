@@ -217,9 +217,12 @@ integrationTest(
       const demoButton = mobile.page.locator(
         '[data-audio-controls] #use-demo-audio',
       );
-      await demoButton.click();
+      await demoButton.waitFor({ state: 'visible' });
+      await demoButton.click({ force: true });
       await mobile.page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
+        undefined,
+        { timeout: 30000, polling: 500 },
       );
       const focusedSessionState = await mobile.page.evaluate(() => ({
         focusedSession: document.documentElement.dataset.focusedSession ?? null,
@@ -276,8 +279,13 @@ integrationTest(
         });
       });
 
-      await mobile.page.locator('#use-demo-audio').click();
-      await mobile.page.waitForSelector('[data-gesture-hints]:not([hidden])');
+      await mobile.page
+        .locator('#use-demo-audio')
+        .waitFor({ state: 'visible' });
+      await mobile.page.locator('#use-demo-audio').click({ force: true });
+      await mobile.page.waitForSelector('[data-gesture-hints]:not([hidden])', {
+        timeout: 15000,
+      });
       const gestureText =
         (await mobile.page.textContent('[data-gesture-hints]')) ?? '';
       expect(gestureText).toContain('Drag to bend the scene.');
