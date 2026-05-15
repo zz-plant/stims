@@ -401,25 +401,11 @@ export function WorkspaceLaunchPanel({
   onAudioStart,
   onBrowseRecovery,
   onFeaturedPresetSelection,
-  onLoadRecentYouTubeVideo,
-  onLoadYouTube,
   onPresetSelection,
-  onToggleExtendedSources,
-  onYoutubeUrlChange,
-  onYoutubeUrlKeyDown,
   presetPreviews,
-  recentYouTubeVideos,
-  recentPresets,
   readinessAlerts,
+  recentPresets,
   requestedPresetId,
-  showExtendedSources,
-  youtubeCanLoad,
-  youtubeFeedback,
-  youtubeInputInvalid,
-  youtubeLoading,
-  youtubePreviewRef,
-  youtubeReady,
-  youtubeUrl,
 }: {
   embedded?: boolean;
   engineReady: boolean;
@@ -432,25 +418,11 @@ export function WorkspaceLaunchPanel({
   onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
   onBrowseRecovery: () => void;
   onFeaturedPresetSelection: () => void;
-  onLoadRecentYouTubeVideo: (videoId: string) => void;
-  onLoadYouTube: () => void;
   onPresetSelection: (presetId: string) => void;
-  onToggleExtendedSources: () => void;
-  onYoutubeUrlChange: (value: string) => void;
-  onYoutubeUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
-  recentYouTubeVideos: Array<{ id: string; title: string }>;
   recentPresets: PresetCatalogEntry[];
   readinessAlerts: ReadinessItem[];
   requestedPresetId: string | null;
-  showExtendedSources: boolean;
-  youtubeCanLoad: boolean;
-  youtubeFeedback: string;
-  youtubeInputInvalid: boolean;
-  youtubeLoading: boolean;
-  youtubePreviewRef: RefObject<HTMLDivElement | null>;
-  youtubeReady: boolean;
-  youtubeUrl: string;
 }) {
   const rootClassName = embedded
     ? 'stims-shell__launch-panel'
@@ -488,54 +460,19 @@ export function WorkspaceLaunchPanel({
         </div>
 
         <div className="stims-shell__launch-stack">
-          <div className="stims-shell__launch-actions">
-            <button
-              id="use-demo-audio"
-              data-demo-audio-btn="true"
-              className="cta-button primary stims-shell__action-button"
-              type="button"
-              disabled={!engineReady}
-              onClick={() => onAudioStart('demo')}
-            >
-              <span className="stims-shell__action-label">See visuals now</span>
-              <span className="stims-shell__action-hint">
-                Starts instantly with built-in sound
-              </span>
-            </button>
-            <button
-              type="button"
-              className="cta-button stims-shell__action-button stims-shell__action-button--secondary"
-              onClick={onToggleExtendedSources}
-            >
-              <span className="stims-shell__action-label">Explore modes</span>
-              <span className="stims-shell__action-hint">
-                Microphone, tab audio, or YouTube
-              </span>
-            </button>
-          </div>
-          <div
-            className="stims-shell__launch-more"
-            data-launch-secondary="true"
+          <button
+            id="use-demo-audio"
+            data-demo-audio-btn="true"
+            className="cta-button primary stims-shell__action-button"
+            type="button"
+            disabled={!engineReady}
+            onClick={() => onAudioStart('demo')}
           >
-            {showExtendedSources ? (
-              <AudioSourcePanel
-                engineReady={engineReady}
-                onAudioStart={onAudioStart}
-                onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
-                onLoadYouTube={onLoadYouTube}
-                onYoutubeUrlChange={onYoutubeUrlChange}
-                onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
-                recentYouTubeVideos={recentYouTubeVideos}
-                youtubeCanLoad={youtubeCanLoad}
-                youtubeFeedback={youtubeFeedback}
-                youtubeInputInvalid={youtubeInputInvalid}
-                youtubeLoading={youtubeLoading}
-                youtubePreviewRef={youtubePreviewRef}
-                youtubeReady={youtubeReady}
-                youtubeUrl={youtubeUrl}
-              />
-            ) : null}
-          </div>
+            <span className="stims-shell__action-label">See visuals now</span>
+            <span className="stims-shell__action-hint">
+              Starts instantly with built-in sound
+            </span>
+          </button>
         </div>
 
         {featuredPreset ? (
@@ -596,14 +533,10 @@ export function WorkspaceLaunchPanel({
 
       {!firstVisitDismissed ? (
         <section className="stims-shell__confidence-note">
-          <strong>The browser-native visualizer in the MilkDrop lineage</strong>
+          <strong>Browser-native MilkDrop visualizer</strong>
           <span>
-            Stims runs authentic MilkDrop presets (.milk files) live in the
-            browser with WebGPU or WebGL. Each bundled preset is captured
-            against a Stims reference render and certified for rendering
-            consistency. Certified presets carry a &ldquo;Stims certified&rdquo;
-            badge in the preset list. Press play with demo audio, then switch to
-            your own music whenever you want.
+            Runs authentic .milk presets via WebGPU or WebGL. Press play with
+            demo audio, then switch to your own music.
           </span>
           <button
             type="button"
@@ -978,9 +911,12 @@ function BrowseSheetPanel({
   favoritePresets,
   filteredCatalog,
   onCollectionTagChange,
+  onExportPreset,
+  onImport,
   onPresetSelection,
   onRefreshPresetPreviews,
   onSearchQueryChange,
+  onShowCurrentLink,
   onShufflePreset,
   onVisiblePresetIdsChange,
   presetPreviews,
@@ -997,9 +933,12 @@ function BrowseSheetPanel({
   favoritePresets: PresetCatalogEntry[];
   filteredCatalog: PresetCatalogEntry[];
   onCollectionTagChange: (collectionTag: string | null) => void;
+  onExportPreset: () => void;
+  onImport: (files: FileList | null) => void;
   onPresetSelection: (presetId: string) => void;
   onRefreshPresetPreviews: (presetIds: string[]) => void;
   onSearchQueryChange: (query: string) => void;
+  onShowCurrentLink: () => void;
   onShufflePreset: () => void;
   onVisiblePresetIdsChange: (presetIds: string[]) => void;
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
@@ -1339,6 +1278,28 @@ function BrowseSheetPanel({
             );
           })}
         </ul>
+
+        <div className="stims-shell__session-actions">
+          <button type="button" className="cta-button" onClick={onExportPreset}>
+            Export preset
+          </button>
+          <label className="cta-button stims-shell__file-button">
+            Import preset
+            <input
+              type="file"
+              accept=".milk,.txt,text/plain"
+              multiple
+              onChange={(event) => onImport(event.target.files)}
+            />
+          </label>
+          <button
+            type="button"
+            className="cta-button"
+            onClick={onShowCurrentLink}
+          >
+            Copy link
+          </button>
+        </div>
       </section>
     </div>
   );
@@ -1349,7 +1310,6 @@ function SettingsSheetPanel({
   onCompatibilityModeChange,
   onMotionPreferenceChange,
   onQualityPresetChange,
-  onRenderPreferenceChange,
   qualityPreset,
   renderPreferences,
 }: {
@@ -1357,7 +1317,6 @@ function SettingsSheetPanel({
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
   onQualityPresetChange: (presetId: string) => void;
-  onRenderPreferenceChange: (update: Partial<RenderPreferences>) => void;
   qualityPreset: QualityPreset;
   renderPreferences: RenderPreferences;
 }) {
@@ -1443,66 +1402,8 @@ function SettingsSheetPanel({
               </small>
             </span>
           </label>
-
-          <label className="stims-shell__field-label" htmlFor="render-scale">
-            Scene sharpness
-          </label>
-          <input
-            id="render-scale"
-            type="range"
-            min="0.6"
-            max="1.4"
-            step="0.05"
-            value={renderPreferences.renderScale ?? 1}
-            onChange={(event) =>
-              onRenderPreferenceChange({
-                renderScale: Number.parseFloat(event.target.value),
-              })
-            }
-          />
-          <p className="stims-shell__meta-copy">
-            Current scene sharpness:{' '}
-            {(renderPreferences.renderScale ?? 1).toFixed(2)}x
-          </p>
-
-          <label className="stims-shell__field-label" htmlFor="max-pixel-ratio">
-            Detail ceiling
-          </label>
-          <input
-            id="max-pixel-ratio"
-            type="range"
-            min="0.75"
-            max="3"
-            step="0.05"
-            value={renderPreferences.maxPixelRatio ?? 1.5}
-            onChange={(event) =>
-              onRenderPreferenceChange({
-                maxPixelRatio: Number.parseFloat(event.target.value),
-              })
-            }
-          />
-          <p className="stims-shell__meta-copy">
-            Current detail ceiling:{' '}
-            {(renderPreferences.maxPixelRatio ?? 1.5).toFixed(2)}x
-          </p>
         </div>
       </details>
-    </div>
-  );
-}
-
-function StageAnchoredToolCallout({
-  panel,
-}: {
-  panel: 'editor' | 'inspector';
-}) {
-  return (
-    <div className="stims-shell__sheet-callout">
-      <h3>
-        {panel === 'editor'
-          ? 'The editor opens on the stage.'
-          : 'The inspector opens on the stage.'}
-      </h3>
     </div>
   );
 }
@@ -1524,7 +1425,6 @@ export function WorkspaceToolSheet({
   onPresetSelection,
   onQualityPresetChange,
   onRefreshPresetPreviews,
-  onRenderPreferenceChange,
   onSearchQueryChange,
   onShowCurrentLink,
   onShufflePreset,
@@ -1557,7 +1457,6 @@ export function WorkspaceToolSheet({
   onPresetSelection: (presetId: string) => void;
   onQualityPresetChange: (presetId: string) => void;
   onRefreshPresetPreviews: (presetIds: string[]) => void;
-  onRenderPreferenceChange: (update: Partial<RenderPreferences>) => void;
   onSearchQueryChange: (query: string) => void;
   onShowCurrentLink: () => void;
   onShufflePreset: () => void;
@@ -1719,9 +1618,12 @@ export function WorkspaceToolSheet({
               favoritePresets={favoritePresets}
               filteredCatalog={filteredCatalog}
               onCollectionTagChange={onCollectionTagChange}
+              onExportPreset={onExportPreset}
+              onImport={onImport}
               onPresetSelection={onPresetSelection}
               onRefreshPresetPreviews={onRefreshPresetPreviews}
               onSearchQueryChange={onSearchQueryChange}
+              onShowCurrentLink={onShowCurrentLink}
               onShufflePreset={onShufflePreset}
               onVisiblePresetIdsChange={onVisiblePresetIdsChange}
               presetPreviews={presetPreviews}
@@ -1738,52 +1640,11 @@ export function WorkspaceToolSheet({
               onCompatibilityModeChange={onCompatibilityModeChange}
               onMotionPreferenceChange={onMotionPreferenceChange}
               onQualityPresetChange={onQualityPresetChange}
-              onRenderPreferenceChange={onRenderPreferenceChange}
               qualityPreset={qualityPreset}
               renderPreferences={renderPreferences}
             />
           ) : null}
-
-          {panel === 'editor' || panel === 'inspector' ? (
-            <StageAnchoredToolCallout panel={panel} />
-          ) : null}
         </div>
-
-        <details className="stims-shell__sheet-footer">
-          <summary className="stims-shell__sheet-footer-summary">
-            <span className="stims-shell__section-label">
-              Share, save, or import
-            </span>
-            <span className="stims-shell__meta-copy">
-              Copy a link, export what is playing, or bring in one of your own.
-            </span>
-          </summary>
-          <div className="stims-shell__session-actions">
-            <button
-              type="button"
-              className="cta-button"
-              onClick={onExportPreset}
-            >
-              Export preset
-            </button>
-            <label className="cta-button stims-shell__file-button">
-              Import preset
-              <input
-                type="file"
-                accept=".milk,.txt,text/plain"
-                multiple
-                onChange={(event) => onImport(event.target.files)}
-              />
-            </label>
-            <button
-              type="button"
-              className="cta-button"
-              onClick={onShowCurrentLink}
-            >
-              Copy link
-            </button>
-          </div>
-        </details>
       </aside>
     </>
   );

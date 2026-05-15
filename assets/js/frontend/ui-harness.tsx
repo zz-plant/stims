@@ -120,25 +120,11 @@ function MockWorkspaceLaunchPanel(overrides: Record<string, unknown>) {
       onAudioStart={() => {}}
       onBrowseRecovery={() => {}}
       onFeaturedPresetSelection={() => {}}
-      onLoadRecentYouTubeVideo={() => {}}
-      onLoadYouTube={() => {}}
       onPresetSelection={() => {}}
-      onToggleExtendedSources={() => {}}
-      onYoutubeUrlChange={() => {}}
-      onYoutubeUrlKeyDown={() => {}}
       presetPreviews={{}}
       readinessAlerts={[]}
-      recentYouTubeVideos={[]}
       requestedPresetId={null}
       recentPresets={MOCK_CATALOG.slice(1, 3)}
-      showExtendedSources={false}
-      youtubeCanLoad={false}
-      youtubeFeedback=""
-      youtubeInputInvalid={false}
-      youtubeLoading={false}
-      youtubePreviewRef={{ current: null }}
-      youtubeReady={false}
-      youtubeUrl=""
       {...overrides}
     />
   );
@@ -215,7 +201,6 @@ function MockWorkspaceToolSheet(overrides: Record<string, unknown>) {
       onPresetSelection={() => {}}
       onQualityPresetChange={() => {}}
       onRefreshPresetPreviews={() => {}}
-      onRenderPreferenceChange={() => {}}
       onSearchQueryChange={() => {}}
       onShowCurrentLink={() => {}}
       onShufflePreset={() => {}}

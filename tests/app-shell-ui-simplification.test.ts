@@ -89,7 +89,7 @@ describe('Workspace shell UI simplification regression', () => {
       'Desktop-first rendering with a lighter fallback when needed.',
     );
     expect(uiSource).toContain('See visuals now');
-    expect(uiSource).toContain('Explore modes');
+    expect(uiSource).not.toContain('Explore modes');
     expect(uiSource).toContain('Use my music');
     expect(uiSource).toMatch(
       /Needs mic permission\.\s+React to the room, your speakers, or live\s+sound\./u,
@@ -109,8 +109,8 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('stims-shell__session-meta');
     expect(uiSource).not.toContain('stims-shell__audio-bridge"');
     expect(uiSource).toContain('Copy link');
-    expect(uiSource).toContain('The editor opens on the stage.');
-    expect(uiSource).toContain('The inspector opens on the stage.');
+    expect(uiSource).not.toContain('The editor opens on the stage.');
+    expect(uiSource).not.toContain('The inspector opens on the stage.');
     expect(uiSource).toContain(
       'className="stims-shell__launch-summary">{launchSummary}</p>',
     );

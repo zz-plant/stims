@@ -127,10 +127,7 @@ class StimsErrorBoundary extends Component<
 }
 
 import { setMotionPreference } from '../core/motion-preferences.ts';
-import {
-  setCompatibilityMode,
-  setRenderPreferences,
-} from '../core/state/render-preference-store.ts';
+import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   applyTheme,
   getActiveThemePreference,
@@ -475,27 +472,11 @@ function StimsWorkspaceAppInner() {
             }}
             onBrowseRecovery={handleBrowseRecovery}
             onFeaturedPresetSelection={handleFeaturedPresetSelection}
-            onLoadRecentYouTubeVideo={loadRecentYouTubeVideo}
-            onLoadYouTube={() => {
-              void loadYouTubePreview();
-            }}
             onPresetSelection={handlePresetSelection}
-            onToggleExtendedSources={toggleExtendedSources}
-            onYoutubeUrlChange={setYoutubeUrl}
-            onYoutubeUrlKeyDown={handleYoutubeUrlKeyDown}
             presetPreviews={presetPreviews}
             readinessAlerts={readinessAlerts}
-            recentYouTubeVideos={recentYouTubeVideos}
             requestedPresetId={routeState.presetId}
             recentPresets={recentPresets}
-            showExtendedSources={showExtendedSources}
-            youtubeCanLoad={youtubeCanLoad}
-            youtubeFeedback={youtubeFeedback}
-            youtubeInputInvalid={youtubeInputInvalid}
-            youtubeLoading={youtubeLoading}
-            youtubePreviewRef={youtubePreviewRef}
-            youtubeReady={youtubeReady}
-            youtubeUrl={youtubeUrl}
           />
         }
         liveMode={liveMode}
@@ -564,7 +545,6 @@ function StimsWorkspaceAppInner() {
           void refreshPresetPreviews(presetIds);
         }}
         onQualityPresetChange={setQualityPreset}
-        onRenderPreferenceChange={setRenderPreferences}
         onSearchQueryChange={setSearchQuery}
         onShowCurrentLink={() => {
           void handleShowCurrentLink();

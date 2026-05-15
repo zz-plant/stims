@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 describe('workspace first-fold launch hierarchy', () => {
-  test('keeps exactly one dominant primary CTA and demotes alternate launch modes', () => {
+  test('keeps exactly one dominant primary CTA with no alternate launch modes in the first fold', () => {
     const uiSource = readFileSync(
       join(
         import.meta.dir,
@@ -16,22 +16,20 @@ describe('workspace first-fold launch hierarchy', () => {
       'utf8',
     );
 
-    const launchActionsBlock =
+    const launchStackBlock =
       uiSource.match(
-        /<div className="stims-shell__launch-actions">([\s\S]*?)<\/div>/u,
+        /<div className="stims-shell__launch-stack">([\s\S]*?)<\/div>/u,
       )?.[1] ?? '';
 
     expect(
       (
-        launchActionsBlock.match(
+        launchStackBlock.match(
           /cta-button primary stims-shell__action-button/gu,
         ) ?? []
       ).length,
     ).toBe(1);
-    expect(launchActionsBlock).toContain('See visuals now');
-    expect(launchActionsBlock).not.toContain('Use my music');
-    expect(launchActionsBlock).toContain('Explore modes');
-    expect(uiSource).toContain('data-launch-secondary="true"');
-    expect(uiSource).toContain('Microphone, tab audio, or YouTube');
+    expect(launchStackBlock).toContain('See visuals now');
+    expect(launchStackBlock).not.toContain('Explore modes');
+    expect(launchStackBlock).not.toContain('Microphone');
   });
 });
