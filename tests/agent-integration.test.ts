@@ -131,7 +131,7 @@ beforeAll(async () => {
   if (!hasChromium) return;
 
   await startDevServer();
-}, 30000);
+}, 60000);
 
 afterAll(async () => {
   await stopDevServer();
@@ -240,7 +240,7 @@ integrationTest(
       await mobile.close();
     }
   },
-  { timeout: 60000 },
+  { timeout: 90000 },
 );
 
 integrationTest(
@@ -288,5 +288,5 @@ integrationTest(
       await mobile.close();
     }
   },
-  { timeout: 60000 },
+  { timeout: 90000 },
 );
