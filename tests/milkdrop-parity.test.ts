@@ -407,7 +407,7 @@ test('keeps former shader-gap parity fixtures out of the allowlist when only vid
       routing: 'descriptor-plan',
       feedback: expect.objectContaining({
         kind: 'feedback-post-effect',
-        shaderExecution: 'controls',
+        shaderExecution: 'direct',
         usesVideoEcho: true,
         fallbackToLegacyFeedback: false,
       }),

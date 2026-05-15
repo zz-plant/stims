@@ -1936,8 +1936,8 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb * 1.2;
       }),
     ).toBe(true);
 
-    expect(compositeStates[0]?.shaderExecution).toBe('controls');
-    expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
+    expect(compositeStates[0]?.shaderExecution).toBe('direct');
+    expect(compositeStates[0]?.shaderPrograms.comp).not.toBeNull();
   });
 
   test('forwards direct shader programs into the webgpu feedback composite state', async () => {
