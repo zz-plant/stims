@@ -308,7 +308,7 @@ export function StimsWorkspaceApp() {
   return (
     <div
       className="stims-shell"
-      data-has_toast={toast ? 'true' : undefined}
+      data-has-toast={toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
     >
       <a href="#stims-main" className="skip-link">

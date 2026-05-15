@@ -1051,7 +1051,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
         execution: expect.objectContaining({
           kind: 'direct-feedback-program',
           stage: 'comp',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: true,
         }),
       }),

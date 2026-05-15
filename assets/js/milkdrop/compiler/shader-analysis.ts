@@ -1155,7 +1155,11 @@ export function extractShaderControls(
           shaderExpressionEnv,
         })
       ) {
-        if (retainsDirectProgramContext || prefersDirectProgram) {
+        if (
+          retainsDirectProgramContext ||
+          prefersDirectProgram ||
+          shouldEmitDirectProgramStatement(parsedStatement.target)
+        ) {
           pushDirectProgramStatement();
         }
         supportedLineCount += 1;

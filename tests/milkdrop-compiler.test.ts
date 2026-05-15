@@ -556,7 +556,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.shaderText.compProgram).toEqual(
@@ -566,7 +566,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_aura, uv * 1.5 
         execution: expect.objectContaining({
           kind: 'direct-feedback-program',
           stage: 'comp',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: true,
         }),
       }),
@@ -611,7 +611,7 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + tex2d(sampler_aura, uv * 1.2 + v
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.shaderText.compProgram).toEqual(
@@ -621,7 +621,7 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + tex2d(sampler_aura, uv * 1.2 + v
         execution: expect.objectContaining({
           kind: 'direct-feedback-program',
           stage: 'comp',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: true,
         }),
       }),
@@ -650,7 +650,7 @@ comp_shader=ret = tex2d(sampler_fw_noise_lq, uv).rgb
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
@@ -895,7 +895,7 @@ comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
@@ -907,7 +907,7 @@ comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
           kind: 'direct-feedback-program',
           stage: 'comp',
           requiresControlFallback: true,
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
         }),
       }),
     );
@@ -926,17 +926,17 @@ comp_shader=float pulse = beat_pulse * 0.4; ret = tex2d(sampler_main, uv).rgb + 
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'unsupported',
+      webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.compProgram).toEqual(
       expect.objectContaining({
         source:
           'float pulse = beat_pulse * 0.4; ret = tex2d(sampler_main, uv).rgb + vec3(pulse, 0.0, 0.0)',
         execution: expect.objectContaining({
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: false,
           statementTargets: ['pulse', 'ret'],
         }),
@@ -966,17 +966,17 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'unsupported',
+      webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.compProgram).toEqual(
       expect.objectContaining({
         source:
           'ret = tex2d(sampler_main, uv).rgb + vec3(time * 0.1, 0.0, 0.0)',
         execution: expect.objectContaining({
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: false,
         }),
       }),
@@ -996,10 +996,10 @@ warp_shader=vec2 drift = vec2(time * 0.02, -0.01); uv = uv + drift * (tex2d(samp
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'unsupported',
+      webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.warpProgram).toEqual(
       expect.objectContaining({
@@ -1007,7 +1007,7 @@ warp_shader=vec2 drift = vec2(time * 0.02, -0.01); uv = uv + drift * (tex2d(samp
           'vec2 drift = vec2(time * 0.02, -0.01); uv = uv + drift * (tex2d(sampler_main, uv).xy - 0.5)',
         execution: expect.objectContaining({
           entryTarget: 'uv',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: false,
           statementTargets: ['drift', 'uv'],
         }),
@@ -1037,17 +1037,17 @@ warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'unsupported',
+      webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.warpProgram).toEqual(
       expect.objectContaining({
         source: 'shader_body=uv + vec2(time * 0.02, 0.0)',
         execution: expect.objectContaining({
           entryTarget: 'uv',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: false,
           statementTargets: ['uv'],
         }),
@@ -1075,17 +1075,17 @@ comp_shader=ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'unsupported',
+      webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.warpProgram).toEqual(
       expect.objectContaining({
         source: 'uv = uv + vec2(0.02) * (tex2d(sampler_perlin, uv).yx - 0.5)',
         execution: expect.objectContaining({
           entryTarget: 'uv',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
         }),
       }),
     );
@@ -1095,7 +1095,7 @@ comp_shader=ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.
           'ret = vec3(0.25) * tex3d(sampler_fw_noisevol_lq, vec3(uv, time / 10.0)).bgr',
         execution: expect.objectContaining({
           entryTarget: 'ret',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
         }),
       }),
     );
@@ -1116,16 +1116,16 @@ comp_shader=ret.rg = vec2(0.2, 0.4); ret.b = 0.6
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'unsupported',
+      webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
     expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.shaderText.warpProgram).toEqual(
       expect.objectContaining({
         source: 'uv.yx = vec2(0.15, 0.35)',
         execution: expect.objectContaining({
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           statementTargets: ['uv.yx'],
         }),
       }),
@@ -1134,7 +1134,7 @@ comp_shader=ret.rg = vec2(0.2, 0.4); ret.b = 0.6
       expect.objectContaining({
         source: 'ret.rg = vec2(0.2, 0.4); ret.b = 0.6',
         execution: expect.objectContaining({
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           statementTargets: ['ret.rg', 'ret.b'],
         }),
       }),
@@ -1253,7 +1253,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.shaderText.compProgram).toEqual(
@@ -1263,7 +1263,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
         execution: expect.objectContaining({
           kind: 'direct-feedback-program',
           stage: 'comp',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: true,
         }),
       }),
@@ -1317,7 +1317,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.shaderText.compProgram).toEqual(
@@ -1327,7 +1327,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
         execution: expect.objectContaining({
           kind: 'direct-feedback-program',
           stage: 'comp',
-          supportedBackends: ['webgpu'],
+          supportedBackends: ['webgl', 'webgpu'],
           requiresControlFallback: true,
         }),
       }),
@@ -1370,7 +1370,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
-      webgl: 'translated',
+      webgl: 'direct',
       webgpu: 'direct',
     });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');

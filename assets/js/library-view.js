@@ -53,6 +53,7 @@ export function createLibraryView({
   let initPromise = null;
   let initToken = 0;
   let disposed = false;
+  let searchDebounceTimer = null;
   const cleanupStack = [];
 
   const registerCleanup = (cleanup) => {
@@ -560,11 +561,11 @@ export function createLibraryView({
     filterLabelCache: new Map(),
     onSearchInput(query) {
       // Debounce to avoid DOM thrash per keystroke — critical on mobile
-      if (this._searchDebounceTimer) {
-        clearTimeout(this._searchDebounceTimer);
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
       }
-      this._searchDebounceTimer = setTimeout(() => {
-        this._searchDebounceTimer = null;
+      searchDebounceTimer = setTimeout(() => {
+        searchDebounceTimer = null;
         filterToys(query);
         stateController.commitState({ replace: true });
       }, 150);
@@ -599,8 +600,11 @@ export function createLibraryView({
       stateController.setSort(sort);
       stateController.commitState({ replace: false });
       renderCurrentState();
-      updateFilterResetState();
-      updateActiveFiltersSummary();
+      filterPresenter.updateFilterResetState();
+      filterPresenter.updateActiveFiltersSummary({
+        emitFilterStateChange,
+        commitAndRender,
+      });
     },
     onResetFilters() {
       resetFiltersAndSearch();

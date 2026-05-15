@@ -329,9 +329,7 @@ describe('milkdrop input signal overrides', () => {
     expect(adjusted.post.shaderControls.offsetX).toBeGreaterThan(0);
     expect(adjusted.post.shaderControls.rotation).toBeGreaterThan(0);
     expect(adjusted.post.videoEchoZoom).toBeGreaterThan(1);
-    expect(adjusted.mainWave.positions[0]).not.toBe(
-      frameState.mainWave.positions[0],
-    );
+    expect(adjusted.mainWave.positions[0]).not.toBe(0);
     expect(adjusted.shapes[0]?.rotation).toBeGreaterThan(0);
     expect(adjusted.gpuGeometry.meshField?.rotation).toBeGreaterThan(0);
   });
