@@ -2,7 +2,8 @@ declare module '*.css';
 
 interface Window {
   __stimsTheme?: {
-    applyTheme(theme: string, persist?: boolean): void;
+    resolveThemePreference: () => 'light' | 'dark';
+    applyTheme: (theme: 'light' | 'dark', persist?: boolean) => void;
   };
   __stimsAppReady?: Promise<void>;
 }
