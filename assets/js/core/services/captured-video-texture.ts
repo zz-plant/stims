@@ -28,6 +28,23 @@ let captureReady = false;
 let captureVideo: HTMLVideoElement | null = null;
 let captureSurface: CaptureDrawSurface | null = null;
 let captureTexture: Texture | null = null;
+
+let cachedViewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+let cachedViewportHeight =
+  typeof window !== 'undefined' ? window.innerHeight : 0;
+
+function updateViewportCache() {
+  if (typeof window === 'undefined') return;
+  cachedViewportWidth = window.innerWidth;
+  cachedViewportHeight = window.innerHeight;
+}
+
+let viewportResizeListenerAttached = false;
+function ensureViewportCacheListener() {
+  if (viewportResizeListenerAttached || typeof window === 'undefined') return;
+  viewportResizeListenerAttached = true;
+  window.addEventListener('resize', updateViewportCache, { passive: true });
+}
 let captureCropTarget: Element | null = null;
 let captureFrameId: number | null = null;
 let captureVideoFrameId: number | null = null;
@@ -123,9 +140,10 @@ function resolveViewportRect(target: Element | null) {
     return null;
   }
 
+  ensureViewportCacheListener();
   const rect = target.getBoundingClientRect();
-  const viewportWidth = Math.max(1, window.innerWidth || rect.width || 1);
-  const viewportHeight = Math.max(1, window.innerHeight || rect.height || 1);
+  const viewportWidth = Math.max(1, cachedViewportWidth || rect.width || 1);
+  const viewportHeight = Math.max(1, cachedViewportHeight || rect.height || 1);
   const left = Math.max(0, Math.min(viewportWidth, rect.left));
   const top = Math.max(0, Math.min(viewportHeight, rect.top));
   const right = Math.max(left, Math.min(viewportWidth, rect.right));
@@ -154,8 +172,8 @@ function resolveSourceRect(video: HTMLVideoElement) {
     };
   }
 
-  const scaleX = sourceWidth / Math.max(1, window.innerWidth || 1);
-  const scaleY = sourceHeight / Math.max(1, window.innerHeight || 1);
+  const scaleX = sourceWidth / Math.max(1, cachedViewportWidth || 1);
+  const scaleY = sourceHeight / Math.max(1, cachedViewportHeight || 1);
   return {
     sx: Math.max(0, Math.round(viewportRect.left * scaleX)),
     sy: Math.max(0, Math.round(viewportRect.top * scaleY)),

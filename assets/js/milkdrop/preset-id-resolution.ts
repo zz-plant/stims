@@ -1,3 +1,7 @@
+import { createLogger } from '../core/logger.ts';
+
+const log = createLogger('PresetIdResolution');
+
 type PresetLookupEntry = {
   id: string;
   title?: string | null;
@@ -157,9 +161,7 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     LEGACY_PRESET_ID_ALIASES.get(normalizedRequestedId) ??
     LEGACY_PRESET_ID_ALIASES.get(slugifyPresetCandidate(requested));
   if (legacyAliasTarget) {
-    console.log(
-      `[PresetIdResolution] "${requested}" → legacy alias "${legacyAliasTarget}"`,
-    );
+    log.log(`"${requested}" → legacy alias "${legacyAliasTarget}"`);
     const exactAliasMatch =
       entries.find(
         (entry) =>
@@ -179,9 +181,7 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     setsIntersect(buildLookupValues(entry).exact, requestedLookup.exact),
   );
   if (directAliasMatch) {
-    console.log(
-      `[PresetIdResolution] "${requested}" → alias match "${directAliasMatch.id}"`,
-    );
+    log.log(`"${requested}" → alias match "${directAliasMatch.id}"`);
     return directAliasMatch;
   }
 
@@ -189,9 +189,7 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     setsIntersect(buildLookupValues(entry).slug, requestedLookup.slug),
   );
   if (fuzzyMatch) {
-    console.log(
-      `[PresetIdResolution] "${requested}" → fuzzy slug match "${fuzzyMatch.id}"`,
-    );
+    log.log(`"${requested}" → fuzzy slug match "${fuzzyMatch.id}"`);
   }
   return fuzzyMatch;
 }

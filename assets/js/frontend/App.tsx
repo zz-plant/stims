@@ -102,7 +102,7 @@ class StimsErrorBoundary extends Component<
                       'stims:webgpu-compat-override',
                     );
                   } catch {}
-                  window.location.reload();
+                  window.location.href = '/';
                 }}
                 style={{
                   margin: '8px',

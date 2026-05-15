@@ -1,3 +1,4 @@
+import { createLogger } from '../core/logger.ts';
 import { sortMilkdropCatalogEntries } from './catalog-sort';
 import {
   createCatalogAnalysis,
@@ -15,6 +16,7 @@ import {
 import { resolvePresetCatalogEntry } from './preset-id-resolution';
 import type { MilkdropCatalogStore, MilkdropPresetSource } from './types';
 
+const log = createLogger('CatalogStore');
 const HISTORY_RECORD_ID = '__history__';
 
 function slugify(value: string) {
@@ -107,60 +109,46 @@ export function createMilkdropCatalogStore({
         return null;
       }
 
-      console.log(
-        `[PresetLoad:${normalizedId}] getPresetSource: checking IndexedDB`,
-      );
+      log.log(`${normalizedId}: checking IndexedDB`);
       const stored = await persistence.getPreset(normalizedId);
       if (stored) {
-        console.log(
-          `[PresetLoad:${normalizedId}] getPresetSource: found in IndexedDB (origin: ${stored.origin})`,
+        log.log(
+          `${normalizedId}: found in IndexedDB (origin: ${stored.origin})`,
         );
         return stored;
       }
 
-      console.log(
-        `[PresetLoad:${normalizedId}] getPresetSource: not in IndexedDB, checking bundled`,
-      );
+      log.log(`${normalizedId}: not in IndexedDB, checking bundled`);
       const bundled = await bundledCatalog.getBundledCatalog();
       const bundledExactEntry =
         bundled.find((candidate) => candidate.id === normalizedId) ?? null;
       if (bundledExactEntry) {
-        console.log(
-          `[PresetLoad:${normalizedId}] getPresetSource: found exact match in bundled`,
-        );
+        log.log(`${normalizedId}: found exact match in bundled`);
         const source =
           await bundledCatalog.loadBundledSource(bundledExactEntry);
         analysis.getCompiled(source);
         return source;
       }
 
-      console.log(
-        `[PresetLoad:${normalizedId}] getPresetSource: no exact match, trying alias in stored`,
-      );
+      log.log(`${normalizedId}: no exact match, trying alias in stored`);
       const storedAliasMatch = resolvePresetCatalogEntry(
         await persistence.listPresets(),
         normalizedId,
       );
       if (storedAliasMatch) {
-        console.log(
-          `[PresetLoad:${normalizedId}] getPresetSource: alias matched stored "${storedAliasMatch.id}"`,
+        log.log(
+          `${normalizedId}: alias matched stored "${storedAliasMatch.id}"`,
         );
         return storedAliasMatch;
       }
 
-      console.log(
-        `[PresetLoad:${normalizedId}] getPresetSource: trying alias in bundled`,
-      );
+      log.log(`${normalizedId}: trying alias in bundled`);
       const entry = resolvePresetCatalogEntry(bundled, normalizedId);
       if (!entry) {
-        console.log(
-          `[PresetLoad:${normalizedId}] getPresetSource: not found in any source`,
-        );
+        log.log(`${normalizedId}: not found in any source`);
         return null;
       }
-      console.log(
-        `[PresetLoad:${normalizedId}] getPresetSource: alias matched bundled "${entry.id}"`,
-      );
+      log.log(`${normalizedId}: alias matched bundled "${entry.id}"`);
       const source = await bundledCatalog.loadBundledSource(entry);
       analysis.getCompiled(source);
       return source;

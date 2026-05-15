@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { createLogger } from '../core/logger.ts';
 import {
   getActiveMotionPreference,
   subscribeToMotionPreference,
@@ -53,9 +54,13 @@ import {
   buildLaunchIntent,
   mapRuntimeCatalogEntry,
 } from './workspace-helpers.ts';
+
 import { useWorkspaceReadiness } from './workspace-readiness.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
+
+const log = createLogger('WorkspaceHooks');
+const PREVIEW_SETTLE_MS = 750;
 
 function syncStageCanvasStyle(stage: HTMLDivElement | null) {
   const canvas = stage?.querySelector('canvas');
@@ -325,7 +330,7 @@ export function useWorkspaceSessionState({
                   });
                   await adapter.loadPreset(presetId);
                   await new Promise<void>((resolve) => {
-                    window.setTimeout(resolve, 750);
+                    window.setTimeout(resolve, PREVIEW_SETTLE_MS);
                   });
 
                   const canvas = previewHost.querySelector('canvas');
@@ -668,9 +673,7 @@ export function useWorkspaceSessionState({
 
     if (!engineRef.current?.isMounted()) {
       if (requestedPresetId) {
-        console.log(
-          `[PresetLoad] engine not mounted, deferring preset ${requestedPresetId}`,
-        );
+        log.log(`engine not mounted, deferring preset ${requestedPresetId}`);
       }
       return;
     }
@@ -685,18 +688,18 @@ export function useWorkspaceSessionState({
     }
 
     pendingPresetIdRef.current = requestedPresetId;
-    console.log(
-      `[PresetLoad] requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
+    log.log(
+      `requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
     );
     void engineRef.current.loadPreset(requestedPresetId).then(
       () => {
-        console.log(`[PresetLoad] loaded ${requestedPresetId}`);
+        log.log(`loaded ${requestedPresetId}`);
         if (pendingPresetIdRef.current === requestedPresetId) {
           pendingPresetIdRef.current = null;
         }
       },
       () => {
-        console.warn(`[PresetLoad] failed to load ${requestedPresetId}`);
+        log.warn(`failed to load ${requestedPresetId}`);
         if (pendingPresetIdRef.current === requestedPresetId) {
           pendingPresetIdRef.current = null;
         }

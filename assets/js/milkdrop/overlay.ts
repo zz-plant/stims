@@ -9,6 +9,8 @@ import type {
   MilkdropFrameState,
 } from './types';
 
+const OSD_HIDE_TIMEOUT_MS = 1800;
+
 type OverlayCallbacks = {
   onSelectPreset: (id: string) => void;
   onSelectQualityPreset: (presetId: string) => void;
@@ -513,7 +515,7 @@ export class MilkdropOverlay {
     this.osdHideTimeoutId = window.setTimeout(() => {
       this.presetOsd.hidden = true;
       this.osdHideTimeoutId = null;
-    }, 1800);
+    }, OSD_HIDE_TIMEOUT_MS);
   }
 
   private setActiveTab(tab: string) {

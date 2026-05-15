@@ -13,6 +13,7 @@ import {
   resolveTouchGestureHints,
   supportsTouchLikeInput,
 } from './audio-control-policy.ts';
+import { escapeHtml } from './nav-shared.ts';
 
 export { resolveTouchGestureHints } from './audio-control-policy.ts';
 
@@ -592,14 +593,14 @@ function renderPostStartGuidance({
         <span class="control-panel__label">After start</span>
         ${
           showStarterPresetAction
-            ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Use ${starterPresetLabel}</button>`
+            ? `<button type="button" class="control-panel__dismiss" data-apply-starter-preset>Use ${escapeHtml(starterPresetLabel)}</button>`
             : ''
         }
       </div>
       <p class="control-panel__comparison">You are in. Keep exploring, or stop here if it already feels right.</p>
       ${
         firstRunHint
-          ? `<p class="control-panel__microcopy">${firstRunHint}</p>`
+          ? `<p class="control-panel__microcopy">${escapeHtml(firstRunHint)}</p>`
           : ''
       }
       ${
@@ -611,7 +612,7 @@ function renderPostStartGuidance({
         </div>
         <p class="control-panel__microcopy">On desktop:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
-          ${desktopHints.map((tip) => `<li>${tip}</li>`).join('')}
+          ${desktopHints.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}
         </ul>
       </section>
       `
@@ -627,7 +628,7 @@ function renderPostStartGuidance({
         </div>
         <p class="control-panel__microcopy">After audio starts:</p>
         <ul class="control-panel__tips control-panel__tips--compact">
-          ${touchHints.map((tip) => `<li>${tip}</li>`).join('')}
+          ${touchHints.map((tip) => `<li>${escapeHtml(tip)}</li>`).join('')}
         </ul>
       </section>
       `
@@ -643,7 +644,7 @@ function renderPostStartGuidance({
         <ul class="control-panel__tips control-panel__tips--compact">
           ${starterTips
             .slice(0, 2)
-            .map((tip) => `<li>${tip}</li>`)
+            .map((tip) => `<li>${escapeHtml(tip)}</li>`)
             .join('')}
         </ul>
       </section>

@@ -119,6 +119,31 @@ body.tv-mode {
   --tv-safe-padding: 32px;
 }
 
+:focus-visible {
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
+  transition: outline-offset 0.15s ease;
+}
+
+:target {
+  scroll-margin-top: clamp(6rem, 12vh, 9rem);
+}
+
+img,
+video,
+canvas {
+  content-visibility: auto;
+}
+
+@supports (container-type: inline-size) {
+  .content,
+  .home-shell,
+  .launch-shell,
+  .webtoy-container {
+    container-type: inline-size;
+  }
+}
+
 html.light {
   --bg-color: #f4efe4;
   --bg-color-secondary: #e5ded0;

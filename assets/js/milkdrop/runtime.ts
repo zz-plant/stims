@@ -3,6 +3,7 @@ import {
   isAgentMode,
   setDebugSnapshot,
 } from '../core/agent-api.ts';
+import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
 import type {
   AdaptiveQualityController,
@@ -60,6 +61,8 @@ import {
   getDisabledMilkdropWebGpuOptimizationFlags,
   resolveMilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
+
+const log = createLogger('MilkdropRuntime');
 
 export {
   applyMilkdropInteractionResponse,
@@ -746,8 +749,8 @@ export function createMilkdropExperience({
       return;
     }
     if (shouldFallbackToWebgl(nextCompiled)) {
-      console.log(
-        `[PresetLoad:${nextCompiled.source.id}] subscriber: WebGL fallback triggered`,
+      log.log(
+        `${nextCompiled.source.id}: subscriber: WebGL fallback triggered`,
       );
       triggerWebglFallback({
         presetId: nextCompiled.source.id,
@@ -760,8 +763,8 @@ export function createMilkdropExperience({
     const didSourceChange =
       nextCompiled.formattedSource !== activeCompiled.formattedSource;
     if (didPresetIdChange) {
-      console.log(
-        `[PresetLoad:${nextCompiled.source.id}] subscriber: preset ID change, applying`,
+      log.log(
+        `${nextCompiled.source.id}: subscriber: preset ID change, applying`,
       );
       applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);
@@ -771,8 +774,8 @@ export function createMilkdropExperience({
       return;
     }
     if (didSourceChange) {
-      console.log(
-        `[PresetLoad:${nextCompiled.source.id}] subscriber: source change, re-applying`,
+      log.log(
+        `${nextCompiled.source.id}: subscriber: source change, re-applying`,
       );
       applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);

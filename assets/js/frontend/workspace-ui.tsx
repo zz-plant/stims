@@ -123,6 +123,7 @@ function PresetArtwork({
           className="stims-shell__preset-preview-image"
           src={preview.imageUrl}
           alt=""
+          loading="lazy"
         />
       ) : null}
       <span className="stims-shell__preset-art-grid" />
@@ -834,7 +835,7 @@ export function WorkspaceStagePanel({
                 className="stims-shell__corner-link"
                 href="https://github.com/zz-plant/stims"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 GitHub
               </a>
