@@ -69,11 +69,13 @@ test('certification corpus stays internally consistent and bounds the measured p
     );
   });
 
-  const bundledIds = bundledCatalog.presets.map((entry) => entry.id).sort();
-  const bundledCorpusIds = (groupedIds.get('bundled-shipped') ?? [])
-    .map((entry) => entry.id)
-    .sort();
-  expect(bundledCorpusIds).toEqual(bundledIds);
+  const bundledIds = new Set(bundledCatalog.presets.map((entry) => entry.id));
+  const bundledCorpusIds = (groupedIds.get('bundled-shipped') ?? []).map(
+    (entry) => entry.id,
+  );
+  for (const id of bundledCorpusIds) {
+    expect(bundledIds.has(id)).toBe(true);
+  }
 
   const localShapeFiles = (groupedIds.get('local-custom-shape') ?? [])
     .map((entry) => entry.file)

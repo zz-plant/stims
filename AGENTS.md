@@ -35,10 +35,10 @@ Use the repo-local capability guide in [`docs/agents/custom-capabilities.md`](./
 ## Essentials
 
 - **Package manager:** Bun (use `bun install` for dependency updates, reserve `bun install --frozen-lockfile` for reproducible/CI installs, and run scripts with `bun run ...`).
-- **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing.
+- **Quality gate for JS/TS edits:** run `bun run check` (Biome check + typecheck + tests) before committing. If `bun run check` fails, fix the root cause — do not chain fix-attempt commits.
 - **Done criteria by change type:** JS/TS changes need `bun run check`; runtime, preset, audio, shell, or routing changes also need browser verification on `http://localhost:5173/?agent=true`; docs-only edits can skip typecheck/tests unless commands, paths, or workflow-critical instructions changed.
 - **Cloudflare Pages deploy default:** GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) own preview and production deploys; keep local `pages:deploy:*` scripts as the manual fallback.
-- **Commit metadata:** use sentence case commit titles with no trailing period.
+- **Commit metadata:** use Conventional Commits format (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`) with sentence case titles and no trailing period. The type prefix is mandatory for every commit.
 - **PR metadata:** include a short summary plus explicit lists of tests run and docs touched/added.
 
 ## Recommended execution order
