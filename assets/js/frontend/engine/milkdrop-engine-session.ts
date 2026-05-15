@@ -251,6 +251,15 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
+    async stopAudio() {
+      if (!audioActive) return;
+
+      audioActive = false;
+      audioSource = null;
+      setAudioActive(false, null);
+      emit();
+    },
+
     openTool(tool: 'browse' | 'editor' | 'inspector') {
       experience?.openTab(tool);
       emit();

@@ -210,6 +210,7 @@ function StimsWorkspaceAppInner() {
     featuredPreset,
     filteredCatalog,
     handleAudioStart,
+    handleAudioStop,
     handleBrowseRecovery,
     handleFeaturedPresetSelection,
     handleImport,
@@ -442,6 +443,20 @@ function StimsWorkspaceAppInner() {
     applyTheme(next);
   };
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        document.documentElement.dataset.pageHidden = 'true';
+      } else {
+        delete document.documentElement.dataset.pageHidden;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
   return (
     <div
       className="stims-shell"
@@ -501,6 +516,9 @@ function StimsWorkspaceAppInner() {
         missingRequestedPreset={missingRequestedPreset}
         onAudioStart={(source) => {
           void handleAudioStart(source);
+        }}
+        onAudioStop={() => {
+          void handleAudioStop();
         }}
         onLoadYouTube={() => {
           void loadYouTubePreview();

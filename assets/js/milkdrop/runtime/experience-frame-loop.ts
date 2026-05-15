@@ -162,6 +162,11 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
+      if (typeof document !== 'undefined' && document.hidden) {
+        setCurrentFrameState(null);
+        return;
+      }
+
       const now = performance.now();
       const frameStartAt = now;
       const activeBackend = getActiveBackend();

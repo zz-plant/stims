@@ -3,6 +3,8 @@ const STORAGE_KEY = 'stims:last-session';
 interface PersistedSession {
   audioSource: string | null;
   presetId: string | null;
+  collectionTag: string | null;
+  panel: string | null;
   lastVisitedAt: number;
 }
 

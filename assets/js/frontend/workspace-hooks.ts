@@ -707,6 +707,18 @@ export function useWorkspaceSessionState({
   }, [engineSnapshot?.audioActive, routeState.audioSource]);
 
   useEffect(() => {
+    if (
+      !engineRef.current?.isMounted() ||
+      !engineSnapshot?.audioActive ||
+      routeState.audioSource !== null
+    ) {
+      return;
+    }
+
+    void engineRef.current.stopAudio().catch(() => {});
+  }, [engineSnapshot?.audioActive, routeState.audioSource]);
+
+  useEffect(() => {
     const liveSession =
       engineSnapshot?.audioActive ||
       document.body.dataset.audioActive === 'true';
@@ -746,6 +758,14 @@ export function useWorkspaceSessionState({
           ? (persisted.audioSource as SessionRouteState['audioSource'])
           : current.audioSource,
         presetId: current.presetId ?? persisted.presetId ?? current.presetId,
+        collectionTag:
+          current.collectionTag ??
+          persisted.collectionTag ??
+          current.collectionTag,
+        panel:
+          current.panel ??
+          (persisted.panel as SessionRouteState['panel']) ??
+          current.panel,
       }));
     });
   }, [engineSnapshot?.audioActive, routeState.audioSource, setRouteState]);
@@ -754,8 +774,15 @@ export function useWorkspaceSessionState({
     writePersistedSession({
       audioSource: routeState.audioSource,
       presetId: routeState.presetId,
+      collectionTag: routeState.collectionTag,
+      panel: routeState.panel,
     });
-  }, [routeState.audioSource, routeState.presetId]);
+  }, [
+    routeState.audioSource,
+    routeState.presetId,
+    routeState.collectionTag,
+    routeState.panel,
+  ]);
 
   return {
     deferredSearch,
@@ -854,5 +881,8 @@ export function useWorkspaceSessionState({
     youtubePreviewRef,
     youtubeReady,
     youtubeUrl,
+    stopAudio: async () => {
+      await engineRef.current?.stopAudio();
+    },
   };
 }
