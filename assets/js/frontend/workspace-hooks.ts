@@ -563,7 +563,7 @@ export function useWorkspaceSessionState({
   ]);
 
   useEffect(() => {
-    if (!engineSnapshot?.activePresetId) {
+    if (!engineSnapshot?.activePresetId || !engineSnapshot?.runtimeReady) {
       return;
     }
 
@@ -597,12 +597,17 @@ export function useWorkspaceSessionState({
   }, [
     engineSnapshot?.activePresetId,
     engineSnapshot?.catalogEntries,
+    engineSnapshot?.runtimeReady,
     routeState.presetId,
     setRouteState,
   ]);
 
   useEffect(() => {
-    if (!routeState.presetId || routeState.invalidExperienceSlug) {
+    if (
+      !routeState.presetId ||
+      routeState.invalidExperienceSlug ||
+      !engineSnapshot?.runtimeReady
+    ) {
       return;
     }
 
@@ -628,6 +633,7 @@ export function useWorkspaceSessionState({
     });
   }, [
     engineSnapshot?.catalogEntries,
+    engineSnapshot?.runtimeReady,
     routeState.invalidExperienceSlug,
     routeState.presetId,
     setRouteState,
@@ -740,7 +746,7 @@ export function useWorkspaceSessionState({
         audioSource: persisted.audioSource
           ? (persisted.audioSource as SessionRouteState['audioSource'])
           : current.audioSource,
-        presetId: persisted.presetId ?? current.presetId,
+        presetId: current.presetId ?? persisted.presetId ?? current.presetId,
       }));
     });
   }, [engineSnapshot?.audioActive, routeState.audioSource, setRouteState]);
