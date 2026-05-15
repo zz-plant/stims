@@ -967,7 +967,7 @@ body {
   position: fixed;
   left: 50%;
   bottom: 16px;
-  z-index: 9999;
+  z-index: 45;
   max-width: min(420px, calc(100vw - 32px));
   padding: 12px 14px;
   border: 1px solid rgba(119, 201, 255, 0.36);
@@ -4584,7 +4584,7 @@ body {
   left: 50%;
   bottom: clamp(1.2rem, 4vw, 2.8rem);
   transform: translateX(-50%);
-  z-index: 34;
+  z-index: 1260;
   min-width: min(24rem, calc(100vw - 2rem));
   max-width: min(36rem, calc(100vw - 2rem));
   padding: 0.9rem 1rem;

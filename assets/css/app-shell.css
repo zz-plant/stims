@@ -2544,7 +2544,7 @@ body[data-page="workspace"] {
 .stims-shell__sheet-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 1150;
   border: 0;
   background:
     radial-gradient(
@@ -2561,7 +2561,7 @@ body[data-page="workspace"] {
   position: fixed;
   top: 24px;
   right: 24px;
-  z-index: 31;
+  z-index: 1151;
   width: min(540px, calc(100vw - 48px));
   height: calc(100vh - 48px);
   max-height: calc(100vh - 48px);
