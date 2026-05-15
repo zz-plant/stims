@@ -163,11 +163,6 @@ const reportRendererTelemetry = (result: RendererCapabilities) => {
     webgpu: result.webgpu,
   };
   telemetryHandler?.('renderer_capabilities', detail);
-  if (typeof window !== 'undefined' && window.dispatchEvent) {
-    window.dispatchEvent(
-      new CustomEvent('stims:renderer-capabilities', { detail }),
-    );
-  }
 };
 
 const cacheResult = (result: RendererCapabilities) => {

@@ -151,7 +151,6 @@ export function initAudioControls(
   ) as HTMLDetailsElement | null;
   const ADVANCED_KEY = 'stims-audio-advanced-open';
   const GESTURE_HINT_KEY = 'stims-gesture-hints-dismissed';
-  const QUICK_START_PRESET_KEY = 'stims-quick-start-preset';
 
   const setPrimaryRow = (row: Element | null, isPrimary: boolean): void => {
     row?.classList.toggle('control-panel__row--primary', isPrimary);
@@ -300,11 +299,6 @@ export function initAudioControls(
       return;
     }
 
-    try {
-      window.sessionStorage.setItem(QUICK_START_PRESET_KEY, appliedPreset.id);
-    } catch (_error) {
-      // Ignore storage errors.
-    }
     updateStatus(`${starterPresetLabel} applied.`, 'success');
   });
 
