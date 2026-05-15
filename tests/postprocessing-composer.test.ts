@@ -296,12 +296,13 @@ describe('milkdrop postprocessing composer', () => {
       bloomStrength: 1,
     });
 
-    const afterimagePass =
-      pipeline.afterimagePass as unknown as MockAfterimagePass;
+    const afterimagePass = pipeline.afterimagePass as unknown as
+      | MockAfterimagePass
+      | undefined;
     const filmPass = pipeline.filmPass as unknown as MockFilmPass;
     const chromaPass = pipeline.chromaPass as unknown as MockShaderPass;
 
-    expect(afterimagePass.damp).toBe(0);
+    expect(afterimagePass?.damp ?? 0).toBe(0);
     expect(filmPass.uniforms.nIntensity.value).toBe(0);
     expect(filmPass.uniforms.sIntensity.value).toBe(0);
     expect(filmPass.uniforms.sCount.value).toBe(0);

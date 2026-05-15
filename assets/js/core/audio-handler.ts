@@ -1,4 +1,5 @@
-import * as THREE from 'three';
+import type { Camera, Object3D } from 'three';
+import { Audio, AudioListener, PositionalAudio } from 'three';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
@@ -364,17 +365,17 @@ export class AudioAccessError extends Error {
 export type AudioInitOptions = {
   fftSize?: number;
   smoothingTimeConstant?: number;
-  camera?: THREE.Camera;
+  camera?: Camera;
   positional?: boolean;
-  object?: THREE.Object3D;
+  object?: Object3D;
   constraints?: MediaStreamConstraints;
   stream?: MediaStream;
   fallbackToSynthetic?: boolean;
   preferSynthetic?: boolean;
   onCleanup?: (ctx: {
     analyser: FrequencyAnalyser;
-    listener: THREE.AudioListener;
-    audio: THREE.Audio | THREE.PositionalAudio;
+    listener: AudioListener;
+    audio: Audio | PositionalAudio;
     stream?: MediaStream;
   }) => void;
   stopStreamOnCleanup?: boolean;
@@ -558,7 +559,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
     monitorInput = false,
   } = options;
 
-  let listener: THREE.AudioListener | null = null;
+  let listener: AudioListener | null = null;
   let resolvedStream: MediaStream | null = null;
   let ownsStream = false;
   let permissionState: PermissionState | undefined;
@@ -578,7 +579,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
   }
 
   try {
-    const activeListener = new THREE.AudioListener();
+    const activeListener = new AudioListener();
     listener = activeListener;
     if (activeListener.context.state === 'suspended') {
       await activeListener.context.resume();
@@ -615,11 +616,11 @@ export async function initAudio(options: AudioInitOptions = {}) {
     }
 
     const audio = positional
-      ? new THREE.PositionalAudio(activeListener)
-      : new THREE.Audio(activeListener);
+      ? new PositionalAudio(activeListener)
+      : new Audio(activeListener);
     audio.setMediaStreamSource(streamSource);
     if (!monitorInput && 'setVolume' in audio) {
-      (audio as THREE.Audio).setVolume(0);
+      (audio as Audio).setVolume(0);
     }
     if (positional && object) {
       object.add(audio);
@@ -655,9 +656,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
       }
 
       if (camera && 'remove' in camera && listener) {
-        (
-          camera as THREE.Camera & { remove?: (obj: THREE.Object3D) => void }
-        ).remove(listener);
+        (camera as Camera & { remove?: (obj: Object3D) => void }).remove(
+          listener,
+        );
       }
 
       if (listener?.context?.close && closeContextOnCleanup) {
@@ -665,9 +666,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
       }
 
       if (positional && object && 'remove' in object) {
-        (
-          object as THREE.Object3D & { remove?: (obj: THREE.Object3D) => void }
-        ).remove?.(audio);
+        (object as Object3D & { remove?: (obj: Object3D) => void }).remove?.(
+          audio,
+        );
       }
 
       onCleanup?.({
@@ -702,9 +703,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
     }
 
     if (camera && 'remove' in camera && listener) {
-      (
-        camera as THREE.Camera & { remove?: (obj: THREE.Object3D) => void }
-      ).remove(listener);
+      (camera as Camera & { remove?: (obj: Object3D) => void }).remove(
+        listener,
+      );
     }
 
     if (error instanceof AudioAccessError) {

@@ -6,6 +6,7 @@ import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { isMobileDevice } from '../utils/device-detect.ts';
 import type { RendererBackend } from './renderer-capabilities';
 
 export type MilkdropPostprocessingProfile = {
@@ -188,22 +189,31 @@ export function createMilkdropPostprocessingComposer({
   composer.addPass(renderPass);
 
   const size = renderer.getSize(new Vector2());
-  const bloomPass = new UnrealBloomPass(
-    new Vector2(size.x, size.y),
-    profile.bloomStrength,
-    profile.bloomRadius,
-    profile.bloomThreshold,
-  );
-  composer.addPass(bloomPass);
+  const mobile = isMobileDevice();
+
+  let bloomPass: UnrealBloomPass | undefined;
+  if (profile.bloomStrength > 0) {
+    const bloomSize = mobile
+      ? new Vector2(Math.round(size.x / 2), Math.round(size.y / 2))
+      : new Vector2(size.x, size.y);
+    bloomPass = new UnrealBloomPass(
+      bloomSize,
+      profile.bloomStrength,
+      profile.bloomRadius,
+      profile.bloomThreshold,
+    );
+    composer.addPass(bloomPass);
+  }
 
   const filmPass = new FilmPass() as FilmPassWithUniforms;
   composer.addPass(filmPass);
 
-  const afterimagePass = new AfterimagePass(
-    Math.max(profile.afterimageDamp, 0),
-  );
-  afterimagePass.enabled = profile.afterimageDamp > 0;
-  composer.addPass(afterimagePass);
+  let afterimagePass: AfterimagePass | undefined;
+  if (profile.afterimageDamp > 0) {
+    afterimagePass = new AfterimagePass(Math.max(profile.afterimageDamp, 0));
+    afterimagePass.enabled = true;
+    composer.addPass(afterimagePass);
+  }
 
   const chromaPass = new ShaderPass(MILKDROP_POSTPROCESSING_SHADER);
   setUniformValue(
@@ -224,14 +234,18 @@ export function createMilkdropPostprocessingComposer({
   chromaPass.material.uniforms.resolution?.value?.set?.(size.x, size.y);
 
   const applyProfile = (nextProfile: MilkdropPostprocessingProfile) => {
-    bloomPass.strength = nextProfile.bloomStrength;
-    bloomPass.radius = nextProfile.bloomRadius;
-    bloomPass.threshold = nextProfile.bloomThreshold;
+    if (bloomPass) {
+      bloomPass.strength = nextProfile.bloomStrength;
+      bloomPass.radius = nextProfile.bloomRadius;
+      bloomPass.threshold = nextProfile.bloomThreshold;
+    }
     setUniformValue(filmPass.uniforms, 'nIntensity', nextProfile.filmNoise);
     setUniformValue(filmPass.uniforms, 'sIntensity', nextProfile.filmScanlines);
     setUniformValue(filmPass.uniforms, 'sCount', nextProfile.filmScanlineCount);
-    afterimagePass.damp = Math.max(nextProfile.afterimageDamp, 0);
-    afterimagePass.enabled = nextProfile.afterimageDamp > 0;
+    if (afterimagePass) {
+      afterimagePass.damp = Math.max(nextProfile.afterimageDamp, 0);
+      afterimagePass.enabled = nextProfile.afterimageDamp > 0;
+    }
     setUniformValue(
       chromaPass.material.uniforms,
       'vignetteStrength',
@@ -264,6 +278,12 @@ export function createMilkdropPostprocessingComposer({
     renderer.getSize(sizeScratch);
     if (sizeScratch.x !== lastSize.x || sizeScratch.y !== lastSize.y) {
       composer.setSize(sizeScratch.x, sizeScratch.y);
+      if (bloomPass && mobile) {
+        bloomPass.resolution.set(
+          Math.round(sizeScratch.x / 2),
+          Math.round(sizeScratch.y / 2),
+        );
+      }
       chromaPass.material.uniforms.resolution?.value?.set?.(
         sizeScratch.x,
         sizeScratch.y,
@@ -282,7 +302,7 @@ export function createMilkdropPostprocessingComposer({
     render: () => composer.render(),
     updateSize,
     dispose: () => {
-      afterimagePass.dispose();
+      afterimagePass?.dispose();
       composer.dispose();
     },
   };
