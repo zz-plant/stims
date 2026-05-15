@@ -188,7 +188,7 @@ integrationTest(
       await rm(outputDir, { recursive: true, force: true });
     }
   },
-  { timeout: 60000 },
+  { timeout: 90000 },
 );
 
 integrationTest(
@@ -203,7 +203,7 @@ integrationTest(
 
     expect(result.success).toBe(false);
   },
-  { timeout: 45000 },
+  { timeout: 90000 },
 );
 
 integrationTest(

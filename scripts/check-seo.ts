@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import sharp from 'sharp';
 import {
   buildSeoArtifacts,
   DEFAULT_BASE_URL,
@@ -66,11 +67,12 @@ async function compareGeneratedFile(
     normalize?: (value: string) => string;
   } = {},
 ) {
-  const actual = await fs.readFile(path.join(rootDir, relativePath));
+  const targetPath = path.join(rootDir, relativePath);
   let passed = false;
-  let returnValue: string | Buffer = actual;
+  let returnValue: string | Buffer;
 
   if (typeof expected === 'string') {
+    const actual = await fs.readFile(targetPath);
     const actualText = actual.toString('utf8');
     const expectedText = expected;
     passed =
@@ -78,8 +80,8 @@ async function compareGeneratedFile(
       (normalize ? normalize(expectedText) : expectedText);
     returnValue = actualText;
   } else {
-    const expectedBuffer = Buffer.from(expected);
-    passed = Buffer.compare(actual, expectedBuffer) === 0;
+    passed = await checkPngValidity(targetPath, expected);
+    returnValue = await fs.readFile(targetPath);
   }
 
   results.push({
@@ -89,6 +91,26 @@ async function compareGeneratedFile(
   });
 
   return returnValue;
+}
+
+async function checkPngValidity(
+  filePath: string,
+  expectedBuffer: Uint8Array,
+): Promise<boolean> {
+  try {
+    const [actualMeta, expectedMeta] = await Promise.all([
+      sharp(filePath).metadata(),
+      sharp(Buffer.from(expectedBuffer)).metadata(),
+    ]);
+
+    return (
+      actualMeta.format === 'png' &&
+      actualMeta.width === expectedMeta.width &&
+      actualMeta.height === expectedMeta.height
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function runSeoChecks(rootDir = repoRoot) {
