@@ -12,7 +12,6 @@ const CORE_TO_UTILS_ALLOWLIST = new Set([
 type ArchitectureLayer =
   | 'app'
   | 'frontend'
-  | 'legacy'
   | 'core'
   | 'ui'
   | 'utils'
@@ -41,17 +40,6 @@ export function classifyArchitectureLayer(
 
   if (relative === 'assets/js/app.ts') return 'app';
   if (relative.startsWith('assets/js/frontend/')) return 'frontend';
-  if (
-    relative === 'assets/js/loader.ts' ||
-    relative === 'assets/js/router.ts' ||
-    relative === 'assets/js/toy-view.ts' ||
-    relative === 'assets/js/library-view.js' ||
-    relative.startsWith('assets/js/bootstrap/') ||
-    relative.startsWith('assets/js/library-view/') ||
-    relative.startsWith('assets/js/loader/')
-  ) {
-    return 'legacy';
-  }
   if (relative.startsWith('assets/js/core/')) return 'core';
   if (relative.startsWith('assets/js/ui/')) {
     return 'ui';
@@ -123,17 +111,6 @@ export function isArchitectureDependencyAllowed({
   if (sourceLayer === 'ui') {
     return (
       targetLayer === 'ui' || targetLayer === 'core' || targetLayer === 'utils'
-    );
-  }
-
-  if (sourceLayer === 'legacy') {
-    return (
-      targetLayer === 'legacy' ||
-      targetLayer === 'core' ||
-      targetLayer === 'ui' ||
-      targetLayer === 'utils' ||
-      targetLayer === 'toy' ||
-      targetLayer === 'milkdrop-public'
     );
   }
 

@@ -594,6 +594,94 @@
         "audioMode": "demo",
         "vibeMode": false
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260515070917",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-05-15T07:09:17.194Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1778828932425.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1778828932425.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=rovastar-parallel-universe",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260515070923",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-glowsticks-v2-03-music",
+      "title": null,
+      "createdAt": "2026-05-15T07:09:23.767Z",
+      "files": {
+        "image": "milkdrop--preset-eos-glowsticks-v2-03-music-1778828940428.png",
+        "debugSnapshot": "milkdrop--preset-eos-glowsticks-v2-03-music-1778828940428.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-glowsticks-v2-03-music",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260515071018",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-phat-cubetrace-v2",
+      "title": null,
+      "createdAt": "2026-05-15T07:10:18.043Z",
+      "files": {
+        "image": "milkdrop--preset-eos-phat-cubetrace-v2-1778829003022.png",
+        "debugSnapshot": "milkdrop--preset-eos-phat-cubetrace-v2-1778829003022.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-phat-cubetrace-v2",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260515071105",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "krash-rovastar-cerebral-demons-stars",
+      "title": null,
+      "createdAt": "2026-05-15T07:11:05.349Z",
+      "files": {
+        "image": "milkdrop--preset-krash-rovastar-cerebral-demons-stars-1778829055821.png",
+        "debugSnapshot": "milkdrop--preset-krash-rovastar-cerebral-demons-stars-1778829055821.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=krash-rovastar-cerebral-demons-stars",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
     }
   ]
 }

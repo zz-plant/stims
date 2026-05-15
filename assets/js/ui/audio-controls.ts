@@ -533,7 +533,10 @@ export function initAudioControls(
     void handleRequest(
       tabBtn,
       async () => {
-        updateStatus('Select tab to capture audio.', 'success');
+        updateStatus(
+          "A permission dialog will open. Select the browser tab or window to capture. If you don't see your audio, try demo audio as a quick start.",
+          'success',
+        );
         const stream = await captureDisplayAudioStream({
           unavailableMessage: 'Tab audio capture unavailable.',
         });
@@ -541,9 +544,13 @@ export function initAudioControls(
         await requestTabAudio(stream);
       },
       'Tab audio capture failed.',
-      undefined,
+      (errorMessage) => {
+        emphasizeDemoAudio();
+        updateStatus(
+          `${errorMessage} Try demo audio instead — it works instantly with no permissions needed.`,
+        );
+      },
       'Tab video is feeding the preset.',
-      'Starting tab audio…',
     );
   });
 

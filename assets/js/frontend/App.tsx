@@ -40,6 +40,84 @@ class StimsErrorBoundary extends Component<
             <p style={{ opacity: 0.6, fontSize: '0.9rem', margin: 0 }}>
               Reload the page to try again.
             </p>
+            <div style={{ marginTop: '24px' }}>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                style={{
+                  margin: '8px',
+                  padding: '8px 16px',
+                  background: '#1a2a3a',
+                  color: '#e9fbff',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                Reload page
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    window.sessionStorage.removeItem(
+                      'stims:webgpu-compat-override',
+                    );
+                  } catch {}
+                  try {
+                    window.localStorage.setItem(
+                      'stims:compatibility-mode',
+                      'true',
+                    );
+                  } catch {}
+                  window.location.reload();
+                }}
+                style={{
+                  margin: '8px',
+                  padding: '8px 16px',
+                  background: '#1a2a3a',
+                  color: '#e9fbff',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                Try WebGL mode
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const keys: string[] = [];
+                    for (let i = 0; i < window.localStorage.length; i++) {
+                      const key = window.localStorage.key(i);
+                      if (key?.startsWith('stims:')) {
+                        keys.push(key);
+                      }
+                    }
+                    keys.forEach((key) => window.localStorage.removeItem(key));
+                    window.sessionStorage.removeItem(
+                      'stims:webgpu-compat-override',
+                    );
+                  } catch {}
+                  window.location.reload();
+                }}
+                style={{
+                  margin: '8px',
+                  padding: '8px 16px',
+                  background: '#1a2a3a',
+                  color: '#e9fbff',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                Reset settings
+              </button>
+            </div>
           </div>
         </div>
       );

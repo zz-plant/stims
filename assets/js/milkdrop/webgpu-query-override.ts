@@ -8,6 +8,9 @@
  * localStorage toggle.
  */
 
+import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
+import { isMobileDevice } from '../utils/device-detect.ts';
+
 const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
 const URL_PARAM_RENDERER = 'renderer';
@@ -81,6 +84,23 @@ export function getWebGpuForceMode(): WebGpuForceMode {
 }
 
 /**
+ * Check whether the current browser and environment qualify for the
+ * default (full-procedural) WebGPU path without an explicit override.
+ *
+ * Qualifying criteria:
+ * - WebGPU API is available
+ * - Not a mobile device
+ * - Compatibility mode not active
+ */
+function qualifiesForDefaultWebGPUPath(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  if (isCompatibilityModeEnabled()) return false;
+  if (isMobileDevice()) return false;
+
+  return true;
+}
+
+/**
  * Determine whether the safe (reduced-feature) WebGPU path should be used
  * for the MilkDrop visualizer engine.
  *
@@ -90,7 +110,7 @@ export function getWebGpuForceMode(): WebGpuForceMode {
  * 3. URL query parameters:
  *    - `?renderer=webgpu&corpus=certification` → full path
  *    - `?renderer=webgpu` (without certification corpus) → safe path
- * 4. Default: safe path for the live visualizer
+ * 4. Default: use full path on Chrome/Edge 130+ desktop; safe path otherwise
  */
 export function shouldUseSafeMilkdropWebGpuPath(
   location: Pick<Location, 'search'> | null | undefined = globalThis.location,
@@ -118,8 +138,8 @@ export function shouldUseSafeMilkdropWebGpuPath(
     }
   }
 
-  // 4. Default: safe path for live visualizer
-  return false;
+  // 4. Default: full path unless the device doesn't qualify
+  return !qualifiesForDefaultWebGPUPath();
 }
 
 /**
@@ -165,5 +185,8 @@ export function getWebGpuPathDescription(
     }
   }
 
-  return { mode: 'safe', source: 'default' };
+  return {
+    mode: qualifiesForDefaultWebGPUPath() ? 'full' : 'safe',
+    source: 'default',
+  };
 }

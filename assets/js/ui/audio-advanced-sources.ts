@@ -382,7 +382,10 @@ export function setupYouTubeAudioControls(
       useBtn.disabled = true;
       useBtn.toggleAttribute('data-loading', true);
       useBtn.setAttribute('aria-busy', 'true');
-      updateStatus('Select tab to capture audio.', 'success');
+      updateStatus(
+        "A permission dialog will open. Select the browser tab or window to capture. If you don't see your audio, try demo audio as a quick start.",
+        'success',
+      );
       const stream = await captureDisplayAudioStream({
         unavailableMessage: 'Screen capture unavailable.',
       });
@@ -394,7 +397,9 @@ export function setupYouTubeAudioControls(
       onSuccess?.();
       updateStatus('YouTube video is feeding the preset.', 'success');
     } catch (_err) {
-      updateStatus('YouTube audio capture failed.');
+      updateStatus(
+        'YouTube audio capture failed. Try demo audio instead — it works instantly with no permissions needed.',
+      );
     } finally {
       useBtn.disabled = false;
       useBtn.toggleAttribute('data-loading', false);

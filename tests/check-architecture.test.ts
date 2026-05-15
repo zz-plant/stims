@@ -27,10 +27,7 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(
         workspacePath('assets/js/bootstrap/home-page.ts'),
       ),
-    ).toBe('legacy');
-    expect(
-      classifyArchitectureLayer(workspacePath('assets/js/library-view.js')),
-    ).toBe('legacy');
+    ).toBeNull();
     expect(
       classifyArchitectureLayer(workspacePath('assets/js/core/web-toy.ts')),
     ).toBe('core');
@@ -82,7 +79,7 @@ describe('architecture boundary rules', () => {
   test('treats data as a leaf layer', () => {
     expect(
       isArchitectureDependencyAllowed({
-        sourceLayer: 'legacy',
+        sourceLayer: 'toy',
         targetLayer: 'data',
         targetPath: workspacePath('assets/js/data/toy-manifest.ts'),
       }),
@@ -96,10 +93,10 @@ describe('architecture boundary rules', () => {
     ).toBe(false);
   });
 
-  test('keeps the milkdrop seam narrow', () => {
+  test('keeps the frontend seam narrow', () => {
     expect(
       isArchitectureDependencyAllowed({
-        sourceLayer: 'legacy',
+        sourceLayer: 'frontend',
         targetLayer: 'milkdrop-public',
         targetPath: workspacePath(
           'assets/js/milkdrop/public/launch-intents.ts',
@@ -108,16 +105,16 @@ describe('architecture boundary rules', () => {
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
-        sourceLayer: 'legacy',
-        targetLayer: 'milkdrop',
-        targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
-      }),
-    ).toBe(false);
-    expect(
-      isArchitectureDependencyAllowed({
         sourceLayer: 'milkdrop-public',
         targetLayer: 'milkdrop',
         targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
+      }),
+    ).toBe(true);
+    expect(
+      isArchitectureDependencyAllowed({
+        sourceLayer: 'frontend',
+        targetLayer: 'utils',
+        targetPath: workspacePath('assets/js/utils/device-detect.ts'),
       }),
     ).toBe(true);
   });
@@ -133,8 +130,8 @@ describe('architecture boundary rules', () => {
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'app',
-        targetLayer: 'legacy',
-        targetPath: workspacePath('assets/js/loader.ts'),
+        targetLayer: 'milkdrop',
+        targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
       }),
     ).toBe(false);
   });

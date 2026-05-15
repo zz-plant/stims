@@ -97,7 +97,7 @@ describe('renderer worker WebGPU safety', () => {
       type: RENDERER_WORKER_MESSAGE_TYPES.error,
       payload: {
         message:
-          'Renderer worker rejected a fallback WebGPU adapter. Use the main-thread WebGL fallback instead.',
+          'Renderer worker failed to initialize with either backend. WebGPU error: Renderer worker rejected a fallback WebGPU adapter. Will attempt WebGL fallback.. WebGL error: Failed to initialize WebGL renderer in the worker.',
       },
     });
   });

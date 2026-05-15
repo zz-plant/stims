@@ -11,6 +11,7 @@ export type StoredMetaRecord = {
   stack?: string[];
 };
 
+const DB_VERSION = 2;
 const DB_OPEN_TIMEOUT_MS = 750;
 
 function requestToPromise<T>(request: IDBRequest<T>) {
@@ -34,18 +35,31 @@ function openDb(name: string) {
   }
 
   return new Promise<IDBDatabase | null>((resolve, reject) => {
-    const request = indexedDB.open(name, 2);
-    request.onupgradeneeded = () => {
+    const request = indexedDB.open(name, DB_VERSION);
+    request.onupgradeneeded = (event) => {
       const db = request.result;
-      if (!db.objectStoreNames.contains('presets')) {
+      if (event.oldVersion < 2) {
+        if (db.objectStoreNames.contains('presets')) {
+          db.deleteObjectStore('presets');
+        }
+        if (db.objectStoreNames.contains('meta')) {
+          db.deleteObjectStore('meta');
+        }
         db.createObjectStore('presets', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('meta')) {
         db.createObjectStore('meta', { keyPath: 'id' });
       }
+      // Future: if (event.oldVersion < 3) { /* migrate v2 → v3 */ }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => {
+      const error = request.error;
+      if (error?.name === 'QuotaExceededError') {
+        console.warn(
+          '[catalog-store] IndexedDB open failed: storage quota exceeded',
+        );
+      }
+      reject(error);
+    };
   });
 }
 
@@ -79,6 +93,10 @@ export function openDbWithTimeout(
         }
         settled = true;
         clearTimeout(timeout);
+        console.warn(
+          '[catalog-store] IndexedDB open failed:',
+          error?.name ?? error,
+        );
         reject(error);
       },
     );

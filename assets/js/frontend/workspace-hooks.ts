@@ -41,6 +41,10 @@ import type {
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
 import {
+  readPersistedSession,
+  writePersistedSession,
+} from './session-persistence.ts';
+import {
   buildSessionRouteSearch,
   readSessionRouteState,
   readSessionRouteStateFromSearch,
@@ -172,6 +176,7 @@ export function useWorkspaceSessionState({
     Record<string, MilkdropPresetRenderPreview>
   >({});
   const deferredSearch = useDeferredValue(searchQuery);
+  const sessionRestoredRef = useRef(false);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
   const catalogStoreRef = useRef<MilkdropCatalogStore | null>(null);
@@ -709,6 +714,43 @@ export function useWorkspaceSessionState({
       delete document.documentElement.dataset.agentMode;
     }
   }, [engineSnapshot?.audioActive, routeState.agentMode]);
+
+  useEffect(() => {
+    if (sessionRestoredRef.current) {
+      return;
+    }
+
+    const audioActive =
+      engineSnapshot?.audioActive ||
+      document.body.dataset.audioActive === 'true';
+    if (routeState.audioSource || audioActive) {
+      return;
+    }
+
+    const persisted = readPersistedSession();
+    if (!persisted) {
+      sessionRestoredRef.current = true;
+      return;
+    }
+
+    sessionRestoredRef.current = true;
+    startTransition(() => {
+      setRouteState((current) => ({
+        ...current,
+        audioSource: persisted.audioSource
+          ? (persisted.audioSource as SessionRouteState['audioSource'])
+          : current.audioSource,
+        presetId: persisted.presetId ?? current.presetId,
+      }));
+    });
+  }, [engineSnapshot?.audioActive, routeState.audioSource, setRouteState]);
+
+  useEffect(() => {
+    writePersistedSession({
+      audioSource: routeState.audioSource,
+      presetId: routeState.presetId,
+    });
+  }, [routeState.audioSource, routeState.presetId]);
 
   return {
     deferredSearch,
