@@ -253,8 +253,6 @@ export function setAudioActive(
 
     if (typeof document !== 'undefined') {
       document.body.dataset.audioActive = 'true';
-      document.body.dataset.audioSource = source;
-      document.documentElement.dataset.focusedSession = 'live';
       document
         .querySelector('[data-audio-controls]')
         ?.setAttribute('hidden', '');
@@ -264,8 +262,6 @@ export function setAudioActive(
 
     if (typeof document !== 'undefined') {
       document.body.dataset.audioActive = 'false';
-      delete document.body.dataset.audioSource;
-      document.documentElement.dataset.focusedSession = 'launch';
       document
         .querySelector('[data-audio-controls]')
         ?.removeAttribute('hidden');

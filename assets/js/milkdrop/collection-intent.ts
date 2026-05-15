@@ -1,12 +1,6 @@
 const REQUESTED_COLLECTION_KEY = 'stims:milkdrop:requested-collection';
-export const MILKDROP_COLLECTION_SELECTION_EVENT =
-  'stims:milkdrop:select-collection';
 
 export const CREAM_OF_THE_CROP_COLLECTION_TAG = 'collection:cream-of-the-crop';
-
-type CollectionSelectionEventDetail = {
-  collectionTag: string;
-};
 
 function normalizeCollectionTag(collectionTag: string | null | undefined) {
   const normalized = collectionTag?.trim().toLowerCase();
@@ -31,23 +25,8 @@ export function requestMilkdropCollectionSelection(collectionTag: string) {
       normalizedCollectionTag,
     );
   } catch {
-    // Ignore storage failures and rely on the live event when possible.
+    // Ignore storage failures.
   }
-
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.dispatchEvent(
-    new CustomEvent<CollectionSelectionEventDetail>(
-      MILKDROP_COLLECTION_SELECTION_EVENT,
-      {
-        detail: {
-          collectionTag: normalizedCollectionTag,
-        },
-      },
-    ),
-  );
 }
 
 export function consumeRequestedMilkdropCollectionSelection() {

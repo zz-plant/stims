@@ -93,20 +93,11 @@ export function initAudioControls(
   container: HTMLElement,
   options: AudioControlsOptions,
 ) {
-  const STORAGE_KEY = 'stims-audio-source';
-  const readStoredSource = () => {
-    try {
-      return window.sessionStorage.getItem(STORAGE_KEY);
-    } catch (_error) {
-      return null;
-    }
-  };
-  const writeStoredSource = (source: 'microphone' | 'demo') => {
-    try {
-      window.sessionStorage.setItem(STORAGE_KEY, source);
-    } catch (_error) {
-      // Ignore storage errors.
-    }
+  let lastStartedSource: 'microphone' | 'demo' | null = null;
+
+  const getLastStartedSource = () => lastStartedSource;
+  const setLastStartedSource = (source: 'microphone' | 'demo') => {
+    lastStartedSource = source;
   };
 
   const preserveFloatingLayout = container.classList.contains(
@@ -254,7 +245,7 @@ export function initAudioControls(
   };
 
   const preferDemoAudio =
-    options.preferDemoAudio ?? readStoredSource() === 'demo';
+    options.preferDemoAudio ?? getLastStartedSource() === 'demo';
   const autoStartMicrophoneWhenGranted =
     options.autoStartMicrophoneWhenGranted ?? true;
   let hasStartedAudio = false;
@@ -421,7 +412,7 @@ export function initAudioControls(
       micBtn,
       async () => {
         await options.onRequestMicrophone();
-        writeStoredSource('microphone');
+        setLastStartedSource('microphone');
         setPreferredSource('microphone');
       },
       'Microphone access failed.',
@@ -489,7 +480,7 @@ export function initAudioControls(
       demoBtn,
       async () => {
         await options.onRequestDemoAudio();
-        writeStoredSource('demo');
+        setLastStartedSource('demo');
         setPreferredSource('demo');
       },
       'Demo audio failed to load.',
@@ -505,7 +496,7 @@ export function initAudioControls(
         await options.onRequestMicrophone();
         microphonePermissionState = 'granted';
         setMicrophoneButtonState();
-        writeStoredSource('microphone');
+        setLastStartedSource('microphone');
         setPreferredSource('microphone');
       },
       'Microphone access failed.',

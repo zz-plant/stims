@@ -188,6 +188,10 @@ export function createMilkdropEngineAdapter() {
     },
 
     async setAudioSource(request: EngineAudioRequest) {
+      if (audioActive && audioSource === request.source) {
+        return;
+      }
+
       const activeRuntime = runtime ?? (await waitForRuntime(() => runtime));
       if (!activeRuntime) {
         throw new Error('MilkDrop runtime is not mounted yet.');
