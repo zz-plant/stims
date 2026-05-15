@@ -55,6 +55,21 @@
     />
     <link rel="stylesheet" href="assets/css/base.css" />
     <link rel="stylesheet" href="assets/css/index.css" />
+    <script>
+      (() => {
+        try {
+          const stored = localStorage.getItem('stims:theme');
+          if (stored === 'light') { document.documentElement.classList.add('light'); }
+        } catch (_e) {}
+      })();
+    </script>
+    <style>
+      .stims-loading { position:fixed; inset:0; z-index:9999; display:grid; place-items:center; background:#0a0f19; color:#e9fbff; font-family:system-ui,sans-serif; }
+      .stims-loading[hidden] { display:none; }
+      .stims-loading__spinner { width:48px; height:48px; border-radius:50%; border:3px solid rgba(255,255,255,0.1); border-top-color:rgba(255,255,255,0.7); animation:stims-spin .8s linear infinite; margin:0 auto 16px; }
+      @keyframes stims-spin { to { transform:rotate(360deg); } }
+      .stims-loading__text { font-size:.9rem; opacity:.6; }
+    </style>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -70,7 +85,14 @@
     </script>
   </head>
   <body data-page="experience">
-    <div id="app"></div>
+    <div id="app">
+      <div class="stims-loading" id="stims-loading">
+        <div>
+          <div class="stims-loading__spinner"></div>
+          <div class="stims-loading__text">Loading MilkDrop visualizer</div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/assets/js/app.ts"></script>
   </body>
 </html>

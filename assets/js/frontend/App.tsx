@@ -1,5 +1,53 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component, useCallback, useEffect, useRef, useState } from 'react';
 import '../../css/app-shell.css';
+
+class StimsErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Stims crashed:', error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div
+          className="stims-shell"
+          id="stims-main"
+          style={{
+            display: 'grid',
+            placeItems: 'center',
+            height: '100vh',
+            background: '#0a0f19',
+            color: '#e9fbff',
+            fontFamily: 'system-ui,sans-serif',
+            textAlign: 'center',
+            padding: '24px',
+          }}
+        >
+          <div>
+            <h1 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>
+              Something went wrong
+            </h1>
+            <p style={{ opacity: 0.6, fontSize: '0.9rem', margin: 0 }}>
+              Reload the page to try again.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   setCompatibilityMode,
@@ -28,7 +76,7 @@ import {
   WorkspaceToolSheet,
 } from './workspace-ui.tsx';
 
-export function StimsWorkspaceApp() {
+function StimsWorkspaceAppInner() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
   const {
@@ -280,9 +328,15 @@ export function StimsWorkspaceApp() {
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown as EventListener);
+    document.addEventListener(
+      'keydown',
+      handleKeyDown as unknown as EventListener,
+    );
     return () => {
-      document.removeEventListener('keydown', handleKeyDown as EventListener);
+      document.removeEventListener(
+        'keydown',
+        handleKeyDown as unknown as EventListener,
+      );
     };
   }, [
     liveMode,
@@ -298,6 +352,11 @@ export function StimsWorkspaceApp() {
     applyTheme(preference.theme);
   }, []);
 
+  useEffect(() => {
+    const el = document.getElementById('stims-loading');
+    if (el) el.hidden = true;
+  }, []);
+
   const handleToggleTheme = () => {
     const current = getActiveThemePreference();
     const next = current.theme === 'dark' ? 'light' : 'dark';
@@ -308,6 +367,7 @@ export function StimsWorkspaceApp() {
   return (
     <div
       className="stims-shell"
+      id="stims-main"
       data-has-toast={toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
     >
@@ -446,5 +506,13 @@ export function StimsWorkspaceApp() {
 
       <WorkspaceToast toast={toast} onDismiss={dismissToast} />
     </div>
+  );
+}
+
+export function StimsWorkspaceApp() {
+  return (
+    <StimsErrorBoundary>
+      <StimsWorkspaceAppInner />
+    </StimsErrorBoundary>
   );
 }
