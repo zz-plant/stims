@@ -136,7 +136,7 @@ function findUniqueMatch<T extends PresetLookupEntry>(
 export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
   entries: readonly T[],
   requestedPresetId: string | null | undefined,
-) {
+): T | null {
   const requested = requestedPresetId?.trim();
   if (!requested) {
     return null;
@@ -157,6 +157,9 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     LEGACY_PRESET_ID_ALIASES.get(normalizedRequestedId) ??
     LEGACY_PRESET_ID_ALIASES.get(slugifyPresetCandidate(requested));
   if (legacyAliasTarget) {
+    console.log(
+      `[PresetIdResolution] "${requested}" → legacy alias "${legacyAliasTarget}"`,
+    );
     const exactAliasMatch =
       entries.find(
         (entry) =>
@@ -176,12 +179,21 @@ export function resolvePresetCatalogEntry<T extends PresetLookupEntry>(
     setsIntersect(buildLookupValues(entry).exact, requestedLookup.exact),
   );
   if (directAliasMatch) {
+    console.log(
+      `[PresetIdResolution] "${requested}" → alias match "${directAliasMatch.id}"`,
+    );
     return directAliasMatch;
   }
 
-  return findUniqueMatch(entries, (entry) =>
+  const fuzzyMatch = findUniqueMatch(entries, (entry) =>
     setsIntersect(buildLookupValues(entry).slug, requestedLookup.slug),
   );
+  if (fuzzyMatch) {
+    console.log(
+      `[PresetIdResolution] "${requested}" → fuzzy slug match "${fuzzyMatch.id}"`,
+    );
+  }
+  return fuzzyMatch;
 }
 
 export function resolvePresetId<T extends PresetLookupEntry>(

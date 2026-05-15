@@ -243,7 +243,7 @@ export function buildBackendSupport({
         createBackendEvidence({
           backend,
           scope: 'backend',
-          status: backend === 'webgpu' ? 'unsupported' : 'partial',
+          status: 'partial',
           code: 'unsupported-shader-text-gap',
           message: unsupportedMessage,
           feature: 'unsupported-shader-text',

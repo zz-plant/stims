@@ -210,6 +210,7 @@ function StimsWorkspaceAppInner() {
     featuredPreset,
     filteredCatalog,
     handleAudioStart,
+    handleAudioStop,
     handleBrowseRecovery,
     handleFeaturedPresetSelection,
     handleImport,
@@ -501,6 +502,9 @@ function StimsWorkspaceAppInner() {
         missingRequestedPreset={missingRequestedPreset}
         onAudioStart={(source) => {
           void handleAudioStart(source);
+        }}
+        onAudioStop={() => {
+          handleAudioStop();
         }}
         onLoadYouTube={() => {
           void loadYouTubePreview();

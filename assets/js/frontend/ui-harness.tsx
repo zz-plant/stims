@@ -157,6 +157,7 @@ function MockWorkspaceStagePanel(overrides: Record<string, unknown>) {
       liveMode={false}
       missingRequestedPreset={false}
       onAudioStart={() => {}}
+      onAudioStop={() => {}}
       onLoadRecentYouTubeVideo={() => {}}
       onLoadYouTube={() => {}}
       onOpenBrowse={() => {}}

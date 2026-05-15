@@ -1254,9 +1254,7 @@ class WebGPUMilkdropFeedbackManager {
       this.currentCompositeKey = nextCompositeKey;
       this.compositeMaterial.outputNode = createCompositeOutputNode(
         this.compositeMaterial.uniforms,
-        state.shaderExecution === 'direct'
-          ? state.shaderPrograms
-          : { warp: null, comp: null },
+        state.shaderPrograms,
       );
       this.compositeMaterial.needsUpdate = true;
     }

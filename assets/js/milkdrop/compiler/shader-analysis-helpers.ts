@@ -223,6 +223,9 @@ export function toMilkdropExpression(
         name === 'tex2d' ||
         name === 'tex3d'
       ) {
+        console.warn(
+          `[ShaderCompat] ${name}() call cannot be converted to a scalar Milkdrop expression — control extraction degraded`,
+        );
         return null;
       }
       const args = node.args

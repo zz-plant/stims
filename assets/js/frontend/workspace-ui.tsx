@@ -652,6 +652,7 @@ export function WorkspaceStagePanel({
   liveMode,
   missingRequestedPreset,
   onAudioStart,
+  onAudioStop,
   onLoadRecentYouTubeVideo,
   onLoadYouTube,
   onOpenBrowse,
@@ -690,6 +691,7 @@ export function WorkspaceStagePanel({
   onAudioStart: (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
   ) => void;
+  onAudioStop: () => void;
   onLoadRecentYouTubeVideo: (videoId: string) => void;
   onLoadYouTube: () => void;
   onOpenBrowse: () => void;
@@ -827,6 +829,23 @@ export function WorkspaceStagePanel({
                       Surprise me
                     </span>
                   </button>
+                  {audioSource ? (
+                    <button
+                      type="button"
+                      className="stims-shell__stage-tool"
+                      aria-label="Stop audio"
+                      title="Stop audio"
+                      onClick={onAudioStop}
+                    >
+                      <UiIcon
+                        name="close"
+                        className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+                      />
+                      <span className="stims-shell__stage-tool-label">
+                        Stop
+                      </span>
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="stims-shell__stage-tool"

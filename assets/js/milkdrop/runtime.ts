@@ -746,6 +746,9 @@ export function createMilkdropExperience({
       return;
     }
     if (shouldFallbackToWebgl(nextCompiled)) {
+      console.log(
+        `[PresetLoad:${nextCompiled.source.id}] subscriber: WebGL fallback triggered`,
+      );
       triggerWebglFallback({
         presetId: nextCompiled.source.id,
         reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
@@ -757,6 +760,9 @@ export function createMilkdropExperience({
     const didSourceChange =
       nextCompiled.formattedSource !== activeCompiled.formattedSource;
     if (didPresetIdChange) {
+      console.log(
+        `[PresetLoad:${nextCompiled.source.id}] subscriber: preset ID change, applying`,
+      );
       applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);
@@ -765,6 +771,9 @@ export function createMilkdropExperience({
       return;
     }
     if (didSourceChange) {
+      console.log(
+        `[PresetLoad:${nextCompiled.source.id}] subscriber: source change, re-applying`,
+      );
       applyPresetPerformanceOverride(nextCompiled.source.id);
       applyCompiledPreset(nextCompiled);
       void catalogStore.saveDraft(nextCompiled.source.id, state.source);

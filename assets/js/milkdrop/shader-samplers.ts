@@ -17,7 +17,17 @@ export const MILKDROP_SHADER_TEXTURE_SAMPLERS = new Set<
 ]);
 
 const MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS =
-  new Set<MilkdropShaderTextureSampler>(['simplex']);
+  new Set<MilkdropShaderTextureSampler>([
+    'simplex',
+    'noise',
+    'perlin',
+    'voronoi',
+    'aura',
+    'caustics',
+    'pattern',
+    'fractal',
+    'video',
+  ]);
 
 const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   string,

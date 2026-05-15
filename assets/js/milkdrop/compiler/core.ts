@@ -112,7 +112,7 @@ const BACKEND_SHADER_TEXT_GAPS: Record<
   },
   webgpu: {
     unsupportedSubset:
-      'WebGPU cannot safely approximate unsupported shader-text lines and must fall back to WebGL.',
+      'This preset relies on shader-text paths that the WebGPU runtime cannot execute directly and will approximate.',
   },
 };
 

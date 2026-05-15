@@ -71,11 +71,15 @@ export function createMilkdropPresentationController({
   };
 
   const applyCompiledPreset = (compiled: MilkdropCompiledPreset) => {
+    const start = performance.now();
+    const presetId = compiled.source.id;
     setCompiledState(compiled);
     const state = getState();
     vm.setPreset(compiled);
+    const vmDuration = performance.now() - start;
     vm.setRenderBackend(state.backend);
     getAdapter()?.setPreset(compiled);
+    const adapterDuration = performance.now() - start;
 
     const overlay = getOverlay();
     overlay?.setCurrentPresetTitle(compiled.title);
@@ -86,6 +90,11 @@ export function createMilkdropPresentationController({
       backend: state.backend,
     });
     updateAgentDebugSnapshot(true);
+
+    const total = performance.now() - start;
+    console.log(
+      `[PresetLoad:${presetId}] apply: vm=${vmDuration.toFixed(1)}ms adapter=${adapterDuration.toFixed(1)}ms total=${total.toFixed(1)}ms`,
+    );
   };
 
   const syncInspectorState = () => {

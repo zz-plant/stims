@@ -1,7 +1,4 @@
-import {
-  isMilkdropVolumeShaderSamplerName,
-  normalizeMilkdropShaderSamplerName,
-} from './shader-samplers.ts';
+import { normalizeMilkdropShaderSamplerName } from './shader-samplers.ts';
 import type { MilkdropShaderTextureSampler } from './types';
 
 export type DirectShaderValueKind = 'vec2' | 'vec3';
@@ -52,11 +49,7 @@ export function resolveDirectShaderSamplerBinding(
   if (!canonicalSource) {
     return null;
   }
-  if (
-    sampleDimension === '3d' &&
-    (canonicalSource === 'main' ||
-      !isMilkdropVolumeShaderSamplerName(canonicalSource))
-  ) {
+  if (sampleDimension === '3d' && canonicalSource === 'main') {
     return null;
   }
   return {

@@ -85,6 +85,10 @@ const PROCEDURAL_FIELD_PROGRAM_SHADER_HELPERS = `
     return abs(left - right) <= 0.000001 ? 1.0 : 0.0;
   }
 
+  float milkdropRand(float seed) {
+    return fract(sin(dot(vec2(seed, signalTimeValue), vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
   float milkdropNormalizeTransformCenterX(float value) {
     return value >= 0.0 && value <= 1.0 ? (value - 0.5) * 2.0 : value;
   }
@@ -112,6 +116,8 @@ function gpuFieldVarName(name: string) {
       return 'fieldRotation';
     case 'warp':
       return 'fieldWarp';
+    case 'warp_scale':
+      return 'fieldWarpScale';
     case 'cx':
       return 'fieldCenterX';
     case 'cy':
@@ -253,6 +259,8 @@ function buildGpuFieldExpressionShaderSource(
           return `milkdropBelow(${args[0]}, ${args[1]})`;
         case 'equal':
           return `milkdropEqual(${args[0]}, ${args[1]})`;
+        case 'rand':
+          return `milkdropRand(${args[0]})`;
         default:
           return `${expression.name}(${args.join(', ')})`;
       }
@@ -348,6 +356,7 @@ function buildProceduralFieldProgramShaderChunk(
       float fieldZoomExponent = paramZoomExponent;
       float fieldRotation = paramRotation;
       float fieldWarp = paramWarp;
+      float fieldWarpScale = paramWarpAnimSpeed;
       float fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);
       float fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);
       float fieldScaleX = paramScaleX;
@@ -370,7 +379,7 @@ function buildProceduralFieldProgramShaderChunk(
         fieldTranslateY * 2.0;
       float ripple = sin(
         field_rad * 12.0 +
-        signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + paramWarpAnimSpeed)
+        signalTimeValue * (0.6 + signalTrebleAttValue) * (0.35 + fieldWarpScale)
       ) * fieldWarp * 0.08;
       float radiusNormalized = clamp(field_rad / 1.41421356237, 0.0, 1.0);
       float zoomScale = pow(

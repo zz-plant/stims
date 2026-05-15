@@ -660,30 +660,48 @@ export function useWorkspaceSessionState({
   }, [routeState.collectionTag]);
 
   useEffect(() => {
-    const requestedPresetId = routeState.presetId
-      ? (resolvePresetId(
-          engineSnapshot?.catalogEntries ?? [],
-          routeState.presetId,
-        ) ?? routeState.presetId)
+    const routePresetId = routeState.presetId;
+    const requestedPresetId = routePresetId
+      ? (resolvePresetId(engineSnapshot?.catalogEntries ?? [], routePresetId) ??
+        routePresetId)
       : null;
 
-    if (
-      !engineRef.current?.isMounted() ||
-      !requestedPresetId ||
-      requestedPresetId === engineSnapshot?.activePresetId
-    ) {
-      if (requestedPresetId === engineSnapshot?.activePresetId) {
-        pendingPresetIdRef.current = null;
+    if (!engineRef.current?.isMounted()) {
+      if (requestedPresetId) {
+        console.log(
+          `[PresetLoad] engine not mounted, deferring preset ${requestedPresetId}`,
+        );
       }
       return;
     }
 
+    if (!requestedPresetId) {
+      return;
+    }
+
+    if (requestedPresetId === engineSnapshot?.activePresetId) {
+      pendingPresetIdRef.current = null;
+      return;
+    }
+
     pendingPresetIdRef.current = requestedPresetId;
-    void engineRef.current.loadPreset(requestedPresetId).catch(() => {
-      if (pendingPresetIdRef.current === requestedPresetId) {
-        pendingPresetIdRef.current = null;
-      }
-    });
+    console.log(
+      `[PresetLoad] requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
+    );
+    void engineRef.current.loadPreset(requestedPresetId).then(
+      () => {
+        console.log(`[PresetLoad] loaded ${requestedPresetId}`);
+        if (pendingPresetIdRef.current === requestedPresetId) {
+          pendingPresetIdRef.current = null;
+        }
+      },
+      () => {
+        console.warn(`[PresetLoad] failed to load ${requestedPresetId}`);
+        if (pendingPresetIdRef.current === requestedPresetId) {
+          pendingPresetIdRef.current = null;
+        }
+      },
+    );
   }, [
     engineSnapshot?.activePresetId,
     engineSnapshot?.catalogEntries,

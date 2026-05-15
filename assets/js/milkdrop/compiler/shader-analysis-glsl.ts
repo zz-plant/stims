@@ -269,9 +269,10 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `acos(clamp(${args[0] ?? '0.0'}, -1.0, 1.0))`;
       }
       if (lower === 'rand') {
-        // Simple deterministic pseudo-random
+        // Vary with signalTime so results differ per frame (matching VM's
+        // stateful LCG behavior more closely than a pure-hash approach)
         const seed = args[0] ?? '0.0';
-        return `fract(sin(dot(${seed}, vec2(12.9898, 78.233))) * 43758.5453)`;
+        return `fract(sin(dot(vec2(${seed}, signalTime), vec2(12.9898, 78.233))) * 43758.5453)`;
       }
       if (lower === 'noise') {
         // Simple noise approximation

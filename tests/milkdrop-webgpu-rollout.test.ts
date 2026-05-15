@@ -46,39 +46,17 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
     expect(effective.proceduralMotionVectors).not.toBeNull();
   });
 
-  test('keeps unsupported fixtures on fallback-to-webgl only when the rollout guard is enabled', () => {
+  test('keeps unsupported fixtures only on a descriptor plan after removing forced WebGL fallback', () => {
     const compiled = compileFixture('unsupported-fallback.milk');
     const descriptorPlan = compiled.ir.compatibility.gpuDescriptorPlans.webgpu;
 
-    expect(descriptorPlan.routing).toBe('fallback-webgl');
+    expect(descriptorPlan.routing).toBe('descriptor-plan');
     expect(
       shouldFallbackMilkdropPresetToWebgl({
         backend: 'webgpu',
         compatibilityMode: false,
         descriptorPlan,
         flags: DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-      }),
-    ).toBe(true);
-
-    const disabledFallbackPlan = applyMilkdropWebGpuOptimizationFlags(
-      descriptorPlan,
-      {
-        ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-        descriptorFallbackToWebgl: false,
-      },
-    );
-
-    expect(disabledFallbackPlan.routing).toBe('generic-frame-payload');
-    expect(disabledFallbackPlan.unsupported).toHaveLength(1);
-    expect(
-      shouldFallbackMilkdropPresetToWebgl({
-        backend: 'webgpu',
-        compatibilityMode: false,
-        descriptorPlan,
-        flags: {
-          ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-          descriptorFallbackToWebgl: false,
-        },
       }),
     ).toBe(false);
   });
