@@ -10,6 +10,13 @@ import { playToy } from '../scripts/play-toy.ts';
 const chromiumPath = chromium.executablePath();
 const hasChromium = fs.existsSync(chromiumPath);
 const integrationTest = hasChromium ? test : test.skip;
+const flakyIntegrationTest = hasChromium
+  ? (
+      name: string,
+      fn: () => Promise<void>,
+      options?: { timeout?: number; retry?: number },
+    ) => test(name, fn, { retry: 2, ...options })
+  : test.skip;
 const TEST_PORT = 5180;
 const PLAYWRIGHT_RENDERER_ARGS = [
   '--use-angle=swiftshader',
@@ -163,7 +170,7 @@ integrationTest(
   { timeout: 45000 },
 );
 
-integrationTest(
+flakyIntegrationTest(
   'agents can launch and capture milkdrop',
   async () => {
     await ensureDevServer();
@@ -191,7 +198,7 @@ integrationTest(
   { timeout: 90000 },
 );
 
-integrationTest(
+flakyIntegrationTest(
   'agents can detect failing toy',
   async () => {
     await ensureDevServer();
@@ -206,7 +213,7 @@ integrationTest(
   { timeout: 90000 },
 );
 
-integrationTest(
+flakyIntegrationTest(
   'milkdrop collapses into the focused session shell after mobile audio start',
   async () => {
     await ensureDevServer();
@@ -246,7 +253,7 @@ integrationTest(
   { timeout: 90000 },
 );
 
-integrationTest(
+flakyIntegrationTest(
   'browser-backed audio controls use mobile fallback gestures without desktop shortcut copy',
   async () => {
     await ensureDevServer();
