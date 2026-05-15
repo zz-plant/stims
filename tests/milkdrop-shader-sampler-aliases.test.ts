@@ -28,6 +28,33 @@ const SAMPLER_ALIAS_CASES = [
   },
 ] as const;
 
+const SAMPLER_CANONICAL_CASES = [
+  {
+    alias: 'sampler_perlin',
+    canonical: 'perlin',
+  },
+  {
+    alias: 'sampler_aura',
+    canonical: 'aura',
+  },
+  {
+    alias: 'sampler_caustics',
+    canonical: 'caustics',
+  },
+  {
+    alias: 'sampler_pattern',
+    canonical: 'pattern',
+  },
+  {
+    alias: 'sampler_voronoi',
+    canonical: 'voronoi',
+  },
+  {
+    alias: 'sampler_fractal',
+    canonical: 'fractal',
+  },
+] as const;
+
 describe('milkdrop shader sampler aliases', () => {
   test('normalizes MilkDrop2 vector aliases and 3D sampler calls in shader ASTs', () => {
     const tintStatement = parseMilkdropShaderStatement(
@@ -100,9 +127,65 @@ describe('milkdrop shader sampler aliases', () => {
     );
   });
 
+  test('normalizes canonical sampler names through the shared helper', () => {
+    for (const { alias, canonical } of SAMPLER_CANONICAL_CASES) {
+      expect(normalizeMilkdropShaderSamplerName(alias)).toBe(canonical);
+    }
+  });
+
+  test('normalizes perlin as a distinct sampler with correct compiler extraction', () => {
+    expect(normalizeMilkdropShaderSamplerName('sampler_perlin')).toBe('perlin');
+
+    const sampledCompile = compileMilkdropPresetSource(
+      `title=Perlin Sample\ncomp_shader=ret = tex2d(sampler_perlin, uv).rgb`,
+      { id: 'sample-perlin' },
+    );
+    expect(sampledCompile.ir.shaderText.supported).toBe(true);
+    expect(sampledCompile.ir.post.shaderControls.textureLayer.source).toBe(
+      'perlin',
+    );
+    expect(sampledCompile.ir.post.shaderControls.textureLayer.mode).toBe(
+      'replace',
+    );
+
+    const assignedCompile = compileMilkdropPresetSource(
+      `title=Perlin Control\ncomp_shader=texture_source = sampler_perlin`,
+      { id: 'control-perlin' },
+    );
+    expect(assignedCompile.ir.shaderText.supported).toBe(true);
+    expect(assignedCompile.ir.post.shaderControls.textureLayer.source).toBe(
+      'perlin',
+    );
+  });
+
+  test('maps perlin to its own source ID distinct from noise', () => {
+    const noiseCompile = compileMilkdropPresetSource(
+      `title=Noise Sample\ncomp_shader=ret = tex2d(sampler_noise, uv).rgb`,
+      { id: 'sample-noise' },
+    );
+    const perlinCompile = compileMilkdropPresetSource(
+      `title=Perlin Sample\ncomp_shader=ret = tex2d(sampler_perlin, uv).rgb`,
+      { id: 'sample-perlin' },
+    );
+
+    expect(noiseCompile.ir.post.shaderControls.textureLayer.source).toBe(
+      'noise',
+    );
+    expect(perlinCompile.ir.post.shaderControls.textureLayer.source).toBe(
+      'perlin',
+    );
+    expect(
+      noiseCompile.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({ webgl: 'direct', webgpu: 'direct' });
+    expect(
+      perlinCompile.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({ webgl: 'direct', webgpu: 'direct' });
+  });
+
   test('identifies only simplex as a runtime volume sampler', () => {
     expect(isVolumeSamplerName('simplex')).toBe(true);
     expect(isVolumeSamplerName('noise')).toBe(false);
+    expect(isVolumeSamplerName('perlin')).toBe(false);
     expect(isVolumeSamplerName('voronoi')).toBe(false);
   });
 

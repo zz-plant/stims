@@ -125,8 +125,9 @@ const polygonOutlineGeometryCache = new Map<string, BufferGeometry>();
 export function getShaderTextureSourceId(source: string) {
   switch (source) {
     case 'noise':
-    case 'perlin':
       return 1;
+    case 'perlin':
+      return 9;
     case 'simplex':
       return 2;
     case 'voronoi':

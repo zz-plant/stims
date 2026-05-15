@@ -854,6 +854,7 @@ function createCompositeOutputNode(
   );
   const sampleAuxTextureNode = createSampleAuxTextureNode(
     uniforms.noiseTex,
+    uniforms.perlinTex,
     uniforms.simplexTex,
     uniforms.voronoiTex,
     uniforms.auraTex,

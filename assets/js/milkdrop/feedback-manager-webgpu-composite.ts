@@ -50,6 +50,7 @@ export type FeedbackRendererLike = {
 
 export const MILKDROP_TEXTURE_FILES = {
   noise: 'seamless_perlin_noise.png',
+  perlin: 'seamless_perlin_noise.png',
   simplex: 'simplex_noise_3d.png',
   voronoi: 'voronoi_cellular.png',
   aura: 'colorful_aura_gradient.png',
@@ -60,6 +61,7 @@ export const MILKDROP_TEXTURE_FILES = {
 
 const AUX_TEXTURE_SPECS = {
   noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
+  perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
   simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
   voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
   aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
@@ -134,6 +136,7 @@ export function getSharedMilkdropTexturePlaceholder() {
 export function getSharedMilkdropAuxTextures() {
   return {
     noise: getSharedMilkdropTexturePlaceholder(),
+    perlin: getSharedMilkdropTexturePlaceholder(),
     simplex: getSharedMilkdropTexturePlaceholder(),
     voronoi: getSharedMilkdropTexturePlaceholder(),
     aura: getSharedMilkdropTexturePlaceholder(),
@@ -168,6 +171,12 @@ export function resolveAuxTextureName(source: number) {
   }
   if (source < 7.5) {
     return 'fractal';
+  }
+  if (source < 8.5) {
+    return null;
+  }
+  if (source < 9.5) {
+    return 'perlin';
   }
   return null;
 }
@@ -224,6 +233,7 @@ export function createCompositeUniforms(
     currentTex: texture(sceneTexture),
     previousTex: texture(previousTexture),
     noiseTex: texture(auxTextures.noise),
+    perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),
     voronoiTex: texture(auxTextures.voronoi),
     auraTex: texture(auxTextures.aura),
@@ -323,6 +333,7 @@ export function createApplyFeedbackWarpNode() {
 
 export function createSampleAuxTextureNode(
   noiseTexNode: ReturnType<typeof texture>,
+  perlinTexNode: ReturnType<typeof texture>,
   simplexTexNode: ReturnType<typeof texture>,
   voronoiTexNode: ReturnType<typeof texture>,
   auraTexNode: ReturnType<typeof texture>,
@@ -357,7 +368,15 @@ export function createSampleAuxTextureNode(
                   select(
                     source.lessThan(7.5),
                     fractalTexNode.sample(sampleUv),
-                    videoTexNode.sample(sampleUv),
+                    select(
+                      source.lessThan(8.5),
+                      videoTexNode.sample(sampleUv),
+                      select(
+                        source.lessThan(9.5),
+                        perlinTexNode.sample(sampleUv),
+                        flat,
+                      ),
+                    ),
                   ),
                 ),
               ),

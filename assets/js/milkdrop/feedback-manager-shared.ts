@@ -54,6 +54,7 @@ export type MilkdropCompositeShaderConfig = {
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
 const MILKDROP_TEXTURE_FILES = {
   noise: 'seamless_perlin_noise.png',
+  perlin: 'seamless_perlin_noise.png',
   simplex: 'simplex_noise_3d.png',
   voronoi: 'voronoi_cellular.png',
   aura: 'colorful_aura_gradient.png',
@@ -63,6 +64,7 @@ const MILKDROP_TEXTURE_FILES = {
 } as const;
 const AUX_TEXTURE_SPECS = {
   noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
+  perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
   simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
   voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
   aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
@@ -130,6 +132,7 @@ function getSharedMilkdropTexturePlaceholder() {
 function getSharedAuxTextures(): SharedAuxTextureMap {
   return {
     noise: getSharedMilkdropTexturePlaceholder(),
+    perlin: getSharedMilkdropTexturePlaceholder(),
     simplex: getSharedMilkdropTexturePlaceholder(),
     voronoi: getSharedMilkdropTexturePlaceholder(),
     aura: getSharedMilkdropTexturePlaceholder(),
@@ -164,6 +167,12 @@ function resolveAuxTextureName(source: number) {
   }
   if (source < 7.5) {
     return 'fractal';
+  }
+  if (source < 8.5) {
+    return null;
+  }
+  if (source < 9.5) {
+    return 'perlin';
   }
   return null;
 }
@@ -258,6 +267,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D patternTex;
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
+        uniform sampler2D perlinTex;
         uniform float mixAlpha;
         uniform float videoEchoAlpha;
         uniform float zoom;
@@ -396,7 +406,13 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           if (source < 7.5) {
             return texture2D(fractalTex, uv);
           }
-          return texture2D(videoTex, uv);
+          if (source < 8.5) {
+            return texture2D(videoTex, uv);
+          }
+          if (source < 9.5) {
+            return texture2D(perlinTex, uv);
+          }
+          return vec4(0.5, 0.5, 0.5, 1.0);
         }
 
         vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
@@ -662,6 +678,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         patternTex: { value: this.auxTextures.pattern },
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
+        perlinTex: { value: this.auxTextures.perlin },
         mixAlpha: { value: 0.18 },
         videoEchoAlpha: { value: 0 },
         zoom: { value: 1.02 },
