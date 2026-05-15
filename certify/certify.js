@@ -129,8 +129,8 @@ async function capturePresetFrame(presetId, backend) {
  * Captures frames for both backends, diffs them, and returns results.
  */
 async function certifyPreset(preset) {
-  const gpuTarget = document.getElementById('webgpu-canvas-target');
-  const glTarget = document.getElementById('webgl-canvas-target');
+  const _gpuTarget = document.getElementById('webgpu-canvas-target');
+  const _glTarget = document.getElementById('webgl-canvas-target');
 
   console.log(`[certify] Starting capture for ${preset.id}`);
 
@@ -413,7 +413,7 @@ async function submitResults(results) {
 // ---- entry point ----
 
 (async function main() {
-  const presets = BUNDLED_PRESETS;
+  const _presets = BUNDLED_PRESETS;
   let results = [];
 
   // Populate preset selector

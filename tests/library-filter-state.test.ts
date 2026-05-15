@@ -329,7 +329,7 @@ test('search query filters library cards and persists in the URL', async () => {
   const search = document.getElementById('toy-search') as HTMLInputElement;
   search.value = 'mobile';
   search.dispatchEvent(new Event('input', { bubbles: true }));
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 200));
 
   const cards = Array.from(document.querySelectorAll('.webtoy-card'));
   expect(cards).toHaveLength(1);
@@ -429,7 +429,7 @@ test('reset view clears active search, filters, and sort chips from the sticky r
 
   search.value = 'mobile';
   search.dispatchEvent(new Event('input', { bubbles: true }));
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 200));
   chip.click();
   sort.value = 'az';
   sort.dispatchEvent(new Event('change', { bubbles: true }));

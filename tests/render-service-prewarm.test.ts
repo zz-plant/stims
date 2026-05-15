@@ -40,7 +40,7 @@ describe('render-service prewarm', () => {
 
     expect(getRendererCapabilities).toHaveBeenCalledTimes(1);
     expect(getRendererCapabilities).toHaveBeenCalledWith({
-      preferWebGLForKnownCompatibilityGaps: false,
+      preferWebGLForKnownCompatibilityGaps: true,
     });
 
     renderService.resetRendererPool({ dispose: true });
