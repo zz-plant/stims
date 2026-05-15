@@ -1141,7 +1141,7 @@ export function extractShaderControls(
       const pushDirectProgramStatement = () => {
         directProgramStatements.push(parsedStatement);
         directProgramLines.push(line);
-        if (prefersDirectProgram) {
+        if (prefersDirectProgram || requiresDirectProgram) {
           directProgramRequired = true;
         }
       };
@@ -1175,7 +1175,7 @@ export function extractShaderControls(
           shaderEnv,
         })
       ) {
-        if (prefersDirectProgram) {
+        if (prefersDirectProgram || requiresDirectProgram) {
           pushDirectProgramStatement();
         }
         supportedLineCount += 1;

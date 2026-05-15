@@ -773,12 +773,46 @@ comp_shader=ret=tex2d(sampler_main,uv).rgb*1.2;
     expect(compiled.ir.post.shaderControls.colorScale.b).toBeCloseTo(1.2, 6);
     expect(compiled.ir.shaderText.warpAst).toHaveLength(1);
     expect(compiled.ir.shaderText.compAst).toHaveLength(1);
-    expect(compiled.ir.shaderText.warpProgram).toBeNull();
-    expect(compiled.ir.shaderText.compProgram).toBeNull();
+    expect(compiled.ir.shaderText.warpProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.warpProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
     expect(compiled.ir.compatibility.backends.webgpu.evidence).toEqual([]);
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );
+  });
+
+  test('emits direct GPU program for main sampler with non-trivial UV expression', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader UV Offset
+comp_shader=ret = tex2d(sampler_main, uv + vec2(bass_att * 0.1, treb_att * 0.05)).rgb
+      `.trim(),
+      { id: 'shader-uv-offset' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.shaderText.compProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.compProgram?.execution.kind).toBe(
+      'direct-feedback-program',
+    );
+    expect(
+      compiled.ir.shaderText.compProgram?.execution.requiresControlFallback,
+    ).toBe(false);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'direct',
+      webgpu: 'direct',
+    });
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
   });
 
   test('supports affine uv shader-body transforms', () => {
