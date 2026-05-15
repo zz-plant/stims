@@ -191,6 +191,16 @@ export default class WebToy {
     return audio;
   }
 
+  stopAudio() {
+    this.renderer?.setAnimationLoop?.(null);
+    this.audioSession.dispose();
+    this.audioHandle = null;
+    this.analyser = null;
+    this.audioListener = null;
+    this.audio = null;
+    this.audioStream = null;
+  }
+
   render() {
     this.renderer?.render(this.scene, this.camera);
   }

@@ -333,11 +333,6 @@ export function useWorkspaceShellOrchestration({
     }
   };
 
-  const handleAudioStop = async () => {
-    commitRoute({ ...routeState, audioSource: null });
-    setStatusMessage('Audio stopped.');
-  };
-
   const handleImport = async (files: FileList | null) => {
     await importPresetFiles(files);
     updatePanel('editor');
@@ -376,7 +371,6 @@ export function useWorkspaceShellOrchestration({
   return {
     ...shellState,
     handleAudioStart,
-    handleAudioStop,
     handleBrowseRecovery,
     handleFeaturedPresetSelection,
     handleImport,

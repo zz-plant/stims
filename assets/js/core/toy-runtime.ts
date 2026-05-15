@@ -73,6 +73,7 @@ export type ToyRuntimeOptions = {
 export type ToyRuntimeInstance = ToyInstance & {
   toy: WebToy;
   startAudio: (request?: ToyAudioRequest) => Promise<AnimationContext>;
+  stopAudio: () => void;
   addPlugin: (plugin: ToyRuntimePlugin) => void;
   getInputState: () => UnifiedInputState | null;
   getPerformanceSettings: () => PerformanceSettings;
@@ -461,6 +462,12 @@ export function createToyRuntime({
   runtime = {
     toy,
     startAudio,
+    stopAudio: () => {
+      toy.stopAudio();
+      analyser = null;
+      lastFrameTime = 0;
+      startPreviewLoop();
+    },
     addPlugin: (plugin) => {
       pluginManager.add(plugin);
       plugin.setup?.(runtime as ToyRuntimeInstance);

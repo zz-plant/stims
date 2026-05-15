@@ -254,6 +254,14 @@ export function createMilkdropEngineAdapter() {
     async stopAudio() {
       if (!audioActive) return;
 
+      if (runtime) {
+        runtime.stopAudio();
+      }
+      if (capturedVideoModulePromise) {
+        const { clearMilkdropCapturedVideoStream } =
+          await loadCapturedVideoModule();
+        clearMilkdropCapturedVideoStream();
+      }
       audioActive = false;
       audioSource = null;
       setAudioActive(false, null);

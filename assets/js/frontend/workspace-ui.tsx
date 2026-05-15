@@ -652,7 +652,6 @@ export function WorkspaceStagePanel({
   liveMode,
   missingRequestedPreset,
   onAudioStart,
-  onAudioStop,
   onLoadRecentYouTubeVideo,
   onLoadYouTube,
   onOpenBrowse,
@@ -691,7 +690,6 @@ export function WorkspaceStagePanel({
   onAudioStart: (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
   ) => void;
-  onAudioStop?: () => void;
   onLoadRecentYouTubeVideo: (videoId: string) => void;
   onLoadYouTube: () => void;
   onOpenBrowse: () => void;

@@ -882,7 +882,7 @@ export function useWorkspaceSessionState({
     youtubeReady,
     youtubeUrl,
     stopAudio: async () => {
-      await engineRef.current?.stopAudio();
+      await engineRef.current?.stopAudio().catch(() => {});
     },
   };
 }
