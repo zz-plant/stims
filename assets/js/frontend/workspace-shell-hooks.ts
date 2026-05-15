@@ -161,7 +161,10 @@ export function useWorkspaceShellOrchestration({
     fallbackCatalogReady,
     activityCatalog,
     pendingPresetIdRef,
-    routeState,
+    routeState.collectionTag,
+    routeState.invalidExperienceSlug,
+    routeState.panel,
+    routeState.presetId,
   ]);
 
   const readinessAlerts = useMemo(

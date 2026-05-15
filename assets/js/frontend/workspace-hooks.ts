@@ -584,21 +584,21 @@ export function useWorkspaceSessionState({
       return;
     }
 
-    if (routeState.presetId === shareableActivePresetId) {
-      return;
-    }
-
     startTransition(() => {
-      setRouteState((current) => ({
-        ...current,
-        presetId: shareableActivePresetId,
-      }));
+      setRouteState((current) => {
+        if (current.presetId === shareableActivePresetId) {
+          return current;
+        }
+        return {
+          ...current,
+          presetId: shareableActivePresetId,
+        };
+      });
     });
   }, [
     engineSnapshot?.activePresetId,
     engineSnapshot?.catalogEntries,
     engineSnapshot?.runtimeReady,
-    routeState.presetId,
     setRouteState,
   ]);
 
@@ -615,16 +615,15 @@ export function useWorkspaceSessionState({
       engineSnapshot?.catalogEntries ?? [],
       routeState.presetId,
     );
-    if (!resolvedPresetId || resolvedPresetId === routeState.presetId) {
+    if (!resolvedPresetId) {
       return;
     }
 
     startTransition(() => {
       setRouteState((current) => {
-        if (current.presetId !== routeState.presetId) {
+        if (current.presetId === resolvedPresetId) {
           return current;
         }
-
         return {
           ...current,
           presetId: resolvedPresetId,
