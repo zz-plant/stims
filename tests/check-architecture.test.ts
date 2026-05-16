@@ -32,7 +32,7 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(workspacePath('assets/js/core/web-toy.ts')),
     ).toBe('core');
     expect(
-      classifyArchitectureLayer(workspacePath('assets/js/ui/nav.ts')),
+      classifyArchitectureLayer(workspacePath('assets/js/ui/icon-library.ts')),
     ).toBe('ui');
     expect(
       classifyArchitectureLayer(

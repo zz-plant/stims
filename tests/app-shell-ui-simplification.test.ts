@@ -41,6 +41,28 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
+    const stageSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'StimsStageFrame.tsx',
+      ),
+      'utf8',
+    );
+    const dockSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'StimsControlDock.tsx',
+      ),
+      'utf8',
+    );
 
     expect(helperSource).toContain(
       'Start with one fast launch, then roam the full list when you want more modes.',
@@ -62,8 +84,8 @@ describe('Workspace shell UI simplification regression', () => {
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
     expect(uiSource).not.toContain('Launch deck');
     expect(uiSource).not.toContain('Single-route workspace');
-    expect(uiSource).toContain('className="stims-shell__rail-actions"');
-    expect(uiSource).toContain('className="stims-shell__stage-dock"');
+    expect(stageSource).toContain('className="stims-shell__rail-actions"');
+    expect(dockSource).toContain('className="stims-shell__stage-dock"');
     expect(uiSource).toContain('Featured pick');
     expect(uiSource).toMatch(/>\s*Shuffle\s*</u);
     expect(uiSource).toContain('Pick something and press play.');
@@ -74,11 +96,11 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Preview QA: {previewSummary');
     expect(uiSource).toContain('Four easy ways to get started.');
     expect(uiSource).toContain('Everything');
-    expect(uiSource).toContain('className="stims-shell__frame-chrome"');
-    expect(uiSource).toContain('className="stims-shell__frame-header"');
+    expect(stageSource).toContain('className="stims-shell__frame-chrome"');
+    expect(stageSource).toContain('className="stims-shell__frame-header"');
     expect(uiSource).toContain('className="stims-shell__corner-link"');
-    expect(uiSource).toMatch(/>\s*Browse\s*</u);
-    expect(uiSource).toContain('Style</span>');
+    expect(dockSource).toMatch(/>\s*Browse\s*</u);
+    expect(dockSource).toContain('Style</span>');
     expect(uiSource).not.toContain('>Look</span>');
     expect(uiSource).toContain('Or pick an exact render profile');
     expect(uiSource).toContain('Keep things steadier on tricky hardware');

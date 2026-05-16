@@ -14,6 +14,14 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
+import { StimsControlDock } from './StimsControlDock.tsx';
+import {
+  StimsCornerBrand,
+  StimsFrameChrome,
+  StimsFrameHeader,
+  StimsRailActions,
+  StimsStageFrame,
+} from './StimsStageFrame.tsx';
 import {
   buildAppliedFilterSummary,
   describePresetMood,
@@ -43,7 +51,13 @@ type PresetArtworkTone =
   | 'classic'
   | 'instant';
 
-function UiIcon({ name, className }: { name: UiIconName; className: string }) {
+export function UiIcon({
+  name,
+  className,
+}: {
+  name: UiIconName;
+  className: string;
+}) {
   const nodes = getIconNodes(name);
   const title = name.replace(/-/g, ' ');
 
@@ -657,248 +671,128 @@ export function WorkspaceStagePanel({
       className="stims-shell__workspace"
       data-mode={liveMode ? 'live' : 'home'}
     >
-      <section className="stims-shell__stage-section">
-        <div
-          className="stims-shell__stage-frame"
-          data-mode={liveMode ? 'live' : 'home'}
-        >
-          <div className="stims-shell__stage-ambient" aria-hidden="true">
-            <span className="stims-shell__stage-ambient-grid" />
-            <span className="stims-shell__stage-ambient-beam" />
-            <span className="stims-shell__stage-ambient-beam stims-shell__stage-ambient-beam--secondary" />
-            <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--ember" />
-            <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--sky" />
-            <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--mint" />
-            <span className="stims-shell__stage-ambient-ring" />
-          </div>
-          <div ref={stageRef} className="stims-shell__stage-root" />
-          <div className="stims-shell__frame-chrome">
-            <div className="stims-shell__corner-brand">
-              <a href="/" className="stims-shell__logo">
-                <span>Stims</span>
-                <small>Sound into motion</small>
-              </a>
-              {liveMode ? (
-                <div className="stims-shell__corner-status">
-                  <span
-                    className="stims-shell__corner-pill"
-                    title="Visualizer is running with live audio"
-                  >
-                    Live session
-                  </span>
-                  <span className="stims-shell__corner-pill">
-                    {backend === 'webgpu'
-                      ? 'WebGPU active'
-                      : backend === 'webgl'
-                        ? 'WebGL active'
-                        : 'Renderer loading'}
-                  </span>
-                  {audioEnergy > 0 ? (
-                    <span
-                      className="stims-shell__audio-meter"
-                      style={{
-                        transform: `scale(${0.82 + audioEnergy * 0.36})`,
-                        opacity: 0.3 + audioEnergy * 0.55,
-                      }}
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-            <div className="stims-shell__rail-actions">
-              {panel ? (
-                <span className="stims-shell__corner-pill">
-                  {getToolLabel(panel)} open
-                </span>
-              ) : null}
-              {!missingRequestedPreset && !invalidExperienceSlug ? (
-                <div
-                  className="stims-shell__stage-dock"
-                  role="toolbar"
-                  aria-label={liveMode ? 'Live controls' : 'Launch controls'}
+      <StimsStageFrame stageRef={stageRef} liveMode={liveMode}>
+        <StimsFrameChrome>
+          <StimsCornerBrand>
+            <a href="/" className="stims-shell__logo">
+              <span>Stims</span>
+              <small>Sound into motion</small>
+            </a>
+            {liveMode ? (
+              <div className="stims-shell__corner-status">
+                <span
+                  className="stims-shell__corner-pill"
+                  title="Visualizer is running with live audio"
                 >
-                  <button
-                    type="button"
-                    className="stims-shell__stage-tool"
-                    data-active={String(panel === 'browse')}
-                    aria-label="Open browse panel"
-                    title="Open browse panel"
-                    onClick={onOpenBrowse}
-                  >
-                    <UiIcon
-                      name="sparkles"
-                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                    />
-                    <span className="stims-shell__stage-tool-label">
-                      Browse
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="stims-shell__stage-tool"
-                    data-active={String(panel === 'settings')}
-                    aria-label="Open look settings"
-                    title="Open look settings"
-                    onClick={onOpenSettings}
-                  >
-                    <UiIcon
-                      name="sliders"
-                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                    />
-                    <span className="stims-shell__stage-tool-label">Style</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="stims-shell__stage-tool"
-                    aria-label="Surprise me"
-                    title="Surprise me"
-                    onClick={onShufflePreset}
-                  >
-                    <UiIcon
-                      name="pulse"
-                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                    />
-                    <span className="stims-shell__stage-tool-label">
-                      Surprise me
-                    </span>
-                  </button>
-                  {audioSource ? (
-                    <button
-                      type="button"
-                      className="stims-shell__stage-tool"
-                      aria-label="Stop audio"
-                      title="Stop audio"
-                      onClick={onAudioStop}
-                    >
-                      <UiIcon
-                        name="close"
-                        className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                      />
-                      <span className="stims-shell__stage-tool-label">
-                        Stop
-                      </span>
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="stims-shell__stage-tool"
-                    aria-label={
-                      isFullscreen ? 'Exit full screen' : 'Enter full screen'
-                    }
-                    title={
-                      isFullscreen ? 'Exit full screen' : 'Enter full screen'
-                    }
-                    onClick={onToggleFullscreen}
-                  >
-                    <UiIcon
-                      name="expand"
-                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                    />
-                    <span className="stims-shell__stage-tool-label">
-                      {isFullscreen ? 'Exit full screen' : 'Full screen'}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="stims-shell__stage-tool"
-                    aria-label="Share current link"
-                    title="Share current link"
-                    onClick={onShowCurrentLink}
-                  >
-                    <UiIcon
-                      name="link"
-                      className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                    />
-                    <span className="stims-shell__stage-tool-label">Share</span>
-                  </button>
-                  {onToggleTheme ? (
-                    <button
-                      type="button"
-                      className="stims-shell__stage-tool"
-                      aria-label="Toggle theme"
-                      title="Toggle theme"
-                      onClick={onToggleTheme}
-                    >
-                      <UiIcon
-                        name="moon"
-                        className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-                      />
-                      <span className="stims-shell__stage-tool-label">
-                        Theme
-                      </span>
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-              <a
-                className="stims-shell__corner-link"
-                href="https://github.com/zz-plant/stims"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                GitHub
-              </a>
+                  Live session
+                </span>
+                <span className="stims-shell__corner-pill">
+                  {backend === 'webgpu'
+                    ? 'WebGPU active'
+                    : backend === 'webgl'
+                      ? 'WebGL active'
+                      : 'Renderer loading'}
+                </span>
+                {audioEnergy > 0 ? (
+                  <span
+                    className="stims-shell__audio-meter"
+                    style={{
+                      transform: `scale(${0.82 + audioEnergy * 0.36})`,
+                      opacity: 0.3 + audioEnergy * 0.55,
+                    }}
+                    aria-hidden="true"
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </StimsCornerBrand>
+          <StimsRailActions>
+            {panel ? (
+              <span className="stims-shell__corner-pill">
+                {getToolLabel(panel)} open
+              </span>
+            ) : null}
+            {!missingRequestedPreset && !invalidExperienceSlug ? (
+              <StimsControlDock
+                audioSource={audioSource}
+                isFullscreen={isFullscreen}
+                panel={panel}
+                onOpenBrowse={onOpenBrowse}
+                onOpenSettings={onOpenSettings}
+                onShufflePreset={onShufflePreset}
+                onAudioStop={onAudioStop}
+                onToggleFullscreen={onToggleFullscreen}
+                onShowCurrentLink={onShowCurrentLink}
+                onToggleTheme={onToggleTheme}
+              />
+            ) : null}
+            <a
+              className="stims-shell__corner-link"
+              href="https://github.com/zz-plant/stims"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+          </StimsRailActions>
+        </StimsFrameChrome>
+        {liveMode ? (
+          <StimsFrameHeader>
+            <div className="stims-shell__stage-copy">
+              <p className="stims-shell__eyebrow">{stageEyebrow}</p>
+              <h2>{stageTitle}</h2>
+              <p className="stims-shell__meta-copy stims-shell__stage-summary">
+                {stageSummary}
+              </p>
+            </div>
+            {audioSource === 'demo' ? (
+              <div className="stims-shell__frame-sidecar">
+                <button
+                  type="button"
+                  className="stims-shell__text-button stims-shell__audio-bridge-link"
+                  onClick={onToggleExtendedSources}
+                >
+                  {showExtendedSources
+                    ? 'Hide sources'
+                    : 'Switch to your music →'}
+                </button>
+                {showExtendedSources ? (
+                  <AudioSourcePanel
+                    engineReady={engineReady}
+                    onAudioStart={onAudioStart}
+                    onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
+                    onLoadYouTube={onLoadYouTube}
+                    onYoutubeUrlChange={onYoutubeUrlChange}
+                    onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
+                    recentYouTubeVideos={recentYouTubeVideos}
+                    youtubeCanLoad={youtubeCanLoad}
+                    youtubeFeedback={youtubeFeedback}
+                    youtubeInputInvalid={youtubeInputInvalid}
+                    youtubeLoading={youtubeLoading}
+                    youtubePreviewRef={youtubePreviewRef}
+                    youtubeReady={youtubeReady}
+                    youtubeUrl={youtubeUrl}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </StimsFrameHeader>
+        ) : null}
+        {!liveMode ? (
+          <div className="stims-shell__stage-hero">{launchPanel}</div>
+        ) : null}
+        {invalidExperienceSlug ? (
+          <div className="active-toy-status is-error">
+            <div className="active-toy-status__content">
+              <h2>Link no longer works</h2>
+              <p>
+                This Stims link points to a view that is no longer available: "
+                {invalidExperienceSlug}".
+              </p>
             </div>
           </div>
-          {liveMode ? (
-            <div className="stims-shell__frame-header">
-              <div className="stims-shell__stage-copy">
-                <p className="stims-shell__eyebrow">{stageEyebrow}</p>
-                <h2>{stageTitle}</h2>
-                <p className="stims-shell__meta-copy stims-shell__stage-summary">
-                  {stageSummary}
-                </p>
-              </div>
-              {audioSource === 'demo' ? (
-                <div className="stims-shell__frame-sidecar">
-                  <button
-                    type="button"
-                    className="stims-shell__text-button stims-shell__audio-bridge-link"
-                    onClick={onToggleExtendedSources}
-                  >
-                    {showExtendedSources
-                      ? 'Hide sources'
-                      : 'Switch to your music →'}
-                  </button>
-                  {showExtendedSources ? (
-                    <AudioSourcePanel
-                      engineReady={engineReady}
-                      onAudioStart={onAudioStart}
-                      onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
-                      onLoadYouTube={onLoadYouTube}
-                      onYoutubeUrlChange={onYoutubeUrlChange}
-                      onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
-                      recentYouTubeVideos={recentYouTubeVideos}
-                      youtubeCanLoad={youtubeCanLoad}
-                      youtubeFeedback={youtubeFeedback}
-                      youtubeInputInvalid={youtubeInputInvalid}
-                      youtubeLoading={youtubeLoading}
-                      youtubePreviewRef={youtubePreviewRef}
-                      youtubeReady={youtubeReady}
-                      youtubeUrl={youtubeUrl}
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          {!liveMode ? (
-            <div className="stims-shell__stage-hero">{launchPanel}</div>
-          ) : null}
-          {invalidExperienceSlug ? (
-            <div className="active-toy-status is-error">
-              <div className="active-toy-status__content">
-                <h2>Link no longer works</h2>
-                <p>
-                  This Stims link points to a view that is no longer available:
-                  "{invalidExperienceSlug}".
-                </p>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </section>
+        ) : null}
+      </StimsStageFrame>
     </section>
   );
 }
