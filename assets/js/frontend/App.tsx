@@ -138,6 +138,7 @@ import {
   subscribeToFullscreenChange,
   toggleElementFullscreen,
 } from './fullscreen.ts';
+import { NewHomePage } from './NewHomePage.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import {
   useWorkspaceRouteState,
@@ -145,7 +146,6 @@ import {
 } from './workspace-hooks.ts';
 import { useWorkspaceShellOrchestration } from './workspace-shell-hooks.ts';
 import {
-  WorkspaceLaunchPanel,
   WorkspaceStagePanel,
   WorkspaceToast,
   WorkspaceToolSheet,
@@ -300,18 +300,6 @@ function StimsWorkspaceAppInner() {
     liveMode,
     setStatusMessage,
   ]);
-  const launchEyebrow =
-    engineReady || routeState.invalidExperienceSlug
-      ? 'MilkDrop in the browser'
-      : 'Loading';
-  const launchTitle =
-    engineReady || routeState.invalidExperienceSlug
-      ? 'Start music-reactive color and motion in seconds.'
-      : 'Loading the visualizer.';
-  const launchSummary =
-    engineReady || routeState.invalidExperienceSlug
-      ? 'Start with demo audio now, then switch to your own music whenever you want the motion to track live sound.'
-      : 'Getting everything ready.';
   const stageEyebrow = loadingRequestedPreset
     ? 'Loading preset'
     : liveMode
@@ -458,14 +446,10 @@ function StimsWorkspaceAppInner() {
         invalidExperienceSlug={routeState.invalidExperienceSlug}
         isFullscreen={isFullscreen}
         launchPanel={
-          <WorkspaceLaunchPanel
-            embedded
+          <NewHomePage
             engineReady={engineReady}
             favoritePresets={favoritePresets}
             featuredPreset={featuredPreset}
-            launchEyebrow={launchEyebrow}
-            launchSummary={launchSummary}
-            launchTitle={launchTitle}
             missingRequestedPreset={missingRequestedPreset}
             onAudioStart={(source) => {
               void handleAudioStart(source);

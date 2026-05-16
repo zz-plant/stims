@@ -113,7 +113,7 @@ function getPresetArtworkTone(entry: PresetCatalogEntry): PresetArtworkTone {
   }
 }
 
-function PresetArtwork({
+export function PresetArtwork({
   entry,
   compact = false,
   preview = null,
@@ -184,7 +184,7 @@ function SkeletonPresetCard() {
   );
 }
 
-function PresetShelfSection({
+export function PresetShelfSection({
   entries,
   summary,
   title,
