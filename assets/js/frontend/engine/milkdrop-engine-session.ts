@@ -180,6 +180,33 @@ export function createMilkdropEngineAdapter() {
       subscribers.clear();
     },
 
+    /** Pre-warm the WebGPU pipeline cache during idle time */
+    prewarmWebGpu() {
+      if (typeof window === 'undefined') return;
+      if ('requestIdleCallback' in window) {
+        (
+          window as { requestIdleCallback: (cb: IdleRequestCallback) => void }
+        ).requestIdleCallback(async () => {
+          try {
+            const { WebGPURenderer } = await import(
+              'three/addons/renderers/webgpu/WebGPURenderer.js'
+            );
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            canvas.hidden = true;
+            document.body.appendChild(canvas);
+            const renderer = new WebGPURenderer({ canvas });
+            await renderer.init();
+            renderer.dispose();
+            canvas.remove();
+          } catch {
+            // WebGPU not available or pre-warm failed — nothing to do
+          }
+        });
+      }
+    },
+
     async loadPreset(presetId: string) {
       if (!experience) {
         throw new Error('MilkDrop engine session is not mounted.');

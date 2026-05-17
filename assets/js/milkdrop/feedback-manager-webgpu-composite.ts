@@ -2,9 +2,11 @@
 import type { Camera, Scene, Texture } from 'three';
 import {
   Color,
+  Data3DTexture,
   DataTexture,
   HalfFloatType,
   LinearFilter,
+  RedFormat,
   RepeatWrapping,
   RGBAFormat,
   SRGBColorSpace,
@@ -131,6 +133,88 @@ export function getSharedMilkdropTexture(
 
 export function getSharedMilkdropTexturePlaceholder() {
   return sharedMilkdropTexturePlaceholder;
+}
+
+let sharedSimplex3dTexture: Data3DTexture | null = null;
+let sharedSimplexLoading: Promise<Data3DTexture> | null = null;
+
+function getSliceSize(tex: Texture): number {
+  const grid = AUX_TEXTURE_ATLAS_GRID_SIZE;
+  const img = tex.image as { width?: number; height?: number } | null;
+  return Math.floor(Math.min(img?.width ?? 256, img?.height ?? 256) / grid);
+}
+
+function buildSimplexVolumeData(
+  source: HTMLImageElement | HTMLCanvasElement,
+  width: number,
+  height: number,
+): Uint8Array {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new Uint8Array(64 * 64 * 64);
+  ctx.drawImage(source, 0, 0);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const grid = AUX_TEXTURE_ATLAS_GRID_SIZE;
+  const sliceSize = Math.floor(width / grid);
+  const volumeSize = sliceSize * sliceSize * AUX_TEXTURE_ATLAS_SLICE_COUNT;
+  const volume = new Uint8Array(volumeSize);
+  for (let z = 0; z < AUX_TEXTURE_ATLAS_SLICE_COUNT; z++) {
+    const gridY = Math.floor(z / grid);
+    const gridX = z % grid;
+    for (let y = 0; y < sliceSize; y++) {
+      for (let x = 0; x < sliceSize; x++) {
+        const srcIdx =
+          ((gridY * sliceSize + y) * width + (gridX * sliceSize + x)) * 4;
+        const dstIdx = z * sliceSize * sliceSize + y * sliceSize + x;
+        volume[dstIdx] = imageData.data[srcIdx];
+      }
+    }
+  }
+  return volume;
+}
+
+export async function getSharedSimplex3dTexture(): Promise<Data3DTexture> {
+  if (sharedSimplex3dTexture) return sharedSimplex3dTexture;
+  if (sharedSimplexLoading) return sharedSimplexLoading;
+
+  sharedSimplexLoading = new Promise<Data3DTexture>((resolve) => {
+    const loader = new TextureLoader();
+    const tex = loader.load(
+      resolveTextureUrl(MILKDROP_TEXTURE_FILES.simplex),
+      () => {
+        const img = tex.image as HTMLImageElement | HTMLCanvasElement | null;
+        if (!img) {
+          resolve(
+            getSharedMilkdropTexturePlaceholder() as unknown as Data3DTexture,
+          );
+          return;
+        }
+        const sliceSize = getSliceSize(tex);
+        const imgWidth = 'width' in img ? (img.width as number) : 256;
+        const imgHeight = 'height' in img ? (img.height as number) : 256;
+        const volumeData = buildSimplexVolumeData(img, imgWidth, imgHeight);
+        const volumeTex = new Data3DTexture(
+          volumeData,
+          sliceSize,
+          sliceSize,
+          AUX_TEXTURE_ATLAS_SLICE_COUNT,
+        );
+        volumeTex.format = RedFormat;
+        volumeTex.type = UnsignedByteType;
+        volumeTex.wrapS = RepeatWrapping;
+        volumeTex.wrapT = RepeatWrapping;
+        volumeTex.wrapR = RepeatWrapping;
+        volumeTex.minFilter = LinearFilter;
+        volumeTex.magFilter = LinearFilter;
+        volumeTex.needsUpdate = true;
+        sharedSimplex3dTexture = volumeTex;
+        resolve(volumeTex);
+      },
+    );
+  });
+  return sharedSimplexLoading;
 }
 
 export function getSharedMilkdropAuxTextures() {

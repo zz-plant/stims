@@ -640,9 +640,11 @@ export function createMilkdropExperience({
   }
 
   if (enableOverlay) {
-    // Remove any stale overlay DOM nodes from previous experience instances
     document.querySelectorAll('.milkdrop-overlay').forEach((el) => el.remove());
-    overlay?.dispose();
+    if (overlay) {
+      overlay.dispose();
+      overlay = null;
+    }
     overlay = new MilkdropOverlay({
       host: container ?? document.body,
       callbacks: interactionPresenter.overlayCallbacks,
