@@ -221,7 +221,8 @@ export function getSharedMilkdropAuxTextures() {
   return {
     noise: getSharedMilkdropTexturePlaceholder(),
     perlin: getSharedMilkdropTexturePlaceholder(),
-    simplex: getSharedMilkdropTexturePlaceholder(),
+    simplex: (sharedSimplex3dTexture ??
+      getSharedMilkdropTexturePlaceholder()) as Texture,
     voronoi: getSharedMilkdropTexturePlaceholder(),
     aura: getSharedMilkdropTexturePlaceholder(),
     caustics: getSharedMilkdropTexturePlaceholder(),
