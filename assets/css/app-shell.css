@@ -1105,7 +1105,7 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__preset-list .stims-shell__preset-art {
-  min-height: 130px;
+  min-height: 180px;
 }
 
 .stims-shell__preset-list .stims-shell__preset-card-copy {
@@ -1114,6 +1114,22 @@ body[data-page="workspace"] {
 
 .stims-shell__preset-list .stims-shell__preset-meta-row {
   font-size: 0.82rem;
+}
+
+/* Fade decorative artwork elements when a real preview is available */
+.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-grid,
+.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-orbit,
+.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-core {
+  opacity: 0.15;
+}
+
+.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-caption,
+.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-status {
+  display: none;
+}
+
+.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-preview-image {
+  opacity: 1;
 }
 
 .stims-shell__preset-vibe {
