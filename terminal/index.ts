@@ -1,5 +1,6 @@
 import { createAudioPipeline } from './audio';
 import { createEffectState, nextMode, renderFrame } from './effects';
+import { detectListenSetup, streamAudioFrames } from './listen';
 import {
   autoDetectTmux,
   Canvas,
@@ -7,6 +8,7 @@ import {
   restoreTerminal,
   setRenderOptions,
 } from './renderer';
+import { getTheme, themeNames } from './themes';
 import { readWav, readWavFromStdin, type WavFile } from './wav';
 import { cleanupYoutube, downloadYoutube } from './youtube';
 
@@ -16,29 +18,26 @@ stims-terminal — vibe-coding audio visualizer
 usage: bun run terminal/index.ts [source] [flags]
 
 source:
-  <file.wav>        play a WAV file
-  -                  read WAV from stdin (pipe)
-  --yt <url>         play from YouTube (requires yt-dlp + ffmpeg)
+  <file.wav>         play a WAV file
+  -                   read WAV from stdin (pipe)
+  --yt <url>          play from YouTube (requires yt-dlp + ffmpeg)
+  --listen            capture system audio (requires BlackHole on macOS)
 
 flags:
-  --loop             loop the file continuously
-  --mode <n>         start mode (0:waveform 1:spectrum 2:orbit 3:bars 4:combo)
-  --autocycle <s>    rotate modes every N seconds
-  --tmux             optimise for tmux (no screen clear, compact width)
-  --compact          narrow pane layout (60 cols, orbit+bars only)
-  --minimal          hide particles, beat flash, and status bar
-  --fps <n>          target FPS (default: 30, tmux: 15, compact: 12)
-  -h, --help         show this help
+  --loop              loop the file continuously
+  --play              play audio through speakers (requires ffplay)
+  --mode <n>          start mode (0:waveform 1:spectrum 2:orbit 3:bars 4:combo)
+  --autocycle <s>     rotate modes every N seconds
+  --theme <name>      color theme: ${themeNames().join(' ')}
+  --tmux              optimise for tmux (no screen clear, compact width)
+  --compact           narrow pane layout (60 cols, orbit+bars only)
+  --minimal           hide particles, beat flash, and status bar
+  --fps <n>           target FPS (default: 30, tmux: 15, compact: 12)
+  -h, --help          show this help
 
 controls:
-  space              cycle visual mode
-  q / esc / ^C       quit
-
-examples:
-  bun run terminal/index.ts song.wav
-  yt-dlp -x --audio-format wav -o - URL | bun run terminal/index.ts -
-  bun run terminal/index.ts --yt https://youtube.com/watch?v=xxx --autocycle 20
-  bun run terminal/index.ts song.wav --tmux --compact --autocycle 30
+  space               cycle visual mode
+  q / esc / ^C        quit
 `;
 
 if (process.argv.includes('-h') || process.argv.includes('--help')) {
@@ -51,6 +50,8 @@ const loopMode = process.argv.includes('--loop');
 const tmuxFlag = process.argv.includes('--tmux');
 const compactMode = process.argv.includes('--compact');
 const minimalMode = process.argv.includes('--minimal');
+const listenMode = process.argv.includes('--listen');
+const playAudio = process.argv.includes('--play');
 
 let startMode = 0;
 const modeArg = process.argv.indexOf('--mode');
@@ -73,6 +74,12 @@ if (fpsArg !== -1 && process.argv[fpsArg + 1]) {
   );
 }
 
+let themeName = '';
+const themeArg = process.argv.indexOf('--theme');
+if (themeArg !== -1 && process.argv[themeArg + 1]) {
+  themeName = process.argv[themeArg + 1]!;
+}
+
 autoDetectTmux();
 if (
   tmuxFlag ||
@@ -87,6 +94,7 @@ if (!targetFps) targetFps = 30;
 
 let youtubeTemp: string | null = null;
 let title = '';
+let playerProc: ReturnType<typeof Bun.spawn> | null = null;
 
 async function loadSource(): Promise<{ path: string; title: string }> {
   if (ytIdx !== -1) {
@@ -107,12 +115,16 @@ async function loadSource(): Promise<{ path: string; title: string }> {
     }
   }
 
+  if (listenMode) {
+    return { path: ':listen:', title: 'System Audio' };
+  }
+
   const filePath = process.argv[2];
   if (filePath === '-') {
     return { path: ':stdin:', title: 'stdin' };
   }
   if (!filePath) {
-    console.error('Error: no WAV file or --yt URL specified.');
+    console.error('Error: no WAV file, --yt URL, or --listen specified.');
     console.log(HELP);
     process.exit(1);
   }
@@ -127,31 +139,64 @@ title = source.title;
 
 process.stdout.write(`\n  ${title}\n`);
 
-let wav: WavFile;
-try {
-  wav =
-    source.path === ':stdin:' ? await readWavFromStdin() : readWav(source.path);
-} catch (err) {
-  console.error(`  Error: ${err instanceof Error ? err.message : String(err)}`);
-  process.exit(1);
+const isStreaming = source.path === ':listen:';
+
+let wav: WavFile | null = null;
+if (!isStreaming) {
+  try {
+    wav =
+      source.path === ':stdin:'
+        ? await readWavFromStdin()
+        : readWav(source.path);
+  } catch (err) {
+    console.error(
+      `  Error: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    process.exit(1);
+  }
+  process.stdout.write(
+    `  ${(wav.sampleRate / 1000).toFixed(1)}kHz ${wav.channels}ch ${wav.duration.toFixed(1)}s `,
+  );
+} else {
+  const setup = detectListenSetup();
+  if (setup.command.length === 0) {
+    console.error(`\n${setup.hint}\n`);
+    process.exit(1);
+  }
+  process.stdout.write(`  ${setup.hint}\n`);
+  if (playAudio) {
+    console.log(
+      '  Note: --play has no effect with --listen (audio is already playing)',
+    );
+  }
 }
 
-process.stdout.write(
-  `  ${(wav.sampleRate / 1000).toFixed(1)}kHz ${wav.channels}ch ${wav.duration.toFixed(1)}s `,
-);
-if (minimalMode) process.stdout.write('| minimal');
+if (playAudio && wav) {
+  try {
+    playerProc = Bun.spawn(
+      ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'quiet', source.path],
+      { stdout: 'null', stderr: 'null' },
+    );
+  } catch {
+    console.log('  Note: ffplay not found, audio will be silent.');
+  }
+}
+
+const theme = getTheme(themeName);
+if (themeName) process.stdout.write(` | ${theme.name}`);
+if (minimalMode) process.stdout.write(' | minimal');
 if (compactMode) process.stdout.write(' | compact');
 if (autocycleSecs > 0) process.stdout.write(` | autocycle ${autocycleSecs}s`);
 process.stdout.write('\n');
 process.stdout.write('  space=mode | q=quit\n\n');
 
 let term = initTerminal();
-let pipeline = createAudioPipeline(wav, Date.now());
 
 const state = createEffectState({
   compact: compactMode,
   minimal: minimalMode,
   autocycleSecs,
+  theme,
 });
 state.modeIndex = Math.min(startMode, 4);
 
@@ -191,33 +236,56 @@ if (isTTY) {
 
 const frameMs = 1000 / targetFps;
 
-function tick() {
-  if (!running) return;
+if (isStreaming) {
+  const setup = detectListenSetup();
+  const listenProc = Bun.spawn(setup.command, {
+    stdout: 'pipe',
+    stderr: 'null',
+  });
 
-  const start = Date.now();
-  const now = Date.now();
+  const stream = streamAudioFrames(44100);
+  const frameGen = stream[Symbol.asyncIterator]();
 
-  let frame = pipeline.nextFrame(now);
-  if (!frame) {
-    if (loopMode) {
-      wav = readWav(source.path === ':stdin:' ? source.path : source.path);
-      pipeline = createAudioPipeline(wav, now);
-      frame = pipeline.nextFrame(now);
-    }
-    if (!frame) {
+  async function streamTick() {
+    if (!running) return;
+    const start = Date.now();
+    const { value: frame, done } = await frameGen.next();
+    if (done) {
       stop();
       return;
     }
+    renderFrame(canvas, state, frame as any);
+    canvas.render();
+    const elapsed = Date.now() - start;
+    timer = setTimeout(streamTick, Math.max(1, frameMs - elapsed));
   }
+  streamTick();
+} else {
+  let pipeline = createAudioPipeline(wav!, Date.now());
 
-  renderFrame(canvas, state, frame);
-  canvas.render();
-
-  const elapsed = Date.now() - start;
-  timer = setTimeout(tick, Math.max(1, frameMs - elapsed));
+  function tick() {
+    if (!running) return;
+    const start = Date.now();
+    const now = Date.now();
+    let frame = pipeline.nextFrame(now);
+    if (!frame) {
+      if (loopMode) {
+        wav = readWav(source.path === ':stdin:' ? source.path : source.path);
+        pipeline = createAudioPipeline(wav, now);
+        frame = pipeline.nextFrame(now);
+      }
+      if (!frame) {
+        stop();
+        return;
+      }
+    }
+    renderFrame(canvas, state, frame);
+    canvas.render();
+    const elapsed = Date.now() - start;
+    timer = setTimeout(tick, Math.max(1, frameMs - elapsed));
+  }
+  tick();
 }
-
-tick();
 
 function cleanup() {
   if (isTTY) {
@@ -225,6 +293,11 @@ function cleanup() {
       process.stdin.setRawMode(false);
     } catch {}
     process.stdin.pause();
+  }
+  if (playerProc) {
+    try {
+      playerProc.kill();
+    } catch {}
   }
   if (running) {
     restoreTerminal();
