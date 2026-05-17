@@ -44,8 +44,8 @@ export default defineConfig({
     outDir: 'dist',
     target: 'es2020',
     // The WebGPU renderer bundle is intentionally large and loaded on demand.
-    // Keep CI builds focused on regressions instead of expected size warnings.
-    chunkSizeWarningLimit: 700,
+    // Chunks are split into vendor-react, vendor-three, and vendor-codemirror.
+    chunkSizeWarningLimit: 400,
     // Emit the standard .vite/manifest.json so docs and tooling resolve assets
     // without custom paths.
     manifest: true,
@@ -54,6 +54,25 @@ export default defineConfig({
       // can find the `start` functions even when they look unused at build time.
       preserveEntrySignatures: 'strict',
       input: rollupInputs,
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/react') ||
+            id.includes('node_modules/react-dom')
+          ) {
+            return 'vendor-react';
+          }
+          if (
+            id.includes('node_modules/three') ||
+            id.includes('node_modules/@react-three')
+          ) {
+            return 'vendor-three';
+          }
+          if (id.includes('node_modules/@codemirror')) {
+            return 'vendor-codemirror';
+          }
+        },
+      },
     },
   },
 });
