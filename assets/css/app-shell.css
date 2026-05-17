@@ -1734,6 +1734,8 @@ body[data-page="workspace"] {
   border-radius: 50%;
   background: var(--stims-good);
   box-shadow: 0 0 8px rgba(125, 224, 162, 0.5);
+  transform: scale(calc(0.82 + var(--audio-energy, 0) * 0.36));
+  opacity: calc(0.3 + var(--audio-energy, 0) * 0.55);
   transition:
     transform 130ms ease-out,
     opacity 160ms ease;
@@ -2667,11 +2669,44 @@ body[data-page="workspace"] {
 
 .stims-shell__sheet-body {
   display: grid;
-  gap: 16px;
-  flex: 1;
-  min-height: 0;
+  gap: 20px;
+  align-content: start;
+  container-type: inline-size;
+}
+
+.stims-shell__preset-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+  min-height: 240px;
+  max-height: min(56vh, 680px);
   overflow: auto;
   padding-right: 4px;
+  align-content: start;
+}
+
+/* When the browse panel is narrow (<520px), switch to 2 narrower columns */
+@container (max-width: 520px) {
+  .stims-shell__preset-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stims-shell__preset-list .stims-shell__preset-art {
+    min-height: 100px;
+  }
+
+  .stims-shell__preset-list .stims-shell__preset-meta-row,
+  .stims-shell__preset-list .stims-shell__meta-copy {
+    display: none;
+  }
+}
+
+/* When very narrow (<320px), single column */
+@container (max-width: 320px) {
+  .stims-shell__preset-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stims-shell__tool-tabs {
