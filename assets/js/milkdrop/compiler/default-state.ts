@@ -105,7 +105,7 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   gammaadj: 2,
   video_echo_enabled: 0,
   video_echo_alpha: 0,
-  video_echo_zoom: 2,
+  video_echo_zoom: 1,
   video_echo_orientation: 0,
   ob_size: 0.01,
   ob_r: 0,

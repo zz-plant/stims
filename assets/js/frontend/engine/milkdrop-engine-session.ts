@@ -140,7 +140,7 @@ export function createMilkdropEngineAdapter() {
           rendererOptions: { antialias: false },
         },
         audio: {
-          fftSize: 512,
+          fftSize: 1024,
         },
         plugins: [
           {
