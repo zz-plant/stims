@@ -212,22 +212,39 @@ export function useWorkspaceShellOrchestration({
     if (!nextPool.length) {
       return;
     }
-    const fidelityScore = (entry: PresetCatalogEntry) => {
+    const scatterWeight = (entry: PresetCatalogEntry) => {
       const fidelityClass = entry.visualCertification?.fidelityClass;
-      if (fidelityClass === 'exact') return 4;
-      if (fidelityClass === 'near-exact') return 3;
-      if (fidelityClass === 'partial') return 2;
-      return 1;
+      const fidelityWeight =
+        fidelityClass === 'exact'
+          ? 8
+          : fidelityClass === 'near-exact'
+            ? 6
+            : fidelityClass === 'partial'
+              ? 4
+              : 2;
+      const favoriteWeight = entry.isFavorite ? 6 : 0;
+      const historyBonus =
+        entry.historyIndex !== undefined && entry.historyIndex >= 0 ? 3 : 0;
+      const recentPenalty =
+        entry.lastOpenedAt && entry.lastOpenedAt > Date.now() - 300_000
+          ? -4
+          : 0;
+      return Math.max(
+        1,
+        fidelityWeight + favoriteWeight + historyBonus + recentPenalty,
+      );
     };
     const scoredPool = nextPool.map((entry) => ({
       entry,
-      weight: fidelityScore(entry),
+      weight: scatterWeight(entry),
     }));
-    const highestScore = Math.max(...scoredPool.map((s) => s.weight), 1);
-    const topPool = scoredPool.filter((s) => s.weight >= highestScore);
-    const drawPool = topPool.length > 0 ? topPool : scoredPool;
+    const totalWeight = scoredPool.reduce((sum, s) => sum + s.weight, 0);
+    let roll = Math.random() * totalWeight;
+    const picked = scoredPool.find((s) => {
+      roll -= s.weight;
+      return roll <= 0;
+    });
 
-    const picked = drawPool[Math.floor(Math.random() * drawPool.length)];
     const nextPreset = picked?.entry ?? nextPool[0];
     if (!nextPreset) {
       return;

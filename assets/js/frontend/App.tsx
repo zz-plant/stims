@@ -302,6 +302,19 @@ function StimsWorkspaceAppShell() {
       } else if (key === 'i') {
         event.preventDefault();
         w.updatePanel(w.routeState.panel === 'inspector' ? null : 'inspector');
+      } else if (key === 'n' || key === 'arrowright') {
+        event.preventDefault();
+        void w.handleShufflePreset();
+      } else if (key === 'p' || key === 'arrowleft') {
+        event.preventDefault();
+        w.setStatusMessage('Previous preset — use Shuffle for random');
+      } else if (/^[1-9]$/.test(key) && liveMode) {
+        event.preventDefault();
+        const index = Number.parseInt(key, 10) - 1;
+        const preset = w.filteredCatalog[index];
+        if (preset) {
+          w.handlePresetSelection(preset.id);
+        }
       }
     };
 
@@ -322,6 +335,10 @@ function StimsWorkspaceAppShell() {
     w.routeState.panel,
     w.updatePanel,
     w.handleAudioStart,
+    w.handleShufflePreset,
+    w.filteredCatalog,
+    w.handlePresetSelection,
+    w.setStatusMessage,
   ]);
 
   useEffect(() => {
