@@ -31,6 +31,13 @@ export type MilkdropRuntimeSignals = {
   beat_pulse: number;
   transient: number;
   spectralFlux: number;
+  bandFlux: number;
+  beatBass: number;
+  beatMid: number;
+  beatTreble: number;
+  beat_bass: number;
+  beat_mid: number;
+  beat_treb: number;
   weightedEnergy: number;
   inputX: number;
   inputY: number;

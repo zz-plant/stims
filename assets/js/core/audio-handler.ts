@@ -206,7 +206,7 @@ export class FrequencyAnalyser {
             outputChannelCount: [1],
             processorOptions: {
               fftSize,
-              messageEvery: fftSize >= 512 ? 2 : 1,
+              messageEvery: fftSize >= 1024 ? 4 : fftSize >= 512 ? 2 : 1,
             },
           },
         );
@@ -546,7 +546,7 @@ export function getCachedDemoAudioStream() {
 
 export async function initAudio(options: AudioInitOptions = {}) {
   const {
-    fftSize = 256,
+    fftSize = 1024,
     smoothingTimeConstant,
     camera,
     positional = false,

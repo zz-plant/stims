@@ -75,6 +75,13 @@ class MilkdropPresetVM implements MilkdropVM {
     beat: 0,
     beat_pulse: 0,
     beatPulse: 0,
+    beatBass: 0,
+    beatMid: 0,
+    beatTreble: 0,
+    beat_bass: 0,
+    beat_mid: 0,
+    beat_treb: 0,
+    bandFlux: 0,
     rms: 0,
     vol: 0,
     music: 0,
@@ -399,6 +406,13 @@ class MilkdropPresetVM implements MilkdropVM {
     this.signalEnv.beat = signals.beat;
     this.signalEnv.beat_pulse = signals.beat_pulse;
     this.signalEnv.beatPulse = signals.beatPulse;
+    this.signalEnv.beatBass = signals.beatBass;
+    this.signalEnv.beatMid = signals.beatMid;
+    this.signalEnv.beatTreble = signals.beatTreble;
+    this.signalEnv.beat_bass = signals.beatBass;
+    this.signalEnv.beat_mid = signals.beatMid;
+    this.signalEnv.beat_treb = signals.beatTreble;
+    this.signalEnv.bandFlux = signals.bandFlux;
     this.signalEnv.rms = signals.rms;
     this.signalEnv.vol = signals.vol;
     this.signalEnv.music = signals.music;

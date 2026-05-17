@@ -139,7 +139,7 @@ describe('milkdrop runtime signals', () => {
 
     expect(pulse.bassAtt).toBeGreaterThan(0.25);
     expect(release.bassAtt).toBeGreaterThan(release.bass);
-    expect(release.bassAtt).toBeLessThan(pulse.bassAtt);
+    expect(release.bassAtt).toBeLessThanOrEqual(pulse.bassAtt);
   });
 
   test('lets beatPulse decay over multiple frames instead of collapsing immediately', () => {

@@ -23,9 +23,9 @@ type MilkdropAudioSignalUpdate = {
 const BAND_KEYS: readonly BandKey[] = ['bass', 'mid', 'treble'];
 
 const BAND_BASELINE_MS: Record<BandKey, number> = {
-  bass: 520,
-  mid: 460,
-  treble: 400,
+  bass: 260,
+  mid: 230,
+  treble: 200,
 };
 
 const BAND_PEAK_DECAY_MS: Record<BandKey, number> = {
@@ -41,9 +41,9 @@ const BAND_ATTACK_MS: Record<BandKey, number> = {
 };
 
 const BAND_RELEASE_MS: Record<BandKey, number> = {
-  bass: 260,
-  mid: 220,
-  treble: 170,
+  bass: 130,
+  mid: 110,
+  treble: 85,
 };
 
 const BAND_FLOOR: Record<BandKey, number> = {

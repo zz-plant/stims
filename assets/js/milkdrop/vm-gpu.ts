@@ -96,6 +96,13 @@ const SIGNAL_FIELD_LIST = [
   'beat',
   'beat_pulse',
   'beatPulse',
+  'beat_bass',
+  'beat_mid',
+  'beat_treb',
+  'beatBass',
+  'beatMid',
+  'beatTreble',
+  'bandFlux',
   'rms',
   'vol',
   'music',
@@ -132,6 +139,13 @@ function buildSignalBuffer(
   signalMap.set('beat', signals.beat ?? 0);
   signalMap.set('beat_pulse', signals.beat_pulse ?? 0);
   signalMap.set('beatPulse', signals.beatPulse ?? 0);
+  signalMap.set('beat_bass', signals.beatBass ?? 0);
+  signalMap.set('beat_mid', signals.beatMid ?? 0);
+  signalMap.set('beat_treb', signals.beatTreble ?? 0);
+  signalMap.set('beatBass', signals.beatBass ?? 0);
+  signalMap.set('beatMid', signals.beatMid ?? 0);
+  signalMap.set('beatTreble', signals.beatTreble ?? 0);
+  signalMap.set('bandFlux', signals.bandFlux ?? 0);
   signalMap.set('rms', signals.rms ?? 0);
   signalMap.set('vol', signals.vol ?? 0);
   signalMap.set('music', signals.music ?? 0);

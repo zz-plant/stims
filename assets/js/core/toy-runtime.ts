@@ -299,7 +299,7 @@ export function createToyRuntime({
 
   const previewOptions = {
     enabled: true,
-    fftBins: 128,
+    fftBins: 512,
     ...preview,
   };
   const previewFrequencyData = new Uint8Array(previewOptions.fftBins);

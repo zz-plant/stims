@@ -20,7 +20,7 @@ export interface AnimationContext {
 }
 
 const fallbackBuffers = new Map<number, Uint8Array>();
-const FALLBACK_BIN_COUNT = 64;
+const FALLBACK_BIN_COUNT = 512;
 const SILENCE_THRESHOLD = 6;
 
 function getFallbackBuffer(length: number): Uint8Array {
