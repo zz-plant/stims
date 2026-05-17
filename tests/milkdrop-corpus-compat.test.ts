@@ -99,6 +99,22 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
     webgl: 'supported',
     webgpu: 'supported',
   },
+  'aderrasi-potion-of-spirits.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'geiss-casino.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'orb-radiation.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-apocalypse.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
 };
 
 const PARITY_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> = {
@@ -267,7 +283,7 @@ describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(5);
+    expect(corpus.length).toBe(9);
 
     const unexpected = corpus.filter(({ file, compiled }) => {
       const expectation =

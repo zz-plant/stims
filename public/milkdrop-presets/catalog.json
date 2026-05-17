@@ -382,8 +382,92 @@
       "id": "eos-heater-core-c",
       "title": "Eo.S. - Heater Core C",
       "author": "Eo.S.",
-      "order": 5,
+      "order": 13,
       "file": "/milkdrop-presets/eos-heater-core-c.milk",
+      "preview": true,
+      "tags": ["collection:cream-of-the-crop", "geometry", "preset"],
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime"
+    },
+    {
+      "id": "aderrasi-potion-of-spirits",
+      "title": "Aderrasi - Potion of Spirits",
+      "author": "Aderrasi",
+      "order": 14,
+      "file": "/milkdrop-presets/aderrasi-potion-of-spirits.milk",
+      "preview": true,
+      "tags": ["collection:cream-of-the-crop", "ambient", "preset"],
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime"
+    },
+    {
+      "id": "geiss-casino",
+      "title": "Geiss - Casino",
+      "author": "Ryan Geiss",
+      "order": 15,
+      "file": "/milkdrop-presets/geiss-casino.milk",
+      "preview": true,
+      "tags": ["collection:cream-of-the-crop", "classic", "preset"],
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime"
+    },
+    {
+      "id": "orb-radiation",
+      "title": "Orb - Radiation",
+      "author": "Orb",
+      "order": 16,
+      "file": "/milkdrop-presets/orb-radiation.milk",
+      "preview": true,
+      "tags": ["collection:cream-of-the-crop", "ambient", "preset"],
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime"
+    },
+    {
+      "id": "eos-apocalypse",
+      "title": "Eo.S. - Apocalypse",
+      "author": "Eo.S.",
+      "order": 17,
+      "file": "/milkdrop-presets/eos-apocalypse.milk",
       "preview": true,
       "tags": ["collection:cream-of-the-crop", "geometry", "preset"],
       "visualCertification": {
