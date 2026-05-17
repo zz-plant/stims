@@ -41,6 +41,8 @@ export function NewHomePage() {
   const readinessAlerts = w.readinessAlerts;
   const recentPresets = w.recentPresets;
   const requestedPresetId = w.routeState.presetId;
+  const catalog = w.catalog;
+  const catalogReady = w.catalogReady;
 
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined')
@@ -66,8 +68,10 @@ export function NewHomePage() {
             <p className="stims-shell__eyebrow">Browser visualizer</p>
             <h1>Sound into motion.</h1>
             <p className="stims-shell__launch-summary">
-              Start with demo audio, then switch to your own music. Authentic
-              MilkDrop presets run in WebGL or WebGPU.
+              Start with demo audio, then switch to your own music.
+              {catalogReady
+                ? ` ${catalog.length} authentic MilkDrop presets run in WebGL or WebGPU.`
+                : ' Authentic MilkDrop presets run in WebGL or WebGPU.'}
             </p>
           </div>
           <div className="stims-shell__launch-stack">
@@ -163,10 +167,10 @@ export function NewHomePage() {
 
       {!dismissed ? (
         <section className="stims-shell__confidence-note">
-          <strong>Browser-native MilkDrop visualizer</strong>
+          <strong>Audio-reactive visuals</strong>
           <span>
-            Runs authentic .milk presets via WebGPU or WebGL. Press play with
-            demo audio, then switch to your own music.
+            Start with demo audio — no sign-up, no setup. Works in any modern
+            browser.
           </span>
           <button
             type="button"
@@ -198,6 +202,18 @@ export function NewHomePage() {
           entries={buildJumpBackEntries(favoritePresets, recentPresets)}
           summary="Saved picks and recent stops."
           title="Jump back in"
+          onSelect={w.handlePresetSelection}
+          presetPreviews={presetPreviews}
+        />
+      ) : catalogReady && catalog.length > 0 ? (
+        <PresetShelfSection
+          entries={catalog.slice(0, 4).map((entry) => ({
+            entry,
+            label: 'Try first',
+            summary: describePresetMood(entry),
+          }))}
+          summary="Get started with a curated pick."
+          title="Featured presets"
           onSelect={w.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
