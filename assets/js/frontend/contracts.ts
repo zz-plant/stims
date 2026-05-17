@@ -41,6 +41,7 @@ export type PresetCatalogEntry = {
   tags?: string[];
   preview?: boolean;
   isFavorite?: boolean;
+  rating?: number;
   historyIndex?: number;
   lastOpenedAt?: number;
   expectedFidelityClass?: string;

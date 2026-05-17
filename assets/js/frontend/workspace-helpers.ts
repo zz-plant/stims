@@ -383,6 +383,7 @@ export function mapRuntimeCatalogEntry(
     file: entry.bundledFile,
     tags: entry.tags,
     isFavorite: entry.isFavorite,
+    rating: entry.rating,
     historyIndex:
       entry.historyIndex !== undefined && entry.historyIndex >= 0
         ? entry.historyIndex

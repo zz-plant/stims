@@ -1019,39 +1019,54 @@ function BrowseSheetPanel({
 
             return (
               <li key={entry.id}>
-                <button
-                  type="button"
-                  className="stims-shell__preset-card"
-                  data-active={String(entry.id === currentPresetId)}
-                  onClick={() => w.handlePresetSelection(entry.id)}
-                >
-                  <PresetArtwork
-                    entry={entry}
-                    compact
-                    preview={presetPreviews[entry.id] ?? null}
-                  />
-                  <span className="stims-shell__preset-card-copy">
-                    <span className="stims-shell__preset-title">
-                      {entry.title}
-                    </span>
-                    <span className="stims-shell__preset-vibe">
-                      {describePresetMood(entry)}
-                    </span>
-                    <span className="stims-shell__preset-meta-row">
-                      <span className="stims-shell__preset-meta">
-                        {entry.author || 'Unknown author'}
+                <div className="stims-shell__preset-card-wrap">
+                  <button
+                    type="button"
+                    className="stims-shell__preset-card"
+                    data-active={String(entry.id === currentPresetId)}
+                    onClick={() => w.handlePresetSelection(entry.id)}
+                  >
+                    <PresetArtwork
+                      entry={entry}
+                      compact
+                      preview={presetPreviews[entry.id] ?? null}
+                    />
+                    <span className="stims-shell__preset-card-copy">
+                      <span className="stims-shell__preset-title">
+                        {entry.title}
                       </span>
-                      {supportLabel ? (
-                        <span className="stims-shell__preset-tech">
-                          {supportLabel}
+                      <span className="stims-shell__preset-vibe">
+                        {describePresetMood(entry)}
+                      </span>
+                      <span className="stims-shell__preset-meta-row">
+                        <span className="stims-shell__preset-meta">
+                          {entry.author || 'Unknown author'}
                         </span>
-                      ) : null}
+                        {supportLabel ? (
+                          <span className="stims-shell__preset-tech">
+                            {supportLabel}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="stims-shell__meta-copy">
+                        {formatPresetSupportNote(entry)}
+                      </span>
                     </span>
-                    <span className="stims-shell__meta-copy">
-                      {formatPresetSupportNote(entry)}
-                    </span>
-                  </span>
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    className="stims-shell__preset-fav"
+                    aria-label={
+                      entry.isFavorite ? 'Remove from saved' : 'Save preset'
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void w.toggleFavoritePreset(entry.id, !entry.isFavorite);
+                    }}
+                  >
+                    {entry.isFavorite ? '\u2665' : '\u2661'}
+                  </button>
+                </div>
               </li>
             );
           })}

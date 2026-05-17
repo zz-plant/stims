@@ -72,6 +72,7 @@ export interface WorkspaceContextValue {
     stream?: MediaStream;
   }) => Promise<void>;
   toggleExtendedSources: () => void;
+  toggleFavoritePreset: (presetId: string, favorite: boolean) => Promise<void>;
 
   // Shell computed
   catalog: PresetCatalogEntry[];
@@ -180,6 +181,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     refreshPresetPreviews: sessionState.refreshPresetPreviews,
     startAudioSource: sessionState.startAudioSource,
     toggleExtendedSources: sessionState.toggleExtendedSources,
+    toggleFavoritePreset: sessionState.toggleFavoritePreset,
 
     catalog: shellOrchestration.catalog,
     catalogError: shellOrchestration.catalogError,

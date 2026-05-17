@@ -1263,6 +1263,40 @@ body[data-page="workspace"] {
   font-weight: 700;
 }
 
+.stims-shell__preset-card-wrap {
+  position: relative;
+}
+
+.stims-shell__preset-fav {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.38);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.stims-shell__preset-fav:hover {
+  color: #f472b6;
+  background: rgba(0, 0, 0, 0.55);
+}
+
 .stims-shell__preset-card-copy {
   display: grid;
   gap: 6px;
