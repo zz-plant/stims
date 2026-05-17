@@ -97,6 +97,119 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
   },
 };
 
+const PARITY_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> = {
+  'parity-per-pixel-03.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-motion-04.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-wave-02.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-shape-07.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-registers-05.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-hybrid-09.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-feedback-orientation-01.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-shader-08.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-legacy-wave-01.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+  'parity-legacy-shape-01.milk': {
+    diagnostics: [],
+    webgl: 'supported',
+    webgpu: 'supported',
+    fidelityClass: 'exact',
+    unsupportedKeys: [],
+    warnings: [],
+    blockedConstructs: [],
+    missingAliasesOrFunctions: [],
+    customShapeCount: 0,
+  },
+};
+
 function loadPresetCorpus(dir: string, origin: 'bundled' | 'user' = 'bundled') {
   return readdirSync(dir)
     .filter((file) => file.endsWith('.milk'))
@@ -128,6 +241,20 @@ function loadLegacyFixtureCorpus() {
 function loadLocalShapeFixtureCorpus() {
   return loadPresetCorpus(
     join(process.cwd(), 'tests', 'fixtures', 'milkdrop', 'local-shape-corpus'),
+    'user',
+  );
+}
+
+function loadParityCorpus() {
+  return loadPresetCorpus(
+    join(process.cwd(), 'tests', 'fixtures', 'milkdrop', 'parity-corpus'),
+    'user',
+  );
+}
+
+function loadProjectmUpstreamCorpus() {
+  return loadPresetCorpus(
+    join(process.cwd(), 'tests', 'fixtures', 'milkdrop', 'projectm-upstream'),
     'user',
   );
 }
@@ -240,6 +367,71 @@ describe('milkdrop local shape fixture corpus', () => {
       compiled.ir.customShapes.forEach((shape) => {
         expect(shape.programs.init.sourceLines.length).toBeGreaterThan(0);
         expect(shape.programs.perFrame.sourceLines.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('milkdrop parity corpus', () => {
+    test('keeps parity-corpus fixtures on stable compatibility metadata', () => {
+      const corpus = loadParityCorpus();
+
+      const certified = corpus.filter(({ file }) =>
+        Object.keys(PARITY_CORPUS_EXPECTATIONS).includes(file),
+      );
+
+      expect(certified.length).toBeGreaterThanOrEqual(10);
+
+      certified.forEach(({ file, compiled }) => {
+        const expected = PARITY_CORPUS_EXPECTATIONS[file];
+        const actualDiagnosticCodes = compiled.diagnostics.map(
+          (entry) => entry.code,
+        );
+
+        expect(expected).toBeDefined();
+        expect(actualDiagnosticCodes).toEqual([...expected.diagnostics]);
+        expect(compiled.ir.compatibility.backends.webgl.status).toBe(
+          expected.webgl,
+        );
+        expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+          expected.webgpu,
+        );
+        expect(compiled.ir.compatibility.parity.fidelityClass).toBe(
+          expected.fidelityClass,
+        );
+        expect(compiled.ir.compatibility.unsupportedKeys).toEqual([
+          ...expected.unsupportedKeys,
+        ]);
+        expect(compiled.ir.compatibility.warnings).toEqual([
+          ...expected.warnings,
+        ]);
+        expect(compiled.ir.compatibility.parity.blockedConstructs).toEqual([
+          ...expected.blockedConstructs,
+        ]);
+      });
+
+      const uncertified = corpus.filter(
+        ({ file }) => !Object.keys(PARITY_CORPUS_EXPECTATIONS).includes(file),
+      );
+
+      uncertified.forEach(({ compiled }) => {
+        expect(
+          compiled.diagnostics.filter((d) => d.severity === 'error').length,
+        ).toBe(0);
+      });
+    });
+  });
+
+  describe('milkdrop projectM upstream fixture corpus', () => {
+    test('stays available as a sanity-tier fixture corpus', () => {
+      const corpus = loadProjectmUpstreamCorpus();
+
+      expect(corpus.length).toBeGreaterThanOrEqual(6);
+
+      corpus.forEach(({ compiled }) => {
+        expect(compiled.title.length).toBeGreaterThan(0);
+        expect(
+          compiled.diagnostics.some((entry) => entry.severity === 'error'),
+        ).toBe(false);
       });
     });
   });
