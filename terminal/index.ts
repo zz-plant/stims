@@ -29,16 +29,17 @@ source:
 flags:
   --loop              loop the file continuously
   --play              play audio through speakers (requires ffplay)
-  --normalize         auto-gain for consistent visual intensity
-  --vibe              time-of-day + idle-aware intensity and theme
+  --no-normalize      disable auto-gain (on by default)
+  --no-vibe           disable time-of-day + idle-aware behavior (on by default)
+  --no-autocycle      disable mode rotation (20s by default)
   --serve <port>      broadcast ANSI frames over HTTP on :port
-  --mode <n>          start mode (0:waveform 1:spectrum 2:orbit 3:bars 4:combo)
-  --autocycle <s>     rotate modes every N seconds
-  --theme <name>      color theme: ${themeNames().join(' ')}
+  --mode <n>          lock to one mode (0:waveform 1:spectrum 2:orbit 3:bars 4:combo)
+  --autocycle <s>     rotate modes every N seconds (default: 20s)
+  --theme <name>      color theme (default: ocean): ${themeNames().join(' ')}
   --tmux              optimise for tmux (no screen clear, compact width)
   --compact           narrow pane layout (60 cols, orbit+bars only)
   --minimal           hide particles, beat flash, and status bar
-  --fps <n>           target FPS (default: 30, tmux: 15, compact: 12)
+  --fps <n>           target FPS (default: 20, tmux: 15, compact: 10)
   -h, --help          show this help
 
 controls:
@@ -58,8 +59,8 @@ const compactMode = process.argv.includes('--compact');
 const minimalMode = process.argv.includes('--minimal');
 const listenMode = process.argv.includes('--listen');
 const playAudio = process.argv.includes('--play');
-const normalizeMode = process.argv.includes('--normalize');
-const vibeMode = process.argv.includes('--vibe');
+const normalizeMode = !process.argv.includes('--no-normalize');
+const vibeMode = !process.argv.includes('--no-vibe');
 
 let servePort = 0;
 const serveArg = process.argv.indexOf('--serve');
@@ -67,13 +68,15 @@ if (serveArg !== -1 && process.argv[serveArg + 1]) {
   servePort = parseInt(process.argv[serveArg + 1]!, 10) || 9393;
 }
 
-let startMode = 0;
+let startMode = 2;
+let autocycleSecs = process.argv.includes('--no-autocycle') ? 0 : 20;
+
 const modeArg = process.argv.indexOf('--mode');
 if (modeArg !== -1 && process.argv[modeArg + 1]) {
   startMode = parseInt(process.argv[modeArg + 1]!, 10) || 0;
+  if (!process.argv.includes('--autocycle')) autocycleSecs = 0;
 }
 
-let autocycleSecs = 0;
 const cycleArg = process.argv.indexOf('--autocycle');
 if (cycleArg !== -1 && process.argv[cycleArg + 1]) {
   autocycleSecs = Math.max(1, parseInt(process.argv[cycleArg + 1]!, 10) || 0);
@@ -88,7 +91,7 @@ if (fpsArg !== -1 && process.argv[fpsArg + 1]) {
   );
 }
 
-let themeName = '';
+let themeName = 'ocean';
 const themeArg = process.argv.indexOf('--theme');
 if (themeArg !== -1 && process.argv[themeArg + 1]) {
   themeName = process.argv[themeArg + 1]!;
@@ -103,8 +106,8 @@ if (
   setRenderOptions({ tmux: true });
   if (!targetFps) targetFps = 15;
 }
-if (compactMode && !targetFps) targetFps = 12;
-if (!targetFps) targetFps = 30;
+if (compactMode && !targetFps) targetFps = 10;
+if (!targetFps) targetFps = 20;
 
 let youtubeTemp: string | null = null;
 let title = '';
