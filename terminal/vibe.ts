@@ -5,7 +5,7 @@ export interface VibeState {
 }
 
 export function createVibeState(): VibeState & { update: (now: Date) => void } {
-  let lastKeypress = Date.now();
+  const lastKeypress = Date.now();
   const state: VibeState = { intensity: 0.5, particleBoost: 1, hueShift: 0 };
 
   const update = (now: Date) => {
@@ -36,6 +36,8 @@ export function createVibeState(): VibeState & { update: (now: Date) => void } {
   return { ...state, update };
 }
 
-export function onInputActivity(vibe: VibeState & { update: (now: Date) => void }) {
+export function onInputActivity(
+  vibe: VibeState & { update: (now: Date) => void },
+) {
   vibe.intensity = Math.max(0.2, vibe.intensity - 0.15);
 }

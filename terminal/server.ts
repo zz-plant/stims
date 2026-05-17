@@ -9,7 +9,10 @@ export function startServer(port: number, onConnect: () => void) {
       const upgraded = srv.upgrade(req);
       if (upgraded) return;
       return new Response(latestAnsi, {
-        headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' },
+        headers: {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*',
+        },
       });
     },
     websocket: {

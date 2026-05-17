@@ -114,7 +114,7 @@ function drawWaveform(canvas: Canvas, state: EffectState, frame: AudioFrame) {
     const idx = Math.floor((x / width) * wf.length);
     const sample = wf[Math.min(idx, wf.length - 1)] ?? 0;
     const y = Math.round(centerY + sample * height * 0.42);
-    const val = (0.5 + Math.abs(sample) * 0.5) * state.normalizeGain;
+    const val = 0.5 + Math.abs(sample) * 0.5;
     const c = color(theme, (200 + (x / width) * 60) % 360, val);
     canvas.setPixel(x, y, c.r, c.g, c.b);
   }
@@ -134,9 +134,9 @@ function drawSpectrum(canvas: Canvas, state: EffectState, frame: AudioFrame) {
       const v = spec[Math.min(i * binsPerBar + j, spec.length - 1)] ?? 0;
       if (v > maxBin) maxBin = v;
     }
-    const barH = Math.round(Math.max(0, Math.min(1, maxBin * state.normalizeGain)) * height * 0.9);
+    const barH = Math.round(Math.max(0, Math.min(1, maxBin)) * height * 0.9);
     const hue = ((i / barCount) * 300 + 180) % 360;
-    const c = color(theme, hue, Math.min(1, maxBin * 1.5 * state.normalizeGain));
+    const c = color(theme, hue, Math.min(1, maxBin * 1.5));
     const bx = i * barWidth;
     for (let y = height - 1; y >= height - barH; y--) {
       for (let dx = 0; dx < barWidth - 1; dx++) {
@@ -194,7 +194,7 @@ function drawBars(canvas: Canvas, state: EffectState, frame: AudioFrame) {
   const barW = Math.floor(barArea / 3) - 2;
 
   for (let i = 0; i < 3; i++) {
-    const barH = Math.round(Math.max(1, (bands[i] ?? 0) * state.normalizeGain * height * 0.9));
+    const barH = Math.round(Math.max(1, (bands[i] ?? 0) * height * 0.9));
     const bx = startX + i * (barW + 2);
     const val = (bands[i] ?? 0) * 0.8 + 0.2;
     const c = color(theme, colors[i]!, val);

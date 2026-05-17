@@ -24,7 +24,8 @@ export function normalizeFrame(n: Normalizer, rms: number, deltaMs: number) {
   n.raw = rms;
   const coeff = Math.exp(-Math.min(deltaMs, 2000) / n.windowMs);
   const smoothedRms = n.raw * (1 - coeff) + Math.max(n.raw, 0.001) * coeff;
-  const desired = smoothedRms > 0.0001 ? n.target / Math.max(smoothedRms, 0.0001) : 1;
+  const desired =
+    smoothedRms > 0.0001 ? n.target / Math.max(smoothedRms, 0.0001) : 1;
   const targetGain = Math.min(n.maxGain, Math.max(0.5, desired));
   const gainCoeff = Math.exp(-deltaMs / 500);
   n.gain = n.gain * gainCoeff + targetGain * (1 - gainCoeff);

@@ -1,5 +1,7 @@
 import { createAudioPipeline } from './audio';
 import { createEffectState, nextMode, renderFrame } from './effects';
+import { detectListenSetup, streamAudioFrames } from './listen';
+import { createNormalizer, normalizeFrame } from './normalize';
 import {
   autoDetectTmux,
   Canvas,
@@ -7,13 +9,11 @@ import {
   restoreTerminal,
   setRenderOptions,
 } from './renderer';
+import { broadcastFrame, startServer, stopServer } from './server';
 import { getTheme, themeNames } from './themes';
+import { createVibeState, onInputActivity } from './vibe';
 import { readWav, readWavFromStdin, type WavFile } from './wav';
 import { cleanupYoutube, downloadYoutube } from './youtube';
-import { detectListenSetup, streamAudioFrames } from './listen';
-import { createNormalizer, normalizeFrame } from './normalize';
-import { startServer, broadcastFrame, stopServer } from './server';
-import { createVibeState, onInputActivity } from './vibe';
 
 const HELP = `
 stims-terminal — vibe-coding audio visualizer
@@ -82,7 +82,10 @@ if (cycleArg !== -1 && process.argv[cycleArg + 1]) {
 let targetFps = 0;
 const fpsArg = process.argv.indexOf('--fps');
 if (fpsArg !== -1 && process.argv[fpsArg + 1]) {
-  targetFps = Math.max(4, Math.min(60, parseInt(process.argv[fpsArg + 1]!, 10) || 0));
+  targetFps = Math.max(
+    4,
+    Math.min(60, parseInt(process.argv[fpsArg + 1]!, 10) || 0),
+  );
 }
 
 let themeName = '';
@@ -110,13 +113,18 @@ let playerProc: ReturnType<typeof Bun.spawn> | null = null;
 async function loadSource(): Promise<{ path: string; title: string }> {
   if (ytIdx !== -1) {
     const url = process.argv[ytIdx + 1];
-    if (!url) { console.error('Error: --yt requires a URL'); process.exit(1); }
+    if (!url) {
+      console.error('Error: --yt requires a URL');
+      process.exit(1);
+    }
     try {
       const result = await downloadYoutube(url);
       youtubeTemp = result.wavPath;
       return { path: result.wavPath, title: result.title };
     } catch (err) {
-      console.error(`  Error: ${err instanceof Error ? err.message : String(err)}`);
+      console.error(
+        `  Error: ${err instanceof Error ? err.message : String(err)}`,
+      );
       process.exit(1);
     }
   }
@@ -128,7 +136,10 @@ async function loadSource(): Promise<{ path: string; title: string }> {
     console.log(HELP);
     process.exit(1);
   }
-  return { path: filePath, title: filePath.replace(/^.*\//, '').replace(/\.wav$/i, '') };
+  return {
+    path: filePath,
+    title: filePath.replace(/^.*\//, '').replace(/\.wav$/i, ''),
+  };
 }
 
 const source = await loadSource();
@@ -141,9 +152,14 @@ const isStreaming = source.path === ':listen:';
 let wav: WavFile | null = null;
 if (!isStreaming) {
   try {
-    wav = source.path === ':stdin:' ? await readWavFromStdin() : readWav(source.path);
+    wav =
+      source.path === ':stdin:'
+        ? await readWavFromStdin()
+        : readWav(source.path);
   } catch (err) {
-    console.error(`  Error: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(
+      `  Error: ${err instanceof Error ? err.message : String(err)}`,
+    );
     process.exit(1);
   }
   process.stdout.write(
@@ -151,7 +167,10 @@ if (!isStreaming) {
   );
 } else {
   const setup = detectListenSetup();
-  if (setup.command.length === 0) { console.error(`\n${setup.hint}\n`); process.exit(1); }
+  if (setup.command.length === 0) {
+    console.error(`\n${setup.hint}\n`);
+    process.exit(1);
+  }
   process.stdout.write(`  ${setup.hint}\n`);
   if (playAudio) console.log('  Note: --play has no effect with --listen');
 }
@@ -162,7 +181,9 @@ if (playAudio && wav) {
       ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'quiet', source.path],
       { stdout: 'null', stderr: 'null' },
     );
-  } catch { /* ffplay not found */ }
+  } catch {
+    /* ffplay not found */
+  }
 }
 
 const normalizer = normalizeMode ? createNormalizer() : null;
@@ -190,7 +211,9 @@ state.modeIndex = Math.min(startMode, 4);
 const canvas = new Canvas(term);
 
 if (servePort) {
-  startServer(servePort, () => process.stdout.write(`  Viewer connected :${servePort}\n`));
+  startServer(servePort, () =>
+    process.stdout.write(`  Viewer connected :${servePort}\n`),
+  );
 }
 
 let running = true;
@@ -198,7 +221,10 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 
 function stop() {
   running = false;
-  if (timer) { clearTimeout(timer); timer = null; }
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
 }
 
 process.on('SIGINT', stop);
@@ -252,11 +278,24 @@ if (isStreaming) {
     if (!running) return;
     const start = Date.now();
     const { value: rawFrame, done } = await frameGen.next();
-    if (done) { stop(); return; }
+    if (done) {
+      stop();
+      return;
+    }
     const frame = rawFrame as any;
     applyVibe(frame);
     if (normalizer) {
       normalizeFrame(normalizer, frame.rms, frameMs);
+      frame.bands = {
+        bass: frame.bands.bass * normalizer.gain,
+        mid: frame.bands.mid * normalizer.gain,
+        treble: frame.bands.treble * normalizer.gain,
+      };
+      frame.smoothedBands = {
+        bass: frame.smoothedBands.bass * normalizer.gain,
+        mid: frame.smoothedBands.mid * normalizer.gain,
+        treble: frame.smoothedBands.treble * normalizer.gain,
+      };
       state.normalizeGain = normalizer.gain;
     }
     if (vibe) state.vibeIntensity = vibe.intensity;
@@ -281,11 +320,28 @@ if (isStreaming) {
         pipeline = createAudioPipeline(wav, now);
         frame = pipeline.nextFrame(now);
       }
-      if (!frame) { stop(); return; }
+      if (!frame) {
+        stop();
+        return;
+      }
     }
     applyVibe(frame);
     if (normalizer) {
       normalizeFrame(normalizer, frame.rms, frameMs);
+      frame.bands = {
+        bass: frame.bands.bass * normalizer.gain,
+        mid: frame.bands.mid * normalizer.gain,
+        treble: frame.bands.treble * normalizer.gain,
+      };
+      frame.smoothedBands = {
+        bass: frame.smoothedBands.bass * normalizer.gain,
+        mid: frame.smoothedBands.mid * normalizer.gain,
+        treble: frame.smoothedBands.treble * normalizer.gain,
+      };
+      for (let i = 0; i < frame.spectrum.length; i++)
+        frame.spectrum[i] = (frame.spectrum[i] ?? 0) * normalizer.gain;
+      for (let i = 0; i < frame.waveform.length; i++)
+        frame.waveform[i] = (frame.waveform[i] ?? 0) * normalizer.gain;
       state.normalizeGain = normalizer.gain;
     }
     if (vibe) state.vibeIntensity = vibe.intensity;
@@ -299,17 +355,37 @@ if (isStreaming) {
 }
 
 function cleanup() {
-  if (isTTY) { try { process.stdin.setRawMode(false); } catch {} process.stdin.pause(); }
-  if (playerProc) { try { playerProc.kill(); } catch {} }
+  if (isTTY) {
+    try {
+      process.stdin.setRawMode(false);
+    } catch {}
+    process.stdin.pause();
+  }
+  if (playerProc) {
+    try {
+      playerProc.kill();
+    } catch {}
+  }
   stopServer();
-  if (running) { restoreTerminal(); process.stdout.write('\n'); }
+  if (running) {
+    restoreTerminal();
+    process.stdout.write('\n');
+  }
   if (youtubeTemp) cleanupYoutube(youtubeTemp);
 }
 
-process.on('beforeExit', () => { cleanup(); process.exit(0); });
+process.on('beforeExit', () => {
+  cleanup();
+  process.exit(0);
+});
 
 const exitPromise = new Promise<void>((resolve) => {
-  const check = setInterval(() => { if (!running) { clearInterval(check); resolve(); } }, 50);
+  const check = setInterval(() => {
+    if (!running) {
+      clearInterval(check);
+      resolve();
+    }
+  }, 50);
 });
 
 await exitPromise;
