@@ -986,6 +986,48 @@
       },
       "expectedFidelityClass": "partial",
       "visualEvidenceTier": "runtime"
+    },
+    {
+      "id": "phat-rovastar-eos-square-faces-v2",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "author": "Phat + Rovastar + Eo.S.",
+      "order": 42,
+      "file": "/milkdrop-presets/phat-rovastar-eos-square-faces-v2.milk",
+      "preview": true,
+      "tags": ["collection:cream-of-the-crop", "geometry", "preset"],
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime"
+    },
+    {
+      "id": "phat-zylot-eos-trippy-rotation",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "author": "Phat + Rovastar + Eo.S.",
+      "order": 43,
+      "file": "/milkdrop-presets/phat-zylot-eos-trippy-rotation.milk",
+      "preview": true,
+      "tags": ["collection:cream-of-the-crop", "geometry", "preset"],
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime"
     }
   ]
 }

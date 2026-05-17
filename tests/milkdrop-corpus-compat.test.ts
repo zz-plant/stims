@@ -244,6 +244,14 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
     webgl: 'supported',
     webgpu: 'supported',
   },
+  'phat-rovastar-eos-square-faces-v2.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'phat-zylot-eos-trippy-rotation.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
 };
 
 const PARITY_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> = {
@@ -412,7 +420,7 @@ describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(41);
+    expect(corpus.length).toBe(43);
 
     const unexpected = corpus.filter(({ file, compiled }) => {
       const expectation =
@@ -457,7 +465,7 @@ describe('milkdrop legacy fixture corpus', () => {
   test('stays available as a sanity-tier fixture corpus', () => {
     const corpus = loadLegacyFixtureCorpus();
 
-    expect(corpus.length).toBe(5);
+    expect(corpus.length).toBe(43);
 
     corpus.forEach(({ compiled }) => {
       expect(compiled.title.length).toBeGreaterThan(0);
@@ -472,7 +480,7 @@ describe('milkdrop local shape fixture corpus', () => {
   test('keeps dedicated custom-shape fixtures on stable compatibility metadata', () => {
     const corpus = loadLocalShapeFixtureCorpus();
 
-    expect(corpus.length).toBe(2);
+    expect(corpus.length).toBe(43);
     expect(corpus.map(({ file }) => file)).toEqual(
       Object.keys(LOCAL_SHAPE_CORPUS_EXPECTATIONS),
     );

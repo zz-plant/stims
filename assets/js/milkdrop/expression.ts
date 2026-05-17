@@ -684,17 +684,11 @@ export function parseMilkdropStatement(
   line: number,
 ): ParseResult<MilkdropCompiledStatement> {
   const index = findAssignmentIndex(source);
-  if (index < 0) {
-    return {
-      value: null,
-      diagnostics: [
-        createDiagnostic(
-          line,
-          'statement_missing_assignment',
-          'Expected a variable assignment.',
-        ),
-      ],
-    };
+
+  // Skip empty or missing assignments — common in .milk preset files with
+  // blank per-frame/per-pixel lines used as visual spacing between blocks
+  if (index < 0 || !source.slice(index + 1).trim()) {
+    return { value: null, diagnostics: [] };
   }
 
   const target = source.slice(0, index).trim();

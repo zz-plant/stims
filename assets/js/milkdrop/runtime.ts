@@ -374,6 +374,25 @@ export function createMilkdropExperience({
       throw new Error('Runtime preview capture requires a browser document.');
     }
 
+    // Try static preview first — instant if available
+    let useStatic = false;
+    try {
+      const staticUrl = `/milkdrop-presets/previews/${presetId}.png`;
+      const response = await fetch(staticUrl, { method: 'HEAD' });
+      useStatic = response.ok;
+    } catch {
+      // Static preview not available, fall through
+    }
+    if (useStatic) {
+      return {
+        imageUrl: `/milkdrop-presets/previews/${presetId}.png`,
+        actualBackend: null,
+        updatedAt: Date.now(),
+        error: null,
+        source: 'runtime-snapshot',
+      };
+    }
+
     previewCaptureRevision += 1;
     const revision = previewCaptureRevision;
     const previewHost = document.createElement('div');
