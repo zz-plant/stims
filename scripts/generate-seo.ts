@@ -104,15 +104,17 @@ export const buildOgSvg = ({
   accentEnd: string;
 }) => `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="${accentStart}" />
-      <stop offset="100%" stop-color="${accentEnd}" />
+    <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.08)" />
+      <stop offset="50%" stop-color="rgba(0,0,0,0.48)" />
+      <stop offset="100%" stop-color="rgba(0,0,0,0.78)" />
     </linearGradient>
   </defs>
-  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#bg)" />
-  <circle cx="1060" cy="520" r="210" fill="rgba(255,255,255,0.08)" />
-  <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.08)" />
-  <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.18)" />
+  <image href="bg-visualizer.png" width="${ogWidth}" height="${ogHeight}" preserveAspectRatio="xMidYMid slice" />
+  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#overlay)" />
+  <circle cx="1060" cy="520" r="210" fill="rgba(255,255,255,0.04)" />
+  <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.04)" />
+  <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.1)" />
   <rect x="88" y="86" width="${chip ? '280' : '0'}" height="${chip ? '52' : '0'}" rx="26" fill="rgba(255,255,255,0.12)" />
   ${chip ? `<text x="116" y="120" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(chip)}</text>` : ''}
   <text x="88" y="${chip ? '206' : '152'}" font-size="34" fill="#d8e2ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(eyebrow)}</text>

@@ -1,14 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Stims">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#08131b" />
-      <stop offset="100%" stop-color="#1f5f66" />
+    <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.08)" />
+      <stop offset="50%" stop-color="rgba(0,0,0,0.48)" />
+      <stop offset="100%" stop-color="rgba(0,0,0,0.78)" />
     </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)" />
-  <circle cx="1060" cy="520" r="210" fill="rgba(255,255,255,0.08)" />
-  <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.08)" />
-  <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.18)" />
+  <image href="bg-visualizer.png" width="1200" height="630" preserveAspectRatio="xMidYMid slice" />
+  <rect width="1200" height="630" fill="url(#overlay)" />
+  <circle cx="1060" cy="520" r="210" fill="rgba(255,255,255,0.04)" />
+  <circle cx="180" cy="120" r="130" fill="rgba(255,255,255,0.04)" />
+  <circle cx="920" cy="140" r="56" fill="rgba(255,255,255,0.1)" />
   <rect x="88" y="86" width="280" height="52" rx="26" fill="rgba(255,255,255,0.12)" />
   <text x="116" y="120" font-size="28" fill="#f4f7ff" font-family="Space Grotesk, Arial, sans-serif">Instant visuals</text>
   <text x="88" y="206" font-size="34" fill="#d8e2ff" font-family="Space Grotesk, Arial, sans-serif">Music-reactive in the browser</text>
