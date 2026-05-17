@@ -204,60 +204,78 @@ export function describePresetMood(entry: PresetCatalogEntry) {
 export function buildStarterPresets(entries: PresetCatalogEntry[]) {
   const usedPresetIds = new Set<string>();
   const starterPresets: StarterPreset[] = [];
-  const definitions = [
+
+  // Score entries by fidelity so we prefer certified presets
+  const scoreFidelity = (entry: PresetCatalogEntry) => {
+    const fc = entry.visualCertification?.fidelityClass;
+    if (fc === 'exact') return 4;
+    if (fc === 'near-exact') return 3;
+    if (fc === 'partial') return 2;
+    return 1;
+  };
+
+  // Pick the best entry matching a tag predicate
+  const pickByTag = (predicate: (tag: string) => boolean) => {
+    const candidates = entries
+      .filter((e) => !usedPresetIds.has(e.id) && (e.tags ?? []).some(predicate))
+      .sort(
+        (a, b) =>
+          scoreFidelity(b) - scoreFidelity(a) ||
+          (a.historyIndex ?? 999) - (b.historyIndex ?? 999),
+      );
+    return candidates[0] ?? null;
+  };
+
+  const categories = [
     {
-      key: 'bright-pulse',
-      label: 'Bright pulse',
-      summary: 'Fast payoff with glowing motion and clean contrast.',
-      matchers: [/glowsticks/u, /(sun|flare|star)/u],
+      key: 'popular',
+      label: 'Popular pick',
+      summary: 'A community favorite with broad appeal.',
+      tagPredicate: (tag: string) => tag === 'popular',
     },
     {
-      key: 'space-drift',
+      key: 'classic',
+      label: 'Classic MilkDrop',
+      summary: 'A grounded first pick from the classic MilkDrop lineage.',
+      tagPredicate: (tag: string) =>
+        /^collection:/.test(tag) && /classic/i.test(tag),
+    },
+    {
+      key: 'lasers',
+      label: 'Bright & sharp',
+      summary: 'Glowing motion with clean contrast and geometry.',
+      tagPredicate: (tag: string) =>
+        ['glowsticks', 'lasers', 'bright', 'geometry'].includes(tag),
+    },
+    {
+      key: 'space',
       label: 'Space drift',
       summary: 'Slower cosmic motion with more room to breathe.',
-      matchers: [/(parallel universe|quasar|ether|mars|radiation)/u],
-    },
-    {
-      key: 'sharp-geometry',
-      label: 'Sharp geometry',
-      summary: 'Hard edges, grids, and satisfying symmetry.',
-      matchers: [/(cube|matrix|square|trace|line)/u],
-    },
-    {
-      key: 'classic-rush',
-      label: 'Classic rush',
-      summary: 'A grounded first pick from the classic MilkDrop lineage.',
-      matchers: [/(happy drops|casino|classic milkdrop)/u],
+      tagPredicate: (tag: string) =>
+        ['space', 'moody', 'atmospheric'].includes(tag) ||
+        /space|cosmos/i.test(tag),
     },
   ];
 
-  definitions.forEach((definition) => {
-    const preset = entries.find((entry) => {
-      if (usedPresetIds.has(entry.id)) {
-        return false;
-      }
-      const index = buildPresetSearchIndex(entry);
-      return definition.matchers.some((matcher) => matcher.test(index));
-    });
-
-    if (!preset) {
-      return;
+  categories.forEach(({ key, label, summary, tagPredicate }) => {
+    const preset = pickByTag(tagPredicate);
+    if (preset) {
+      usedPresetIds.add(preset.id);
+      starterPresets.push({ key, label, summary, preset });
     }
-
-    usedPresetIds.add(preset.id);
-    starterPresets.push({ ...definition, preset });
   });
 
-  if (starterPresets.length > 0) {
-    return starterPresets;
+  // Fallback: pick the first remaining entry by order if any category missed
+  if (starterPresets.length === 0 && entries.length > 0) {
+    starterPresets.push({
+      key: 'start-here',
+      label: 'Start here',
+      summary: 'A great preset to begin with.',
+      preset: entries[0],
+    });
   }
 
-  return entries.slice(0, 3).map((preset, index) => ({
-    key: `starter-${preset.id}`,
-    label: ['First pick', 'Try next', 'Then go wide'][index] ?? 'Starter',
-    summary: 'A quick way in without overthinking it.',
-    preset,
-  }));
+  return starterPresets;
 }
 
 export function formatAudioSourceLabel(source: AudioSource | undefined | null) {
