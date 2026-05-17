@@ -20,60 +20,43 @@ export function ConfirmDialog({
   onCancel,
   children,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
     confirmRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCancel();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown as EventListener);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown as EventListener);
-    };
-  }, [onCancel]);
+  const handleClose = () => {
+    onCancel();
+  };
 
   return (
-    <>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: overlay click-to-dismiss for mouse users; keyboard users use Escape or Cancel button */}
-      <div className="stims-shell__confirm-overlay" onClick={onCancel}>
-        <div
-          className="stims-shell__confirm-dialog"
-          onClick={(event) => event.stopPropagation()}
-          role="alertdialog"
-          aria-modal="true"
-          aria-label={message}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              onConfirm();
-            }
-          }}
+    <dialog
+      ref={dialogRef}
+      className="stims-shell__confirm-dialog"
+      aria-label={message}
+      onClose={handleClose}
+    >
+      <h3>{message}</h3>
+      {details ? <p>{details}</p> : null}
+      {children}
+      <div className="stims-shell__confirm-actions">
+        <button type="button" className="cta-button" onClick={onCancel}>
+          {cancelLabel}
+        </button>
+        <button
+          ref={confirmRef}
+          type="button"
+          className="cta-button primary"
+          onClick={onConfirm}
         >
-          <h3>{message}</h3>
-          {details ? <p>{details}</p> : null}
-          {children}
-          <div className="stims-shell__confirm-actions">
-            <button type="button" className="cta-button" onClick={onCancel}>
-              {cancelLabel}
-            </button>
-            <button
-              ref={confirmRef}
-              type="button"
-              className="cta-button primary"
-              onClick={onConfirm}
-            >
-              {confirmLabel}
-            </button>
-          </div>
-        </div>
+          {confirmLabel}
+        </button>
       </div>
-    </>
+    </dialog>
   );
 }

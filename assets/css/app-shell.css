@@ -428,17 +428,6 @@ body[data-page="workspace"] {
 }
 
 /* Confirmation dialog styling */
-.stims-shell__confirm-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .stims-shell__confirm-dialog {
   background: var(--stims-panel-strong);
   border: 1px solid var(--stims-line-strong);
@@ -447,6 +436,11 @@ body[data-page="workspace"] {
   max-width: 420px;
   width: calc(100% - 48px);
   box-shadow: var(--stims-shadow);
+}
+
+.stims-shell__confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
 }
 
 .stims-shell__confirm-dialog h3 {
@@ -2683,11 +2677,13 @@ body[data-page="workspace"] {
   overflow: auto;
   padding-right: 4px;
   align-content: start;
+  scroll-snap-type: y proximity;
 }
 
 .stims-shell__preset-list > li {
   content-visibility: auto;
   contain-intrinsic-size: 220px;
+  scroll-snap-align: start;
 }
 
 /* When the browse panel is narrow (<520px), switch to 2 narrower columns */
