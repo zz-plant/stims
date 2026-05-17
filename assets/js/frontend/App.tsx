@@ -14,7 +14,7 @@ import {
   toggleElementFullscreen,
 } from './fullscreen.ts';
 import { NewHomePage } from './NewHomePage.tsx';
-import { useWorkspace, WorkspaceProvider } from './workspace-context.ts';
+import { useWorkspace, WorkspaceProvider } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import {
   WorkspaceStagePanel,

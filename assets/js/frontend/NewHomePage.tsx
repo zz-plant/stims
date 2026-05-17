@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
-import { useWorkspace } from './workspace-context.ts';
+import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import { PresetArtwork, PresetShelfSection } from './workspace-ui.tsx';
 

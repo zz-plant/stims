@@ -1,6 +1,6 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { WorkspaceProvider } from './workspace-context.ts';
+import { WorkspaceProvider } from './workspace-context.tsx';
 import {
   WorkspaceStagePanel,
   WorkspaceToast,

@@ -1,4 +1,4 @@
-import { useWorkspace } from './workspace-context.ts';
+import { useWorkspace } from './workspace-context.tsx';
 import { UiIcon } from './workspace-ui.tsx';
 
 export function StimsControlDock({

@@ -15,7 +15,7 @@ import {
   StimsRailActions,
   StimsStageFrame,
 } from './StimsStageFrame.tsx';
-import { useWorkspace } from './workspace-context.ts';
+import { useWorkspace } from './workspace-context.tsx';
 import {
   buildAppliedFilterSummary,
   describePresetMood,
