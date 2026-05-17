@@ -1252,7 +1252,19 @@ export function WorkspaceToolSheet({
       'keydown',
       handleKeyDown as unknown as EventListener,
     );
-    sheetElement?.focus();
+
+    // Focus the most useful element for the active panel.
+    // Defer by a frame to let the overlay mount its DOM first.
+    requestAnimationFrame(() => {
+      if (w.routeState.panel === 'browse') {
+        const searchEl = document.querySelector<HTMLElement>(
+          '.milkdrop-overlay__search',
+        );
+        (searchEl ?? sheetElement)?.focus();
+      } else {
+        sheetElement?.focus();
+      }
+    });
 
     return () => {
       sheetElement?.removeEventListener(
@@ -1260,7 +1272,7 @@ export function WorkspaceToolSheet({
         handleKeyDown as unknown as EventListener,
       );
     };
-  }, [w.updatePanel]);
+  }, [w.routeState.panel, w.updatePanel]);
 
   if (!panel) {
     return null;
