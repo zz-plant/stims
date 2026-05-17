@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-05-15",
+  "generatedAt": "2026-05-17",
   "certification": "bundled",
   "corpusTier": "bundled",
   "presets": [
@@ -377,6 +377,27 @@
         "actualBackend": null,
         "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
+    },
+    {
+      "id": "eos-heater-core-c",
+      "title": "Eo.S. - Heater Core C",
+      "author": "Eo.S.",
+      "order": 5,
+      "file": "/milkdrop-presets/eos-heater-core-c.milk",
+      "preview": true,
+      "tags": ["collection:cream-of-the-crop", "geometry", "preset"],
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
+      },
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime"
     }
   ]
 }
