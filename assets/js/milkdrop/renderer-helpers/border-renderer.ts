@@ -3,6 +3,8 @@ import {
   BufferGeometry,
   DoubleSide,
   Float32BufferAttribute,
+  LineBasicMaterial,
+  Line as ThreeLine,
   MeshBasicMaterial,
   Group as ThreeGroup,
   Mesh as ThreeMesh,
@@ -27,6 +29,40 @@ function getBorderGeometryKey(
   outerBorderSize: number | null,
 ) {
   return `${border.key}:${outerBorderSize ?? 'self'}:${border.size}`;
+}
+
+function buildBorderAccentLines(
+  border: MilkdropBorderVisual,
+): Float32Array {
+  // Styled borders get a small decorative accent at each corner.
+  // The accent extends from the corner inward at 45 degrees.
+  const outerRadius = border.key === 'outer' ? 1 : 0.88;
+  const innerRadius = border.key === 'outer' ? 1 - border.size : 0.88 - border.size;
+  const accentSize = border.size * 0.5;
+  const z = 0.3;
+
+  // Each accent is a line from the corner going inward at 45 degrees.
+  // 4 corners × 2 vertices × 3 coords = 24
+  const data = new Float32Array(24);
+  const corners = [
+    { x: outerRadius, y: outerRadius, dx: -1, dy: -1 }, // top-right
+    { x: -outerRadius, y: outerRadius, dx: 1, dy: -1 },  // top-left
+    { x: -outerRadius, y: -outerRadius, dx: 1, dy: 1 },  // bottom-left
+    { x: outerRadius, y: -outerRadius, dx: -1, dy: 1 },  // bottom-right
+  ];
+
+  for (let i = 0; i < 4; i++) {
+    const c = corners[i]!;
+    const offset = i * 6;
+    data[offset] = c.x;
+    data[offset + 1] = c.y;
+    data[offset + 2] = z;
+    data[offset + 3] = c.x + c.dx * accentSize;
+    data[offset + 4] = c.y + c.dy * accentSize;
+    data[offset + 5] = z;
+  }
+
+  return data;
 }
 
 function buildBorderGeometry(
@@ -134,6 +170,27 @@ function createBorderGroupObjectRaw(
   );
   fill.position.z = 0.3;
   group.add(fill);
+
+  if (border.styled) {
+    const accentData = buildBorderAccentLines(border);
+    const accentGeo = new BufferGeometry();
+    accentGeo.setAttribute('position', new Float32BufferAttribute(accentData, 3));
+    const accentMat = new LineBasicMaterial({
+      transparent: true,
+      opacity: border.alpha * alphaMultiplier * 0.6,
+      color: 0xffffff,
+      linewidth: 1,
+    });
+    accentMat.color.setRGB(
+      border.color.r * 1.3,
+      border.color.g * 1.3,
+      border.color.b * 1.3,
+    );
+    const accentLine = new ThreeLine(accentGeo, accentMat);
+    accentLine.position.z = 0.31;
+    group.add(accentLine);
+  }
+
   return group;
 }
 

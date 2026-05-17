@@ -90,7 +90,7 @@ function color(
 
 function beatColor(theme: Theme | null): { r: number; g: number; b: number } {
   if (theme) {
-    const { h, s, l } = applyTheme(theme, 0, 0.8);
+    const { h, l } = applyTheme(theme, 0, 0.8);
     return hslToRgb(h, 0.3, l * 0.3);
   }
   return hslToRgb(300, 0.8, 0.3);
