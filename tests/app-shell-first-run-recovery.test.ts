@@ -66,10 +66,14 @@ describe('Workspace shell first-run and recovery regression', () => {
       /const missingRequestedPreset = Boolean\([\s\S]*?catalogReady[\s\S]*?\);/u,
     );
     expect(sessionHookSource).toContain(
-      'const shareableActivePresetId = resolvePresetId(',
+      'const requestedPresetId = routePresetId',
     );
-    expect(sessionHookSource).toContain('if (!shareableActivePresetId) {');
-    expect(sessionHookSource).toContain('presetId: shareableActivePresetId');
+    expect(sessionHookSource).toContain(
+      'resolvePresetId(engineSnapshot?.catalogEntries ?? [], routePresetId)',
+    );
+    expect(sessionHookSource).toContain(
+      'pendingPresetIdRef.current = requestedPresetId',
+    );
     expect(toastHookSource).toContain(
       'const unresolvedRequestedPreset = routeState.presetId',
     );

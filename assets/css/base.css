@@ -13,6 +13,12 @@ body {
 }
 
 :root {
+  --stims-white-04: var(--stims-white-04);
+  --stims-white-08: var(--stims-white-08);
+  --stims-white-05: var(--stims-white-05);
+  --stims-border-08: var(--stims-border-08);
+  --stims-shadow-34: var(--stims-shadow-34);
+  --stims-muted-35: var(--stims-muted-35);
   --app-height: 100vh;
   --app-width: 100vw;
   --tv-scale-multiplier: 1;
@@ -44,6 +50,24 @@ body {
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-full: 9999px;
+
+  /* Milkdrop overlay theme colors */
+  --milkdrop-overlay-bg-primary: rgba(11, 18, 30, 0.96);
+  --milkdrop-overlay-bg-secondary: rgba(8, 12, 22, 0.94);
+  --milkdrop-overlay-bg-tertiary: rgba(8, 12, 22, 0.96);
+  --milkdrop-overlay-overlay: rgba(12, 18, 32, 0.9);
+  --milkdrop-overlay-overlay-2: rgba(12, 18, 22, 0.92);
+  --milkdrop-overlay-border: rgba(164, 194, 255, 0.18);
+  --milkdrop-overlay-blur: 18px;
+  --milkdrop-overlay-blur-lg: 22px;
+  --milkdrop-overlay-shadow: rgba(0, 0, 0, 0.42);
+  --milkdrop-overlay-shadow-lg: rgba(0, 0, 0, 0.48);
+
+  /* Overlay component borders */
+  --milkdrop-overlay-button: rgba(108, 176, 255, 0.22);
+  --milkdrop-overlay-button-border: rgba(108, 176, 255, 0.4);
+  --milkdrop-active-indicator: rgba(108, 176, 255, 0.22);
+  --milkdrop-active-indicator-border: rgba(108, 176, 255, 0.4);
 
   scrollbar-color: color-mix(in srgb, var(--accent-color) 55%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);
@@ -611,7 +635,7 @@ body {
   border-radius: 18px;
   background: rgba(6, 11, 22, 0.8);
   box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.34),
+    0 12px 28px var(--stims-shadow-34),
     inset 0 1px 0 rgba(255, 248, 234, 0.05);
 }
 
@@ -846,7 +870,7 @@ body {
   margin-top: 6px;
   padding: 6px 11px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 165, 180, 0.35);
+  border: 1px solid var(--stims-muted-35);
   background: rgba(148, 165, 180, 0.08);
   color: rgba(233, 251, 255, 0.94);
   font-size: 0.82rem;
@@ -894,7 +918,7 @@ body {
   margin-top: 6px;
   padding: 6px 11px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 165, 180, 0.35);
+  border: 1px solid var(--stims-muted-35);
   background: rgba(148, 165, 180, 0.08);
   color: rgba(233, 251, 255, 0.94);
   font-size: 0.82rem;
@@ -1109,7 +1133,7 @@ body {
   text-align: center;
   line-height: 1.4;
   box-shadow:
-    0 24px 54px rgba(0, 0, 0, 0.34),
+    0 24px 54px var(--stims-shadow-34),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transform: translateX(-50%);
 }
@@ -1183,7 +1207,7 @@ body {
   border: 1px solid rgba(208, 226, 255, 0.14);
   box-shadow:
     0 36px 80px rgba(0, 0, 0, 0.52),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 1px 0 var(--stims-white-05);
   backdrop-filter: blur(20px) saturate(150%);
   color: #e9fbff;
   overscroll-behavior: contain;
@@ -1232,7 +1256,7 @@ body {
   grid-area: steps;
   margin: 0;
   padding: 14px 0 0 20px;
-  border-top: 1px solid rgba(208, 226, 255, 0.08);
+  border-top: 1px solid var(--stims-border-08);
   padding-left: 20px;
   color: rgba(233, 251, 255, 0.82);
   display: grid;
@@ -1256,7 +1280,7 @@ body {
   align-items: center;
   margin: 0;
   padding-top: 14px;
-  border-top: 1px solid rgba(208, 226, 255, 0.08);
+  border-top: 1px solid var(--stims-border-08);
 }
 
 .rendering-overlay__button {
@@ -1269,7 +1293,7 @@ body {
   border-radius: 14px;
   border: 1px solid rgba(208, 226, 255, 0.16);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 44%),
+    linear-gradient(180deg, var(--stims-white-05), transparent 44%),
     rgba(12, 22, 36, 0.74);
   color: #e9fbff;
   text-decoration: none;
@@ -1298,7 +1322,7 @@ body {
   border: 1px solid rgba(208, 226, 255, 0.12);
   padding: 7px 11px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -1321,7 +1345,7 @@ body {
   border-radius: 22px;
   padding: 14px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 44%),
+    linear-gradient(180deg, var(--stims-white-05), transparent 44%),
     rgba(8, 16, 28, 0.78);
 }
 
@@ -1336,11 +1360,7 @@ body {
   min-height: 220px;
   border-radius: 16px;
   background:
-    radial-gradient(
-      circle at 25% 40%,
-      rgba(148, 165, 180, 0.35),
-      transparent 45%
-    ),
+    radial-gradient(circle at 25% 40%, var(--stims-muted-35), transparent 45%),
     radial-gradient(
       circle at 70% 60%,
       rgba(161, 124, 106, 0.4),
@@ -1409,7 +1429,7 @@ body {
     rgba(12, 18, 24, 0.88)
   );
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 18px 42px var(--stims-shadow-34);
   border-radius: 18px;
   backdrop-filter: blur(16px) saturate(120%);
   z-index: 1100;
@@ -1482,13 +1502,13 @@ body {
 }
 
 .control-panel::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
+  background: linear-gradient(180deg, var(--stims-white-04), transparent);
   opacity: 0.7;
 }
 
 .control-panel::after {
   inset: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--stims-white-04);
   border-radius: 14px;
 }
 
@@ -1524,16 +1544,16 @@ body {
   margin: 0 0 8px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--stims-white-08);
+  background: var(--stims-white-04);
 }
 
 .control-panel__first-steps {
   margin: 0 0 8px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--stims-white-08);
+  background: var(--stims-white-04);
 }
 
 .control-panel__quickstart-spotlight {
@@ -1560,7 +1580,7 @@ body {
   padding: 12px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
 }
 
 .control-panel__shortcut-actions {
@@ -1590,7 +1610,7 @@ body {
   min-width: 44px;
   border: 1px solid rgba(148, 165, 180, 0.26);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
   color: rgba(233, 251, 255, 0.86);
   font-size: 0.74rem;
   font-family: inherit;
@@ -1626,7 +1646,7 @@ body {
   font-size: 0.68rem;
   letter-spacing: 0.01em;
   color: rgba(233, 251, 255, 0.9);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--stims-white-05);
 }
 
 .control-panel__advanced-helper {
@@ -1639,8 +1659,8 @@ body {
   margin: 0 0 8px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--stims-white-08);
+  background: var(--stims-white-04);
 }
 
 .control-panel__tips {
@@ -1659,7 +1679,7 @@ body {
   gap: 12px;
   margin: 0;
   padding: 10px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--stims-white-08);
 }
 
 .control-panel__row--primary {
@@ -1748,7 +1768,7 @@ body {
 
 .control-panel__details {
   margin: 8px 0 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--stims-white-08);
   padding-top: 8px;
 }
 
@@ -1772,7 +1792,7 @@ body {
 }
 
 .control-panel__row--advanced-toggle {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--stims-white-08);
 }
 
 .control-panel__advanced-toggle {
@@ -1780,7 +1800,7 @@ body {
   text-align: left;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
   color: inherit;
   padding: 10px 12px;
   display: grid;
@@ -1824,7 +1844,7 @@ body {
   line-height: 1.4;
   padding: 12px 14px 12px 38px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
   border: 1px solid rgba(148, 165, 180, 0.28);
   position: relative;
   box-shadow: none;
@@ -2006,7 +2026,7 @@ body {
   max-width: 100%;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
   border: 1px solid rgba(148, 165, 180, 0.24);
   color: #9bf3ff;
   font-size: 0.85rem;
@@ -2037,7 +2057,7 @@ body {
 }
 
 .control-panel__chip:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--stims-white-08);
   border-color: rgba(148, 165, 180, 0.6);
   transform: none;
 }
@@ -2095,7 +2115,7 @@ body {
   outline-offset: 2px;
   box-shadow:
     0 0 18px rgba(161, 124, 106, 0.4),
-    0 0 10px rgba(148, 165, 180, 0.35);
+    0 0 10px var(--stims-muted-35);
 }
 
 .control-panel input[type="range"],
@@ -2104,7 +2124,7 @@ body {
   width: 100%;
   height: 44px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
   border: 1px solid rgba(148, 165, 180, 0.36);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
   cursor: pointer;
@@ -2117,7 +2137,7 @@ body {
   outline-offset: 3px;
   box-shadow:
     0 0 18px rgba(161, 124, 106, 0.4),
-    0 0 10px rgba(148, 165, 180, 0.35);
+    0 0 10px var(--stims-muted-35);
 }
 
 .control-panel input[type="range"]::-webkit-slider-runnable-track,
@@ -2165,7 +2185,7 @@ body {
   padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid rgba(148, 165, 180, 0.2);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--stims-white-04);
   font-weight: 600;
   letter-spacing: 0.01em;
   color: #e9fbff;
@@ -2180,7 +2200,7 @@ body {
   outline-offset: 2px;
   box-shadow:
     0 0 18px rgba(161, 124, 106, 0.4),
-    0 0 10px rgba(148, 165, 180, 0.35);
+    0 0 10px var(--stims-muted-35);
 }
 
 @media (max-width: 720px) {
@@ -2347,7 +2367,7 @@ body {
     min-height: 40px;
     padding: 8px 10px;
     border-radius: 10px;
-    border-color: rgba(148, 165, 180, 0.35);
+    border-color: var(--stims-muted-35);
     background: rgba(148, 165, 180, 0.08);
     box-shadow: none;
     font-size: 0.82rem;
@@ -2808,7 +2828,7 @@ body {
     linear-gradient(180deg, rgba(7, 12, 22, 0.98), rgba(9, 15, 28, 0.98));
   box-shadow:
     0 32px 72px rgba(0, 0, 0, 0.46),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    inset 0 1px 0 var(--stims-white-04);
 }
 
 .preflight-panel::before {
@@ -2826,7 +2846,7 @@ body {
 .preflight-panel::after {
   inset: 10px;
   border-radius: 20px;
-  border-color: rgba(208, 226, 255, 0.08);
+  border-color: var(--stims-border-08);
 }
 
 .preflight-panel.control-panel--floating {
@@ -2878,9 +2898,9 @@ body {
 .preflight-status {
   padding: 14px 16px;
   border-radius: 18px;
-  border: 1px solid rgba(208, 226, 255, 0.08);
+  border: 1px solid var(--stims-border-08);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 44%),
+    linear-gradient(180deg, var(--stims-white-04), transparent 44%),
     rgba(10, 17, 29, 0.76);
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.16);
 }
@@ -2894,12 +2914,12 @@ body {
       rgba(124, 232, 255, 0.12),
       transparent 36%
     ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 44%),
+    linear-gradient(180deg, var(--stims-white-05), transparent 44%),
     rgba(10, 18, 30, 0.92);
 }
 
 .preflight-status--supporting {
-  border-color: rgba(208, 226, 255, 0.08);
+  border-color: var(--stims-border-08);
   background: rgba(8, 14, 28, 0.64);
 }
 
@@ -2909,7 +2929,7 @@ body {
   justify-content: flex-start;
   margin-top: 6px;
   padding-top: 14px;
-  border-top: 1px solid rgba(208, 226, 255, 0.08);
+  border-top: 1px solid var(--stims-border-08);
 }
 
 .preflight-dialog .control-panel__actions .cta-button.primary {
@@ -2975,17 +2995,17 @@ body {
 .preflight-panel__issues-container {
   margin-top: 2px;
   padding: 14px 16px;
-  border: 1px solid rgba(208, 226, 255, 0.08);
+  border: 1px solid var(--stims-border-08);
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 46%),
+    linear-gradient(180deg, var(--stims-white-04), transparent 46%),
     rgba(8, 14, 28, 0.66);
 }
 
 .preflight-panel__details {
   margin: 2px 0 0;
   padding: 14px 16px;
-  border: 1px solid rgba(208, 226, 255, 0.08);
+  border: 1px solid var(--stims-border-08);
   border-radius: 18px;
   background: rgba(8, 14, 28, 0.54);
 }
@@ -3031,7 +3051,7 @@ body {
   margin-top: 10px;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(208, 226, 255, 0.08);
+  border: 1px solid var(--stims-border-08);
   background: rgba(8, 14, 28, 0.72);
 }
 
@@ -3169,6 +3189,21 @@ body.tv-mode .control-panel input {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   box-shadow: 0 18px 44px rgba(2, 6, 23, 0.45);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.milkdrop-overlay__toggle:hover {
+  transform: scale(1.04);
+  box-shadow: 0 18px 44px rgba(2, 6, 23, 0.55);
+}
+
+.milkdrop-overlay__toggle:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline-offset: 2px;
 }
 
 .milkdrop-overlay__osd {
@@ -3183,6 +3218,15 @@ body.tv-mode .control-panel input {
   background: rgba(8, 14, 28, 0.88);
   box-shadow: 0 18px 44px rgba(2, 6, 23, 0.42);
   backdrop-filter: blur(18px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.milkdrop-overlay:not(.is-open) .milkdrop-overlay__osd {
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
 }
 
 .milkdrop-overlay__osd-title {
@@ -3216,6 +3260,18 @@ body.tv-mode .control-panel input {
   color: #e2e8f0;
   box-shadow: 0 24px 68px rgba(2, 6, 23, 0.55);
   backdrop-filter: blur(24px);
+  transform: translateY(8px);
+  opacity: 0;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.milkdrop-overlay.is-open .milkdrop-overlay__panel {
+  display: grid;
+  transform: translateY(0);
+  opacity: 1;
 }
 
 :root[data-focused-session="launch"] .milkdrop-overlay__panel,
@@ -3664,6 +3720,19 @@ body.tv-mode .control-panel input {
   overflow: auto;
   padding-right: 4px;
   scroll-snap-type: y proximity;
+  scroll-behavior: smooth;
+}
+
+@media (max-height: 700px) {
+  .milkdrop-overlay__browse {
+    max-height: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .milkdrop-overlay__browse {
+    max-height: 200px;
+  }
 }
 
 .milkdrop-overlay__browse-section {
@@ -3735,6 +3804,20 @@ body.tv-mode .control-panel input {
   padding: 2px 0;
   border: 0;
   background: transparent;
+  border-radius: 6px;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.milkdrop-overlay__preset-launch:hover {
+  color: #f8fafc;
+}
+
+.milkdrop-overlay__preset-launch:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 .milkdrop-overlay__preset-header {
@@ -3904,7 +3987,7 @@ body.tv-mode .control-panel input {
   border: 1px solid rgba(125, 211, 252, 0.18);
   background: rgba(7, 12, 22, 0.94);
   color: rgba(226, 232, 240, 0.92);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 20px 40px var(--stims-shadow-34);
 }
 
 .milkdrop-overlay__shortcut-hud p {
@@ -3947,7 +4030,7 @@ body.tv-mode .control-panel input {
   border: 1px solid rgba(125, 211, 252, 0.18);
   background: rgba(6, 12, 20, 0.88);
   color: #f8fafc;
-  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 22px 40px var(--stims-shadow-34);
   text-align: center;
 }
 
@@ -4606,7 +4689,7 @@ body {
     0 18px 32px rgba(0, 0, 0, 0.46),
     0 1px 0 rgba(255, 255, 255, 0.18) inset,
     0 -1px 0 rgba(11, 16, 28, 0.72) inset,
-    1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    1px 0 0 var(--stims-white-08) inset,
     -1px 0 0 rgba(11, 16, 28, 0.42) inset;
 }
 
@@ -4702,8 +4785,8 @@ body {
 }
 
 .milkdrop-overlay__tool-tabs button[data-active="true"] {
-  background: rgba(108, 176, 255, 0.22);
-  border-color: rgba(108, 176, 255, 0.4);
+  background: var(--milkdrop-active-indicator);
+  border-color: var(--milkdrop-active-indicator-border);
 }
 
 .milkdrop-overlay__tools-panel {
@@ -4720,12 +4803,16 @@ body {
   max-width: min(36rem, calc(100vw - 2rem));
   padding: 0.9rem 1rem;
   border-radius: 18px;
-  border: 1px solid rgba(164, 194, 255, 0.18);
+  border: 1px solid var(--milkdrop-overlay-border);
   background:
-    linear-gradient(180deg, rgba(8, 12, 22, 0.96), rgba(12, 18, 32, 0.9)),
-    rgba(8, 12, 22, 0.92);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(18px);
+    linear-gradient(
+      180deg,
+      var(--milkdrop-overlay-bg-primary),
+      var(--milkdrop-overlay-overlay-2)
+    ),
+    var(--milkdrop-overlay-bg-secondary);
+  box-shadow: 0 24px 48px var(--milkdrop-overlay-shadow);
+  backdrop-filter: blur(var(--milkdrop-overlay-blur));
 }
 
 .milkdrop-overlay__osd-title {
@@ -5612,7 +5699,7 @@ body {
       rgba(255, 255, 255, 0.02) calc(100% - 1px)
     );
   background-size: 72px 72px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.34), transparent 78%);
+  mask-image: linear-gradient(180deg, var(--stims-shadow-34), transparent 78%);
   opacity: 0.35;
 }
 
@@ -5681,7 +5768,7 @@ body {
   opacity: 0.34;
   mix-blend-mode: screen;
   box-shadow:
-    0 26px 56px rgba(0, 0, 0, 0.34),
+    0 26px 56px var(--stims-shadow-34),
     0 0 0 1px rgba(124, 232, 255, 0.12);
   filter: saturate(1.18) contrast(1.08) brightness(0.92);
   transform: rotate(-4deg) scale(0.96);
@@ -5855,7 +5942,7 @@ body {
   border-radius: 18px;
   border-color: rgba(208, 226, 255, 0.12);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 40%),
+    linear-gradient(180deg, var(--stims-white-05), transparent 40%),
     rgba(5, 10, 18, 0.92);
   box-shadow: 0 22px 44px rgba(0, 0, 0, 0.42);
 }
@@ -5942,7 +6029,7 @@ body {
   border-radius: 999px;
   border-color: rgba(124, 232, 255, 0.2);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 40%),
+    linear-gradient(180deg, var(--stims-white-05), transparent 40%),
     linear-gradient(135deg, rgba(6, 12, 22, 0.9), rgba(8, 15, 27, 0.92));
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.36);
   letter-spacing: 0.12em;
@@ -6020,7 +6107,7 @@ body {
   position: relative;
   gap: 1rem;
   padding: 18px 20px 14px;
-  border-bottom-color: rgba(208, 226, 255, 0.08);
+  border-bottom-color: var(--stims-border-08);
 }
 
 .milkdrop-overlay__header::after {
@@ -6126,7 +6213,7 @@ body {
   gap: 0.85rem;
   padding: 14px;
   border-radius: 22px;
-  border-color: rgba(208, 226, 255, 0.08);
+  border-color: var(--stims-border-08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 54%),
     rgba(10, 17, 29, 0.76);
@@ -6336,7 +6423,7 @@ body {
   .milkdrop-overlay__editor-actions
   button {
   min-height: 40px;
-  border-color: rgba(208, 226, 255, 0.08);
+  border-color: var(--stims-border-08);
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -6391,7 +6478,7 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 32%),
     rgba(6, 11, 19, 0.94);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 var(--stims-white-04),
     0 24px 48px rgba(0, 0, 0, 0.22);
 }
 
@@ -6567,7 +6654,7 @@ body {
     rgba(10, 15, 27, 0.76)
   );
   border-color: rgba(164, 194, 255, 0.12);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 18px 40px var(--stims-shadow-34);
 }
 
 :root[data-focused-session="live"] .active-toy-nav__content {
@@ -6609,7 +6696,7 @@ body {
   padding: 0.72rem 0.95rem;
   border-color: rgba(124, 232, 255, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    linear-gradient(180deg, var(--stims-white-04), transparent 42%),
     linear-gradient(135deg, rgba(6, 12, 22, 0.88), rgba(8, 15, 27, 0.9));
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32);
 }

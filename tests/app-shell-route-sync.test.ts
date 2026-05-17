@@ -34,7 +34,9 @@ describe('Workspace shell route sync regression', () => {
       'utf8',
     );
 
-    expect(appSource).toContain(`data-has-toast={toast ? 'true' : undefined}`);
+    expect(appSource).toContain(
+      `data-has-toast={w.toast ? 'true' : undefined}`,
+    );
     expect(cssSource).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell\[data-has-toast="true"\]\s*\{\s*padding-bottom:\s*calc\(96px \+ env\(safe-area-inset-bottom\)\);/u,
     );

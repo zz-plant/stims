@@ -1065,7 +1065,7 @@ ob_border=1
 
     expect(fill?.material).toBeInstanceOf(MeshBasicMaterial);
     expect(fill?.material?.opacity).toBeCloseTo(0.8, 6);
-    expect(outerBorder?.children).toHaveLength(1);
+    expect(outerBorder?.children).toHaveLength(2);
   });
 
   test('keeps zero-alpha border fills invisible on webgpu batches', async () => {

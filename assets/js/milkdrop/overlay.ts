@@ -132,6 +132,9 @@ export class MilkdropOverlay {
       'M: toggle overlay',
       'F / 1-5: favorite and rate',
       'H / W: transition and wave mode',
+      'T: browse presets',
+      '↑ / ↓ / A / S: browse navigation',
+      'Escape: close browse panel',
       '?: shortcut help',
     ].forEach((item) => {
       const row = document.createElement('div');

@@ -247,8 +247,17 @@ function syncBorderGroupObject(
     return createBorderGroupObjectRaw(border, outerBorderSize, alphaMultiplier);
   }
 
+  const childCount = existing.children.length;
+
+  // Accept 1 (fill only) or 2 (fill + styled accent line).
+  // Any other count means the group structure changed and needs full rebuild.
+  if (childCount !== 1 && childCount !== 2) {
+    helpers.disposeObject(existing);
+    return createBorderGroupObjectRaw(border, outerBorderSize, alphaMultiplier);
+  }
+
   const fill = existing.children[0];
-  if (!(fill instanceof ThreeMesh) || existing.children.length !== 1) {
+  if (!(fill instanceof ThreeMesh)) {
     helpers.disposeObject(existing);
     return createBorderGroupObjectRaw(border, outerBorderSize, alphaMultiplier);
   }
@@ -260,6 +269,31 @@ function syncBorderGroupObject(
     border.alpha * alphaMultiplier,
   );
   fill.position.z = 0.3;
+
+  // Sync styled accent line if present (childCount === 2)
+  if (childCount === 2) {
+    const accentLine = existing.children[1];
+    if (accentLine instanceof ThreeLine) {
+      const accentData = buildBorderAccentLines(border);
+      const geo = accentLine.geometry;
+      const pos = geo.getAttribute('position') as
+        | Float32BufferAttribute
+        | undefined;
+      if (pos) {
+        pos.array.set(accentData);
+        pos.needsUpdate = true;
+      }
+      if (accentLine.material instanceof LineBasicMaterial) {
+        accentLine.material.opacity = border.alpha * alphaMultiplier * 0.6;
+        accentLine.material.color.setRGB(
+          border.color.r * 1.3,
+          border.color.g * 1.3,
+          border.color.b * 1.3,
+        );
+      }
+    }
+  }
+
   return existing;
 }
 
