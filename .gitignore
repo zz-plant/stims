@@ -24,3 +24,6 @@ yarn-error.log*
 
 # Local Codex session state
 .codex/
+.playwright-mcp/
+.sisyphus/
+opencode.json
