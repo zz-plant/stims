@@ -348,7 +348,7 @@ export function buildMainWaveFrame({
   );
   const centerX = ((state.wave_x ?? 0.5) - 0.5) * 2;
   const centerY = (0.5 - (state.wave_y ?? 0.5)) * 2;
-  const scale = clamp(0.12 + (state.wave_scale ?? 1) * 0.2, 0.08, 1.4);
+  const scale = clamp((state.wave_scale ?? 1) * 0.45, 0.08, 1.4);
   const smoothing = clamp(state.wave_smoothing ?? 0.72, 0, 0.98);
   const mystery = normalizeProjectMMystery(state.wave_mystery ?? 0);
   const mysteryPhase = mystery * Math.PI;
