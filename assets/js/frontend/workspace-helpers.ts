@@ -277,6 +277,15 @@ export function formatAudioSourceLabel(source: AudioSource | undefined | null) {
 
 export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
   const visualCertification = entry.visualCertification;
+  const fidelityTier = entry.fidelityTier;
+
+  if (fidelityTier === 'semantic-only') {
+    return 'Parsed (not measured)';
+  }
+
+  if (fidelityTier === 'unmeasured') {
+    return 'No evidence';
+  }
 
   if (
     visualCertification?.status === 'certified' &&
@@ -313,6 +322,15 @@ export function formatPresetSupportLabel(entry: PresetCatalogEntry) {
 
 export function formatPresetSupportNote(entry: PresetCatalogEntry) {
   const visualCertification = entry.visualCertification;
+  const fidelityTier = entry.fidelityTier;
+
+  if (fidelityTier === 'semantic-only') {
+    return 'Compiler parses this preset, but visual verification is not yet recorded.';
+  }
+
+  if (fidelityTier === 'unmeasured') {
+    return 'No compatibility evidence has been collected for this preset yet.';
+  }
 
   if (
     visualCertification?.status === 'certified' &&
@@ -371,6 +389,7 @@ export function mapRuntimeCatalogEntry(
         : undefined,
     lastOpenedAt: entry.lastOpenedAt,
     expectedFidelityClass: entry.fidelityClass,
+    fidelityTier: entry.fidelityTier,
     visualCertification: entry.visualCertification,
     supports: {
       webgl: entry.supports.webgl.status === 'supported',

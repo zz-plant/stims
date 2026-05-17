@@ -40,6 +40,7 @@ function createCatalogEntry(
     },
     fidelityClass: 'fallback',
     visualEvidenceTier: 'compile',
+    fidelityTier: 'semantic-only',
     semanticSupport: {
       fidelityClass: 'fallback',
       evidence: {

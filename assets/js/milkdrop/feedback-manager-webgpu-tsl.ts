@@ -94,6 +94,7 @@ type ShaderBinaryOperator =
   | '*'
   | '/'
   | '%'
+  | '^'
   | '<'
   | '<='
   | '>'
@@ -325,6 +326,8 @@ function applyShaderBinaryNode(
       return shaderValueFromNode(lhs.div(max(abs(rhs), 0.000001)), kind);
     case '%':
       return shaderValueFromNode(createModNode(lhs, rhs), kind);
+    case '^':
+      return shaderValueFromNode(pow(lhs, rhs), kind);
     case '<':
     case '<=':
     case '>':

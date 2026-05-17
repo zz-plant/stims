@@ -3009,7 +3009,13 @@
   },
   {
     "file": "261-compshader-noisevol_lq.milk",
-    "diagnostics": [],
+    "diagnostics": [
+      {
+        "code": "preset_shader_volume_approximation",
+        "field": null,
+        "severity": "warning"
+      }
+    ],
     "normalizedPrograms": {
       "init": [],
       "perFrame": [],
@@ -3019,7 +3025,9 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [],
+      "warnings": [
+        "Texture layer shader control uses tex3D/texture3D with volume sampler \"simplex\" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering."
+      ],
       "featuresUsed": [
         "base-globals",
         "borders",
@@ -3066,16 +3074,30 @@
       },
       "backends": {
         "webgl": {
-          "status": "supported",
-          "evidence": []
+          "status": "partial",
+          "evidence": [
+            {
+              "code": "volume-sampler-gap",
+              "feature": null,
+              "scope": "backend",
+              "status": "partial"
+            }
+          ]
         },
         "webgpu": {
-          "status": "supported",
-          "evidence": []
+          "status": "partial",
+          "evidence": [
+            {
+              "code": "volume-sampler-gap",
+              "feature": null,
+              "scope": "backend",
+              "status": "partial"
+            }
+          ]
         }
       },
       "parity": {
-        "fidelityClass": "exact",
+        "fidelityClass": "near-exact",
         "backendDivergence": [],
         "ignoredFields": [],
         "blockedConstructs": [],

@@ -10,6 +10,10 @@ import {
 } from '../utils/device-detect';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
+  FallbackState,
+  transition as validateTransition,
+} from './fallback-state.ts';
+import {
   getRendererCapabilities,
   type RendererBackend,
   rememberRendererFallback,
@@ -25,6 +29,7 @@ import {
 import { deriveRendererPlan } from './renderer-plan.ts';
 import { shouldPreferWebGLForKnownCompatibilityGaps } from './renderer-query-override.ts';
 import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
+import { createRenderScale, type RenderScale } from './renderer-types.ts';
 import { ensureWebGL } from './webgl-check';
 import { createWebGLRenderer } from './webgl-renderer';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
@@ -47,7 +52,7 @@ export type RendererInitConfig = {
   exposure?: number;
   maxPixelRatio?: number;
   alpha?: boolean;
-  renderScale?: number;
+  renderScale?: number | RenderScale;
   adaptiveMaxPixelRatioMultiplier?: number;
   adaptiveRenderScaleMultiplier?: number;
   adaptiveDensityMultiplier?: number;
@@ -83,25 +88,38 @@ export async function initRenderer(
     exposure: 1,
     maxPixelRatio: isMobileUserAgent ? 1.1 : 1.5,
     alpha: false,
-    renderScale: 1,
+    renderScale: createRenderScale(1),
   },
 ): Promise<RendererInitResult | null> {
+  let currentState = FallbackState.Initial;
+
   if (!ensureWebGL()) {
+    currentState = validateTransition(
+      currentState,
+      FallbackState.ErrorNoBackend,
+    );
     return null;
   }
+
+  currentState = validateTransition(currentState, FallbackState.ProbingWebgl);
 
   const {
     antialias = true,
     exposure = 1,
     maxPixelRatio = isMobileUserAgent ? 1.1 : 1.5,
     alpha = false,
-    renderScale = 1,
+    renderScale = createRenderScale(1),
     adaptiveMaxPixelRatioMultiplier = 1,
     adaptiveRenderScaleMultiplier = 1,
     adaptiveDensityMultiplier = 1,
     webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
     forceRetryCapabilities = false,
   } = config;
+
+  const effectiveRenderScale: RenderScale =
+    typeof renderScale === 'number'
+      ? createRenderScale(renderScale)
+      : renderScale;
 
   const finalize = (
     renderer: WebGLRenderer | WebGPURenderer,
@@ -117,7 +135,7 @@ export async function initRenderer(
       platformFamily: deviceEnvironment.platformFamily,
     });
     const effectivePixelRatio = Math.min(
-      (window.devicePixelRatio || 1) * renderScale,
+      (window.devicePixelRatio || 1) * effectiveRenderScale,
       adaptiveMaxPixelRatio,
       backendPixelRatioCap,
     );
@@ -132,7 +150,7 @@ export async function initRenderer(
       adapter,
       device,
       maxPixelRatio,
-      renderScale,
+      renderScale: effectiveRenderScale,
       adaptiveMaxPixelRatioMultiplier,
       adaptiveRenderScaleMultiplier,
       adaptiveDensityMultiplier,
@@ -177,9 +195,18 @@ export async function initRenderer(
     hasWebGL: true,
   });
 
+  currentState = validateTransition(currentState, FallbackState.ProbingWebgpu);
+
   if (plan.backend === 'webgpu' && capabilities?.adapter) {
     const adapter = capabilities.adapter;
     let device = capabilities.device;
+    const initAbortController = new AbortController();
+
+    const teardownAbort = () => {
+      if (!initAbortController.signal.aborted) {
+        initAbortController.abort();
+      }
+    };
 
     if (!device) {
       try {
@@ -189,6 +216,7 @@ export async function initRenderer(
           'WebGPU device initialization timed out.',
         );
       } catch (error) {
+        teardownAbort();
         return fallbackToWebGL(
           getRendererFallbackReasonMessage(
             RENDERER_FALLBACK_REASON_CODES.noDevice,
@@ -199,6 +227,7 @@ export async function initRenderer(
     }
 
     if (!device) {
+      teardownAbort();
       return fallbackToWebGL('WebGPU device request returned no device.');
     }
 
@@ -230,7 +259,22 @@ export async function initRenderer(
           );
         } catch (error) {
           disposeTimedOutRenderer();
-          void initPromise.then(disposeTimedOutRenderer).catch(() => {});
+          currentState = validateTransition(
+            currentState,
+            FallbackState.RendererTimeout,
+          );
+          teardownAbort();
+          void initPromise
+            .then(() => {
+              if (!initAbortController.signal.aborted) {
+                disposeTimedOutRenderer();
+              }
+            })
+            .catch(() => {});
+          currentState = validateTransition(
+            currentState,
+            FallbackState.RendererReady,
+          );
           return fallbackToWebGL(
             getRendererFallbackReasonMessage(
               RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
@@ -239,8 +283,14 @@ export async function initRenderer(
           );
         }
       }
+      currentState = validateTransition(
+        currentState,
+        FallbackState.RendererReady,
+      );
+      teardownAbort();
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
+      teardownAbort();
       return fallbackToWebGL(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuRendererCreationFailed,
@@ -250,6 +300,7 @@ export async function initRenderer(
     }
   }
 
+  currentState = validateTransition(currentState, FallbackState.RendererReady);
   return fallbackToWebGL(
     plan.reasonMessage ??
       getRendererFallbackReasonMessage(

@@ -1,4 +1,5 @@
 import {
+  deriveFidelityTier,
   getConservativeBundledCatalogProjectionDefaults,
   supportsFromCompiled,
 } from './catalog-store-analysis';
@@ -136,6 +137,7 @@ export function toCatalogEntry(
     featuresUsed: compiled.ir.compatibility.featureAnalysis.featuresUsed,
     warnings: compiled.ir.compatibility.warnings,
     supports: supportsFromCompiled(compiled),
+    fidelityTier: deriveFidelityTier(source.id, { isCompiled: true }),
     fidelityClass:
       bundledDefaults?.fidelityClass ??
       options.expectedFidelityClass ??
@@ -196,6 +198,7 @@ export function toUnavailableBundledCatalogEntry(
         recommendedFallback: 'webgl',
       },
     },
+    fidelityTier: deriveFidelityTier(entry.id),
     fidelityClass: 'fallback',
     visualEvidenceTier: 'none',
     semanticSupport: {
@@ -340,6 +343,9 @@ export function toBundledCatalogEntryFromManifest(
     featuresUsed: [],
     warnings,
     supports,
+    fidelityTier: deriveFidelityTier(entry.id, {
+      isCompiled: hasCompatibilityMetadata,
+    }),
     fidelityClass,
     visualEvidenceTier,
     semanticSupport,

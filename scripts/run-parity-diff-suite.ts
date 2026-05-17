@@ -22,7 +22,7 @@ type RunParityDiffSuiteOptions = {
   strict: boolean;
 };
 
-type SuitePresetResult = {
+export type SuitePresetResult = {
   presetId: string;
   title: string;
   status:
@@ -117,7 +117,7 @@ function latestStimsArtifactForPreset(
     )[0];
 }
 
-function suiteResultRank(result: SuitePresetResult) {
+export function suiteResultRank(result: SuitePresetResult) {
   switch (result.status) {
     case 'backend-mismatch':
       return 0;
@@ -132,7 +132,7 @@ function suiteResultRank(result: SuitePresetResult) {
   }
 }
 
-function compareSuiteResults(
+export function compareSuiteResults(
   left: SuitePresetResult,
   right: SuitePresetResult,
 ) {
@@ -190,6 +190,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
       stimsArtifact.files.image,
     );
     if (!stimsImagePath || !fs.existsSync(stimsImagePath)) {
+      const resolvedPath = stimsImagePath ?? '<null>';
       results.push({
         presetId: preset.id,
         title: preset.title,
@@ -201,7 +202,10 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         projectmImagePath,
         requiredBackend: preset.capture.requiredBackend,
         actualBackend: stimsArtifact.capture?.backend ?? null,
-        error: `Missing Stims image for artifact "${stimsArtifact.id}".`,
+        error:
+          `Missing Stims capture image for preset "${preset.id}" (artifact "${stimsArtifact.id}"). ` +
+          `Expected file not found at "${resolvedPath}". ` +
+          `Re-capture with: bun run scripts/capture-visual-reference-suite.ts --preset "${preset.id}"`,
       });
       continue;
     }
@@ -318,6 +322,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         actualBackend,
       });
     } catch (error) {
+      const rawMessage = error instanceof Error ? error.message : String(error);
       results.push({
         presetId: preset.id,
         title: preset.title,
@@ -329,7 +334,9 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         projectmImagePath,
         requiredBackend: preset.capture.requiredBackend,
         actualBackend,
-        error: error instanceof Error ? error.message : String(error),
+        error:
+          `Diff failed for preset "${preset.id}" while comparing Stims image "${stimsImagePath}" ` +
+          `against projectM reference "${projectmImagePath}": ${rawMessage}`,
       });
     }
   }
@@ -384,11 +391,17 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
 
 if (import.meta.main) {
   try {
-    const result = await runParityDiffSuite(parseArgs(process.argv.slice(2)));
+    const options = parseArgs(process.argv.slice(2));
+    const result = await runParityDiffSuite(options);
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : String(error);
     usage();
-    console.error(error instanceof Error ? error.message : String(error));
+    console.error(
+      `Parity diff suite failed: ${rawMessage}\n` +
+        `Verify the artifact directory contains Stims captures and/or projectM reference images. ` +
+        `Check individual suite reports in <output>/suite/ for per-preset details.`,
+    );
     process.exit(1);
   }
 }

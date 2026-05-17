@@ -5,6 +5,7 @@ import {
   parseMilkdropShaderStatement,
 } from '../assets/js/milkdrop/shader-ast.ts';
 import {
+  classifyTex3dSamplerEquivalence,
   isMilkdropVolumeShaderSamplerName as isVolumeSamplerName,
   normalizeMilkdropShaderSamplerName,
 } from '../assets/js/milkdrop/shader-samplers.ts';
@@ -257,12 +258,60 @@ describe('milkdrop shader sampler aliases', () => {
       expect(
         compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
       ).not.toBeNull();
-      expect(compiled.diagnostics).toEqual([]);
-      expect(compiled.ir.compatibility.warnings).toEqual([]);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-        'supported',
-      );
+      expect(compiled.diagnostics).toEqual([
+        {
+          severity: 'warning',
+          code: 'preset_shader_volume_approximation',
+          message: expect.stringContaining('volume sampler'),
+        },
+      ]);
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        expect.stringContaining('no true browser equivalent'),
+      ]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     }
+  });
+
+  test('classifies tex3D volume sampler usage as not-equivalent with measured diagnostic coverage', () => {
+    expect(classifyTex3dSamplerEquivalence('3d', 'simplex')).toBe(
+      'not-equivalent',
+    );
+    expect(classifyTex3dSamplerEquivalence('2d', 'simplex')).toBe(
+      'semantic-supported',
+    );
+    expect(classifyTex3dSamplerEquivalence('3d', 'noise')).toBe(
+      'not-equivalent',
+    );
+    expect(classifyTex3dSamplerEquivalence('3d', 'main')).toBe(
+      'semantic-supported',
+    );
+    expect(classifyTex3dSamplerEquivalence(null, 'simplex')).toBe(
+      'semantic-supported',
+    );
+
+    const compiled = compileMilkdropPresetSource(
+      `title=Volume Classification
+comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
+      { id: 'volume-classification' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
+    expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
+      '3d',
+    );
+    expect(compiled.diagnostics).toEqual([
+      {
+        severity: 'warning',
+        code: 'preset_shader_volume_approximation',
+        message: expect.stringContaining('volume sampler'),
+      },
+    ]);
+    const volumeDiag = compiled.diagnostics.find(
+      (d) => d.code === 'preset_shader_volume_approximation',
+    );
+    expect(volumeDiag).not.toBeUndefined();
+    expect(volumeDiag?.message).toContain('no true browser equivalent');
   });
 });

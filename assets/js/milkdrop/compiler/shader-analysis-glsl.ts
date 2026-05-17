@@ -80,6 +80,9 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         treb: 'signalTreb',
         treb_att: 'signalTreb',
         treble: 'signalTreb',
+        bassatt: 'signalBass',
+        midatt: 'signalMid',
+        trebleatt: 'signalTreb',
         beat: 'signalBeat',
         beat_pulse: 'signalBeatPulse',
         progress: 'signalTime',
@@ -138,6 +141,9 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       // Emit saturating OR via a+b-a*b to keep values in [0,1] when both operands are truthy.
       if (op === '||') {
         return `(${left} + ${right} - ${left} * ${right})`;
+      }
+      if (op === '^') {
+        return `pow(${left}, ${right})`;
       }
       return `(${left} ${glslOp} ${right})`;
     },

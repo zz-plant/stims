@@ -17,6 +17,7 @@ import {
 } from './backend-behavior';
 import { createMilkdropRendererAdapterSceneOwner } from './renderer-adapter-scene.tsx';
 import {
+  applyBlendModeToGroup,
   BACKGROUND_GEOMETRY,
   clearGroup,
   disposeObject,
@@ -318,6 +319,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   >;
   private webgpuDescriptorPlan: MilkdropWebGpuDescriptorPlan | null = null;
   private readonly webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags;
+  private static lineThicknessLogged = new Set<'webgl' | 'webgpu'>();
 
   constructor({
     scene,
@@ -379,6 +381,17 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.blendMotionVectorGroup.add(this.blendProceduralMotionVectors);
     this.root.add(this.blendMotionVectorGroup);
     this.batcher?.attach(this.root);
+
+    if (!ThreeMilkdropAdapter.lineThicknessLogged.has(backend)) {
+      ThreeMilkdropAdapter.lineThicknessLogged.add(backend);
+      if (typeof console !== 'undefined' && 'debug' in console) {
+        console.debug(
+          backend === 'webgpu'
+            ? 'line: WebGPU shader-quad variable-width'
+            : 'line: WebGL 1px fixed-width (4 offset passes)',
+        );
+      }
+    }
 
     if (
       this.behavior.supportsFeedbackPass &&
@@ -464,6 +477,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
             target,
             wave.additive,
           );
+          if (wave.blendMode) {
+            applyBlendModeToGroup(synced, wave.blendMode);
+          }
         }
         return synced;
       },
@@ -682,6 +698,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
           nextAlphaMultiplier,
         );
         synced.renderOrder = getMilkdropPassRenderOrder(target, shape.additive);
+        if (shape.blendMode) {
+          applyBlendModeToGroup(synced, shape.blendMode);
+        }
         return synced;
       },
     });

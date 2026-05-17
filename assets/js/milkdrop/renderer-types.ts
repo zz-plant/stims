@@ -43,6 +43,7 @@ export type MilkdropPolyline = {
 export type MilkdropWaveVisual = MilkdropPolyline & {
   drawMode: 'line' | 'dots';
   additive: boolean;
+  blendMode?: 'subtractive' | 'multiplicative';
   pointSize: number;
   spectrum?: boolean;
 };
@@ -67,6 +68,7 @@ export type MilkdropShapeVisual = {
   secondaryColor?: MilkdropColor | null;
   borderColor: MilkdropColor;
   additive: boolean;
+  blendMode?: 'subtractive' | 'multiplicative';
   thickOutline: boolean;
 };
 

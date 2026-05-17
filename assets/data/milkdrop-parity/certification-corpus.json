@@ -28,11 +28,12 @@
       "file": "eos-glowsticks-v2-03-music.milk",
       "fixtureRoot": "public/milkdrop-presets",
       "corpusGroup": "bundled-shipped",
-      "sourceFamily": "external-pack",
+      "sourceFamily": "stims-bundled",
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
-      "strata": ["waveform", "glowsticks", "external-pack"],
-      "selectionReason": "Popular bundled external-pack preset with recognizable visual output."
+      "strata": ["feedback", "classic-milkdrop", "glowsticks"],
+      "selectionReason": "Popular bundled external-pack preset with recognizable visual output.",
+      "webgpuCertificationStatus": "certified-both"
     },
     {
       "id": "rovastar-parallel-universe",
@@ -40,11 +41,12 @@
       "file": "rovastar-parallel-universe.milk",
       "fixtureRoot": "public/milkdrop-presets",
       "corpusGroup": "bundled-shipped",
-      "sourceFamily": "external-pack",
+      "sourceFamily": "stims-bundled",
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
-      "strata": ["feedback", "lasers", "external-pack"],
-      "selectionReason": "Bundled external-pack preset with strong feedback-driven divergence risk."
+      "strata": ["lasers", "classic-milkdrop", "cream-of-the-crop"],
+      "selectionReason": "Bundled external-pack preset with strong feedback-driven divergence risk.",
+      "webgpuCertificationStatus": "certified-both"
     },
     {
       "id": "eos-phat-cubetrace-v2",
@@ -52,11 +54,12 @@
       "file": "eos-phat-cubetrace-v2.milk",
       "fixtureRoot": "public/milkdrop-presets",
       "corpusGroup": "bundled-shipped",
-      "sourceFamily": "external-pack",
+      "sourceFamily": "stims-bundled",
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
-      "strata": ["geometry", "shapes", "external-pack"],
-      "selectionReason": "Bundled external-pack preset with shape-heavy geometry."
+      "strata": ["geometry", "classic-milkdrop", "cream-of-the-crop"],
+      "selectionReason": "Bundled external-pack preset with shape-heavy geometry.",
+      "webgpuCertificationStatus": "certified-both"
     },
     {
       "id": "krash-rovastar-cerebral-demons-stars",
@@ -64,11 +67,12 @@
       "file": "krash-rovastar-cerebral-demons-stars.milk",
       "fixtureRoot": "public/milkdrop-presets",
       "corpusGroup": "bundled-shipped",
-      "sourceFamily": "external-pack",
+      "sourceFamily": "stims-bundled",
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
-      "strata": ["comets", "feedback", "external-pack"],
-      "selectionReason": "Bundled external-pack preset with star/comet motion and feedback."
+      "strata": ["comets", "classic-milkdrop", "cream-of-the-crop"],
+      "selectionReason": "Bundled external-pack preset with star/comet motion and feedback.",
+      "webgpuCertificationStatus": "certified-both"
     },
     {
       "id": "shape-legacy-max-slot-orbit",
@@ -80,7 +84,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["custom-shape", "legacy-slot", "shape-texture"],
-      "selectionReason": "Local shape fixture focused on legacy max-slot alias coverage."
+      "selectionReason": "Local shape fixture focused on legacy max-slot alias coverage.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "shape-projectm-dual-lattice",
@@ -92,7 +97,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["custom-shape", "borders", "shape-texture"],
-      "selectionReason": "Local shape fixture focused on projectM-style custom-shape behavior."
+      "selectionReason": "Local shape fixture focused on projectM-style custom-shape behavior.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-feedback-orientation-01",
@@ -104,7 +110,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["feedback", "video-echo", "orientation"],
-      "selectionReason": "Explicit orientation fixture for feedback/video-echo parity."
+      "selectionReason": "Explicit orientation fixture for feedback/video-echo parity.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-per-pixel-03",
@@ -116,7 +123,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["per-pixel", "per-frame"],
-      "selectionReason": "Representative per-pixel warp fixture."
+      "selectionReason": "Representative per-pixel warp fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-wave-02",
@@ -128,7 +136,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["custom-wave", "registers"],
-      "selectionReason": "Representative custom-wave fixture."
+      "selectionReason": "Representative custom-wave fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-shape-07",
@@ -140,7 +149,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["custom-shape", "borders"],
-      "selectionReason": "Representative custom-shape fixture."
+      "selectionReason": "Representative custom-shape fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-motion-04",
@@ -152,7 +162,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["motion-vectors", "per-frame"],
-      "selectionReason": "Representative motion-vector fixture."
+      "selectionReason": "Representative motion-vector fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-registers-05",
@@ -164,7 +175,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["registers", "per-frame"],
-      "selectionReason": "Representative register-heavy fixture."
+      "selectionReason": "Representative register-heavy fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-shader-08",
@@ -176,7 +188,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["shader-supported", "feedback"],
-      "selectionReason": "Representative shader-supported fixture."
+      "selectionReason": "Representative shader-supported fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-hybrid-09",
@@ -188,7 +201,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["hybrid", "custom-wave", "custom-shape", "video-echo"],
-      "selectionReason": "Hybrid fixture spanning multiple subsystems in one preset."
+      "selectionReason": "Hybrid fixture spanning multiple subsystems in one preset.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-legacy-wave-01",
@@ -200,7 +214,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["custom-wave", "legacy-slot"],
-      "selectionReason": "Legacy-slot custom-wave representative."
+      "selectionReason": "Legacy-slot custom-wave representative.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "parity-legacy-shape-01",
@@ -212,7 +227,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["custom-shape", "legacy-slot"],
-      "selectionReason": "Legacy-slot custom-shape representative."
+      "selectionReason": "Legacy-slot custom-shape representative.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "001-line",
@@ -224,7 +240,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["waveform", "upstream"],
-      "selectionReason": "Minimal upstream line primitive fixture."
+      "selectionReason": "Minimal upstream line primitive fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "100-square",
@@ -236,7 +253,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["shapes", "upstream"],
-      "selectionReason": "Minimal upstream shape fixture."
+      "selectionReason": "Minimal upstream shape fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "110-per_pixel",
@@ -248,7 +266,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["per-pixel", "upstream"],
-      "selectionReason": "Upstream per-pixel warp fixture."
+      "selectionReason": "Upstream per-pixel warp fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "250-wavecode",
@@ -260,7 +279,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["custom-wave", "upstream"],
-      "selectionReason": "Upstream custom-wave fixture."
+      "selectionReason": "Upstream custom-wave fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "260-compshader-noise_lq",
@@ -272,7 +292,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["shader-supported", "samplers", "upstream"],
-      "selectionReason": "Upstream comp-shader fixture with sampler behavior."
+      "selectionReason": "Upstream comp-shader fixture with sampler behavior.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "261-compshader-noisevol_lq",
@@ -284,7 +305,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["shader-supported", "volume-sampler", "upstream"],
-      "selectionReason": "Upstream volume-sampler comp-shader fixture."
+      "selectionReason": "Upstream volume-sampler comp-shader fixture.",
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "id": "300-beatdetect-bassmidtreb",
@@ -296,7 +318,8 @@
       "requiredBackend": "webgpu",
       "toleranceProfile": "default",
       "strata": ["beat-detect", "upstream"],
-      "selectionReason": "Upstream beat-detection fixture with distinctive audio-reactive behavior."
+      "selectionReason": "Upstream beat-detection fixture with distinctive audio-reactive behavior.",
+      "webgpuCertificationStatus": "unmeasured"
     }
   ]
 }

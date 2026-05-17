@@ -1,22 +1,29 @@
 import type { Camera, PointsMaterial, Scene, Texture } from 'three';
 import {
+  AddEquation,
   AdditiveBlending,
   BufferGeometry,
+  CustomBlending,
+  DstColorFactor,
   DynamicDrawUsage,
   Float32BufferAttribute,
   type Group,
   type Line,
   type LineBasicMaterial,
   type LineSegments,
+  type Material,
   type Mesh,
   type MeshBasicMaterial,
+  OneFactor,
   PlaneGeometry,
   type Points,
+  ReverseSubtractEquation,
   Shape,
   ShapeGeometry,
   Sphere,
   Vector2,
   Vector3,
+  ZeroFactor,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import type { MilkdropBackendBehavior } from './backend-behavior';
@@ -417,6 +424,41 @@ export function setMaterialColor(
   material.color.setRGB(value.r, value.g, value.b);
   material.opacity = opacity;
   material.transparent = opacity < 1 || material.blending === AdditiveBlending;
+}
+
+export function setMaterialBlendMode(
+  material: Material | Material[],
+  blendMode: 'subtractive' | 'multiplicative',
+) {
+  const candidates = Array.isArray(material) ? material : [material];
+  for (const mat of candidates) {
+    mat.blending = CustomBlending;
+    mat.blendSrc = blendMode === 'multiplicative' ? DstColorFactor : OneFactor;
+    mat.blendDst = blendMode === 'multiplicative' ? ZeroFactor : OneFactor;
+    mat.blendEquation =
+      blendMode === 'subtractive' ? ReverseSubtractEquation : AddEquation;
+  }
+}
+
+export function applyBlendModeToGroup(
+  group: Group,
+  blendMode: 'subtractive' | 'multiplicative',
+) {
+  for (const child of group.children) {
+    if ('material' in child) {
+      setMaterialBlendMode(
+        (child as { material: Material }).material,
+        blendMode,
+      );
+    }
+    if (
+      'children' in child &&
+      Array.isArray((child as Group).children) &&
+      (child as Group).children.length > 0
+    ) {
+      applyBlendModeToGroup(child as Group, blendMode);
+    }
+  }
 }
 
 export function ensureGeometryPositions(

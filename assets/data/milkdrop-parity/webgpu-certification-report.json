@@ -1,0 +1,545 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-17T01:42:05.586Z",
+  "parityTarget": "webgpu-certification-comparator",
+  "tolerance": {
+    "threshold": 16,
+    "failThreshold": 0.04
+  },
+  "presetCount": 23,
+  "certifiedBothCount": 0,
+  "certifiedNativeCount": 0,
+  "certifiedWebglCount": 0,
+  "unmeasuredCount": 23,
+  "presets": [
+    {
+      "presetId": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "shape-legacy-max-slot-orbit",
+      "title": "Shape Legacy Max Slot Orbit",
+      "corpusGroup": "local-custom-shape",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "shape-projectm-dual-lattice",
+      "title": "Shape projectM Dual Lattice",
+      "corpusGroup": "local-custom-shape",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-feedback-orientation-01",
+      "title": "Parity Feedback Orientation 01",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-hybrid-09",
+      "title": "Parity Hybrid 09",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-legacy-shape-01",
+      "title": "Parity Legacy Shape 01",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-legacy-wave-01",
+      "title": "Parity Legacy Wave 01",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-motion-04",
+      "title": "Parity Motion 04",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-per-pixel-03",
+      "title": "Parity Per Pixel 03",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-registers-05",
+      "title": "Parity Registers 05",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-shader-08",
+      "title": "Parity Shader 08",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-shape-07",
+      "title": "Parity Shape 07",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "parity-wave-02",
+      "title": "Parity Wave 02",
+      "corpusGroup": "parity-corpus",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "001-line",
+      "title": "001 Line",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "100-square",
+      "title": "100 Square",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "100-square.png",
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGL capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"100-square\" --force-webgl"
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGPU capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"100-square\" --force-webgpu"
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "110-per_pixel",
+      "title": "110 Per Pixel",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "250-wavecode",
+      "title": "250 Wavecode",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "250-wavecode.png",
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGL capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"250-wavecode\" --force-webgl"
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGPU capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"250-wavecode\" --force-webgpu"
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "260-compshader-noise_lq.png",
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGL capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"260-compshader-noise_lq\" --force-webgl"
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGPU capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"260-compshader-noise_lq\" --force-webgpu"
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "261-compshader-noisevol_lq",
+      "title": "261 Compshader Noisevol LQ",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": "300 Beatdetect Bassmidtreb",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "300-beatdetect-bassmidtreb.png",
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGL capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"300-beatdetect-bassmidtreb\" --force-webgl"
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "missing-capture",
+        "error": "No WEBGPU capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"300-beatdetect-bassmidtreb\" --force-webgpu"
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    }
+  ]
+}

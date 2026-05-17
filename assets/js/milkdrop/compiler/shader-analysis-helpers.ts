@@ -5,6 +5,7 @@ import {
 import { evaluateMilkdropShaderExpression } from '../shader-ast';
 import { normalizeMilkdropShaderCallName } from '../shader-expression-shared.ts';
 import {
+  classifyTex3dSamplerEquivalence,
   isMilkdropShaderSamplerName,
   isMilkdropVolumeShaderSamplerName,
   normalizeMilkdropShaderSamplerName,
@@ -267,6 +268,7 @@ export function createShaderBinaryNode(
     | '*'
     | '/'
     | '%'
+    | '^'
     | '<'
     | '<='
     | '>'
@@ -644,16 +646,27 @@ export function buildUnsupportedVolumeSamplerWarnings(
     label: string,
     source: MilkdropShaderTextureSampler,
   ) => {
-    if (
-      controls[controlName].sampleDimension !== '3d' ||
-      source === 'none' ||
-      isMilkdropVolumeShaderSamplerName(source)
-    ) {
+    if (controls[controlName].sampleDimension !== '3d' || source === 'none') {
       return;
     }
-    warnings.push(
-      `${label} uses tex3D/texture3D with aux sampler "${source}", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.`,
-    );
+
+    if (
+      classifyTex3dSamplerEquivalence(
+        controls[controlName].sampleDimension,
+        source,
+      ) === 'not-equivalent'
+    ) {
+      warnings.push(
+        `${label} uses tex3D/texture3D with volume sampler "${source}" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.`,
+      );
+      return;
+    }
+
+    if (!isMilkdropVolumeShaderSamplerName(source)) {
+      warnings.push(
+        `${label} uses tex3D/texture3D with aux sampler "${source}", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.`,
+      );
+    }
   };
 
   appendWarning(

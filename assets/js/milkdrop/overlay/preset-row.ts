@@ -1,3 +1,4 @@
+import type { VisualFidelityTier } from '../catalog-store-analysis.ts';
 import type { MilkdropPresetRenderPreview } from '../preset-preview.ts';
 import type {
   MilkdropCatalogEntry,
@@ -53,6 +54,32 @@ export function fidelityLabel(fidelity: MilkdropFidelityClass) {
       return 'Partial';
     default:
       return 'Fallback';
+  }
+}
+
+export function fidelityTierLabel(tier: VisualFidelityTier): string {
+  switch (tier) {
+    case 'measured-visual':
+      return 'Certified';
+    case 'measured-checksum':
+      return 'Baseline';
+    case 'semantic-only':
+      return 'Semantic';
+    default:
+      return 'Unmeasured';
+  }
+}
+
+export function fidelityTierBadgeClass(tier: VisualFidelityTier): string {
+  switch (tier) {
+    case 'measured-visual':
+      return 'milkdrop-overlay__preset-tag--verified';
+    case 'measured-checksum':
+      return 'milkdrop-overlay__preset-tag--baseline';
+    case 'semantic-only':
+      return 'milkdrop-overlay__preset-tag--semantic';
+    default:
+      return 'milkdrop-overlay__preset-tag--unmeasured';
   }
 }
 
@@ -389,6 +416,12 @@ function buildPresetRow({
     activeBadge.textContent = 'Live';
     badges.appendChild(activeBadge);
   }
+
+  const tierBadge = document.createElement('span');
+  tierBadge.className = `milkdrop-overlay__preset-tag ${fidelityTierBadgeClass(preset.fidelityTier)}`;
+  tierBadge.textContent = fidelityTierLabel(preset.fidelityTier);
+  tierBadge.title = `Fidelity tier: ${preset.fidelityTier}`;
+  badges.appendChild(tierBadge);
 
   const certificationBadgeStatus = getPresetCertificationBadgeStatus(preset);
   if (certificationBadgeStatus === 'certified') {

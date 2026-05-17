@@ -258,6 +258,7 @@ export type MilkdropShaderExpressionNode =
         | '*'
         | '/'
         | '%'
+        | '^'
         | '<'
         | '<='
         | '>'

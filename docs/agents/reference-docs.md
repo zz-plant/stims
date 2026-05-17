@@ -5,11 +5,20 @@
 - `docs/DEVELOPMENT.md` — scripts and contributor workflow baseline.
 - `docs/MILKDROP_PRESET_RUNTIME.md` — preset runtime, editor, compiler, and compatibility behavior.
 - `docs/ARCHITECTURE.md` — runtime architecture and flow.
+- `docs/STATUS_2026-05.md` — current project state: what changed, certified corpus, known gaps, next targets.
+- `docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md` — single source of truth: certified/baseline-measured/semantic/unmeasured presets, fidelity gaps by subsystem.
+- `docs/evidence/public-claim-audit.md` — overclaim findings and recommended fixes for public-facing naming and evidence claims.
 - `docs/MANUAL_SMOKE_BASELINE.md` — milestone sign-off checklist for startup/shell/runtime changes.
 - `docs/QA_PLAN.md` — broader QA map and focused regression coverage.
 - `docs/PAGE_SPECIFICATIONS.md` — app shell and launch-flow behavior.
 - `docs/DEPLOYMENT.md` — shipping and hosting guidance.
 - `docs/TOY_SCRIPT_INDEX.md` / `docs/toys.md` — generated manifest reference docs synced from `assets/data/toys.json`.
+
+## Architecture and fidelity docs
+
+- `docs/architecture/shader-support-inventory.md` — full compiler support audit: ~50 supported patterns, 10 unsupported/partial, 6 silent fallback locations, priority-ranked fixes.
+- `docs/architecture/fallback-state-machine.md` — renderer setup FSM design: 28 transitions across 12 states, 6 implicit ordering risks, implementation plan.
+- `docs/architecture/rasterization-fidelity-audit.md` — WebGL vs WebGPU divergence: 7 known divergence points, blend order audit, 10 object-count-only tests identified.
 
 ## High-signal code locations
 

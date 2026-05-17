@@ -16,6 +16,7 @@ import type {
 import {
   compatibilityCategoryLabel,
   fidelityLabel,
+  fidelityTierLabel,
   formatPrimaryCompatibilityMessage,
   getPrimaryDegradationReason,
   supportLabel,
@@ -101,6 +102,12 @@ export function formatInspectorMetrics({
   return [
     { label: 'Backend', value: backend },
     { label: 'Transport support', value: supportLabel(support.status) },
+    {
+      label: 'Fidelity tier',
+      value: presetEntry
+        ? fidelityTierLabel(presetEntry.fidelityTier)
+        : 'Unmeasured',
+    },
     {
       label: 'Fidelity',
       value: fidelityLabel(

@@ -303,7 +303,7 @@ class ShaderExpressionParser {
   }
 
   private parseMultiplicative(): MilkdropShaderExpressionNode | null {
-    let node = this.parseUnary();
+    let node = this.parseExponentiation();
     if (!node) {
       return null;
     }
@@ -312,7 +312,7 @@ class ShaderExpressionParser {
       if (!operator) {
         return node;
       }
-      const right = this.parseUnary();
+      const right = this.parseExponentiation();
       if (!right) {
         return null;
       }
@@ -323,6 +323,27 @@ class ShaderExpressionParser {
         right,
       };
     }
+  }
+
+  private parseExponentiation(): MilkdropShaderExpressionNode | null {
+    const node = this.parseUnary();
+    if (!node) {
+      return null;
+    }
+    const operator = this.matchOperator('^');
+    if (!operator) {
+      return node;
+    }
+    const right = this.parseExponentiation();
+    if (!right) {
+      return null;
+    }
+    return {
+      type: 'binary',
+      operator: '^',
+      left: node,
+      right,
+    };
   }
 
   private parseUnary(): MilkdropShaderExpressionNode | null {
@@ -525,6 +546,7 @@ function mapScalarBinary(
     | '*'
     | '/'
     | '%'
+    | '^'
     | '<'
     | '<='
     | '>'
@@ -547,6 +569,8 @@ function mapScalarBinary(
       return b === 0 ? 0 : a / b;
     case '%':
       return b === 0 ? 0 : a % b;
+    case '^':
+      return a ** b;
     case '<':
       return a < b ? 1 : 0;
     case '<=':
@@ -573,6 +597,7 @@ function applyBinary(
     | '*'
     | '/'
     | '%'
+    | '^'
     | '<'
     | '<='
     | '>'

@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import type { Vector2 } from 'three';
 import {
   AdditiveBlending,
+  CustomBlending,
+  DstColorFactor,
   Group,
   HalfFloatType,
   LinearFilter,
@@ -10,11 +12,14 @@ import {
   LineSegments,
   type Mesh,
   MeshBasicMaterial,
+  OneFactor,
   OrthographicCamera,
+  ReverseSubtractEquation,
   Scene,
   ShaderMaterial,
   Texture,
   WebGLRenderer,
+  ZeroFactor,
 } from 'three';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import {
@@ -3837,5 +3842,179 @@ warp_shader=warp_texture_source = sampler_noise; warp_texture_amount = 0.08; war
     expect(
       feedback?.compositeMaterial.uniforms.warpTextureScale.value.y,
     ).toBeCloseTo(1.7, 6);
+  });
+
+  test('applies subtractive blend mode on waves via CustomBlending', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Subtractive Wave
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+      `.trim(),
+      { id: 'subtractive-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    frameState.mainWave.blendMode = 'subtractive';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgl',
+      batcher: null,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveGroup = getRootChildByRenderOrder(root, 20);
+    expect(waveGroup).toBeDefined();
+    const waveLine = waveGroup?.children?.[0] as RenderTreeNode;
+    const lineChild = waveLine.children?.[0] as {
+      material?: LineBasicMaterial;
+    };
+    const lineMaterial = lineChild?.material;
+
+    expect(lineMaterial).toBeDefined();
+    expect(lineMaterial?.blending).toBe(CustomBlending);
+    expect(lineMaterial?.blendSrc).toBe(OneFactor);
+    expect(lineMaterial?.blendDst).toBe(OneFactor);
+    expect(lineMaterial?.blendEquation).toBe(ReverseSubtractEquation);
+  });
+
+  test('applies multiplicative blend mode on shapes via CustomBlending', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Multiplicative Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_additive=0
+shapecode_0_a=0.7
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+      `.trim(),
+      { id: 'multiplicative-shape' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    expect(frameState.shapes[0]).toBeDefined();
+    const shape = frameState.shapes[0];
+    if (!shape) {
+      throw new Error('expected shape');
+    }
+    shape.blendMode = 'multiplicative';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgl',
+      batcher: null,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
+    const shapeObject = shapesGroup?.children?.[0] as RenderTreeNode;
+    const fillMesh = shapeObject?.children?.[0] as
+      | { material?: MeshBasicMaterial }
+      | undefined;
+    const fillMaterial = fillMesh?.material;
+
+    expect(fillMaterial).toBeDefined();
+    expect(fillMaterial?.blending).toBe(CustomBlending);
+    expect(fillMaterial?.blendSrc).toBe(DstColorFactor);
+    expect(fillMaterial?.blendDst).toBe(ZeroFactor);
+  });
+
+  test('ensures wave blend state precedes shape blend state in render order', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Blend Order Check
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_additive=0
+shapecode_0_a=0.7
+      `.trim(),
+      { id: 'blend-order-check' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    frameState.mainWave.blendMode = 'subtractive';
+    expect(frameState.shapes[0]).toBeDefined();
+    const shape = frameState.shapes[0];
+    if (!shape) {
+      throw new Error('expected shape');
+    }
+    shape.blendMode = 'multiplicative';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgl',
+      batcher: null,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveGroup = getRootChildByRenderOrder(root, 20);
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
+
+    expect(waveGroup).toBeDefined();
+    expect(shapesGroup).toBeDefined();
+    expect(waveGroup?.renderOrder).toBe(20);
+    expect(shapesGroup?.renderOrder).toBe(50);
+    expect(waveGroup?.renderOrder ?? Infinity).toBeLessThan(
+      shapesGroup?.renderOrder ?? -Infinity,
+    );
+
+    const waveLine = waveGroup?.children?.[0] as RenderTreeNode;
+    const waveLineChild = waveLine.children?.[0] as {
+      material?: LineBasicMaterial;
+    };
+    const waveMaterial = waveLineChild?.material;
+    const shapeObject = shapesGroup?.children?.[0] as RenderTreeNode;
+    const fillMesh = shapeObject?.children?.[0] as
+      | { material?: MeshBasicMaterial }
+      | undefined;
+    const shapeMaterial = fillMesh?.material;
+
+    expect(waveMaterial).toBeDefined();
+    expect(shapeMaterial).toBeDefined();
+    expect(waveMaterial?.blending).toBe(CustomBlending);
+    expect(waveMaterial?.blendSrc).toBe(OneFactor);
+    expect(waveMaterial?.blendDst).toBe(OneFactor);
+    expect(waveMaterial?.blendEquation).toBe(ReverseSubtractEquation);
+    expect(shapeMaterial?.blending).toBe(CustomBlending);
+    expect(shapeMaterial?.blendSrc).toBe(DstColorFactor);
+    expect(shapeMaterial?.blendDst).toBe(ZeroFactor);
   });
 });

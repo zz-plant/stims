@@ -73,3 +73,18 @@ export function isMilkdropVolumeShaderSamplerName(
     value as MilkdropShaderTextureSampler,
   );
 }
+
+export type Tex3dSamplerEquivalence = 'not-equivalent' | 'semantic-supported';
+
+export const TEX3D_NOT_EQUIVALENT_SAMPLERS: ReadonlySet<MilkdropShaderTextureSampler> =
+  MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS;
+
+export function classifyTex3dSamplerEquivalence(
+  dimension: string | null | undefined,
+  source: string,
+): Tex3dSamplerEquivalence {
+  if (dimension === '3d' && isMilkdropVolumeShaderSamplerName(source)) {
+    return 'not-equivalent';
+  }
+  return 'semantic-supported';
+}

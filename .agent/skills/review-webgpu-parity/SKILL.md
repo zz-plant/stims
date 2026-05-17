@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to `assets/js/milkdrop/feedba
 
 ## Why this exists
 
-The most frequent source of fixes in this repo (~35% of fix commits) is parity drift between WebGPU and WebGL: alpha blending order, feedback color math, wave interpolation, resolution scales, and shader lowering. This skill prevents those regressions at review time.
+The most frequent source of fixes in this repo (~22% of fix commits) is parity drift between WebGPU and WebGL — still the #1 category: alpha blending order, feedback color math, wave interpolation, resolution scales, and shader lowering. This skill prevents those regressions at review time.
 
 ## Pre-merge checklist
 

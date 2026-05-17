@@ -1,6 +1,9 @@
 import measuredResultsJson from '../../data/milkdrop-parity/measured-results.json' with {
   type: 'json',
 };
+import visualBaselinesJson from '../../data/milkdrop-parity/visual-baselines.json' with {
+  type: 'json',
+};
 import { compileMilkdropPresetSource } from './compiler';
 import type {
   MilkdropBackendSupport,
@@ -9,6 +12,48 @@ import type {
   MilkdropCompiledPreset,
   MilkdropPresetSource,
 } from './types';
+
+export type VisualFidelityTier =
+  | 'measured-visual'
+  | 'measured-checksum'
+  | 'semantic-only'
+  | 'unmeasured';
+
+type VisualBaselinesManifest = {
+  version: number;
+  frames: number[];
+  tolerance: number;
+  generatedAt: string;
+  presets: Array<{ id: string; title: string; file: string }>;
+};
+
+const VISUAL_BASELINES = visualBaselinesJson as VisualBaselinesManifest;
+
+const MEASURED_VISUAL_IDS = new Set(
+  (measuredResultsJson as MeasuredVisualResultsManifest).presets.map(
+    (p) => p.id,
+  ),
+);
+
+const MEASURED_CHECKSUM_IDS = new Set(
+  VISUAL_BASELINES.presets.map((p) => p.id),
+);
+
+export function deriveFidelityTier(
+  presetId: string,
+  options?: { isCompiled?: boolean },
+): VisualFidelityTier {
+  if (MEASURED_VISUAL_IDS.has(presetId)) {
+    return 'measured-visual';
+  }
+  if (MEASURED_CHECKSUM_IDS.has(presetId)) {
+    return 'measured-checksum';
+  }
+  if (options?.isCompiled) {
+    return 'semantic-only';
+  }
+  return 'unmeasured';
+}
 
 type MeasuredVisualPresetResult = {
   id: string;
@@ -31,9 +76,6 @@ type MeasuredVisualResultsManifest = {
   updatedAt: string | null;
   presets: MeasuredVisualPresetResult[];
 };
-
-const MEASURED_VISUAL_RESULTS =
-  measuredResultsJson as MeasuredVisualResultsManifest;
 
 function inferredFidelityWithoutMeasuredVisualResult(
   compiled: MilkdropCompiledPreset,
@@ -145,7 +187,9 @@ function catalogSupportsMatchCompiled(
 export function getValidatedCatalogOverrides(
   entry: MilkdropBundledCatalogEntry,
   compiled: MilkdropCompiledPreset,
-  measuredResults: readonly MeasuredVisualPresetResult[] = MEASURED_VISUAL_RESULTS.presets,
+  measuredResults: readonly MeasuredVisualPresetResult[] = (
+    measuredResultsJson as MeasuredVisualResultsManifest
+  ).presets,
 ): {
   expectedFidelityClass?: MilkdropCatalogEntry['fidelityClass'];
   visualEvidenceTier?: MilkdropCatalogEntry['visualEvidenceTier'];

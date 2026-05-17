@@ -31,6 +31,7 @@ function createCatalogEntry(id: string): MilkdropCatalogEntry {
     },
     fidelityClass: 'exact',
     visualEvidenceTier: 'none',
+    fidelityTier: 'semantic-only',
     semanticSupport: {
       fidelityClass: 'exact',
       evidence: {

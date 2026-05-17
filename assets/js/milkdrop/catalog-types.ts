@@ -1,3 +1,4 @@
+import type { VisualFidelityTier } from './catalog-store-analysis.ts';
 import type {
   MilkdropBackendSupport,
   MilkdropCompatibilityEvidence,
@@ -50,6 +51,7 @@ export type MilkdropCatalogEntry = {
   };
   fidelityClass: MilkdropFidelityClass;
   visualEvidenceTier: MilkdropVisualEvidenceTier;
+  fidelityTier: VisualFidelityTier;
   semanticSupport: MilkdropSemanticSupport;
   visualCertification: MilkdropVisualCertification;
   evidence: MilkdropCompatibilityEvidence;

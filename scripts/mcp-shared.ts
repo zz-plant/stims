@@ -11,6 +11,8 @@ import agentModifyPresetWorkflowSkill from '../.agent/skills/modify-preset-workf
 import agentModifyVisualizerRuntimeSkill from '../.agent/skills/modify-visualizer-runtime/SKILL.md';
 import agentPlayVisualizerSkill from '../.agent/skills/play-visualizer/SKILL.md';
 import agentQuickStartSkill from '../.agent/skills/quick-start/SKILL.md';
+import agentReviewDeployToolingSkill from '../.agent/skills/review-deploy-tooling/SKILL.md';
+import agentReviewModuleLoadingSkill from '../.agent/skills/review-module-loading/SKILL.md';
 import agentReviewRendererFallbackSkill from '../.agent/skills/review-renderer-fallback/SKILL.md';
 import agentReviewTestHarnessSkill from '../.agent/skills/review-test-harness/SKILL.md';
 import agentReviewWebgpuParitySkill from '../.agent/skills/review-webgpu-parity/SKILL.md';
@@ -27,8 +29,11 @@ import toyManifest from '../assets/js/data/toy-manifest.ts';
 import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
 import docsDevelopment from '../docs/DEVELOPMENT.md';
+import docsEvidenceClaimAudit from '../docs/evidence/public-claim-audit.md';
+import docsEvidenceLedger202605 from '../docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md';
 import docsMcpServer from '../docs/MCP_SERVER.md';
 import docsReadme from '../docs/README.md';
+import docsStatus202605 from '../docs/STATUS_2026-05.md';
 import docsToyDevelopment from '../docs/TOY_DEVELOPMENT.md';
 import docsToyScriptIndex from '../docs/TOY_SCRIPT_INDEX.md';
 import docsToys from '../docs/toys.md';
@@ -45,6 +50,9 @@ const markdownSources = {
   'docs/TOY_DEVELOPMENT.md': docsToyDevelopment,
   'docs/TOY_SCRIPT_INDEX.md': docsToyScriptIndex,
   'docs/toys.md': docsToys,
+  'docs/STATUS_2026-05.md': docsStatus202605,
+  'docs/evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md': docsEvidenceLedger202605,
+  'docs/evidence/public-claim-audit.md': docsEvidenceClaimAudit,
   'docs/agents/README.md': docsAgentsReadme,
   'docs/agents/agent-handoffs.md': docsAgentsAgentHandoffs,
   '.claude/CLAUDE.md': docsClaudeReadme,
@@ -72,6 +80,8 @@ const markdownSources = {
   '.agent/skills/review-test-harness/SKILL.md': agentReviewTestHarnessSkill,
   '.agent/skills/review-workspace-ui-state/SKILL.md':
     agentReviewWorkspaceUiStateSkill,
+  '.agent/skills/review-deploy-tooling/SKILL.md': agentReviewDeployToolingSkill,
+  '.agent/skills/review-module-loading/SKILL.md': agentReviewModuleLoadingSkill,
   '.agent/skills/audit-recurring-fixes/SKILL.md': agentAuditRecurringFixesSkill,
   '.agent/skills/iterate-visualizer-ui/SKILL.md': agentIterateVisualizerUiSkill,
 } as const;
@@ -241,6 +251,22 @@ const agentCapabilities: AgentCapability[] = [
     description:
       'Review PRs touching React workspace UI state, URL routing, toast/panel behavior, or engine adapter boundary.',
     command: '/review-workspace-ui-state',
+  },
+  {
+    name: 'review-deploy-tooling',
+    kind: 'skill',
+    path: '.agent/skills/review-deploy-tooling/SKILL.md',
+    description:
+      'Review PRs touching CI, wrangler config, build scripts, Cloudflare deploy, or tooling.',
+    command: '/review-deploy-tooling',
+  },
+  {
+    name: 'review-module-loading',
+    kind: 'skill',
+    path: '.agent/skills/review-module-loading/SKILL.md',
+    description:
+      'Review PRs touching module loading, bootstrap, toy manifest, library resolution, or gamepad polling.',
+    command: '/review-module-loading',
   },
   {
     name: 'audit-recurring-fixes',

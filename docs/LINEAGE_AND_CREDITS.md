@@ -8,7 +8,7 @@ Use language like:
 
 - "Independent browser-native visualizer built in the lineage of Ryan Geiss's MilkDrop."
 - "Inspired by MilkDrop-era preset workflows."
-- "Compatible with parts of the broader MilkDrop/projectM preset ecosystem."
+- "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity varies: 4 of 23 certification-corpus presets have measured near-exact results; the remaining presets are at the compiler/runtime compatibility stage and have not yet been measured against projectM references."
 
 Avoid language like:
 

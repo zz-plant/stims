@@ -319,6 +319,46 @@ describe('milkdrop compiler shader GLSL emitter — vector constructors', () => 
   });
 });
 
+// ─── Caret Exponent Operator → pow() ───────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — ^ exponent operator', () => {
+  test('^ emits pow() in GLSL (not bitwise XOR)', () => {
+    const glsl = emitShaderExpression('x = bass ^ 2.0');
+    expect(glsl).toBe('x = pow(signalBass, 2.0);');
+  });
+
+  test('^ with complex sub-expressions emits nested pow()', () => {
+    const glsl = emitShaderExpression('x = (bass + 1) ^ (treble * 2)');
+    expect(glsl).toContain('pow(');
+    expect(glsl).toContain('signalBass + 1.0');
+    expect(glsl).toContain('signalTreb * 2.0');
+  });
+});
+
+// ─── bassAtt / midAtt / trebleAtt CamelCase Signal Mappings ─────────
+
+describe('milkdrop compiler shader GLSL emitter — camelCase signal aliases', () => {
+  test('bassAtt maps to signalBass', () => {
+    const glsl = emitShaderExpression('x = bassAtt');
+    expect(glsl).toBe('x = signalBass;');
+  });
+
+  test('midAtt maps to signalMid', () => {
+    const glsl = emitShaderExpression('x = midAtt');
+    expect(glsl).toBe('x = signalMid;');
+  });
+
+  test('trebleAtt maps to signalTreb', () => {
+    const glsl = emitShaderExpression('x = trebleAtt');
+    expect(glsl).toBe('x = signalTreb;');
+  });
+
+  test('bassAtt used in expression compiles correctly', () => {
+    const glsl = emitShaderExpression('x = bassAtt * 2.0');
+    expect(glsl).toBe('x = (signalBass * 2.0);');
+  });
+});
+
 // ─── Identity / Variable Resolution ────────────────────────────────
 
 describe('milkdrop compiler shader GLSL emitter — identifier resolution', () => {

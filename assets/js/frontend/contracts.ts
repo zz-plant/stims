@@ -1,3 +1,4 @@
+import type { VisualFidelityTier } from '../milkdrop/catalog-store-analysis.ts';
 import type { MilkdropVisualCertification } from '../milkdrop/types.ts';
 
 export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
@@ -43,6 +44,7 @@ export type PresetCatalogEntry = {
   historyIndex?: number;
   lastOpenedAt?: number;
   expectedFidelityClass?: string;
+  fidelityTier?: VisualFidelityTier;
   visualCertification?: MilkdropVisualCertification;
   supports?: {
     webgl?: boolean;
