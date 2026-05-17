@@ -13,12 +13,17 @@ export function StimsControlDock({
   const w = useWorkspace();
   const panel = w.routeState.panel;
   const audioSource = w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
+  const audioEnergy = w.engineSnapshot?.audioEnergy ?? 0;
+  const energyNorm = Math.min(1, Math.max(0, audioEnergy));
 
   return (
     <div
       className="stims-shell__stage-dock"
       role="toolbar"
       aria-label="Live controls"
+      style={
+        { '--stims-audio-glow': String(energyNorm) } as React.CSSProperties
+      }
     >
       <button
         type="button"

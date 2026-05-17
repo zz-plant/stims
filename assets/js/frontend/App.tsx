@@ -318,15 +318,43 @@ function StimsWorkspaceAppShell() {
       }
     };
 
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return;
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    };
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (!touchStartX || !touchStartY) return;
+      const dx = event.changedTouches[0].clientX - touchStartX;
+      const dy = event.changedTouches[0].clientY - touchStartY;
+      touchStartX = 0;
+      touchStartY = 0;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (dx > 0) {
+        w.setStatusMessage('Previous preset \u2014 use Shuffle for random');
+      } else {
+        void w.handleShufflePreset();
+      }
+    };
+
     document.addEventListener(
       'keydown',
       handleKeyDown as unknown as EventListener,
     );
+    document.addEventListener('touchstart', handleTouchStart, {
+      passive: true,
+    });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+
     return () => {
       document.removeEventListener(
         'keydown',
         handleKeyDown as unknown as EventListener,
       );
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [
     handleToggleFullscreen,

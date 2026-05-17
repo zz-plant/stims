@@ -1848,6 +1848,19 @@ body[data-page="workspace"] {
     0 18px 34px var(--stims-shadow-22),
     inset 0 1px 0 var(--stims-white-05);
   backdrop-filter: blur(16px);
+  transition: box-shadow 0.15s ease;
+}
+
+/* Audio-reactive glow on the control dock */
+.stims-shell__stage-dock::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 20px;
+  opacity: calc(var(--stims-audio-glow, 0) * 0.4);
+  box-shadow: 0 0 24px 4px rgba(56, 189, 248, 0.5);
+  pointer-events: none;
+  transition: opacity 0.1s ease;
 }
 
 .stims-shell__stage-tool {
