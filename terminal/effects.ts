@@ -1,11 +1,14 @@
 import type { AudioFrame } from './audio';
 import type { Canvas } from './renderer';
 import { hslToRgb } from './renderer';
+import type { Theme } from './themes';
+import { applyTheme } from './themes';
 
 export interface EffectOptions {
   compact: boolean;
   minimal: boolean;
   autocycleSecs: number;
+  theme: Theme | null;
 }
 
 export interface EffectState {
@@ -33,7 +36,13 @@ export function createEffectState(
     flashAlpha: 0,
     modeIndex: 0,
     modeTimer: 0,
-    options: { compact: false, minimal: false, autocycleSecs: 0, ...opts },
+    options: {
+      compact: false,
+      minimal: false,
+      autocycleSecs: 0,
+      theme: null,
+      ...opts,
+    },
   };
 }
 
@@ -51,51 +60,64 @@ export function getMode(state: EffectState): string {
   return modes[state.modeIndex % modes.length]!;
 }
 
+function color(
+  theme: Theme | null,
+  hue: number,
+  value: number,
+): { r: number; g: number; b: number } {
+  if (theme) {
+    const { h, s, l } = applyTheme(theme, hue, value);
+    return hslToRgb(h, s, l);
+  }
+  const sat = 0.7 + (1 - value) * 0.3;
+  const light = 0.4 + value * 0.3;
+  return hslToRgb(hue, sat, light);
+}
+
+function beatColor(theme: Theme | null): { r: number; g: number; b: number } {
+  if (theme) {
+    const { h, s, l } = applyTheme(theme, 0, 0.8);
+    return hslToRgb(h, 0.3, l * 0.3);
+  }
+  return hslToRgb(300, 0.8, 0.3);
+}
+
 function drawBeatFlash(canvas: Canvas, state: EffectState, frame: AudioFrame) {
   if (state.options.minimal) return;
   if (frame.beat.isBeat) state.flashAlpha = 1;
   state.flashAlpha *= 0.85;
   if (state.flashAlpha < 0.01) return;
 
-  const h = frame.beat.isBeatBass
-    ? 0
-    : frame.beat.isBeatMid
-      ? 200
-      : frame.beat.isBeatTreble
-        ? 60
-        : 300;
-  const c = hslToRgb(h, 0.8, 0.3 * state.flashAlpha);
-
+  const c = beatColor(state.options.theme);
   const step = state.options.compact ? 8 : 6;
+  const alpha = state.flashAlpha * 0.2;
   for (let y = 0; y < canvas.frame.height; y += step) {
     for (let x = 0; x < canvas.frame.width; x += step) {
-      canvas.setPixel(x, y, c.r, c.g, c.b, state.flashAlpha * 0.2);
+      canvas.setPixel(x, y, c.r, c.g, c.b, alpha);
     }
   }
 }
 
-function drawWaveform(canvas: Canvas, frame: AudioFrame) {
+function drawWaveform(canvas: Canvas, state: EffectState, frame: AudioFrame) {
   const { width, height } = canvas.frame;
   const wf = frame.waveform;
   const centerY = height / 2;
+  const theme = state.options.theme;
 
   for (let x = 0; x < width; x++) {
     const idx = Math.floor((x / width) * wf.length);
     const sample = wf[Math.min(idx, wf.length - 1)] ?? 0;
     const y = Math.round(centerY + sample * height * 0.42);
-    const light = 0.4 + Math.abs(sample) * 0.35;
-    const c = hslToRgb(
-      (200 + (x / width) * 60) % 360,
-      0.7 + frame.beat.beatIntensity * 0.3,
-      light,
-    );
+    const val = 0.5 + Math.abs(sample) * 0.5;
+    const c = color(theme, (200 + (x / width) * 60) % 360, val);
     canvas.setPixel(x, y, c.r, c.g, c.b);
   }
 }
 
-function drawSpectrum(canvas: Canvas, frame: AudioFrame) {
+function drawSpectrum(canvas: Canvas, state: EffectState, frame: AudioFrame) {
   const { width, height } = canvas.frame;
   const spec = frame.spectrum;
+  const theme = state.options.theme;
   const barCount = Math.min(width, 80);
   const barWidth = Math.max(1, Math.floor(width / barCount));
   const binsPerBar = Math.max(1, Math.floor(spec.length / barCount));
@@ -108,7 +130,7 @@ function drawSpectrum(canvas: Canvas, frame: AudioFrame) {
     }
     const barH = Math.round(Math.max(0, Math.min(1, maxBin)) * height * 0.9);
     const hue = ((i / barCount) * 300 + 180) % 360;
-    const c = hslToRgb(hue, 0.8, 0.35 + maxBin * 0.3);
+    const c = color(theme, hue, Math.min(1, maxBin * 1.5));
     const bx = i * barWidth;
     for (let y = height - 1; y >= height - barH; y--) {
       for (let dx = 0; dx < barWidth - 1; dx++) {
@@ -118,18 +140,19 @@ function drawSpectrum(canvas: Canvas, frame: AudioFrame) {
   }
 }
 
-function drawOrbit(canvas: Canvas, frame: AudioFrame) {
+function drawOrbit(canvas: Canvas, state: EffectState, frame: AudioFrame) {
   const { width, height } = canvas.frame;
-  const cx = width / 2,
-    cy = height / 2;
+  const cx = width / 2;
+  const cy = height / 2;
   const angle = (Date.now() * 0.001) % (Math.PI * 2);
   const minDim = Math.min(width, height);
+  const theme = state.options.theme;
 
   function ring(radius: number, hue: number, alpha: number, speed: number) {
     const steps = Math.max(16, Math.round(radius * 1.5));
     for (let i = 0; i < steps; i++) {
       const a = (i / steps) * Math.PI * 2 + angle * speed;
-      const c = hslToRgb((hue + i * 3) % 360, 0.9, 0.5);
+      const c = color(theme, (hue + i * 3) % 360, 0.6);
       canvas.setPixel(
         Math.round(cx + Math.cos(a) * radius),
         Math.round(cy + Math.sin(a) * radius),
@@ -151,7 +174,7 @@ function drawOrbit(canvas: Canvas, frame: AudioFrame) {
   );
 }
 
-function drawBars(canvas: Canvas, frame: AudioFrame) {
+function drawBars(canvas: Canvas, state: EffectState, frame: AudioFrame) {
   const { width, height } = canvas.frame;
   const bands = [
     frame.smoothedBands.bass,
@@ -159,6 +182,7 @@ function drawBars(canvas: Canvas, frame: AudioFrame) {
     frame.smoothedBands.treble,
   ];
   const colors = [0, 200, 60];
+  const theme = state.options.theme;
   const barArea = Math.floor(width * 0.7);
   const startX = Math.floor((width - barArea) / 2);
   const barW = Math.floor(barArea / 3) - 2;
@@ -166,7 +190,8 @@ function drawBars(canvas: Canvas, frame: AudioFrame) {
   for (let i = 0; i < 3; i++) {
     const barH = Math.round(Math.max(1, (bands[i] ?? 0) * height * 0.9));
     const bx = startX + i * (barW + 2);
-    const c = hslToRgb(colors[i]!, 1, 0.4 + (bands[i] ?? 0) * 0.35);
+    const val = (bands[i] ?? 0) * 0.8 + 0.2;
+    const c = color(theme, colors[i]!, val);
     for (let py = 0; py < barH; py++) {
       const y = height - 1 - py;
       for (let dx = 0; dx < barW; dx++) {
@@ -179,6 +204,7 @@ function drawBars(canvas: Canvas, frame: AudioFrame) {
 
 function drawParticles(canvas: Canvas, state: EffectState, frame: AudioFrame) {
   if (state.options.minimal || state.options.compact) return;
+  const theme = state.options.theme;
   const energy =
     frame.smoothedBands.bass * 0.6 +
     frame.smoothedBands.mid * 0.3 +
@@ -216,7 +242,7 @@ function drawParticles(canvas: Canvas, state: EffectState, frame: AudioFrame) {
       state.particles.splice(i, 1);
       continue;
     }
-    const c = hslToRgb(p.hue, 0.8, 0.3 + p.life * 0.4);
+    const c = color(theme, p.hue, 0.4 + p.life * 0.4);
     canvas.setPixel(Math.round(p.x), Math.round(p.y), c.r, c.g, c.b, p.life);
   }
 }
@@ -269,20 +295,20 @@ export function renderFrame(
   const mode = getMode(state);
   switch (mode) {
     case 'waveform':
-      drawWaveform(canvas, frame);
+      drawWaveform(canvas, state, frame);
       break;
     case 'spectrum':
-      drawSpectrum(canvas, frame);
+      drawSpectrum(canvas, state, frame);
       break;
     case 'orbit':
-      drawOrbit(canvas, frame);
+      drawOrbit(canvas, state, frame);
       break;
     case 'bars':
-      drawBars(canvas, frame);
+      drawBars(canvas, state, frame);
       break;
     case 'combo':
-      drawWaveform(canvas, frame);
-      drawSpectrum(canvas, frame);
+      drawWaveform(canvas, state, frame);
+      drawSpectrum(canvas, state, frame);
       break;
   }
 
