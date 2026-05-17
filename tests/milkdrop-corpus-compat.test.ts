@@ -95,6 +95,10 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
       'nmotionvectorsy',
     ],
   },
+  'eos-heater-core-c.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
 };
 
 const PARITY_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> = {
@@ -263,7 +267,7 @@ describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(4);
+    expect(corpus.length).toBe(5);
 
     const unexpected = corpus.filter(({ file, compiled }) => {
       const expectation =
