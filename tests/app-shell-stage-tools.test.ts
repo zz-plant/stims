@@ -21,7 +21,7 @@ describe('Workspace shell stage tool interaction regression', () => {
     );
 
     expect(appSource).toMatch(
-      /const stageAnchoredToolOpen =[\s\S]*?routeState\.panel === 'editor' \|\| routeState\.panel === 'inspector'/u,
+      /const stageAnchoredToolOpen =[\s\S]*?w\.routeState\.panel === 'editor' \|\| w\.routeState\.panel === 'inspector'/u,
     );
     expect(uiSource).toMatch(
       /\{!stageAnchoredToolOpen \? \(\s*<button[\s\S]*?className="stims-shell__sheet-backdrop"/u,

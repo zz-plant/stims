@@ -46,27 +46,35 @@ describe('milkdrop runtime signals', () => {
   test('increments frame count and emits stable ranges with fallback data', () => {
     const tracker = createMilkdropSignalTracker();
 
-    const quiet = tracker.update({
-      time: 0,
-      deltaMs: 16.7,
-      analyser: null,
-      frequencyData: filledData(24),
-      waveformData: waveformData(),
-    });
-    const pulse = tracker.update({
-      time: 0.24,
-      deltaMs: 16.7,
-      analyser: null,
-      frequencyData: pulseData({ bass: 1, mid: 0.45, treble: 0.18 }),
-      waveformData: waveformData(),
-    });
-    const sustain = tracker.update({
-      time: 0.32,
-      deltaMs: 16.7,
-      analyser: null,
-      frequencyData: pulseData({ bass: 1, mid: 0.45, treble: 0.18 }),
-      waveformData: waveformData(),
-    });
+    // Capture snapshots before each subsequent update since the tracker
+    // reuses a shared mutable cache object to avoid per-frame allocations.
+    const quiet = {
+      ...tracker.update({
+        time: 0,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData: filledData(24),
+        waveformData: waveformData(),
+      }),
+    };
+    const pulse = {
+      ...tracker.update({
+        time: 0.24,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData: pulseData({ bass: 1, mid: 0.45, treble: 0.18 }),
+        waveformData: waveformData(),
+      }),
+    };
+    const sustain = {
+      ...tracker.update({
+        time: 0.32,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData: pulseData({ bass: 1, mid: 0.45, treble: 0.18 }),
+        waveformData: waveformData(),
+      }),
+    };
 
     expect(quiet.frame).toBe(1);
     expect(pulse.frame).toBe(2);
@@ -153,27 +161,33 @@ describe('milkdrop runtime signals', () => {
       waveformData: waveformData(),
     });
 
-    const pulse = tracker.update({
-      time: 0.18,
-      deltaMs: 16.7,
-      analyser: null,
-      frequencyData: pulseData({ bass: 1, mid: 0.28, treble: 0.14 }),
-      waveformData: waveformData(),
-    });
-    const decayOne = tracker.update({
-      time: 0.24,
-      deltaMs: 16.7,
-      analyser: null,
-      frequencyData: pulseData({ bass: 0.22, mid: 0.16, treble: 0.09 }),
-      waveformData: waveformData(),
-    });
-    const decayTwo = tracker.update({
-      time: 0.3,
-      deltaMs: 16.7,
-      analyser: null,
-      frequencyData: pulseData({ bass: 0.14, mid: 0.1, treble: 0.06 }),
-      waveformData: waveformData(),
-    });
+    const pulse = {
+      ...tracker.update({
+        time: 0.18,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData: pulseData({ bass: 1, mid: 0.28, treble: 0.14 }),
+        waveformData: waveformData(),
+      }),
+    };
+    const decayOne = {
+      ...tracker.update({
+        time: 0.24,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData: pulseData({ bass: 0.22, mid: 0.16, treble: 0.09 }),
+        waveformData: waveformData(),
+      }),
+    };
+    const decayTwo = {
+      ...tracker.update({
+        time: 0.3,
+        deltaMs: 16.7,
+        analyser: null,
+        frequencyData: pulseData({ bass: 0.14, mid: 0.1, treble: 0.06 }),
+        waveformData: waveformData(),
+      }),
+    };
 
     expect(pulse.beat).toBe(1);
     expect(pulse.beatPulse).toBeGreaterThan(0.3);
