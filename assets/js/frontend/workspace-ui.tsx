@@ -1,19 +1,12 @@
-import type { KeyboardEvent, ReactNode, RefObject } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
-import type { RenderPreferences } from '../core/state/render-preference-store.ts';
 import {
   type MilkdropPresetRenderPreview,
   PRESET_PREVIEW_REQUEST_LIMIT,
 } from '../milkdrop/preset-preview.ts';
 import { getIconNodes, type UiIconName } from '../ui/icon-library.ts';
-import type {
-  AudioSource,
-  PanelState,
-  PresetCatalogEntry,
-  SessionRouteState,
-} from './contracts.ts';
+import type { PresetCatalogEntry } from './contracts.ts';
 import { StimsControlDock } from './StimsControlDock.tsx';
 import {
   StimsCornerBrand,
@@ -22,6 +15,7 @@ import {
   StimsRailActions,
   StimsStageFrame,
 } from './StimsStageFrame.tsx';
+import { useWorkspace } from './workspace-context.ts';
 import {
   buildAppliedFilterSummary,
   describePresetMood,
@@ -34,7 +28,6 @@ import {
   getToolLabel,
   prettifyCollectionTag,
   type ReadinessItem,
-  type StarterPreset,
   TOOL_TABS,
 } from './workspace-helpers.ts';
 
@@ -233,37 +226,24 @@ export function PresetShelfSection({
   );
 }
 
-function AudioSourcePanel({
-  engineReady,
-  onAudioStart,
-  onLoadRecentYouTubeVideo,
-  onLoadYouTube,
-  onYoutubeUrlChange,
-  onYoutubeUrlKeyDown,
-  recentYouTubeVideos,
-  youtubeCanLoad,
-  youtubeFeedback,
-  youtubeInputInvalid,
-  youtubeLoading,
-  youtubePreviewRef,
-  youtubeReady,
-  youtubeUrl,
-}: {
-  engineReady: boolean;
-  onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
-  onLoadRecentYouTubeVideo: (videoId: string) => void;
-  onLoadYouTube: () => void;
-  onYoutubeUrlChange: (value: string) => void;
-  onYoutubeUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
-  recentYouTubeVideos: Array<{ id: string; title: string }>;
-  youtubeCanLoad: boolean;
-  youtubeFeedback: string;
-  youtubeInputInvalid: boolean;
-  youtubeLoading: boolean;
-  youtubePreviewRef: RefObject<HTMLDivElement | null>;
-  youtubeReady: boolean;
-  youtubeUrl: string;
-}) {
+function AudioSourcePanel() {
+  const w = useWorkspace();
+  const engineReady = w.engineReady;
+  const onAudioStart = (source: 'demo' | 'microphone' | 'tab' | 'youtube') =>
+    w.handleAudioStart(source);
+  const onLoadRecentYouTubeVideo = w.loadRecentYouTubeVideo;
+  const onLoadYouTube = () => w.loadYouTubePreview();
+  const onYoutubeUrlChange = w.setYoutubeUrl;
+  const onYoutubeUrlKeyDown = w.handleYoutubeUrlKeyDown;
+  const recentYouTubeVideos = w.recentYouTubeVideos;
+  const youtubeCanLoad = w.youtubeCanLoad;
+  const youtubeFeedback = w.youtubeFeedback;
+  const youtubeInputInvalid = w.youtubeInputInvalid;
+  const youtubeLoading = w.youtubeLoading;
+  const youtubePreviewRef = w.youtubePreviewRef;
+  const youtubeReady = w.youtubeReady;
+  const youtubeUrl = w.youtubeUrl;
+
   return (
     <div className="stims-shell__source-panel">
       <div className="stims-shell__source-heading">
@@ -591,87 +571,38 @@ export function WorkspaceLaunchPanel({
 
 export function WorkspaceStagePanel({
   audioEnergy = 0,
-  audioSource,
-  backend,
-  engineReady,
-  invalidExperienceSlug,
   isFullscreen,
   launchPanel,
   liveMode,
-  missingRequestedPreset,
-  onAudioStart,
-  onAudioStop,
-  onLoadRecentYouTubeVideo,
-  onLoadYouTube,
-  onOpenBrowse,
-  onOpenSettings,
-  onShowCurrentLink,
-  onShufflePreset,
-  onToggleExtendedSources,
   onToggleFullscreen,
   onToggleTheme,
-  onYoutubeUrlChange,
-  onYoutubeUrlKeyDown,
-  panel,
-  recentYouTubeVideos,
   stageEyebrow,
-  stageRef,
   stageSummary,
   stageTitle,
-  showExtendedSources,
-  youtubeCanLoad,
-  youtubeFeedback,
-  youtubeInputInvalid,
-  youtubeLoading,
-  youtubePreviewRef,
-  youtubeReady,
-  youtubeUrl,
 }: {
   audioEnergy?: number;
-  audioSource: AudioSource | null | undefined;
-  backend: 'webgl' | 'webgpu' | null | undefined;
-  engineReady: boolean;
-  invalidExperienceSlug: string | null;
   isFullscreen: boolean;
   launchPanel: ReactNode;
   liveMode: boolean;
-  missingRequestedPreset: boolean;
-  onAudioStart: (
-    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
-  ) => void;
-  onAudioStop: () => void;
-  onLoadRecentYouTubeVideo: (videoId: string) => void;
-  onLoadYouTube: () => void;
-  onOpenBrowse: () => void;
-  onOpenSettings: () => void;
-  onShowCurrentLink: () => void;
-  onShufflePreset: () => void;
-  onToggleExtendedSources: () => void;
   onToggleFullscreen: () => void;
   onToggleTheme: () => void;
-  onYoutubeUrlChange: (value: string) => void;
-  onYoutubeUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
-  panel: PanelState;
-  recentYouTubeVideos: Array<{ id: string; title: string }>;
   stageEyebrow: string;
-  stageRef: RefObject<HTMLDivElement | null>;
   stageSummary: string;
   stageTitle: string;
-  showExtendedSources: boolean;
-  youtubeCanLoad: boolean;
-  youtubeFeedback: string;
-  youtubeInputInvalid: boolean;
-  youtubeLoading: boolean;
-  youtubePreviewRef: RefObject<HTMLDivElement | null>;
-  youtubeReady: boolean;
-  youtubeUrl: string;
 }) {
+  const w = useWorkspace();
+  const backend = w.engineSnapshot?.backend;
+  const panel = w.routeState.panel;
+  const missingRequestedPreset = w.missingRequestedPreset;
+  const invalidExperienceSlug = w.routeState.invalidExperienceSlug;
+  const audioSource = w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
+
   return (
     <section
       className="stims-shell__workspace"
       data-mode={liveMode ? 'live' : 'home'}
     >
-      <StimsStageFrame stageRef={stageRef} liveMode={liveMode}>
+      <StimsStageFrame stageRef={w.stageRef} liveMode={liveMode}>
         <StimsFrameChrome>
           <StimsCornerBrand>
             <a href="/" className="stims-shell__logo">
@@ -714,15 +645,8 @@ export function WorkspaceStagePanel({
             ) : null}
             {!missingRequestedPreset && !invalidExperienceSlug ? (
               <StimsControlDock
-                audioSource={audioSource}
                 isFullscreen={isFullscreen}
-                panel={panel}
-                onOpenBrowse={onOpenBrowse}
-                onOpenSettings={onOpenSettings}
-                onShufflePreset={onShufflePreset}
-                onAudioStop={onAudioStop}
                 onToggleFullscreen={onToggleFullscreen}
-                onShowCurrentLink={onShowCurrentLink}
                 onToggleTheme={onToggleTheme}
               />
             ) : null}
@@ -750,30 +674,13 @@ export function WorkspaceStagePanel({
                 <button
                   type="button"
                   className="stims-shell__text-button stims-shell__audio-bridge-link"
-                  onClick={onToggleExtendedSources}
+                  onClick={w.toggleExtendedSources}
                 >
-                  {showExtendedSources
+                  {w.showExtendedSources
                     ? 'Hide sources'
-                    : 'Switch to your music →'}
+                    : 'Switch to your music \u2192'}
                 </button>
-                {showExtendedSources ? (
-                  <AudioSourcePanel
-                    engineReady={engineReady}
-                    onAudioStart={onAudioStart}
-                    onLoadRecentYouTubeVideo={onLoadRecentYouTubeVideo}
-                    onLoadYouTube={onLoadYouTube}
-                    onYoutubeUrlChange={onYoutubeUrlChange}
-                    onYoutubeUrlKeyDown={onYoutubeUrlKeyDown}
-                    recentYouTubeVideos={recentYouTubeVideos}
-                    youtubeCanLoad={youtubeCanLoad}
-                    youtubeFeedback={youtubeFeedback}
-                    youtubeInputInvalid={youtubeInputInvalid}
-                    youtubeLoading={youtubeLoading}
-                    youtubePreviewRef={youtubePreviewRef}
-                    youtubeReady={youtubeReady}
-                    youtubeUrl={youtubeUrl}
-                  />
-                ) : null}
+                {w.showExtendedSources ? <AudioSourcePanel /> : null}
               </div>
             ) : null}
           </StimsFrameHeader>
@@ -798,50 +705,26 @@ export function WorkspaceStagePanel({
 }
 
 function BrowseSheetPanel({
-  catalog,
-  catalogError,
-  catalogReady,
-  collectionTags,
-  currentPresetId,
-  favoritePresets,
-  filteredCatalog,
   onCollectionTagChange,
-  onExportPreset,
   onImport,
-  onPresetSelection,
-  onRefreshPresetPreviews,
-  onSearchQueryChange,
-  onShowCurrentLink,
-  onShufflePreset,
-  onVisiblePresetIdsChange,
-  presetPreviews,
-  recentPresets,
-  routeState,
-  searchQuery,
-  starterPresets,
 }: {
-  catalog: PresetCatalogEntry[];
-  catalogError: string | null;
-  catalogReady: boolean;
-  collectionTags: string[];
-  currentPresetId: string | null;
-  favoritePresets: PresetCatalogEntry[];
-  filteredCatalog: PresetCatalogEntry[];
   onCollectionTagChange: (collectionTag: string | null) => void;
-  onExportPreset: () => void;
   onImport: (files: FileList | null) => void;
-  onPresetSelection: (presetId: string) => void;
-  onRefreshPresetPreviews: (presetIds: string[]) => void;
-  onSearchQueryChange: (query: string) => void;
-  onShowCurrentLink: () => void;
-  onShufflePreset: () => void;
-  onVisiblePresetIdsChange: (presetIds: string[]) => void;
-  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
-  recentPresets: PresetCatalogEntry[];
-  routeState: SessionRouteState;
-  searchQuery: string;
-  starterPresets: StarterPreset[];
 }) {
+  const w = useWorkspace();
+  const catalog = w.catalog;
+  const catalogError = w.catalogError;
+  const catalogReady = w.catalogReady;
+  const collectionTags = w.collectionTags;
+  const currentPresetId = w.engineSnapshot?.activePresetId ?? null;
+  const favoritePresets = w.favoritePresets;
+  const filteredCatalog = w.filteredCatalog;
+  const presetPreviews = w.presetPreviews;
+  const recentPresets = w.recentPresets;
+  const routeState = w.routeState;
+  const searchQuery = w.searchQuery;
+  const starterPresets = w.starterPresets;
+
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const showStarterPresets =
     searchQuery.trim().length === 0 && routeState.collectionTag === null;
@@ -891,8 +774,8 @@ function BrowseSheetPanel({
     .join(' · ');
 
   useEffect(() => {
-    onVisiblePresetIdsChange(visiblePreviewIds);
-  }, [onVisiblePresetIdsChange, visiblePreviewIds]);
+    w.requestPresetPreviews(visiblePreviewIds);
+  }, [visiblePreviewIds, w.requestPresetPreviews]);
 
   useEffect(() => {
     if (usingHiddenCollectionFilter) {
@@ -914,7 +797,7 @@ function BrowseSheetPanel({
             <button
               type="button"
               className="stims-shell__text-button"
-              onClick={onShufflePreset}
+              onClick={w.handleShufflePreset}
               disabled={catalog.length === 0}
             >
               Shuffle
@@ -936,7 +819,7 @@ function BrowseSheetPanel({
                 <button
                   type="button"
                   className="stims-shell__text-button"
-                  onClick={() => onRefreshPresetPreviews(visiblePreviewIds)}
+                  onClick={() => w.refreshPresetPreviews(visiblePreviewIds)}
                   disabled={visiblePreviewIds.length === 0}
                 >
                   Refresh previews
@@ -955,7 +838,7 @@ function BrowseSheetPanel({
           type="search"
           placeholder="Search by title, mood, creator, or collection"
           value={searchQuery}
-          onChange={(event) => onSearchQueryChange(event.target.value)}
+          onChange={(event) => w.setSearchQuery(event.target.value)}
         />
 
         <p
@@ -1057,7 +940,7 @@ function BrowseSheetPanel({
                 key={starter.key}
                 type="button"
                 className="stims-shell__starter-card"
-                onClick={() => onPresetSelection(starter.preset.id)}
+                onClick={() => w.handlePresetSelection(starter.preset.id)}
               >
                 <PresetArtwork
                   entry={starter.preset}
@@ -1085,7 +968,7 @@ function BrowseSheetPanel({
           }))}
           summary="Recent picks help you resume without hunting."
           title="Recent"
-          onSelect={onPresetSelection}
+          onSelect={w.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
       ) : null}
@@ -1099,7 +982,7 @@ function BrowseSheetPanel({
           }))}
           summary="Saved picks stay visible even before anything is playing."
           title="Saved"
-          onSelect={onPresetSelection}
+          onSelect={w.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
       ) : null}
@@ -1140,7 +1023,7 @@ function BrowseSheetPanel({
                   type="button"
                   className="stims-shell__preset-card"
                   data-active={String(entry.id === currentPresetId)}
-                  onClick={() => onPresetSelection(entry.id)}
+                  onClick={() => w.handlePresetSelection(entry.id)}
                 >
                   <PresetArtwork
                     entry={entry}
@@ -1175,7 +1058,7 @@ function BrowseSheetPanel({
         </ul>
 
         <div className="stims-shell__session-actions">
-          <button type="button" className="cta-button" onClick={onExportPreset}>
+          <button type="button" className="cta-button" onClick={w.exportPreset}>
             Export preset
           </button>
           <label className="cta-button stims-shell__file-button">
@@ -1190,7 +1073,7 @@ function BrowseSheetPanel({
           <button
             type="button"
             className="cta-button"
-            onClick={onShowCurrentLink}
+            onClick={() => void w.handleShowCurrentLink()}
           >
             Copy link
           </button>
@@ -1201,20 +1084,16 @@ function BrowseSheetPanel({
 }
 
 function SettingsSheetPanel({
-  motionPreference,
   onCompatibilityModeChange,
   onMotionPreferenceChange,
-  onQualityPresetChange,
-  qualityPreset,
-  renderPreferences,
 }: {
-  motionPreference: MotionPreference;
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
-  onQualityPresetChange: (presetId: string) => void;
-  qualityPreset: QualityPreset;
-  renderPreferences: RenderPreferences;
 }) {
+  const w = useWorkspace();
+  const motionPreference = w.motionPreference;
+  const qualityPreset = w.qualityPreset;
+  const renderPreferences = w.renderPreferences;
   const guidedPresets = getSettingsPresetOptions().slice(0, 3);
 
   return (
@@ -1228,7 +1107,7 @@ function SettingsSheetPanel({
                 type="button"
                 className="stims-shell__preset-guide"
                 data-active={String(preset.id === qualityPreset.id)}
-                onClick={() => onQualityPresetChange(preset.id)}
+                onClick={() => w.setQualityPreset(preset.id)}
               >
                 <strong>{preset.label}</strong>
                 <span className="stims-shell__meta-copy">
@@ -1245,7 +1124,7 @@ function SettingsSheetPanel({
           id="quality-select"
           className="stims-shell__select"
           value={qualityPreset.id}
-          onChange={(event) => onQualityPresetChange(event.target.value)}
+          onChange={(event) => w.setQualityPreset(event.target.value)}
         >
           {getSettingsPresetOptions().map((preset) => (
             <option key={preset.id} value={preset.id}>
@@ -1304,70 +1183,16 @@ function SettingsSheetPanel({
 }
 
 export function WorkspaceToolSheet({
-  catalog,
-  catalogError,
-  catalogReady,
-  collectionTags,
-  currentPresetId,
-  favoritePresets,
-  filteredCatalog,
-  motionPreference,
-  onClose,
-  onCollectionTagChange,
   onCompatibilityModeChange,
-  onImport,
   onMotionPreferenceChange,
-  onPresetSelection,
-  onQualityPresetChange,
-  onRefreshPresetPreviews,
-  onSearchQueryChange,
-  onShowCurrentLink,
-  onShufflePreset,
-  onTabChange,
-  onVisiblePresetIdsChange,
-  onExportPreset,
-  panel,
-  presetPreviews,
-  qualityPreset,
-  recentPresets,
-  renderPreferences,
-  routeState,
-  searchQuery,
-  starterPresets,
   stageAnchoredToolOpen,
 }: {
-  catalog: PresetCatalogEntry[];
-  catalogError: string | null;
-  catalogReady: boolean;
-  collectionTags: string[];
-  currentPresetId: string | null;
-  favoritePresets: PresetCatalogEntry[];
-  filteredCatalog: PresetCatalogEntry[];
-  motionPreference: MotionPreference;
-  onClose: () => void;
-  onCollectionTagChange: (collectionTag: string | null) => void;
   onCompatibilityModeChange: (enabled: boolean) => void;
-  onImport: (files: FileList | null) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
-  onPresetSelection: (presetId: string) => void;
-  onQualityPresetChange: (presetId: string) => void;
-  onRefreshPresetPreviews: (presetIds: string[]) => void;
-  onSearchQueryChange: (query: string) => void;
-  onShowCurrentLink: () => void;
-  onShufflePreset: () => void;
-  onTabChange: (panel: PanelState) => void;
-  onVisiblePresetIdsChange: (presetIds: string[]) => void;
-  onExportPreset: () => void;
-  panel: PanelState;
-  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
-  qualityPreset: QualityPreset;
-  recentPresets: PresetCatalogEntry[];
-  renderPreferences: RenderPreferences;
-  routeState: SessionRouteState;
-  searchQuery: string;
-  starterPresets: StarterPreset[];
   stageAnchoredToolOpen: boolean;
 }) {
+  const w = useWorkspace();
+  const panel = w.routeState.panel;
   const sheetRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -1381,7 +1206,7 @@ export function WorkspaceToolSheet({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        w.updatePanel(null);
         return;
       }
 
@@ -1417,7 +1242,7 @@ export function WorkspaceToolSheet({
         handleKeyDown as unknown as EventListener,
       );
     };
-  }, [onClose]);
+  }, [w.updatePanel]);
 
   if (!panel) {
     return null;
@@ -1434,7 +1259,7 @@ export function WorkspaceToolSheet({
           type="button"
           className="stims-shell__sheet-backdrop"
           aria-label="Close tools"
-          onClick={onClose}
+          onClick={() => w.updatePanel(null)}
         />
       ) : null}
       <aside
@@ -1454,7 +1279,7 @@ export function WorkspaceToolSheet({
           <button
             type="button"
             className="stims-shell__icon-button"
-            onClick={onClose}
+            onClick={() => w.updatePanel(null)}
           >
             <UiIcon
               name="close"
@@ -1472,7 +1297,7 @@ export function WorkspaceToolSheet({
                 type="button"
                 className="stims-shell__sheet-tab"
                 data-active={String(panel === tool)}
-                onClick={() => onTabChange(tool)}
+                onClick={() => w.updatePanel(tool)}
               >
                 {getToolLabel(tool)}
               </button>
@@ -1490,12 +1315,12 @@ export function WorkspaceToolSheet({
                   key={tool}
                   type="button"
                   className="stims-shell__text-button"
-                  onClick={() => onTabChange(tool)}
+                  onClick={() => w.updatePanel(tool)}
                 >
                   {panel === 'browse' && tool === 'settings'
-                    ? 'Style →'
+                    ? 'Style \u2192'
                     : panel === 'settings' && tool === 'browse'
-                      ? '← Browse presets'
+                      ? '\u2190 Browse presets'
                       : `Open ${getToolLabel(tool).toLowerCase()}`}
                 </button>
               ))}
@@ -1505,38 +1330,19 @@ export function WorkspaceToolSheet({
         <div className="stims-shell__sheet-body">
           {panel === 'browse' ? (
             <BrowseSheetPanel
-              catalog={catalog}
-              catalogError={catalogError}
-              catalogReady={catalogReady}
-              collectionTags={collectionTags}
-              currentPresetId={currentPresetId}
-              favoritePresets={favoritePresets}
-              filteredCatalog={filteredCatalog}
-              onCollectionTagChange={onCollectionTagChange}
-              onExportPreset={onExportPreset}
-              onImport={onImport}
-              onPresetSelection={onPresetSelection}
-              onRefreshPresetPreviews={onRefreshPresetPreviews}
-              onSearchQueryChange={onSearchQueryChange}
-              onShowCurrentLink={onShowCurrentLink}
-              onShufflePreset={onShufflePreset}
-              onVisiblePresetIdsChange={onVisiblePresetIdsChange}
-              presetPreviews={presetPreviews}
-              recentPresets={recentPresets}
-              routeState={routeState}
-              searchQuery={searchQuery}
-              starterPresets={starterPresets}
+              onCollectionTagChange={(collectionTag) =>
+                w.commitRoute({ ...w.routeState, collectionTag })
+              }
+              onImport={(files) => {
+                void w.handleImport(files);
+              }}
             />
           ) : null}
 
           {panel === 'settings' ? (
             <SettingsSheetPanel
-              motionPreference={motionPreference}
               onCompatibilityModeChange={onCompatibilityModeChange}
               onMotionPreferenceChange={onMotionPreferenceChange}
-              onQualityPresetChange={onQualityPresetChange}
-              qualityPreset={qualityPreset}
-              renderPreferences={renderPreferences}
             />
           ) : null}
         </div>
@@ -1563,7 +1369,8 @@ export function WorkspaceToast({
     <output
       className="stims-shell__toast"
       data-tone={toast.tone}
-      aria-live="polite"
+      role={toast.tone === 'error' ? 'alert' : 'status'}
+      aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
       aria-atomic="true"
     >
       <span>{toast.message}</span>

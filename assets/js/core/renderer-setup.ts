@@ -270,7 +270,9 @@ export async function initRenderer(
                 disposeTimedOutRenderer();
               }
             })
-            .catch(() => {});
+            .catch((error: unknown) => {
+              console.warn('WebGPU renderer init timed out.', error);
+            });
           currentState = validateTransition(
             currentState,
             FallbackState.RendererReady,

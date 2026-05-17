@@ -11,20 +11,10 @@ import {
 } from 'react';
 import { createLogger } from '../core/logger.ts';
 import {
-  getActiveMotionPreference,
-  subscribeToMotionPreference,
-} from '../core/motion-preferences.ts';
-import {
   DEFAULT_QUALITY_PRESETS,
-  getActiveQualityPreset,
   QUALITY_STORAGE_KEY,
   setQualityPresetById,
-  subscribeToQualityPreset,
 } from '../core/settings-panel.ts';
-import {
-  getActiveRenderPreferences,
-  subscribeToRenderPreferences,
-} from '../core/state/render-preference-store.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
@@ -41,6 +31,11 @@ import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
+import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
+import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
+import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
+import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
+import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import {
   readPersistedSession,
   writePersistedSession,
@@ -61,35 +56,6 @@ import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
 
 const log = createLogger('WorkspaceHooks');
 const PREVIEW_SETTLE_MS = 750;
-
-function syncStageCanvasStyle(stage: HTMLDivElement | null) {
-  const canvas = stage?.querySelector('canvas');
-  if (
-    !canvas ||
-    typeof canvas !== 'object' ||
-    !('style' in canvas) ||
-    !('tagName' in canvas) ||
-    canvas.tagName !== 'CANVAS'
-  ) {
-    return;
-  }
-
-  if (canvas.style.display !== 'block') {
-    canvas.style.display = 'block';
-  }
-  if (canvas.style.width !== '100%') {
-    canvas.style.width = '100%';
-  }
-  if (canvas.style.height !== '100%') {
-    canvas.style.height = '100%';
-  }
-  if (canvas.style.maxWidth !== 'none') {
-    canvas.style.maxWidth = 'none';
-  }
-  if (canvas.style.maxHeight !== 'none') {
-    canvas.style.maxHeight = 'none';
-  }
-}
 
 export function useWorkspaceRouteState() {
   const router = useRouter();
@@ -166,15 +132,8 @@ export function useWorkspaceSessionState({
   );
   const [engineAdapterReady, setEngineAdapterReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [qualityPreset, setQualityPresetState] = useState(() =>
-    getActiveQualityPreset({ storageKey: QUALITY_STORAGE_KEY }),
-  );
-  const [renderPreferences, setRenderPreferencesState] = useState(() =>
-    getActiveRenderPreferences(),
-  );
-  const [motionPreference, setMotionPreferenceState] = useState(() =>
-    getActiveMotionPreference(),
-  );
+  const { motionPreference, qualityPreset, renderPreferences } =
+    useStoreSubscriptions();
   const [showExtendedSources, setShowExtendedSources] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [presetPreviews, setPresetPreviews] = useState<
@@ -394,28 +353,7 @@ export function useWorkspaceSessionState({
     },
   );
 
-  useEffect(() => {
-    const stage = stageRef.current;
-    syncStageCanvasStyle(stage);
-    if (!stage || typeof MutationObserver !== 'function') {
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      syncStageCanvasStyle(stage);
-    });
-
-    observer.observe(stage, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ['style'],
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+  useStageCanvasSync(stageRef);
 
   useEffect(() => {
     sessionDisposedRef.current = false;
@@ -451,27 +389,6 @@ export function useWorkspaceSessionState({
       engineAdapterPromiseRef.current = null;
       setEngineAdapterReady(false);
     };
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToQualityPreset((preset) => {
-      setQualityPresetState(preset);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToRenderPreferences((preferences) => {
-      setRenderPreferencesState(preferences);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToMotionPreference((preference) => {
-      setMotionPreferenceState(preference);
-    });
-    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -571,77 +488,15 @@ export function useWorkspaceSessionState({
     if (!engineSnapshot?.activePresetId || !engineSnapshot?.runtimeReady) {
       return;
     }
-
     void refreshCatalogActivity();
+  }, [engineSnapshot?.activePresetId, engineSnapshot?.runtimeReady]);
 
-    const shareableActivePresetId = resolvePresetId(
-      engineSnapshot.catalogEntries,
-      engineSnapshot.activePresetId,
-    );
-    if (!shareableActivePresetId) {
-      return;
-    }
-
-    if (pendingPresetIdRef.current) {
-      if (shareableActivePresetId === pendingPresetIdRef.current) {
-        pendingPresetIdRef.current = null;
-      }
-      return;
-    }
-
-    startTransition(() => {
-      setRouteState((current) => {
-        if (current.presetId === shareableActivePresetId) {
-          return current;
-        }
-        return {
-          ...current,
-          presetId: shareableActivePresetId,
-        };
-      });
-    });
-  }, [
-    engineSnapshot?.activePresetId,
-    engineSnapshot?.catalogEntries,
-    engineSnapshot?.runtimeReady,
+  usePresetRouteSync({
+    engineSnapshot,
+    pendingPresetIdRef,
+    routeState,
     setRouteState,
-  ]);
-
-  useEffect(() => {
-    if (
-      !routeState.presetId ||
-      routeState.invalidExperienceSlug ||
-      !engineSnapshot?.runtimeReady
-    ) {
-      return;
-    }
-
-    const resolvedPresetId = resolvePresetId(
-      engineSnapshot?.catalogEntries ?? [],
-      routeState.presetId,
-    );
-    if (!resolvedPresetId) {
-      return;
-    }
-
-    startTransition(() => {
-      setRouteState((current) => {
-        if (current.presetId === resolvedPresetId) {
-          return current;
-        }
-        return {
-          ...current,
-          presetId: resolvedPresetId,
-        };
-      });
-    });
-  }, [
-    engineSnapshot?.catalogEntries,
-    engineSnapshot?.runtimeReady,
-    routeState.invalidExperienceSlug,
-    routeState.presetId,
-    setRouteState,
-  ]);
+  });
 
   useEffect(() => {
     if (!engineRef.current?.isMounted()) {
@@ -691,17 +546,35 @@ export function useWorkspaceSessionState({
     log.log(
       `requesting ${requestedPresetId} (active: ${engineSnapshot?.activePresetId ?? 'none'})`,
     );
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      if (pendingPresetIdRef.current === requestedPresetId) {
+        pendingPresetIdRef.current = null;
+        setStatusMessage(
+          `Preset "${requestedPresetId}" took too long to load. Try again.`,
+        );
+      }
+    }, 10_000);
+
     void engineRef.current.loadPreset(requestedPresetId).then(
       () => {
+        clearTimeout(timeoutId);
+        if (timedOut) return;
         log.log(`loaded ${requestedPresetId}`);
         if (pendingPresetIdRef.current === requestedPresetId) {
           pendingPresetIdRef.current = null;
         }
       },
       () => {
+        clearTimeout(timeoutId);
+        if (timedOut) return;
         log.warn(`failed to load ${requestedPresetId}`);
         if (pendingPresetIdRef.current === requestedPresetId) {
           pendingPresetIdRef.current = null;
+          setStatusMessage(
+            `Failed to load preset. "${requestedPresetId}" may be unavailable.`,
+          );
         }
       },
     );
@@ -711,47 +584,17 @@ export function useWorkspaceSessionState({
     routeState.presetId,
   ]);
 
-  useEffect(() => {
-    if (
-      !engineRef.current?.isMounted() ||
-      routeState.audioSource !== 'demo' ||
-      engineSnapshot?.audioActive
-    ) {
-      return;
-    }
+  useAudioSourceSync({
+    engineRef,
+    engineSnapshot,
+    routeState,
+    setStatusMessage,
+  });
 
-    void engineRef.current.setAudioSource({ source: 'demo' }).catch((error) => {
-      setStatusMessage(
-        error instanceof Error ? error.message : 'Unable to start demo audio.',
-      );
-    });
-  }, [engineSnapshot?.audioActive, routeState.audioSource]);
-
-  useEffect(() => {
-    if (
-      !engineRef.current?.isMounted() ||
-      !engineSnapshot?.audioActive ||
-      routeState.audioSource !== null
-    ) {
-      return;
-    }
-
-    void engineRef.current.stopAudio().catch(() => {});
-  }, [engineSnapshot?.audioActive, routeState.audioSource]);
-
-  useEffect(() => {
-    const liveSession =
-      engineSnapshot?.audioActive ||
-      document.body.dataset.audioActive === 'true';
-    document.documentElement.dataset.focusedSession = liveSession
-      ? 'live'
-      : 'launch';
-    if (routeState.agentMode) {
-      document.documentElement.dataset.agentMode = 'true';
-    } else {
-      delete document.documentElement.dataset.agentMode;
-    }
-  }, [engineSnapshot?.audioActive, routeState.agentMode]);
+  useDocumentDatasetSync({
+    audioActive: engineSnapshot?.audioActive,
+    agentMode: routeState.agentMode,
+  });
 
   useEffect(() => {
     if (sessionRestoredRef.current) {
@@ -903,7 +746,9 @@ export function useWorkspaceSessionState({
     youtubeReady,
     youtubeUrl,
     stopAudio: async () => {
-      await engineRef.current?.stopAudio().catch(() => {});
+      await engineRef.current?.stopAudio().catch((error) => {
+        console.debug('Audio stop failed.', error);
+      });
     },
   };
 }

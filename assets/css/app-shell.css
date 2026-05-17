@@ -856,8 +856,7 @@ body[data-page="workspace"] {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 16px;
   align-items: start;
-  align-self: stretch;
-  min-height: 100%;
+  align-self: start;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 28px;
@@ -888,7 +887,7 @@ body[data-page="workspace"] {
     border-color 180ms ease,
     box-shadow 180ms ease;
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
 }
 
 .stims-shell__launch-recommendation:hover {
@@ -1745,6 +1744,9 @@ body[data-page="workspace"] {
   align-items: start;
   justify-items: start;
   pointer-events: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
 }
 
 .stims-shell__stage-hero > * {
@@ -2782,6 +2784,24 @@ body[data-page="workspace"] {
   );
   border-color: rgba(255, 255, 255, 0.12);
   color: rgba(16, 22, 16, 0.5);
+}
+
+/* Collapse launch hero to single column at tablet widths */
+@media (max-width: 1280px) {
+  .stims-shell__launch-hero,
+  .stims-shell__launch-recommendation {
+    grid-template-columns: 1fr;
+  }
+
+  .stims-shell__launch-recommendation {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 0;
+  }
+
+  .stims-shell__stage-hero {
+    width: min(62rem, calc(100% - 64px));
+  }
 }
 
 @media (max-width: 1120px) {

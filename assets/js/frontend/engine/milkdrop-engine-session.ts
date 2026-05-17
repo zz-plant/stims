@@ -181,7 +181,7 @@ export function createMilkdropEngineAdapter() {
 
     async loadPreset(presetId: string) {
       if (!experience) {
-        return;
+        throw new Error('MilkDrop engine session is not mounted.');
       }
       await experience.selectPreset(presetId);
       emit();

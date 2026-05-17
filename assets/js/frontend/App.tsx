@@ -1,6 +1,26 @@
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component, useCallback, useEffect, useRef, useState } from 'react';
 import '../../css/app-shell.css';
+import { setMotionPreference } from '../core/motion-preferences.ts';
+import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
+import {
+  applyTheme,
+  getActiveThemePreference,
+  setThemePreference,
+} from '../core/theme-preferences.ts';
+import {
+  getFullscreenElement,
+  subscribeToFullscreenChange,
+  toggleElementFullscreen,
+} from './fullscreen.ts';
+import { NewHomePage } from './NewHomePage.tsx';
+import { useWorkspace, WorkspaceProvider } from './workspace-context.ts';
+import { describePresetMood } from './workspace-helpers.ts';
+import {
+  WorkspaceStagePanel,
+  WorkspaceToast,
+  WorkspaceToolSheet,
+} from './workspace-ui.tsx';
 
 class StimsErrorBoundary extends Component<
   { children: ReactNode },
@@ -126,130 +146,22 @@ class StimsErrorBoundary extends Component<
   }
 }
 
-import { setMotionPreference } from '../core/motion-preferences.ts';
-import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
-import {
-  applyTheme,
-  getActiveThemePreference,
-  setThemePreference,
-} from '../core/theme-preferences.ts';
-import {
-  getFullscreenElement,
-  subscribeToFullscreenChange,
-  toggleElementFullscreen,
-} from './fullscreen.ts';
-import { NewHomePage } from './NewHomePage.tsx';
-import { describePresetMood } from './workspace-helpers.ts';
-import {
-  useWorkspaceRouteState,
-  useWorkspaceSessionState,
-} from './workspace-hooks.ts';
-import { useWorkspaceShellOrchestration } from './workspace-shell-hooks.ts';
-import {
-  WorkspaceStagePanel,
-  WorkspaceToast,
-  WorkspaceToolSheet,
-} from './workspace-ui.tsx';
+function StimsWorkspaceAppShell() {
+  const w = useWorkspace();
 
-function StimsWorkspaceAppInner() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
-  const {
-    activityCatalog,
-    deferredSearch,
-    dismissToast,
-    engineSnapshot,
-    exportPreset,
-    fallbackCatalog,
-    fallbackCatalogError,
-    fallbackCatalogReady,
-    handleYoutubeUrlKeyDown,
-    importPresetFiles,
-    loadRecentYouTubeVideo,
-    loadYouTubePreview,
-    motionPreference,
-    pendingPresetIdRef,
-    presetPreviews,
-    qualityPreset,
-    refreshPresetPreviews,
-    readinessItems,
-    recentYouTubeVideos,
-    renderPreferences,
-    requestPresetPreviews,
-    searchQuery,
-    setQualityPreset,
-    setSearchQuery,
-    setStatusMessage,
-    setYoutubeUrl,
-    showExtendedSources,
-    stageRef,
-    startAudioSource,
-    toast,
-    toggleExtendedSources,
-    youtubeCanLoad,
-    youtubeFeedback,
-    youtubeInputInvalid,
-    youtubeLoading,
-    youtubePreviewRef,
-    youtubeReady,
-    youtubeUrl,
-  } = useWorkspaceSessionState({
-    routeState,
-    setRouteState,
-  });
-  const {
-    catalog,
-    catalogError,
-    catalogReady,
-    collectionTags,
-    engineReady,
-    favoritePresets,
-    featuredPreset,
-    filteredCatalog,
-    handleAudioStart,
-    handleAudioStop,
-    handleBrowseRecovery,
-    handleFeaturedPresetSelection,
-    handleImport,
-    handlePresetSelection,
-    handleShowCurrentLink,
-    handleShufflePreset,
-    launchControlsHidden,
-    loadingRequestedPreset,
-    missingRequestedPreset,
-    recentPresets,
-    readinessAlerts,
-    selectedPreset,
-    starterPresets,
-    updatePanel,
-  } = useWorkspaceShellOrchestration({
-    commitRoute,
-    deferredSearch,
-    engineSnapshot,
-    fallbackCatalog,
-    fallbackCatalogError,
-    fallbackCatalogReady,
-    activityCatalog,
-    importPresetFiles,
-    pendingPresetIdRef,
-    readinessItems,
-    routeState,
-    setStatusMessage,
-    startAudioSource,
-    youtubePreviewRef,
-  });
 
   const stageAnchoredToolOpen =
-    routeState.panel === 'editor' || routeState.panel === 'inspector';
-  const liveMode = launchControlsHidden;
-  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
+    w.routeState.panel === 'editor' || w.routeState.panel === 'inspector';
+  const liveMode = w.launchControlsHidden;
+  const audioEnergy = w.engineSnapshot?.audioEnergy ?? 0;
   const currentAudioSource =
-    engineSnapshot?.audioSource ?? routeState.audioSource;
+    w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
 
   const handleToggleFullscreen = useCallback(() => {
-    const stageElement = stageRef.current?.parentElement;
+    const stageElement = w.stageRef.current?.parentElement;
     if (!stageElement) {
       return;
     }
@@ -258,18 +170,18 @@ function StimsWorkspaceAppInner() {
       try {
         const toggled = await toggleElementFullscreen(stageElement, document);
         if (!toggled) {
-          setStatusMessage('Full screen is unavailable in this browser.');
+          w.setStatusMessage('Full screen is unavailable in this browser.');
         }
       } catch (_error) {
-        setStatusMessage('Full screen is unavailable in this browser.');
+        w.setStatusMessage('Full screen is unavailable in this browser.');
       }
     })();
-  }, [stageRef, setStatusMessage]);
+  }, [w.stageRef, w.setStatusMessage]);
 
   useEffect(() => {
     if (
       !liveMode ||
-      !engineSnapshot?.audioActive ||
+      !w.engineSnapshot?.audioActive ||
       currentAudioSource === 'demo'
     ) {
       quietAtRef.current = null;
@@ -285,7 +197,7 @@ function StimsWorkspaceAppInner() {
         !quietDemoSuggestedRef.current
       ) {
         quietDemoSuggestedRef.current = true;
-        setStatusMessage(
+        w.setStatusMessage(
           'Not hearing much? Switch to demo audio for guaranteed motion.',
         );
       }
@@ -296,30 +208,31 @@ function StimsWorkspaceAppInner() {
   }, [
     audioEnergy,
     currentAudioSource,
-    engineSnapshot?.audioActive,
     liveMode,
-    setStatusMessage,
+    w.engineSnapshot?.audioActive,
+    w.setStatusMessage,
   ]);
-  const stageEyebrow = loadingRequestedPreset
+
+  const stageEyebrow = w.loadingRequestedPreset
     ? 'Loading preset'
     : liveMode
       ? 'Now playing'
       : 'Ready when you are';
-  const stageTitle = loadingRequestedPreset
+  const stageTitle = w.loadingRequestedPreset
     ? 'Loading preset'
-    : selectedPreset
-      ? selectedPreset.title
-      : missingRequestedPreset
+    : w.selectedPreset
+      ? w.selectedPreset.title
+      : w.missingRequestedPreset
         ? 'Choose something new'
-        : (featuredPreset?.title ?? 'Featured pick');
-  const stageSummary = loadingRequestedPreset
-    ? `Loading ${routeState.presetId}.`
-    : selectedPreset
-      ? selectedPreset.author || 'Unknown author'
-      : missingRequestedPreset
+        : (w.featuredPreset?.title ?? 'Featured pick');
+  const stageSummary = w.loadingRequestedPreset
+    ? `Loading ${w.routeState.presetId}.`
+    : w.selectedPreset
+      ? w.selectedPreset.author || 'Unknown author'
+      : w.missingRequestedPreset
         ? 'Start with the featured pick or open the full list.'
-        : featuredPreset
-          ? describePresetMood(featuredPreset)
+        : w.featuredPreset
+          ? describePresetMood(w.featuredPreset)
           : 'Press play with demo audio, or open the full list first.';
 
   useEffect(() => {
@@ -333,32 +246,32 @@ function StimsWorkspaceAppInner() {
 
   useEffect(() => {
     let title = 'Stims';
-    if (loadingRequestedPreset) {
-      title = `Loading… · ${title}`;
-    } else if (selectedPreset) {
-      title = `${selectedPreset.title} · ${title}`;
-    } else if (routeState.panel) {
+    if (w.loadingRequestedPreset) {
+      title = `Loading\u2026 \u00B7 ${title}`;
+    } else if (w.selectedPreset) {
+      title = `${w.selectedPreset.title} \u00B7 ${title}`;
+    } else if (w.routeState.panel) {
       const panelLabel =
-        routeState.panel === 'browse'
+        w.routeState.panel === 'browse'
           ? 'Browse'
-          : routeState.panel === 'settings'
+          : w.routeState.panel === 'settings'
             ? 'Settings'
-            : routeState.panel === 'editor'
+            : w.routeState.panel === 'editor'
               ? 'Editor'
               : 'Inspector';
-      title = `${panelLabel} · ${title}`;
+      title = `${panelLabel} \u00B7 ${title}`;
     } else if (liveMode) {
-      title = `Now Playing · ${title}`;
-    } else if (!engineReady) {
-      title = `Loading… · ${title}`;
+      title = `Now Playing \u00B7 ${title}`;
+    } else if (!w.engineReady) {
+      title = `Loading\u2026 \u00B7 ${title}`;
     }
     document.title = title;
   }, [
-    loadingRequestedPreset,
-    selectedPreset,
-    routeState.panel,
+    w.loadingRequestedPreset,
+    w.selectedPreset,
+    w.routeState.panel,
     liveMode,
-    engineReady,
+    w.engineReady,
   ]);
 
   useEffect(() => {
@@ -371,24 +284,24 @@ function StimsWorkspaceAppInner() {
       }
 
       const key = event.key.toLowerCase();
-      if (key === ' ' && liveMode && engineReady) {
+      if (key === ' ' && liveMode && w.engineReady) {
         event.preventDefault();
-        handleAudioStart('demo');
+        void w.handleAudioStart('demo');
       } else if (key === 'f') {
         event.preventDefault();
         handleToggleFullscreen();
       } else if (key === 'b') {
         event.preventDefault();
-        updatePanel(routeState.panel === 'browse' ? null : 'browse');
+        w.updatePanel(w.routeState.panel === 'browse' ? null : 'browse');
       } else if (key === 's') {
         event.preventDefault();
-        updatePanel(routeState.panel === 'settings' ? null : 'settings');
+        w.updatePanel(w.routeState.panel === 'settings' ? null : 'settings');
       } else if (key === 'e') {
         event.preventDefault();
-        updatePanel(routeState.panel === 'editor' ? null : 'editor');
+        w.updatePanel(w.routeState.panel === 'editor' ? null : 'editor');
       } else if (key === 'i') {
         event.preventDefault();
-        updatePanel(routeState.panel === 'inspector' ? null : 'inspector');
+        w.updatePanel(w.routeState.panel === 'inspector' ? null : 'inspector');
       }
     };
 
@@ -403,12 +316,12 @@ function StimsWorkspaceAppInner() {
       );
     };
   }, [
-    liveMode,
-    engineReady,
-    routeState.panel,
-    updatePanel,
-    handleAudioStart,
     handleToggleFullscreen,
+    liveMode,
+    w.engineReady,
+    w.routeState.panel,
+    w.updatePanel,
+    w.handleAudioStart,
   ]);
 
   useEffect(() => {
@@ -428,11 +341,11 @@ function StimsWorkspaceAppInner() {
     applyTheme(next);
   };
 
-  return (
-    <div
+  const shell = (
+    <main
       className="stims-shell"
       id="stims-main"
-      data-has-toast={toast ? 'true' : undefined}
+      data-has-toast={w.toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
     >
       <a href="#stims-main" className="skip-link">
@@ -440,125 +353,35 @@ function StimsWorkspaceAppInner() {
       </a>
       <WorkspaceStagePanel
         audioEnergy={audioEnergy}
-        audioSource={currentAudioSource}
-        backend={engineSnapshot?.backend}
-        engineReady={engineReady}
-        invalidExperienceSlug={routeState.invalidExperienceSlug}
         isFullscreen={isFullscreen}
-        launchPanel={
-          <NewHomePage
-            engineReady={engineReady}
-            favoritePresets={favoritePresets}
-            featuredPreset={featuredPreset}
-            missingRequestedPreset={missingRequestedPreset}
-            onAudioStart={(source) => {
-              void handleAudioStart(source);
-            }}
-            onBrowseRecovery={handleBrowseRecovery}
-            onFeaturedPresetSelection={handleFeaturedPresetSelection}
-            onPresetSelection={handlePresetSelection}
-            presetPreviews={presetPreviews}
-            readinessAlerts={readinessAlerts}
-            requestedPresetId={routeState.presetId}
-            recentPresets={recentPresets}
-          />
-        }
+        launchPanel={<NewHomePage />}
         liveMode={liveMode}
-        missingRequestedPreset={missingRequestedPreset}
-        onAudioStart={(source) => {
-          void handleAudioStart(source);
-        }}
-        onAudioStop={() => {
-          handleAudioStop();
-        }}
-        onLoadYouTube={() => {
-          void loadYouTubePreview();
-        }}
-        onLoadRecentYouTubeVideo={loadRecentYouTubeVideo}
-        onOpenBrowse={() =>
-          updatePanel(routeState.panel === 'browse' ? null : 'browse')
-        }
-        onOpenSettings={() =>
-          updatePanel(routeState.panel === 'settings' ? null : 'settings')
-        }
-        onShowCurrentLink={() => {
-          void handleShowCurrentLink();
-        }}
-        onShufflePreset={handleShufflePreset}
-        onToggleExtendedSources={toggleExtendedSources}
         onToggleFullscreen={handleToggleFullscreen}
-        onYoutubeUrlChange={setYoutubeUrl}
-        onYoutubeUrlKeyDown={handleYoutubeUrlKeyDown}
-        panel={routeState.panel}
+        onToggleTheme={handleToggleTheme}
         stageEyebrow={stageEyebrow}
-        stageRef={stageRef}
         stageSummary={stageSummary}
         stageTitle={stageTitle}
-        showExtendedSources={showExtendedSources}
-        recentYouTubeVideos={recentYouTubeVideos}
-        youtubeCanLoad={youtubeCanLoad}
-        youtubeFeedback={youtubeFeedback}
-        youtubeInputInvalid={youtubeInputInvalid}
-        youtubeLoading={youtubeLoading}
-        youtubePreviewRef={youtubePreviewRef}
-        youtubeReady={youtubeReady}
-        youtubeUrl={youtubeUrl}
-        onToggleTheme={handleToggleTheme}
       />
 
       <WorkspaceToolSheet
-        catalog={catalog}
-        catalogError={catalogError}
-        catalogReady={catalogReady}
-        collectionTags={collectionTags}
-        currentPresetId={engineSnapshot?.activePresetId ?? null}
-        filteredCatalog={filteredCatalog}
-        motionPreference={motionPreference}
-        onClose={() => updatePanel(null)}
-        onCollectionTagChange={(collectionTag) =>
-          commitRoute({ ...routeState, collectionTag })
-        }
         onCompatibilityModeChange={setCompatibilityMode}
-        onExportPreset={exportPreset}
-        onImport={(files) => {
-          void handleImport(files);
-        }}
         onMotionPreferenceChange={(enabled) => setMotionPreference({ enabled })}
-        onPresetSelection={handlePresetSelection}
-        onRefreshPresetPreviews={(presetIds) => {
-          void refreshPresetPreviews(presetIds);
-        }}
-        onQualityPresetChange={setQualityPreset}
-        onSearchQueryChange={setSearchQuery}
-        onShowCurrentLink={() => {
-          void handleShowCurrentLink();
-        }}
-        onShufflePreset={handleShufflePreset}
-        onTabChange={updatePanel}
-        panel={routeState.panel}
-        presetPreviews={presetPreviews}
-        qualityPreset={qualityPreset}
-        renderPreferences={renderPreferences}
-        onVisiblePresetIdsChange={(presetIds) => {
-          void requestPresetPreviews(presetIds);
-        }}
-        routeState={routeState}
-        searchQuery={searchQuery}
-        favoritePresets={favoritePresets}
-        recentPresets={recentPresets}
-        starterPresets={starterPresets}
         stageAnchoredToolOpen={stageAnchoredToolOpen}
       />
 
-      <WorkspaceToast toast={toast} onDismiss={dismissToast} />
-    </div>
+      <WorkspaceToast toast={w.toast} onDismiss={w.dismissToast} />
+    </main>
   );
+
+  return shell;
 }
 
 export function StimsWorkspaceApp() {
   return (
     <StimsErrorBoundary>
-      <StimsWorkspaceAppInner />
+      <WorkspaceProvider>
+        <StimsWorkspaceAppShell />
+      </WorkspaceProvider>
     </StimsErrorBoundary>
   );
 }

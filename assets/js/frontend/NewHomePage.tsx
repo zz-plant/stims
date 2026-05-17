@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
-import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
-import type { ReadinessItem } from './workspace-helpers.ts';
+import { useWorkspace } from './workspace-context.ts';
 import { describePresetMood } from './workspace-helpers.ts';
 import { PresetArtwork, PresetShelfSection } from './workspace-ui.tsx';
 
@@ -32,33 +31,17 @@ function buildJumpBackEntries(
   ].slice(0, 3);
 }
 
-export function NewHomePage({
-  engineReady,
-  featuredPreset,
-  favoritePresets,
-  missingRequestedPreset,
-  onAudioStart,
-  onBrowseRecovery,
-  onFeaturedPresetSelection,
-  onPresetSelection,
-  presetPreviews,
-  readinessAlerts,
-  recentPresets,
-  requestedPresetId,
-}: {
-  engineReady: boolean;
-  featuredPreset: PresetCatalogEntry | null;
-  favoritePresets: PresetCatalogEntry[];
-  missingRequestedPreset: boolean;
-  onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
-  onBrowseRecovery: () => void;
-  onFeaturedPresetSelection: () => void;
-  onPresetSelection: (presetId: string) => void;
-  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
-  readinessAlerts: ReadinessItem[];
-  recentPresets: PresetCatalogEntry[];
-  requestedPresetId: string | null;
-}) {
+export function NewHomePage() {
+  const w = useWorkspace();
+  const engineReady = w.engineReady;
+  const featuredPreset = w.featuredPreset;
+  const favoritePresets = w.favoritePresets;
+  const missingRequestedPreset = w.missingRequestedPreset;
+  const presetPreviews = w.presetPreviews;
+  const readinessAlerts = w.readinessAlerts;
+  const recentPresets = w.recentPresets;
+  const requestedPresetId = w.routeState.presetId;
+
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined')
       return true;
@@ -94,7 +77,7 @@ export function NewHomePage({
               className="cta-button primary stims-shell__action-button"
               type="button"
               disabled={!engineReady}
-              onClick={() => onAudioStart('demo')}
+              onClick={() => void w.handleAudioStart('demo')}
             >
               <span className="stims-shell__action-label">See visuals now</span>
               <span className="stims-shell__action-hint">
@@ -106,7 +89,7 @@ export function NewHomePage({
                 type="button"
                 className="cta-button ghost"
                 disabled={!engineReady}
-                onClick={() => onAudioStart('microphone')}
+                onClick={() => void w.handleAudioStart('microphone')}
               >
                 Use microphone
               </button>
@@ -114,7 +97,7 @@ export function NewHomePage({
                 type="button"
                 className="cta-button ghost"
                 disabled={!engineReady}
-                onClick={() => onAudioStart('tab')}
+                onClick={() => void w.handleAudioStart('tab')}
               >
                 Capture tab audio
               </button>
@@ -126,7 +109,7 @@ export function NewHomePage({
           <button
             type="button"
             className="stims-shell__launch-recommendation"
-            onClick={() => onPresetSelection(featuredPreset.id)}
+            onClick={() => w.handlePresetSelection(featuredPreset.id)}
           >
             <div className="stims-shell__launch-recommendation-top">
               <p className="stims-shell__section-label">Featured pick</p>
@@ -162,7 +145,7 @@ export function NewHomePage({
               <button
                 type="button"
                 className="cta-button primary"
-                onClick={onFeaturedPresetSelection}
+                onClick={w.handleFeaturedPresetSelection}
               >
                 Try featured pick
               </button>
@@ -170,7 +153,7 @@ export function NewHomePage({
             <button
               type="button"
               className="cta-button"
-              onClick={onBrowseRecovery}
+              onClick={w.handleBrowseRecovery}
             >
               Browse everything
             </button>
@@ -215,7 +198,7 @@ export function NewHomePage({
           entries={buildJumpBackEntries(favoritePresets, recentPresets)}
           summary="Saved picks and recent stops."
           title="Jump back in"
-          onSelect={onPresetSelection}
+          onSelect={w.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
       ) : null}

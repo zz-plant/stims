@@ -1,29 +1,19 @@
-import type { PanelState } from './contracts.ts';
+import { useWorkspace } from './workspace-context.ts';
 import { UiIcon } from './workspace-ui.tsx';
 
 export function StimsControlDock({
-  audioSource,
   isFullscreen,
-  panel,
-  onOpenBrowse,
-  onOpenSettings,
-  onShufflePreset,
-  onAudioStop,
   onToggleFullscreen,
-  onShowCurrentLink,
   onToggleTheme,
 }: {
-  audioSource: string | null | undefined;
   isFullscreen: boolean;
-  panel: PanelState;
-  onOpenBrowse: () => void;
-  onOpenSettings: () => void;
-  onShufflePreset: () => void;
-  onAudioStop: () => void;
   onToggleFullscreen: () => void;
-  onShowCurrentLink: () => void;
   onToggleTheme?: () => void;
 }) {
+  const w = useWorkspace();
+  const panel = w.routeState.panel;
+  const audioSource = w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
+
   return (
     <div
       className="stims-shell__stage-dock"
@@ -36,7 +26,7 @@ export function StimsControlDock({
         data-active={String(panel === 'browse')}
         aria-label="Open browse panel"
         title="Open browse panel"
-        onClick={onOpenBrowse}
+        onClick={() => w.updatePanel('browse')}
       >
         <UiIcon
           name="sparkles"
@@ -50,7 +40,7 @@ export function StimsControlDock({
         data-active={String(panel === 'settings')}
         aria-label="Open look settings"
         title="Open look settings"
-        onClick={onOpenSettings}
+        onClick={() => w.updatePanel('settings')}
       >
         <UiIcon
           name="sliders"
@@ -63,7 +53,7 @@ export function StimsControlDock({
         className="stims-shell__stage-tool"
         aria-label="Surprise me"
         title="Surprise me"
-        onClick={onShufflePreset}
+        onClick={w.handleShufflePreset}
       >
         <UiIcon
           name="pulse"
@@ -77,7 +67,7 @@ export function StimsControlDock({
           className="stims-shell__stage-tool"
           aria-label="Stop audio"
           title="Stop audio"
-          onClick={onAudioStop}
+          onClick={w.handleAudioStop}
         >
           <UiIcon
             name="close"
@@ -106,7 +96,7 @@ export function StimsControlDock({
         className="stims-shell__stage-tool"
         aria-label="Share current link"
         title="Share current link"
-        onClick={onShowCurrentLink}
+        onClick={() => void w.handleShowCurrentLink()}
       >
         <UiIcon
           name="link"

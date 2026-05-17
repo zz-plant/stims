@@ -400,7 +400,9 @@ async function createRendererHandle(
           console.warn('WebGPU renderer recovery failed.', error);
         });
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.warn('WebGPU device lost listener failed to register.', error);
+      });
 
     const handleUncapturedError = (event: WebGpuUncapturedErrorEventLike) => {
       if (observedRevision !== observedWebGpuDeviceRevision) {

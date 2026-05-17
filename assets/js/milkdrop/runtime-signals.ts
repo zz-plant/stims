@@ -245,7 +245,7 @@ export function createMilkdropSignalTracker() {
       signalCache.waveformData = resolvedWaveformData;
       latestWeightedEnergy = weightedEnergy;
 
-      return { ...signalCache };
+      return signalCache;
     },
   };
 }
