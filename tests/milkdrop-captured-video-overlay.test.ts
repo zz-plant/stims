@@ -6,8 +6,8 @@ describe('milkdrop captured video overlay layout', () => {
   test('keeps the overlay in the upper-right camera frustum with sane opacity bounds', () => {
     const tracker = createMilkdropCapturedVideoReactivityTracker();
     const layout = resolveCapturedVideoOverlayLayout({
-      aspect: 16 / 9,
-      fov: 75,
+      frustumWidth: 3.56,
+      frustumHeight: 2,
       reactivity: tracker.update({
         signals: {
           time: 12,
@@ -53,13 +53,13 @@ describe('milkdrop captured video overlay layout', () => {
       },
     });
     const desktop = resolveCapturedVideoOverlayLayout({
-      aspect: 16 / 9,
-      fov: 75,
+      frustumWidth: 3.56,
+      frustumHeight: 2,
       reactivity,
     });
     const portrait = resolveCapturedVideoOverlayLayout({
-      aspect: 0.7,
-      fov: 75,
+      frustumWidth: 1.4,
+      frustumHeight: 2,
       reactivity,
     });
 

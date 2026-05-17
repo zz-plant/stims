@@ -249,6 +249,6 @@ export class Canvas {
       lines.push(`${ESC}[0m${CLEAR_BELOW}`);
     }
 
-    process.stdout.write(lines.join('\n'));
+    return lines.join('\n');
   }
 }

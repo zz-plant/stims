@@ -1,6 +1,5 @@
 import { createAudioPipeline } from './audio';
 import { createEffectState, nextMode, renderFrame } from './effects';
-import { detectListenSetup, streamAudioFrames } from './listen';
 import {
   autoDetectTmux,
   Canvas,
@@ -11,6 +10,10 @@ import {
 import { getTheme, themeNames } from './themes';
 import { readWav, readWavFromStdin, type WavFile } from './wav';
 import { cleanupYoutube, downloadYoutube } from './youtube';
+import { detectListenSetup, streamAudioFrames } from './listen';
+import { createNormalizer, normalizeFrame } from './normalize';
+import { startServer, broadcastFrame, stopServer } from './server';
+import { createVibeState, onInputActivity } from './vibe';
 
 const HELP = `
 stims-terminal — vibe-coding audio visualizer
@@ -26,6 +29,9 @@ source:
 flags:
   --loop              loop the file continuously
   --play              play audio through speakers (requires ffplay)
+  --normalize         auto-gain for consistent visual intensity
+  --vibe              time-of-day + idle-aware intensity and theme
+  --serve <port>      broadcast ANSI frames over HTTP on :port
   --mode <n>          start mode (0:waveform 1:spectrum 2:orbit 3:bars 4:combo)
   --autocycle <s>     rotate modes every N seconds
   --theme <name>      color theme: ${themeNames().join(' ')}
@@ -52,6 +58,14 @@ const compactMode = process.argv.includes('--compact');
 const minimalMode = process.argv.includes('--minimal');
 const listenMode = process.argv.includes('--listen');
 const playAudio = process.argv.includes('--play');
+const normalizeMode = process.argv.includes('--normalize');
+const vibeMode = process.argv.includes('--vibe');
+
+let servePort = 0;
+const serveArg = process.argv.indexOf('--serve');
+if (serveArg !== -1 && process.argv[serveArg + 1]) {
+  servePort = parseInt(process.argv[serveArg + 1]!, 10) || 9393;
+}
 
 let startMode = 0;
 const modeArg = process.argv.indexOf('--mode');
@@ -68,10 +82,7 @@ if (cycleArg !== -1 && process.argv[cycleArg + 1]) {
 let targetFps = 0;
 const fpsArg = process.argv.indexOf('--fps');
 if (fpsArg !== -1 && process.argv[fpsArg + 1]) {
-  targetFps = Math.max(
-    4,
-    Math.min(60, parseInt(process.argv[fpsArg + 1]!, 10) || 0),
-  );
+  targetFps = Math.max(4, Math.min(60, parseInt(process.argv[fpsArg + 1]!, 10) || 0));
 }
 
 let themeName = '';
@@ -99,39 +110,25 @@ let playerProc: ReturnType<typeof Bun.spawn> | null = null;
 async function loadSource(): Promise<{ path: string; title: string }> {
   if (ytIdx !== -1) {
     const url = process.argv[ytIdx + 1];
-    if (!url) {
-      console.error('Error: --yt requires a URL');
-      process.exit(1);
-    }
+    if (!url) { console.error('Error: --yt requires a URL'); process.exit(1); }
     try {
       const result = await downloadYoutube(url);
       youtubeTemp = result.wavPath;
       return { path: result.wavPath, title: result.title };
     } catch (err) {
-      console.error(
-        `  Error: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      console.error(`  Error: ${err instanceof Error ? err.message : String(err)}`);
       process.exit(1);
     }
   }
-
-  if (listenMode) {
-    return { path: ':listen:', title: 'System Audio' };
-  }
-
+  if (listenMode) return { path: ':listen:', title: 'System Audio' };
   const filePath = process.argv[2];
-  if (filePath === '-') {
-    return { path: ':stdin:', title: 'stdin' };
-  }
+  if (filePath === '-') return { path: ':stdin:', title: 'stdin' };
   if (!filePath) {
     console.error('Error: no WAV file, --yt URL, or --listen specified.');
     console.log(HELP);
     process.exit(1);
   }
-  return {
-    path: filePath,
-    title: filePath.replace(/^.*\//, '').replace(/\.wav$/i, ''),
-  };
+  return { path: filePath, title: filePath.replace(/^.*\//, '').replace(/\.wav$/i, '') };
 }
 
 const source = await loadSource();
@@ -144,14 +141,9 @@ const isStreaming = source.path === ':listen:';
 let wav: WavFile | null = null;
 if (!isStreaming) {
   try {
-    wav =
-      source.path === ':stdin:'
-        ? await readWavFromStdin()
-        : readWav(source.path);
+    wav = source.path === ':stdin:' ? await readWavFromStdin() : readWav(source.path);
   } catch (err) {
-    console.error(
-      `  Error: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    console.error(`  Error: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
   process.stdout.write(
@@ -159,16 +151,9 @@ if (!isStreaming) {
   );
 } else {
   const setup = detectListenSetup();
-  if (setup.command.length === 0) {
-    console.error(`\n${setup.hint}\n`);
-    process.exit(1);
-  }
+  if (setup.command.length === 0) { console.error(`\n${setup.hint}\n`); process.exit(1); }
   process.stdout.write(`  ${setup.hint}\n`);
-  if (playAudio) {
-    console.log(
-      '  Note: --play has no effect with --listen (audio is already playing)',
-    );
-  }
+  if (playAudio) console.log('  Note: --play has no effect with --listen');
 }
 
 if (playAudio && wav) {
@@ -177,13 +162,17 @@ if (playAudio && wav) {
       ['ffplay', '-nodisp', '-autoexit', '-loglevel', 'quiet', source.path],
       { stdout: 'null', stderr: 'null' },
     );
-  } catch {
-    console.log('  Note: ffplay not found, audio will be silent.');
-  }
+  } catch { /* ffplay not found */ }
 }
+
+const normalizer = normalizeMode ? createNormalizer() : null;
+const vibe = vibeMode ? createVibeState() : null;
 
 const theme = getTheme(themeName);
 if (themeName) process.stdout.write(` | ${theme.name}`);
+if (normalizeMode) process.stdout.write(' | normalize');
+if (vibeMode) process.stdout.write(' | vibe');
+if (servePort) process.stdout.write(` | :${servePort}`);
 if (minimalMode) process.stdout.write(' | minimal');
 if (compactMode) process.stdout.write(' | compact');
 if (autocycleSecs > 0) process.stdout.write(` | autocycle ${autocycleSecs}s`);
@@ -191,7 +180,6 @@ process.stdout.write('\n');
 process.stdout.write('  space=mode | q=quit\n\n');
 
 let term = initTerminal();
-
 const state = createEffectState({
   compact: compactMode,
   minimal: minimalMode,
@@ -199,18 +187,18 @@ const state = createEffectState({
   theme,
 });
 state.modeIndex = Math.min(startMode, 4);
-
 const canvas = new Canvas(term);
+
+if (servePort) {
+  startServer(servePort, () => process.stdout.write(`  Viewer connected :${servePort}\n`));
+}
 
 let running = true;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 function stop() {
   running = false;
-  if (timer) {
-    clearTimeout(timer);
-    timer = null;
-  }
+  if (timer) { clearTimeout(timer); timer = null; }
 }
 
 process.on('SIGINT', stop);
@@ -224,6 +212,7 @@ if (isTTY) {
   process.stdin.on('data', (key: string) => {
     if (key === '\x03' || key === '\x1b' || key === 'q') stop();
     if (key === ' ') nextMode(state);
+    if (vibe) onInputActivity(vibe);
   });
 }
 
@@ -236,12 +225,25 @@ if (isTTY) {
 
 const frameMs = 1000 / targetFps;
 
+function applyVibe(frame: { time: number }) {
+  if (!vibe) return;
+  vibe.update(new Date());
+  if (state.options.autocycleSecs > 0) {
+    const rate = 1 + vibe.intensity * 2;
+    state.modeTimer += rate / 30;
+    const secs = Math.max(3, state.options.autocycleSecs + vibe.intensity * 15);
+    if (state.modeTimer >= secs) state.modeTimer = 0;
+  }
+}
+
+function writeAndBroadcast(ansi: string) {
+  process.stdout.write(ansi);
+  if (servePort) broadcastFrame(ansi);
+}
+
 if (isStreaming) {
   const setup = detectListenSetup();
-  const listenProc = Bun.spawn(setup.command, {
-    stdout: 'pipe',
-    stderr: 'null',
-  });
+  Bun.spawn(setup.command, { stdout: 'pipe', stderr: 'null' });
 
   const stream = streamAudioFrames(44100);
   const frameGen = stream[Symbol.asyncIterator]();
@@ -249,13 +251,18 @@ if (isStreaming) {
   async function streamTick() {
     if (!running) return;
     const start = Date.now();
-    const { value: frame, done } = await frameGen.next();
-    if (done) {
-      stop();
-      return;
+    const { value: rawFrame, done } = await frameGen.next();
+    if (done) { stop(); return; }
+    const frame = rawFrame as any;
+    applyVibe(frame);
+    if (normalizer) {
+      normalizeFrame(normalizer, frame.rms, frameMs);
+      state.normalizeGain = normalizer.gain;
     }
-    renderFrame(canvas, state, frame as any);
-    canvas.render();
+    if (vibe) state.vibeIntensity = vibe.intensity;
+    renderFrame(canvas, state, frame);
+    const ansi = canvas.render();
+    writeAndBroadcast(ansi);
     const elapsed = Date.now() - start;
     timer = setTimeout(streamTick, Math.max(1, frameMs - elapsed));
   }
@@ -274,13 +281,17 @@ if (isStreaming) {
         pipeline = createAudioPipeline(wav, now);
         frame = pipeline.nextFrame(now);
       }
-      if (!frame) {
-        stop();
-        return;
-      }
+      if (!frame) { stop(); return; }
     }
+    applyVibe(frame);
+    if (normalizer) {
+      normalizeFrame(normalizer, frame.rms, frameMs);
+      state.normalizeGain = normalizer.gain;
+    }
+    if (vibe) state.vibeIntensity = vibe.intensity;
     renderFrame(canvas, state, frame);
-    canvas.render();
+    const ansi = canvas.render();
+    writeAndBroadcast(ansi);
     const elapsed = Date.now() - start;
     timer = setTimeout(tick, Math.max(1, frameMs - elapsed));
   }
@@ -288,36 +299,17 @@ if (isStreaming) {
 }
 
 function cleanup() {
-  if (isTTY) {
-    try {
-      process.stdin.setRawMode(false);
-    } catch {}
-    process.stdin.pause();
-  }
-  if (playerProc) {
-    try {
-      playerProc.kill();
-    } catch {}
-  }
-  if (running) {
-    restoreTerminal();
-    process.stdout.write('\n');
-  }
+  if (isTTY) { try { process.stdin.setRawMode(false); } catch {} process.stdin.pause(); }
+  if (playerProc) { try { playerProc.kill(); } catch {} }
+  stopServer();
+  if (running) { restoreTerminal(); process.stdout.write('\n'); }
   if (youtubeTemp) cleanupYoutube(youtubeTemp);
 }
 
-process.on('beforeExit', () => {
-  cleanup();
-  process.exit(0);
-});
+process.on('beforeExit', () => { cleanup(); process.exit(0); });
 
 const exitPromise = new Promise<void>((resolve) => {
-  const check = setInterval(() => {
-    if (!running) {
-      clearInterval(check);
-      resolve();
-    }
-  }, 50);
+  const check = setInterval(() => { if (!running) { clearInterval(check); resolve(); } }, 50);
 });
 
 await exitPromise;

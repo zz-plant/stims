@@ -1,14 +1,10 @@
-import type { PerspectiveCamera } from 'three';
+import type { Camera } from 'three';
 import {
   type AudioHandle,
   acquireAudioHandle,
 } from './services/audio-service.ts';
 
-export function createToyAudioSession({
-  camera,
-}: {
-  camera: PerspectiveCamera;
-}) {
+export function createToyAudioSession({ camera }: { camera: Camera }) {
   let audioHandle: AudioHandle | null = null;
 
   return {

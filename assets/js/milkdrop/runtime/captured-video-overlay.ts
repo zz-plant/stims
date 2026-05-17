@@ -1,10 +1,7 @@
 import {
-  AdditiveBlending,
-  Group,
-  MathUtils,
-  Mesh,
   MeshBasicMaterial,
-  type PerspectiveCamera,
+  type Camera,
+  Mesh,
   PlaneGeometry,
 } from 'three';
 import {
@@ -23,12 +20,12 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function resolveCapturedVideoOverlayLayout({
-  aspect,
-  fov,
+  frustumWidth,
+  frustumHeight,
   reactivity,
 }: {
-  aspect: number;
-  fov: number;
+  frustumWidth: number;
+  frustumHeight: number;
   reactivity: Pick<
     MilkdropCapturedVideoReactiveState,
     | 'overlayWidthScale'
@@ -40,10 +37,7 @@ export function resolveCapturedVideoOverlayLayout({
     | 'ghostOpacity'
   >;
 }) {
-  const frustumHeight =
-    2 * Math.tan(MathUtils.degToRad(fov) * 0.5) * OVERLAY_DEPTH;
-  const frustumWidth = frustumHeight * aspect;
-  const desktopLike = aspect >= 1;
+  const desktopLike = frustumWidth >= frustumHeight;
   const widthFraction = desktopLike ? 0.29 : 0.48;
   const maxHeightFraction = desktopLike ? 0.34 : 0.42;
   const width = frustumWidth * widthFraction;
@@ -113,7 +107,7 @@ export function createMilkdropCapturedVideoOverlay() {
   });
   group.add(baseMesh, redGhostMesh, cyanGhostMesh);
 
-  let attachedCamera: PerspectiveCamera | null = null;
+  let attachedCamera: Camera | null = null;
 
   const setDomOverlayState = (active: boolean) => {
     if (typeof document === 'undefined') {
@@ -127,7 +121,7 @@ export function createMilkdropCapturedVideoOverlay() {
   };
 
   return {
-    attach(camera: PerspectiveCamera) {
+    attach(camera: Camera) {
       if (attachedCamera === camera) {
         return;
       }
@@ -138,10 +132,10 @@ export function createMilkdropCapturedVideoOverlay() {
       camera.add(group);
     },
     update({
-      camera,
+      _camera,
       reactivity,
     }: {
-      camera: PerspectiveCamera;
+      camera: Camera;
       reactivity: MilkdropCapturedVideoReactiveState;
     }) {
       const active = isMilkdropCapturedVideoReady();
@@ -151,9 +145,12 @@ export function createMilkdropCapturedVideoOverlay() {
         return;
       }
 
+      const frustumHeight = 2;
+      const frustumWidth =
+        (frustumHeight * globalThis.innerWidth) / globalThis.innerHeight;
       const layout = resolveCapturedVideoOverlayLayout({
-        aspect: camera.aspect,
-        fov: camera.fov,
+        frustumWidth,
+        frustumHeight,
         reactivity,
       });
 

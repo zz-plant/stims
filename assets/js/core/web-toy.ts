@@ -1,11 +1,6 @@
 import {
-  type AudioListener,
-  Mesh,
-  type Object3D,
-  type PerspectiveCamera,
-  type PositionalAudio,
-  type Scene,
-  type Audio as ThreeAudio,
+  type Camera,
+  Scene,
 } from 'three';
 import type {
   AmbientLightConfig,
@@ -44,7 +39,7 @@ export default class WebToy {
   container: HTMLElement | null;
   canvas: HTMLCanvasElement;
   scene: Scene;
-  camera: PerspectiveCamera;
+  camera: Camera;
   renderer: RendererHandle['renderer'] | null;
   rendererBackend: RendererHandle['backend'] | null;
   rendererInfo: RendererHandle['info'] | null;
@@ -161,8 +156,22 @@ export default class WebToy {
     this.viewportCssWidth = state.cssWidth;
     this.viewportCssHeight = state.cssHeight;
 
-    this.camera.aspect = state.width / state.height;
-    this.camera.updateProjectionMatrix();
+    const aspect = state.width / state.height;
+    if ('left' in this.camera) {
+      const orthoCam = this.camera as unknown as {
+        left: number;
+        right: number;
+        top: number;
+        bottom: number;
+        updateProjectionMatrix: () => void;
+      };
+      const halfWidth = Math.max(1, aspect);
+      orthoCam.left = -halfWidth;
+      orthoCam.right = halfWidth;
+      orthoCam.top = 1;
+      orthoCam.bottom = -1;
+      orthoCam.updateProjectionMatrix();
+    }
     this.rendererSession.setViewport(state);
     this.applyRendererSettings();
   }
