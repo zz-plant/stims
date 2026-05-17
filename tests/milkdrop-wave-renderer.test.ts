@@ -13,7 +13,11 @@ import {
 } from '../assets/js/milkdrop/renderer-helpers/wave-renderer';
 import type { MilkdropWaveVisual } from '../assets/js/milkdrop/types';
 
-const PASS_OFFSET = 1 / 1024;
+// Matches THICK_WAVE_BASE_OFFSET = 1/512 in wave-renderer.ts with formula:
+// spread = THICK_WAVE_BASE_OFFSET * Math.max(1, thickness * 1.5)
+function passOffset(thickness: number) {
+  return (1 / 512) * Math.max(1, thickness * 1.5);
+}
 
 function makeWave(
   overrides: Partial<MilkdropWaveVisual> = {},
@@ -49,16 +53,17 @@ function makeHelpers() {
   };
 }
 
-function expectLayerPositions(group: Group) {
+function expectLayerPositions(group: Group, thickness: number) {
+  const offset = passOffset(thickness);
   expect(group.children).toHaveLength(4);
   expect(group.children[0]?.position.x).toBeCloseTo(0, 6);
   expect(group.children[0]?.position.y).toBeCloseTo(0, 6);
-  expect(group.children[1]?.position.x).toBeCloseTo(PASS_OFFSET, 6);
+  expect(group.children[1]?.position.x).toBeCloseTo(offset, 6);
   expect(group.children[1]?.position.y).toBeCloseTo(0, 6);
-  expect(group.children[2]?.position.x).toBeCloseTo(PASS_OFFSET, 6);
-  expect(group.children[2]?.position.y).toBeCloseTo(PASS_OFFSET, 6);
+  expect(group.children[2]?.position.x).toBeCloseTo(offset, 6);
+  expect(group.children[2]?.position.y).toBeCloseTo(offset, 6);
   expect(group.children[3]?.position.x).toBeCloseTo(0, 6);
-  expect(group.children[3]?.position.y).toBeCloseTo(PASS_OFFSET, 6);
+  expect(group.children[3]?.position.y).toBeCloseTo(offset, 6);
 }
 
 describe('milkdrop wave renderer', () => {
@@ -76,7 +81,7 @@ describe('milkdrop wave renderer', () => {
 
     expect(group).toBeInstanceOf(Group);
     expect(group).not.toBeNull();
-    expectLayerPositions(group as Group);
+    expectLayerPositions(group as Group, 2);
 
     const firstLayer = (group as Group).children[0] as Line;
     expect(firstLayer).toBeInstanceOf(Line);
@@ -98,7 +103,7 @@ describe('milkdrop wave renderer', () => {
 
     expect(group).toBeInstanceOf(Group);
     expect(group).not.toBeNull();
-    expectLayerPositions(group as Group);
+    expectLayerPositions(group as Group, 1);
 
     const firstLayer = (group as Group).children[0] as Points;
     expect(firstLayer).toBeInstanceOf(Points);
@@ -126,7 +131,7 @@ describe('milkdrop wave renderer', () => {
     );
 
     expect(synced).toBe(existing);
-    expectLayerPositions(synced as Group);
+    expectLayerPositions(synced as Group, 4);
     expect(
       (((synced as Group).children[0] as Line).material as LineBasicMaterial)
         .opacity,
