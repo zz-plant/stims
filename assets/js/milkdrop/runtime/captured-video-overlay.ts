@@ -1,7 +1,9 @@
 import {
-  MeshBasicMaterial,
+  AdditiveBlending,
   type Camera,
+  Group,
   Mesh,
+  MeshBasicMaterial,
   PlaneGeometry,
 } from 'three';
 import {
@@ -132,7 +134,6 @@ export function createMilkdropCapturedVideoOverlay() {
       camera.add(group);
     },
     update({
-      _camera,
       reactivity,
     }: {
       camera: Camera;

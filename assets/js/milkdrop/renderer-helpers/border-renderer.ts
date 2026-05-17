@@ -1,12 +1,12 @@
-import type { Group, Line, LineBasicMaterial, LineLoop, Mesh } from 'three';
+import type { Group, Line, LineLoop, Mesh } from 'three';
 import {
   BufferGeometry,
   DoubleSide,
   Float32BufferAttribute,
   LineBasicMaterial,
-  Line as ThreeLine,
   MeshBasicMaterial,
   Group as ThreeGroup,
+  Line as ThreeLine,
   Mesh as ThreeMesh,
 } from 'three';
 import { disposeGeometry } from '../../utils/three-dispose';
@@ -31,13 +31,10 @@ function getBorderGeometryKey(
   return `${border.key}:${outerBorderSize ?? 'self'}:${border.size}`;
 }
 
-function buildBorderAccentLines(
-  border: MilkdropBorderVisual,
-): Float32Array {
+function buildBorderAccentLines(border: MilkdropBorderVisual): Float32Array {
   // Styled borders get a small decorative accent at each corner.
   // The accent extends from the corner inward at 45 degrees.
   const outerRadius = border.key === 'outer' ? 1 : 0.88;
-  const innerRadius = border.key === 'outer' ? 1 - border.size : 0.88 - border.size;
   const accentSize = border.size * 0.5;
   const z = 0.3;
 
@@ -46,13 +43,12 @@ function buildBorderAccentLines(
   const data = new Float32Array(24);
   const corners = [
     { x: outerRadius, y: outerRadius, dx: -1, dy: -1 }, // top-right
-    { x: -outerRadius, y: outerRadius, dx: 1, dy: -1 },  // top-left
-    { x: -outerRadius, y: -outerRadius, dx: 1, dy: 1 },  // bottom-left
-    { x: outerRadius, y: -outerRadius, dx: -1, dy: 1 },  // bottom-right
+    { x: -outerRadius, y: outerRadius, dx: 1, dy: -1 }, // top-left
+    { x: -outerRadius, y: -outerRadius, dx: 1, dy: 1 }, // bottom-left
+    { x: outerRadius, y: -outerRadius, dx: -1, dy: 1 }, // bottom-right
   ];
 
-  for (let i = 0; i < 4; i++) {
-    const c = corners[i]!;
+  for (const [i, c] of corners.entries()) {
     const offset = i * 6;
     data[offset] = c.x;
     data[offset + 1] = c.y;
@@ -174,7 +170,10 @@ function createBorderGroupObjectRaw(
   if (border.styled) {
     const accentData = buildBorderAccentLines(border);
     const accentGeo = new BufferGeometry();
-    accentGeo.setAttribute('position', new Float32BufferAttribute(accentData, 3));
+    accentGeo.setAttribute(
+      'position',
+      new Float32BufferAttribute(accentData, 3),
+    );
     const accentMat = new LineBasicMaterial({
       transparent: true,
       opacity: border.alpha * alphaMultiplier * 0.6,

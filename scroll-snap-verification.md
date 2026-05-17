@@ -1,0 +1,57 @@
+- main [ref=e3]:
+  - link "Skip to main content" [ref=e4] [cursor=pointer]:
+    - /url: "#stims-main"
+  - generic [ref=e7]:
+    - generic:
+      - link "Stims Sound into motion" [ref=e10] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e11]: Stims
+        - generic [ref=e12]: Sound into motion
+      - generic:
+        - toolbar "Live controls" [ref=e13]:
+          - button "Open browse panel" [ref=e14]:
+            - img [ref=e16]
+            - generic [ref=e20]: Browse
+          - button "Open look settings" [ref=e21]:
+            - img [ref=e23]
+            - generic [ref=e27]: Style
+          - button "Surprise me" [ref=e28]:
+            - img [ref=e30]
+            - generic [ref=e32]: Surprise me
+          - button "Enter full screen" [ref=e33]:
+            - img [ref=e35]
+            - generic [ref=e44]: Full screen
+          - button "Share current link" [ref=e45]:
+            - img [ref=e47]
+            - generic [ref=e50]: Share
+          - button "Toggle theme" [ref=e51]:
+            - img [ref=e53]
+            - generic [ref=e55]: Theme
+        - link "GitHub" [ref=e56] [cursor=pointer]:
+          - /url: https://github.com/zz-plant/stims
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: Browser visualizer
+            - heading "Sound into motion." [level=1] [ref=e62]
+            - paragraph [ref=e63]: Start with demo audio, then switch to your own music. Authentic MilkDrop presets run in WebGL or WebGPU.
+          - generic [ref=e64]:
+            - button "See visuals now Starts instantly with built-in sound" [ref=e65]:
+              - generic [ref=e66]: See visuals now
+              - generic [ref=e67]: Starts instantly with built-in sound
+            - generic [ref=e68]:
+              - button "Use microphone" [ref=e69]
+              - button "Capture tab audio" [ref=e70]
+        - button "Featured pick Eo.S. - Glowsticks v2 03 Music Bright pulse" [ref=e71]:
+          - paragraph [ref=e73]: Featured pick
+          - generic [ref=e74]:
+            - generic [ref=e78]: Bright pulse
+            - generic [ref=e79]: Preview queued
+          - generic [ref=e80]:
+            - strong [ref=e81]: Eo.S. - Glowsticks v2 03 Music
+            - generic [ref=e82]: Bright pulse
+      - generic [ref=e83]:
+        - strong [ref=e84]: Browser-native MilkDrop visualizer
+        - generic [ref=e85]: Runs authentic .milk presets via WebGPU or WebGL. Press play with demo audio, then switch to your own music.
+        - button "Got it" [ref=e86]

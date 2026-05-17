@@ -1111,18 +1111,24 @@ body[data-page="workspace"] {
 }
 
 /* Fade decorative artwork elements when a real preview is available */
-.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-grid,
-.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-orbit,
-.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-core {
+.stims-shell__preset-art[data-preview-status="ready"]
+.stims-shell__preset-art-grid,
+.stims-shell__preset-art[data-preview-status="ready"]
+  .stims-shell__preset-art-orbit,
+.stims-shell__preset-art[data-preview-status="ready"]
+  .stims-shell__preset-art-core {
   opacity: 0.15;
 }
 
-.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-caption,
-.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-art-status {
+.stims-shell__preset-art[data-preview-status="ready"]
+  .stims-shell__preset-art-caption,
+.stims-shell__preset-art[data-preview-status="ready"]
+  .stims-shell__preset-art-status {
   display: none;
 }
 
-.stims-shell__preset-art[data-preview-status="ready"] .stims-shell__preset-preview-image {
+.stims-shell__preset-art[data-preview-status="ready"]
+  .stims-shell__preset-preview-image {
   opacity: 1;
 }
 

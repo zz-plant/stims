@@ -1,7 +1,12 @@
-import {
-  type Camera,
+import type {
+  AudioListener,
+  Camera,
+  Object3D,
+  PositionalAudio,
   Scene,
+  Audio as ThreeAudio,
 } from 'three';
+import { Mesh } from 'three';
 import type {
   AmbientLightConfig,
   LightConfig,

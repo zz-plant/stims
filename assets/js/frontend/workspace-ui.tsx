@@ -627,7 +627,11 @@ export function WorkspaceStagePanel({
                 {audioEnergy > 0 ? (
                   <span
                     className="stims-shell__audio-meter"
-                    style={{ '--audio-energy': `${audioEnergy}` } as React.CSSProperties}
+                    style={
+                      {
+                        '--audio-energy': `${audioEnergy}`,
+                      } as React.CSSProperties
+                    }
                     aria-hidden="true"
                   />
                 ) : null}

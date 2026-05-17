@@ -3663,12 +3663,14 @@ body.tv-mode .control-panel input {
   max-height: 360px;
   overflow: auto;
   padding-right: 4px;
+  scroll-snap-type: y proximity;
 }
 
 .milkdrop-overlay__browse-section {
   display: grid;
   gap: 6px;
   padding: 0;
+  scroll-snap-align: start;
 }
 
 .milkdrop-overlay__browse-heading {
@@ -3713,6 +3715,7 @@ body.tv-mode .control-panel input {
   align-items: start;
   padding-top: 8px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
+  scroll-snap-align: start;
 }
 
 .milkdrop-overlay__browse-section .milkdrop-overlay__preset:first-of-type {
