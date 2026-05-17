@@ -2685,6 +2685,11 @@ body[data-page="workspace"] {
   align-content: start;
 }
 
+.stims-shell__preset-list > li {
+  content-visibility: auto;
+  contain-intrinsic-size: 220px;
+}
+
 /* When the browse panel is narrow (<520px), switch to 2 narrower columns */
 @container (max-width: 520px) {
   .stims-shell__preset-list {
