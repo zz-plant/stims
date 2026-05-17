@@ -15,6 +15,12 @@ export type CertificationCorpusGroup =
   | 'parity-corpus'
   | 'projectm-upstream';
 
+export type WebGpuCertificationStatus =
+  | 'unmeasured'
+  | 'certified-webgl'
+  | 'certified-native'
+  | 'certified-both';
+
 export type CertificationCorpusEntry = {
   id: string;
   title: string;
@@ -26,6 +32,7 @@ export type CertificationCorpusEntry = {
   toleranceProfile: MilkdropParityToleranceProfile;
   strata: string[];
   selectionReason: string;
+  webgpuCertificationStatus: WebGpuCertificationStatus;
 };
 
 export type CertificationCorpusManifest = {

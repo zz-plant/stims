@@ -44,6 +44,8 @@ If a task cannot be described with a clean file boundary and a small validation 
 | `.agent/skills/review-renderer-fallback/SKILL.md` | Reviewing PRs that touch renderer capability probing, fallback chains, timeout logic, or audio worklet init. | `bun run test:integration`, trace renderScale end-to-end, validate fallback paths |
 | `.agent/skills/review-test-harness/SKILL.md` | Reviewing PRs that add, modify, or remove tests, fixtures, or integration harness code. | `bun run test`, behavior-based assertion review, fixture determinism check |
 | `.agent/skills/review-workspace-ui-state/SKILL.md` | Reviewing PRs that touch React workspace UI state, URL routing, toast/panel behavior, or engine adapter boundary. | `bun run test tests/frontend-url-state.test.ts`, adapter boundary inspection |
+| `.agent/skills/review-deploy-tooling/SKILL.md` | Reviewing PRs that touch CI, wrangler config, build scripts, Cloudflare deploy, or package.json tooling. | `bun run build`, `bun run preview`, verify wrangler.toml and CI workflow integrity |
+| `.agent/skills/review-module-loading/SKILL.md` | Reviewing PRs that touch module loading, bootstrap, toy manifest, library resolution, or gamepad polling. | `bun run check:toys`, validate manifest regeneration, gamepad lifecycle |
 | `.agent/skills/audit-recurring-fixes/SKILL.md` | Auditing commit history to find recurring fix patterns and updating prevention skills. | `git log` analysis, cross-reference with `docs/RECURRING_FIX_PATTERNS_AUDIT_*.md` |
 | `.agent/skills/iterate-visualizer-ui/SKILL.md` | Iterating on workspace UI, shell chrome, and CSS with fast feedback loops and component isolation. | `bun run dev:ui`, isolated component playground, screenshot diff, responsive grid |
 | `.agent/skills/quick-start/SKILL.md` | First entry into the repo or after a long gap; fastest safe path to productive work. | `bun run agent:status`, `bun run setup:codex` |
@@ -64,6 +66,12 @@ If a task cannot be described with a clean file boundary and a small validation 
 - Day-to-day repo commands: [`../DEVELOPMENT.md`](../DEVELOPMENT.md)
 - Visualizer runtime and preset details: [`../MILKDROP_PRESET_RUNTIME.md`](../MILKDROP_PRESET_RUNTIME.md)
 - Runtime architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
+- Current project status and next targets: [`../STATUS_2026-05.md`](../STATUS_2026-05.md)
+- Release evidence ledger (certified/open/pending): [`../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md`](../evidence/RELEASE_EVIDENCE_LEDGER_2026-05.md)
+- Public claim audit findings: [`../evidence/public-claim-audit.md`](../evidence/public-claim-audit.md)
+- Shader compiler support inventory: [`../architecture/shader-support-inventory.md`](../architecture/shader-support-inventory.md)
+- Renderer fallback state machine design: [`../architecture/fallback-state-machine.md`](../architecture/fallback-state-machine.md)
+- Rasterization fidelity audit (WebGL vs WebGPU): [`../architecture/rasterization-fidelity-audit.md`](../architecture/rasterization-fidelity-audit.md)
 - Agent overlay index: [`./README.md`](./README.md)
 - Agent bootstrap and handoffs: [`./agent-handoffs.md`](./agent-handoffs.md)
 - Visualizer workflow quick reference: [`./visualizer-workflows.md`](./visualizer-workflows.md)

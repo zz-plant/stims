@@ -135,6 +135,7 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
     },
     fidelityClass: 'exact',
     visualEvidenceTier: 'none',
+    fidelityTier: 'semantic-only',
     semanticSupport: {
       fidelityClass: 'exact',
       evidence: {
@@ -1018,7 +1019,7 @@ describe('milkdrop overlay browse rendering', () => {
       '.milkdrop-overlay__preset-preview-status',
     );
     expect(activeMeta?.textContent).toBe('Stims · Recent');
-    expect(activeBadges).toEqual(['Live', 'Stims certified']);
+    expect(activeBadges).toEqual(['Live', 'Semantic', 'Stims certified']);
     expect(activePreviewStatus?.textContent).toBe('WebGL preview');
     expect(activeFavorite?.textContent).toBe('★');
     expect(activeFavorite?.getAttribute('aria-label')).toBe(

@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to renderer setup, capability
 
 ## Why this exists
 
-~25% of fix commits are in the fallback chain: WebGPU timeout regressions, renderScale propagation failures, analyser worklet path breaks, and capability probe drift. This skill hardens that boundary.
+~8% of fix commits are in the fallback chain — now the smallest category: WebGPU timeout regressions, renderScale propagation failures, analyser worklet path breaks, and capability probe drift. The fallback state machine (Sprint 7) may have reduced the rate further. This skill hardens that boundary.
 
 ## Pre-merge checklist
 

@@ -10,6 +10,8 @@ import {
   InspectorPanel,
 } from '../assets/js/milkdrop/overlay/inspector-panel.ts';
 import {
+  fidelityTierBadgeClass,
+  fidelityTierLabel,
   formatMeasuredMismatchPercent,
   getPresetCertificationBadgeStatus,
   getPresetMetaQualifier,
@@ -50,6 +52,7 @@ function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
     },
     fidelityClass: 'exact',
     visualEvidenceTier: 'none',
+    fidelityTier: 'semantic-only',
     semanticSupport: {
       fidelityClass: 'exact',
       evidence: {
@@ -581,5 +584,31 @@ describe('preset row parity badges', () => {
       failThreshold: 0.02,
     };
     expect(getPresetCertificationBadgeStatus(preset)).toBe('uncertified');
+  });
+
+  test('fidelity tier label for unmeasured is "Unmeasured" not "Supported"', () => {
+    expect(fidelityTierLabel('unmeasured')).toBe('Unmeasured');
+    expect(fidelityTierLabel('unmeasured')).not.toBe('Supported');
+  });
+
+  test('fidelity tier label and badge class for measured-visual presets', () => {
+    expect(fidelityTierLabel('measured-visual')).toBe('Certified');
+    expect(fidelityTierBadgeClass('measured-visual')).toBe(
+      'milkdrop-overlay__preset-tag--verified',
+    );
+  });
+
+  test('fidelity tier label and badge class for measured-checksum presets', () => {
+    expect(fidelityTierLabel('measured-checksum')).toBe('Baseline');
+    expect(fidelityTierBadgeClass('measured-checksum')).toBe(
+      'milkdrop-overlay__preset-tag--baseline',
+    );
+  });
+
+  test('fidelity tier label and badge class for semantic-only presets', () => {
+    expect(fidelityTierLabel('semantic-only')).toBe('Semantic');
+    expect(fidelityTierBadgeClass('semantic-only')).toBe(
+      'milkdrop-overlay__preset-tag--semantic',
+    );
   });
 });

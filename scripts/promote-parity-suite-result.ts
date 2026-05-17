@@ -159,7 +159,12 @@ if (import.meta.main) {
     const result = promoteParitySuiteResult(options);
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    console.error(
+      `Promotion failed for preset "${options.presetId}": ${rawMessage}\n` +
+        `Ensure parity suite reports exist at "${options.outputDir}/suite/". ` +
+        `If missing, first run: bun run scripts/run-parity-diff-suite.ts --preset "${options.presetId}"`,
+    );
     process.exit(1);
   }
 }

@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to any file under `tests/`, `
 
 ## Why this exists
 
-~20% of fix commits are test harness drift: failing expectations, architecture path string mismatches, fixture module refactors, and integration harness startup flakiness. This skill prevents that tax.
+~15% of fix commits are test harness drift: failing expectations, architecture path string mismatches, fixture module refactors, and integration harness startup flakiness. This skill prevents that tax.
 
 ## Pre-merge checklist
 

@@ -1,7 +1,14 @@
 import { expect, test } from 'bun:test';
-import { getValidatedCatalogOverrides } from '../assets/js/milkdrop/catalog-store-analysis.ts';
+import {
+  deriveFidelityTier,
+  getValidatedCatalogOverrides,
+} from '../assets/js/milkdrop/catalog-store-analysis.ts';
 import { toCatalogEntry } from '../assets/js/milkdrop/catalog-store-projection.ts';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import {
+  fidelityTierLabel,
+  supportLabel,
+} from '../assets/js/milkdrop/overlay/preset-row.ts';
 
 test('measured visual results override inferred fidelity and evidence tier', () => {
   const compiled = compileMilkdropPresetSource(
@@ -93,4 +100,36 @@ test('bundled catalog entries downgrade optimistic labels without measured evide
       }),
     }),
   );
+});
+
+test('deriveFidelityTier returns measured-visual for a preset with a checked-in reference', () => {
+  expect(deriveFidelityTier('eos-glowsticks-v2-03-music')).toBe(
+    'measured-visual',
+  );
+  expect(deriveFidelityTier('rovastar-parallel-universe')).toBe(
+    'measured-visual',
+  );
+});
+
+test('deriveFidelityTier returns measured-checksum for a parity-corpus preset with baseline checksums', () => {
+  expect(deriveFidelityTier('parity-feedback-01')).toBe('measured-checksum');
+  expect(deriveFidelityTier('parity-hybrid-08')).toBe('measured-checksum');
+});
+
+test('deriveFidelityTier returns unmeasured for a preset without any evidence', () => {
+  expect(deriveFidelityTier('unknown-local-fixture')).toBe('unmeasured');
+  expect(deriveFidelityTier('random-ad-hoc-preset')).toBe('unmeasured');
+});
+
+test('deriveFidelityTier returns semantic-only when the compiler can parse but no evidence exists', () => {
+  expect(
+    deriveFidelityTier('some-compilable-preset', { isCompiled: true }),
+  ).toBe('semantic-only');
+});
+
+test('an unmeasured preset shows as "Unmeasured" not "Supported"', () => {
+  expect(fidelityTierLabel('unmeasured')).toBe('Unmeasured');
+  expect(fidelityTierLabel('unmeasured')).not.toBe('Supported');
+  expect(supportLabel('supported')).toBe('Supported');
+  expect(fidelityTierLabel('unmeasured')).not.toBe(supportLabel('supported'));
 });

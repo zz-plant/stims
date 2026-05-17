@@ -179,7 +179,10 @@ if (import.meta.main) {
     const result = importProjectMReference(options);
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    console.error(
+      `Import failed for preset "${options.presetId}" from image "${options.imagePath}": ${rawMessage}`,
+    );
     process.exit(1);
   }
 }

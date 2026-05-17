@@ -108,7 +108,7 @@ bun scripts/play-toy.ts milkdrop \
 
 This keeps the capture focused on one preset and saves both the screenshot and the runtime debug snapshot for later comparison.
 
-To capture the certification corpus directly from `assets/data/milkdrop-parity/certification-corpus.json` instead of the checked-in visual-reference manifest, use:
+To capture the certification corpus directly from `assets/data/milkdrop-parity/certification-corpus.json` instead of the checked-in visual-reference manifest (note: only 4 of the 23 corpus presets have measured results; the corpus represents certification targets, not completed certifications), use:
 
 ```bash
 bun run parity:capture:corpus -- --group bundled-shipped
@@ -152,13 +152,13 @@ bun run parity:promote-reference -- \
 This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `assets/data/milkdrop-parity/visual-reference-manifest.json`.
 The checked-in certification target set itself lives in `assets/data/milkdrop-parity/certification-corpus.json`; visual references and measured results should only be added for presets in that bounded corpus.
 
-To run the certified parity suite against the checked-in visual reference manifest:
+To run the parity suite against the checked-in visual reference manifest (currently 4 presets with projectM reference images):
 
 ```bash
 bun run parity:suite -- --output ./screenshots/parity --write-diff-images
 ```
 
-This reads `assets/data/milkdrop-parity/visual-reference-manifest.json`, resolves the latest Stims captures for each certified preset, writes per-preset reports under `./screenshots/parity/suite/`, and emits a ranked `summary.json` with worst mismatches first.
+This reads `assets/data/milkdrop-parity/visual-reference-manifest.json`, resolves the latest Stims captures for each preset in the visual reference manifest, writes per-preset reports under `./screenshots/parity/suite/`, and emits a ranked `summary.json` with worst mismatches first.
 
 To promote a suite report into the checked-in measured-results manifest:
 

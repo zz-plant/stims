@@ -1241,13 +1241,19 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
       expect(
         compiled.ir.post.shaderControls.textureLayer.volumeSliceZ,
       ).toBeCloseTo(0, 6);
-      expect(compiled.diagnostics).toEqual([]);
+      expect(compiled.diagnostics).toEqual([
+        {
+          severity: 'warning',
+          code: 'preset_shader_volume_approximation',
+          message: expect.stringContaining('volume sampler'),
+        },
+      ]);
       expect(compiled.ir.shaderText.compProgram).not.toBeNull();
-      expect(compiled.ir.compatibility.warnings).toEqual([]);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-        'supported',
-      );
+      expect(compiled.ir.compatibility.warnings).toEqual([
+        expect.stringContaining('no true browser equivalent'),
+      ]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
       expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
@@ -1280,10 +1286,18 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     expect(
       compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
     ).not.toBeNull();
-    expect(compiled.diagnostics).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.diagnostics).toEqual([
+      {
+        severity: 'warning',
+        code: 'preset_shader_volume_approximation',
+        message: expect.stringContaining('volume sampler'),
+      },
+    ]);
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      expect.stringContaining('no true browser equivalent'),
+    ]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
@@ -1388,7 +1402,14 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
       },
     );
 
-    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.diagnostics).toEqual([
+      {
+        severity: 'warning',
+        code: 'preset_shader_volume_approximation',
+        message:
+          'Texture layer shader control uses tex3D/texture3D with volume sampler "simplex" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.',
+      },
+    ]);
     expect(compiled.ir.shaderText.supported).toBe(true);
     expect(compiled.ir.post.shaderControls.textureLayer.source).toBe('simplex');
     expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
@@ -1407,11 +1428,13 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
       webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
-    expect(compiled.ir.compatibility.warnings).toEqual([]);
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
+    expect(compiled.ir.compatibility.warnings).toEqual([
+      'Texture layer shader control uses tex3D/texture3D with volume sampler "simplex" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.',
+    ]);
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
   });
 
   test('downgrades non-volume aux tex3D aliases as unsupported shader text', () => {
@@ -1433,8 +1456,8 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
       'motion-vectors',
       'post-effects',
     ]);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );

@@ -133,6 +133,15 @@ if (import.meta.main) {
   }
 
   const options = parseArgs(args);
-  const result = await captureVisualReferenceSuite(options);
-  console.log(JSON.stringify(result, null, 2));
+  try {
+    const result = await captureVisualReferenceSuite(options);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    console.error(
+      `Capture suite failed: ${rawMessage}\n` +
+        `Check that the dev server is running on port ${options.port} (bun run dev) and the browser is available.`,
+    );
+    process.exit(1);
+  }
 }

@@ -6,11 +6,17 @@ import sharp from 'sharp';
 import {
   computeParityDiffMetrics,
   diffParityArtifacts,
+  loadImagePixels,
 } from '../scripts/diff-parity-artifacts.ts';
 import {
   appendParityArtifactEntry,
   loadParityArtifactManifest,
 } from '../scripts/parity-artifacts.ts';
+import {
+  compareSuiteResults,
+  type SuitePresetResult,
+  suiteResultRank,
+} from '../scripts/run-parity-diff-suite.ts';
 
 test('computeParityDiffMetrics reports exact matches', () => {
   const pixelData = Uint8Array.from([10, 20, 30, 255, 40, 50, 60, 255]);
@@ -106,4 +112,94 @@ test('diffParityArtifacts resolves the latest pair for a preset and writes outpu
       (entry) => entry.kind === 'parity-diff',
     ),
   ).toBe(true);
+});
+
+function makeSuiteResult(
+  overrides: Partial<SuitePresetResult> & { presetId: string },
+): SuitePresetResult {
+  return {
+    projectmImagePath: '',
+    requiredBackend: 'webgpu',
+    actualBackend: null,
+    stimsArtifactId: null,
+    ...overrides,
+    title: overrides.title ?? `title-${overrides.presetId}`,
+    status: overrides.status ?? 'pass',
+    mismatchRatio: overrides.mismatchRatio ?? null,
+    reportPath: overrides.reportPath ?? null,
+    diffImagePath: overrides.diffImagePath ?? null,
+  };
+}
+
+test('compareSuiteResults sorts worst-first by status rank, then highest mismatch first', () => {
+  const entries: SuitePresetResult[] = [
+    makeSuiteResult({ presetId: 'a', status: 'pass', mismatchRatio: 0.01 }),
+    makeSuiteResult({ presetId: 'b', status: 'fail', mismatchRatio: 0.15 }),
+    makeSuiteResult({ presetId: 'c', status: 'fail', mismatchRatio: 0.25 }),
+    makeSuiteResult({
+      presetId: 'd',
+      status: 'backend-mismatch',
+      mismatchRatio: null,
+    }),
+    makeSuiteResult({
+      presetId: 'e',
+      status: 'missing-stims-capture',
+      mismatchRatio: null,
+    }),
+    makeSuiteResult({ presetId: 'f', status: 'pass', mismatchRatio: 0.0 }),
+    makeSuiteResult({ presetId: 'g', status: 'error', mismatchRatio: null }),
+  ].sort(compareSuiteResults);
+
+  const idsInOrder = entries.map((entry) => entry.presetId);
+  expect(idsInOrder).toEqual(['d', 'c', 'b', 'g', 'e', 'a', 'f']);
+});
+
+test('suiteResultRank returns higher numbers for better statuses', () => {
+  expect(
+    suiteResultRank(
+      makeSuiteResult({ presetId: 'x', status: 'backend-mismatch' }),
+    ),
+  ).toBe(0);
+  expect(
+    suiteResultRank(makeSuiteResult({ presetId: 'x', status: 'fail' })),
+  ).toBe(1);
+  expect(
+    suiteResultRank(makeSuiteResult({ presetId: 'x', status: 'error' })),
+  ).toBe(2);
+  expect(
+    suiteResultRank(
+      makeSuiteResult({ presetId: 'x', status: 'missing-stims-capture' }),
+    ),
+  ).toBe(3);
+  expect(
+    suiteResultRank(makeSuiteResult({ presetId: 'x', status: 'pass' })),
+  ).toBe(4);
+});
+
+test('computeParityDiffMetrics throws with descriptive error on dimension mismatch', () => {
+  const pixels2x1 = {
+    width: 2,
+    height: 1,
+    channels: 4,
+    data: Uint8Array.from([10, 20, 30, 255, 40, 50, 60, 255]),
+  };
+  const pixels1x1 = {
+    width: 1,
+    height: 1,
+    channels: 4,
+    data: Uint8Array.from([0, 0, 0, 255]),
+  };
+
+  expect(() =>
+    computeParityDiffMetrics({
+      stims: pixels2x1,
+      projectm: pixels1x1,
+      threshold: 0,
+    }),
+  ).toThrow(/dimensions differ/i);
+});
+
+test('loadImagePixels throws descriptive error for non-existent file', async () => {
+  const missingPath = path.join(os.tmpdir(), 'stims-nonexistent-ref-99999.png');
+  await expect(loadImagePixels(missingPath)).rejects.toThrow();
 });

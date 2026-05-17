@@ -18,6 +18,8 @@ The repo also ships targeted review skills under `.agent/skills/` that gate the 
 - [`/review-renderer-fallback`](../../.agent/skills/review-renderer-fallback/SKILL.md) — gate PRs touching renderer capability probing, fallback chains, timeout logic, or audio worklet init.
 - [`/review-test-harness`](../../.agent/skills/review-test-harness/SKILL.md) — gate PRs adding or modifying tests, fixtures, or integration harness code.
 - [`/review-workspace-ui-state`](../../.agent/skills/review-workspace-ui-state/SKILL.md) — gate PRs touching React workspace UI state, URL routing, toast/panel behavior, or the engine adapter boundary.
+- [`/review-deploy-tooling`](../../.agent/skills/review-deploy-tooling/SKILL.md) — gate PRs touching CI, wrangler config, build scripts, Cloudflare deploy, or package.json tooling.
+- [`/review-module-loading`](../../.agent/skills/review-module-loading/SKILL.md) — gate PRs touching module loading, bootstrap, toy manifest, library resolution, or gamepad polling.
 - [`/audit-recurring-fixes`](../../.agent/skills/audit-recurring-fixes/SKILL.md) — audit commit history to find recurring fix patterns and update prevention skills.
 - [`/iterate-visualizer-ui`](../../.agent/skills/iterate-visualizer-ui/SKILL.md) — iterate on workspace UI, shell chrome, and CSS with fast feedback loops, component isolation, and screenshot diff.
 - [`/quick-start`](../../.agent/skills/quick-start/SKILL.md) — fastest safe path into the repo when dropped in cold.

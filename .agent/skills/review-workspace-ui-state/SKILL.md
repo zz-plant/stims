@@ -9,7 +9,7 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
 ## Why this exists
 
-~10% of fix commits are workspace UI races: tool toggles double-firing, toast state leaking, URL param collisions between legacy (`experience`, `panel`) and canonical (`tool`, `collection`) keys. This skill keeps the adapter boundary clean.
+~18% of fix commits are workspace UI races — now the #2 category (was understated): tool toggles double-firing, toast state leaking, URL param collisions between legacy (`experience`, `panel`) and canonical (`tool`, `collection`) keys. This skill keeps the adapter boundary clean.
 
 ## Pre-merge checklist
 
