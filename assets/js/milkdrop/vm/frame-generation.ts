@@ -25,6 +25,69 @@ function mix(start: number, end: number, amount: number) {
   return start + (end - start) * amount;
 }
 
+/**
+ * Catmull-Rom spline interpolation for a single value.
+ * Interpolates between p1 and p2 using tension alpha (0 = standard, 0.5 = centripetal, 1 = chordal).
+ */
+function catmullRomValue(
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+  t: number,
+): number {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    0.5 *
+    (2 * p1 +
+      (-p0 + p2) * t +
+      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+      (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+  );
+}
+
+/**
+ * Applies Catmull-Rom interpolation to a flat position array [x,y,z,...].
+ * Produces (n-1)*subdiv+1 points from n input points.
+ * Returns a new array — does not mutate the input.
+ */
+function catmullRomInterpolatePositions(
+  positions: readonly number[],
+  subdiv: number,
+): number[] {
+  const ptCount = positions.length / 3;
+  if (ptCount < 2 || subdiv < 2) return [...positions];
+
+  const out: number[] = [];
+  const lastIdx = ptCount - 1;
+
+  for (let i = 0; i < lastIdx; i++) {
+    const p0x = positions[Math.max(0, i - 1) * 3];
+    const p0y = positions[Math.max(0, i - 1) * 3 + 1];
+    const p1x = positions[i * 3];
+    const p1y = positions[i * 3 + 1];
+    const p2x = positions[Math.min(lastIdx, i + 1) * 3];
+    const p2y = positions[Math.min(lastIdx, i + 1) * 3 + 1];
+    const p3x = positions[Math.min(lastIdx, i + 2) * 3];
+    const p3y = positions[Math.min(lastIdx, i + 2) * 3 + 1];
+    const z = positions[i * 3 + 2];
+
+    for (let j = 0; j < subdiv; j++) {
+      const t = j / subdiv;
+      out.push(
+        catmullRomValue(p0x, p1x, p2x, p3x, t),
+        catmullRomValue(p0y, p1y, p2y, p3y, t),
+        z,
+      );
+    }
+  }
+
+  const lastOut = lastIdx * 3;
+  out.push(positions[lastOut], positions[lastOut + 1], positions[lastOut + 2]);
+  return out;
+}
+
 function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
   const waveformData =
     signals.waveformData && signals.waveformData.length > 0
@@ -490,6 +553,23 @@ export function buildMainWaveFrame({
     positions[writeIndex] = x;
     positions[writeIndex + 1] = y;
     positions[writeIndex + 2] = 0.22 + momentum * 0.06;
+  }
+
+  // Apply Catmull-Rom interpolation to smooth the wave path.
+  // wave_smoothing maps to subdivision count: more subdiv = smoother curve.
+  // At smoothing=0 the wave uses raw sample-to-sample straight lines (angular).
+  // At smoothing=0.75 (default) ~5 subdiv creates visibly smooth curves.
+  // At smoothing=0.98 ~7 subdiv creates very smooth organic shapes.
+  const catmullSubdiv = Math.max(1, 1 + Math.round(smoothing * 6));
+  if (catmullSubdiv > 1 && !useProcedural) {
+    const interpolated = catmullRomInterpolatePositions(
+      positions,
+      catmullSubdiv,
+    );
+    positions.length = 0;
+    for (let i = 0; i < interpolated.length; i++) {
+      positions.push(interpolated[i]);
+    }
   }
 
   const waveColor = color(

@@ -22,6 +22,13 @@ export type BeatTrackerOptions = {
   baselineMs?: number;
   midThreshold?: number;
   trebleThreshold?: number;
+  /**
+   * When 'projectM', uses projectM-compatible beat detection:
+   * simple energy threshold against running average,
+   * ignoring multi-band onset/flux analysis.
+   * When 'default' or omitted, uses the enhanced multi-band tracker.
+   */
+  mode?: 'default' | 'projectM';
 };
 
 export type BeatTrackerUpdate = {
@@ -84,7 +91,14 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     baselineMs = 360,
     midThreshold = 0.06,
     trebleThreshold = 0.04,
+    mode = 'default',
   } = options;
+
+  // projectM-style beat detector state
+  let pmRunningAvg = 0;
+  let pmBeatIntensity = 0;
+  let pmLastBeatTime = 0;
+  const pmCoeff = 0.1; // projectM's energy averaging coefficient
 
   let smoothedBands: AudioBandLevels = { bass: 0, mid: 0, treble: 0 };
   let beatIntensity = 0;
@@ -116,6 +130,62 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     },
     timeMs: number,
   ): BeatTrackerUpdate => {
+    // projectM-compatible beat detection: simple energy threshold against running average.
+    // This matches projectM's algorithm more closely than the multi-band onset tracker.
+    if (mode === 'projectM') {
+      const currentEnergy = weightedEnergy;
+      pmRunningAvg += pmCoeff * (currentEnergy - pmRunningAvg);
+      const pmThreshold = pmRunningAvg * (1 + threshold * 3);
+      const pmIsBeat =
+        currentEnergy > pmThreshold && timeMs - pmLastBeatTime > minIntervalMs;
+
+      if (pmIsBeat) {
+        pmBeatIntensity = Math.min(1, pmBeatIntensity + 0.5);
+        pmLastBeatTime = timeMs;
+      } else {
+        pmBeatIntensity *= beatDecay;
+      }
+
+      smoothedBands = {
+        bass: applyEnvelope(
+          smoothedBands.bass,
+          bands.bass,
+          deltaMs,
+          attackMs.bass ?? DEFAULT_SMOOTHING.bass,
+          releaseMs.bass ?? DEFAULT_RELEASE.bass,
+        ),
+        mid: applyEnvelope(
+          smoothedBands.mid,
+          bands.mid,
+          deltaMs,
+          attackMs.mid ?? DEFAULT_SMOOTHING.mid,
+          releaseMs.mid ?? DEFAULT_RELEASE.mid,
+        ),
+        treble: applyEnvelope(
+          smoothedBands.treble,
+          bands.treble,
+          deltaMs,
+          attackMs.treble ?? DEFAULT_SMOOTHING.treble,
+          releaseMs.treble ?? DEFAULT_RELEASE.treble,
+        ),
+      };
+
+      previousBands = { ...previousBands, ...bands };
+      previousWeightedEnergy = weightedEnergy;
+
+      return {
+        smoothedBands,
+        beatIntensity: pmBeatIntensity,
+        isBeat: pmIsBeat,
+        isTransient: currentEnergy > pmRunningAvg * 1.8,
+        spectralFlux: 0,
+        bandFlux: 0,
+        beatBass: pmIsBeat,
+        beatMid: false,
+        beatTreble: false,
+      };
+    }
+
     smoothedBands = {
       bass: applyEnvelope(
         smoothedBands.bass,
@@ -279,6 +349,9 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     _previousSpectrum = null;
     spectralFlux = 0;
     bandFlux = 0;
+    pmRunningAvg = 0;
+    pmBeatIntensity = 0;
+    pmLastBeatTime = 0;
   };
 
   return {

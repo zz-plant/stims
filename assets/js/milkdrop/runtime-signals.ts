@@ -15,13 +15,16 @@ function smoothLevel(
   return current * coefficient + next * (1 - coefficient);
 }
 
-export function createMilkdropSignalTracker() {
+export function createMilkdropSignalTracker(options?: {
+  beatDetectionMode?: 'default' | 'projectM';
+}) {
   const signalProcessor = createMilkdropAudioSignalProcessor();
   const beatTracker = createBeatTracker({
     threshold: 0.08,
     onsetThreshold: 0.016,
     minIntervalMs: 170,
     beatDecay: 0.88,
+    mode: options?.beatDetectionMode ?? 'default',
   });
   let frame = 0;
   let rms = 0;
