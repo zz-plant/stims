@@ -93,15 +93,11 @@ export const buildOgSvg = ({
   subtitle,
   eyebrow,
   chip,
-  accentStart,
-  accentEnd,
 }: {
   title: string;
   subtitle: string;
   eyebrow: string;
   chip?: string;
-  accentStart: string;
-  accentEnd: string;
 }) => `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
   <defs>
     <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
@@ -433,24 +429,18 @@ export async function buildSeoArtifacts(
     subtitle: 'MilkDrop-inspired visuals for your music',
     eyebrow: 'Music-reactive in the browser',
     chip: 'Instant visuals',
-    accentStart: '#08131b',
-    accentEnd: '#1f5f66',
   });
   const milkdropOgSvg = buildOgSvg({
     title: milkdrop.title,
     subtitle: 'Demo audio, presets, and your own music',
     eyebrow: 'Browser music visualizer',
     chip: 'Start fast',
-    accentStart: '#150d2e',
-    accentEnd: '#244b9a',
   });
   const performanceOgSvg = buildOgSvg({
     title: 'Compatibility and Performance',
     subtitle: 'Browser support, lighter modes, and first-run guidance',
     eyebrow: 'What to expect before you start',
     chip: 'Performance guide',
-    accentStart: '#0a1328',
-    accentEnd: '#0d8b8f',
   });
   const iconSvg = buildAppIconSvg();
   const heroWideSvg = buildManifestScreenshotSvg({
