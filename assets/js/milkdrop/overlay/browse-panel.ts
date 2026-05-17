@@ -467,6 +467,10 @@ export class BrowsePanel {
       this.renderCollectionFilters();
       this.render();
     }
+    if (visible) {
+      // Defer focus to yield past React shell re-render that resets focus
+      setTimeout(() => this.searchInput.focus(), 100);
+    }
   }
 
   setQualityPresets({

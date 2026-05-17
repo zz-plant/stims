@@ -170,7 +170,7 @@ export class MilkdropOverlay {
     closeButton.className = 'milkdrop-overlay__close';
     closeButton.textContent = 'Close';
     closeButton.addEventListener('click', () => this.toggleOpen(false));
-    headerActions.append(this.shortcutHudToggle, closeButton);
+    headerActions.append(closeButton, this.shortcutHudToggle);
     header.append(titleBlock, headerActions);
 
     const toolbar = document.createElement('div');
