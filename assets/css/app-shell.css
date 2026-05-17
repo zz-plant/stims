@@ -1287,9 +1287,14 @@ body[data-page="workspace"] {
   cursor: pointer;
   transition:
     color 160ms ease,
-    background 160ms ease;
+    background 160ms ease,
+    transform 160ms ease;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+}
+
+.stims-shell__preset-card-wrap:hover .stims-shell__preset-fav {
+  transform: translateY(-1px);
 }
 
 .stims-shell__preset-fav:hover {
@@ -1300,6 +1305,19 @@ body[data-page="workspace"] {
 .stims-shell__preset-card-copy {
   display: grid;
   gap: 6px;
+}
+
+.stims-shell__action-hint {
+  display: block;
+  font-size: 0.82rem;
+  opacity: 0.65;
+  line-height: 1.35;
+}
+
+.stims-shell__active-filters {
+  padding: 6px 0;
+  font-size: 0.85rem;
+  opacity: 0.72;
 }
 
 .stims-shell__preset-meta,
