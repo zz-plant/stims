@@ -620,6 +620,7 @@ export function createMilkdropExperience({
   }
 
   if (enableOverlay) {
+    overlay?.dispose();
     overlay = new MilkdropOverlay({
       host: container ?? document.body,
       callbacks: interactionPresenter.overlayCallbacks,

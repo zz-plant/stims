@@ -87,6 +87,7 @@ export function createMilkdropEngineAdapter() {
     unsubscribeExperience = null;
     runtime?.dispose();
     runtime = null;
+    experience?.dispose();
     experience = null;
     container = null;
     audioActive = false;
