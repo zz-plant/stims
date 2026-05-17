@@ -3721,6 +3721,17 @@ body.tv-mode .control-panel input {
   padding-right: 4px;
   scroll-snap-type: y proximity;
   scroll-behavior: smooth;
+  /* Fade hint at bottom indicating more content */
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 32px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 32px),
+    transparent 100%
+  );
 }
 
 @media (max-height: 700px) {
@@ -3738,8 +3749,16 @@ body.tv-mode .control-panel input {
 .milkdrop-overlay__browse-section {
   display: grid;
   gap: 6px;
-  padding: 0;
+  padding: 8px 0;
   scroll-snap-align: start;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.milkdrop-overlay__browse-section:has(
+  .milkdrop-overlay__preset[data-active="true"]
+) {
+  background: rgba(56, 189, 248, 0.04);
 }
 
 .milkdrop-overlay__browse-heading {
@@ -3747,11 +3766,20 @@ body.tv-mode .control-panel input {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  padding: 0 4px;
   color: rgba(226, 232, 240, 0.76);
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.milkdrop-overlay__browse-section:has(
+    .milkdrop-overlay__preset[data-active="true"]
+  )
+  .milkdrop-overlay__browse-heading {
+  color: rgba(186, 230, 253, 0.95);
 }
 
 .milkdrop-overlay__browse-count {
