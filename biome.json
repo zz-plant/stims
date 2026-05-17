@@ -47,6 +47,16 @@
       "formatter": {
         "enabled": false
       }
+    },
+    {
+      "includes": ["terminal/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
     }
   ]
 }
