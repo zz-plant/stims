@@ -115,6 +115,135 @@ const BUNDLED_PRESET_EXPECTATIONS: Record<string, BundledPresetExpectation> = {
     webgl: 'supported',
     webgpu: 'supported',
   },
+
+  'dbleja-hovering-over-mars.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'dbleja-hovering-over-pluto.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'dbleja-inside-the-tree-blue-mix.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-dark-side-of-the-moon-clean-mix.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-ether-posession-phat-edit-v3.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-ether.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-matrix-cube-c.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-phat-cat-scan-nirvana.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-phat-dark-heart.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-phat-linear-clouds-v2.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-phat-magnetosphere-13-pulsar.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-phat-vacuum-deification.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-quasar.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'eos-starburst-05-phasing.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'evet-proteus-core-element-5.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'evet-responsive-acid-iris.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'geiss-bipolar-x.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'geiss-happy-drops.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'orb-acid-in-my-eyes.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'orb-cloud-scope.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'orbasonic.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'pieturp-sunflare.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'rovastar-and-idiot24-7-abstract-psychaos.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'rovastar-dark-ritual-star-of-destiny-denied-mix.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'rovastar-harlequins-liquid-dragon.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'rovastar-mosaics-of-ages.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'rovastar-oozing-resistance.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'shifter-curlique.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'shifter-glassworms-flare.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'shifter-snakeskin.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'shifter-spectro.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
+  'shifter-swarm.milk': {
+    webgl: 'supported',
+    webgpu: 'supported',
+  },
 };
 
 const PARITY_CORPUS_EXPECTATIONS: Record<string, ShapeCorpusExpectation> = {
@@ -283,7 +412,7 @@ describe('milkdrop bundled preset corpus', () => {
   test('keeps the bundled preset corpus fully supported on both backends in compat mode', () => {
     const corpus = loadBundledPresetCorpus();
 
-    expect(corpus.length).toBe(9);
+    expect(corpus.length).toBe(41);
 
     const unexpected = corpus.filter(({ file, compiled }) => {
       const expectation =
