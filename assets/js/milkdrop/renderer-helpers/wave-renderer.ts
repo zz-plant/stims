@@ -18,21 +18,24 @@ import type { MilkdropColor, MilkdropWaveVisual } from '../types';
 
 type WaveLayerObject = Line | LineLoop | Points;
 
-const THICK_WAVE_PASS_OFFSET = 1 / 1024;
+const THICK_WAVE_BASE_OFFSET = 1 / 512;
 
 function getWaveLayerCount(wave: MilkdropWaveVisual) {
   return wave.drawMode === 'dots' || wave.thickness > 1 ? 4 : 1;
 }
 
-function getWaveLayerOffsets(layerCount: number) {
+function getWaveLayerOffsets(layerCount: number, thickness: number) {
   if (layerCount < 4) {
     return [{ x: 0, y: 0 }];
   }
+  // Use thickness to determine offset: thicker = wider multi-pass spread.
+  // At thickness=2, offset ~2px at 1080p. At thickness=5, offset ~6px.
+  const spread = THICK_WAVE_BASE_OFFSET * Math.max(1, thickness * 1.5);
   return [
     { x: 0, y: 0 },
-    { x: THICK_WAVE_PASS_OFFSET, y: 0 },
-    { x: THICK_WAVE_PASS_OFFSET, y: THICK_WAVE_PASS_OFFSET },
-    { x: 0, y: THICK_WAVE_PASS_OFFSET },
+    { x: spread, y: 0 },
+    { x: spread, y: spread },
+    { x: 0, y: spread },
   ];
 }
 
@@ -199,7 +202,7 @@ export function createWaveObject(
   }
   const layerCount = getWaveLayerCount(wave);
   const group = new ThreeGroup();
-  for (const { x, y } of getWaveLayerOffsets(layerCount)) {
+  for (const { x, y } of getWaveLayerOffsets(layerCount, wave.thickness)) {
     group.add(
       createWaveLayerObject(wave, behavior, helpers, alphaMultiplier, x, y),
     );
@@ -230,7 +233,7 @@ export function updateWaveObject(
   alphaMultiplier: number,
 ) {
   const layerCount = getWaveLayerCount(wave);
-  const offsets = getWaveLayerOffsets(layerCount);
+  const offsets = getWaveLayerOffsets(layerCount, wave.thickness);
 
   for (let index = 0; index < offsets.length; index += 1) {
     const { x, y } = offsets[index] as { x: number; y: number };
