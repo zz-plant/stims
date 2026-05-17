@@ -3809,12 +3809,16 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__browse-empty {
-  padding: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  display: grid;
+  gap: 8px;
+  padding: 18px 16px;
+  border: 1px dashed rgba(148, 163, 184, 0.18);
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.42);
   color: rgba(191, 219, 254, 0.78);
   font-size: 0.9rem;
+  text-align: center;
+  line-height: 1.5;
 }
 
 .milkdrop-overlay__preset {
@@ -3822,14 +3826,24 @@ body.tv-mode .control-panel input {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: start;
-  padding-top: 8px;
+  padding: 8px 6px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
   scroll-snap-align: start;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.milkdrop-overlay__preset:hover {
+  background: rgba(56, 189, 248, 0.04);
 }
 
 .milkdrop-overlay__browse-section .milkdrop-overlay__preset:first-of-type {
   border-top: 0;
-  padding-top: 0;
+  padding-top: 8px;
+}
+
+.milkdrop-overlay__preset[data-active="true"] {
+  background: rgba(56, 189, 248, 0.06);
 }
 
 .milkdrop-overlay__preset[data-active="true"] .milkdrop-overlay__preset-launch {

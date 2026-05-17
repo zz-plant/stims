@@ -2869,6 +2869,29 @@ body[data-page="workspace"] {
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
+.stims-shell .cta-button.ghost {
+  min-height: 40px;
+  padding: 0.6rem 0.9rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: none;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: rgba(226, 232, 240, 0.7);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.stims-shell .cta-button.ghost:hover {
+  color: rgba(226, 232, 240, 0.95);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(148, 163, 184, 0.3);
+  transform: none;
+  box-shadow: none;
+}
+
 .stims-shell .cta-button:disabled,
 .stims-shell .cta-button[disabled] {
   opacity: 0.5;
