@@ -432,8 +432,7 @@ export function buildMainWaveFrame({
 
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
-    const sampleValue =
-      smoothedSamples[index] ?? sampleWaveformData(signals, t);
+    const sampleValue = liveSamples[index] ?? sampleWaveformData(signals, t);
     const prevSample = previousSamples[index] ?? sampleValue;
     const prevMomentum = previousMomentum[index] ?? 0;
     const prevCurrent = smoothedSamples[Math.max(0, index - 1)] ?? sampleValue;
