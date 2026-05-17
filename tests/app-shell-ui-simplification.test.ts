@@ -104,7 +104,7 @@ describe('Workspace shell UI simplification regression', () => {
       'Share this tab when prompted to capture audio already playing here.',
     );
     expect(uiSource).toContain('Paste a YouTube link, then start capture');
-    expect(uiSource).toContain('Switch to your music →');
+    expect(uiSource).toContain('Switch to your music \\u2192');
     expect(uiSource).not.toContain('Demo audio is running.');
     expect(uiSource).not.toContain('Easy on demo audio');
     expect(uiSource).not.toContain('Switch to live input later');

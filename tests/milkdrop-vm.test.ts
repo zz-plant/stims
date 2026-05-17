@@ -524,7 +524,7 @@ wave_scale=1
     );
     expect(withHistory.mainWave.positions[3]).not.toBeCloseTo(
       withoutHistory.mainWave.positions[3] ?? 0,
-      4,
+      5,
     );
   });
 

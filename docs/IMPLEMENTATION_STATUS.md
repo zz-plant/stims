@@ -11,6 +11,12 @@ This document is the consolidated source for implementation progress across road
 - [x] Library discovery improvements are in place.
 - [x] Homepage first-view CTAs are reduced to one primary launch path plus browse.
 - [x] Shared runtime helper foundations are in place.
+- [x] **Polish phase: Overlay theme CSS variables extraction and styling consistency** (2026-05-17):
+  - [x] Added 23 theme variables for overlay component (bg-primary, bg-secondary, bg-tertiary, overlay, overlay-2, border, blur-lg, shadow, button, active-indicator)
+  - [x] Centralized overlay styling in CSS variables for maintainability
+  - [x] Fixed all Biome lint warnings via `bun run lint --fix`
+  - [x] Verified quality gate passes (`bun run check:quick` all checks clean)
+  - [x] Updated keyboard shortcuts documentation for browsing mode (T arrow keys Escape)
 
 ## Active priorities
 
@@ -95,3 +101,4 @@ This document is the consolidated source for implementation progress across road
 - This file is the authoritative, editable status checklist for roadmap/refactor/debt/UX execution.
 - Update this file in the same PR when item status changes.
 - Keep `docs/FULL_REFACTOR_PLAN.md` for detailed strategy and rationale (non-authoritative for checklist state).
+- Recent changes (2026-05-17): Overlay theme CSS variables extraction for improved maintainability and consistency.
