@@ -38,12 +38,50 @@ const DEFAULT_LIBRARY_MANIFEST_URLS = [
   '/milkdrop-presets/libraries/projectm-upstream/catalog.json',
 ];
 
-export async function loadText(url: string) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch preset source: ${url}`);
+const RETRY_DELAY_MS = 500;
+const FETCH_TIMEOUT_MS = 8_000;
+const MAX_RETRIES = 2;
+
+export async function loadText(url: string): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+    if (attempt > 0) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, RETRY_DELAY_MS * attempt),
+      );
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        lastError = new Error(
+          `Failed to fetch preset source (${response.status}): ${url}`,
+        );
+        continue;
+      }
+
+      return response.text();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        lastError = new Error(`Timeout fetching preset source: ${url}`);
+      } else if (error instanceof TypeError) {
+        lastError = new Error(`Network error fetching preset source: ${url}`);
+      } else {
+        lastError =
+          error instanceof Error
+            ? error
+            : new Error(`Unknown error fetching preset source: ${url}`);
+      }
+    }
   }
-  return response.text();
+
+  throw lastError ?? new Error(`Failed to fetch preset source: ${url}`);
 }
 
 function buildCertificationCorpusFileUrl(
@@ -117,12 +155,16 @@ async function loadOptionalCatalog(
   return fetch(catalogUrl)
     .then(async (response) => {
       if (!response.ok) {
+        console.warn(`Optional catalog not found: ${catalogUrl}`);
         return [] as MilkdropBundledCatalogEntry[];
       }
       const document = (await response.json()) as BundledCatalogDocument;
       return toBundledCatalogEntries(document);
     })
-    .catch(() => [] as MilkdropBundledCatalogEntry[]);
+    .catch((error) => {
+      console.warn(`Failed to load optional catalog: ${catalogUrl}`, error);
+      return [] as MilkdropBundledCatalogEntry[];
+    });
 }
 
 function mergeUniqueCatalogEntries(
