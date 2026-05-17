@@ -1831,6 +1831,60 @@ body[data-page="workspace"] {
   pointer-events: auto;
 }
 
+.stims-shell__stage-dock-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.stims-shell__now-playing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 28rem;
+  padding: 6px 14px;
+  border: 1px solid var(--stims-white-08);
+  border-radius: 14px;
+  background: var(--stims-rail-fill);
+  backdrop-filter: blur(12px);
+}
+
+.stims-shell__now-playing-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.stims-shell__now-playing-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stims-shell__now-playing-artist {
+  font-size: 0.68rem;
+  color: rgba(191, 219, 254, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stims-shell__now-playing-bar {
+  flex-shrink: 0;
+  width: 3px;
+  height: 28px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.6);
+  opacity: calc(0.15 + var(--stims-energy, 0) * 0.85);
+  transition: opacity 0.1s ease;
+}
+
 .stims-shell__stage-dock {
   position: relative;
   z-index: 1;

@@ -15,115 +15,141 @@ export function StimsControlDock({
   const audioSource = w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
   const audioEnergy = w.engineSnapshot?.audioEnergy ?? 0;
   const energyNorm = Math.min(1, Math.max(0, audioEnergy));
+  const runtimeReady = w.engineSnapshot?.runtimeReady ?? false;
+  const presetTitle = w.selectedPreset?.title ?? w.featuredPreset?.title ?? '';
+  const presetAuthor =
+    w.selectedPreset?.author ?? w.featuredPreset?.author ?? '';
 
   return (
-    <div
-      className="stims-shell__stage-dock"
-      role="toolbar"
-      aria-label="Live controls"
-      style={
-        { '--stims-audio-glow': String(energyNorm) } as React.CSSProperties
-      }
-    >
-      <button
-        type="button"
-        className="stims-shell__stage-tool"
-        data-active={String(panel === 'browse')}
-        aria-label="Open browse panel"
-        title="Open browse panel"
-        onClick={() => w.updatePanel('browse')}
+    <div className="stims-shell__stage-dock-wrap">
+      {runtimeReady && presetTitle ? (
+        <div className="stims-shell__now-playing">
+          <div className="stims-shell__now-playing-info">
+            <span className="stims-shell__now-playing-title">
+              {presetTitle}
+            </span>
+            {presetAuthor ? (
+              <span className="stims-shell__now-playing-artist">
+                {presetAuthor}
+              </span>
+            ) : null}
+          </div>
+          <span
+            className="stims-shell__now-playing-bar"
+            style={
+              { '--stims-energy': String(energyNorm) } as React.CSSProperties
+            }
+          />
+        </div>
+      ) : null}
+      <div
+        className="stims-shell__stage-dock"
+        role="toolbar"
+        aria-label="Live controls"
+        style={
+          { '--stims-audio-glow': String(energyNorm) } as React.CSSProperties
+        }
       >
-        <UiIcon
-          name="sparkles"
-          className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-        />
-        <span className="stims-shell__stage-tool-label">Browse</span>
-      </button>
-      <button
-        type="button"
-        className="stims-shell__stage-tool"
-        data-active={String(panel === 'settings')}
-        aria-label="Open look settings"
-        title="Open look settings"
-        onClick={() => w.updatePanel('settings')}
-      >
-        <UiIcon
-          name="sliders"
-          className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-        />
-        <span className="stims-shell__stage-tool-label">Style</span>
-      </button>
-      <button
-        type="button"
-        className="stims-shell__stage-tool"
-        aria-label="Surprise me"
-        title="Surprise me"
-        onClick={w.handleShufflePreset}
-      >
-        <UiIcon
-          name="pulse"
-          className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-        />
-        <span className="stims-shell__stage-tool-label">Surprise me</span>
-      </button>
-      {audioSource ? (
         <button
           type="button"
           className="stims-shell__stage-tool"
-          aria-label="Stop audio"
-          title="Stop audio"
-          onClick={w.handleAudioStop}
+          data-active={String(panel === 'browse')}
+          aria-label="Open browse panel"
+          title="Open browse panel"
+          onClick={() => w.updatePanel('browse')}
         >
           <UiIcon
-            name="close"
+            name="sparkles"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
-          <span className="stims-shell__stage-tool-label">Stop</span>
+          <span className="stims-shell__stage-tool-label">Browse</span>
         </button>
-      ) : null}
-      <button
-        type="button"
-        className="stims-shell__stage-tool"
-        aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
-        title={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
-        onClick={onToggleFullscreen}
-      >
-        <UiIcon
-          name="expand"
-          className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-        />
-        <span className="stims-shell__stage-tool-label">
-          {isFullscreen ? 'Exit full screen' : 'Full screen'}
-        </span>
-      </button>
-      <button
-        type="button"
-        className="stims-shell__stage-tool"
-        aria-label="Share current link"
-        title="Share current link"
-        onClick={() => void w.handleShowCurrentLink()}
-      >
-        <UiIcon
-          name="link"
-          className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-        />
-        <span className="stims-shell__stage-tool-label">Share</span>
-      </button>
-      {onToggleTheme ? (
         <button
           type="button"
           className="stims-shell__stage-tool"
-          aria-label="Toggle theme"
-          title="Toggle theme"
-          onClick={onToggleTheme}
+          data-active={String(panel === 'settings')}
+          aria-label="Open look settings"
+          title="Open look settings"
+          onClick={() => w.updatePanel('settings')}
         >
           <UiIcon
-            name="moon"
+            name="sliders"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
-          <span className="stims-shell__stage-tool-label">Theme</span>
+          <span className="stims-shell__stage-tool-label">Style</span>
         </button>
-      ) : null}
+        <button
+          type="button"
+          className="stims-shell__stage-tool"
+          aria-label="Surprise me"
+          title="Surprise me"
+          onClick={w.handleShufflePreset}
+        >
+          <UiIcon
+            name="pulse"
+            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__stage-tool-label">Surprise me</span>
+        </button>
+        {audioSource ? (
+          <button
+            type="button"
+            className="stims-shell__stage-tool"
+            aria-label="Stop audio"
+            title="Stop audio"
+            onClick={w.handleAudioStop}
+          >
+            <UiIcon
+              name="close"
+              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className="stims-shell__stage-tool-label">Stop</span>
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="stims-shell__stage-tool"
+          aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
+          title={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
+          onClick={onToggleFullscreen}
+        >
+          <UiIcon
+            name="expand"
+            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__stage-tool-label">
+            {isFullscreen ? 'Exit full screen' : 'Full screen'}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="stims-shell__stage-tool"
+          aria-label="Share current link"
+          title="Share current link"
+          onClick={() => void w.handleShowCurrentLink()}
+        >
+          <UiIcon
+            name="link"
+            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__stage-tool-label">Share</span>
+        </button>
+        {onToggleTheme ? (
+          <button
+            type="button"
+            className="stims-shell__stage-tool"
+            aria-label="Toggle theme"
+            title="Toggle theme"
+            onClick={onToggleTheme}
+          >
+            <UiIcon
+              name="moon"
+              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className="stims-shell__stage-tool-label">Theme</span>
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -134,8 +134,9 @@ export function createMilkdropExperience({
   let blendEndAtMs = 0;
   let autoplay = preferences.getAutoplay();
   let lockedPreset = false;
+  const presetBlend = activeCompiled.ir.numericFields.blend_duration;
   let blendDuration = preferences.getBlendDuration(
-    activeCompiled.ir.numericFields.blend_duration,
+    presetBlend && presetBlend > 0 ? presetBlend : 0.3,
   );
   let preferredTransitionMode = preferences.getTransitionMode();
   let transitionMode = preferredTransitionMode;
