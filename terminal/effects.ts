@@ -27,6 +27,9 @@ export interface EffectState {
   options: EffectOptions;
   normalizeGain: number;
   vibeIntensity: number;
+  transitionAlpha: number;
+  previousMode: number;
+  transitionSnapshot: { bg: Uint8Array; bgColor: Uint32Array } | null;
 }
 
 export function createEffectState(
@@ -47,6 +50,9 @@ export function createEffectState(
     },
     normalizeGain: 1,
     vibeIntensity: 0.5,
+    transitionAlpha: 0,
+    previousMode: 0,
+    transitionSnapshot: null,
   };
 }
 
@@ -55,7 +61,9 @@ const COMPACT_MODES = ['orbit', 'bars'] as const;
 
 export function nextMode(state: EffectState): string {
   const modes = state.options.compact ? COMPACT_MODES : MODES;
+  state.previousMode = state.modeIndex;
   state.modeIndex = (state.modeIndex + 1) % modes.length;
+  state.transitionAlpha = 0;
   return modes[state.modeIndex]!;
 }
 
@@ -284,6 +292,12 @@ export function renderFrame(
   state: EffectState,
   frame: AudioFrame,
 ) {
+  if (state.previousMode !== state.modeIndex) {
+    state.transitionSnapshot = canvas.snapshot();
+    state.transitionAlpha = 1;
+    state.previousMode = state.modeIndex;
+  }
+
   canvas.fill(6, 8, 14);
   drawParticles(canvas, state, frame);
   drawBeatFlash(canvas, state, frame);
@@ -293,12 +307,47 @@ export function renderFrame(
     const secsPerMode = state.options.autocycleSecs;
     if (state.modeTimer >= secsPerMode) {
       state.modeTimer = 0;
+      state.transitionSnapshot = canvas.snapshot();
+      canvas.fill(6, 8, 14);
+      state.previousMode = state.modeIndex;
+      state.transitionAlpha = 1;
       const modes = state.options.compact ? COMPACT_MODES : MODES;
       state.modeIndex = (state.modeIndex + 1) % modes.length;
     }
   }
 
-  const mode = getMode(state);
+  if (state.transitionAlpha > 0) {
+    state.transitionAlpha -= 1 / 15;
+    drawMode(canvas, state, frame, getMode(state));
+    if (state.transitionSnapshot) {
+      canvas.blend(
+        state.transitionSnapshot,
+        Math.max(0, state.transitionAlpha),
+      );
+    }
+    if (state.transitionAlpha <= 0) {
+      state.transitionSnapshot = null;
+    }
+  } else {
+    drawMode(canvas, state, frame, getMode(state));
+  }
+
+  const hueRate = 1.5 + frame.beat.beatIntensity * 4;
+  state.hueShift = (state.hueShift + hueRate) % 360;
+
+  const extra =
+    state.options.autocycleSecs > 0
+      ? `⏱${state.options.autocycleSecs - Math.floor(state.modeTimer)}`
+      : undefined;
+  drawInfo(canvas, frame, getMode(state), extra);
+}
+
+function drawMode(
+  canvas: Canvas,
+  state: EffectState,
+  frame: AudioFrame,
+  mode: string,
+) {
   switch (mode) {
     case 'waveform':
       drawWaveform(canvas, state, frame);
@@ -317,13 +366,4 @@ export function renderFrame(
       drawSpectrum(canvas, state, frame);
       break;
   }
-
-  const hueRate = 1.5 + frame.beat.beatIntensity * 4;
-  state.hueShift = (state.hueShift + hueRate) % 360;
-
-  const extra =
-    state.options.autocycleSecs > 0
-      ? `⏱${state.options.autocycleSecs - Math.floor(state.modeTimer)}`
-      : undefined;
-  drawInfo(canvas, frame, mode, extra);
 }

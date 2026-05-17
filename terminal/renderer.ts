@@ -251,4 +251,31 @@ export class Canvas {
 
     return lines.join('\n');
   }
+
+  snapshot(): { bg: Uint8Array; bgColor: Uint32Array } {
+    return {
+      bg: new Uint8Array(this.bg),
+      bgColor: new Uint32Array(this.bgColor),
+    };
+  }
+
+  blend(src: { bg: Uint8Array; bgColor: Uint32Array }, alpha: number) {
+    const len = this.bg.length;
+    for (let i = 0; i < len; i++) {
+      if (src.bg[i]! !== 1) continue;
+      const sp = src.bgColor[i]!;
+      const sr = (sp >> 16) & 0xff;
+      const sg = (sp >> 8) & 0xff;
+      const sb = sp & 0xff;
+      const dp = this.bgColor[i]!;
+      const dr = (dp >> 16) & 0xff;
+      const dg = (dp >> 8) & 0xff;
+      const db = dp & 0xff;
+      this.bgColor[i] =
+        (Math.round(sr * alpha + dr * (1 - alpha)) << 16) |
+        (Math.round(sg * alpha + dg * (1 - alpha)) << 8) |
+        Math.round(sb * alpha + db * (1 - alpha));
+      this.bg[i] = 1;
+    }
+  }
 }
