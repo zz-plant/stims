@@ -1080,13 +1080,14 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__preset-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
   min-height: 240px;
   max-height: min(56vh, 680px);
   overflow: auto;
   padding-right: 4px;
+  align-content: start;
 }
 
 .stims-shell__sheet-body .stims-shell__preset-list {
@@ -1094,6 +1095,25 @@ body[data-page="workspace"] {
   max-height: none;
   overflow: visible;
   padding-right: 0;
+}
+
+.stims-shell__preset-list .stims-shell__preset-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px;
+}
+
+.stims-shell__preset-list .stims-shell__preset-art {
+  min-height: 130px;
+}
+
+.stims-shell__preset-list .stims-shell__preset-card-copy {
+  gap: 4px;
+}
+
+.stims-shell__preset-list .stims-shell__preset-meta-row {
+  font-size: 0.82rem;
 }
 
 .stims-shell__preset-vibe {
