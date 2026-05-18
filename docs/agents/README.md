@@ -85,4 +85,4 @@ Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the checklist before f
 - `.github/workflows/ci.yml` — CI quality gate plus the default Cloudflare Pages direct-upload deploy jobs.
 - `tests/` — automated test suite.
 - `docs/` — contributor and architecture docs.
-- `.agent/workflows/` + `.agent/skills/` — reusable automation workflows.
+- `.agent/skills/` — reusable agent task skills.
