@@ -938,73 +938,77 @@ function registerTools(server: McpServer) {
         .strict(),
     },
     async ({ presetId }) => {
-      const catalog = await resolveCatalog();
-      if (!catalog) {
-        return asTextResponse('Unable to load preset catalog.');
-      }
+      try {
+        const catalog = await resolveCatalog();
+        if (!catalog) {
+          return asTextResponse('Unable to load preset catalog.');
+        }
 
-      const preset = catalog.presets.find((p) => p.id === presetId);
-      if (!preset) {
-        return asTextResponse(
-          `Preset "${presetId}" not found. Use list_presets to browse available presets.`,
+        const preset = catalog.presets.find((p) => p.id === presetId);
+        if (!preset) {
+          return asTextResponse(
+            `Preset "${presetId}" not found. Use list_presets to browse available presets.`,
+          );
+        }
+
+        const tags = (preset.tags ?? []).filter(
+          (t: string) => !t.startsWith('collection:') && t !== 'preset',
         );
+        const collections = (preset.tags ?? [])
+          .filter((t: string) => t.startsWith('collection:'))
+          .map((t: string) => t.replace('collection:', ''));
+
+        const visualCert = preset.visualCertification as
+          | {
+              fidelityClass?: string;
+              status?: string;
+              visualEvidenceTier?: string;
+            }
+          | undefined;
+
+        const fidelityLabel =
+          visualCert?.fidelityClass === 'exact'
+            ? 'Pixel-perfect reproduction'
+            : visualCert?.fidelityClass === 'near-exact'
+              ? 'Near-perfect reproduction (minor floating-point differences)'
+              : 'Approximate reproduction';
+
+        const certLabel =
+          visualCert?.status === 'certified' ? 'Certified' : 'Uncertified';
+        const evidenceLabel =
+          visualCert?.visualEvidenceTier === 'visual'
+            ? 'Visually verified against reference capture'
+            : visualCert?.visualEvidenceTier === 'compile'
+              ? 'Verified at compile time'
+              : 'Not yet measured';
+
+        const lines: string[] = [
+          `## ${preset.title}`,
+          `**Author:** ${preset.author}`,
+          '',
+          '### Style',
+          tags.length > 0
+            ? tags.map((t: string) => `- ${t}`).join('\n')
+            : '- General preset',
+          '',
+          '### Collections',
+          collections.length > 0
+            ? collections.map((c: string) => `- ${c}`).join('\n')
+            : '- None',
+          '',
+          '### Quality',
+          `- Fidelity: ${fidelityLabel}`,
+          `- Status: ${certLabel}`,
+          `- Evidence: ${evidenceLabel}`,
+          '',
+          '### Launch',
+          `Open in browser: \`https://toil.fyi/?agent=true&preset=${preset.id}\``,
+        ];
+
+        return asTextResponse(lines.join('\n'));
+      } catch (e) {
+        return asTextResponse(`Error describing preset: ${e}`);
       }
-
-      const tags = (preset.tags ?? []).filter(
-        (t: string) => !t.startsWith('collection:') && t !== 'preset',
-      );
-      const collections = (preset.tags ?? [])
-        .filter((t: string) => t.startsWith('collection:'))
-        .map((t: string) => t.replace('collection:', ''));
-
-      const visualCert = preset.visualCertification as
-        | {
-            fidelityClass?: string;
-            status?: string;
-            visualEvidenceTier?: string;
-          }
-        | undefined;
-
-      const fidelityLabel =
-        visualCert?.fidelityClass === 'exact'
-          ? 'Pixel-perfect reproduction'
-          : visualCert?.fidelityClass === 'near-exact'
-            ? 'Near-perfect reproduction (minor floating-point differences)'
-            : 'Approximate reproduction';
-
-      const certLabel =
-        visualCert?.status === 'certified' ? 'Certified' : 'Uncertified';
-      const evidenceLabel =
-        visualCert?.visualEvidenceTier === 'visual'
-          ? 'Visually verified against reference capture'
-          : visualCert?.visualEvidenceTier === 'compile'
-            ? 'Verified at compile time'
-            : 'Not yet measured';
-
-      const lines: string[] = [
-        `## ${preset.title}`,
-        `**Author:** ${preset.author}`,
-        '',
-        '### Style',
-        tags.length > 0
-          ? tags.map((t: string) => `- ${t}`).join('\n')
-          : '- General preset',
-        '',
-        '### Collections',
-        collections.length > 0
-          ? collections.map((c: string) => `- ${c}`).join('\n')
-          : '- None',
-        '',
-        '### Quality',
-        `- Fidelity: ${fidelityLabel}`,
-        `- Status: ${certLabel}`,
-        `- Evidence: ${evidenceLabel}`,
-        '',
-        '### Launch',
-        `Open in browser: \`https://toil.fyi/?agent=true&preset=${preset.id}\``,
-      ];
-
-      return asTextResponse(lines.join('\n'));
     },
   );
 }
