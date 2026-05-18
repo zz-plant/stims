@@ -42,13 +42,12 @@ export class MilkdropRenderBundleManager {
 
   /** Enable or disable RenderBundle support. Creates or destroys the BundleGroup. */
   setConfig(config: Partial<MilkdropRenderBundleConfig>) {
-    const wasEnabled = this.config.enabled;
-    const wasBundleGroup = this.bundleGroup !== null;
+    const hadGroup = this.bundleGroup !== null;
     this.config = { ...this.config, ...config };
 
-    if (this.config.enabled && !wasBundleGroup) {
+    if (this.config.enabled && !hadGroup) {
       this.bundleGroup = new BundleGroup();
-    } else if (!this.config.enabled && wasBundleGroup) {
+    } else if (!this.config.enabled && hadGroup) {
       this.bundleGroup = null;
     }
   }
