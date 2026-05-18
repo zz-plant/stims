@@ -8,7 +8,7 @@ This document describes the current shipped frontend architecture for Stims afte
 - `assets/js/app.ts` mounts the React workspace and global runtime affordances.
 - `assets/js/frontend/*` owns route state, workspace UI, and the engine adapter seam.
 - `assets/js/milkdrop/*` remains the imperative visualizer engine, overlay, compiler, and catalog runtime.
-- `assets/js/frontend/workspace-three-scenes.tsx` and similar files use React Three Fiber only for small workspace-scene layers. They are presentational helpers, not a second visualizer runtime.
+- Workspace-scene decorative layers are rendered with imperative Three.js, not a secondary React renderer.
 - `assets/js/core/*` owns shared renderer, audio, quality, persistence, and input systems.
 - `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/library-view/*`, and `assets/js/bootstrap/*` are legacy compatibility/test-support internals for older non-root shell flows. They are not the production root app surface anymore.
 
@@ -84,7 +84,7 @@ Primary implementation:
 
 - [`assets/js/frontend/engine/milkdrop-engine-adapter.ts`](../assets/js/frontend/engine/milkdrop-engine-adapter.ts) is the only frontend-facing engine boundary.
 - New UI code should not import deep `assets/js/milkdrop/*` runtime internals directly.
-- React Three Fiber scene code should stay at the workspace edge. Use it for staged or decorative shell visuals, but keep actual MilkDrop rendering in the imperative engine.
+- Decorative shell visuals are handled with imperative Three.js, not a secondary React renderer. Keep actual MilkDrop rendering in the imperative engine.
 - The adapter owns:
   - mount and dispose
   - preset loading

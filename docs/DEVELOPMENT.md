@@ -215,7 +215,7 @@ Keep the bundled shipped presets in evidence order:
 
 - `assets/js/app.ts` and `assets/js/frontend/*` are the active product frontend.
 - `assets/js/milkdrop/*` remains the visual engine behind the adapter seam.
-- `assets/js/frontend/workspace-three-scenes.tsx` is allowed to use React Three Fiber for small workspace-scene layers, but it should stay decorative and never absorb the main visualizer runtime.
+- `assets/js/frontend/` avoids adding a secondary React renderer for Three.js scenes; decorative visuals use imperative Three.js directly.
 - `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/library-view/*`, and `assets/js/bootstrap/*` are legacy compatibility modules.
 - New product work should not add fresh route ownership or UI flows to those legacy modules.
 
