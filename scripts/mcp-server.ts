@@ -206,6 +206,140 @@ server.registerTool(
 );
 
 server.registerTool(
+  'capture_preset',
+  {
+    description:
+      'Open the visualizer with a specific bundled preset, wait for it to render, and return a screenshot. Lets agents see what a preset looks like visually.',
+    inputSchema: z.object({
+      presetId: z
+        .string()
+        .describe(
+          'The preset ID to capture (e.g. "eos-glowsticks-v2-03-music").',
+        ),
+      duration: z
+        .number()
+        .optional()
+        .default(5000)
+        .describe('Duration in ms to wait for the preset to render.'),
+    }),
+  },
+  async ({ presetId, duration }) => {
+    try {
+      const catalog = await fetch(
+        'https://toil.fyi/milkdrop-presets/catalog.json',
+      ).then((r) => r.json());
+      const preset = catalog.presets.find(
+        (p: { id: string }) => p.id === presetId,
+      );
+      if (!preset) {
+        return asTextResponse(
+          `Preset "${presetId}" not found. Use list_presets to see available presets.`,
+        );
+      }
+
+      const result = await playToy({
+        slug: 'milkdrop',
+        presetId,
+        duration,
+        screenshot: true,
+      });
+
+      if (!result.success) {
+        return asTextResponse(
+          `Failed to capture "${preset.title}": ${result.error}`,
+        );
+      }
+
+      return asTextResponse(
+        [
+          `Preset: ${preset.title} by ${preset.author}`,
+          `Screenshot: ${result.screenshot}`,
+          `Audio Active: ${result.audioActive}`,
+          result.consoleErrors?.length
+            ? `Console Warnings: ${result.consoleErrors.length}`
+            : 'No console errors',
+        ].join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Error capturing preset: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'preview_gallery',
+  {
+    description:
+      'Capture screenshots of multiple presets in sequence. Great for getting a quick visual overview of what presets look like.',
+    inputSchema: z.object({
+      query: z
+        .string()
+        .optional()
+        .describe('Optional search query to filter which presets to capture.'),
+      count: z
+        .number()
+        .int()
+        .min(1)
+        .max(6)
+        .optional()
+        .default(4)
+        .describe('Number of presets to capture (1-6, default 4).'),
+      duration: z
+        .number()
+        .optional()
+        .default(4000)
+        .describe('Duration in ms per preset.'),
+    }),
+  },
+  async ({ query, count, duration }) => {
+    try {
+      const catalog = await fetch(
+        'https://toil.fyi/milkdrop-presets/catalog.json',
+      ).then((r) => r.json());
+
+      let presets = catalog.presets;
+      if (query) {
+        const q = query.toLowerCase();
+        presets = presets.filter(
+          (p: { title: string; author: string; tags?: string[] }) =>
+            p.title.toLowerCase().includes(q) ||
+            p.author.toLowerCase().includes(q) ||
+            p.tags?.some((t: string) => t.toLowerCase().includes(q)),
+        );
+      }
+
+      const toCapture = presets.slice(0, count ?? 4);
+      const results: string[] = [];
+
+      for (const preset of toCapture) {
+        const result = await playToy({
+          slug: 'milkdrop',
+          presetId: preset.id,
+          duration,
+          screenshot: true,
+        });
+
+        const line = result.success
+          ? `✅ ${preset.title}: ${result.screenshot}`
+          : `❌ ${preset.title}: ${result.error}`;
+        results.push(line);
+      }
+
+      return asTextResponse(
+        [
+          `Captured ${results.length}/${toCapture.length} preset(s)`,
+          ...(query ? [`Filter: "${query}"`] : []),
+          '',
+          ...results,
+        ].join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Error in gallery capture: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
   'test_toy_interactivity',
   {
     description:
