@@ -173,6 +173,8 @@ export function createGpuVmRunner() {
   let pipeline: GPUComputePipeline | null = null;
   let activeCompilation: WgslProgramCompilation | null = null;
 
+  let currentSignalBuffer: GPUBuffer | null = null;
+
   function init(
     gpuDevice: GPUDevice,
     block: MilkdropProgramBlock,
@@ -201,6 +203,12 @@ export function createGpuVmRunner() {
     }
 
     const bindGroupLayout = pipeline.getBindGroupLayout(0);
+    const initialSignalBuffer = buildSignalBuffer(gpuDevice, {
+      time: 0,
+      frame: 0,
+      fps: 60,
+    });
+    currentSignalBuffer = initialSignalBuffer;
     bindGroup = gpuDevice.createBindGroup({
       label: 'milkdrop-vm-bind-group',
       layout: bindGroupLayout,
@@ -211,13 +219,7 @@ export function createGpuVmRunner() {
         },
         {
           binding: 1,
-          resource: {
-            buffer: buildSignalBuffer(gpuDevice, {
-              time: 0,
-              frame: 0,
-              fps: 60,
-            }),
-          },
+          resource: { buffer: initialSignalBuffer },
         },
       ],
     });
@@ -237,7 +239,11 @@ export function createGpuVmRunner() {
       throw new Error('GPU VM not initialized');
     }
 
+    if (currentSignalBuffer) {
+      currentSignalBuffer.destroy();
+    }
     const signalBuffer = buildSignalBuffer(device, signals);
+    currentSignalBuffer = signalBuffer;
     const bindGroupLayout = pipeline.getBindGroupLayout(0);
     bindGroup = device.createBindGroup({
       label: 'milkdrop-vm-bind-group',

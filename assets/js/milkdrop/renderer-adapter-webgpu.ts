@@ -15,14 +15,7 @@ export type MilkdropWebGPURendererAdapterConfig = Omit<
   'backend'
 >;
 
-const SAFE_WEBGPU_BEHAVIOR = {
-  ...WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
-  supportsShapeGradient: true,
-  supportsShapeShaderFill: true,
-  supportsFeedbackPass: true,
-} as const;
-
-const DEFAULT_WEBGPU_BEHAVIOR = {
+const WEBGPU_BEHAVIOR = {
   ...WEBGPU_MILKDROP_BACKEND_BEHAVIOR,
   supportsShapeGradient: true,
   supportsShapeShaderFill: true,
@@ -51,9 +44,7 @@ export function createMilkdropWebGPURendererAdapter(
   return createMilkdropRendererAdapterCore({
     ...config,
     backend: 'webgpu',
-    behavior: useSafeWebGpuPath
-      ? SAFE_WEBGPU_BEHAVIOR
-      : DEFAULT_WEBGPU_BEHAVIOR,
+    behavior: WEBGPU_BEHAVIOR,
     createFeedbackManager: useSafeWebGpuPath
       ? createMilkdropWebGLFeedbackManager
       : createMilkdropWebGPUFeedbackManager,

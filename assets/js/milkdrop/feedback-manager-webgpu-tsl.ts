@@ -868,10 +868,6 @@ function createCompositeOutputNode(
     uniforms.videoTex,
   );
 
-  const hasPerPixelProgram = Boolean(
-    perPixelPrograms?.statements && perPixelPrograms.statements.length > 0,
-  );
-
   return Fn(() => {
     const hasDirectWarpProgram = shaderPrograms.warp !== null;
     const hasDirectCompProgram = shaderPrograms.comp !== null;
@@ -884,22 +880,14 @@ function createCompositeOutputNode(
     const baseUv = uv();
     const centeredUv = baseUv.sub(0.5);
 
-    // When per-pixel programs are active, the CPU writes computed warp/zoom/rot
-    // values to uniforms each frame. The TSL path will use direct shader injection
-    // when Three.js exposes a TSL runtime compiler — see compiler/tsl-generator.ts.
-    const activeWarp = hasPerPixelProgram
-      ? uniforms.warpScale
-      : uniforms.warpScale;
-    const activeZoom = hasPerPixelProgram ? uniforms.zoomMul : uniforms.zoomMul;
-    const activeRot = hasPerPixelProgram
-      ? uniforms.rotation
-      : uniforms.rotation;
-    const activeOffsetX = hasPerPixelProgram
-      ? uniforms.offsetX
-      : uniforms.offsetX;
-    const activeOffsetY = hasPerPixelProgram
-      ? uniforms.offsetY
-      : uniforms.offsetY;
+    // CPU-written per-frame warp/zoom/rot values propagate via uniforms.
+    // The TSL path uses direct shader injection when Three.js exposes a
+    // TSL runtime compiler — see compiler/tsl-generator.ts.
+    const activeWarp = uniforms.warpScale;
+    const activeZoom = uniforms.zoomMul;
+    const activeRot = uniforms.rotation;
+    const activeOffsetX = uniforms.offsetX;
+    const activeOffsetY = uniforms.offsetY;
 
     const rotationSin = sin(activeRot);
     const rotationCos = cos(activeRot);
