@@ -111,8 +111,8 @@ export function buildTslExpression(expression: MilkdropExpressionNode): string {
 
     case 'call': {
       const args = expression.args.map(buildTslExpression);
-      const callee = expression.callee.toLowerCase();
-      switch (callee) {
+      const fnName = expression.name.toLowerCase();
+      switch (fnName) {
         case 'sin':
           return `sin(${args[0] ?? '0.0'})`;
         case 'cos':

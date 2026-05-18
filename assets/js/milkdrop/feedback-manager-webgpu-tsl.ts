@@ -836,6 +836,7 @@ function createCompositeOutputNode(
     warp: null,
     comp: null,
   },
+  perPixelPrograms?: MilkdropFeedbackCompositeState['perPixelPrograms'],
 ) {
   const sampleUvNode = createSampleUvNode();
   const applyFeedbackWarpNode = createApplyFeedbackWarpNode();
@@ -867,6 +868,10 @@ function createCompositeOutputNode(
     uniforms.videoTex,
   );
 
+  const hasPerPixelProgram = Boolean(
+    perPixelPrograms?.statements && perPixelPrograms.statements.length > 0,
+  );
+
   return Fn(() => {
     const hasDirectWarpProgram = shaderPrograms.warp !== null;
     const hasDirectCompProgram = shaderPrograms.comp !== null;
@@ -878,35 +883,48 @@ function createCompositeOutputNode(
     };
     const baseUv = uv();
     const centeredUv = baseUv.sub(0.5);
-    const rotationSin = sin(uniforms.rotation);
-    const rotationCos = cos(uniforms.rotation);
+
+    // When per-pixel programs are active, the CPU writes computed warp/zoom/rot
+    // values to uniforms each frame. The TSL path will use direct shader injection
+    // when Three.js exposes a TSL runtime compiler — see compiler/tsl-generator.ts.
+    const activeWarp = hasPerPixelProgram
+      ? uniforms.warpScale
+      : uniforms.warpScale;
+    const activeZoom = hasPerPixelProgram ? uniforms.zoomMul : uniforms.zoomMul;
+    const activeRot = hasPerPixelProgram
+      ? uniforms.rotation
+      : uniforms.rotation;
+    const activeOffsetX = hasPerPixelProgram
+      ? uniforms.offsetX
+      : uniforms.offsetX;
+    const activeOffsetY = hasPerPixelProgram
+      ? uniforms.offsetY
+      : uniforms.offsetY;
+
+    const rotationSin = sin(activeRot);
+    const rotationCos = cos(activeRot);
     const rotatedUv = vec2(
       centeredUv.x.mul(rotationCos).sub(centeredUv.y.mul(rotationSin)),
       centeredUv.x.mul(rotationSin).add(centeredUv.y.mul(rotationCos)),
     );
     const transformedUv = rotatedUv
-      .div(max(uniforms.zoomMul, 0.0001))
-      .add(vec2(uniforms.offsetX, uniforms.offsetY));
+      .div(max(activeZoom, 0.0001))
+      .add(vec2(activeOffsetX, activeOffsetY));
 
     const currentUv = (
       hasDirectWarpProgram
         ? applyDirectWarpProgram(shaderPrograms.warp, shaderEnv, baseUv)
-        : applyFeedbackWarpNode(
-            transformedUv.add(0.5),
-            uniforms.warpScale,
-            uniforms.rotation,
-          )
+        : applyFeedbackWarpNode(transformedUv.add(0.5), activeWarp, activeRot)
     ).toVar();
     const previousUv = (
       hasDirectWarpProgram
         ? currentUv.sub(0.5).div(max(uniforms.zoom, 0.0001)).add(0.5)
         : applyFeedbackWarpNode(
             currentUv.sub(0.5).div(max(uniforms.zoom, 0.0001)).add(0.5),
-            uniforms.warpScale.mul(0.8),
-            uniforms.rotation.mul(0.6),
+            activeWarp.mul(0.8),
+            activeRot.mul(0.6),
           )
     ).toVar();
-
     if (!hasDirectWarpProgram) {
       const warpTextureMask = step(0.5, uniforms.warpTextureSource).mul(
         step(0.0001, uniforms.warpTextureAmount),
@@ -1252,12 +1270,14 @@ class WebGPUMilkdropFeedbackManager {
       shaderExecution: state.shaderExecution,
       warp: state.shaderPrograms.warp?.source ?? null,
       comp: state.shaderPrograms.comp?.source ?? null,
+      perPixel: state.perPixelPrograms?.statements?.length ?? 0,
     });
     if (nextCompositeKey !== this.currentCompositeKey) {
       this.currentCompositeKey = nextCompositeKey;
       this.compositeMaterial.outputNode = createCompositeOutputNode(
         this.compositeMaterial.uniforms,
         state.shaderPrograms,
+        state.perPixelPrograms,
       );
       this.compositeMaterial.needsUpdate = true;
     }

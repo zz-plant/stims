@@ -291,6 +291,10 @@ export type MilkdropFeedbackCompositeState = {
     warp: MilkdropShaderProgramPayload | null;
     comp: MilkdropShaderProgramPayload | null;
   };
+  /** Per-pixel equation programs that modify warp/zoom/rot per fragment */
+  perPixelPrograms?: {
+    statements: Array<{ target: string; expression: string }>;
+  } | null;
   mixAlpha: number;
   videoEchoAlpha: number;
   zoom: number;

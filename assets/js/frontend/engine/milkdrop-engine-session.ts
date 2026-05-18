@@ -189,6 +189,7 @@ export function createMilkdropEngineAdapter() {
         ).requestIdleCallback(async () => {
           try {
             const { WebGPURenderer } = await import(
+              // @ts-expect-error - three/addons types not installed
               'three/addons/renderers/webgpu/WebGPURenderer.js'
             );
             const canvas = document.createElement('canvas');
