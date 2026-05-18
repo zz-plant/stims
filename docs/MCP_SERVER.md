@@ -48,6 +48,23 @@ All tools are registered on the logical MCP server name `stim-webtoys-mcp` and u
   - **Input:** optional `slug` (string) to get toy-specific guidance.
   - **Output:** `text` response explaining how the shipped MilkDrop visualizer responds to different audio frequencies (bass, mids, highs) and what visual effects to expect while it is playing.
 
+## Preset interaction tools
+
+These tools interact with the live bundled preset catalog hosted at `toil.fyi` and work from both the stdio server and the Cloudflare Worker transport.
+
+- **`list_presets`**
+  - **Input:** optional `filter` (string) and `limit` (1-50, default 20).
+  - **Output:** `text` response with an array of preset summaries (id, title, author, tags, fidelity, certification status). Filters match against title, author, and tags.
+- **`get_preset_info`**
+  - **Input:** required `presetId` (string).
+  - **Output:** `text` response with the full preset metadata including file path, tags, and visual certification details.
+- **`search_presets`**
+  - **Input:** required `query` (string) and optional `limit` (1-50, default 10).
+  - **Output:** `text` response listing matching presets with the matched field (title, author, or tags).
+- **`open_preset_url`**
+  - **Input:** required `presetId` (string) and optional `baseUrl` (defaults to `https://toil.fyi`).
+  - **Output:** `text` response with a URL that loads the visualizer with the specified preset in agent mode.
+
 ## Stdio-only automation tools
 
 The following tools are only available from the Bun/Node stdio server (`bun run mcp`) and are not exposed by the Cloudflare Worker transport:
