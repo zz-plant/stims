@@ -1,183 +1,122 @@
-# MCP stdio server guide
+# MCP Server Guide
 
-The repository includes a Model Context Protocol (MCP) stdio server at [`scripts/mcp-server.ts`](../scripts/mcp-server.ts) and a Cloudflare Worker transport at [`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts). Both expose documentation, toy metadata, loader behavior, and development command references so MCP-compatible clients can retrieve structured information without scraping markdown. The stdio server is the baseline path for local/tooling use; the Worker transport is an optional deployment target when remote MCP access is needed.
+The repository includes an MCP stdio server at `scripts/mcp-server.ts` and a Cloudflare Worker transport at `scripts/mcp-worker.ts`. The stdio server (`bun run mcp`) is the primary path — it has access to all tools including headless browser automation.
 
-For the human-readable overview of repo-local `.agent/skills/*` and `.agent/workflows/*`, see [`agents/custom-capabilities.md`](./agents/custom-capabilities.md). For fast bootstrap and delegation guidance, see [`agents/agent-handoffs.md`](./agents/agent-handoffs.md).
+## Tool Categories
 
-## Starting the server
+### Documentation & Commands (Worker + Stdio)
 
-- Install dependencies (`bun install`).
-- Run the stdio server from the repo root:
-  ```bash
-  bun run mcp
-  ```
-  MCP clients should launch the command above with the working directory set to the repository root so the server can read `README.md`, `assets/data/toys.json`, and the Biome-enforced quality markers. The server writes responses over stdio using the MCP protocol.
+| Tool | Input | Output |
+|------|-------|--------|
+| `list_docs` | none | Quick-start, runtime, and repo layout pointers from README.md |
+| `read_doc_section` | `file` (enum), optional `heading` | Markdown file or section content |
+| `search_docs` | `query`, optional `file`, optional `limit` | Matching sections with excerpts |
+| `dev_commands` | optional `scope` (setup/dev/build/test/lint) | Relevant commands from README.md |
+| `describe_loader` | none | How the toy loader resolves entries and errors |
+| `list_agent_capabilities` | optional `kind` (skill/workflow) | Available agent workflows and skills |
+| `read_agent_capability` | `kind`, `name` | Full skill/workflow instructions |
+| `get_toys` | optional `slug`, `requiresWebGPU` | Toy metadata (controls, module, type) |
+| `launch_toy` | `slug`, optional `port` | Instructions for launching and observing a toy |
+| `get_toy_audio_reactivity_guide` | optional `slug` | How toys respond to audio frequencies |
 
-## Registered tools
+### Preset Catalog (Worker + Stdio)
 
-All tools are registered on the logical MCP server name `stim-webtoys-mcp` and use zod-based schemas for validation. The Cloudflare Worker deploy name (`stims` in this repository) can differ from the logical MCP server name without changing tool behavior.
+All tools fetch the live catalog from `https://toil.fyi/milkdrop-presets/catalog.json` — no local server needed.
 
-- **`list_docs`**
-  - **Input:** none.
-  - **Output:** `text` response with quick-start pointers, runtime notes, repository layout, and toy catalog references pulled from `README.md` with line ranges.
-- **`get_toys`**
-  - **Input:** optional `slug` (string) to fetch a single toy and optional `requiresWebGPU` (boolean) to filter by WebGPU requirements.
-  - **Output:** `json` array of `{ slug, title, description, requiresWebGPU, controls, module, type, allowWebGLFallback, url }` entries. Returns a helpful text message when no toys match the filters. Optional fields default to sensible fallbacks when missing from `assets/data/toys.json`.
-- **`read_doc_section`**
-  - **Input:** required `file` enum (e.g., `README.md`, `docs/MCP_SERVER.md`, `docs/agents/README.md`, `docs/agents/agent-handoffs.md`, `.agent/skills/play-visualizer/SKILL.md`, `.agent/skills/modify-visualizer-runtime/SKILL.md`) and optional `heading` string.
-  - **Output:** `text` response containing the full markdown file when no heading is provided, or the matching section beginning at the requested heading. Returns a friendly error when the file or heading cannot be found.
-- **`search_docs`**
-  - **Input:** required `query` string plus optional `file` enum to limit search scope and optional `limit` (1-20) for result count.
-  - **Output:** `text` response with each matching section’s file, heading, line range, and a short excerpt containing the query. Returns a friendly message when no matches are found.
-- **`describe_loader`**
-  - **Input:** none.
-  - **Output:** `text` summary of how the toy loader resolves entries and errors, including manifest resolution (`/.vite/manifest.json`), URL/history handling, WebGPU gating, and the recovery states shown when imports fail.
-- **`list_agent_capabilities`**
-  - **Input:** optional `kind` enum (`skill`, `workflow`) to filter results.
-  - **Output:** `json` array describing reusable capabilities from `.agent/skills/*` and `.agent/workflows/*`, including command aliases and file paths so agentic LLMs can decide which playbook to invoke.
-- **`read_agent_capability`**
-  - **Input:** required `kind` enum (`skill`, `workflow`) and required `name` (string such as `modify-visualizer-runtime`, `play-visualizer`, or `ship-visualizer-change`).
-  - **Output:** `text` response with the selected capability metadata plus full markdown instructions, letting MCP clients execute the same workflow steps as local agents.
-- **`dev_commands`**
-  - **Input:** optional `scope` enum (`setup`, `dev`, `build`, `test`, `lint`) to narrow the result.
-  - **Output:** `text` response containing the requested setup or workflow commands from `README.md`. Without a scope, the tool returns all development snippets including **Biome** and Bun references.
-- **`launch_toy`**
-  - **Input:** required `slug` (string) for the toy to launch and optional `port` (number) for the dev server port (defaults to 5173).
-  - **Output:** `text` response with step-by-step instructions for launching the toy, enabling demo audio, and observing audio-reactive visual effects. Includes the toy URL, description, controls, and guidance on what to observe.
-- **`get_toy_audio_reactivity_guide`**
-  - **Input:** optional `slug` (string) to get toy-specific guidance.
-  - **Output:** `text` response explaining how the shipped MilkDrop visualizer responds to different audio frequencies (bass, mids, highs) and what visual effects to expect while it is playing.
+| Tool | Input | Output |
+|------|-------|--------|
+| `list_presets` | optional `filter`, `limit` (1-50) | Preset summaries (id, title, author, tags, fidelity, certification) |
+| `search_presets` | `query`, optional `limit` | Matching presets with matched field (title/author/tags) |
+| `get_preset_info` | `presetId` | Full preset metadata (file path, tags, certification, supports) |
+| `describe_preset` | `presetId` | Human-readable description — style, collections, fidelity, launch URL |
+| `open_preset_url` | `presetId`, optional `baseUrl` | URL to load the preset in agent mode |
 
-## Preset interaction tools (Worker + Stdio)
+### Agent Session (Stdio-only, requires Playwright)
 
-These tools interact with the live bundled preset catalog hosted at `toil.fyi` and work from both the stdio server and the Cloudflare Worker transport.
+These tools manage a persistent headless browser session so you can interact with a running visualizer across multiple calls. **Start here for any visual interaction.**
 
-- **`list_presets`**
-  - **Input:** optional `filter` (string) and `limit` (1-50, default 20).
-  - **Output:** `text` response with an array of preset summaries (id, title, author, tags, fidelity, certification status). Filters match against title, author, and tags.
-- **`get_preset_info`**
-  - **Input:** required `presetId` (string).
-  - **Output:** `text` response with the full preset metadata including file path, tags, and visual certification details.
-- **`search_presets`**
-  - **Input:** required `query` (string) and optional `limit` (1-50, default 10).
-  - **Output:** `text` response listing matching presets with the matched field (title, author, or tags).
-- **`open_preset_url`**
-  - **Input:** required `presetId` (string) and optional `baseUrl` (defaults to `https://toil.fyi`).
-  - **Output:** `text` response with a URL that loads the visualizer with the specified preset in agent mode.
-- **`describe_preset`**
-  - **Input:** required `presetId` (string).
-  - **Output:** `text` response with a human-readable description including style tags, collections, fidelity, certification status, and a launch URL.
+**Workflow:**
+1. `start_agent_session` → get a `sessionId`
+2. Use session tools to inspect, capture, tweak, and switch
+3. `session_close` when done
 
-## Agent session tools (Stdio-only)
+| Tool | Input | Output |
+|------|-------|--------|
+| `start_agent_session` | optional `presetId`, `headless` | Session ID — the visualizer opens in a persistent browser |
+| `session_get_state` | `sessionId` | Current state: preset title, author, audio energy (0-1), backend, canvas size |
+| `session_capture_frame` | `sessionId`, optional `waitMs` | Path to captured screenshot |
+| `session_describe_frame` | `sessionId`, optional `waitMs` | Preset info + screenshot path (no pixel analysis — use a vision model) |
+| `session_switch_preset` | `sessionId`, `presetId`, optional `waitMs` | Confirmation when new preset is rendered |
+| `session_tweak` | `sessionId`, `tweak` (natural language), optional `amount` | Applies the change via the inspector panel |
+| `session_apply_source` | `sessionId`, `source` (.milk code) | Applies modified preset source to the running visualizer |
+| `session_get_preset_source` | `presetId` or `sessionId` | Raw .milk source code from disk |
+| `session_get_inspector_values` | `sessionId` | All visible field names and current values from the inspector panel |
+| `session_compare` | `sessionId`, optional `settleMs`, `label` | Before/after screenshot pair |
+| `session_watch` | `sessionId`, optional `durationMs`, `intervalMs` | Timelapse frames + state snapshots over time |
+| `session_vibe` | `vibe` (natural language description), optional `durationMs` | Searches all 43 presets by keyword relevance, returns screenshots of top 3 matches |
+| `session_close` | `sessionId` | Releases browser resources |
 
-These tools manage a persistent headless browser session so agents can interact with the visualizer across multiple calls — the same way a human would browse, watch, and switch presets.
+**Natural language tweaks supported by `session_tweak`:**
+- Colors: "more blue", "more red", "more green", "warmer", "cooler"
+- Brightness: "brighter", "darker"
+- Motion: "more warp", "less warp", "more zoom", "faster", "slower"
+- Quality: "more saturation", "more contrast", "more decay" (trails)
+- Each maps to the appropriate MilkDrop field via the inspector panel
 
-- **`start_agent_session`**
-  - **Input:** optional `presetId` (defaults to Glowsticks) and `headless` (boolean, default true).
-  - **Output:** session ID plus instructions for using session tools. Opens the visualizer in a persistent browser.
-- **`session_get_state`**
-  - **Input:** required `sessionId`.
-  - **Output:** JSON with current page state — preset title, author, audio status, canvas dimensions, overlay visibility, URL.
-- **`session_capture_frame`**
-  - **Input:** required `sessionId` and optional `waitMs` (0-10000, default 500).
-  - **Output:** file path to the captured screenshot.
-- **`session_switch_preset`**
-  - **Input:** required `sessionId`, `presetId`, and optional `waitMs` (500-15000, default 4000).
-  - **Output:** confirmation when the new preset is rendered and ready.
-- **`session_watch`**
-  - **Input:** required `sessionId`, optional `durationMs` (1000-30000, default 5000) and `intervalMs` (500-10000, default 1000).
-  - **Output:** list of captured frames and state snapshots showing how the visual changes over time.
-- **`session_close`**
-  - **Input:** required `sessionId`.
-  - **Output:** confirmation. Always call when done to release browser resources.
+### Automation (Stdio-only)
 
-## Stdio-only visual tools
+| Tool | Input | Output |
+|------|-------|--------|
+| `run_quality_gate` | optional `scope`, `timeoutMs` | Structured pass/fail output |
+| `capture_toy_screenshot` | `slug`, optional `duration` | Screenshot path + audio/error summary |
+| `capture_preset` | `presetId`, optional `duration` | Opens visualizer with preset, returns screenshot |
+| `preview_gallery` | optional `query`, `count` (1-6), `duration` | Screenshots of multiple presets in sequence |
+| `test_toy_interactivity` | `slug` | Pass/fail with audio and error details |
+| `get_toy_health` | `slug` | HEALTHY/UNHEALTHY status |
 
-These tools require headless browser automation (Playwright) and are only available from the Bun/Node stdio server (`bun run mcp`).
+## Agent Workflow Examples
 
-- **`capture_preset`**
-  - **Input:** required `presetId` (string) and optional `duration` (default 5000ms).
-  - **Output:** `text` response with preset info and path to the captured screenshot. Opens the visualizer with the specified preset and captures a rendered frame.
-- **`preview_gallery`**
-  - **Input:** optional `query` (string), `count` (1-6, default 4), and `duration` (default 4000ms).
-  - **Output:** `text` response listing each preset with a screenshot path. Captures multiple presets in sequence for a quick visual overview.
-
-## Stdio-only automation tools
-
-The following tools are only available from the Bun/Node stdio server (`bun run mcp`) and are not exposed by the Cloudflare Worker transport:
-
-- **`run_quality_gate`**
-  - **Input:** optional `scope` enum (`full`, `quick`, `toys`, `typecheck`, `test`) and optional `timeoutMs` (1000-1800000, defaults to 600000).
-  - **Output:** `text` response containing command, scope, status, exit code, timeout status, and captured stdout/stderr.
-- **`capture_toy_screenshot`**
-  - **Input:** required `slug` and optional `duration` milliseconds.
-  - **Output:** screenshot path plus audio/error summary from headless browser automation.
-- **`test_toy_interactivity`**
-  - **Input:** required `slug`.
-  - **Output:** pass/fail status with audio activation and console error context.
-- **`get_toy_health`**
-  - **Input:** required `slug`.
-  - **Output:** `HEALTHY`/`UNHEALTHY` result with relevant error details.
-
-## Inputs, outputs, and client expectations
-
-- All tool calls follow MCP stdio conventions. Successful calls return a `content` array with either `text` or `json` entries.
-- Validation errors surface when inputs don’t satisfy the schemas above (for example, passing a number for `slug`).
-- `get_toys` reads from the generated toy manifest built from `assets/data/toys.json`; keep that file up to date so MCP clients surface accurate metadata.
-
-## Troubleshooting tips
-
-- **Manifest resolution:** The loader summary references `/.vite/manifest.json`; when discussing loader behavior with `describe_loader`, ensure a Vite dev server or build has produced the manifest so paths resolve correctly.
-- **Slug filters:** If `get_toys` returns “No toys matched the requested filters,” double-check the slug in `assets/data/toys.json` or omit filters to retrieve the full catalog.
-- **Client invocation:** MCP clients must launch `bun run mcp` in the repository root; running elsewhere can block access to `README.md`, the toy data file, or the Vite manifest.
-
-## Cloudflare Worker deployment (optional transport)
-
-[`scripts/mcp-worker.ts`](../scripts/mcp-worker.ts) serves the same tools over Streamable HTTP (POST requests for JSON-RPC, GET + `text/event-stream` for streaming responses) and WebSocket upgrades on the `/mcp` route. The worker bundles markdown and toy metadata at build time via Wrangler `Text` module rules, so it does not rely on file system access in production.
-
-- **Schema validation:** Uses `CfWorkerJsonSchemaValidator` from `@modelcontextprotocol/sdk/validation/cfworker` (peer dependency: `@cfworker/json-schema`).
-- **Bindings:** No KV, D1, or other bindings are required.
-
-### `wrangler.mcp.jsonc`
-
-The Worker uses a dedicated Wrangler config in [`wrangler.mcp.jsonc`](../wrangler.mcp.jsonc) so the MCP transport can evolve independently from the Pages project config in [`wrangler.toml`](../wrangler.toml).
-
-```jsonc
-{
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "stims",
-  "main": "scripts/mcp-worker.ts",
-  "compatibility_date": "2024-10-20",
-  "compatibility_flags": ["nodejs_compat"],
-  "rules": [
-    {
-      "type": "Text",
-      "globs": ["**/*.md"],
-      "fallthrough": false
-    }
-  ],
-  "workers_dev": true,
-  "preview_urls": true
-}
+### Browse and learn about presets:
+```
+list_presets → search_presets("ambient") → describe_preset("best-match") → open_preset_url
 ```
 
-### Deploying
+### See what a preset looks like:
+```
+start_agent_session(presetId="shifter-snakeskin") → session_capture_frame → session_close
+```
 
-1. Install dependencies (`bun install`), ensuring `@cfworker/json-schema` is available for the Worker build.
-2. Validate the Worker bundle and config:
-   ```bash
-   bun run mcp:check
-   ```
-3. Deploy with Wrangler:
-   ```bash
-   bun run mcp:deploy
-   ```
-4. Local preview (Worker fetch + WebSocket support):
-   ```bash
-   bun run mcp:dev
-   ```
+### Vibe coding loop (describe → see → tweak → compare):
+```
+start_agent_session → session_vibe("dark purple storm")
+→ session_get_preset_source("best-match")
+→ session_tweak("more blue and increase warp")
+→ session_compare
+→ session_tweak("brighter")
+→ session_compare
+→ session_close
+```
 
-### Client endpoints
+### Inspect and modify a running visualizer:
+```
+start_agent_session → session_get_state
+→ session_get_inspector_values
+→ session_tweak("faster motion")
+→ session_describe_frame
+→ session_compare
+→ session_close
+```
 
-- **HTTP/SSE:** `https://<worker-name>.<account>.workers.dev/mcp` (or your mapped custom domain) handles POST requests for JSON-RPC and GET requests with `Accept: text/event-stream` for streaming responses. CORS headers are set to `*` for interoperability.
-- **WebSocket:** `wss://<worker-name>.<account>.workers.dev/mcp` accepts WebSocket upgrades for clients that prefer a persistent connection.
+## Starting the Server
+
+```bash
+bun run mcp
+```
+
+The server connects over stdio. MCP clients should launch this command from the repo root.
+
+## Worker Deployment (Alternative Transport)
+
+The Cloudflare Worker at `scripts/mcp-worker.ts` serves the Worker-compatible tools (documentation + preset catalog) over HTTP/SSE and WebSocket. It does not support session tools or automation.
+
+See `wrangler.mcp.jsonc` for configuration.
