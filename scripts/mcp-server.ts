@@ -1071,6 +1071,256 @@ server.registerTool(
   },
 );
 
+// ── Tweak and compare tools ─────────────────────────────────────────
+
+server.registerTool(
+  'session_tweak',
+  {
+    description:
+      'Tweak a visual parameter in the running visualizer. Uses the inspector panel to find and modify MilkDrop fields. Describe what you want to change in natural language — the tool maps it to the right field. Examples: "more blue", "increase warp", "faster motion", "brighter".',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      tweak: z
+        .string()
+        .describe(
+          'What to change (e.g. "more blue", "increase warp", "brighter colors").',
+        ),
+      amount: z
+        .number()
+        .optional()
+        .default(0.15)
+        .describe('How much to change (0-1, default 0.15).'),
+    }),
+  },
+  async ({ sessionId, tweak, amount }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    // Map natural language tweaks to MilkDrop fields
+    const t = tweak.toLowerCase();
+    const fieldMap: Array<{ match: string[]; field: string; delta: number }> = [
+      {
+        match: ['more blue', 'bluer', 'increase blue', 'blue shift'],
+        field: 'ib_b',
+        delta: amount!,
+      },
+      { match: ['less blue', 'reduce blue'], field: 'ib_b', delta: -amount! },
+      {
+        match: ['more red', 'redder', 'increase red', 'red shift'],
+        field: 'ib_r',
+        delta: amount!,
+      },
+      { match: ['less red', 'reduce red'], field: 'ib_r', delta: -amount! },
+      {
+        match: ['more green', 'greener', 'increase green'],
+        field: 'ib_g',
+        delta: amount!,
+      },
+      { match: ['less green', 'reduce green'], field: 'ib_g', delta: -amount! },
+      {
+        match: ['warmer', 'more warm', 'increase warmth'],
+        field: 'ib_r',
+        delta: amount!,
+      },
+      {
+        match: ['cooler', 'more cool', 'increase cool', 'cool shift'],
+        field: 'ib_b',
+        delta: amount!,
+      },
+      {
+        match: ['brighter', 'more bright', 'increase brightness'],
+        field: 'gammaadj',
+        delta: -0.05,
+      },
+      {
+        match: ['darker', 'more dark', 'decrease brightness'],
+        field: 'gammaadj',
+        delta: 0.05,
+      },
+      {
+        match: ['more warp', 'increase warp', 'more distortion', 'warp more'],
+        field: 'warp',
+        delta: amount!,
+      },
+      {
+        match: ['less warp', 'decrease warp', 'less distortion'],
+        field: 'warp',
+        delta: -amount!,
+      },
+      {
+        match: ['more zoom', 'zoom in', 'increase zoom'],
+        field: 'zoom',
+        delta: amount!,
+      },
+      {
+        match: ['less zoom', 'zoom out', 'decrease zoom'],
+        field: 'zoom',
+        delta: -amount!,
+      },
+      {
+        match: ['more motion', 'faster', 'increase motion', 'more movement'],
+        field: 'mv_dx',
+        delta: 0.5,
+      },
+      {
+        match: ['less motion', 'slower', 'decrease motion'],
+        field: 'mv_dx',
+        delta: -0.5,
+      },
+      {
+        match: ['more saturation', 'more colorful', 'more vibrant'],
+        field: 'saturation',
+        delta: amount!,
+      },
+      {
+        match: ['less saturation', 'less colorful', 'more grey'],
+        field: 'saturation',
+        delta: -amount!,
+      },
+      {
+        match: ['more contrast', 'increase contrast'],
+        field: 'contrast',
+        delta: amount!,
+      },
+      {
+        match: ['less contrast', 'decrease contrast'],
+        field: 'contrast',
+        delta: -amount!,
+      },
+      {
+        match: ['more decay', 'more trail', 'more smear', 'longer trail'],
+        field: 'decay',
+        delta: 0.02,
+      },
+      {
+        match: ['less decay', 'shorter trail', 'crisper'],
+        field: 'decay',
+        delta: -0.02,
+      },
+    ];
+
+    let matched = false;
+    const results: string[] = [];
+
+    for (const entry of fieldMap) {
+      if (entry.match.some((m) => t.includes(m))) {
+        matched = true;
+        const fieldKey = entry.field;
+        const delta = entry.delta;
+        try {
+          await session.page.evaluate(
+            ({ key, delta: d }) => {
+              // Find the inspector field by its data-key attribute or label text
+              const fieldEl = Array.from(
+                document.querySelectorAll('.milkdrop-overlay__field'),
+              ).find((el) => {
+                const label = el
+                  .querySelector('span')
+                  ?.textContent?.trim()
+                  .toLowerCase();
+                return label === key || label?.includes(key);
+              });
+
+              if (!fieldEl) return { error: `field ${key} not found` };
+
+              const input = fieldEl.querySelector('input');
+              if (!input) return { error: 'no input found' };
+
+              const currentVal = parseFloat(input.value);
+              if (isNaN(currentVal)) return { error: 'non-numeric value' };
+
+              const newVal = Math.max(0, Math.min(2, currentVal + d));
+              input.value = String(newVal);
+
+              // Dispatch input event for range sliders, change for text inputs
+              if (input.type === 'range') {
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+              } else {
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+
+              return { field: key, from: currentVal, to: newVal };
+            },
+            { key: fieldKey, delta },
+          );
+          results.push(`  ${fieldKey}: changed`);
+        } catch (e) {
+          results.push(`  ${fieldKey}: error - ${e}`);
+        }
+      }
+    }
+
+    if (!matched) {
+      return asTextResponse(
+        `Could not understand "${tweak}". Try: more/less color (red, blue, green), warp, zoom, motion, brightness, saturation, contrast, decay.`,
+      );
+    }
+
+    await session.page.waitForTimeout(1500);
+
+    return asTextResponse(
+      [
+        `Applied tweak: "${tweak}"`,
+        ...results,
+        'Use session_capture_frame to see the result.',
+      ].join('\n'),
+    );
+  },
+);
+
+server.registerTool(
+  'session_compare',
+  {
+    description:
+      'Capture before and after frames when making visual changes. Takes a "before" screenshot, waits for changes to settle, then takes an "after" screenshot. Perfect for seeing the impact of preset tweaks.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      settleMs: z
+        .number()
+        .int()
+        .min(500)
+        .max(10000)
+        .optional()
+        .default(2000)
+        .describe('Ms to wait between before and after.'),
+      label: z
+        .string()
+        .optional()
+        .describe(
+          'Optional label for the comparison (e.g. "after color tweak").',
+        ),
+    }),
+  },
+  async ({ sessionId, settleMs, label }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      const ts = Date.now();
+      const beforePath = `/tmp/stims-before-${ts}.png`;
+      await session.page.screenshot({ path: beforePath });
+
+      if (settleMs && settleMs > 0) await session.page.waitForTimeout(settleMs);
+
+      const afterPath = `/tmp/stims-after-${ts}.png`;
+      await session.page.screenshot({ path: afterPath });
+
+      return asTextResponse(
+        [
+          `Before: ${beforePath}`,
+          `After: ${afterPath}`,
+          label ? `Label: ${label}` : '',
+          `Settle time: ${settleMs ?? 2000}ms`,
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Error in comparison: ${e}`);
+    }
+  },
+);
+
 async function startServer() {
   await server.connect(transport);
   console.error('Stim Webtoys MCP server is running on stdio.');
