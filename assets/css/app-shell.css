@@ -716,11 +716,11 @@ body[data-page="workspace"] {
 .stims-shell__launch-copy h1,
 .stims-shell__stage-header h2,
 .stims-shell__sheet-heading h2 {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   font-family: var(--stims-display);
   font-size: clamp(2.65rem, 5vw, 5.35rem);
   font-weight: 600;
-  line-height: 0.88;
+  line-height: 1.05;
   letter-spacing: -0.035em;
   color: var(--stims-ink-strong);
   text-wrap: balance;
