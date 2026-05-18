@@ -68,6 +68,29 @@ These tools interact with the live bundled preset catalog hosted at `toil.fyi` a
   - **Input:** required `presetId` (string).
   - **Output:** `text` response with a human-readable description including style tags, collections, fidelity, certification status, and a launch URL.
 
+## Agent session tools (Stdio-only)
+
+These tools manage a persistent headless browser session so agents can interact with the visualizer across multiple calls — the same way a human would browse, watch, and switch presets.
+
+- **`start_agent_session`**
+  - **Input:** optional `presetId` (defaults to Glowsticks) and `headless` (boolean, default true).
+  - **Output:** session ID plus instructions for using session tools. Opens the visualizer in a persistent browser.
+- **`session_get_state`**
+  - **Input:** required `sessionId`.
+  - **Output:** JSON with current page state — preset title, author, audio status, canvas dimensions, overlay visibility, URL.
+- **`session_capture_frame`**
+  - **Input:** required `sessionId` and optional `waitMs` (0-10000, default 500).
+  - **Output:** file path to the captured screenshot.
+- **`session_switch_preset`**
+  - **Input:** required `sessionId`, `presetId`, and optional `waitMs` (500-15000, default 4000).
+  - **Output:** confirmation when the new preset is rendered and ready.
+- **`session_watch`**
+  - **Input:** required `sessionId`, optional `durationMs` (1000-30000, default 5000) and `intervalMs` (500-10000, default 1000).
+  - **Output:** list of captured frames and state snapshots showing how the visual changes over time.
+- **`session_close`**
+  - **Input:** required `sessionId`.
+  - **Output:** confirmation. Always call when done to release browser resources.
+
 ## Stdio-only visual tools
 
 These tools require headless browser automation (Playwright) and are only available from the Bun/Node stdio server (`bun run mcp`).
