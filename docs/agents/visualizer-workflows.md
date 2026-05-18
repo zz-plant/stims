@@ -1,14 +1,14 @@
 # Visualizer Workflows and Commands
 
-## Reusable agent workflows
+## Reusable agent skills
 
-The repository includes markdown workflows under `.agent/workflows/`:
+Task routing goes through repo-local skills under `.agent/skills/`. Each skill is the single source of truth for its workflow:
 
-- [`/modify-visualizer-runtime`](../../.agent/workflows/modify-visualizer-runtime.md) — update shared runtime, loader, renderer, shell, audio, or capability behavior.
-- [`/modify-preset-workflow`](../../.agent/workflows/modify-preset-workflow.md) — update bundled presets, catalog/editor flows, import/export, or compatibility behavior.
-- [`/play-visualizer`](../../.agent/workflows/play-visualizer.md) — run and manually verify the flagship visualizer.
-- [`/test-visualizer`](../../.agent/workflows/test-visualizer.md) — execute visualizer-focused tests.
-- [`/ship-visualizer-change`](../../.agent/workflows/ship-visualizer-change.md) — orchestrate implementation, checks, and PR-ready docs alignment.
+- [`/modify-visualizer-runtime`](../../.agent/skills/modify-visualizer-runtime/SKILL.md) — update shared runtime, loader, renderer, shell, audio, or capability behavior.
+- [`/modify-preset-workflow`](../../.agent/skills/modify-preset-workflow/SKILL.md) — update bundled presets, catalog/editor flows, import/export, or compatibility behavior.
+- [`/play-visualizer`](../../.agent/skills/play-visualizer/SKILL.md) — run and manually verify the flagship visualizer.
+- [`/test-visualizer`](../../.agent/skills/test-visualizer/SKILL.md) — execute visualizer-focused tests.
+- [`/ship-visualizer-change`](../../.agent/skills/ship-visualizer-change/SKILL.md) — orchestrate implementation, checks, and PR-ready docs alignment.
 
 ### Review skills (prevent recurring fix categories)
 

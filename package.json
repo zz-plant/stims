@@ -32,7 +32,6 @@
     "test:compat": "bun run scripts/run-tests.ts --profile compat",
     "test:watch": "bun run scripts/run-tests.ts --watch",
     "biome:check": "bash scripts/run-biome.sh check",
-    "biome:staged": "biome check --staged --files-ignore-unknown=true --vcs-enabled=true --vcs-use-ignore-file=true --no-errors-on-unmatched",
     "lint": "bash scripts/run-biome.sh lint",
     "lint:fix": "bash scripts/run-biome.sh lint --write",
     "format": "bash scripts/run-biome.sh format --write",
@@ -85,7 +84,7 @@
     "parity:suite": "bun run scripts/run-parity-diff-suite.ts",
     "perf:certification-corpus": "bun run scripts/run-certification-corpus-perf-suite.ts",
     "test:agent": "bun run test:integration",
-    "prepare": "husky install",
+
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
     "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs",
     "dev:ui": "vite --config vite.config.ui.js",
@@ -103,7 +102,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@vitejs/plugin-react": "^6.0.2",
     "happy-dom": "^20.9.0",
-    "husky": "^9.1.7",
+
     "playwright": "^1.60.0",
     "typescript": "^6.0.3",
     "vite": "8.0.8",
