@@ -650,7 +650,7 @@ body[data-page="workspace"] {
 .stims-shell__launch-hero {
   position: relative;
   z-index: 1;
-  grid-template-columns: minmax(0, 1.16fr) minmax(18rem, 0.84fr);
+  grid-template-columns: minmax(0, 1.16fr) minmax(min(18rem, 40vw), 0.84fr);
   align-items: stretch;
   column-gap: 20px;
   row-gap: 18px;
@@ -1654,7 +1654,7 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__frame-header {
-  top: 126px;
+  top: max(72px, 10vh);
   align-items: flex-start;
 }
 
@@ -1747,7 +1747,7 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__stage-copy {
-  max-width: min(40rem, calc(100% - 24rem));
+  max-width: min(40rem, calc(100vw - 28rem));
 }
 
 .stims-shell__frame-sidecar {
@@ -3589,6 +3589,22 @@ body[data-page="workspace"] {
     max-width: none;
     align-items: flex-start;
     padding: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .stims-shell__launch-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stims-shell__launch-recommendation {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .stims-shell__launch-signals {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 
