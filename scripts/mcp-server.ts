@@ -539,14 +539,29 @@ server.registerTool(
       const state = await session.page.evaluate(() => {
         const body = document.body;
         const dataset = body.dataset;
+        const htmlDataset = document.documentElement.dataset;
         const canvas = document.querySelector('canvas');
         const overlay = document.querySelector('.milkdrop-overlay');
         const osdTitle = overlay?.querySelector('.milkdrop-overlay__osd-title');
         const osdMeta = overlay?.querySelector('.milkdrop-overlay__osd-meta');
+        const dock = document.querySelector('.stims-shell__stage-dock');
+        const dockStyle = dock ? getComputedStyle(dock) : null;
+        const audioGlow =
+          dockStyle?.getPropertyValue('--stims-audio-glow') ?? null;
+
+        // Read audio energy from the Now Playing bar's CSS custom property
+        const nowPlaying = document.querySelector(
+          '.stims-shell__now-playing-bar',
+        );
+        const npStyle = nowPlaying ? getComputedStyle(nowPlaying) : null;
+        const audioEnergy =
+          npStyle?.getPropertyValue('--stims-energy') ?? audioGlow;
 
         return {
           page: dataset.page,
-          audioActive: dataset.audioActive,
+          audioActive: dataset.audioActive ?? 'false',
+          audioEnergy: audioEnergy ? parseFloat(audioEnergy).toFixed(2) : null,
+          backend: dataset.activeBackend ?? htmlDataset.activeBackend ?? null,
           canvasExists: !!canvas,
           canvasWidth: canvas?.width,
           canvasHeight: canvas?.height,
