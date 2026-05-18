@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -44,35 +44,6 @@ function getSession(sessionId: string): AgentSession | null {
   }
   session.lastUsedAt = Date.now();
   return session;
-}
-
-/**
- * Close a session's browser and clean up.
- */
-async function closeSession(session: AgentSession) {
-  try {
-    await session.browser.close();
-  } catch {
-    /* ignore */
-  }
-}
-
-/**
- * Set the visualizer's audio source in an active page.
- */
-async function setAudioSource(
-  page: import('playwright').Page,
-  source: 'demo' | 'microphone' | 'tab',
-) {
-  await page.evaluate((src) => {
-    const btn = document.querySelector<HTMLButtonElement>(
-      src === 'demo'
-        ? '[data-demo-audio-btn="true"]'
-        : `[data-audio-source="${src}"]`,
-    );
-    btn?.click();
-  }, source);
-  await page.waitForTimeout(2000);
 }
 
 const qualityGateCommands = {
