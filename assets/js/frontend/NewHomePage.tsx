@@ -205,15 +205,16 @@ export function NewHomePage() {
           onSelect={w.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
-      ) : catalogReady && catalog.length > 0 ? (
+      ) : null}
+      {catalogReady && catalog.length > 0 ? (
         <PresetShelfSection
-          entries={catalog.slice(0, 4).map((entry) => ({
+          entries={catalog.slice(0, 6).map((entry) => ({
             entry,
-            label: 'Try first',
-            summary: describePresetMood(entry),
+            label: describePresetMood(entry),
+            summary: `by ${entry.author}`,
           }))}
-          summary="Get started with a curated pick."
-          title="Featured presets"
+          summary="Pick a preset to start with."
+          title="Browse all presets"
           onSelect={w.handlePresetSelection}
           presetPreviews={presetPreviews}
         />

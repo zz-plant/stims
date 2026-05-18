@@ -72,11 +72,13 @@ export class MilkdropOverlay {
   private readonly presetOsd: HTMLElement;
   private readonly presetOsdTitle: HTMLElement;
   private readonly presetOsdMeta: HTMLElement;
+  private readonly osdBackendEl: HTMLElement;
   private readonly shortcutHud: HTMLElement;
   private readonly shortcutHudToggle: HTMLButtonElement;
   private activeTab: OverlayTab = 'browse';
   private activePresetId: string | null = null;
   private activePresetEntry: MilkdropCatalogEntry | null = null;
+  private activeBackend: 'webgl' | 'webgpu' = 'webgl';
   private osdHideTimeoutId: number | null = null;
   private editorPanel: EditorPanelInstance | null = null;
   private editorPanelPromise: Promise<EditorPanelInstance | null> | null = null;
@@ -116,7 +118,11 @@ export class MilkdropOverlay {
     this.presetOsdTitle.className = 'milkdrop-overlay__osd-title';
     this.presetOsdMeta = document.createElement('div');
     this.presetOsdMeta.className = 'milkdrop-overlay__osd-meta';
-    this.presetOsd.append(this.presetOsdTitle, this.presetOsdMeta);
+    const osdBackend = document.createElement('span');
+    osdBackend.className = 'milkdrop-overlay__osd-backend';
+    osdBackend.textContent = '';
+    this.osdBackendEl = osdBackend;
+    this.presetOsd.append(this.presetOsdTitle, this.presetOsdMeta, osdBackend);
 
     this.shortcutHud = document.createElement('section');
     this.shortcutHud.className = 'milkdrop-overlay__shortcut-hud';
@@ -409,6 +415,8 @@ export class MilkdropOverlay {
     this.activePresetId = activePresetId;
     this.activePresetEntry =
       presets.find((entry) => entry.id === activePresetId) ?? null;
+    this.activeBackend = backend;
+    this.osdBackendEl.textContent = backend.toUpperCase();
     this.browsePanel.setCatalog(presets, activePresetId, backend);
     this.pendingEditorDeleteEnabled = Boolean(
       this.activePresetEntry && this.activePresetEntry.origin !== 'bundled',
