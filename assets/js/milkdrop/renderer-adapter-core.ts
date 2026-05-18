@@ -1,7 +1,6 @@
 import type { Camera, Scene, ShaderMaterial, Texture } from 'three';
 import {
   BufferGeometry,
-  BundleGroup,
   Group,
   type Line,
   LineBasicMaterial,
@@ -10,6 +9,8 @@ import {
   MeshBasicMaterial,
   Vector2,
 } from 'three';
+// @ts-expect-error - BundleGroup available in three/webgpu at runtime
+import { BundleGroup as WebGpuBundleGroup } from 'three/webgpu';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import {
   type MilkdropBackendBehavior,
@@ -366,8 +367,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     // lifetime instead of every frame.
     const useBundles =
       backend === 'webgpu' && this.webgpuOptimizationFlags.renderBundles;
-    if (useBundles) {
-      const staticBundle = new BundleGroup();
+    if (useBundles && WebGpuBundleGroup) {
+      const staticBundle = new WebGpuBundleGroup();
       staticBundle.add(this.background);
       staticBundle.add(this.meshLines);
       staticBundle.add(this.borderGroup);
@@ -399,21 +400,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.blendMotionVectorGroup.add(this.blendProceduralMotionVectors);
     this.root.add(this.blendMotionVectorGroup);
     this.batcher?.attach(this.root);
-
-    // Wrap static geometry in a BundleGroup for WebGPU RenderBundle support.
-    // BundleGroup auto-records static objects as GPU RenderBundles, reducing
-    // per-frame CPU command-encoding overhead. Only enabled when the
-    // renderBundles optimization flag is set.
-    if (backend === 'webgpu' && this.webgpuOptimizationFlags.renderBundles) {
-      const bundleGroup = new BundleGroup();
-      bundleGroup.add(this.background);
-      bundleGroup.add(this.meshLines);
-      bundleGroup.add(this.borderGroup);
-      bundleGroup.add(this.motionVectorCpuGroup);
-      bundleGroup.add(this.blendBorderGroup);
-      bundleGroup.add(this.blendMotionVectorCpuGroup);
-      this.root.add(bundleGroup);
-    }
 
     if (!ThreeMilkdropAdapter.lineThicknessLogged.has(backend)) {
       ThreeMilkdropAdapter.lineThicknessLogged.add(backend);
