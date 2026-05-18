@@ -605,12 +605,12 @@ export function WorkspaceStagePanel({
       <StimsStageFrame stageRef={w.stageRef} liveMode={liveMode}>
         <StimsFrameChrome>
           <StimsCornerBrand>
-            <h1 className="stims-shell__logo">
+            <span className="stims-shell__logo">
               <a href="/">
                 <span>Stims</span>
                 <small>Sound into motion</small>
               </a>
-            </h1>
+            </span>
             {liveMode ? (
               <div className="stims-shell__corner-status">
                 <span
