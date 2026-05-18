@@ -908,6 +908,225 @@ server.registerTool(
   },
 );
 
+// ── Vibe coding tools ───────────────────────────────────────────────
+
+server.registerTool(
+  'session_describe_frame',
+  {
+    description:
+      'Capture a frame from the active session and return a structured description of the visuals — brightness levels, color distribution, and motion hints. Lets agents "see" what the visualizer is showing without manually inspecting screenshots.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      waitMs: z
+        .number()
+        .int()
+        .min(0)
+        .max(5000)
+        .optional()
+        .default(300)
+        .describe('Ms to wait before capture.'),
+    }),
+  },
+  async ({ sessionId, waitMs }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      if (waitMs && waitMs > 0) await session.page.waitForTimeout(waitMs);
+
+      const analysis = await session.page.evaluate(() => {
+        const canvas = document.querySelector('canvas');
+        if (!canvas) return { error: 'no canvas' };
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return { error: 'no 2d context' };
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        let totalR = 0,
+          totalG = 0,
+          totalB = 0,
+          totalPixels = 0;
+        let brightPixels = 0,
+          darkPixels = 0;
+        const buckets = { red: 0, warm: 0, cool: 0, neutral: 0, dark: 0 };
+
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i],
+            g = data[i + 1],
+            b = data[i + 2],
+            a = data[i + 3];
+          if (a < 128) continue;
+          totalPixels++;
+          totalR += r;
+          totalG += g;
+          totalB += b;
+          const brightness = (r + g + b) / 3;
+          if (brightness > 180) brightPixels++;
+          if (brightness < 60) darkPixels++;
+
+          if (r > g + 30 && r > b + 30) buckets.red++;
+          else if (r > g + 10 && r > b + 10) buckets.warm++;
+          else if (b > r + 10 && b > g + 10) buckets.cool++;
+          else if (brightness < 60) buckets.dark++;
+          else buckets.neutral++;
+        }
+
+        if (totalPixels === 0) return { error: 'no visible pixels' };
+
+        const avgR = totalR / totalPixels;
+        const avgG = totalG / totalPixels;
+        const avgB = totalB / totalPixels;
+
+        const dominant = Object.entries(buckets)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 2)
+          .map(([k, v]) => `${k} (${((v / totalPixels) * 100).toFixed(0)}%)`)
+          .join(', ');
+
+        const mood =
+          brightPixels > totalPixels * 0.6
+            ? 'bright and energetic'
+            : darkPixels > totalPixels * 0.5
+              ? 'dark and moody'
+              : 'balanced';
+
+        const palette =
+          avgR > avgG + 20 && avgR > avgB + 20
+            ? 'warm (red/orange dominant)'
+            : avgB > avgR + 20 && avgB > avgG + 20
+              ? 'cool (blue dominant)'
+              : avgG > avgR + 10 && avgG > avgB + 10
+                ? 'green-tinged'
+                : 'neutral/mixed';
+
+        return {
+          width: w,
+          height: h,
+          averageColor: `rgb(${avgR.toFixed(0)}, ${avgG.toFixed(0)}, ${avgB.toFixed(0)})`,
+          brightness: `${(avgR + avgG + avgB) / 3 / 2.55}.toFixed(0)}%`,
+          mood,
+          palette,
+          dominant,
+          brightPercent: ((brightPixels / totalPixels) * 100).toFixed(0),
+          darkPercent: ((darkPixels / totalPixels) * 100).toFixed(0),
+        };
+      });
+
+      return asTextResponse(JSON.stringify(analysis, null, 2));
+    } catch (e) {
+      return asTextResponse(`Error analyzing frame: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_vibe',
+  {
+    description:
+      "THE VIBE CODING TOOL. Given a natural language description of what you want to see, this tool opens the visualizer, iterates through presets to find the closest match, and returns frames so you can see the result. Describe the mood, colors, energy, or style you're looking for.",
+    inputSchema: z.object({
+      vibe: z
+        .string()
+        .describe(
+          'Describe what you want to see — mood, colors, energy level (e.g. "dark purple storm with bright lightning flashes").',
+        ),
+      durationMs: z
+        .number()
+        .int()
+        .min(2000)
+        .max(20000)
+        .optional()
+        .default(6000)
+        .describe('How long to watch each candidate preset (ms).'),
+    }),
+  },
+  async ({ vibe, durationMs }) => {
+    try {
+      const q = vibe.toLowerCase();
+      const catalog = await fetch(
+        'https://toil.fyi/milkdrop-presets/catalog.json',
+      ).then((r) => r.json());
+
+      // Score presets by keyword relevance to the vibe description
+      const keywords = q.split(/\s+/).filter((w) => w.length > 3);
+      const scored = catalog.presets
+        .map(
+          (p: {
+            id: string;
+            title: string;
+            author: string;
+            tags?: string[];
+          }) => {
+            const text = [p.title, p.author, ...(p.tags ?? [])]
+              .join(' ')
+              .toLowerCase();
+            const score = keywords.filter((k: string) =>
+              text.includes(k),
+            ).length;
+            return { ...p, score };
+          },
+        )
+        .sort(
+          (a: { score: number }, b: { score: number }) => b.score - a.score,
+        );
+
+      const best = scored.slice(0, 3);
+      if (best.length === 0)
+        return asTextResponse('No presets found matching that description.');
+
+      // Open a session and try each candidate
+      const browser = await chromium.launch({ headless: true });
+      const page = await browser.newPage({
+        viewport: { width: 1280, height: 720 },
+      });
+
+      const results: string[] = [];
+      for (const preset of best) {
+        await page.goto(
+          `http://localhost:5173/?agent=true&preset=${encodeURIComponent(preset.id)}`,
+          { waitUntil: 'networkidle', timeout: 15000 },
+        );
+        await page.waitForTimeout(1000);
+        const btn = page.locator('button:has-text("See visuals now")');
+        if (await btn.isVisible({ timeout: 2000 }).catch(() => false))
+          await btn.click();
+        await page.waitForTimeout(durationMs ?? 6000);
+
+        const filename = `vibe-${preset.id}-${Date.now()}.png`;
+        const filepath = `/tmp/${filename}`;
+        await page.screenshot({ path: filepath });
+
+        const matchReason =
+          preset.score > 0
+            ? `matched ${preset.score} keyword(s)`
+            : 'selected as fallback';
+        results.push(
+          `- ${preset.title} by ${preset.author} (${matchReason}): ${filepath}`,
+        );
+      }
+
+      await browser.close();
+
+      return asTextResponse(
+        [
+          `Vibe search: "${vibe}"`,
+          `Tried ${best.length} preset(s)`,
+          '',
+          ...results,
+          '',
+          'Use session_capture_frame with a session to capture more frames.',
+        ].join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Error in vibe search: ${e}`);
+    }
+  },
+);
+
 async function startServer() {
   await server.connect(transport);
   console.error('Stim Webtoys MCP server is running on stdio.');
