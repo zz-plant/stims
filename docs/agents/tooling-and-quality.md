@@ -137,21 +137,6 @@ Its independent checks run in parallel by default; add `-- --serial` when debugg
   bun run test:integration
   ```
 
-## Husky hook bootstrap and generated wrappers
-
-- Husky hooks are bootstrapped through the `prepare` script in `package.json`:
-
-  ```bash
-  bun run prepare
-  ```
-
-  In normal development this runs automatically during `bun install`.
-- `.husky/*` files (for example, `.husky/pre-commit`) are the user-maintained hook sources and should be committed.
-- `.husky/_/*` shim wrappers are generated artifacts from `husky install`; do not hand-edit or commit them.
-- The pre-commit hook runs a staged-file Biome check so it does not rewrite files
-  after they have already been staged.
-- If wrappers are missing or stale, reinstall dependencies (or run `bun run prepare`) to regenerate them locally.
-
 ## Docs-only updates
 
 For Markdown-only edits, you can skip typecheck/tests unless the change modifies commands, paths, or workflow-critical instructions that should be validated.
