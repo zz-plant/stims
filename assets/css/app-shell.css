@@ -1815,7 +1815,7 @@ body[data-page="workspace"] {
 
 .stims-shell__stage-hero {
   position: absolute;
-  inset: 114px auto 26px 28px;
+  inset: max(72px, 8vh) auto 26px 28px;
   z-index: 2;
   display: grid;
   width: min(74rem, calc(100% - 84px));
