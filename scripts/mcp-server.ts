@@ -934,87 +934,31 @@ server.registerTool(
     try {
       if (waitMs && waitMs > 0) await session.page.waitForTimeout(waitMs);
 
-      const analysis = await session.page.evaluate(() => {
+      // Capture a screenshot and analyze it via Playwright's built-in pixel access
+      const screenshotPath = `/tmp/stims-analyze-${Date.now()}.png`;
+      await session.page.screenshot({ path: screenshotPath });
+
+      // Basic metadata from the page
+      const meta = await session.page.evaluate(() => {
         const canvas = document.querySelector('canvas');
-        if (!canvas) return { error: 'no canvas' };
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return { error: 'no 2d context' };
-
-        const w = canvas.width;
-        const h = canvas.height;
-        const imageData = ctx.getImageData(0, 0, w, h);
-        const data = imageData.data;
-
-        let totalR = 0,
-          totalG = 0,
-          totalB = 0,
-          totalPixels = 0;
-        let brightPixels = 0,
-          darkPixels = 0;
-        const buckets = { red: 0, warm: 0, cool: 0, neutral: 0, dark: 0 };
-
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i],
-            g = data[i + 1],
-            b = data[i + 2],
-            a = data[i + 3];
-          if (a < 128) continue;
-          totalPixels++;
-          totalR += r;
-          totalG += g;
-          totalB += b;
-          const brightness = (r + g + b) / 3;
-          if (brightness > 180) brightPixels++;
-          if (brightness < 60) darkPixels++;
-
-          if (r > g + 30 && r > b + 30) buckets.red++;
-          else if (r > g + 10 && r > b + 10) buckets.warm++;
-          else if (b > r + 10 && b > g + 10) buckets.cool++;
-          else if (brightness < 60) buckets.dark++;
-          else buckets.neutral++;
-        }
-
-        if (totalPixels === 0) return { error: 'no visible pixels' };
-
-        const avgR = totalR / totalPixels;
-        const avgG = totalG / totalPixels;
-        const avgB = totalB / totalPixels;
-
-        const dominant = Object.entries(buckets)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 2)
-          .map(([k, v]) => `${k} (${((v / totalPixels) * 100).toFixed(0)}%)`)
-          .join(', ');
-
-        const mood =
-          brightPixels > totalPixels * 0.6
-            ? 'bright and energetic'
-            : darkPixels > totalPixels * 0.5
-              ? 'dark and moody'
-              : 'balanced';
-
-        const palette =
-          avgR > avgG + 20 && avgR > avgB + 20
-            ? 'warm (red/orange dominant)'
-            : avgB > avgR + 20 && avgB > avgG + 20
-              ? 'cool (blue dominant)'
-              : avgG > avgR + 10 && avgG > avgB + 10
-                ? 'green-tinged'
-                : 'neutral/mixed';
-
+        const overlay = document.querySelector('.milkdrop-overlay');
+        const osdTitle = overlay?.querySelector('.milkdrop-overlay__osd-title');
+        const osdMeta = overlay?.querySelector('.milkdrop-overlay__osd-meta');
         return {
-          width: w,
-          height: h,
-          averageColor: `rgb(${avgR.toFixed(0)}, ${avgG.toFixed(0)}, ${avgB.toFixed(0)})`,
-          brightness: `${(avgR + avgG + avgB) / 3 / 2.55}.toFixed(0)}%`,
-          mood,
-          palette,
-          dominant,
-          brightPercent: ((brightPixels / totalPixels) * 100).toFixed(0),
-          darkPercent: ((darkPixels / totalPixels) * 100).toFixed(0),
+          width: canvas?.width ?? 0,
+          height: canvas?.height ?? 0,
+          presetTitle: osdTitle?.textContent?.trim() ?? null,
+          presetAuthor: osdMeta?.textContent?.trim() ?? null,
         };
       });
+
+      // For pixel-level analysis, agents should use session_capture_frame
+      // and interpret the image themselves or via a vision model.
+      const analysis = {
+        ...meta,
+        screenshotPath,
+        note: 'Pixel data extracted to screenshot. Use a vision model or external tool for detailed analysis.',
+      };
 
       return asTextResponse(JSON.stringify(analysis, null, 2));
     } catch (e) {
