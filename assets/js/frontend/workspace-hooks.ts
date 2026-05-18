@@ -1,4 +1,3 @@
-import { useRouter } from '@tanstack/react-router';
 import {
   type Dispatch,
   type SetStateAction,
@@ -42,8 +41,9 @@ import {
 } from './session-persistence.ts';
 import {
   buildSessionRouteSearch,
+  parsePlainSearch,
   readSessionRouteState,
-  readSessionRouteStateFromSearch,
+  stringifyPlainSearch,
 } from './url-state.ts';
 import {
   buildLaunchIntent,
@@ -58,46 +58,33 @@ const log = createLogger('WorkspaceHooks');
 const PREVIEW_SETTLE_MS = 750;
 
 export function useWorkspaceRouteState() {
-  const router = useRouter();
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
-    readSessionRouteStateFromSearch(router.state.location.search),
+    readSessionRouteState(),
   );
 
   useEffect(() => {
-    const nextSearch = buildSessionRouteSearch(
-      routeState,
-      router.state.location.search,
-    );
-    // The router validates these raw query params back into SessionRouteState.
-    const nextSearchInput = nextSearch as never;
-    const nextLocation = router.buildLocation({
-      to: '/',
-      hash: router.state.location.hash,
-      search: nextSearchInput,
-    });
-    if (nextLocation.href === router.state.location.href) {
+    const currentSearch = parsePlainSearch(window.location.search);
+    const nextSearch = buildSessionRouteSearch(routeState, currentSearch);
+    const serialized = stringifyPlainSearch(nextSearch);
+    const current = window.location.search;
+    if (serialized === current) {
       return;
     }
 
-    void router.navigate({
-      to: '/',
-      hash: router.state.location.hash,
-      replace: true,
-      search: nextSearchInput,
-    });
-  }, [routeState, router]);
+    const hash = window.location.hash;
+    const newUrl = hash ? `${serialized}${hash}` : serialized;
+    window.history.replaceState(null, '', newUrl);
+  }, [routeState]);
 
   useEffect(() => {
-    const unsubscribe = router.history.subscribe(({ location }) => {
+    const onPopState = () => {
       startTransition(() => {
-        setRouteState(readSessionRouteState(location.href));
+        setRouteState(readSessionRouteState());
       });
-    });
-
-    return () => {
-      unsubscribe();
     };
-  }, [router]);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const commitRoute = (nextState: SessionRouteState) => {
     setRouteState(nextState);
