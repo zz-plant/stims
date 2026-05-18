@@ -802,7 +802,7 @@ function registerTools(server: McpServer) {
           : `${results.length} preset(s) found.`;
 
       return asTextResponse(
-        summary + '\n\n' + JSON.stringify(results, null, 2),
+        `${summary}\n\n${JSON.stringify(results, null, 2)}`,
       );
     },
   );
