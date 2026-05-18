@@ -166,20 +166,12 @@ export function NewHomePage() {
       ) : null}
 
       {!dismissed ? (
-        <section className="stims-shell__confidence-note">
-          <strong>Audio-reactive visuals</strong>
-          <span>
-            Start with demo audio — no sign-up, no setup. Works in any modern
-            browser.
-          </span>
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            onClick={dismiss}
-          >
-            Got it
+        <div className="stims-shell__confidence-bar">
+          <span>Start with demo audio — no sign-up, no setup.</span>
+          <button type="button" className="stims-shell__text-button" onClick={dismiss}>
+            Dismiss
           </button>
-        </section>
+        </div>
       ) : null}
 
       {readinessAlerts.length > 0 ? (

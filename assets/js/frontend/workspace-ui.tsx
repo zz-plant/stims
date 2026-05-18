@@ -248,10 +248,6 @@ function AudioSourcePanel() {
     <div className="stims-shell__source-panel">
       <div className="stims-shell__source-heading">
         <p className="stims-shell__section-label">Use my music</p>
-        <p className="stims-shell__meta-copy">
-          Pick a live source only when you want the motion to follow your own
-          sound.
-        </p>
       </div>
       <div className="stims-shell__source-grid">
         <button
@@ -262,10 +258,7 @@ function AudioSourcePanel() {
           onClick={() => onAudioStart('microphone')}
         >
           <strong>Microphone</strong>
-          <span>
-            Needs mic permission. React to the room, your speakers, or live
-            sound.
-          </span>
+          <span>Live mic input</span>
         </button>
         <button
           type="button"
@@ -275,14 +268,12 @@ function AudioSourcePanel() {
           onClick={() => onAudioStart('tab')}
         >
           <strong>This tab</strong>
-          <span>
-            Share this tab when prompted to capture audio already playing here.
-          </span>
+          <span>Audio from this browser tab</span>
         </button>
       </div>
       <div className="stims-shell__youtube">
         <label className="stims-shell__field-label" htmlFor="youtube-url">
-          Paste a YouTube link, then start capture
+          YouTube link
         </label>
         <div className="stims-shell__youtube-row">
           <input
@@ -613,30 +604,20 @@ export function WorkspaceStagePanel({
             </span>
             {liveMode ? (
               <div className="stims-shell__corner-status">
-                <span
-                  className="stims-shell__corner-pill"
-                  title="Visualizer is running with live audio"
-                >
-                  Live session
-                </span>
                 <span className="stims-shell__corner-pill">
-                  {backend === 'webgpu'
-                    ? 'WebGPU active'
-                    : backend === 'webgl'
-                      ? 'WebGL active'
-                      : 'Renderer loading'}
+                  {backend === 'webgpu' ? 'WebGPU' : 'WebGL'}
+                  {audioEnergy > 0 ? (
+                    <span
+                      className="stims-shell__audio-meter"
+                      style={
+                        {
+                          '--audio-energy': `${audioEnergy}`,
+                        } as React.CSSProperties
+                      }
+                      aria-hidden="true"
+                    />
+                  ) : null}
                 </span>
-                {audioEnergy > 0 ? (
-                  <span
-                    className="stims-shell__audio-meter"
-                    style={
-                      {
-                        '--audio-energy': `${audioEnergy}`,
-                      } as React.CSSProperties
-                    }
-                    aria-hidden="true"
-                  />
-                ) : null}
               </div>
             ) : null}
           </StimsCornerBrand>
@@ -928,39 +909,6 @@ function BrowseSheetPanel({
           ) : null}
         </div>
       </section>
-
-      {showStarterPresets && starterPresets.length > 0 ? (
-        <section className="stims-shell__starter-section">
-          <div className="stims-shell__section-heading">
-            <p className="stims-shell__section-label">Start here</p>
-            <p className="stims-shell__meta-copy">
-              Four easy ways to get started.
-            </p>
-          </div>
-          <div className="stims-shell__starter-grid">
-            {starterPresets.map((starter) => (
-              <button
-                key={starter.key}
-                type="button"
-                className="stims-shell__starter-card"
-                onClick={() => w.handlePresetSelection(starter.preset.id)}
-              >
-                <PresetArtwork
-                  entry={starter.preset}
-                  preview={presetPreviews[starter.preset.id] ?? null}
-                />
-                <span className="stims-shell__starter-label">
-                  {starter.label}
-                </span>
-                <strong>{starter.preset.title}</strong>
-                <span className="stims-shell__meta-copy">
-                  {starter.summary}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       {showActivitySections ? (
         <PresetShelfSection

@@ -686,7 +686,7 @@ body[data-page="workspace"] {
     0 18px 32px rgba(0, 0, 0, 0.16);
 }
 
-.stims-shell__confidence-note,
+.stims-shell__confidence-bar,
 .stims-shell__audio-bridge {
   display: grid;
   gap: 8px;
@@ -703,12 +703,12 @@ body[data-page="workspace"] {
   box-shadow: var(--stims-shadow-soft);
 }
 
-.stims-shell__confidence-note strong,
+.stims-shell__confidence-bar strong,
 .stims-shell__audio-bridge strong {
   color: var(--stims-ink-strong);
 }
 
-.stims-shell__confidence-note span {
+.stims-shell__confidence-bar span {
   color: var(--stims-muted);
   line-height: 1.45;
 }
@@ -3649,7 +3649,7 @@ body[data-page="workspace"] {
     gap: 12px;
   }
 
-  .stims-shell__confidence-note,
+  .stims-shell__confidence-bar,
   .stims-shell__audio-bridge,
   .stims-shell__launch-recommendation,
   .stims-shell__source-panel {
