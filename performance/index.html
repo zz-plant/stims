@@ -99,28 +99,35 @@
           <p class="stims-performance__eyebrow">What to expect</p>
           <h2>Browser and device guidance</h2>
         </div>
-        <div class="stims-performance__table" role="table" aria-label="Browser guidance">
-          <div class="stims-performance__row stims-performance__row--head" role="row">
-            <span role="columnheader">Setup</span>
-            <span role="columnheader">Expectation</span>
-          </div>
-          <div class="stims-performance__row" role="row">
-            <span role="cell">Newer desktop browser</span>
-            <span role="cell">Richest detail and the best shot at the heaviest rendering stack.</span>
-          </div>
-          <div class="stims-performance__row" role="row">
-            <span role="cell">Older laptop or integrated graphics</span>
-            <span role="cell">Stims may ease back to keep motion stable.</span>
-          </div>
-          <div class="stims-performance__row" role="row">
-            <span role="cell">Phone or tablet</span>
-            <span role="cell">Expect a cleaner, lighter run with touch-friendly controls.</span>
-          </div>
-          <div class="stims-performance__row" role="row">
-            <span role="cell">TV-style browser</span>
-            <span role="cell">Use the default quick looks first and keep extra tuning minimal.</span>
-          </div>
-        </div>
+        <table class="stims-performance__table">
+          <caption class="sr-only">
+            Browser guidance
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Setup</th>
+              <th scope="col">Expectation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Newer desktop browser</th>
+              <td>Richest detail and the best shot at the heaviest rendering stack.</td>
+            </tr>
+            <tr>
+              <th scope="row">Older laptop or integrated graphics</th>
+              <td>Stims may ease back to keep motion stable.</td>
+            </tr>
+            <tr>
+              <th scope="row">Phone or tablet</th>
+              <td>Expect a cleaner, lighter run with touch-friendly controls.</td>
+            </tr>
+            <tr>
+              <th scope="row">TV-style browser</th>
+              <td>Use the default quick looks first and keep extra tuning minimal.</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <section class="stims-performance__section stims-performance__section--split">

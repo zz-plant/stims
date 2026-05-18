@@ -11,9 +11,19 @@
   --stims-perf-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 }
 
+html {
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto;
+  background: #05070d;
+}
+
 body[data-page="performance"] {
   margin: 0;
+  height: auto;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   color: var(--stims-perf-text);
   background:
     radial-gradient(circle at 12% 0%, rgba(244, 122, 84, 0.16), transparent 24%),
@@ -24,6 +34,12 @@ body[data-page="performance"] {
     ),
     linear-gradient(180deg, #05070d 0%, #08111b 48%, #03050a 100%);
   font-family: "Space Grotesk", sans-serif;
+}
+
+@supports (min-height: 100dvh) {
+  body[data-page="performance"] {
+    min-height: 100dvh;
+  }
 }
 
 .stims-performance {
@@ -166,30 +182,39 @@ body[data-page="performance"] {
 }
 
 .stims-performance__table {
-  display: grid;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-top: 18px;
   border: 1px solid var(--stims-perf-line);
   border-radius: 18px;
   overflow: hidden;
 }
 
-.stims-performance__row {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1.8fr);
-  gap: 12px;
+.stims-performance__table th,
+.stims-performance__table td {
   padding: 14px 16px;
+  text-align: left;
+  vertical-align: top;
   background: rgba(255, 255, 255, 0.025);
   border-top: 1px solid var(--stims-perf-line);
 }
 
-.stims-performance__row--head {
+.stims-performance__table thead th {
   border-top: 0;
   background: rgba(255, 255, 255, 0.05);
-}
-
-.stims-performance__row--head span {
   color: #fff8ef;
   font-weight: 700;
+}
+
+.stims-performance__table tbody th {
+  width: 34%;
+  color: var(--stims-perf-text);
+}
+
+.stims-performance__table tbody td {
+  color: var(--stims-perf-muted);
+  line-height: 1.6;
 }
 
 .stims-performance__steps,
@@ -224,7 +249,25 @@ body[data-page="performance"] {
     border-radius: 20px;
   }
 
-  .stims-performance__row {
-    grid-template-columns: 1fr;
+  .stims-performance__table,
+  .stims-performance__table thead,
+  .stims-performance__table tbody,
+  .stims-performance__table tr,
+  .stims-performance__table th,
+  .stims-performance__table td {
+    display: block;
+  }
+
+  .stims-performance__table thead {
+    display: none;
+  }
+
+  .stims-performance__table tbody th {
+    width: 100%;
+    padding-bottom: 4px;
+  }
+
+  .stims-performance__table tbody td {
+    padding-top: 4px;
   }
 }

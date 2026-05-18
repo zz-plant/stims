@@ -1,12 +1,12 @@
 :root {
-  --stims-white-08: var(--stims-white-08);
-  --stims-white-05: var(--stims-white-05);
-  --stims-white-04: var(--stims-white-04);
-  --stims-white-06: var(--stims-white-06);
-  --stims-white-12: var(--stims-white-12);
-  --stims-white-02: var(--stims-white-02);
-  --stims-shadow-22: var(--stims-shadow-22);
-  --stims-accent-blue-08: var(--stims-accent-blue-08);
+  --stims-white-02: rgba(255, 255, 255, 0.02);
+  --stims-white-04: rgba(255, 255, 255, 0.04);
+  --stims-white-05: rgba(255, 255, 255, 0.05);
+  --stims-white-06: rgba(255, 255, 255, 0.06);
+  --stims-white-08: rgba(255, 255, 255, 0.08);
+  --stims-white-12: rgba(255, 255, 255, 0.12);
+  --stims-shadow-22: rgba(0, 0, 0, 0.22);
+  --stims-accent-blue-08: rgba(119, 201, 255, 0.08);
   --stims-ink: #f6efe4;
   --stims-ink-strong: #fff8ef;
   --stims-muted: rgba(246, 239, 228, 0.74);
@@ -1168,6 +1168,10 @@ body[data-page="workspace"] {
   margin: 0;
 }
 
+.stims-shell__section-label {
+  margin: 0;
+}
+
 .stims-shell__starter-section {
   display: grid;
   gap: 12px;
@@ -1825,6 +1829,7 @@ body[data-page="workspace"] {
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
+  scroll-padding: 12px;
 }
 
 .stims-shell__stage-hero > * {

@@ -13,12 +13,20 @@ body {
 }
 
 :root {
-  --stims-white-04: var(--stims-white-04);
-  --stims-white-08: var(--stims-white-08);
-  --stims-white-05: var(--stims-white-05);
-  --stims-border-08: var(--stims-border-08);
-  --stims-shadow-34: var(--stims-shadow-34);
-  --stims-muted-35: var(--stims-muted-35);
+  --stims-white-02: rgba(255, 255, 255, 0.02);
+  --stims-white-03: rgba(255, 255, 255, 0.03);
+  --stims-white-04: rgba(255, 255, 255, 0.04);
+  --stims-white-05: rgba(255, 255, 255, 0.05);
+  --stims-white-06: rgba(255, 255, 255, 0.06);
+  --stims-white-08: rgba(255, 255, 255, 0.08);
+  --stims-white-12: rgba(255, 255, 255, 0.12);
+  --stims-border-08: rgba(255, 255, 255, 0.08);
+  --stims-shadow-22: rgba(0, 0, 0, 0.22);
+  --stims-shadow-34: rgba(0, 0, 0, 0.34);
+  --stims-muted-35: rgba(246, 239, 228, 0.35);
+  --stims-focus-95: rgba(244, 122, 84, 0.95);
+  --stims-focus-ring-35: rgba(244, 122, 84, 0.35);
+  --stims-accent-blue-08: rgba(119, 201, 255, 0.08);
   --app-height: 100vh;
   --app-width: 100vw;
   --tv-scale-multiplier: 1;
@@ -210,6 +218,118 @@ body.gamepad-active :focus:not(:focus-visible) {
   /* Force GPU acceleration for better mobile performance */
   transform: translateZ(0);
   will-change: transform;
+}
+
+.stims-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(
+      circle at 30% 20%,
+      rgba(95, 192, 181, 0.08),
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 70% 80%,
+      rgba(211, 137, 84, 0.06),
+      transparent 50%
+    ),
+    #0a0f19;
+  color: #e9fbff;
+  font-family: system-ui, sans-serif;
+}
+
+.stims-loading[hidden] {
+  display: none;
+}
+
+.stims-loading__spinner {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  position: relative;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(95, 192, 181, 0.95),
+    rgba(233, 212, 155, 0.85),
+    rgba(211, 137, 84, 0.95),
+    rgba(95, 192, 181, 0.95)
+  );
+  animation: stims-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.stims-loading__spinner::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #0a0f19;
+}
+
+.stims-loading__text {
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  animation: stims-pulse 2s ease-in-out infinite;
+}
+
+.stims-loading__dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+.stims-loading__dots span {
+  width: 4px;
+  height: 4px;
+  display: inline-block;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+  animation: stims-bounce 1.4s ease-in-out infinite both;
+}
+
+.stims-loading__dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.stims-loading__dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes stims-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes stims-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes stims-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
 }
 body {
   background:

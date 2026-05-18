@@ -24,13 +24,21 @@ export function StimsStageFrame({
   stageRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
-    <section className="stims-shell__stage-section">
+    <section
+      className="stims-shell__stage-section"
+      aria-label="Visualizer stage"
+    >
       <div
         className="stims-shell__stage-frame"
         data-mode={liveMode ? 'live' : 'home'}
       >
         <StimsStageAmbient />
-        <div ref={stageRef} className="stims-shell__stage-root" />
+        <div
+          ref={stageRef}
+          className="stims-shell__stage-root"
+          role="img"
+          aria-label="Audio-reactive visual output"
+        />
         {children}
       </div>
     </section>

@@ -1,13 +1,13 @@
 :root {
-  --stims-white-04: var(--stims-white-04);
-  --stims-white-05: var(--stims-white-05);
-  --stims-white-02: var(--stims-white-02);
-  --stims-white-08: var(--stims-white-08);
-  --stims-white-06: var(--stims-white-06);
-  --stims-white-12: var(--stims-white-12);
-  --stims-white-03: var(--stims-white-03);
-  --stims-focus-95: var(--stims-focus-95);
-  --stims-focus-ring-35: var(--stims-focus-ring-35);
+  --stims-white-02: rgba(255, 255, 255, 0.02);
+  --stims-white-03: rgba(255, 255, 255, 0.03);
+  --stims-white-04: rgba(255, 255, 255, 0.04);
+  --stims-white-05: rgba(255, 255, 255, 0.05);
+  --stims-white-06: rgba(255, 255, 255, 0.06);
+  --stims-white-08: rgba(255, 255, 255, 0.08);
+  --stims-white-12: rgba(255, 255, 255, 0.12);
+  --stims-focus-95: rgba(244, 122, 84, 0.95);
+  --stims-focus-ring-35: rgba(244, 122, 84, 0.35);
   --bg-color: #0e1518;
   --bg-color-secondary: #162126;
   --text-color: #f7f4eb;

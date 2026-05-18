@@ -61,12 +61,16 @@ export function NewHomePage() {
   const showJumpBack = hasFavorites || hasRecent;
 
   return (
-    <div className="stims-shell__launch" data-audio-controls>
+    <section
+      className="stims-shell__launch"
+      data-audio-controls
+      aria-labelledby="stims-launch-title"
+    >
       <div className="stims-shell__launch-hero">
         <div className="stims-shell__launch-header">
           <div className="stims-shell__launch-copy">
             <p className="stims-shell__eyebrow">Browser visualizer</p>
-            <h1>Sound into motion.</h1>
+            <h1 id="stims-launch-title">Sound into motion.</h1>
             <p className="stims-shell__launch-summary">
               Start with demo audio, then switch to your own music.
               {catalogReady
@@ -168,7 +172,11 @@ export function NewHomePage() {
       {!dismissed ? (
         <div className="stims-shell__confidence-bar">
           <span>Start with demo audio — no sign-up, no setup.</span>
-          <button type="button" className="stims-shell__text-button" onClick={dismiss}>
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={dismiss}
+          >
             Dismiss
           </button>
         </div>
@@ -211,6 +219,6 @@ export function NewHomePage() {
           presetPreviews={presetPreviews}
         />
       ) : null}
-    </div>
+    </section>
   );
 }

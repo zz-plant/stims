@@ -25,6 +25,7 @@
         color: var(--ink);
         min-height: 100vh;
         padding: 24px;
+        line-height: 1.5;
       }
       .cert-shell {
         max-width: 900px;
@@ -81,6 +82,17 @@
         padding: 10px 14px;
         min-width: 200px;
       }
+      .cert-field {
+        display: grid;
+        gap: 6px;
+      }
+      .cert-label {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
       .cert-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -94,7 +106,7 @@
         border-radius: var(--radius);
         background: var(--panel);
       }
-      .cert-pane h3 {
+      .cert-pane h2 {
         font-size: 0.85rem;
         font-weight: 700;
         letter-spacing: 0.06em;
@@ -125,7 +137,7 @@
         border-radius: var(--radius);
         background: var(--panel);
       }
-      .cert-results h3 {
+      .cert-results h2 {
         font-size: 1rem;
       }
       .cert-metrics {
@@ -181,6 +193,10 @@
         flex-wrap: wrap;
         gap: 10px;
       }
+      .cert-results[hidden],
+      .cert-actions[hidden] {
+        display: none;
+      }
       .cert-submit {
         border: 1px solid var(--cool);
         border-radius: 8px;
@@ -202,51 +218,54 @@
     </style>
   </head>
   <body>
-    <div class="cert-shell">
-      <div class="cert-header">
+    <main class="cert-shell">
+      <header class="cert-header">
         <h1>Stims Certification Suite</h1>
         <p>
           Client-side certification compares WebGPU and WebGL rendering for
           each bundled preset. Captured frames are diffed pixel-by-pixel to
           verify backend consistency on your device.
         </p>
-      </div>
-      <div class="cert-controls">
-        <select id="preset-select">
-          <option value="">Loading presets…</option>
-        </select>
+      </header>
+      <section class="cert-controls" aria-label="Certification controls">
+        <div class="cert-field">
+          <label class="cert-label" for="preset-select">Preset</label>
+          <select id="preset-select">
+            <option value="">Loading presets…</option>
+          </select>
+        </div>
         <button type="button" id="certify-all-btn">Certify all (4 presets)</button>
         <button type="button" id="certify-one-btn">Certify selected</button>
         <button type="button" id="submit-results-btn" disabled>Submit results</button>
-      </div>
-      <div class="cert-grid">
-        <div class="cert-pane">
-          <h3>WebGPU</h3>
+      </section>
+      <section class="cert-grid" aria-label="Renderer comparison">
+        <article class="cert-pane">
+          <h2>WebGPU</h2>
           <div id="webgpu-canvas-target" class="cert-placeholder">
             Waiting for renderer…
           </div>
-        </div>
-        <div class="cert-pane">
-          <h3>WebGL</h3>
+        </article>
+        <article class="cert-pane">
+          <h2>WebGL</h2>
           <div id="webgl-canvas-target" class="cert-placeholder">
             Waiting for renderer…
           </div>
-        </div>
-      </div>
-      <div class="cert-results" id="results-panel" hidden>
-        <h3>Results — <span id="results-preset-name"></span></h3>
+        </article>
+      </section>
+      <section class="cert-results" id="results-panel" hidden>
+        <h2>Results — <span id="results-preset-name"></span></h2>
         <span class="cert-status cert-status--pending" id="results-status">
           Pending
         </span>
         <div class="cert-metrics" id="results-metrics"></div>
         <canvas class="cert-diff-img" id="diff-canvas" hidden></canvas>
-      </div>
+      </section>
       <div class="cert-actions" id="results-actions" hidden>
         <button type="button" class="cert-submit" id="submit-single-btn">
           Submit this result
         </button>
       </div>
-    </div>
+    </main>
     <script type="module" src="./certify.js"></script>
   </body>
 </html>

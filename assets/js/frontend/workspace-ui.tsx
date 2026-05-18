@@ -197,11 +197,20 @@ export function PresetShelfSection({
   if (entries.length === 0) {
     return null;
   }
+  const sectionId = `stims-shelf-${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')}`;
 
   return (
-    <section className="stims-shell__starter-section">
+    <section
+      className="stims-shell__starter-section"
+      aria-labelledby={sectionId}
+    >
       <div className="stims-shell__section-heading">
-        <p className="stims-shell__section-label">{title}</p>
+        <h2 id={sectionId} className="stims-shell__section-label">
+          {title}
+        </h2>
         <p className="stims-shell__meta-copy">{summary}</p>
       </div>
       <div className="stims-shell__starter-grid">
@@ -245,9 +254,14 @@ function AudioSourcePanel() {
   const youtubeUrl = w.youtubeUrl;
 
   return (
-    <div className="stims-shell__source-panel">
+    <section
+      className="stims-shell__source-panel"
+      aria-labelledby="stims-source-heading"
+    >
       <div className="stims-shell__source-heading">
-        <p className="stims-shell__section-label">Use my music</p>
+        <h2 id="stims-source-heading" className="stims-shell__section-label">
+          Use my music
+        </h2>
       </div>
       <div className="stims-shell__source-grid">
         <button
@@ -357,7 +371,7 @@ function AudioSourcePanel() {
           <div id="workspace-youtube-player"></div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -435,7 +449,7 @@ export function WorkspaceLaunchPanel({
   ].slice(0, 3);
 
   return (
-    <div className={rootClassName} data-audio-controls>
+    <section className={rootClassName} data-audio-controls>
       <div className="stims-shell__launch-hero">
         <div className="stims-shell__launch-header">
           <div className="stims-shell__launch-copy">
@@ -556,7 +570,7 @@ export function WorkspaceLaunchPanel({
         onSelect={onPresetSelection}
         presetPreviews={presetPreviews}
       />
-    </div>
+    </section>
   );
 }
 
@@ -592,6 +606,7 @@ export function WorkspaceStagePanel({
     <section
       className="stims-shell__workspace"
       data-mode={liveMode ? 'live' : 'home'}
+      aria-label="Stims visualizer workspace"
     >
       <StimsStageFrame stageRef={w.stageRef} liveMode={liveMode}>
         <StimsFrameChrome>
