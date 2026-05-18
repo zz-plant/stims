@@ -172,23 +172,21 @@ server.registerTool(
   {
     description:
       'Run Bun-based quality gate commands and return structured pass/fail output. Useful for agent workflows that need deterministic repository checks.',
-    inputSchema: z
-      .object({
-        scope: z
-          .enum(['full', 'quick', 'toys', 'typecheck', 'test'])
-          .optional()
-          .default('full')
-          .describe('Quality gate scope to run. Defaults to full.'),
-        timeoutMs: z
-          .number()
-          .int()
-          .min(1000)
-          .max(30 * 60 * 1000)
-          .optional()
-          .default(defaultQualityGateTimeoutMs)
-          .describe('Timeout in milliseconds before command termination.'),
-      })
-      .strict(),
+    inputSchema: z.object({
+      scope: z
+        .enum(['full', 'quick', 'toys', 'typecheck', 'test'])
+        .optional()
+        .default('full')
+        .describe('Quality gate scope to run. Defaults to full.'),
+      timeoutMs: z
+        .number()
+        .int()
+        .min(1000)
+        .max(30 * 60 * 1000)
+        .optional()
+        .default(defaultQualityGateTimeoutMs)
+        .describe('Timeout in milliseconds before command termination.'),
+    }),
   },
   async ({ scope = 'full', timeoutMs = defaultQualityGateTimeoutMs }) => {
     const selected = resolveQualityGateCommand(scope);

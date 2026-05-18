@@ -340,7 +340,7 @@ function registerTools(server: McpServer) {
     {
       description:
         'Return quick-start, runtime, repository layout, and manifest-doc pointers from README.md with line references.',
-      inputSchema: z.object({}).strict(),
+      inputSchema: z.object({}),
     },
     async () => {
       const pointers = await buildDocPointers();
@@ -354,21 +354,17 @@ function registerTools(server: McpServer) {
     {
       description:
         'Return structured toy metadata (including controls and module info) from assets/data/toys.json with optional slug or WebGPU filters.',
-      inputSchema: z
-        .object({
-          slug: z
-            .string()
-            .trim()
-            .optional()
-            .describe('Limit results to a specific toy slug.'),
-          requiresWebGPU: z
-            .boolean()
-            .optional()
-            .describe(
-              'Filter by WebGPU requirement (true = only WebGPU toys).',
-            ),
-        })
-        .strict(),
+      inputSchema: z.object({
+        slug: z
+          .string()
+          .trim()
+          .optional()
+          .describe('Limit results to a specific toy slug.'),
+        requiresWebGPU: z
+          .boolean()
+          .optional()
+          .describe('Filter by WebGPU requirement (true = only WebGPU toys).'),
+      }),
     },
     async ({ slug, requiresWebGPU }) => {
       const toys = normalizeToys(toyManifest);
@@ -396,27 +392,25 @@ function registerTools(server: McpServer) {
     {
       description:
         'Return an entire markdown file or a specific heading section from README.md or docs/*.md.',
-      inputSchema: z
-        .object({
-          file: z
-            .enum(
-              Object.keys(markdownSources) as [
-                MarkdownSourceKey,
-                ...MarkdownSourceKey[],
-              ],
-            )
-            .describe(
-              'Markdown file to read (e.g., README.md or docs/MCP_SERVER.md).',
-            ),
-          heading: z
-            .string()
-            .trim()
-            .optional()
-            .describe(
-              'Optional heading text to narrow the response to a single section.',
-            ),
-        })
-        .strict(),
+      inputSchema: z.object({
+        file: z
+          .enum(
+            Object.keys(markdownSources) as [
+              MarkdownSourceKey,
+              ...MarkdownSourceKey[],
+            ],
+          )
+          .describe(
+            'Markdown file to read (e.g., README.md or docs/MCP_SERVER.md).',
+          ),
+        heading: z
+          .string()
+          .trim()
+          .optional()
+          .describe(
+            'Optional heading text to narrow the response to a single section.',
+          ),
+      }),
     },
     async ({ file, heading }) => {
       const result = await getDocSectionContent(file, heading);
@@ -430,27 +424,25 @@ function registerTools(server: McpServer) {
     {
       description:
         'Search for a keyword across README.md and docs/*.md, returning matching sections with line ranges.',
-      inputSchema: z
-        .object({
-          query: z.string().trim().min(1).describe('Search keyword or phrase.'),
-          file: z
-            .enum(
-              Object.keys(markdownSources) as [
-                MarkdownSourceKey,
-                ...MarkdownSourceKey[],
-              ],
-            )
-            .optional()
-            .describe('Optional markdown file to limit the search.'),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(20)
-            .optional()
-            .describe('Maximum number of matches to return (default: 10).'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        query: z.string().trim().min(1).describe('Search keyword or phrase.'),
+        file: z
+          .enum(
+            Object.keys(markdownSources) as [
+              MarkdownSourceKey,
+              ...MarkdownSourceKey[],
+            ],
+          )
+          .optional()
+          .describe('Optional markdown file to limit the search.'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(20)
+          .optional()
+          .describe('Maximum number of matches to return (default: 10).'),
+      }),
     },
     async ({ query, file, limit }) => {
       const matches = await searchMarkdownSources(query, {
@@ -483,7 +475,7 @@ function registerTools(server: McpServer) {
     {
       description:
         'Summarize how toy loading and error handling works based on assets/js/loader.ts.',
-      inputSchema: z.object({}).strict(),
+      inputSchema: z.object({}),
     },
     async () => {
       const loaderDetails = [
@@ -504,14 +496,12 @@ function registerTools(server: McpServer) {
     {
       description:
         'List reusable agent skills/workflows that can be invoked to support human users, including path and command references.',
-      inputSchema: z
-        .object({
-          kind: z
-            .enum(['skill', 'workflow'])
-            .optional()
-            .describe('Optionally filter to only skills or only workflows.'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        kind: z
+          .enum(['skill', 'workflow'])
+          .optional()
+          .describe('Optionally filter to only skills or only workflows.'),
+      }),
     },
     async ({ kind }) => {
       const capabilities = agentCapabilities.filter((capability) =>
@@ -533,20 +523,18 @@ function registerTools(server: McpServer) {
     {
       description:
         'Read a specific agent skill/workflow markdown file so MCP clients can execute the same playbook steps.',
-      inputSchema: z
-        .object({
-          kind: z
-            .enum(['skill', 'workflow'])
-            .describe('Capability type to read.'),
-          name: z
-            .string()
-            .trim()
-            .min(1)
-            .describe(
-              'Capability name such as modify-visualizer-runtime, play-visualizer, or test-visualizer.',
-            ),
-        })
-        .strict(),
+      inputSchema: z.object({
+        kind: z
+          .enum(['skill', 'workflow'])
+          .describe('Capability type to read.'),
+        name: z
+          .string()
+          .trim()
+          .min(1)
+          .describe(
+            'Capability name such as modify-visualizer-runtime, play-visualizer, or test-visualizer.',
+          ),
+      }),
     },
     async ({ kind, name }) => {
       const capability = agentCapabilities.find(
@@ -582,14 +570,12 @@ function registerTools(server: McpServer) {
     {
       description:
         'Return installation and development commands from README.md.',
-      inputSchema: z
-        .object({
-          scope: z
-            .enum(['setup', 'dev', 'build', 'test', 'lint'])
-            .optional()
-            .describe('Limit output to a specific workflow area.'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        scope: z
+          .enum(['setup', 'dev', 'build', 'test', 'lint'])
+          .optional()
+          .describe('Limit output to a specific workflow area.'),
+      }),
     },
     async ({ scope }) => {
       const text = await getReadmeDevCommands(scope);
@@ -605,22 +591,20 @@ function registerTools(server: McpServer) {
     {
       description:
         'Launch a toy in headless mode and enable demo audio for visualization. Returns instructions for capturing screenshots or observing audio reactivity.',
-      inputSchema: z
-        .object({
-          slug: z
-            .string()
-            .trim()
-            .describe('The toy slug to launch (for example, "milkdrop").'),
-          port: z
-            .number()
-            .int()
-            .min(1024)
-            .max(65535)
-            .optional()
-            .default(5173)
-            .describe('Dev server port (defaults to 5173).'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        slug: z
+          .string()
+          .trim()
+          .describe('The toy slug to launch (for example, "milkdrop").'),
+        port: z
+          .number()
+          .int()
+          .min(1024)
+          .max(65535)
+          .optional()
+          .default(5173)
+          .describe('Dev server port (defaults to 5173).'),
+      }),
     },
     async ({ slug, port = 5173 }) => {
       const toy = normalizeToys(toyManifest).find((t) => t.slug === slug);
@@ -671,15 +655,13 @@ function registerTools(server: McpServer) {
     {
       description:
         'Get a guide on how toys respond to audio frequencies and what visual effects to look for when a toy is playing with demo audio.',
-      inputSchema: z
-        .object({
-          slug: z
-            .string()
-            .trim()
-            .optional()
-            .describe('Specific toy slug for targeted guidance.'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        slug: z
+          .string()
+          .trim()
+          .optional()
+          .describe('Specific toy slug for targeted guidance.'),
+      }),
     },
     async ({ slug }) => {
       const guide = [
@@ -777,25 +759,21 @@ function registerTools(server: McpServer) {
     {
       description:
         'List all 43+ bundled MilkDrop presets with title, author, tags, and certification status.',
-      inputSchema: z
-        .object({
-          filter: z
-            .string()
-            .trim()
-            .optional()
-            .describe(
-              'Optional filter string matched against title and author.',
-            ),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(50)
-            .optional()
-            .default(20)
-            .describe('Max results to return (1-50, default 20).'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        filter: z
+          .string()
+          .trim()
+          .optional()
+          .describe('Optional filter string matched against title and author.'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .optional()
+          .default(20)
+          .describe('Max results to return (1-50, default 20).'),
+      }),
     },
     async ({ filter, limit }) => {
       const catalog = await resolveCatalog();
@@ -843,15 +821,13 @@ function registerTools(server: McpServer) {
     {
       description:
         'Get detailed information about a specific bundled preset by ID.',
-      inputSchema: z
-        .object({
-          presetId: z
-            .string()
-            .trim()
-            .min(1)
-            .describe('Preset ID (e.g. "eos-glowsticks-v2-03-music").'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        presetId: z
+          .string()
+          .trim()
+          .min(1)
+          .describe('Preset ID (e.g. "eos-glowsticks-v2-03-music").'),
+      }),
     },
     async ({ presetId }) => {
       const catalog = await resolveCatalog();
@@ -875,25 +851,21 @@ function registerTools(server: McpServer) {
     {
       description:
         'Full-text search across all 43+ bundled presets by title, author, or tags.',
-      inputSchema: z
-        .object({
-          query: z
-            .string()
-            .trim()
-            .min(1)
-            .describe(
-              'Search query (matched against title, author, and tags).',
-            ),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(50)
-            .optional()
-            .default(10)
-            .describe('Max results (1-50, default 10).'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        query: z
+          .string()
+          .trim()
+          .min(1)
+          .describe('Search query (matched against title, author, and tags).'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .optional()
+          .default(10)
+          .describe('Max results (1-50, default 10).'),
+      }),
     },
     async ({ query, limit }) => {
       const catalog = await resolveCatalog();
@@ -934,21 +906,19 @@ function registerTools(server: McpServer) {
     {
       description:
         'Generate a URL to open a specific preset in the visualizer (for sharing or loading via agent=true mode).',
-      inputSchema: z
-        .object({
-          presetId: z
-            .string()
-            .trim()
-            .min(1)
-            .describe('Preset ID to generate a URL for.'),
-          baseUrl: z
-            .string()
-            .url()
-            .optional()
-            .default('https://toil.fyi')
-            .describe('Base URL (defaults to production).'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        presetId: z
+          .string()
+          .trim()
+          .min(1)
+          .describe('Preset ID to generate a URL for.'),
+        baseUrl: z
+          .string()
+          .url()
+          .optional()
+          .default('https://toil.fyi')
+          .describe('Base URL (defaults to production).'),
+      }),
     },
     async ({ presetId, baseUrl }) => {
       return asTextResponse(
@@ -962,11 +932,31 @@ function registerTools(server: McpServer) {
     {
       description:
         'Get a human-readable description of a preset — what visual style to expect, what features it uses, and what backend it runs on.',
-      inputSchema: z
-        .object({
-          presetId: z.string().trim().min(1).describe('Preset ID to describe.'),
-        })
-        .strict(),
+      inputSchema: z.object({
+        presetId: z.string().trim().min(1).describe('Preset ID to open.'),
+        baseUrl: z
+          .string()
+          .url()
+          .optional()
+          .default('https://toil.fyi')
+          .describe('Base URL (defaults to production).'),
+      }),
+    },
+    async ({ presetId, baseUrl }) => {
+      return asTextResponse(
+        `${baseUrl}/?agent=true&preset=${encodeURIComponent(presetId)}`,
+      );
+    },
+  );
+
+  server.registerTool(
+    'describe_preset',
+    {
+      description:
+        'Get a human-readable description of a preset — what visual style to expect, what features it uses, and what backend it runs on.',
+      inputSchema: z.object({
+        presetId: z.string().trim().min(1).describe('Preset ID to describe.'),
+      }),
     },
     async ({ presetId }) => {
       try {

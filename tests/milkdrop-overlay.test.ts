@@ -478,7 +478,7 @@ describe('milkdrop overlay browse rendering', () => {
     overlay.dispose();
   });
 
-  test('keeps featured browse focused on recovery and recommendations', () => {
+  test('keeps featured browse focused on recovery and recommendations', async () => {
     globalThis.MutationObserver = class {
       disconnect() {}
       observe() {}
@@ -512,6 +512,13 @@ describe('milkdrop overlay browse rendering', () => {
       'signal-bloom',
       'webgl',
     );
+
+    // Switch to featured mode to test recovery and recommendations sections
+    const featuredTab = document.querySelector(
+      '.milkdrop-overlay__browse-mode-tab[data-mode="featured"]',
+    ) as HTMLButtonElement | null;
+    featuredTab?.click();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
 
     const sections = [
       ...document.querySelectorAll('.milkdrop-overlay__browse-section'),
@@ -587,7 +594,7 @@ describe('milkdrop overlay browse rendering', () => {
       modeTabs
         .find((tab) => tab.dataset.active === 'true')
         ?.textContent?.trim(),
-    ).toBe('Featured');
+    ).toBe('All presets');
     expect(optionsDisclosure?.open).toBe(false);
     expect(collectionFilters?.hidden).toBe(true);
     expect(browse?.textContent).toContain('Signal Bloom');
@@ -622,7 +629,7 @@ describe('milkdrop overlay browse rendering', () => {
       onRequestPresetPreviews.mock.calls[
         onRequestPresetPreviews.mock.calls.length - 1
       ]?.[0],
-    ).toEqual(['signal-bloom', 'aurora-drift']);
+    ).toEqual(['aurora-drift', 'signal-bloom']);
     expect(
       document.querySelector('.milkdrop-overlay__browse-qa')?.textContent,
     ).toBe('Preview QA: 2 queued');
@@ -642,7 +649,7 @@ describe('milkdrop overlay browse rendering', () => {
     overlay.dispose();
   });
 
-  test('surfaces familiar author and classic sections for MilkDrop veterans', () => {
+  test('surfaces familiar author and classic sections for MilkDrop veterans', async () => {
     globalThis.MutationObserver = class {
       disconnect() {}
       observe() {}
@@ -692,6 +699,12 @@ describe('milkdrop overlay browse rendering', () => {
       'signal-bloom',
       'webgl',
     );
+
+    const featuredTab = document.querySelector(
+      '.milkdrop-overlay__browse-mode-tab[data-mode="featured"]',
+    ) as HTMLButtonElement | null;
+    featuredTab?.click();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
 
     const headings = [
       ...document.querySelectorAll('.milkdrop-overlay__browse-heading'),
@@ -770,6 +783,14 @@ describe('milkdrop overlay browse rendering', () => {
       sentinelButton.focus();
     };
     window.addEventListener('keydown', handleWindowArrowKey);
+
+    // Switch to featured mode first to test roving focus behavior
+    allPresetsTab.dispatchEvent(
+      new window.KeyboardEvent('keydown', {
+        key: 'ArrowLeft',
+        bubbles: true,
+      }),
+    );
 
     expect(featuredTab.tabIndex).toBe(0);
     expect(allPresetsTab.tabIndex).toBe(-1);
