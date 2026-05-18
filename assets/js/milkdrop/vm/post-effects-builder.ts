@@ -284,6 +284,13 @@ export function buildPost({
     ),
     warp: clamp(state.warp ?? 0.08, 0, 1),
     decay: clamp(state.decay ?? 0.98, 0, 1),
+    perPixelStatements:
+      preset.ir.programs.perPixel.statements.length > 0
+        ? preset.ir.programs.perPixel.statements.map((s) => ({
+            target: s.target,
+            source: s.source,
+          }))
+        : null,
   };
   post.postprocessingProfile = deriveMilkdropPostprocessingProfile({
     post,

@@ -51,9 +51,19 @@ export function buildFeedbackCompositeState({
       : plannedShaderExecution === 'controls'
         ? false
         : shaderPrograms.warp !== null || shaderPrograms.comp !== null;
+  const perPixelStatements = frameState.post.perPixelStatements ?? null;
+
   return {
     shaderExecution: usesDirectShaderPrograms ? 'direct' : 'controls',
     shaderPrograms,
+    perPixelPrograms: perPixelStatements
+      ? {
+          statements: perPixelStatements.map((s) => ({
+            target: s.target,
+            expression: s.source,
+          })),
+        }
+      : null,
     mixAlpha: controls.mixAlpha,
     videoEchoAlpha: frameState.post.videoEchoEnabled
       ? frameState.post.videoEchoAlpha

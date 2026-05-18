@@ -223,6 +223,8 @@ export type MilkdropPostVisual = {
     warp: MilkdropShaderProgramPayload | null;
     comp: MilkdropShaderProgramPayload | null;
   };
+  /** Per-pixel equation targets and their expression trees for GPU evaluation */
+  perPixelPrograms?: Array<{ target: string; exprStrings: string[] }> | null;
   brighten: boolean;
   darken: boolean;
   darkenCenter: boolean;
