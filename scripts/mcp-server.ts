@@ -751,6 +751,163 @@ server.registerTool(
   },
 );
 
+// ── Agent source and settings tools ─────────────────────────────────
+
+import { readFileSync } from 'node:fs';
+import { join as pathJoin } from 'node:path';
+
+const PRESET_DIR = pathJoin(
+  import.meta.dirname ?? __dirname,
+  '..',
+  'public',
+  'milkdrop-presets',
+);
+
+server.registerTool(
+  'session_get_preset_source',
+  {
+    description:
+      'Get the raw .milk preset source code for a specific preset. Lets agents read and understand the MilkDrop preset code that creates the visuals.',
+    inputSchema: z.object({
+      presetId: z
+        .string()
+        .describe(
+          'Preset ID (e.g. "eos-ether"). Defaults to the session\'s current preset.',
+        )
+        .optional(),
+      sessionId: z
+        .string()
+        .optional()
+        .describe(
+          'Session ID - defaults to file system lookup if not provided.',
+        ),
+    }),
+  },
+  async ({ presetId, sessionId }) => {
+    let pid = presetId;
+    if (!pid && sessionId) {
+      const session = agentSessions.get(sessionId);
+      pid = session?.presetId;
+    }
+    if (!pid) {
+      return asTextResponse(
+        'Provide a presetId or a sessionId with an active preset.',
+      );
+    }
+
+    try {
+      const filePath = pathJoin(PRESET_DIR, `${pid}.milk`);
+      const source = readFileSync(filePath, 'utf8');
+      const lines = source.split('\n');
+      const summary = lines
+        .slice(0, 5)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .join('\n');
+      return asTextResponse(
+        `## ${pid}.milk\n${lines.length} lines\n\n\`\`\`\n${summary}\n...\n\`\`\`\n\nFull source (${lines.length} lines):\n\n\`\`\`\n${source}\n\`\`\``,
+      );
+    } catch {
+      return asTextResponse(
+        `Preset file "${pid}.milk" not found in bundled catalog.`,
+      );
+    }
+  },
+);
+
+server.registerTool(
+  'session_apply_source',
+  {
+    description:
+      'Apply modified preset source code to the running visualizer. The editor panel will update and the preset will recompile and render immediately. Changes are in-memory only — refresh the page to reset.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      source: z
+        .string()
+        .describe('The full .milk preset source code to apply.'),
+      lineOffset: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .default(0)
+        .describe('Line offset if applying a partial edit.'),
+    }),
+  },
+  async ({ sessionId, source }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      await session.page.evaluate((src) => {
+        // Dispatch a custom event that the overlay's editor listens for
+        window.dispatchEvent(
+          new CustomEvent('applyPresetSource', { detail: src }),
+        );
+      }, source);
+      await session.page.waitForTimeout(1500);
+
+      return asTextResponse(
+        'Source applied. The visualizer should now reflect the changes.',
+      );
+    } catch (e) {
+      return asTextResponse(`Error applying source: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_get_inspector_values',
+  {
+    description:
+      'Read current MilkDrop field values from the inspector panel. Returns all visible field names and their current numeric values.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+    }),
+  },
+  async ({ sessionId }) => {
+    const session = getSession(sessionId);
+    if (!session) return asTextResponse('Session not found or expired.');
+
+    try {
+      const fields = await session.page.evaluate(() => {
+        const overlay = document.querySelector('.milkdrop-overlay');
+        if (!overlay) return { error: 'overlay not found' };
+
+        // Open inspector tab if needed
+        const inspectBtn = overlay.querySelector<HTMLButtonElement>(
+          '[data-tab="inspector"]',
+        );
+        inspectBtn?.click();
+
+        // Wait a beat for the inspector to render
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            const fieldEls = overlay.querySelectorAll(
+              '.milkdrop-overlay__field',
+            );
+            const result: Record<string, string> = {};
+            fieldEls.forEach((el) => {
+              const labelEl = el.querySelector(
+                '.milkdrop-overlay__field-label',
+              );
+              const label = labelEl?.textContent?.trim() ?? '';
+              const value =
+                el.querySelector('input, select')?.getAttribute('value') ?? '';
+              if (label) result[label] = value;
+            });
+            resolve(result);
+          }, 500);
+        });
+      });
+
+      return asTextResponse(JSON.stringify(fields, null, 2));
+    } catch (e) {
+      return asTextResponse(`Error reading inspector: ${e}`);
+    }
+  },
+);
+
 async function startServer() {
   await server.connect(transport);
   console.error('Stim Webtoys MCP server is running on stdio.');
