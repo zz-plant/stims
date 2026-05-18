@@ -46,6 +46,14 @@ function getSession(sessionId: string): AgentSession | null {
   return session;
 }
 
+async function closeSession(session: AgentSession) {
+  try {
+    await session.browser.close();
+  } catch {
+    /* ignore */
+  }
+}
+
 const qualityGateCommands = {
   full: ['bun', ['run', 'check']],
   quick: ['bun', ['run', 'check:quick']],
