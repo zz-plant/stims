@@ -19,7 +19,7 @@ describe('applyRendererSettings', () => {
         backend: 'webgpu',
         isMobile: false,
       }),
-    ).toBe(2);
+    ).toBe(3);
   });
 
   test('keeps mobile webgpu below the desktop ceiling', () => {

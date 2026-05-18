@@ -240,6 +240,14 @@ body[data-page="workspace"] {
   font-family: "Space Grotesk", sans-serif;
 }
 
+.stims-shell__logo a {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+}
+
 .stims-shell__logo span {
   font-size: 1.08rem;
   font-weight: 700;
@@ -1922,7 +1930,7 @@ body[data-page="workspace"] {
   inset: max(72px, 8vh) auto 26px 28px;
   z-index: 2;
   display: grid;
-  width: min(74rem, calc(100% - 84px));
+  width: min(46rem, calc(100% - 84px));
   align-items: start;
   justify-items: start;
   pointer-events: none;
@@ -2127,8 +2135,10 @@ body[data-page="workspace"] {
 
 .stims-shell__action-button {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   min-width: 0;
   width: 100%;
   text-align: center;
@@ -2139,10 +2149,6 @@ body[data-page="workspace"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   max-width: none;
-}
-
-.stims-shell__launch-actions > :first-child {
-  grid-column: 1 / -1;
 }
 
 .stims-shell__launch-actions > * {
@@ -3053,7 +3059,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-hero {
-    width: min(62rem, calc(100% - 64px));
+    width: min(46rem, calc(100% - 64px));
   }
 }
 
@@ -3101,7 +3107,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-hero {
-    width: min(62rem, calc(100% - 64px));
+    width: min(46rem, calc(100% - 64px));
   }
 }
 
@@ -3418,10 +3424,6 @@ body[data-page="workspace"] {
     grid-template-columns: 1fr;
   }
 
-  .stims-shell__launch-actions > :first-child {
-    grid-column: 1 / -1;
-  }
-
   .stims-shell__launch-actions > * {
     width: 100%;
   }
@@ -3494,12 +3496,11 @@ body[data-page="workspace"] {
 
   .stims-shell__frame-chrome {
     top: 10px;
-    flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
   }
 
   .stims-shell__frame-header {
-    top: 352px;
+    top: 112px;
     flex-direction: column;
   }
 
@@ -3521,14 +3522,14 @@ body[data-page="workspace"] {
   .stims-shell__corner-status,
   .stims-shell__rail-actions,
   .stims-shell__frame-sidecar {
-    width: 100%;
     justify-items: start;
   }
 
   .stims-shell__rail-actions {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-wrap: wrap;
     justify-content: flex-start;
+    width: auto;
   }
 
   .stims-shell__corner-link,
@@ -3542,13 +3543,13 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-hero {
-    inset: 352px 10px 18px;
+    inset: 112px 10px 18px;
     width: auto;
     align-content: start;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-    top: 352px;
+    top: 112px;
     right: 10px;
     bottom: 18px;
     left: 10px;
@@ -3648,7 +3649,7 @@ body[data-page="workspace"] {
 
   @media (max-width: 480px) {
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-      top: 344px;
+      top: 104px;
       bottom: 12px;
     }
 

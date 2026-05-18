@@ -20,10 +20,10 @@ describe('Workspace shell mobile layout regression', () => {
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*88svh;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-hero\s*\{[\s\S]*?inset:\s*352px 10px 18px;[\s\S]*?align-content:\s*start;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-hero\s*\{[\s\S]*?inset:\s*112px 10px 18px;[\s\S]*?align-content:\s*start;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__frame-chrome\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?align-items:\s*stretch;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__frame-chrome\s*\{[\s\S]*?align-items:\s*flex-start;/u,
     );
   });
 
@@ -38,13 +38,13 @@ describe('Workspace shell mobile layout regression', () => {
     );
   });
 
-  test('keeps supporting cards compact and horizontally scannable on phones', () => {
+  test('keeps supporting cards compact and secondary actions side-by-side on phones', () => {
     const css = readAppShellCss();
 
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-actions > :first-child\s*\{\s*grid-column:\s*1 \/ -1;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/u,
     );
-    expect(css).toContain('.stims-shell__launch-actions > :first-child');
+    expect(css).not.toContain('.stims-shell__launch-actions > :first-child');
     expect(css).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-panel\s*\{[\s\S]*?width:\s*min\(100%, calc\(100vw - 20px\)\);/u,
     );

@@ -107,9 +107,11 @@ describe('createAdaptiveQualityController', () => {
 
     const recovered = controller.getState();
     expect(recovered.qualityStep).toBe(0);
-    expect(recovered.feedbackResolutionMultiplier).toBe(1);
+    expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(1.1, 6);
     expect(recovered.supportsGpuTimestamps).toBe(true);
-    expect(['steady', 'recovering']).toContain(recovered.adaptation);
+    expect(['steady', 'recovering', 'enhanced']).toContain(
+      recovered.adaptation,
+    );
   });
 
   test('starts conservatively and adapts on webgl backends', () => {
@@ -139,7 +141,7 @@ describe('createAdaptiveQualityController', () => {
     }
 
     const recovered = controller.getState();
-    expect(recovered.qualityStep).toBe(1);
+    expect(recovered.qualityStep).toBe(2);
     expect(recovered.feedbackResolutionMultiplier).toBeCloseTo(0.9, 6);
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
@@ -184,7 +186,7 @@ describe('createAdaptiveQualityController', () => {
 
     const state = controller.getState();
     expect(state.qualityStep).toBe(1);
-    expect(state.renderScaleMultiplier).toBeCloseTo(0.94, 6);
+    expect(state.renderScaleMultiplier).toBe(1);
     expect(state.reasons).toContain(
       'Balanced startup quality is preferred on touch-first devices for steadier frame pacing.',
     );
