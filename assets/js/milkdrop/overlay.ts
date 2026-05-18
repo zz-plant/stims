@@ -78,7 +78,6 @@ export class MilkdropOverlay {
   private activeTab: OverlayTab = 'browse';
   private activePresetId: string | null = null;
   private activePresetEntry: MilkdropCatalogEntry | null = null;
-  private activeBackend: 'webgl' | 'webgpu' = 'webgl';
   private osdHideTimeoutId: number | null = null;
   private editorPanel: EditorPanelInstance | null = null;
   private editorPanelPromise: Promise<EditorPanelInstance | null> | null = null;
@@ -415,7 +414,6 @@ export class MilkdropOverlay {
     this.activePresetId = activePresetId;
     this.activePresetEntry =
       presets.find((entry) => entry.id === activePresetId) ?? null;
-    this.activeBackend = backend;
     this.osdBackendEl.textContent = backend.toUpperCase();
     this.browsePanel.setCatalog(presets, activePresetId, backend);
     this.pendingEditorDeleteEnabled = Boolean(
