@@ -101,7 +101,7 @@ test('buildCertificationCorpusCaptureRequests derives requests from the certific
       vibeMode: false,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
-      screenshotSurface: 'page',
+      screenshotSurface: 'canvas',
     },
     {
       slug: 'milkdrop',
@@ -117,7 +117,7 @@ test('buildCertificationCorpusCaptureRequests derives requests from the certific
       vibeMode: false,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
-      screenshotSurface: 'page',
+      screenshotSurface: 'canvas',
     },
   ]);
 });

@@ -53,9 +53,12 @@ const basePlan: MilkdropWebGpuDescriptorPlan = {
 };
 
 describe('milkdrop webgpu optimization flag resolution', () => {
-  test('defaults every rollout flag to enabled', () => {
+  test('defaults descriptor rollout flags to enabled and render bundles to opt-in', () => {
     expect(resolveMilkdropWebGpuOptimizationFlags()).toEqual(
       DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    );
+    expect(DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS.renderBundles).toBe(
+      false,
     );
   });
 

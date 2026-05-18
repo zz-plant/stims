@@ -7,6 +7,16 @@ import {
   type WebGpuCertificationStatus,
 } from './certification-corpus.ts';
 import {
+  computeParityDiffMetrics,
+  loadImagePixels,
+  writeDiffImage,
+} from './diff-parity-artifacts.ts';
+import {
+  buildParityArtifactStem,
+  loadParityArtifactManifest,
+  type ParityArtifactEntry,
+} from './parity-artifacts.ts';
+import {
   loadVisualReferenceManifest,
   type VisualReferenceManifest,
   type VisualReferencePresetEntry,
@@ -54,6 +64,7 @@ export type WebGpuCertificationReport = {
   certifiedBothCount: number;
   certifiedNativeCount: number;
   certifiedWebglCount: number;
+  uncertifiedCount: number;
   unmeasuredCount: number;
   presets: ComparatorPresetResult[];
 };
@@ -133,6 +144,13 @@ export function computeWebGpuCertificationStatus({
   if (webglPass) {
     return 'certified-webgl';
   }
+  if (
+    [webglDiff.status, webgpuDiff.status].some((status) =>
+      ['pass', 'fail', 'error'].includes(status),
+    )
+  ) {
+    return 'uncertified';
+  }
   return 'unmeasured';
 }
 
@@ -155,10 +173,14 @@ export function buildComparatorPresetResult({
   corpusEntry,
   referenceEntry,
   failThreshold,
+  webglDiff,
+  webgpuDiff,
 }: {
   corpusEntry: CertificationCorpusEntry;
   referenceEntry: VisualReferencePresetEntry | null;
   failThreshold: number;
+  webglDiff?: ComparatorDiffResult;
+  webgpuDiff?: ComparatorDiffResult;
 }): ComparatorPresetResult {
   const hasReference = referenceEntry !== null;
   const projectmReferenceImage = hasReference
@@ -168,17 +190,21 @@ export function buildComparatorPresetResult({
   const webglCaptureCmd = buildCaptureCommand(corpusEntry.id, 'webgl');
   const webgpuCaptureCmd = buildCaptureCommand(corpusEntry.id, 'webgpu');
 
-  const webglDiff = hasReference
-    ? createMissingCaptureDiffResult('webgl', webglCaptureCmd)
-    : createEmptyDiffResult();
+  const resolvedWebglDiff =
+    webglDiff ??
+    (hasReference
+      ? createMissingCaptureDiffResult('webgl', webglCaptureCmd)
+      : createEmptyDiffResult());
 
-  const webgpuDiff = hasReference
-    ? createMissingCaptureDiffResult('webgpu', webgpuCaptureCmd)
-    : createEmptyDiffResult();
+  const resolvedWebgpuDiff =
+    webgpuDiff ??
+    (hasReference
+      ? createMissingCaptureDiffResult('webgpu', webgpuCaptureCmd)
+      : createEmptyDiffResult());
 
   const certificationStatus = computeWebGpuCertificationStatus({
-    webglDiff,
-    webgpuDiff,
+    webglDiff: resolvedWebglDiff,
+    webgpuDiff: resolvedWebgpuDiff,
     failThreshold,
   });
 
@@ -189,33 +215,285 @@ export function buildComparatorPresetResult({
     hasProjectmReference: hasReference,
     projectmReferenceImage,
     failThreshold,
-    webglDiff,
-    webgpuDiff,
+    webglDiff: resolvedWebglDiff,
+    webgpuDiff: resolvedWebgpuDiff,
     webgpuCertificationStatus: certificationStatus,
   };
 }
 
-export function buildWebGpuCertificationReport({
+function artifactCreatedAtValue(entry: ParityArtifactEntry) {
+  return Date.parse(entry.createdAt) || 0;
+}
+
+function resolveArtifactImagePath(
+  outputDir: string,
+  imagePath: string | null | undefined,
+) {
+  if (!imagePath) {
+    return null;
+  }
+  return path.isAbsolute(imagePath)
+    ? imagePath
+    : path.join(outputDir, imagePath);
+}
+
+async function latestStimsArtifactForBackend({
+  artifacts,
+  outputDir,
+  presetId,
+  backend,
+  expectedSize,
+}: {
+  artifacts: readonly ParityArtifactEntry[];
+  outputDir: string;
+  presetId: string;
+  backend: 'webgl' | 'webgpu';
+  expectedSize?: { width: number; height: number };
+}) {
+  const candidates = artifacts
+    .filter(
+      (entry) =>
+        entry.kind === 'stims-capture' &&
+        entry.presetId === presetId &&
+        entry.capture?.backend === backend,
+    )
+    .sort(
+      (left, right) =>
+        artifactCreatedAtValue(right) - artifactCreatedAtValue(left),
+    );
+
+  if (!expectedSize) {
+    return candidates[0];
+  }
+
+  for (const entry of candidates) {
+    const imagePath = resolveArtifactImagePath(outputDir, entry.files.image);
+    if (!imagePath || !fs.existsSync(imagePath)) {
+      continue;
+    }
+    try {
+      const pixels = await loadImagePixels(imagePath);
+      if (
+        pixels.width === expectedSize.width &&
+        pixels.height === expectedSize.height
+      ) {
+        return entry;
+      }
+    } catch {}
+  }
+
+  return candidates[0];
+}
+
+function resolveReferenceImagePath({
   repoRoot,
-  failThreshold,
+  defaultFixtureRoot,
+  referenceEntry,
 }: {
   repoRoot: string;
+  defaultFixtureRoot: string;
+  referenceEntry: VisualReferencePresetEntry;
+}) {
+  const defaultPath = path.join(
+    repoRoot,
+    defaultFixtureRoot,
+    referenceEntry.image,
+  );
+  if (fs.existsSync(defaultPath)) {
+    return defaultPath;
+  }
+
+  if (referenceEntry.capture.renderer === 'stims') {
+    for (const referenceRoot of [
+      'tests/fixtures/milkdrop/stims-reference',
+      'public/milkdrop-presets/previews',
+      'output/playwright/projectm-cream-compositor',
+    ]) {
+      const stimsReferencePath = path.join(
+        repoRoot,
+        referenceRoot,
+        referenceEntry.image,
+      );
+      if (fs.existsSync(stimsReferencePath)) {
+        return stimsReferencePath;
+      }
+    }
+  }
+
+  return defaultPath;
+}
+
+async function diffBackendCapture({
+  artifact,
+  backend,
+  outputDir,
+  projectmImagePath,
+  presetId,
+  title,
+  threshold,
+  failThreshold,
+  writeDiffImages,
+}: {
+  artifact: ParityArtifactEntry | undefined;
+  backend: 'webgl' | 'webgpu';
+  outputDir: string;
+  projectmImagePath: string;
+  presetId: string;
+  title: string;
+  threshold: number;
   failThreshold: number;
-}): WebGpuCertificationReport {
+  writeDiffImages: boolean;
+}): Promise<ComparatorDiffResult> {
+  if (!artifact) {
+    return createMissingCaptureDiffResult(
+      backend,
+      buildCaptureCommand(presetId, backend),
+    );
+  }
+
+  const capturePath = resolveArtifactImagePath(outputDir, artifact.files.image);
+  if (!capturePath || !fs.existsSync(capturePath)) {
+    return {
+      stimsArtifactId: artifact.id,
+      capturePath,
+      mismatchRatio: null,
+      status: 'error',
+      error: `Missing ${backend.toUpperCase()} capture image for preset "${presetId}" at "${capturePath ?? '<null>'}".`,
+    };
+  }
+
+  try {
+    const [stimsPixels, projectmPixels] = await Promise.all([
+      loadImagePixels(capturePath),
+      loadImagePixels(projectmImagePath),
+    ]);
+    const { metrics, diffBuffer } = computeParityDiffMetrics({
+      stims: stimsPixels,
+      projectm: projectmPixels,
+      threshold,
+    });
+
+    if (writeDiffImages) {
+      const outputStem = buildParityArtifactStem({
+        kind: 'parity-diff',
+        slug: artifact.slug,
+        presetId,
+      });
+      const diffImagePath = path.join(
+        outputDir,
+        `${outputStem}--${backend}.png`,
+      );
+      await writeDiffImage({
+        outputPath: diffImagePath,
+        width: metrics.width,
+        height: metrics.height,
+        diffBuffer,
+      });
+    }
+
+    return {
+      stimsArtifactId: artifact.id,
+      capturePath,
+      mismatchRatio: metrics.mismatchRatio,
+      status: metrics.mismatchRatio <= failThreshold ? 'pass' : 'fail',
+      error: null,
+    };
+  } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    return {
+      stimsArtifactId: artifact.id,
+      capturePath,
+      mismatchRatio: null,
+      status: 'error',
+      error: `${title} ${backend.toUpperCase()} diff failed: ${rawMessage}`,
+    };
+  }
+}
+
+export async function buildWebGpuCertificationReport({
+  repoRoot,
+  outputDir,
+  failThreshold,
+  writeDiffImages,
+}: {
+  repoRoot: string;
+  outputDir: string;
+  failThreshold: number;
+  writeDiffImages: boolean;
+}): Promise<WebGpuCertificationReport> {
   const corpus = loadCertificationCorpusManifest(repoRoot);
   const referenceManifest = loadVisualReferenceManifest(repoRoot);
+  const artifactManifest = loadParityArtifactManifest(outputDir);
 
-  const results = corpus.presets.map((corpusEntry) => {
-    const referenceEntry = findProjectmReference(
-      referenceManifest,
-      corpusEntry.id,
-    );
-    return buildComparatorPresetResult({
-      corpusEntry,
-      referenceEntry,
-      failThreshold,
-    });
-  });
+  const results = await Promise.all(
+    corpus.presets.map(async (corpusEntry) => {
+      const referenceEntry = findProjectmReference(
+        referenceManifest,
+        corpusEntry.id,
+      );
+      const projectmImagePath = referenceEntry
+        ? resolveReferenceImagePath({
+            repoRoot,
+            defaultFixtureRoot: referenceManifest.fixtureRoot,
+            referenceEntry,
+          })
+        : null;
+      const expectedSize = referenceEntry
+        ? {
+            width: referenceEntry.capture.width,
+            height: referenceEntry.capture.height,
+          }
+        : undefined;
+      const threshold = referenceEntry?.tolerance.threshold ?? 16;
+      const presetFailThreshold =
+        referenceEntry?.tolerance.failThreshold ?? failThreshold;
+      const webglDiff = projectmImagePath
+        ? await diffBackendCapture({
+            artifact: await latestStimsArtifactForBackend({
+              artifacts: artifactManifest.artifacts,
+              outputDir,
+              presetId: corpusEntry.id,
+              backend: 'webgl',
+              expectedSize,
+            }),
+            backend: 'webgl',
+            outputDir,
+            projectmImagePath,
+            presetId: corpusEntry.id,
+            title: corpusEntry.title,
+            threshold,
+            failThreshold: presetFailThreshold,
+            writeDiffImages,
+          })
+        : undefined;
+      const webgpuDiff = projectmImagePath
+        ? await diffBackendCapture({
+            artifact: await latestStimsArtifactForBackend({
+              artifacts: artifactManifest.artifacts,
+              outputDir,
+              presetId: corpusEntry.id,
+              backend: 'webgpu',
+              expectedSize,
+            }),
+            backend: 'webgpu',
+            outputDir,
+            projectmImagePath,
+            presetId: corpusEntry.id,
+            title: corpusEntry.title,
+            threshold,
+            failThreshold: presetFailThreshold,
+            writeDiffImages,
+          })
+        : undefined;
+      return buildComparatorPresetResult({
+        corpusEntry,
+        referenceEntry,
+        failThreshold: presetFailThreshold,
+        webglDiff,
+        webgpuDiff,
+      });
+    }),
+  );
 
   results.sort(comparePresetResults);
 
@@ -234,6 +512,7 @@ export function buildWebGpuCertificationReport({
     certifiedBothCount: countByStatus('certified-both'),
     certifiedNativeCount: countByStatus('certified-native'),
     certifiedWebglCount: countByStatus('certified-webgl'),
+    uncertifiedCount: countByStatus('uncertified'),
     unmeasuredCount: countByStatus('unmeasured'),
     presets: results,
   };
@@ -290,6 +569,7 @@ export function validateCertificationReport(
 
   const validCertStatuses = new Set([
     'unmeasured',
+    'uncertified',
     'certified-webgl',
     'certified-native',
     'certified-both',
@@ -377,6 +657,12 @@ export function assertCertificationSemantics(
         `Preset "${preset.presetId}" is certified-webgl but WebGPU also passes — should be certified-both`,
       );
     }
+
+    if (status === 'uncertified' && (webglPass || webgpuPass)) {
+      violations.push(
+        `Preset "${preset.presetId}" is uncertified but at least one backend passes — should be certified-webgl or certified-native`,
+      );
+    }
   }
 
   return violations;
@@ -384,7 +670,7 @@ export function assertCertificationSemantics(
 
 export type RunWebGpuCertificationComparatorOptions = {
   repoRoot: string;
-  outputDir?: string;
+  outputDir: string;
   failThreshold: number;
   writeDiffImages: boolean;
   strict: boolean;
@@ -396,6 +682,9 @@ function usage() {
   );
   console.error('Options:');
   console.error('  --repo-root <path>      Repo root (default: cwd)');
+  console.error(
+    '  --output <dir>          Parity capture artifact directory (default: ./screenshots/parity)',
+  );
   console.error(
     '  --fail-threshold <n>    Mismatch ratio fail threshold (default: 0.04)',
   );
@@ -425,6 +714,8 @@ function parseArgs(argv: string[]): RunWebGpuCertificationComparatorOptions {
 
   return {
     repoRoot: getArg('--repo-root', process.cwd()) ?? process.cwd(),
+    outputDir:
+      getArg('--output', './screenshots/parity') ?? './screenshots/parity',
     failThreshold: Number.isFinite(failThresholdValue)
       ? failThresholdValue
       : DEFAULT_WEBGPU_CERTIFICATION_FAIL_THRESHOLD,
@@ -436,9 +727,11 @@ function parseArgs(argv: string[]): RunWebGpuCertificationComparatorOptions {
 export async function runWebGpuCertificationComparator(
   options: RunWebGpuCertificationComparatorOptions,
 ) {
-  const report = buildWebGpuCertificationReport({
+  const report = await buildWebGpuCertificationReport({
     repoRoot: options.repoRoot,
+    outputDir: options.outputDir,
     failThreshold: options.failThreshold,
+    writeDiffImages: options.writeDiffImages,
   });
 
   const reportPath = saveWebGpuCertificationReport(options.repoRoot, report);
@@ -519,6 +812,7 @@ if (import.meta.main) {
           certifiedBothCount: result.report.certifiedBothCount,
           certifiedNativeCount: result.report.certifiedNativeCount,
           certifiedWebglCount: result.report.certifiedWebglCount,
+          uncertifiedCount: result.report.uncertifiedCount,
           unmeasuredCount: result.report.unmeasuredCount,
           missingWebglCaptures: result.missingWebglCaptures,
           missingWebgpuCaptures: result.missingWebgpuCaptures,

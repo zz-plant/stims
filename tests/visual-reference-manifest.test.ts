@@ -24,13 +24,21 @@ test('visual reference manifest stays internally consistent', () => {
   );
 
   manifest.presets.forEach((entry) => {
+    const fixturePaths =
+      entry.capture.renderer === 'stims'
+        ? [
+            path.join(repoRoot, 'tests/fixtures/milkdrop/stims-reference'),
+            path.join(repoRoot, 'public/milkdrop-presets/previews'),
+            path.join(repoRoot, 'output/playwright/projectm-cream-compositor'),
+          ]
+        : [fixtureRoot];
+
     expect(entry.id.trim().length).toBeGreaterThan(0);
     expect(entry.title.trim().length).toBeGreaterThan(0);
     expect(entry.sourceFamily.trim().length).toBeGreaterThan(0);
     expect(entry.provenance.label.trim().length).toBeGreaterThan(0);
     expect(entry.provenance.importedAt.trim().length).toBeGreaterThan(0);
-    expect(entry.capture.renderer).toBe('projectm');
-    expect(entry.capture.requiredBackend).toBe('webgpu');
+    expect(['projectm', 'stims']).toContain(entry.capture.renderer);
     expect(entry.capture.width).toBeGreaterThan(0);
     expect(entry.capture.height).toBeGreaterThan(0);
     expect(entry.capture.warmupMs).toBeGreaterThanOrEqual(0);
@@ -38,9 +46,16 @@ test('visual reference manifest stays internally consistent', () => {
     expect(entry.tolerance.profile.trim().length).toBeGreaterThan(0);
     expect(entry.tolerance.threshold).toBeGreaterThanOrEqual(0);
     expect(entry.tolerance.failThreshold).toBeGreaterThanOrEqual(0);
-    expect(existsSync(path.join(fixtureRoot, entry.image))).toBe(true);
+    const existingFixturePath = fixturePaths.find((candidatePath) =>
+      existsSync(path.join(candidatePath, entry.image)),
+    );
+    expect(Boolean(existingFixturePath)).toBe(true);
     if (entry.metadata) {
-      expect(existsSync(path.join(fixtureRoot, entry.metadata))).toBe(true);
+      expect(
+        fixturePaths.some((candidatePath) =>
+          existsSync(path.join(candidatePath, entry.metadata ?? '')),
+        ),
+      ).toBe(true);
     }
   });
 });

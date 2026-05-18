@@ -53,12 +53,12 @@ describe('getDocSectionContent', () => {
   test('returns a specific heading section when present', async () => {
     const result = await getDocSectionContent(
       'docs/MCP_SERVER.md',
-      'Registered tools',
+      'Tool Categories',
     );
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.content).toContain('Registered tools');
+      expect(result.content).toContain('Tool Categories');
       expect(result.content).toContain('list_docs');
     }
   });
@@ -78,14 +78,14 @@ describe('getDocSectionContent', () => {
 
 describe('searchMarkdownSources', () => {
   test('finds matches across markdown files', async () => {
-    const results = await searchMarkdownSources('Registered tools', {
+    const results = await searchMarkdownSources('Tool Categories', {
       file: 'docs/MCP_SERVER.md',
       limit: 5,
     });
 
     expect(results.length).toBeGreaterThan(0);
     expect(results[0]?.file).toBe('docs/MCP_SERVER.md');
-    expect(results[0]?.heading).toContain('Registered tools');
+    expect(results[0]?.heading).toContain('Tool Categories');
   });
 
   test('returns empty results when no matches exist', async () => {

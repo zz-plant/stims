@@ -130,6 +130,7 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
           expect(preset.webgpuDiff.status).toBeString();
           expect([
             'unmeasured',
+            'uncertified',
             'certified-webgl',
             'certified-native',
             'certified-both',
@@ -224,6 +225,7 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
         certifiedBothCount: 0,
         certifiedNativeCount: 1,
         certifiedWebglCount: 0,
+        uncertifiedCount: 0,
         unmeasuredCount: 0,
         presets: [
           {
@@ -270,6 +272,7 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
         certifiedBothCount: 1,
         certifiedNativeCount: 0,
         certifiedWebglCount: 0,
+        uncertifiedCount: 0,
         unmeasuredCount: 0,
         presets: [
           {
@@ -312,6 +315,31 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
       expect(status).toBe('unmeasured');
     });
 
+    test('measured failures are uncertified instead of unmeasured', () => {
+      const failDiff: ComparatorDiffResult = {
+        stimsArtifactId: 'stims-1',
+        capturePath: '/captures/preset.png',
+        mismatchRatio: 0.2,
+        status: 'fail',
+        error: null,
+      };
+      const unmeasuredDiff: ComparatorDiffResult = {
+        stimsArtifactId: null,
+        capturePath: null,
+        mismatchRatio: null,
+        status: 'unmeasured',
+        error: null,
+      };
+
+      const status = computeWebGpuCertificationStatus({
+        webglDiff: failDiff,
+        webgpuDiff: unmeasuredDiff,
+        failThreshold: 0.04,
+      });
+
+      expect(status).toBe('uncertified');
+    });
+
     test('missing-capture diffs do not count as passing for certification', () => {
       const missingCapture: ComparatorDiffResult = {
         stimsArtifactId: null,
@@ -346,6 +374,7 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
       for (const preset of report.presets) {
         expect([
           'unmeasured',
+          'uncertified',
           'certified-webgl',
           'certified-native',
           'certified-both',

@@ -19,6 +19,17 @@ describe('Workspace shell first-run and recovery regression', () => {
       ),
       'utf8',
     );
+    const homeSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'NewHomePage.tsx',
+      ),
+      'utf8',
+    );
     const shellHookSource = readFileSync(
       join(
         import.meta.dir,
@@ -57,10 +68,10 @@ describe('Workspace shell first-run and recovery regression', () => {
     expect(appSource).toContain(
       'Start with the featured pick or open the full list.',
     );
-    expect(uiSource).toContain('Try featured pick');
-    expect(uiSource).toContain('Browse everything');
-    expect(uiSource).toContain('Saved pick not found');
-    expect(uiSource).toContain("isn't available here anymore.");
+    expect(homeSource).toContain('Try featured pick');
+    expect(homeSource).toContain('Browse everything');
+    expect(homeSource).toContain('Saved pick not found');
+    expect(homeSource).toContain("isn't available here anymore.");
     expect(uiSource).not.toContain('This preset is no longer bundled here.');
     expect(shellHookSource).toMatch(
       /const missingRequestedPreset = Boolean\([\s\S]*?catalogReady[\s\S]*?\);/u,
