@@ -714,6 +714,217 @@ function registerTools(server: McpServer) {
       return asTextResponse(guide.join('\n'));
     },
   );
+
+  // ── Preset interaction tools ─────────────────────────────────────────
+
+  const PRESET_CATALOG_URL = 'https://toil.fyi/milkdrop-presets/catalog.json';
+
+  async function resolveCatalog() {
+    try {
+      const response = await fetch(PRESET_CATALOG_URL);
+      if (!response.ok) return null;
+      return (await response.json()) as {
+        presets: Array<{
+          id: string;
+          title: string;
+          author: string;
+          tags?: string[];
+          file?: string;
+          visualCertification?: {
+            fidelityClass?: string;
+            status?: string;
+          };
+        }>;
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  server.registerTool(
+    'list_presets',
+    {
+      description:
+        'List all 43+ bundled MilkDrop presets with title, author, tags, and certification status.',
+      inputSchema: z
+        .object({
+          filter: z
+            .string()
+            .trim()
+            .optional()
+            .describe(
+              'Optional filter string matched against title and author.',
+            ),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(50)
+            .optional()
+            .default(20)
+            .describe('Max results to return (1-50, default 20).'),
+        })
+        .strict(),
+    },
+    async ({ filter, limit }) => {
+      const catalog = await resolveCatalog();
+      if (!catalog) {
+        return asTextResponse(
+          'Unable to load preset catalog. The site may be unavailable.',
+        );
+      }
+
+      let presets = catalog.presets;
+      if (filter) {
+        const q = filter.toLowerCase();
+        presets = presets.filter(
+          (p) =>
+            p.title.toLowerCase().includes(q) ||
+            p.author.toLowerCase().includes(q) ||
+            p.tags?.some((t) => t.toLowerCase().includes(q)),
+        );
+      }
+
+      const results = presets.slice(0, limit ?? 20).map((p) => ({
+        id: p.id,
+        title: p.title,
+        author: p.author,
+        tags: (p.tags ?? []).filter(
+          (t) => !t.startsWith('collection:') && t !== 'preset',
+        ),
+        fidelity: p.visualCertification?.fidelityClass ?? 'unknown',
+        certified: p.visualCertification?.status === 'certified',
+      }));
+
+      const summary =
+        presets.length > (limit ?? 20)
+          ? `Showing ${results.length} of ${presets.length} matching presets.`
+          : `${results.length} preset(s) found.`;
+
+      return asTextResponse(
+        summary + '\n\n' + JSON.stringify(results, null, 2),
+      );
+    },
+  );
+
+  server.registerTool(
+    'get_preset_info',
+    {
+      description:
+        'Get detailed information about a specific bundled preset by ID.',
+      inputSchema: z
+        .object({
+          presetId: z
+            .string()
+            .trim()
+            .min(1)
+            .describe('Preset ID (e.g. "eos-glowsticks-v2-03-music").'),
+        })
+        .strict(),
+    },
+    async ({ presetId }) => {
+      const catalog = await resolveCatalog();
+      if (!catalog) {
+        return asTextResponse('Unable to load preset catalog.');
+      }
+
+      const preset = catalog.presets.find((p) => p.id === presetId);
+      if (!preset) {
+        return asTextResponse(
+          `Preset "${presetId}" not found. Use list_presets to see available presets.`,
+        );
+      }
+
+      return asTextResponse(JSON.stringify(preset, null, 2));
+    },
+  );
+
+  server.registerTool(
+    'search_presets',
+    {
+      description:
+        'Full-text search across all 43+ bundled presets by title, author, or tags.',
+      inputSchema: z
+        .object({
+          query: z
+            .string()
+            .trim()
+            .min(1)
+            .describe(
+              'Search query (matched against title, author, and tags).',
+            ),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(50)
+            .optional()
+            .default(10)
+            .describe('Max results (1-50, default 10).'),
+        })
+        .strict(),
+    },
+    async ({ query, limit }) => {
+      const catalog = await resolveCatalog();
+      if (!catalog) {
+        return asTextResponse('Unable to load preset catalog.');
+      }
+
+      const q = query.toLowerCase();
+      const results = catalog.presets
+        .filter(
+          (p) =>
+            p.title.toLowerCase().includes(q) ||
+            p.author.toLowerCase().includes(q) ||
+            p.tags?.some((t) => t.toLowerCase().includes(q)),
+        )
+        .slice(0, limit ?? 10)
+        .map((p) => ({
+          id: p.id,
+          title: p.title,
+          author: p.author,
+          match: p.title.toLowerCase().includes(q)
+            ? 'title'
+            : p.author.toLowerCase().includes(q)
+              ? 'author'
+              : 'tags',
+        }));
+
+      return asTextResponse(
+        results.length === 0
+          ? `No presets found matching "${query}".`
+          : `Found ${results.length} preset(s) matching "${query}":\n\n${JSON.stringify(results, null, 2)}`,
+      );
+    },
+  );
+
+  server.registerTool(
+    'open_preset_url',
+    {
+      description:
+        'Generate a URL to open a specific preset in the visualizer (for sharing or loading via agent=true mode).',
+      inputSchema: z
+        .object({
+          presetId: z
+            .string()
+            .trim()
+            .min(1)
+            .describe('Preset ID to generate a URL for.'),
+          baseUrl: z
+            .string()
+            .url()
+            .optional()
+            .default('https://toil.fyi')
+            .describe('Base URL (defaults to production).'),
+        })
+        .strict(),
+    },
+    async ({ presetId, baseUrl }) => {
+      return asTextResponse(
+        `${baseUrl}/?agent=true&preset=${encodeURIComponent(presetId)}`,
+      );
+    },
+  );
 }
 
 async function loadReadme() {
