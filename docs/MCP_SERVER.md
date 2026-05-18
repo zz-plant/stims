@@ -48,7 +48,7 @@ All tools are registered on the logical MCP server name `stim-webtoys-mcp` and u
   - **Input:** optional `slug` (string) to get toy-specific guidance.
   - **Output:** `text` response explaining how the shipped MilkDrop visualizer responds to different audio frequencies (bass, mids, highs) and what visual effects to expect while it is playing.
 
-## Preset interaction tools
+## Preset interaction tools (Worker + Stdio)
 
 These tools interact with the live bundled preset catalog hosted at `toil.fyi` and work from both the stdio server and the Cloudflare Worker transport.
 
@@ -64,6 +64,20 @@ These tools interact with the live bundled preset catalog hosted at `toil.fyi` a
 - **`open_preset_url`**
   - **Input:** required `presetId` (string) and optional `baseUrl` (defaults to `https://toil.fyi`).
   - **Output:** `text` response with a URL that loads the visualizer with the specified preset in agent mode.
+- **`describe_preset`**
+  - **Input:** required `presetId` (string).
+  - **Output:** `text` response with a human-readable description including style tags, collections, fidelity, certification status, and a launch URL.
+
+## Stdio-only visual tools
+
+These tools require headless browser automation (Playwright) and are only available from the Bun/Node stdio server (`bun run mcp`).
+
+- **`capture_preset`**
+  - **Input:** required `presetId` (string) and optional `duration` (default 5000ms).
+  - **Output:** `text` response with preset info and path to the captured screenshot. Opens the visualizer with the specified preset and captures a rendered frame.
+- **`preview_gallery`**
+  - **Input:** optional `query` (string), `count` (1-6, default 4), and `duration` (default 4000ms).
+  - **Output:** `text` response listing each preset with a screenshot path. Captures multiple presets in sequence for a quick visual overview.
 
 ## Stdio-only automation tools
 
