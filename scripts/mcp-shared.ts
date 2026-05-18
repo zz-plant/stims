@@ -933,28 +933,6 @@ function registerTools(server: McpServer) {
       description:
         'Get a human-readable description of a preset — what visual style to expect, what features it uses, and what backend it runs on.',
       inputSchema: z.object({
-        presetId: z.string().trim().min(1).describe('Preset ID to open.'),
-        baseUrl: z
-          .string()
-          .url()
-          .optional()
-          .default('https://toil.fyi')
-          .describe('Base URL (defaults to production).'),
-      }),
-    },
-    async ({ presetId, baseUrl }) => {
-      return asTextResponse(
-        `${baseUrl}/?agent=true&preset=${encodeURIComponent(presetId)}`,
-      );
-    },
-  );
-
-  server.registerTool(
-    'describe_preset',
-    {
-      description:
-        'Get a human-readable description of a preset — what visual style to expect, what features it uses, and what backend it runs on.',
-      inputSchema: z.object({
         presetId: z.string().trim().min(1).describe('Preset ID to describe.'),
       }),
     },

@@ -17,6 +17,7 @@ export type CertificationCorpusGroup =
 
 export type WebGpuCertificationStatus =
   | 'unmeasured'
+  | 'uncertified'
   | 'certified-webgl'
   | 'certified-native'
   | 'certified-both';

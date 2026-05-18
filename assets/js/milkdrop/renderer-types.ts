@@ -225,6 +225,8 @@ export type MilkdropPostVisual = {
   };
   /** Per-pixel equation targets and their expression trees for GPU evaluation */
   perPixelPrograms?: Array<{ target: string; exprStrings: string[] }> | null;
+  /** Per-pixel equation targets and source expressions for fragment evaluation */
+  perPixelStatements?: Array<{ target: string; source: string }> | null;
   brighten: boolean;
   darken: boolean;
   darkenCenter: boolean;

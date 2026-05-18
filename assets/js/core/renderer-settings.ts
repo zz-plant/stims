@@ -46,7 +46,7 @@ export function getRendererBackendMaxPixelRatioCap({
     return backend === 'webgpu' ? 1.4 : 1.15;
   }
 
-  return backend === 'webgpu' ? 2 : 1.35;
+  return backend === 'webgpu' ? 3 : 1.35;
 }
 
 export type RendererViewport = {

@@ -1,10 +1,7 @@
-import { useCallback, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import { PresetArtwork, PresetShelfSection } from './workspace-ui.tsx';
-
-const FIRST_VISIT_KEY = 'stims:visited_before';
 
 function buildJumpBackEntries(
   favoritePresets: PresetCatalogEntry[],
@@ -38,23 +35,10 @@ export function NewHomePage() {
   const favoritePresets = w.favoritePresets;
   const missingRequestedPreset = w.missingRequestedPreset;
   const presetPreviews = w.presetPreviews;
-  const readinessAlerts = w.readinessAlerts;
   const recentPresets = w.recentPresets;
   const requestedPresetId = w.routeState.presetId;
   const catalog = w.catalog;
   const catalogReady = w.catalogReady;
-
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined' || typeof localStorage === 'undefined')
-      return true;
-    return localStorage.getItem(FIRST_VISIT_KEY) === 'true';
-  });
-  const dismiss = useCallback(() => {
-    setDismissed(true);
-    try {
-      localStorage.setItem(FIRST_VISIT_KEY, 'true');
-    } catch {}
-  }, []);
 
   const hasFavorites = favoritePresets.length > 0;
   const hasRecent = recentPresets.length > 0;
@@ -72,7 +56,8 @@ export function NewHomePage() {
             <p className="stims-shell__eyebrow">Browser visualizer</p>
             <h1 id="stims-launch-title">Sound into motion.</h1>
             <p className="stims-shell__launch-summary">
-              Start with demo audio, then switch to your own music.
+              Start with demo audio, then switch to your own music. No sign-up,
+              no setup.
               {catalogReady
                 ? ` ${catalog.length} authentic MilkDrop presets run in WebGL or WebGPU.`
                 : ' Authentic MilkDrop presets run in WebGL or WebGPU.'}
@@ -92,7 +77,7 @@ export function NewHomePage() {
                 Starts instantly with built-in sound
               </span>
             </button>
-            <div className="stims-shell__launch-supplement">
+            <div className="stims-shell__launch-supplement stims-shell__launch-actions">
               <button
                 type="button"
                 className="cta-button ghost"
@@ -112,26 +97,24 @@ export function NewHomePage() {
             </div>
           </div>
         </div>
-
-        {featuredPreset ? (
-          <button
-            type="button"
-            className="stims-shell__launch-recommendation"
-            onClick={() => w.handlePresetSelection(featuredPreset.id)}
-          >
-            <div className="stims-shell__launch-recommendation-top">
-              <p className="stims-shell__section-label">Featured pick</p>
-            </div>
-            <PresetArtwork entry={featuredPreset} />
-            <div className="stims-shell__launch-recommendation-copy">
-              <strong>{featuredPreset.title}</strong>
-              <span className="stims-shell__meta-copy">
-                {describePresetMood(featuredPreset)}
-              </span>
-            </div>
-          </button>
-        ) : null}
       </div>
+
+      {featuredPreset ? (
+        <button
+          type="button"
+          className="stims-shell__launch-recommendation"
+          onClick={() => w.handlePresetSelection(featuredPreset.id)}
+        >
+          <PresetArtwork entry={featuredPreset} compact />
+          <div className="stims-shell__launch-recommendation-copy">
+            <p className="stims-shell__section-label">Featured pick</p>
+            <strong>{featuredPreset.title}</strong>
+            <span className="stims-shell__meta-copy">
+              {describePresetMood(featuredPreset)}
+            </span>
+          </div>
+        </button>
+      ) : null}
 
       {missingRequestedPreset ? (
         <section className="stims-shell__launch-alert" data-tone="warn">
@@ -169,34 +152,6 @@ export function NewHomePage() {
         </section>
       ) : null}
 
-      {!dismissed ? (
-        <div className="stims-shell__confidence-bar">
-          <span>Start with demo audio — no sign-up, no setup.</span>
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            onClick={dismiss}
-          >
-            Dismiss
-          </button>
-        </div>
-      ) : null}
-
-      {readinessAlerts.length > 0 ? (
-        <section className="stims-shell__readiness-chips">
-          {readinessAlerts.map((item) => (
-            <article
-              key={item.id}
-              className="stims-shell__readiness-chip"
-              data-state={item.state}
-            >
-              <strong>{item.label}</strong>
-              <span>{item.summary}</span>
-            </article>
-          ))}
-        </section>
-      ) : null}
-
       {showJumpBack ? (
         <PresetShelfSection
           entries={buildJumpBackEntries(favoritePresets, recentPresets)}
@@ -210,8 +165,8 @@ export function NewHomePage() {
         <PresetShelfSection
           entries={catalog.slice(0, 6).map((entry) => ({
             entry,
-            label: describePresetMood(entry),
-            summary: `by ${entry.author}`,
+            label: entry.author || 'Unknown',
+            summary: describePresetMood(entry),
           }))}
           summary="Pick a preset to start with."
           title="Browse all presets"

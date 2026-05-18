@@ -36,7 +36,7 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   averageFrameMs: number | null;
   averageRenderMs: number | null;
   sampleCount: number;
-  adaptation: 'steady' | 'degraded' | 'recovering';
+  adaptation: 'steady' | 'degraded' | 'recovering' | 'enhanced';
   reasons: string[];
 };
 
@@ -56,6 +56,13 @@ type QualityStep = AdaptiveQualityMultipliers & {
 };
 
 const QUALITY_STEPS: readonly QualityStep[] = [
+  {
+    id: 'ultra',
+    renderScaleMultiplier: 1.15,
+    maxPixelRatioMultiplier: 1.15,
+    densityMultiplier: 1.2,
+    feedbackResolutionMultiplier: 1.1,
+  },
   {
     id: 'full',
     renderScaleMultiplier: 1,
@@ -97,6 +104,7 @@ const EMA_ALPHA = 0.18;
 const MIN_WARMUP_SAMPLES = 12;
 const DEGRADE_THRESHOLD_SAMPLES = 6;
 const RECOVER_THRESHOLD_SAMPLES = 45;
+const ENHANCE_THRESHOLD_SAMPLES = 90;
 const RESET_THRESHOLD_SAMPLES = 3;
 
 function clamp(value: number, min: number, max: number) {
@@ -113,14 +121,44 @@ function updateEma(previous: number | null, next: number) {
   return previous + (next - previous) * EMA_ALPHA;
 }
 
+function getDisplayRefreshRate(): number {
+  if (typeof window === 'undefined') return 60;
+  const mediaQuery = window.matchMedia('(update: fast)');
+  if (!mediaQuery.matches) return 60;
+
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl');
+  if (gl) {
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    if (ext) {
+      const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+      if (renderer && /mali/i.test(renderer)) return 60;
+    }
+  }
+
+  try {
+    const concurrency = navigator.hardwareConcurrency ?? 4;
+    if (concurrency <= 4) return 60;
+  } catch {}
+
+  return 120;
+}
+
+function estimateFrameBudgetMs(): number {
+  const hz = getDisplayRefreshRate();
+  return 1000 / hz;
+}
+
 function buildHeuristicProfile(
   backend: RendererBackend,
   capabilities: WebGPUCapabilitySummary | null,
 ) {
+  const frameBudgetMs = estimateFrameBudgetMs();
+
   if (backend === 'webgl') {
     return {
-      frameBudgetMs: 16.7,
-      initialStep: 1,
+      frameBudgetMs,
+      initialStep: 2,
       profile: 'fallback-webgl',
       reasons: [
         'WebGL fallback sessions start from a conservative adaptive quality step.',
@@ -131,8 +169,8 @@ function buildHeuristicProfile(
 
   if (!capabilities) {
     return {
-      frameBudgetMs: 16.7,
-      initialStep: 2,
+      frameBudgetMs,
+      initialStep: 3,
       profile: 'fallback-webgpu',
       reasons: ['No WebGPU capability snapshot was available for adaptation.'],
     };
@@ -182,7 +220,7 @@ function buildHeuristicProfile(
   initialStep = clamp(initialStep, 0, QUALITY_STEPS.length - 1);
 
   return {
-    frameBudgetMs: 16.7,
+    frameBudgetMs,
     initialStep,
     profile: capabilities.performanceTier,
     reasons,
@@ -367,6 +405,25 @@ export function createAdaptiveQualityController({
           reasons: [
             ...heuristic.reasons,
             'Frame headroom allowed the controller to restore quality.',
+          ],
+        };
+        return publish();
+      }
+
+      if (
+        consecutiveUnderBudget >= ENHANCE_THRESHOLD_SAMPLES &&
+        qualityStep > 0 &&
+        heuristic.profile === 'high-end'
+      ) {
+        qualityStep -= 1;
+        adaptation = 'enhanced';
+        consecutiveOverBudget = 0;
+        consecutiveUnderBudget = 0;
+        state = {
+          ...state,
+          reasons: [
+            ...heuristic.reasons,
+            `Sustained headroom — stepping up to ${QUALITY_STEPS[qualityStep].id}.`,
           ],
         };
         return publish();

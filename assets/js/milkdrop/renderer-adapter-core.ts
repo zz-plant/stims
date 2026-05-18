@@ -380,12 +380,12 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.root.add(this.background);
       this.root.add(this.meshLines);
     }
-    this.root.add(this.borderGroup);
     this.root.add(this.mainWaveGroup);
     this.root.add(this.customWaveGroup);
     this.root.add(this.trailGroup);
     this.root.add(this.particleFieldGroup);
     this.root.add(this.shapesGroup);
+    this.root.add(this.borderGroup);
     this.motionVectorGroup.add(this.motionVectorCpuGroup);
     this.proceduralMotionVectors.visible = false;
     this.motionVectorGroup.add(this.proceduralMotionVectors);

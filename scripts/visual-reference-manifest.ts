@@ -24,7 +24,7 @@ export type VisualReferencePresetEntry = {
     failThreshold: number;
   };
   capture: {
-    renderer: 'projectm';
+    renderer: 'projectm' | 'stims';
     requiredBackend: MilkdropRenderBackend;
     width: number;
     height: number;
@@ -115,7 +115,10 @@ export function loadVisualReferenceManifest(
                 0.02,
             },
             capture: {
-              renderer: 'projectm',
+              renderer:
+                normalizedPreset.capture?.renderer ??
+                parsed.defaults?.renderer ??
+                'projectm',
               requiredBackend:
                 normalizedPreset.capture?.requiredBackend ??
                 parsed.defaults?.requiredBackend ??
@@ -136,6 +139,11 @@ export function loadVisualReferenceManifest(
                 normalizedPreset.capture?.captureOffsetMs ??
                 parsed.defaults?.captureOffsetMs ??
                 0,
+            },
+            provenance: normalizedPreset.provenance ?? {
+              label: 'checked-in Stims reference capture',
+              importedAt: 'unknown',
+              sourceArtifactId: null,
             },
           };
         })

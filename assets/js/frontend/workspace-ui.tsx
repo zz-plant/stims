@@ -27,7 +27,6 @@ import {
   getToolDescription,
   getToolLabel,
   prettifyCollectionTag,
-  type ReadinessItem,
   TOOL_TABS,
 } from './workspace-helpers.ts';
 
@@ -375,205 +374,6 @@ function AudioSourcePanel() {
   );
 }
 
-export const STIMS_FIRST_VISIT_KEY = 'stims:visited_before';
-
-function useFirstVisitDismissed() {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    return [true, () => {}] as const;
-  }
-  const stored = localStorage.getItem(STIMS_FIRST_VISIT_KEY);
-  const dismissed = stored === 'true';
-  const dismiss = () => {
-    localStorage.setItem(STIMS_FIRST_VISIT_KEY, 'true');
-  };
-  return [dismissed, dismiss] as const;
-}
-
-export function WorkspaceLaunchPanel({
-  embedded = false,
-  engineReady,
-  favoritePresets,
-  featuredPreset,
-  launchEyebrow,
-  launchSummary,
-  launchTitle,
-  missingRequestedPreset,
-  onAudioStart,
-  onBrowseRecovery,
-  onFeaturedPresetSelection,
-  onPresetSelection,
-  presetPreviews,
-  readinessAlerts,
-  recentPresets,
-  requestedPresetId,
-}: {
-  embedded?: boolean;
-  engineReady: boolean;
-  favoritePresets: PresetCatalogEntry[];
-  featuredPreset: PresetCatalogEntry | null;
-  launchEyebrow: string;
-  launchSummary: string;
-  launchTitle: string;
-  missingRequestedPreset: boolean;
-  onAudioStart: (source: 'demo' | 'microphone' | 'tab' | 'youtube') => void;
-  onBrowseRecovery: () => void;
-  onFeaturedPresetSelection: () => void;
-  onPresetSelection: (presetId: string) => void;
-  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
-  recentPresets: PresetCatalogEntry[];
-  readinessAlerts: ReadinessItem[];
-  requestedPresetId: string | null;
-}) {
-  const rootClassName = embedded
-    ? 'stims-shell__launch-panel'
-    : 'stims-shell__launch';
-  const [firstVisitDismissed, dismissFirstVisit] = useFirstVisitDismissed();
-  const jumpBackInEntries = [
-    ...favoritePresets.map((entry) => ({
-      entry,
-      label: 'Saved pick',
-      summary: 'A favorite you saved for an easy return.',
-    })),
-    ...recentPresets
-      .filter(
-        (entry) =>
-          !favoritePresets.some(
-            (favoriteEntry) => favoriteEntry.id === entry.id,
-          ),
-      )
-      .map((entry) => ({
-        entry,
-        label: 'Recent',
-        summary: 'Something you opened recently and can jump back into.',
-      })),
-  ].slice(0, 3);
-
-  return (
-    <section className={rootClassName} data-audio-controls>
-      <div className="stims-shell__launch-hero">
-        <div className="stims-shell__launch-header">
-          <div className="stims-shell__launch-copy">
-            <p className="stims-shell__eyebrow">{launchEyebrow}</p>
-            <h1>{launchTitle}</h1>
-            <p className="stims-shell__launch-summary">{launchSummary}</p>
-          </div>
-        </div>
-
-        <div className="stims-shell__launch-stack">
-          <button
-            id="use-demo-audio"
-            data-demo-audio-btn="true"
-            className="cta-button primary stims-shell__action-button"
-            type="button"
-            disabled={!engineReady}
-            onClick={() => onAudioStart('demo')}
-          >
-            <span className="stims-shell__action-label">See visuals now</span>
-            <span className="stims-shell__action-hint">
-              Starts instantly with built-in sound
-            </span>
-          </button>
-        </div>
-
-        {featuredPreset ? (
-          <button
-            type="button"
-            className="stims-shell__launch-recommendation"
-            onClick={() => onPresetSelection(featuredPreset.id)}
-          >
-            <div className="stims-shell__launch-recommendation-top">
-              <p className="stims-shell__section-label">Featured pick</p>
-            </div>
-            <PresetArtwork entry={featuredPreset} />
-            <div className="stims-shell__launch-recommendation-copy">
-              <strong>{featuredPreset.title}</strong>
-              <span className="stims-shell__meta-copy">
-                {describePresetMood(featuredPreset)}
-              </span>
-            </div>
-          </button>
-        ) : null}
-      </div>
-
-      {missingRequestedPreset ? (
-        <section className="stims-shell__launch-alert" data-tone="warn">
-          <div className="stims-shell__launch-alert-copy">
-            <p className="stims-shell__section-label">Saved pick not found</p>
-            <strong>
-              {requestedPresetId
-                ? `"${requestedPresetId}" isn't available here anymore.`
-                : "That saved pick isn't available here anymore."}
-            </strong>
-            <p className="stims-shell__meta-copy">
-              {featuredPreset
-                ? `Try ${featuredPreset.title} instead, or browse everything.`
-                : 'Open the full list to pick another one.'}
-            </p>
-          </div>
-          <div className="stims-shell__session-actions">
-            {featuredPreset ? (
-              <button
-                type="button"
-                className="cta-button primary"
-                onClick={onFeaturedPresetSelection}
-              >
-                Try featured pick
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="cta-button"
-              onClick={onBrowseRecovery}
-            >
-              Browse everything
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      {!firstVisitDismissed ? (
-        <section className="stims-shell__confidence-note">
-          <strong>Browser-native MilkDrop visualizer</strong>
-          <span>
-            Runs authentic .milk presets via WebGPU or WebGL. Press play with
-            demo audio, then switch to your own music.
-          </span>
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            onClick={dismissFirstVisit}
-          >
-            Got it
-          </button>
-        </section>
-      ) : null}
-
-      {readinessAlerts.length > 0 ? (
-        <section className="stims-shell__readiness-chips">
-          {readinessAlerts.map((item) => (
-            <article
-              key={item.id}
-              className="stims-shell__readiness-chip"
-              data-state={item.state}
-            >
-              <strong>{item.label}</strong>
-              <span>{item.summary}</span>
-            </article>
-          ))}
-        </section>
-      ) : null}
-
-      <PresetShelfSection
-        entries={jumpBackInEntries}
-        summary="Saved picks and recent stops stay close so you can start faster next time."
-        title="Jump back in"
-        onSelect={onPresetSelection}
-        presetPreviews={presetPreviews}
-      />
-    </section>
-  );
-}
-
 export function WorkspaceStagePanel({
   audioEnergy = 0,
   isFullscreen,
@@ -642,7 +442,7 @@ export function WorkspaceStagePanel({
                 {getToolLabel(panel)} open
               </span>
             ) : null}
-            {!missingRequestedPreset && !invalidExperienceSlug ? (
+            {liveMode && !missingRequestedPreset && !invalidExperienceSlug ? (
               <StimsControlDock
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={onToggleFullscreen}
@@ -1079,6 +879,20 @@ function SettingsSheetPanel({
 
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
+      <section className="stims-shell__sheet-surface">
+        <p className="stims-shell__section-label">Renderer</p>
+        <p className="stims-shell__meta-copy">
+          {w.engineSnapshot?.backend
+            ? `Running on ${w.engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
+            : w.engineReady
+              ? 'Renderer ready'
+              : 'Initializing renderer\u2026'}
+          {w.engineSnapshot?.backend === 'webgl'
+            ? ' — WebGPU was unavailable or disabled.'
+            : ''}
+        </p>
+      </section>
+
       <section className="stims-shell__sheet-surface">
         <p className="stims-shell__section-label">Quick looks</p>
         <ul className="stims-shell__preset-guides">

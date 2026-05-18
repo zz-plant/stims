@@ -10,6 +10,10 @@ export function StimsStageAmbient() {
       <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--sky" />
       <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--mint" />
       <span className="stims-shell__stage-ambient-ring" />
+      <span className="stims-shell__stage-ambient-pulse" />
+      <span className="stims-shell__stage-ambient-hint">
+        Press play to start
+      </span>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
 } from '../utils/device-detect.ts';
+import { getDevicePerformanceProfile } from './device-profile.ts';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {
   getRendererFallbackReasonMessage,
@@ -517,6 +518,17 @@ async function probeRendererCapabilities({
     return cacheResult(
       buildFallback(
         'WebGPU is temporarily disabled on this mobile browser while we stabilize renderer compatibility. Using WebGL mode.',
+        { forceWebGL: true },
+      ),
+    );
+  }
+
+  if (getDevicePerformanceProfile().lowPower) {
+    return cacheResult(
+      buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.compatibilityMode,
+        ),
         { forceWebGL: true },
       ),
     );

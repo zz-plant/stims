@@ -1108,6 +1108,7 @@ server.registerTool(
   async ({ sessionId, tweak, amount }) => {
     const session = getSession(sessionId);
     if (!session) return asTextResponse('Session not found or expired.');
+    const tweakAmount = amount ?? 0.15;
 
     // Map natural language tweaks to MilkDrop fields
     const t = tweak.toLowerCase();
@@ -1115,30 +1116,38 @@ server.registerTool(
       {
         match: ['more blue', 'bluer', 'increase blue', 'blue shift'],
         field: 'ib_b',
-        delta: amount!,
+        delta: tweakAmount,
       },
-      { match: ['less blue', 'reduce blue'], field: 'ib_b', delta: -amount! },
+      {
+        match: ['less blue', 'reduce blue'],
+        field: 'ib_b',
+        delta: -tweakAmount,
+      },
       {
         match: ['more red', 'redder', 'increase red', 'red shift'],
         field: 'ib_r',
-        delta: amount!,
+        delta: tweakAmount,
       },
-      { match: ['less red', 'reduce red'], field: 'ib_r', delta: -amount! },
+      { match: ['less red', 'reduce red'], field: 'ib_r', delta: -tweakAmount },
       {
         match: ['more green', 'greener', 'increase green'],
         field: 'ib_g',
-        delta: amount!,
+        delta: tweakAmount,
       },
-      { match: ['less green', 'reduce green'], field: 'ib_g', delta: -amount! },
+      {
+        match: ['less green', 'reduce green'],
+        field: 'ib_g',
+        delta: -tweakAmount,
+      },
       {
         match: ['warmer', 'more warm', 'increase warmth'],
         field: 'ib_r',
-        delta: amount!,
+        delta: tweakAmount,
       },
       {
         match: ['cooler', 'more cool', 'increase cool', 'cool shift'],
         field: 'ib_b',
-        delta: amount!,
+        delta: tweakAmount,
       },
       {
         match: ['brighter', 'more bright', 'increase brightness'],
@@ -1153,22 +1162,22 @@ server.registerTool(
       {
         match: ['more warp', 'increase warp', 'more distortion', 'warp more'],
         field: 'warp',
-        delta: amount!,
+        delta: tweakAmount,
       },
       {
         match: ['less warp', 'decrease warp', 'less distortion'],
         field: 'warp',
-        delta: -amount!,
+        delta: -tweakAmount,
       },
       {
         match: ['more zoom', 'zoom in', 'increase zoom'],
         field: 'zoom',
-        delta: amount!,
+        delta: tweakAmount,
       },
       {
         match: ['less zoom', 'zoom out', 'decrease zoom'],
         field: 'zoom',
-        delta: -amount!,
+        delta: -tweakAmount,
       },
       {
         match: ['more motion', 'faster', 'increase motion', 'more movement'],
@@ -1183,22 +1192,22 @@ server.registerTool(
       {
         match: ['more saturation', 'more colorful', 'more vibrant'],
         field: 'saturation',
-        delta: amount!,
+        delta: tweakAmount,
       },
       {
         match: ['less saturation', 'less colorful', 'more grey'],
         field: 'saturation',
-        delta: -amount!,
+        delta: -tweakAmount,
       },
       {
         match: ['more contrast', 'increase contrast'],
         field: 'contrast',
-        delta: amount!,
+        delta: tweakAmount,
       },
       {
         match: ['less contrast', 'decrease contrast'],
         field: 'contrast',
-        delta: -amount!,
+        delta: -tweakAmount,
       },
       {
         match: ['more decay', 'more trail', 'more smear', 'longer trail'],
@@ -1240,7 +1249,8 @@ server.registerTool(
               if (!input) return { error: 'no input found' };
 
               const currentVal = parseFloat(input.value);
-              if (isNaN(currentVal)) return { error: 'non-numeric value' };
+              if (Number.isNaN(currentVal))
+                return { error: 'non-numeric value' };
 
               const newVal = Math.max(0, Math.min(2, currentVal + d));
               input.value = String(newVal);

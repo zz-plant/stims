@@ -54,6 +54,14 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
     renderScale: 1.05,
     particleScale: 1.25,
   },
+  {
+    id: 'ultra',
+    label: 'Ultra visuals',
+    description: 'Maximum supersampling and particle density for SOTA GPUs.',
+    maxPixelRatio: 2.8,
+    renderScale: 1.15,
+    particleScale: 1.8,
+  },
 ];
 
 export const QUALITY_STORAGE_KEY = 'stims:quality-preset';

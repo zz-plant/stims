@@ -6,6 +6,39 @@ export type DevicePerformanceProfile = {
   reducedMotion: boolean;
 };
 
+export type DeviceTier = 'low' | 'mid' | 'high';
+
+export function getDeviceTier(): DeviceTier {
+  const profile = getDevicePerformanceProfile();
+  if (!profile.lowPower) return 'high';
+
+  const deviceMemory =
+    typeof navigator !== 'undefined' && 'deviceMemory' in navigator
+      ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
+        null)
+      : null;
+  const hardwareConcurrency =
+    typeof navigator !== 'undefined'
+      ? (navigator.hardwareConcurrency ?? null)
+      : null;
+
+  const veryConstrained =
+    (deviceMemory !== null && deviceMemory <= 2) ||
+    (hardwareConcurrency !== null && hardwareConcurrency <= 2) ||
+    (deviceMemory !== null &&
+      deviceMemory <= 3 &&
+      hardwareConcurrency !== null &&
+      hardwareConcurrency <= 3);
+
+  return veryConstrained ? 'low' : 'mid';
+}
+
+export function applyDeviceTierToDocument() {
+  if (typeof document === 'undefined') return;
+  const tier = getDeviceTier();
+  document.documentElement.dataset.deviceTier = tier;
+}
+
 export function getDevicePerformanceProfile(): DevicePerformanceProfile {
   const environment = getDeviceEnvironmentProfile();
   const deviceMemory =

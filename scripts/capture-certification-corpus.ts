@@ -74,7 +74,7 @@ export function buildCertificationCorpusCaptureRequests({
       vibeMode,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
-      screenshotSurface: 'page',
+      screenshotSurface: 'canvas',
     }));
 }
 

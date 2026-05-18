@@ -92,18 +92,15 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Single-route workspace');
     expect(stageSource).toContain('className="stims-shell__rail-actions"');
     expect(dockSource).toContain('className="stims-shell__stage-dock"');
-    expect(uiSource).toContain('Featured pick');
+    expect(homeSource).toContain('Featured pick');
     expect(dockSource).toMatch(/>\s*Surprise me\s*</u);
     expect(homeSource).toContain('See visuals now');
-    expect(uiSource).not.toContain('Explore modes');
+    expect(homeSource).not.toContain('Explore modes');
     expect(uiSource).toContain('Use my music');
-    expect(uiSource).toMatch(
-      /Needs mic permission\.\s+React to the room, your speakers, or live\s+sound\./u,
-    );
-    expect(uiSource).toContain(
-      'Share this tab when prompted to capture audio already playing here.',
-    );
-    expect(uiSource).toContain('Paste a YouTube link, then start capture');
+    expect(uiSource).toContain('Live mic input');
+    expect(uiSource).toContain('Audio from this browser tab');
+    expect(uiSource).toContain('YouTube link');
+    expect(uiSource).toContain('Start capture');
     expect(uiSource).toContain('Switch to your music \\u2192');
     expect(uiSource).not.toContain('Demo audio is running.');
     expect(uiSource).not.toContain('Easy on demo audio');
@@ -117,9 +114,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).toContain('Copy link');
     expect(uiSource).not.toContain('The editor opens on the stage.');
     expect(uiSource).not.toContain('The inspector opens on the stage.');
-    expect(uiSource).toContain(
-      'className="stims-shell__launch-summary">{launchSummary}</p>',
-    );
+    expect(homeSource).toContain('className="stims-shell__launch-summary"');
     expect(uiSource).toMatch(
       /className="stims-shell__meta-copy stims-shell__stage-summary">\s*\{stageSummary\}\s*<\/p>/u,
     );
@@ -135,5 +130,7 @@ describe('Workspace shell UI simplification regression', () => {
     );
     expect(uiSource).not.toContain('Recommended first run: start demo');
     expect(uiSource).not.toContain('Show current link');
+    expect(homeSource).toContain('Saved pick not found');
+    expect(homeSource).toContain('Browse everything');
   });
 });

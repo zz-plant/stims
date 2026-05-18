@@ -938,6 +938,30 @@ export async function captureActiveToyCanvas(
     return false;
   }
 
+  const canvasDataUrl = await page
+    .evaluate(() => {
+      const canvas =
+        document.querySelector<HTMLCanvasElement>(
+          '#active-toy-container canvas',
+        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        return null;
+      }
+
+      try {
+        return canvas.toDataURL('image/png');
+      } catch (_error) {
+        return null;
+      }
+    })
+    .catch(() => null);
+
+  const [, base64Data = ''] = canvasDataUrl?.split(',', 2) ?? [];
+  if (base64Data) {
+    fs.writeFileSync(screenshotPath, Buffer.from(base64Data, 'base64'));
+    return true;
+  }
+
   const canvasLocator = page
     .locator('#active-toy-container canvas')
     .or(page.locator('canvas'))
@@ -1000,31 +1024,7 @@ export async function captureActiveToyCanvas(
     return true;
   }
 
-  const canvasDataUrl = await page
-    .evaluate(() => {
-      const canvas =
-        document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container canvas',
-        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
-      if (!(canvas instanceof HTMLCanvasElement)) {
-        return null;
-      }
-
-      try {
-        return canvas.toDataURL('image/png');
-      } catch (_error) {
-        return null;
-      }
-    })
-    .catch(() => null);
-
-  const [, base64Data = ''] = canvasDataUrl?.split(',', 2) ?? [];
-  if (!base64Data) {
-    return false;
-  }
-
-  fs.writeFileSync(screenshotPath, Buffer.from(base64Data, 'base64'));
-  return true;
+  return false;
 }
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {

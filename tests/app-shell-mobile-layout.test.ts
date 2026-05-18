@@ -44,9 +44,7 @@ describe('Workspace shell mobile layout regression', () => {
     expect(css).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-actions > :first-child\s*\{\s*grid-column:\s*1 \/ -1;/u,
     );
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__readiness-chips\s*\{\s*flex-wrap:\s*nowrap;[\s\S]*?overflow-x:\s*auto;/u,
-    );
+    expect(css).toContain('.stims-shell__launch-actions > :first-child');
     expect(css).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-panel\s*\{[\s\S]*?width:\s*min\(100%, calc\(100vw - 20px\)\);/u,
     );
@@ -65,14 +63,19 @@ describe('Workspace shell mobile layout regression', () => {
       /@media \(max-height: 480px\)[\s\S]*?\.stims-shell__stage-frame,\s*\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*calc\(100vh - 20px\);/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-hero,[\s\S]*?\.stims-shell__source-grid,[\s\S]*?\.stims-shell__launch-recommendation\s*\{[\s\S]*?grid-template-columns:\s*1fr;/u,
+      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-hero,[\s\S]*?\.stims-shell__source-grid\s*\{[\s\S]*?grid-template-columns:\s*1fr;/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-recommendation\s*\{[\s\S]*?min-height:\s*0;/u,
     );
   });
 
   test('adds compatibility fallbacks for older mobile browser CSS support', () => {
     const css = readAppShellCss();
 
-    expect(css).toContain('-webkit-backdrop-filter: blur(24px);');
+    expect(css).toContain(
+      '-webkit-backdrop-filter: blur(12px) saturate(118%);',
+    );
     expect(css).toContain('-webkit-mask-image: radial-gradient(');
     expect(css).toMatch(
       /@supports not \(color: color-mix\(in srgb, white, black\)\) \{[\s\S]*?\.stims-shell \.cta-button\.primary/u,

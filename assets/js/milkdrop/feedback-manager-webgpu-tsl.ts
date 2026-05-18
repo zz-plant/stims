@@ -836,7 +836,7 @@ function createCompositeOutputNode(
     warp: null,
     comp: null,
   },
-  perPixelPrograms?: MilkdropFeedbackCompositeState['perPixelPrograms'],
+  _perPixelPrograms?: MilkdropFeedbackCompositeState['perPixelPrograms'],
 ) {
   const sampleUvNode = createSampleUvNode();
   const applyFeedbackWarpNode = createApplyFeedbackWarpNode();

@@ -1,6 +1,7 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
+import { applyDeviceTierToDocument } from './core/device-profile.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/device-detect.ts';
@@ -26,6 +27,7 @@ const startApp = async () => {
   if (document.body) {
     document.body.dataset.page = 'workspace';
     document.body.classList.toggle('tv-mode', isSmartTvDevice());
+    applyDeviceTierToDocument();
   }
 
   const container = ensureRootContainer();

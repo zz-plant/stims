@@ -52,7 +52,7 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   directFeedbackShaders: true,
   descriptorFallbackToWebgl: true,
   gpuComputeVM: true,
-  renderBundles: true,
+  renderBundles: false,
 }) satisfies MilkdropWebGpuOptimizationFlags;
 
 const ENABLED_FLAG_VALUES = new Set(['1', 'true', 'on', 'yes', 'enabled']);

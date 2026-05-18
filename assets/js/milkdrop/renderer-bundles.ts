@@ -10,7 +10,14 @@
  * and the renderer is WebGPU.
  */
 
-import { BundleGroup, type Object3D } from 'three';
+import type { Object3D } from 'three';
+// @ts-expect-error - BundleGroup is exposed by the WebGPU entrypoint at runtime.
+import { BundleGroup as WebGpuBundleGroup } from 'three/webgpu';
+
+type BundleGroupLike = Object3D & {
+  needsUpdate: boolean;
+  clear(): void;
+};
 
 export type MilkdropRenderBundleConfig = {
   /** Whether RenderBundle recording is enabled. */
@@ -29,14 +36,14 @@ export const DEFAULT_RENDER_BUNDLE_CONFIG: MilkdropRenderBundleConfig = {
  */
 export class MilkdropRenderBundleManager {
   private config: MilkdropRenderBundleConfig;
-  private bundleGroup: BundleGroup | null = null;
+  private bundleGroup: BundleGroupLike | null = null;
 
   constructor(config: Partial<MilkdropRenderBundleConfig> = {}) {
     this.config = { ...DEFAULT_RENDER_BUNDLE_CONFIG, ...config };
   }
 
   /** Get the underlying BundleGroup (null if disabled). */
-  getGroup(): BundleGroup | null {
+  getGroup(): BundleGroupLike | null {
     return this.bundleGroup;
   }
 
@@ -46,7 +53,7 @@ export class MilkdropRenderBundleManager {
     this.config = { ...this.config, ...config };
 
     if (this.config.enabled && !hadGroup) {
-      this.bundleGroup = new BundleGroup();
+      this.bundleGroup = new WebGpuBundleGroup() as BundleGroupLike;
     } else if (!this.config.enabled && hadGroup) {
       this.bundleGroup = null;
     }
