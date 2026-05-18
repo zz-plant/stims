@@ -216,6 +216,7 @@ Keep the bundled shipped presets in evidence order:
 - `assets/js/app.ts` and `assets/js/frontend/*` are the active product frontend.
 - `assets/js/milkdrop/*` remains the visual engine behind the adapter seam.
 - `assets/js/frontend/` avoids adding a secondary React renderer for Three.js scenes; decorative visuals use imperative Three.js directly.
+- `assets/js/frontend/workspace-router.tsx` is a thin pass-through that renders `App.tsx` directly — the old `@tanstack/react-router` was removed in favor of the native History API (see `url-state.ts` + `workspace-hooks.ts` for URL sync).
 - `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/library-view/*`, and `assets/js/bootstrap/*` are legacy compatibility modules.
 - New product work should not add fresh route ownership or UI flows to those legacy modules.
 

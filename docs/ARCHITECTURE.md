@@ -36,18 +36,22 @@ flowchart LR
   Legacy --> Milkdrop
 ```
 
-## Route contract
+## URL state (no router)
 
-- Canonical route: `/`
-- Compatibility alias: `/milkdrop/`
-- Legacy query params still read on boot:
+Stims uses the native History API instead of a client-side router. The app is a single-page SPA with one route (`/`); all persistent state lives in URL search params.
+
+- URL reads → `window.location.search` via `readSessionRouteState()`
+- URL writes → `window.history.replaceState(null, '', newUrl)` on state changes
+- Back/forward → `popstate` event listener re-reads the URL
+
+Legacy query params still read on boot:
   - `experience`
   - `panel`
   - `collection`
   - `preset`
   - `audio`
   - `agent`
-- Canonical query params written by the app:
+Canonical query params written by the app:
   - `tool`
   - `collection`
   - `preset`
@@ -59,6 +63,7 @@ flowchart LR
 Primary implementation:
 - [`assets/js/frontend/url-state.ts`](../assets/js/frontend/url-state.ts)
 - [`assets/js/frontend/contracts.ts`](../assets/js/frontend/contracts.ts)
+- URL synchronization hook: `useWorkspaceRouteState()` in [`assets/js/frontend/workspace-hooks.ts`](../assets/js/frontend/workspace-hooks.ts)
 
 ## Frontend ownership
 
