@@ -3,7 +3,7 @@
   "parityTarget": "projectm-visual-reference",
   "fixtureRoot": "tests/fixtures/milkdrop/projectm-reference",
   "minimumPresetCount": 4,
-  "presetCount": 4,
+  "presetCount": 47,
   "defaults": {
     "renderer": "projectm",
     "requiredBackend": "webgpu",
@@ -118,6 +118,909 @@
         "label": "checked-in output/playwright projectM capture",
         "importedAt": "2026-03-30T22:20:51.356Z",
         "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "image": "eos-glowsticks-v2-03-music.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "image": "rovastar-parallel-universe.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "image": "eos-phat-cubetrace-v2.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "image": "krash-rovastar-cerebral-demons-stars.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "aderrasi-potion-of-spirits",
+      "title": "Aderrasi - Potion of Spirits",
+      "image": "aderrasi-potion-of-spirits.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "geiss-casino",
+      "title": "Geiss - Casino",
+      "image": "geiss-casino.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "shifter-snakeskin",
+      "title": "Shifter - Snakeskin",
+      "image": "shifter-snakeskin.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "shifter-swarm",
+      "title": "Shifter - Swarm",
+      "image": "shifter-swarm.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "shifter-curlique",
+      "title": "Shifter - Curlique",
+      "image": "shifter-curlique.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "rovastar-harlequins-liquid-dragon",
+      "title": "Rovastar - Harlequin's Liquid Dragon",
+      "image": "rovastar-harlequins-liquid-dragon.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-heater-core-c",
+      "title": "Eo.S. - Heater Core C",
+      "image": "eos-heater-core-c.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "orb-radiation",
+      "title": "Orb - Radiation",
+      "image": "orb-radiation.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-apocalypse",
+      "title": "Eo.S. - Apocalypse",
+      "image": "eos-apocalypse.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "dbleja-hovering-over-mars",
+      "title": "Dbleja - Hovering - Over - Mars",
+      "image": "dbleja-hovering-over-mars.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "dbleja-hovering-over-pluto",
+      "title": "Dbleja - Hovering - Over - Pluto",
+      "image": "dbleja-hovering-over-pluto.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "dbleja-inside-the-tree-blue-mix",
+      "title": "Dbleja - Inside - The - Tree - Blue - Mix",
+      "image": "dbleja-inside-the-tree-blue-mix.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-dark-side-of-the-moon-clean-mix",
+      "title": "Eos - Dark - Side - Of - The - Moon - Clean - Mix",
+      "image": "eos-dark-side-of-the-moon-clean-mix.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-ether-posession-phat-edit-v3",
+      "title": "Eos - Ether - Posession - Phat - Edit - V3",
+      "image": "eos-ether-posession-phat-edit-v3.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-ether",
+      "title": "Eos - Ether",
+      "image": "eos-ether.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-matrix-cube-c",
+      "title": "Eos - Matrix - Cube - C",
+      "image": "eos-matrix-cube-c.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-phat-cat-scan-nirvana",
+      "title": "Eos - Phat - Cat - Scan - Nirvana",
+      "image": "eos-phat-cat-scan-nirvana.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-phat-dark-heart",
+      "title": "Eos - Phat - Dark - Heart",
+      "image": "eos-phat-dark-heart.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-phat-linear-clouds-v2",
+      "title": "Eos - Phat - Linear - Clouds - V2",
+      "image": "eos-phat-linear-clouds-v2.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-phat-magnetosphere-13-pulsar",
+      "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
+      "image": "eos-phat-magnetosphere-13-pulsar.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-phat-vacuum-deification",
+      "title": "Eos - Phat - Vacuum - Deification",
+      "image": "eos-phat-vacuum-deification.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-quasar",
+      "title": "Eos - Quasar",
+      "image": "eos-quasar.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "eos-starburst-05-phasing",
+      "title": "Eos - Starburst - 05 - Phasing",
+      "image": "eos-starburst-05-phasing.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "evet-proteus-core-element-5",
+      "title": "Evet - Proteus - Core - Element - 5",
+      "image": "evet-proteus-core-element-5.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "evet-responsive-acid-iris",
+      "title": "Evet - Responsive - Acid - Iris",
+      "image": "evet-responsive-acid-iris.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "geiss-bipolar-x",
+      "title": "Geiss - Bipolar - X",
+      "image": "geiss-bipolar-x.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "geiss-happy-drops",
+      "title": "Geiss - Happy - Drops",
+      "image": "geiss-happy-drops.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "orb-acid-in-my-eyes",
+      "title": "Orb - Acid - In - My - Eyes",
+      "image": "orb-acid-in-my-eyes.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "orb-cloud-scope",
+      "title": "Orb - Cloud - Scope",
+      "image": "orb-cloud-scope.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "orbasonic",
+      "title": "Orbasonic",
+      "image": "orbasonic.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "pieturp-sunflare",
+      "title": "Pieturp - Sunflare",
+      "image": "pieturp-sunflare.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "rovastar-and-idiot24-7-abstract-psychaos",
+      "title": "Rovastar - And - Idiot24 - 7 - Abstract - Psychaos",
+      "image": "rovastar-and-idiot24-7-abstract-psychaos.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "rovastar-dark-ritual-star-of-destiny-denied-mix",
+      "title": "Rovastar - Dark - Ritual - Star - Of - Destiny - Denied - Mix",
+      "image": "rovastar-dark-ritual-star-of-destiny-denied-mix.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "rovastar-mosaics-of-ages",
+      "title": "Rovastar - Mosaics - Of - Ages",
+      "image": "rovastar-mosaics-of-ages.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "rovastar-oozing-resistance",
+      "title": "Rovastar - Oozing - Resistance",
+      "image": "rovastar-oozing-resistance.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "shifter-glassworms-flare",
+      "title": "Shifter - Glassworms - Flare",
+      "image": "shifter-glassworms-flare.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "shifter-spectro",
+      "title": "Shifter - Spectro",
+      "image": "shifter-spectro.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "phat-rovastar-eos-square-faces-v2",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "image": "phat-rovastar-eos-square-faces-v2.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      }
+    },
+    {
+      "id": "phat-zylot-eos-trippy-rotation",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "image": "phat-zylot-eos-trippy-rotation.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
       }
     }
   ]
