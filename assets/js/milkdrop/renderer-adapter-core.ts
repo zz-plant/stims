@@ -1,6 +1,7 @@
 import type { Camera, Scene, ShaderMaterial, Texture } from 'three';
 import {
   BufferGeometry,
+  BundleGroup,
   Group,
   type Line,
   LineBasicMaterial,
@@ -359,14 +360,31 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
     this.background.position.z = -1.2;
     this.meshLines.position.z = -0.3;
-    this.root.add(this.background);
-    this.root.add(this.meshLines);
+
+    // When WebGPU render bundles are enabled, group static objects into a
+    // BundleGroup so the renderer records their draw calls once per bundle
+    // lifetime instead of every frame.
+    const useBundles =
+      backend === 'webgpu' && this.webgpuOptimizationFlags.renderBundles;
+    if (useBundles) {
+      const staticBundle = new BundleGroup();
+      staticBundle.add(this.background);
+      staticBundle.add(this.meshLines);
+      staticBundle.add(this.borderGroup);
+      staticBundle.add(this.motionVectorCpuGroup);
+      staticBundle.add(this.blendBorderGroup);
+      staticBundle.add(this.blendMotionVectorCpuGroup);
+      this.root.add(staticBundle);
+    } else {
+      this.root.add(this.background);
+      this.root.add(this.meshLines);
+    }
+    this.root.add(this.borderGroup);
     this.root.add(this.mainWaveGroup);
     this.root.add(this.customWaveGroup);
     this.root.add(this.trailGroup);
     this.root.add(this.particleFieldGroup);
     this.root.add(this.shapesGroup);
-    this.root.add(this.borderGroup);
     this.motionVectorGroup.add(this.motionVectorCpuGroup);
     this.proceduralMotionVectors.visible = false;
     this.motionVectorGroup.add(this.proceduralMotionVectors);
@@ -381,6 +399,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     this.blendMotionVectorGroup.add(this.blendProceduralMotionVectors);
     this.root.add(this.blendMotionVectorGroup);
     this.batcher?.attach(this.root);
+
+    // Wrap static geometry in a BundleGroup for WebGPU RenderBundle support.
+    // BundleGroup auto-records static objects as GPU RenderBundles, reducing
+    // per-frame CPU command-encoding overhead. Only enabled when the
+    // renderBundles optimization flag is set.
+    if (backend === 'webgpu' && this.webgpuOptimizationFlags.renderBundles) {
+      const bundleGroup = new BundleGroup();
+      bundleGroup.add(this.background);
+      bundleGroup.add(this.meshLines);
+      bundleGroup.add(this.borderGroup);
+      bundleGroup.add(this.motionVectorCpuGroup);
+      bundleGroup.add(this.blendBorderGroup);
+      bundleGroup.add(this.blendMotionVectorCpuGroup);
+      this.root.add(bundleGroup);
+    }
 
     if (!ThreeMilkdropAdapter.lineThicknessLogged.has(backend)) {
       ThreeMilkdropAdapter.lineThicknessLogged.add(backend);
