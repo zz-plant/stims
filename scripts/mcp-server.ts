@@ -1,11 +1,79 @@
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { chromium } from 'playwright';
 import { z } from 'zod';
 import { asTextResponse, createMcpServer } from './mcp-shared.ts';
 import { playToy } from './play-toy.ts';
 
 const server = createMcpServer();
 const transport = new StdioServerTransport();
+
+// ── Agent session manager ───────────────────────────────────────────
+// Keeps a headless browser session alive across tool calls so agents
+// can interact with a running visualizer (switch presets, capture
+// frames, watch changes) the same way a human would.
+
+type AgentSession = {
+  id: string;
+  browser: import('playwright').Browser;
+  page: import('playwright').Page;
+  presetId: string;
+  createdAt: number;
+  lastUsedAt: number;
+  screenshotDir: string;
+};
+
+const agentSessions = new Map<string, AgentSession>();
+const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 min idle timeout
+const CAPTURE_DIR = mkdtempSync(join(tmpdir(), 'stims-agent-'));
+
+/**
+ * Get a session by ID, checking expiry.
+ */
+function getSession(sessionId: string): AgentSession | null {
+  const session = agentSessions.get(sessionId);
+  if (!session) return null;
+  if (Date.now() - session.lastUsedAt > SESSION_TIMEOUT_MS) {
+    closeSession(session);
+    agentSessions.delete(sessionId);
+    return null;
+  }
+  session.lastUsedAt = Date.now();
+  return session;
+}
+
+/**
+ * Close a session's browser and clean up.
+ */
+async function closeSession(session: AgentSession) {
+  try {
+    await session.browser.close();
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Set the visualizer's audio source in an active page.
+ */
+async function setAudioSource(
+  page: import('playwright').Page,
+  source: 'demo' | 'microphone' | 'tab',
+) {
+  await page.evaluate((src) => {
+    const btn = document.querySelector<HTMLButtonElement>(
+      src === 'demo'
+        ? '[data-demo-audio-btn="true"]'
+        : `[data-audio-source="${src}"]`,
+    );
+    btn?.click();
+  }, source);
+  await page.waitForTimeout(2000);
+}
 
 const qualityGateCommands = {
   full: ['bun', ['run', 'check']],
@@ -402,6 +470,305 @@ server.registerTool(
     } catch (e) {
       return asTextResponse(`Error checking health: ${e}`);
     }
+  },
+);
+
+// ── Agent session tools ─────────────────────────────────────────────
+
+server.registerTool(
+  'start_agent_session',
+  {
+    description:
+      'Open the visualizer in a persistent headless browser session and return a session ID. Use this session ID with session_capture_frame, session_switch_preset, session_get_state, and session_watch to interact with a running visualizer across multiple tool calls — the same way a human would browse presets.',
+    inputSchema: z.object({
+      presetId: z
+        .string()
+        .optional()
+        .default('eos-glowsticks-v2-03-music')
+        .describe('Initial preset to load. Defaults to Glowsticks.'),
+      headless: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('Run headless (no visible window).'),
+    }),
+  },
+  async ({ presetId, headless }) => {
+    try {
+      const id = randomUUID();
+      const browser = await chromium.launch({ headless });
+      const page = await browser.newPage({
+        viewport: { width: 1280, height: 720 },
+      });
+
+      await page.goto(
+        `http://localhost:5173/?agent=true&preset=${encodeURIComponent(presetId ?? 'eos-glowsticks-v2-03-music')}`,
+        { waitUntil: 'networkidle', timeout: 15000 },
+      );
+      await page.waitForTimeout(1000);
+
+      // Click launch button if present
+      const launchBtn = page.locator('button:has-text("See visuals now")');
+      if (await launchBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await launchBtn.click();
+      }
+      await page.waitForTimeout(4000);
+
+      const session: AgentSession = {
+        id,
+        browser,
+        page,
+        presetId: presetId ?? 'eos-glowsticks-v2-03-music',
+        createdAt: Date.now(),
+        lastUsedAt: Date.now(),
+        screenshotDir: CAPTURE_DIR,
+      };
+      agentSessions.set(id, session);
+
+      return asTextResponse(
+        [
+          `Session started: ${id}`,
+          `Preset: ${presetId ?? 'eos-glowsticks-v2-03-music'}`,
+          `Screenshots: ${CAPTURE_DIR}`,
+          `Available tools: session_get_state, session_capture_frame, session_switch_preset, session_watch, session_close`,
+        ].join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Failed to start session: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_get_state',
+  {
+    description:
+      'Get the current state of an active agent session — which preset is playing, the audio energy level, FPS, and backend (WebGL/WebGPU).',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+    }),
+  },
+  async ({ sessionId }) => {
+    const session = getSession(sessionId);
+    if (!session) {
+      return asTextResponse(
+        'Session not found or expired. Start a new session with start_agent_session.',
+      );
+    }
+
+    try {
+      const state = await session.page.evaluate(() => {
+        const body = document.body;
+        const dataset = body.dataset;
+        const canvas = document.querySelector('canvas');
+        const overlay = document.querySelector('.milkdrop-overlay');
+        const osdTitle = overlay?.querySelector('.milkdrop-overlay__osd-title');
+        const osdMeta = overlay?.querySelector('.milkdrop-overlay__osd-meta');
+
+        return {
+          page: dataset.page,
+          audioActive: dataset.audioActive,
+          canvasExists: !!canvas,
+          canvasWidth: canvas?.width,
+          canvasHeight: canvas?.height,
+          overlayVisible: overlay?.classList.contains('is-open') ?? false,
+          presetTitle: osdTitle?.textContent?.trim() ?? null,
+          presetAuthor: osdMeta?.textContent?.trim() ?? null,
+          url: window.location.href,
+        };
+      });
+
+      return asTextResponse(JSON.stringify(state, null, 2));
+    } catch (e) {
+      return asTextResponse(`Error reading session state: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_capture_frame',
+  {
+    description:
+      'Capture a screenshot from an active agent session. Returns the file path to the captured image. Use after start_agent_session.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      waitMs: z
+        .number()
+        .int()
+        .min(0)
+        .max(10000)
+        .optional()
+        .default(500)
+        .describe(
+          'Additional ms to wait before capturing (for animations to settle).',
+        ),
+    }),
+  },
+  async ({ sessionId, waitMs }) => {
+    const session = getSession(sessionId);
+    if (!session) {
+      return asTextResponse('Session not found or expired.');
+    }
+
+    try {
+      if (waitMs && waitMs > 0) {
+        await session.page.waitForTimeout(waitMs);
+      }
+
+      const filename = `frame-${session.presetId}-${Date.now()}.png`;
+      const filepath = join(session.screenshotDir, filename);
+      await session.page.screenshot({ path: filepath });
+
+      return asTextResponse(
+        `Frame captured: ${filepath}\nPreset: ${session.presetId}`,
+      );
+    } catch (e) {
+      return asTextResponse(`Error capturing frame: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_switch_preset',
+  {
+    description:
+      'Load a different preset in an active agent session. Waits for the new preset to render before returning.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      presetId: z
+        .string()
+        .describe('Preset ID to load (e.g. "shifter-snakeskin").'),
+      waitMs: z
+        .number()
+        .int()
+        .min(500)
+        .max(15000)
+        .optional()
+        .default(4000)
+        .describe('Ms to wait for the new preset to render.'),
+    }),
+  },
+  async ({ sessionId, presetId, waitMs }) => {
+    const session = getSession(sessionId);
+    if (!session) {
+      return asTextResponse('Session not found or expired.');
+    }
+
+    try {
+      // Navigate to new preset
+      const url = new URL(session.page.url());
+      url.searchParams.set('preset', presetId);
+      await session.page.goto(url.toString(), {
+        waitUntil: 'networkidle',
+        timeout: 15000,
+      });
+      await session.page.waitForTimeout(waitMs ?? 4000);
+
+      session.presetId = presetId;
+
+      return asTextResponse(
+        `Switched to preset: ${presetId}\nReady. Use session_capture_frame to capture the visual.`,
+      );
+    } catch (e) {
+      return asTextResponse(`Error switching preset: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_watch',
+  {
+    description:
+      'Watch the visualizer in an active session for N seconds. Captures frames at intervals so an agent can observe how the visual changes over time with the audio.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+      durationMs: z
+        .number()
+        .int()
+        .min(1000)
+        .max(30000)
+        .optional()
+        .default(5000)
+        .describe('Total duration to watch (ms).'),
+      intervalMs: z
+        .number()
+        .int()
+        .min(500)
+        .max(10000)
+        .optional()
+        .default(1000)
+        .describe('Interval between frames (ms).'),
+    }),
+  },
+  async ({ sessionId, durationMs, intervalMs }) => {
+    const session = getSession(sessionId);
+    if (!session) {
+      return asTextResponse('Session not found or expired.');
+    }
+
+    try {
+      const totalFrames = Math.floor(
+        (durationMs ?? 5000) / (intervalMs ?? 1000),
+      );
+      const frames: string[] = [];
+      const stateSnapshots: string[] = [];
+
+      for (let i = 0; i < totalFrames; i++) {
+        await session.page.waitForTimeout(intervalMs ?? 1000);
+
+        const filename = `watch-${session.presetId}-${Date.now()}.png`;
+        const filepath = join(session.screenshotDir, filename);
+        await session.page.screenshot({ path: filepath });
+        frames.push(filepath);
+
+        const state = await session.page.evaluate(() => {
+          const osdTitle = document.querySelector(
+            '.milkdrop-overlay__osd-title',
+          );
+          return {
+            title: osdTitle?.textContent?.trim() ?? null,
+          };
+        });
+        stateSnapshots.push(
+          `  t=${(i + 1) * (intervalMs ?? 1000)}ms: "${state.title}"`,
+        );
+      }
+
+      return asTextResponse(
+        [
+          `Watched for ${durationMs}ms (${totalFrames} frames)`,
+          `Preset: ${session.presetId}`,
+          'Sequence:',
+          ...stateSnapshots,
+          '',
+          `Frames: ${frames.join(', ')}`,
+        ].join('\n'),
+      );
+    } catch (e) {
+      return asTextResponse(`Error during watch: ${e}`);
+    }
+  },
+);
+
+server.registerTool(
+  'session_close',
+  {
+    description:
+      'Close an active agent session and release the browser. Always call this when done to free resources.',
+    inputSchema: z.object({
+      sessionId: z.string().describe('Session ID from start_agent_session.'),
+    }),
+  },
+  async ({ sessionId }) => {
+    const session = agentSessions.get(sessionId);
+    if (!session) {
+      return asTextResponse('Session not found or already closed.');
+    }
+
+    await closeSession(session);
+    agentSessions.delete(sessionId);
+
+    return asTextResponse('Session closed.');
   },
 );
 
