@@ -270,7 +270,7 @@ export class BrowsePanel {
   private activePresetId: string | null = null;
   private activeBackend: 'webgl' | 'webgpu' = 'webgl';
   private activeCollectionTag = '';
-  private browseMode: BrowseMode = 'featured';
+  private browseMode: BrowseMode = 'all';
   private browseSort: BrowseSort = 'recommended';
   private browseSupportFilter: BrowseFidelityFilter = 'all';
   private browseRenderDebounceId: number | null = null;

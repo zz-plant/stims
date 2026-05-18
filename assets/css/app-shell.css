@@ -3706,6 +3706,7 @@ body[data-page="workspace"] {
     font-size: 1.04rem;
   }
 
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock,
   .stims-shell__stage-dock {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3714,6 +3715,7 @@ body[data-page="workspace"] {
 
   .stims-shell__stage-tool {
     width: 100%;
+    min-height: 44px;
   }
 }
 
