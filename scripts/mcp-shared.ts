@@ -39,8 +39,39 @@ import docsToyScriptIndex from '../docs/TOY_SCRIPT_INDEX.md';
 import docsToys from '../docs/toys.md';
 import readme from '../README.md';
 
-const defaultInstructions =
-  'Use these tools to surface documentation, toy metadata, loader behavior, and development commands for the Stim Webtoys library.';
+const defaultInstructions = [
+  'Stims is a browser-native MilkDrop visualizer with 43+ bundled presets. The MCP server provides tools organized into these categories:',
+  '',
+  '## Documentation & Commands',
+  'list_docs, read_doc_section, search_docs, dev_commands, list_agent_capabilities, read_agent_capability — Explore docs, find commands, load agent workflows.',
+  '',
+  '## Preset Catalog (Worker-compatible)',
+  'list_presets, search_presets, get_preset_info, describe_preset, open_preset_url — Browse, search, and learn about presets without a running visualizer.',
+  '',
+  '## Live Visualizer Session (Stdio-only, requires browser)',
+  'Start with start_agent_session to open the visualizer in a headless browser. Then use:',
+  '- session_get_state — See what preset is playing, audio energy, backend (WebGL/WebGPU)',
+  '- session_capture_frame — Take a screenshot of the current visuals',
+  '- session_describe_frame — Get preset info and screenshot path',
+  '- session_switch_preset — Load a different preset',
+  '- session_tweak("more blue") — Modify visuals with natural language',
+  '- session_apply_source — Apply edited .milk preset source code',
+  '- session_get_preset_source — Read the raw .milk source of any preset',
+  '- session_get_inspector_values — Read current MilkDrop field values',
+  '- session_compare — Capture before/after frames when making changes',
+  '- session_watch — Record a timelapse of visuals over time',
+  '- session_vibe("dark storm") — Search presets by natural language description, returns screenshots',
+  '- session_close — Release browser resources when done',
+  '',
+  '## Automation (Stdio-only)',
+  'run_quality_gate, capture_toy_screenshot, capture_preset, preview_gallery — Run local checks and capture visual output.',
+  '',
+  '## Workflow Tips',
+  '1. Browse: list_presets → search_presets → describe_preset → open_preset_url',
+  '2. Visualize: start_agent_session → session_get_state → session_capture_frame',
+  '3. Vibe Code: start_agent_session → session_vibe("description") → get source → tweak → compare → iterate',
+  '4. Tweak: session_tweak with natural language ("more blue", "increase warp", "brighter")',
+].join('\n');
 
 const markdownSources = {
   'README.md': readme,
