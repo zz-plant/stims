@@ -1,0 +1,124 @@
+.bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+  background: linear-gradient(
+    0deg,
+    rgba(5, 7, 13, 0.97),
+    rgba(5, 7, 13, 0.88) 60%,
+    transparent
+  );
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--stims-line-soft);
+  transform: translateY(100%);
+  opacity: 0;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.bar[data-visible="true"] {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.energyMeter {
+  height: 2px;
+  background: var(--stims-good);
+  transition: width 0.15s ease;
+  border-radius: 0 1px 1px 0;
+}
+
+.nowPlaying {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 2px;
+  min-height: 24px;
+}
+
+.nowPlayingTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--stims-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.nowPlayingAuthor {
+  font-size: 0.68rem;
+  color: var(--stims-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 4px 4px 2px;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 52px;
+  min-height: 48px;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--stims-muted);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action:active {
+  color: var(--stims-accent);
+  transform: scale(1.08);
+}
+
+.action[data-active="true"] {
+  color: var(--stims-accent);
+  background: rgba(244, 122, 84, 0.12);
+}
+
+.actionLabel {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+@media (width >= 768px) {
+  .bar {
+    display: none;
+  }
+}
+
+[data-device-tier="low"] .bar {
+  backdrop-filter: none;
+  background: rgba(5, 7, 13, 0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}

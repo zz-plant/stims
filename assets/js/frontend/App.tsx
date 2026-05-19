@@ -8,12 +8,15 @@ import {
   getActiveThemePreference,
   setThemePreference,
 } from '../core/theme-preferences.ts';
+import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import {
   getFullscreenElement,
   subscribeToFullscreenChange,
   toggleElementFullscreen,
 } from './fullscreen.ts';
+import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
+import { OnboardingFlow, useOnboarding } from './OnboardingFlow.tsx';
 import { useWorkspace, WorkspaceProvider } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import {
@@ -160,6 +163,9 @@ function StimsWorkspaceAppShell() {
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
 
+  const { showOnboarding, dismissOnboarding } = useOnboarding();
+  const { visibleHint, showHint, dismissHint } = useHelpHints();
+
   const handleToggleFullscreen = useCallback(() => {
     const stageElement = w.stageRef.current?.parentElement;
     if (!stageElement) {
@@ -273,6 +279,24 @@ function StimsWorkspaceAppShell() {
     liveMode,
     w.engineReady,
   ]);
+
+  useEffect(() => {
+    if (liveMode && w.engineSnapshot?.audioActive) {
+      showHint('first-play');
+    }
+  }, [liveMode, w.engineSnapshot?.audioActive, showHint]);
+
+  useEffect(() => {
+    if (w.routeState.panel === 'browse') {
+      showHint('browse-open');
+    }
+  }, [w.routeState.panel, showHint]);
+
+  useEffect(() => {
+    if (w.routeState.panel === 'editor') {
+      showHint('editor-open');
+    }
+  }, [w.routeState.panel, showHint]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -415,6 +439,23 @@ function StimsWorkspaceAppShell() {
       />
 
       <WorkspaceToast toast={w.toast} onDismiss={w.dismissToast} />
+
+      {showOnboarding ? <OnboardingFlow onDismiss={dismissOnboarding} /> : null}
+
+      <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
+
+      {liveMode ? (
+        <MobileControlBar
+          audioEnergy={audioEnergy}
+          presetTitle={w.selectedPreset?.title ?? w.featuredPreset?.title ?? ''}
+          presetAuthor={
+            w.selectedPreset?.author ?? w.featuredPreset?.author ?? ''
+          }
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={handleToggleFullscreen}
+          onToggleTheme={handleToggleTheme}
+        />
+      ) : null}
     </main>
   );
 

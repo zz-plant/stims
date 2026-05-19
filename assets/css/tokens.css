@@ -1,0 +1,505 @@
+/* ═════════════════════════════════════════════════════════════════════
+   Stims Unified Design Tokens
+   Single source of truth — all CSS custom properties for the entire app.
+   Replaces duplicate :root blocks in base.css, app-shell.css, index.css.
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ── Responsive Breakpoints (mobile-first) ──────────────────────── */
+/* Usage: @media (width >= var(--bp-sm)) { ... } — not directly in media queries
+   Documented here as the canonical scale. Actual media queries use raw values.
+   Scale: sm=640px (phone landscape), md=1024px (tablet), lg=1440px (desktop) */
+
+/* ── Base Opacity Primitives ─────────────────────────────────────── */
+:root {
+  --stims-white-02: rgba(255, 255, 255, 0.02);
+  --stims-white-03: rgba(255, 255, 255, 0.03);
+  --stims-white-04: rgba(255, 255, 255, 0.04);
+  --stims-white-05: rgba(255, 255, 255, 0.05);
+  --stims-white-06: rgba(255, 255, 255, 0.06);
+  --stims-white-08: rgba(255, 255, 255, 0.08);
+  --stims-white-12: rgba(255, 255, 255, 0.12);
+  --stims-border-08: rgba(255, 255, 255, 0.08);
+  --stims-shadow-22: rgba(0, 0, 0, 0.22);
+  --stims-shadow-34: rgba(0, 0, 0, 0.34);
+  --stims-muted-35: rgba(246, 239, 228, 0.35);
+  --stims-focus-95: rgba(244, 122, 84, 0.95);
+  --stims-focus-ring-35: rgba(244, 122, 84, 0.35);
+  --stims-accent-blue-08: rgba(119, 201, 255, 0.08);
+
+  /* ── Viewport ──────────────────────────────────────────────── */
+  --app-height: 100dvh;
+  --app-width: 100dvw;
+}
+
+/* ── Semantic Color Palette (dark mode default) ──────────────────── */
+:root {
+  /* Surface colors */
+  --bg-color: #0e1518;
+  --bg-color-secondary: #162126;
+  --card-bg: #182328;
+
+  /* Text colors */
+  --text-color: #f7f4eb;
+  --text-muted: rgba(247, 244, 235, 0.76);
+  --accent-contrast: #fdfdfd;
+
+  /* Brand accents */
+  --link-color: #9fd4cb;
+  --link-hover: #e9d49b;
+  --accent-color: #5fc0b5;
+  --accent-purple: #87a9a2;
+  --accent-magenta: #d38954;
+
+  /* Glow / soft accents */
+  --glow-color: rgba(95, 192, 181, 0.16);
+  --accent-soft: rgba(95, 192, 181, 0.1);
+  --hover-bg: rgba(95, 192, 181, 0.12);
+  --highlight-glow: rgba(211, 137, 84, 0.18);
+
+  /* ── App-shell semantic colors (aliased from above) ────────── */
+  --stims-ink: var(--text-color);
+  --stims-ink-strong: #fff8ef;
+  --stims-muted: rgba(246, 239, 228, 0.74);
+  --stims-line: var(--stims-white-12);
+  --stims-line-strong: rgba(255, 255, 255, 0.2);
+  --stims-line-soft: var(--stims-white-08);
+
+  /* State colors */
+  --stims-cool: #77c9ff;
+  --stims-accent: #f47a54;
+  --stims-accent-soft: rgba(244, 122, 84, 0.2);
+  --stims-accent-glow: rgba(244, 122, 84, 0.18);
+  --stims-good: #7de0a2;
+  --stims-warn: #ffd166;
+  --stims-bad: #ff7b72;
+}
+
+/* ── Surface Gradients & Effects ─────────────────────────────────── */
+:root {
+  --surface-gradient: linear-gradient(
+    180deg,
+    rgba(255, 248, 234, 0.05),
+    transparent
+  );
+  --surface-border: rgba(255, 244, 222, 0.14);
+  --surface-sheen: none;
+  --surface-texture: none;
+  --surface-highlight: none;
+  --surface-emboss: none;
+
+  --accent-gradient: linear-gradient(
+    120deg,
+    rgba(95, 192, 181, 0.95),
+    rgba(233, 212, 155, 0.72),
+    rgba(211, 137, 84, 0.72)
+  );
+
+  --panel-gradient: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card-bg) 95%, transparent),
+    color-mix(in srgb, #10181d 82%, var(--card-bg))
+  );
+  --panel-glass: color-mix(in srgb, var(--card-bg) 84%, transparent);
+  --panel-highlight: rgba(255, 248, 234, 0.08);
+
+  --aurora-soft: radial-gradient(
+    circle at 20% 10%,
+    color-mix(in srgb, var(--accent-color) 34%, transparent),
+    transparent 48%
+  );
+
+  --interactive-border: color-mix(
+    in srgb,
+    var(--accent-color) 28%,
+    var(--surface-border)
+  );
+  --interactive-bg: color-mix(in srgb, var(--card-bg) 85%, transparent);
+  --interactive-bg-hover: color-mix(
+    in srgb,
+    var(--accent-color) 14%,
+    var(--card-bg)
+  );
+  --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+
+  /* ── App-shell panel fills ────────────────────────────────── */
+  --stims-panel: rgba(10, 13, 20, 0.74);
+  --stims-panel-strong: rgba(12, 16, 26, 0.92);
+  --stims-panel-fill: linear-gradient(
+    180deg,
+    rgba(14, 19, 30, 0.96),
+    rgba(7, 11, 20, 0.9)
+  );
+  --stims-panel-fill-strong: linear-gradient(
+    180deg,
+    rgba(14, 19, 30, 0.98),
+    rgba(6, 9, 16, 0.96)
+  );
+  --stims-control-fill: linear-gradient(
+    180deg,
+    var(--stims-white-08),
+    var(--stims-white-02)
+  );
+  --stims-control-fill-hover: linear-gradient(
+    180deg,
+    var(--stims-white-12),
+    var(--stims-white-04)
+  );
+  --stims-rail-fill: linear-gradient(
+    180deg,
+    rgba(9, 13, 21, 0.9),
+    rgba(5, 8, 15, 0.76)
+  );
+}
+
+/* ── Shadows ──────────────────────────────────────────────────────── */
+:root {
+  /* Index.css shadow system */
+  --shadow-strong:
+    0 24px 60px rgba(0, 0, 0, 0.34), 0 4px 18px rgba(95, 192, 181, 0.12);
+  --shadow-soft:
+    0 10px 26px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(95, 192, 181, 0.1);
+  --shadow-surface:
+    0 18px 42px rgba(0, 0, 0, 0.28), 0 2px 12px rgba(95, 192, 181, 0.12);
+
+  /* App-shell shadow system */
+  --stims-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+  --stims-shadow-soft: 0 14px 34px var(--stims-shadow-22);
+  --stims-shadow-control:
+    0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 var(--stims-white-06);
+}
+
+/* ── Radii ────────────────────────────────────────────────────────── */
+:root {
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Index.css larger radii */
+  --radius-lg-index: 26px;
+  --radius-md-index: 18px;
+  --radius-pill: 999px;
+
+  /* App-shell radii */
+  --stims-radius-panel: 18px;
+  --stims-radius-card: 14px;
+  --stims-radius-control: 10px;
+  --stims-radius-stage: 18px;
+  --stims-radius-mobile-panel: 16px;
+}
+
+/* ── Typography ───────────────────────────────────────────────────── */
+:root {
+  --font-family-base:
+    "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-family-mono: "Space Mono", monospace;
+  --stims-display: "Cormorant Garamond", "Iowan Old Style", serif;
+
+  /* Base.css type scale (--text-*) */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Index.css type scale (--font-size-*) — aliased for compatibility */
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-base: var(--text-base);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-xl);
+  --font-size-2xl: var(--text-2xl);
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+}
+
+/* ── Spacing (8px base, two scales for compatibility) ─────────────── */
+:root {
+  /* Base.css scale (--space-N) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Index.css scale (--space-{t-shirt}) */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 2.5rem;
+  --space-3xl: 3rem;
+  --space-4xl: 4rem;
+}
+
+/* ── Transitions & Motion ─────────────────────────────────────────── */
+:root {
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Spring physics for sheets / overlays */
+  --spring-enter: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-exit: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --spring-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ── Layout ───────────────────────────────────────────────────────── */
+:root {
+  --content-width: 1220px;
+  --section-gap: clamp(1.9rem, 2.8vw, 3rem);
+  --touch-target-min: 44px;
+
+  /* Interactive states */
+  --focus-ring: 0 0 0 3px rgba(244, 122, 84, 0.42);
+  --focus-ring-offset: 0 0 0 2px rgba(5, 8, 14, 0.8);
+}
+
+/* ── Z-Index Scale (canonical stacking order) ─────────────────────── */
+:root {
+  --z-ambient: 0; /* Stage ambient backgrounds */
+  --z-stage-root: 1; /* Canvas / renderer */
+  --z-stage-hero: 2; /* Hero overlay (home mode) */
+  --z-frame-chrome: 3; /* Corner brand, rail actions */
+  --z-search-sticky: 6; /* Sticky search bar */
+  --z-nav: 10; /* Top navigation */
+  --z-dock: 25; /* Control dock / tool panels */
+  --z-toast: 30; /* Toast notifications */
+  --z-modal-backdrop: 40; /* Modal / sheet backdrop */
+  --z-modal: 45; /* Modal / sheet panel */
+  --z-loading: 9999; /* Global loading overlay */
+  --z-home-link: 1000; /* Floating home link */
+  --z-control-panel: 1100; /* Floating control panels */
+  --z-sheet: 1125; /* Tool sheets */
+  --z-active-nav: 1200; /* Active toy nav bar */
+  --z-error-overlay: 2000; /* Error / rendering overlay */
+}
+
+/* ── TV Mode Scaling ──────────────────────────────────────────────── */
+:root {
+  --tv-scale-multiplier: 1;
+  --tv-focus-outline-width: 2px;
+  --tv-focus-outline-offset: 3px;
+  --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
+  --tv-safe-padding: 0px;
+}
+
+body.tv-mode {
+  --tv-scale-multiplier: 1.16;
+  --tv-focus-outline-width: 4px;
+  --tv-focus-outline-offset: 5px;
+  --tv-content-padding: clamp(2.2rem, 2.4vw + 1.6rem, 4.4rem);
+  --tv-safe-padding: 28px;
+}
+
+/* ── MilkDrop Overlay Theme ───────────────────────────────────────── */
+:root {
+  --milkdrop-overlay-bg-primary: rgba(11, 18, 30, 0.96);
+  --milkdrop-overlay-bg-secondary: rgba(8, 12, 22, 0.94);
+  --milkdrop-overlay-bg-tertiary: rgba(8, 12, 22, 0.96);
+  --milkdrop-overlay-overlay: rgba(12, 18, 32, 0.9);
+  --milkdrop-overlay-overlay-2: rgba(12, 18, 22, 0.92);
+  --milkdrop-overlay-border: rgba(164, 194, 255, 0.18);
+  --milkdrop-overlay-blur: 18px;
+  --milkdrop-overlay-blur-lg: 22px;
+  --milkdrop-overlay-shadow: rgba(0, 0, 0, 0.42);
+  --milkdrop-overlay-shadow-lg: rgba(0, 0, 0, 0.48);
+
+  --milkdrop-overlay-button: rgba(108, 176, 255, 0.22);
+  --milkdrop-overlay-button-border: rgba(108, 176, 255, 0.4);
+  --milkdrop-active-indicator: rgba(108, 176, 255, 0.22);
+  --milkdrop-active-indicator-border: rgba(108, 176, 255, 0.4);
+
+  /* Agent vibe mode */
+  --agent-vibe-intensity: 1;
+
+  /* Toy shell effects */
+  --toy-shell-metal: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.02) 38%,
+    rgba(0, 0, 0, 0.12) 66%,
+    rgba(0, 0, 0, 0.18)
+  );
+  --toy-shell-highlight: rgba(255, 255, 255, 0.16);
+  --toy-shell-shadow: rgba(2, 5, 12, 0.48);
+}
+
+/* ── Scrollbar (dark default) ─────────────────────────────────── */
+:root {
+  scrollbar-color: color-mix(in srgb, var(--accent-color) 55%, transparent)
+    color-mix(in srgb, var(--card-bg) 80%, transparent);
+}
+
+/* ── Light Theme Override ─────────────────────────────────────────── */
+html.light {
+  --bg-color: #f4efe4;
+  --bg-color-secondary: #e5ded0;
+  --text-color: #233038;
+  --text-muted: #52606b;
+  --accent-contrast: #ffffff;
+  --link-color: #2f6f6a;
+  --link-hover: #7e4c2d;
+  --accent-color: #2f8b83;
+  --accent-purple: #6c8f89;
+  --accent-magenta: #b86f3d;
+  --glow-color: rgba(47, 139, 131, 0.1);
+  --accent-soft: rgba(47, 139, 131, 0.08);
+  --card-bg: #fffaf0;
+  --hover-bg: rgba(47, 139, 131, 0.12);
+  --highlight-glow: rgba(184, 111, 61, 0.14);
+  --surface-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0.02), transparent);
+  --surface-border: rgba(35, 48, 56, 0.14);
+  --accent-gradient: linear-gradient(
+    120deg,
+    rgba(47, 139, 131, 0.78),
+    rgba(232, 198, 127, 0.85),
+    rgba(184, 111, 61, 0.7)
+  );
+  --panel-glass: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.45);
+  --aurora-soft: radial-gradient(
+    circle at 20% 10%,
+    color-mix(in srgb, var(--accent-color) 18%, transparent),
+    transparent 52%
+  );
+  --interactive-shadow: 0 2px 7px rgba(15, 23, 42, 0.1);
+  --shadow-strong:
+    0 12px 24px rgba(15, 23, 42, 0.11), 0 2px 8px rgba(91, 110, 130, 0.11);
+  --shadow-soft:
+    0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(91, 110, 130, 0.09);
+  --shadow-surface:
+    0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
+
+  /* App-shell light overrides */
+  --stims-ink: var(--text-color);
+  --stims-ink-strong: #0f172a;
+  --stims-muted: rgba(35, 48, 56, 0.72);
+  --stims-line: rgba(43, 56, 77, 0.14);
+  --stims-line-strong: rgba(43, 56, 77, 0.22);
+  --stims-line-soft: rgba(43, 56, 77, 0.08);
+  --stims-panel: rgba(255, 250, 240, 0.8);
+  --stims-panel-strong: rgba(255, 250, 240, 0.94);
+
+  color-scheme: light;
+
+  scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
+    color-mix(in srgb, var(--card-bg) 80%, transparent);
+}
+
+/* ── Performance Tier: Low-End Devices ────────────────────────────── */
+[data-device-tier="low"] {
+  --stims-white-02: rgba(255, 255, 255, 0.01);
+  --stims-white-04: rgba(255, 255, 255, 0.02);
+  --stims-white-05: rgba(255, 255, 255, 0.03);
+  --stims-white-06: rgba(255, 255, 255, 0.03);
+  --stims-white-08: rgba(255, 255, 255, 0.04);
+  --stims-white-12: rgba(255, 255, 255, 0.06);
+}
+
+[data-device-tier="low"] .stims-shell__stage-ambient-beam,
+[data-device-tier="low"] .stims-shell__stage-ambient-ring,
+[data-device-tier="low"] .stims-shell__stage-ambient-grid {
+  display: none;
+}
+
+[data-device-tier="low"] .stims-shell__stage-ambient-orb {
+  animation: none;
+  opacity: 0.25;
+}
+
+[data-device-tier="low"] .stims-shell__backdrop-filter,
+[data-device-tier="low"] .stims-shell__stage-frame::before,
+[data-device-tier="low"] .stims-shell__stage-frame::after,
+[data-device-tier="low"] .stims-shell::before,
+[data-device-tier="low"] .stims-shell::after {
+  display: none;
+}
+
+/* ── System Theme Detection ───────────────────────────────────────── */
+/* Auto-apply light theme when system prefers light, unless user manually set dark */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --bg-color: #f4efe4;
+    --bg-color-secondary: #e5ded0;
+    --text-color: #233038;
+    --text-muted: #52606b;
+    --accent-contrast: #ffffff;
+    --link-color: #2f6f6a;
+    --link-hover: #7e4c2d;
+    --accent-color: #2f8b83;
+    --accent-purple: #6c8f89;
+    --accent-magenta: #b86f3d;
+    --glow-color: rgba(47, 139, 131, 0.1);
+    --accent-soft: rgba(47, 139, 131, 0.08);
+    --card-bg: #fffaf0;
+    --hover-bg: rgba(47, 139, 131, 0.12);
+    --highlight-glow: rgba(184, 111, 61, 0.14);
+    --surface-gradient: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.02),
+      transparent
+    );
+    --surface-border: rgba(35, 48, 56, 0.14);
+    --accent-gradient: linear-gradient(
+      120deg,
+      rgba(47, 139, 131, 0.78),
+      rgba(232, 198, 127, 0.85),
+      rgba(184, 111, 61, 0.7)
+    );
+    --panel-glass: color-mix(in srgb, var(--card-bg) 92%, transparent);
+    --panel-highlight: rgba(255, 255, 255, 0.45);
+    --aurora-soft: radial-gradient(
+      circle at 20% 10%,
+      color-mix(in srgb, var(--accent-color) 18%, transparent),
+      transparent 52%
+    );
+    --interactive-shadow: 0 2px 7px rgba(15, 23, 42, 0.1);
+    --shadow-strong:
+      0 12px 24px rgba(15, 23, 42, 0.11), 0 2px 8px rgba(91, 110, 130, 0.11);
+    --shadow-soft:
+      0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(91, 110, 130, 0.09);
+    --shadow-surface:
+      0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
+    --stims-ink: var(--text-color);
+    --stims-ink-strong: #0f172a;
+    --stims-muted: rgba(35, 48, 56, 0.72);
+    --stims-line: rgba(43, 56, 77, 0.14);
+    --stims-line-strong: rgba(43, 56, 77, 0.22);
+    --stims-line-soft: rgba(43, 56, 77, 0.08);
+    --stims-panel: rgba(255, 250, 240, 0.8);
+    --stims-panel-strong: rgba(255, 250, 240, 0.94);
+    color-scheme: light;
+    scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
+      color-mix(in srgb, var(--card-bg) 80%, transparent);
+  }
+}
+
+/* Explicit dark mode override */
+html.dark {
+  color-scheme: dark;
+}
+
+/* ── Reduced Motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0.01ms;
+    --transition-base: 0.01ms;
+    --transition-slow: 0.01ms;
+    --spring-enter: 0.01ms linear;
+    --spring-exit: 0.01ms linear;
+    --spring-bounce: 0.01ms linear;
+  }
+}

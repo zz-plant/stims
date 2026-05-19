@@ -28,69 +28,7 @@
 }
 
 :root {
-  --stims-white-02: rgba(255, 255, 255, 0.02);
-  --stims-white-04: rgba(255, 255, 255, 0.04);
-  --stims-white-05: rgba(255, 255, 255, 0.05);
-  --stims-white-06: rgba(255, 255, 255, 0.06);
-  --stims-white-08: rgba(255, 255, 255, 0.08);
-  --stims-white-12: rgba(255, 255, 255, 0.12);
-  --stims-shadow-22: rgba(0, 0, 0, 0.22);
-  --stims-accent-blue-08: rgba(119, 201, 255, 0.08);
-  --stims-ink: #f6efe4;
-  --stims-ink-strong: #fff8ef;
-  --stims-muted: rgba(246, 239, 228, 0.74);
-  --stims-line: var(--stims-white-12);
-  --stims-line-strong: rgba(255, 255, 255, 0.2);
-  --stims-line-soft: var(--stims-white-08);
-
-  /* Interactive states */
-  --focus-ring: 0 0 0 3px rgba(244, 122, 84, 0.42);
-  --focus-ring-offset: 0 0 0 2px rgba(5, 8, 14, 0.8);
-  --touch-target-min: 44px;
-  --stims-panel: rgba(10, 13, 20, 0.74);
-  --stims-panel-strong: rgba(12, 16, 26, 0.92);
-  --stims-panel-fill: linear-gradient(
-    180deg,
-    rgba(14, 19, 30, 0.96),
-    rgba(7, 11, 20, 0.9)
-  );
-  --stims-panel-fill-strong: linear-gradient(
-    180deg,
-    rgba(14, 19, 30, 0.98),
-    rgba(6, 9, 16, 0.96)
-  );
-  --stims-control-fill: linear-gradient(
-    180deg,
-    var(--stims-white-08),
-    var(--stims-white-02)
-  );
-  --stims-control-fill-hover: linear-gradient(
-    180deg,
-    var(--stims-white-12),
-    var(--stims-white-04)
-  );
-  --stims-cool: #77c9ff;
-  --stims-accent: #f47a54;
-  --stims-accent-soft: rgba(244, 122, 84, 0.2);
-  --stims-accent-glow: rgba(244, 122, 84, 0.18);
-  --stims-good: #7de0a2;
-  --stims-warn: #ffd166;
-  --stims-bad: #ff7b72;
-  --stims-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
-  --stims-shadow-soft: 0 14px 34px var(--stims-shadow-22);
-  --stims-shadow-control:
-    0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 var(--stims-white-06);
-  --stims-rail-fill: linear-gradient(
-    180deg,
-    rgba(9, 13, 21, 0.9),
-    rgba(5, 8, 15, 0.76)
-  );
-  --stims-radius-panel: 18px;
-  --stims-radius-card: 14px;
-  --stims-radius-control: 10px;
-  --stims-radius-stage: 18px;
-  --stims-radius-mobile-panel: 16px;
-  --stims-display: "Cormorant Garamond", "Iowan Old Style", serif;
+  /* All design tokens now live in tokens.css — only app-shell-specific values remain here. */
 }
 
 body[data-page="workspace"] {

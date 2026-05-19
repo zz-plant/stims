@@ -1,115 +1,5 @@
-:root {
-  --stims-white-02: rgba(255, 255, 255, 0.02);
-  --stims-white-03: rgba(255, 255, 255, 0.03);
-  --stims-white-04: rgba(255, 255, 255, 0.04);
-  --stims-white-05: rgba(255, 255, 255, 0.05);
-  --stims-white-06: rgba(255, 255, 255, 0.06);
-  --stims-white-08: rgba(255, 255, 255, 0.08);
-  --stims-white-12: rgba(255, 255, 255, 0.12);
-  --stims-focus-95: rgba(244, 122, 84, 0.95);
-  --stims-focus-ring-35: rgba(244, 122, 84, 0.35);
-  --bg-color: #0e1518;
-  --bg-color-secondary: #162126;
-  --text-color: #f7f4eb;
-  --text-muted: rgba(247, 244, 235, 0.76);
-  --accent-contrast: #fdfdfd;
-  --link-color: #9fd4cb;
-  --link-hover: #e9d49b;
-  --accent-color: #5fc0b5;
-  --accent-purple: #87a9a2;
-  --accent-magenta: #d38954;
-  --glow-color: rgba(95, 192, 181, 0.16);
-  --accent-soft: rgba(95, 192, 181, 0.1);
-  --card-bg: #182328;
-  --hover-bg: rgba(95, 192, 181, 0.12);
-  --highlight-glow: rgba(211, 137, 84, 0.18);
-  --surface-gradient: linear-gradient(
-    180deg,
-    rgba(255, 248, 234, 0.05),
-    transparent
-  );
-  --surface-border: rgba(255, 244, 222, 0.14);
-  --surface-sheen: none;
-  --surface-texture: none;
-  --surface-highlight: none;
-  --surface-emboss: none;
-  --panel-gradient: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--card-bg) 95%, transparent),
-    color-mix(in srgb, #10181d 82%, var(--card-bg))
-  );
-  --shadow-strong:
-    0 24px 60px rgba(0, 0, 0, 0.34), 0 4px 18px rgba(95, 192, 181, 0.12);
-  --shadow-soft:
-    0 10px 26px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(95, 192, 181, 0.1);
-  --shadow-surface:
-    0 18px 42px rgba(0, 0, 0, 0.28), 0 2px 12px rgba(95, 192, 181, 0.12);
-  --radius-lg: 26px;
-  --radius-md: 18px;
-  --radius-pill: 999px;
-  --content-width: 1220px;
-  --section-gap: clamp(1.9rem, 2.8vw, 3rem);
-  --accent-gradient: linear-gradient(
-    120deg,
-    rgba(95, 192, 181, 0.95),
-    rgba(233, 212, 155, 0.72),
-    rgba(211, 137, 84, 0.72)
-  );
-  --panel-glass: color-mix(in srgb, var(--card-bg) 84%, transparent);
-  --panel-highlight: rgba(255, 248, 234, 0.08);
-  --aurora-soft: radial-gradient(
-    circle at 20% 10%,
-    color-mix(in srgb, var(--accent-color) 34%, transparent),
-    transparent 48%
-  );
-  --interactive-border: color-mix(
-    in srgb,
-    var(--accent-color) 28%,
-    var(--surface-border)
-  );
-  --interactive-bg: color-mix(in srgb, var(--card-bg) 85%, transparent);
-  --interactive-bg-hover: color-mix(
-    in srgb,
-    var(--accent-color) 14%,
-    var(--card-bg)
-  );
-  --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
-  --tv-scale-multiplier: 1;
-  --tv-focus-outline-width: 2px;
-  --tv-focus-outline-offset: 3px;
-  --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
-  --tv-safe-padding: 0px;
-  /* Spacing scale (8px base) */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 2.5rem;
-  --space-3xl: 3rem;
-  --space-4xl: 4rem;
-  /* Typography scale */
-  --font-family-base:
-    "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-family-mono: "Space Mono", monospace;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-bold: 700;
-  --line-height-tight: 1.2;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
-  /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
-  --transition-slow: 0.3s ease;
-}
-
+/* All design tokens now live in tokens.css — loaded before this file.
+   HTML reset and component styles follow. */
 html {
   color-scheme: dark;
 }
@@ -120,15 +10,14 @@ html {
   box-sizing: border-box;
 }
 
-body.tv-mode {
-  --tv-scale-multiplier: 1.16;
-  --tv-focus-outline-width: 4px;
-  --tv-focus-outline-offset: 5px;
-  --tv-content-padding: clamp(2.2rem, 2.4vw + 1.6rem, 4.4rem);
-  --tv-safe-padding: 32px;
-}
+/* Light theme and TV mode token overrides now live in tokens.css. */
 
 :focus-visible {
+  outline: var(--tv-focus-outline-width) solid var(--accent-color);
+  outline-offset: var(--tv-focus-outline-offset);
+  transition: outline-offset 0.15s ease;
+}
+.sr-only {
   outline: var(--tv-focus-outline-width) solid var(--accent-color);
   outline-offset: var(--tv-focus-outline-offset);
   transition: outline-offset 0.15s ease;
@@ -153,51 +42,7 @@ canvas {
   }
 }
 
-html.light {
-  --bg-color: #f4efe4;
-  --bg-color-secondary: #e5ded0;
-  --text-color: #233038;
-  --text-muted: #52606b;
-  --accent-contrast: #ffffff;
-  --link-color: #2f6f6a;
-  --link-hover: #7e4c2d;
-  --accent-color: #2f8b83;
-  --accent-purple: #6c8f89;
-  --accent-magenta: #b86f3d;
-  --glow-color: rgba(47, 139, 131, 0.1);
-  --accent-soft: rgba(47, 139, 131, 0.08);
-  --card-bg: #fffaf0;
-  --hover-bg: rgba(47, 139, 131, 0.12);
-  --highlight-glow: rgba(184, 111, 61, 0.14);
-  --surface-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0.02), transparent);
-  --surface-border: rgba(35, 48, 56, 0.14);
-  --surface-sheen: none;
-  --surface-texture: none;
-  --surface-highlight: none;
-  --surface-emboss: none;
-  --accent-gradient: linear-gradient(
-    120deg,
-    rgba(47, 139, 131, 0.78),
-    rgba(232, 198, 127, 0.85),
-    rgba(184, 111, 61, 0.7)
-  );
-  --panel-glass: color-mix(in srgb, var(--card-bg) 92%, transparent);
-  --panel-highlight: rgba(255, 255, 255, 0.45);
-  --aurora-soft: radial-gradient(
-    circle at 20% 10%,
-    color-mix(in srgb, var(--accent-color) 18%, transparent),
-    transparent 52%
-  );
-  --interactive-shadow: 0 2px 7px rgba(15, 23, 42, 0.1);
-  --shadow-strong:
-    0 12px 24px rgba(15, 23, 42, 0.11), 0 2px 8px rgba(91, 110, 130, 0.11);
-  --shadow-soft:
-    0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(91, 110, 130, 0.09);
-  --shadow-surface:
-    0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
-  color-scheme: light;
-}
-
+/* Light theme and TV mode token overrides now live in tokens.css. */
 .sr-only {
   /* biome-ignore lint/complexity/noImportantStyles: a11y utility */
   position: absolute !important;

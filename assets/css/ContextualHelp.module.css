@@ -1,0 +1,82 @@
+.toast {
+  position: fixed;
+  bottom: 86px;
+  left: 50%;
+  z-index: 28;
+  max-width: min(340px, calc(100vw - 32px));
+  padding: 12px 36px 12px 16px;
+  border-radius: 14px;
+  background: var(--stims-panel-strong);
+  border: 1px solid var(--stims-line-strong);
+  box-shadow: var(--stims-shadow);
+  color: var(--stims-ink);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  transform: translateX(-50%);
+  animation: help-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  pointer-events: auto;
+}
+
+.toast[data-exiting="true"] {
+  animation: help-exit 0.2s ease forwards;
+}
+
+@keyframes help-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes help-exit {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 6px;
+  background: var(--stims-white-06);
+  color: var(--stims-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.closeButton:hover {
+  background: var(--stims-white-12);
+  color: var(--stims-ink);
+}
+
+@media (width >= 768px) {
+  .toast {
+    bottom: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast[data-exiting="true"] {
+    animation-duration: 0.01ms;
+  }
+}
