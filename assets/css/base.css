@@ -114,12 +114,7 @@ textarea::placeholder {
   }
 }
 
-body.tv-mode {
-  --tv-scale-multiplier: 1.12;
-  --tv-focus-outline-width: 4px;
-  --tv-focus-outline-offset: 5px;
-  --tv-safe-padding: 28px;
-}
+/* TV mode tokens now in tokens.css */
 canvas {
   display: block;
   /* Prevent text selection on canvas */
@@ -4125,17 +4120,6 @@ body.tv-mode .control-panel input {
   }
 }
 
-:root {
-  --toy-shell-metal: linear-gradient(
-    180deg,
-    #5d6d93 0%,
-    #344563 12%,
-    #18233b 100%
-  );
-  --toy-shell-highlight: rgba(255, 255, 255, 0.16);
-  --toy-shell-shadow: rgba(2, 5, 12, 0.48);
-}
-
 body {
   background:
     radial-gradient(
@@ -4205,16 +4189,6 @@ body {
 
 .active-toy-status p {
   color: rgba(230, 236, 245, 0.8);
-}
-
-:root {
-  --toy-shell-metal: linear-gradient(
-    180deg,
-    #8a95b0 0%,
-    #556383 10%,
-    #2c3654 30%,
-    #18233b 100%
-  );
 }
 
 .active-toy-status__content {

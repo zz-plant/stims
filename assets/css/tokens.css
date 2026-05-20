@@ -168,6 +168,30 @@
     0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 var(--stims-white-06);
 }
 
+/* ── Page-Level Panel Tokens (used by index.css home/layout shells) ─ */
+:root {
+  --panel-solid: color-mix(in srgb, var(--card-bg) 95%, #091015);
+  --panel-subtle: color-mix(in srgb, var(--card-bg) 91%, transparent);
+  --surface-border-strong: color-mix(
+    in srgb,
+    var(--accent-color) 22%,
+    var(--surface-border)
+  );
+  --shadow-panel:
+    0 18px 38px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.12);
+  --shadow-panel-hover:
+    0 24px 46px rgba(0, 0, 0, 0.26), 0 6px 16px rgba(0, 0, 0, 0.14);
+}
+
+html.light {
+  --panel-solid: color-mix(in srgb, var(--card-bg) 97%, #ffffff);
+  --panel-subtle: color-mix(in srgb, var(--card-bg) 94%, #ffffff);
+  --shadow-panel:
+    0 16px 32px rgba(15, 23, 42, 0.08), 0 3px 10px rgba(15, 23, 42, 0.06);
+  --shadow-panel-hover:
+    0 22px 44px rgba(15, 23, 42, 0.11), 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
 /* ── Radii ────────────────────────────────────────────────────────── */
 :root {
   --radius-sm: 0.25rem;

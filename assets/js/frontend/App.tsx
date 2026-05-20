@@ -17,6 +17,7 @@ import {
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { OnboardingFlow, useOnboarding } from './OnboardingFlow.tsx';
+import { SplitViewBrowse } from './SplitViewBrowse.tsx';
 import { useWorkspace, WorkspaceProvider } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import {
@@ -437,6 +438,19 @@ function StimsWorkspaceAppShell() {
         onMotionPreferenceChange={(enabled) => setMotionPreference({ enabled })}
         stageAnchoredToolOpen={stageAnchoredToolOpen}
       />
+
+      {w.routeState.panel === 'browse' && w.filteredCatalog.length > 0 ? (
+        <SplitViewBrowse
+          presets={w.filteredCatalog}
+          currentPresetId={w.engineSnapshot?.activePresetId ?? null}
+          onSelect={w.handlePresetSelection}
+          onClose={() => w.updatePanel(null)}
+          onPlay={(presetId) => {
+            w.handlePresetSelection(presetId);
+            w.updatePanel(null);
+          }}
+        />
+      ) : null}
 
       <WorkspaceToast toast={w.toast} onDismiss={w.dismissToast} />
 
