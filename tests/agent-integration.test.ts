@@ -103,6 +103,9 @@ async function createMobilePage() {
     hasTouch: true,
   });
   const page = await context.newPage();
+  await page.addInitScript(() => {
+    window.localStorage.setItem('stims:onboarding-complete', 'true');
+  });
 
   const forceCloseChromium = () => {
     spawnSync('pkill', ['-f', 'playwright_chromiumdev_profile'], {

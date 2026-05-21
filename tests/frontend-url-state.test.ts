@@ -20,6 +20,7 @@ describe('frontend url state', () => {
       panel: 'browse',
       audioSource: 'demo',
       agentMode: true,
+      previewMode: false,
       invalidExperienceSlug: null,
     });
   });
@@ -66,6 +67,7 @@ describe('frontend url state', () => {
         panel: 'settings',
         audioSource: 'demo',
         agentMode: true,
+        previewMode: false,
         invalidExperienceSlug: null,
       },
       'https://toil.fyi/milkdrop/?landing=1&experience=milkdrop',
@@ -85,6 +87,7 @@ describe('frontend url state', () => {
         panel: null,
         audioSource: null,
         agentMode: false,
+        previewMode: false,
         invalidExperienceSlug: 'seary',
       },
       'https://toil.fyi/milkdrop/?experience=seary&panel=browse&audio=demo',
@@ -119,11 +122,39 @@ describe('frontend url state', () => {
             panel: null,
             audioSource: null,
             agentMode: true,
+            previewMode: false,
             invalidExperienceSlug: null,
           },
           parsePlainSearch('?landing=1&experience=milkdrop'),
         ),
       ),
     ).toBe('?landing=1&preset=signal-bloom&agent=true');
+  });
+
+  test('parses and writes embedded preview mode', () => {
+    const state = readSessionRouteState(
+      'https://toil.fyi/?agent=true&embedded=true&preset=signal-bloom',
+    );
+
+    expect(state.previewMode).toBe(true);
+
+    const search = stringifyPlainSearch(
+      buildSessionRouteSearch(
+        {
+          presetId: 'signal-bloom',
+          collectionTag: null,
+          panel: null,
+          audioSource: 'demo',
+          agentMode: true,
+          previewMode: true,
+          invalidExperienceSlug: null,
+        },
+        {},
+      ),
+    );
+
+    expect(search).toBe(
+      '?preset=signal-bloom&audio=demo&agent=true&embedded=true',
+    );
   });
 });

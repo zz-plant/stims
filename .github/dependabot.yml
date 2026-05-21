@@ -8,7 +8,6 @@ updates:
       time: "06:00"
     open-pull-requests-limit: 10
     labels:
-      - "dependencies"
       - "github"
 
   - package-ecosystem: "github-actions"
@@ -19,5 +18,4 @@ updates:
       time: "06:30"
     open-pull-requests-limit: 10
     labels:
-      - "dependencies"
       - "github"
