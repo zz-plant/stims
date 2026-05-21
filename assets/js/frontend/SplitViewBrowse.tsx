@@ -23,9 +23,10 @@ export function SplitViewBrowse({
   onPlay,
 }: SplitViewBrowseProps) {
   const [previewPresetId, setPreviewPresetId] = useState<string | null>(
-    currentPresetId,
+    currentPresetId ?? presets[0]?.id ?? null,
   );
-  const selectedPreset = presets.find((p) => p.id === previewPresetId);
+  const selectedPreset =
+    presets.find((p) => p.id === previewPresetId) ?? presets[0] ?? null;
 
   const handleSelect = useCallback(
     (presetId: string) => {
@@ -127,7 +128,7 @@ export function SplitViewBrowse({
             <div className={styles.previewStage}>
               <iframe
                 className={styles.previewIframe}
-                src={`/?agent=true&preset=${encodeURIComponent(selectedPreset.id)}&embedded=true`}
+                src={`/?agent=true&audio=demo&preset=${encodeURIComponent(selectedPreset.id)}&embedded=true`}
                 title={`Preview: ${selectedPreset.title}`}
                 allow="autoplay"
                 sandbox="allow-scripts allow-same-origin"

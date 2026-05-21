@@ -3211,6 +3211,20 @@ body.tv-mode .control-panel input {
   pointer-events: none;
 }
 
+.milkdrop-overlay:not(.is-open) .milkdrop-overlay__panel {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  pointer-events: none;
+}
+
+.milkdrop-overlay.is-open .milkdrop-overlay__panel {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
 :root[data-session-display-mode="immersive"][data-session-chrome="hidden"]
   .milkdrop-overlay:not(.is-open)
   .milkdrop-overlay__toggle {

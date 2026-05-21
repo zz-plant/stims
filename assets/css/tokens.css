@@ -407,17 +407,17 @@ html.light {
   --shadow-surface:
     0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
 
-  /* App-shell light overrides */
+  /* App-shell dark defaults. Light mode overrides these in the media query below. */
   --stims-ink: var(--text-color);
-  --stims-ink-strong: #0f172a;
-  --stims-muted: rgba(35, 48, 56, 0.72);
-  --stims-line: rgba(43, 56, 77, 0.14);
-  --stims-line-strong: rgba(43, 56, 77, 0.22);
-  --stims-line-soft: rgba(43, 56, 77, 0.08);
-  --stims-panel: rgba(255, 250, 240, 0.8);
-  --stims-panel-strong: rgba(255, 250, 240, 0.94);
+  --stims-ink-strong: #fff8ef;
+  --stims-muted: rgba(246, 239, 228, 0.74);
+  --stims-line: var(--stims-white-12);
+  --stims-line-strong: rgba(255, 255, 255, 0.2);
+  --stims-line-soft: var(--stims-white-08);
+  --stims-panel: rgba(10, 14, 23, 0.8);
+  --stims-panel-strong: rgba(10, 14, 23, 0.94);
 
-  color-scheme: light;
+  color-scheme: dark;
 
   scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);

@@ -9,9 +9,10 @@
     gap: 0;
     position: fixed;
     inset: 0;
-    z-index: 40;
+    z-index: 1200;
     background: rgba(5, 7, 13, 0.94);
     backdrop-filter: blur(8px);
+    color: #eef7ff;
   }
 
   .listPanel {
@@ -35,7 +36,7 @@
     margin: 0;
     font-size: 1.05rem;
     font-weight: 700;
-    color: var(--stims-ink-strong);
+    color: #f7fbff;
   }
 
   .listPanelBody {
@@ -101,12 +102,12 @@
   .previewMetaTitle {
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--stims-ink-strong);
+    color: #f7fbff;
   }
 
   .previewMetaAuthor {
     font-size: 0.78rem;
-    color: var(--stims-muted);
+    color: rgba(221, 237, 255, 0.72);
   }
 
   .previewMood {
@@ -114,7 +115,17 @@
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--stims-cool) 62%, var(--stims-ink));
+    color: #8fdcff;
+  }
+
+  .splitView :global(.stims-shell__preset-title),
+  .splitView :global(.stims-shell__preset-card-copy strong) {
+    color: #f7fbff;
+  }
+
+  .splitView :global(.stims-shell__preset-meta),
+  .splitView :global(.stims-shell__meta-copy) {
+    color: rgba(221, 237, 255, 0.72);
   }
 
   .previewPlay {

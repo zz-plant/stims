@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { createRoot, type Root } from 'react-dom/client';
 import { createElement } from 'react';
 import { flushSync } from 'react-dom';
+import { createRoot, type Root } from 'react-dom/client';
 
 import type { PresetCatalogEntry } from '../assets/js/frontend/contracts.ts';
-import {
-  SplitViewBrowse,
-} from '../assets/js/frontend/SplitViewBrowse.tsx';
+import { SplitViewBrowse } from '../assets/js/frontend/SplitViewBrowse.tsx';
 import {
   describePresetMood,
   getPresetCardSupportLabel,
@@ -31,9 +29,7 @@ type RenderResult = {
   dispose: () => void;
 };
 
-function render(
-  props: Parameters<typeof SplitViewBrowse>[0],
-): RenderResult {
+function render(props: Parameters<typeof SplitViewBrowse>[0]): RenderResult {
   const { container, dispose } = createToyContainer('split-view-root');
   const root = createRoot(container);
   flushSync(() => {
@@ -86,9 +82,7 @@ describe('describePresetMood', () => {
 describe('getPresetCardSupportLabel', () => {
   test('returns null for "Smooth playback" (default label)', () => {
     expect(
-      getPresetCardSupportLabel(
-        makePreset({ id: '1', title: 'Basic Preset' }),
-      ),
+      getPresetCardSupportLabel(makePreset({ id: '1', title: 'Basic Preset' })),
     ).toBeNull();
   });
 
@@ -118,9 +112,7 @@ describe('getPresetCardSupportLabel', () => {
       title: 'Semantic Only',
       fidelityTier: 'semantic-only',
     });
-    expect(getPresetCardSupportLabel(entry)).toBe(
-      'Parsed (not measured)',
-    );
+    expect(getPresetCardSupportLabel(entry)).toBe('Parsed (not measured)');
   });
 });
 
@@ -145,23 +137,25 @@ describe('SplitViewBrowse', () => {
       onPlay,
     });
 
-    const aside = container.querySelector<HTMLElement>(
-      '[role="dialog"]',
-    );
+    const aside = container.querySelector<HTMLElement>('[role="dialog"]');
     expect(aside).not.toBeNull();
+    if (!aside) {
+      throw new Error('Expected browse dialog to render.');
+    }
     expect(aside?.getAttribute('aria-label')).toBe('Browse presets');
     expect(aside?.getAttribute('aria-modal')).toBe('true');
 
-    const title = aside!.querySelector('h2');
+    const title = aside.querySelector('h2');
     expect(title).not.toBeNull();
-    expect(title!.textContent).toBe('Browse presets');
+    expect(title?.textContent).toBe('Browse presets');
 
-    const cards = aside!.querySelectorAll('.stims-shell__preset-card');
+    const cards = aside.querySelectorAll('.stims-shell__preset-card');
     expect(cards.length).toBe(2);
 
-    const asideDivs = aside!.children;
+    const asideDivs = aside.children;
     const previewPanel = asideDivs[asideDivs.length - 1] as HTMLElement;
-    expect(previewPanel.textContent).toContain('Select a preset');
+    expect(previewPanel.textContent).toContain('First Preset');
+    expect(previewPanel.textContent).toContain('Play now');
   });
 
   test('selecting a preset fires onSelect and updates active indicator', () => {
@@ -184,11 +178,9 @@ describe('SplitViewBrowse', () => {
       onPlay,
     });
 
-    const cards = container.querySelectorAll(
-      '.stims-shell__preset-card',
-    );
+    const cards = container.querySelectorAll('.stims-shell__preset-card');
     expect(cards.length).toBe(2);
-    expect(cards[0].getAttribute('data-active')).toBe('false');
+    expect(cards[0].getAttribute('data-active')).toBe('true');
     expect(cards[1].getAttribute('data-active')).toBe('false');
 
     (cards[1] as HTMLElement).click();
@@ -215,11 +207,14 @@ describe('SplitViewBrowse', () => {
 
     const aside = container.querySelector('[role="dialog"]');
     expect(aside).not.toBeNull();
+    if (!aside) {
+      throw new Error('Expected browse dialog to render.');
+    }
 
-    const cards = aside!.querySelectorAll('.stims-shell__preset-card');
+    const cards = aside.querySelectorAll('.stims-shell__preset-card');
     expect(cards.length).toBe(0);
 
-    const asideDivs = aside!.children;
+    const asideDivs = aside.children;
     const previewPanel = asideDivs[asideDivs.length - 1] as HTMLElement;
     expect(previewPanel.textContent).toContain('Select a preset');
     expect(previewPanel.textContent).toContain('Play now');
@@ -266,16 +261,12 @@ describe('SplitViewBrowse', () => {
       onPlay,
     });
 
-    const cards = container.querySelectorAll(
-      '.stims-shell__preset-card',
-    );
+    const cards = container.querySelectorAll('.stims-shell__preset-card');
     expect(cards.length).toBe(1);
 
-    const metaSpan = cards[0].querySelector(
-      '.stims-shell__preset-meta',
-    );
+    const metaSpan = cards[0].querySelector('.stims-shell__preset-meta');
     expect(metaSpan).not.toBeNull();
-    expect(metaSpan!.textContent).toBe('Unknown author');
+    expect(metaSpan?.textContent).toBe('Unknown author');
   });
 
   test('renders preview panel with iframe when a preset is selected', () => {
@@ -297,8 +288,11 @@ describe('SplitViewBrowse', () => {
 
     const aside = container.querySelector('[role="dialog"]');
     expect(aside).not.toBeNull();
+    if (!aside) {
+      throw new Error('Expected browse dialog to render.');
+    }
 
-    const asideDivs = aside!.children;
+    const asideDivs = aside.children;
     const previewPanel = asideDivs[asideDivs.length - 1] as HTMLElement;
     expect(previewPanel.textContent).toContain('Alpha Wave');
     expect(previewPanel.textContent).toContain('Alice');
@@ -308,16 +302,15 @@ describe('SplitViewBrowse', () => {
     expect(iframe).not.toBeNull();
     expect(iframe?.getAttribute('src')).toContain('preset=alpha');
     expect(iframe?.getAttribute('src')).toContain('agent=true');
+    expect(iframe?.getAttribute('src')).toContain('audio=demo');
     expect(iframe?.getAttribute('src')).toContain('embedded=true');
 
-    const playButton = Array.from(
-      container.querySelectorAll('button'),
-    ).find((btn) => btn.textContent?.trim() === 'Play now');
+    const playButton = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.trim() === 'Play now',
+    );
     expect(playButton).not.toBeNull();
 
-    const activeCard = container.querySelector(
-      '[data-active="true"]',
-    );
+    const activeCard = container.querySelector('[data-active="true"]');
     expect(activeCard).not.toBeNull();
     expect(activeCard?.textContent).toContain('Alpha Wave');
   });

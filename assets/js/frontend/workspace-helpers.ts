@@ -501,6 +501,7 @@ export function buildLaunchIntent(routeState: SessionRouteState): LaunchIntent {
         : null,
     audioSource: routeState.audioSource,
     agentMode: routeState.agentMode,
+    previewMode: routeState.previewMode,
   };
 }
 

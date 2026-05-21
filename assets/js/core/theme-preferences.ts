@@ -72,7 +72,9 @@ export function applyTheme(theme: 'light' | 'dark') {
   const html = document.documentElement;
   if (theme === 'light') {
     html.classList.add('light');
+    html.classList.remove('dark');
   } else {
     html.classList.remove('light');
+    html.classList.add('dark');
   }
 }

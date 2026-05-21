@@ -35,6 +35,8 @@ const SESSION_ROUTE_SEARCH_KEYS = [
   'collection',
   'audio',
   'agent',
+  'embedded',
+  'preview',
 ] as const;
 
 function readSearchValue(value: unknown) {
@@ -115,6 +117,9 @@ export function readSessionRouteStateFromSearch(
     panel: normalizePanel(search.tool ?? search.panel),
     audioSource: normalizeAudioSource(search.audio),
     agentMode: readSearchValue(search.agent) === 'true',
+    previewMode:
+      readSearchValue(search.embedded) === 'true' ||
+      readSearchValue(search.preview) === 'true',
     invalidExperienceSlug:
       legacyExperience && legacyExperience !== 'milkdrop'
         ? legacyExperience
@@ -191,6 +196,9 @@ export function buildSessionRouteSearch(
   }
   if (state.agentMode) {
     nextSearch.agent = 'true';
+  }
+  if (state.previewMode) {
+    nextSearch.embedded = 'true';
   }
 
   return nextSearch;

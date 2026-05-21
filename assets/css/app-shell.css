@@ -60,6 +60,27 @@ body[data-page="workspace"] {
   isolation: isolate;
 }
 
+.stims-shell[data-preview="true"] {
+  min-height: 100vh;
+  padding: 0;
+  background: #05070d;
+}
+
+.stims-shell[data-preview="true"] .stims-shell__workspace,
+.stims-shell[data-preview="true"] .stims-shell__stage-frame {
+  min-height: 100vh;
+  border: 0;
+  border-radius: 0;
+}
+
+.stims-shell[data-preview="true"] .stims-shell__frame-chrome,
+.stims-shell[data-preview="true"] .stims-shell__frame-header,
+.stims-shell[data-preview="true"] .stims-shell__stage-hero,
+.stims-shell[data-preview="true"] .stims-shell__stage-dock-wrap,
+.stims-shell[data-preview="true"] .stims-shell__toast {
+  display: none;
+}
+
 @supports (min-height: 100svh) {
   #app,
   .stims-shell {
@@ -2017,6 +2038,33 @@ body[data-page="workspace"] {
   font-size: 0.92rem;
 }
 
+.stims-shell__stage-frame[data-mode="live"] .stims-shell__rail-actions {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock {
+  color: #e5f1ff;
+}
+
+.stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+}
+
+.stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool-label,
+.stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy {
+  display: none;
+}
+
+.stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
+  top: auto;
+  right: auto;
+  bottom: 24px;
+  left: 24px;
+}
+
 .stims-shell__stage-recovery {
   position: absolute;
   inset: auto 18px 18px;
@@ -3577,6 +3625,27 @@ body[data-page="workspace"] {
     max-width: none;
     align-items: flex-start;
     padding: 12px;
+  }
+
+  .stims-shell[data-mode="live"] .stims-shell__toast {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (width >= 1024px) {
+  .stims-shell__sheet-backdrop[data-panel="browse"],
+  .stims-shell__sheet[data-panel="browse"] {
+    display: none;
+  }
+}
+
+@media (width < 768px) {
+  .stims-shell[data-mode="live"] .stims-shell__stage-dock-wrap {
+    display: none;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
+    display: none;
   }
 }
 

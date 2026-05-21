@@ -165,6 +165,7 @@ function StimsWorkspaceAppShell() {
   const quietDemoSuggestedRef = useRef(false);
 
   const { showOnboarding, dismissOnboarding } = useOnboarding();
+  const showOnboardingFlow = showOnboarding && !w.routeState.previewMode;
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
   const handleToggleFullscreen = useCallback(() => {
@@ -417,6 +418,7 @@ function StimsWorkspaceAppShell() {
       id="stims-main"
       data-has-toast={w.toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
+      data-preview={w.routeState.previewMode ? 'true' : undefined}
     >
       <a href="#stims-main" className="skip-link">
         Skip to main content
@@ -454,7 +456,9 @@ function StimsWorkspaceAppShell() {
 
       <WorkspaceToast toast={w.toast} onDismiss={w.dismissToast} />
 
-      {showOnboarding ? <OnboardingFlow onDismiss={dismissOnboarding} /> : null}
+      {showOnboardingFlow ? (
+        <OnboardingFlow onDismiss={dismissOnboarding} />
+      ) : null}
 
       <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
 

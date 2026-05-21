@@ -1065,6 +1065,7 @@ export function WorkspaceToolSheet({
         <button
           type="button"
           className="stims-shell__sheet-backdrop"
+          data-panel={panel}
           aria-label="Close tools"
           onClick={() => w.updatePanel(null)}
         />

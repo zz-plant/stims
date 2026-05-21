@@ -20,6 +20,7 @@ export type SessionRouteState = {
   panel: PanelState;
   audioSource: AudioSource | null;
   agentMode: boolean;
+  previewMode?: boolean;
   invalidExperienceSlug: string | null;
 };
 
