@@ -188,8 +188,9 @@ export function createMilkdropEngineAdapter() {
           window as { requestIdleCallback: (cb: IdleRequestCallback) => void }
         ).requestIdleCallback(async () => {
           try {
-            const modPath = 'three/addons/renderers/webgpu/WebGPURenderer.js';
-            const { WebGPURenderer } = await import(modPath);
+            const { WebGPURenderer } = await import(
+              '../../core/webgpu-renderer.ts'
+            );
             const canvas = document.createElement('canvas');
             canvas.width = 1;
             canvas.height = 1;

@@ -516,7 +516,9 @@ body[data-page="workspace"] {
 
 @media (prefers-reduced-motion: reduce) {
   .stims-shell__button-icon.stims-icon-slot--sm svg,
-  .stims-shell .cta-button [data-icon="spinner"] svg {
+  .stims-shell .cta-button [data-icon="spinner"] svg,
+  .stims-shell__stage-ambient-bars span,
+  .stims-shell__launch-mini-mixer span {
     animation: none;
   }
 }
@@ -751,6 +753,25 @@ body[data-page="workspace"] {
   color: color-mix(in srgb, var(--stims-ink) 84%, transparent);
   font-size: 1.02rem;
   line-height: 1.7;
+}
+
+.stims-shell__launch-kicker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stims-shell__launch-kicker-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--stims-white-12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: color-mix(in srgb, var(--stims-ink) 86%, transparent);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .stims-shell__launch-signals {
@@ -1499,17 +1520,98 @@ body[data-page="workspace"] {
 .stims-shell__stage-ambient-hint {
   display: none;
   place-items: center;
+  gap: 14px;
   font-family: "Space Grotesk", sans-serif;
   font-size: 0.85rem;
   font-weight: 500;
   letter-spacing: 0.04em;
-  color: rgba(246, 239, 228, 0.28);
+  color: rgba(246, 239, 228, 0.56);
   pointer-events: none;
   z-index: 2;
 }
 
+.stims-shell__stage-ambient-hint-copy {
+  padding: 8px 12px;
+  border: 1px solid var(--stims-white-12);
+  border-radius: 999px;
+  background: rgba(3, 5, 11, 0.38);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    inset 0 1px 0 var(--stims-white-05),
+    0 18px 34px rgba(0, 0, 0, 0.2);
+}
+
+.stims-shell__stage-ambient-bars,
+.stims-shell__launch-mini-mixer {
+  display: inline-flex;
+  align-items: end;
+  gap: 5px;
+}
+
+.stims-shell__stage-ambient-bars span,
+.stims-shell__launch-mini-mixer span {
+  display: block;
+  width: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    var(--stims-cool),
+    var(--stims-good) 48%,
+    var(--stims-accent)
+  );
+  box-shadow: 0 0 18px rgba(119, 201, 255, 0.22);
+  transform-origin: bottom;
+  animation: stims-eq-pop 920ms ease-in-out infinite;
+}
+
+.stims-shell__stage-ambient-bars span {
+  height: 34px;
+}
+
+.stims-shell__launch-mini-mixer span {
+  width: 8px;
+  height: 42px;
+}
+
+.stims-shell__stage-ambient-bars span:nth-child(2),
+.stims-shell__launch-mini-mixer span:nth-child(2) {
+  animation-delay: -140ms;
+}
+
+.stims-shell__stage-ambient-bars span:nth-child(3),
+.stims-shell__launch-mini-mixer span:nth-child(3) {
+  animation-delay: -320ms;
+}
+
+.stims-shell__stage-ambient-bars span:nth-child(4),
+.stims-shell__launch-mini-mixer span:nth-child(4) {
+  animation-delay: -520ms;
+}
+
+.stims-shell__stage-ambient-bars span:nth-child(5),
+.stims-shell__launch-mini-mixer span:nth-child(5) {
+  animation-delay: -720ms;
+}
+
+@keyframes stims-eq-pop {
+  0%,
+  100% {
+    transform: scaleY(0.36);
+    opacity: 0.58;
+  }
+
+  42% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
 .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-ambient-hint {
-  display: grid;
+  inset: 18% 7% 18% 52%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .stims-shell__stage-ambient-pulse {
@@ -2135,6 +2237,21 @@ body[data-page="workspace"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   max-width: none;
+}
+
+.stims-shell__launch-mini-mixer {
+  justify-content: center;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 1px solid var(--stims-white-08);
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      circle at 50% 100%,
+      rgba(125, 224, 162, 0.14),
+      transparent 52%
+    ),
+    rgba(255, 255, 255, 0.025);
 }
 
 .stims-shell__launch-actions > * {
@@ -3471,6 +3588,10 @@ body[data-page="workspace"] {
     inset: 44% 10% 20% 10%;
     border-radius: 20px;
     transform: none;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-ambient-hint {
+    display: none;
   }
 
   .stims-shell__frame-chrome,

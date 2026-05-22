@@ -62,6 +62,15 @@ export function NewHomePage() {
                 ? ` ${catalog.length} authentic MilkDrop presets run in WebGL or WebGPU.`
                 : ' Authentic MilkDrop presets run in WebGL or WebGPU.'}
             </p>
+            <div className="stims-shell__launch-kicker-row">
+              <span>Instant demo</span>
+              <span>
+                {catalogReady
+                  ? `${catalog.length} classic presets`
+                  : 'Classic presets'}
+              </span>
+              <span>Shuffle anytime</span>
+            </div>
           </div>
           <div className="stims-shell__launch-stack">
             <button
@@ -74,7 +83,7 @@ export function NewHomePage() {
             >
               <span className="stims-shell__action-label">See visuals now</span>
               <span className="stims-shell__action-hint">
-                Starts instantly with built-in sound
+                Starts built-in audio and drops you into the stage
               </span>
             </button>
             <div className="stims-shell__launch-supplement stims-shell__launch-actions">
@@ -94,6 +103,13 @@ export function NewHomePage() {
               >
                 Capture tab audio
               </button>
+            </div>
+            <div className="stims-shell__launch-mini-mixer" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
             </div>
           </div>
         </div>

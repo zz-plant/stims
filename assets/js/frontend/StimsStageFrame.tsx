@@ -12,7 +12,16 @@ export function StimsStageAmbient() {
       <span className="stims-shell__stage-ambient-ring" />
       <span className="stims-shell__stage-ambient-pulse" />
       <span className="stims-shell__stage-ambient-hint">
-        Press play to start
+        <span className="stims-shell__stage-ambient-hint-copy">
+          Ready for sound
+        </span>
+        <span className="stims-shell__stage-ambient-bars">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </span>
       </span>
     </div>
   );

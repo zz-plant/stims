@@ -139,8 +139,7 @@ export function hasWebGPUCompatibilityGapOverride() {
  * 1. Explicit URL param `?renderer=webgl` or `?renderer=webgpu`
  * 2. Certification corpus runs (`?corpus=certification&renderer=webgpu`) always use WebGPU
  * 3. Session-level gap override (via `setWebGPUCompatibilityGapOverride`)
- * 4. Browser capability check: WebGPU is enabled for Chrome 120+ desktop, Edge 120+
- * 5. Default: prefer WebGL (conservative fallback)
+ * 4. Default: prefer WebGL for the live visualizer (conservative fallback)
  */
 export function shouldPreferWebGLForKnownCompatibilityGaps() {
   const requestedRenderer = getRequestedRenderer();
@@ -155,11 +154,6 @@ export function shouldPreferWebGLForKnownCompatibilityGaps() {
 
   // Session-level gap override forces WebGPU
   if (hasWebGPUCompatibilityGapOverride()) {
-    return false;
-  }
-
-  // Platform-based enablement
-  if (isWebGPUStableInThisBrowser()) {
     return false;
   }
 

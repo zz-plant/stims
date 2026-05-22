@@ -165,7 +165,8 @@ function StimsWorkspaceAppShell() {
   const quietDemoSuggestedRef = useRef(false);
 
   const { showOnboarding, dismissOnboarding } = useOnboarding();
-  const showOnboardingFlow = showOnboarding && !w.routeState.previewMode;
+  const showOnboardingFlow =
+    showOnboarding && !w.routeState.previewMode && !w.routeState.agentMode;
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
   const handleToggleFullscreen = useCallback(() => {
@@ -457,7 +458,10 @@ function StimsWorkspaceAppShell() {
       <WorkspaceToast toast={w.toast} onDismiss={w.dismissToast} />
 
       {showOnboardingFlow ? (
-        <OnboardingFlow onDismiss={dismissOnboarding} />
+        <OnboardingFlow
+          onDismiss={dismissOnboarding}
+          onStartDemo={() => void w.handleAudioStart('demo')}
+        />
       ) : null}
 
       <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />

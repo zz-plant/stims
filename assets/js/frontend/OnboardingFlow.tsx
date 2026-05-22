@@ -60,9 +60,13 @@ export function useOnboarding(): {
 
 type OnboardingFlowProps = {
   onDismiss: () => void;
+  onStartDemo: () => void;
 };
 
-export function OnboardingFlow({ onDismiss }: OnboardingFlowProps) {
+export function OnboardingFlow({
+  onDismiss,
+  onStartDemo,
+}: OnboardingFlowProps) {
   const [step, setStep] = useState(0);
   const [exiting, setExiting] = useState(false);
 
@@ -73,13 +77,23 @@ export function OnboardingFlow({ onDismiss }: OnboardingFlowProps) {
     setTimeout(onDismiss, 250);
   }, [onDismiss]);
 
+  const handleStartDemo = useCallback(() => {
+    handleDismiss();
+    onStartDemo();
+  }, [handleDismiss, onStartDemo]);
+
   const handleNext = useCallback(() => {
+    if (step === 0) {
+      handleStartDemo();
+      return;
+    }
+
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
       handleDismiss();
     }
-  }, [step, handleDismiss]);
+  }, [step, handleDismiss, handleStartDemo]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
