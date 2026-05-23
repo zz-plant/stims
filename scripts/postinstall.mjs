@@ -47,7 +47,9 @@ if (isCloudflarePages) {
   console.log('[postinstall] CF_PAGES not set; skipping build.');
 }
 
-if (isBunUserAgent) {
+if (isCloudflarePages) {
+  console.log('[postinstall] Husky install skipped (Cloudflare Pages).');
+} else if (isBunUserAgent) {
   run('husky install');
 } else {
   console.log(
