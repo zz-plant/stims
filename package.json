@@ -84,12 +84,12 @@
     "parity:suite": "bun run scripts/run-parity-diff-suite.ts",
     "perf:certification-corpus": "bun run scripts/run-certification-corpus-perf-suite.ts",
     "test:agent": "bun run test:integration",
-
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
     "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs",
     "dev:ui": "vite --config vite.config.ui.js",
     "ui:diff": "bun scripts/ui-diff.ts",
-    "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh"
+    "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh",
+    "check:production-edge": "bash scripts/check_production_edge.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
@@ -102,7 +102,6 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@vitejs/plugin-react": "^6.0.2",
     "happy-dom": "^20.9.0",
-
     "playwright": "^1.60.0",
     "typescript": "^6.0.3",
     "vite": "8.0.13",
@@ -122,10 +121,8 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "6.43.0",
-
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-
     "three": "^0.183.2",
     "zod": "4.4.3"
   },
