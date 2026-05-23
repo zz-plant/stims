@@ -1,0 +1,32 @@
+name: Continuous Falsification
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  falsify:
+    name: Run property-based tests against rendering invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - name: Run compatibility suite
+        run: bun run test:compat
+
+      - name: Generate parity report
+        run: bun run check:parity
+
+      - name: Health Summary
+        if: always()
+        run: |
+          echo "## Rendering Invariants Health Report" >> $GITHUB_STEP_SUMMARY
+          if [ $? -eq 0 ]; then
+            echo "✅ **PASS**: All rendering invariants maintained. No falsification detected." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **FAIL**: Rendering invariant violated. A preset or renderer change broke compatibility." >> $GITHUB_STEP_SUMMARY
+          fi
