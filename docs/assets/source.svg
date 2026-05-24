@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" role="img" aria-labelledby="title">
+  <title id="title">stims design source</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07111d"/>
+      <stop offset="100%" stop-color="#0d7f84"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="200" fill="url(#bg)"/>
+  <circle cx="200" cy="95" r="62" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="8"/>
+  <circle cx="200" cy="95" r="40" fill="none" stroke="#f5fbff" stroke-width="7" stroke-dasharray="84 30" stroke-linecap="round"/>
+  <circle cx="200" cy="95" r="14" fill="#f5fbff" opacity="0.9"/>
+  <text x="200" y="180" text-anchor="middle" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif" font-size="12">stims — music-reactive browser visuals, MilkDrop-inspired</text>
+</svg>
