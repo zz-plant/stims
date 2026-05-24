@@ -1030,10 +1030,10 @@ type SectionExcerpt = {
 async function buildDocPointers() {
   const lines = await loadReadmeLines();
 
-  const quickStart = extractSectionWithRange(lines, 'Quickstart');
-  const commands = extractSectionWithRange(lines, 'Common commands');
-  const layout = extractSectionWithRange(lines, 'Project shape');
-  const docs = extractSectionWithRange(lines, 'Docs');
+  const quickStart = extractSectionWithRange(lines, 'Try it now');
+  const commands = extractSectionWithRange(lines, 'Quick reference');
+  const layout = extractSectionWithRange(lines, 'Project docs');
+  const docs = extractSectionWithRange(lines, 'Project docs');
 
   const entries = [
     quickStart && formatPointer('Quickstart', quickStart),
@@ -1110,19 +1110,20 @@ async function getReadmeDevCommands(
   scope?: 'setup' | 'dev' | 'build' | 'test' | 'lint',
 ) {
   const readmeContent = await loadReadme();
-  const quickstart = extractSection(readmeContent, 'Quickstart');
-  const commonCommands = extractSection(readmeContent, 'Common commands');
+  const quickstart = extractSection(readmeContent, 'Try it now');
+  const installLocal = extractSection(readmeContent, 'Install locally');
+  const commonCommands = extractSection(readmeContent, 'Quick reference');
   const developmentNotes = extractSection(readmeContent, 'Development notes');
 
   const sections: Record<string, string> = {
-    setup: quickstart ?? 'README.md does not currently expose setup guidance.',
+    setup: [installLocal, quickstart].filter(Boolean).join('\n\n') || 'README.md does not currently expose setup guidance.',
     dev: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
     build: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
     test: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
     lint: 'README.md does not currently list lint-only commands. Use `bun run check` or see docs/agents/tooling-and-quality.md.',
   };
 
-  const combined = [quickstart, commonCommands, developmentNotes]
+  const combined = [quickstart, installLocal, commonCommands, developmentNotes]
     .filter(Boolean)
     .join('\n\n');
 
@@ -1281,7 +1282,7 @@ function canReadLocalMarkdown() {
 function looksLikeRenderedHtml(content: string) {
   const trimmed = content.trimStart();
 
-  return /^<(?:h\d|p|ul|ol|li|pre|code|blockquote|table)\b/i.test(trimmed);
+  return /^<(?:h\d|div|p|ul|ol|li|pre|code|blockquote|table)\b/i.test(trimmed);
 }
 
 async function getDocSectionContent(
