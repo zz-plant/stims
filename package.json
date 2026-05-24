@@ -49,7 +49,7 @@
     "model:codex": "bash scripts/codex-model-route.sh",
     "agent:status": "bash scripts/codex-setup.sh --status && echo && bash scripts/codex-session.sh --status",
     "agent:verify": "bash scripts/codex-setup.sh --status && bun run check:quick",
-    "check": "bun run scripts/run-quality-gate.ts",
+    "check": "bun run assets:check && bun run scripts/run-quality-gate.ts",
     "check:all": "bun run scripts/run-quality-gate.ts --all",
     "check:architecture": "bun run scripts/check-architecture.ts",
     "check:catalog-fidelity": "bun run scripts/check-bundled-catalog-fidelity.ts",
@@ -89,7 +89,8 @@
     "dev:ui": "vite --config vite.config.ui.js",
     "ui:diff": "bun scripts/ui-diff.ts",
     "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh",
-    "check:production-edge": "bash scripts/check_production_edge.sh"
+    "check:production-edge": "bash scripts/check_production_edge.sh",
+    "assets:check": "bun run scripts/check-assets.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
