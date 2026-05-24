@@ -1116,7 +1116,9 @@ async function getReadmeDevCommands(
   const developmentNotes = extractSection(readmeContent, 'Development notes');
 
   const sections: Record<string, string> = {
-    setup: [installLocal, quickstart].filter(Boolean).join('\n\n') || 'README.md does not currently expose setup guidance.',
+    setup:
+      [installLocal, quickstart].filter(Boolean).join('\n\n') ||
+      'README.md does not currently expose setup guidance.',
     dev: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
     build: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
     test: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
