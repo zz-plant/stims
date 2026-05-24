@@ -1,189 +1,104 @@
+<div align="center">
+
 # Stims
+
+**Browser music visualizer inspired by MilkDrop — press play, get moving visuals, go deeper when you want.**
 
 [![Live site](https://img.shields.io/badge/live-toil.fyi-5a67d8?style=flat-square&logo=cloudflare)](https://toil.fyi)
 [![GitHub stars](https://img.shields.io/github/stars/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/zz-plant/stims?style=flat-square)](https://github.com/zz-plant/stims/issues)
 [![License](https://img.shields.io/github/license/zz-plant/stims?style=flat-square)](./LICENSE)
 [![Built with Bun](https://img.shields.io/badge/bun-1.3+-14151a?style=flat-square&logo=bun)](https://bun.sh)
+[![Discussions](https://img.shields.io/badge/discussions-welcome-8b5cf6?style=flat-square)](https://github.com/zz-plant/stims/discussions)
 
-Stims is an instant browser music visualizer inspired by Ryan Geiss's MilkDrop. You can start with demo audio in one click, switch to your own sound when you want to, and move through curated presets without leaving the main stage.
+</div>
 
-It is designed to feel like a real browser product instead of a desktop port: fast first play, live preset browsing, optional deeper controls, and a shell that stays usable across desktop, laptop, touch, and TV-style setups.
+<p align="center">
+  <img src="assets/stims-demo.gif" alt="Stims visualizer in action" width="700" style="border-radius: 8px;">
+  <br>
+  <em>Demo audio in one click. Curated presets, live mic/tab input, and deep editing when you want it.</em>
+</p>
 
-## Quick links
+---
 
-- Live site: [toil.fyi](https://toil.fyi)
-- Homepage: [toil.fyi/](https://toil.fyi/)
-- Launch app: [toil.fyi/](https://toil.fyi/)
-- Legacy alias: [toil.fyi/milkdrop/](https://toil.fyi/milkdrop/)
-- Docs hub: [docs/README.md](./docs/README.md)
-- Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
+## Try it now
 
-## Table of contents
+**[→ Launch at toil.fyi](https://toil.fyi)** — no install, no signup. Click play and watch the visuals react.
 
-- [Why Stims exists](#why-stims-exists)
-- [What you get](#what-you-get)
-- [Shipped experience](#shipped-experience)
-- [Quickstart](#quickstart)
-- [Common commands](#common-commands)
-- [README maintenance checklist](#readme-maintenance-checklist)
-- [Development notes](#development-notes)
-- [Contributing at a glance](#contributing-at-a-glance)
-- [Project shape](#project-shape)
-- [Troubleshooting](#troubleshooting)
-- [Docs](#docs)
-- [Lineage](#lineage)
+Curated presets, demo audio, microphone input, YouTube tab capture. All in the browser.
 
-## Why Stims exists
+---
 
-Stims exists to make reactive music visuals feel immediate on the web. The product is centered on a single flagship experience: press play, get moving visuals fast, then go deeper into presets, editing, and input choices only if you want to.
+## Install locally
 
-## What you get
+```bash
+git clone https://github.com/zz-plant/stims.git
+cd stims
+bun install
+bun run dev
+```
 
-- One-click demo playback so first-time users can start immediately.
-- Curated presets with a browser for quick discovery and smooth transitions.
-- Optional live audio input from microphone, tab audio, or YouTube-backed tab capture.
-- Live preset editing plus import/export for people who want to customize deeper.
-- Shared playback, browse, and settings surfaces that work across desktop, touch, and TV-style setups.
-- One unified workspace route at `index.html` (`/`) for launch, playback, and live session entry, plus a `/milkdrop/` alias that redirects into the same experience.
+Open `http://localhost:5173`. That's it.
 
-## Shipped experience
+**Prerequisites:** [Bun](https://bun.sh) 1.3+, a browser with WebGL (WebGPU optional).
 
-At the product level, Stims currently ships one flagship MilkDrop-led visualizer experience with:
+See [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) for detailed setup, troubleshooting, and production builds.
 
-- An instant-start launch route that makes demo playback the default first run.
-- A preset-led playback flow designed for quick experimentation and repeat browsing.
-- Optional audio-source upgrades when users want the visuals to follow their own sound.
-- A settings panel built around quick looks first, with advanced tuning hidden until needed.
-- A live overlay that keeps preset browsing primary and tucks editing and inspection one layer deeper without leaving playback.
-- Session-shell behavior that supports keyboard, gamepad, and TV-style remote navigation.
-- Persistent session and local settings so the app can recover your last-used audio and rendering preferences.
+---
 
-## Quickstart
+## Features
 
-### Prerequisites
+- **One-click demo playback** — first-time users see visuals instantly, no audio setup required.
+- **Curated presets** — browse, preview, and switch smoothly. Pocketful of intros, then dive deeper.
+- **Live audio input** — microphone, tab audio, or YouTube-backed tab capture.
+- **Preset editor** — live editing with import/export for customization.
+- **Cross-device** — desktop keyboard, touch, gamepad, and TV-style remote navigation.
+- **Session persistence** — recovers your last audio source and rendering preferences.
 
-- [Bun](https://bun.sh) 1.3+
-- A modern browser with WebGL enabled (WebGPU is optional and auto-detected)
+---
 
-### Run locally
+## Quick reference
 
-1. Bootstrap the local workspace:
+```
+bun run dev           Start development server
+bun run check:quick   Fast quality gate (lint + types)
+bun run check         Full quality gate (lint + types + tests)
+bun run build         Production build
+bun run test          Run unit/integration tests
+bun run preview       Preview production build locally
+```
 
-   ```bash
-   bun run doctor
-   bun run setup -- --print-plan
-   bun run setup
-   ```
+---
 
-   `bun run doctor` gives you a fast local readiness summary. If you only need dependencies and do not want the quick validation pass yet, run `bun install` instead.
+## Contributing
 
-2. Start the local dev server:
+PRs welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md), then check [docs/README.md](./docs/README.md) for the full documentation index.
 
-   ```bash
-   bun run dev
-   ```
+Questions? Join [GitHub Discussions](https://github.com/zz-plant/stims/discussions).
 
-3. Open the visualizer:
+---
 
-   ```text
-   http://localhost:5173/
-   ```
+## Project docs
 
-If you want to validate the production bundle locally, run `bun run build` and then `bun run preview`.
+- [Development guide](./docs/DEVELOPMENT.md)
+- [Architecture overview](./docs/ARCHITECTURE.md)
+- [Preset runtime docs](./docs/MILKDROP_PRESET_RUNTIME.md)
+- [Deployment guide](./docs/DEPLOYMENT.md)
+- [QA plan](./docs/QA_PLAN.md)
+- [Feature specifications](./docs/FEATURE_SPECIFICATIONS.md)
 
-## Common commands
+---
 
-| Task | Command |
-| --- | --- |
-| Check local readiness | `bun run doctor` |
-| Preview local bootstrap plan | `bun run setup -- --print-plan` |
-| Bootstrap local workspace | `bun run setup` |
-| Start dev server | `bun run dev` |
-| Warm an agent session stack | `bun run session:codex -- --profile review` |
-| Route onto a local model role | `bun run model:codex -- --mode triage --no-exec` |
-| Start dev server on all interfaces | `bun run dev:host` |
-| Start a WebGPU-focused local session | `bun run dev:webgpu` |
-| Run the fast local quality gate | `bun run check:quick` |
-| Run the full quality gate | `bun run check` |
-| Run all tests | `bun run test` |
-| Build production assets | `bun run build` |
-| Preview the production build | `bun run preview` |
-| Manual Cloudflare Pages preview deploy | `bun run pages:deploy:preview` |
-| Manual Cloudflare Pages production deploy | `bun run pages:deploy` |
+## Ecosystem
 
-For JavaScript or TypeScript changes, `bun run check` is the repository quality gate.
+Stims is part of a broader set of open-source work by [Kanav Jain](https://kanav.net):
 
-## README maintenance checklist
+- [**sabnzbd-mcp**](https://github.com/zz-plant/sabnzbd-mcp) — MCP server for SABnzbd. Zero deps.
+- [**Refract**](https://github.com/refract-org/refract) — Open infrastructure for agent-readable knowledge change.
+- [**neckass**](https://github.com/zz-plant/neckass) — Privacy-first headline generator with on-device AI.
+- [**ethotechnics.org**](https://github.com/zz-plant/ethotechnics.org) — Essays on ethical technology and human-centered design.
 
-When changing project workflows or documentation structure, keep README-level entry points aligned in the same change:
-
-- `README.md` (this file)
-- `CONTRIBUTING.md`
-- `AGENTS.md`
-- `docs/README.md`
-- `docs/agents/README.md`
-
-Use [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md) as the synchronization checklist for add/move/rename/delete docs updates.
-
-## Development notes
-
-- Use `bun run doctor` when you want a fast local readiness summary before changing anything.
-- Prefer `bun run setup` when the workspace state is unknown; it installs dependencies and runs `bun run check:quick`.
-- Repeated `bun run setup` runs skip `bun install` automatically when `node_modules` and the local manifest fingerprint are already current.
-- Prefer `bun run dev:host` when testing on phones, tablets, or TV browsers on your local network.
-- Use `bun run session:codex -- --profile review` to keep a local agent stack warm with the dev server, LM Studio model roles when available, and a background verification watcher.
-- Use `bun run model:codex -- --mode auto --task "review a renderer regression" --no-exec` to choose the right local LM Studio helper before a triage or review pass.
-- `bun run check:quick` now runs its independent checks in parallel; use `bun run check:quick -- --serial` only when you need deterministic one-step-at-a-time debugging.
-- If your browser supports WebGPU but visuals fail, switch renderer preference to WebGL in app settings and refresh.
-- Use `bun run preview` after `bun run build` to test the production bundle behavior (including route handling) before deployment.
-- Cloudflare Pages preview and production deploys default to the GitHub Actions direct-upload jobs in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml); the `pages:deploy:*` scripts are the manual fallback path.
-- [`wrangler.toml`](./wrangler.toml) is checked in as the Pages config source of truth for compatibility and placement settings; keep dashboard-only build settings aligned with it.
-
-## Contributing at a glance
-
-- Package manager: `bun`
-- Runtime target: browser-first Three.js/WebGL app with optional WebGPU
-- Main quality gate: `bun run check`
-- Faster iteration gate: `bun run check:quick`
-- Main contributor docs: [CONTRIBUTING.md](./CONTRIBUTING.md) and [docs/README.md](./docs/README.md)
-
-If you change workflows, scripts, or documentation structure, keep the doc entry points aligned per [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md).
-
-## Project shape
-
-- `index.html` (`/`) is the canonical workspace route for the visualizer.
-- `milkdrop/index.html` (`/milkdrop/`) is a compatibility alias that redirects to `/`.
-- `assets/js/frontend/` contains the product-facing workspace UI, URL state, and engine adapter seam.
-- `assets/js/` contains the runtime, renderer, UI shell, and preset infrastructure.
-- `assets/data/toys.json` is the checked-in app manifest source for the shipped MilkDrop entry.
-- `tests/` contains unit, integration, and compatibility coverage.
-- `docs/` is the canonical contributor documentation set.
-
-## Troubleshooting
-
-- **Blank canvas on startup**: confirm hardware acceleration is enabled in your browser and retry with WebGL preference.
-- **No microphone or tab audio input**: check browser permission prompts and verify the selected input device in the in-app controls.
-- **Mobile device cannot reach local dev server**: use `bun run dev:host`, then load the host machine IP from the mobile browser.
-
-## Docs
-
-Use [docs/README.md](./docs/README.md) as the canonical docs index.
-
-Start with:
-
-- [docs/agents/agent-handoffs.md](./docs/agents/agent-handoffs.md)
-- [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)
-- [docs/MILKDROP_PRESET_RUNTIME.md](./docs/MILKDROP_PRESET_RUNTIME.md)
-- [docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md](./docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md)
-- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-- [docs/MANUAL_SMOKE_BASELINE.md](./docs/MANUAL_SMOKE_BASELINE.md)
-- [docs/QA_PLAN.md](./docs/QA_PLAN.md)
-- [docs/FEATURE_SPECIFICATIONS.md](./docs/FEATURE_SPECIFICATIONS.md)
-- [docs/DOCS_MAINTENANCE.md](./docs/DOCS_MAINTENANCE.md)
-- [docs/LINEAGE_AND_CREDITS.md](./docs/LINEAGE_AND_CREDITS.md)
-- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+---
 
 ## Lineage
 
-Stims is not an official MilkDrop or Winamp release. When presets, fixtures, screenshots, or compatibility work draw from the wider MilkDrop or projectM ecosystem, credits should remain explicit for original authors, curators, and contributors. See [docs/LINEAGE_AND_CREDITS.md](./docs/LINEAGE_AND_CREDITS.md) for the repository's attribution rules.
+Stims is not an official MilkDrop or Winamp release. Credits to original authors, curators, and contributors are maintained in [docs/LINEAGE_AND_CREDITS.md](./docs/LINEAGE_AND_CREDITS.md).
