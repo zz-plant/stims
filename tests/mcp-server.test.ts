@@ -107,8 +107,8 @@ describe('README-derived MCP guidance', () => {
   test('surfaces the current session-oriented dev workflow', async () => {
     const commands = await getReadmeDevCommands('dev');
 
-    expect(commands).toContain('bun run session:codex -- --profile review');
     expect(commands).toContain('bun run dev');
+    expect(commands).toContain('bun run build');
   });
 
   test('returns an explicit lint fallback when README omits lint-only commands', async () => {
