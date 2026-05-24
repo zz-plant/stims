@@ -107,13 +107,25 @@ function main() {
     }
   }
 
+  const svgPath = join(ASSETS_DIR, 'source.svg');
+  try {
+    const svg = readFileSync(svgPath, 'utf8').trim();
+    if (svg.startsWith('<svg') || svg.startsWith('<?xml')) {
+      console.log(`  ✅ source.svg  (${(statSync(svgPath).size).toLocaleString()}B)  design reference`);
+    } else {
+      errors.push('source.svg: invalid SVG (missing <svg> root)');
+    }
+  } catch {
+    errors.push('source.svg: missing — design source file required');
+  }
+
   const expectedTypes = Object.keys(SPECS);
   const missing = expectedTypes.filter(t => !found.has(t));
   if (missing.length > 0) {
     console.log(`\n  ⚠  Missing types: ${missing.join(', ')}`);
   }
 
-  console.log(`\n${errors.length === 0 ? '✅ All assets valid' : '❌ FAILURES:'}  (${files.length} checked)\n`);
+  console.log(`\n${errors.length === 0 ? '✅ All assets valid' : '❌ FAILURES:'}  (${files.length} PNGs, 1 SVG checked)\n`);
 
   if (errors.length > 0) {
     for (const err of errors) console.error(`  ❌ ${err}`);
