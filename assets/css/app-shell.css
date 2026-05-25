@@ -49,6 +49,14 @@ body[data-page="workspace"] {
     linear-gradient(180deg, #05070d 0%, #08111b 48%, #03050a 100%);
 }
 
+html:has(body[data-page="workspace"]),
+body[data-page="workspace"] {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 #app {
   min-height: 100vh;
 }
@@ -3569,12 +3577,13 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] {
-    min-height: 88svh;
+    min-height: auto;
+    overflow: visible;
   }
 
   @supports (min-height: max(88svh, 640px)) {
     .stims-shell__stage-frame[data-mode="home"] {
-      min-height: max(88svh, 640px);
+      min-height: auto;
     }
   }
 
@@ -3656,16 +3665,15 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-    top: 112px;
-    right: 10px;
-    bottom: 18px;
-    left: 10px;
+    position: relative;
+    inset: auto;
+    width: 100%;
     align-content: start;
     align-items: start;
     justify-items: stretch;
-    overflow-y: auto;
+    overflow-y: visible;
     overscroll-behavior: contain;
-    padding: 4px 0 12px;
+    padding: 112px 10px 18px;
     scrollbar-width: thin;
   }
 
