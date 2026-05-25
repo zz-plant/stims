@@ -90,7 +90,8 @@
     "ui:diff": "bun scripts/ui-diff.ts",
     "check:no-ts-nocheck": "bash scripts/check-no-ts-nocheck.sh",
     "check:production-edge": "bash scripts/check_production_edge.sh",
-    "assets:check": "bun run scripts/check-assets.ts"
+    "assets:check": "bun run scripts/check-assets.ts",
+    "assets:generate": "bun run scripts/generate-scenes.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
