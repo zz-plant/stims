@@ -33,6 +33,7 @@ const STEPS: OnboardingStep[] = [
 ];
 
 const STORAGE_KEY = 'stims:onboarding-complete';
+const ONBOARDING_PARAM = 'onboarding';
 
 export function useOnboarding(): {
   showOnboarding: boolean;
@@ -40,9 +41,11 @@ export function useOnboarding(): {
 } {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     try {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has(ONBOARDING_PARAM)) return false;
       return localStorage.getItem(STORAGE_KEY) !== 'true';
     } catch {
-      return true;
+      return false;
     }
   });
 
