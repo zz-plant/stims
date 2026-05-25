@@ -15,13 +15,13 @@ for (const route of routes) {
   try {
     const res = await fetch(url);
     if (res.status !== 200) {
-      console.error('FAIL ' + url + ' => ' + res.status);
+      console.error(`FAIL ${url} => ${res.status}`);
       failures++;
     } else {
-      console.log('OK   ' + url + ' => ' + res.status);
+      console.log(`OK   ${url} => ${res.status}`);
     }
   } catch (e) {
-    console.error('FAIL ' + url + ' => ' + e.message);
+    console.error(`FAIL ${url} => ${e.message}`);
     failures++;
   }
 }

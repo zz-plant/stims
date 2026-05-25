@@ -17,10 +17,13 @@ describe('Workspace shell mobile layout regression', () => {
       /\.stims-shell__workspace\[data-mode="home"\]\s*\{[\s\S]*?padding:\s*0;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*88svh;/u,
+      /html:has\(body\[data-page="workspace"\]\),\s*body\[data-page="workspace"\]\s*\{[\s\S]*?height:\s*auto;[\s\S]*?overflow-y:\s*auto;/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-hero\s*\{[\s\S]*?inset:\s*112px 10px 18px;[\s\S]*?align-content:\s*start;/u,
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*auto;[\s\S]*?overflow:\s*visible;/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\] \.stims-shell__stage-hero\s*\{[\s\S]*?position:\s*relative;[\s\S]*?inset:\s*auto;[\s\S]*?padding:\s*112px 10px 18px;/u,
     );
     expect(css).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__frame-chrome\s*\{[\s\S]*?align-items:\s*flex-start;/u,
