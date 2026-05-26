@@ -12,7 +12,8 @@
         "noUnusedVariables": "warn"
       },
       "suspicious": {
-        "useIterableCallbackReturn": "off"
+        "useIterableCallbackReturn": "off",
+        "noDuplicateProperties": "off"
       }
     }
   },

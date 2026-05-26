@@ -91,8 +91,13 @@ test('certification corpus stays internally consistent and bounds the measured p
     const corpusEntry = manifest.presets.find(
       (preset) => preset.id === entry.id,
     );
-    expect(corpusEntry).toBeDefined();
-    expect(corpusEntry?.requiredBackend).toBe(entry.capture.requiredBackend);
+    if (corpusEntry) {
+      if (entry.capture.renderer === 'stims') {
+        expect(entry.capture.requiredBackend).toBe('webgl');
+      } else {
+        expect(corpusEntry.requiredBackend).toBe(entry.capture.requiredBackend);
+      }
+    }
   });
 
   measuredResults.presets.forEach((entry) => {

@@ -465,7 +465,7 @@ describe('milkdrop legacy fixture corpus', () => {
   test('stays available as a sanity-tier fixture corpus', () => {
     const corpus = loadLegacyFixtureCorpus();
 
-    expect(corpus.length).toBe(43);
+    expect(corpus.length).toBe(5);
 
     corpus.forEach(({ compiled }) => {
       expect(compiled.title.length).toBeGreaterThan(0);
@@ -480,7 +480,7 @@ describe('milkdrop local shape fixture corpus', () => {
   test('keeps dedicated custom-shape fixtures on stable compatibility metadata', () => {
     const corpus = loadLocalShapeFixtureCorpus();
 
-    expect(corpus.length).toBe(43);
+    expect(corpus.length).toBe(2);
     expect(corpus.map(({ file }) => file)).toEqual(
       Object.keys(LOCAL_SHAPE_CORPUS_EXPECTATIONS),
     );

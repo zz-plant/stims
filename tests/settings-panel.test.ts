@@ -9,16 +9,31 @@ import {
 } from '../assets/js/core/settings-panel.ts';
 
 describe('quality preset subscriptions', () => {
+  let originalConcurrency: number | undefined;
+
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = '';
     resetSettingsPanelState({ removePanel: true });
+
+    originalConcurrency = navigator.hardwareConcurrency;
+    Object.defineProperty(navigator, 'hardwareConcurrency', {
+      value: 4,
+      configurable: true,
+    });
   });
 
   afterEach(() => {
     localStorage.clear();
     document.body.innerHTML = '';
     resetSettingsPanelState({ removePanel: true });
+
+    if (originalConcurrency !== undefined) {
+      Object.defineProperty(navigator, 'hardwareConcurrency', {
+        value: originalConcurrency,
+        configurable: true,
+      });
+    }
   });
 
   test('notifies subscribers for initial and subsequent preset changes', () => {

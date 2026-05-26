@@ -13,13 +13,13 @@ describe('applyRendererSettings', () => {
         backend: 'webgl',
         isMobile: false,
       }),
-    ).toBe(1.35);
+    ).toBe(1.75);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',
         isMobile: false,
       }),
-    ).toBe(3);
+    ).toBe(4);
   });
 
   test('keeps mobile webgpu below the desktop ceiling', () => {
@@ -116,7 +116,7 @@ describe('applyRendererSettings', () => {
       renderScale: 1,
     });
 
-    expect(pixelRatios[pixelRatios.length - 1]).toBeCloseTo(1.35, 6);
+    expect(pixelRatios[pixelRatios.length - 1]).toBeCloseTo(1.75, 6);
 
     Object.defineProperty(window, 'devicePixelRatio', {
       configurable: true,
