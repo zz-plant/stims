@@ -44,7 +44,7 @@ function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
     const isActive = button.dataset.tab === activeId;
     button.classList.toggle('is-active', isActive);
     button.dataset.active = String(isActive);
-    button.setAttribute('aria-pressed', String(isActive));
+    button.setAttribute('aria-selected', String(isActive));
   });
 }
 
@@ -103,6 +103,7 @@ export class MilkdropOverlay {
     this.toggleButton.type = 'button';
     this.toggleButton.className = 'milkdrop-overlay__toggle';
     this.toggleButton.textContent = 'Controls';
+    this.toggleButton.setAttribute('aria-expanded', 'false');
     this.toggleButton.addEventListener('click', () => this.toggleOpen());
 
     this.panel = document.createElement('aside');
@@ -129,7 +130,7 @@ export class MilkdropOverlay {
     const shortcutHeading = document.createElement('div');
     shortcutHeading.className = 'milkdrop-overlay__shortcut-title';
     shortcutHeading.textContent = 'Keyboard shortcuts';
-    const shortcutList = document.createElement('div');
+    const shortcutList = document.createElement('ul');
     shortcutList.className = 'milkdrop-overlay__shortcut-list';
     [
       'N / P: next or previous preset',
@@ -142,7 +143,7 @@ export class MilkdropOverlay {
       'Escape: close browse panel',
       '?: shortcut help',
     ].forEach((item) => {
-      const row = document.createElement('div');
+      const row = document.createElement('li');
       row.className = 'milkdrop-overlay__shortcut-item';
       row.textContent = item;
       shortcutList.appendChild(row);
@@ -244,9 +245,11 @@ export class MilkdropOverlay {
     this.blendSlider.max = '8';
     this.blendSlider.step = '0.25';
     this.blendSlider.value = '2.5';
+    this.blendSlider.setAttribute('aria-label', 'Blend duration');
     this.blendSlider.addEventListener('input', () => {
       const value = Number.parseFloat(this.blendSlider.value);
       this.blendValue.textContent = `${value.toFixed(2)}s`;
+      this.blendSlider.setAttribute('aria-valuetext', `${value.toFixed(2)} seconds`);
       this.callbacks.onBlendDurationChange(value);
     });
     this.blendValue = document.createElement('span');
@@ -265,9 +268,11 @@ export class MilkdropOverlay {
 
     const tabs = document.createElement('div');
     tabs.className = 'milkdrop-overlay__tabs';
+    tabs.setAttribute('role', 'tablist');
     this.tabButtons = ['browse', 'editor', 'inspector'].map((tab) => {
       const button = document.createElement('button');
       button.type = 'button';
+      button.setAttribute('role', 'tab');
       button.dataset.tab = tab;
       button.textContent =
         tab === 'browse' ? 'Presets' : tab === 'editor' ? 'Edit' : 'Inspect';
@@ -362,6 +367,7 @@ export class MilkdropOverlay {
     if (!this.isOpen()) {
       this.shortcutHud.hidden = true;
     }
+    this.toggleButton.setAttribute('aria-expanded', String(this.isOpen()));
     this.syncRootSessionState();
   }
 

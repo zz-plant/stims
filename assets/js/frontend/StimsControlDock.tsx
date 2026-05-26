@@ -1,5 +1,19 @@
-import { useWorkspace } from './workspace-context.tsx';
+import { useLayoutEffect, useRef } from 'react';
+import { useEngine, useUI } from './workspace-context.tsx';
 import { UiIcon } from './workspace-ui.tsx';
+
+function useDirectCSSProperty<T extends HTMLElement>(
+  name: string,
+  value: number,
+) {
+  const ref = useRef<T>(null);
+  useLayoutEffect(() => {
+    if (ref.current) {
+      ref.current.style.setProperty(name, String(value));
+    }
+  });
+  return ref;
+}
 
 export function StimsControlDock({
   isFullscreen,
@@ -10,15 +24,27 @@ export function StimsControlDock({
   onToggleFullscreen: () => void;
   onToggleTheme?: () => void;
 }) {
-  const w = useWorkspace();
-  const panel = w.routeState.panel;
-  const audioSource = w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
-  const audioEnergy = w.engineSnapshot?.audioEnergy ?? 0;
+  const ui = useUI();
+  const engine = useEngine();
+  const panel = ui.routeState.panel;
+  const audioSource =
+    engine.engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+  const audioEnergy = engine.engineSnapshot?.audioEnergy ?? 0;
   const energyNorm = Math.min(1, Math.max(0, audioEnergy));
-  const runtimeReady = w.engineSnapshot?.runtimeReady ?? false;
-  const presetTitle = w.selectedPreset?.title ?? w.featuredPreset?.title ?? '';
+  const runtimeReady = engine.engineSnapshot?.runtimeReady ?? false;
+  const presetTitle =
+    engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? '';
   const presetAuthor =
-    w.selectedPreset?.author ?? w.featuredPreset?.author ?? '';
+    engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? '';
+
+  const barRef = useDirectCSSProperty<HTMLSpanElement>(
+    '--stims-energy',
+    energyNorm,
+  );
+  const dockRef = useDirectCSSProperty<HTMLDivElement>(
+    '--stims-audio-glow',
+    energyNorm,
+  );
 
   return (
     <div className="stims-shell__stage-dock-wrap">
@@ -34,21 +60,14 @@ export function StimsControlDock({
               </span>
             ) : null}
           </div>
-          <span
-            className="stims-shell__now-playing-bar"
-            style={
-              { '--stims-energy': String(energyNorm) } as React.CSSProperties
-            }
-          />
+          <span ref={barRef} className="stims-shell__now-playing-bar" />
         </div>
       ) : null}
       <div
+        ref={dockRef}
         className="stims-shell__stage-dock"
         role="toolbar"
         aria-label="Live controls"
-        style={
-          { '--stims-audio-glow': String(energyNorm) } as React.CSSProperties
-        }
       >
         <button
           type="button"
@@ -56,7 +75,7 @@ export function StimsControlDock({
           data-active={String(panel === 'browse')}
           aria-label="Open browse panel"
           title="Open browse panel"
-          onClick={() => w.updatePanel('browse')}
+          onClick={() => ui.updatePanel('browse')}
         >
           <UiIcon
             name="sparkles"
@@ -70,7 +89,7 @@ export function StimsControlDock({
           data-active={String(panel === 'settings')}
           aria-label="Open look settings"
           title="Open look settings"
-          onClick={() => w.updatePanel('settings')}
+          onClick={() => ui.updatePanel('settings')}
         >
           <UiIcon
             name="sliders"
@@ -83,7 +102,7 @@ export function StimsControlDock({
           className="stims-shell__stage-tool"
           aria-label="Surprise me"
           title="Surprise me"
-          onClick={w.handleShufflePreset}
+          onClick={engine.handleShufflePreset}
         >
           <UiIcon
             name="pulse"
@@ -97,7 +116,7 @@ export function StimsControlDock({
             className="stims-shell__stage-tool"
             aria-label="Stop audio"
             title="Stop audio"
-            onClick={w.handleAudioStop}
+            onClick={engine.handleAudioStop}
           >
             <UiIcon
               name="close"
@@ -126,7 +145,7 @@ export function StimsControlDock({
           className="stims-shell__stage-tool"
           aria-label="Share current link"
           title="Share current link"
-          onClick={() => void w.handleShowCurrentLink()}
+          onClick={() => void ui.handleShowCurrentLink()}
         >
           <UiIcon
             name="link"

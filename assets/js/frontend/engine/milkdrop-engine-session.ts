@@ -73,12 +73,17 @@ export function createMilkdropEngineAdapter() {
   });
 
   const emit = () => {
-    lastSnapshot = buildEngineSnapshot({
+    const next = buildEngineSnapshot({
       experience,
       runtime,
       audioActive,
       audioSource,
+      previousSnapshot: lastSnapshot,
     });
+    if (next === lastSnapshot) {
+      return;
+    }
+    lastSnapshot = next;
     subscribers.forEach((subscriber) => subscriber(lastSnapshot));
   };
 

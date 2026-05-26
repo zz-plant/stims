@@ -77,7 +77,9 @@ export function OnboardingFlow({
 
   const handleDismiss = useCallback(() => {
     setExiting(true);
-    setTimeout(onDismiss, 250);
+    const prefersReducedMotion = typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(onDismiss, prefersReducedMotion ? 0 : 250);
   }, [onDismiss]);
 
   const handleStartDemo = useCallback(() => {

@@ -1116,6 +1116,11 @@ body[data-page="workspace"] {
   padding-right: 0;
 }
 
+.stims-shell__preset-list .stims-shell__preset-card-wrap {
+  content-visibility: auto;
+  contain-intrinsic-size: 220px;
+}
+
 .stims-shell__preset-list .stims-shell__preset-card {
   display: grid;
   grid-template-columns: 1fr;

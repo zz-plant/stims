@@ -486,6 +486,7 @@ export function ensureGeometryPositions(
 }
 
 export function clearGroup(group: Group) {
+  trimCountCache.delete(group);
   for (let index = group.children.length - 1; index >= 0; index -= 1) {
     const child = group.children[index];
     disposeObject(child);
@@ -514,12 +515,23 @@ export function disposeObject(object: { children?: unknown[] }) {
   }
 }
 
+const trimCountCache = new WeakMap<Group, number>();
+
 export function trimGroupChildren(group: Group, keepCount: number) {
+  const prevCount = trimCountCache.get(group);
+  if (prevCount === keepCount) {
+    return;
+  }
+  trimCountCache.set(group, keepCount);
   for (let index = group.children.length - 1; index >= keepCount; index -= 1) {
     const child = group.children[index];
     disposeObject(child as { children?: unknown[] });
     group.remove(child);
   }
+}
+
+export function clearTrimCountCache(group: Group) {
+  trimCountCache.delete(group);
 }
 
 export function withRenderOrder<T extends { renderOrder: number }>(

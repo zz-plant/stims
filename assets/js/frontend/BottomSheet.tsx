@@ -114,11 +114,13 @@ export function BottomSheet({
 
   return (
     <>
-      <div
+      <button
+        type="button"
         className={styles.backdrop}
         data-exiting={String(exiting)}
         onClick={startClose}
-        aria-hidden="true"
+        aria-label="Close"
+        tabIndex={-1}
       />
       <div
         ref={sheetRef}

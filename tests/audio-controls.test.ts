@@ -121,9 +121,9 @@ describe('audio controls primary emphasis', () => {
 
     expect(container.textContent).toContain('Pick your input');
     expect(container.textContent).toContain('Demo');
-    expect(container.textContent).toContain('Built-in audio.');
+    expect(container.textContent).toContain('Built-in procedural audio.');
     expect(container.textContent).toContain('Live mic');
-    expect(container.textContent).toContain('Room, voice, or instrument.');
+    expect(container.textContent).toContain('Room audio, voice, or instruments.');
   });
 
   test('keeps advanced sources collapsed and post-start guidance hidden by default', () => {

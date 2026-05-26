@@ -33,19 +33,37 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
   };
 }
 
+function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
+  if (a === b) return true;
+  return (
+    a.activePresetId === b.activePresetId &&
+    a.backend === b.backend &&
+    a.status === b.status &&
+    a.adaptiveQuality === b.adaptiveQuality &&
+    a.catalogEntries === b.catalogEntries &&
+    a.sessionState === b.sessionState &&
+    a.runtimeReady === b.runtimeReady &&
+    a.audioActive === b.audioActive &&
+    a.audioSource === b.audioSource &&
+    a.audioEnergy === b.audioEnergy
+  );
+}
+
 export function buildEngineSnapshot({
   experience,
   runtime,
   audioActive,
   audioSource,
+  previousSnapshot,
 }: {
   experience: ExperienceController | null;
   runtime: ToyRuntimeInstance | null;
   audioActive: boolean;
   audioSource: AudioSource | null;
+  previousSnapshot?: EngineSnapshot | null;
 }): EngineSnapshot {
   const snapshot = experience?.getStateSnapshot();
-  return {
+  const next: EngineSnapshot = {
     activePresetId: snapshot?.activePresetId ?? null,
     backend: snapshot?.backend ?? null,
     status: snapshot?.status ?? null,
@@ -57,4 +75,8 @@ export function buildEngineSnapshot({
     audioSource,
     audioEnergy: snapshot?.audioEnergy ?? 0,
   };
+  if (previousSnapshot && shallowEqual(next, previousSnapshot)) {
+    return previousSnapshot;
+  }
+  return next;
 }

@@ -15,7 +15,7 @@ import {
   StimsRailActions,
   StimsStageFrame,
 } from './StimsStageFrame.tsx';
-import { useWorkspace } from './workspace-context.tsx';
+import { useUI, useWorkspace } from './workspace-context.tsx';
 import {
   buildAppliedFilterSummary,
   describePresetMood,
@@ -51,7 +51,6 @@ export function UiIcon({
   className: string;
 }) {
   const nodes = getIconNodes(name);
-  const title = name.replace(/-/g, ' ');
 
   return (
     <span className={className} aria-hidden="true">
@@ -65,8 +64,8 @@ export function UiIcon({
         strokeLinejoin="round"
         focusable="false"
         data-icon={name}
+        aria-hidden="true"
       >
-        <title>{title}</title>
         {nodes.map(({ tag, attrs }) => {
           const key = `${name}-${tag}-${Object.entries(attrs)
             .map(([attrName, value]) => `${attrName}:${value}`)
@@ -296,6 +295,7 @@ function AudioSourcePanel() {
             placeholder="https://youtube.com/watch?v=..."
             autoComplete="off"
             inputMode="url"
+            spellCheck={false}
             aria-describedby="youtube-url-feedback"
             aria-invalid={youtubeInputInvalid}
             value={youtubeUrl}
@@ -636,6 +636,7 @@ function BrowseSheetPanel({
           className="stims-shell__input"
           type="search"
           placeholder="Search by title, mood, creator, or collection"
+          spellCheck={false}
           value={searchQuery}
           onChange={(event) => w.setSearchQuery(event.target.value)}
         />
@@ -986,7 +987,7 @@ export function WorkspaceToolSheet({
   onMotionPreferenceChange: (enabled: boolean) => void;
   stageAnchoredToolOpen: boolean;
 }) {
-  const w = useWorkspace();
+  const w = useUI();
   const panel = w.routeState.panel;
   const sheetRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);

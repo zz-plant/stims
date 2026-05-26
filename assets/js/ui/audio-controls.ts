@@ -553,19 +553,19 @@ export function initAudioControls(
 
 function renderPrimaryAudioChoice() {
   return `
-    <div class="control-panel__row" data-audio-row="demo">
-      <div class="control-panel__text">
-        <span class="control-panel__label">Demo</span>
-        <span class="control-panel__subtext">Built-in audio.</span>
-      </div>
-      <button id="use-demo-audio" class="cta-button primary" type="button">Start demo</button>
-    </div>
     <div class="control-panel__row" data-audio-row="mic">
       <div class="control-panel__text">
         <span class="control-panel__label">Live mic</span>
-        <span class="control-panel__subtext">Room, voice, or instrument.</span>
+        <span class="control-panel__subtext">Room audio, voice, or instruments.</span>
       </div>
-      <button id="start-audio-btn" class="cta-button ghost" type="button">Use mic</button>
+      <button id="start-audio-btn" class="cta-button primary" type="button">Enable mic</button>
+    </div>
+    <div class="control-panel__row" data-audio-row="demo">
+      <div class="control-panel__text">
+        <span class="control-panel__label">Demo</span>
+        <span class="control-panel__subtext">Built-in procedural audio.</span>
+      </div>
+      <button id="use-demo-audio" class="cta-button ghost" type="button">Start demo</button>
     </div>
   `;
 }
