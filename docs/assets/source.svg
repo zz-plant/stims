@@ -9,6 +9,6 @@
   <rect width="400" height="200" fill="url(#bg)"/>
   <circle cx="200" cy="95" r="62" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="8"/>
   <circle cx="200" cy="95" r="40" fill="none" stroke="#f5fbff" stroke-width="7" stroke-dasharray="84 30" stroke-linecap="round"/>
-  <circle cx="200" cy="95" r="14" fill="#f5fbff" opacity="0.9"/>
-  <text x="200" y="180" text-anchor="middle" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif" font-size="12">stims — music-reactive browser visuals, MilkDrop-inspired</text>
+  <circle cx="200" cy="95" r="14" fill="#f5fbff" opacity="1"/>
+  <text x="200" y="112" text-anchor="middle" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif" font-size="12">stims — music-reactive browser visuals, MilkDrop-inspired</text>
 </svg>
