@@ -18,7 +18,7 @@ import {
   type WaveBuilderState,
 } from './shared';
 
-const MAX_CUSTOM_WAVE_SAMPLES = 512;
+const MAX_CUSTOM_WAVE_SAMPLES = 1024;
 
 export function buildMainWave({
   state,

@@ -1,3 +1,4 @@
+import { getRecommendedQualityPresetId } from '../device-profile.ts';
 import { getBrowserStorage } from './browser-storage.ts';
 
 export type QualityPreset = {
@@ -96,7 +97,21 @@ export function getStoredQualityPreset({
     return fromStorage;
   }
 
-  return presets.find((preset) => preset.id === defaultPresetId) || presets[0];
+  if (defaultPresetId !== DEFAULT_PRESET_ID) {
+    const customDefault = presets.find(
+      (preset) => preset.id === defaultPresetId,
+    );
+    if (customDefault) {
+      return customDefault;
+    }
+  }
+
+  const recommendedId = getRecommendedQualityPresetId();
+  return (
+    presets.find((preset) => preset.id === recommendedId) ||
+    presets.find((preset) => preset.id === defaultPresetId) ||
+    presets[0]
+  );
 }
 
 export function getActiveQualityPreset({

@@ -6,9 +6,27 @@ export type DevicePerformanceProfile = {
   reducedMotion: boolean;
 };
 
-export type DeviceTier = 'low' | 'mid' | 'high';
+export type DeviceTier = 'low' | 'mid' | 'high' | 'ultra';
 
 export function getDeviceTier(): DeviceTier {
+  const environment = getDeviceEnvironmentProfile();
+  const hardwareConcurrency =
+    typeof navigator !== 'undefined'
+      ? (navigator.hardwareConcurrency ?? null)
+      : null;
+
+  const isUltra =
+    !environment.isMobile &&
+    ((hardwareConcurrency !== null && hardwareConcurrency >= 12) ||
+      (typeof window !== 'undefined' &&
+        (
+          window as unknown as {
+            __stims_webgpu_performance_tier?: string;
+          }
+        ).__stims_webgpu_performance_tier === 'high-end'));
+
+  if (isUltra) return 'ultra';
+
   const profile = getDevicePerformanceProfile();
   if (!profile.lowPower) return 'high';
 
@@ -16,10 +34,6 @@ export function getDeviceTier(): DeviceTier {
     typeof navigator !== 'undefined' && 'deviceMemory' in navigator
       ? ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ??
         null)
-      : null;
-  const hardwareConcurrency =
-    typeof navigator !== 'undefined'
-      ? (navigator.hardwareConcurrency ?? null)
       : null;
 
   const veryConstrained =
@@ -64,6 +78,13 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
     ((deviceMemory !== null && deviceMemory <= 3) ||
       (hardwareConcurrency !== null && hardwareConcurrency <= 3));
 
+  // When deviceMemory is unavailable (Safari/Firefox), use core count as proxy
+  const inferredLimitedMemory =
+    deviceMemory === null &&
+    environment.isMobile &&
+    hardwareConcurrency !== null &&
+    hardwareConcurrency <= 4;
+
   if (reducedMotion) {
     reasons.push('reduced motion preference');
   }
@@ -76,13 +97,17 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
   if (constrainedHandheld) {
     reasons.push('handheld thermal envelope');
   }
+  if (inferredLimitedMemory) {
+    reasons.push('inferred memory constraint (Safari/Firefox mobile)');
+  }
 
   return {
     lowPower:
       reducedMotion ||
       limitedDeviceMemory ||
       limitedCpuCores ||
-      constrainedHandheld,
+      constrainedHandheld ||
+      inferredLimitedMemory,
     reason: reasons.length > 0 ? reasons.join(', ') : null,
     reducedMotion,
   };
@@ -99,4 +124,20 @@ export function getAdaptiveMaxPixelRatio(maxPixelRatio: number) {
   }
 
   return Math.min(maxPixelRatio, 1.25);
+}
+
+export function getRecommendedQualityPresetId(tier?: DeviceTier): string {
+  const resolvedTier = tier ?? getDeviceTier();
+  switch (resolvedTier) {
+    case 'low':
+      return 'performance';
+    case 'mid':
+      return 'balanced';
+    case 'high':
+      return 'hi-fi';
+    case 'ultra':
+      return 'ultra';
+    default:
+      return 'balanced';
+  }
 }

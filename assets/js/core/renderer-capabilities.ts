@@ -61,7 +61,7 @@ export type WebGPUCapabilitySummary = {
   optimization: RendererOptimizationSupport;
   preferredCanvasFormat: string | null;
   performanceTier: WebGPUCapabilityTier;
-  recommendedQualityPreset: 'balanced' | 'hi-fi';
+  recommendedQualityPreset: 'balanced' | 'hi-fi' | 'ultra';
 };
 
 export type RendererCapabilities = {
@@ -381,6 +381,14 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
   const workers = getWorkerSupport();
   const performanceTier = getWebGPUPerformanceTier({ features, limits });
 
+  if (typeof window !== 'undefined') {
+    (
+      window as unknown as {
+        __stims_webgpu_performance_tier?: string;
+      }
+    ).__stims_webgpu_performance_tier = performanceTier;
+  }
+
   return {
     features,
     limits,
@@ -391,7 +399,7 @@ function summarizeWebGPUCapabilities(adapter: GPUAdapter) {
     recommendedQualityPreset: environment.isMobile
       ? 'balanced'
       : performanceTier === 'high-end'
-        ? 'hi-fi'
+        ? 'ultra'
         : 'balanced',
   } satisfies WebGPUCapabilitySummary;
 }
@@ -736,7 +744,7 @@ export type WebGpuHealthSnapshot = {
   /** Capability tier if we have a valid WebGPU summary. */
   tier: WebGPUCapabilityTier | null;
   /** Recommended quality preset. */
-  recommendedQuality: 'balanced' | 'hi-fi' | null;
+  recommendedQuality: 'balanced' | 'hi-fi' | 'ultra' | null;
   /** Known optimization features available. */
   optimizationFeatures: {
     shaderF16: boolean;

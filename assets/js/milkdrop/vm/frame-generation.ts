@@ -165,14 +165,14 @@ function getMainWaveSampleCount(
   sourceLength: number,
 ) {
   const baseCountByMode = [176, 168, 160, 152, 192, 176, 192, 160];
-  const sourceFloor = sourceLength > 0 ? Math.min(sourceLength, 768) : 64;
+  const sourceFloor = sourceLength > 0 ? Math.min(sourceLength, 1024) : 64;
   return clamp(
     Math.round(
       mix(baseCountByMode[mode] ?? 168, sourceFloor, 0.45) *
-        clamp(detailScale, 0.5, 2),
+        clamp(detailScale, 0.5, 3.5),
     ),
     48,
-    768,
+    1024,
   );
 }
 

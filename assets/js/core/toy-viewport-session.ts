@@ -97,6 +97,18 @@ export function createToyViewportSession({
     window.visualViewport.addEventListener('scroll', viewportResizeHandler);
   }
 
+  // Track devicePixelRatio changes (e.g., moving between displays)
+  let currentDpr = window.devicePixelRatio || 1;
+  const dprQuery = window.matchMedia(`(resolution: ${currentDpr}dppx)`);
+  const handleDprChange = () => {
+    const newDpr = window.devicePixelRatio || 1;
+    if (newDpr !== currentDpr) {
+      currentDpr = newDpr;
+      scheduleResize();
+    }
+  };
+  dprQuery.addEventListener('change', handleDprChange);
+
   handleResize();
 
   return {
@@ -122,6 +134,8 @@ export function createToyViewportSession({
         );
         viewportResizeHandler = null;
       }
+
+      dprQuery.removeEventListener('change', handleDprChange);
 
       if (resizeFrameId !== null) {
         window.cancelAnimationFrame(resizeFrameId);

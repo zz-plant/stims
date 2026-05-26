@@ -103,8 +103,8 @@ const QUALITY_STEPS: readonly QualityStep[] = [
 const EMA_ALPHA = 0.18;
 const MIN_WARMUP_SAMPLES = 12;
 const DEGRADE_THRESHOLD_SAMPLES = 6;
-const RECOVER_THRESHOLD_SAMPLES = 45;
-const ENHANCE_THRESHOLD_SAMPLES = 90;
+const RECOVER_THRESHOLD_SAMPLES = 30;
+const ENHANCE_THRESHOLD_SAMPLES = 60;
 const RESET_THRESHOLD_SAMPLES = 3;
 
 function clamp(value: number, min: number, max: number) {
@@ -123,6 +123,12 @@ function updateEma(previous: number | null, next: number) {
 
 function getDisplayRefreshRate(): number {
   if (typeof window === 'undefined') return 60;
+
+  if (typeof screen !== 'undefined' && 'refreshRate' in screen) {
+    const rate = (screen as unknown as { refreshRate: number }).refreshRate;
+    if (rate > 0) return rate;
+  }
+
   const mediaQuery = window.matchMedia('(update: fast)');
   if (!mediaQuery.matches) return 60;
 
@@ -134,6 +140,11 @@ function getDisplayRefreshRate(): number {
       const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
       if (renderer && /mali/i.test(renderer)) return 60;
     }
+    // After getting GL info, clean up
+    const loseCtx = gl.getExtension('WEBGL_lose_context');
+    loseCtx?.loseContext();
+    canvas.width = 0;
+    canvas.height = 0;
   }
 
   try {

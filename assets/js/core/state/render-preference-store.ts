@@ -3,7 +3,9 @@ import { getBrowserStorage } from './browser-storage.ts';
 
 export type RenderPreferences = {
   compatibilityMode: boolean;
+  /** @deprecated Use quality presets instead. Managed as an advanced override. */
   maxPixelRatio: number | null;
+  /** @deprecated Use quality presets instead. Managed as an advanced override. */
   renderScale: number | null;
 };
 

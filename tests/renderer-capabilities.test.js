@@ -342,7 +342,7 @@ describe('renderer capabilities', () => {
 
     expect(result.webgpu).toMatchObject({
       performanceTier: 'high-end',
-      recommendedQualityPreset: 'hi-fi',
+      recommendedQualityPreset: 'ultra',
       preferredCanvasFormat: 'bgra8unorm',
       optimization: {
         shaderF16: true,

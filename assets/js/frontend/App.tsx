@@ -14,6 +14,7 @@ import {
   subscribeToFullscreenChange,
   toggleElementFullscreen,
 } from './fullscreen.ts';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { OnboardingFlow, useOnboarding } from './OnboardingFlow.tsx';
@@ -152,6 +153,7 @@ class StimsErrorBoundary extends Component<
 
 function StimsWorkspaceAppShell() {
   const w = useWorkspace();
+  const isWideEnough = useMediaQuery('(min-width: 1024px)');
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -442,7 +444,9 @@ function StimsWorkspaceAppShell() {
         stageAnchoredToolOpen={stageAnchoredToolOpen}
       />
 
-      {w.routeState.panel === 'browse' && w.filteredCatalog.length > 0 ? (
+      {isWideEnough &&
+      w.routeState.panel === 'browse' &&
+      w.filteredCatalog.length > 0 ? (
         <SplitViewBrowse
           presets={w.filteredCatalog}
           currentPresetId={w.engineSnapshot?.activePresetId ?? null}

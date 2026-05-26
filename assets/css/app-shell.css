@@ -29,6 +29,14 @@
 
 :root {
   /* All design tokens now live in tokens.css — only app-shell-specific values remain here. */
+  --stims-chrome-top: 22px;
+  --stims-chrome-height: 40px;
+  --stims-header-gap: 20px;
+  --stims-header-top: calc(
+    var(--stims-chrome-top) +
+    var(--stims-chrome-height) +
+    var(--stims-header-gap)
+  );
 }
 
 body[data-page="workspace"] {
@@ -59,17 +67,20 @@ body[data-page="workspace"] {
 
 #app {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .stims-shell {
   min-height: 100vh;
-  padding: 24px;
+  min-height: 100dvh;
+  padding: clamp(10px, 2vw + 6px, 24px);
   position: relative;
   isolation: isolate;
 }
 
 .stims-shell[data-preview="true"] {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 0;
   background: #05070d;
 }
@@ -77,6 +88,7 @@ body[data-page="workspace"] {
 .stims-shell[data-preview="true"] .stims-shell__workspace,
 .stims-shell[data-preview="true"] .stims-shell__stage-frame {
   min-height: 100vh;
+  min-height: 100dvh;
   border: 0;
   border-radius: 0;
 }
@@ -577,6 +589,7 @@ body[data-page="workspace"] {
 
 .stims-shell__workspace {
   min-height: calc(100vh - 40px);
+  min-height: calc(100dvh - 40px);
   border: 1px solid var(--stims-line);
   border-radius: var(--stims-radius-panel);
   background:
@@ -1423,6 +1436,7 @@ body[data-page="workspace"] {
 .stims-shell__stage-frame {
   position: relative;
   min-height: calc(100vh - 40px);
+  min-height: calc(100dvh - 40px);
   border-radius: var(--stims-radius-stage);
   overflow: hidden;
   border: 1px solid rgba(119, 201, 255, 0.16);
@@ -1452,6 +1466,7 @@ body[data-page="workspace"] {
 
 .stims-shell__stage-frame[data-mode="home"] {
   min-height: calc(100vh - 40px);
+  min-height: calc(100dvh - 40px);
   background:
     radial-gradient(
       circle at 18% 20%,
@@ -2849,7 +2864,9 @@ body[data-page="workspace"] {
   z-index: 1151;
   width: min(540px, calc(100vw - 48px));
   height: calc(100vh - 48px);
+  height: calc(100dvh - 48px);
   max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -3175,12 +3192,20 @@ body[data-page="workspace"] {
 }
 
 @media (max-width: 1120px) {
+  :root {
+    --stims-chrome-top: 22px;
+    --stims-chrome-height: 72px;
+    --stims-header-gap: 44px;
+  }
+
   .stims-shell__stage-frame {
     min-height: calc(100vh - 40px);
+    min-height: calc(100dvh - 40px);
   }
 
   .stims-shell__stage-frame[data-mode="home"] {
     min-height: calc(100vh - 40px);
+    min-height: calc(100dvh - 40px);
   }
 
   .stims-shell__launch-panel {
@@ -3205,7 +3230,7 @@ body[data-page="workspace"] {
   .stims-shell__frame-header {
     flex-direction: column;
     justify-content: flex-start;
-    top: 138px;
+    top: var(--stims-header-top);
   }
 
   .stims-shell__stage-copy {
@@ -3256,6 +3281,7 @@ body[data-page="workspace"] {
   .stims-shell__stage-frame,
   .stims-shell__stage-frame[data-mode="home"] {
     min-height: calc(100vh - 28px);
+    min-height: calc(100dvh - 28px);
   }
 
   .stims-shell__frame-chrome {
@@ -3305,6 +3331,7 @@ body[data-page="workspace"] {
   .stims-shell__stage-frame,
   .stims-shell__stage-frame[data-mode="home"] {
     min-height: calc(100vh - 20px);
+    min-height: calc(100dvh - 20px);
   }
 
   .stims-shell__frame-chrome {
@@ -3420,8 +3447,10 @@ body[data-page="workspace"] {
 }
 
 @media (max-width: 720px) {
-  .stims-shell {
-    padding: 10px;
+  :root {
+    --stims-chrome-top: 10px;
+    --stims-chrome-height: 58px;
+    --stims-header-gap: 44px;
   }
 
   .stims-shell[data-has-toast="true"] {
@@ -3500,17 +3529,6 @@ body[data-page="workspace"] {
   .stims-shell__launch-hero,
   .stims-shell__source-grid {
     grid-template-columns: 1fr;
-  }
-
-  .stims-shell__launch-footnote {
-    grid-template-columns: 1fr;
-  }
-
-  .stims-shell__launch-header,
-  .stims-shell__launch-stack,
-  .stims-shell__launch-signals {
-    grid-column: auto;
-    grid-row: auto;
   }
 
   .stims-shell__launch-footnote {
@@ -3611,12 +3629,12 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__frame-chrome {
-    top: 10px;
+    top: var(--stims-chrome-top);
     align-items: flex-start;
   }
 
   .stims-shell__frame-header {
-    top: 112px;
+    top: var(--stims-header-top);
     flex-direction: column;
   }
 
@@ -3727,7 +3745,7 @@ body[data-page="workspace"] {
 
   .stims-shell__preset-list {
     min-height: 0;
-    max-height: 34vh;
+    max-height: max(34vh, 240px);
   }
 
   .stims-shell__sheet {
@@ -3738,6 +3756,7 @@ body[data-page="workspace"] {
     width: auto;
     height: auto;
     max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
     gap: 12px;
     padding: 12px;
     border-radius: 14px;
@@ -3781,133 +3800,6 @@ body[data-page="workspace"] {
 @media (max-width: 640px) {
   .stims-shell__launch-hero {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  @media (max-width: 480px) {
-    .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-      top: 104px;
-      bottom: 12px;
-    }
-
-    .stims-shell__launch-panel {
-      padding: 14px;
-      border-radius: 20px;
-    }
-
-    .stims-shell__launch-signal,
-    .stims-shell__launch-promise {
-      padding: 12px;
-      border-radius: 18px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
-      bottom: 56px;
-      top: 344px;
-      gap: 6px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy,
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
-      gap: 8px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy {
-      padding: 10px 12px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-summary {
-      display: none;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__session-meta {
-      gap: 4px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__meta-pill {
-      min-height: 38px;
-      padding: 6px 10px;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
-      padding: 10px 12px;
-    }
-
-    .stims-shell__launch-hero {
-      gap: 14px;
-    }
-
-    .stims-shell__launch-stack {
-      gap: 12px;
-    }
-
-    .stims-shell__confidence-bar,
-    .stims-shell__audio-bridge,
-    .stims-shell__launch-recommendation,
-    .stims-shell__source-panel {
-      padding: 12px;
-      border-radius: 18px;
-    }
-
-    .stims-shell__launch-copy h1 {
-      font-size: clamp(1.25rem, 6.8vw, 1.7rem);
-      line-height: 0.96;
-    }
-
-    .stims-shell__launch-copy p {
-      font-size: 0.94rem;
-      line-height: 1.48;
-    }
-
-    .stims-shell__launch-actions {
-      gap: 8px;
-    }
-
-    .stims-shell__launch-recommendation-footer {
-      gap: 6px;
-    }
-
-    .stims-shell__launch-recommendation-footer span,
-    .stims-shell__launch-badge {
-      min-height: 30px;
-      padding: 0 8px;
-      font-size: 0.68rem;
-    }
-
-    .stims-shell__launch-actions > * {
-      min-height: 46px;
-    }
-
-    .stims-shell__audio-bridge-copy .stims-shell__meta-copy {
-      font-size: 0.82rem;
-      line-height: 1.38;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"]
-      .stims-shell__audio-bridge-actions
-      .cta-button {
-      min-height: 40px;
-      padding: 0.68rem 0.9rem;
-    }
-
-    .stims-shell__preset-art {
-      min-height: 126px;
-    }
-
-    .stims-shell__launch-recommendation strong {
-      font-size: 1.04rem;
-    }
-
-    .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock,
-    .stims-shell__stage-dock {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      width: 100%;
-    }
-
-    .stims-shell__stage-tool {
-      width: 100%;
-      min-height: 44px;
-    }
   }
 
   /* UX critique implementation: collapsible footer + browse extras + jumplink */
@@ -4054,5 +3946,132 @@ body[data-page="workspace"] {
       outline: 2px solid var(--stims-accent);
       outline-offset: 2px;
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
+    top: 104px;
+    bottom: 12px;
+  }
+
+  .stims-shell__launch-panel {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .stims-shell__launch-signal,
+  .stims-shell__launch-promise {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__frame-header {
+    bottom: 56px;
+    top: 344px;
+    gap: 6px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy,
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
+    gap: 8px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-copy {
+    padding: 10px 12px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-summary {
+    display: none;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__session-meta {
+    gap: 4px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__meta-pill {
+    min-height: 38px;
+    padding: 6px 10px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__audio-bridge {
+    padding: 10px 12px;
+  }
+
+  .stims-shell__launch-hero {
+    gap: 14px;
+  }
+
+  .stims-shell__launch-stack {
+    gap: 12px;
+  }
+
+  .stims-shell__confidence-bar,
+  .stims-shell__audio-bridge,
+  .stims-shell__launch-recommendation,
+  .stims-shell__source-panel {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .stims-shell__launch-copy h1 {
+    font-size: clamp(1.25rem, 6.8vw, 1.7rem);
+    line-height: 0.96;
+  }
+
+  .stims-shell__launch-copy p {
+    font-size: 0.94rem;
+    line-height: 1.48;
+  }
+
+  .stims-shell__launch-actions {
+    gap: 8px;
+  }
+
+  .stims-shell__launch-recommendation-footer {
+    gap: 6px;
+  }
+
+  .stims-shell__launch-recommendation-footer span,
+  .stims-shell__launch-badge {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.68rem;
+  }
+
+  .stims-shell__launch-actions > * {
+    min-height: 46px;
+  }
+
+  .stims-shell__audio-bridge-copy .stims-shell__meta-copy {
+    font-size: 0.82rem;
+    line-height: 1.38;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .stims-shell__audio-bridge-actions
+    .cta-button {
+    min-height: 40px;
+    padding: 0.68rem 0.9rem;
+  }
+
+  .stims-shell__preset-art {
+    min-height: 126px;
+  }
+
+  .stims-shell__launch-recommendation strong {
+    font-size: 1.04rem;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-dock,
+  .stims-shell__stage-dock {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .stims-shell__stage-tool {
+    width: 100%;
+    min-height: 44px;
   }
 }

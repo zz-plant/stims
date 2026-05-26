@@ -16,21 +16,49 @@ import {
   acquireAudioHandle,
   resetAudioPool,
 } from '../assets/js/core/services/audio-service.ts';
-import {
-  getRendererRuntimeControls,
-  requestRenderer,
-  resetRendererPool,
-  setRendererRuntimeControls,
-  subscribeToRendererRuntimeControls,
+
+import type {
+  getRendererRuntimeControls as getControlsType,
+  requestRenderer as requestType,
+  resetRendererPool as resetPoolType,
+  setRendererRuntimeControls as setControlsType,
+  subscribeToRendererRuntimeControls as subscribeType,
 } from '../assets/js/core/services/render-service.ts';
 import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
-import { flushTasks } from './test-helpers.ts';
+import { flushTasks, importFresh } from './test-helpers.ts';
+
+let getRendererRuntimeControls: typeof getControlsType;
+let requestRenderer: typeof requestType;
+let resetRendererPool: typeof resetPoolType;
+let setRendererRuntimeControls: typeof setControlsType;
+let subscribeToRendererRuntimeControls: typeof subscribeType;
 
 describe('render-service pooling', () => {
-  beforeEach(() => {
+  let originalConcurrency: number | undefined;
+
+  beforeEach(async () => {
     window.localStorage.clear();
     resetRenderPreferencesState();
     resetSettingsPanelState();
+    delete (window as unknown as { __stims_webgpu_performance_tier?: string })
+      .__stims_webgpu_performance_tier;
+
+    originalConcurrency = navigator.hardwareConcurrency;
+    Object.defineProperty(navigator, 'hardwareConcurrency', {
+      value: 4,
+      configurable: true,
+    });
+
+    const renderService = await importFresh<
+      typeof import('../assets/js/core/services/render-service.ts')
+    >('../assets/js/core/services/render-service.ts');
+    getRendererRuntimeControls = renderService.getRendererRuntimeControls;
+    requestRenderer = renderService.requestRenderer;
+    resetRendererPool = renderService.resetRendererPool;
+    setRendererRuntimeControls = renderService.setRendererRuntimeControls;
+    subscribeToRendererRuntimeControls =
+      renderService.subscribeToRendererRuntimeControls;
+
     resetRendererPool({ dispose: true });
   });
 
@@ -51,11 +79,21 @@ describe('render-service pooling', () => {
     window.localStorage.clear();
     resetRenderPreferencesState();
     resetSettingsPanelState();
-    resetRendererPool({ dispose: true });
+    if (resetRendererPool) {
+      resetRendererPool({ dispose: true });
+    }
+    delete (window as unknown as { __stims_webgpu_performance_tier?: string })
+      .__stims_webgpu_performance_tier;
     Object.defineProperty(window, 'devicePixelRatio', {
       configurable: true,
       value: 1,
     });
+    if (originalConcurrency !== undefined) {
+      Object.defineProperty(navigator, 'hardwareConcurrency', {
+        value: originalConcurrency,
+        configurable: true,
+      });
+    }
   });
 
   test('reuses renderer handle between toys', async () => {
@@ -190,7 +228,7 @@ describe('render-service pooling', () => {
       waveSampleMultiplier: 1,
       motionVectorDensityMultiplier: 1,
     });
-    expect(setPixelRatioMock).toHaveBeenLastCalledWith(1.35);
+    expect(setPixelRatioMock).toHaveBeenLastCalledWith(1.75);
   });
 
   test('keeps the active webgpu renderer stable across animation frames', async () => {

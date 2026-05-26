@@ -46,7 +46,7 @@ export function getRendererBackendMaxPixelRatioCap({
     return backend === 'webgpu' ? 1.4 : 1.15;
   }
 
-  return backend === 'webgpu' ? 3 : 1.35;
+  return backend === 'webgpu' ? 4 : 1.75;
 }
 
 export type RendererViewport = {
@@ -183,6 +183,12 @@ export function applyRendererSettings(
   defaults: Partial<RendererInitConfig> = {},
   viewport?: RendererViewport,
 ) {
+  // Precedence Chain for settings resolution:
+  // 1. Explicit overrides passed via `options`.
+  // 2. User advanced overrides (RenderPreferences) -> resolved in `defaults`.
+  // 3. Quality presets (active settings) -> fallback in `defaults`.
+  // 4. Runtime adaptive adjustments (adaptive multipliers) -> dynamically applied.
+  // 5. Hardware/Platform/Browser constraints (backend caps) -> absolute boundaries.
   const merged = resolveRendererSettings(options, info, defaults);
   const effectiveRenderScale = Math.max(
     0.4,
