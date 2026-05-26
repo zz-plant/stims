@@ -26,3 +26,9 @@ yarn-error.log*
 .playwright-mcp/
 .sisyphus/
 opencode.json
+
+# Tooling
+.cmux/
+.opencode/
+.agent/
+.wrangler/
