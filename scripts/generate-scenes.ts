@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, no-empty */
 /**
  * generate-scenes.ts — renders source.svg into scene-specific PNGs with variation.
  * Usage: bun run scripts/generate-scenes.ts [--dry-run]
@@ -110,7 +111,6 @@ function main() {
       const composed = overlay.replace("</svg>",
         `\n  <g transform="translate(${sx},${sy}) scale(${scale})">${innerSvg}</g>\n</svg>`);
       // Also add a subtle pattern for depth
-      const finalSvg = composed.replace("</svg>", `\n  <circle cx="${spec.width/2}" cy="${spec.height/2}" r="${Math.min(spec.width,spec.height)*0.3}" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>\n</svg>`);
       writeFileSync(compPath, composed);
       
       // 3. Render via rsvg-convert
