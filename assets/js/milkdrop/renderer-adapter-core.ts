@@ -909,6 +909,281 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     });
   }
 
+  private renderFrameVisuals(
+    frameState: MilkdropRenderPayload['frameState'],
+    mainWaveGroup: Group,
+    customWaveGroup: Group,
+    trailGroup: Group,
+    particleFieldGroup: Group,
+    shapesGroup: Group,
+    borderGroup: Group,
+    motionVectorGroup: Group,
+    proceduralMotionVectors: LineSegments<
+      BufferGeometry,
+      LineBasicMaterial | ShaderMaterial
+    >,
+    alphaMultiplier = 1,
+    blend?: {
+      previousFrame?: MilkdropRenderPayload['frameState'];
+      blendMix?: number;
+    } | null,
+  ) {
+    const {
+      gpuGeometry: gpu,
+      interaction,
+      signals,
+      mainWave,
+      customWaves,
+      trails,
+      mesh,
+      shapes,
+      borders,
+    } = frameState;
+    const plans = this.webgpuDescriptorPlan?.proceduralWaves ?? [];
+    const canProcedural = (target: string) =>
+      this.backend === 'webgpu' && plans.some((p) => p.target === target);
+    const canProceduralMain =
+      canProcedural('main-wave') && gpu?.mainWave != null;
+    const canProceduralCustom =
+      canProcedural('custom-wave') && (gpu?.customWaves?.length ?? 0) > 0;
+
+    if (canProceduralMain && gpu.mainWave) {
+      this.renderProceduralWaveGroup('main-wave', mainWaveGroup, [
+        gpu.mainWave,
+      ]);
+    } else {
+      this.renderWaveGroup(
+        'main-wave',
+        mainWaveGroup,
+        [mainWave],
+        alphaMultiplier,
+      );
+    }
+    if (canProceduralCustom && gpu.customWaves.length > 0) {
+      this.renderProceduralCustomWaveGroup(
+        customWaveGroup,
+        gpu.customWaves,
+        interaction?.waves,
+      );
+    } else {
+      this.renderWaveGroup(
+        'custom-wave',
+        customWaveGroup,
+        customWaves,
+        alphaMultiplier,
+      );
+    }
+    if (canProcedural('trail-waves') && (gpu?.trailWaves?.length ?? 0) > 0) {
+      this.renderProceduralWaveGroup(
+        'trail-waves',
+        trailGroup,
+        gpu.trailWaves,
+        interaction?.waves,
+      );
+    } else {
+      this.renderLineVisualGroup('trails', trailGroup, trails, alphaMultiplier);
+    }
+    renderParticleFieldGroupHelper({
+      target: 'particle-field',
+      group: particleFieldGroup,
+      particleField:
+        (gpu as { particleField?: MilkdropParticleFieldVisual | null })
+          ?.particleField ?? null,
+      mesh,
+      meshPositions: mesh.positions,
+      signals,
+      trimGroupChildren,
+      alphaMultiplier,
+    });
+    this.renderShapeGroup('shapes', shapesGroup, shapes, alphaMultiplier);
+    this.renderBorderGroup('borders', borderGroup, borders, alphaMultiplier);
+    this.renderMotionVectors(
+      frameState,
+      alphaMultiplier,
+      blend?.previousFrame ?? null,
+      blend?.blendMix ?? 1,
+      motionVectorGroup,
+      proceduralMotionVectors,
+    );
+  }
+
+  private renderBlendVisuals(
+    payload: MilkdropRenderPayload,
+    blend: NonNullable<MilkdropRenderPayload['blendState']>,
+  ) {
+    if (blend.mode === 'gpu') {
+      const prev = blend.previousFrame;
+      const blendMix = 1 - blend.alpha;
+      const plans = this.webgpuDescriptorPlan?.proceduralWaves ?? [];
+      const canProcedural = (target: string) =>
+        this.backend === 'webgpu' && plans.some((p) => p.target === target);
+
+      if (
+        canProcedural('main-wave') &&
+        prev.gpuGeometry.mainWave &&
+        payload.frameState.gpuGeometry.mainWave
+      ) {
+        const interaction = (
+          t: 'offsetX' | 'offsetY' | 'rotation' | 'scale' | 'alphaMultiplier',
+          def: number,
+        ) =>
+          lerpNumber(
+            prev.interaction?.waves[t] ?? def,
+            payload.frameState.interaction?.waves[t] ?? def,
+            blendMix,
+          );
+        this.renderInterpolatedProceduralWaveGroup(
+          this.blendWaveGroup,
+          [
+            {
+              previous: prev.gpuGeometry.mainWave,
+              current: payload.frameState.gpuGeometry.mainWave,
+            },
+          ],
+          blendMix,
+          blend.alpha,
+          {
+            offsetX: interaction('offsetX', 0),
+            offsetY: interaction('offsetY', 0),
+            rotation: interaction('rotation', 0),
+            scale: interaction('scale', 1),
+            alphaMultiplier: interaction('alphaMultiplier', 1),
+          },
+        );
+      } else {
+        this.renderWaveGroup(
+          'blend-main-wave',
+          this.blendWaveGroup,
+          [prev.mainWave],
+          blend.alpha,
+        );
+      }
+      if (
+        canProcedural('custom-wave') &&
+        prev.gpuGeometry.customWaves.length > 0
+      ) {
+        const interpolated = prev.gpuGeometry.customWaves.map((wave, i) => ({
+          previous: wave,
+          current: payload.frameState.gpuGeometry.customWaves[i] ?? wave,
+        }));
+        const interp = (
+          t: 'offsetX' | 'offsetY' | 'rotation' | 'scale' | 'alphaMultiplier',
+          def: number,
+        ) =>
+          lerpNumber(
+            prev.interaction?.waves[t] ?? def,
+            payload.frameState.interaction?.waves[t] ?? def,
+            blendMix,
+          );
+        this.renderInterpolatedProceduralCustomWaveGroup(
+          this.blendCustomWaveGroup,
+          interpolated,
+          blendMix,
+          blend.alpha,
+          {
+            offsetX: interp('offsetX', 0),
+            offsetY: interp('offsetY', 0),
+            rotation: interp('rotation', 0),
+            scale: interp('scale', 1),
+            alphaMultiplier: interp('alphaMultiplier', 1),
+          },
+        );
+      } else {
+        this.renderWaveGroup(
+          'blend-custom-wave',
+          this.blendCustomWaveGroup,
+          prev.customWaves,
+          blend.alpha,
+        );
+      }
+      renderParticleFieldGroupHelper({
+        target: 'blend-particle-field',
+        group: this.blendParticleFieldGroup,
+        particleField:
+          (
+            prev.gpuGeometry as {
+              particleField?: MilkdropParticleFieldVisual | null;
+            }
+          ).particleField ?? null,
+        mesh: prev.mesh,
+        meshPositions: prev.mesh.positions,
+        signals: prev.signals,
+        alphaMultiplier: blend.alpha,
+        trimGroupChildren,
+      });
+      this.renderInterpolatedShapeGroup(
+        this.blendShapeGroup,
+        prev.shapes,
+        payload.frameState.shapes,
+        blendMix,
+        blend.alpha,
+      );
+      this.renderBorderGroup(
+        'blend-borders',
+        this.blendBorderGroup,
+        prev.borders,
+        blend.alpha,
+      );
+      this.renderMotionVectors(
+        payload.frameState,
+        blend.alpha,
+        prev,
+        blendMix,
+        this.blendMotionVectorCpuGroup,
+        this.blendProceduralMotionVectors,
+      );
+      if (
+        !this.blendProceduralMotionVectors.visible &&
+        prev.motionVectors.length === 0
+      ) {
+        clearGroup(this.blendMotionVectorCpuGroup);
+      }
+    } else {
+      const alpha = blend.alpha ?? 0;
+      this.renderWaveGroup(
+        'blend-main-wave',
+        this.blendWaveGroup,
+        blend.mode === 'cpu' ? [blend.mainWave] : [],
+        alpha,
+      );
+      this.renderWaveGroup(
+        'blend-custom-wave',
+        this.blendCustomWaveGroup,
+        blend.mode === 'cpu' ? blend.customWaves : [],
+        alpha,
+      );
+      renderParticleFieldGroupHelper({
+        target: 'blend-particle-field',
+        group: this.blendParticleFieldGroup,
+        particleField: null,
+        mesh: payload.frameState.mesh,
+        meshPositions: payload.frameState.mesh.positions,
+        signals: payload.frameState.signals,
+        alphaMultiplier: alpha,
+        trimGroupChildren,
+      });
+      this.renderShapeGroup(
+        'blend-shapes',
+        this.blendShapeGroup,
+        blend.mode === 'cpu' ? blend.shapes : [],
+        alpha,
+      );
+      this.renderBorderGroup(
+        'blend-borders',
+        this.blendBorderGroup,
+        blend.mode === 'cpu' ? blend.borders : [],
+        alpha,
+      );
+      this.blendProceduralMotionVectors.visible = false;
+      this.renderLineVisualGroup(
+        'blend-motion-vectors',
+        this.blendMotionVectorCpuGroup,
+        blend.mode === 'cpu' ? blend.motionVectors : [],
+        alpha,
+      );
+    }
+  }
+
   render(payload: MilkdropRenderPayload) {
     const backgroundMaterial = this.background.material as MeshBasicMaterial;
     setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
@@ -919,277 +1194,21 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       payload.frameState.signals,
       payload.frameState.interaction?.mesh,
     );
-
-    const proceduralWavePlans =
-      this.webgpuDescriptorPlan?.proceduralWaves ?? [];
-    const canUseProceduralMainWave =
-      this.backend === 'webgpu' &&
-      proceduralWavePlans.some((plan) => plan.target === 'main-wave');
-    const canUseProceduralCustomWaves =
-      this.backend === 'webgpu' &&
-      proceduralWavePlans.some((plan) => plan.target === 'custom-wave');
-    const canUseProceduralTrailWaves =
-      this.backend === 'webgpu' &&
-      proceduralWavePlans.some((plan) => plan.target === 'trail-waves');
-
-    if (canUseProceduralMainWave && payload.frameState.gpuGeometry.mainWave) {
-      this.renderProceduralWaveGroup('main-wave', this.mainWaveGroup, [
-        payload.frameState.gpuGeometry.mainWave,
-      ]);
-    } else {
-      this.renderWaveGroup('main-wave', this.mainWaveGroup, [
-        payload.frameState.mainWave,
-      ]);
-    }
-    if (
-      canUseProceduralCustomWaves &&
-      payload.frameState.gpuGeometry.customWaves.length > 0
-    ) {
-      this.renderProceduralCustomWaveGroup(
-        this.customWaveGroup,
-        payload.frameState.gpuGeometry.customWaves,
-        payload.frameState.interaction?.waves,
-      );
-    } else {
-      this.renderWaveGroup(
-        'custom-wave',
-        this.customWaveGroup,
-        payload.frameState.customWaves,
-      );
-    }
-    if (
-      canUseProceduralTrailWaves &&
-      payload.frameState.gpuGeometry.trailWaves.length > 0
-    ) {
-      this.renderProceduralWaveGroup(
-        'trail-waves',
-        this.trailGroup,
-        payload.frameState.gpuGeometry.trailWaves,
-        payload.frameState.interaction?.waves,
-      );
-    } else {
-      this.renderLineVisualGroup(
-        'trails',
-        this.trailGroup,
-        payload.frameState.trails,
-      );
-    }
-    renderParticleFieldGroupHelper({
-      target: 'particle-field',
-      group: this.particleFieldGroup,
-      particleField:
-        (
-          payload.frameState.gpuGeometry as {
-            particleField?: MilkdropParticleFieldVisual | null;
-          }
-        ).particleField ?? null,
-      mesh: payload.frameState.mesh,
-      meshPositions: payload.frameState.mesh.positions,
-      signals: payload.frameState.signals,
-      trimGroupChildren,
-    });
-    this.renderShapeGroup(
-      'shapes',
+    this.renderFrameVisuals(
+      payload.frameState,
+      this.mainWaveGroup,
+      this.customWaveGroup,
+      this.trailGroup,
+      this.particleFieldGroup,
       this.shapesGroup,
-      payload.frameState.shapes,
-    );
-    this.renderBorderGroup(
-      'borders',
       this.borderGroup,
-      payload.frameState.borders,
+      this.motionVectorCpuGroup,
+      this.proceduralMotionVectors,
     );
-    this.renderMotionVectors(payload.frameState);
 
     const blend = payload.blendState;
-    if (blend?.mode === 'gpu') {
-      const previousFrame = blend.previousFrame;
-      const blendMix = 1 - blend.alpha;
-      if (
-        canUseProceduralMainWave &&
-        previousFrame.gpuGeometry.mainWave &&
-        payload.frameState.gpuGeometry.mainWave
-      ) {
-        this.renderInterpolatedProceduralWaveGroup(
-          this.blendWaveGroup,
-          [
-            {
-              previous: previousFrame.gpuGeometry.mainWave,
-              current: payload.frameState.gpuGeometry.mainWave,
-            },
-          ],
-          blendMix,
-          blend.alpha,
-          {
-            offsetX: lerpNumber(
-              previousFrame.interaction?.waves.offsetX ?? 0,
-              payload.frameState.interaction?.waves.offsetX ?? 0,
-              blendMix,
-            ),
-            offsetY: lerpNumber(
-              previousFrame.interaction?.waves.offsetY ?? 0,
-              payload.frameState.interaction?.waves.offsetY ?? 0,
-              blendMix,
-            ),
-            rotation: lerpNumber(
-              previousFrame.interaction?.waves.rotation ?? 0,
-              payload.frameState.interaction?.waves.rotation ?? 0,
-              blendMix,
-            ),
-            scale: lerpNumber(
-              previousFrame.interaction?.waves.scale ?? 1,
-              payload.frameState.interaction?.waves.scale ?? 1,
-              blendMix,
-            ),
-            alphaMultiplier: lerpNumber(
-              previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-              payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-              blendMix,
-            ),
-          },
-        );
-      } else {
-        this.renderWaveGroup(
-          'blend-main-wave',
-          this.blendWaveGroup,
-          [previousFrame.mainWave],
-          blend.alpha,
-        );
-      }
-      if (
-        canUseProceduralCustomWaves &&
-        previousFrame.gpuGeometry.customWaves.length > 0
-      ) {
-        const interpolatedCustomWaves =
-          previousFrame.gpuGeometry.customWaves.map((wave, index) => {
-            const current =
-              payload.frameState.gpuGeometry.customWaves[index] ?? wave;
-            return { previous: wave, current };
-          });
-        this.renderInterpolatedProceduralCustomWaveGroup(
-          this.blendCustomWaveGroup,
-          interpolatedCustomWaves,
-          blendMix,
-          blend.alpha,
-          {
-            offsetX: lerpNumber(
-              previousFrame.interaction?.waves.offsetX ?? 0,
-              payload.frameState.interaction?.waves.offsetX ?? 0,
-              blendMix,
-            ),
-            offsetY: lerpNumber(
-              previousFrame.interaction?.waves.offsetY ?? 0,
-              payload.frameState.interaction?.waves.offsetY ?? 0,
-              blendMix,
-            ),
-            rotation: lerpNumber(
-              previousFrame.interaction?.waves.rotation ?? 0,
-              payload.frameState.interaction?.waves.rotation ?? 0,
-              blendMix,
-            ),
-            scale: lerpNumber(
-              previousFrame.interaction?.waves.scale ?? 1,
-              payload.frameState.interaction?.waves.scale ?? 1,
-              blendMix,
-            ),
-            alphaMultiplier: lerpNumber(
-              previousFrame.interaction?.waves.alphaMultiplier ?? 1,
-              payload.frameState.interaction?.waves.alphaMultiplier ?? 1,
-              blendMix,
-            ),
-          },
-        );
-      } else {
-        this.renderWaveGroup(
-          'blend-custom-wave',
-          this.blendCustomWaveGroup,
-          previousFrame.customWaves,
-          blend.alpha,
-        );
-      }
-      renderParticleFieldGroupHelper({
-        target: 'blend-particle-field',
-        group: this.blendParticleFieldGroup,
-        particleField:
-          (
-            previousFrame.gpuGeometry as {
-              particleField?: MilkdropParticleFieldVisual | null;
-            }
-          ).particleField ?? null,
-        mesh: previousFrame.mesh,
-        meshPositions: previousFrame.mesh.positions,
-        signals: previousFrame.signals,
-        alphaMultiplier: blend.alpha,
-        trimGroupChildren,
-      });
-      this.renderInterpolatedShapeGroup(
-        this.blendShapeGroup,
-        previousFrame.shapes,
-        payload.frameState.shapes,
-        blendMix,
-        blend.alpha,
-      );
-      this.renderBorderGroup(
-        'blend-borders',
-        this.blendBorderGroup,
-        previousFrame.borders,
-        blend.alpha,
-      );
-      this.renderMotionVectors(
-        payload.frameState,
-        blend.alpha,
-        previousFrame,
-        blendMix,
-        this.blendMotionVectorCpuGroup,
-        this.blendProceduralMotionVectors,
-      );
-      if (
-        !this.blendProceduralMotionVectors.visible &&
-        previousFrame.motionVectors.length === 0
-      ) {
-        clearGroup(this.blendMotionVectorCpuGroup);
-      }
-    } else {
-      this.renderWaveGroup(
-        'blend-main-wave',
-        this.blendWaveGroup,
-        blend?.mode === 'cpu' ? [blend.mainWave] : [],
-        blend?.alpha ?? 0,
-      );
-      this.renderWaveGroup(
-        'blend-custom-wave',
-        this.blendCustomWaveGroup,
-        blend?.mode === 'cpu' ? blend.customWaves : [],
-        blend?.alpha ?? 0,
-      );
-      renderParticleFieldGroupHelper({
-        target: 'blend-particle-field',
-        group: this.blendParticleFieldGroup,
-        particleField: null,
-        mesh: payload.frameState.mesh,
-        meshPositions: payload.frameState.mesh.positions,
-        signals: payload.frameState.signals,
-        alphaMultiplier: blend?.alpha ?? 0,
-        trimGroupChildren,
-      });
-      this.renderShapeGroup(
-        'blend-shapes',
-        this.blendShapeGroup,
-        blend?.mode === 'cpu' ? blend.shapes : [],
-        blend?.alpha ?? 0,
-      );
-      this.renderBorderGroup(
-        'blend-borders',
-        this.blendBorderGroup,
-        blend?.mode === 'cpu' ? blend.borders : [],
-        blend?.alpha ?? 0,
-      );
-      this.blendProceduralMotionVectors.visible = false;
-      this.renderLineVisualGroup(
-        'blend-motion-vectors',
-        this.blendMotionVectorCpuGroup,
-        blend?.mode === 'cpu' ? blend.motionVectors : [],
-        blend?.alpha ?? 0,
-      );
+    if (blend) {
+      this.renderBlendVisuals(payload, blend);
     }
 
     if (
@@ -1199,7 +1218,6 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     ) {
       return false;
     }
-
     this.feedback.applyCompositeState(
       this.buildFeedbackCompositeState(payload.frameState),
     );

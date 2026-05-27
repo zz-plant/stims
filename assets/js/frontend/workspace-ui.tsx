@@ -1,11 +1,16 @@
-import type { KeyboardEvent, ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import {
   type MilkdropPresetRenderPreview,
   PRESET_PREVIEW_REQUEST_LIMIT,
 } from '../milkdrop/preset-preview.ts';
-import { getIconNodes, type UiIconName } from '../ui/icon-library.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { StimsControlDock } from './StimsControlDock.tsx';
 import {
@@ -29,208 +34,20 @@ import {
   prettifyCollectionTag,
   TOOL_TABS,
 } from './workspace-helpers.ts';
+import { PresetShelfSection, SkeletonPresetCard } from './PresetShelfSection.tsx';
+import { PresetArtwork } from './PresetArtwork.tsx';
+import { UiIcon } from './UiIcon.tsx';
+
+export { UiIcon } from './UiIcon.tsx';
+export { PresetArtwork } from './PresetArtwork.tsx';
+export {
+  PresetShelfSection,
+  SkeletonPresetCard,
+} from './PresetShelfSection.tsx';
+export { WorkspaceToast } from './WorkspaceToast.tsx';
 
 function describeQuickLook(preset: QualityPreset): string {
   return getQualityImpactSummary(preset).replace(/^What changes:\s*/u, '');
-}
-
-type PresetArtworkTone =
-  | 'bright'
-  | 'geometry'
-  | 'space'
-  | 'moody'
-  | 'psychedelic'
-  | 'classic'
-  | 'instant';
-
-export function UiIcon({
-  name,
-  className,
-}: {
-  name: UiIconName;
-  className: string;
-}) {
-  const nodes = getIconNodes(name);
-
-  return (
-    <span className={className} aria-hidden="true">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        focusable="false"
-        data-icon={name}
-        aria-hidden="true"
-      >
-        {nodes.map(({ tag, attrs }) => {
-          const key = `${name}-${tag}-${Object.entries(attrs)
-            .map(([attrName, value]) => `${attrName}:${value}`)
-            .join('|')}`;
-          if (tag === 'path') {
-            return <path key={key} {...attrs} />;
-          }
-          if (tag === 'circle') {
-            return <circle key={key} {...attrs} />;
-          }
-          return <rect key={key} {...attrs} />;
-        })}
-      </svg>
-    </span>
-  );
-}
-
-function getPresetArtworkTone(entry: PresetCatalogEntry): PresetArtworkTone {
-  const mood = describePresetMood(entry);
-
-  switch (mood) {
-    case 'Bright pulse':
-      return 'bright';
-    case 'Sharp geometry':
-      return 'geometry';
-    case 'Space drift':
-      return 'space';
-    case 'Moody sweep':
-      return 'moody';
-    case 'Psychedelic spin':
-      return 'psychedelic';
-    case 'Classic rush':
-      return 'classic';
-    default:
-      return 'instant';
-  }
-}
-
-export function PresetArtwork({
-  entry,
-  compact = false,
-  preview = null,
-}: {
-  entry: PresetCatalogEntry;
-  compact?: boolean;
-  preview?: MilkdropPresetRenderPreview | null;
-}) {
-  const mood = describePresetMood(entry);
-
-  return (
-    <div
-      className="stims-shell__preset-art"
-      data-tone={getPresetArtworkTone(entry)}
-      data-compact={String(compact)}
-      data-preview-status={preview?.status ?? 'queued'}
-      aria-hidden="true"
-    >
-      {preview?.imageUrl ? (
-        <img
-          className="stims-shell__preset-preview-image"
-          src={preview.imageUrl}
-          alt=""
-          loading="lazy"
-        />
-      ) : null}
-      <span className="stims-shell__preset-art-grid" />
-      <span className="stims-shell__preset-art-orbit" />
-      <span className="stims-shell__preset-art-core" />
-      <span className="stims-shell__preset-art-caption">{mood}</span>
-      <span className="stims-shell__preset-art-status">
-        {preview?.status === 'ready'
-          ? preview.actualBackend === 'webgpu'
-            ? 'WebGPU preview'
-            : preview.actualBackend === 'webgl'
-              ? 'WebGL preview'
-              : 'Runtime preview'
-          : preview?.status === 'capturing'
-            ? 'Capturing'
-            : preview?.status === 'failed'
-              ? 'Preview failed'
-              : 'Preview queued'}
-      </span>
-    </div>
-  );
-}
-
-function SkeletonPresetCard() {
-  return (
-    <div className="stims-shell__starter-card stims-shell__skeleton--card stims-shell__skeleton">
-      <div
-        className="stims-shell__preset-art stims-shell__skeleton"
-        style={{ minHeight: 164 }}
-      />
-      <span
-        className="stims-shell__starter-label stims-shell__skeleton stims-shell__skeleton--text stims-shell__skeleton--text-sm"
-        style={{ height: 14, width: '40%' }}
-      />
-      <strong
-        className="stims-shell__skeleton stims-shell__skeleton--text stims-shell__skeleton--text-md"
-        style={{ height: 18 }}
-      />
-      <span
-        className="stims-shell__meta-copy stims-shell__skeleton stims-shell__skeleton--text stims-shell__skeleton--text-sm"
-        style={{ height: 14, width: '70%' }}
-      />
-    </div>
-  );
-}
-
-export function PresetShelfSection({
-  entries,
-  summary,
-  title,
-  onSelect,
-  presetPreviews,
-}: {
-  entries: Array<{
-    entry: PresetCatalogEntry;
-    label: string;
-    summary: string;
-  }>;
-  summary: string;
-  title: string;
-  onSelect: (presetId: string) => void;
-  presetPreviews: Record<string, MilkdropPresetRenderPreview>;
-}) {
-  if (entries.length === 0) {
-    return null;
-  }
-  const sectionId = `stims-shelf-${title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')}`;
-
-  return (
-    <section
-      className="stims-shell__starter-section"
-      aria-labelledby={sectionId}
-    >
-      <div className="stims-shell__section-heading">
-        <h2 id={sectionId} className="stims-shell__section-label">
-          {title}
-        </h2>
-        <p className="stims-shell__meta-copy">{summary}</p>
-      </div>
-      <div className="stims-shell__starter-grid">
-        {entries.map(({ entry, label, summary: cardSummary }) => (
-          <button
-            key={`${title}-${entry.id}`}
-            type="button"
-            className="stims-shell__starter-card"
-            onClick={() => onSelect(entry.id)}
-          >
-            <PresetArtwork
-              entry={entry}
-              preview={presetPreviews[entry.id] ?? null}
-            />
-            <span className="stims-shell__starter-label">{label}</span>
-            <strong>{entry.title}</strong>
-            <span className="stims-shell__meta-copy">{cardSummary}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 function AudioSourcePanel() {
@@ -535,42 +352,63 @@ function BrowseSheetPanel({
   const usingHiddenCollectionFilter =
     routeState.collectionTag !== null &&
     !featuredCollectionTags.includes(routeState.collectionTag);
-  const previewTargetIds = [
-    ...starterPresets.map((starter) => starter.preset.id),
-    ...recentPresets.map((entry) => entry.id),
-    ...favoritePresets.map((entry) => entry.id),
-    ...filteredCatalog.map((entry) => entry.id),
-  ].filter((presetId, index, ids) => ids.indexOf(presetId) === index);
-  const visiblePreviewIds = previewTargetIds.slice(
-    0,
-    PRESET_PREVIEW_REQUEST_LIMIT,
-  );
-  const previewCounts = visiblePreviewIds.reduce(
-    (summary, presetId) => {
-      const preview = presetPreviews[presetId];
-      if (!preview || preview.status === 'queued') {
-        summary.queued += 1;
-        return summary;
+  const visiblePreviewIds = useMemo(() => {
+    const seen = new Set<string>();
+    const ids: string[] = [];
+    const push = (items: Array<{ id: string }>) => {
+      for (let i = 0; i < items.length; i++) {
+        const id = items[i].id;
+        if (!seen.has(id)) {
+          seen.add(id);
+          ids.push(id);
+        }
       }
+    };
+    if (starterPresets.length > 0) {
+      const starters = starterPresets;
+      for (let i = 0; i < starters.length; i++) {
+        push([starters[i].preset]);
+      }
+    }
+    push(recentPresets);
+    push(favoritePresets);
+    push(filteredCatalog);
+    return ids.slice(0, PRESET_PREVIEW_REQUEST_LIMIT);
+  }, [starterPresets, recentPresets, favoritePresets, filteredCatalog]);
+  const previewCounts = useMemo(
+    () =>
+      visiblePreviewIds.reduce(
+        (summary, presetId) => {
+          const preview = presetPreviews[presetId];
+          if (!preview || preview.status === 'queued') {
+            summary.queued += 1;
+            return summary;
+          }
 
-      summary[preview.status] += 1;
-      return summary;
-    },
-    {
-      queued: 0,
-      capturing: 0,
-      ready: 0,
-      failed: 0,
-    },
+          summary[preview.status] += 1;
+          return summary;
+        },
+        {
+          queued: 0,
+          capturing: 0,
+          ready: 0,
+          failed: 0,
+        },
+      ),
+    [visiblePreviewIds, presetPreviews],
   );
-  const previewSummary = [
-    previewCounts.ready ? `${previewCounts.ready} ready` : '',
-    previewCounts.capturing ? `${previewCounts.capturing} capturing` : '',
-    previewCounts.queued ? `${previewCounts.queued} queued` : '',
-    previewCounts.failed ? `${previewCounts.failed} failed` : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const previewSummary = useMemo(
+    () =>
+      [
+        previewCounts.ready ? `${previewCounts.ready} ready` : '',
+        previewCounts.capturing ? `${previewCounts.capturing} capturing` : '',
+        previewCounts.queued ? `${previewCounts.queued} queued` : '',
+        previewCounts.failed ? `${previewCounts.failed} failed` : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    [previewCounts],
+  );
 
   useEffect(() => {
     w.requestPresetPreviews(visiblePreviewIds);
@@ -587,7 +425,7 @@ function BrowseSheetPanel({
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
         <div className="stims-shell__browse-toolbar">
           <div className="stims-shell__browse-toolbar-copy">
-            <strong>Pick something and press play.</strong>
+            <strong>Select a preset and press play.</strong>
             <p className="stims-shell__meta-copy">
               Tap any card to play it. Previews update as they finish loading.
             </p>
@@ -831,7 +669,11 @@ function BrowseSheetPanel({
                       void w.toggleFavoritePreset(entry.id, !entry.isFavorite);
                     }}
                   >
-                    {entry.isFavorite ? '\u2665' : '\u2661'}
+                    <span
+                      className="stims-shell__preset-fav-icon"
+                      data-active={String(entry.isFavorite)}
+                      aria-hidden="true"
+                    />
                   </button>
                 </div>
               </li>
@@ -1157,39 +999,5 @@ export function WorkspaceToolSheet({
         </div>
       </aside>
     </>
-  );
-}
-
-export function WorkspaceToast({
-  onDismiss,
-  toast,
-}: {
-  onDismiss: () => void;
-  toast: {
-    message: string;
-    tone: 'info' | 'warn' | 'error';
-  } | null;
-}) {
-  if (!toast) {
-    return null;
-  }
-
-  return (
-    <output
-      className="stims-shell__toast"
-      data-tone={toast.tone}
-      role={toast.tone === 'error' ? 'alert' : 'status'}
-      aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
-      aria-atomic="true"
-    >
-      <span>{toast.message}</span>
-      <button
-        type="button"
-        className="stims-shell__toast-dismiss"
-        onClick={onDismiss}
-      >
-        Dismiss
-      </button>
-    </output>
   );
 }

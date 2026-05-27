@@ -58,84 +58,128 @@ export function useWorkspaceShellOrchestration({
   startAudioSource,
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
-  const shellState = useMemo(() => {
+  const enrichedCatalog = useMemo(() => {
     const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
       mapRuntimeCatalogEntry,
     );
     const runtimeCatalogReady =
       (engineSnapshot?.runtimeReady ?? false) || runtimeCatalog.length > 0;
-    const catalog = routeState.invalidExperienceSlug
+    const rawCatalog = routeState.invalidExperienceSlug
       ? fallbackCatalog
       : runtimeCatalogReady
         ? runtimeCatalog
         : fallbackCatalog;
-    const enrichedCatalog = mergeCatalogActivity(catalog, activityCatalog);
-    const catalogReady = routeState.invalidExperienceSlug
-      ? fallbackCatalogReady
-      : runtimeCatalogReady || fallbackCatalogReady;
-    const catalogError = routeState.invalidExperienceSlug
-      ? fallbackCatalogError
-      : null;
+    return mergeCatalogActivity(rawCatalog, activityCatalog);
+  }, [
+    engineSnapshot,
+    fallbackCatalog,
+    activityCatalog,
+    routeState.invalidExperienceSlug,
+  ]);
 
-    const filteredCatalog = enrichedCatalog.filter((entry) => {
-      if (
-        routeState.collectionTag &&
-        !entry.tags?.includes(routeState.collectionTag)
-      ) {
-        return false;
-      }
-      return matchesPreset(entry, deferredSearch);
-    });
+  const catalogReady = useMemo(
+    () =>
+      routeState.invalidExperienceSlug
+        ? fallbackCatalogReady
+        : (engineSnapshot?.runtimeReady ?? false) ||
+          (engineSnapshot?.catalogEntries ?? []).length > 0 ||
+          fallbackCatalogReady,
+    [engineSnapshot, fallbackCatalogReady, routeState.invalidExperienceSlug],
+  );
 
-    const currentPreset =
+  const catalogError = useMemo(
+    () => (routeState.invalidExperienceSlug ? fallbackCatalogError : null),
+    [routeState.invalidExperienceSlug, fallbackCatalogError],
+  );
+
+  const filteredCatalog = useMemo(
+    () =>
+      enrichedCatalog.filter((entry) => {
+        if (
+          routeState.collectionTag &&
+          !entry.tags?.includes(routeState.collectionTag)
+        ) {
+          return false;
+        }
+        return matchesPreset(entry, deferredSearch);
+      }),
+    [enrichedCatalog, routeState.collectionTag, deferredSearch],
+  );
+
+  const currentPreset = useMemo(
+    () =>
       filteredCatalog.find(
         (entry) => entry.id === engineSnapshot?.activePresetId,
       ) ??
       enrichedCatalog.find(
         (entry) => entry.id === engineSnapshot?.activePresetId,
       ) ??
-      null;
+      null,
+    [filteredCatalog, enrichedCatalog, engineSnapshot?.activePresetId],
+  );
 
-    const starterPresets = buildStarterPresets(enrichedCatalog);
-    const featuredPreset =
-      starterPresets[0]?.preset ?? enrichedCatalog[0] ?? null;
-    const launchControlsHidden =
+  const starterPresets = useMemo(
+    () => buildStarterPresets(enrichedCatalog),
+    [enrichedCatalog],
+  );
+
+  const featuredPreset = useMemo(
+    () => starterPresets[0]?.preset ?? enrichedCatalog[0] ?? null,
+    [starterPresets, enrichedCatalog],
+  );
+
+  const resolvedRequestedPreset = useMemo(
+    () =>
+      routeState.presetId
+        ? resolvePresetCatalogEntry(enrichedCatalog, routeState.presetId)
+        : null,
+    [enrichedCatalog, routeState.presetId],
+  );
+
+  const selectedPreset = useMemo(
+    () => resolvedRequestedPreset ?? currentPreset ?? null,
+    [resolvedRequestedPreset, currentPreset],
+  );
+
+  const launchControlsHidden = useMemo(
+    () =>
       engineSnapshot?.audioActive ||
-      document.body.dataset.audioActive === 'true';
-    const runtimeReady =
-      Boolean(engineSnapshot?.runtimeReady) &&
-      !routeState.invalidExperienceSlug;
-    const engineReady =
-      !routeState.invalidExperienceSlug && fallbackCatalogError === null;
-    const resolvedBackend =
-      engineSnapshot?.backend ??
-      (document.body.dataset.activeBackend === 'webgl'
-        ? 'webgl'
-        : document.body.dataset.activeBackend === 'webgpu'
-          ? 'webgpu'
-          : null);
-    const resolvedRequestedPreset = routeState.presetId
-      ? resolvePresetCatalogEntry(enrichedCatalog, routeState.presetId)
-      : null;
-    const selectedPreset = resolvedRequestedPreset ?? currentPreset ?? null;
-    const missingRequestedPreset = Boolean(
-      routeState.presetId &&
-        catalogReady &&
-        !resolvedRequestedPreset &&
-        !routeState.invalidExperienceSlug &&
-        pendingPresetIdRef.current !== routeState.presetId,
-    );
-    const loadingRequestedPreset = Boolean(
-      routeState.presetId &&
-        !selectedPreset &&
-        !routeState.invalidExperienceSlug &&
-        !missingRequestedPreset,
-    );
+      document.body.dataset.audioActive === 'true',
+    [engineSnapshot?.audioActive],
+  );
 
-    return {
+  const runtimeReady = useMemo(
+    () =>
+      Boolean(engineSnapshot?.runtimeReady) &&
+      !routeState.invalidExperienceSlug,
+    [engineSnapshot?.runtimeReady, routeState.invalidExperienceSlug],
+  );
+
+  const engineReady = useMemo(
+    () => !routeState.invalidExperienceSlug && fallbackCatalogError === null,
+    [routeState.invalidExperienceSlug, fallbackCatalogError],
+  );
+
+  const missingRequestedPreset = Boolean(
+    routeState.presetId &&
+      catalogReady &&
+      !resolvedRequestedPreset &&
+      !routeState.invalidExperienceSlug &&
+      pendingPresetIdRef.current !== routeState.presetId,
+  );
+
+  const loadingRequestedPreset = Boolean(
+    routeState.presetId &&
+      !selectedPreset &&
+      !routeState.invalidExperienceSlug &&
+      !missingRequestedPreset,
+  );
+
+  const shellState = useMemo(
+    () => ({
       catalog: enrichedCatalog,
       catalogError,
-      catalogReady,
+      catalogReady: catalogReady,
       collectionTags: getCollectionTags(enrichedCatalog),
       currentPreset,
       engineReady,
@@ -146,26 +190,29 @@ export function useWorkspaceShellOrchestration({
       loadingRequestedPreset,
       missingRequestedPreset,
       recentPresets: pickRecentPresets(enrichedCatalog),
-      resolvedBackend,
       runtimeReady,
       selectedPreset,
       starterPresets,
       stageAnchoredToolOpen:
         routeState.panel === 'editor' || routeState.panel === 'inspector',
-    };
-  }, [
-    deferredSearch,
-    engineSnapshot,
-    fallbackCatalog,
-    fallbackCatalogError,
-    fallbackCatalogReady,
-    activityCatalog,
-    pendingPresetIdRef,
-    routeState.collectionTag,
-    routeState.invalidExperienceSlug,
-    routeState.panel,
-    routeState.presetId,
-  ]);
+    }),
+    [
+      enrichedCatalog,
+      catalogError,
+      catalogReady,
+      currentPreset,
+      engineReady,
+      featuredPreset,
+      filteredCatalog,
+      launchControlsHidden,
+      loadingRequestedPreset,
+      missingRequestedPreset,
+      routeState.panel,
+      runtimeReady,
+      selectedPreset,
+      starterPresets,
+    ],
+  );
 
   const readinessAlerts = useMemo(
     () => readinessItems.filter((item) => item.state !== 'ready'),

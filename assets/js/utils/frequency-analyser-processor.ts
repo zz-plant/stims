@@ -80,8 +80,6 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private bufferIndex = 0;
   private readonly outputReal: Float32Array;
   private readonly outputImag: Float32Array;
-  private readonly frequencyData: Uint8Array;
-  private readonly waveformData: Uint8Array;
   private readonly twiddles: ReturnType<typeof buildTwiddleTable>;
   private readonly messageEvery: number;
   private analyseCount = 0;
@@ -95,8 +93,6 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     this.buffer = new Float32Array(this.fftSize);
     this.outputReal = new Float32Array(this.fftSize);
     this.outputImag = new Float32Array(this.fftSize);
-    this.frequencyData = new Uint8Array(this.frequencyBinCount);
-    this.waveformData = new Uint8Array(this.fftSize);
     this.twiddles = buildTwiddleTable(this.fftSize);
     this.messageEvery = Math.max(
       1,
@@ -114,34 +110,37 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     for (let i = 0; i < this.fftSize; i += 1) {
       const sample = this.buffer[i];
       sumSquares += sample * sample;
-      this.waveformData[i] = Math.min(
-        255,
-        Math.max(0, Math.round((sample * 0.5 + 0.5) * 255)),
-      );
     }
     const rms = Math.sqrt(sumSquares / this.fftSize);
 
     fft(this.outputReal, this.outputImag, this.twiddles);
 
-    for (let i = 0; i < this.frequencyBinCount; i += 1) {
-      const magnitude =
-        Math.sqrt(
-          this.outputReal[i] * this.outputReal[i] +
-            this.outputImag[i] * this.outputImag[i],
-        ) / this.frequencyBinCount;
-      this.frequencyData[i] = Math.min(
-        255,
-        Math.max(0, Math.round(magnitude * 255)),
-      );
-    }
-
     this.analyseCount += 1;
     if (this.analyseCount % this.messageEvery === 0) {
-      this.port.postMessage({
-        frequencyData: this.frequencyData.slice(),
-        waveformData: this.waveformData.slice(),
-        rms,
-      });
+      const freqBuf = new Uint8Array(this.frequencyBinCount);
+      const waveBuf = new Uint8Array(this.fftSize);
+      for (let i = 0; i < this.frequencyBinCount; i += 1) {
+        const magnitude =
+          Math.sqrt(
+            this.outputReal[i] * this.outputReal[i] +
+              this.outputImag[i] * this.outputImag[i],
+          ) / this.frequencyBinCount;
+        freqBuf[i] = Math.min(
+          255,
+          Math.max(0, Math.round(magnitude * 255)),
+        );
+      }
+      for (let i = 0; i < this.fftSize; i += 1) {
+        const sample = this.buffer[i];
+        waveBuf[i] = Math.min(
+          255,
+          Math.max(0, Math.round((sample * 0.5 + 0.5) * 255)),
+        );
+      }
+      this.port.postMessage(
+        { frequencyData: freqBuf.buffer, waveformData: waveBuf.buffer, rms },
+        [freqBuf.buffer, waveBuf.buffer],
+      );
     }
   }
 

@@ -60,10 +60,10 @@ class StimsErrorBoundary extends Component<
         >
           <div>
             <h1 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>
-              Something went wrong
+              Error
             </h1>
             <p style={{ opacity: 0.6, fontSize: '0.9rem', margin: 0 }}>
-              Reload the page to try again.
+              Reload to retry.
             </p>
             <div style={{ marginTop: '24px' }}>
               <button
@@ -181,10 +181,10 @@ function StimsWorkspaceAppShell() {
       try {
         const toggled = await toggleElementFullscreen(stageElement, document);
         if (!toggled) {
-          w.setStatusMessage('Full screen is unavailable in this browser.');
+          w.setStatusMessage('Full screen unavailable.');
         }
       } catch (_error) {
-        w.setStatusMessage('Full screen is unavailable in this browser.');
+        w.setStatusMessage('Full screen unavailable.');
       }
     })();
   }, [w.stageRef, w.setStatusMessage]);
@@ -228,13 +228,13 @@ function StimsWorkspaceAppShell() {
     ? 'Loading preset'
     : liveMode
       ? 'Now playing'
-      : 'Ready when you are';
+      : 'Stage ready';
   const stageTitle = w.loadingRequestedPreset
     ? 'Loading preset'
     : w.selectedPreset
       ? w.selectedPreset.title
       : w.missingRequestedPreset
-        ? 'Choose something new'
+        ? 'Change preset'
         : (w.featuredPreset?.title ?? 'Featured pick');
   const stageSummary = w.loadingRequestedPreset
     ? `Loading ${w.routeState.presetId}.`
@@ -303,6 +303,19 @@ function StimsWorkspaceAppShell() {
     }
   }, [w.routeState.panel, showHint]);
 
+  const filteredCatalogRef = useRef(w.filteredCatalog);
+  filteredCatalogRef.current = w.filteredCatalog;
+  const handlePresetSelectionRef = useRef(w.handlePresetSelection);
+  handlePresetSelectionRef.current = w.handlePresetSelection;
+  const setStatusMessageRef = useRef(w.setStatusMessage);
+  setStatusMessageRef.current = w.setStatusMessage;
+  const updatePanelRef = useRef(w.updatePanel);
+  updatePanelRef.current = w.updatePanel;
+  const handleShufflePresetRef = useRef(w.handleShufflePreset);
+  handleShufflePresetRef.current = w.handleShufflePreset;
+  const handleAudioStartRef = useRef(w.handleAudioStart);
+  handleAudioStartRef.current = w.handleAudioStart;
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
@@ -315,34 +328,44 @@ function StimsWorkspaceAppShell() {
       const key = event.key.toLowerCase();
       if (key === ' ' && liveMode && w.engineReady) {
         event.preventDefault();
-        void w.handleAudioStart('demo');
+        void handleAudioStartRef.current('demo');
       } else if (key === 'f') {
         event.preventDefault();
         handleToggleFullscreen();
       } else if (key === 'b') {
         event.preventDefault();
-        w.updatePanel(w.routeState.panel === 'browse' ? null : 'browse');
+        updatePanelRef.current(
+          w.routeState.panel === 'browse' ? null : 'browse',
+        );
       } else if (key === 's') {
         event.preventDefault();
-        w.updatePanel(w.routeState.panel === 'settings' ? null : 'settings');
+        updatePanelRef.current(
+          w.routeState.panel === 'settings' ? null : 'settings',
+        );
       } else if (key === 'e') {
         event.preventDefault();
-        w.updatePanel(w.routeState.panel === 'editor' ? null : 'editor');
+        updatePanelRef.current(
+          w.routeState.panel === 'editor' ? null : 'editor',
+        );
       } else if (key === 'i') {
         event.preventDefault();
-        w.updatePanel(w.routeState.panel === 'inspector' ? null : 'inspector');
+        updatePanelRef.current(
+          w.routeState.panel === 'inspector' ? null : 'inspector',
+        );
       } else if (key === 'n' || key === 'arrowright') {
         event.preventDefault();
-        void w.handleShufflePreset();
+        void handleShufflePresetRef.current();
       } else if (key === 'p' || key === 'arrowleft') {
         event.preventDefault();
-        w.setStatusMessage('Previous preset — use Shuffle for random');
+        setStatusMessageRef.current(
+          'Previous preset \u2014 use Shuffle for random',
+        );
       } else if (/^[1-9]$/.test(key) && liveMode) {
         event.preventDefault();
         const index = Number.parseInt(key, 10) - 1;
-        const preset = w.filteredCatalog[index];
+        const preset = filteredCatalogRef.current[index];
         if (preset) {
-          w.handlePresetSelection(preset.id);
+          handlePresetSelectionRef.current(preset.id);
         }
       }
     };
@@ -362,9 +385,11 @@ function StimsWorkspaceAppShell() {
       touchStartY = 0;
       if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
       if (dx > 0) {
-        w.setStatusMessage('Previous preset \u2014 use Shuffle for random');
+        setStatusMessageRef.current(
+          'Previous preset \u2014 use Shuffle for random',
+        );
       } else {
-        void w.handleShufflePreset();
+        void handleShufflePresetRef.current();
       }
     };
 
@@ -385,18 +410,7 @@ function StimsWorkspaceAppShell() {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [
-    handleToggleFullscreen,
-    liveMode,
-    w.engineReady,
-    w.routeState.panel,
-    w.updatePanel,
-    w.handleAudioStart,
-    w.handleShufflePreset,
-    w.filteredCatalog,
-    w.handlePresetSelection,
-    w.setStatusMessage,
-  ]);
+  }, [handleToggleFullscreen, liveMode, w.engineReady, w.routeState.panel]);
 
   useEffect(() => {
     const preference = getActiveThemePreference();

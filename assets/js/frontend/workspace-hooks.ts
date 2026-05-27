@@ -240,62 +240,49 @@ export function useWorkspaceSessionState({
         import('./engine/milkdrop-engine-adapter.ts'),
       ])
         .then(
-          ([
+          async ([
             { createMilkdropPresetPreviewService },
             { createMilkdropEngineAdapter },
           ]) => {
+            const previewHost = document.createElement('div');
+            previewHost.className = 'stims-shell__preset-preview-host';
+            previewHost.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(previewHost);
+
+            const previewAdapter = createMilkdropEngineAdapter();
+            let previewBackend: EngineSnapshot['backend'] = null;
+            const unsubPreview = previewAdapter.subscribe((snap) => {
+              previewBackend = snap.backend;
+            });
+            await previewAdapter.mount(previewHost, {
+              presetId: null,
+              collectionTag: null,
+              panel: 'browse',
+              audioSource: null,
+              agentMode: true,
+              previewMode: true,
+            });
+
             const service = createMilkdropPresetPreviewService({
               capturePreview: async (presetId) => {
-                if (typeof document === 'undefined') {
-                  throw new Error(
-                    'Preset previews require a browser document.',
-                  );
+                previewBackend = null;
+                await previewAdapter.loadPreset(presetId);
+                await new Promise<void>((resolve) => {
+                  window.setTimeout(resolve, PREVIEW_SETTLE_MS);
+                });
+
+                const canvas = previewHost.querySelector('canvas');
+                if (!(canvas instanceof HTMLCanvasElement)) {
+                  throw new Error('Preview canvas was not available.');
                 }
 
-                const previewHost = document.createElement('div');
-                previewHost.className = 'stims-shell__preset-preview-host';
-                previewHost.setAttribute('aria-hidden', 'true');
-                document.body.appendChild(previewHost);
-
-                let lastBackend: EngineSnapshot['backend'] = null;
-                const adapter = createMilkdropEngineAdapter();
-                const unsubscribe = adapter.subscribe(
-                  (snapshot: EngineSnapshot) => {
-                    lastBackend = snapshot.backend;
-                  },
-                );
-
-                try {
-                  await adapter.mount(previewHost, {
-                    presetId,
-                    collectionTag: null,
-                    panel: 'browse',
-                    audioSource: null,
-                    agentMode: true,
-                    previewMode: true,
-                  });
-                  await adapter.loadPreset(presetId);
-                  await new Promise<void>((resolve) => {
-                    window.setTimeout(resolve, PREVIEW_SETTLE_MS);
-                  });
-
-                  const canvas = previewHost.querySelector('canvas');
-                  if (!(canvas instanceof HTMLCanvasElement)) {
-                    throw new Error('Preview canvas was not available.');
-                  }
-
-                  return {
-                    imageUrl: canvas.toDataURL('image/webp', 0.82),
-                    actualBackend: lastBackend,
-                    updatedAt: Date.now(),
-                    error: null,
-                    source: 'runtime-snapshot' as const,
-                  };
-                } finally {
-                  unsubscribe();
-                  adapter.dispose();
-                  previewHost.remove();
-                }
+                return {
+                  imageUrl: canvas.toDataURL('image/webp', 0.82),
+                  actualBackend: previewBackend,
+                  updatedAt: Date.now(),
+                  error: null,
+                  source: 'runtime-snapshot' as const,
+                };
               },
               onPreviewChanged: (preview) => {
                 setPresetPreviews((current) => ({
@@ -304,6 +291,14 @@ export function useWorkspaceSessionState({
                 }));
               },
             });
+
+            const initialDispose = service.dispose.bind(service);
+            service.dispose = () => {
+              initialDispose();
+              unsubPreview();
+              previewAdapter.dispose();
+              previewHost.remove();
+            };
 
             if (sessionDisposedRef.current) {
               service.dispose();
@@ -472,11 +467,11 @@ export function useWorkspaceSessionState({
   ]);
 
   useEffect(() => {
-    if (!engineSnapshot?.activePresetId || !engineSnapshot?.runtimeReady) {
+    if (!routeState.panel || !engineSnapshot?.runtimeReady) {
       return;
     }
     void refreshCatalogActivity();
-  }, [engineSnapshot?.activePresetId, engineSnapshot?.runtimeReady]);
+  }, [routeState.panel, engineSnapshot?.runtimeReady]);
 
   usePresetRouteSync({
     engineSnapshot,

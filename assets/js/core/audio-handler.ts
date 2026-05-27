@@ -151,30 +151,30 @@ export class FrequencyAnalyser {
       this.workletNode.port.onmessage = (event: MessageEvent) => {
         const { frequencyData, waveformData, rms } = event.data ?? {};
         if (frequencyData) {
-          const nextData =
+          const nextFreq =
             frequencyData instanceof Uint8Array
               ? frequencyData
               : new Uint8Array(frequencyData);
-          if (this.frequencyData.length !== nextData.length) {
-            this.frequencyData = new Uint8Array(nextData.length);
-            this.frequencyBinCount = nextData.length;
+          if (this.frequencyData.length !== nextFreq.length) {
+            this.frequencyData = new Uint8Array(nextFreq.length);
+            this.frequencyBinCount = nextFreq.length;
           }
-          this.frequencyData.set(nextData);
+          this.frequencyData.set(nextFreq);
           this.dataVersion += 1;
           this.cachedEnergy = this.calculateMultiBandEnergy(this.frequencyData);
           this.energyVersion = this.dataVersion;
           this.updateEnergyHistory(this.cachedEnergy);
         }
         if (waveformData) {
-          const nextWaveform =
+          const nextWave =
             waveformData instanceof Uint8Array
               ? waveformData
               : new Uint8Array(waveformData);
-          if (this.waveformData.length !== nextWaveform.length) {
-            this.waveformData = new Uint8Array(nextWaveform.length);
+          if (this.waveformData.length !== nextWave.length) {
+            this.waveformData = new Uint8Array(nextWave.length);
             this.waveformData.fill(128);
           }
-          this.waveformData.set(nextWaveform);
+          this.waveformData.set(nextWave);
         }
         if (typeof rms === 'number') {
           this.rms = rms;
@@ -192,65 +192,57 @@ export class FrequencyAnalyser {
     const sourceNode = context.createMediaStreamSource(stream);
     const silentGain = context.createGain();
     silentGain.gain.value = 0;
+    const sampleRate =
+      Number.isFinite(context.sampleRate) && context.sampleRate > 0
+        ? context.sampleRate
+        : DEFAULT_SAMPLE_RATE;
 
+    let workletNode: AudioWorkletNode | undefined;
     if (context.audioWorklet?.addModule) {
       try {
         await context.audioWorklet.addModule(FREQUENCY_ANALYSER_PROCESSOR);
-
-        const workletNode = new AudioWorkletNode(
-          context,
-          'frequency-analyser',
-          {
-            numberOfInputs: 1,
-            numberOfOutputs: 1,
-            outputChannelCount: [1],
-            processorOptions: {
-              fftSize,
-              messageEvery: fftSize >= 1024 ? 4 : fftSize >= 512 ? 2 : 1,
-            },
+        workletNode = new AudioWorkletNode(context, 'frequency-analyser', {
+          numberOfInputs: 1,
+          numberOfOutputs: 1,
+          outputChannelCount: [1],
+          processorOptions: {
+            fftSize,
+            messageEvery: fftSize >= 1024 ? 4 : fftSize >= 512 ? 2 : 1,
           },
-        );
-
-        sourceNode.connect(workletNode);
-        workletNode.connect(silentGain);
-        silentGain.connect(context.destination);
-
-        return new FrequencyAnalyser({
-          sourceNode,
-          workletNode,
-          fftSize,
-          silentGain,
-          sampleRate:
-            Number.isFinite(context.sampleRate) && context.sampleRate > 0
-              ? context.sampleRate
-              : DEFAULT_SAMPLE_RATE,
         });
+        sourceNode.connect(workletNode);
       } catch (error) {
         console.warn(
-          'Falling back to AnalyserNode after AudioWorklet failure',
+          'AudioWorklet failed, falling back to AnalyserNode',
           error,
         );
       }
     }
 
-    const analyserNode = context.createAnalyser();
-    analyserNode.fftSize = fftSize;
-    if (typeof smoothingTimeConstant === 'number') {
-      analyserNode.smoothingTimeConstant = smoothingTimeConstant;
-    }
-    sourceNode.connect(analyserNode);
-    analyserNode.connect(silentGain);
+    const analyserNode = workletNode
+      ? undefined
+      : (() => {
+          const node = context.createAnalyser();
+          node.fftSize = fftSize;
+          if (typeof smoothingTimeConstant === 'number') {
+            node.smoothingTimeConstant = smoothingTimeConstant;
+          }
+          sourceNode.connect(node);
+          return node;
+        })();
+
+    const audioNode = workletNode ?? analyserNode;
+    if (!audioNode) throw new Error('No audio node available');
+    audioNode.connect(silentGain);
     silentGain.connect(context.destination);
 
     return new FrequencyAnalyser({
       sourceNode,
+      workletNode,
       analyserNode,
       fftSize,
       silentGain,
-      sampleRate:
-        Number.isFinite(context.sampleRate) && context.sampleRate > 0
-          ? context.sampleRate
-          : DEFAULT_SAMPLE_RATE,
+      sampleRate,
     });
   }
 

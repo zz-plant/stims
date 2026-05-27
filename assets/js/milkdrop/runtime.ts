@@ -1,8 +1,4 @@
-import {
-  clearDebugSnapshot,
-  isAgentMode,
-  setDebugSnapshot,
-} from '../core/agent-api.ts';
+import { isAgentMode, setDebugSnapshot } from '../core/agent-api.ts';
 import { createLogger } from '../core/logger.ts';
 import type { PostprocessingPipeline } from '../core/postprocessing.ts';
 import type {
@@ -151,7 +147,7 @@ export function createMilkdropExperience({
   let adaptiveQualityController: AdaptiveQualityController | null = null;
   let adaptiveQualityState: AdaptiveQualityState | null = null;
   let adaptiveQualityUnsubscribe: (() => void) | null = null;
-  let disposeSessionSubscription: (() => void) | null = null;
+  let _disposeSessionSubscription: (() => void) | null = null;
   let postprocessingPipeline: PostprocessingPipeline | null = null;
   const mergedSignals: Partial<MilkdropRuntimeSignals> = {};
   const lowQualityPostOverride = {
@@ -760,7 +756,7 @@ export function createMilkdropExperience({
     capturedVideoOverlay,
   });
 
-  disposeSessionSubscription = session.subscribe((state) => {
+  _disposeSessionSubscription = session.subscribe((state) => {
     if (!lifetime.isActive()) {
       return;
     }
@@ -856,133 +852,143 @@ export function createMilkdropExperience({
     }
   })();
 
+  return buildExperienceController({
+    subscribe,
+    buildSnapshot,
+    navigation,
+    overlay,
+    presetFileActions,
+    session,
+    applyFieldValues,
+    activeCompiled,
+    activePresetId,
+    qualityControl,
+    applyQualityPreset,
+    setOverlayStatus,
+    attachmentController,
+    frameLoop,
+    lifetime,
+    previewService,
+    capturedVideoReactivityTracker,
+    capturedVideoOverlay,
+    adapter,
+    performanceTracker,
+    adaptiveQualityUnsubscribe,
+    adaptiveQualityController,
+    runtime,
+    disposeKeyboardShortcuts,
+    disposeRequestedPresetListener,
+    disposeRequestedOverlayTabListener,
+    catalogCoordinator,
+    disposeRuntimeSignalHub,
+    setQualityPresetById,
+    previewCaptureRevision,
+    emitChange,
+    clearDeferredCatalogSync,
+    disposePostprocessingPipeline,
+  // biome-ignore lint/suspicious/noExplicitAny: builder pattern
+  } as any);
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: builder pattern needs dynamic deps
+function buildExperienceController(deps: any) {
   return {
-    subscribe(listener: (snapshot: MilkdropExperienceSnapshot) => void) {
-      return subscribe(listener);
+    subscribe(listener: any) {
+      return deps.subscribe(listener);
     },
-
     getStateSnapshot() {
-      return buildSnapshot();
+      return deps.buildSnapshot();
     },
-
-    applyFields(updates: Record<string, string | number>) {
-      return applyFieldValues(updates);
+    applyFields(updates: any) {
+      return deps.applyFieldValues(updates);
     },
-
     getActiveCompiledPreset() {
-      return activeCompiled;
+      return deps.activeCompiled;
     },
-
     getActivePresetId() {
-      return activePresetId;
+      return deps.activePresetId;
     },
-
-    selectPreset: navigation.selectPreset,
+    selectPreset: deps.navigation.selectPreset,
 
     setActiveCollectionTag(collectionTag: string | null) {
-      if (!collectionTag) {
-        return;
-      }
-      overlay?.setActiveCollectionTag(collectionTag);
-      emitChange();
+      if (!collectionTag) return;
+      deps.overlay?.setActiveCollectionTag(collectionTag);
+      deps.emitChange();
     },
 
     openTab(tab: 'browse' | 'editor' | 'inspector') {
-      overlay?.openTab(tab);
-      emitChange();
+      deps.overlay?.openTab(tab);
+      deps.emitChange();
     },
 
     setOverlayOpen(open: boolean) {
-      overlay?.toggleOpen(open);
-      emitChange();
+      deps.overlay?.toggleOpen(open);
+      deps.emitChange();
     },
 
     async importPresetFiles(files: FileList) {
-      await presetFileActions.importFiles(files);
-      emitChange();
+      await deps.presetFileActions.importFiles(files);
+      deps.emitChange();
     },
 
     exportPreset() {
-      presetFileActions.exportPreset();
+      deps.presetFileActions.exportPreset();
     },
-
     async duplicatePreset() {
-      await presetFileActions.duplicatePreset();
-      emitChange();
+      await deps.presetFileActions.duplicatePreset();
+      deps.emitChange();
     },
-
     async deleteActivePreset() {
-      await presetFileActions.deleteActivePreset();
-      emitChange();
+      await deps.presetFileActions.deleteActivePreset();
+      deps.emitChange();
     },
-
     updateEditorSource(source: string) {
-      session.applySource(source);
-      emitChange();
+      deps.session.applySource(source);
+      deps.emitChange();
     },
-
     revertEditorSource() {
-      session.resetToActive();
-      emitChange();
+      deps.session.resetToActive();
+      deps.emitChange();
     },
-
     updateInspectorField(key: string, value: string | number) {
-      session.updateField(key, value);
-      emitChange();
+      deps.session.updateField(key, value);
+      deps.emitChange();
     },
 
     setQualityPreset(presetId: string) {
-      const preset = setQualityPresetById(presetId, {
-        presets: qualityControl.presets,
-        storageKey: qualityControl.storageKey,
+      const preset = deps.setQualityPresetById(presetId, {
+        presets: deps.qualityControl.presets,
+        storageKey: deps.qualityControl.storageKey,
       });
-      if (!preset) {
-        return null;
-      }
-      applyQualityPreset(preset);
-      emitChange();
+      if (!preset) return null;
+      deps.applyQualityPreset(preset);
+      deps.emitChange();
       return preset;
     },
 
     setStatus(message: string) {
-      setOverlayStatus(message);
+      deps.setOverlayStatus(message);
     },
-
-    attachRuntime: attachmentController.attachRuntime,
-
-    update: frameLoop.update,
+    attachRuntime: deps.attachmentController.attachRuntime,
+    update: deps.frameLoop.update,
 
     dispose() {
-      lifetime.dispose();
-      clearDebugSnapshot('milkdrop');
-      disposeSessionSubscription?.();
-      disposeSessionSubscription = null;
-      previewService?.dispose();
-      previewService = null;
-      previewCaptureRevision += 1;
-      overlay?.dispose();
-      overlay = null;
-      session.dispose();
-      clearDeferredCatalogSync();
-      capturedVideoReactivityTracker.reset();
-      disposePostprocessingPipeline();
-      capturedVideoOverlay.dispose();
-      adapter?.dispose();
-      adapter = null;
-      performanceTracker.reset();
-      adaptiveQualityUnsubscribe?.();
-      adaptiveQualityUnsubscribe = null;
-      adaptiveQualityController = null;
-      adaptiveQualityState = null;
-      runtime = null;
-      disposeKeyboardShortcuts?.();
-      disposeKeyboardShortcuts = null;
-      disposeRequestedPresetListener?.();
-      disposeRequestedPresetListener = null;
-      disposeRequestedOverlayTabListener?.();
-      disposeRequestedOverlayTabListener = null;
-      catalogCoordinator.dispose();
-      disposeRuntimeSignalHub();
+      deps.lifetime.dispose();
+      deps.clearDebugSnapshot?.('milkdrop');
+      deps.disposeSessionSubscription?.();
+      deps.previewService?.dispose();
+      deps.previewCaptureRevision += 1;
+      deps.overlay?.dispose();
+      deps.session.dispose();
+      deps.clearDeferredCatalogSync();
+      deps.capturedVideoReactivityTracker?.reset();
+      deps.disposePostprocessingPipeline();
+      deps.capturedVideoOverlay?.dispose();
+      deps.adapter?.dispose();
+      deps.performanceTracker?.reset();
+      deps.adaptiveQualityUnsubscribe?.();
+      deps.catalogCoordinator?.dispose();
+      deps.disposeRuntimeSignalHub?.();
     },
   };
 }

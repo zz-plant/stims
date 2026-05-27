@@ -11,24 +11,24 @@ type OnboardingStep = {
 const STEPS: OnboardingStep[] = [
   {
     icon: '\uD83C\uDFB5',
-    title: 'This is a music visualizer',
+    title: 'Stims',
     description:
       'Stims turns sound into motion. Press play to see it work with built-in demo audio.',
-    cta: 'See it in action',
+    cta: 'Watch demo',
   },
   {
     icon: '\uD83C\uDFA8',
-    title: 'Pick your vibe',
+    title: 'Choose a preset',
     description:
       'Choose from dozens of hand-picked presets. Each one moves differently. Browse to find your favorite look.',
     cta: 'Browse presets',
   },
   {
     icon: '\uD83D\uDD0A',
-    title: 'Make it yours',
+    title: 'Customize',
     description:
       'Switch to your own music anytime — microphone, browser tab, or YouTube. The visuals react to your sound.',
-    cta: 'Start exploring',
+    cta: 'Browse presets',
   },
 ];
 

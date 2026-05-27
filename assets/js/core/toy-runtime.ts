@@ -26,6 +26,7 @@ export type ToyRuntimeFrame = {
   toy: WebToy;
   time: number;
   deltaMs: number;
+  realTimeMs: number;
   analyser: FrequencyAnalyser | null;
   frequencyData: Uint8Array;
   waveformData: Uint8Array;
@@ -277,6 +278,7 @@ export function createToyRuntime({
     toy,
     time: 0,
     deltaMs: 0,
+    realTimeMs: 0,
     analyser: null,
     frequencyData: new Uint8Array(0),
     waveformData: new Uint8Array(0),
@@ -369,6 +371,7 @@ export function createToyRuntime({
       frameState.deltaMs = now - previewLastFrame;
       previewLastFrame = now;
       frameState.time = time;
+      frameState.realTimeMs = now;
       frameState.analyser = null;
       updatePreviewFrequencyData(time);
       frameState.frequencyData = previewFrequencyData;
@@ -413,6 +416,7 @@ export function createToyRuntime({
         frameState.deltaMs = lastFrameTime ? (now - lastFrameTime) * 1000 : 0;
         lastFrameTime = now;
         frameState.time = now;
+        frameState.realTimeMs = ctx.realTimeMs;
         frameState.analyser = analyser;
         frameState.frequencyData = getContextFrequencyData(ctx);
         frameState.waveformData = analyser?.getWaveformData() ?? EMPTY_UINT8;

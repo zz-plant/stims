@@ -36,10 +36,15 @@ const loadRuntimeFactories = () => {
     runtimeFactoriesPromise = Promise.all([
       import('../../milkdrop/runtime.ts'),
       import('../../core/toy-runtime-starter.ts'),
-    ]).then(([runtimeModule, starterModule]) => ({
-      createMilkdropExperience: runtimeModule.createMilkdropExperience,
-      createToyRuntimeStarter: starterModule.createToyRuntimeStarter,
-    }));
+    ])
+      .then(([runtimeModule, starterModule]) => ({
+        createMilkdropExperience: runtimeModule.createMilkdropExperience,
+        createToyRuntimeStarter: starterModule.createToyRuntimeStarter,
+      }))
+      .catch((error) => {
+        runtimeFactoriesPromise = null;
+        throw error;
+      });
   }
 
   return runtimeFactoriesPromise;
@@ -49,7 +54,10 @@ const loadCapturedVideoModule = () => {
   if (!capturedVideoModulePromise) {
     capturedVideoModulePromise = import(
       '../../core/services/captured-video-texture.ts'
-    );
+    ).catch((error) => {
+      capturedVideoModulePromise = null;
+      throw error;
+    });
   }
 
   return capturedVideoModulePromise;

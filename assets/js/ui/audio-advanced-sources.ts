@@ -225,7 +225,7 @@ export function setupYouTubeAudioControls(
       } else if (isLoadingVideo) {
         urlFeedback.textContent = 'Loading the embedded player…';
       } else {
-        urlFeedback.textContent = 'Link looks good. Press Load to continue.';
+        urlFeedback.textContent = 'Press Load to continue.';
       }
     }
   };

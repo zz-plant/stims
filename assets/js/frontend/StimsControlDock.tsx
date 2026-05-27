@@ -11,7 +11,7 @@ function useDirectCSSProperty<T extends HTMLElement>(
     if (ref.current) {
       ref.current.style.setProperty(name, String(value));
     }
-  });
+  }, [name, value]);
   return ref;
 }
 

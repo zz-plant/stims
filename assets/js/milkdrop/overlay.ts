@@ -1,5 +1,5 @@
 import type { QualityPreset } from '../core/settings-panel';
-import { BrowsePanel } from './overlay/browse-panel';
+import type { EditorPanel } from './overlay/editor-panel';
 import { InspectorPanel } from './overlay/inspector-panel';
 import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
 import type {
@@ -13,11 +13,6 @@ const OSD_HIDE_TIMEOUT_MS = 1800;
 
 type OverlayCallbacks = {
   onSelectPreset: (id: string) => void;
-  onSelectQualityPreset: (presetId: string) => void;
-  onToggleFavorite: (id: string, favorite: boolean) => void;
-  onSetRating: (id: string, rating: number) => void;
-  onRequestPresetPreviews: (presetIds: string[]) => void;
-  onRefreshPresetPreviews: (presetIds: string[]) => void;
   onToggleAutoplay: (enabled: boolean) => void;
   onTransitionModeChange: (mode: 'blend' | 'cut') => void;
   onGoBackPreset: () => void;
@@ -34,19 +29,7 @@ type OverlayCallbacks = {
   onInspectorFieldChange: (key: string, value: string | number) => void;
 };
 
-type OverlayPrimaryView = 'browse' | 'tools';
-type OverlayToolView = 'editor' | 'inspector';
-type OverlayTab = 'browse' | 'editor' | 'inspector';
-type EditorPanelInstance = import('./overlay/editor-panel').EditorPanel;
-
-function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
-  buttons.forEach((button) => {
-    const isActive = button.dataset.tab === activeId;
-    button.classList.toggle('is-active', isActive);
-    button.dataset.active = String(isActive);
-    button.setAttribute('aria-selected', String(isActive));
-  });
-}
+type OverlayTab = 'editor' | 'inspector';
 
 function isShortcutToggleEvent(event: KeyboardEvent) {
   return event.key === '?' || (event.key === '/' && event.shiftKey);
@@ -65,7 +48,6 @@ export class MilkdropOverlay {
   private readonly blendValue: HTMLElement;
   private readonly fileInput: HTMLInputElement;
   private readonly tabButtons: HTMLButtonElement[];
-  private readonly browsePanel: BrowsePanel;
   private readonly editorPanelHost: HTMLElement;
   private readonly editorPanelLoadingState: HTMLElement;
   private readonly inspectorPanel: InspectorPanel;
@@ -75,12 +57,10 @@ export class MilkdropOverlay {
   private readonly osdBackendEl: HTMLElement;
   private readonly shortcutHud: HTMLElement;
   private readonly shortcutHudToggle: HTMLButtonElement;
-  private activeTab: OverlayTab = 'browse';
-  private activePresetId: string | null = null;
-  private activePresetEntry: MilkdropCatalogEntry | null = null;
+  private activeTab: OverlayTab = 'editor';
   private osdHideTimeoutId: number | null = null;
-  private editorPanel: EditorPanelInstance | null = null;
-  private editorPanelPromise: Promise<EditorPanelInstance | null> | null = null;
+  private editorPanel: EditorPanel | null = null;
+  private editorPanelPromise: Promise<EditorPanel | null> | null = null;
   private pendingEditorDeleteEnabled = false;
   private pendingEditorSessionState: MilkdropEditorSessionState | null = null;
   private disposed = false;
@@ -109,8 +89,6 @@ export class MilkdropOverlay {
     this.panel = document.createElement('aside');
     this.panel.className = 'milkdrop-overlay__panel';
 
-    this.syncOverlayDatasets(this.activeTab);
-
     this.presetOsd = document.createElement('div');
     this.presetOsd.className = 'milkdrop-overlay__osd';
     this.presetOsd.hidden = true;
@@ -138,9 +116,6 @@ export class MilkdropOverlay {
       'M: toggle overlay',
       'F / 1-5: favorite and rate',
       'H / W: transition and wave mode',
-      'T: browse presets',
-      '↑ / ↓ / A / S: browse navigation',
-      'Escape: close browse panel',
       '?: shortcut help',
     ].forEach((item) => {
       const row = document.createElement('li');
@@ -249,7 +224,10 @@ export class MilkdropOverlay {
     this.blendSlider.addEventListener('input', () => {
       const value = Number.parseFloat(this.blendSlider.value);
       this.blendValue.textContent = `${value.toFixed(2)}s`;
-      this.blendSlider.setAttribute('aria-valuetext', `${value.toFixed(2)} seconds`);
+      this.blendSlider.setAttribute(
+        'aria-valuetext',
+        `${value.toFixed(2)} seconds`,
+      );
       this.callbacks.onBlendDurationChange(value);
     });
     this.blendValue = document.createElement('span');
@@ -269,13 +247,12 @@ export class MilkdropOverlay {
     const tabs = document.createElement('div');
     tabs.className = 'milkdrop-overlay__tabs';
     tabs.setAttribute('role', 'tablist');
-    this.tabButtons = ['browse', 'editor', 'inspector'].map((tab) => {
+    this.tabButtons = (['editor', 'inspector'] as OverlayTab[]).map((tab) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.setAttribute('role', 'tab');
       button.dataset.tab = tab;
-      button.textContent =
-        tab === 'browse' ? 'Presets' : tab === 'editor' ? 'Edit' : 'Inspect';
+      button.textContent = tab === 'editor' ? 'Edit' : 'Inspect';
       button.addEventListener('click', () => this.setActiveTab(tab));
       tabs.appendChild(button);
       return button;
@@ -293,18 +270,6 @@ export class MilkdropOverlay {
       this.fileInput.value = '';
     });
 
-    this.browsePanel = new BrowsePanel({
-      onSelectPreset: (id) => this.callbacks.onSelectPreset(id),
-      onSelectQualityPreset: (presetId) =>
-        this.callbacks.onSelectQualityPreset(presetId),
-      onToggleFavorite: (id, favorite) =>
-        this.callbacks.onToggleFavorite(id, favorite),
-      onSetRating: (id, rating) => this.callbacks.onSetRating(id, rating),
-      onRequestPresetPreviews: (presetIds) =>
-        this.callbacks.onRequestPresetPreviews(presetIds),
-      onRefreshPresetPreviews: (presetIds) =>
-        this.callbacks.onRefreshPresetPreviews(presetIds),
-    });
     this.inspectorPanel = new InspectorPanel({
       onInspectorFieldChange: (key, value) =>
         this.callbacks.onInspectorFieldChange(key, value),
@@ -321,11 +286,7 @@ export class MilkdropOverlay {
 
     const panelBody = document.createElement('div');
     panelBody.className = 'milkdrop-overlay__body';
-    panelBody.append(
-      this.browsePanel.element,
-      this.editorPanelHost,
-      this.inspectorPanel.element,
-    );
+    panelBody.append(this.editorPanelHost, this.inspectorPanel.element);
 
     this.panel.append(header, toolbar, tabs, this.shortcutHud, panelBody);
     this.root.append(this.panel, this.presetOsd, this.fileInput);
@@ -333,7 +294,7 @@ export class MilkdropOverlay {
       this.root.prepend(this.toggleButton);
     }
     host.appendChild(this.root);
-    this.setActiveTab('browse');
+    this.setActiveTab('editor');
 
     this.shortcutListener = (event) => {
       const target = event.target as HTMLElement | null;
@@ -376,63 +337,60 @@ export class MilkdropOverlay {
   }
 
   openTab(tab: string) {
-    this.setActiveTab(tab);
+    this.setActiveTab(tab as OverlayTab);
     this.toggleOpen(true);
   }
 
-  shouldRenderInspectorMetrics() {
-    return (
-      this.activeTab === 'inspector' &&
-      this.inspectorPanel.shouldRenderMetrics(this.isOpen())
-    );
-  }
+  private setActiveTab(tab: OverlayTab) {
+    this.activeTab = tab;
+    setButtonActive(this.tabButtons, tab);
 
-  setCurrentPresetTitle(title: string) {
-    const previousTitle = this.currentPresetLabel.textContent ?? '';
-    if (previousTitle !== title) {
-      this.currentPresetLabel.textContent = title;
-      this.showPresetOsd(this.activePresetEntry, title);
+    this.editorPanelHost.hidden = tab !== 'editor';
+    this.inspectorPanel.element.hidden = tab !== 'inspector';
+
+    if (tab === 'editor') {
+      this.loadEditorPanel();
     }
+    this.syncRootSessionState();
   }
 
-  setQualityPresets({
-    presets,
-    activePresetId,
-    storageKey,
-  }: {
-    presets: QualityPreset[];
-    activePresetId: string;
-    storageKey?: string;
-  }) {
-    this.browsePanel.setQualityPresets({ presets, activePresetId, storageKey });
-  }
-
-  setActiveCollectionTag(collectionTag: string) {
-    this.browsePanel.setActiveCollectionTag(collectionTag);
-  }
-
-  setCatalog(
-    presets: MilkdropCatalogEntry[],
-    activePresetId: string | null,
-    backend: 'webgl' | 'webgpu',
-  ) {
-    const previousActivePresetId = this.activePresetId;
-    this.activePresetId = activePresetId;
-    this.activePresetEntry =
-      presets.find((entry) => entry.id === activePresetId) ?? null;
-    this.osdBackendEl.textContent = backend.toUpperCase();
-    this.browsePanel.setCatalog(presets, activePresetId, backend);
-    this.pendingEditorDeleteEnabled = Boolean(
-      this.activePresetEntry && this.activePresetEntry.origin !== 'bundled',
-    );
-    this.syncEditorPanelState();
-    if (this.activePresetEntry && previousActivePresetId !== activePresetId) {
-      this.showPresetOsd(this.activePresetEntry, this.activePresetEntry.title);
+  private async loadEditorPanel() {
+    if (this.editorPanelPromise) {
+      return;
     }
-  }
+    this.editorPanelLoadingState.hidden = false;
 
-  setPresetPreview(preview: MilkdropPresetRenderPreview) {
-    this.browsePanel.setPresetPreview(preview);
+    this.editorPanelPromise = import('./overlay/editor-panel.ts')
+      .then(({ EditorPanel }) => {
+        if (this.disposed) {
+          return null;
+        }
+        const panel = new EditorPanel({
+          onEditorSourceChange: (source) =>
+            this.callbacks.onEditorSourceChange(source),
+          onRevertToActive: () => this.callbacks.onRevertToActive(),
+          onExport: () => this.callbacks.onExport(),
+          onDuplicatePreset: () => this.callbacks.onDuplicatePreset(),
+          onDeletePreset: () => this.callbacks.onDeletePreset(),
+          onRequestImport: () => this.fileInput.click(),
+        });
+        this.editorPanel = panel;
+        this.editorPanelHost.append(panel.element);
+        this.editorPanelLoadingState.hidden = true;
+        if (this.pendingEditorDeleteEnabled !== undefined) {
+          panel.setDeleteEnabled(this.pendingEditorDeleteEnabled);
+        }
+        if (this.pendingEditorSessionState) {
+          panel.setSessionState(this.pendingEditorSessionState);
+        }
+        panel.setVisible(this.activeTab === 'editor');
+        return panel;
+      })
+      .catch(() => {
+        this.editorPanelLoadingState.textContent = 'Failed to load editor.';
+        this.editorPanelLoadingState.hidden = false;
+        return null;
+      });
   }
 
   setAutoplay(enabled: boolean) {
@@ -446,181 +404,93 @@ export class MilkdropOverlay {
 
   setTransitionMode(mode: 'blend' | 'cut') {
     this.transitionModeSelect.value = mode;
-    this.blendSlider.disabled = mode === 'cut';
+  }
+
+  setActiveCollectionTag(collectionTag: string | null) {
+    if (!collectionTag) {
+      return;
+    }
+    this.syncRootSessionState();
   }
 
   setSessionState(state: MilkdropEditorSessionState) {
     this.pendingEditorSessionState = state;
-    this.syncEditorPanelState();
-    if (state.activeCompiled) {
-      this.inspectorPanel.setCompiledPreset(state.activeCompiled);
+    if (this.editorPanel) {
+      this.editorPanel.setSessionState(state);
     }
   }
 
-  setInspectorState({
-    compiled,
-    frameState,
-    backend,
-  }: {
-    compiled: MilkdropCompiledPreset | null;
-    frameState: MilkdropFrameState | null;
-    backend: 'webgl' | 'webgpu';
+  setQualityPresets(_config: {
+    presets: QualityPreset[];
+    activePresetId: string;
+    storageKey: string;
   }) {
-    if (compiled) {
-      this.setCurrentPresetTitle(compiled.title);
-      this.inspectorPanel.setCompiledPreset(compiled);
-    }
-    this.inspectorPanel.renderMetrics({
-      compiled,
-      frameState,
-      backend,
-      presetEntry: this.activePresetEntry,
-      isOpen: this.isOpen(),
-    });
+    this.syncRootSessionState();
   }
 
-  setStatus(message: string) {
-    const nextMessage = message.trim();
-    this.statusLabel.textContent = nextMessage;
-    this.statusLabel.hidden = nextMessage.length === 0;
-  }
-
-  dispose() {
-    this.disposed = true;
-    this.editorPanel?.dispose();
-    this.browsePanel.dispose();
-    if (this.osdHideTimeoutId !== null) {
-      window.clearTimeout(this.osdHideTimeoutId);
-    }
-    document.removeEventListener('keydown', this.shortcutListener);
-    this.root.remove();
-  }
-
-  toggleShortcutHud(force?: boolean) {
-    const shouldOpen =
-      typeof force === 'boolean' ? force : this.shortcutHud.hidden;
-    this.shortcutHud.hidden = !shouldOpen;
-    if (!this.shortcutHud.hidden) {
-      this.toggleOpen(true);
-    }
-  }
-
-  private showPresetOsd(
-    preset: MilkdropCatalogEntry | null,
-    fallbackTitle: string | null = null,
+  setCatalog(
+    _presets: MilkdropCatalogEntry[],
+    _activePresetId: string,
+    _backend: string,
   ) {
-    const title = preset?.title ?? fallbackTitle?.trim();
-    if (!title) {
-      return;
-    }
+    this.syncRootSessionState();
+  }
+
+  setPresetPreview(_preview: MilkdropPresetRenderPreview) {
+    // browse panel handles previews — no-op
+  }
+
+  showPresetOsd(title: string, meta: string, backend: string) {
     this.presetOsdTitle.textContent = title;
-    const meta = [
-      preset?.author,
-      preset?.isFavorite ? 'Favorite' : null,
-      preset?.rating ? `${preset.rating}★` : null,
-      preset?.origin === 'bundled' ? null : 'Imported',
-    ]
-      .filter(Boolean)
-      .join(' · ');
     this.presetOsdMeta.textContent = meta;
+    this.osdBackendEl.textContent = backend;
     this.presetOsd.hidden = false;
     if (this.osdHideTimeoutId !== null) {
       window.clearTimeout(this.osdHideTimeoutId);
     }
     this.osdHideTimeoutId = window.setTimeout(() => {
       this.presetOsd.hidden = true;
-      this.osdHideTimeoutId = null;
     }, OSD_HIDE_TIMEOUT_MS);
   }
 
-  private setActiveTab(tab: string) {
-    this.activeTab = tab === 'editor' || tab === 'inspector' ? tab : 'browse';
-    this.syncOverlayDatasets(this.activeTab);
-    this.browsePanel.setVisible(this.activeTab === 'browse');
-    if (this.activeTab === 'editor') {
-      this.editorPanelHost.hidden = false;
-      this.editorPanelLoadingState.hidden = false;
-      void this.ensureEditorPanel();
+  resetOsdTimer() {
+    if (this.osdHideTimeoutId !== null) {
+      window.clearTimeout(this.osdHideTimeoutId);
+    }
+    this.osdHideTimeoutId = window.setTimeout(() => {
+      this.presetOsd.hidden = true;
+    }, OSD_HIDE_TIMEOUT_MS);
+  }
+
+  toggleShortcutHud(open?: boolean) {
+    if (typeof open === 'boolean') {
+      this.shortcutHud.hidden = !open;
     } else {
-      this.editorPanelHost.hidden = true;
-      this.editorPanelLoadingState.hidden = true;
-      this.editorPanel?.setVisible(false);
+      this.shortcutHud.hidden = !this.shortcutHud.hidden;
     }
-    this.inspectorPanel.setVisible(this.activeTab === 'inspector');
-    setButtonActive(this.tabButtons, this.activeTab);
-    this.syncRootSessionState();
   }
 
-  private async ensureEditorPanel() {
-    if (this.editorPanel || this.editorPanelPromise) {
-      return this.editorPanelPromise ?? Promise.resolve(this.editorPanel);
-    }
-    if (this.disposed) {
-      return Promise.resolve(null);
-    }
-
-    const isEditorTabActive = this.activeTab === 'editor';
-    this.editorPanelLoadingState.hidden = false;
-    this.editorPanelPromise = import('./overlay/editor-panel')
-      .then(({ EditorPanel }) => {
-        if (this.disposed) {
-          return null;
-        }
-
-        const panel = new EditorPanel({
-          onEditorSourceChange: (source) =>
-            this.callbacks.onEditorSourceChange(source),
-          onRevertToActive: () => this.callbacks.onRevertToActive(),
-          onDuplicatePreset: () => this.callbacks.onDuplicatePreset(),
-          onExport: () => this.callbacks.onExport(),
-          onDeletePreset: () => this.callbacks.onDeletePreset(),
-          onRequestImport: () => this.fileInput.click(),
-        });
-
-        this.editorPanel = panel;
-        this.editorPanelHost.hidden = !isEditorTabActive;
-        this.editorPanelHost.replaceChildren(
-          this.editorPanelLoadingState,
-          panel.element,
-        );
-        panel.setVisible(isEditorTabActive);
-        panel.setDeleteEnabled(this.pendingEditorDeleteEnabled);
-        if (this.pendingEditorSessionState) {
-          panel.setSessionState(this.pendingEditorSessionState);
-        }
-        this.editorPanelLoadingState.hidden = true;
-        return panel;
-      })
-      .catch((error) => {
-        this.editorPanelPromise = null;
-        throw error;
-      });
-
-    return this.editorPanelPromise;
+  setStatus(message: string) {
+    this.statusLabel.textContent = message;
+    this.statusLabel.hidden = !message;
   }
 
-  private syncEditorPanelState() {
-    const panel = this.editorPanel;
-    if (!panel || this.disposed) {
-      return;
-    }
-
-    panel.setDeleteEnabled(this.pendingEditorDeleteEnabled);
-    if (this.pendingEditorSessionState) {
-      panel.setSessionState(this.pendingEditorSessionState);
-    }
-    panel.setVisible(this.activeTab === 'editor');
+  setCurrentPresetTitle(title: string) {
+    this.currentPresetLabel.textContent = title;
   }
 
-  private syncOverlayDatasets(tab: OverlayTab) {
-    const activeView: OverlayPrimaryView =
-      tab === 'browse' ? 'browse' : 'tools';
-    const activeToolView: OverlayToolView =
-      tab === 'inspector' ? 'inspector' : 'editor';
-    this.root.dataset.activeView = activeView;
-    this.root.dataset.activeToolView = activeToolView;
-    this.panel.dataset.activeView = activeView;
-    this.panel.dataset.activeToolView = activeToolView;
+  setInspectorState(state: {
+    compiled?: MilkdropCompiledPreset | null;
+    frameState?: MilkdropFrameState | null;
+    backend?: string | null;
+  }) {
+    if (state.compiled) {
+      this.inspectorPanel.setCompiledPreset(state.compiled);
+    }
+  }
+
+  shouldRenderInspectorMetrics() {
+    return this.activeTab === 'inspector';
   }
 
   private syncRootSessionState() {
@@ -635,8 +505,23 @@ export class MilkdropOverlay {
       return;
     }
 
-    root.dataset.sessionDisplayMode =
-      this.activeTab === 'browse' ? 'immersive' : 'tools';
+    root.dataset.sessionDisplayMode = 'tools';
     root.dataset.sessionChrome = 'visible';
   }
+
+  dispose() {
+    this.disposed = true;
+    this.editorPanel?.element.remove();
+    this.root.remove();
+    document.removeEventListener('keydown', this.shortcutListener);
+  }
+}
+
+function setButtonActive(buttons: HTMLButtonElement[], activeId: string) {
+  buttons.forEach((button) => {
+    const isActive = button.dataset.tab === activeId;
+    button.classList.toggle('is-active', isActive);
+    button.dataset.active = String(isActive);
+    button.setAttribute('aria-selected', String(isActive));
+  });
 }

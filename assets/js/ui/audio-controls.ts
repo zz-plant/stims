@@ -121,7 +121,7 @@ export function initAudioControls(
 
   container.innerHTML = `
 	    <p class="control-panel__eyebrow">Start</p>
-	    <div class="control-panel__heading">Pick your input</div>
+	    <div class="control-panel__heading">Audio input</div>
 	    ${renderPrimaryAudioChoice()}
 	    ${renderAdvancedAudioSources(options)}
 	    <div id="audio-status" class="control-panel__status" role="status" aria-live="polite" hidden></div>

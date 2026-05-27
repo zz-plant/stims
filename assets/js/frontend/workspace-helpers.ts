@@ -177,28 +177,35 @@ export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
     .toLowerCase();
 }
 
+const moodCache = new Map<string, string>();
+
 export function describePresetMood(entry: PresetCatalogEntry) {
+  const cached = moodCache.get(entry.id);
+  if (cached) return cached;
+
   const index = buildPresetSearchIndex(entry);
+  let mood: string;
 
   if (/(glow|sun|flare|star|light|bloom)/u.test(index)) {
-    return 'Bright pulse';
+    mood = 'Bright pulse';
+  } else if (/(cube|matrix|square|line|grid|trace)/u.test(index)) {
+    mood = 'Sharp geometry';
+  } else if (
+    /(quasar|ether|parallel|space|mars|radiation|vacuum)/u.test(index)
+  ) {
+    mood = 'Space drift';
+  } else if (/(dark|ritual|apocalypse|demon|moon)/u.test(index)) {
+    mood = 'Moody sweep';
+  } else if (/(trippy|psychaos|rotation|spectro|glassworms)/u.test(index)) {
+    mood = 'Psychedelic spin';
+  } else if (entry.tags?.includes('collection:classic-milkdrop')) {
+    mood = 'Classic rush';
+  } else {
+    mood = 'Instant pick';
   }
-  if (/(cube|matrix|square|line|grid|trace)/u.test(index)) {
-    return 'Sharp geometry';
-  }
-  if (/(quasar|ether|parallel|space|mars|radiation|vacuum)/u.test(index)) {
-    return 'Space drift';
-  }
-  if (/(dark|ritual|apocalypse|demon|moon)/u.test(index)) {
-    return 'Moody sweep';
-  }
-  if (/(trippy|psychaos|rotation|spectro|glassworms)/u.test(index)) {
-    return 'Psychedelic spin';
-  }
-  if (entry.tags?.includes('collection:classic-milkdrop')) {
-    return 'Classic rush';
-  }
-  return 'Instant pick';
+
+  moodCache.set(entry.id, mood);
+  return mood;
 }
 
 export function buildStarterPresets(entries: PresetCatalogEntry[]) {

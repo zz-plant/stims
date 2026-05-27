@@ -10,7 +10,7 @@ type HelpHint = {
 const HINTS: HelpHint[] = [
   {
     id: 'first-play',
-    message: 'Press Space or tap to switch presets anytime',
+    message: 'Space or tap to switch presets',
     autoHideMs: 6000,
   },
   {
@@ -25,7 +25,7 @@ const HINTS: HelpHint[] = [
   },
   {
     id: 'browse-open',
-    message: 'Tap any card to play that preset immediately',
+    message: 'Tap a card to play',
     autoHideMs: 5000,
   },
   {

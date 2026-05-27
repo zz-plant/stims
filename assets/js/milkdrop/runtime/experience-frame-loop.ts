@@ -167,7 +167,7 @@ export function createMilkdropExperienceFrameLoop({
         return;
       }
 
-      const now = performance.now();
+      const now = frame.realTimeMs;
       const frameStartAt = now;
       const activeBackend = getActiveBackend();
       const detailScale = getMilkdropDetailScale({
@@ -202,7 +202,7 @@ export function createMilkdropExperienceFrameLoop({
         shouldAutoAdvancePreset({
           autoplay: getAutoplay(),
           catalogSize: catalogCoordinator.getCatalogEntries().length,
-          now,
+          now: frameStartAt,
           lastPresetSwitchAt: getLastPresetSwitchAt(),
           blendDuration: getBlendDuration(),
         })
@@ -226,7 +226,7 @@ export function createMilkdropExperienceFrameLoop({
         shaderQuality: frame.performance.shaderQuality,
         canBlendCurrentFrame,
         blendState: getBlendState(),
-        now,
+        now: frameStartAt,
         blendEndAtMs: getBlendEndAtMs(),
         blendDuration: getBlendDuration(),
       });

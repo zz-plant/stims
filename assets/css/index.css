@@ -104,14 +104,10 @@ html {
   font-size: calc(16px * var(--tv-scale-multiplier));
   background:
     radial-gradient(
-      circle at top left,
-      rgba(95, 192, 181, 0.16),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 85% 10%,
-      rgba(211, 137, 84, 0.18),
-      transparent 26%
+      circle at 15% 0%,
+      rgba(95, 192, 181, 0.14),
+      rgba(211, 137, 84, 0.16) 42%,
+      transparent 50%
     ),
     linear-gradient(180deg, var(--bg-color) 0%, var(--bg-color-secondary) 100%);
   color: var(--text-color);

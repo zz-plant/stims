@@ -17,6 +17,7 @@ export interface AnimationContext {
   toy: AudioLoopToy;
   analyser: FrequencyAnalyser | null;
   time: number;
+  realTimeMs: number;
 }
 
 const fallbackBuffers = new Map<number, Uint8Array>();
@@ -71,7 +72,12 @@ export async function startAudioLoop(
     await toy.rendererReady;
   }
   await toy.initAudio(audioOptions);
-  const ctx: AnimationContext = { toy, analyser: toy.analyser, time: 0 };
+  const ctx: AnimationContext = {
+    toy,
+    analyser: toy.analyser,
+    time: 0,
+    realTimeMs: 0,
+  };
   if (!toy.renderer?.setAnimationLoop) {
     throw new Error('Renderer is not available to start the animation loop.');
   }
@@ -79,6 +85,7 @@ export async function startAudioLoop(
     const now =
       typeof performance !== 'undefined' ? performance.now() : Date.now();
     ctx.time = now / 1000;
+    ctx.realTimeMs = now;
     animate(ctx);
   });
   return ctx;

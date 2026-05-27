@@ -11,7 +11,7 @@ const YOUTUBE_URL_STORAGE_KEY = 'stims-youtube-url';
 const DEFAULT_YOUTUBE_FEEDBACK = 'Paste a YouTube link or video ID to load it.';
 const INVALID_YOUTUBE_FEEDBACK =
   'That link or ID was not recognized. Try a YouTube watch/share link or an 11-character video ID.';
-const VALID_YOUTUBE_FEEDBACK = 'Link looks good. Press Load to continue.';
+const VALID_YOUTUBE_FEEDBACK = 'Press Load to continue.';
 const LOADING_YOUTUBE_FEEDBACK = 'Loading the embedded player…';
 const READY_YOUTUBE_FEEDBACK =
   'Video is ready. Choose Start capture to continue.';
