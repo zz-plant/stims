@@ -4,24 +4,11 @@ import { MilkdropOverlay } from '../assets/js/milkdrop/overlay.ts';
 import type { MilkdropPresetRenderPreview } from '../assets/js/milkdrop/preset-preview.ts';
 import type { MilkdropCatalogEntry } from '../assets/js/milkdrop/types.ts';
 
-function createOverlay({
-  onSelectQualityPreset = mock(),
-  onRequestPresetPreviews = mock(),
-  onRefreshPresetPreviews = mock(),
-}: {
-  onSelectQualityPreset?: ReturnType<typeof mock>;
-  onRequestPresetPreviews?: ReturnType<typeof mock>;
-  onRefreshPresetPreviews?: ReturnType<typeof mock>;
-} = {}) {
+function createOverlay() {
   return new MilkdropOverlay({
     host: document.body,
     callbacks: {
       onSelectPreset: mock(),
-      onSelectQualityPreset,
-      onToggleFavorite: mock(),
-      onSetRating: mock(),
-      onRequestPresetPreviews,
-      onRefreshPresetPreviews,
       onToggleAutoplay: mock(),
       onTransitionModeChange: mock(),
       onGoBackPreset: mock(),
@@ -223,25 +210,7 @@ describe('milkdrop overlay browse simplifications', () => {
   afterEach(() => {
     document.body.innerHTML = '';
     globalThis.MutationObserver = OriginalMutationObserver;
-  });
 
-  test('keeps live quality controls out of browse', () => {
-    globalThis.MutationObserver = class {
-      disconnect() {}
-      observe() {}
-      takeRecords() {
-        return [];
-      }
-    } as unknown as typeof MutationObserver;
-
-    const onSelectQualityPreset = mock();
-    const overlay = createOverlay({ onSelectQualityPreset });
-
-    overlay.setQualityPresets({
-      presets: DEFAULT_QUALITY_PRESETS,
-      activePresetId: 'balanced',
-      storageKey: 'stims:milkdrop:quality',
-    });
 
     expect(
       document.querySelector('.milkdrop-overlay__quality-select'),
@@ -250,25 +219,7 @@ describe('milkdrop overlay browse simplifications', () => {
     expect(onSelectQualityPreset).not.toHaveBeenCalled();
 
     overlay.dispose();
-  });
 
-  test('opens without a workspace handoff hint card', () => {
-    globalThis.MutationObserver = class {
-      disconnect() {}
-      observe() {}
-      takeRecords() {
-        return [];
-      }
-    } as unknown as typeof MutationObserver;
-    const overlay = createOverlay();
-    overlay.toggleOpen(true);
-
-    expect(
-      document.querySelector('.milkdrop-overlay__workspace-hint'),
-    ).toBeNull();
-
-    overlay.dispose();
-  });
 
   test('can omit the floating controls toggle when the shell owns tool entry', () => {
     globalThis.MutationObserver = class {
@@ -284,12 +235,7 @@ describe('milkdrop overlay browse simplifications', () => {
       showToggle: false,
       callbacks: {
         onSelectPreset: mock(),
-        onSelectQualityPreset: mock(),
-        onToggleFavorite: mock(),
-        onSetRating: mock(),
-        onRequestPresetPreviews: mock(),
-        onRefreshPresetPreviews: mock(),
-        onToggleAutoplay: mock(),
+      onToggleAutoplay: mock(),
         onTransitionModeChange: mock(),
         onGoBackPreset: mock(),
         onNextPreset: mock(),
@@ -425,13 +371,7 @@ describe('milkdrop overlay compatibility messaging', () => {
   });
 });
 
-describe('milkdrop overlay browse rendering', () => {
-  const OriginalMutationObserver = globalThis.MutationObserver;
-
-  afterEach(() => {
-    document.body.innerHTML = '';
-    globalThis.MutationObserver = OriginalMutationObserver;
-  });
+});
 
   test('debounces search-driven browse rerenders', async () => {
     globalThis.MutationObserver = class {
