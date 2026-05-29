@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100">
+  <!-- Bar Crew — Stims mascots, three audio-bar characters -->
+  <!-- Shorty (left) -->
+  <rect x="10" y="52" width="22" height="38" rx="3" fill="#07111d"/>
+  <circle cx="21" cy="42" r="5" fill="#07111d"/>
+  <circle cx="21" cy="42" r="2" fill="#22d3ee"/>
+  <ellipse cx="21" cy="32" rx="2" ry="1.5" fill="none" stroke="#07111d" stroke-width="1.5"/>
+  <line x1="13" y1="56" x2="6" y2="50" stroke="#07111d" stroke-width="2" stroke-linecap="round"/>
+  <line x1="29" y1="56" x2="36" y2="50" stroke="#07111d" stroke-width="2" stroke-linecap="round"/>
+  <!-- Midi (center) -->
+  <rect x="60" y="30" width="22" height="60" rx="3" fill="#07111d"/>
+  <circle cx="71" cy="22" r="5" fill="#07111d"/>
+  <circle cx="71" cy="22" r="2" fill="#22d3ee"/>
+  <ellipse cx="71" cy="12" rx="2" ry="1.5" fill="none" stroke="#07111d" stroke-width="1.5"/>
+  <line x1="63" y1="34" x2="56" y2="28" stroke="#07111d" stroke-width="2" stroke-linecap="round"/>
+  <line x1="79" y1="34" x2="86" y2="28" stroke="#07111d" stroke-width="2" stroke-linecap="round"/>
+  <!-- Tallboy (right) -->
+  <rect x="115" y="14" width="22" height="76" rx="3" fill="#07111d"/>
+  <circle cx="126" cy="8" r="5" fill="#07111d"/>
+  <circle cx="126" cy="8" r="2" fill="#22d3ee"/>
+  <ellipse cx="126" cy="-2" rx="2" ry="1.5" fill="none" stroke="#07111d" stroke-width="1.5"/>
+  <line x1="118" y1="20" x2="111" y2="14" stroke="#07111d" stroke-width="2" stroke-linecap="round"/>
+  <line x1="134" y1="20" x2="141" y2="14" stroke="#07111d" stroke-width="2" stroke-linecap="round"/>
+  <!-- Ground line -->
+  <line x1="4" y1="92" x2="156" y2="92" stroke="#07111d" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+</svg>

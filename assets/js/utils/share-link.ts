@@ -46,6 +46,10 @@ function tryLegacyCopy(url: string, doc: Document) {
   return copied;
 }
 
+export function buildPresetLink(presetName: string): string {
+  return `https://toil.fyi/?preset=${encodeURIComponent(presetName)}`;
+}
+
 export async function shareOrCopyLink(
   url: string,
   {
