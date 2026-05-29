@@ -127,7 +127,7 @@ export function detectListenSetup(): ListenSetup {
 }
 
 export async function* readPcmFromStdin(
-  sampleRate = 44100,
+  _sampleRate = 44100,
 ): AsyncGenerator<Float64Array> {
   const reader = Bun.stdin.stream().getReader();
   const buffer = new Int16Array(4096);
@@ -164,7 +164,7 @@ import {
   getBandLevels,
   getWeightedEnergy,
 } from '../assets/js/utils/audio-reactivity';
-import type { AudioFrame, BandLevels, BeatState } from './audio';
+import type { AudioFrame, BeatState } from './audio';
 
 interface StreamFrame extends Omit<AudioFrame, 'progress' | 'waveform'> {
   progress: number;
@@ -209,7 +209,7 @@ export async function* streamAudioFrames(
   const FFT_SIZE = 1024;
 
   let rmsSmooth = 0;
-  let frameCount = 0;
+  let _frameCount = 0;
   let prevFrameMs = 0;
   const startTime = Date.now();
 
@@ -248,7 +248,7 @@ export async function* streamAudioFrames(
 
       const beat = beatUpdateToState(trackerResult);
 
-      frameCount += 1;
+      _frameCount += 1;
 
       yield {
         time: (nowMs - startTime) / 1000,

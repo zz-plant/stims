@@ -254,7 +254,7 @@ if (isTTY) {
 
 const frameMs = 1000 / targetFps;
 
-function applyVibe(frame: { time: number }) {
+function applyVibe(_frame: { time: number }) {
   if (!vibe) return;
   vibe.update(new Date());
   if (state.options.autocycleSecs > 0) {

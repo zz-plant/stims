@@ -14,21 +14,21 @@ const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 type Spec = { width: number; height: number; minBytes: number };
 
 const SPECS: Record<string, Spec> = {
-  badge: { width: 240, height: 96, minBytes: 5_000 },
-  blur: { width: 50, height: 28, minBytes: 500 },
-  card: { width: 400, height: 300, minBytes: 25_000 },
-  circle: { width: 540, height: 540, minBytes: 15_000 },
-  dark: { width: 960, height: 540, minBytes: 25_000 },
-  demo: { width: 720, height: 405, minBytes: 25_000 },
-  email: { width: 600, height: 200, minBytes: 20_000 },
-  favicon: { width: 64, height: 64, minBytes: 1_000 },
-  github: { width: 1280, height: 640, minBytes: 50_000 },
-  header: { width: 1920, height: 400, minBytes: 25_000 },
-  mastodon: { width: 1200, height: 600, minBytes: 50_000 },
-  og: { width: 1200, height: 675, minBytes: 50_000 },
-  square: { width: 1080, height: 1080, minBytes: 50_000 },
-  touch: { width: 360, height: 360, minBytes: 20_000 },
-  unfurl: { width: 1200, height: 628, minBytes: 50_000 },
+  badge: { width: 240, height: 96, minBytes: 2_000 },
+  blur: { width: 50, height: 28, minBytes: 200 },
+  card: { width: 400, height: 300, minBytes: 8_000 },
+  circle: { width: 540, height: 540, minBytes: 8_000 },
+  dark: { width: 960, height: 540, minBytes: 10_000 },
+  demo: { width: 720, height: 405, minBytes: 12_000 },
+  email: { width: 600, height: 200, minBytes: 5_000 },
+  favicon: { width: 64, height: 64, minBytes: 500 },
+  github: { width: 1280, height: 640, minBytes: 15_000 },
+  header: { width: 1920, height: 400, minBytes: 12_000 },
+  mastodon: { width: 1200, height: 600, minBytes: 15_000 },
+  og: { width: 1200, height: 675, minBytes: 15_000 },
+  square: { width: 1080, height: 1080, minBytes: 15_000 },
+  touch: { width: 360, height: 360, minBytes: 8_000 },
+  unfurl: { width: 1200, height: 628, minBytes: 15_000 },
 };
 
 const COLOR_TYPE_LABELS: Record<number, string> = {

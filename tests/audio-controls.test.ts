@@ -119,11 +119,13 @@ describe('audio controls primary emphasis', () => {
       onRequestDemoAudio: async () => {},
     });
 
-    expect(container.textContent).toContain('Pick your input');
+    expect(container.textContent).toContain('Audio input');
     expect(container.textContent).toContain('Demo');
     expect(container.textContent).toContain('Built-in procedural audio.');
     expect(container.textContent).toContain('Live mic');
-    expect(container.textContent).toContain('Room audio, voice, or instruments.');
+    expect(container.textContent).toContain(
+      'Room audio, voice, or instruments.',
+    );
   });
 
   test('keeps advanced sources collapsed and post-start guidance hidden by default', () => {
@@ -580,7 +582,7 @@ describe('audio controls primary emphasis', () => {
     ) as HTMLElement;
 
     expect(loadButton.disabled).toBe(false);
-    expect(feedback.textContent).toContain('Link looks good');
+    expect(feedback.textContent).toContain('Press Load to continue');
   });
 
   test('pressing Enter in YouTube URL field triggers load action', () => {
@@ -827,7 +829,7 @@ describe('audio controls primary emphasis', () => {
 
     input.value = 'https://youtube.com/watch?v=dQw4w9WgXcQ';
     input.dispatchEvent(new Event('input'));
-    expect(feedback.textContent).toContain('Link looks good');
+    expect(feedback.textContent).toContain('Press Load to continue');
   });
 
   test('preserves timestamped YouTube links when loading the player', async () => {

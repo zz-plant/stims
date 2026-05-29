@@ -70,7 +70,7 @@ describe('workspace YouTube preview helpers', () => {
       }),
     ).toMatchObject({
       canLoad: true,
-      feedback: 'Link looks good. Press Load to continue.',
+      feedback: 'Press Load to continue.',
       invalid: false,
       reference,
     });
