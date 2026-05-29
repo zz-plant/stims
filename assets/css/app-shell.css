@@ -747,6 +747,7 @@ body[data-page="workspace"] {
   border: 0;
   background: transparent;
   box-shadow: none;
+  overflow: visible;
 }
 
 .stims-shell__workspace[data-mode="home"]::before {
@@ -1496,6 +1497,7 @@ body[data-page="workspace"] {
 .stims-shell__stage-frame[data-mode="home"] {
   min-height: calc(100vh - 40px);
   min-height: calc(100dvh - 40px);
+  overflow: visible;
   background:
     radial-gradient(
       circle at 18% 20%,
