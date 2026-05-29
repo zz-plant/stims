@@ -151,9 +151,21 @@
   );
 
   /* Common corner glow patterns */
-  --stims-glow-blue: radial-gradient(circle at top right, rgba(119, 201, 255, 0.12), transparent 32%);
-  --stims-glow-orange: radial-gradient(circle at 24% 8%, rgba(244, 122, 84, 0.14), transparent 26%);
-  --stims-glow-green: radial-gradient(circle at 86% 88%, rgba(125, 224, 162, 0.12), transparent 32%);
+  --stims-glow-blue: radial-gradient(
+    circle at top right,
+    rgba(119, 201, 255, 0.12),
+    transparent 32%
+  );
+  --stims-glow-orange: radial-gradient(
+    circle at 24% 8%,
+    rgba(244, 122, 84, 0.14),
+    transparent 26%
+  );
+  --stims-glow-green: radial-gradient(
+    circle at 86% 88%,
+    rgba(125, 224, 162, 0.12),
+    transparent 32%
+  );
 }
 
 /* ── Shadows ──────────────────────────────────────────────────────── */

@@ -17,11 +17,6 @@ html {
   outline-offset: var(--tv-focus-outline-offset);
   transition: outline-offset 0.15s ease;
 }
-.sr-only {
-  outline: var(--tv-focus-outline-width) solid var(--accent-color);
-  outline-offset: var(--tv-focus-outline-offset);
-  transition: outline-offset 0.15s ease;
-}
 
 :target {
   scroll-margin-top: clamp(6rem, 12vh, 9rem);
@@ -4172,21 +4167,6 @@ section.intro::after {
 .active-toy-nav,
 .active-toy-status__content {
   border-radius: 18px;
-}
-
-.active-toy-container {
-  background:
-    radial-gradient(
-      circle at 18% 6%,
-      color-mix(in srgb, var(--accent-purple) 18%, transparent),
-      transparent 24%
-    ),
-    radial-gradient(
-      circle at 82% 16%,
-      color-mix(in srgb, var(--accent-magenta) 16%, transparent),
-      transparent 26%
-    ),
-    linear-gradient(180deg, #061113, #09191a 56%, #081112);
 }
 
 .active-toy-status__glow {
