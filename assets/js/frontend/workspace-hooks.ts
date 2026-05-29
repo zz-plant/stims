@@ -336,27 +336,8 @@ export function useWorkspaceSessionState({
 
   useEffect(() => {
     sessionDisposedRef.current = false;
-    let cancelled = false;
-
-    void ensureEngineAdapter()
-      .then(() => {
-        if (cancelled) {
-          return;
-        }
-      })
-      .catch((error) => {
-        if (cancelled) {
-          return;
-        }
-        setStatusMessage(
-          error instanceof Error
-            ? error.message
-            : 'Unable to load the visualizer runtime.',
-        );
-      });
 
     return () => {
-      cancelled = true;
       sessionDisposedRef.current = true;
       previewServiceRef.current?.dispose();
       previewServiceRef.current = null;
@@ -435,7 +416,6 @@ export function useWorkspaceSessionState({
 
   useEffect(() => {
     if (
-      !engineAdapterReady ||
       routeState.invalidExperienceSlug ||
       engineSnapshot?.runtimeReady ||
       (routeState.audioSource !== 'demo' &&
@@ -455,7 +435,6 @@ export function useWorkspaceSessionState({
       );
     });
   }, [
-    engineAdapterReady,
     engineSnapshot?.runtimeReady,
     routeState,
     routeState.audioSource,
