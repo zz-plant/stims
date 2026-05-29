@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 
-export function StimsStageAmbient() {
+export function StimsStageAmbient({
+  hintText = 'Ready for sound',
+  muted = false,
+}: {
+  hintText?: string;
+  muted?: boolean;
+}) {
   return (
     <div className="stims-shell__stage-ambient" aria-hidden="true">
       <span className="stims-shell__stage-ambient-grid" />
@@ -11,11 +17,12 @@ export function StimsStageAmbient() {
       <span className="stims-shell__stage-ambient-orb stims-shell__stage-ambient-orb--mint" />
       <span className="stims-shell__stage-ambient-ring" />
       <span className="stims-shell__stage-ambient-pulse" />
-      <span className="stims-shell__stage-ambient-hint">
-        <span className="stims-shell__stage-ambient-hint-copy">
-          Ready for sound
-        </span>
-        <span className="stims-shell__stage-ambient-bars">
+      <span
+        className="stims-shell__stage-ambient-hint"
+        data-muted={muted ? 'true' : undefined}
+      >
+        <span className="stims-shell__stage-ambient-hint-copy">{hintText}</span>
+        <span className="stims-shell__stage-ambient-bars" aria-hidden="true">
           <span />
           <span />
           <span />
@@ -29,11 +36,15 @@ export function StimsStageAmbient() {
 
 export function StimsStageFrame({
   children,
+  hintText,
   liveMode,
+  muted,
   stageRef,
 }: {
   children: ReactNode;
+  hintText?: string;
   liveMode: boolean;
+  muted?: boolean;
   stageRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
@@ -45,7 +56,7 @@ export function StimsStageFrame({
         className="stims-shell__stage-frame"
         data-mode={liveMode ? 'live' : 'home'}
       >
-        <StimsStageAmbient />
+        <StimsStageAmbient hintText={hintText} muted={muted} />
         <div
           ref={stageRef}
           className="stims-shell__stage-root"

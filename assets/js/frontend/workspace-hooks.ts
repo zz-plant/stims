@@ -414,13 +414,7 @@ export function useWorkspaceSessionState({
   }, [routeState]);
 
   useEffect(() => {
-    if (
-      routeState.invalidExperienceSlug ||
-      engineSnapshot?.runtimeReady ||
-      (routeState.audioSource !== 'demo' &&
-        routeState.panel !== 'editor' &&
-        routeState.panel !== 'inspector')
-    ) {
+    if (routeState.invalidExperienceSlug || engineSnapshot?.runtimeReady) {
       return;
     }
 
@@ -436,10 +430,15 @@ export function useWorkspaceSessionState({
   }, [
     engineSnapshot?.runtimeReady,
     routeState,
-    routeState.audioSource,
     routeState.invalidExperienceSlug,
-    routeState.panel,
   ]);
+
+  useEffect(() => {
+    if (!engineSnapshot?.runtimeReady || !fallbackCatalogReady) {
+      return;
+    }
+    void ensurePresetPreviewService().catch(() => {});
+  }, [engineSnapshot?.runtimeReady, fallbackCatalogReady]);
 
   useEffect(() => {
     if (!routeState.panel || !engineSnapshot?.runtimeReady) {

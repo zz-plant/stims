@@ -218,13 +218,25 @@ export function WorkspaceStagePanel({
   const invalidExperienceSlug = w.routeState.invalidExperienceSlug;
   const audioSource = w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
 
+  const engineRunning = w.engineSnapshot?.runtimeReady ?? false;
+  const audioActive = w.engineSnapshot?.audioActive ?? false;
+  const mutedVisualizer = engineRunning && !audioActive;
+  const stageHint = w.selectedPreset
+    ? `${w.selectedPreset.title}\u00A0\u00B7\u00A0${w.selectedPreset.author || 'Unknown'}`
+    : 'Ready for sound';
+
   return (
     <section
       className="stims-shell__workspace"
       data-mode={liveMode ? 'live' : 'home'}
       aria-label="Stims visualizer workspace"
     >
-      <StimsStageFrame stageRef={w.stageRef} liveMode={liveMode}>
+      <StimsStageFrame
+        stageRef={w.stageRef}
+        liveMode={liveMode}
+        hintText={stageHint}
+        muted={mutedVisualizer}
+      >
         <StimsFrameChrome>
           <StimsCornerBrand>
             <span className="stims-shell__logo">
