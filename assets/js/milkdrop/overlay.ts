@@ -1,10 +1,3 @@
-import type { MilkdropPresetRenderPreview } from './preset-preview.ts';
-import type {
-  MilkdropCompiledPreset,
-  MilkdropEditorSessionState,
-  MilkdropFrameState,
-} from './types';
-
 const OSD_HIDE_TIMEOUT_MS = 1800;
 
 export class MilkdropOverlay {
@@ -20,7 +13,6 @@ export class MilkdropOverlay {
   private readonly presetOsdMeta: HTMLElement;
   private readonly osdBackendEl: HTMLElement;
   private osdHideTimeoutId: number | null = null;
-  private disposed = false;
 
   constructor({
     host = document.body,
@@ -54,12 +46,15 @@ export class MilkdropOverlay {
     toolbar.className = 'milkdrop-overlay__toolbar';
 
     const transportGroup = document.createElement('div');
-    transportGroup.className = 'milkdrop-overlay__toolbar-group milkdrop-overlay__toolbar-group--transport';
+    transportGroup.className =
+      'milkdrop-overlay__toolbar-group milkdrop-overlay__toolbar-group--transport';
     const prevBtn = document.createElement('button');
-    prevBtn.type = 'button'; prevBtn.textContent = 'Prev';
+    prevBtn.type = 'button';
+    prevBtn.textContent = 'Prev';
     prevBtn.addEventListener('click', () => callbacks.onPreviousPreset());
     const nextBtn = document.createElement('button');
-    nextBtn.type = 'button'; nextBtn.textContent = 'Next';
+    nextBtn.type = 'button';
+    nextBtn.textContent = 'Next';
     nextBtn.addEventListener('click', () => callbacks.onNextPreset());
     transportGroup.append(prevBtn, nextBtn);
 
@@ -91,8 +86,10 @@ export class MilkdropOverlay {
 
     this.blendSlider = document.createElement('input');
     this.blendSlider.type = 'range';
-    this.blendSlider.min = '0'; this.blendSlider.max = '8';
-    this.blendSlider.step = '0.25'; this.blendSlider.value = '2.5';
+    this.blendSlider.min = '0';
+    this.blendSlider.max = '8';
+    this.blendSlider.step = '0.25';
+    this.blendSlider.value = '2.5';
     this.blendSlider.addEventListener('input', () => {
       const v = Number.parseFloat(this.blendSlider.value);
       this.blendValue.textContent = `${v.toFixed(2)}s`;
@@ -117,7 +114,12 @@ export class MilkdropOverlay {
     this.statusLabel.className = 'milkdrop-overlay__status';
     this.statusLabel.hidden = true;
 
-    this.root.append(this.presetOsd, toolbar, this.currentPresetLabel, this.statusLabel);
+    this.root.append(
+      this.presetOsd,
+      toolbar,
+      this.currentPresetLabel,
+      this.statusLabel,
+    );
     host.appendChild(this.root);
 
     // Read URL state on startup
@@ -140,9 +142,18 @@ export class MilkdropOverlay {
           setTimeout(() => callbacks.onBlendDurationChange(blend), 0);
         }
       }
-      if (paramTransition !== null && (paramTransition === 'blend' || paramTransition === 'cut')) {
+      if (
+        paramTransition !== null &&
+        (paramTransition === 'blend' || paramTransition === 'cut')
+      ) {
         this.transitionModeSelect.value = paramTransition;
-        setTimeout(() => callbacks.onTransitionModeChange(paramTransition as 'blend' | 'cut'), 0);
+        setTimeout(
+          () =>
+            callbacks.onTransitionModeChange(
+              paramTransition as 'blend' | 'cut',
+            ),
+          0,
+        );
       }
     } catch (_err) {}
   }
@@ -151,7 +162,10 @@ export class MilkdropOverlay {
     try {
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.set('autoplay', String(this.autoplayToggle.checked));
-      searchParams.set('blend', Number.parseFloat(this.blendSlider.value).toFixed(2));
+      searchParams.set(
+        'blend',
+        Number.parseFloat(this.blendSlider.value).toFixed(2),
+      );
       searchParams.set('transition', this.transitionModeSelect.value);
       const newRelativePathQuery = `${window.location.pathname}?${searchParams.toString()}${window.location.hash}`;
       window.history.replaceState(null, '', newRelativePathQuery);
@@ -163,7 +177,8 @@ export class MilkdropOverlay {
     this.presetOsdMeta.textContent = meta;
     this.osdBackendEl.textContent = backend;
     this.presetOsd.hidden = false;
-    if (this.osdHideTimeoutId !== null) window.clearTimeout(this.osdHideTimeoutId);
+    if (this.osdHideTimeoutId !== null)
+      window.clearTimeout(this.osdHideTimeoutId);
     this.osdHideTimeoutId = window.setTimeout(() => {
       this.presetOsd.hidden = true;
     }, OSD_HIDE_TIMEOUT_MS);
@@ -182,19 +197,21 @@ export class MilkdropOverlay {
     this.autoplayToggle.checked = enabled;
     this.updateUrlParams();
   }
-  
+
   setBlendDuration(value: number) {
     this.blendSlider.value = String(value);
     this.blendValue.textContent = `${value.toFixed(2)}s`;
     this.updateUrlParams();
   }
-  
+
   setTransitionMode(mode: 'blend' | 'cut') {
     this.transitionModeSelect.value = mode;
     this.updateUrlParams();
   }
 
-  isOpen() { return true; }
+  isOpen() {
+    return true;
+  }
   toggleOpen(_force?: boolean) {}
   toggleShortcutHud(_open?: boolean) {}
   openTab(_tab: string) {}
@@ -204,10 +221,11 @@ export class MilkdropOverlay {
   setSessionState(..._args: unknown[]) {}
   setQualityPresets(..._args: unknown[]) {}
   setInspectorState(..._args: unknown[]) {}
-  shouldRenderInspectorMetrics() { return false; }
+  shouldRenderInspectorMetrics() {
+    return false;
+  }
 
   dispose() {
-    this.disposed = true;
     this.root.remove();
   }
 }

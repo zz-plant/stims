@@ -45,15 +45,14 @@ import {
   readSessionRouteState,
   stringifyPlainSearch,
 } from './url-state.ts';
+import { createLazyFactory } from './use-lazy-factory.ts';
 import {
   buildLaunchIntent,
   mapRuntimeCatalogEntry,
 } from './workspace-helpers.ts';
-
 import { useWorkspaceReadiness } from './workspace-readiness.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
-import { createLazyFactory } from './use-lazy-factory.ts';
 
 const log = createLogger('WorkspaceHooks');
 const PREVIEW_SETTLE_MS = 750;

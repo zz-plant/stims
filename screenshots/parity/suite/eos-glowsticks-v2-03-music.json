@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "presetId": "eos-glowsticks-v2-03-music",
+  "title": "Eo.S. - Glowsticks v2 03 Music",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260518155613",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-glowsticks-v2-03-music.png",
+  "requiredBackend": "webgl",
+  "actualBackend": "webgpu",
+  "sourceFamily": "bundled",
+  "strata": [
+    "bundled",
+    "cream-of-the-crop"
+  ],
+  "toleranceProfile": "loose",
+  "threshold": 32,
+  "failThreshold": 0.05,
+  "metrics": {
+    "mismatchRatio": null
+  },
+  "status": "backend-mismatch",
+  "error": "Certified preset requires WEBGL. Latest Stims capture used WEBGPU."
+}

@@ -64,7 +64,7 @@ describe('Workspace shell first-run and recovery regression', () => {
       'utf8',
     );
 
-    expect(appSource).toContain('Choose something new');
+    expect(appSource).toContain('Change preset');
     expect(appSource).toContain(
       'Start with the featured pick or open the full list.',
     );

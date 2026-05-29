@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "stims-capture--milkdrop--20260529231539",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": null,
+      "title": null,
+      "createdAt": "2026-05-29T23:15:39.684Z",
+      "files": {
+        "image": "milkdrop-1780096538829.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    }
+  ]
+}

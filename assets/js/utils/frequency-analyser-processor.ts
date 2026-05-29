@@ -125,10 +125,7 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
             this.outputReal[i] * this.outputReal[i] +
               this.outputImag[i] * this.outputImag[i],
           ) / this.frequencyBinCount;
-        freqBuf[i] = Math.min(
-          255,
-          Math.max(0, Math.round(magnitude * 255)),
-        );
+        freqBuf[i] = Math.min(255, Math.max(0, Math.round(magnitude * 255)));
       }
       for (let i = 0; i < this.fftSize; i += 1) {
         const sample = this.buffer[i];

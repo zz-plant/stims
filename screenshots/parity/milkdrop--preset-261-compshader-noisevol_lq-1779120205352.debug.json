@@ -1644,14 +1644,9 @@
             "kind": "direct-feedback-program",
             "stage": "comp",
             "entryTarget": "ret",
-            "supportedBackends": [
-              "webgl",
-              "webgpu"
-            ],
+            "supportedBackends": ["webgl", "webgpu"],
             "requiresControlFallback": true,
-            "statementTargets": [
-              "ret"
-            ]
+            "statementTargets": ["ret"]
           }
         }
       },

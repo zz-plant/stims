@@ -894,7 +894,7 @@ export function createMilkdropExperience({
     emitChange,
     clearDeferredCatalogSync,
     disposePostprocessingPipeline,
-  // biome-ignore lint/suspicious/noExplicitAny: builder pattern
+    // biome-ignore lint/suspicious/noExplicitAny: builder pattern
   } as any);
 }
 

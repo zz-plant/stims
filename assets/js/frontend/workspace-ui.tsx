@@ -7,11 +7,12 @@ import {
   useState,
 } from 'react';
 import type { QualityPreset } from '../core/settings-panel.ts';
+import { PRESET_PREVIEW_REQUEST_LIMIT } from '../milkdrop/preset-preview.ts';
+import { PresetArtwork } from './PresetArtwork.tsx';
 import {
-  type MilkdropPresetRenderPreview,
-  PRESET_PREVIEW_REQUEST_LIMIT,
-} from '../milkdrop/preset-preview.ts';
-import type { PresetCatalogEntry } from './contracts.ts';
+  PresetShelfSection,
+  SkeletonPresetCard,
+} from './PresetShelfSection.tsx';
 import { StimsControlDock } from './StimsControlDock.tsx';
 import {
   StimsCornerBrand,
@@ -20,6 +21,7 @@ import {
   StimsRailActions,
   StimsStageFrame,
 } from './StimsStageFrame.tsx';
+import { UiIcon } from './UiIcon.tsx';
 import { useUI, useWorkspace } from './workspace-context.tsx';
 import {
   buildAppliedFilterSummary,
@@ -34,16 +36,13 @@ import {
   prettifyCollectionTag,
   TOOL_TABS,
 } from './workspace-helpers.ts';
-import { PresetShelfSection, SkeletonPresetCard } from './PresetShelfSection.tsx';
-import { PresetArtwork } from './PresetArtwork.tsx';
-import { UiIcon } from './UiIcon.tsx';
 
-export { UiIcon } from './UiIcon.tsx';
 export { PresetArtwork } from './PresetArtwork.tsx';
 export {
   PresetShelfSection,
   SkeletonPresetCard,
 } from './PresetShelfSection.tsx';
+export { UiIcon } from './UiIcon.tsx';
 export { WorkspaceToast } from './WorkspaceToast.tsx';
 
 function describeQuickLook(preset: QualityPreset): string {

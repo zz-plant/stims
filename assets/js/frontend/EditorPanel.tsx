@@ -10,7 +10,11 @@ export function EditorPanel() {
     import('../milkdrop/overlay/editor-panel.ts').then(({ EditorPanel }) => {
       const panel = new EditorPanel({
         onEditorSourceChange: (source) => {
-          window.dispatchEvent(new CustomEvent('stims:editor:source-change', { detail: { source } }));
+          window.dispatchEvent(
+            new CustomEvent('stims:editor:source-change', {
+              detail: { source },
+            }),
+          );
         },
         onRevertToActive: () => {
           window.dispatchEvent(new CustomEvent('stims:editor:revert'));

@@ -39,9 +39,12 @@ function catmullRomInterpolatePositions(
 
   // First segment (i=0): p0 = p1 (clamped)
   let baseI = 0;
-  let p0x = positions[0], p0y = positions[1];
-  let p1x = p0x, p1y = p0y;
-  let p2x = positions[3], p2y = positions[4];
+  let p0x = positions[0],
+    p0y = positions[1];
+  let p1x = p0x,
+    p1y = p0y;
+  let p2x = positions[3],
+    p2y = positions[4];
   let p3x = positions[Math.min(lastIdx, 2) * 3];
   let p3y = positions[Math.min(lastIdx, 2) * 3 + 1];
   let z = positions[2];
@@ -49,16 +52,21 @@ function catmullRomInterpolatePositions(
   for (let i = 0; i < lastIdx; i++) {
     if (i > 0) {
       baseI = i * 3;
-      p0x = p1x; p0y = p1y;
-      p1x = p2x; p1y = p2y;
+      p0x = p1x;
+      p0y = p1y;
+      p1x = p2x;
+      p1y = p2y;
       if (i + 2 <= lastIdx) {
         const nextI = (i + 1) * 3;
-        p2x = positions[nextI]; p2y = positions[nextI + 1];
+        p2x = positions[nextI];
+        p2y = positions[nextI + 1];
         p3x = positions[Math.min(lastIdx, i + 2) * 3];
         p3y = positions[Math.min(lastIdx, i + 2) * 3 + 1];
       } else {
-        p2x = positions[lastIdx * 3]; p2y = positions[lastIdx * 3 + 1];
-        p3x = p2x; p3y = p2y;
+        p2x = positions[lastIdx * 3];
+        p2y = positions[lastIdx * 3 + 1];
+        p3x = p2x;
+        p3y = p2y;
       }
       z = positions[baseI + 2];
     }
@@ -67,8 +75,18 @@ function catmullRomInterpolatePositions(
       const t = j / subdiv;
       const t2 = t * t;
       const t3 = t2 * t;
-      out[writeIdx++] = 0.5 * ((2 * p1x) + (-p0x + p2x) * t + (2 * p0x - 5 * p1x + 4 * p2x - p3x) * t2 + (-p0x + 3 * p1x - 3 * p2x + p3x) * t3);
-      out[writeIdx++] = 0.5 * ((2 * p1y) + (-p0y + p2y) * t + (2 * p0y - 5 * p1y + 4 * p2y - p3y) * t2 + (-p0y + 3 * p1y - 3 * p2y + p3y) * t3);
+      out[writeIdx++] =
+        0.5 *
+        (2 * p1x +
+          (-p0x + p2x) * t +
+          (2 * p0x - 5 * p1x + 4 * p2x - p3x) * t2 +
+          (-p0x + 3 * p1x - 3 * p2x + p3x) * t3);
+      out[writeIdx++] =
+        0.5 *
+        (2 * p1y +
+          (-p0y + p2y) * t +
+          (2 * p0y - 5 * p1y + 4 * p2y - p3y) * t2 +
+          (-p0y + 3 * p1y - 3 * p2y + p3y) * t3);
       out[writeIdx++] = z;
     }
   }

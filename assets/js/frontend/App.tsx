@@ -14,12 +14,12 @@ import {
   subscribeToFullscreenChange,
   toggleElementFullscreen,
 } from './fullscreen.ts';
-import { connectWakeLock } from './wake-lock.ts';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { OnboardingFlow, useOnboarding } from './OnboardingFlow.tsx';
 import { SplitViewBrowse } from './SplitViewBrowse.tsx';
+import { connectWakeLock } from './wake-lock.ts';
 import { useWorkspace, WorkspaceProvider } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import {

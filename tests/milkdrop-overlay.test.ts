@@ -15,7 +15,9 @@ function createOverlay() {
 }
 
 describe('milkdrop overlay OSD', () => {
-  afterEach(() => { document.body.innerHTML = ''; });
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
 
   test('showPresetOsd displays title, meta, and backend', () => {
     const overlay = createOverlay();
@@ -35,7 +37,9 @@ describe('milkdrop overlay OSD', () => {
 });
 
 describe('milkdrop overlay status', () => {
-  afterEach(() => { document.body.innerHTML = ''; });
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
 
   test('setStatus shows and hides status message', () => {
     const overlay = createOverlay();
@@ -48,12 +52,16 @@ describe('milkdrop overlay status', () => {
 });
 
 describe('milkdrop overlay controls', () => {
-  afterEach(() => { document.body.innerHTML = ''; });
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
 
   test('setAutoplay checks toggle', () => {
     const overlay = createOverlay();
     overlay.setAutoplay(true);
-    const cb = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    const cb = document.querySelector(
+      'input[type="checkbox"]',
+    ) as HTMLInputElement;
     expect(cb?.checked).toBe(true);
     overlay.dispose();
   });
@@ -69,7 +77,9 @@ describe('milkdrop overlay controls', () => {
   test('setBlendDuration updates slider and label', () => {
     const overlay = createOverlay();
     overlay.setBlendDuration(1.5);
-    const slider = document.querySelector('input[type="range"]') as HTMLInputElement;
+    const slider = document.querySelector(
+      'input[type="range"]',
+    ) as HTMLInputElement;
     expect(slider?.value).toBe('1.5');
     expect(document.body.textContent).toContain('1.50s');
     overlay.dispose();
@@ -77,16 +87,24 @@ describe('milkdrop overlay controls', () => {
 });
 
 describe('milkdrop overlay transport', () => {
-  afterEach(() => { document.body.innerHTML = ''; });
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
 
   test('prev button fires callback', () => {
     const onPrev = mock();
     const overlay = new MilkdropOverlay({
       host: document.body,
-      callbacks: { onToggleAutoplay: mock(), onTransitionModeChange: mock(), onNextPreset: mock(), onPreviousPreset: onPrev, onBlendDurationChange: mock() },
+      callbacks: {
+        onToggleAutoplay: mock(),
+        onTransitionModeChange: mock(),
+        onNextPreset: mock(),
+        onPreviousPreset: onPrev,
+        onBlendDurationChange: mock(),
+      },
     });
     const buttons = document.querySelectorAll('button');
-    const prevBtn = Array.from(buttons).find(b => b.textContent === 'Prev');
+    const prevBtn = Array.from(buttons).find((b) => b.textContent === 'Prev');
     prevBtn?.click();
     expect(onPrev).toHaveBeenCalled();
     overlay.dispose();
@@ -96,10 +114,16 @@ describe('milkdrop overlay transport', () => {
     const onNext = mock();
     const overlay = new MilkdropOverlay({
       host: document.body,
-      callbacks: { onToggleAutoplay: mock(), onTransitionModeChange: mock(), onNextPreset: onNext, onPreviousPreset: mock(), onBlendDurationChange: mock() },
+      callbacks: {
+        onToggleAutoplay: mock(),
+        onTransitionModeChange: mock(),
+        onNextPreset: onNext,
+        onPreviousPreset: mock(),
+        onBlendDurationChange: mock(),
+      },
     });
     const buttons = document.querySelectorAll('button');
-    const nextBtn = Array.from(buttons).find(b => b.textContent === 'Next');
+    const nextBtn = Array.from(buttons).find((b) => b.textContent === 'Next');
     nextBtn?.click();
     expect(onNext).toHaveBeenCalled();
     overlay.dispose();
@@ -107,7 +131,9 @@ describe('milkdrop overlay transport', () => {
 });
 
 describe('milkdrop overlay dispose', () => {
-  afterEach(() => { document.body.innerHTML = ''; });
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
 
   test('dispose removes root element', () => {
     const overlay = createOverlay();
