@@ -639,19 +639,27 @@ export function createMilkdropExperience({
     document.querySelectorAll('.milkdrop-overlay').forEach((el) => el.remove());
     overlay = new MilkdropOverlay({
       host: container ?? document.body,
-      callbacks: interactionPresenter.overlayCallbacks,
-      showToggle: showOverlayToggle,
+      callbacks: {
+        onToggleAutoplay: (enabled) => {
+          autoplay = enabled;
+          preferences.setAutoplay(enabled);
+        },
+        onTransitionModeChange: (mode) => {
+          transitionMode = mode;
+          preferences.setTransitionMode(mode);
+        },
+        onNextPreset: () => navigation.selectAdjacentPreset(1),
+        onPreviousPreset: () => navigation.selectAdjacentPreset(-1),
+        onBlendDurationChange: (value) => {
+          blendDuration = value;
+          preferences.setBlendDuration(value);
+        },
+      },
     });
 
     overlay.setAutoplay(autoplay);
     overlay.setBlendDuration(blendDuration);
     overlay.setTransitionMode(transitionMode);
-    overlay.setQualityPresets({
-      presets: qualityControl.presets,
-      activePresetId: quality.activeQuality.id,
-      storageKey: qualityControl.storageKey,
-    });
-    overlay.setSessionState(session.getState());
   }
   const fallbackNotice = !previewMode
     ? preferences.consumeFallbackNotice()

@@ -5,170 +5,114 @@ function createOverlay() {
   return new MilkdropOverlay({
     host: document.body,
     callbacks: {
-      onSelectPreset: mock(),
       onToggleAutoplay: mock(),
       onTransitionModeChange: mock(),
-      onGoBackPreset: mock(),
       onNextPreset: mock(),
       onPreviousPreset: mock(),
-      onRandomize: mock(),
       onBlendDurationChange: mock(),
-      onImportFiles: mock(),
-      onExport: mock(),
-      onDuplicatePreset: mock(),
-      onDeletePreset: mock(),
-      onEditorSourceChange: mock(),
-      onRevertToActive: mock(),
-      onInspectorFieldChange: mock(),
     },
   });
 }
 
-describe('milkdrop overlay lifecycle', () => {
-  afterEach(() => {
-    document.body.innerHTML = '';
-  });
-
-  test('toggleOpen and isOpen work correctly', () => {
-    const overlay = createOverlay();
-    expect(overlay.isOpen()).toBe(false);
-
-    overlay.toggleOpen(true);
-    expect(overlay.isOpen()).toBe(true);
-
-    overlay.toggleOpen(false);
-    expect(overlay.isOpen()).toBe(false);
-
-    overlay.toggleOpen();
-    expect(overlay.isOpen()).toBe(true);
-
-    overlay.toggleOpen();
-    expect(overlay.isOpen()).toBe(false);
-
-    overlay.dispose();
-  });
-
-  test('openTab switches active tab and opens overlay', () => {
-    const overlay = createOverlay();
-    expect(overlay.isOpen()).toBe(false);
-    expect(overlay.shouldRenderInspectorMetrics()).toBe(false);
-
-    overlay.openTab('inspector');
-    expect(overlay.shouldRenderInspectorMetrics()).toBe(true);
-    expect(overlay.isOpen()).toBe(true);
-
-    overlay.dispose();
-  });
-
-  test('editor tab does not trigger inspector metrics', () => {
-    const overlay = createOverlay();
-    overlay.openTab('editor');
-    expect(overlay.shouldRenderInspectorMetrics()).toBe(false);
-    expect(overlay.isOpen()).toBe(true);
-
-    overlay.dispose();
-  });
-});
-
 describe('milkdrop overlay OSD', () => {
-  afterEach(() => {
-    document.body.innerHTML = '';
-  });
+  afterEach(() => { document.body.innerHTML = ''; });
 
-  test('showPresetOsd displays title and meta', () => {
+  test('showPresetOsd displays title, meta, and backend', () => {
     const overlay = createOverlay();
     overlay.showPresetOsd('Test Preset', 'By Author', 'webgpu');
     expect(document.body.textContent).toContain('Test Preset');
     expect(document.body.textContent).toContain('By Author');
-
+    expect(document.body.textContent).toContain('webgpu');
     overlay.dispose();
   });
 
-  test('setCurrentPresetTitle updates header label', () => {
+  test('setCurrentPresetTitle updates header', () => {
     const overlay = createOverlay();
     overlay.setCurrentPresetTitle('Active Preset');
     expect(document.body.textContent).toContain('Active Preset');
-
     overlay.dispose();
   });
+});
+
+describe('milkdrop overlay status', () => {
+  afterEach(() => { document.body.innerHTML = ''; });
 
   test('setStatus shows and hides status message', () => {
     const overlay = createOverlay();
     overlay.setStatus('Something happened');
-
-    const statusEl = document.querySelector('.milkdrop-overlay__status');
-    expect(statusEl?.textContent).toBe('Something happened');
-    expect(statusEl?.getAttribute('hidden')).toBeNull();
-
+    expect(document.body.textContent).toContain('Something happened');
     overlay.setStatus('');
-    expect(statusEl?.getAttribute('hidden')).not.toBeNull();
-
+    expect(document.body.textContent).not.toContain('Something happened');
     overlay.dispose();
   });
 });
 
-describe('milkdrop overlay inspector metrics', () => {
-  afterEach(() => {
-    document.body.innerHTML = '';
-  });
+describe('milkdrop overlay controls', () => {
+  afterEach(() => { document.body.innerHTML = ''; });
 
-  test('shouldRenderInspectorMetrics reflects active tab', () => {
+  test('setAutoplay checks toggle', () => {
     const overlay = createOverlay();
-    expect(overlay.shouldRenderInspectorMetrics()).toBe(false);
-
-    overlay.openTab('inspector');
-    expect(overlay.shouldRenderInspectorMetrics()).toBe(true);
-
-    overlay.openTab('editor');
-    expect(overlay.shouldRenderInspectorMetrics()).toBe(false);
-
+    overlay.setAutoplay(true);
+    const cb = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(cb?.checked).toBe(true);
     overlay.dispose();
   });
 
-  test('setInspectorState updates inspector panel content', () => {
+  test('setTransitionMode selects correct option', () => {
     const overlay = createOverlay();
-    overlay.openTab('inspector');
+    overlay.setTransitionMode('cut');
+    const select = document.querySelector('select') as HTMLSelectElement;
+    expect(select?.value).toBe('cut');
+    overlay.dispose();
+  });
 
-    const section = document.querySelector('.milkdrop-overlay__inspector-selection');
-    expect(section).not.toBeNull();
-
-    overlay.setInspectorState({});
-
+  test('setBlendDuration updates slider and label', () => {
+    const overlay = createOverlay();
+    overlay.setBlendDuration(1.5);
+    const slider = document.querySelector('input[type="range"]') as HTMLInputElement;
+    expect(slider?.value).toBe('1.5');
+    expect(document.body.textContent).toContain('1.50s');
     overlay.dispose();
   });
 });
 
-describe('milkdrop overlay compact toggle', () => {
-  afterEach(() => {
-    document.body.innerHTML = '';
-  });
+describe('milkdrop overlay transport', () => {
+  afterEach(() => { document.body.innerHTML = ''; });
 
-  test('can omit the floating controls toggle when the shell owns tool entry', () => {
+  test('prev button fires callback', () => {
+    const onPrev = mock();
     const overlay = new MilkdropOverlay({
       host: document.body,
-      showToggle: false,
-      callbacks: {
-        onSelectPreset: mock(),
-        onToggleAutoplay: mock(),
-        onTransitionModeChange: mock(),
-        onGoBackPreset: mock(),
-        onNextPreset: mock(),
-        onPreviousPreset: mock(),
-        onRandomize: mock(),
-        onBlendDurationChange: mock(),
-        onImportFiles: mock(),
-        onExport: mock(),
-        onDuplicatePreset: mock(),
-        onDeletePreset: mock(),
-        onEditorSourceChange: mock(),
-        onRevertToActive: mock(),
-        onInspectorFieldChange: mock(),
-      },
+      callbacks: { onToggleAutoplay: mock(), onTransitionModeChange: mock(), onNextPreset: mock(), onPreviousPreset: onPrev, onBlendDurationChange: mock() },
     });
-
-    expect(document.querySelector('.milkdrop-overlay__toggle')).toBeNull();
-    expect(document.querySelector('.milkdrop-overlay__panel')).not.toBeNull();
-
+    const buttons = document.querySelectorAll('button');
+    const prevBtn = Array.from(buttons).find(b => b.textContent === 'Prev');
+    prevBtn?.click();
+    expect(onPrev).toHaveBeenCalled();
     overlay.dispose();
+  });
+
+  test('next button fires callback', () => {
+    const onNext = mock();
+    const overlay = new MilkdropOverlay({
+      host: document.body,
+      callbacks: { onToggleAutoplay: mock(), onTransitionModeChange: mock(), onNextPreset: onNext, onPreviousPreset: mock(), onBlendDurationChange: mock() },
+    });
+    const buttons = document.querySelectorAll('button');
+    const nextBtn = Array.from(buttons).find(b => b.textContent === 'Next');
+    nextBtn?.click();
+    expect(onNext).toHaveBeenCalled();
+    overlay.dispose();
+  });
+});
+
+describe('milkdrop overlay dispose', () => {
+  afterEach(() => { document.body.innerHTML = ''; });
+
+  test('dispose removes root element', () => {
+    const overlay = createOverlay();
+    expect(document.querySelector('.milkdrop-overlay')).not.toBeNull();
+    overlay.dispose();
+    expect(document.querySelector('.milkdrop-overlay')).toBeNull();
   });
 });

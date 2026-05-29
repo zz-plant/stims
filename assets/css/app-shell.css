@@ -620,7 +620,6 @@ body[data-page="workspace"] {
   border: 1px solid var(--stims-white-12);
   border-radius: 34px;
   background:
-    linear-gradient(135deg, var(--stims-white-04), transparent 50%),
     linear-gradient(180deg, rgba(8, 12, 20, 0.9), rgba(5, 8, 15, 0.82)),
     radial-gradient(
       circle at top right,
@@ -885,8 +884,13 @@ body[data-page="workspace"] {
   border: 1px solid var(--stims-white-12);
   border-radius: 24px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.03), transparent 46%),
-    linear-gradient(180deg, var(--stims-white-06), rgba(255, 255, 255, 0.022)),
+    linear-gradient(
+      152deg,
+      rgba(255, 255, 255, 0.03),
+      transparent 30%,
+      var(--stims-white-04) 52%,
+      rgba(255, 255, 255, 0.018) 100%
+    ),
     radial-gradient(
       circle at top right,
       rgba(244, 122, 84, 0.14),

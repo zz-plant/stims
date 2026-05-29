@@ -62,3 +62,9 @@ const appReady = new Promise<void>((resolve) => {
 (
   globalThis as typeof globalThis & { __stimsAppReady?: Promise<void> }
 ).__stimsAppReady = appReady;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js');
+  });
+}

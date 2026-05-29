@@ -1,7 +1,7 @@
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
-import { PresetArtwork, PresetShelfSection } from './workspace-ui.tsx';
+import { PresetArtwork, PresetShelfSection, UiIcon } from './workspace-ui.tsx';
 
 function buildJumpBackEntries(
   favoritePresets: PresetCatalogEntry[],
@@ -111,6 +111,18 @@ export function NewHomePage() {
               <span />
               <span />
             </div>
+            <a
+              href="https://github.com/zz-plant/stims"
+              className="cta-button ghost"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <UiIcon
+                name="github"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              GitHub
+            </a>
           </div>
         </div>
       </div>

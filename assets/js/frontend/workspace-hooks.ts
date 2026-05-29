@@ -53,6 +53,7 @@ import {
 import { useWorkspaceReadiness } from './workspace-readiness.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
+import { createLazyFactory } from './use-lazy-factory.ts';
 
 const log = createLogger('WorkspaceHooks');
 const PREVIEW_SETTLE_MS = 750;
@@ -198,36 +199,32 @@ export function useWorkspaceSessionState({
     }
   });
 
-  const ensureEngineAdapter = useEffectEvent(async () => {
-    if (engineRef.current) {
-      return engineRef.current;
-    }
-
-    if (!engineAdapterPromiseRef.current) {
-      engineAdapterPromiseRef.current = import(
-        './engine/milkdrop-engine-adapter.ts'
-      )
-        .then(({ createMilkdropEngineAdapter }) => {
-          const adapter = createMilkdropEngineAdapter();
-          if (sessionDisposedRef.current) {
-            adapter.dispose();
-            throw new Error('Visualizer session has already been disposed.');
-          }
-          engineRef.current = adapter;
-          engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
-            setEngineSnapshot(snapshot);
-          });
-          setEngineAdapterReady(true);
-          return adapter;
-        })
-        .catch((error) => {
-          engineAdapterPromiseRef.current = null;
-          throw error;
-        });
-    }
-
-    return engineAdapterPromiseRef.current;
-  });
+  const ensureEngineAdapter = useEffectEvent(
+    createLazyFactory({
+      name: 'EngineAdapter',
+      factory: () =>
+        import('./engine/milkdrop-engine-adapter.ts').then(
+          ({ createMilkdropEngineAdapter }) => {
+            const adapter = createMilkdropEngineAdapter();
+            engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
+              setEngineSnapshot(snapshot);
+            });
+            setEngineAdapterReady(true);
+            return adapter;
+          },
+        ),
+      getRef: () => engineRef.current,
+      setRef: (adapter) => {
+        engineRef.current = adapter;
+      },
+      getPromiseRef: () => engineAdapterPromiseRef.current,
+      setPromiseRef: (p) => {
+        engineAdapterPromiseRef.current = p;
+      },
+      cleanup: (adapter) => adapter.dispose(),
+      isDisposed: () => sessionDisposedRef.current,
+    }),
+  );
 
   const ensurePresetPreviewService = useEffectEvent(async () => {
     if (previewServiceRef.current) {

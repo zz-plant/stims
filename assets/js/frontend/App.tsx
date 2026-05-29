@@ -14,6 +14,7 @@ import {
   subscribeToFullscreenChange,
   toggleElementFullscreen,
 } from './fullscreen.ts';
+import { connectWakeLock } from './wake-lock.ts';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
@@ -59,9 +60,7 @@ class StimsErrorBoundary extends Component<
           }}
         >
           <div>
-            <h1 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>
-              Error
-            </h1>
+            <h1 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Error</h1>
             <p style={{ opacity: 0.6, fontSize: '0.9rem', margin: 0 }}>
               Reload to retry.
             </p>
@@ -254,6 +253,14 @@ function StimsWorkspaceAppShell() {
     handleFullscreenChange();
     return subscribeToFullscreenChange(handleFullscreenChange, document);
   }, []);
+
+  useEffect(() => {
+    return connectWakeLock(() => {
+      return (
+        isFullscreen || (liveMode && (w.engineSnapshot?.audioActive ?? false))
+      );
+    });
+  }, [isFullscreen, liveMode, w.engineSnapshot?.audioActive]);
 
   useEffect(() => {
     let title = 'Stims';
