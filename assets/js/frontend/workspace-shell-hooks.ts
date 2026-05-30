@@ -349,6 +349,24 @@ export function useWorkspaceShellOrchestration({
     }
   };
 
+  const handlePlayPreset = async (presetId: string) => {
+    try {
+      setStatusMessage(null);
+      const nextRouteState = {
+        ...routeState,
+        audioSource: 'demo' as const,
+        panel: null,
+        presetId,
+      };
+      commitRoute(nextRouteState);
+      await startAudioSource({ source: 'demo', launchState: nextRouteState });
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : 'Audio start failed.',
+      );
+    }
+  };
+
   const handleAudioStart = async (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
   ) => {
@@ -444,6 +462,7 @@ export function useWorkspaceShellOrchestration({
     handleBrowseRecovery,
     handleFeaturedPresetSelection,
     handleImport,
+    handlePlayPreset,
     handlePresetSelection,
     handleShowCurrentLink,
     handleAudioFile,

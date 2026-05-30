@@ -140,7 +140,7 @@ export function NewHomePage() {
         <button
           type="button"
           className="stims-shell__launch-recommendation"
-          onClick={() => engine.handlePresetSelection(featuredPreset.id)}
+          onClick={() => engine.handlePlayPreset(featuredPreset.id)}
         >
           <PresetArtwork entry={featuredPreset} compact />
           <div className="stims-shell__launch-recommendation-copy">
@@ -194,7 +194,7 @@ export function NewHomePage() {
           entries={buildJumpBackEntries(favoritePresets, recentPresets)}
           summary="Saved picks and recent stops."
           title="Jump back in"
-          onSelect={engine.handlePresetSelection}
+          onSelect={engine.handlePlayPreset}
           presetPreviews={presetPreviews}
         />
       ) : null}
@@ -211,7 +211,7 @@ export function NewHomePage() {
             label: `See all ${catalog.length} \u2192`,
             onClick: () => ui.updatePanel('browse'),
           }}
-          onSelect={engine.handlePresetSelection}
+          onSelect={engine.handlePlayPreset}
           presetPreviews={presetPreviews}
         />
       ) : null}

@@ -34,6 +34,7 @@ export interface EngineContextValue {
   }) => Promise<void>;
   toggleFavoritePreset: (presetId: string, favorite: boolean) => Promise<void>;
   handlePresetSelection: (presetId: string) => void;
+  handlePlayPreset: (presetId: string) => Promise<void>;
   handleShufflePreset: () => void;
   handleAudioStart: (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
