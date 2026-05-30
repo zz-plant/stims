@@ -440,45 +440,63 @@ let cachedDemoUsers = 0;
 function createProceduralDemoAudio() {
   const context = new AudioContext();
 
-  const carrier = context.createOscillator();
-  carrier.type = 'triangle';
-  carrier.frequency.value = 172;
-
-  const harmonic = context.createOscillator();
-  harmonic.type = 'sine';
-  harmonic.frequency.value = 0.32;
-
-  const harmonicGain = context.createGain();
-  harmonicGain.gain.value = 110;
-  harmonic.connect(harmonicGain);
-  harmonicGain.connect(carrier.frequency);
-
-  const wobble = context.createOscillator();
-  wobble.type = 'sine';
-  wobble.frequency.value = 2.25;
-
-  const wobbleGain = context.createGain();
-  wobbleGain.gain.value = 0.12;
-
   const mainGain = context.createGain();
-  mainGain.gain.value = 0.14;
-
-  wobble.connect(wobbleGain);
-  wobbleGain.connect(mainGain.gain);
-
+  mainGain.gain.value = 0.12;
   const destination = context.createMediaStreamDestination();
-
-  carrier.connect(mainGain);
   mainGain.connect(destination);
 
-  carrier.start();
-  harmonic.start();
-  wobble.start();
+  // ── Arpeggiator ──────────────────────────────────────────────
+  // Cycles through notes of a chord at 8th-note tempo.
+  // Each step retunes the oscillator and shapes with a quick envelope.
+  const voice = context.createOscillator();
+  voice.type = 'triangle';
+  voice.frequency.value = 220;
 
+  const voiceEnv = context.createGain();
+  voiceEnv.gain.value = 0;
+  voice.connect(voiceEnv);
+  voiceEnv.connect(mainGain);
+
+  const chord = [220, 277.2, 329.6, 440, 554.4]; // A3, C#4, E4, A4, C#5
+  const bpm = 112;
+  const stepMs = (60 / bpm) * 1000 * 0.5; // 8th notes
+  const attackMs = 8;
+  const releaseMs = 80;
+  let stepIndex = 0;
+
+  const scheduleStep = () => {
+    const now = context.currentTime;
+    const hz = chord[stepIndex % chord.length];
+    voice.frequency.setValueAtTime(hz, now);
+    voiceEnv.gain.cancelScheduledValues(now);
+    voiceEnv.gain.setValueAtTime(0, now);
+    voiceEnv.gain.linearRampToValueAtTime(0.55, now + attackMs / 1000);
+    voiceEnv.gain.linearRampToValueAtTime(0, now + releaseMs / 1000);
+    stepIndex += 1;
+  };
+
+  let intervalId: ReturnType<typeof setInterval> | null = setInterval(
+    scheduleStep,
+    stepMs,
+  );
+
+  // ── Sub drone ────────────────────────────────────────────────
+  // A quiet 55 Hz sine anchors the low end so the visualizer's
+  // bass band always has signal, even between arpeggiator notes.
+  const sub = context.createOscillator();
+  sub.type = 'sine';
+  sub.frequency.value = 55;
+  const subGain = context.createGain();
+  subGain.gain.value = 0.18;
+  sub.connect(subGain);
+  subGain.connect(mainGain);
+
+  voice.start();
+  sub.start();
+
+  // ── Teardown ─────────────────────────────────────────────────
   const resume = async () => {
-    if (context.state === 'running') {
-      return;
-    }
+    if (context.state === 'running') return;
     await context.resume();
   };
 
@@ -486,28 +504,26 @@ function createProceduralDemoAudio() {
   const stop = () => {
     if (stopped) return;
     stopped = true;
-    try {
-      carrier.stop();
-      harmonic.stop();
-      wobble.stop();
-    } catch (error) {
-      console.error('Error stopping procedural demo audio nodes', error);
+    if (intervalId !== null) {
+      clearInterval(intervalId);
+      intervalId = null;
     }
+    try {
+      voice.stop();
+      sub.stop();
+    } catch (_) {}
   };
 
   const disconnect = async () => {
     stop();
-    carrier.disconnect();
-    harmonic.disconnect();
-    wobble.disconnect();
-    harmonicGain.disconnect();
-    wobbleGain.disconnect();
+    voice.disconnect();
+    voiceEnv.disconnect();
+    sub.disconnect();
+    subGain.disconnect();
     mainGain.disconnect();
     try {
       await context.close();
-    } catch (error) {
-      console.error('Error closing procedural demo audio context', error);
-    }
+    } catch (_) {}
   };
 
   return { stream: destination.stream, teardown: disconnect, resume };
