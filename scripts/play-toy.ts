@@ -115,7 +115,11 @@ const COMPATIBILITY_RENDERER_ARGS = [
 const WEBGPU_RENDERER_ARGS = [
   '--enable-unsafe-webgpu',
   '--ignore-gpu-blocklist',
-  '--enable-features=Vulkan',
+  '--enable-features=Vulkan,WebGPU,SharedArrayBuffer',
+  '--enable-dawn-features=allow_unsafe_apis',
+  '--disable-dawn-features=disallow_unsafe_apis',
+  '--use-angle=vulkan',
+  '--use-gl=angle',
   '--disable-background-timer-throttling',
   '--disable-renderer-backgrounding',
   '--disable-backgrounding-occluded-windows',
@@ -1079,11 +1083,13 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     page.on('console', (msg: ConsoleMessage) => {
       if (msg.type() === 'error') {
+        console.error(`[Browser Console error] ${msg.text()}`);
         consoleErrors.push(msg.text());
       }
     });
 
     page.on('pageerror', (err: Error) => {
+      console.error(`[Browser PageError] ${err.stack || err.message}`);
       consoleErrors.push(err.message);
     });
 
@@ -1581,6 +1587,10 @@ if (import.meta.main) {
     'compatibility',
   ) as PlayToyRendererProfile;
   const catalogMode = getArg('--catalog-mode', 'bundled') as PlayToyCatalogMode;
+  const screenshotSurface = getArg(
+    '--screenshot-surface',
+    'canvas',
+  ) as PlayToyScreenshotSurface;
 
   console.log(`Launching ${slug} on port ${port}...`);
 
@@ -1599,5 +1609,6 @@ if (import.meta.main) {
     vibeMode,
     rendererProfile,
     catalogMode,
+    screenshotSurface,
   }).then((res) => console.log(JSON.stringify(res, null, 2)));
 }

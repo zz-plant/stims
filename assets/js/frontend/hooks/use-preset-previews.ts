@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import type { MilkdropPresetRenderPreview } from '../../milkdrop/preset-preview.ts';
 import type { EngineSnapshot } from '../engine/engine-snapshot.ts';
 import { createLazyFactory } from '../use-lazy-factory.ts';
-import type { MilkdropPresetRenderPreview } from '../../milkdrop/preset-preview.ts';
 
 export function usePresetPreviews({
   stageRef,

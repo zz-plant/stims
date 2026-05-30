@@ -117,16 +117,13 @@ export function useWorkspaceSessionState({
     refreshCatalogActivity,
   } = useCatalogLoading();
 
-  const {
-    presetPreviews,
-    requestPresetPreviews,
-    refreshPresetPreviews,
-  } = usePresetPreviews({
-    stageRef,
-    engineSnapshot,
-    fallbackCatalogReady,
-    isDisposed: () => sessionDisposedRef.current,
-  });
+  const { presetPreviews, requestPresetPreviews, refreshPresetPreviews } =
+    usePresetPreviews({
+      stageRef,
+      engineSnapshot,
+      fallbackCatalogReady,
+      isDisposed: () => sessionDisposedRef.current,
+    });
   const {
     handleYoutubeUrlKeyDown,
     loadRecentYouTubeVideo,

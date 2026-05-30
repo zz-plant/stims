@@ -1,9 +1,5 @@
-import {
-  closePlayToyBrowserSession,
-  createPlayToyBrowserSession,
-  type PlayToyOptions,
-  playToy,
-} from './play-toy.ts';
+import { spawn } from 'node:child_process';
+import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 type CaptureVisualReferenceSuiteOptions = {
@@ -60,10 +56,90 @@ export function buildVisualReferenceCaptureRequests({
       outputDir,
       headless,
       vibeMode,
-      rendererProfile: 'webgpu',
+      rendererProfile:
+        preset.capture.requiredBackend === 'webgpu'
+          ? 'webgpu'
+          : 'compatibility',
       catalogMode: 'certification',
       screenshotSurface: 'page',
     }));
+}
+
+function runPlayToyInChildProcess(
+  request: VisualReferenceCaptureRequest,
+): Promise<PlayToyResult> {
+  return new Promise((resolve, reject) => {
+    const args = [
+      'run',
+      'scripts/play-toy.ts',
+      request.slug,
+      '--preset',
+      request.presetId,
+      '--port',
+      String(request.port),
+      '--duration',
+      String(request.duration),
+      '--width',
+      String(request.viewportWidth),
+      '--height',
+      String(request.viewportHeight),
+      '--output',
+      request.outputDir,
+      '--renderer-profile',
+      request.rendererProfile,
+      '--catalog-mode',
+      request.catalogMode,
+      '--screenshot-surface',
+      request.screenshotSurface,
+    ];
+
+    if (!request.headless) {
+      args.push('--no-headless');
+    }
+    if (!request.vibeMode) {
+      args.push('--no-vibe-mode');
+    }
+    if (request.debugSnapshot) {
+      args.push('--debug-snapshot');
+    }
+
+    const proc = spawn('bun', args, { stdio: ['ignore', 'pipe', 'inherit'] });
+    let stdout = '';
+
+    proc.stdout?.on('data', (data) => {
+      const str = data.toString();
+      stdout += str;
+      process.stdout.write(str);
+    });
+
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`play-toy process exited with code ${code}`));
+        return;
+      }
+
+      try {
+        const jsonStart = stdout.lastIndexOf('{');
+        if (jsonStart === -1) {
+          throw new Error('No JSON output found');
+        }
+        const jsonStr = stdout.substring(jsonStart);
+        const result = JSON.parse(jsonStr);
+        resolve(result);
+      } catch (err) {
+        const errMessage = err instanceof Error ? err.message : String(err);
+        reject(
+          new Error(
+            `Failed to parse play-toy JSON output: ${errMessage}. Raw output length: ${stdout.length}`,
+          ),
+        );
+      }
+    });
+
+    proc.on('error', (err) => {
+      reject(err);
+    });
+  });
 }
 
 export async function captureVisualReferenceSuite(
@@ -71,22 +147,9 @@ export async function captureVisualReferenceSuite(
 ) {
   const requests = buildVisualReferenceCaptureRequests(options);
   const results = [];
-  const browserSession = await createPlayToyBrowserSession({
-    headless: options.headless,
-    rendererProfile: 'webgpu',
-  });
 
-  try {
-    for (const request of requests) {
-      results.push(
-        await playToy({
-          ...request,
-          browserSession,
-        }),
-      );
-    }
-  } finally {
-    await closePlayToyBrowserSession(browserSession);
+  for (const request of requests) {
+    results.push(await runPlayToyInChildProcess(request));
   }
 
   return {
