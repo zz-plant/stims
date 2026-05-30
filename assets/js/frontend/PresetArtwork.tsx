@@ -74,7 +74,7 @@ export function PresetArtwork({
             ? 'Capturing'
             : preview?.status === 'failed'
               ? 'Preview failed'
-              : 'Preview queued'}
+              : ''}
       </span>
     </div>
   );

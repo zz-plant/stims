@@ -42,8 +42,7 @@ export function NewHomePage() {
   const catalogReady = engine.catalogReady;
 
   const hasFavorites = favoritePresets.length > 0;
-  const hasRecent = recentPresets.length > 0;
-  const showJumpBack = hasFavorites || hasRecent;
+  const showJumpBack = hasFavorites;
 
   useEffect(() => {
     if (!catalogReady || catalog.length === 0) return;
