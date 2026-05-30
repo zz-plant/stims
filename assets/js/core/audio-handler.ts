@@ -480,6 +480,61 @@ function createProceduralDemoAudio() {
     stepMs,
   );
 
+  // ── Drums ─────────────────────────────────────────────────────
+  // Kick on beats 1 & 3. Hi-hat on every 8th note.
+  // Pre-built noise buffer for hats (reused per hit).
+  const noiseBuffer = (() => {
+    const len = context.sampleRate * 0.1;
+    const buf = context.createBuffer(1, len, context.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+    return buf;
+  })();
+
+  // Patch the scheduleStep to add drums.
+  const originalSchedule = scheduleStep;
+  const patchedStep = () => {
+    const now = context.currentTime;
+    const beat = stepIndex; // snapshot before arp increments it
+
+    originalSchedule();
+
+    // Kick: sine with fast pitch drop on 1 and 3
+    if (beat % 4 === 0 || beat % 4 === 2) {
+      const kick = context.createOscillator();
+      kick.type = 'sine';
+      kick.frequency.setValueAtTime(120, now);
+      kick.frequency.exponentialRampToValueAtTime(30, now + 0.08);
+      const kickGain = context.createGain();
+      kickGain.gain.setValueAtTime(0.45, now);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      kick.connect(kickGain);
+      kickGain.connect(mainGain);
+      kick.start(now);
+      kick.stop(now + 0.2);
+    }
+
+    // Hi-hat: noise burst, short decay, on every step
+    const hat = context.createBufferSource();
+    hat.buffer = noiseBuffer;
+    const hipass = context.createBiquadFilter();
+    hipass.type = 'highpass';
+    hipass.frequency.value = 8000;
+    const hatGain = context.createGain();
+    hatGain.gain.setValueAtTime(0.1, now);
+    hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    hat.connect(hipass);
+    hipass.connect(hatGain);
+    hatGain.connect(mainGain);
+    hat.start(now);
+    hat.stop(now + 0.08);
+  };
+
+  if (intervalId !== null) {
+    clearInterval(intervalId);
+  }
+  intervalId = setInterval(patchedStep, stepMs);
+
   // ── Sub drone ────────────────────────────────────────────────
   // A quiet 55 Hz sine anchors the low end so the visualizer's
   // bass band always has signal, even between arpeggiator notes.
