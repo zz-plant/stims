@@ -6,7 +6,7 @@
 export type StimState = {
   currentToy: string | null;
   audioActive: boolean;
-  audioSource: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | null;
+  audioSource: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | 'spotify' | null;
   toyLoaded: boolean;
   isAgentMode: boolean;
   vibeMode: boolean;
@@ -27,7 +27,7 @@ export type StimAPI = {
   onToyLoad: (callback: (slug: string) => void) => () => void;
   onAudioStart: (
     callback: (
-      source: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file',
+      source: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | 'spotify',
     ) => void,
   ) => () => void;
   onAudioStop: (callback: () => void) => () => void;
@@ -35,14 +35,14 @@ export type StimAPI = {
   // Utility
   waitForToyLoad: () => Promise<string>;
   waitForAudioActive: () => Promise<
-    'microphone' | 'demo' | 'tab' | 'youtube' | 'file'
+    'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | 'spotify'
   >;
   activateVibeMode: (durationMs?: number) => Promise<void>;
 };
 
 type StimEventMap = {
   'toy:load': { slug: string };
-  'audio:start': { source: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file' };
+  'audio:start': { source: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | 'spotify' };
   'audio:stop': undefined;
 };
 
@@ -207,7 +207,7 @@ function waitForToyLoad(): Promise<string> {
 }
 
 function waitForAudioActive(): Promise<
-  'microphone' | 'demo' | 'tab' | 'youtube' | 'file'
+  'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | 'spotify'
 > {
   if (state.audioActive && state.audioSource) {
     return Promise.resolve(state.audioSource);
@@ -241,7 +241,7 @@ export function setCurrentToy(slug: string | null) {
 
 export function setAudioActive(
   active: boolean,
-  source: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | null = null,
+  source: 'microphone' | 'demo' | 'tab' | 'youtube' | 'file' | 'spotify' | null = null,
 ) {
   state.audioActive = active;
   state.audioSource = source;

@@ -1,0 +1,73 @@
+[preset00]
+fRating=0.000000
+fDecay=0.990000
+nWaveMode=6.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=0.063000
+fWaveScale=1.881000
+fWaveSmoothing=0.036000
+fWaveParam=-0.040000
+fModWaveAlphaStart=1.070000
+fModWaveAlphaEnd=1.270000
+fZoom=1.310000
+fRot=0.200000
+fWarp=0.384140
+fWaveR=0.460000
+fWaveG=0.650000
+fWaveB=0.830000
+fMotionVectorsA=0.000000
+b1n=0.400000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1 = (uv_orig * texsize.xy);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = (texture (sampler_main, mix (uv, (
+    ((uv_orig - 0.5) * 0.97)
+   + 0.5), vec2(clamp (
+    (2.0 * fract(((
+      (tmpvar_1.x + tmpvar_1.y)
+     * 0.5) + 0.25)))
+  , 0.0, 1.0)))).xyz * (0.85 + (0.15 * 
+    clamp ((rad * 5.0), 0.0, 1.0)
+  )));
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1 = texture (sampler_main, uv);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = (mix (vec3(dot (tmpvar_1.xyz, vec3(0.32, 0.49, 0.29))), tmpvar_1.xyz, vec3(3.0, 3.0, 3.0)) * 3.0);
+  ret = tmpvar_2.xyz;
+ }

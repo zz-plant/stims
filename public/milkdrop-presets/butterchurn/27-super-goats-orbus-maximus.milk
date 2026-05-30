@@ -1,0 +1,75 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=2.700000
+fDecay=0.715000
+bTexWrap=0.000000
+bSolarize=1.000000
+fWaveAlpha=0.001000
+fRot=0.004000
+fDX=-0.012000
+fDY=-0.004000
+fWarp=0.803220
+fSx=1.816700
+fSy=1.798710
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fWaveX=0.000000
+fWaveY=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=20.000000
+nInstances=410.000000
+fRad=0.010000
+fR=0.000000
+fB=1.000000
+fG2=0.000000
+fA2=0.100000
+fBorderA=0.006000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz + ((
+    (texture (sampler_blur1, uv).xyz * scale1)
+   + bias1) * 0.4));
+  ret_1 = (ret_1 * 0.41);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_blur1, uv).xyz * scale1) + bias1));
+  ret_1 = (ret_1 * 2.7);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

@@ -1,0 +1,61 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.980000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+nWaveMode=7.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarkenCenter=1.000000
+bDarken=1.000000
+fWaveAlpha=25.000000
+fWaveScale=1.555000
+fWaveSmoothing=0.000000
+fShader=1.000000
+fZoom=0.970590
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fWaveY=0.340000
+nMotionVectorsX=64.000000
+nMotionVectorsY=2.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  ret_1 = (tmpvar_2.xyz + ((tmpvar_2.xyz - 
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  ) * 0.2));
+  ret_1 = (ret_1 * 0.9);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }

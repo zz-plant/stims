@@ -1,0 +1,116 @@
+[preset00]
+fRating=2.000000
+fGammaAdj=1.000000
+fDecay=0.910000
+fVideoEchoZoom=1.002000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bTexWrap=0.000000
+bDarkenCenter=1.000000
+fWaveAlpha=4.100000
+fWaveScale=1.286000
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpAnimSpeed=100.000000
+fWarpScale=1.951000
+fZoomExponent=0.010000
+fShader=1.000000
+fZoom=0.904850
+fWarp=2.905230
+fSx=0.999990
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bAdditive=1.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fRad=1.089250
+fR=0.900000
+fG=0.400000
+fB=0.800000
+fA=0.800000
+fR2=0.800000
+fG2=0.850000
+fB2=1.000000
+fA2=0.010000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=100.000000
+fG=0.300000
+fB=0.500000
+fG2=0.000000
+fBorderR=0.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+bAdditive=1.000000
+bTextured=1.000000
+fX=0.350000
+fRad=0.662310
+fTexZoom=0.550450
+fR=0.400000
+fG=0.800000
+fB=0.900000
+fG2=0.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=3.000000
+bAdditive=1.000000
+fG=1.000000
+fB=1.000000
+fA=0.500000
+fR2=0.800000
+fB2=1.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_fc_main, uv);
+  ret_1 = tmpvar_2.xyz;
+  if ((((tmpvar_2.x + tmpvar_2.y) + tmpvar_2.z) < ((
+    ((mid + bass) + treb)
+   / 3.0) * 0.3))) {
+    ret_1 = (tmpvar_2.xyz + vec3(0.6, 0.6, 0.6));
+  } else {
+    ret_1 = ((ret_1 - 0.005) * 0.99);
+  };
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }

@@ -266,6 +266,20 @@ export function createMilkdropEngineAdapter() {
         return;
       }
 
+      if (request.source === 'spotify') {
+        if (capturedVideoModulePromise) {
+          const { clearMilkdropCapturedVideoStream } =
+            await loadCapturedVideoModule();
+          clearMilkdropCapturedVideoStream();
+        }
+        await activeRuntime.startAudio({ stream: request.stream });
+        audioActive = true;
+        audioSource = 'spotify';
+        setAudioActive(true, 'spotify');
+        emit();
+        return;
+      }
+
       if (request.source === 'microphone') {
         if (capturedVideoModulePromise) {
           const { clearMilkdropCapturedVideoStream } =

@@ -1,0 +1,73 @@
+[preset00]
+fRating=1.000000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nWaveMode=1.000000
+bWaveDots=1.000000
+bWaveThick=1.000000
+fWaveAlpha=1.347000
+fWaveScale=1.910000
+fWaveSmoothing=0.900000
+fWaveParam=-0.100000
+fWarpScale=3.138000
+fZoom=1.022250
+fWarp=0.000540
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.300000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, (uv + (
+    (texture (sampler_main, (uv + texsize.zw)).xy - 0.37)
+   * 0.02))).xyz - 0.004);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  float tmpvar_1;
+  tmpvar_1 = abs(((
+    fract((((ang / 6.28) * 7.0) + (time * 0.05)))
+   * 2.0) - 1.0));
+  vec2 tmpvar_2;
+  tmpvar_2.x = cos(tmpvar_1);
+  tmpvar_2.y = sin(tmpvar_1);
+  vec4 tmpvar_3;
+  tmpvar_3 = texture (sampler_main, (0.5 + ((
+    pow (rad, 0.5)
+   * 0.5) * tmpvar_2)));
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = (-0.3 + (1.7 * mix (vec3(
+    dot (tmpvar_3.xyz, vec3(0.3333, 0.3333, 0.3333))
+  ), tmpvar_3.xyz, vec3(2.5, 2.5, 2.5))));
+  ret = tmpvar_4.xyz;
+ }

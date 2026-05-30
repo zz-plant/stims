@@ -1,0 +1,78 @@
+[preset00]
+fRating=4.000000
+fGammaAdj=2.400000
+fDecay=0.975000
+fVideoEchoZoom=1.051000
+fVideoEchoAlpha=0.500000
+nWaveMode=7.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.640000
+fWaveSmoothing=0.270000
+fWarpScale=1.331000
+fZoom=0.852350
+fWarp=0.010000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fWaveY=0.960000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=32.000000
+fRad=0.200000
+fB=0.400000
+fA=0.500000
+fA2=0.200000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=32.000000
+fRad=0.200000
+fA=0.500000
+fA2=0.200000
+
+[shape00_2]
+bEnabled=1.000000
+fRad=0.200000
+fA=0.500000
+fA2=0.200000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = ((texture (sampler_main, uv).xyz * 1.5) - 0.1);
+  ret_1.y = (ret_1 * 0.7).y;
+  ret_1.x = (((texture (sampler_blur1, uv).xyz * scale1) + bias1).x - 0.03);
+  ret_1.z = (((
+    (texture (sampler_blur2, uv).xyz * scale2)
+   + bias2).z * 1.5) - 0.05);
+  ret_1 = (ret_1 * 2.3);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

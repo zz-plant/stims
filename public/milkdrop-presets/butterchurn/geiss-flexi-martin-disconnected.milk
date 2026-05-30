@@ -1,0 +1,113 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=0.925000
+fVideoEchoZoom=1.007000
+nVideoEchoOrientation=3.000000
+bMaximizeWaveColor=0.000000
+bBrighten=1.000000
+bDarken=1.000000
+bSolarize=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.010000
+fWaveSmoothing=0.000000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=1.459000
+fWarpScale=2.007000
+fShader=1.000000
+fZoom=0.999900
+fWarp=0.010000
+fSx=0.999900
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.015000
+fOuterBorderB=1.000000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=5.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fRad=0.789000
+fAng=0.628300
+fTexZoom=1.172570
+fR=0.000000
+fG=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+nSamples=495.000000
+fSeparation=4.000000
+bSpectrum=1.000000
+bThick=1.000000
+bAdditive=1.000000
+fScaling=100.000000
+fSmoothing=1.000000
+fR=0.000000
+fG=0.040000
+fB=0.000000
+fA=0.990000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec2 uv6_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = ((uv - 0.5) * aspect.xy);
+  float tmpvar_4;
+  tmpvar_4 = (((q29 * 2.0) * sqrt(
+    dot (tmpvar_3, tmpvar_3)
+  )) + (rand_frame * 64.0)).x;
+  uv_1 = (uv + (clamp (
+    ((sin(tmpvar_4) / cos(tmpvar_4)) * normalize(tmpvar_3))
+  , vec2(-2.0, -2.0), vec2(2.0, 2.0)) / 20.0));
+  uv6_2 = (0.4 * sin((tmpvar_3 * 22.0)));
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = (((q24 * 
+    (((texture (sampler_main, uv_1).xyz - (
+      ((texture (sampler_blur1, fract(uv_1)).xyz * scale1) + bias1)
+     * 0.04)) + (0.15 * (vec3(
+      (0.1 / sqrt(dot (uv6_2, uv6_2)))
+    ) * roam_cos.xyz))) - 0.02)
+  ) * 0.98) + ((1.0 - q24) * texture (sampler_main, uv_orig).xyz));
+  ret = tmpvar_5.xyz;
+ }
+
+[comp_shader]
+uniform sampler2D sampler_rand00;
+ shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1 = texture (sampler_main, uv);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ((texture (sampler_rand00, (0.4 + 
+    (0.6 * tmpvar_1.xy)
+  )) * tmpvar_1.z) * 3.0).xyz;
+  ret = tmpvar_2.xyz;
+ }

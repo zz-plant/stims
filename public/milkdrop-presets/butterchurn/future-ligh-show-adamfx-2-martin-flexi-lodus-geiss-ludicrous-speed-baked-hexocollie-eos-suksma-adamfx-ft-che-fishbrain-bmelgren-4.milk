@@ -1,0 +1,93 @@
+[preset00]
+fRating=3.000000
+fGammaAdj=1.980000
+fDecay=0.500000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=6.000000
+bAdditiveWaves=1.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarken=1.000000
+fWaveAlpha=4.100000
+fWaveScale=0.010000
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fZoom=0.999510
+fWarp=0.010000
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=44.000000
+fRad=0.033470
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=44.000000
+fRad=0.033470
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec2 uv6_2;
+  uv_1 = (uv + (vec2(0.0, 0.01) * dot (
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  , vec3(0.32, 0.49, 0.29))));
+  uv6_2 = (0.4 * sin((
+    (uv_1 * 8.0)
+   + 
+    (rand_frame * 6.0)
+  .xy)));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = (((
+    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, 
+      fract(uv_1)
+    ).xyz * scale2) + bias2) * 0.03))
+   + 
+    (0.1 * (vec3((0.1 / sqrt(
+      dot (uv6_2, uv6_2)
+    ))) * ((1.0 + roam_cos) / 2.0).xyz))
+  ) * 0.99) - 0.02);
+  ret = tmpvar_3.xyz;
+ }

@@ -1,0 +1,96 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.700000
+fVideoEchoZoom=1.169000
+nWaveMode=4.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.524000
+fWaveScale=2.718000
+fWaveSmoothing=0.900000
+fWaveParam=1.000000
+fZoom=0.999900
+fWarp=0.010000
+fWaveR=0.130000
+fWaveG=0.500000
+fWaveY=0.600000
+fOuterBorderSize=0.007000
+fInnerBorderSize=0.260000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = texture (sampler_main, uv).xyz;
+  vec2 tmpvar_2;
+  tmpvar_2 = (normalize((uv - uv_orig)) * texsize.zw);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 0.0;
+  tmpvar_3.xyz = ret_1;
+  vec4 tmpvar_4;
+  tmpvar_4.w = 0.0;
+  tmpvar_4.xyz = max (tmpvar_3, (texture (sampler_main, (uv - tmpvar_2)) * 0.9)).xyz;
+  vec4 tmpvar_5;
+  tmpvar_5.w = 0.0;
+  tmpvar_5.xyz = max (tmpvar_4, (texture (sampler_main, (uv + tmpvar_2)) * 0.97)).xyz;
+  vec4 tmpvar_6;
+  tmpvar_6.w = 0.0;
+  tmpvar_6.xyz = max (tmpvar_5, (texture (sampler_main, (uv + 
+    (tmpvar_2 * 2.0)
+  )) * 0.97)).xyz;
+  ret_1 = (max (tmpvar_6, (texture (sampler_main, 
+    (uv + (tmpvar_2 * 3.0))
+  ) * 0.9)).xyz * 0.92);
+  vec4 tmpvar_7;
+  tmpvar_7.w = 1.0;
+  tmpvar_7.xyz = ret_1;
+  ret = tmpvar_7.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  float ang2_1;
+  ang2_1 = ((ang * 0.1591549) + (time * 0.025));
+  float tmpvar_2;
+  tmpvar_2 = (3.0 + floor((rand_preset.z * 5.95)));
+  ang2_1 = (fract((ang2_1 * tmpvar_2)) / tmpvar_2);
+  ang2_1 = (abs((ang2_1 - 
+    (0.5 / tmpvar_2)
+  )) * 6.283185);
+  vec2 tmpvar_3;
+  tmpvar_3.x = cos(ang2_1);
+  tmpvar_3.y = sin(ang2_1);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = (texture (sampler_main, (0.5 + (
+    ((0.4 * (rad * sqrt(
+      dot (texsize.xy, texsize.xy)
+    ))) * tmpvar_3)
+   * texsize.zw))).xyz * 1.333);
+  ret = tmpvar_4.xyz;
+ }

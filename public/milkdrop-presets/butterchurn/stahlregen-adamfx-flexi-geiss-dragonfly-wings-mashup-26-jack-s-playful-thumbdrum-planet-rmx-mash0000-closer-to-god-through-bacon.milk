@@ -1,0 +1,101 @@
+[preset00]
+fRating=4.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+nWaveMode=2.000000
+bTexWrap=0.000000
+fWaveAlpha=0.327000
+fWaveScale=1.605000
+fWaveSmoothing=0.600000
+fWarpScale=2.853000
+fZoom=1.064000
+fWarp=0.000000
+fWaveR=0.600000
+fWaveG=0.600000
+fWaveB=0.600000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = texture (sampler_main, uv).xyz;
+  ret_1 = (ret_1 + ((
+    (ret_1 - mix (((texture (sampler_blur2, uv).xyz * scale2) + bias2), ((texture (sampler_blur1, uv).xyz * scale1) + bias1), uv_orig.xxx))
+   * 0.3) - (0.00666 * 
+    (((bass + treb) + mid) - 0.5)
+  )));
+  ret_1 = (ret_1 * 0.95);
+  ret_1 = (ret_1 + ((
+    ((texture (sampler_noise_lq, ((
+      (uv_orig * texsize.xy)
+     * 
+      (texsize_noise_lq.zw * 0.4)
+    ) + rand_frame.xy)).xyz - 0.5) / 256.0)
+   * 122.0) * clamp (
+    (treb_att - 1.0)
+  , 0.0, 1.0)));
+  ret_1 = mix (ret_1, vec3(dot (ret_1, vec3(0.32, 0.49, 0.29))), vec3(0.2, 0.2, 0.2));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+float xlat_mutablea;
+float xlat_mutableb;
+float xlat_mutablec;
+ shader_body { 
+  vec2 uv_1;
+  vec3 ret_2;
+  uv_1 = ((0.5 + (
+    (uv - 0.5)
+   * vec2(0.75, -0.9))) - vec2(0.0, 0.05));
+  vec3 tmpvar_3;
+  tmpvar_3 = (((
+    (((texture (sampler_blur3, uv_1).xyz * scale3) + bias3) + ((texture (sampler_blur2, uv_1).xyz * scale2) + bias2))
+   + 
+    ((texture (sampler_blur1, uv_1).xyz * scale1) + bias1)
+  ) + (texture (sampler_main, uv_1) * 0.8).xyz) - 0.4);
+  xlat_mutablea = (tmpvar_3.x / 4.0);
+  xlat_mutableb = (tmpvar_3.y / 4.0);
+  xlat_mutablec = (tmpvar_3.z / 4.0);
+  xlat_mutablec = ((xlat_mutablec + xlat_mutableb) - (xlat_mutablec * xlat_mutableb));
+  xlat_mutablea = ((xlat_mutablea + xlat_mutablec) - (xlat_mutablea * xlat_mutablec));
+  vec3 tmpvar_4;
+  tmpvar_4 = vec3((1.4 * xlat_mutablea));
+  ret_2 = ((vec3(2.8, 4.0, 0.0) * (
+    (tmpvar_4 * (1.0 - tmpvar_4))
+   * 
+    (1.0 - tmpvar_4)
+  )) + ((tmpvar_4 * tmpvar_4) * vec3(-0.1, 0.1, 0.5)));
+  ret_2 = (0.6 - ret_2);
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_2;
+  ret = tmpvar_5.xyz;
+ }

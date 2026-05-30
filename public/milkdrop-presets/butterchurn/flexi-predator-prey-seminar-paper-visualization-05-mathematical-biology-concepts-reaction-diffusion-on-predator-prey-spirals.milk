@@ -1,0 +1,93 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.009000
+fWaveScale=2.713000
+fWaveSmoothing=0.000000
+fModWaveAlphaStart=1.200000
+fModWaveAlphaEnd=1.200000
+fWarpScale=1.331000
+fZoom=0.999510
+fWarp=0.009090
+fWaveR=0.440000
+fWaveG=0.400000
+fOuterBorderSize=0.005000
+fOuterBorderR=0.010000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.260000
+nMotionVectorsX=44.160000
+nMotionVectorsY=33.600000
+nMotionVectorsLoop=0.500000
+fMotionVectorsG=0.000000
+fMotionVectorsB=0.000000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+fSeparation=4.000000
+bSpectrum=1.000000
+bThick=1.000000
+bAdditive=1.000000
+fScaling=100.000000
+fSmoothing=0.000000
+fB=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec3 ret_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = (texsize.zw * 12.0);
+  vec2 tmpvar_4;
+  tmpvar_4.x = (0.5 * ((2.0 * 
+    ((texture (sampler_blur2, (uv + (vec2(1.0, 0.0) * tmpvar_3))).xyz * scale2) + bias2)
+  ) - (2.0 * 
+    ((texture (sampler_blur2, (uv - (vec2(1.0, 0.0) * tmpvar_3))).xyz * scale2) + bias2)
+  ))).z;
+  tmpvar_4.y = (0.5 * ((2.0 * 
+    ((texture (sampler_blur2, (uv + (vec2(0.0, 1.0) * tmpvar_3))).xyz * scale2) + bias2)
+  ) - (2.0 * 
+    ((texture (sampler_blur2, (uv - (vec2(0.0, 1.0) * tmpvar_3))).xyz * scale2) + bias2)
+  ))).z;
+  uv_1 = (uv - (tmpvar_4 * texsize.zw));
+  ret_2.z = ((texture (sampler_main, uv_1).z + (
+    (texture (sampler_main, uv_1).z - ((texture (sampler_blur3, uv_1).xyz * scale3) + bias3))
+  .z * 0.12)) + 0.008);
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_2;
+  ret = tmpvar_5.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_main, uv).xyz;
+  ret = tmpvar_1.xyz;
+ }

@@ -1,0 +1,93 @@
+[preset00]
+fRating=0.000000
+fDecay=0.990000
+fVideoEchoZoom=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=1.000000
+fWaveScale=0.608000
+fWaveParam=-0.400000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.005000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsR=0.000000
+fMotionVectorsG=0.700000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bTextured=1.000000
+fRad=0.472210
+fTexZoom=0.503300
+fG=0.700000
+fR2=1.000000
+fG2=0.700000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fB=0.700000
+
+[wave00_1]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fG=0.900000
+fB=0.800000
+
+[wave00_2]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fG=0.720000
+fB=0.100000
+
+[wave00_3]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fG=0.700000
+fB=0.500000
+
+[warp_shader]
+uniform sampler2D sampler_cells;
+ shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz + ((texture (sampler_noise_lq, 
+    (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)
+  ).xyz - 0.5) / 256.0));
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_cells, (uv_orig * aspect.xy));
+  vec2 x_3;
+  x_3 = (uv - uv_orig);
+  ret_1 = (mix (ret_1, tmpvar_2.xyz, vec3((
+    clamp ((1.0 - (abs(
+      (((dot (tmpvar_2.xyz, vec3(0.32, 0.49, 0.29)) * 0.8) + 0.1) - (0.5 + (roam_cos.y * 0.25)))
+    ) * 43.0)), 0.0, 1.0)
+   * 0.07))) * (0.97 + (0.03 * 
+    clamp ((sqrt(dot (x_3, x_3)) * 200.0), 0.0, 1.0)
+  )));
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = ret_1;
+  ret = tmpvar_4.xyz;
+ }

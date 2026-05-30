@@ -1,0 +1,127 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+nWaveMode=1.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=0.004000
+fWaveScale=0.762000
+fWaveSmoothing=0.900000
+fWaveParam=-0.440000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=0.408000
+fWarpScale=0.905000
+fZoom=1.025000
+fWarp=0.637350
+fWaveY=0.040000
+fOuterBorderSize=0.000000
+fOuterBorderR=1.000000
+fOuterBorderG=1.000000
+fOuterBorderB=1.000000
+fOuterBorderA=1.000000
+fInnerBorderR=1.000000
+fInnerBorderG=1.000000
+fInnerBorderB=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=5.000000
+fMotionVectorsG=0.910000
+fMotionVectorsB=0.710000
+fMotionVectorsA=0.000000
+b1n=0.270000
+b2n=0.780000
+b3n=0.490000
+b1x=0.840000
+b2x=0.910000
+b3x=0.520000
+b1ed=0.900000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+vec2 xlat_mutabledenominator;
+vec2 xlat_mutablenumerator;
+ shader_body { 
+  vec2 uv_1;
+  float fnord_2;
+  uv_1 = ((uv_orig - 0.5) * aspect.xy);
+  vec2 tmpvar_3;
+  tmpvar_3.x = ((uv_1.x * q1) - (uv_1.y * q2));
+  tmpvar_3.y = ((uv_1.x * q2) + (uv_1.y * q1));
+  vec2 tmpvar_4;
+  tmpvar_4.x = q3;
+  tmpvar_4.y = q4;
+  xlat_mutablenumerator = (tmpvar_3 + tmpvar_4);
+  vec2 tmpvar_5;
+  tmpvar_5.x = ((uv_1.x * q5) - (uv_1.y * q6));
+  tmpvar_5.y = ((uv_1.x * q6) + (uv_1.y * q5));
+  vec2 tmpvar_6;
+  tmpvar_6.x = q7;
+  tmpvar_6.y = q8;
+  xlat_mutabledenominator = (tmpvar_5 + tmpvar_6);
+  vec2 tmpvar_7;
+  tmpvar_7.x = ((xlat_mutablenumerator.x * xlat_mutabledenominator.x) + (xlat_mutablenumerator.y * xlat_mutabledenominator.y));
+  tmpvar_7.y = ((xlat_mutablenumerator.y * xlat_mutabledenominator.x) - (xlat_mutablenumerator.x * xlat_mutabledenominator.y));
+  uv_1 = ((tmpvar_7 / (
+    (xlat_mutabledenominator.x * xlat_mutabledenominator.x)
+   + 
+    (xlat_mutabledenominator.y * xlat_mutabledenominator.y)
+  )) * 0.2);
+  vec2 tmpvar_8;
+  tmpvar_8 = fract(uv_1);
+  uv_1 = tmpvar_8;
+  vec2 tmpvar_9;
+  tmpvar_9 = ((tmpvar_8 - 0.5) * texsize.xy);
+  float tmpvar_10;
+  float tmpvar_11;
+  tmpvar_11 = (time * 200.0);
+  tmpvar_10 = clamp (((float(mod (
+    ((abs(tmpvar_9.x) + abs(tmpvar_9.y)) + tmpvar_11)
+  , 128.0))) - 64.0), 0.0, 1.0);
+  float tmpvar_12;
+  tmpvar_12 = clamp (((float(mod (
+    ((-(abs(tmpvar_9.x)) - abs(tmpvar_9.y)) + tmpvar_11)
+  , 128.0))) - 64.0), 0.0, 1.0);
+  float tmpvar_13;
+  tmpvar_13 = sqrt(dot (tmpvar_9, tmpvar_9));
+  if ((tmpvar_13 > (0.25 * texsize.y))) {
+    fnord_2 = tmpvar_12;
+  } else {
+    fnord_2 = tmpvar_10;
+  };
+  vec4 tmpvar_14;
+  tmpvar_14.w = 1.0;
+  tmpvar_14.xyz = vec3(fnord_2);
+  ret = tmpvar_14.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_main, uv).xyz;
+  ret = tmpvar_1.xyz;
+ }

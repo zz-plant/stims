@@ -1,0 +1,102 @@
+[preset00]
+fRating=3.000000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nWaveMode=6.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=4.100000
+fWaveScale=2.630000
+fWaveSmoothing=0.360000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpAnimSpeed=9.861000
+fWarpScale=16.217000
+fZoomExponent=1.503740
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderR=1.000000
+fOuterBorderG=0.100000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.050000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=44.000000
+fRad=0.033470
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=44.000000
+fRad=0.033470
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_y_1;
+  vec3 ret_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = (texsize.zw * 12.0);
+  vec2 tmpvar_4;
+  tmpvar_4.x = (((texture (sampler_blur1, 
+    (uv + (vec2(1.0, 0.0) * tmpvar_3))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(1.0, 0.0) * tmpvar_3))
+  ).xyz * scale1) + bias1)).y;
+  tmpvar_4.y = (((texture (sampler_blur1, 
+    (uv + (vec2(0.0, 1.0) * tmpvar_3))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(0.0, 1.0) * tmpvar_3))
+  ).xyz * scale1) + bias1)).y;
+  uv_y_1 = (uv + ((tmpvar_4 * texsize.zw) * 2.0));
+  ret_2.y = texture (sampler_fc_main, uv_y_1).y;
+  ret_2.y = (ret_2.y + ((
+    ((ret_2.y - ((texture (sampler_blur1, uv_y_1).xyz * scale1) + bias1).y) - 0.1)
+   * 0.01) - 0.004));
+  ret_2.x = (texture (sampler_main, (uv + (
+    ((texture (sampler_noise_lq, ((
+      (uv_orig * texsize.xy)
+     * 
+      (texsize_noise_lq.zw * 0.4)
+    ) + rand_frame.xy)).xy - 0.5) * texsize.zw)
+   * 2.0))).x - 0.004);
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_2;
+  ret = tmpvar_5.xyz;
+ }

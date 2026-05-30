@@ -1,0 +1,80 @@
+[preset00]
+fRating=3.000000
+fGammaAdj=3.520000
+fDecay=0.955000
+nWaveMode=3.000000
+bWaveDots=1.000000
+bModWaveAlphaByVolume=1.000000
+bBrighten=1.000000
+bDarken=1.000000
+bInvert=1.000000
+fWaveScale=16.217000
+fWaveParam=-0.440000
+fWarpScale=2.853000
+fShader=1.000000
+fZoom=1.064000
+fWarp=0.000000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec2 uv6_2;
+  uv_1 = (uv + (vec2(0.0, 0.01) * dot (
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  , vec3(0.32, 0.49, 0.29))));
+  uv6_2 = (0.4 * sin((
+    (uv_1 * 8.0)
+   + 
+    (rand_frame * 6.0)
+  .xy)));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = (((
+    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, 
+      fract(uv_1)
+    ).xyz * scale2) + bias2) * 0.03))
+   + 
+    (0.1 * (vec3((0.1 / sqrt(
+      dot (uv6_2, uv6_2)
+    ))) * ((1.0 + roam_cos) / 2.0).xyz))
+  ) * 0.99) - 0.02);
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_main, (uv + (cos(
+    (texture (sampler_main, uv).xz * 17.3)
+  ) * 0.02))).xyz;
+  ret = tmpvar_1.xyz;
+ }

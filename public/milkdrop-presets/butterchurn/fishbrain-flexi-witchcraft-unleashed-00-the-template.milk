@@ -1,0 +1,120 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=0.955000
+fVideoEchoZoom=0.997000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=0.001000
+fWaveScale=1.286000
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fShader=1.000000
+fZoom=0.999510
+fWarp=0.010000
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=14.000000
+bAdditive=1.000000
+nInstances=512.000000
+fRad=0.012200
+fTexAng=0.628320
+fR2=1.000000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=23.000000
+bAdditive=1.000000
+nInstances=1024.000000
+fRad=0.014890
+fAng=0.439820
+fTexAng=0.628320
+fR2=1.000000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=14.000000
+bAdditive=1.000000
+nInstances=256.000000
+fRad=0.015250
+fTexAng=0.628320
+fR2=1.000000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=14.000000
+bAdditive=1.000000
+nInstances=256.000000
+fRad=0.015250
+fTexAng=0.628320
+fR2=1.000000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = ((texture (sampler_main, uv).xyz * 0.8) - 0.004);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 uv_1;
+  uv_1 = (uv * 2.0);
+  vec2 tmpvar_2;
+  tmpvar_2 = floor((fract(
+    (uv_1 * 0.5)
+  ) * 2.0));
+  uv_1 = ((fract(uv_1) * (1.0 - tmpvar_2)) + (tmpvar_2 * fract(
+    (1.0 - uv_1)
+  )));
+  uv_1 = ((0.5 + (
+    (uv_1 - 0.5)
+   * vec2(0.75, -0.9))) - vec2(0.0, 0.05));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = texture (sampler_main, uv_1).xyz;
+  ret = tmpvar_3.xyz;
+ }

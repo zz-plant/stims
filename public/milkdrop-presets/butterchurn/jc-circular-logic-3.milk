@@ -1,0 +1,87 @@
+[preset00]
+fRating=4.000000
+fGammaAdj=1.140000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+bWaveDots=1.000000
+bModWaveAlphaByVolume=1.000000
+bDarken=1.000000
+fWaveAlpha=4.100000
+fWaveScale=0.972000
+fWaveSmoothing=0.504000
+fWaveParam=-0.200000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.300000
+fWarpAnimSpeed=1.459000
+fWarpScale=2.007000
+fZoom=0.999900
+fWarp=0.010000
+fSx=0.999900
+fWaveG=0.500000
+fWaveB=0.440000
+fWaveX=1.000000
+fOuterBorderR=1.000000
+fOuterBorderG=1.000000
+fOuterBorderB=1.000000
+fInnerBorderSize=0.260000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=40.000000
+bTextured=1.000000
+fRad=0.599570
+fTexZoom=1.334500
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=40.000000
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=40.000000
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=40.000000
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1.x = (1.0 - uv.x);
+  tmpvar_1.y = uv.y;
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = (max (texture (sampler_main, uv).xyz, texture (sampler_main, tmpvar_1).zyx) * 0.97);
+  ret = tmpvar_2.xyz;
+ }

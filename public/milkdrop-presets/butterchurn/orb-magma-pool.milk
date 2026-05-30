@@ -1,0 +1,126 @@
+[preset00]
+fRating=1.000000
+fDecay=0.500000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=7.000000
+bSolarize=1.000000
+fWaveAlpha=0.001000
+fWarpAnimSpeed=2.007000
+fWarpScale=3.749000
+fZoomExponent=1.074100
+fZoom=1.000400
+fWarp=38.613100
+fWaveR=0.000000
+fWaveG=0.400000
+fWaveB=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bTextured=1.000000
+fRad=2.667180
+fTexZoom=0.374090
+fG=1.000000
+fB=1.000000
+fA=0.800000
+fR2=1.000000
+fB2=1.000000
+fA2=0.400000
+
+[shape00_1]
+bEnabled=1.000000
+bTextured=1.000000
+fRad=2.667180
+fTexZoom=0.377130
+fG=1.000000
+fB=1.000000
+fA=0.700000
+fR2=0.800000
+fB2=1.000000
+fA2=0.500000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+fG2=0.800000
+fB2=1.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  float final_noise_1;
+  mat2 tmpvar_2;
+  tmpvar_2[uint(0)].x = q5;
+  tmpvar_2[uint(0)].y = -(q4);
+  tmpvar_2[1u].x = q4;
+  tmpvar_2[1u].y = q5;
+  vec3 tmpvar_3;
+  tmpvar_3.xy = uv;
+  tmpvar_3.z = q2;
+  final_noise_1 = ((texture (sampler_noisevol_hq, (tmpvar_3 * 
+    pow (q3, 0.0)
+  )) * 2.0) - 1.0).x;
+  final_noise_1 = (final_noise_1 + (0.5 * (
+    (texture (sampler_noisevol_hq, (tmpvar_3 * q3)) * 2.0)
+   - 1.0)).x);
+  final_noise_1 = (final_noise_1 + (0.25 * (
+    (texture (sampler_noisevol_hq, (tmpvar_3 * (q3 * q3))) * 2.0)
+   - 1.0)).x);
+  final_noise_1 = (final_noise_1 + (0.125 * (
+    (texture (sampler_noisevol_hq, (tmpvar_3 * pow (q3, 3.0))) * 2.0)
+   - 1.0)).x);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = (texture (sampler_main, ((
+    (((uv - 0.5) * tmpvar_2) * (1.0 - ((rad * 3.7) * (1.0 - 
+      (bass_att * 0.3)
+    ))))
+   * final_noise_1) + 0.5)).xyz - 0.08);
+  ret = tmpvar_4.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  mat2 tmpvar_2;
+  tmpvar_2[uint(0)].x = q4;
+  tmpvar_2[uint(0)].y = -(q5);
+  tmpvar_2[1u].x = q5;
+  tmpvar_2[1u].y = q4;
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv - 0.5);
+  ret_1 = (mix (texture (sampler_main, fract(
+    (((tmpvar_3 * tmpvar_2) * 0.9) + 0.5)
+  )).xyz, texture (sampler_main, fract(
+    ((((
+      (-(tmpvar_3) + 0.5)
+     - 0.5) * -(tmpvar_2)) * 0.9) + 0.5)
+  )).xyz, vec3(0.5, 0.5, 0.5)) * 2.0);
+  vec3 tmpvar_4;
+  tmpvar_4.x = (ret_1.x * 10.0);
+  tmpvar_4.y = ret_1.y;
+  tmpvar_4.z = -(ret_1.z);
+  ret_1 = tmpvar_4;
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = tmpvar_4;
+  ret = tmpvar_5.xyz;
+ }

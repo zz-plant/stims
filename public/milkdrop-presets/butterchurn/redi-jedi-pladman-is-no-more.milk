@@ -1,0 +1,101 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=0.925000
+fVideoEchoZoom=1.006596
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=4.099998
+fWaveScale=1.285751
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fShader=0.060000
+fZoom=0.999514
+fWarp=0.010000
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.005000
+fOuterBorderR=0.010000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fRad=0.431700
+fAng=2.953098
+fTexZoom=0.707206
+fA=0.500000
+fR2=1.000000
+fB2=1.000000
+fA2=0.500000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+fSeparation=20.000000
+bSpectrum=1.000000
+bThick=1.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 newuv_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv_orig);
+  float tmpvar_3;
+  tmpvar_3 = ((tmpvar_2.y - tmpvar_2.z) * 0.1);
+  vec2 tmpvar_4;
+  tmpvar_4.x = (0.5 + (q7 * 0.3));
+  tmpvar_4.y = (0.5 + (q6 * 0.3));
+  float tmpvar_5;
+  tmpvar_5 = sin(tmpvar_3);
+  float tmpvar_6;
+  tmpvar_6 = cos(tmpvar_3);
+  vec2 tmpvar_7;
+  tmpvar_7.x = (((uv_orig.x - tmpvar_4.x) * tmpvar_6) - ((uv_orig.y - tmpvar_4.y) * tmpvar_5));
+  tmpvar_7.y = (((uv_orig.x - tmpvar_4.x) * tmpvar_5) + ((uv_orig.y - tmpvar_4.y) * tmpvar_6));
+  newuv_1 = (tmpvar_7 + tmpvar_4);
+  newuv_1 = (newuv_1 - vec2(0.5, 0.5));
+  newuv_1 = (newuv_1 * (1.0 + (tmpvar_2.x * 0.1)));
+  newuv_1 = (newuv_1 + vec2(0.5, 0.5));
+  vec4 tmpvar_8;
+  tmpvar_8.w = 1.0;
+  tmpvar_8.xyz = (0.9996 * texture (sampler_main, newuv_1).xyz);
+  ret = tmpvar_8.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 0.98);
+  ret = tmpvar_1.xyz;
+ }

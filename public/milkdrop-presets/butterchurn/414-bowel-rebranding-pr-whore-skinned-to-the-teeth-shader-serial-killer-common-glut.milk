@@ -1,0 +1,102 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.980000
+fDecay=0.500000
+fVideoEchoZoom=0.952000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+bAdditiveWaves=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.010000
+fWaveSmoothing=0.700000
+fWarpScale=2.853000
+fZoomExponent=2.100000
+fZoom=1.025000
+fWarp=0.309000
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fWaveX=0.000000
+fWaveY=0.000000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=3.000000
+nInstances=200.000000
+fRad=0.027050
+fTexZoom=1.246990
+fG=0.400000
+fB=0.300000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.510000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz - (roam_sin.wzy * roam_cos.zxy));
+  ret_1 = (ret_1 - (ret_1 * 0.5));
+  ret_1 = ((ret_1 * abs(
+    (((texture (sampler_blur2, uv).xyz * scale2) + bias2) - 0.5)
+  )) * 5.0);
+  ret_1 = (ret_1 - 0.01);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec3 tmpvar_2;
+  tmpvar_2.xy = uv;
+  tmpvar_2.z = q2;
+  vec2 tmpvar_3;
+  vec2 tmpvar_4;
+  tmpvar_4 = (uv - 0.5);
+  tmpvar_3 = ((tmpvar_4 * vec2(-1.0, 1.0)) + 0.5);
+  ret_1 = (((
+    (mix (texture (sampler_main, ((tmpvar_4 * 0.98) + 0.5)).xyz, texture (sampler_main, ((
+      (tmpvar_3 - 0.5)
+     * 0.98) + 0.5)).xyz, vec3(0.5, 0.5, 0.5)) + ((texture (sampler_blur3, uv).xyz * scale3) + bias3))
+   + 
+    ((texture (sampler_blur3, tmpvar_3).xyz * scale3) + bias3)
+  ) + (
+    (texture (sampler_blur1, uv).xyz * scale1)
+   + bias1)) + ((texture (sampler_blur1, tmpvar_3).xyz * scale1) + bias1));
+  ret_1 = (ret_1 * texture (sampler_noisevol_hq, (tmpvar_2 - (roam_sin.zyx * roam_cos.ywx))).xyz);
+  ret_1 = (ret_1 * 2.0);
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_1;
+  ret = tmpvar_5.xyz;
+ }

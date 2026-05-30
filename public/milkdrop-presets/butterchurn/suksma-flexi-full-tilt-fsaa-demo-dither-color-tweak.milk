@@ -1,0 +1,87 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=0.500000
+fVideoEchoZoom=1.030000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=0.001000
+fWaveScale=0.010000
+fWaveSmoothing=0.000000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.000000
+fWarpScale=0.107000
+fZoomExponent=1.008140
+fShader=1.000000
+fWarp=0.017430
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=1.000000
+fInnerBorderG=1.000000
+fInnerBorderB=1.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=5.000000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+nSamples=495.000000
+fSeparation=4.000000
+bSpectrum=1.000000
+bThick=1.000000
+fScaling=100.000000
+fSmoothing=1.000000
+fA=0.990000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = ((texture (sampler_blur3, (0.5 + 
+    (((uv + (texsize.zw * 2.0)) - 0.5) * 0.94)
+  )).xyz * scale3) + bias3);
+  ret_1 = (ret_1 - 0.024);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 myblur_1;
+  myblur_1 = ((texture (sampler_main, uv).xyz * 3.0) + (texture (sampler_main, (uv - texsize.zw)) * 0.75).xyz);
+  myblur_1 = (myblur_1 + (texture (sampler_main, (uv + texsize.zw)) * 0.75).xyz);
+  myblur_1 = (myblur_1 + (texture (sampler_main, (uv + 
+    (vec2(1.0, -1.0) * texsize.zw)
+  )) * 0.75).xyz);
+  myblur_1 = (myblur_1 + (texture (sampler_main, (uv + 
+    (vec2(-1.0, 1.0) * texsize.zw)
+  )) * 0.75).xyz);
+  myblur_1 = (myblur_1 + texture (sampler_main, (uv + (vec2(0.0, -1.0) * texsize.zw))).xyz);
+  myblur_1 = (myblur_1 + texture (sampler_main, (uv + (vec2(0.0, 1.0) * texsize.zw))).xyz);
+  myblur_1 = (myblur_1 + texture (sampler_main, (uv + (vec2(-1.0, 0.0) * texsize.zw))).xyz);
+  myblur_1 = (myblur_1 + texture (sampler_main, (uv + (vec2(1.0, 0.0) * texsize.zw))).xyz);
+  myblur_1 = (myblur_1 * 0.1);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ((myblur_1 * myblur_1) * myblur_1);
+  ret = tmpvar_2.xyz;
+ }

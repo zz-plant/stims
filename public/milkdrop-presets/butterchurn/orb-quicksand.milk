@@ -1,0 +1,77 @@
+[preset00]
+fRating=5.000000
+fDecay=0.900000
+fVideoEchoZoom=1.006596
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+nWaveMode=1.000000
+bTexWrap=0.000000
+bBrighten=1.000000
+fWaveAlpha=0.001000
+fZoom=0.960000
+fRot=-18.840240
+fWarp=0.000521
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderR=0.900000
+fOuterBorderG=0.500000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=0.300000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=4.950000
+fMotionVectorsR=0.500000
+fMotionVectorsG=0.400000
+fMotionVectorsB=0.300000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  vec2 tmpvar_2;
+  tmpvar_2 = (uv - 0.5);
+  tmpvar_1.xyz = (texture (sampler_main, ((
+    ((tmpvar_2 * (0.97 + (rad * 0.02))) + 0.5)
+   + 
+    (((texture (sampler_blur1, (
+      (tmpvar_2 * 0.9)
+     + 0.5)).xyz * scale1) + bias1) * 0.1)
+  .xy) - 0.01)).xyz - 0.001);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 2.0);
+  ret = tmpvar_1.xyz;
+ }

@@ -1,0 +1,104 @@
+[preset00]
+fRating=0.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bDarkenCenter=1.000000
+fWaveAlpha=0.001000
+fWaveScale=1.286000
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpAnimSpeed=0.905000
+fWarpScale=0.010000
+fZoom=0.960980
+fRot=0.080000
+fWarp=0.010000
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.005000
+fOuterBorderA=0.250000
+fInnerBorderSize=0.180000
+fInnerBorderR=0.300000
+fInnerBorderG=0.300000
+fInnerBorderB=0.300000
+fInnerBorderA=0.090000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fRad=3.998660
+fTexZoom=0.250050
+fR=0.900000
+fG=0.940000
+fB=0.890000
+fR2=0.840000
+fG2=0.930000
+fB2=1.000000
+fA2=1.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_1]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_2]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_3]
+bEnabled=1.000000
+bThick=1.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 0.875);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec3 ret_2;
+  vec4 tmpvar_3;
+  tmpvar_3 = max (vec4(0.2, 0.2, 0.2, 0.2), min (vec4(0.85, 0.85, 0.85, 0.85), rand_preset));
+  uv_1 = (uv + texture (sampler_pw_noise_lq, ((
+    (floor((uv * vec2(10.0, 10.0))) * 0.1)
+   + tmpvar_3.xy) * aspect.xy)).xy);
+  ret_2 = -(((tmpvar_3.xyz * vec3(0.0, 1.5, 0.5)) * (
+    (texture (sampler_blur1, fract(uv_1)).xyz * scale1)
+   + bias1).yyy));
+  ret_2 = (ret_2 - mix (ret_2, (tmpvar_3.xyz * vec3(1.8, 0.5, 2.0)), (
+    (texture (sampler_blur2, fract(uv_1)).xyz * scale2)
+   + bias2).zzz));
+  vec3 tmpvar_4;
+  tmpvar_4 = mix (mix (ret_2, (tmpvar_3.yyy * vec3(-0.45, 0.25, 0.5)), texture (sampler_main, fract(uv_1)).yyy), (tmpvar_3.zzz * vec3(1.15, 0.75, -0.2)), texture (sampler_main, fract(uv_1)).zzz);
+  ret_2 = (tmpvar_4 - mix (-(tmpvar_4), vec3(0.75, 0.75, 0.75), (texture (sampler_main, uv).xzy - 0.125)));
+  vec3 tmpvar_5;
+  tmpvar_5 = pow (ret_2, (tmpvar_3.xyz - ret_2));
+  ret_2 = (tmpvar_5 * tmpvar_5);
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = ret_2;
+  ret = tmpvar_6.xyz;
+ }

@@ -1,0 +1,71 @@
+[preset00]
+fRating=0.000000
+fDecay=0.990000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+fWaveAlpha=0.001000
+fWaveScale=1.111000
+fWaveSmoothing=0.171000
+fWaveParam=-0.160000
+fModWaveAlphaStart=1.050000
+fModWaveAlphaEnd=1.400000
+fWarp=0.179200
+fWaveR=0.860000
+fWaveG=0.610000
+fWaveB=0.290000
+fMotionVectorsA=0.000000
+b1n=0.400000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=16.000000
+nInstances=36.000000
+fG=1.000000
+fB=1.000000
+fA=0.300000
+fR2=0.500000
+fG2=0.700000
+fB2=0.900000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+nSamples=198.000000
+fSeparation=15.000000
+fSmoothing=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * (0.8 + (0.17 * 
+    clamp ((rad * 5.0), 0.0, 1.0)
+  )));
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 1.8);
+  ret = tmpvar_1.xyz;
+ }

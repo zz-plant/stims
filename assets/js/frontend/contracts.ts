@@ -1,7 +1,7 @@
 import type { VisualFidelityTier } from '../milkdrop/catalog-store-analysis.ts';
 import type { MilkdropVisualCertification } from '../milkdrop/types.ts';
 
-export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
+export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file' | 'spotify';
 
 export type PanelState = 'browse' | 'editor' | 'inspector' | 'settings' | null;
 
@@ -28,6 +28,7 @@ export type EngineAudioRequest =
   | { source: 'demo' }
   | { source: 'microphone' }
   | { source: 'file'; stream: MediaStream }
+  | { source: 'spotify'; stream: MediaStream }
   | {
       source: 'tab' | 'youtube';
       stream: MediaStream;

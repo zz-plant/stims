@@ -10,3 +10,19 @@ compatibility_date = "2026-02-24"
 
 [env.production.placement]
 mode = "smart"
+
+[[ai]]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "stims-gallery"
+database_id = "your-d1-database-id"
+
+[[r2_buckets]]
+binding = "GALLERY_R2"
+bucket_name = "stims-gallery"
+
+# Secrets (set via `wrangler secret`):
+# SPOTIFY_CLIENT_ID
+# SPOTIFY_CLIENT_SECRET

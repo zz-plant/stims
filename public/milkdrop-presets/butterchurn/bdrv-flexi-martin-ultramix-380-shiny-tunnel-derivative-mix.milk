@@ -1,0 +1,113 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+nVideoEchoOrientation=3.000000
+nWaveMode=5.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=100.000000
+fWaveScale=0.721000
+fWaveSmoothing=0.500000
+fModWaveAlphaStart=0.500000
+fModWaveAlphaEnd=1.000000
+fDX=0.000010
+fDY=0.000010
+fWarp=0.010000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.005000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+nMotionVectorsLoop=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bTextured=1.000000
+fY=1.800000
+
+[shape00_1]
+bEnabled=1.000000
+bTextured=1.000000
+fY=1.800000
+
+[shape00_2]
+bEnabled=1.000000
+bTextured=1.000000
+fY=1.800000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[comp_shader]
+vec2 xlat_mutablers;
+ shader_body { 
+  vec2 uv_1;
+  uv_1 = (0.5 + ((uv - 0.5) * aspect.xy));
+  xlat_mutablers.x = (((ang / 3.14) + (rad * q15)) - q18);
+  vec2 x_2;
+  x_2 = (uv_1 - 0.5);
+  xlat_mutablers.y = ((0.1 / (0.05 + 
+    (sqrt(dot (x_2, x_2)) * 1.4)
+  )) + q21);
+  vec2 tmpvar_3;
+  tmpvar_3 = fract(xlat_mutablers);
+  vec2 tmpvar_4;
+  tmpvar_4.y = 0.0;
+  tmpvar_4.x = texsize.z;
+  vec2 tmpvar_5;
+  tmpvar_5 = (tmpvar_4 * 4.0);
+  vec2 tmpvar_6;
+  tmpvar_6.x = 0.0;
+  tmpvar_6.y = texsize.w;
+  vec2 tmpvar_7;
+  tmpvar_7 = (tmpvar_6 * 4.0);
+  vec2 tmpvar_8;
+  tmpvar_8.x = dot (((
+    (texture (sampler_blur1, (tmpvar_3 - tmpvar_5)).xyz * scale1)
+   + bias1) - (
+    (texture (sampler_blur1, (tmpvar_3 + tmpvar_5)).xyz * scale1)
+   + bias1)), vec3(0.32, 0.49, 0.29));
+  tmpvar_8.y = dot (((
+    (texture (sampler_blur1, (tmpvar_3 - tmpvar_7)).xyz * scale1)
+   + bias1) - (
+    (texture (sampler_blur1, (tmpvar_3 + tmpvar_7)).xyz * scale1)
+   + bias1)), vec3(0.32, 0.49, 0.29));
+  uv_1 = (cos((
+    (12.56 * tmpvar_3)
+   - 
+    (vec2(0.0, 10.0) * q20)
+  )) - (8.0 * tmpvar_8));
+  vec3 tmpvar_9;
+  tmpvar_9 = pow (((
+    (2.0 * (clamp ((0.02 / 
+      sqrt(dot (uv_1, uv_1))
+    ), 0.0, 1.0) * hue_shader))
+   * 
+    ((texture (sampler_main, tmpvar_3).xyz * 5.0) + 1.0)
+  ) - 0.04), vec3(0.5, 0.5, 0.5));
+  vec4 tmpvar_10;
+  tmpvar_10.w = 1.0;
+  tmpvar_10.xyz = mix (tmpvar_9, tmpvar_9.zxy, vec3(q19));
+  ret = tmpvar_10.xyz;
+ }

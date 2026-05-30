@@ -1,0 +1,204 @@
+[preset00]
+fRating=3.000000
+fGammaAdj=1.000000
+bWaveThick=1.000000
+bTexWrap=0.000000
+fWaveAlpha=0.004000
+fWaveScale=0.037000
+fWaveSmoothing=0.000000
+fWaveParam=-0.440000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=0.803000
+fWarpScale=1.220000
+fZoomExponent=1.503740
+fWarp=0.312180
+fWaveY=0.040000
+fOuterBorderSize=0.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=1.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.750000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsB=0.000000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=3.000000
+bAdditive=1.000000
+nInstances=400.000000
+fRad=0.162830
+fTexZoom=0.734580
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+vec2 pix;
+float xlat_mutablebuf2;
+ shader_body { 
+  pix = (texsize.zw * 2.0);
+  vec3 res_1;
+  res_1 = (texture (sampler_main, (uv + (pix * vec2(1.0, 0.0)))).xyz - 0.5);
+  res_1 = ((res_1 * res_1) * sign(res_1));
+  vec3 res_2;
+  res_2 = (texture (sampler_main, (uv + (pix * vec2(0.0, 1.0)))).xyz - 0.5);
+  res_2 = ((res_2 * res_2) * sign(res_2));
+  vec3 res_3;
+  res_3 = (texture (sampler_main, (uv + (pix * vec2(-1.0, 0.0)))).xyz - 0.5);
+  res_3 = ((res_3 * res_3) * sign(res_3));
+  vec3 res_4;
+  res_4 = (texture (sampler_main, (uv + (pix * vec2(0.0, -1.0)))).xyz - 0.5);
+  res_4 = ((res_4 * res_4) * sign(res_4));
+  vec3 res_5;
+  res_5 = (texture (sampler_main, (uv + (pix * vec2(2.0, 0.0)))).xyz - 0.5);
+  res_5 = ((res_5 * res_5) * sign(res_5));
+  vec3 res_6;
+  res_6 = (texture (sampler_main, (uv + (pix * vec2(0.0, 2.0)))).xyz - 0.5);
+  res_6 = ((res_6 * res_6) * sign(res_6));
+  vec3 res_7;
+  res_7 = (texture (sampler_main, (uv + (pix * vec2(-2.0, 0.0)))).xyz - 0.5);
+  res_7 = ((res_7 * res_7) * sign(res_7));
+  vec3 res_8;
+  res_8 = (texture (sampler_main, (uv + (pix * vec2(0.0, -2.0)))).xyz - 0.5);
+  res_8 = ((res_8 * res_8) * sign(res_8));
+  vec3 res_9;
+  res_9 = (texture (sampler_main, uv).xyz - 0.5);
+  res_9 = ((res_9 * res_9) * sign(res_9));
+  xlat_mutablebuf2 = (((
+    ((((
+      (res_1.y + res_2.y)
+     + 
+      (res_3.y + res_4.y)
+    ) + (res_5.y / 2.0)) + (res_6.y / 2.0)) + (res_7.y / 2.0))
+   + 
+    (res_8.y / 2.0)
+  ) / 3.0) - res_9.x);
+  xlat_mutablebuf2 = (xlat_mutablebuf2 * 0.98);
+  vec3 tmpvar_10;
+  tmpvar_10.z = 0.0;
+  tmpvar_10.x = texture (sampler_pw_main, uv).y;
+  tmpvar_10.y = ((sign(xlat_mutablebuf2) * sqrt(
+    abs(xlat_mutablebuf2)
+  )) + 0.5);
+  vec4 tmpvar_11;
+  tmpvar_11.w = 1.0;
+  tmpvar_11.xyz = tmpvar_10;
+  ret = tmpvar_11.xyz;
+ }
+
+[comp_shader]
+uniform sampler2D sampler_smalltiled_lizard_scales;
+vec2 pix;
+vec2 xlat_mutabledz;
+vec2 xlat_mutabledz1;
+vec2 xlat_mutableuv1;
+ shader_body { 
+  pix = (texsize.zw * 2.0);
+  vec2 uv_1;
+  vec2 uvi_2;
+  uvi_2 = (uv + (pix * vec2(1.0, 0.0)));
+  float res_3;
+  res_3 = (mix ((
+    (texture (sampler_blur1, uvi_2).xyz * scale1)
+   + bias1).x, (
+    (texture (sampler_blur1, uvi_2).xyz * scale1)
+   + bias1).y, 0.5) - 0.5);
+  res_3 = ((res_3 * res_3) * sign(res_3));
+  vec2 uvi_4;
+  uvi_4 = (uv + (pix * vec2(-1.0, 0.0)));
+  float res_5;
+  res_5 = (mix ((
+    (texture (sampler_blur1, uvi_4).xyz * scale1)
+   + bias1).x, (
+    (texture (sampler_blur1, uvi_4).xyz * scale1)
+   + bias1).y, 0.5) - 0.5);
+  res_5 = ((res_5 * res_5) * sign(res_5));
+  xlat_mutabledz1.x = (res_3 - res_5);
+  vec2 uvi_6;
+  uvi_6 = (uv + (pix * vec2(0.0, 1.0)));
+  float res_7;
+  res_7 = (mix ((
+    (texture (sampler_blur1, uvi_6).xyz * scale1)
+   + bias1).x, (
+    (texture (sampler_blur1, uvi_6).xyz * scale1)
+   + bias1).y, 0.5) - 0.5);
+  res_7 = ((res_7 * res_7) * sign(res_7));
+  vec2 uvi_8;
+  uvi_8 = (uv + (pix * vec2(0.0, -1.0)));
+  float res_9;
+  res_9 = (mix ((
+    (texture (sampler_blur1, uvi_8).xyz * scale1)
+   + bias1).x, (
+    (texture (sampler_blur1, uvi_8).xyz * scale1)
+   + bias1).y, 0.5) - 0.5);
+  res_9 = ((res_9 * res_9) * sign(res_9));
+  xlat_mutabledz1.y = (res_7 - res_9);
+  float res_10;
+  vec4 tmpvar_11;
+  tmpvar_11 = texture (sampler_blur1, uv);
+  res_10 = (mix ((
+    (tmpvar_11.xyz * scale1)
+   + bias1).x, (
+    (tmpvar_11.xyz * scale1)
+   + bias1).y, 0.5) - 0.5);
+  res_10 = ((res_10 * res_10) * sign(res_10));
+  uv_1 = (uv + ((xlat_mutabledz1 * 
+    clamp ((1.0 - res_10), 0.0, 1.0)
+  ) * 0.5));
+  xlat_mutabledz.x = (texture (sampler_main, (uv_1 + (pix * vec2(1.0, 0.0)))).z - texture (sampler_main, (uv_1 + (pix * vec2(-1.0, 0.0)))).z);
+  xlat_mutabledz.y = (texture (sampler_main, (uv_1 + (pix * vec2(0.0, 1.0)))).z - texture (sampler_main, (uv_1 + (pix * vec2(0.0, -1.0)))).z);
+  xlat_mutableuv1 = ((uv_1 - 0.1) + (xlat_mutabledz1 * 8.0));
+  vec2 x_12;
+  x_12 = (xlat_mutableuv1 + (xlat_mutabledz * 0.6));
+  vec2 x_13;
+  x_13 = (xlat_mutableuv1 + xlat_mutabledz);
+  vec2 x_14;
+  x_14 = (xlat_mutableuv1 + (xlat_mutabledz * 2.6));
+  vec3 tmpvar_15;
+  tmpvar_15.x = sqrt(dot (x_12, x_12));
+  tmpvar_15.y = sqrt(dot (x_13, x_13));
+  tmpvar_15.z = sqrt(dot (x_14, x_14));
+  vec4 tmpvar_16;
+  tmpvar_16.w = 1.0;
+  tmpvar_16.xyz = ((texture (sampler_smalltiled_lizard_scales, (
+    (uv_1 + xlat_mutabledz1)
+   - 
+    (time * 0.02)
+  )) * 0.5).xyz + ((
+    (0.1 / tmpvar_15)
+   - 
+    (texture (sampler_main, uv).z * 0.2)
+  ) - (texture (sampler_main, 
+    (0.8 - uv_1)
+  ).z * 0.2)));
+  ret = tmpvar_16.xyz;
+ }

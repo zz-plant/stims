@@ -1,0 +1,107 @@
+[preset00]
+fRating=0.000000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.400000
+nVideoEchoOrientation=2.000000
+nWaveMode=5.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+bSolarize=1.000000
+fWaveAlpha=1.000000
+fWaveScale=0.498000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fWaveY=0.950000
+fOuterBorderSize=0.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.020000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=31.200000
+nMotionVectorsY=2.280000
+nMotionVectorsLoop=2.500000
+fMotionVectorsB=0.800000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=1.000000
+bThick=1.000000
+
+[warp_shader]
+shader_body { 
+  float n_1;
+  vec3 ret_2;
+  vec4 tmpvar_3;
+  tmpvar_3 = texture (sampler_pw_main, uv);
+  ret_2 = tmpvar_3.xyz;
+  n_1 = (clamp ((texture (sampler_pw_main, 
+    (uv + texsize.zw)
+  ).x * 999.0), 0.0, 1.0) + clamp ((texture (sampler_pw_main, 
+    (uv + (texsize.zw * vec2(1.0, 0.0)))
+  ).x * 999.0), 0.0, 1.0));
+  n_1 = (n_1 + clamp ((texture (sampler_pw_main, 
+    (uv + (texsize.zw * vec2(1.0, -1.0)))
+  ).x * 999.0), 0.0, 1.0));
+  n_1 = (n_1 + clamp ((texture (sampler_pw_main, 
+    (uv + (texsize.zw * vec2(0.0, 1.0)))
+  ).x * 999.0), 0.0, 1.0));
+  n_1 = (n_1 + clamp ((texture (sampler_pw_main, 
+    (uv + (texsize.zw * vec2(0.0, -1.0)))
+  ).x * 999.0), 0.0, 1.0));
+  n_1 = (n_1 + clamp ((texture (sampler_pw_main, 
+    (uv + (texsize.zw * vec2(-1.0, 1.0)))
+  ).x * 999.0), 0.0, 1.0));
+  n_1 = (n_1 + clamp ((texture (sampler_pw_main, 
+    (uv + (texsize.zw * vec2(-1.0, 0.0)))
+  ).x * 999.0), 0.0, 1.0));
+  n_1 = (n_1 + clamp ((texture (sampler_pw_main, 
+    (uv - texsize.zw)
+  ).x * 999.0), 0.0, 1.0));
+  if ((n_1 < 1.9)) {
+    ret_2 = (tmpvar_3.xyz - 0.4);
+  };
+  if ((n_1 > 3.1)) {
+    ret_2 = (ret_2 - 0.4);
+  };
+  bool tmpvar_4;
+  if ((ret_2.x < 0.1)) {
+    tmpvar_4 = (abs((n_1 - 3.0)) < 0.5);
+  } else {
+    tmpvar_4 = bool(0);
+  };
+  if (tmpvar_4) {
+    ret_2 = (ret_2 + 0.4);
+  };
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_2;
+  ret = tmpvar_5.xyz;
+ }

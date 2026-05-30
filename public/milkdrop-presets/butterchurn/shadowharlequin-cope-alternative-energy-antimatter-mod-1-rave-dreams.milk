@@ -1,0 +1,113 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.490000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=1.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bBrighten=1.000000
+bDarken=1.000000
+fWaveAlpha=1.060000
+fWaveScale=0.829000
+fWaveSmoothing=0.549000
+fWaveParam=-1.000000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=0.403000
+fZoomExponent=1.001600
+fZoom=1.029800
+fWarp=0.010000
+fSx=0.990100
+fSy=0.970780
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.005000
+fOuterBorderA=0.050000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.500000
+fMotionVectorsR=0.100000
+fMotionVectorsG=0.100000
+fMotionVectorsB=0.100000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 noise2_1;
+  vec3 ret_2;
+  vec4 tmpvar_3;
+  tmpvar_3 = texture (sampler_main, uv);
+  vec3 tmpvar_4;
+  tmpvar_4.x = q8;
+  tmpvar_4.y = q7;
+  tmpvar_4.z = q6;
+  vec3 tmpvar_5;
+  tmpvar_5.x = q10;
+  tmpvar_5.y = q11;
+  tmpvar_5.z = q12;
+  noise2_1 = (texture (sampler_noise_lq, ((
+    (uv_orig * texsize.xy)
+   * texsize_noise_lq.zw) + rand_frame.xy)).xyz * (1.7 * mix (tmpvar_4, tmpvar_5, vec3(
+    (1.0 - rad)
+  ))));
+  vec3 a_6;
+  a_6 = (tmpvar_3.xyz * 0.7);
+  ret_2 = (tmpvar_3.xyz + clamp ((
+    (a_6.yzx * noise2_1.zxy)
+   - 
+    (a_6.zxy * noise2_1.yzx)
+  ), 0.0, 1.0));
+  ret_2 = (ret_2 * 0.9);
+  vec4 tmpvar_7;
+  tmpvar_7.w = 1.0;
+  tmpvar_7.xyz = ret_2;
+  ret = tmpvar_7.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz * 1.49);
+  ret_1 = (ret_1 * (ret_1 + sin(
+    (treb_att * 0.5)
+  )));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

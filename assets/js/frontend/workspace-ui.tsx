@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 import type { QualityPreset } from '../core/settings-panel.ts';
+import type { PresetCatalogEntry } from './contracts.ts';
 import { PRESET_PREVIEW_REQUEST_LIMIT } from '../milkdrop/preset-preview.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import {
@@ -23,6 +24,8 @@ import {
 } from './StimsStageFrame.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useUI, useWorkspace } from './workspace-context.tsx';
+import { EditorPanel } from './EditorPanel.tsx';
+import { SpotifyPlayerUI } from './SpotifyPlayerUI.tsx';
 import {
   buildAppliedFilterSummary,
   describePresetMood,
@@ -186,6 +189,7 @@ function AudioSourcePanel() {
           <div id="workspace-youtube-player"></div>
         </div>
       </div>
+      <SpotifyPlayerUI />
     </section>
   );
 }
@@ -354,6 +358,27 @@ function BrowseSheetPanel({
   const starterPresets = engine.starterPresets;
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [communityPresets, setCommunityPresets] = useState<PresetCatalogEntry[]>([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communityError, setCommunityError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (routeState.collectionTag === 'collection:community') {
+      setCommunityLoading(true);
+      setCommunityError(null);
+      fetch('/api/presets?sort=top&limit=20')
+        .then((res) => res.json())
+        .then((data) => {
+          setCommunityPresets(data.presets || []);
+          setCommunityLoading(false);
+        })
+        .catch((err: Error) => {
+          setCommunityError(err.message);
+          setCommunityLoading(false);
+        });
+    }
+  }, [routeState.collectionTag]);
+
   const showStarterPresets =
     searchQuery.trim().length === 0 && routeState.collectionTag === null;
   const showActivitySections = showStarterPresets;
@@ -533,6 +558,22 @@ function BrowseSheetPanel({
               {prettifyCollectionTag(collectionTag)}
             </button>
           ))}
+          <button
+            type="button"
+            className="stims-shell__collection-pill"
+            data-active={String(
+              routeState.collectionTag === 'collection:community',
+            )}
+            onClick={() =>
+              onCollectionTagChange(
+                routeState.collectionTag === 'collection:community'
+                  ? null
+                  : 'collection:community',
+              )
+            }
+          >
+            Community
+          </button>
         </nav>
         <div
           className="stims-shell__browse-toolbar-extras"
@@ -624,16 +665,35 @@ function BrowseSheetPanel({
         {catalogError ? (
           <p className="stims-shell__meta-copy">{catalogError}</p>
         ) : null}
-        <div className="stims-shell__section-heading">
-          <p className="stims-shell__section-label">Everything</p>
-          <p className="stims-shell__meta-copy">
-            {filteredCatalog.length} result
-            {filteredCatalog.length === 1 ? '' : 's'}
-            ready to explore.
-          </p>
-        </div>
+        {routeState.collectionTag === 'collection:community' ? (
+          <div className="stims-shell__section-heading">
+            <p className="stims-shell__section-label">Community</p>
+            {communityLoading ? (
+              <p className="stims-shell__meta-copy">Loading community presets...</p>
+            ) : communityError ? (
+              <p className="stims-shell__meta-copy">{communityError}</p>
+            ) : (
+              <p className="stims-shell__meta-copy">
+                {communityPresets.length} result
+                {communityPresets.length === 1 ? '' : 's'}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="stims-shell__section-heading">
+            <p className="stims-shell__section-label">Everything</p>
+            <p className="stims-shell__meta-copy">
+              {filteredCatalog.length} result
+              {filteredCatalog.length === 1 ? '' : 's'}
+              ready to explore.
+            </p>
+          </div>
+        )}
         <ul className="stims-shell__preset-list">
-          {filteredCatalog.map((entry) => {
+          {(routeState.collectionTag === 'collection:community'
+            ? communityPresets
+            : filteredCatalog
+          ).map((entry) => {
             const supportLabel = getPresetCardSupportLabel(entry);
 
             return (
@@ -1000,6 +1060,8 @@ export function WorkspaceToolSheet({
         )}
 
         <div className="stims-shell__sheet-body">
+          {panel === 'editor' ? <EditorPanel /> : null}
+
           {panel === 'browse' ? (
             <BrowseSheetPanel
               onCollectionTagChange={(collectionTag) =>

@@ -1,0 +1,142 @@
+[preset00]
+fRating=0.000000
+nWaveMode=6.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=1.069000
+fWaveScale=2.115000
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.772000
+fZoomExponent=5.008730
+fZoom=1.041630
+fRot=0.003000
+fWarp=0.000000
+fWaveR=0.000000
+fWaveG=0.300000
+fWaveB=0.500000
+fOuterBorderSize=0.005000
+fOuterBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.100000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=30.000000
+bTextured=1.000000
+fX=0.240000
+fRad=0.472090
+fTexAng=0.628320
+fTexZoom=0.819520
+fR2=0.600000
+fG2=0.600000
+fB2=0.900000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=1.791420
+fTexAng=1.570800
+fR2=0.300000
+fG2=0.200000
+fB2=0.800000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+bTextured=1.000000
+fRad=0.808140
+fR=0.400000
+fG=0.400000
+fB=0.800000
+fR2=0.700000
+fG2=0.600000
+fB2=0.500000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fRad=0.364570
+fTexZoom=0.498310
+fA=0.000000
+fA2=0.800000
+
+[wave00_0]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+bAdditive=1.000000
+
+[wave00_1]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+bAdditive=1.000000
+
+[wave00_2]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+bAdditive=1.000000
+
+[wave00_3]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+bAdditive=1.000000
+
+[warp_shader]
+uniform sampler2D sampler_smalltiled_ensign_meat;
+ shader_body { 
+  float tmpvar_1;
+  tmpvar_1 = fract((time * 0.5));
+  float tmpvar_2;
+  tmpvar_2 = pow (0.5, tmpvar_1);
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv - 0.5);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = (mix (texture (sampler_fc_main, uv).xyz, (
+    mix (texture (sampler_smalltiled_ensign_meat, (((
+      (tmpvar_3 * tmpvar_2)
+     + 0.5) * texsize.xy) * texsize_smalltiled_ensign_meat.zw)).xyz, texture (sampler_smalltiled_ensign_meat, (((
+      (tmpvar_3 * (tmpvar_2 * 2.0))
+     + 0.5) * texsize.xy) * texsize_smalltiled_ensign_meat.zw)).xyz, vec3(tmpvar_1))
+   * 
+    (clamp ((rad * 1.3), 0.0, 1.0) * 1.1)
+  ), vec3(0.15, 0.15, 0.15)) * 0.8);
+  ret = tmpvar_4.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1 = (texsize.zw * 4.0);
+  vec2 tmpvar_2;
+  tmpvar_2.x = (((texture (sampler_blur1, 
+    (uv + (vec2(1.0, 0.0) * tmpvar_1))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(1.0, 0.0) * tmpvar_1))
+  ).xyz * scale1) + bias1)).y;
+  tmpvar_2.y = (((texture (sampler_blur1, 
+    (uv + (vec2(0.0, 1.0) * tmpvar_1))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(0.0, 1.0) * tmpvar_1))
+  ).xyz * scale1) + bias1)).y;
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = mix ((texture (sampler_fc_main, (uv - 
+    (tmpvar_2 * 0.4)
+  )).x * (hue_shader.zxy * hue_shader.zxy)), mix ((
+    pow (hue_shader, vec3(4.0, 4.0, 4.0))
+   * 1.2), vec3(3.0, 3.0, 3.0), texture (sampler_main, uv).zzz), ((texture (sampler_blur1, uv).xyz * scale1) + bias1).yyy);
+  ret = tmpvar_3.xyz;
+ }

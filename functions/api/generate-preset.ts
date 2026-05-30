@@ -1,3 +1,5 @@
+import { buildGeneratePrompt } from '../../assets/js/milkdrop/preset-prompt.ts';
+
 interface Env {
   AI: {
     run: (
@@ -34,7 +36,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       return new Response('Description too short', { status: 400 });
     }
 
-    const systemPrompt = buildSystemPrompt(complexity);
+    const systemPrompt = buildGeneratePrompt(description, complexity);
     const userPrompt = `Generate a MilkDrop preset that: ${description}`;
 
     let milkSource = '';
@@ -49,9 +51,15 @@ export async function onRequest(context: { request: Request; env: Env }) {
           ],
         },
       );
-      milkSource = extractMilkSource(result.response);
+      const response = result.response;
+      const startIdx = response.indexOf('[preset00]');
+      if (startIdx >= 0) {
+        milkSource = '[preset00]\n' + response.slice(startIdx + 9).trim();
+      } else {
+        milkSource = '[preset00]\n' + response.trim();
+      }
     } else {
-      milkSource = generateFallbackPreset(description);
+      milkSource = '[preset00]\nfRating=4.0\nfDecay=0.96\nnWaveMode=1\nfZoom=1.0\nfWarp=1.0\nfRot=0.0\n';
     }
 
     return new Response(JSON.stringify({ milkSource }), {
@@ -71,65 +79,4 @@ export async function onRequest(context: { request: Request; env: Env }) {
       },
     );
   }
-}
-
-function buildSystemPrompt(complexity: string): string {
-  return `You are a MilkDrop preset equation generator.
-Output ONLY the [preset00] section of a .milk file with key=value pairs.
-
-Available functions: sin cos tan asin acos atan atan2 abs sqrt pow mod floor ceil sqr clamp step smoothstep log exp sigmoid sign frac rand if above below equal min max
-
-Available audio registers: bass mid treb bass_att mid_att treb_att beat rms vol time frame
-
-Set wave_mode (1-7) for visibility. Use q1-q8 for state. Set decay (0.95-0.99) for trails.
-
-${complexity === 'simple' ? 'Use 5-10 fields. Avoid custom waves/shapes.' : 'You can use custom waves (wave_N_per_point_N) and shapes (shape_N_per_frame_N) for more complex visuals.'}
-
-Do NOT include markdown, explanations, or code fences. Only the [preset00] section.`;
-}
-
-function extractMilkSource(response: string): string {
-  if (response.includes('[preset00]')) {
-    const start = response.indexOf('[preset00]');
-    const end = response.indexOf('\n\n', start);
-    const section =
-      end > start ? response.slice(start, end + 1) : response.slice(start);
-    return '[preset00]\n' + section.replace(/^\[preset00\]\n?/i, '');
-  }
-  return '[preset00]\n' + response.replace(/^[\s\S]*?(\w+)=/, '$1=');
-}
-
-function generateFallbackPreset(description: string): string {
-  const lower = description.toLowerCase();
-  const waveMode =
-    lower.includes('blob') || lower.includes('circular')
-      ? 7
-      : lower.includes('wave') || lower.includes('flow')
-        ? 1
-        : 2;
-  const zoom = lower.includes('zoom') || lower.includes('close') ? 1.5 : 1.0;
-  const warpMod = lower.includes('warp') || lower.includes('bend') ? 2.0 : 1.0;
-  const rot = lower.includes('spin') || lower.includes('rotate') ? 0.5 : 0.0;
-  const bassReact =
-    lower.includes('pulse') || lower.includes('beat') ? '0.5' : '0.2';
-
-  return `[preset00]
-fRating=4.0
-fDecay=0.96
-nWaveMode=${waveMode}
-fWaveScale=1.2
-fWaveAlpha=0.85
-bAdditiveWaves=0
-fZoom=${zoom}
-fWarp=${warpMod}
-fRot=${rot}
-fGammaAdj=2.0
-fSx=1.0
-fSy=1.0
-fCx=0.5
-fCy=0.5
-per_frame_1=decay=0.96;
-per_frame_2=zoom=1.0+bass*${bassReact};
-per_frame_3=rot=time*0.02;
-`;
 }

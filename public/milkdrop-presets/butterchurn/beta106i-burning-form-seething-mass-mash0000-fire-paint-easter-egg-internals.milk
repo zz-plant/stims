@@ -1,0 +1,72 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.700000
+fDecay=0.995000
+fVideoEchoZoom=1.000000
+nVideoEchoOrientation=1.000000
+nWaveMode=2.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=100.000000
+fWaveSmoothing=0.900000
+fWaveParam=-0.600000
+fModWaveAlphaStart=0.500000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=100.000000
+fWarpScale=100.000000
+fShader=1.000000
+fDX=0.000010
+fDY=0.000010
+fWarp=0.010000
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.300000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=1.000000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+nMotionVectorsLoop=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, (uv + (
+    (texture (sampler_main, (mix (uv, uv_orig, vec2(-1.0, -1.0)) + texsize.zw)).xy - 0.37)
+   * 
+    (0.005 + (0.025 * clamp ((treb - 1.0), 0.0, 1.0)))
+  ))).xyz - 0.004);
+  ret = tmpvar_1.xyz;
+ }

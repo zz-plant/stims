@@ -36,7 +36,7 @@ type WorkspaceShellOrchestrationArgs = {
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
     launchState?: SessionRouteState;
-    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
+    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file' | 'spotify';
     stream?: MediaStream;
   }) => Promise<void>;
   youtubePreviewRef: { current: HTMLDivElement | null };
@@ -368,7 +368,7 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handleAudioStart = async (
-    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
+    source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file' | 'spotify',
   ) => {
     try {
       setStatusMessage(null);

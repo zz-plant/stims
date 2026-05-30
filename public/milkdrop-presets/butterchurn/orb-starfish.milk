@@ -1,0 +1,82 @@
+[preset00]
+fRating=1.000000
+fDecay=0.500000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=7.000000
+bSolarize=1.000000
+fWaveAlpha=0.001000
+fRot=-0.280000
+fWarp=0.010000
+fWaveR=0.000000
+fWaveG=0.400000
+fWaveB=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+fY=0.550000
+fA2=1.000000
+
+[shape00_3]
+bEnabled=1.000000
+fA2=1.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  float final_noise_1;
+  vec3 tmpvar_2;
+  tmpvar_2.xy = uv;
+  tmpvar_2.z = (q2 * 10.0);
+  final_noise_1 = ((texture (sampler_noisevol_lq, tmpvar_2) * 2.0) - 1.0).x;
+  final_noise_1 = ((final_noise_1 + 1.0) * 0.5);
+  mat2 tmpvar_3;
+  float tmpvar_4;
+  tmpvar_4 = cos(q1);
+  tmpvar_3[uint(0)].x = tmpvar_4;
+  float tmpvar_5;
+  tmpvar_5 = sin(q1);
+  tmpvar_3[uint(0)].y = -(tmpvar_5);
+  tmpvar_3[1u].x = tmpvar_5;
+  tmpvar_3[1u].y = tmpvar_4;
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = texture (sampler_main, (((
+    ((uv - 0.5) * tmpvar_3)
+   * 
+    (1.0 - (rad * 0.05))
+  ) + 0.5) + ((final_noise_1 * 0.01) * rad))).xyz;
+  ret = tmpvar_6.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (mix (texture (sampler_main, uv).xyz, texture (sampler_main, (
+    (0.5 - uv)
+   + 0.5)).xyz, vec3(0.5, 0.5, 0.5)) * 2.0);
+  ret_1 = ((ret_1 * (1.0 - ret_1)) * 4.0);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

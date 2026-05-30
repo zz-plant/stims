@@ -1,0 +1,112 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+nWaveMode=6.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=100.000000
+fWaveScale=4.438000
+fWaveSmoothing=0.414000
+fWaveParam=1.000000
+fModWaveAlphaStart=1.050000
+fModWaveAlphaEnd=1.650000
+fWarpAnimSpeed=2.130000
+fWarpScale=2.498000
+fZoom=1.025000
+fWarp=0.361460
+fWaveR=0.800000
+fWaveG=0.800000
+fWaveB=0.800000
+fOuterBorderSize=0.005000
+fOuterBorderR=1.000000
+fOuterBorderG=1.000000
+fOuterBorderB=1.000000
+fOuterBorderA=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1 = ((uv - 0.5) * vec2(1.9, 1.9));
+  vec2 tmpvar_2;
+  tmpvar_2.x = ((tmpvar_1.x * tmpvar_1.x) - (tmpvar_1.y * tmpvar_1.y));
+  tmpvar_2.y = ((2.0 * tmpvar_1.x) * tmpvar_1.y);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ((texture (sampler_fc_main, (tmpvar_2 + vec2(0.4, 0.32))).xyz * 0.92) + 0.01);
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 plastic_1;
+  vec2 tmpvar_2;
+  tmpvar_2 = (texsize.zw * 8.0);
+  vec3 tmpvar_3;
+  tmpvar_3 = (((texture (sampler_blur1, 
+    (uv + (vec2(1.0, 0.0) * tmpvar_2))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(1.0, 0.0) * tmpvar_2))
+  ).xyz * scale1) + bias1));
+  vec3 tmpvar_4;
+  tmpvar_4 = (((texture (sampler_blur1, 
+    (uv + (vec2(0.0, 1.0) * tmpvar_2))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(0.0, 1.0) * tmpvar_2))
+  ).xyz * scale1) + bias1));
+  vec2 tmpvar_5;
+  tmpvar_5.x = q1;
+  tmpvar_5.y = q2;
+  vec2 tmpvar_6;
+  tmpvar_6.x = tmpvar_3.x;
+  tmpvar_6.y = tmpvar_4.x;
+  vec2 x_7;
+  x_7 = ((uv - (tmpvar_6 * 4.0)) - tmpvar_5);
+  plastic_1.x = (4.0 / (1.0 + (16.0 * 
+    pow (sqrt(dot (x_7, x_7)), 0.5)
+  )));
+  vec2 tmpvar_8;
+  tmpvar_8.x = tmpvar_3.y;
+  tmpvar_8.y = tmpvar_4.y;
+  vec2 x_9;
+  x_9 = ((uv - (tmpvar_8 * 4.0)) - tmpvar_5);
+  plastic_1.y = (4.0 / (1.0 + (16.0 * 
+    pow (sqrt(dot (x_9, x_9)), 0.5)
+  )));
+  vec2 tmpvar_10;
+  tmpvar_10.x = tmpvar_3.z;
+  tmpvar_10.y = tmpvar_4.z;
+  vec2 x_11;
+  x_11 = ((uv - (tmpvar_10 * 4.0)) - tmpvar_5);
+  plastic_1.z = (4.0 / (1.0 + (16.0 * 
+    pow (sqrt(dot (x_11, x_11)), 0.5)
+  )));
+  vec4 tmpvar_12;
+  tmpvar_12.w = 1.0;
+  tmpvar_12.xyz = (plastic_1 * texture (sampler_main, uv).xyz);
+  ret = tmpvar_12.xyz;
+ }

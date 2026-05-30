@@ -1,0 +1,103 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.420000
+fDecay=1.000000
+fVideoEchoZoom=1.220000
+fVideoEchoAlpha=0.300000
+nWaveMode=5.000000
+bTexWrap=0.000000
+bDarken=1.000000
+fWaveAlpha=0.691000
+fWaveScale=4.778000
+fWaveSmoothing=0.000000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fShader=1.000000
+fZoom=0.999510
+fWarp=0.010100
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.005000
+fOuterBorderA=0.100000
+fInnerBorderSize=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 rsamp_1;
+  vec3 ret_2;
+  vec4 tmpvar_3;
+  tmpvar_3 = texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy));
+  vec4 tmpvar_4;
+  tmpvar_4 = texture (sampler_pw_main, uv_orig);
+  ret_2 = tmpvar_4.xyz;
+  vec4 tmpvar_5;
+  tmpvar_5 = texture (sampler_pw_main, (uv_orig + ((
+    (tmpvar_3.xy - 0.5)
+   * 12.0) * texsize.zw)));
+  vec3 tmpvar_6;
+  tmpvar_6 = tmpvar_5.xyz;
+  rsamp_1 = tmpvar_6;
+  float tmpvar_7;
+  vec2 x_8;
+  x_8 = (tmpvar_4.xy - uv_orig);
+  tmpvar_7 = sqrt(dot (x_8, x_8));
+  float tmpvar_9;
+  vec2 x_10;
+  x_10 = (tmpvar_5.xy - uv_orig);
+  tmpvar_9 = sqrt(dot (x_10, x_10));
+  if ((tmpvar_7 > tmpvar_9)) {
+    ret_2.xy = tmpvar_6.xy;
+  };
+  vec4 tmpvar_11;
+  tmpvar_11 = texture (sampler_pw_main, (uv_orig + ((
+    (tmpvar_3.zw - 0.5)
+   * 48.0) * texsize.zw)));
+  rsamp_1 = tmpvar_11.xyz;
+  float tmpvar_12;
+  vec2 x_13;
+  x_13 = (ret_2.xy - uv_orig);
+  tmpvar_12 = sqrt(dot (x_13, x_13));
+  float tmpvar_14;
+  vec2 x_15;
+  x_15 = (tmpvar_11.xy - uv_orig);
+  tmpvar_14 = sqrt(dot (x_15, x_15));
+  if ((tmpvar_12 > tmpvar_14)) {
+    ret_2.xy = rsamp_1.xy;
+  };
+  ret_2.z = texture (sampler_fw_main, ret_2.xy).z;
+  ret_2.z = (ret_2.z - (q1 * 0.005));
+  if ((ret_2.z < 0.09)) {
+    ret_2 = vec3(0.0, 0.0, 0.0);
+  };
+  vec4 tmpvar_16;
+  tmpvar_16.w = 1.0;
+  tmpvar_16.xyz = ret_2;
+  ret = tmpvar_16.xyz;
+ }

@@ -1,0 +1,124 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.700000
+fDecay=1.000000
+fVideoEchoZoom=0.997000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+bTexWrap=0.000000
+fWaveAlpha=0.001000
+fWaveScale=0.188000
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpAnimSpeed=2.599000
+fWarpScale=0.010000
+fZoomExponent=0.999900
+fZoom=1.019590
+fWarp=0.010000
+fSy=1.001700
+fOuterBorderSize=0.000000
+fOuterBorderR=1.000000
+fOuterBorderG=1.000000
+fOuterBorderB=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.500000
+fMotionVectorsR=0.350000
+fMotionVectorsG=0.350000
+fMotionVectorsB=0.350000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+fSeparation=128.000000
+bSpectrum=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fScaling=4.447970
+fSmoothing=1.000000
+
+[wave00_1]
+bEnabled=1.000000
+fSeparation=128.000000
+bSpectrum=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fScaling=4.447960
+fSmoothing=1.000000
+
+[wave00_2]
+bEnabled=1.000000
+bSpectrum=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fScaling=4.448410
+fSmoothing=1.000000
+
+[wave00_3]
+bEnabled=1.000000
+bSpectrum=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fScaling=4.448410
+fSmoothing=1.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1.z = texture (sampler_fc_main, uv).z;
+  ret_1.x = (texture (sampler_main, uv).x * 0.97);
+  ret_1.y = (texture (sampler_main, mix (uv_orig, uv, vec2(0.2, 0.2))).y * 0.98);
+  ret_1.z = ((texture (sampler_main, mix (uv_orig, uv, vec2(0.4, 0.4))).z * 0.96) + (ret_1.xy * 0.25)).x;
+  ret_1 = (ret_1 - (0.0085 + (0.005 * ret_1)));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  vec3 tmpvar_3;
+  tmpvar_3 = ((texture (sampler_blur3, uv).xyz * scale3) + bias3);
+  ret_1 = (tmpvar_2.xyz + (tmpvar_3 + mix (tmpvar_2.xxx, 
+    (tmpvar_3.x * vec3(0.24, 0.9, 0.138))
+  , tmpvar_2.yyy)));
+  ret_1 = (ret_1 + (tmpvar_3 + mix (ret_1.yyy, 
+    (tmpvar_3.y * vec3(0.9, 0.25, 0.1))
+  , tmpvar_2.xxx)));
+  ret_1 = (ret_1 + (tmpvar_3 + mix (ret_1.zzz, 
+    (tmpvar_3.z * vec3(0.31, 0.12, 0.18))
+  , tmpvar_2.zzz)));
+  ret_1 = (ret_1 + ((tmpvar_3 * 
+    (fract(tmpvar_2.xyz) + fract(tmpvar_3))
+  ) + (
+    (tmpvar_2.xyz + dot ((tmpvar_2.xyz + tmpvar_3), vec3(0.32, 0.49, 0.29)))
+   + tmpvar_2.xyz)));
+  ret_1 = (ret_1 + fract((ret_1 + tmpvar_3)));
+  ret_1 = (ret_1 * ret_1);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = ret_1;
+  ret = tmpvar_4.xyz;
+ }

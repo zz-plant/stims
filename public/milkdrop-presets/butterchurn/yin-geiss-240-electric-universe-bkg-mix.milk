@@ -1,0 +1,130 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=0.800000
+fVideoEchoZoom=13.693630
+nWaveMode=3.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=0.200000
+fWaveScale=0.532384
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=0.500000
+fModWaveAlphaEnd=1.000000
+fWarpScale=1.430768
+fZoomExponent=0.880200
+fShader=0.330001
+fZoom=1.000489
+fWarp=0.341546
+fSx=0.999900
+fSy=0.999800
+fOuterBorderSize=0.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.300000
+fInnerBorderB=0.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=5.000000
+fMotionVectorsA=0.000000
+b1n=0.250000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+fTexZoom=0.999999
+fR=0.050000
+fG=0.050000
+fB=0.900000
+fG2=0.000000
+fB2=0.400000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=50.000000
+fRad=0.050330
+fG=0.050000
+fB=0.050000
+fR2=0.400001
+fG2=0.020000
+fB2=0.020000
+fA2=0.100000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=50.000000
+fRad=0.049832
+fG=0.050000
+fB=0.050000
+fR2=0.400001
+fG2=0.020000
+fB2=0.020000
+fA2=0.100000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=50.000000
+fRad=0.049832
+fG=0.050000
+fB=0.050000
+fR2=0.400001
+fG2=0.020000
+fB2=0.020000
+fA2=0.100000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+fSmoothing=0.000000
+
+[wave00_1]
+bEnabled=1.000000
+fSmoothing=0.000000
+
+[wave00_2]
+bEnabled=1.000000
+fSmoothing=0.000000
+
+[wave00_3]
+bEnabled=1.000000
+bAdditive=1.000000
+fScaling=1.030300
+fSmoothing=0.000000
+fB=0.470000
+
+[warp_shader]
+uniform sampler2D sampler_smalltiled_electric_nebula;
+ shader_body { 
+  float tmpvar_1;
+  tmpvar_1 = fract((time * 0.5));
+  float tmpvar_2;
+  tmpvar_2 = pow (0.5, tmpvar_1);
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv - 0.5);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = (mix (texture (sampler_fc_main, uv).xyz, (
+    mix (texture (sampler_smalltiled_electric_nebula, (((
+      (tmpvar_3 * tmpvar_2)
+     + 0.5) * texsize.xy) * texsize_smalltiled_electric_nebula.zw)).xyz, texture (sampler_smalltiled_electric_nebula, (((
+      (tmpvar_3 * (tmpvar_2 * 2.0))
+     + 0.5) * texsize.xy) * texsize_smalltiled_electric_nebula.zw)).xyz, vec3(tmpvar_1))
+   * 
+    (clamp ((rad * 1.3), 0.0, 1.0) * 1.1)
+  ), vec3(0.15, 0.15, 0.15)) * 0.8);
+  ret = tmpvar_4.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz + ((
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+   - blur1_min) * 2.0));
+  ret = tmpvar_1.xyz;
+ }

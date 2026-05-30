@@ -1,0 +1,97 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.207000
+fWaveScale=0.397000
+fWaveSmoothing=0.000000
+fWaveParam=0.240000
+fModWaveAlphaEnd=1.170000
+fWarpAnimSpeed=0.451000
+fWarpScale=3.040000
+fZoomExponent=2.194760
+fZoom=1.029710
+fWarp=0.098620
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsR=0.350000
+fMotionVectorsG=0.350000
+fMotionVectorsB=0.350000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = texture (sampler_main, uv).xyz;
+  ret_1 = (ret_1 + ((ret_1 - 
+    ((texture (sampler_blur2, uv).xyz * scale2) + bias2)
+  ) * 0.3));
+  ret_1 = (ret_1 * 0.9);
+  ret_1 = (ret_1 + ((
+    ((texture (sampler_noise_lq, ((
+      (uv_orig * texsize.xy)
+     * 
+      (texsize_noise_lq.zw * 0.4)
+    ) + rand_frame.xy)).xyz - 0.5) / 256.0)
+   * 122.0) * clamp (
+    (treb_att - 1.0)
+  , 0.0, 1.0)));
+  ret_1 = mix (ret_1, vec3(dot (ret_1, vec3(0.32, 0.49, 0.29))), vec3(0.2, 0.2, 0.2));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 uv2_1;
+  float blur_2;
+  float crisp_3;
+  vec3 ret_4;
+  vec2 tmpvar_5;
+  tmpvar_5 = (uv - 0.5);
+  uv2_1 = ((tmpvar_5 * 0.8) + 0.5);
+  crisp_3 = texture (sampler_main, uv2_1).y;
+  blur_2 = ((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1).y;
+  ret_4 = (texture (sampler_main, ((tmpvar_5 * 0.6) + 0.5)).zzz * (1.0 - (blur_2 * 1.15)));
+  vec3 tmpvar_6;
+  tmpvar_6 = max (ret_4, vec3(crisp_3));
+  uv2_1 = uv;
+  crisp_3 = texture (sampler_main, uv).x;
+  blur_2 = ((texture (sampler_blur1, uv).xyz * scale1) + bias1).x;
+  ret_4 = (tmpvar_6 * (1.0 - (blur_2 * 1.15)));
+  vec3 tmpvar_7;
+  tmpvar_7 = max (ret_4, vec3(crisp_3));
+  ret_4 = tmpvar_7;
+  vec4 tmpvar_8;
+  tmpvar_8.w = 1.0;
+  tmpvar_8.xyz = tmpvar_7;
+  ret = tmpvar_8.xyz;
+ }

@@ -74,7 +74,6 @@ body[data-page="workspace"] {
   }
 
   @supports (min-height: 100svh) {
-    #app,
     :scope {
       min-height: 100svh;
     }

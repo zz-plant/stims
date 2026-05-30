@@ -1,0 +1,93 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+nVideoEchoOrientation=3.000000
+nWaveMode=1.000000
+bWaveThick=1.000000
+bTexWrap=0.000000
+bDarkenCenter=1.000000
+fWaveAlpha=0.300000
+fWaveScale=0.881000
+fWaveSmoothing=0.500000
+fWaveParam=-1.000000
+fWarpScale=2.853000
+fZoomExponent=3.600000
+fZoom=1.021090
+fRot=-0.160000
+fWarp=0.309000
+fWaveR=0.600000
+fWaveG=0.600000
+fWaveB=0.600000
+fWaveY=0.470000
+nMotionVectorsLoop=1.750000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[comp_shader]
+shader_body { 
+  vec2 uv2_1;
+  uv2_1 = (uv + (vec2(1.0, 0.0) * texsize.zw));
+  float tmpvar_2;
+  tmpvar_2 = ((texture (sampler_main, uv2_1).x + (
+    ((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1)
+  .x * 0.3)) + ((
+    (texture (sampler_blur2, uv2_1).xyz * scale2)
+   + bias2).x * 0.1));
+  uv2_1 = (uv + (vec2(-1.0, 0.0) * texsize.zw));
+  float tmpvar_3;
+  tmpvar_3 = ((texture (sampler_main, uv2_1).x + (
+    ((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1)
+  .x * 0.3)) + ((
+    (texture (sampler_blur2, uv2_1).xyz * scale2)
+   + bias2).x * 0.1));
+  uv2_1 = (uv + (vec2(0.0, 1.0) * texsize.zw));
+  float tmpvar_4;
+  tmpvar_4 = ((texture (sampler_main, uv2_1).x + (
+    ((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1)
+  .x * 0.3)) + ((
+    (texture (sampler_blur2, uv2_1).xyz * scale2)
+   + bias2).x * 0.1));
+  uv2_1 = (uv + (vec2(0.0, -1.0) * texsize.zw));
+  vec3 tmpvar_5;
+  tmpvar_5.z = 0.06;
+  tmpvar_5.x = (tmpvar_2 - tmpvar_3);
+  tmpvar_5.y = (tmpvar_4 - ((texture (sampler_main, uv2_1).x + 
+    (((texture (sampler_blur1, uv2_1).xyz * scale1) + bias1).x * 0.3)
+  ) + (
+    ((texture (sampler_blur2, uv2_1).xyz * scale2) + bias2)
+  .x * 0.1)));
+  vec3 tmpvar_6;
+  tmpvar_6 = normalize(tmpvar_5);
+  vec4 tmpvar_7;
+  tmpvar_7.w = 1.0;
+  tmpvar_7.xyz = ((vec3(0.9, 1.17, 0.8099999) * clamp (
+    dot (tmpvar_6, vec3(0.804518, 0.5229367, 0.2815813))
+  , 0.0, 1.0)) + (vec3(0.54, 0.63, 0.8099999) * clamp (
+    dot (tmpvar_6, vec3(0.3137279, -0.9411837, 0.1254912))
+  , 0.0, 1.0)));
+  ret = tmpvar_7.xyz;
+ }
