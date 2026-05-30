@@ -11,6 +11,7 @@ const isCloudflarePages = (() => {
   return value === '1' || value === 'true';
 })();
 const skipCloudflareBuild = process.env.STIMS_SKIP_POSTINSTALL_BUILD === '1';
+const isCI = process.env.CI === 'true' || process.env.HUSKY === '0';
 
 const run = (command) => {
   execSync(command, { stdio: 'inherit' });
@@ -47,8 +48,8 @@ if (isCloudflarePages) {
   console.log('[postinstall] CF_PAGES not set; skipping build.');
 }
 
-if (isCloudflarePages) {
-  console.log('[postinstall] Husky install skipped (Cloudflare Pages).');
+if (isCI || isCloudflarePages) {
+  console.log('[postinstall] Husky install skipped (CI/CF Pages).');
 } else if (isBunUserAgent) {
   run('husky install');
 } else {
