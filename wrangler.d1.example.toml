@@ -1,0 +1,9 @@
+# Add to wrangler.toml to enable D1 and R2
+[[d1_databases]]
+binding = "DB"
+database_name = "stims-gallery"
+database_id = "your-d1-database-id"
+
+[[r2_buckets]]
+binding = "GALLERY_R2"
+bucket_name = "stims-gallery"
