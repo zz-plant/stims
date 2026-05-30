@@ -29,6 +29,5 @@ opencode.json
 
 # Tooling
 .cmux/
-.opencode/
 .agent/
 .wrangler/
