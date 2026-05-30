@@ -1,4 +1,5 @@
 import type { PresetCatalogEntry } from './contracts.ts';
+import { useEffect } from 'react';
 import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import { PresetArtwork, PresetShelfSection, UiIcon } from './workspace-ui.tsx';
@@ -43,6 +44,15 @@ export function NewHomePage() {
   const hasFavorites = favoritePresets.length > 0;
   const hasRecent = recentPresets.length > 0;
   const showJumpBack = hasFavorites || hasRecent;
+
+  useEffect(() => {
+    if (!catalogReady || catalog.length === 0) return;
+    const ids = catalog.slice(0, 6).map((e) => e.id);
+    if (featuredPreset && !ids.includes(featuredPreset.id)) {
+      ids.unshift(featuredPreset.id);
+    }
+    void engine.requestPresetPreviews(ids);
+  }, [catalogReady, catalog, featuredPreset, engine.requestPresetPreviews]);
 
   return (
     <section

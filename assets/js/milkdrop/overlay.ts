@@ -65,7 +65,6 @@ export class MilkdropOverlay {
     this.autoplayToggle.type = 'checkbox';
     this.autoplayToggle.addEventListener('change', () => {
       callbacks.onToggleAutoplay(this.autoplayToggle.checked);
-      this.updateUrlParams();
     });
     const autoplayLabel = document.createElement('label');
     autoplayLabel.append('Auto', this.autoplayToggle);
@@ -81,7 +80,6 @@ export class MilkdropOverlay {
     this.transitionModeSelect.addEventListener('change', () => {
       const mode = this.transitionModeSelect.value === 'cut' ? 'cut' : 'blend';
       callbacks.onTransitionModeChange(mode);
-      this.updateUrlParams();
     });
 
     this.blendSlider = document.createElement('input');
@@ -94,7 +92,6 @@ export class MilkdropOverlay {
       const v = Number.parseFloat(this.blendSlider.value);
       this.blendValue.textContent = `${v.toFixed(2)}s`;
       callbacks.onBlendDurationChange(v);
-      this.updateUrlParams();
     });
     this.blendValue = document.createElement('span');
     this.blendValue.className = 'milkdrop-overlay__blend-value';
@@ -158,20 +155,6 @@ export class MilkdropOverlay {
     } catch (_err) {}
   }
 
-  private updateUrlParams() {
-    try {
-      const searchParams = new URLSearchParams(window.location.search);
-      searchParams.set('autoplay', String(this.autoplayToggle.checked));
-      searchParams.set(
-        'blend',
-        Number.parseFloat(this.blendSlider.value).toFixed(2),
-      );
-      searchParams.set('transition', this.transitionModeSelect.value);
-      const newRelativePathQuery = `${window.location.pathname}?${searchParams.toString()}${window.location.hash}`;
-      window.history.replaceState(null, '', newRelativePathQuery);
-    } catch (_err) {}
-  }
-
   showPresetOsd(title: string, meta: string, backend: string) {
     this.presetOsdTitle.textContent = title;
     this.presetOsdMeta.textContent = meta;
@@ -195,18 +178,15 @@ export class MilkdropOverlay {
 
   setAutoplay(enabled: boolean) {
     this.autoplayToggle.checked = enabled;
-    this.updateUrlParams();
   }
 
   setBlendDuration(value: number) {
     this.blendSlider.value = String(value);
     this.blendValue.textContent = `${value.toFixed(2)}s`;
-    this.updateUrlParams();
   }
 
   setTransitionMode(mode: 'blend' | 'cut') {
     this.transitionModeSelect.value = mode;
-    this.updateUrlParams();
   }
 
   isOpen() {

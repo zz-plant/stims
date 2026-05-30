@@ -1498,6 +1498,10 @@ body[data-page="workspace"] {
   pointer-events: none;
 }
 
+.stims-shell__stage-frame[data-mode="home"] .milkdrop-overlay__toolbar {
+  display: none;
+}
+
 .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero > * {
   pointer-events: auto;
 }
