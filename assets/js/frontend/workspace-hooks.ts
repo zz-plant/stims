@@ -14,23 +14,16 @@ import {
   QUALITY_STORAGE_KEY,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
-import type {
-  MilkdropCatalogEntry,
-  MilkdropCatalogStore,
-} from '../milkdrop/catalog-types.ts';
 import { resolvePresetId } from '../milkdrop/preset-id-resolution.ts';
-import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
-import type {
-  LaunchIntent,
-  PresetCatalogEntry,
-  SessionRouteState,
-} from './contracts.ts';
+import type { LaunchIntent, SessionRouteState } from './contracts.ts';
 import type {
   EngineSnapshot,
   MilkdropEngineAdapter,
 } from './engine/milkdrop-engine-adapter.ts';
 import { useAudioSourceSync } from './hooks/use-audio-source-sync.ts';
+import { useCatalogLoading } from './hooks/use-catalog-loading.ts';
 import { useDocumentDatasetSync } from './hooks/use-document-dataset-sync.ts';
+import { usePresetPreviews } from './hooks/use-preset-previews.ts';
 import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
@@ -41,10 +34,7 @@ import {
   stringifyPlainSearch,
 } from './url-state.ts';
 import { createLazyFactory } from './use-lazy-factory.ts';
-import {
-  buildLaunchIntent,
-  mapRuntimeCatalogEntry,
-} from './workspace-helpers.ts';
+import { buildLaunchIntent } from './workspace-helpers.ts';
 import { useWorkspaceReadiness } from './workspace-readiness.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
@@ -101,47 +91,42 @@ export function useWorkspaceSessionState({
   const [engineSnapshot, setEngineSnapshot] = useState<EngineSnapshot | null>(
     null,
   );
-  const [fallbackCatalog, setFallbackCatalog] = useState<PresetCatalogEntry[]>(
-    [],
-  );
-  const [fallbackCatalogError, setFallbackCatalogError] = useState<
-    string | null
-  >(null);
-  const [fallbackCatalogReady, setFallbackCatalogReady] = useState(false);
-  const [activityCatalog, setActivityCatalog] = useState<PresetCatalogEntry[]>(
-    [],
-  );
-  const [engineAdapterReady, setEngineAdapterReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { motionPreference, qualityPreset, renderPreferences } =
     useStoreSubscriptions();
   const [showExtendedSources, setShowExtendedSources] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [presetPreviews, setPresetPreviews] = useState<
-    Record<string, MilkdropPresetRenderPreview>
-  >({});
   const deferredSearch = useDeferredValue(searchQuery);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
-  const catalogStoreRef = useRef<MilkdropCatalogStore | null>(null);
   const sessionDisposedRef = useRef(false);
   const engineAdapterPromiseRef = useRef<Promise<MilkdropEngineAdapter> | null>(
     null,
   );
   const engineUnsubscribeRef = useRef<(() => void) | null>(null);
-  const previewServiceRef = useRef<{
-    dispose: () => void;
-    refreshPreviews: (presetIds: string[]) => void;
-    requestPreviews: (presetIds: string[]) => void;
-  } | null>(null);
-  const previewServicePromiseRef = useRef<Promise<{
-    dispose: () => void;
-    refreshPreviews: (presetIds: string[]) => void;
-    requestPreviews: (presetIds: string[]) => void;
-  }> | null>(null);
   const pendingPresetIdRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
   const readinessItems = useWorkspaceReadiness();
+
+  const {
+    activityCatalog,
+    ensureCatalogStore,
+    fallbackCatalog,
+    fallbackCatalogError,
+    fallbackCatalogReady,
+    refreshCatalogActivity,
+  } = useCatalogLoading();
+
+  const {
+    presetPreviews,
+    requestPresetPreviews,
+    refreshPresetPreviews,
+  } = usePresetPreviews({
+    stageRef,
+    engineSnapshot,
+    fallbackCatalogReady,
+    isDisposed: () => sessionDisposedRef.current,
+  });
   const {
     handleYoutubeUrlKeyDown,
     loadRecentYouTubeVideo,
@@ -164,33 +149,6 @@ export function useWorkspaceSessionState({
     statusMessage,
   });
 
-  const ensureCatalogStore = useEffectEvent(async () => {
-    if (catalogStoreRef.current) {
-      return catalogStoreRef.current;
-    }
-
-    const { createMilkdropCatalogStore } = await import(
-      '../milkdrop/catalog-store.ts'
-    );
-    const store = createMilkdropCatalogStore();
-    catalogStoreRef.current = store;
-    return store;
-  });
-
-  const refreshCatalogActivity = useEffectEvent(async () => {
-    try {
-      const store = await ensureCatalogStore();
-      const entries = await store.listPresets();
-      setActivityCatalog(
-        entries.map((entry: MilkdropCatalogEntry) =>
-          mapRuntimeCatalogEntry(entry),
-        ),
-      );
-    } catch (_error) {
-      setActivityCatalog([]);
-    }
-  });
-
   const ensureEngineAdapter = useEffectEvent(
     createLazyFactory({
       name: 'EngineAdapter',
@@ -201,7 +159,6 @@ export function useWorkspaceSessionState({
             engineUnsubscribeRef.current = adapter.subscribe((snapshot) => {
               setEngineSnapshot(snapshot);
             });
-            setEngineAdapterReady(true);
             return adapter;
           },
         ),
@@ -214,53 +171,6 @@ export function useWorkspaceSessionState({
         engineAdapterPromiseRef.current = p;
       },
       cleanup: (adapter) => adapter.dispose(),
-      isDisposed: () => sessionDisposedRef.current,
-    }),
-  );
-
-  const ensurePresetPreviewService = useEffectEvent(
-    createLazyFactory({
-      name: 'PresetPreviewService',
-      factory: async () => {
-        const [{ createMilkdropPresetPreviewService }] = await Promise.all([
-          import('../milkdrop/runtime/preset-preview-service.ts'),
-        ]);
-
-        const service = createMilkdropPresetPreviewService({
-          capturePreview: async (_presetId) => {
-            const stage = stageRef.current;
-            const canvas = stage?.querySelector('canvas');
-            if (!(canvas instanceof HTMLCanvasElement)) {
-              throw new Error('Preview canvas was not available.');
-            }
-
-            return {
-              imageUrl: canvas.toDataURL('image/webp', 0.82),
-              actualBackend: engineSnapshot?.backend ?? null,
-              updatedAt: Date.now(),
-              error: null,
-              source: 'runtime-snapshot' as const,
-            };
-          },
-          onPreviewChanged: (preview) => {
-            setPresetPreviews((current) => ({
-              ...current,
-              [preview.presetId]: preview,
-            }));
-          },
-        });
-
-        return service;
-      },
-      getRef: () => previewServiceRef.current,
-      setRef: (svc) => {
-        previewServiceRef.current = svc;
-      },
-      getPromiseRef: () => previewServicePromiseRef.current,
-      setPromiseRef: (p) => {
-        previewServicePromiseRef.current = p;
-      },
-      cleanup: (svc) => svc.dispose(),
       isDisposed: () => sessionDisposedRef.current,
     }),
   );
@@ -289,48 +199,11 @@ export function useWorkspaceSessionState({
 
     return () => {
       sessionDisposedRef.current = true;
-      previewServiceRef.current?.dispose();
-      previewServiceRef.current = null;
-      previewServicePromiseRef.current = null;
       engineUnsubscribeRef.current?.();
       engineUnsubscribeRef.current = null;
       engineRef.current?.dispose();
       engineRef.current = null;
       engineAdapterPromiseRef.current = null;
-      setEngineAdapterReady(false);
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    setFallbackCatalogError(null);
-    setFallbackCatalogReady(false);
-
-    void ensureCatalogStore()
-      .then((store) => store.listPresets())
-      .then((entries) => {
-        if (cancelled) {
-          return;
-        }
-        const mapped = entries.map((entry: MilkdropCatalogEntry) =>
-          mapRuntimeCatalogEntry(entry),
-        );
-        setFallbackCatalog(mapped);
-        setFallbackCatalogReady(true);
-        setActivityCatalog(mapped);
-      })
-      .catch((error) => {
-        if (cancelled) {
-          return;
-        }
-        setFallbackCatalogError(
-          error instanceof Error ? error.message : 'Unable to load catalog.',
-        );
-        setActivityCatalog([]);
-      });
-
-    return () => {
-      cancelled = true;
     };
   }, []);
 
@@ -345,34 +218,14 @@ export function useWorkspaceSessionState({
       return;
     }
 
-    const launchIntent = buildLaunchIntent(routeState);
-    initialLaunchIntentRef.current = launchIntent;
-    void ensureEngineMounted(launchIntent).catch((error) => {
+    void ensureEngineMounted().catch((error) => {
       setStatusMessage(
         error instanceof Error
           ? error.message
           : 'Unable to start the visualizer runtime.',
       );
     });
-  }, [
-    engineSnapshot?.runtimeReady,
-    routeState,
-    routeState.invalidExperienceSlug,
-  ]);
-
-  useEffect(() => {
-    if (!engineSnapshot?.runtimeReady || !fallbackCatalogReady) {
-      return;
-    }
-    void ensurePresetPreviewService().catch(() => {});
-  }, [engineSnapshot?.runtimeReady, fallbackCatalogReady]);
-
-  useEffect(() => {
-    if (!routeState.panel || !engineSnapshot?.runtimeReady) {
-      return;
-    }
-    void refreshCatalogActivity();
-  }, [routeState.panel, engineSnapshot?.runtimeReady]);
+  }, [engineSnapshot?.runtimeReady, routeState.invalidExperienceSlug]);
 
   usePresetRouteSync({
     engineSnapshot,
@@ -525,10 +378,7 @@ export function useWorkspaceSessionState({
     setYoutubeUrl,
     showExtendedSources,
     stageRef,
-    refreshPresetPreviews: async (presetIds: string[]) => {
-      const service = await ensurePresetPreviewService();
-      service.refreshPreviews(presetIds);
-    },
+    refreshPresetPreviews,
     startAudioSource: async (request: {
       cropTarget?: HTMLElement | null;
       launchState?: SessionRouteState;
@@ -564,10 +414,7 @@ export function useWorkspaceSessionState({
       await refreshCatalogActivity();
     },
     toggleExtendedSources: () => setShowExtendedSources((current) => !current),
-    requestPresetPreviews: async (presetIds: string[]) => {
-      const service = await ensurePresetPreviewService();
-      service.requestPreviews(presetIds);
-    },
+    requestPresetPreviews,
     youtubeCanLoad,
     youtubeFeedback,
     youtubeInputInvalid,
