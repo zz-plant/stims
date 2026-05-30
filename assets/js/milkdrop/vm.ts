@@ -1,7 +1,7 @@
 /* global GPUDevice */
 
 import { DEFAULT_MILKDROP_STATE } from './compiler';
-import { evaluateMilkdropExpression } from './expression';
+import { evaluateJit } from './expression-jit.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -474,9 +474,7 @@ class MilkdropPresetVM implements MilkdropVM {
       if (!statement) {
         continue;
       }
-      const value = evaluateMilkdropExpression(statement.expression, env, {
-        nextRandom: this.nextRandom,
-      });
+      const value = evaluateJit(statement.expression, env, this.nextRandom);
       this.setValue(statement.target, value, locals);
       env[statement.target] = value;
     }

@@ -2,69 +2,6 @@ import type { MilkdropExpressionNode } from './common-types.ts';
 
 type JitFn = (env: Record<string, number>, r: () => number) => number;
 
-const OPERATORS: Record<string, string> = {
-  '+': 'l+r',
-  '-': 'l-r',
-  '*': 'l*r',
-  '/': '(r===0?0:l/r)',
-  '%': '(R===0?0:l%R)',
-  '^': 'l**r',
-  '<': '(l<r?1:0)',
-  '<=': '(l<=r?1:0)',
-  '>': '(l>r?1:0)',
-  '>=': '(l>=r?1:0)',
-  '==': '(l===r?1:0)',
-  '!=': '(l!==r?1:0)',
-  '&&': '(l&&r?1:0)',
-  '||': '(l||r?1:0)',
-};
-
-const UNARY: Record<string, string> = {
-  '+': '(+x)',
-  '-': '(-x)',
-  '!': '(x?-1:0)',
-};
-
-const FUNCTIONS: Record<string, string> = {
-  sin: 'Math.sin',
-  cos: 'Math.cos',
-  tan: 'Math.tan',
-  asin: '(a=Math.min(Math.max(a,-1),1),Math.asin(a))',
-  acos: '(a=Math.min(Math.max(a,-1),1),Math.acos(a))',
-  atan: 'Math.atan',
-  atan2: 'Math.atan2',
-  abs: 'Math.abs',
-  sqrt: 'Math.sqrt(Math.max(0,a))',
-  pow: '(a**b)',
-  exp: 'Math.exp',
-  log: 'Math.log(Math.max(1e-6,a))',
-  sqr: '(a*a)',
-  floor: 'Math.floor',
-  ceil: 'Math.ceil',
-  int: '((a|0)===a?a:Math.trunc(a))',
-  frac: '(a-Math.floor(a))',
-  sign: 'Math.sign',
-  min: '(a<b?a:b)',
-  max: '(a>b?a:b)',
-  clamp: '(Math.min(Math.max(a,b),c))',
-  mix: '(a+(b-a)*c)',
-  lerp: '(a+(b-a)*c)',
-  step: '(a>b?1:0)',
-  smoothstep:
-    '(function(e0,e1,x){var t=Math.max(0,Math.min((x-e0)/(e1-e0),1));return t*t*(3-2*t)})(a,b,c)',
-  sigmoid: '(1/(1+Math.exp(-a*(b||1))))',
-  above: '(a>b?1:0)',
-  below: '(a<b?1:0)',
-  equal: '(a===b?1:0)',
-  if: '(a!==0?b:c)',
-  mod: '(b===0?0:a%b)',
-  fmod: '(b===0?0:a%b)',
-  bor: '((a|0)|(b|0))',
-  band: '((a|0)&(b|0))',
-  bnot: '(~(a|0))',
-  rand: 'r()*(a||1)',
-};
-
 function compileNode(node: MilkdropExpressionNode): string {
   switch (node.type) {
     case 'literal':
@@ -73,31 +10,135 @@ function compileNode(node: MilkdropExpressionNode): string {
       const name = node.name.toLowerCase();
       if (name === 'pi') return 'Math.PI';
       if (name === 'e') return 'Math.E';
-      return `e[${JSON.stringify(node.name)}]`;
+      return `(e[${JSON.stringify(node.name)}] ?? 0)`;
     }
     case 'unary': {
       const x = compileNode(node.operand);
-      return UNARY[node.operator]?.replace('x', x) ?? '(0)';
+      switch (node.operator) {
+        case '+':
+          return `(+(${x}))`;
+        case '-':
+          return `(-(${x}))`;
+        case '!':
+          return `((${x}) === 0 ? 1 : 0)`;
+      }
+      return '(0)';
     }
     case 'binary': {
       const l = compileNode(node.left);
       const r = compileNode(node.right);
-      const op =
-        node.operator === '%'
-          ? `var R=Math.trunc(${r});${OPERATORS[node.operator]?.replace('R', 'R') ?? '(0)'}`
-          : (OPERATORS[node.operator] ?? '(0)');
-      return op.replace('l', l).replace('r', r);
+      switch (node.operator) {
+        case '+':
+          return `((${l}) + (${r}))`;
+        case '-':
+          return `((${l}) - (${r}))`;
+        case '*':
+          return `((${l}) * (${r}))`;
+        case '/':
+          return `(((${r}) === 0) ? 0 : (${l}) / (${r}))`;
+        case '%':
+          return `((function(a,b){var ai=Math.trunc(a)||0,bi=Math.trunc(b)||0;return bi===0?0:ai%bi})(${l},${r}))`;
+        case '^':
+          return `((${l}) ** (${r}))`;
+        case '|':
+          return `((Math.trunc(${l})||0) | (Math.trunc(${r})||0))`;
+        case '&':
+          return `((Math.trunc(${l})||0) & (Math.trunc(${r})||0))`;
+        case '<':
+          return `((${l}) < (${r}) ? 1 : 0)`;
+        case '<=':
+          return `((${l}) <= (${r}) ? 1 : 0)`;
+        case '>':
+          return `((${l}) > (${r}) ? 1 : 0)`;
+        case '>=':
+          return `((${l}) >= (${r}) ? 1 : 0)`;
+        case '==':
+          return `((${l}) === (${r}) ? 1 : 0)`;
+        case '!=':
+          return `((${l}) !== (${r}) ? 1 : 0)`;
+        case '&&':
+          return `((${l}) !== 0 && (${r}) !== 0 ? 1 : 0)`;
+        case '||':
+          return `((${l}) !== 0 || (${r}) !== 0 ? 1 : 0)`;
+      }
+      return '(0)';
     }
     case 'call': {
-      const fn = FUNCTIONS[node.name.toLowerCase()];
-      if (!fn) return '(0)';
       const args = node.args.map(compileNode);
-      const names = ['a', 'b', 'c', 'd', 'e', 'f'];
-      let code = fn;
-      for (let i = args.length - 1; i >= 0; i--) {
-        code = code.replace(names[i], () => args[i]);
+      const name = node.name.toLowerCase();
+      switch (name) {
+        case 'sin':
+          return `Math.sin(${args[0] ?? '0'})`;
+        case 'cos':
+          return `Math.cos(${args[0] ?? '0'})`;
+        case 'tan':
+          return `Math.tan(${args[0] ?? '0'})`;
+        case 'asin':
+          return `Math.asin(Math.min(1, Math.max(-1, ${args[0] ?? '0'})))`;
+        case 'acos':
+          return `Math.acos(Math.min(1, Math.max(-1, ${args[0] ?? '0'})))`;
+        case 'atan':
+          return `Math.atan(${args[0] ?? '0'})`;
+        case 'abs':
+          return `Math.abs(${args[0] ?? '0'})`;
+        case 'sqrt':
+          return `Math.sqrt(Math.max(0, ${args[0] ?? '0'}))`;
+        case 'pow':
+          return `((${args[0] ?? '0'}) ** (${args[1] ?? '0'}))`;
+        case 'mod':
+        case 'fmod':
+          return `((${args[1] ?? '0'}) === 0 ? 0 : (${args[0] ?? '0'}) % (${args[1] ?? '0'}))`;
+        case 'min':
+          return `Math.min(${args.join(',') || '0'})`;
+        case 'max':
+          return `Math.max(${args.join(',') || '0'})`;
+        case 'mix':
+        case 'lerp':
+          return `((${args[0] ?? '0'}) + ((${args[1] ?? '0'}) - (${args[0] ?? '0'})) * (${args[2] ?? '0'}))`;
+        case 'floor':
+          return `Math.floor(${args[0] ?? '0'})`;
+        case 'int':
+          return `(Math.trunc(${args[0] ?? '0'})||0)`;
+        case 'ceil':
+          return `Math.ceil(${args[0] ?? '0'})`;
+        case 'sqr':
+          return `((${args[0] ?? '0'}) * (${args[0] ?? '0'}))`;
+        case 'clamp':
+          return `Math.min(Math.max(${args[0] ?? '0'}, ${args[1] ?? '0'}), ${args[2] ?? '1'})`;
+        case 'step':
+          return `((${args[1] ?? '0'}) < (${args[0] ?? '0'}) ? 0 : 1)`;
+        case 'smoothstep':
+          return `((function(e0,e1,v){if(e0===e1)return v<e0?0:1;var t=Math.min(Math.max((v-e0)/(e1-e0),0),1);return t*t*(3-2*t)})(${args[0] ?? '0'},${args[1] ?? '1'},${args[2] ?? '0'}))`;
+        case 'log':
+          return `Math.log(Math.max(0.000001, ${args[0] ?? '0'}))`;
+        case 'exp':
+          return `Math.exp(${args[0] ?? '0'})`;
+        case 'sigmoid':
+          return `(1 / (1 + Math.exp(-(${args[0] ?? '0'}) * (${args[1] ?? '1'}))))`;
+        case 'sign':
+          return `Math.sign(${args[0] ?? '0'})`;
+        case 'bor':
+          return `((Math.trunc(${args[0] ?? '0'})||0) | (Math.trunc(${args[1] ?? '0'})||0))`;
+        case 'band':
+          return `((Math.trunc(${args[0] ?? '0'})||0) & (Math.trunc(${args[1] ?? '0'})||0))`
+        case 'bnot':
+          return `(~(Math.trunc(${args[0] ?? '0'})||0))`;
+        case 'atan2':
+          return `Math.atan2(${args[0] ?? '0'}, ${args[1] ?? '0'})`;
+        case 'frac':
+          return `((${args[0] ?? '0'}) - Math.floor(${args[0] ?? '0'}))`;
+        case 'if':
+          return `((${args[0] ?? '0'}) !== 0 ? (${args[1] ?? '0'}) : (${args[2] ?? '0'}))`;
+        case 'above':
+          return `((${args[0] ?? '0'}) > (${args[1] ?? '0'}) ? 1 : 0)`;
+        case 'below':
+          return `((${args[0] ?? '0'}) < (${args[1] ?? '0'}) ? 1 : 0)`;
+        case 'equal':
+          return `((${args[0] ?? '0'}) === (${args[1] ?? '0'}) ? 1 : 0)`;
+        case 'rand':
+          return `(r() * (${args[0] ?? '1'}))`;
       }
-      return code;
+      return '(0)';
     }
   }
 }
