@@ -1,0 +1,174 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=0.000000
+fWaveScale=2.630000
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.100000
+fZoom=1.040600
+fCX=0.470000
+nMotionVectorsDx=1.000000
+nMotionVectorsDy=1.000000
+nMotionVectorsLoop=5.000000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+nSamples=256.000000
+bSpectrum=1.000000
+bThick=1.000000
+fScaling=0.020000
+fR=0.000000
+fG=0.000000
+fB=0.000000
+
+[wave00_1]
+bEnabled=1.000000
+nSamples=256.000000
+bSpectrum=1.000000
+bThick=1.000000
+fScaling=0.020000
+fR=0.000000
+fG=0.000000
+fB=0.000000
+
+[wave00_2]
+bEnabled=1.000000
+nSamples=256.000000
+bSpectrum=1.000000
+bThick=1.000000
+fScaling=0.020000
+fR=0.000000
+fG=0.000000
+fB=0.000000
+
+[wave00_3]
+bEnabled=1.000000
+nSamples=256.000000
+bSpectrum=1.000000
+bThick=1.000000
+fScaling=0.010000
+fR=0.000000
+fG=0.000000
+fB=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  ret_1 = (tmpvar_2.xyz + ((tmpvar_2.xyz - 
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  ) * 0.3));
+  ret_1 = (ret_1 * 0.9);
+  ret_1 = (ret_1 + ((
+    (texture (sampler_noise_lq, ((uv_orig * texsize.xy) * (texsize_noise_lq.zw * 0.1))).xyz - 0.5)
+   / 256.0) * 28.0));
+  vec3 tmpvar_3;
+  tmpvar_3 = mix (ret_1, vec3(dot (ret_1, vec3(0.32, 0.49, 0.29))), vec3(0.04, 0.04, 0.04));
+  ret_1 = tmpvar_3;
+  vec4 tmpvar_4;
+  tmpvar_4 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * uv.xyy) * (
+    (q27 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q29)));
+  if (((tmpvar_3.x > (q21 * roam_cos.y)) && (tmpvar_3.x <= (q24 * roam_sin.x)))) {
+    ret_1.y = (tmpvar_3.y - (tmpvar_4.x * 0.5));
+  };
+  if (((ret_1.y > (q22 * roam_sin.x)) && (ret_1.y <= (q25 * roam_cos.x)))) {
+    ret_1.z = (tmpvar_3.z - (tmpvar_4.y * 0.5));
+  };
+  if (((ret_1.z > (q23 * roam_cos.x)) && (ret_1.z <= (q26 * roam_sin.y)))) {
+    ret_1.x = (tmpvar_3.x - (tmpvar_4.z * 0.5));
+  };
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_1;
+  ret = tmpvar_5.xyz;
+ }
+
+[comp_shader]
+uniform sampler2D sampler_fw_noise_hq;
+ shader_body { 
+  vec2 uv_1;
+  vec2 uv2_2;
+  vec3 ret_3;
+  uv_1 = (uv - 0.5);
+  uv_1 = (uv_1 * aspect.xy);
+  vec4 tmpvar_4;
+  vec2 tmpvar_5;
+  tmpvar_5 = (0.1 * texsize_noise_hq.zw);
+  tmpvar_4 = texture (sampler_fw_noise_hq, (((
+    (uv_1 * texsize.xy)
+   * tmpvar_5) / 64.0) + rand_preset.xy));
+  vec4 tmpvar_6;
+  tmpvar_6 = (texture (sampler_fw_noise_hq, ((
+    ((uv_1 * texsize.xy) * tmpvar_5)
+   / 16.0) + rand_preset.xy)) * 0.25);
+  vec4 tmpvar_7;
+  tmpvar_7 = (texture (sampler_fw_noise_hq, ((
+    ((uv_1 * texsize.xy) * tmpvar_5)
+   / 32.0) + rand_preset.xy)) * 0.5);
+  uv_1 = (0.05 + (0.9 * uv_1));
+  uv_1.x = (uv_1.x + (0.05 * cos(
+    ((((
+      (tmpvar_4.x + tmpvar_6.x)
+     + tmpvar_7.x) * 5.0) + (bass_att * 0.2)) + (time * 4.13))
+  )));
+  uv_1.y = (uv_1.y + (0.05 * sin(
+    ((((
+      (tmpvar_4.y + tmpvar_6.y)
+     + tmpvar_7.y) * 5.0) + (treb_att * 0.2)) + (time * 5.0))
+  )));
+  float tmpvar_8;
+  tmpvar_8 = sin(q1);
+  float tmpvar_9;
+  tmpvar_9 = cos(q1);
+  uv2_2.x = ((uv_1.x * tmpvar_9) - (uv_1.y * tmpvar_8));
+  uv2_2.y = ((uv_1.x * tmpvar_8) + (uv_1.y * tmpvar_9));
+  uv2_2 = (uv2_2 * aspect.zw);
+  uv2_2 = (uv2_2 + 0.5);
+  vec2 tmpvar_10;
+  tmpvar_10 = abs((fract(
+    (uv2_2 + 0.5)
+  ) - 0.5));
+  uv2_2 = tmpvar_10;
+  ret_3 = (abs((
+    (texture (sampler_main, tmpvar_10).xyz * 2.65)
+   + 
+    (((texture (sampler_blur1, tmpvar_10).xyz * scale1) + bias1) * -2.0)
+  )) * 1.5);
+  vec4 tmpvar_11;
+  tmpvar_11 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * tmpvar_10.xyy) * (
+    (q28 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q30)));
+  if (((ret_3.x > (q26 * roam_cos.y)) && (ret_3.x <= (q23 * roam_sin.x)))) {
+    ret_3.z = (ret_3.z - (tmpvar_11.x * 0.5));
+  };
+  if (((ret_3.y > (q25 * roam_sin.x)) && (ret_3.y <= (q22 * roam_cos.x)))) {
+    ret_3.x = (ret_3.x - (tmpvar_11.y * 0.5));
+  };
+  if (((ret_3.z > (q24 * roam_cos.x)) && (ret_3.z <= (q21 * roam_sin.y)))) {
+    ret_3.y = (ret_3.y - (tmpvar_11.z * 0.5));
+  };
+  vec4 tmpvar_12;
+  tmpvar_12.w = 1.0;
+  tmpvar_12.xyz = ret_3;
+  ret = tmpvar_12.xyz;
+ }

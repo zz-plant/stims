@@ -1,0 +1,188 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=1.007000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=0.001000
+fWaveScale=1.286000
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpAnimSpeed=1.459000
+fWarpScale=2.007000
+fZoom=0.999900
+fWarp=0.010000
+fSx=0.999900
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderA=0.300000
+nMotionVectorsX=64.000000
+nMotionVectorsY=4.800000
+nMotionVectorsDx=0.400000
+nMotionVectorsLoop=1.000000
+fMotionVectorsR=0.000000
+fMotionVectorsG=0.500000
+fMotionVectorsA=0.100000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=5.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fX=0.780000
+fY=0.600000
+fRad=0.976310
+fAng=0.565490
+fTexZoom=0.657210
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=1.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=13.000000
+bAdditive=1.000000
+fY=0.840000
+fRad=0.364570
+fAng=3.078760
+fTexZoom=4.141460
+fR=0.250000
+fG=0.050000
+fA=0.200000
+fG2=0.000000
+fB2=1.000000
+fBorderR=0.500000
+fBorderG=0.500000
+fBorderB=0.500000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=6.000000
+bTextured=1.000000
+fX=0.400000
+fY=0.700000
+fRad=1.089250
+fAng=0.816810
+fTexAng=3.141590
+fTexZoom=0.504220
+fG=1.000000
+fB=1.000000
+fR2=0.700000
+fG2=0.700000
+fB2=0.700000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=3.000000
+bTextured=1.000000
+fRad=0.284280
+fAng=3.141590
+fTexAng=4.900890
+fTexZoom=2.987760
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=1.000000
+
+[wave00_0]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+bAdditive=1.000000
+fR=0.000000
+fA=0.060000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=1.000000
+bThick=1.000000
+fB=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec2 uv6_2;
+  uv_1 = (uv + ((0.004 * 
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  ).xy * vec2(0.0, 1.0)));
+  uv6_2 = (0.4 * sin((
+    (((uv - 0.5) * aspect.xy) * 18.0)
+   * rand_frame.xy)));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = (((
+    (texture (sampler_main, uv_1).xyz - (((texture (sampler_blur2, 
+      fract(uv_1)
+    ).xyz * scale2) + bias2) * 0.03))
+   + 
+    (vec3((0.051 / sqrt(dot (uv6_2, uv6_2)))) * vec3(0.15, 0.12, 0.075))
+  ) * 0.99) - 0.02);
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 uv3_1;
+  vec2 uv2_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = ((uv - 0.5) * aspect.xy);
+  float tmpvar_4;
+  tmpvar_4 = (0.1 / (sqrt(
+    dot (tmpvar_3, tmpvar_3)
+  ) + 0.1));
+  vec2 tmpvar_5;
+  float tmpvar_6;
+  tmpvar_6 = (ang / 3.14);
+  tmpvar_5.x = tmpvar_6;
+  tmpvar_5.y = (q27 * tmpvar_4);
+  float tmpvar_7;
+  tmpvar_7 = (0.1 * q30);
+  uv2_2.y = (tmpvar_5.y + tmpvar_7);
+  uv2_2.x = (tmpvar_6 + (0.2 * time));
+  vec2 tmpvar_8;
+  tmpvar_8.x = tmpvar_6;
+  tmpvar_8.y = (4.0 * tmpvar_4);
+  uv3_1.x = tmpvar_8.x;
+  uv3_1.y = (tmpvar_8.y - tmpvar_7);
+  float tmpvar_9;
+  tmpvar_9 = clamp ((1.0 - (4.0 * rad)), 0.0, 1.0);
+  vec4 tmpvar_10;
+  tmpvar_10.w = 1.0;
+  tmpvar_10.xyz = (((
+    (3.0 * max (((2.0 * texture (sampler_main, uv2_2).xyz) + texture (sampler_main, uv3_1).xyz), ((2.0 * 
+      ((texture (sampler_blur2, fract(uv2_2)).xyz * scale2) + bias2)
+    ) + (
+      (texture (sampler_blur2, fract(uv3_1)).xyz * scale2)
+     + bias2))))
+   * rad) + (
+    ((vec3(0.0, 0.0, 1.0) * uv.y) * pow ((1.0 - rad), 8.0))
+   * tmpvar_9)) + ((tmpvar_9 * 2.0) * (
+    (texture (sampler_blur1, uv).xyz * scale1)
+   + bias1)));
+  ret = tmpvar_10.xyz;
+ }

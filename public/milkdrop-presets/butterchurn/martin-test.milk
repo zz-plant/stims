@@ -1,0 +1,88 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.980000
+fDecay=0.500000
+fVideoEchoZoom=0.952000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+bAdditiveWaves=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.021000
+fWaveSmoothing=0.450000
+fModWaveAlphaStart=0.000000
+fModWaveAlphaEnd=1.320000
+fWarpAnimSpeed=1.459000
+fWarpScale=2.007000
+fZoom=0.999900
+fWarp=0.008260
+fSx=0.999900
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.050000
+fInnerBorderSize=0.260000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+nMotionVectorsLoop=1.850000
+fMotionVectorsR=0.500000
+fMotionVectorsG=0.500000
+fMotionVectorsB=0.500000
+fMotionVectorsA=0.000000
+b2x=0.600000
+b3x=0.400000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+uniform sampler2D sampler_moss1;
+ shader_body { 
+  vec2 uv_1;
+  uv_1 = (((
+    (uv - 0.5)
+   / texsize_moss1.xy) * texsize.xy) + 0.5);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = (((
+    (texture (sampler_moss1, uv_1) * float((uv_1.x < 1.0)))
+   * 
+    float((uv_1.x > 0.0))
+  ) * float(
+    (uv_1.y < 1.0)
+  )) * float((uv_1.y > 0.0))).xyz;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_main, uv).xyz;
+  ret = tmpvar_1.xyz;
+ }

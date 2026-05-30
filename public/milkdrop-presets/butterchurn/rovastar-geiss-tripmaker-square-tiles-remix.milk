@@ -1,0 +1,107 @@
+[preset00]
+fRating=2.000000
+nWaveMode=2.000000
+bTexWrap=0.000000
+fWaveAlpha=3.222000
+fWaveScale=0.685000
+fZoomExponent=100.000000
+fShader=1.000000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.000000
+fOuterBorderR=0.200000
+fOuterBorderG=0.400000
+fOuterBorderB=0.220000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.005000
+fInnerBorderR=0.500000
+fInnerBorderG=0.500000
+fInnerBorderB=0.500000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=5.000000
+fMotionVectorsR=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=1.791420
+fTexAng=0.062830
+fG=1.000000
+fB=1.000000
+fA=0.080000
+fR2=1.000000
+fB2=1.000000
+fA2=0.080000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=1.791420
+fTexAng=0.062830
+fB=1.000000
+fA=0.080000
+fR2=1.000000
+fA2=0.080000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fRad=0.919740
+fTexAng=0.628320
+fTexZoom=1.030300
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=100.000000
+fRad=0.138870
+fA=0.050000
+fA2=0.050000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[comp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1.x = 1.0;
+  tmpvar_1.y = (texsize.y * texsize.z);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ((texture (sampler_main, (uv + texture (sampler_pw_noise_lq, 
+    (((floor(
+      (uv * (tmpvar_1 * 10.0))
+    ) * 0.1) + rand_preset.xy) * aspect.xy)
+  ).xy)).xyz * 1.4) - 0.4);
+  ret = tmpvar_2.xyz;
+ }

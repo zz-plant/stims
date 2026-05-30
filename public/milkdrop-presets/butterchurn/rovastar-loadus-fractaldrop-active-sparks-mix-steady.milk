@@ -1,0 +1,119 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=1.006752
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.080487
+fWaveScale=100.000000
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=0.000000
+fModWaveAlphaEnd=1.100000
+fZoom=0.999902
+fWarp=0.010000
+fWaveR=0.650000
+fWaveG=0.650000
+fOuterBorderSize=0.006500
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.850000
+fMotionVectorsR=0.499900
+fMotionVectorsG=0.499900
+fMotionVectorsB=0.499900
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=3.000000
+fX=0.370000
+fRad=6.811289
+fAng=3.644249
+fR=0.000000
+fA=0.500000
+fG2=0.000000
+fA2=0.500000
+fBorderA=1.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fX=0.370000
+fRad=0.897961
+fAng=3.644249
+fG=1.000000
+fB=1.000000
+fA=0.500000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fX=0.670000
+fY=0.430000
+fRad=0.513861
+fAng=4.209736
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=0.222979
+fR=0.600000
+fG=0.800000
+fB=1.000000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_main, uv).xyz;
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = texture (sampler_main, uv).xyz;
+  vec4 tmpvar_2;
+  tmpvar_2.w = 0.0;
+  tmpvar_2.xyz = ret_1;
+  vec2 tmpvar_3;
+  tmpvar_3.x = (1.0 - uv.x);
+  tmpvar_3.y = uv.y;
+  ret_1 = max (tmpvar_2, texture (sampler_main, tmpvar_3)).xyz;
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = ret_1;
+  ret = tmpvar_4.xyz;
+ }

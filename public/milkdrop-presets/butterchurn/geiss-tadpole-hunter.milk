@@ -1,0 +1,81 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+nWaveMode=5.000000
+bWaveDots=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=8.200000
+fWaveScale=3.587000
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=1.190000
+fModWaveAlphaEnd=1.710000
+fZoom=1.195000
+fWarp=0.016050
+fWaveR=0.800000
+fWaveG=0.800000
+fWaveB=0.800000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 b_1;
+  vec3 ret_2;
+  ret_2 = texture (sampler_main, uv).xyz;
+  b_1.x = dot (((texture (sampler_blur2, vec2(0.35, 0.35)).xyz * scale2) + bias2), vec3(0.32, 0.49, 0.29));
+  b_1.y = dot (((texture (sampler_blur2, vec2(0.65, 0.35)).xyz * scale2) + bias2), vec3(0.32, 0.49, 0.29));
+  b_1.z = dot (((texture (sampler_blur2, vec2(0.35, 0.65)).xyz * scale2) + bias2), vec3(0.32, 0.49, 0.29));
+  b_1.w = dot (((texture (sampler_blur2, vec2(0.65, 0.65)).xyz * scale2) + bias2), vec3(0.32, 0.49, 0.29));
+  float tmpvar_3;
+  tmpvar_3 = (min (min (b_1.x, b_1.y), min (b_1.z, b_1.w)) * 0.8);
+  vec3 tmpvar_4;
+  tmpvar_4 = mix (ret_2, ((ret_2 - tmpvar_3) / (
+    (max (max (b_1.x, b_1.y), max (b_1.z, b_1.w)) / 0.8)
+   - tmpvar_3)).xxx, vec3(0.04, 0.04, 0.04));
+  ret_2 = tmpvar_4;
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = tmpvar_4;
+  ret = tmpvar_5.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1 = texture (sampler_main, uv);
+  float tmpvar_2;
+  tmpvar_2 = dot (tmpvar_1.xyz, vec3(0.32, 0.49, 0.29));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ((tmpvar_1.xyz * tmpvar_1.xyz) * (1.0 + (
+    (clamp (((
+      cos(((tmpvar_2 * 27.0) + 3.0))
+     * 30.0) - 26.0), 0.0, 1.0) * clamp (((
+      cos(((tmpvar_2 * 27.0) + 3.0))
+     * 30.0) - 26.0), 0.0, 1.0))
+   * 0.5)));
+  ret = tmpvar_3.xyz;
+ }

@@ -1,0 +1,111 @@
+[preset00]
+fRating=2.000000
+fGammaAdj=1.000000
+fDecay=0.906000
+fVideoEchoZoom=2.003000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=5.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.100000
+fWaveScale=1.511000
+fWaveSmoothing=0.900000
+fWarpAnimSpeed=0.037000
+fWarpScale=0.015000
+fWarp=0.033000
+fWaveR=0.500000
+fWaveG=0.400000
+fWaveB=0.300000
+fOuterBorderSize=0.000000
+fOuterBorderR=0.110000
+fOuterBorderB=0.100000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+nMotionVectorsX=3.000000
+nMotionVectorsY=2.000000
+nMotionVectorsDx=0.020000
+nMotionVectorsDy=-0.020000
+nMotionVectorsLoop=0.150000
+fMotionVectorsR=0.490000
+fMotionVectorsG=0.480000
+fMotionVectorsB=0.300000
+fMotionVectorsA=0.000000
+b2n=0.100000
+b3n=0.150000
+b1x=0.900000
+b2x=0.850000
+b3x=0.750000
+b1ed=0.200000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  float tmpvar_2;
+  tmpvar_2 = dot (texsize.zw, texsize.zw);
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv - 0.5);
+  tmpvar_1.xyz = (max (max (texture (sampler_main, uv).xyz, texture (sampler_main, 
+    ((tmpvar_3 * (1.0 - (8.0 * 
+      sqrt(tmpvar_2)
+    ))) + 0.5)
+  ).xyz), texture (sampler_main, (
+    (tmpvar_3 * (1.0 + (8.0 * sqrt(tmpvar_2))))
+   + 0.5)).xyz) - 0.034);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  vec2 tmpvar_3;
+  tmpvar_3.x = uv.y;
+  tmpvar_3.y = abs((uv.x - 1.0));
+  vec4 tmpvar_4;
+  tmpvar_4 = texture (sampler_main, tmpvar_3);
+  ret_1 = (tmpvar_2.xyz + ((tmpvar_2.xyz * tmpvar_2.xyz) * 10.0));
+  vec3 tmpvar_5;
+  tmpvar_5 = mix ((tmpvar_4.xyz + (
+    (tmpvar_4.xyz * tmpvar_4.xyz)
+   * 10.0)), ret_1, vec3(0.5, 0.5, 0.5));
+  vec3 tmpvar_6;
+  tmpvar_6 = mix (tmpvar_5, (tmpvar_2.xyz + (
+    (tmpvar_2.xyz * tmpvar_2.xyz)
+   * 
+    (5.0 * treb)
+  )), (tmpvar_5 * bass));
+  ret_1 = tmpvar_6;
+  vec4 tmpvar_7;
+  tmpvar_7.w = 1.0;
+  tmpvar_7.xyz = tmpvar_6;
+  ret = tmpvar_7.xyz;
+ }

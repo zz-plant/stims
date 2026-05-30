@@ -1,0 +1,155 @@
+[preset00]
+fRating=1.000000
+fGammaAdj=1.980000
+fDecay=0.500000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.263000
+fWaveSmoothing=0.000000
+fModWaveAlphaStart=0.000000
+fModWaveAlphaEnd=1.320000
+fWarpAnimSpeed=1.459000
+fWarpScale=2.007000
+fZoom=0.999900
+fWarp=0.010000
+fSx=0.999900
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.050000
+fOuterBorderG=0.100000
+fOuterBorderB=1.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+nMotionVectorsX=25.600000
+nMotionVectorsY=9.600000
+nMotionVectorsLoop=0.000000
+fMotionVectorsR=0.500000
+fMotionVectorsG=0.500000
+fMotionVectorsB=0.500000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+bThick=1.000000
+fScaling=2.023100
+fSmoothing=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1 = (((uv_orig * texsize.xy) * (texsize_noise_lq.zw * 1.5)) + rand_frame.xy);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ((texture (sampler_main, (
+    mix (uv_orig, uv, vec2(((dot (texture (sampler_main, 
+      mix (uv_orig, uv, vec2(8.0, 8.0))
+    ).xyz, vec3(0.32, 0.49, 0.29)) - dot (
+      ((texture (sampler_blur1, mix (uv_orig, uv, vec2(-8.0, -8.0))).xyz * scale1) + bias1)
+    , vec3(0.32, 0.49, 0.29))) * 0.75)))
+   + 
+    (((texture (sampler_noise_lq, tmpvar_1) - 0.5).xy * texsize.zw) * 0.5)
+  )).xyz + (
+    (texture (sampler_noise_lq, tmpvar_1) - 0.5)
+   * 0.004).xyz) + -0.0015);
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 tmpvar_1;
+  tmpvar_1.x = q4;
+  tmpvar_1.y = q5;
+  tmpvar_1.z = q6;
+  mat3 tmpvar_2;
+  tmpvar_2[uint(0)].x = q20;
+  tmpvar_2[uint(0)].y = q23;
+  tmpvar_2[uint(0)].z = q26;
+  tmpvar_2[1u].x = q21;
+  tmpvar_2[1u].y = q24;
+  tmpvar_2[1u].z = q27;
+  tmpvar_2[2u].x = q22;
+  tmpvar_2[2u].y = q25;
+  tmpvar_2[2u].z = q28;
+  vec2 tmpvar_3;
+  tmpvar_3.x = q1;
+  tmpvar_3.y = q2;
+  vec2 uv_4;
+  vec3 ret_5;
+  uv_4 = (((uv - 0.5) * 0.9) + 0.5);
+  vec3 tmpvar_6;
+  tmpvar_6.xy = ((uv_4 - 0.5) * min ((1.0 - texture (sampler_main, uv_4).z), (1.0 - 
+    ((texture (sampler_blur2, uv_4).xyz * scale2) + bias2)
+  .z)));
+  tmpvar_6.z = min ((1.0 - texture (sampler_main, uv_4).z), (1.0 - (
+    (texture (sampler_blur2, uv_4).xyz * scale2)
+   + bias2).z));
+  float tmpvar_7;
+  tmpvar_7 = clamp ((abs(
+    ((1.0 - ((texture (sampler_blur2, uv_4).xyz * scale2) + bias2).z) - clamp ((1.0 - (
+      (texture (sampler_blur2, tmpvar_3).xyz * scale2)
+     + bias2).z), 0.1, 0.4))
+  ) + 0.2), 0.0, 1.0);
+  float tmpvar_8;
+  tmpvar_8 = clamp (((1.0 - 
+    exp(-(((texture (sampler_blur1, uv_4).xyz * scale1) + bias1).x))
+  ) - 0.2), 0.0, 1.0);
+  ret_5 = ((mix (texture (sampler_main, uv_4).xyz, 
+    ((texture (sampler_blur1, uv_4).xyz * scale1) + bias1)
+  , vec3(tmpvar_7)).x * (0.2 + 
+    ((1.0 - tmpvar_7) * (1.0 - min ((1.0 - texture (sampler_main, uv_4).z), (1.0 - 
+      ((texture (sampler_blur2, uv_4).xyz * scale2) + bias2)
+    .z))))
+  )) * (1.0 + (0.5 * 
+    sin((((tmpvar_6 / q7) * tmpvar_2) + tmpvar_1))
+  )));
+  vec3 tmpvar_9;
+  tmpvar_9.xy = vec2(0.0, 1.0);
+  tmpvar_9.z = (tmpvar_8 * 3.0);
+  ret_5 = (mix (ret_5, tmpvar_9, vec3(tmpvar_8)) + ((
+    pow ((1.0 - mix (texture (sampler_main, uv_4).xyz, (
+      (texture (sampler_blur1, uv_4).xyz * scale1)
+     + bias1), vec3(0.8, 0.8, 0.8)).z), 3.0)
+   * 
+    (0.5 + (0.5 * slow_roam_cos))
+  ) * q19).xyz);
+  ret_5 = (1.0 - exp((-2.0 * ret_5)));
+  vec4 tmpvar_10;
+  tmpvar_10.w = 1.0;
+  tmpvar_10.xyz = ret_5;
+  ret = tmpvar_10.xyz;
+ }

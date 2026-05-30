@@ -1,0 +1,104 @@
+[preset00]
+fRating=0.000000
+fDecay=0.987000
+fVideoEchoZoom=1.006000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=1.000000
+bAdditiveWaves=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarken=1.000000
+fWaveAlpha=1.028000
+fWaveScale=0.591000
+fWaveSmoothing=0.180000
+fWaveParam=0.240000
+fModWaveAlphaStart=0.950000
+fModWaveAlphaEnd=0.750000
+fZoomExponent=1.001700
+fShader=0.100000
+fZoom=0.970300
+fCX=0.440000
+fWarp=0.010000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.500000
+fInnerBorderG=0.500000
+fInnerBorderB=0.500000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 v_1;
+  vec3 ret_2;
+  v_1 = (normalize((uv - 0.5)) * texsize.zw);
+  ret_2 = (0.2 * ((
+    ((texture (sampler_main, uv).xyz + texture (sampler_main, (uv - (v_1 * 2.5))).xyz) + texture (sampler_main, (uv - (v_1 * 5.5))).xyz)
+   + texture (sampler_main, 
+    (uv - (v_1 * 9.0))
+  ).xyz) + texture (sampler_main, (uv - 
+    (v_1 * 13.0)
+  )).xyz));
+  ret_2 = (ret_2 * 0.98);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_2;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec3 tmpvar_2;
+  tmpvar_2.z = 0.0;
+  tmpvar_2.xy = texsize.zw;
+  vec3 tmpvar_3;
+  tmpvar_3 = (tmpvar_2 * 1.25);
+  ret_1 = (texture (sampler_main, uv).xyz * 0.5);
+  ret_1 = (ret_1 + (vec3(2.0, 1.2, 0.2) * clamp (
+    ((dot ((
+      (texture (sampler_blur1, (uv + tmpvar_3.xz)).xyz * scale1)
+     + bias1), vec3(0.32, 0.49, 0.29)) - dot ((
+      (texture (sampler_blur1, (uv - tmpvar_3.xz)).xyz * scale1)
+     + bias1), vec3(0.32, 0.49, 0.29))) * 8.0)
+  , 0.0, 1.0)));
+  ret_1 = (ret_1 + (vec3(0.4, 1.0, 1.4) * clamp (
+    ((dot ((
+      (texture (sampler_blur1, (uv + tmpvar_3.zy)).xyz * scale1)
+     + bias1), vec3(0.32, 0.49, 0.29)) - dot ((
+      (texture (sampler_blur1, (uv - tmpvar_3.zy)).xyz * scale1)
+     + bias1), vec3(0.32, 0.49, 0.29))) * 8.0)
+  , 0.0, 1.0)));
+  ret_1 = (ret_1 * 1.5);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = ret_1;
+  ret = tmpvar_4.xyz;
+ }

@@ -1,0 +1,137 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=0.940000
+fVideoEchoZoom=1.053000
+fVideoEchoAlpha=1.000000
+nVideoEchoOrientation=3.000000
+nWaveMode=2.000000
+bAdditiveWaves=1.000000
+bMaximizeWaveColor=0.000000
+bBrighten=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.010000
+fWaveSmoothing=0.630000
+fWaveParam=-1.000000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=0.070000
+fZoomExponent=0.880270
+fZoom=100.000000
+fRot=1.000000
+fDX=1.000000
+fDY=-1.000000
+fWarp=0.010000
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.500000
+fInnerBorderSize=0.000000
+fInnerBorderR=1.000000
+fInnerBorderG=1.000000
+fInnerBorderB=1.000000
+nMotionVectorsX=12.800000
+nMotionVectorsY=9.600000
+nMotionVectorsLoop=0.000000
+fMotionVectorsG=0.910000
+fMotionVectorsB=0.710000
+fMotionVectorsA=0.000000
+b1ed=1.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=25.000000
+bTextured=1.000000
+fRad=0.808130
+fAng=6.283190
+fTexZoom=0.591230
+fG=0.800000
+fR2=1.000000
+fG2=0.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=88.000000
+bTextured=1.000000
+fY=0.700000
+fRad=0.397110
+fAng=6.283190
+fTexAng=6.283190
+fTexZoom=2.630070
+fG=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=0.842820
+fAng=3.141590
+fTexZoom=0.241460
+fR=0.000000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=0.564820
+fAng=1.884960
+fTexAng=3.141590
+fTexZoom=0.397100
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz + (0.34 + (rad + 
+    (treb * 0.3)
+  )));
+  float tmpvar_2;
+  tmpvar_2 = (rad * rad);
+  ret_1 = (ret_1 - ((0.95 + 
+    ((tmpvar_2 * tmpvar_2) * (tmpvar_2 * tmpvar_2))
+  ) - (bass * 0.3)));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  float theta_1;
+  theta_1 = (texture (sampler_main, uv).x * 0.9);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = texture (sampler_main, (uv * (sin(theta_1) / cos(theta_1)))).xyz;
+  ret = tmpvar_2.xyz;
+ }

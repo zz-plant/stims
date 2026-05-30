@@ -1,0 +1,65 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=0.999609
+nWaveMode=7.000000
+fWaveAlpha=4.000000
+fWaveScale=1.868658
+fWaveSmoothing=0.500000
+fWarpScale=3.138000
+fZoom=1.000300
+fCY=0.110000
+fDY=-0.001000
+fWarp=0.024300
+fSx=1.001992
+fSy=1.004987
+fWaveR=0.800000
+fWaveG=0.770000
+fWaveB=0.700000
+fWaveX=0.650000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1 = normalize((uv - 0.5));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = (((
+    ((texture (sampler_main, (uv + (texsize.zw * 
+      (tmpvar_1 * -4.5)
+    ))) * 0.19) + (texture (sampler_main, (uv + (texsize.zw * 
+      (tmpvar_1 * -1.5)
+    ))) * 0.31))
+   + 
+    (texture (sampler_main, (uv + (texsize.zw * (tmpvar_1 * 1.5)))) * 0.31)
+  ) + (texture (sampler_main, 
+    (uv + (texsize.zw * (tmpvar_1 * 4.5)))
+  ) * 0.19)) - 0.006).xyz;
+  ret = tmpvar_2.xyz;
+ }

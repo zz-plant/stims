@@ -1,0 +1,79 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+nWaveMode=1.000000
+fWaveAlpha=8.200000
+fWaveScale=1.013000
+fWaveSmoothing=0.900000
+fWaveParam=-0.280000
+fModWaveAlphaStart=1.050000
+fModWaveAlphaEnd=1.650000
+fZoom=1.055000
+fWarp=0.023490
+fWaveR=0.700000
+fWaveG=0.650000
+fWaveB=0.700000
+nMotionVectorsX=31.200000
+nMotionVectorsY=2.280000
+nMotionVectorsLoop=2.500000
+fMotionVectorsB=0.800000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  float tmpvar_2;
+  tmpvar_2 = dot (texsize.zw, texsize.zw);
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv - 0.5);
+  tmpvar_1.xyz = (max (max (texture (sampler_main, uv).xyz, texture (sampler_main, 
+    ((tmpvar_3 * (1.0 - (8.0 * 
+      sqrt(tmpvar_2)
+    ))) + 0.5)
+  ).xyz), texture (sampler_main, (
+    (tmpvar_3 * (1.0 + (8.0 * sqrt(tmpvar_2))))
+   + 0.5)).xyz) - 0.01);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1.x = roam_cos.x;
+  tmpvar_1.y = roam_sin.x;
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ((texture (sampler_main, (uv + 
+    ((normalize((texture (sampler_noise_lq, 
+      ((((
+        floor((uv * vec2(12.0, 12.0)))
+       / 12.0) + rand_preset.xy) * aspect.xy) + (tmpvar_1 * 0.07))
+    ) - 0.5).xy) * 0.033) * rad)
+  )).xyz * 1.4) - 0.4);
+  ret = tmpvar_2.xyz;
+ }

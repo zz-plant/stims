@@ -1,0 +1,87 @@
+[preset00]
+fRating=3.500000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nWaveMode=1.000000
+bDarkenCenter=1.000000
+fWaveAlpha=5.900000
+fWaveScale=0.408000
+fWaveSmoothing=0.900000
+fWarpScale=7.532000
+fZoom=1.002840
+fWarp=0.055410
+fWaveR=0.900000
+fWaveG=0.450000
+fWaveB=0.000000
+fMotionVectorsR=0.400000
+fMotionVectorsG=0.700000
+fMotionVectorsB=0.700000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 xfer_1;
+  vec3 ret_2;
+  vec4 tmpvar_3;
+  vec2 tmpvar_4;
+  tmpvar_4 = (uv - 0.5);
+  tmpvar_3 = texture (sampler_main, (tmpvar_4 + 0.5));
+  ret_2 = (tmpvar_3.xyz / ((tmpvar_3.x + tmpvar_3.y) + tmpvar_3.z));
+  ret_2 = texture (sampler_main, ((tmpvar_4 * dot (ret_2, vec3(1.0, 0.985, 0.95))) + 0.5)).xyz;
+  vec3 tmpvar_5;
+  tmpvar_5 = clamp (((ret_2 - 0.05) * 99.0), 0.0, 1.0);
+  xfer_1.x = tmpvar_5.x;
+  xfer_1.yz = (tmpvar_5.yz * clamp ((
+    (0.1 - ret_2.xy)
+   * 99.0), 0.0, 1.0));
+  ret_2 = (ret_2 + (vec3(-0.014, 0.014, 0.0) * tmpvar_5.xxx));
+  ret_2 = (ret_2 + (vec3(0.0, -0.08, 0.08) * xfer_1.yyy));
+  ret_2 = (ret_2 + (vec3(0.0, 0.0, -0.02) * xfer_1.zzz));
+  ret_2 = (ret_2 + (vec3(5.0, 15.0, 40.0) * (
+    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).xyz - 0.5)
+   / 256.0)));
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = ret_2;
+  ret = tmpvar_6.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = texture (sampler_main, uv).xyz;
+  vec4 tmpvar_2;
+  tmpvar_2.w = 0.0;
+  tmpvar_2.xyz = ret_1;
+  ret_1 = ((max (tmpvar_2, texture (sampler_main, 
+    (1.0 - uv)
+  )).xyz * 1.5) - 0.2);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }

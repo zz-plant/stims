@@ -1,0 +1,68 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.998000
+fVideoEchoZoom=1.421000
+nWaveMode=1.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bModWaveAlphaByVolume=1.000000
+bDarkenCenter=1.000000
+fWaveAlpha=0.220000
+fWaveScale=1.712000
+fWaveSmoothing=0.000000
+fWaveParam=-0.400000
+fModWaveAlphaStart=0.970000
+fModWaveAlphaEnd=2.000000
+fWarpAnimSpeed=1.348000
+fWarpScale=1.160000
+fZoom=1.010350
+fWarp=0.089790
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fWaveX=0.600000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (max (max (
+    max (max (max (texture (sampler_fw_main, uv_orig).xyz, texture (sampler_fw_main, mix (uv_orig, uv, vec2(0.2, 0.2))).xyz), texture (sampler_fw_main, mix (uv_orig, uv, vec2(0.4, 0.4))).xyz), texture (sampler_fw_main, mix (uv_orig, uv, vec2(0.6, 0.6))).xyz)
+  , texture (sampler_fw_main, 
+    mix (uv_orig, uv, vec2(0.8, 0.8))
+  ).xyz), texture (sampler_fw_main, uv).xyz) - 0.02);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_main, uv).xyz;
+  ret = tmpvar_1.xyz;
+ }

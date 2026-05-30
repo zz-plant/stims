@@ -1,0 +1,93 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.700000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarken=1.000000
+bInvert=1.000000
+fWaveAlpha=0.004000
+fWaveScale=0.010000
+fWaveSmoothing=0.000000
+fWaveParam=-0.440000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=0.010000
+fWarpScale=100.000000
+fZoomExponent=0.921780
+fZoom=0.990100
+fWarp=0.010000
+fWaveY=0.040000
+fOuterBorderSize=0.005000
+fOuterBorderR=1.000000
+fOuterBorderG=1.000000
+fOuterBorderB=1.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.250000
+fMotionVectorsG=0.500000
+fMotionVectorsB=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_fc_main, uv).xyz;
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 uv_1;
+  float ang2_2;
+  ang2_2 = (fract((0.9549295 * ang)) / 6.0);
+  ang2_2 = (abs((ang2_2 - 0.08333334)) * 6.283185);
+  vec2 tmpvar_3;
+  tmpvar_3.x = cos(ang2_2);
+  tmpvar_3.y = sin(ang2_2);
+  uv_1 = (0.5 + ((
+    (0.4 * (rad * sqrt(dot (texsize.xy, texsize.xy))))
+   * tmpvar_3) * texsize.zw));
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = (1.4 * pow ((
+    clamp (((texture (sampler_blur1, uv_1).xyz * scale1) + bias1), 0.0, 1.0)
+   * 
+    (texture (sampler_pc_main, uv_1).xyz - ((texture (sampler_blur3, uv_1).xyz * scale3) + bias3))
+  ), vec3(0.5, 0.5, 0.5)));
+  ret = tmpvar_4.xyz;
+ }

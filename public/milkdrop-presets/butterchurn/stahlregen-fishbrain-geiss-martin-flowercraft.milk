@@ -1,0 +1,147 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarkenCenter=1.000000
+fWaveAlpha=0.001000
+fWaveScale=1.286000
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fZoomExponent=1.310600
+fZoom=0.980300
+fCX=0.650000
+fCY=0.350000
+fWarp=0.010000
+fSx=0.999990
+fSy=0.999990
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.075000
+fInnerBorderR=0.200000
+fInnerBorderG=0.200000
+fInnerBorderB=0.200000
+fInnerBorderA=0.050000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_1]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_2]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+
+[wave00_3]
+bEnabled=1.000000
+bThick=1.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  float tmpvar_2;
+  tmpvar_2 = dot (texsize.zw, texsize.zw);
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv - 0.5);
+  tmpvar_1.xyz = (max (max (texture (sampler_main, uv).xyz, texture (sampler_main, 
+    ((tmpvar_3 * (1.0 - (8.0 * 
+      sqrt(tmpvar_2)
+    ))) + 0.5)
+  ).xyz), texture (sampler_main, (
+    (tmpvar_3 * (1.0 + (8.0 * sqrt(tmpvar_2))))
+   + 0.5)).xyz) - 0.024);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec3 ret1_2;
+  vec2 uv2_3;
+  uv_1 = (uv - 0.5);
+  uv_1 = (uv_1 * aspect.xy);
+  ret1_2 = vec3(0.0, 0.0, 0.0);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 0.0;
+  tmpvar_4.xyz = ret1_2;
+  float tmpvar_5;
+  tmpvar_5 = (0.1 * q1);
+  ret1_2 = max (tmpvar_4, texture (sampler_main, ((uv_1 + 0.5) + tmpvar_5))).xyz;
+  uv2_3.x = ((uv_1.x * 0.3096228) - (uv_1.y * 0.9508595));
+  uv2_3.y = ((uv_1.x * 0.9508595) + (uv_1.y * 0.3096228));
+  vec4 tmpvar_6;
+  tmpvar_6.w = 0.0;
+  tmpvar_6.xyz = ret1_2;
+  ret1_2 = max (tmpvar_6, texture (sampler_main, ((uv2_3 + 0.5) + tmpvar_5))).xyz;
+  uv2_3.x = ((uv_1.x * -0.8082675) - (uv_1.y * 0.5888155));
+  uv2_3.y = ((uv_1.x * 0.5888155) + (uv_1.y * -0.8082675));
+  vec4 tmpvar_7;
+  tmpvar_7.w = 0.0;
+  tmpvar_7.xyz = ret1_2;
+  ret1_2 = max (tmpvar_7, texture (sampler_main, ((uv2_3 + 0.5) + tmpvar_5))).xyz;
+  uv2_3.x = ((uv_1.x * -0.8101388) - (uv_1.y * -0.5862381));
+  uv2_3.y = ((uv_1.x * -0.5862381) + (uv_1.y * -0.8101388));
+  vec4 tmpvar_8;
+  tmpvar_8.w = 0.0;
+  tmpvar_8.xyz = ret1_2;
+  ret1_2 = max (tmpvar_8, texture (sampler_main, ((uv2_3 + 0.5) + tmpvar_5))).xyz;
+  uv2_3.x = ((uv_1.x * 0.3065926) - (uv_1.y * -0.9518408));
+  uv2_3.y = ((uv_1.x * -0.9518408) + (uv_1.y * 0.3065926));
+  vec4 tmpvar_9;
+  tmpvar_9.w = 0.0;
+  tmpvar_9.xyz = ret1_2;
+  ret1_2 = max (tmpvar_9, texture (sampler_main, ((uv2_3 + 0.5) + tmpvar_5))).xyz;
+  uv2_3.x = ((uv_1.x * 0.9999949) - (uv_1.y * -0.003185092));
+  uv2_3.y = ((uv_1.x * -0.003185092) + (uv_1.y * 0.9999949));
+  vec4 tmpvar_10;
+  tmpvar_10.w = 0.0;
+  tmpvar_10.xyz = ret1_2;
+  ret1_2 = max (tmpvar_10, texture (sampler_main, ((uv2_3 + 0.5) + tmpvar_5))).xyz;
+  ret1_2 = ((ret1_2 - (rad / 2.0)) * (1.0 + (slow_roam_cos.xyz / 2.0)));
+  vec3 tmpvar_11;
+  tmpvar_11.x = q32;
+  tmpvar_11.y = q31;
+  tmpvar_11.z = q30;
+  vec3 tmpvar_12;
+  tmpvar_12 = max ((ret1_2 * tmpvar_11), ((
+    ((hue_shader * 4.0) - 2.8)
+   * 
+    dot ((texture (sampler_noise_hq, ((uv_1 * 8.0) + (
+      dot (ret1_2, vec3(0.32, 0.49, 0.29))
+     / 8.0))) + 0.15).xyz, vec3(0.32, 0.49, 0.29))
+  ) / 6.0));
+  ret1_2 = tmpvar_12;
+  vec4 tmpvar_13;
+  tmpvar_13.w = 1.0;
+  tmpvar_13.xyz = ((tmpvar_12 * 2.25) - 0.05);
+  ret = tmpvar_13.xyz;
+ }

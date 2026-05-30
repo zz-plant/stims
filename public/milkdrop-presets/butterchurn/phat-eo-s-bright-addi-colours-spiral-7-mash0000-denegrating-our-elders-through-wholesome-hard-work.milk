@@ -1,0 +1,103 @@
+[preset00]
+fRating=4.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+nVideoEchoOrientation=1.000000
+nWaveMode=5.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+bSolarize=1.000000
+bInvert=1.000000
+fWaveAlpha=0.004000
+fWaveScale=0.653000
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=0.500000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=0.010000
+fWarpScale=1.766000
+fZoomExponent=1.000160
+fDX=0.000010
+fDY=0.000010
+fWarp=0.010000
+fSx=0.887450
+fSy=0.887450
+fWaveB=0.100000
+fOuterBorderSize=0.015000
+fOuterBorderG=0.150000
+fOuterBorderB=0.150000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.005000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=25.600000
+nMotionVectorsY=14.400000
+nMotionVectorsLoop=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fRad=0.481700
+fTexAng=0.502660
+fTexZoom=1.580430
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec3 tmpvar_2;
+  tmpvar_2 = (texture (sampler_noise_lq, ((
+    ((texsize.xy * texsize_noise_lq.zw).x * uv)
+   / 2.0) + q23)) + 1.0).xyz;
+  vec3 tmpvar_3;
+  tmpvar_3 = (((texture (sampler_blur1, uv).xyz * scale1) + bias1) - 0.3);
+  vec2 tmpvar_4;
+  tmpvar_4.x = (0.3 * tmpvar_3.x);
+  tmpvar_4.y = tmpvar_3.y;
+  ret_1 = ((-0.4 * (
+    ((texture (sampler_blur1, ((uv / 4.0) + (0.4 * tmpvar_4))).xyz * scale1) + bias1)
+   - 
+    (tmpvar_2 * 0.1)
+  )) + (texture (sampler_main, (uv + 
+    (tmpvar_3 * 0.01)
+  .xy)).xyz + (tmpvar_2 * 0.1)));
+  float tmpvar_5;
+  tmpvar_5 = (1.0 - ((0.01 * q28) * (q28 * rad)));
+  ret_1 = (ret_1 * (0.98 * (tmpvar_5 * tmpvar_5)));
+  ret_1 = (ret_1 - 0.04);
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = ret_1;
+  ret = tmpvar_6.xyz;
+ }

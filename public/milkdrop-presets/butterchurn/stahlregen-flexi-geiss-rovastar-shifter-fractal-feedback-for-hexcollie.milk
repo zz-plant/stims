@@ -1,0 +1,126 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nWaveMode=6.000000
+bAdditiveWaves=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=4.224000
+fWaveScale=3.672000
+fWaveSmoothing=0.666000
+fWaveParam=0.100000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpAnimSpeed=0.037000
+fWarpScale=0.015000
+fWarp=0.033000
+fWaveR=0.100000
+fWaveG=0.100000
+fWaveB=0.100000
+fOuterBorderSize=0.005000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.005000
+fInnerBorderR=0.000000
+fInnerBorderG=1.000000
+fInnerBorderB=0.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.850000
+fMotionVectorsR=0.500000
+fMotionVectorsG=0.500000
+fMotionVectorsB=0.500000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+fX=0.370000
+fRad=3.000000
+fAng=3.644250
+fR=0.000000
+fA=0.500000
+fG2=0.000000
+fA2=0.300000
+fBorderA=1.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=5.000000
+bAdditive=1.000000
+bTextured=1.000000
+fX=0.370000
+fRad=0.706530
+fAng=3.644250
+fG=1.000000
+fB=1.000000
+fA=0.800000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=5.000000
+bAdditive=1.000000
+bTextured=1.000000
+fX=0.670000
+fY=0.430000
+fRad=0.706530
+fAng=4.209740
+fG=1.000000
+fB=1.000000
+fA=0.800000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=6.000000
+fRad=0.161220
+fR=0.560000
+fG=1.000000
+fG2=0.000000
+fB2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=1.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 my_uv_1;
+  vec2 tmpvar_2;
+  tmpvar_2 = ((uv - 0.5) * vec2((1.0 + q1)));
+  vec2 tmpvar_3;
+  tmpvar_3.x = ((tmpvar_2.x * tmpvar_2.x) - (tmpvar_2.y * tmpvar_2.y));
+  tmpvar_3.y = ((2.0 * tmpvar_2.x) * tmpvar_2.y);
+  vec2 tmpvar_4;
+  tmpvar_4.x = ((tmpvar_3.x * -0.12) - (tmpvar_3.y * 0.74));
+  tmpvar_4.y = ((tmpvar_3.x * 0.74) + (-0.12 * tmpvar_3.y));
+  vec2 tmpvar_5;
+  tmpvar_5.x = ((tmpvar_3.x * (tmpvar_4.x + 1.0)) + (tmpvar_3.y * tmpvar_4.y));
+  tmpvar_5.y = ((tmpvar_3.y * (tmpvar_4.x + 1.0)) - (tmpvar_3.x * tmpvar_4.y));
+  my_uv_1 = (tmpvar_5 * (1.0/((
+    ((tmpvar_4.x + 1.0) * (tmpvar_4.x + 1.0))
+   + 
+    (tmpvar_4.y * tmpvar_4.y)
+  ))));
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = (texture (sampler_fc_main, (my_uv_1 - floor(my_uv_1))) * 0.94).xyz;
+  ret = tmpvar_6.xyz;
+ }

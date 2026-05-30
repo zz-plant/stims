@@ -1,0 +1,76 @@
+[preset00]
+fRating=5.000000
+nWaveMode=1.000000
+bTexWrap=0.000000
+fWaveAlpha=0.001000
+fWaveScale=0.132666
+fWaveParam=-0.380000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_1]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_2]
+bEnabled=1.000000
+bThick=1.000000
+
+[wave00_3]
+bEnabled=1.000000
+bThick=1.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_fc_main, uv);
+  ret_1 = tmpvar_2.xyz;
+  if ((((tmpvar_2.x + tmpvar_2.y) + tmpvar_2.z) < ((
+    ((mid + bass) + treb)
+   / 3.0) * 0.3))) {
+    ret_1 = (tmpvar_2.xyz + vec3(0.6, 0.6, 0.6));
+  } else {
+    ret_1 = ((ret_1 - 0.005) * 0.99);
+  };
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+uniform sampler2D sampler_smalltiled_electric_nebula;
+ shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1 = texture (sampler_main, uv);
+  vec2 tmpvar_2;
+  tmpvar_2.x = ((uv.x + 0.5) + q1);
+  tmpvar_2.y = ((uv.y + 0.5) + q2);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = mix ((texture (sampler_smalltiled_electric_nebula, (
+    (tmpvar_2 * texsize.xy)
+   * texsize_smalltiled_electric_nebula.zw)).xyz * (
+    ((bass + mid) + treb)
+   * 0.5)), tmpvar_1.xyz, (tmpvar_1.xyz * 2.5));
+  ret = tmpvar_3.xyz;
+ }

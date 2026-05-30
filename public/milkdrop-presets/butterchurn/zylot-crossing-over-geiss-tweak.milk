@@ -1,0 +1,74 @@
+[preset00]
+fRating=5.000000
+bTexWrap=0.000000
+fWaveScale=0.133000
+fWaveParam=-0.380000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+fRad=0.164460
+fG=1.000000
+fB=1.000000
+fA=0.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_fc_main, uv).xyz + ((
+    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).xyz - 0.5)
+   / 256.0) * 5.0));
+  ret_1 = (ret_1 * 0.96);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz * 2.0);
+  ret_1 = (ret_1 * 2.0);
+  ret_1 = (ret_1 + abs((ret_1 - 0.2)));
+  ret_1 = (ret_1 - 0.2);
+  vec3 tmpvar_2;
+  tmpvar_2.x = (1.5 + sin(time));
+  tmpvar_2.y = (1.5 + sin((time * 0.988776)));
+  tmpvar_2.z = (1.5 + sin((time * 5.566779e+07)));
+  vec3 tmpvar_3;
+  tmpvar_3 = pow (ret_1, tmpvar_2);
+  ret_1 = tmpvar_3;
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = tmpvar_3;
+  ret = tmpvar_4.xyz;
+ }

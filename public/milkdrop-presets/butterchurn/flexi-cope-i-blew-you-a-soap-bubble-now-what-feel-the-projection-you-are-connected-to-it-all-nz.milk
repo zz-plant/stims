@@ -1,0 +1,547 @@
+[preset00]
+fRating=4.000000
+fGammaAdj=1.000000
+fDecay=0.925000
+fVideoEchoZoom=1.007000
+nVideoEchoOrientation=3.000000
+nWaveMode=2.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=3.222000
+fWaveScale=0.685000
+fWarpScale=5.921000
+fZoom=1.000300
+fWarp=0.591240
+fSy=0.999980
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.000000
+fOuterBorderR=1.000000
+fOuterBorderG=0.050000
+fOuterBorderB=0.100000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+b1x=0.500000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=1.791420
+fTexAng=0.062830
+fG=1.000000
+fB=1.000000
+fA=0.080000
+fR2=1.000000
+fB2=1.000000
+fA2=0.080000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=1.791420
+fTexAng=0.062830
+fB=1.000000
+fA=0.080000
+fR2=1.000000
+fA2=0.080000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fRad=0.919740
+fTexAng=1.696460
+fTexZoom=1.030300
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmp_1;
+  vec3 ret_2;
+  tmp_1.x = (ang * 3.0);
+  tmp_1.y = rad;
+  vec3 tmpvar_3;
+  tmpvar_3 = (texture (sampler_noise_lq, ((
+    ((texsize.xy * texsize_noise_lq.zw).x * uv)
+   / 2.0) + q23)) + 1.0).xyz;
+  vec3 tmpvar_4;
+  tmpvar_4 = (((texture (sampler_blur1, uv).xyz * scale1) + bias1) - 0.3);
+  vec2 tmpvar_5;
+  tmpvar_5.x = (0.3 * tmpvar_4.x);
+  tmpvar_5.y = tmpvar_4.y;
+  ret_2 = ((-0.4 * (
+    ((texture (sampler_blur1, ((uv / 4.0) + (0.4 * tmpvar_5))).xyz * scale1) + bias1)
+   - 
+    (tmpvar_3 * 0.1)
+  )) + (texture (sampler_main, (uv + 
+    (tmpvar_4 * 0.01)
+  .xy)).xyz + (tmpvar_3 * 0.1)));
+  vec4 tmpvar_6;
+  tmpvar_6 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * tmp_1.xyy) * (
+    (q27 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q29)));
+  if (((ret_2.x > (q21 * q13)) && (ret_2.x <= (q24 * q11)))) {
+    ret_2.y = (ret_2.y + (tmpvar_6.x * 0.5));
+  };
+  if (((ret_2.y > (q22 * q11)) && (ret_2.y <= (q25 * q12)))) {
+    ret_2.z = (ret_2.z + (tmpvar_6.y * 0.5));
+  };
+  if (((ret_2.z > (q23 * q12)) && (ret_2.z <= (q26 * q13)))) {
+    ret_2.x = (ret_2.x + (tmpvar_6.z * 0.5));
+  };
+  float tmpvar_7;
+  tmpvar_7 = (1.0 - ((0.01 * q28) * (q28 * rad)));
+  ret_2 = (ret_2 * (0.98 * (tmpvar_7 * tmpvar_7)));
+  ret_2 = (ret_2 - 0.04);
+  vec4 tmpvar_8;
+  tmpvar_8.w = 1.0;
+  tmpvar_8.xyz = ret_2;
+  ret = tmpvar_8.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  float dots_1;
+  float dy_2;
+  float dx_3;
+  vec2 uv1_4;
+  vec2 polar2_5;
+  vec3 p_6;
+  vec2 polar_7;
+  vec2 c_8;
+  vec3 ret_9;
+  vec2 tmpvar_10;
+  tmpvar_10 = ((q27 * (uv - 0.5)) * aspect.xy);
+  c_8 = tmpvar_10;
+  float tmpvar_11;
+  tmpvar_11 = sqrt(dot (tmpvar_10, tmpvar_10));
+  float tmpvar_12;
+  float tmpvar_13;
+  tmpvar_13 = (min (abs(
+    (tmpvar_11 / q30)
+  ), 1.0) / max (abs(
+    (tmpvar_11 / q30)
+  ), 1.0));
+  float tmpvar_14;
+  tmpvar_14 = (tmpvar_13 * tmpvar_13);
+  tmpvar_14 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_14) + 0.05368138) * tmpvar_14) - 0.1173503)
+     * tmpvar_14) + 0.1938925) * tmpvar_14) - 0.3326756)
+   * tmpvar_14) + 0.9999793) * tmpvar_13);
+  tmpvar_14 = (tmpvar_14 + (float(
+    (abs((tmpvar_11 / q30)) > 1.0)
+  ) * (
+    (tmpvar_14 * -2.0)
+   + 1.570796)));
+  tmpvar_12 = (tmpvar_14 * sign((tmpvar_11 / q30)));
+  if ((abs(q30) > (1e-08 * abs(tmpvar_11)))) {
+    if ((q30 < 0.0)) {
+      if ((tmpvar_11 >= 0.0)) {
+        tmpvar_12 += 3.141593;
+      } else {
+        tmpvar_12 = (tmpvar_12 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_12 = (sign(tmpvar_11) * 1.570796);
+  };
+  bool tmpvar_15;
+  tmpvar_15 = (q32 >= tmpvar_12);
+  float tmpvar_16;
+  float tmpvar_17;
+  tmpvar_17 = (min (abs(
+    (tmpvar_10.x / tmpvar_10.y)
+  ), 1.0) / max (abs(
+    (tmpvar_10.x / tmpvar_10.y)
+  ), 1.0));
+  float tmpvar_18;
+  tmpvar_18 = (tmpvar_17 * tmpvar_17);
+  tmpvar_18 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_18) + 0.05368138) * tmpvar_18) - 0.1173503)
+     * tmpvar_18) + 0.1938925) * tmpvar_18) - 0.3326756)
+   * tmpvar_18) + 0.9999793) * tmpvar_17);
+  tmpvar_18 = (tmpvar_18 + (float(
+    (abs((tmpvar_10.x / tmpvar_10.y)) > 1.0)
+  ) * (
+    (tmpvar_18 * -2.0)
+   + 1.570796)));
+  tmpvar_16 = (tmpvar_18 * sign((tmpvar_10.x / tmpvar_10.y)));
+  if ((abs(tmpvar_10.y) > (1e-08 * abs(tmpvar_10.x)))) {
+    if ((tmpvar_10.y < 0.0)) {
+      if ((tmpvar_10.x >= 0.0)) {
+        tmpvar_16 += 3.141593;
+      } else {
+        tmpvar_16 = (tmpvar_16 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_16 = (sign(tmpvar_10.x) * 1.570796);
+  };
+  float x_19;
+  x_19 = (q31 * sin(tmpvar_12));
+  vec2 tmpvar_20;
+  tmpvar_20.x = tmpvar_16;
+  tmpvar_20.y = ((q28 - tmpvar_12) + (sign(x_19) * (1.570796 - 
+    (sqrt((1.0 - abs(x_19))) * (1.570796 + (abs(x_19) * (-0.2146018 + 
+      (abs(x_19) * (0.08656672 + (abs(x_19) * -0.03102955)))
+    ))))
+  )));
+  polar_7 = tmpvar_20;
+  vec3 tmpvar_21;
+  tmpvar_21.x = (sin(tmpvar_16) * sin(tmpvar_20.y));
+  tmpvar_21.y = (cos(tmpvar_16) * sin(tmpvar_20.y));
+  tmpvar_21.z = cos(tmpvar_20.y);
+  vec2 tmpvar_22;
+  tmpvar_22.x = ((tmpvar_21.z * q20) - (tmpvar_21.y * q21));
+  tmpvar_22.y = ((tmpvar_21.z * q21) + (tmpvar_21.y * q20));
+  vec2 tmpvar_23;
+  tmpvar_23.x = ((tmpvar_22.x * q22) - (tmpvar_21.x * q23));
+  tmpvar_23.y = ((tmpvar_22.x * q23) + (tmpvar_21.x * q22));
+  p_6.z = tmpvar_23.x;
+  vec2 tmpvar_24;
+  tmpvar_24.x = ((tmpvar_22.y * q24) - (tmpvar_23.y * q25));
+  tmpvar_24.y = ((tmpvar_22.y * q25) + (tmpvar_23.y * q24));
+  p_6.xy = tmpvar_24.yx;
+  float tmpvar_25;
+  float tmpvar_26;
+  tmpvar_26 = (min (abs(
+    (tmpvar_23.x / tmpvar_24.y)
+  ), 1.0) / max (abs(
+    (tmpvar_23.x / tmpvar_24.y)
+  ), 1.0));
+  float tmpvar_27;
+  tmpvar_27 = (tmpvar_26 * tmpvar_26);
+  tmpvar_27 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_27) + 0.05368138) * tmpvar_27) - 0.1173503)
+     * tmpvar_27) + 0.1938925) * tmpvar_27) - 0.3326756)
+   * tmpvar_27) + 0.9999793) * tmpvar_26);
+  tmpvar_27 = (tmpvar_27 + (float(
+    (abs((tmpvar_23.x / tmpvar_24.y)) > 1.0)
+  ) * (
+    (tmpvar_27 * -2.0)
+   + 1.570796)));
+  tmpvar_25 = (tmpvar_27 * sign((tmpvar_23.x / tmpvar_24.y)));
+  if ((abs(tmpvar_24.y) > (1e-08 * abs(tmpvar_23.x)))) {
+    if ((tmpvar_24.y < 0.0)) {
+      if ((tmpvar_23.x >= 0.0)) {
+        tmpvar_25 += 3.141593;
+      } else {
+        tmpvar_25 = (tmpvar_25 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_25 = (sign(tmpvar_23.x) * 1.570796);
+  };
+  float tmpvar_28;
+  tmpvar_28 = sqrt(dot (p_6.xz, p_6.xz));
+  float tmpvar_29;
+  float tmpvar_30;
+  tmpvar_30 = (min (abs(
+    (tmpvar_24.x / tmpvar_28)
+  ), 1.0) / max (abs(
+    (tmpvar_24.x / tmpvar_28)
+  ), 1.0));
+  float tmpvar_31;
+  tmpvar_31 = (tmpvar_30 * tmpvar_30);
+  tmpvar_31 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_31) + 0.05368138) * tmpvar_31) - 0.1173503)
+     * tmpvar_31) + 0.1938925) * tmpvar_31) - 0.3326756)
+   * tmpvar_31) + 0.9999793) * tmpvar_30);
+  tmpvar_31 = (tmpvar_31 + (float(
+    (abs((tmpvar_24.x / tmpvar_28)) > 1.0)
+  ) * (
+    (tmpvar_31 * -2.0)
+   + 1.570796)));
+  tmpvar_29 = (tmpvar_31 * sign((tmpvar_24.x / tmpvar_28)));
+  if ((abs(tmpvar_28) > (1e-08 * abs(tmpvar_24.x)))) {
+    if ((tmpvar_28 < 0.0)) {
+      if ((tmpvar_24.x >= 0.0)) {
+        tmpvar_29 += 3.141593;
+      } else {
+        tmpvar_29 = (tmpvar_29 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_29 = (sign(tmpvar_24.x) * 1.570796);
+  };
+  vec2 tmpvar_32;
+  tmpvar_32.x = tmpvar_25;
+  tmpvar_32.y = tmpvar_29;
+  polar_7 = (((tmpvar_32 * q29) * vec2(1.0, 2.0)) + vec2(0.0, 0.5));
+  vec2 tmpvar_33;
+  tmpvar_33 = (1.0 - abs((
+    (fract(polar_7) * 2.0)
+   - 1.0)));
+  polar2_5 = tmpvar_33;
+  vec2 tmpvar_34;
+  tmpvar_34.x = (tmpvar_33.x - q6);
+  tmpvar_34.y = (tmpvar_33.y - q5);
+  vec2 tmpvar_35;
+  tmpvar_35.y = 0.0;
+  tmpvar_35.x = texsize.z;
+  vec2 tmpvar_36;
+  tmpvar_36.x = 0.0;
+  tmpvar_36.y = texsize.w;
+  float tmpvar_37;
+  tmpvar_37 = (texture (sampler_main, (tmpvar_33 - tmpvar_35)).xyz - texture (sampler_main, (tmpvar_33 + tmpvar_35)).xyz).x;
+  dx_3 = tmpvar_37;
+  float tmpvar_38;
+  tmpvar_38 = (texture (sampler_main, (tmpvar_33 - tmpvar_36)).xyz - texture (sampler_main, (tmpvar_33 + tmpvar_36)).xyz).x;
+  dy_2 = tmpvar_38;
+  vec2 tmpvar_39;
+  tmpvar_39.x = tmpvar_37;
+  tmpvar_39.y = tmpvar_38;
+  uv1_4 = ((0.3 * cos(
+    (tmpvar_34 * 2.0)
+  )) - tmpvar_39);
+  float tmpvar_40;
+  tmpvar_40 = clamp ((0.04 / sqrt(
+    dot (uv1_4, uv1_4)
+  )), 0.0, 1.0);
+  uv1_4 = ((0.3 * cos(
+    (uv1_4 * 12.0)
+  )) - (9.0 * tmpvar_39));
+  dots_1 = (tmpvar_40 - dot ((
+    (texture (sampler_blur2, tmpvar_33).xyz * scale2)
+   + bias2), vec3(0.32, 0.49, 0.29)));
+  ret_9 = (dots_1 + ((texture (sampler_main, tmpvar_33).xyz * 12.0) * vec3(clamp (
+    (0.04 / sqrt(dot (uv1_4, uv1_4)))
+  , 0.0, 1.0))));
+  c_8 = ((0.5 - uv) * aspect.xy);
+  float tmpvar_41;
+  float tmpvar_42;
+  tmpvar_42 = (min (abs(
+    (c_8.x / q30)
+  ), 1.0) / max (abs(
+    (c_8.x / q30)
+  ), 1.0));
+  float tmpvar_43;
+  tmpvar_43 = (tmpvar_42 * tmpvar_42);
+  tmpvar_43 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_43) + 0.05368138) * tmpvar_43) - 0.1173503)
+     * tmpvar_43) + 0.1938925) * tmpvar_43) - 0.3326756)
+   * tmpvar_43) + 0.9999793) * tmpvar_42);
+  tmpvar_43 = (tmpvar_43 + (float(
+    (abs((c_8.x / q30)) > 1.0)
+  ) * (
+    (tmpvar_43 * -2.0)
+   + 1.570796)));
+  tmpvar_41 = (tmpvar_43 * sign((c_8.x / q30)));
+  if ((abs(q30) > (1e-08 * abs(c_8.x)))) {
+    if ((q30 < 0.0)) {
+      if ((c_8.x >= 0.0)) {
+        tmpvar_41 += 3.141593;
+      } else {
+        tmpvar_41 = (tmpvar_41 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_41 = (sign(c_8.x) * 1.570796);
+  };
+  float tmpvar_44;
+  float tmpvar_45;
+  tmpvar_45 = (min (abs(
+    (c_8.y / q30)
+  ), 1.0) / max (abs(
+    (c_8.y / q30)
+  ), 1.0));
+  float tmpvar_46;
+  tmpvar_46 = (tmpvar_45 * tmpvar_45);
+  tmpvar_46 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_46) + 0.05368138) * tmpvar_46) - 0.1173503)
+     * tmpvar_46) + 0.1938925) * tmpvar_46) - 0.3326756)
+   * tmpvar_46) + 0.9999793) * tmpvar_45);
+  tmpvar_46 = (tmpvar_46 + (float(
+    (abs((c_8.y / q30)) > 1.0)
+  ) * (
+    (tmpvar_46 * -2.0)
+   + 1.570796)));
+  tmpvar_44 = (tmpvar_46 * sign((c_8.y / q30)));
+  if ((abs(q30) > (1e-08 * abs(c_8.y)))) {
+    if ((q30 < 0.0)) {
+      if ((c_8.y >= 0.0)) {
+        tmpvar_44 += 3.141593;
+      } else {
+        tmpvar_44 = (tmpvar_44 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_44 = (sign(c_8.y) * 1.570796);
+  };
+  vec2 tmpvar_47;
+  tmpvar_47.x = tmpvar_41;
+  tmpvar_47.y = tmpvar_44;
+  polar_7 = tmpvar_47;
+  vec3 tmpvar_48;
+  tmpvar_48.x = (sin(tmpvar_41) * cos(tmpvar_44));
+  tmpvar_48.y = (sin(tmpvar_44) * cos(tmpvar_41));
+  tmpvar_48.z = (cos(tmpvar_41) * cos(tmpvar_44));
+  vec2 tmpvar_49;
+  tmpvar_49.x = ((tmpvar_48.z * q20) - (tmpvar_48.y * q21));
+  tmpvar_49.y = ((tmpvar_48.z * q21) + (tmpvar_48.y * q20));
+  vec2 tmpvar_50;
+  tmpvar_50.x = ((tmpvar_49.x * q22) - (tmpvar_48.x * q23));
+  tmpvar_50.y = ((tmpvar_49.x * q23) + (tmpvar_48.x * q22));
+  p_6.z = tmpvar_50.x;
+  vec2 tmpvar_51;
+  tmpvar_51.x = ((tmpvar_49.y * q24) - (tmpvar_50.y * q25));
+  tmpvar_51.y = ((tmpvar_49.y * q25) + (tmpvar_50.y * q24));
+  p_6.xy = tmpvar_51.yx;
+  float tmpvar_52;
+  float tmpvar_53;
+  tmpvar_53 = (min (abs(
+    (tmpvar_51.y / tmpvar_50.x)
+  ), 1.0) / max (abs(
+    (tmpvar_51.y / tmpvar_50.x)
+  ), 1.0));
+  float tmpvar_54;
+  tmpvar_54 = (tmpvar_53 * tmpvar_53);
+  tmpvar_54 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_54) + 0.05368138) * tmpvar_54) - 0.1173503)
+     * tmpvar_54) + 0.1938925) * tmpvar_54) - 0.3326756)
+   * tmpvar_54) + 0.9999793) * tmpvar_53);
+  tmpvar_54 = (tmpvar_54 + (float(
+    (abs((tmpvar_51.y / tmpvar_50.x)) > 1.0)
+  ) * (
+    (tmpvar_54 * -2.0)
+   + 1.570796)));
+  tmpvar_52 = (tmpvar_54 * sign((tmpvar_51.y / tmpvar_50.x)));
+  if ((abs(tmpvar_50.x) > (1e-08 * abs(tmpvar_51.y)))) {
+    if ((tmpvar_50.x < 0.0)) {
+      if ((tmpvar_51.y >= 0.0)) {
+        tmpvar_52 += 3.141593;
+      } else {
+        tmpvar_52 = (tmpvar_52 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_52 = (sign(tmpvar_51.y) * 1.570796);
+  };
+  float tmpvar_55;
+  tmpvar_55 = sqrt(dot (p_6.xz, p_6.xz));
+  float tmpvar_56;
+  float tmpvar_57;
+  tmpvar_57 = (min (abs(
+    (tmpvar_51.x / tmpvar_55)
+  ), 1.0) / max (abs(
+    (tmpvar_51.x / tmpvar_55)
+  ), 1.0));
+  float tmpvar_58;
+  tmpvar_58 = (tmpvar_57 * tmpvar_57);
+  tmpvar_58 = (((
+    ((((
+      ((((-0.01213232 * tmpvar_58) + 0.05368138) * tmpvar_58) - 0.1173503)
+     * tmpvar_58) + 0.1938925) * tmpvar_58) - 0.3326756)
+   * tmpvar_58) + 0.9999793) * tmpvar_57);
+  tmpvar_58 = (tmpvar_58 + (float(
+    (abs((tmpvar_51.x / tmpvar_55)) > 1.0)
+  ) * (
+    (tmpvar_58 * -2.0)
+   + 1.570796)));
+  tmpvar_56 = (tmpvar_58 * sign((tmpvar_51.x / tmpvar_55)));
+  if ((abs(tmpvar_55) > (1e-08 * abs(tmpvar_51.x)))) {
+    if ((tmpvar_55 < 0.0)) {
+      if ((tmpvar_51.x >= 0.0)) {
+        tmpvar_56 += 3.141593;
+      } else {
+        tmpvar_56 = (tmpvar_56 - 3.141593);
+      };
+    };
+  } else {
+    tmpvar_56 = (sign(tmpvar_51.x) * 1.570796);
+  };
+  vec2 tmpvar_59;
+  tmpvar_59.x = tmpvar_52;
+  tmpvar_59.y = (tmpvar_56 * 2.0);
+  polar_7 = ((tmpvar_59 * q29) + vec2(0.0, 0.5));
+  polar2_5 = (1.0 - abs((
+    (fract(polar_7) * 2.0)
+   - 1.0)));
+  vec2 tmpvar_60;
+  tmpvar_60.x = (polar2_5.x - q6);
+  tmpvar_60.y = (polar2_5.y - q5);
+  vec2 tmpvar_61;
+  tmpvar_61.y = 0.0;
+  tmpvar_61.x = texsize.z;
+  vec2 tmpvar_62;
+  tmpvar_62.x = 0.0;
+  tmpvar_62.y = texsize.w;
+  dx_3 = (texture (sampler_main, (polar2_5 - tmpvar_61)).xyz - texture (sampler_main, (polar2_5 + tmpvar_61)).xyz).x;
+  dy_2 = (texture (sampler_main, (polar2_5 - tmpvar_62)).xyz - texture (sampler_main, (polar2_5 + tmpvar_62)).xyz).x;
+  vec2 tmpvar_63;
+  tmpvar_63.x = dx_3;
+  tmpvar_63.y = dy_2;
+  uv1_4 = ((0.3 * cos(
+    (tmpvar_60 * 2.0)
+  )) - tmpvar_63);
+  float tmpvar_64;
+  tmpvar_64 = clamp ((0.04 / sqrt(
+    dot (uv1_4, uv1_4)
+  )), 0.0, 1.0);
+  uv1_4 = ((0.3 * cos(
+    (uv1_4 * 12.0)
+  )) - (9.0 * tmpvar_63));
+  dots_1 = (tmpvar_64 - dot ((
+    (texture (sampler_blur2, polar2_5).xyz * scale2)
+   + bias2), vec3(0.32, 0.49, 0.29)));
+  vec3 tmpvar_65;
+  tmpvar_65 = mix (ret_9, pow ((dots_1 + 
+    ((texture (sampler_main, polar2_5).xyz * 12.0) * vec3(clamp ((0.04 / sqrt(
+      dot (uv1_4, uv1_4)
+    )), 0.0, 1.0)))
+  ), vec3(1.75, 1.75, 1.75)).yzx, vec3((1.0 - float(tmpvar_15))));
+  ret_9 = tmpvar_65;
+  vec4 tmpvar_66;
+  tmpvar_66 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * uv1_4.xyy) * (
+    (q28 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q31)));
+  if (((tmpvar_65.x > (q26 * q13)) && (tmpvar_65.x <= (q23 * q11)))) {
+    ret_9.z = (tmpvar_65.z - (tmpvar_66.x * 0.5));
+  };
+  if (((tmpvar_65.y > (q25 * q11)) && (tmpvar_65.y <= (q22 * q12)))) {
+    ret_9.x = (tmpvar_65.x - (tmpvar_66.y * 0.5));
+  };
+  if (((ret_9.z > (q24 * q12)) && (ret_9.z <= (q21 * q13)))) {
+    ret_9.y = (tmpvar_65.y - (tmpvar_66.z * 0.5));
+  };
+  vec4 tmpvar_67;
+  tmpvar_67.w = 1.0;
+  tmpvar_67.xyz = ret_9;
+  ret = tmpvar_67.xyz;
+ }

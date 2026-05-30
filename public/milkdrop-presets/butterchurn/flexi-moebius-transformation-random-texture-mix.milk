@@ -1,0 +1,98 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=0.950000
+fVideoEchoZoom=0.498000
+nVideoEchoOrientation=3.000000
+bAdditiveWaves=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=0.001000
+fWaveScale=0.010000
+fWaveSmoothing=0.630000
+fWaveParam=-1.000000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fZoom=13.290890
+fDX=-0.280000
+fDY=-0.320000
+fWarp=0.009090
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=1.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=12.800000
+nMotionVectorsY=9.600000
+nMotionVectorsLoop=1.000000
+fMotionVectorsG=0.910000
+fMotionVectorsB=0.710000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+uniform sampler2D sampler_rand00;
+ shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_rand00, uv_orig).xyz;
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1.x = q1;
+  tmpvar_1.y = q2;
+  vec2 tmpvar_2;
+  tmpvar_2.x = q7;
+  tmpvar_2.y = q8;
+  vec2 tmpvar_3;
+  tmpvar_3 = ((uv - 0.5) * aspect.wz);
+  vec2 tmpvar_4;
+  tmpvar_4.x = ((tmpvar_3.x * q5) - (tmpvar_3.y * q6));
+  tmpvar_4.y = ((tmpvar_3.x * q6) - (tmpvar_3.y * q5));
+  vec2 tmpvar_5;
+  tmpvar_5 = ((tmpvar_4 * aspect.yx) + tmpvar_2);
+  vec2 tmpvar_6;
+  tmpvar_6.x = ((q3 * tmpvar_5.x) + (q4 * tmpvar_5.y));
+  tmpvar_6.y = ((q4 * tmpvar_5.x) - (q3 * tmpvar_5.y));
+  vec4 tmpvar_7;
+  tmpvar_7.w = 1.0;
+  tmpvar_7.xyz = texture (sampler_fc_main, (0.5 + ((
+    (1.0 - abs(((
+      fract((((tmpvar_6 / 
+        ((tmpvar_5.x * tmpvar_5.x) + (tmpvar_5.y * tmpvar_5.y))
+      ) + tmpvar_1) * 0.5))
+     * 2.0) - 1.0)))
+   - 0.5) * 0.99))).xyz;
+  ret = tmpvar_7.xyz;
+ }

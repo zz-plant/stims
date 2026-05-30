@@ -1,0 +1,103 @@
+[preset00]
+fRating=1.000000
+fGammaAdj=0.160000
+fDecay=0.960000
+fVideoEchoZoom=0.997000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=1.000000
+nWaveMode=2.000000
+bWaveDots=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.012000
+fWaveSmoothing=0.900000
+fWarpScale=1.331000
+fZoom=0.999500
+fRot=0.100000
+fCX=2.000000
+fCY=2.000000
+fWarp=0.011050
+fWaveR=0.500000
+fWaveG=0.400000
+fWaveB=0.300000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+nMotionVectorsX=0.000000
+nMotionVectorsY=43.200000
+nMotionVectorsLoop=1.000000
+fMotionVectorsG=0.910000
+fMotionVectorsB=0.710000
+fMotionVectorsA=0.000000
+b1ed=0.300000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+fR=0.100000
+fB=0.700000
+
+[wave00_1]
+bEnabled=1.000000
+fR=0.200000
+fB=0.600000
+
+[wave00_2]
+bEnabled=1.000000
+fG=0.600000
+fB=0.100000
+
+[wave00_3]
+bEnabled=1.000000
+fG=0.300000
+fB=0.100000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz * 0.85);
+  ret_1 = (ret_1 - 0.022);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec3 tmpvar_2;
+  tmpvar_2.xy = uv;
+  tmpvar_2.z = q2;
+  vec2 tmpvar_3;
+  vec2 tmpvar_4;
+  tmpvar_4 = (uv - 0.5);
+  tmpvar_3 = ((tmpvar_4 * vec2(-1.0, 1.0)) + 0.5);
+  ret_1 = (((
+    (mix (texture (sampler_main, ((tmpvar_4 * 0.98) + 0.5)).xyz, texture (sampler_main, ((
+      (tmpvar_3 - 0.5)
+     * 0.98) + 0.5)).xyz, vec3(0.2, 0.2, 0.2)) + ((texture (sampler_blur3, uv).xyz * scale3) + bias3))
+   + 
+    ((texture (sampler_blur3, tmpvar_3).xyz * scale3) + bias3)
+  ) + (
+    (texture (sampler_blur1, uv).xyz * scale1)
+   + bias1)) + ((texture (sampler_blur1, tmpvar_3).xyz * scale1) + bias1));
+  ret_1 = (ret_1 * texture (sampler_noisevol_hq, tmpvar_2).xyz);
+  ret_1 = (ret_1 * 2.0);
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_1;
+  ret = tmpvar_5.xyz;
+ }

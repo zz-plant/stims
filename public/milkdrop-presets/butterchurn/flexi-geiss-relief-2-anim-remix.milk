@@ -1,0 +1,107 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.210000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=0.004000
+fWaveScale=0.010000
+fWaveSmoothing=0.000000
+fWaveParam=-0.440000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=0.010000
+fWarpScale=100.000000
+fZoomExponent=0.921780
+fShader=1.000000
+fZoom=0.990100
+fWarp=0.010000
+fWaveY=0.040000
+fOuterBorderSize=0.005000
+fOuterBorderR=1.000000
+fOuterBorderG=1.000000
+fOuterBorderB=1.000000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.500000
+fMotionVectorsR=0.000000
+fMotionVectorsG=0.000000
+fMotionVectorsB=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 d_1;
+  vec3 ret_2;
+  d_1.x = cos(((uv.y * 13.32) + time));
+  d_1.y = cos(((uv.x * 11.32) - (time * 0.31)));
+  ret_2.y = texture (sampler_fc_main, (uv + (d_1 * 0.01))).y;
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_2;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1 = (texsize.zw * 4.0);
+  vec3 tmpvar_2;
+  tmpvar_2 = (((texture (sampler_blur1, 
+    (uv + (vec2(1.0, 0.0) * tmpvar_1))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(1.0, 0.0) * tmpvar_1))
+  ).xyz * scale1) + bias1));
+  vec3 tmpvar_3;
+  tmpvar_3 = (((texture (sampler_blur1, 
+    (uv + (vec2(0.0, 1.0) * tmpvar_1))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(0.0, 1.0) * tmpvar_1))
+  ).xyz * scale1) + bias1));
+  vec2 tmpvar_4;
+  tmpvar_4.x = tmpvar_2.y;
+  tmpvar_4.y = tmpvar_3.y;
+  vec2 x_5;
+  x_5 = ((uv + (tmpvar_4 * 2.0)) - vec2(0.5, 0.5));
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = (vec3(((
+    ((tmpvar_2 - (tmpvar_3 * 0.2)) * 0.8)
+   + 0.5).y * 0.3)) + (vec3((1.04 - 
+    pow (sqrt(dot (x_5, x_5)), 0.25)
+  )) * 0.5));
+  ret = tmpvar_6.xyz;
+ }

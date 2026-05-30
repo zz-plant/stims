@@ -1,0 +1,124 @@
+[preset00]
+fRating=4.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=0.001000
+fWaveScale=0.535000
+fWaveSmoothing=0.000000
+fWaveParam=-0.480000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.100000
+fWarpScale=2.853000
+fZoomExponent=2.630060
+fZoom=1.031000
+fWarp=0.000000
+fWaveG=0.650000
+fWaveB=0.000000
+fOuterBorderSize=0.000000
+fOuterBorderA=1.000000
+nMotionVectorsX=6.400000
+nMotionVectorsY=48.000000
+nMotionVectorsDx=0.500000
+nMotionVectorsDy=0.500000
+nMotionVectorsLoop=5.000000
+fMotionVectorsR=0.014000
+fMotionVectorsG=0.872000
+fMotionVectorsB=0.522000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fRad=0.746300
+fTexZoom=0.942040
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fRad=0.746300
+fTexZoom=0.942040
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+bThickOutline=1.000000
+fRad=0.364560
+fR=0.000000
+fG2=0.000000
+fA2=1.000000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  ret_1 = (tmpvar_2.xyz - (tmpvar_2.xyz * 0.5));
+  ret_1 = ((ret_1 * abs(
+    (((texture (sampler_blur2, uv).xyz * scale2) + bias2) - 0.5)
+  )) * 5.0);
+  ret_1 = (ret_1 - 0.01);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz * 5.0);
+  ret_1 = (ret_1 + 1.2);
+  vec3 tmpvar_2;
+  tmpvar_2.x = (1.0 + (0.2 * sin(time)));
+  tmpvar_2.y = (1.0 + (0.2 * sin(
+    (time * 0.2233333)
+  )));
+  tmpvar_2.z = (1.0 + (0.2 * sin(
+    (time * 0.733467)
+  )));
+  ret_1 = ((ret_1 * (
+    (texture (sampler_blur1, uv).xyz * scale1)
+   + bias1).x) * tmpvar_2);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }

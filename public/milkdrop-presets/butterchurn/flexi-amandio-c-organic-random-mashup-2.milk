@@ -1,0 +1,197 @@
+[preset00]
+fRating=2.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+bTexWrap=0.000000
+bDarkenCenter=1.000000
+bBrighten=1.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWarpAnimSpeed=0.141000
+fWarpScale=14.497000
+fZoom=0.999510
+fWarp=0.750550
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=6.000000
+fRad=0.178090
+fAng=0.260000
+fTexZoom=0.397110
+fG=0.700000
+fB=0.600000
+fR2=0.400000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=6.000000
+bAdditive=1.000000
+fRad=0.178090
+fAng=0.260000
+fTexZoom=0.999990
+fG=1.000000
+fB=0.400000
+fA=0.500000
+fR2=0.200000
+fG2=0.000000
+fB2=0.300000
+fA2=0.600000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=6.000000
+bTextured=1.000000
+fRad=0.176330
+fAng=0.260000
+fTexZoom=1.196150
+fR2=1.000000
+fB2=1.000000
+fA2=0.200000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.200000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=6.000000
+bTextured=1.000000
+fRad=0.162840
+fAng=0.260000
+fR2=0.800000
+fG2=0.800000
+fB2=0.800000
+fA2=0.200000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+fBorderA=0.200000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_z_1;
+  vec3 ret_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = (1.0 - abs((
+    (fract((uv * 0.5)) * 2.0)
+   - 1.0)));
+  ret_2.x = (texture (sampler_fc_main, tmpvar_3).x * 0.5);
+  vec2 tmpvar_4;
+  tmpvar_4 = (texsize.zw * 4.0);
+  vec2 tmpvar_5;
+  vec2 tmpvar_6;
+  tmpvar_6 = (uv_orig - 0.5);
+  tmpvar_5 = ((tmpvar_6 * 0.996) + 0.5);
+  vec2 tmpvar_7;
+  tmpvar_7.x = (((2.0 * 
+    ((texture (sampler_blur1, (tmpvar_5 + (vec2(1.0, 0.0) * tmpvar_4))).xyz * scale1) + bias1)
+  ) - (
+    (texture (sampler_blur1, (tmpvar_5 - (vec2(1.0, 0.0) * tmpvar_4))).xyz * scale1)
+   + bias1)) * 0.5).z;
+  tmpvar_7.y = (((2.0 * 
+    ((texture (sampler_blur1, (tmpvar_5 + (vec2(0.0, 1.0) * tmpvar_4))).xyz * scale1) + bias1)
+  ) - (
+    (texture (sampler_blur1, (tmpvar_5 - (vec2(0.0, 1.0) * tmpvar_4))).xyz * scale1)
+   + bias1)) * 0.5).z;
+  uv_z_1 = (tmpvar_5 - ((tmpvar_7 * texsize.zw) * 2.0));
+  ret_2.z = max (((
+    (texture (sampler_fc_main, tmpvar_3).x - 0.5)
+   * 3.0) * clamp (
+    (1.0 - (sqrt(dot (tmpvar_6, tmpvar_6)) * 3.2))
+  , 0.0, 1.0)), texture (sampler_fc_main, uv_z_1).z);
+  ret_2.z = (ret_2.z + ((
+    (2.0 * texture (sampler_fc_main, uv_z_1).z)
+   - 
+    (2.0 * ((texture (sampler_blur1, clamp (uv_z_1, 0.0, 1.0)).xyz * scale1) + bias1).z)
+  ) * 0.01));
+  ret_2.y = (max (texture (sampler_fc_main, mix (uv, uv_orig, vec2(0.9996, 0.9996))).y, texture (sampler_fc_main, uv_orig).z) - 0.008);
+  vec4 tmpvar_8;
+  tmpvar_8.w = 1.0;
+  tmpvar_8.xyz = ret_2;
+  ret = tmpvar_8.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1.x = q3;
+  tmpvar_1.y = q4;
+  vec2 tmpvar_2;
+  tmpvar_2.x = q6;
+  tmpvar_2.y = q7;
+  vec2 tmpvar_3;
+  tmpvar_3.x = q9;
+  tmpvar_3.y = q10;
+  vec2 tmpvar_4;
+  tmpvar_4.x = q12;
+  tmpvar_4.y = q13;
+  vec2 tmpvar_5;
+  tmpvar_5 = (texsize.zw * 1.2);
+  vec3 tmpvar_6;
+  tmpvar_6 = (texture (sampler_main, (uv + (vec2(1.0, 0.0) * tmpvar_5))).xyz - texture (sampler_main, (uv - (vec2(1.0, 0.0) * tmpvar_5))).xyz);
+  vec3 tmpvar_7;
+  tmpvar_7 = (texture (sampler_main, (uv + (vec2(0.0, 1.0) * tmpvar_5))).xyz - texture (sampler_main, (uv - (vec2(0.0, 1.0) * tmpvar_5))).xyz);
+  vec2 tmpvar_8;
+  tmpvar_8.x = dot (tmpvar_6, vec3(0.32, 0.49, 0.29));
+  tmpvar_8.y = dot (tmpvar_7, vec3(0.32, 0.49, 0.29));
+  vec2 x_9;
+  x_9 = ((uv - (tmpvar_8 * 8.0)) - (1.0 - tmpvar_1));
+  vec2 tmpvar_10;
+  tmpvar_10.x = dot (tmpvar_6, vec3(0.32, 0.49, 0.29));
+  tmpvar_10.y = dot (tmpvar_7, vec3(0.32, 0.49, 0.29));
+  vec2 x_11;
+  x_11 = ((uv - (tmpvar_10 * 8.0)) - (1.0 - tmpvar_2));
+  vec2 tmpvar_12;
+  tmpvar_12.x = dot (tmpvar_6, vec3(0.32, 0.49, 0.29));
+  tmpvar_12.y = dot (tmpvar_7, vec3(0.32, 0.49, 0.29));
+  vec2 x_13;
+  x_13 = ((uv - (tmpvar_12 * 8.0)) - (1.0 - tmpvar_3));
+  vec2 tmpvar_14;
+  tmpvar_14.x = dot (tmpvar_6, vec3(0.32, 0.49, 0.29));
+  tmpvar_14.y = dot (tmpvar_7, vec3(0.32, 0.49, 0.29));
+  vec2 x_15;
+  x_15 = ((uv - (tmpvar_14 * 8.0)) - (1.0 - tmpvar_4));
+  vec4 tmpvar_16;
+  tmpvar_16.w = 1.0;
+  tmpvar_16.xyz = (mix (texture (sampler_main, uv).xyz, max (
+    max ((vec3((1.0 - pow (
+      sqrt(dot (x_9, x_9))
+    , 0.2))) * vec3(2.0, 1.0, -1.0)), (vec3((1.0 - pow (
+      sqrt(dot (x_11, x_11))
+    , 0.2))) * vec3(2.0, -1.0, 1.0)))
+  , 
+    max ((vec3((1.0 - pow (
+      sqrt(dot (x_13, x_13))
+    , 0.2))) * vec3(-1.0, 1.0, 2.0)), (vec3((1.0 - pow (
+      sqrt(dot (x_15, x_15))
+    , 0.2))) * vec3(1.0, -1.0, 2.0)))
+  ), vec3(0.5, 0.5, 0.5)) * 1.25);
+  ret = tmpvar_16.xyz;
+ }

@@ -1,0 +1,104 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=0.925000
+fVideoEchoZoom=1.007000
+nVideoEchoOrientation=3.000000
+nWaveMode=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bTexWrap=0.000000
+fWaveAlpha=0.177000
+fWaveScale=0.194000
+fWaveSmoothing=0.000000
+fWaveParam=-0.400000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=11.882000
+fZoomExponent=0.999900
+fZoom=1.005100
+fRot=1.000000
+fWarp=0.010000
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.065000
+fOuterBorderR=0.400000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=0.500000
+nMotionVectorsX=64.000000
+nMotionVectorsY=25.248000
+nMotionVectorsLoop=5.000000
+fMotionVectorsR=0.000000
+fMotionVectorsG=0.000000
+fMotionVectorsB=0.000000
+fMotionVectorsA=0.000000
+b1ed=0.500000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=94.000000
+fRad=0.049800
+fTexAng=1.884960
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  ret_1 = (abs((tmpvar_2.xyz + 
+    (dot (texture (sampler_noise_lq, ((
+      (uv_orig * texsize.xy)
+     * texsize_noise_lq.zw) + rand_frame.xy)).xyz, ((
+      (texture (sampler_blur1, uv).xyz * scale1)
+     + bias1) - (
+      (texture (sampler_blur2, uv).xyz * scale2)
+     + bias2))) * tmpvar_2.x)
+  )) * 3.0);
+  ret_1 = (ret_1 * 0.4);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz * ((hue_shader * 4.3) - 3.5));
+  ret_1 = (ret_1 * 1.8);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

@@ -1,0 +1,102 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nWaveMode=7.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.303000
+fWaveScale=1.719000
+fWaveSmoothing=0.522000
+fModWaveAlphaStart=0.950000
+fModWaveAlphaEnd=1.470000
+fWarpScale=3.138000
+fZoom=1.063000
+fWarp=0.000540
+fWaveR=0.600000
+fWaveG=0.700000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  uv_1.y = uv.y;
+  vec3 ret_2;
+  vec2 tmpvar_3;
+  tmpvar_3.x = roam_cos.x;
+  tmpvar_3.y = roam_sin.x;
+  vec2 tmpvar_4;
+  tmpvar_4 = (texsize_noise_lq.zw * texsize.xy);
+  uv_1.x = (uv.x + ((0.02 * 
+    ((texture (sampler_noise_lq, ((
+      (0.1 * tmpvar_4)
+     * uv) + (tmpvar_3 * 0.1))).y * 2.0) - 1.0)
+  ) * aspect.x));
+  vec2 tmpvar_5;
+  tmpvar_5.x = roam_sin.y;
+  tmpvar_5.y = -(roam_cos.y);
+  uv_1.x = (uv_1.x + ((0.04 * 
+    ((texture (sampler_noise_lq, ((
+      (0.0125 * tmpvar_4)
+     * uv_1) + (tmpvar_5 * 0.03))).z * 2.0) - 1.0)
+  ) * aspect.x));
+  vec4 tmpvar_6;
+  tmpvar_6 = texture (sampler_main, uv_1);
+  ret_2.xy = tmpvar_6.xy;
+  ret_2.z = (tmpvar_6.z * 0.97);
+  ret_2.z = (ret_2.z + ((texture (sampler_noise_lq, 
+    (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)
+  ).x - 0.5) / 256.0));
+  vec4 tmpvar_7;
+  tmpvar_7.w = 1.0;
+  tmpvar_7.xyz = ret_2;
+  ret = tmpvar_7.xyz;
+ }
+
+[comp_shader]
+uniform sampler2D sampler_seaweed;
+ shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  vec2 tmpvar_3;
+  tmpvar_3.x = slow_roam_cos.x;
+  tmpvar_3.y = slow_roam_sin.y;
+  ret_1 = ((pow (tmpvar_2.z, 0.5) * (1.0 - texture (sampler_seaweed, 
+    (tmpvar_3 + (vec2(0.1, 0.0) * tmpvar_2.z))
+  ))).xyz + (fract(
+    (tmpvar_2.z * 126.0)
+  ) * 0.07));
+  ret_1 = (ret_1 * (abs(
+    (uv.y - 0.5)
+  ) * 6.0));
+  ret_1 = (ret_1 * 0.8);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = ret_1;
+  ret = tmpvar_4.xyz;
+ }

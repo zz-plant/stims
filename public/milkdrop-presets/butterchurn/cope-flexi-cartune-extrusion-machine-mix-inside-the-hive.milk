@@ -1,0 +1,144 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.140000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+nWaveMode=5.000000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=1.599000
+fWaveSmoothing=0.000000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fZoom=1.000200
+fDY=-0.004000
+fWarp=0.010000
+fWaveX=0.200000
+fWaveY=0.880000
+fOuterBorderSize=0.000000
+fOuterBorderA=0.800000
+fInnerBorderSize=0.045000
+fInnerBorderR=0.300000
+fInnerBorderG=0.300000
+fInnerBorderB=0.300000
+fInnerBorderA=1.000000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+nMotionVectorsLoop=1.000000
+fMotionVectorsG=0.910000
+fMotionVectorsB=0.710000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=34.000000
+fY=0.000000
+fRad=0.110460
+fR=0.700000
+fG=0.600000
+fB=0.700000
+fR2=0.600000
+fG2=0.600000
+fB2=0.600000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1.x = uv.x;
+  tmpvar_1.y = (uv.y - pow (pow (
+    (((texture (sampler_blur1, uv).xyz * scale1) + bias1) - 0.05)
+  , 
+    (texture (sampler_main, uv).xyz - 0.9)
+  ).x, 0.007));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = (texture (sampler_main, fract(tmpvar_1)).xyz + 0.001);
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+vec2 xlat_mutabled;
+vec3 xlat_mutabledx;
+vec3 xlat_mutabledy;
+ shader_body { 
+  xlat_mutabled = (texsize.zw * 18.0);
+  xlat_mutabledx = (((texture (sampler_blur1, 
+    (uv + (vec2(1.0, 0.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(1.0, 0.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1));
+  xlat_mutabledy = (((texture (sampler_blur1, 
+    (uv + (vec2(0.0, 1.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(0.0, 1.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1));
+  float tmpvar_1;
+  tmpvar_1 = ((-(xlat_mutabledx) + xlat_mutabledy) + 1.0).x;
+  xlat_mutabled = (texsize.zw * 4.0);
+  xlat_mutabledx = (((texture (sampler_blur1, 
+    (uv + (vec2(1.0, 0.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(1.0, 0.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1));
+  xlat_mutabledy = (((texture (sampler_blur1, 
+    (uv + (vec2(0.0, 1.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1) - ((texture (sampler_blur1, 
+    (uv - (vec2(0.0, 1.0) * xlat_mutabled))
+  ).xyz * scale1) + bias1));
+  vec2 tmpvar_2;
+  tmpvar_2.x = xlat_mutabledx.x;
+  tmpvar_2.y = xlat_mutabledy.x;
+  float tmpvar_3;
+  tmpvar_3 = (sqrt(dot (tmpvar_2, tmpvar_2)) * 0.6);
+  vec2 tmpvar_4;
+  tmpvar_4.x = xlat_mutabledx.x;
+  tmpvar_4.y = xlat_mutabledy.x;
+  vec2 tmpvar_5;
+  tmpvar_5.x = xlat_mutabledx.z;
+  tmpvar_5.y = xlat_mutabledy.z;
+  vec2 tmpvar_6;
+  tmpvar_6.x = xlat_mutabledx.y;
+  tmpvar_6.y = xlat_mutabledy.y;
+  vec2 tmpvar_7;
+  tmpvar_7.x = xlat_mutabledx.x;
+  tmpvar_7.y = xlat_mutabledy.x;
+  vec4 tmpvar_8;
+  tmpvar_8.w = 1.0;
+  tmpvar_8.xyz = mix (mix (mix (
+    ((vec3(0.5, 0.3, 0.0) * texture (sampler_main, uv).x) * tmpvar_1)
+  , 
+    (vec3(8.0, 7.0, 0.0) * tmpvar_3)
+  , vec3(tmpvar_3)), vec3(0.2, 0.0, 0.4), vec3(clamp (
+    (texture (sampler_main, ((uv + (tmpvar_4 * 0.2)) + (tmpvar_5 * 0.04))).z - (((texture (sampler_blur1, uv).xyz * scale1) + bias1).x * 2.0))
+  , 0.0, 1.0))), vec3(1.0, 1.0, 1.0), texture (sampler_main, ((uv + 
+    (tmpvar_6 * 0.01)
+  ) + (tmpvar_7 * 0.2))).yyy);
+  ret = tmpvar_8.xyz;
+ }

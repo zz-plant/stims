@@ -1,0 +1,91 @@
+[preset00]
+fRating=0.000000
+bTexWrap=0.000000
+fWaveAlpha=0.001000
+fWarpAnimSpeed=5.278000
+fWarpScale=0.010000
+fZoomExponent=1.474120
+fZoom=1.030300
+fWarp=0.010000
+fOuterBorderSize=0.005000
+fOuterBorderA=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=32.000000
+bThickOutline=1.000000
+nInstances=13.000000
+fR=0.000000
+fG=0.500000
+fG2=0.500000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=32.000000
+bThickOutline=1.000000
+nInstances=13.000000
+fR=0.000000
+fB=0.500000
+fG2=0.000000
+fB2=0.500000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=32.000000
+bThickOutline=1.000000
+nInstances=13.000000
+fR=0.500000
+fR2=0.500000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1.x = texture (sampler_main, uv).x;
+  ret_1.y = texture (sampler_main, mix (uv_orig, uv, vec2(0.1, 0.1))).y;
+  ret_1.z = texture (sampler_main, mix (uv_orig, uv, vec2(0.2, 0.2))).z;
+  ret_1 = (ret_1 * 0.9);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+uniform sampler2D sampler_rand00_smalltiled;
+ shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = ((texture (sampler_rand00_smalltiled, fract(
+    ((1.0 - ((
+      (texture (sampler_blur2, uv).xyz * scale2)
+     + bias2).yx * 0.6)) + (time * vec2(0.057, 0.036)))
+  )) * (
+    (1.0 + texture (sampler_main, uv).x)
+   + 
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  .y)) * 0.4).xyz;
+  ret = tmpvar_1.xyz;
+ }

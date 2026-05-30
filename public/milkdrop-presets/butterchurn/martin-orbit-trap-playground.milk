@@ -1,0 +1,120 @@
+[preset00]
+fRating=4.000000
+fGammaAdj=1.980000
+fDecay=0.500000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=6.000000
+bAdditiveWaves=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=2.103000
+fWaveSmoothing=0.540000
+fWaveParam=0.380000
+fModWaveAlphaStart=0.810000
+fModWaveAlphaEnd=1.400000
+fRot=-0.020000
+fDY=0.020000
+fWarp=0.110010
+fSx=0.999900
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=1.850000
+fMotionVectorsR=0.500000
+fMotionVectorsG=0.500000
+fMotionVectorsB=0.500000
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=34.000000
+nInstances=274.000000
+fX=0.600000
+fRad=0.022170
+fTexZoom=60.803830
+fG=0.600000
+fB=1.000000
+fA=0.900000
+fG2=0.000000
+fBorderG=0.590000
+fBorderB=0.000000
+fBorderA=1.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 0.9);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+vec2 xlat_mutablec;
+vec2 xlat_mutablezz;
+ shader_body { 
+  int n_1;
+  vec2 p0_2;
+  float trap1_3;
+  trap1_3 = 100.0;
+  p0_2 = (vec2(0.5, 0.6) - (uv * 0.2));
+  xlat_mutablec = (((
+    (uv_orig - 0.5)
+   * aspect.xy) / 10.0) + vec2(-0.5017, 0.6102));
+  xlat_mutablezz = vec2(0.0, 0.0);
+  n_1 = 0;
+  while (true) {
+    if ((n_1 > 60)) {
+      break;
+    };
+    vec2 tmpvar_4;
+    tmpvar_4.x = ((xlat_mutablezz.x * xlat_mutablezz.x) - (xlat_mutablezz.y * xlat_mutablezz.y));
+    tmpvar_4.y = ((2.0 * xlat_mutablezz.x) * xlat_mutablezz.y);
+    xlat_mutablezz = (tmpvar_4 + xlat_mutablec);
+    float tmpvar_5;
+    tmpvar_5 = dot (xlat_mutablezz, xlat_mutablezz);
+    if ((tmpvar_5 > 4.0)) {
+      n_1 = 1000;
+    };
+    vec2 x_6;
+    x_6 = (xlat_mutablezz - p0_2);
+    trap1_3 = min (trap1_3, sqrt(dot (x_6, x_6)));
+    n_1++;
+  };
+  vec3 tmpvar_7;
+  tmpvar_7.x = trap1_3;
+  tmpvar_7.y = (1.0 - trap1_3);
+  tmpvar_7.z = (1.0 - ((2.0 * trap1_3) * trap1_3));
+  vec4 tmpvar_8;
+  tmpvar_8.w = 1.0;
+  tmpvar_8.xyz = pow (tmpvar_7, vec3(4.0, 4.0, 4.0));
+  ret = tmpvar_8.xyz;
+ }

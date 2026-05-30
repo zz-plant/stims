@@ -1,0 +1,131 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=2.400000
+fDecay=0.975000
+fVideoEchoZoom=1.051000
+fVideoEchoAlpha=0.500000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+fWaveAlpha=0.003000
+fWaveScale=0.573000
+fWaveSmoothing=0.000000
+fModWaveAlphaStart=0.240000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fZoom=0.852350
+fWarp=0.010000
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+fY=0.150000
+fRad=0.230670
+fAng=6.031860
+fTexAng=5.780530
+fTexZoom=1.040590
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=0.400000
+fBorderA=0.700000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fX=0.820000
+fY=0.220000
+fRad=0.506270
+fG=1.000000
+fB=1.000000
+fA=0.890000
+fB2=1.000000
+fA2=0.310000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fX=0.180000
+fY=0.800000
+fRad=0.599580
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+fX=0.560000
+fY=0.150000
+fRad=0.230670
+fAng=5.403540
+fTexZoom=0.010000
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=0.400000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = texture (sampler_main, uv).xyz;
+  vec3 tmpvar_2;
+  tmpvar_2 = ((texture (sampler_blur1, uv).xyz * scale1) + bias1);
+  ret_1 = (ret_1 + (mix (
+    (ret_1 - tmpvar_2)
+  , 
+    ((((texture (sampler_blur2, uv).xyz * scale2) + bias2) - tmpvar_2) * 2.0)
+  , vec3(rad)) * 0.3));
+  ret_1 = (ret_1 * 0.9);
+  ret_1 = (mix (ret_1, vec3(0.5, 0.5, 0.5), vec3(0.03, 0.03, 0.03)) + (19.52 * (
+    (texture (sampler_noise_lq, (((uv_orig * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).xyz - 0.5)
+   / 256.0)));
+  ret_1 = mix (ret_1, ret_1.zxy, vec3(0.02, 0.02, 0.02));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = ((texture (sampler_main, uv).xyz * 1.5) - 0.1);
+  ret_1.y = (ret_1 * 0.7).y;
+  ret_1.x = (((texture (sampler_blur1, uv).xyz * scale1) + bias1).x - 0.03);
+  ret_1.z = (((
+    (texture (sampler_blur2, uv).xyz * scale2)
+   + bias2).z * 1.5) - 0.05);
+  ret_1 = (ret_1 * 2.3);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

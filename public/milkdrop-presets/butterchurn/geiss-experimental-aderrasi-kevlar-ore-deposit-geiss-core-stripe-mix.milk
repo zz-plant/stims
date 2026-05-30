@@ -1,0 +1,67 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.000000
+fDecay=0.950000
+fVideoEchoZoom=0.335000
+nWaveMode=1.000000
+bAdditiveWaves=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=100.000000
+fWaveScale=1.311000
+fWaveSmoothing=0.000000
+fWaveParam=0.800000
+fModWaveAlphaStart=0.500000
+fModWaveAlphaEnd=1.000000
+fDX=0.000010
+fDY=0.000010
+fWarp=0.010000
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.050000
+fOuterBorderA=0.300000
+fInnerBorderSize=0.005000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=0.200000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+nMotionVectorsLoop=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1 = texture (sampler_fw_main, uv);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = mix (tmpvar_1.xyz, ((tmpvar_1.xyz - 
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  ).yzx * 2.0), vec3(0.1, 0.1, 0.1));
+  ret = tmpvar_2.xyz;
+ }

@@ -1,0 +1,114 @@
+[preset00]
+fRating=0.000000
+fDecay=0.960000
+fVideoEchoZoom=1.007000
+nVideoEchoOrientation=1.000000
+nWaveMode=2.000000
+bWaveDots=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.012000
+fWaveSmoothing=0.900000
+fWarpAnimSpeed=0.010000
+fWarpScale=0.010000
+fWarp=0.010000
+fWaveR=0.500000
+fWaveG=0.400000
+fWaveB=0.300000
+fOuterBorderSize=0.000000
+fOuterBorderR=0.110000
+fOuterBorderB=0.100000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=5.000000
+fMotionVectorsR=0.000000
+fMotionVectorsG=0.000000
+fMotionVectorsB=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=22.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=0.548220
+fAng=1.445130
+fR=0.300000
+fG=0.910000
+fB=1.000000
+fA=0.220000
+fG2=0.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=33.000000
+fRad=0.249790
+fR=0.400000
+fG=0.200000
+fR2=0.100000
+fG2=0.200000
+fB2=0.300000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=3.000000
+bAdditive=1.000000
+bTextured=1.000000
+fRad=0.364570
+fAng=1.570800
+fTexZoom=1.416600
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.180000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=3.000000
+bTextured=1.000000
+fG=1.000000
+fB=1.000000
+fR2=0.500000
+fG2=0.700000
+fB2=1.000000
+
+[wave00_0]
+bEnabled=1.000000
+bAdditive=1.000000
+fR=0.100000
+fG=0.280000
+fA=0.200000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec2 tmpvar_2;
+  tmpvar_2.x = rad;
+  tmpvar_2.y = uv.y;
+  ret_1 = (texture (sampler_main, tmpvar_2).xyz + ((texture (sampler_blur1, tmpvar_2).xyz * scale1) + bias1));
+  ret_1 = (ret_1 * vec3(1.04, 0.64, 0.4));
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }

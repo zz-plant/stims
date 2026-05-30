@@ -1,0 +1,74 @@
+[preset00]
+fRating=0.000000
+fDecay=0.990000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+fWaveAlpha=1.000000
+fWaveScale=1.372000
+fWaveSmoothing=0.171000
+fWaveParam=-0.160000
+fModWaveAlphaStart=0.850000
+fModWaveAlphaEnd=1.530000
+fWarpAnimSpeed=0.556000
+fWarpScale=0.451000
+fZoom=0.970000
+fRot=-0.020000
+fWarp=2.372480
+fWaveR=0.860000
+fWaveG=0.610000
+fWaveB=0.290000
+fWaveY=0.450000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 tmpvar_1;
+  tmpvar_1 = (uv_orig * texsize.xy);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = (texture (sampler_main, mix (uv, (
+    ((uv_orig - 0.5) * 0.91)
+   + 0.5), vec2(clamp (
+    (2.0 * fract(((
+      (tmpvar_1.x + tmpvar_1.y)
+     * 0.5) + 0.25)))
+  , 0.0, 1.0)))).xyz * (0.8 + (0.17 * 
+    clamp ((rad * 5.0), 0.0, 1.0)
+  )));
+  ret = tmpvar_2.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (texture (sampler_main, uv).xyz - ((texture (sampler_blur1, uv).xyz * scale1) + bias1));
+  ret_1 = (abs(ret_1) * 3.8);
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

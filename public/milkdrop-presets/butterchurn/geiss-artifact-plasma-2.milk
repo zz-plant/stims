@@ -1,0 +1,97 @@
+[preset00]
+fRating=2.000000
+fGammaAdj=1.998000
+fVideoEchoZoom=1.421000
+nWaveMode=2.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bDarkenCenter=1.000000
+fWaveAlpha=1.193000
+fWaveScale=5.398000
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=0.730000
+fModWaveAlphaEnd=1.070000
+fWarpAnimSpeed=0.248000
+fWarpScale=2.108000
+fZoomExponent=3.869960
+fZoom=1.061520
+fWarp=0.119180
+fWaveG=0.800000
+fWaveB=0.200000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = ((texture (sampler_noise_lq, (rand_frame.xy + 
+    ((uv * texsize_noise_lq.zw) * texsize.xy)
+  )) * 2.0) - 1.0);
+  ret_1 = (texture (sampler_pw_main, (uv + (
+    (tmpvar_2.zw * texsize.zw)
+   * 0.5))).xyz + ((0.59 - 
+    (0.2 * rad)
+  ) * tmpvar_2.xyz));
+  ret_1 = (clamp ((
+    ((ret_1 - 0.5) * 3.0)
+   + 0.25), 0.0, 1.0) * 1.45);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = ret_1;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec2 tmpvar_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv - 0.5);
+  tmpvar_2 = ((tmpvar_3 * 0.8) + 0.5);
+  vec2 tmpvar_4;
+  tmpvar_4 = ((tmpvar_3 * 0.6) + 0.5);
+  ret_1.x = texture (sampler_main, uv).x;
+  ret_1.x = (ret_1.x + ((
+    (texture (sampler_blur1, uv).xyz * scale1)
+   + bias1).x * 1.5));
+  ret_1.y = texture (sampler_main, tmpvar_2).y;
+  ret_1.y = (ret_1.y + ((
+    (texture (sampler_blur1, tmpvar_2).xyz * scale1)
+   + bias1).y * 1.5));
+  ret_1.z = texture (sampler_main, tmpvar_4).z;
+  ret_1.z = (ret_1.z + ((
+    (texture (sampler_blur1, tmpvar_4).xyz * scale1)
+   + bias1).z * 1.5));
+  ret_1 = (((ret_1.x * vec3(0.7, 1.1, 1.5)) + (ret_1.y * vec3(1.5, 1.1, 0.4))) + (ret_1.z * vec3(1.0, 0.5, 1.4)));
+  ret_1 = (ret_1 * 0.4);
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_1;
+  ret = tmpvar_5.xyz;
+ }

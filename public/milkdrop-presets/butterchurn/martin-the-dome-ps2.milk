@@ -1,0 +1,151 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.980001
+fDecay=0.500000
+fVideoEchoZoom=0.999998
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=4.000000
+bAdditiveWaves=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.527400
+fWaveSmoothing=0.450000
+fModWaveAlphaStart=0.000000
+fModWaveAlphaEnd=1.320000
+fWarpAnimSpeed=1.459500
+fWarpScale=2.006700
+fZoom=0.999900
+fWarp=0.010000
+fSx=0.999900
+fWaveR=0.800000
+fWaveG=0.490000
+fOuterBorderSize=0.015000
+fOuterBorderB=1.000000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=1.850000
+fMotionVectorsR=0.499900
+fMotionVectorsG=0.499900
+fMotionVectorsB=0.499900
+fMotionVectorsA=0.000000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec2 uv6_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = ((uv - 0.5) * aspect.xy);
+  float tmpvar_4;
+  tmpvar_4 = (((q29 * 2.0) * sqrt(
+    dot (tmpvar_3, tmpvar_3)
+  )) + (rand_frame * 64.0)).x;
+  float tmpvar_5;
+  tmpvar_5 = (0.5 + (rand_preset * 10.0)).x;
+  uv_1 = (uv + (clamp (
+    ((sin(tmpvar_4) / cos(tmpvar_4)) * normalize(tmpvar_3))
+  , vec2(
+    -(tmpvar_5)
+  ), vec2(tmpvar_5)) / 20.0));
+  uv6_2 = (0.4 * sin((tmpvar_3 * 22.0)));
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = (((q25 * 
+    (((texture (sampler_main, uv_1).xyz - (
+      ((texture (sampler_blur1, fract(uv_1)).xyz * scale1) + bias1)
+     * 0.04)) + (0.15 * (vec3(
+      (0.1 / sqrt(dot (uv6_2, uv6_2)))
+    ) * roam_cos.xyz))) - 0.02)
+  ) * 0.98) + ((1.0 - q25) * texture (sampler_main, uv_orig).xyz));
+  ret = tmpvar_6.xyz;
+ }
+
+[comp_shader]
+vec3 xlat_mutableret1;
+vec2 xlat_mutablers;
+vec2 xlat_mutablers0;
+vec2 xlat_mutableuv2;
+vec2 xlat_mutableuv3;
+ shader_body { 
+  vec2 uv_1;
+  uv_1.x = uv.x;
+  vec3 ret2_2;
+  float z_3;
+  uv_1.y = (uv.y - 0.1);
+  vec2 tmpvar_4;
+  tmpvar_4 = ((uv_1 - 0.5) * aspect.xy);
+  z_3 = (0.3 / tmpvar_4.y);
+  xlat_mutablers0.x = (tmpvar_4.x * z_3);
+  xlat_mutablers0.y = z_3;
+  float tmpvar_5;
+  tmpvar_5 = (time / 2.0);
+  xlat_mutablers.x = (xlat_mutablers0.x + tmpvar_5);
+  xlat_mutablers.y = (z_3 + tmpvar_5);
+  xlat_mutableret1 = (vec3(dot (texture (sampler_noise_hq, (xlat_mutablers / 2.0)), vec4(0.32, 0.49, 0.29, 0.0))) - 0.55);
+  float tmpvar_6;
+  tmpvar_6 = clamp ((24.0 * tmpvar_4.y), 0.0, 1.0);
+  xlat_mutableuv2 = ((1.5 * tmpvar_4) * (q28 - abs(tmpvar_4.x)));
+  xlat_mutableuv2 = (xlat_mutableuv2 * aspect.yx);
+  vec2 tmpvar_7;
+  tmpvar_7 = fract(((xlat_mutableuv2 - 
+    (q27 / 2.0)
+  ) - (
+    (xlat_mutableret1 * 0.04)
+   * tmpvar_6).xy));
+  vec2 tmpvar_8;
+  tmpvar_8.y = 0.0;
+  tmpvar_8.x = texsize.z;
+  vec2 tmpvar_9;
+  tmpvar_9.x = 0.0;
+  tmpvar_9.y = texsize.w;
+  vec2 tmpvar_10;
+  tmpvar_10.x = dot ((texture (sampler_main, (tmpvar_7 + tmpvar_8)).xyz - texture (sampler_main, (tmpvar_7 - tmpvar_8)).xyz), vec3(0.32, 0.49, 0.29));
+  tmpvar_10.y = dot ((texture (sampler_main, (tmpvar_7 + tmpvar_9)).xyz - texture (sampler_main, (tmpvar_7 - tmpvar_9)).xyz), vec3(0.32, 0.49, 0.29));
+  xlat_mutableuv3 = (tmpvar_7 + (0.02 * tmpvar_10));
+  vec2 tmpvar_11;
+  tmpvar_11.x = 0.5;
+  tmpvar_11.y = (tmpvar_4.y / tmpvar_4.x);
+  ret2_2 = (((
+    (texture (sampler_blur1, fract(((time / 8.0) + (
+      (0.1 * bass_att)
+     * tmpvar_11)))).xyz * scale1)
+   + bias1) * roam_cos.xyz) + ((0.008 / 
+    sqrt(dot (tmpvar_4, tmpvar_4))
+  ) * roam_cos.xyz));
+  ret2_2 = (ret2_2 * q10);
+  xlat_mutableret1 = (texture (sampler_main, xlat_mutableuv3).xyz + ((texture (sampler_blur1, xlat_mutableuv3).xyz * scale1) + bias1));
+  xlat_mutableret1 = (xlat_mutableret1 * (1.0 - (tmpvar_6 / 3.0)));
+  vec4 tmpvar_12;
+  tmpvar_12.w = 1.0;
+  tmpvar_12.xyz = (xlat_mutableret1 + ret2_2);
+  ret = tmpvar_12.xyz;
+ }

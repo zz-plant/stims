@@ -1,0 +1,174 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.980001
+fDecay=0.500000
+fVideoEchoZoom=0.999998
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=1.000000
+bAdditiveWaves=1.000000
+bWaveDots=1.000000
+bDarken=1.000000
+fWaveAlpha=0.005428
+fWaveScale=3.782626
+fWaveSmoothing=0.810000
+fWaveParam=-1.000000
+fModWaveAlphaStart=0.470000
+fModWaveAlphaEnd=1.320000
+fWarpAnimSpeed=1.459500
+fWarpScale=2.006700
+fZoom=0.999900
+fWarp=0.010000
+fSx=0.999900
+fWaveR=0.450000
+fWaveG=0.400000
+fWaveB=0.500000
+fOuterBorderSize=0.060000
+fOuterBorderR=1.000000
+fOuterBorderG=1.000000
+fOuterBorderB=1.000000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=47.999996
+nMotionVectorsLoop=0.150000
+fMotionVectorsR=0.600000
+fMotionVectorsG=0.200000
+fMotionVectorsB=0.699900
+fMotionVectorsA=0.300000
+b1ed=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bTextured=1.000000
+fX=0.530000
+fRad=0.088200
+fTexZoom=0.492800
+fG=1.000000
+fB=0.700000
+fA=0.700000
+fR2=0.400000
+fG2=0.000000
+fB2=0.800000
+fA2=0.600000
+fBorderB=0.200000
+fBorderA=0.200000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+fX=0.553000
+fY=0.600000
+fRad=0.049138
+fTexZoom=0.499805
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fG2=0.000000
+fB2=1.000000
+fBorderR=0.500000
+fBorderG=0.500000
+fBorderB=0.500000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+nSamples=102.000000
+fSeparation=10.000000
+fScaling=0.891519
+fSmoothing=0.000000
+fG=0.500000
+fB=0.500000
+fA=0.600000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 zz_1;
+  vec2 uv1_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = ((uv - vec2(0.5, 0.5)) * aspect.xy);
+  mat2 tmpvar_4;
+  tmpvar_4[uint(0)] = _qa.xy;
+  tmpvar_4[1u] = _qa.zw;
+  zz_1 = (((tmpvar_3 * texsize.xy) * (0.006 * q28)) * tmpvar_4);
+  zz_1 = ((zz_1.yx * q5) + ((1.0 - q5) * zz_1));
+  uv1_2 = (0.3 * cos((
+    (tmpvar_3 * 16.0)
+   + 
+    (time / 8.0)
+  )));
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ((0.995 * (texture (sampler_main, 
+    (uv + (((
+      clamp ((sin(zz_1.yx) / cos(zz_1.yx)), vec2(-8.0, -8.0), vec2(8.0, 8.0))
+     * 
+      cos(((rand_preset * 8.0).xy * zz_1))
+    ) * texsize.zw) * q29))
+  ).xyz + 
+    (((0.004 / sqrt(
+      dot (uv1_2, uv1_2)
+    )) * q19) * vec3(0.5, 0.0, 1.0))
+  )) - 0.005);
+  ret = tmpvar_5.xyz;
+ }
+
+[comp_shader]
+vec3 xlat_mutableret1;
+ shader_body { 
+  vec2 uv_1;
+  float inten_2;
+  float dist_3;
+  vec2 uv2_4;
+  uv_1 = (uv - 0.5);
+  uv_1 = (uv_1 * aspect.xy);
+  uv2_4.x = ((uv_1.x * 0.5) - (uv_1.y * -0.5));
+  uv2_4.y = ((uv_1.x * -0.5) + (uv_1.y * 0.5));
+  uv2_4 = (uv2_4 * aspect.yx);
+  dist_3 = (1.0 - fract((0.25 + q31)));
+  inten_2 = ((2.0 * sqrt(dist_3)) * (1.0 - (dist_3 * dist_3)));
+  xlat_mutableret1 = max (vec3(0.0, 0.0, 0.0), (texture (sampler_main, (
+    ((2.0 * uv2_4) * dist_3)
+   + q32)).xyz * inten_2));
+  uv2_4.x = ((uv_1.x * -0.5) - (uv_1.y * 0.5));
+  uv2_4.y = ((uv_1.x * 0.5) + (uv_1.y * -0.5));
+  uv2_4 = (uv2_4 * aspect.yx);
+  dist_3 = (1.0 - fract((0.5 + q31)));
+  inten_2 = ((2.0 * sqrt(dist_3)) * (1.0 - (dist_3 * dist_3)));
+  xlat_mutableret1 = max (xlat_mutableret1, (texture (sampler_main, (
+    ((2.0 * uv2_4) * dist_3)
+   + q32)).xyz * inten_2));
+  uv2_4.x = ((uv_1.x * 0.5) - (uv_1.y * -0.5));
+  uv2_4.y = ((uv_1.x * -0.5) + (uv_1.y * 0.5));
+  uv2_4 = (uv2_4 * aspect.yx);
+  dist_3 = (1.0 - fract((0.75 + q31)));
+  inten_2 = ((2.0 * sqrt(dist_3)) * (1.0 - (dist_3 * dist_3)));
+  xlat_mutableret1 = max (xlat_mutableret1, (texture (sampler_main, (
+    ((2.0 * uv2_4) * dist_3)
+   + q32)).xyz * inten_2));
+  uv2_4.x = ((uv_1.x * -0.5) - (uv_1.y * 0.5));
+  uv2_4.y = ((uv_1.x * 0.5) + (uv_1.y * -0.5));
+  uv2_4 = (uv2_4 * aspect.yx);
+  dist_3 = (1.0 - fract((1.0 + q31)));
+  inten_2 = ((2.0 * sqrt(dist_3)) * (1.0 - (dist_3 * dist_3)));
+  xlat_mutableret1 = max (xlat_mutableret1, (texture (sampler_main, (
+    ((2.0 * uv2_4) * dist_3)
+   + q32)).xyz * inten_2));
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = (xlat_mutableret1 * 1.6);
+  ret = tmpvar_5.xyz;
+ }

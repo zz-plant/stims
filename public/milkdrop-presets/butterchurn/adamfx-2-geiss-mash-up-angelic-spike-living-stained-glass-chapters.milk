@@ -1,0 +1,113 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nWaveMode=6.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=0.001000
+fWaveScale=0.010000
+fWaveSmoothing=0.900000
+fWarpScale=1.331000
+fZoom=0.999510
+fWarp=0.010000
+fWaveG=0.000000
+fWaveB=0.000000
+fOuterBorderSize=0.500000
+fOuterBorderR=0.010000
+fInnerBorderSize=0.260000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.050000
+fMotionVectorsR=0.000000
+fMotionVectorsG=0.700000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fRad=1.527700
+fAng=3.141590
+fTexZoom=0.651900
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=100.000000
+bTextured=1.000000
+fRad=1.099980
+fTexZoom=0.344800
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fB2=0.500000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=1.000000
+fSmoothing=0.000000
+
+[wave00_1]
+bEnabled=1.000000
+fSmoothing=0.000000
+
+[wave00_2]
+bEnabled=1.000000
+bUseDots=1.000000
+bThick=1.000000
+fSmoothing=0.000000
+
+[wave00_3]
+bEnabled=1.000000
+bSpectrum=1.000000
+bThick=1.000000
+bAdditive=1.000000
+fScaling=100.000000
+fSmoothing=0.000000
+
+[comp_shader]
+shader_body { 
+  float ang2_1;
+  ang2_1 = ((ang * 0.1591549) + (time * 0.025));
+  float tmpvar_2;
+  tmpvar_2 = (3.0 + floor((rand_preset.z * 5.95)));
+  ang2_1 = (fract((ang2_1 * tmpvar_2)) / tmpvar_2);
+  ang2_1 = (abs((ang2_1 - 
+    (0.5 / tmpvar_2)
+  )) * 6.283185);
+  vec2 tmpvar_3;
+  tmpvar_3.x = cos(ang2_1);
+  tmpvar_3.y = sin(ang2_1);
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = (texture (sampler_main, (0.5 + (
+    ((0.4 * (rad * sqrt(
+      dot (texsize.xy, texsize.xy)
+    ))) * tmpvar_3)
+   * texsize.zw))).xyz * 1.333);
+  ret = tmpvar_4.xyz;
+ }

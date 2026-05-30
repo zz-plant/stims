@@ -1,0 +1,97 @@
+[preset00]
+fRating=0.000000
+fDecay=0.500000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+nWaveMode=7.000000
+bSolarize=1.000000
+fWaveAlpha=0.001000
+fWarp=0.010000
+fWaveR=0.000000
+fWaveG=0.400000
+fWaveB=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+bTextured=1.000000
+fRad=2.667180
+fTexZoom=0.377420
+fG=1.000000
+fB=1.000000
+fA=0.800000
+fG2=0.000000
+fA2=0.400000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+fG=1.000000
+fB=1.000000
+fA=0.800000
+fA2=0.600000
+fBorderR=0.000000
+fBorderG=0.000000
+fBorderB=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=100.000000
+fA=0.800000
+fA2=0.600000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  float final_noise_1;
+  vec3 tmpvar_2;
+  tmpvar_2.xy = uv;
+  tmpvar_2.z = (q2 * 10.0);
+  final_noise_1 = ((texture (sampler_noisevol_lq, tmpvar_2) * 2.0) - 1.0).x;
+  final_noise_1 = (final_noise_1 + (0.5 * (
+    (texture (sampler_noisevol_lq, (tmpvar_2 * 2.0)) * 2.0)
+   - 1.0)).x);
+  final_noise_1 = (final_noise_1 + (0.25 * (
+    (texture (sampler_noisevol_lq, (tmpvar_2 * 4.0)) * 2.0)
+   - 1.0)).x);
+  final_noise_1 = (final_noise_1 + (0.125 * (
+    (texture (sampler_noisevol_lq, (tmpvar_2 * 8.0)) * 2.0)
+   - 1.0)).x);
+  final_noise_1 = ((final_noise_1 + 1.0) * 0.5);
+  vec4 tmpvar_3;
+  tmpvar_3.w = 1.0;
+  tmpvar_3.xyz = texture (sampler_main, (((
+    (uv - 0.5)
+   * 1.5) * final_noise_1) + 0.5)).xyz;
+  ret = tmpvar_3.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  ret_1 = (mix (texture (sampler_main, uv).xyz, texture (sampler_main, (
+    (0.5 - uv)
+   + 0.5)).xyz, vec3(0.5, 0.5, 0.5)) * 2.0);
+  ret_1 = (1.0 - (1.0 - (
+    (ret_1 * (1.0 - ret_1))
+   * 4.0)));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = ret_1;
+  ret = tmpvar_2.xyz;
+ }

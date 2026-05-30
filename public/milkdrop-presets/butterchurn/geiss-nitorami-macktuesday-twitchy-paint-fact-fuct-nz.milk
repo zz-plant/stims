@@ -1,0 +1,156 @@
+[preset00]
+fRating=3.000000
+fGammaAdj=1.560000
+fDecay=1.000000
+fVideoEchoZoom=0.362000
+nVideoEchoOrientation=1.000000
+bAdditiveWaves=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bDarken=1.000000
+fWaveAlpha=0.001000
+fWaveScale=0.010000
+fWaveSmoothing=0.700000
+fWarpAnimSpeed=9.861000
+fWarpScale=16.217000
+fZoomExponent=1.503740
+fShader=1.000000
+fWaveR=0.000000
+fWaveG=0.000000
+fWaveB=0.000000
+fWaveX=0.000000
+fWaveY=0.000000
+fOuterBorderR=1.000000
+fOuterBorderG=0.100000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.050000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+nMotionVectorsX=0.000000
+nMotionVectorsY=0.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=3.000000
+nInstances=200.000000
+fRad=0.027050
+fTexZoom=1.246990
+fG=0.400000
+fB=0.300000
+fG2=0.000000
+fA2=1.000000
+fBorderA=0.510000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec2 dither_uv_big_2;
+  vec3 ret_3;
+  vec2 tmpvar_4;
+  tmpvar_4 = (texsize.xy * texsize_noise_mq.zw);
+  vec2 tmpvar_5;
+  tmpvar_5.x = q1;
+  tmpvar_5.y = q2;
+  dither_uv_big_2 = (((uv_orig * tmpvar_4) * 0.08) + (tmpvar_5 * 0.05));
+  vec2 tmpvar_6;
+  tmpvar_6 = ((uv_orig * tmpvar_4) + rand_frame.xy);
+  vec4 tmpvar_7;
+  tmpvar_7 = texture (sampler_main, uv);
+  uv_1.x = (uv.x + ((
+    (tmpvar_7.y - tmpvar_7.z)
+   * 0.002) * q3));
+  uv_1.y = (uv.y + ((
+    (tmpvar_7.x - 0.5)
+   * 0.004) * q3));
+  ret_3 = ((texture (sampler_main, uv_1).xyz * 0.7) + 0.15);
+  vec4 tmpvar_8;
+  tmpvar_8 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * uv_1.xyy) * (
+    (q27 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q29)));
+  if (((ret_3.x > (q21 * roam_cos.y)) && (ret_3.x <= (q24 * roam_sin.x)))) {
+    ret_3.x = (ret_3.x + (tmpvar_8.x * 1.5));
+  };
+  if (((ret_3.y > (q22 * roam_sin.x)) && (ret_3.y <= (q25 * roam_cos.x)))) {
+    ret_3.y = (ret_3.y - (tmpvar_8.y * 0.5));
+  };
+  if (((ret_3.z > (q23 * roam_cos.x)) && (ret_3.z <= (q26 * roam_sin.y)))) {
+    ret_3.z = (ret_3.z * (tmpvar_8.z * 1.5));
+  };
+  ret_3 = (ret_3 + ((texture (sampler_noise_mq, dither_uv_big_2) - 0.5) * 0.15).xyz);
+  ret_3 = (ret_3 + ((
+    (texture (sampler_noise_lq, tmpvar_6) - 0.5)
+   * 0.035) * q3).xyz);
+  ret_3 = (ret_3 - min (min (ret_3.x, ret_3.y), ret_3.z));
+  ret_3 = (ret_3 / (max (
+    max (ret_3.x, ret_3.y)
+  , ret_3.z) + 0.01));
+  vec4 tmpvar_9;
+  tmpvar_9.w = 1.0;
+  tmpvar_9.xyz = ret_3;
+  ret = tmpvar_9.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec2 tmpvar_2;
+  tmpvar_2.y = 0.0;
+  tmpvar_2.x = texsize.z;
+  vec2 tmpvar_3;
+  tmpvar_3.x = 0.0;
+  tmpvar_3.y = texsize.w;
+  vec3 x_4;
+  x_4 = (1.0 - ((
+    (texture (sampler_main, (uv - tmpvar_2)).xyz - texture (sampler_main, (uv + tmpvar_2)).xyz)
+   + 
+    (texture (sampler_main, (uv - tmpvar_3)).xyz - texture (sampler_main, (uv + tmpvar_3)).xyz)
+  ) * 0.05));
+  ret_1 = (clamp ((
+    (45.0 * ((0.294 * sqrt(
+      dot (x_4, x_4)
+    )) - 0.5))
+   + 0.02), 0.0, 1.0) * (1.1 + (0.9 * texture (sampler_main, uv).xyz)));
+  ret_1 = (ret_1 * 0.4);
+  vec4 tmpvar_5;
+  tmpvar_5 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * uv.xyy) * (
+    (q28 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q30)));
+  if (((ret_1.x > (q26 * roam_cos.y)) && (ret_1.x <= (q23 * roam_sin.x)))) {
+    ret_1.x = (ret_1.x * (tmpvar_5.x * 1.5));
+  };
+  if (((ret_1.y > (q25 * roam_sin.x)) && (ret_1.y <= (q22 * roam_cos.x)))) {
+    ret_1.y = (ret_1.y + (tmpvar_5.y * 1.5));
+  };
+  if (((ret_1.z > (q24 * roam_cos.x)) && (ret_1.z <= (q21 * roam_sin.y)))) {
+    ret_1.z = (ret_1.z - (tmpvar_5.z * 0.5));
+  };
+  vec4 tmpvar_6;
+  tmpvar_6.w = 1.0;
+  tmpvar_6.xyz = ret_1;
+  ret = tmpvar_6.xyz;
+ }

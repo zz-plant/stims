@@ -1,0 +1,90 @@
+[preset00]
+fRating=0.000000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+nWaveMode=1.000000
+bMaximizeWaveColor=0.000000
+fWaveAlpha=1.000000
+fWaveScale=0.504000
+fWaveParam=0.240000
+fWarpAnimSpeed=9.861000
+fWarpScale=16.217000
+fZoomExponent=1.503740
+fZoom=1.020100
+fWarp=0.819540
+fWaveR=0.500000
+fWaveG=0.500000
+fWaveB=0.500000
+fOuterBorderSize=0.005000
+fOuterBorderA=0.200000
+fInnerBorderSize=0.005000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=0.060000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 z_1;
+  vec3 tmpvar_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = (0.1 * texsize.zw);
+  tmpvar_2 = (0.25 * ((
+    (texture (sampler_main, (uv + tmpvar_3)).xyz + texture (sampler_main, (uv + (tmpvar_3 * vec2(-1.0, 1.0)))).xyz)
+   + texture (sampler_main, 
+    (uv + (tmpvar_3 * vec2(1.0, -1.0)))
+  ).xyz) + texture (sampler_main, (uv - tmpvar_3)).xyz));
+  float tmpvar_4;
+  tmpvar_4 = ((tmpvar_2.x * tmpvar_2.y) * tmpvar_2.y);
+  z_1.x = (tmpvar_2.x + ((
+    -(tmpvar_4)
+   + 
+    (0.035 * (1.0 - tmpvar_2.x))
+  ) * 4.0));
+  z_1.y = (tmpvar_2.y + ((tmpvar_4 - 
+    (0.095 * tmpvar_2.y)
+  ) * 4.0));
+  z_1.z = tmpvar_2.z;
+  z_1.x = (z_1.x + (0.4 * (
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+   - texture (sampler_main, uv).xyz)).x);
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = (z_1 + (0.05 * (
+    (texture (sampler_noise_lq, (((uv * texsize.xy) * texsize_noise_lq.zw) + rand_frame.xy)).xyz * 2.0)
+   - 1.0)));
+  ret = tmpvar_5.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = texture (sampler_main, uv).xyz;
+  ret = tmpvar_1.xyz;
+ }

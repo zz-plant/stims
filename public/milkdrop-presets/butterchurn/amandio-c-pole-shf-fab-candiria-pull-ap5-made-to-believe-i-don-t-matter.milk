@@ -1,0 +1,152 @@
+[preset00]
+fRating=3.000000
+fGammaAdj=1.000000
+fDecay=0.500000
+fVideoEchoZoom=1.000000
+nVideoEchoOrientation=1.000000
+nWaveMode=7.000000
+bAdditiveWaves=1.000000
+bModWaveAlphaByVolume=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+fWaveAlpha=0.001000
+fWaveScale=1.286000
+fWaveSmoothing=0.630000
+fModWaveAlphaStart=0.710000
+fModWaveAlphaEnd=1.300000
+fWarpScale=1.331000
+fZoom=1.004000
+fWarp=0.197880
+fSx=0.999670
+fSy=0.999900
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+fOuterBorderR=1.000000
+fOuterBorderA=0.700000
+fInnerBorderSize=0.000000
+fInnerBorderR=0.000000
+fInnerBorderG=0.000000
+fInnerBorderB=0.000000
+fInnerBorderA=1.000000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=16.000000
+nInstances=353.000000
+fX=0.503000
+fRad=0.037600
+fTexZoom=1.112340
+fG=1.000000
+fB=1.000000
+fG2=0.000000
+fBorderA=0.060000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec2 uv_1;
+  vec3 ret_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = (((uv_orig * texsize.xy) * (texsize_noise_lq.zw * 1.5)) + rand_frame.xy);
+  uv_1 = (mix (uv_orig, uv, vec2((
+    (dot (texture (sampler_main, mix (uv_orig, uv, vec2(4.0, 4.0))).xyz, vec3(0.32, 0.49, 0.29)) - dot (((texture (sampler_blur1, 
+      mix (uv_orig, uv, vec2(-8.0, -8.0))
+    ).xyz * scale1) + bias1), vec3(0.32, 0.49, 0.29)))
+   * 8.0))) + ((
+    (texture (sampler_noise_lq, tmpvar_3) - 0.5)
+  .xy * texsize.zw) * 0.3));
+  ret_2 = ((texture (sampler_main, uv_1).xyz + (
+    (texture (sampler_noise_lq, tmpvar_3) - 0.5)
+   * 0.004).xyz) + -0.001);
+  vec4 tmpvar_4;
+  tmpvar_4 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * uv_1.xyy) * (
+    (q27 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q29)));
+  if (((ret_2.x > (q21 * q3)) && (ret_2.x <= (q24 * q1)))) {
+    ret_2.y = (ret_2.y - (tmpvar_4.x * 0.5));
+  };
+  if (((ret_2.y > (q22 * q1)) && (ret_2.y <= (q25 * q2)))) {
+    ret_2.z = (ret_2.z - (tmpvar_4.y * 0.5));
+  };
+  if (((ret_2.z > (q23 * q2)) && (ret_2.z <= (q26 * q3)))) {
+    ret_2.x = (ret_2.x - (tmpvar_4.z * 0.5));
+  };
+  vec4 tmpvar_5;
+  tmpvar_5.w = 1.0;
+  tmpvar_5.xyz = ret_2;
+  ret = tmpvar_5.xyz;
+ }
+
+[comp_shader]
+float xlat_mutablea;
+float xlat_mutableb;
+float xlat_mutablec;
+ shader_body { 
+  vec3 ret_1;
+  vec2 tmpvar_2;
+  tmpvar_2.x = cos(((uv.y * texsize.y) * 0.1));
+  tmpvar_2.y = sin(((uv.x * texsize.x) * 0.1));
+  vec2 tmpvar_3;
+  tmpvar_3 = (uv + ((32.0 * texsize.zw) * tmpvar_2));
+  vec3 tmpvar_4;
+  tmpvar_4 = vec3((((
+    (((texture (sampler_blur3, uv).xyz * scale3) + bias3).x + ((texture (sampler_blur2, uv).xyz * scale2) + bias2).x)
+   + 
+    ((texture (sampler_blur1, tmpvar_3).xyz * scale1) + bias1)
+  .x) + texture (sampler_main, tmpvar_3).x) + 0.04));
+  xlat_mutablea = (tmpvar_4.x / 4.0);
+  xlat_mutableb = (tmpvar_4.y / 4.0);
+  xlat_mutablec = (tmpvar_4.z / 4.0);
+  xlat_mutablec = ((xlat_mutablec + xlat_mutableb) - (xlat_mutablec * xlat_mutableb));
+  xlat_mutablea = ((xlat_mutablea + xlat_mutablec) - (xlat_mutablea * xlat_mutablec));
+  vec3 tmpvar_5;
+  tmpvar_5 = vec3((1.4 * xlat_mutablea));
+  ret_1 = ((vec3(4.0, 2.8, 0.0) * (
+    (tmpvar_5 * (1.0 - tmpvar_5))
+   * 
+    (1.0 - tmpvar_5)
+  )) + ((tmpvar_5 * tmpvar_5) * vec3(-0.3, 0.2, 0.5)));
+  ret_1 = (ret_1 - (roam_sin.wzy * roam_cos.zxy));
+  ret_1 = (1.0 - mix (mix (ret_1, vec3(1.0, 1.0, 1.0), vec3(
+    (((texture (sampler_blur1, uv).xyz * scale1) + bias1).z * 6.0)
+  )), vec3(0.9, 0.0, 0.0), texture (sampler_main, uv).zzz).zyx);
+  vec4 tmpvar_6;
+  tmpvar_6 = texture (sampler_noisevol_hq, (((vec3(0.05, 0.05, 0.0) * tmpvar_3.xyy) * (
+    (q28 * texsize.xyy)
+   * texsize_noisevol_hq.zww)) + ((time * vec3(0.0, 0.0, 1.0)) * q30)));
+  if (((ret_1.x > (q26 * q3)) && (ret_1.x <= (q23 * q1)))) {
+    ret_1.z = (ret_1.z - (tmpvar_6.x * 0.5));
+  };
+  if (((ret_1.y > (q25 * q1)) && (ret_1.y <= (q22 * q2)))) {
+    ret_1.x = (ret_1.x - (tmpvar_6.y * 0.5));
+  };
+  if (((ret_1.z > (q24 * q2)) && (ret_1.z <= (q21 * q3)))) {
+    ret_1.y = (ret_1.y - (tmpvar_6.z * 0.5));
+  };
+  vec4 tmpvar_7;
+  tmpvar_7.w = 1.0;
+  tmpvar_7.xyz = ret_1;
+  ret = tmpvar_7.xyz;
+ }

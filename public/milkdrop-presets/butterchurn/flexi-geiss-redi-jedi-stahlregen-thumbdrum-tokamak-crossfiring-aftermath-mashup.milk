@@ -1,0 +1,103 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nVideoEchoOrientation=1.000000
+nWaveMode=5.000000
+bAdditiveWaves=1.000000
+fWaveAlpha=0.000000
+fWaveScale=0.900000
+fWaveSmoothing=0.630000
+fWaveParam=1.000000
+fModWaveAlphaStart=2.000000
+fModWaveAlphaEnd=2.000000
+fWarpScale=1.331000
+fZoom=1.004000
+fWarp=0.197880
+fSx=0.999670
+fSy=0.999900
+fWaveR=0.650000
+fWaveG=0.650000
+fWaveB=0.650000
+nMotionVectorsX=0.000000
+nMotionVectorsY=48.000000
+nMotionVectorsDx=-0.941000
+nMotionVectorsDy=0.426000
+nMotionVectorsLoop=5.000000
+fMotionVectorsR=0.316000
+fMotionVectorsG=0.078000
+fMotionVectorsB=0.942000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec3 ret_1;
+  vec4 tmpvar_2;
+  tmpvar_2 = texture (sampler_main, uv);
+  ret_1 = (tmpvar_2.xyz + ((tmpvar_2.xyz - 
+    ((texture (sampler_blur2, uv).xyz * scale2) + bias2)
+  ) * 0.3));
+  ret_1 = (ret_1 * 0.9);
+  ret_1 = (ret_1 + ((
+    ((texture (sampler_noise_lq, ((
+      (uv_orig * texsize.xy)
+     * 
+      (texsize_noise_lq.zw * 0.4)
+    ) + rand_frame.xy)).xyz - 0.5) / 256.0)
+   * 122.0) * clamp (
+    (treb_att - 1.0)
+  , 0.0, 1.0)));
+  vec3 tmpvar_3;
+  tmpvar_3 = mix (ret_1, vec3(dot (ret_1, vec3(0.32, 0.49, 0.29))), vec3(0.2, 0.2, 0.2));
+  ret_1 = tmpvar_3;
+  vec4 tmpvar_4;
+  tmpvar_4.w = 1.0;
+  tmpvar_4.xyz = tmpvar_3;
+  ret = tmpvar_4.xyz;
+ }
+
+[comp_shader]
+float xlat_mutablea;
+float xlat_mutableb;
+float xlat_mutablec;
+ shader_body { 
+  vec3 tmpvar_1;
+  tmpvar_1 = (((
+    (((texture (sampler_blur3, uv).xyz * scale3) + bias3) + ((texture (sampler_blur2, uv).xyz * scale2) + bias2))
+   + 
+    ((texture (sampler_blur1, uv).xyz * scale1) + bias1)
+  ) - (texture (sampler_main, uv) * 2.0).xyz) + 0.5);
+  xlat_mutablea = (tmpvar_1.x / 4.0);
+  xlat_mutableb = (tmpvar_1.y / 4.0);
+  xlat_mutablec = (tmpvar_1.z / 4.0);
+  xlat_mutablec = ((xlat_mutablec + xlat_mutableb) - (xlat_mutablec * xlat_mutableb));
+  xlat_mutablea = ((xlat_mutablea + xlat_mutablec) - (xlat_mutablea * xlat_mutablec));
+  vec4 tmpvar_2;
+  tmpvar_2.w = 1.0;
+  tmpvar_2.xyz = mix (vec3(0.7, 0.3, -0.5), vec3(-0.8, -0.7, 0.9), (1.0 - vec3((1.4 * xlat_mutablea))));
+  ret = tmpvar_2.xyz;
+ }

@@ -1,0 +1,175 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+fDecay=1.000000
+fVideoEchoZoom=1.000000
+fVideoEchoAlpha=0.500000
+bWaveThick=1.000000
+bMaximizeWaveColor=0.000000
+bTexWrap=0.000000
+bBrighten=1.000000
+bDarken=1.000000
+bSolarize=1.000000
+fWaveAlpha=0.004000
+fWaveScale=0.010000
+fWaveSmoothing=0.000000
+fWaveParam=-0.440000
+fModWaveAlphaStart=1.000000
+fModWaveAlphaEnd=1.000000
+fWarpAnimSpeed=0.010000
+fWarpScale=100.000000
+fZoomExponent=0.321040
+fWarp=0.010000
+fWaveY=0.040000
+fOuterBorderSize=0.005000
+fOuterBorderA=1.000000
+fInnerBorderSize=0.000000
+fInnerBorderR=1.000000
+fInnerBorderG=1.000000
+fInnerBorderB=1.000000
+nMotionVectorsX=64.000000
+nMotionVectorsY=48.000000
+nMotionVectorsLoop=0.000000
+fMotionVectorsB=0.000000
+fMotionVectorsA=0.100000
+
+[shape00_0]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fX=0.560000
+fY=0.510000
+fRad=1.773680
+fAng=1.256600
+fTexZoom=0.469430
+fG=1.000000
+fB=1.000000
+fR2=0.500000
+fG2=0.500000
+fB2=0.500000
+fBorderA=0.000000
+
+[shape00_1]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fX=0.230000
+fY=0.270000
+fRad=0.605580
+fAng=2.827430
+fTexZoom=0.734580
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_2]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bTextured=1.000000
+fX=0.200000
+fY=0.570000
+fRad=0.387000
+fAng=4.775220
+fTexZoom=0.692000
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[shape00_3]
+bEnabled=1.000000
+nSides=100.000000
+bAdditive=1.000000
+bThickOutline=1.000000
+bTextured=1.000000
+fX=0.350000
+fY=0.530000
+fRad=0.226130
+fAng=0.314160
+fTexZoom=0.727300
+fG=1.000000
+fB=1.000000
+fR2=1.000000
+fB2=1.000000
+fA2=1.000000
+fBorderA=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[comp_shader]
+shader_body { 
+  vec3 ret2_1;
+  vec3 ret_2;
+  vec2 tmpvar_3;
+  tmpvar_3 = (texsize.zw * 6.0);
+  vec2 tmpvar_4;
+  tmpvar_4.x = dot (((
+    (texture (sampler_blur1, (uv + (vec2(1.0, 0.0) * tmpvar_3))).xyz * scale1)
+   + bias1) - (
+    (texture (sampler_blur1, (uv - (vec2(1.0, 0.0) * tmpvar_3))).xyz * scale1)
+   + bias1)), vec3(0.32, 0.49, 0.29));
+  tmpvar_4.y = dot (((
+    (texture (sampler_blur1, (uv + (vec2(0.0, 1.0) * tmpvar_3))).xyz * scale1)
+   + bias1) - (
+    (texture (sampler_blur1, (uv - (vec2(0.0, 1.0) * tmpvar_3))).xyz * scale1)
+   + bias1)), vec3(0.32, 0.49, 0.29));
+  vec2 tmpvar_5;
+  tmpvar_5 = (uv - (0.25 * tmpvar_4));
+  vec4 tmpvar_6;
+  tmpvar_6 = texture (sampler_blur3, uv);
+  ret_2 = (0.3 * ((tmpvar_6.xyz * scale3) + bias3));
+  ret_2 = (ret_2 - ((
+    (texture (sampler_blur2, uv).xyz * scale2)
+   + bias2) - 0.01));
+  vec4 tmpvar_7;
+  tmpvar_7 = texture (sampler_blur1, uv);
+  ret_2 = (ret_2 + ((texture (sampler_main, uv).xyz + 
+    (((tmpvar_7.xyz * scale1) + bias1) * 0.15)
+  ) - 0.01));
+  ret_2 = (ret_2 + 0.75);
+  float tmpvar_8;
+  tmpvar_8 = dot (ret_2, vec3(0.32, 0.49, 0.29));
+  vec3 tmpvar_9;
+  tmpvar_9 = mix (vec3(tmpvar_8), (vec3(tmpvar_8) * dot (
+    ((0.8 * ((texture (sampler_blur3, tmpvar_5).xyz * scale3) + bias3)) - ((texture (sampler_blur1, tmpvar_5).xyz * scale1) + bias1))
+  , vec3(0.32, 0.49, 0.29))), pow (hue_shader, vec3(tmpvar_8)));
+  ret2_1 = ((-0.3 * (
+    (texture (sampler_blur3, tmpvar_5).xyz * scale3)
+   + bias3)) + ((texture (sampler_blur1, tmpvar_5).xyz * scale1) + bias1));
+  ret2_1 = (ret2_1 - texture (sampler_main, tmpvar_5).xyz);
+  ret2_1 = (ret2_1 - 0.75);
+  float tmpvar_10;
+  tmpvar_10 = dot (ret2_1, vec3(0.32, 0.49, 0.29));
+  vec3 tmpvar_11;
+  tmpvar_11 = mix (vec3(tmpvar_10), (vec3(tmpvar_10) * dot (
+    ((0.8 * ((tmpvar_6.xyz * scale3) + bias3)) - ((tmpvar_7.xyz * scale1) + bias1))
+  , vec3(0.32, 0.49, 0.29))), pow (hue_shader.zxy, tmpvar_9));
+  ret2_1 = tmpvar_11;
+  vec3 tmpvar_12;
+  tmpvar_12 = abs((tmpvar_9 - (2.0 * tmpvar_11)));
+  ret_2 = (tmpvar_12 - (0.175 * sqrt(tmpvar_12)));
+  ret_2 = (ret_2 * ret_2);
+  vec4 tmpvar_13;
+  tmpvar_13.w = 1.0;
+  tmpvar_13.xyz = ret_2;
+  ret = tmpvar_13.xyz;
+ }

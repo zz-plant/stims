@@ -1,0 +1,52 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.900000
+fVideoEchoZoom=1.169000
+nWaveMode=7.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.303000
+fWaveScale=1.719000
+fWaveSmoothing=0.522000
+fModWaveAlphaStart=0.950000
+fModWaveAlphaEnd=1.470000
+fWarpScale=3.138000
+fZoom=1.053000
+fWarp=0.263000
+fWaveR=0.600000
+fWaveG=0.700000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = ((texture (sampler_main, uv).xyz * 0.4) + ((
+    (texture (sampler_blur2, uv).xyz * scale2)
+   + bias2) * 1.75));
+  ret = tmpvar_1.xyz;
+ }

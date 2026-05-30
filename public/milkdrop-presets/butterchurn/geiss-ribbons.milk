@@ -1,0 +1,60 @@
+[preset00]
+fRating=5.000000
+fGammaAdj=1.000000
+nWaveMode=2.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=8.200001
+fWaveScale=1.543880
+fWaveSmoothing=0.900000
+fModWaveAlphaStart=1.050000
+fModWaveAlphaEnd=1.650000
+fZoom=1.055000
+fWarp=0.191239
+fWaveR=0.800000
+fWaveG=0.800000
+fWaveB=0.800000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  vec2 tmpvar_2;
+  tmpvar_2 = (vec2(1.0, 0.0) * texsize.zw);
+  tmpvar_1.xyz = (max (max (texture (sampler_main, uv).xyz, texture (sampler_main, 
+    (uv + tmpvar_2)
+  ).xyz), texture (sampler_main, (uv - tmpvar_2)).xyz) - 0.035);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz * 1.4);
+  ret = tmpvar_1.xyz;
+ }

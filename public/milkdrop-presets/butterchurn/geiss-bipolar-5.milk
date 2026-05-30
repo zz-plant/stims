@@ -1,0 +1,64 @@
+[preset00]
+fRating=0.000000
+fGammaAdj=1.998000
+fVideoEchoZoom=1.904763
+fVideoEchoAlpha=0.500000
+nVideoEchoOrientation=3.000000
+bWaveDots=1.000000
+bWaveThick=1.000000
+bModWaveAlphaByVolume=1.000000
+fWaveAlpha=0.900000
+fWaveScale=0.559785
+fWaveSmoothing=0.900000
+fWaveParam=0.200000
+fModWaveAlphaStart=1.150000
+fModWaveAlphaEnd=1.310000
+fWarpScale=2.853000
+fRot=0.001440
+fWarp=0.000000
+fWaveR=0.600000
+fWaveG=0.800000
+fWaveB=0.950000
+fMotionVectorsA=0.000000
+
+[shape00_0]
+bEnabled=0.000000
+
+[shape00_1]
+bEnabled=0.000000
+
+[shape00_2]
+bEnabled=0.000000
+
+[shape00_3]
+bEnabled=0.000000
+
+[wave00_0]
+bEnabled=0.000000
+
+[wave00_1]
+bEnabled=0.000000
+
+[wave00_2]
+bEnabled=0.000000
+
+[wave00_3]
+bEnabled=0.000000
+
+[warp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (texture (sampler_main, uv).xyz - 0.004);
+  ret = tmpvar_1.xyz;
+ }
+
+[comp_shader]
+shader_body { 
+  vec4 tmpvar_1;
+  tmpvar_1.w = 1.0;
+  tmpvar_1.xyz = (mix (texture (sampler_main, uv).xyz, texture (sampler_main, (
+    -(((uv - 0.5) * 0.525))
+   + 0.5)).xyz, vec3(0.5, 0.5, 0.5)) * 2.0);
+  ret = tmpvar_1.xyz;
+ }
