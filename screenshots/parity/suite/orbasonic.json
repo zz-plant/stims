@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "presetId": "krash-rovastar-cerebral-demons-stars",
-  "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260529232430",
-  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
+  "presetId": "orbasonic",
+  "title": "Orbasonic",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--orbasonic--20260529235828",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/orbasonic.png",
   "requiredBackend": "webgl",
   "actualBackend": "webgpu",
   "sourceFamily": "bundled",

@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "presetId": "krash-rovastar-cerebral-demons-stars",
-  "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260529232430",
-  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
+  "presetId": "eos-phat-linear-clouds-v2",
+  "title": "Eos - Phat - Linear - Clouds - V2",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-linear-clouds-v2--20260529234545",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-linear-clouds-v2.png",
   "requiredBackend": "webgl",
   "actualBackend": "webgpu",
   "sourceFamily": "bundled",

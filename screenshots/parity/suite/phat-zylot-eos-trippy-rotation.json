@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "presetId": "krash-rovastar-cerebral-demons-stars",
-  "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260529232430",
-  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
+  "presetId": "phat-zylot-eos-trippy-rotation",
+  "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--phat-zylot-eos-trippy-rotation--20260530000651",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/phat-zylot-eos-trippy-rotation.png",
   "requiredBackend": "webgl",
   "actualBackend": "webgpu",
   "sourceFamily": "bundled",

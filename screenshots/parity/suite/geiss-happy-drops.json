@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "presetId": "krash-rovastar-cerebral-demons-stars",
-  "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260529232430",
-  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
+  "presetId": "geiss-happy-drops",
+  "title": "Geiss - Happy - Drops",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--geiss-happy-drops--20260529235554",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/geiss-happy-drops.png",
   "requiredBackend": "webgl",
   "actualBackend": "webgpu",
   "sourceFamily": "bundled",
