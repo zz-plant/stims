@@ -25,7 +25,7 @@ import {
 import { UiIcon } from './UiIcon.tsx';
 import { useUI, useWorkspace } from './workspace-context.tsx';
 import { EditorPanel } from './EditorPanel.tsx';
-import { SpotifyPlayerUI } from './SpotifyPlayerUI.tsx';
+
 import {
   buildAppliedFilterSummary,
   describePresetMood,
@@ -189,7 +189,6 @@ function AudioSourcePanel() {
           <div id="workspace-youtube-player"></div>
         </div>
       </div>
-      <SpotifyPlayerUI />
     </section>
   );
 }

@@ -379,7 +379,7 @@ export function useWorkspaceSessionState({
     startAudioSource: async (request: {
       cropTarget?: HTMLElement | null;
       launchState?: SessionRouteState;
-      source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file' | 'spotify';
+      source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
       stream?: MediaStream;
     }) => {
       const launchIntent = buildLaunchIntent(request.launchState ?? routeState);
