@@ -267,7 +267,7 @@ function StimsWorkspaceAppShell() {
     let title = 'Stims';
     if (engine.loadingRequestedPreset) {
       title = `Loading\u2026 \u00B7 ${title}`;
-    } else if (engine.selectedPreset) {
+    } else if (engine.selectedPreset && liveMode) {
       title = `${engine.selectedPreset.title} \u00B7 ${title}`;
     } else if (ui.routeState.panel) {
       const panelLabel =

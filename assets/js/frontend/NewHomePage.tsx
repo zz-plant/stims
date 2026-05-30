@@ -91,9 +91,9 @@ export function NewHomePage() {
               disabled={!engineReady}
               onClick={() => void engine.handleAudioStart('demo')}
             >
-              <span className="stims-shell__action-label">See visuals now</span>
+              <span className="stims-shell__action-label">Add sound</span>
               <span className="stims-shell__action-hint">
-                Starts built-in audio and drops you into the stage
+                Space to start — built-in audio, drops onto stage
               </span>
             </button>
             <div className="stims-shell__launch-supplement stims-shell__launch-actions">

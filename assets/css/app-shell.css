@@ -1506,6 +1506,11 @@ body[data-page="workspace"] {
   pointer-events: auto;
 }
 
+.stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-copy h1,
+.stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-copy p {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
 .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-header,
 .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-stack {
   max-width: 560px;
