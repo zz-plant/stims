@@ -225,94 +225,88 @@ export function useWorkspaceSessionState({
     }),
   );
 
-  const ensurePresetPreviewService = useEffectEvent(async () => {
-    if (previewServiceRef.current) {
-      return previewServiceRef.current;
-    }
+  const ensurePresetPreviewService = useEffectEvent(
+    createLazyFactory({
+      name: 'PresetPreviewService',
+      factory: async () => {
+        const [
+          { createMilkdropPresetPreviewService },
+          { createMilkdropEngineAdapter },
+        ] = await Promise.all([
+          import('../milkdrop/runtime/preset-preview-service.ts'),
+          import('./engine/milkdrop-engine-adapter.ts'),
+        ]);
 
-    if (!previewServicePromiseRef.current) {
-      previewServicePromiseRef.current = Promise.all([
-        import('../milkdrop/runtime/preset-preview-service.ts'),
-        import('./engine/milkdrop-engine-adapter.ts'),
-      ])
-        .then(
-          async ([
-            { createMilkdropPresetPreviewService },
-            { createMilkdropEngineAdapter },
-          ]) => {
-            const previewHost = document.createElement('div');
-            previewHost.className = 'stims-shell__preset-preview-host';
-            previewHost.setAttribute('aria-hidden', 'true');
-            document.body.appendChild(previewHost);
+        const previewHost = document.createElement('div');
+        previewHost.className = 'stims-shell__preset-preview-host';
+        previewHost.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(previewHost);
 
-            const previewAdapter = createMilkdropEngineAdapter();
-            let previewBackend: EngineSnapshot['backend'] = null;
-            const unsubPreview = previewAdapter.subscribe((snap) => {
-              previewBackend = snap.backend;
-            });
-            await previewAdapter.mount(previewHost, {
-              presetId: null,
-              collectionTag: null,
-              panel: 'browse',
-              audioSource: null,
-              agentMode: true,
-              previewMode: true,
-            });
+        const previewAdapter = createMilkdropEngineAdapter();
+        let previewBackend: EngineSnapshot['backend'] = null;
+        const unsubPreview = previewAdapter.subscribe((snap) => {
+          previewBackend = snap.backend;
+        });
+        await previewAdapter.mount(previewHost, {
+          presetId: null,
+          collectionTag: null,
+          panel: 'browse',
+          audioSource: null,
+          agentMode: true,
+          previewMode: true,
+        });
 
-            const service = createMilkdropPresetPreviewService({
-              capturePreview: async (presetId) => {
-                previewBackend = null;
-                await previewAdapter.loadPreset(presetId);
-                await new Promise<void>((resolve) => {
-                  window.setTimeout(resolve, PREVIEW_SETTLE_MS);
-                });
-
-                const canvas = previewHost.querySelector('canvas');
-                if (!(canvas instanceof HTMLCanvasElement)) {
-                  throw new Error('Preview canvas was not available.');
-                }
-
-                return {
-                  imageUrl: canvas.toDataURL('image/webp', 0.82),
-                  actualBackend: previewBackend,
-                  updatedAt: Date.now(),
-                  error: null,
-                  source: 'runtime-snapshot' as const,
-                };
-              },
-              onPreviewChanged: (preview) => {
-                setPresetPreviews((current) => ({
-                  ...current,
-                  [preview.presetId]: preview,
-                }));
-              },
+        const service = createMilkdropPresetPreviewService({
+          capturePreview: async (presetId) => {
+            previewBackend = null;
+            await previewAdapter.loadPreset(presetId);
+            await new Promise<void>((resolve) => {
+              window.setTimeout(resolve, PREVIEW_SETTLE_MS);
             });
 
-            const initialDispose = service.dispose.bind(service);
-            service.dispose = () => {
-              initialDispose();
-              unsubPreview();
-              previewAdapter.dispose();
-              previewHost.remove();
-            };
-
-            if (sessionDisposedRef.current) {
-              service.dispose();
-              throw new Error('Visualizer session has already been disposed.');
+            const canvas = previewHost.querySelector('canvas');
+            if (!(canvas instanceof HTMLCanvasElement)) {
+              throw new Error('Preview canvas was not available.');
             }
 
-            previewServiceRef.current = service;
-            return service;
+            return {
+              imageUrl: canvas.toDataURL('image/webp', 0.82),
+              actualBackend: previewBackend,
+              updatedAt: Date.now(),
+              error: null,
+              source: 'runtime-snapshot' as const,
+            };
           },
-        )
-        .catch((error) => {
-          previewServicePromiseRef.current = null;
-          throw error;
+          onPreviewChanged: (preview) => {
+            setPresetPreviews((current) => ({
+              ...current,
+              [preview.presetId]: preview,
+            }));
+          },
         });
-    }
 
-    return previewServicePromiseRef.current;
-  });
+        const initialDispose = service.dispose.bind(service);
+        service.dispose = () => {
+          initialDispose();
+          unsubPreview();
+          previewAdapter.dispose();
+          previewHost.remove();
+        };
+
+        return service;
+      },
+      getRef: () => previewServiceRef.current,
+      setRef: (svc) => {
+        previewServiceRef.current = svc;
+      },
+      getPromiseRef: () => previewServicePromiseRef.current,
+      setPromiseRef: (p) => {
+        previewServicePromiseRef.current = p;
+      },
+      cleanup: (svc) => svc.dispose(),
+      isDisposed: () => sessionDisposedRef.current,
+    }),
+  );
 
   const ensureEngineMounted = useEffectEvent(
     async (launchIntent: LaunchIntent = initialLaunchIntentRef.current) => {
@@ -607,7 +601,6 @@ export function useWorkspaceSessionState({
   return {
     deferredSearch,
     dismissToast,
-    engineAdapterReady,
     engineSnapshot,
     exportPreset: () => {
       engineRef.current?.exportPreset();
