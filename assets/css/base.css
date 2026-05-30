@@ -2809,25 +2809,6 @@ body {
     }
   }
 
-  @keyframes pulseGlow {
-    0%,
-    100% {
-      opacity: 0.8;
-    }
-    50% {
-      opacity: 0.45;
-    }
-  }
-
-  @keyframes hueShift {
-    from {
-      filter: hue-rotate(0deg);
-    }
-    to {
-      filter: hue-rotate(360deg);
-    }
-  }
-
   @keyframes fadeSlide {
     from {
       opacity: 0;

@@ -23,7 +23,6 @@ import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts'
 import type {
   LaunchIntent,
   PresetCatalogEntry,
-  PresetCatalogManifest,
   SessionRouteState,
 } from './contracts.ts';
 import type {
@@ -349,17 +348,18 @@ export function useWorkspaceSessionState({
     setFallbackCatalogError(null);
     setFallbackCatalogReady(false);
 
-    void fetch('/milkdrop-presets/catalog.json')
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Catalog request failed with ${response.status}`);
-        }
-        const manifest = (await response.json()) as PresetCatalogManifest;
+    void ensureCatalogStore()
+      .then((store) => store.listPresets())
+      .then((entries) => {
         if (cancelled) {
           return;
         }
-        setFallbackCatalog(manifest.presets ?? []);
+        const mapped = entries.map((entry: MilkdropCatalogEntry) =>
+          mapRuntimeCatalogEntry(entry),
+        );
+        setFallbackCatalog(mapped);
         setFallbackCatalogReady(true);
+        setActivityCatalog(mapped);
       })
       .catch((error) => {
         if (cancelled) {
@@ -368,32 +368,7 @@ export function useWorkspaceSessionState({
         setFallbackCatalogError(
           error instanceof Error ? error.message : 'Unable to load catalog.',
         );
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void ensureCatalogStore()
-      .then((store) => store.listPresets())
-      .then((entries) => {
-        if (cancelled) {
-          return;
-        }
-        setActivityCatalog(
-          entries.map((entry: MilkdropCatalogEntry) =>
-            mapRuntimeCatalogEntry(entry),
-          ),
-        );
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setActivityCatalog([]);
-        }
+        setActivityCatalog([]);
       });
 
     return () => {
