@@ -120,7 +120,7 @@ function compileNode(node: MilkdropExpressionNode): string {
         case 'bor':
           return `((Math.trunc(${args[0] ?? '0'})||0) | (Math.trunc(${args[1] ?? '0'})||0))`;
         case 'band':
-          return `((Math.trunc(${args[0] ?? '0'})||0) & (Math.trunc(${args[1] ?? '0'})||0))`
+          return `((Math.trunc(${args[0] ?? '0'})||0) & (Math.trunc(${args[1] ?? '0'})||0))`;
         case 'bnot':
           return `(~(Math.trunc(${args[0] ?? '0'})||0))`;
         case 'atan2':

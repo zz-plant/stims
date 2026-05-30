@@ -1,4 +1,9 @@
-export type MilkdropPresetOrigin = 'bundled' | 'imported' | 'user' | 'draft';
+export type MilkdropPresetOrigin =
+  | 'bundled'
+  | 'imported'
+  | 'user'
+  | 'draft'
+  | 'generated';
 
 export type MilkdropDiagnosticSeverity = 'error' | 'warning' | 'info';
 
