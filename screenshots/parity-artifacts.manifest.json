@@ -22,6 +22,72 @@
         "audioMode": "demo",
         "vibeMode": true
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260530055024",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-05-30T05:50:24.050Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1780120223541.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=100-square&renderer=webgpu",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260530055825",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-05-30T05:58:25.626Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1780120705589.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=250-wavecode&renderer=webgpu&corpus=certification",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260530055838",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-05-30T05:58:38.729Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1780120718714.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=250-wavecode&renderer=webgpu&corpus=certification",
+        "durationMs": 3000,
+        "viewportWidth": 2550,
+        "viewportHeight": 1794,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
     }
   ]
 }
