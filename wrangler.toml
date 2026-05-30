@@ -17,12 +17,8 @@ binding = "AI"
 [[d1_databases]]
 binding = "DB"
 database_name = "stims-gallery"
-database_id = "your-d1-database-id"
+database_id = "89718825-6d36-4578-b97e-9eba1d60d75d"
 
 [[r2_buckets]]
 binding = "GALLERY_R2"
 bucket_name = "stims-gallery"
-
-# Secrets (set via `wrangler secret`):
-# SPOTIFY_CLIENT_ID
-# SPOTIFY_CLIENT_SECRET
