@@ -68,8 +68,8 @@ export function NewHomePage() {
               Start with demo audio, then switch to your own music. No sign-up,
               no setup.
               {catalogReady
-                ? ` ${catalog.length} authentic MilkDrop presets run in WebGL or WebGPU.`
-                : ' Authentic MilkDrop presets run in WebGL or WebGPU.'}
+                ? ` ${catalog.length} presets run in WebGL or WebGPU.`
+                : ' Presets run in WebGL or WebGPU.'}
             </p>
             <div className="stims-shell__launch-kicker-row">
               <span>Instant demo</span>
@@ -207,6 +207,10 @@ export function NewHomePage() {
           }))}
           summary="Pick a preset to start with."
           title="Browse all presets"
+          titleAction={{
+            label: `See all ${catalog.length} \u2192`,
+            onClick: () => ui.updatePanel('browse'),
+          }}
           onSelect={engine.handlePresetSelection}
           presetPreviews={presetPreviews}
         />

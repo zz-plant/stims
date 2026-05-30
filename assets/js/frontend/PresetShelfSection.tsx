@@ -31,6 +31,7 @@ export function PresetShelfSection({
   entries,
   summary,
   title,
+  titleAction,
   onSelect,
   presetPreviews,
 }: {
@@ -41,6 +42,7 @@ export function PresetShelfSection({
   }>;
   summary: string;
   title: string;
+  titleAction?: { label: string; onClick: () => void };
   onSelect: (presetId: string) => void;
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
 }) {
@@ -61,6 +63,15 @@ export function PresetShelfSection({
         <h2 id={sectionId} className="stims-shell__section-label">
           {title}
         </h2>
+        {titleAction ? (
+          <button
+            type="button"
+            className="cta-button ghost stims-shell__section-action"
+            onClick={titleAction.onClick}
+          >
+            {titleAction.label}
+          </button>
+        ) : null}
         <p className="stims-shell__meta-copy">{summary}</p>
       </div>
       <div className="stims-shell__starter-grid">
