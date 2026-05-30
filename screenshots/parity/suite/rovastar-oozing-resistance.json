@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "presetId": "krash-rovastar-cerebral-demons-stars",
-  "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260529232430",
-  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
+  "presetId": "rovastar-oozing-resistance",
+  "title": "Rovastar - Oozing - Resistance",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-oozing-resistance--20260530000325",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-oozing-resistance.png",
   "requiredBackend": "webgl",
   "actualBackend": "webgpu",
   "sourceFamily": "bundled",

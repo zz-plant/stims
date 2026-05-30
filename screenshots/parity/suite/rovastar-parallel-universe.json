@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "rovastar-parallel-universe",
   "title": "Rovastar - Parallel Universe",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260518155644",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260529232208",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
   "requiredBackend": "webgl",
   "actualBackend": "webgpu",
