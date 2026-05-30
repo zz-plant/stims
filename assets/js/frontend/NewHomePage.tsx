@@ -29,16 +29,16 @@ function buildJumpBackEntries(
 }
 
 export function NewHomePage() {
-  const w = useWorkspace();
-  const engineReady = w.engineReady;
-  const featuredPreset = w.featuredPreset;
-  const favoritePresets = w.favoritePresets;
-  const missingRequestedPreset = w.missingRequestedPreset;
-  const presetPreviews = w.presetPreviews;
-  const recentPresets = w.recentPresets;
-  const requestedPresetId = w.routeState.presetId;
-  const catalog = w.catalog;
-  const catalogReady = w.catalogReady;
+  const { ui, engine } = useWorkspace();
+  const engineReady = engine.engineReady;
+  const featuredPreset = engine.featuredPreset;
+  const favoritePresets = engine.favoritePresets;
+  const missingRequestedPreset = engine.missingRequestedPreset;
+  const presetPreviews = engine.presetPreviews;
+  const recentPresets = engine.recentPresets;
+  const requestedPresetId = ui.routeState.presetId;
+  const catalog = engine.catalog;
+  const catalogReady = engine.catalogReady;
 
   const hasFavorites = favoritePresets.length > 0;
   const hasRecent = recentPresets.length > 0;
@@ -79,7 +79,7 @@ export function NewHomePage() {
               className="cta-button primary stims-shell__action-button"
               type="button"
               disabled={!engineReady}
-              onClick={() => void w.handleAudioStart('demo')}
+              onClick={() => void engine.handleAudioStart('demo')}
             >
               <span className="stims-shell__action-label">See visuals now</span>
               <span className="stims-shell__action-hint">
@@ -91,7 +91,7 @@ export function NewHomePage() {
                 type="button"
                 className="cta-button ghost"
                 disabled={!engineReady}
-                onClick={() => void w.handleAudioStart('microphone')}
+                onClick={() => void engine.handleAudioStart('microphone')}
               >
                 Use microphone
               </button>
@@ -99,7 +99,7 @@ export function NewHomePage() {
                 type="button"
                 className="cta-button ghost"
                 disabled={!engineReady}
-                onClick={() => void w.handleAudioStart('tab')}
+                onClick={() => void engine.handleAudioStart('tab')}
               >
                 Capture tab audio
               </button>
@@ -131,7 +131,7 @@ export function NewHomePage() {
         <button
           type="button"
           className="stims-shell__launch-recommendation"
-          onClick={() => w.handlePresetSelection(featuredPreset.id)}
+          onClick={() => engine.handlePresetSelection(featuredPreset.id)}
         >
           <PresetArtwork entry={featuredPreset} compact />
           <div className="stims-shell__launch-recommendation-copy">
@@ -164,7 +164,7 @@ export function NewHomePage() {
               <button
                 type="button"
                 className="cta-button primary"
-                onClick={w.handleFeaturedPresetSelection}
+                onClick={ui.handleFeaturedPresetSelection}
               >
                 Try featured pick
               </button>
@@ -172,7 +172,7 @@ export function NewHomePage() {
             <button
               type="button"
               className="cta-button"
-              onClick={w.handleBrowseRecovery}
+              onClick={ui.handleBrowseRecovery}
             >
               Browse everything
             </button>
@@ -185,7 +185,7 @@ export function NewHomePage() {
           entries={buildJumpBackEntries(favoritePresets, recentPresets)}
           summary="Saved picks and recent stops."
           title="Jump back in"
-          onSelect={w.handlePresetSelection}
+          onSelect={engine.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
       ) : null}
@@ -198,7 +198,7 @@ export function NewHomePage() {
           }))}
           summary="Pick a preset to start with."
           title="Browse all presets"
-          onSelect={w.handlePresetSelection}
+          onSelect={engine.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
       ) : null}

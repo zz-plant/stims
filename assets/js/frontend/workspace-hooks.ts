@@ -35,10 +35,6 @@ import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
 import {
-  readPersistedSession,
-  writePersistedSession,
-} from './session-persistence.ts';
-import {
   buildSessionRouteSearch,
   parsePlainSearch,
   readSessionRouteState,
@@ -54,7 +50,6 @@ import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
 
 const log = createLogger('WorkspaceHooks');
-const PREVIEW_SETTLE_MS = 750;
 
 export function useWorkspaceRouteState() {
   const [routeState, setRouteState] = useState<SessionRouteState>(() =>
@@ -126,7 +121,6 @@ export function useWorkspaceSessionState({
     Record<string, MilkdropPresetRenderPreview>
   >({});
   const deferredSearch = useDeferredValue(searchQuery);
-  const sessionRestoredRef = useRef(false);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<MilkdropEngineAdapter | null>(null);
   const catalogStoreRef = useRef<MilkdropCatalogStore | null>(null);
@@ -228,49 +222,21 @@ export function useWorkspaceSessionState({
     createLazyFactory({
       name: 'PresetPreviewService',
       factory: async () => {
-        const [
-          { createMilkdropPresetPreviewService },
-          { createMilkdropEngineAdapter },
-        ] = await Promise.all([
+        const [{ createMilkdropPresetPreviewService }] = await Promise.all([
           import('../milkdrop/runtime/preset-preview-service.ts'),
-          import('./engine/milkdrop-engine-adapter.ts'),
         ]);
 
-        const previewHost = document.createElement('div');
-        previewHost.className = 'stims-shell__preset-preview-host';
-        previewHost.setAttribute('aria-hidden', 'true');
-        document.body.appendChild(previewHost);
-
-        const previewAdapter = createMilkdropEngineAdapter();
-        let previewBackend: EngineSnapshot['backend'] = null;
-        const unsubPreview = previewAdapter.subscribe((snap) => {
-          previewBackend = snap.backend;
-        });
-        await previewAdapter.mount(previewHost, {
-          presetId: null,
-          collectionTag: null,
-          panel: 'browse',
-          audioSource: null,
-          agentMode: true,
-          previewMode: true,
-        });
-
         const service = createMilkdropPresetPreviewService({
-          capturePreview: async (presetId) => {
-            previewBackend = null;
-            await previewAdapter.loadPreset(presetId);
-            await new Promise<void>((resolve) => {
-              window.setTimeout(resolve, PREVIEW_SETTLE_MS);
-            });
-
-            const canvas = previewHost.querySelector('canvas');
+          capturePreview: async (_presetId) => {
+            const stage = stageRef.current;
+            const canvas = stage?.querySelector('canvas');
             if (!(canvas instanceof HTMLCanvasElement)) {
               throw new Error('Preview canvas was not available.');
             }
 
             return {
               imageUrl: canvas.toDataURL('image/webp', 0.82),
-              actualBackend: previewBackend,
+              actualBackend: engineSnapshot?.backend ?? null,
               updatedAt: Date.now(),
               error: null,
               source: 'runtime-snapshot' as const,
@@ -283,14 +249,6 @@ export function useWorkspaceSessionState({
             }));
           },
         });
-
-        const initialDispose = service.dispose.bind(service);
-        service.dispose = () => {
-          initialDispose();
-          unsubPreview();
-          previewAdapter.dispose();
-          previewHost.remove();
-        };
 
         return service;
       },
@@ -520,58 +478,6 @@ export function useWorkspaceSessionState({
     audioActive: engineSnapshot?.audioActive,
     agentMode: routeState.agentMode,
   });
-
-  useEffect(() => {
-    if (sessionRestoredRef.current) {
-      return;
-    }
-
-    const audioActive =
-      engineSnapshot?.audioActive ||
-      document.body.dataset.audioActive === 'true';
-    if (routeState.audioSource || audioActive) {
-      return;
-    }
-
-    const persisted = readPersistedSession();
-    if (!persisted) {
-      sessionRestoredRef.current = true;
-      return;
-    }
-
-    sessionRestoredRef.current = true;
-    startTransition(() => {
-      setRouteState((current) => ({
-        ...current,
-        audioSource: persisted.audioSource
-          ? (persisted.audioSource as SessionRouteState['audioSource'])
-          : current.audioSource,
-        presetId: current.presetId ?? persisted.presetId ?? current.presetId,
-        collectionTag:
-          current.collectionTag ??
-          persisted.collectionTag ??
-          current.collectionTag,
-        panel:
-          current.panel ??
-          (persisted.panel as SessionRouteState['panel']) ??
-          current.panel,
-      }));
-    });
-  }, [engineSnapshot?.audioActive, routeState.audioSource, setRouteState]);
-
-  useEffect(() => {
-    writePersistedSession({
-      audioSource: routeState.audioSource,
-      presetId: routeState.presetId,
-      collectionTag: routeState.collectionTag,
-      panel: routeState.panel,
-    });
-  }, [
-    routeState.audioSource,
-    routeState.presetId,
-    routeState.collectionTag,
-    routeState.panel,
-  ]);
 
   return {
     deferredSearch,

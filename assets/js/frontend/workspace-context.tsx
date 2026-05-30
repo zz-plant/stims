@@ -75,13 +75,16 @@ export function useUI(): WorkspaceContextValue {
 
 export { useEngine } from './engine-context.tsx';
 
-export function useWorkspace(): WorkspaceContextValue & EngineContextValue {
+export function useWorkspace(): {
+  ui: WorkspaceContextValue;
+  engine: EngineContextValue;
+} {
   const ui = useUI();
   const engine = useContext(EngineCtx);
   if (!engine) {
     throw new Error('useWorkspace must be used within a WorkspaceProvider');
   }
-  return { ...ui, ...engine };
+  return { ui, engine };
 }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {

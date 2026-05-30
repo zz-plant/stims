@@ -20,8 +20,8 @@ export function MobileControlBar({
   onToggleFullscreen,
   onToggleTheme,
 }: MobileControlBarProps) {
-  const w = useWorkspace();
-  const panel = w.routeState.panel;
+  const { ui, engine } = useWorkspace();
+  const panel = ui.routeState.panel;
   const [visible, setVisible] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const energyPercent = `${Math.min(100, Math.max(0, audioEnergy * 100)).toFixed(0)}%`;
@@ -56,23 +56,23 @@ export function MobileControlBar({
 
   const handleBrowse = useCallback(() => {
     resetHideTimer();
-    w.updatePanel(panel === 'browse' ? null : 'browse');
-  }, [w, panel, resetHideTimer]);
+    ui.updatePanel(panel === 'browse' ? null : 'browse');
+  }, [ui, panel, resetHideTimer]);
 
   const handleSettings = useCallback(() => {
     resetHideTimer();
-    w.updatePanel(panel === 'settings' ? null : 'settings');
-  }, [w, panel, resetHideTimer]);
+    ui.updatePanel(panel === 'settings' ? null : 'settings');
+  }, [ui, panel, resetHideTimer]);
 
   const handleShuffle = useCallback(() => {
     resetHideTimer();
-    void w.handleShufflePreset();
-  }, [w, resetHideTimer]);
+    void engine.handleShufflePreset();
+  }, [engine, resetHideTimer]);
 
   const handleShare = useCallback(() => {
     resetHideTimer();
-    void w.handleShowCurrentLink();
-  }, [w, resetHideTimer]);
+    void ui.handleShowCurrentLink();
+  }, [ui, resetHideTimer]);
 
   const handleFullscreen = useCallback(() => {
     resetHideTimer();

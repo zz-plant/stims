@@ -50,22 +50,22 @@ function describeQuickLook(preset: QualityPreset): string {
 }
 
 function AudioSourcePanel() {
-  const w = useWorkspace();
-  const engineReady = w.engineReady;
+  const { ui, engine } = useWorkspace();
+  const engineReady = engine.engineReady;
   const onAudioStart = (source: 'demo' | 'microphone' | 'tab' | 'youtube') =>
-    w.handleAudioStart(source);
-  const onLoadRecentYouTubeVideo = w.loadRecentYouTubeVideo;
-  const onLoadYouTube = () => w.loadYouTubePreview();
-  const onYoutubeUrlChange = w.setYoutubeUrl;
-  const onYoutubeUrlKeyDown = w.handleYoutubeUrlKeyDown;
-  const recentYouTubeVideos = w.recentYouTubeVideos;
-  const youtubeCanLoad = w.youtubeCanLoad;
-  const youtubeFeedback = w.youtubeFeedback;
-  const youtubeInputInvalid = w.youtubeInputInvalid;
-  const youtubeLoading = w.youtubeLoading;
-  const youtubePreviewRef = w.youtubePreviewRef;
-  const youtubeReady = w.youtubeReady;
-  const youtubeUrl = w.youtubeUrl;
+    engine.handleAudioStart(source);
+  const onLoadRecentYouTubeVideo = engine.loadRecentYouTubeVideo;
+  const onLoadYouTube = () => engine.loadYouTubePreview();
+  const onYoutubeUrlChange = ui.setYoutubeUrl;
+  const onYoutubeUrlKeyDown = engine.handleYoutubeUrlKeyDown;
+  const recentYouTubeVideos = ui.recentYouTubeVideos;
+  const youtubeCanLoad = ui.youtubeCanLoad;
+  const youtubeFeedback = ui.youtubeFeedback;
+  const youtubeInputInvalid = ui.youtubeInputInvalid;
+  const youtubeLoading = ui.youtubeLoading;
+  const youtubePreviewRef = ui.youtubePreviewRef;
+  const youtubeReady = ui.youtubeReady;
+  const youtubeUrl = ui.youtubeUrl;
 
   return (
     <section
@@ -211,18 +211,19 @@ export function WorkspaceStagePanel({
   stageSummary: string;
   stageTitle: string;
 }) {
-  const w = useWorkspace();
-  const backend = w.engineSnapshot?.backend;
-  const panel = w.routeState.panel;
-  const missingRequestedPreset = w.missingRequestedPreset;
-  const invalidExperienceSlug = w.routeState.invalidExperienceSlug;
-  const audioSource = w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
+  const { ui, engine } = useWorkspace();
+  const backend = engine.engineSnapshot?.backend;
+  const panel = ui.routeState.panel;
+  const missingRequestedPreset = engine.missingRequestedPreset;
+  const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
+  const audioSource =
+    engine.engineSnapshot?.audioSource ?? ui.routeState.audioSource;
 
-  const engineRunning = w.engineSnapshot?.runtimeReady ?? false;
-  const audioActive = w.engineSnapshot?.audioActive ?? false;
+  const engineRunning = engine.engineSnapshot?.runtimeReady ?? false;
+  const audioActive = engine.engineSnapshot?.audioActive ?? false;
   const mutedVisualizer = engineRunning && !audioActive;
-  const stageHint = w.selectedPreset
-    ? `${w.selectedPreset.title}\u00A0\u00B7\u00A0${w.selectedPreset.author || 'Unknown'}`
+  const stageHint = engine.selectedPreset
+    ? `${engine.selectedPreset.title}\u00A0\u00B7\u00A0${engine.selectedPreset.author || 'Unknown'}`
     : 'Ready for sound';
 
   return (
@@ -232,7 +233,7 @@ export function WorkspaceStagePanel({
       aria-label="Stims visualizer workspace"
     >
       <StimsStageFrame
-        stageRef={w.stageRef}
+        stageRef={ui.stageRef}
         liveMode={liveMode}
         hintText={stageHint}
         muted={mutedVisualizer}
@@ -301,13 +302,13 @@ export function WorkspaceStagePanel({
                 <button
                   type="button"
                   className="stims-shell__text-button stims-shell__audio-bridge-link"
-                  onClick={w.toggleExtendedSources}
+                  onClick={ui.toggleExtendedSources}
                 >
-                  {w.showExtendedSources
+                  {ui.showExtendedSources
                     ? 'Hide sources'
                     : 'Switch to your music \u2192'}
                 </button>
-                {w.showExtendedSources ? <AudioSourcePanel /> : null}
+                {ui.showExtendedSources ? <AudioSourcePanel /> : null}
               </div>
             ) : null}
           </StimsFrameHeader>
@@ -338,19 +339,19 @@ function BrowseSheetPanel({
   onCollectionTagChange: (collectionTag: string | null) => void;
   onImport: (files: FileList | null) => void;
 }) {
-  const w = useWorkspace();
-  const catalog = w.catalog;
-  const catalogError = w.catalogError;
-  const catalogReady = w.catalogReady;
-  const collectionTags = w.collectionTags;
-  const currentPresetId = w.engineSnapshot?.activePresetId ?? null;
-  const favoritePresets = w.favoritePresets;
-  const filteredCatalog = w.filteredCatalog;
-  const presetPreviews = w.presetPreviews;
-  const recentPresets = w.recentPresets;
-  const routeState = w.routeState;
-  const searchQuery = w.searchQuery;
-  const starterPresets = w.starterPresets;
+  const { ui, engine } = useWorkspace();
+  const catalog = engine.catalog;
+  const catalogError = engine.catalogError;
+  const catalogReady = engine.catalogReady;
+  const collectionTags = engine.collectionTags;
+  const currentPresetId = engine.engineSnapshot?.activePresetId ?? null;
+  const favoritePresets = engine.favoritePresets;
+  const filteredCatalog = engine.filteredCatalog;
+  const presetPreviews = engine.presetPreviews;
+  const recentPresets = engine.recentPresets;
+  const routeState = ui.routeState;
+  const searchQuery = ui.searchQuery;
+  const starterPresets = engine.starterPresets;
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const showStarterPresets =
@@ -422,8 +423,8 @@ function BrowseSheetPanel({
   );
 
   useEffect(() => {
-    w.requestPresetPreviews(visiblePreviewIds);
-  }, [visiblePreviewIds, w.requestPresetPreviews]);
+    engine.requestPresetPreviews(visiblePreviewIds);
+  }, [visiblePreviewIds, engine.requestPresetPreviews]);
 
   useEffect(() => {
     if (usingHiddenCollectionFilter) {
@@ -445,7 +446,7 @@ function BrowseSheetPanel({
             <button
               type="button"
               className="stims-shell__text-button"
-              onClick={w.handleShufflePreset}
+              onClick={engine.handleShufflePreset}
               disabled={catalog.length === 0}
             >
               Shuffle
@@ -467,7 +468,9 @@ function BrowseSheetPanel({
                 <button
                   type="button"
                   className="stims-shell__text-button"
-                  onClick={() => w.refreshPresetPreviews(visiblePreviewIds)}
+                  onClick={() =>
+                    engine.refreshPresetPreviews(visiblePreviewIds)
+                  }
                   disabled={visiblePreviewIds.length === 0}
                 >
                   Refresh previews
@@ -487,7 +490,7 @@ function BrowseSheetPanel({
           placeholder="Search by title, mood, creator, or collection"
           spellCheck={false}
           value={searchQuery}
-          onChange={(event) => w.setSearchQuery(event.target.value)}
+          onChange={(event) => ui.setSearchQuery(event.target.value)}
         />
 
         <p
@@ -584,7 +587,7 @@ function BrowseSheetPanel({
           }))}
           summary="Recent picks help you resume without hunting."
           title="Recent"
-          onSelect={w.handlePresetSelection}
+          onSelect={engine.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
       ) : null}
@@ -598,7 +601,7 @@ function BrowseSheetPanel({
           }))}
           summary="Saved picks stay visible even before anything is playing."
           title="Saved"
-          onSelect={w.handlePresetSelection}
+          onSelect={engine.handlePresetSelection}
           presetPreviews={presetPreviews}
         />
       ) : null}
@@ -640,7 +643,7 @@ function BrowseSheetPanel({
                     type="button"
                     className="stims-shell__preset-card"
                     data-active={String(entry.id === currentPresetId)}
-                    onClick={() => w.handlePresetSelection(entry.id)}
+                    onClick={() => engine.handlePresetSelection(entry.id)}
                   >
                     <PresetArtwork
                       entry={entry}
@@ -677,7 +680,10 @@ function BrowseSheetPanel({
                     }
                     onClick={(e) => {
                       e.stopPropagation();
-                      void w.toggleFavoritePreset(entry.id, !entry.isFavorite);
+                      void engine.toggleFavoritePreset(
+                        entry.id,
+                        !entry.isFavorite,
+                      );
                     }}
                   >
                     <span
@@ -693,7 +699,11 @@ function BrowseSheetPanel({
         </ul>
 
         <div className="stims-shell__session-actions">
-          <button type="button" className="cta-button" onClick={w.exportPreset}>
+          <button
+            type="button"
+            className="cta-button"
+            onClick={engine.exportPreset}
+          >
             Export preset
           </button>
           <label className="cta-button stims-shell__file-button">
@@ -708,7 +718,7 @@ function BrowseSheetPanel({
           <button
             type="button"
             className="cta-button"
-            onClick={() => void w.handleShowCurrentLink()}
+            onClick={() => void ui.handleShowCurrentLink()}
           >
             Copy link
           </button>
@@ -725,10 +735,10 @@ function SettingsSheetPanel({
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
 }) {
-  const w = useWorkspace();
-  const motionPreference = w.motionPreference;
-  const qualityPreset = w.qualityPreset;
-  const renderPreferences = w.renderPreferences;
+  const { ui, engine } = useWorkspace();
+  const motionPreference = ui.motionPreference;
+  const qualityPreset = ui.qualityPreset;
+  const renderPreferences = ui.renderPreferences;
   const guidedPresets = getSettingsPresetOptions().slice(0, 3);
 
   return (
@@ -736,12 +746,12 @@ function SettingsSheetPanel({
       <section className="stims-shell__sheet-surface">
         <p className="stims-shell__section-label">Renderer</p>
         <p className="stims-shell__meta-copy">
-          {w.engineSnapshot?.backend
-            ? `Running on ${w.engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
-            : w.engineReady
+          {engine.engineSnapshot?.backend
+            ? `Running on ${engine.engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
+            : engine.engineReady
               ? 'Renderer ready'
               : 'Initializing renderer\u2026'}
-          {w.engineSnapshot?.backend === 'webgl'
+          {engine.engineSnapshot?.backend === 'webgl'
             ? ' — WebGPU was unavailable or disabled.'
             : ''}
         </p>
@@ -756,7 +766,7 @@ function SettingsSheetPanel({
                 type="button"
                 className="stims-shell__preset-guide"
                 data-active={String(preset.id === qualityPreset.id)}
-                onClick={() => w.setQualityPreset(preset.id)}
+                onClick={() => engine.setQualityPreset(preset.id)}
               >
                 <strong>{preset.label}</strong>
                 <span className="stims-shell__meta-copy">
@@ -773,7 +783,7 @@ function SettingsSheetPanel({
           id="quality-select"
           className="stims-shell__select"
           value={qualityPreset.id}
-          onChange={(event) => w.setQualityPreset(event.target.value)}
+          onChange={(event) => engine.setQualityPreset(event.target.value)}
         >
           {getSettingsPresetOptions().map((preset) => (
             <option key={preset.id} value={preset.id}>

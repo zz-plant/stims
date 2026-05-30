@@ -151,27 +151,27 @@ class StimsErrorBoundary extends Component<
 }
 
 function StimsWorkspaceAppShell() {
-  const w = useWorkspace();
+  const { ui, engine } = useWorkspace();
   const isWideEnough = useMediaQuery('(min-width: 1024px)');
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const stageAnchoredToolOpen =
-    w.routeState.panel === 'editor' || w.routeState.panel === 'inspector';
-  const liveMode = w.launchControlsHidden;
-  const audioEnergy = w.engineSnapshot?.audioEnergy ?? 0;
+    ui.routeState.panel === 'editor' || ui.routeState.panel === 'inspector';
+  const liveMode = engine.launchControlsHidden;
+  const audioEnergy = engine.engineSnapshot?.audioEnergy ?? 0;
   const currentAudioSource =
-    w.engineSnapshot?.audioSource ?? w.routeState.audioSource;
+    engine.engineSnapshot?.audioSource ?? ui.routeState.audioSource;
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
 
   const { showOnboarding, dismissOnboarding } = useOnboarding();
   const showOnboardingFlow =
-    showOnboarding && !w.routeState.previewMode && !w.routeState.agentMode;
+    showOnboarding && !ui.routeState.previewMode && !ui.routeState.agentMode;
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
   const handleToggleFullscreen = useCallback(() => {
-    const stageElement = w.stageRef.current?.parentElement;
+    const stageElement = ui.stageRef.current?.parentElement;
     if (!stageElement) {
       return;
     }
@@ -180,18 +180,18 @@ function StimsWorkspaceAppShell() {
       try {
         const toggled = await toggleElementFullscreen(stageElement, document);
         if (!toggled) {
-          w.setStatusMessage('Full screen unavailable.');
+          ui.setStatusMessage('Full screen unavailable.');
         }
       } catch (_error) {
-        w.setStatusMessage('Full screen unavailable.');
+        ui.setStatusMessage('Full screen unavailable.');
       }
     })();
-  }, [w.stageRef, w.setStatusMessage]);
+  }, [ui.stageRef, ui.setStatusMessage]);
 
   useEffect(() => {
     if (
       !liveMode ||
-      !w.engineSnapshot?.audioActive ||
+      !engine.engineSnapshot?.audioActive ||
       currentAudioSource === 'demo'
     ) {
       quietAtRef.current = null;
@@ -207,7 +207,7 @@ function StimsWorkspaceAppShell() {
         !quietDemoSuggestedRef.current
       ) {
         quietDemoSuggestedRef.current = true;
-        w.setStatusMessage(
+        ui.setStatusMessage(
           'Not hearing much? Switch to demo audio for guaranteed motion.',
         );
       }
@@ -219,30 +219,30 @@ function StimsWorkspaceAppShell() {
     audioEnergy,
     currentAudioSource,
     liveMode,
-    w.engineSnapshot?.audioActive,
-    w.setStatusMessage,
+    engine.engineSnapshot?.audioActive,
+    ui.setStatusMessage,
   ]);
 
-  const stageEyebrow = w.loadingRequestedPreset
+  const stageEyebrow = engine.loadingRequestedPreset
     ? 'Loading preset'
     : liveMode
       ? 'Now playing'
       : 'Stage ready';
-  const stageTitle = w.loadingRequestedPreset
+  const stageTitle = engine.loadingRequestedPreset
     ? 'Loading preset'
-    : w.selectedPreset
-      ? w.selectedPreset.title
-      : w.missingRequestedPreset
+    : engine.selectedPreset
+      ? engine.selectedPreset.title
+      : engine.missingRequestedPreset
         ? 'Change preset'
-        : (w.featuredPreset?.title ?? 'Featured pick');
-  const stageSummary = w.loadingRequestedPreset
-    ? `Loading ${w.routeState.presetId}.`
-    : w.selectedPreset
-      ? w.selectedPreset.author || 'Unknown author'
-      : w.missingRequestedPreset
+        : (engine.featuredPreset?.title ?? 'Featured pick');
+  const stageSummary = engine.loadingRequestedPreset
+    ? `Loading ${ui.routeState.presetId}.`
+    : engine.selectedPreset
+      ? engine.selectedPreset.author || 'Unknown author'
+      : engine.missingRequestedPreset
         ? 'Start with the featured pick or open the full list.'
-        : w.featuredPreset
-          ? describePresetMood(w.featuredPreset)
+        : engine.featuredPreset
+          ? describePresetMood(engine.featuredPreset)
           : 'Press play with demo audio, or open the full list first.';
 
   useEffect(() => {
@@ -257,71 +257,72 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     return connectWakeLock(() => {
       return (
-        isFullscreen || (liveMode && (w.engineSnapshot?.audioActive ?? false))
+        isFullscreen ||
+        (liveMode && (engine.engineSnapshot?.audioActive ?? false))
       );
     });
-  }, [isFullscreen, liveMode, w.engineSnapshot?.audioActive]);
+  }, [isFullscreen, liveMode, engine.engineSnapshot?.audioActive]);
 
   useEffect(() => {
     let title = 'Stims';
-    if (w.loadingRequestedPreset) {
+    if (engine.loadingRequestedPreset) {
       title = `Loading\u2026 \u00B7 ${title}`;
-    } else if (w.selectedPreset) {
-      title = `${w.selectedPreset.title} \u00B7 ${title}`;
-    } else if (w.routeState.panel) {
+    } else if (engine.selectedPreset) {
+      title = `${engine.selectedPreset.title} \u00B7 ${title}`;
+    } else if (ui.routeState.panel) {
       const panelLabel =
-        w.routeState.panel === 'browse'
+        ui.routeState.panel === 'browse'
           ? 'Browse'
-          : w.routeState.panel === 'settings'
+          : ui.routeState.panel === 'settings'
             ? 'Settings'
-            : w.routeState.panel === 'editor'
+            : ui.routeState.panel === 'editor'
               ? 'Editor'
               : 'Inspector';
       title = `${panelLabel} \u00B7 ${title}`;
     } else if (liveMode) {
       title = `Now Playing \u00B7 ${title}`;
-    } else if (!w.engineReady) {
+    } else if (!engine.engineReady) {
       title = `Loading\u2026 \u00B7 ${title}`;
     }
     document.title = title;
   }, [
-    w.loadingRequestedPreset,
-    w.selectedPreset,
-    w.routeState.panel,
+    engine.loadingRequestedPreset,
+    engine.selectedPreset,
+    ui.routeState.panel,
     liveMode,
-    w.engineReady,
+    engine.engineReady,
   ]);
 
   useEffect(() => {
-    if (liveMode && w.engineSnapshot?.audioActive) {
+    if (liveMode && engine.engineSnapshot?.audioActive) {
       showHint('first-play');
     }
-  }, [liveMode, w.engineSnapshot?.audioActive, showHint]);
+  }, [liveMode, engine.engineSnapshot?.audioActive, showHint]);
 
   useEffect(() => {
-    if (w.routeState.panel === 'browse') {
+    if (ui.routeState.panel === 'browse') {
       showHint('browse-open');
     }
-  }, [w.routeState.panel, showHint]);
+  }, [ui.routeState.panel, showHint]);
 
   useEffect(() => {
-    if (w.routeState.panel === 'editor') {
+    if (ui.routeState.panel === 'editor') {
       showHint('editor-open');
     }
-  }, [w.routeState.panel, showHint]);
+  }, [ui.routeState.panel, showHint]);
 
-  const filteredCatalogRef = useRef(w.filteredCatalog);
-  filteredCatalogRef.current = w.filteredCatalog;
-  const handlePresetSelectionRef = useRef(w.handlePresetSelection);
-  handlePresetSelectionRef.current = w.handlePresetSelection;
-  const setStatusMessageRef = useRef(w.setStatusMessage);
-  setStatusMessageRef.current = w.setStatusMessage;
-  const updatePanelRef = useRef(w.updatePanel);
-  updatePanelRef.current = w.updatePanel;
-  const handleShufflePresetRef = useRef(w.handleShufflePreset);
-  handleShufflePresetRef.current = w.handleShufflePreset;
-  const handleAudioStartRef = useRef(w.handleAudioStart);
-  handleAudioStartRef.current = w.handleAudioStart;
+  const filteredCatalogRef = useRef(engine.filteredCatalog);
+  filteredCatalogRef.current = engine.filteredCatalog;
+  const handlePresetSelectionRef = useRef(engine.handlePresetSelection);
+  handlePresetSelectionRef.current = engine.handlePresetSelection;
+  const setStatusMessageRef = useRef(ui.setStatusMessage);
+  setStatusMessageRef.current = ui.setStatusMessage;
+  const updatePanelRef = useRef(ui.updatePanel);
+  updatePanelRef.current = ui.updatePanel;
+  const handleShufflePresetRef = useRef(engine.handleShufflePreset);
+  handleShufflePresetRef.current = engine.handleShufflePreset;
+  const handleAudioStartRef = useRef(engine.handleAudioStart);
+  handleAudioStartRef.current = engine.handleAudioStart;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -333,7 +334,7 @@ function StimsWorkspaceAppShell() {
       }
 
       const key = event.key.toLowerCase();
-      if (key === ' ' && liveMode && w.engineReady) {
+      if (key === ' ' && liveMode && engine.engineReady) {
         event.preventDefault();
         void handleAudioStartRef.current('demo');
       } else if (key === 'f') {
@@ -342,22 +343,22 @@ function StimsWorkspaceAppShell() {
       } else if (key === 'b') {
         event.preventDefault();
         updatePanelRef.current(
-          w.routeState.panel === 'browse' ? null : 'browse',
+          ui.routeState.panel === 'browse' ? null : 'browse',
         );
       } else if (key === 's') {
         event.preventDefault();
         updatePanelRef.current(
-          w.routeState.panel === 'settings' ? null : 'settings',
+          ui.routeState.panel === 'settings' ? null : 'settings',
         );
       } else if (key === 'e') {
         event.preventDefault();
         updatePanelRef.current(
-          w.routeState.panel === 'editor' ? null : 'editor',
+          ui.routeState.panel === 'editor' ? null : 'editor',
         );
       } else if (key === 'i') {
         event.preventDefault();
         updatePanelRef.current(
-          w.routeState.panel === 'inspector' ? null : 'inspector',
+          ui.routeState.panel === 'inspector' ? null : 'inspector',
         );
       } else if (key === 'n' || key === 'arrowright') {
         event.preventDefault();
@@ -417,7 +418,12 @@ function StimsWorkspaceAppShell() {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [handleToggleFullscreen, liveMode, w.engineReady, w.routeState.panel]);
+  }, [
+    handleToggleFullscreen,
+    liveMode,
+    engine.engineReady,
+    ui.routeState.panel,
+  ]);
 
   useEffect(() => {
     const preference = getActiveThemePreference();
@@ -440,9 +446,9 @@ function StimsWorkspaceAppShell() {
     <main
       className="stims-shell"
       id="stims-main"
-      data-has-toast={w.toast ? 'true' : undefined}
+      data-has-toast={ui.toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
-      data-preview={w.routeState.previewMode ? 'true' : undefined}
+      data-preview={ui.routeState.previewMode ? 'true' : undefined}
     >
       <a href="#stims-main" className="skip-link">
         Skip to main content
@@ -466,26 +472,26 @@ function StimsWorkspaceAppShell() {
       />
 
       {isWideEnough &&
-      w.routeState.panel === 'browse' &&
-      w.filteredCatalog.length > 0 ? (
+      ui.routeState.panel === 'browse' &&
+      engine.filteredCatalog.length > 0 ? (
         <SplitViewBrowse
-          presets={w.filteredCatalog}
-          currentPresetId={w.engineSnapshot?.activePresetId ?? null}
-          onSelect={w.handlePresetSelection}
-          onClose={() => w.updatePanel(null)}
+          presets={engine.filteredCatalog}
+          currentPresetId={engine.engineSnapshot?.activePresetId ?? null}
+          onSelect={engine.handlePresetSelection}
+          onClose={() => ui.updatePanel(null)}
           onPlay={(presetId) => {
-            w.handlePresetSelection(presetId);
-            w.updatePanel(null);
+            engine.handlePresetSelection(presetId);
+            ui.updatePanel(null);
           }}
         />
       ) : null}
 
-      <WorkspaceToast toast={w.toast} onDismiss={w.dismissToast} />
+      <WorkspaceToast toast={ui.toast} onDismiss={ui.dismissToast} />
 
       {showOnboardingFlow ? (
         <OnboardingFlow
           onDismiss={dismissOnboarding}
-          onStartDemo={() => void w.handleAudioStart('demo')}
+          onStartDemo={() => void engine.handleAudioStart('demo')}
         />
       ) : null}
 
@@ -494,9 +500,11 @@ function StimsWorkspaceAppShell() {
       {liveMode ? (
         <MobileControlBar
           audioEnergy={audioEnergy}
-          presetTitle={w.selectedPreset?.title ?? w.featuredPreset?.title ?? ''}
+          presetTitle={
+            engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? ''
+          }
           presetAuthor={
-            w.selectedPreset?.author ?? w.featuredPreset?.author ?? ''
+            engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? ''
           }
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
