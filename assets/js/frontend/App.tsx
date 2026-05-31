@@ -158,6 +158,7 @@ function StimsWorkspaceAppShell() {
   const temporalMemory = useTemporalMemory();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [audioMatch, setAudioMatch] = useState<{ presetId: string; name: string; score: number } | null>(null);
 
   const stageAnchoredToolOpen =
     ui.routeState.panel === 'editor' || ui.routeState.panel === 'inspector';
@@ -324,7 +325,10 @@ function StimsWorkspaceAppShell() {
   }, [engine.engineSnapshot?.activePresetId]);
 
   useEffect(() => {
-    if (!engine.engineSnapshot?.audioActive) return;
+    if (!engine.engineSnapshot?.audioActive) {
+      setAudioMatch(null);
+      return;
+    }
     const snap = engine.engineSnapshot;
     const profile = buildAudioProfile({ audioEnergy: snap.audioEnergy });
     if (profile.rms < 0.02) return;
@@ -333,10 +337,12 @@ function StimsWorkspaceAppShell() {
       if (results.length === 0) return;
       const top = results[0];
       if (top.score < 0.6) return;
-      const presetName = top.presetId || 'unknown preset';
-      ui.setStatusMessage(
-        `Audio match: try "${presetName}" (${(top.score * 100).toFixed(0)}% match)`,
-      );
+      const preset = engine.catalog.find((e) => e.id === top.presetId);
+      setAudioMatch({
+        presetId: top.presetId,
+        name: preset?.title ?? top.presetId,
+        score: top.score,
+      });
     });
   }, [engine.engineSnapshot?.audioActive, engine.engineSnapshot?.audioSource]);
 
@@ -539,6 +545,18 @@ function StimsWorkspaceAppShell() {
           onToggleFullscreen={handleToggleFullscreen}
           onToggleTheme={handleToggleTheme}
         />
+      ) : null}
+      {audioMatch ? (
+        <div className="stims-shell__audio-match">
+          <span className="stims-shell__eyebrow">Audio match</span>
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={() => engine.handlePresetSelection(audioMatch.presetId)}
+          >
+            {audioMatch.name} — {(audioMatch.score * 100).toFixed(0)}% match
+          </button>
+        </div>
       ) : null}
     </main>
   );
