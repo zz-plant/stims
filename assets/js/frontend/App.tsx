@@ -161,6 +161,7 @@ function StimsWorkspaceAppShell() {
   const temporalMemory = useTemporalMemory();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [audioMatch, setAudioMatch] = useState<{
     presetId: string;
     name: string;
@@ -417,6 +418,9 @@ function StimsWorkspaceAppShell() {
         if (preset) {
           handlePresetSelectionRef.current(preset.id);
         }
+      } else if (key === '?') {
+        event.preventDefault();
+        setShowShortcuts((s) => !s);
       }
     };
 
@@ -563,6 +567,33 @@ function StimsWorkspaceAppShell() {
           >
             {audioMatch.name} — {(audioMatch.score * 100).toFixed(0)}% match
           </button>
+        </div>
+      ) : null}
+      {showShortcuts ? (
+        <div
+          className="stims-shell__shortcut-overlay"
+          role="dialog"
+          aria-label="Keyboard shortcuts"
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div className="stims-shell__shortcut-card" onClick={(e) => e.stopPropagation()}>
+            <h2>Keyboard shortcuts</h2>
+            <div className="stims-shell__shortcut-grid">
+              <kbd>Space</kbd><span>Demo audio</span>
+              <kbd>F</kbd><span>Fullscreen</span>
+              <kbd>B</kbd><span>Browse panel</span>
+              <kbd>S</kbd><span>Settings</span>
+              <kbd>E</kbd><span>Editor</span>
+              <kbd>I</kbd><span>Inspector</span>
+              <kbd>N / →</kbd><span>Shuffle preset</span>
+              <kbd>P / ←</kbd><span>Previous preset</span>
+              <kbd>1–9</kbd><span>Quick-select preset</span>
+              <kbd>?</kbd><span>This help</span>
+              <kbd>Esc</kbd><span>Close panels / dismiss</span>
+              <kbd>Cmd+Enter</kbd><span>Compile in editor</span>
+            </div>
+            <button type="button" className="cta-button ghost" onClick={() => setShowShortcuts(false)}>Close</button>
+          </div>
         </div>
       ) : null}
     </main>

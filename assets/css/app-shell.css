@@ -4160,3 +4160,50 @@ body[data-page="workspace"] {
   font-weight: 500;
   padding: 0;
 }
+
+.stims-shell__shortcut-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.stims-shell__shortcut-card {
+  background: #0d1117;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+}
+
+.stims-shell__shortcut-card h2 {
+  margin: 0 0 20px;
+  font-size: 1.1rem;
+}
+
+.stims-shell__shortcut-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 24px;
+  margin-bottom: 24px;
+}
+
+.stims-shell__shortcut-grid kbd {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stims-shell__shortcut-grid span {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+}
