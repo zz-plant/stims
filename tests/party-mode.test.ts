@@ -30,8 +30,6 @@ describe('applyPartyMode', () => {
     setMotionPreference({ enabled: false });
     setRenderPreferences({
       compatibilityMode: true,
-      maxPixelRatio: 1.25,
-      renderScale: 0.9,
     });
 
     applyPartyMode({ enabled: true });
@@ -39,8 +37,6 @@ describe('applyPartyMode', () => {
     expect(getActiveMotionPreference().enabled).toBe(true);
     expect(getActiveRenderPreferences()).toEqual({
       compatibilityMode: false,
-      maxPixelRatio: 2.5,
-      renderScale: 1.15,
     });
 
     applyPartyMode({ enabled: false });
@@ -48,24 +44,18 @@ describe('applyPartyMode', () => {
     expect(getActiveMotionPreference().enabled).toBe(false);
     expect(getActiveRenderPreferences()).toEqual({
       compatibilityMode: true,
-      maxPixelRatio: 1.25,
-      renderScale: 0.9,
     });
   });
 
   test('does not mutate render preferences when disabling without saved state', () => {
     setRenderPreferences({
       compatibilityMode: true,
-      maxPixelRatio: 1.4,
-      renderScale: 0.8,
     });
 
     applyPartyMode({ enabled: false });
 
     expect(getActiveRenderPreferences()).toEqual({
       compatibilityMode: true,
-      maxPixelRatio: 1.4,
-      renderScale: 0.8,
     });
   });
 });

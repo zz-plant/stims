@@ -56,21 +56,14 @@ Iteratively refine an existing MilkDrop preset using AI.
 
 The `model` param overrides the default refine model (Llama 4 Scout). Explain/describe instructions use the micro model (`@cf/ibm-granite/granite-4.0-h-micro`) regardless of `model`.
 
-## POST /api/generate-thumbnail
-
-Generate a thumbnail image for a preset via FLUX.
-
-**Body:** `{ presetId: string, title: string, description: string }`
-**Response:** `{ url: string }`
-
 ## POST /api/image-to-preset
 
 Generate a MilkDrop preset from an uploaded image.
 
-**Body:** `{ image: string }` (base64 encoded image)
+**Body:** FormData with `image` file OR JSON `{ image: string }` (base64)
 **Response:** `{ description: string, milkSource: string, cached?: true }`
 
-Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. Checks embedding cache to avoid redundant generation.
+Accepts both `multipart/form-data` (file upload from browser) and `application/json` (base64 for programmatic use). Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. Checks embedding cache to avoid redundant generation.
 
 ## POST /api/store-embedding
 
