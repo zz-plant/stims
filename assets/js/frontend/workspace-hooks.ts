@@ -214,6 +214,9 @@ export function useWorkspaceSessionState({
     if (routeState.invalidExperienceSlug || engineSnapshot?.runtimeReady) {
       return;
     }
+    if (!routeState.presetId && !routeState.audioSource) {
+      return;
+    }
 
     void ensureEngineMounted().catch((error) => {
       setStatusMessage(
@@ -222,7 +225,7 @@ export function useWorkspaceSessionState({
           : 'Unable to start the visualizer runtime.',
       );
     });
-  }, [engineSnapshot?.runtimeReady, routeState.invalidExperienceSlug]);
+  }, [engineSnapshot?.runtimeReady, routeState.invalidExperienceSlug, routeState.presetId, routeState.audioSource]);
 
   usePresetRouteSync({
     engineSnapshot,

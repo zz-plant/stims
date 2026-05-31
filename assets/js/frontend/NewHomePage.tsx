@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
@@ -31,7 +31,6 @@ function buildJumpBackEntries(
 
 export function NewHomePage() {
   const { ui, engine } = useWorkspace();
-  const engineReady = engine.engineReady;
   const featuredPreset = engine.featuredPreset;
   const favoritePresets = engine.favoritePresets;
   const missingRequestedPreset = engine.missingRequestedPreset;
@@ -43,6 +42,21 @@ export function NewHomePage() {
 
   const hasFavorites = favoritePresets.length > 0;
   const showJumpBack = hasFavorites;
+
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const engineSnapshot = engine.engineSnapshot;
+
+  useEffect(() => {
+    if (engineSnapshot?.audioActive) setLoadingAudio(false);
+  }, [engineSnapshot?.audioActive]);
+
+  const handleStartAudio = useCallback(
+    (source: 'demo' | 'microphone' | 'tab') => {
+      setLoadingAudio(true);
+      void engine.handleAudioStart(source).finally(() => setLoadingAudio(false));
+    },
+    [engine.handleAudioStart],
+  );
 
   useEffect(() => {
     if (!catalogReady || catalog.length === 0) return;
@@ -87,10 +101,12 @@ export function NewHomePage() {
               data-demo-audio-btn="true"
               className="cta-button primary stims-shell__action-button"
               type="button"
-              disabled={!engineReady}
-              onClick={() => void engine.handleAudioStart('demo')}
+              disabled={loadingAudio}
+              onClick={() => handleStartAudio('demo')}
             >
-              <span className="stims-shell__action-label">Add sound</span>
+              <span className="stims-shell__action-label">
+                {loadingAudio ? 'Loading visualizer...' : 'Add sound'}
+              </span>
               <span className="stims-shell__action-hint">
                 Space to start — built-in audio, drops onto stage
               </span>
@@ -99,16 +115,16 @@ export function NewHomePage() {
               <button
                 type="button"
                 className="cta-button ghost"
-                disabled={!engineReady}
-                onClick={() => void engine.handleAudioStart('microphone')}
+                disabled={loadingAudio}
+                onClick={() => handleStartAudio('microphone')}
               >
                 Use microphone
               </button>
               <button
                 type="button"
                 className="cta-button ghost"
-                disabled={!engineReady}
-                onClick={() => void engine.handleAudioStart('tab')}
+                disabled={loadingAudio}
+                onClick={() => handleStartAudio('tab')}
               >
                 Capture tab audio
               </button>
