@@ -25,15 +25,38 @@ export async function onRequest(context: { request: Request; env: Env }) {
   }
 
   try {
-    const { currentSource, instruction } = (await request.json()) as {
+    const { currentSource, instruction, history } = (await request.json()) as {
       currentSource: string;
       instruction: string;
+      history?: Array<{ role: string; content: string }>;
     };
 
     if (!currentSource || !instruction) {
       return new Response('Missing currentSource or instruction', {
         status: 400,
       });
+    }
+
+    if (instruction.toLowerCase().startsWith('explain') || instruction.toLowerCase().startsWith('describe')) {
+      const explainPrompt = `Explain this MilkDrop preset in 2-3 sentences, focusing on visual look, audio reactivity, and notable features. Preset source:\n${currentSource}`;
+
+      if (env.AI) {
+        const result = await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct', {
+          messages: [{ role: 'user', content: explainPrompt }],
+        });
+        return new Response(
+          JSON.stringify({
+            explanation: result.response.trim(),
+            milkSource: currentSource,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+            },
+          },
+        );
+      }
     }
 
     const systemPrompt = `You are a MilkDrop preset editor. Given an existing preset and a refinement instruction, modify ONLY the requested aspects while keeping everything else unchanged.
@@ -44,14 +67,15 @@ Rules:
 3. Keep all unchanged fields identical
 4. Preserve the original structure and formatting
 5. Do NOT add new wave/shape definitions unless asked
-6. Do NOT include explanations or markdown`;
+6. Do NOT include explanations or markdown
+${history ? 'Previous refinements:\n' + history.map(h => `${h.role}: ${h.content}`).join('\n') : ''}`;
 
-    const userPrompt = `Existing preset:
+    const userPrompt = `Existing preset (active features: wave rendering, audio-reactive zoom, per-frame expressions):
 ${currentSource}
 
 Instruction: ${instruction}
 
-Return the complete modified preset.`;
+Return the complete modified preset. Keep all unchanged fields identical.`;
 
     let milkSource = '';
 
@@ -93,11 +117,16 @@ Return the complete modified preset.`;
 }
 
 function extractMilkSection(response: string): string {
-  if (response.includes('[preset00]')) {
-    const start = response.indexOf('[preset00]');
-    const rest = response.slice(start);
-    const end = rest.indexOf('\n\n', '[preset00]'.length);
-    return end > 0 ? rest.slice(0, end) : rest;
-  }
-  return response;
+  let cleaned = response.replace(/```[\w]*\n?/g, '').trim();
+
+  const start = cleaned.indexOf('[preset00]');
+  if (start < 0) return cleaned;
+
+  const after = cleaned.slice(start);
+  const nextSection = after.slice('[preset00]'.length).match(/\n\[(\w+)\]/);
+  const end = nextSection
+    ? after.indexOf('\n[' + nextSection[1] + ']', '[preset00]'.length)
+    : after.length;
+
+  return after.slice(0, end).trim();
 }

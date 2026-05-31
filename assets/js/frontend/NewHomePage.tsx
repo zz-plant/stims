@@ -1,5 +1,5 @@
-import type { PresetCatalogEntry } from './contracts.ts';
 import { useEffect } from 'react';
+import type { PresetCatalogEntry } from './contracts.ts';
 import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import { PresetArtwork, PresetShelfSection, UiIcon } from './workspace-ui.tsx';

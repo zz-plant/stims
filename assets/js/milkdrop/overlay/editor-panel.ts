@@ -1,17 +1,27 @@
+import type { CompletionSource } from '@codemirror/autocomplete';
+import { autocompletion, closeBrackets } from '@codemirror/autocomplete';
 import {
   defaultKeymap,
   history,
   historyKeymap,
   indentWithTab,
 } from '@codemirror/commands';
-import type { StreamParser } from '@codemirror/language';
-import { StreamLanguage } from '@codemirror/language';
-import { properties } from '@codemirror/legacy-modes/mode/properties';
+import {
+  bracketMatching,
+  foldGutter,
+  indentOnInput,
+} from '@codemirror/language';
+import {
+  highlightSelectionMatches,
+  search,
+  searchKeymap,
+} from '@codemirror/search';
 import { Compartment, EditorState, RangeSetBuilder } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { KeyBinding } from '@codemirror/view';
 import { Decoration, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
+import { createMilkdropLanguage } from './editor-language';
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
@@ -46,6 +56,48 @@ const EDITOR_SNIPPETS: EditorSnippet[] = [
     description: 'Add a gentle audio-reactive bend.',
     snippet: 'warp=0.01 + bass_att*0.018 + 0.004*sin(time*0.5)\n',
   },
+  {
+    label: 'Bass zoom',
+    description: 'Zoom pulses with bass energy.',
+    snippet: 'zoom=1.0 + bass*0.12\n',
+  },
+  {
+    label: 'Mid warp',
+    description: 'Warp bends with midrange signal.',
+    snippet: 'warp=1.0 + mid_att*0.025\n',
+  },
+  {
+    label: 'Beat flash',
+    description: 'Outer border pulses on beat.',
+    snippet:
+      'ob_size=0.01 + beat_pulse*0.04\nob_r=0.9; ob_g=0.5; ob_b=1;\nob_a=0.6 + beat_pulse*0.4\n',
+  },
+  {
+    label: 'Time spin',
+    description: 'Slow rotation from time phase.',
+    snippet: 'rot=time*0.15\n',
+  },
+  {
+    label: '3D projection',
+    description: 'Project XY from XYZ with perspective.',
+    snippet: 'x=xp/zp+0.5;\ny=yp/zp*1.3+0.5\n',
+  },
+  {
+    label: 'Color pulse',
+    description: 'Wave color modulated by treble.',
+    snippet:
+      'wave_r=0.5 + treb_att*0.5;\nwave_g=0.3 + mid_att*0.5;\nwave_b=0.9 + bass*0.3\n',
+  },
+  {
+    label: 'Decay trail',
+    description: 'Longer trail = softer motion.',
+    snippet: 'decay=0.935\n',
+  },
+  {
+    label: 'State toggle',
+    description: 'Flip between two values each frame.',
+    snippet: 'q1=above(bass, 0.1);\nzoom=1.0 + q1*0.2\n',
+  },
 ];
 
 const EDITOR_CUES: EditorCue[] = [
@@ -79,11 +131,28 @@ const EDITOR_CUES: EditorCue[] = [
     description: 'Frame drift',
     snippet: 'warp=0.01 + sin(frame*0.02)*0.01\n',
   },
+  {
+    label: 'q1-q8',
+    description: 'Persistent globals',
+    snippet: 'q1=bass*0.5 + q1*0.95\nzoom=1.0 + q1*0.1\n',
+  },
+  {
+    label: 'rad',
+    description: 'Per-point radius',
+    snippet: 'rad=0.02 + bass*0.04\n',
+  },
+  {
+    label: 'r/g/b/a',
+    description: 'Per-point color',
+    snippet: 'r=0.4 + bass*0.3;\ng=0.2 + mid*0.3;\nb=1;\na=0.8\n',
+  },
+  {
+    label: 'decay',
+    description: 'Motion trail length',
+    snippet: 'decay=0.92 + bass_att*0.06\n',
+  },
 ];
 
-// Bun's isolated installs can surface duplicate CodeMirror declaration paths
-// even when the runtime package versions are aligned.
-const propertiesParser = properties as unknown as StreamParser<unknown>;
 const defaultEditorKeymap = defaultKeymap as readonly KeyBinding[];
 const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
 const indentWithTabKeybinding = indentWithTab as KeyBinding;
@@ -142,6 +211,83 @@ function buildDiagnosticDecorations(
   });
   return builder.finish();
 }
+
+const MILKDROP_COMPLETIONS: CompletionSource = (context) => {
+  const word = context.matchBefore(/\w*/);
+  if (!word || (word.from === word.to && !context.explicit)) return null;
+
+  const options = [
+    { label: 'sin', type: 'function', detail: 'sine' },
+    { label: 'cos', type: 'function', detail: 'cosine' },
+    { label: 'tan', type: 'function' },
+    { label: 'asin', type: 'function' },
+    { label: 'acos', type: 'function' },
+    { label: 'atan', type: 'function' },
+    { label: 'atan2', type: 'function' },
+    { label: 'abs', type: 'function' },
+    { label: 'sqrt', type: 'function' },
+    { label: 'pow', type: 'function' },
+    { label: 'mod', type: 'function' },
+    { label: 'floor', type: 'function', detail: 'round down' },
+    { label: 'ceil', type: 'function', detail: 'round up' },
+    { label: 'sqr', type: 'function', detail: 'x*x' },
+    { label: 'clamp', type: 'function', detail: 'clamp(x, min, max)' },
+    { label: 'step', type: 'function' },
+    { label: 'smoothstep', type: 'function' },
+    { label: 'log', type: 'function' },
+    { label: 'exp', type: 'function' },
+    { label: 'sigmoid', type: 'function' },
+    { label: 'sign', type: 'function' },
+    { label: 'frac', type: 'function', detail: 'fractional part' },
+    { label: 'rand', type: 'function', detail: 'random 0-scale' },
+    { label: 'if', type: 'function', detail: 'if(cond, then, else)' },
+    { label: 'above', type: 'function' },
+    { label: 'below', type: 'function' },
+    { label: 'equal', type: 'function' },
+    { label: 'min', type: 'function' },
+    { label: 'max', type: 'function' },
+    { label: 'mix', type: 'function' },
+    { label: 'lerp', type: 'function' },
+    { label: 'bass', type: 'variable', detail: 'bass energy' },
+    { label: 'mid', type: 'variable', detail: 'mid energy' },
+    { label: 'treb', type: 'variable', detail: 'treble energy' },
+    { label: 'bass_att', type: 'variable', detail: 'bass with envelope' },
+    { label: 'mid_att', type: 'variable', detail: 'mid with envelope' },
+    { label: 'treb_att', type: 'variable', detail: 'treble with envelope' },
+    { label: 'beat', type: 'variable' },
+    { label: 'time', type: 'variable', detail: 'seconds' },
+    { label: 'frame', type: 'variable', detail: 'frame count' },
+    { label: 'fps', type: 'variable' },
+    { label: 'rms', type: 'variable' },
+    { label: 'vol', type: 'variable' },
+    { label: 'q1', type: 'variable', detail: 'persistent state' },
+    { label: 'q2', type: 'variable' },
+    { label: 'q3', type: 'variable' },
+    { label: 'q4', type: 'variable' },
+    { label: 'q5', type: 'variable' },
+    { label: 'q6', type: 'variable' },
+    { label: 'q7', type: 'variable' },
+    { label: 'q8', type: 'variable' },
+    { label: 'zoom', type: 'variable' },
+    { label: 'rot', type: 'variable' },
+    { label: 'warp', type: 'variable' },
+    { label: 'sx', type: 'variable' },
+    { label: 'sy', type: 'variable' },
+    { label: 'dx', type: 'variable' },
+    { label: 'dy', type: 'variable' },
+    { label: 'cx', type: 'variable' },
+    { label: 'cy', type: 'variable' },
+    { label: 'pi', type: 'constant' },
+    { label: 'e', type: 'constant' },
+  ];
+
+  return {
+    from: word.from,
+    options: options.filter((opt) =>
+      opt.label.startsWith(word.text.toLowerCase()),
+    ),
+  };
+};
 
 function createEditorTheme() {
   return EditorView.theme({
@@ -223,13 +369,24 @@ function createEditorView({
       extensions: [
         lineNumbers(),
         history(),
-        StreamLanguage.define(propertiesParser),
+        createMilkdropLanguage(),
         oneDark,
         createEditorTheme(),
+        bracketMatching(),
+        closeBrackets(),
+        autocompletion({
+          activateOnTyping: true,
+          override: [MILKDROP_COMPLETIONS],
+        }),
+        search(),
+        highlightSelectionMatches(),
+        foldGutter(),
+        indentOnInput(),
         diagnosticsCompartment.of(
           EditorView.decorations.of(Decoration.set([])),
         ),
         keymap.of([
+          ...searchKeymap,
           {
             key: 'Mod-Enter',
             run: () => flushDocChange(),
@@ -513,17 +670,51 @@ export class EditorPanel {
           body: JSON.stringify({ currentSource, instruction }),
         });
         if (!res.ok) throw new Error(`Refine API: ${res.status}`);
-        const { milkSource } = await res.json();
-        if (milkSource) {
-          callbacks.onEditorSourceChange(milkSource);
-          refineInput.value = '';
+        const json = await res.json();
+
+        if (json.explanation) {
+          const explanationMsg = document.createElement('div');
+          explanationMsg.className = 'milkdrop-overlay__refine-explanation';
+          explanationMsg.textContent = json.explanation;
+          refineForm.appendChild(explanationMsg);
+          setTimeout(() => explanationMsg.remove(), 8000);
         }
-      } catch (err) {
-        console.error('Refinement failed:', err);
-      } finally {
+
+        if (json.milkSource) {
+          const preAiSource = this.editor.state.doc.toString();
+          callbacks.onEditorSourceChange(json.milkSource);
+          refineInput.value = '';
+
+          if (preAiSource !== json.milkSource) {
+            const revertBtn = document.createElement('button');
+            revertBtn.textContent = 'Revert AI';
+            revertBtn.type = 'button';
+            revertBtn.className = 'milkdrop-overlay__refine-btn';
+            revertBtn.style.marginLeft = '6px';
+            revertBtn.addEventListener(
+              'click',
+              () => {
+                callbacks.onEditorSourceChange(preAiSource);
+                revertBtn.remove();
+              },
+              { once: true },
+            );
+            refineBtn.insertAdjacentElement('afterend', revertBtn);
+          }
+        }
         refining = false;
         refineBtn.textContent = 'Refine';
         refineBtn.disabled = false;
+      } catch (err) {
+        console.error('Refinement failed:', err);
+        refineBtn.textContent = 'Error';
+        refineBtn.classList.add('milkdrop-overlay__refine-btn--error');
+        setTimeout(() => {
+          refineBtn.classList.remove('milkdrop-overlay__refine-btn--error');
+          refineBtn.textContent = 'Refine';
+          refineBtn.disabled = false;
+          refining = false;
+        }, 2000);
       }
     });
     refineInput.addEventListener('keydown', (e) => {
@@ -558,12 +749,11 @@ export class EditorPanel {
     this.flushEditorDocChange = editorViewState.flushDocChange;
     this.setEditorDiagnostics = editorViewState.setDiagnostics;
 
-    window.addEventListener(
-      'stims:editor:diagnostics',
-      ((e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>) => {
-        this.setEditorDiagnostics(e.detail.diagnostics);
-      }) as EventListener,
-    );
+    window.addEventListener('stims:editor:diagnostics', ((
+      e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>,
+    ) => {
+      this.setEditorDiagnostics(e.detail.diagnostics);
+    }) as EventListener);
   }
 
   setVisible(visible: boolean) {
@@ -692,6 +882,17 @@ export class EditorPanel {
         'line' in diagnostic && diagnostic.line
           ? `Line ${diagnostic.line}: ${diagnostic.message}`
           : diagnostic.message;
+      if ('line' in diagnostic && diagnostic.line) {
+        const lineNum = diagnostic.line;
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', () => {
+          const line = this.editor.state.doc.line(lineNum);
+          this.editor.dispatch({
+            selection: { anchor: line.from },
+            scrollIntoView: true,
+          });
+        });
+      }
       this.diagnosticsList.appendChild(item);
     });
   }

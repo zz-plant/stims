@@ -2,8 +2,11 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { Component, useCallback, useEffect, useRef, useState } from 'react';
 import '../../css/app-shell.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
+import {
+  buildAudioProfile,
+  searchByAudioProfile,
+} from '../core/services/audio-matcher.ts';
 import { useTemporalMemory } from '../core/services/temporal-memory.ts';
-import { buildAudioProfile, searchByAudioProfile } from '../core/services/audio-matcher.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   applyTheme,
@@ -158,7 +161,11 @@ function StimsWorkspaceAppShell() {
   const temporalMemory = useTemporalMemory();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [audioMatch, setAudioMatch] = useState<{ presetId: string; name: string; score: number } | null>(null);
+  const [audioMatch, setAudioMatch] = useState<{
+    presetId: string;
+    name: string;
+    score: number;
+  } | null>(null);
 
   const stageAnchoredToolOpen =
     ui.routeState.panel === 'editor' || ui.routeState.panel === 'inspector';

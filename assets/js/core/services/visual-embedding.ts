@@ -28,7 +28,11 @@ function histogramDistance(a: number[], b: number[]): number {
 export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) {
-    return { histogram: new Array(24).fill(0), edgeDensity: 0, motionEstimate: 0 };
+    return {
+      histogram: new Array(24).fill(0),
+      edgeDensity: 0,
+      motionEstimate: 0,
+    };
   }
 
   const w = canvas.width;
@@ -60,7 +64,10 @@ export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
       if (x + sampleStep < w) {
         const nextIdx = (y * w + (x + sampleStep)) * 4;
         const grayCurr = 0.299 * r + 0.587 * g + 0.114 * b;
-        const grayNext = 0.299 * pixels[nextIdx] + 0.587 * pixels[nextIdx + 1] + 0.114 * pixels[nextIdx + 2];
+        const grayNext =
+          0.299 * pixels[nextIdx] +
+          0.587 * pixels[nextIdx + 1] +
+          0.114 * pixels[nextIdx + 2];
         edgeDensity += Math.abs(grayCurr - grayNext) / 255;
       }
 
@@ -68,7 +75,8 @@ export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
         const pr = previousPixelData[idx];
         const pg = previousPixelData[idx + 1];
         const pb = previousPixelData[idx + 2];
-        motionEstimate += (Math.abs(r - pr) + Math.abs(g - pg) + Math.abs(b - pb)) / (255 * 3);
+        motionEstimate +=
+          (Math.abs(r - pr) + Math.abs(g - pg) + Math.abs(b - pb)) / (255 * 3);
       }
 
       sampleCount++;

@@ -18,6 +18,13 @@ Generate MilkDrop preset equations from a text description.
 **Body:** `{ description: string, complexity?: 'simple' | 'moderate' | 'complex' }`
 **Response:** `{ milkSource: string }`
 
+## POST /api/refine-preset
+
+Iteratively refine an existing MilkDrop preset using AI.
+
+**Body:** `{ currentSource: string, instruction: string, history?: Array<{ role: string, content: string }> }`
+**Response:** `{ milkSource: string }`
+
 ## POST /api/generate-thumbnail
 
 Generate a thumbnail image for a preset via FLUX.

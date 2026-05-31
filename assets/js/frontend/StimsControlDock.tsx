@@ -1,10 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import {
-  searchByFrame,
-  extractFrameStats,
-  describeFrame,
-} from '../core/services/visual-embedding.ts';
 import { saveCheckpoint } from '../core/services/temporal-memory.ts';
+import {
+  describeFrame,
+  extractFrameStats,
+  searchByFrame,
+} from '../core/services/visual-embedding.ts';
 import { useEngine, useUI } from './workspace-context.tsx';
 import { PresetArtwork, UiIcon } from './workspace-ui.tsx';
 

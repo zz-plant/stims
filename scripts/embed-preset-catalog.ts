@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const PUBLIC_DIR = resolve(import.meta.dirname || '.', '..', 'public');
@@ -46,9 +46,7 @@ function describePreset(entry: CatalogEntry): string {
   return parts.join(', ');
 }
 
-async function embedDescription(
-  description: string,
-): Promise<number[]> {
+async function embedDescription(description: string): Promise<number[]> {
   const response = await fetch(`${API_BASE}/api/visual-search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -113,9 +111,7 @@ async function main() {
 
   for (const catalogPath of catalogPaths) {
     const entries = await loadCatalog(catalogPath);
-    console.log(
-      `Loaded ${entries.length} presets from ${catalogPath}`,
-    );
+    console.log(`Loaded ${entries.length} presets from ${catalogPath}`);
 
     for (const entry of entries) {
       total++;

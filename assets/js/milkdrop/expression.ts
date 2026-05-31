@@ -5,6 +5,28 @@ import type {
   MilkdropExpressionNode,
 } from './types';
 
+export function findNearestMatch(
+  input: string,
+  candidates: string[],
+): string | null {
+  const lower = input.toLowerCase();
+  let best: string | null = null;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    if (c.toLowerCase() === lower) return c;
+    let matches = 0;
+    for (let i = 0; i < lower.length; i++) {
+      if (c.toLowerCase().includes(lower[i])) matches++;
+    }
+    const dist = Math.abs(c.length - lower.length) + (lower.length - matches);
+    if (dist < bestDist && dist < lower.length) {
+      bestDist = dist;
+      best = c;
+    }
+  }
+  return best;
+}
+
 type Token =
   | { type: 'number'; value: number }
   | { type: 'identifier'; value: string }

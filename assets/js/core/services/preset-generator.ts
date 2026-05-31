@@ -1,6 +1,6 @@
 import { compileMilkdropPresetSource } from '../../milkdrop/compiler.ts';
-import type { MilkdropCompiledPreset } from '../../milkdrop/types.ts';
 import { buildGeneratePrompt } from '../../milkdrop/preset-prompt.ts';
+import type { MilkdropCompiledPreset } from '../../milkdrop/types.ts';
 
 export type GenerateStatus =
   | { status: 'generating' }
