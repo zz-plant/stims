@@ -1,5 +1,9 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { saveCheckpoint } from '../core/services/temporal-memory.ts';
+import {
+  getSavedCheckpoints,
+  saveCheckpoint,
+  type VisualCheckpoint,
+} from '../core/services/temporal-memory.ts';
 import {
   describeFrame,
   extractFrameStats,
@@ -47,6 +51,8 @@ export function StimsControlDock({
     Array<{ presetId: string; score: number }>
   >([]);
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [showSavedPanel, setShowSavedPanel] = useState(false);
+  const [savedItems, setSavedItems] = useState<VisualCheckpoint[]>([]);
 
   const handleMoreLikeThis = async () => {
     const canvas = ui.stageRef.current?.querySelector(
@@ -241,6 +247,61 @@ export function StimsControlDock({
         >
           <span className="stims-shell__stage-tool-label">Save</span>
         </button>
+        <button
+          type="button"
+          className="stims-shell__stage-tool"
+          aria-label="Saved looks"
+          title="Saved looks"
+          onClick={() => {
+            if (!showSavedPanel) {
+              setSavedItems(getSavedCheckpoints());
+            }
+            setShowSavedPanel((s) => !s);
+          }}
+        >
+          <UiIcon
+            name="bookmark"
+            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__stage-tool-label">Saved</span>
+        </button>
+        {showSavedPanel && (
+          <div
+            className="stims-saved-panel"
+            role="dialog"
+            aria-label="Saved looks"
+          >
+            <div className="stims-saved-panel__header">
+              <h3>Saved looks</h3>
+              <button
+                type="button"
+                className="cta-button ghost"
+                onClick={() => setShowSavedPanel(false)}
+              >
+                Close
+              </button>
+            </div>
+            {savedItems.length === 0 ? (
+              <p className="stims-saved-panel__empty">
+                No saved looks yet. Save a visual checkpoint while a preset is
+                playing.
+              </p>
+            ) : (
+              <ul className="stims-saved-panel__list">
+                {savedItems.map((item) => (
+                  <li key={item.id} className="stims-saved-panel__item">
+                    <div className="stims-saved-panel__item-desc">
+                      {item.description}
+                    </div>
+                    <div className="stims-saved-panel__item-meta">
+                      {new Date(item.timestamp).toLocaleDateString()}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
       {similarPresets.length > 0 ? (
         <div className="stims-shell__similar-presets">

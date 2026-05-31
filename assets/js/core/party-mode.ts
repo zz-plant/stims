@@ -17,8 +17,6 @@ const PARTY_MODE_RESTORE_KEY = 'stims:party-mode-restore';
 type PartyModeRestoreState = {
   motionEnabled: boolean;
   compatibilityMode: boolean;
-  maxPixelRatio: number | null;
-  renderScale: number | null;
 };
 
 function writePartyMode(enabled: boolean) {
@@ -60,10 +58,6 @@ function readRestoreState(): PartyModeRestoreState | null {
     return {
       motionEnabled: parsed.motionEnabled !== false,
       compatibilityMode: parsed.compatibilityMode === true,
-      maxPixelRatio:
-        typeof parsed.maxPixelRatio === 'number' ? parsed.maxPixelRatio : null,
-      renderScale:
-        typeof parsed.renderScale === 'number' ? parsed.renderScale : null,
     };
   } catch (_error) {
     return null;
@@ -79,15 +73,11 @@ export function applyPartyMode({ enabled }: PartyModeOptions) {
     writeRestoreState({
       motionEnabled: motionPreference.enabled,
       compatibilityMode: renderPreferences.compatibilityMode,
-      maxPixelRatio: renderPreferences.maxPixelRatio,
-      renderScale: renderPreferences.renderScale,
     });
 
     setMotionPreference({ enabled: true });
     setRenderPreferences({
       compatibilityMode: false,
-      maxPixelRatio: 2.5,
-      renderScale: 1.15,
     });
     return;
   }
@@ -101,7 +91,5 @@ export function applyPartyMode({ enabled }: PartyModeOptions) {
   setMotionPreference({ enabled: restore.motionEnabled });
   setRenderPreferences({
     compatibilityMode: restore.compatibilityMode,
-    maxPixelRatio: restore.maxPixelRatio,
-    renderScale: restore.renderScale,
   });
 }

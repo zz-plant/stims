@@ -11,9 +11,9 @@ import {
   updateModalQueryParam,
 } from './modal-utils.ts';
 import {
-  getActiveRenderPreferences,
-  setRenderPreferences,
-} from './render-preferences.ts';
+  getActiveQualityPreset,
+  setQualityPresetById,
+} from './state/quality-preset-store.ts';
 import {
   type CapabilityPreflightResult,
   runCapabilityProbe,
@@ -350,13 +350,11 @@ export function attachCapabilityPreflight({
 
     performanceButton.hidden = false;
 
-    const preferences = getActiveRenderPreferences();
+    const preset = getActiveQualityPreset();
     const performanceEnabled =
-      (preferences.maxPixelRatio !== null &&
-        preferences.maxPixelRatio <=
-          result.performance.recommendedMaxPixelRatio) ||
-      (preferences.renderScale !== null &&
-        preferences.renderScale <= result.performance.recommendedRenderScale);
+      preset.maxPixelRatio <=
+        result.performance.recommendedMaxPixelRatio ||
+      (preset.renderScale ?? 1) <= result.performance.recommendedRenderScale;
 
     if (performanceEnabled) {
       performanceButton.textContent = 'Performance mode enabled';
@@ -369,10 +367,7 @@ export function attachCapabilityPreflight({
 
   performanceButton.addEventListener('click', () => {
     if (!latestResult) return;
-    setRenderPreferences({
-      maxPixelRatio: latestResult.performance.recommendedMaxPixelRatio,
-      renderScale: latestResult.performance.recommendedRenderScale,
-    });
+    setQualityPresetById('performance');
     updatePerformanceButton(latestResult);
   });
 

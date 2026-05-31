@@ -60,10 +60,29 @@ export async function onRequest(context: {
   }
 
   try {
-    const body = (await request.json()) as { image: string };
+    let imageBase64: string | undefined;
 
-    if (!body.image) {
-      return new Response('image is required', { status: 400 });
+    const contentType = request.headers.get('Content-Type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      const file = formData.get('image');
+      if (file instanceof File) {
+        const buffer = await file.arrayBuffer();
+        imageBase64 = btoa(
+          String.fromCharCode(...new Uint8Array(buffer)),
+        );
+      }
+    } else {
+      const body = (await request.json()) as { image: string };
+      imageBase64 = body.image;
+    }
+
+    if (!imageBase64) {
+      return new Response(
+        JSON.stringify({ error: 'No image provided' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
     }
 
     let description = '';
@@ -77,7 +96,7 @@ export async function onRequest(context: {
               'Describe the visual characteristics of this image in under 3 sentences, focusing on colors, shapes, patterns, motion, and mood.',
           },
         ],
-        image: body.image,
+        image: imageBase64,
       });
       description = (visionResult.response || '').trim();
     } else {

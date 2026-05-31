@@ -744,6 +744,54 @@ export class EditorPanel {
       if (e.key === 'Enter') refineBtn.click();
     });
     refineForm.append(refineInput, refineBtn);
+
+    const explainBtn = document.createElement('button');
+    explainBtn.type = 'button';
+    explainBtn.textContent = 'Explain';
+    explainBtn.className = 'milkdrop-overlay__refine-btn';
+    explainBtn.title = 'Explain what this preset does visually';
+    let explaining = false;
+    explainBtn.addEventListener('click', async () => {
+      if (explaining) return;
+      explaining = true;
+      explainBtn.textContent = '...';
+      explainBtn.disabled = true;
+      try {
+        const currentSource = this.editor.state.doc.toString();
+        const res = await fetch('/api/refine-preset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentSource,
+            instruction: 'explain this preset',
+          }),
+        });
+        if (!res.ok) throw new Error(`Refine API: ${res.status}`);
+        const json = await res.json();
+
+        if (json.explanation) {
+          const explanationMsg = document.createElement('div');
+          explanationMsg.className = 'milkdrop-overlay__refine-explanation';
+          explanationMsg.textContent = json.explanation;
+          refineForm.appendChild(explanationMsg);
+          setTimeout(() => explanationMsg.remove(), 8000);
+        }
+        explaining = false;
+        explainBtn.textContent = 'Explain';
+        explainBtn.disabled = false;
+      } catch (err) {
+        console.error('Explanation failed:', err);
+        explainBtn.textContent = 'Error';
+        explainBtn.classList.add('milkdrop-overlay__refine-btn--error');
+        setTimeout(() => {
+          explainBtn.classList.remove('milkdrop-overlay__refine-btn--error');
+          explainBtn.textContent = 'Explain';
+          explainBtn.disabled = false;
+          explaining = false;
+        }, 2000);
+      }
+    });
+    refineForm.appendChild(explainBtn);
     refineSection.append(refineLabel, refineForm);
 
     editorRail.append(

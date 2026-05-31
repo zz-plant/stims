@@ -16,6 +16,14 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'm6 6 12 12' } },
     { tag: 'path', attrs: { d: 'M18 6 6 18' } },
   ],
+  bookmark: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'm19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z',
+      },
+    },
+  ],
   expand: [
     { tag: 'path', attrs: { d: 'M9 3H3v6' } },
     { tag: 'path', attrs: { d: 'm3 3 7 7' } },

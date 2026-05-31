@@ -3,8 +3,6 @@ export {
   clearRenderOverrides,
   getActiveRenderPreferences,
   isCompatibilityModeEnabled,
-  MAX_PIXEL_RATIO_KEY,
-  RENDER_SCALE_KEY,
   type RenderPreferences,
   resetRenderPreferenceStore as resetRenderPreferencesState,
   setCompatibilityMode,

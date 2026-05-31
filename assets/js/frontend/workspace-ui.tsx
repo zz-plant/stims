@@ -387,7 +387,16 @@ function BrowseSheetPanel({
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      if (!res.ok) {
+        let serverMessage = `Server returned ${res.status}`;
+        try {
+          const errBody = (await res.json()) as { error?: string };
+          if (errBody.error) serverMessage = errBody.error;
+        } catch {
+          // Use default message if JSON parse fails
+        }
+        throw new Error(serverMessage);
+      }
       const data = (await res.json()) as {
         description: string;
         presetId: string;
@@ -397,9 +406,9 @@ function BrowseSheetPanel({
         engine.handlePresetSelection(data.presetId);
       }
     } catch (err) {
-      ui.setStatusMessage(
-        `Image import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      );
+      const message =
+        err instanceof Error ? err.message : 'Unknown error';
+      ui.setStatusMessage(`Image import failed: ${message}`);
     } finally {
       setImageImportLoading(false);
     }

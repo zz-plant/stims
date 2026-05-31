@@ -9,8 +9,22 @@ export interface AudioProfile {
 
 export function buildAudioProfile(snapshot: {
   audioEnergy?: number;
+  fftBands?: number[];
 }): AudioProfile {
   const energy = snapshot.audioEnergy ?? 0;
+
+  if (snapshot.fftBands && snapshot.fftBands.length >= 3) {
+    const [bass, mid, treble] = snapshot.fftBands;
+    return {
+      bassEnergy: bass,
+      midEnergy: mid,
+      trebleEnergy: treble,
+      beatIntensity: energy > 0.04 ? 1 : 0,
+      rms: energy,
+      centroid: 500 + energy * 2000,
+    };
+  }
+
   return {
     bassEnergy: energy * 0.6,
     midEnergy: energy * 0.3,
@@ -22,14 +36,17 @@ export function buildAudioProfile(snapshot: {
 }
 
 export function describeAudioProfile(profile: AudioProfile): string {
-  const parts: string[] = [];
-  if (profile.beatIntensity > 0) parts.push('rhythmic with beats');
-  if (profile.bassEnergy > 0.1) parts.push('strong bass');
-  if (profile.midEnergy > 0.1) parts.push('moderate mids');
-  if (profile.trebleEnergy > 0.05) parts.push('crisp treble');
-  if (profile.rms < 0.02) parts.push('quiet');
-  else if (profile.rms > 0.1) parts.push('loud');
-  return parts.join(', ') || 'ambient';
+  const { rms } = profile;
+
+  if (rms < 0.005) return 'silent';
+
+  const intensity =
+    rms < 0.02 ? 'quiet calm ambient slow drift' :
+    rms < 0.06 ? 'moderate gentle pulsing smooth motion' :
+    rms < 0.12 ? 'energetic driving rhythmic dynamic motion' :
+    'intense aggressive chaotic explosive heavy';
+
+  return intensity;
 }
 
 export async function searchByAudioProfile(

@@ -60,7 +60,7 @@ type RendererPoolEntry = {
 
 const rendererPool: RendererPoolEntry[] = [];
 let activeQuality: QualityPreset = getActiveQualityPreset();
-let activeRenderPreferences = getActiveRenderPreferences();
+let _activeRenderPreferences = getActiveRenderPreferences();
 let activeRuntimeControls: RendererRuntimeControls =
   DEFAULT_RENDERER_RUNTIME_CONTROLS;
 const runtimeControlSubscribers = new Set<
@@ -76,11 +76,10 @@ const rendererCapabilitiesInitializer =
 
 function getRenderDefaults(): Partial<RendererInitConfig> {
   return {
-    maxPixelRatio:
-      activeRenderPreferences.maxPixelRatio ?? activeQuality.maxPixelRatio,
+    maxPixelRatio: activeQuality.maxPixelRatio,
     renderScale:
       activeRuntimeControls.renderScale *
-      (activeRenderPreferences.renderScale ?? activeQuality.renderScale ?? 1),
+      (activeQuality.renderScale ?? 1),
   };
 }
 
@@ -99,7 +98,7 @@ subscribeToQualityPreset((preset) => {
 });
 
 subscribeToRenderPreferences((preferences) => {
-  activeRenderPreferences = preferences;
+  _activeRenderPreferences = preferences;
   forEachActiveRenderer((entry) => entry.handle.applySettings());
 });
 
@@ -592,7 +591,7 @@ export function resetRendererPool({
     rendererPool.splice(0, rendererPool.length);
   }
   activeQuality = getActiveQualityPreset();
-  activeRenderPreferences = getActiveRenderPreferences();
+  _activeRenderPreferences = getActiveRenderPreferences();
   resetRendererRuntimeControls();
   runtimeControlSubscribers.clear();
   rendererCapabilitiesInitializer.reset();
