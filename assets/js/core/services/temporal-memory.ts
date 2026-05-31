@@ -74,3 +74,49 @@ export function useTemporalMemory() {
     getRecent: getRecentFn,
   };
 }
+
+export interface VisualCheckpoint {
+  id: string;
+  name: string;
+  description: string;
+  presetId: string;
+  timestamp: number;
+}
+
+export function createVisualCheckpoint(
+  name: string,
+  description: string,
+  presetId: string,
+): VisualCheckpoint {
+  return {
+    id: crypto.randomUUID(),
+    name,
+    description,
+    presetId,
+    timestamp: Date.now(),
+  };
+}
+
+const SAVED_CHECKPOINTS_KEY = 'stims:visual-checkpoints';
+
+export function getSavedCheckpoints(): VisualCheckpoint[] {
+  try {
+    const raw = localStorage.getItem(SAVED_CHECKPOINTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCheckpoint(
+  name: string,
+  description: string,
+  presetId: string,
+) {
+  const checkpoints = getSavedCheckpoints();
+  checkpoints.unshift(createVisualCheckpoint(name, description, presetId));
+  localStorage.setItem(
+    SAVED_CHECKPOINTS_KEY,
+    JSON.stringify(checkpoints.slice(0, 50)),
+  );
+}
