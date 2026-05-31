@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const PUBLIC_DIR = resolve(import.meta.dirname || '.', '..', 'public');
@@ -8,7 +8,9 @@ async function main() {
   const catalogPath = resolve(PUBLIC_DIR, 'milkdrop-presets', 'catalog.json');
   const entries = JSON.parse(readFileSync(catalogPath, 'utf-8')).presets || [];
 
-  const needsThumbnail = entries.filter((e: { preview?: boolean }) => !e.preview);
+  const needsThumbnail = entries.filter(
+    (e: { preview?: boolean }) => !e.preview,
+  );
 
   console.log(`${needsThumbnail.length} presets need thumbnails`);
 
@@ -28,9 +30,7 @@ async function main() {
       });
       if (res.ok) {
         done++;
-        console.log(
-          `  OK: ${entry.id} (${done}/${limit})`,
-        );
+        console.log(`  OK: ${entry.id} (${done}/${limit})`);
       } else {
         console.log(`  FAIL: ${entry.id} - ${res.status}`);
       }
