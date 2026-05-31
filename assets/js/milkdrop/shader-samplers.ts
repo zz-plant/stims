@@ -14,6 +14,8 @@ export const MILKDROP_SHADER_TEXTURE_SAMPLERS = new Set<
   'pattern',
   'fractal',
   'video',
+  'pw_main',
+  'pc_main',
 ]);
 
 const MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS =
@@ -44,10 +46,10 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   noisevol: 'simplex',
   noisevol_lq: 'simplex',
   noisevol_hq: 'simplex',
-  pw_noise_lq: 'noise',
   fc_main: 'main',
-  pw_main: 'main',
-  pc_main: 'main',
+  pw_main: 'pw_main',
+  pc_main: 'pc_main',
+  pw_noise_lq: 'noise',
   pw_mcode1: 'noise',
   fw_clouds: 'noise',
   clouds2: 'noise',

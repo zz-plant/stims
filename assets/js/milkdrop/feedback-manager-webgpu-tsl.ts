@@ -552,6 +552,14 @@ function compileShaderExpressionNode(
             ).rgb,
           );
         }
+        if (resolvedBinding.canonicalSource === 'pw_main' || resolvedBinding.canonicalSource === 'pc_main') {
+          return makeShaderValue(
+            'vec3',
+            env.uniforms.previousTex.sample(
+              env.sampleUvNode(sampleUv, env.uniforms.textureWrap),
+            ).rgb,
+          );
+        }
         return makeShaderValue(
           'vec3',
           env.sampleAuxTextureNode(

@@ -391,6 +391,10 @@ function emitTextureSample(
     return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
   }
 
+  if (normalizedName === 'pw_main' || normalizedName === 'pc_main') {
+    return `texture2D(previousTex, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
+
   if (normalizedName === 'main') {
     // Sample from the main framebuffer texture
     return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;

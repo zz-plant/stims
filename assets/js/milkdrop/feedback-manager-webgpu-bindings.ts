@@ -36,6 +36,10 @@ function getDirectShaderSamplerSourceId(
       return 7;
     case 'video':
       return 8;
+    case 'pw_main':
+      return 9;
+    case 'pc_main':
+      return 10;
     default:
       return 0;
   }

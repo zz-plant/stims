@@ -310,18 +310,18 @@ For simple requests ("blue spiral"), per_frame + per_pixel EEL code is sufficien
 
 ### Custom texture samplers
 
-**Stims supports 14 texture samplers.** The original MilkDrop/Winamp plugin allowed loading arbitrary custom textures via `textures.ini`. Stims uses pre-authored PNG files for the standard set. 188 presets (~10%) reference 27 non-standard sampler names that do not exist in the engine.
+**Stims supports 16 texture samplers.** The original MilkDrop/Winamp plugin allowed loading arbitrary custom textures via `textures.ini`. Stims uses pre-authored PNG files for the standard set. 140 presets (~7.5%) reference 25 non-standard sampler names.
 
-| Standard (supported) | Aliased (mapped to standard) | Multi-pass (unsupported) |
+| Standard (supported) | Aliased (mapped to standard) | Multi-pass (now supported) |
 |---|---|---|
-| `main`, `none` | `noise_mq`, `rand00`, `cells` | `pw_main`, `pc_main` |
-| `noise`, `perlin` | `seaweed`, `lichen`, `moss1` | `pw_noise_lq` |
-| `simplex`, `voronoi` | `prayerwheel`, `clouds` | |
+| `main`, `none` | `noise_mq`, `rand00`, `cells` | `pw_main` → `previousTex` |
+| `noise`, `perlin` | `seaweed`, `lichen`, `moss1` | `pc_main` → `previousTex` |
+| `simplex`, `voronoi` | `prayerwheel`, `fw_clouds` | `pw_noise_lq` → noise |
 | `aura`, `caustics` | `smalltiled_*`, `paper` | |
 | `pattern`, `fractal` | `sunrise` → pattern | |
-| `video` | `fw_noise_lq` → noise | |
+| `video`, `pw_main`, `pc_main` | `fw_noise_lq` → noise | |
 
-Non-standard samplers are aliased to the closest standard texture where possible (`cells` → voronoi, `rand00` → noise, `sunrise` → pattern). However, `pw_main` and `pc_main` (48 presets each) reference intermediate render pass textures from the original multi-stage pipeline — these presets cannot be accurately reproduced without architectural changes to the engine.
+`sampler_pw_main` and `sampler_pc_main` resolve to `previousTex` — the previous frame's composite output. In Stims's single-pass pipeline (warp + comp fused), this is the functional equivalent of the original multi-pass warp/composite output. Non-standard samplers are aliased to the closest standard texture where possible.
 
 ### Warp shader texture coordinates
 
