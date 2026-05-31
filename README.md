@@ -107,6 +107,7 @@ Questions? [GitHub Discussions](https://github.com/zz-plant/stims/discussions).
 
 - [Development guide](./docs/DEVELOPMENT.md)
 - [Architecture overview](./docs/ARCHITECTURE.md)
+- [MilkDrop coding guide](./docs/MILKDROP_CODING_GUIDE.md) — patterns from the top 1%
 - [Preset runtime docs](./docs/MILKDROP_PRESET_RUNTIME.md)
 - [API reference](./docs/api.md)
 - [Lineage and credits](./docs/LINEAGE_AND_CREDITS.md)
