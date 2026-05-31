@@ -51,9 +51,12 @@ export async function onRequest(context: {
   }
 
   try {
-    const { description } = (await request.json()) as { description: string };
+    const body = (await request.json()) as {
+      description: string;
+      embedOnly?: boolean;
+    };
 
-    if (!description || description.length < 3) {
+    if (!body.description || body.description.length < 3) {
       return new Response('Description too short', { status: 400 });
     }
 
@@ -61,9 +64,18 @@ export async function onRequest(context: {
 
     if (env.AI) {
       const result = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
-        text: [description],
+        text: [body.description],
       });
       queryEmbedding = result.data[0];
+    }
+
+    if (body.embedOnly) {
+      return new Response(JSON.stringify({ embedding: queryEmbedding }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
     }
 
     const { results } = await env.DB.prepare(
