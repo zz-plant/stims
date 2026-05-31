@@ -917,6 +917,99 @@ function BrowseSheetPanel({
   );
 }
 
+function PerformanceSection() {
+  const [perf, setPerf] = useState(() => ({
+    shaderDetail: 1,
+    ecoMode: false,
+    renderScale: 1,
+    loaded: false,
+  }));
+
+  useEffect(() => {
+    import('../core/state/performance-settings-store.ts').then(
+      ({ getActivePerformanceSettings }) => {
+        const s = getActivePerformanceSettings();
+        setPerf({
+          shaderDetail: s.shaderDetail,
+          ecoMode: s.ecoMode,
+          renderScale: s.renderScale,
+          loaded: true,
+        });
+      },
+    );
+  }, []);
+
+  const setOption = <K extends keyof typeof perf>(
+    key: K,
+    value: (typeof perf)[K],
+  ) => {
+    setPerf((p) => ({ ...p, [key]: value }));
+    import('../core/state/performance-settings-store.ts').then(
+      ({ setPerformanceOption }) => {
+        setPerformanceOption(
+          key as 'renderScale' | 'shaderDetail' | 'ecoMode',
+          value as never,
+        );
+      },
+    );
+  };
+
+  const shaderLabel = ['Low', 'Medium', 'High'][perf.shaderDetail] ?? 'Medium';
+
+  return (
+    <div className="stims-shell__settings-section">
+      <h3 className="stims-shell__settings-label">Performance</h3>
+
+      <div className="stims-shell__settings-row">
+        <span className="stims-shell__settings-option-label">
+          Render resolution
+        </span>
+        <select
+          className="stims-shell__select"
+          value={perf.renderScale}
+          onChange={(e) => setOption('renderScale', parseFloat(e.target.value))}
+        >
+          <option value={1}>Full (100%)</option>
+          <option value={0.75}>High (75%)</option>
+          <option value={0.5}>Medium (50%)</option>
+        </select>
+      </div>
+
+      <div className="stims-shell__settings-row">
+        <span className="stims-shell__settings-option-label">
+          Shader detail
+        </span>
+        <input
+          type="range"
+          min="0"
+          max="2"
+          step="1"
+          className="stims-shell__range"
+          value={perf.shaderDetail}
+          onChange={(e) =>
+            setOption('shaderDetail', parseInt(e.target.value, 10))
+          }
+        />
+        <span className="stims-shell__range-label">{shaderLabel}</span>
+      </div>
+
+      <div className="stims-shell__settings-row">
+        <span className="stims-shell__settings-option-label">Eco mode</span>
+        <button
+          type="button"
+          className={`stims-shell__toggle ${perf.ecoMode ? 'is-active' : ''}`}
+          onClick={() => setOption('ecoMode', !perf.ecoMode)}
+        >
+          <span className="stims-shell__toggle-knob" />
+        </button>
+        <span className="stims-shell__settings-hint">
+          30 FPS cap, reduced effects
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function SettingsSheetPanel({
   onCompatibilityModeChange,
   onMotionPreferenceChange,
@@ -1026,6 +1119,8 @@ function SettingsSheetPanel({
           </label>
         </div>
       </details>
+
+      <PerformanceSection />
     </div>
   );
 }

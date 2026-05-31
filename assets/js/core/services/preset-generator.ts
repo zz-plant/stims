@@ -33,7 +33,10 @@ export async function generatePreset(
     throw new Error(`Generator API error: ${response.status} ${err}`);
   }
 
-  const data = (await response.json()) as { milkSource: string; cached?: boolean };
+  const data = (await response.json()) as {
+    milkSource: string;
+    cached?: boolean;
+  };
 
   const compiled = compileMilkdropPresetSource(data.milkSource, {
     id: `ai-${Date.now()}`,
@@ -53,13 +56,18 @@ export async function generatePreset(
 export async function generatePresetQuick(
   description: string,
 ): Promise<MilkdropCompiledPreset> {
-  return generatePreset(description, { model: '@cf/qwen/qwen3-30b-a3b-fp8', complexity: 'simple' });
+  return generatePreset(description, {
+    model: '@cf/qwen/qwen3-30b-a3b-fp8',
+    complexity: 'simple',
+  });
 }
 
 export async function generatePresetQuality(
   description: string,
 ): Promise<MilkdropCompiledPreset> {
-  return generatePreset(description, { model: '@cf/qwen/qwen2.5-coder-32b-instruct' });
+  return generatePreset(description, {
+    model: '@cf/qwen/qwen2.5-coder-32b-instruct',
+  });
 }
 
 export async function generatePresetCached(

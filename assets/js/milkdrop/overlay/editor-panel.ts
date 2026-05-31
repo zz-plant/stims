@@ -454,6 +454,9 @@ export class EditorPanel {
   private suppressEditorChange = false;
   private hasBufferedEdits = false;
   private lastSessionState: MilkdropEditorSessionState | null = null;
+  private quickFixBtn: HTMLButtonElement | null = null;
+  private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
+  private snapshots: Array<{ source: string; timestamp: number }> = [];
 
   constructor(callbacks: EditorPanelCallbacks) {
     this.callbacks = callbacks;
@@ -546,6 +549,20 @@ export class EditorPanel {
     exportButton.addEventListener('click', () => this.callbacks.onExport());
     editorActions.appendChild(exportButton);
 
+    const importButton2 = document.createElement('button');
+    importButton2.type = 'button';
+    importButton2.textContent = 'Batch';
+    importButton2.title = 'Generate variations (Shift+Enter)';
+    importButton2.addEventListener('click', () => this.handleBatchGenerate());
+    editorActions.appendChild(importButton2);
+
+    const blendButton = document.createElement('button');
+    blendButton.type = 'button';
+    blendButton.textContent = 'Blend';
+    blendButton.title = 'Blend with another preset';
+    blendButton.addEventListener('click', () => this.handleBlend());
+    editorActions.appendChild(blendButton);
+
     this.deleteButton = document.createElement('button');
     this.deleteButton.type = 'button';
     this.deleteButton.textContent = 'Delete';
@@ -561,7 +578,11 @@ export class EditorPanel {
     editorMain.className = 'milkdrop-overlay__editor-main';
     const editorHost = document.createElement('div');
     editorHost.className = 'milkdrop-overlay__editor';
-    editorMain.append(this.editorStatus, editorHost);
+    const editorBody = document.createElement('div');
+    editorBody.className = 'editor-body';
+    editorBody.appendChild(editorHost);
+    editorBody.appendChild(this.renderSliders());
+    editorMain.append(this.editorStatus, editorBody);
 
     const editorRail = document.createElement('div');
     editorRail.className = 'milkdrop-overlay__editor-rail';
@@ -637,7 +658,9 @@ export class EditorPanel {
     editorConsoleLabel.textContent = 'Console';
     this.diagnosticsList = document.createElement('div');
     this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
-    editorConsole.append(editorConsoleLabel, this.diagnosticsList);
+    const quickFixBtn = this.renderQuickFix();
+    this.quickFixBtn = quickFixBtn;
+    editorConsole.append(editorConsoleLabel, this.diagnosticsList, quickFixBtn);
 
     // ── AI refinement bar ──────────────────────────────
     const refineSection = document.createElement('section');
@@ -849,6 +872,14 @@ export class EditorPanel {
         : 'muted';
 
     this.diagnosticsList.replaceChildren();
+    const errorsForQuickFix = state.diagnostics.filter(
+      (d) => d.severity === 'error',
+    );
+    if (this.quickFixBtn) {
+      this.quickFixBtn.style.display =
+        errorsForQuickFix.length > 0 ? '' : 'none';
+    }
+    this.mostRecentDiagnostic = errorsForQuickFix[0] ?? null;
     const derivedNotices = [
       primaryReason
         ? {
@@ -937,5 +968,203 @@ export class EditorPanel {
       scrollIntoView: true,
     });
     this.editor.focus();
+  }
+
+  private renderSliders(): HTMLElement {
+    const panel = document.createElement('div');
+    panel.className = 'editor-sliders';
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', 'Parameter sliders');
+
+    const title = document.createElement('h4');
+    title.textContent = 'Tune';
+    title.className = 'editor-sliders__title';
+    panel.appendChild(title);
+
+    const sliders: Array<{
+      label: string;
+      key: string;
+      min: number;
+      max: number;
+      step: number;
+    }> = [
+      { label: 'Zoom', key: 'zoom', min: 0.2, max: 3, step: 0.05 },
+      { label: 'Warp', key: 'warp', min: 0, max: 1, step: 0.05 },
+      { label: 'Rot', key: 'rot', min: 0, max: 1, step: 0.02 },
+      { label: 'Decay', key: 'decay', min: 0.8, max: 0.995, step: 0.005 },
+      { label: 'Hue', key: 'hue_rot', min: 0, max: 6.28, step: 0.1 },
+    ];
+
+    for (const s of sliders) {
+      const row = document.createElement('div');
+      row.className = 'editor-slider-row';
+
+      const label = document.createElement('label');
+      label.className = 'editor-slider-row__label';
+      label.textContent = s.label;
+
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = String(s.min);
+      input.max = String(s.max);
+      input.step = String(s.step);
+      input.className = 'editor-slider-row__input';
+
+      const val = this.readVariableFromEditor(s.key);
+      input.value = val !== null ? String(val) : String((s.min + s.max) / 2);
+
+      const valDisplay = document.createElement('span');
+      valDisplay.className = 'editor-slider-row__value';
+      valDisplay.textContent = parseFloat(input.value).toFixed(2);
+
+      input.addEventListener('input', () => {
+        valDisplay.textContent = parseFloat(input.value).toFixed(2);
+        this.writeVariableToEditor(s.key, parseFloat(input.value));
+      });
+
+      row.appendChild(label);
+      row.appendChild(input);
+      row.appendChild(valDisplay);
+      panel.appendChild(row);
+    }
+
+    return panel;
+  }
+
+  private readVariableFromEditor(variableName: string): number | null {
+    const doc = this.editor.state.doc.toString();
+    const regex = new RegExp(`${variableName}\\s*=\\s*([\\d.]+)`, 'i');
+    const match = doc.match(regex);
+    return match ? parseFloat(match[1]) : null;
+  }
+
+  private writeVariableToEditor(variableName: string, value: number): void {
+    const doc = this.editor.state.doc.toString();
+    const regex = new RegExp(`(${variableName}\\s*=\\s*)[\\d.]+`, 'gi');
+    const newDoc = doc.replace(regex, `$1${value.toFixed(3)}`);
+
+    if (newDoc !== doc) {
+      this.editor.dispatch({
+        changes: { from: 0, to: doc.length, insert: newDoc },
+        scrollIntoView: false,
+      });
+      this.editor.dispatch({
+        effects: EditorView.scrollIntoView(
+          this.editor.state.selection.main.head,
+        ),
+      });
+    }
+  }
+
+  private renderQuickFix(): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'editor-quick-fix';
+    btn.textContent = '\u26A1 Fix with AI';
+    btn.title = 'Send this error to the AI for automatic correction';
+    btn.style.display = 'none';
+    btn.addEventListener('click', () => this.handleQuickFix());
+    return btn;
+  }
+
+  private handleQuickFix() {
+    const source = this.editor.state.doc.toString();
+    const diag = this.mostRecentDiagnostic;
+    if (!diag) return;
+
+    const instruction = `Fix this compiler error: "${diag.message}" at line ${diag.line}. Keep the preset style but fix the syntax or math.`;
+
+    this.setRefinePending(true);
+    fetch('https://toil.fyi/api/refine-preset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentSource: source, instruction }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.milkSource) {
+          const currentSource = this.editor.state.doc.toString();
+          this.snapshots.push({ source: currentSource, timestamp: Date.now() });
+          this.editor.dispatch({
+            changes: {
+              from: 0,
+              to: currentSource.length,
+              insert: data.milkSource,
+            },
+          });
+          this.callbacks.onEditorSourceChange(data.milkSource);
+        }
+        this.setRefinePending(false);
+      })
+      .catch(() => this.setRefinePending(false));
+  }
+
+  private handleBatchGenerate() {
+    const source = this.editor.state.doc.toString();
+    const count = window.prompt('How many variations? (1-5)', '3');
+    if (!count) return;
+
+    this.setRefinePending(true);
+    fetch('https://toil.fyi/api/batch-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        description: source.slice(0, 500),
+        count: parseInt(count, 10),
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.presets && data.presets.length > 0) {
+          const currentSource = this.editor.state.doc.toString();
+          this.snapshots.push({ source: currentSource, timestamp: Date.now() });
+          this.editor.dispatch({
+            changes: {
+              from: 0,
+              to: currentSource.length,
+              insert: data.presets[0],
+            },
+          });
+          this.callbacks.onEditorSourceChange(data.presets[0]);
+        }
+        this.setRefinePending(false);
+      })
+      .catch(() => this.setRefinePending(false));
+  }
+
+  private handleBlend() {
+    const source = this.editor.state.doc.toString();
+    const sourceB = window.prompt(
+      'Paste the second preset source (or preset ID):',
+    );
+    if (!sourceB) return;
+
+    this.setRefinePending(true);
+    fetch('https://toil.fyi/api/blend-presets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceA: source, sourceB }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.milkSource) {
+          const currentSource = this.editor.state.doc.toString();
+          this.snapshots.push({ source: currentSource, timestamp: Date.now() });
+          this.editor.dispatch({
+            changes: {
+              from: 0,
+              to: currentSource.length,
+              insert: data.milkSource,
+            },
+          });
+          this.callbacks.onEditorSourceChange(data.milkSource);
+        }
+        this.setRefinePending(false);
+      })
+      .catch(() => this.setRefinePending(false));
+  }
+
+  private setRefinePending(_pending: boolean) {
+    // noop: pending state tracked locally in the refine section
   }
 }

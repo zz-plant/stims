@@ -4194,7 +4194,7 @@ body[data-page="workspace"] {
 }
 
 .stims-shell__shortcut-grid kbd {
-  font-family: 'Space Mono', monospace;
+  font-family: "Space Mono", monospace;
   font-size: 0.78rem;
   padding: 2px 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -4206,4 +4206,261 @@ body[data-page="workspace"] {
 .stims-shell__shortcut-grid span {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.55);
+}
+
+/* ===== Performance throttle ===== */
+.stims-shell__settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.stims-shell__select {
+  background: var(--stims-surface);
+  color: var(--stims-ink);
+  border: 1px solid var(--stims-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+}
+
+.stims-shell__range {
+  width: 80px;
+  accent-color: var(--stims-accent);
+}
+
+.stims-shell__range-label {
+  font-size: 0.72rem;
+  color: var(--stims-ink-dim);
+  min-width: 48px;
+}
+
+.stims-shell__settings-hint {
+  font-size: 0.7rem;
+  color: var(--stims-ink-dim);
+  margin-left: auto;
+}
+
+.stims-shell__toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--stims-border);
+  border: none;
+  cursor: pointer;
+}
+
+.stims-shell__toggle.is-active {
+  background: var(--stims-accent);
+}
+
+.stims-shell__toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.15s ease;
+}
+
+.stims-shell__toggle.is-active .stims-shell__toggle-knob {
+  transform: translateX(16px);
+}
+
+/* ===== Editor sliders ===== */
+.editor-body {
+  display: flex;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-sliders {
+  width: 140px;
+  min-width: 140px;
+  border-left: 1px solid var(--stims-border);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.editor-sliders__title {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--stims-ink-dim);
+  text-align: center;
+}
+
+.editor-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.editor-slider-row__label {
+  font-size: 0.65rem;
+  color: var(--stims-ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.editor-slider-row__input {
+  width: 100%;
+  accent-color: var(--stims-accent);
+  margin: 0;
+}
+
+.editor-slider-row__value {
+  font-size: 0.7rem;
+  color: var(--stims-ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Editor AI buttons ===== */
+.editor-quick-fix {
+  background: var(--stims-accent);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.editor-quick-fix:hover {
+  filter: brightness(1.1);
+}
+
+/* ===== Ghost loading ===== */
+.preset-artwork-ghost {
+  position: relative;
+  border-radius: var(--stims-radius);
+  background: var(--stims-surface);
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  flex-direction: column;
+}
+
+.preset-artwork-ghost__shimmer {
+  flex: 1;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: ghost-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes ghost-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.preset-artwork-ghost__meta {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preset-artwork-ghost__title {
+  height: 10px;
+  width: 70%;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
+.preset-artwork-ghost__author {
+  height: 8px;
+  width: 40%;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+}
+
+/* ===== Lineage badge ===== */
+.preset-artwork-lineage {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  margin-top: 4px;
+  font-size: 0.65rem;
+  color: var(--stims-ink-dim);
+}
+
+.preset-artwork-lineage__icon {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.preset-artwork-lineage__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Macro moods in mobile bar ===== */
+.mc-bar__mood-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mc-bar__mood-row::-webkit-scrollbar {
+  display: none;
+}
+
+.mc-bar__mood-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 56px;
+  padding: 8px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--stims-ink);
+  cursor: pointer;
+  font-size: 0.6rem;
+  transition: background 0.15s;
+}
+
+.mc-bar__mood-btn:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mc-bar__mood-icon {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 480px) {
+  .editor-sliders {
+    display: none;
+  }
 }

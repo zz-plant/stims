@@ -570,29 +570,56 @@ function StimsWorkspaceAppShell() {
         </div>
       ) : null}
       {showShortcuts ? (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape-to-dismiss handled via global key handler
         <div
           className="stims-shell__shortcut-overlay"
           role="dialog"
           aria-label="Keyboard shortcuts"
           onClick={() => setShowShortcuts(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowShortcuts(false); }}
         >
-          <div className="stims-shell__shortcut-card" onClick={(e) => e.stopPropagation()}>
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: card is visual-only, backdrop handles dismiss */}
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: card is visual-only */}
+          <div
+            className="stims-shell__shortcut-card"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
             <h2>Keyboard shortcuts</h2>
             <div className="stims-shell__shortcut-grid">
-              <kbd>Space</kbd><span>Demo audio</span>
-              <kbd>F</kbd><span>Fullscreen</span>
-              <kbd>B</kbd><span>Browse panel</span>
-              <kbd>S</kbd><span>Settings</span>
-              <kbd>E</kbd><span>Editor</span>
-              <kbd>I</kbd><span>Inspector</span>
-              <kbd>N / →</kbd><span>Shuffle preset</span>
-              <kbd>P / ←</kbd><span>Previous preset</span>
-              <kbd>1–9</kbd><span>Quick-select preset</span>
-              <kbd>?</kbd><span>This help</span>
-              <kbd>Esc</kbd><span>Close panels / dismiss</span>
-              <kbd>Cmd+Enter</kbd><span>Compile in editor</span>
+              <kbd>Space</kbd>
+              <span>Demo audio</span>
+              <kbd>F</kbd>
+              <span>Fullscreen</span>
+              <kbd>B</kbd>
+              <span>Browse panel</span>
+              <kbd>S</kbd>
+              <span>Settings</span>
+              <kbd>E</kbd>
+              <span>Editor</span>
+              <kbd>I</kbd>
+              <span>Inspector</span>
+              <kbd>N / →</kbd>
+              <span>Shuffle preset</span>
+              <kbd>P / ←</kbd>
+              <span>Previous preset</span>
+              <kbd>1–9</kbd>
+              <span>Quick-select preset</span>
+              <kbd>?</kbd>
+              <span>This help</span>
+              <kbd>Esc</kbd>
+              <span>Close panels / dismiss</span>
+              <kbd>Cmd+Enter</kbd>
+              <span>Compile in editor</span>
             </div>
-            <button type="button" className="cta-button ghost" onClick={() => setShowShortcuts(false)}>Close</button>
+            <button
+              type="button"
+              className="cta-button ghost"
+              onClick={() => setShowShortcuts(false)}
+            >
+              Close
+            </button>
           </div>
         </div>
       ) : null}
