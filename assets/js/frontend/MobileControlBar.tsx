@@ -70,6 +70,11 @@ export function MobileControlBar({
     void engine.handleShufflePreset();
   }, [engine, resetHideTimer]);
 
+  const handleEditor = useCallback(() => {
+    resetHideTimer();
+    ui.updatePanel(panel === 'editor' ? null : 'editor');
+  }, [ui, panel, resetHideTimer]);
+
   const handleShare = useCallback(() => {
     resetHideTimer();
     void ui.handleShowCurrentLink();
@@ -184,6 +189,19 @@ export function MobileControlBar({
             className="stims-icon-slot stims-icon-slot--sm"
           />
           <span className={styles.actionLabel}>Surprise</span>
+        </button>
+        <button
+          type="button"
+          className={styles.action}
+          data-active={String(panel === 'editor')}
+          onClick={handleEditor}
+          aria-label="Edit preset code"
+        >
+          <UiIcon
+            name="gauge"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className={styles.actionLabel}>Edit</span>
         </button>
         <button
           type="button"
