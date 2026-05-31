@@ -388,7 +388,29 @@ export function useWorkspaceShellOrchestration({
         );
       }
 
-      if (source === 'demo' || source === 'microphone') {
+      if (source === 'microphone') {
+        commitRoute(nextRouteState);
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setStatusMessage('Microphone capture is not available in this browser.');
+          return;
+        }
+        try {
+          const permissionStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          permissionStream.getTracks().forEach((t) => t.stop());
+        } catch (error) {
+          throw new Error(
+            error instanceof DOMException && error.name === 'NotAllowedError'
+              ? 'Microphone access was denied. Check browser settings and try again.'
+              : 'Unable to access microphone.',
+          );
+        }
+        await startAudioSource({ source, launchState: nextRouteState });
+        return;
+      }
+
+      if (source === 'demo') {
         commitRoute(nextRouteState);
         await startAudioSource({ source, launchState: nextRouteState });
         return;
