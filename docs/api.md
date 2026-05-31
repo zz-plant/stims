@@ -25,9 +25,27 @@ When `embedOnly: true`, returns `{ embedding: number[] }` instead.
 Generate MilkDrop preset equations from a text description.
 
 **Body:** `{ description: string, complexity?: 'simple' | 'moderate' | 'complex', model?: string }`
-**Response:** `{ milkSource: string, cached?: true }`
+**Response:** `{ milkSource: string, title?: string, cached?: true }`
 
-The `model` param overrides automatic classification-based model selection. If the description matches a cached embedding (cosine > 0.88), returns cached result without generating.
+The `model` param overrides automatic classification-based model selection. If the description matches a cached embedding (cosine > 0.88), returns cached result without generating. Includes an auto-generated preset title from the micro model.
+
+## POST /api/batch-generate
+
+Generate multiple preset variations from a single description.
+
+**Body:** `{ description: string, count?: number }` (count defaults to 3, max 5)
+**Response:** `{ presets: string[] }`
+
+Generates `count` variations in parallel via qwen2.5-coder, each with a unique variation seed. Use for exploring different interpretations of a description.
+
+## POST /api/blend-presets
+
+Combine two presets into one — take wave patterns from A, color scheme from B.
+
+**Body:** `{ sourceA: string, sourceB: string, instruction?: string }`
+**Response:** `{ milkSource: string }`
+
+Without an instruction, defaults to: "blend the wave patterns and motion from preset A with the color scheme and atmosphere of preset B". The micro model auto-names the result.
 
 ## POST /api/refine-preset
 
