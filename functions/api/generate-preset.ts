@@ -194,7 +194,23 @@ export async function onRequest(context: { request: Request; env: Env }) {
         '[preset00]\nfRating=4.0\nfDecay=0.96\nnWaveMode=1\nfZoom=1.0\nfWarp=1.0\nfRot=0.0\n';
     }
 
-    return new Response(JSON.stringify({ milkSource }), {
+    let title = 'AI Generated';
+    if (env.AI) {
+      try {
+        const nameResult = await env.AI.run('@cf/ibm-granite/granite-4.0-h-micro', {
+          messages: [
+            { role: 'system', content: 'Generate a short, evocative title (3-6 words) for this MilkDrop visualizer preset. Be creative. Output only the title.' },
+            { role: 'user', content: milkSource.slice(0, 500) },
+          ],
+        });
+        title = (nameResult.response || '').trim().replace(/["']/g, '');
+        if (title.length > 60) title = title.slice(0, 60);
+      } catch {
+        // Use fallback title
+      }
+    }
+
+    return new Response(JSON.stringify({ milkSource, title }), {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
