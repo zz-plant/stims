@@ -12,6 +12,6 @@
     "jsx": "react-jsx",
     "types": ["bun", "node"]
   },
-  "include": ["assets/**/*", "tests/**/*", "scripts/**/*"],
+  "include": ["assets/**/*", "tests/**/*", "scripts/**/*", "functions/**/*"],
   "exclude": ["dist"]
 }

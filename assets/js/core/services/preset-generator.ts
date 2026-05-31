@@ -13,6 +13,7 @@ export async function generatePreset(
   options: {
     complexity?: 'simple' | 'moderate' | 'complex';
     apiEndpoint?: string;
+    model?: string;
   } = {},
 ): Promise<MilkdropCompiledPreset> {
   const endpoint = options.apiEndpoint || '/api/generate-preset';
@@ -23,6 +24,7 @@ export async function generatePreset(
     body: JSON.stringify({
       description,
       complexity: options.complexity || 'moderate',
+      model: options.model,
     }),
   });
 
@@ -31,11 +33,11 @@ export async function generatePreset(
     throw new Error(`Generator API error: ${response.status} ${err}`);
   }
 
-  const data = (await response.json()) as { milkSource: string };
+  const data = (await response.json()) as { milkSource: string; cached?: boolean };
 
   const compiled = compileMilkdropPresetSource(data.milkSource, {
     id: `ai-${Date.now()}`,
-    title: 'AI Generated',
+    title: `AI: ${description}`,
     origin: 'generated',
   });
 
@@ -46,6 +48,26 @@ export async function generatePreset(
   }
 
   return compiled;
+}
+
+export async function generatePresetQuick(
+  description: string,
+): Promise<MilkdropCompiledPreset> {
+  return generatePreset(description, { model: '@cf/qwen/qwen3-30b-a3b-fp8', complexity: 'simple' });
+}
+
+export async function generatePresetQuality(
+  description: string,
+): Promise<MilkdropCompiledPreset> {
+  return generatePreset(description, { model: '@cf/qwen/qwen2.5-coder-32b-instruct' });
+}
+
+export async function generatePresetCached(
+  description: string,
+): Promise<MilkdropCompiledPreset> {
+  return generatePreset(description, {
+    apiEndpoint: '/api/generate-preset',
+  });
 }
 
 export async function generatePresetOnWorker(

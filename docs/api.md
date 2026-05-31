@@ -2,6 +2,15 @@
 
 All endpoints are served from `https://toil.fyi/api/` as Cloudflare Pages Functions.
 
+## POST /api/model-router
+
+Classify a request and select the optimal AI model for the task.
+
+**Body:** `{ description: string, task: 'generate' | 'refine' | 'explain' | 'vision' }`
+**Response:** `{ model: string, tier: string, classification: { complexity: string, needsReasoning: boolean } }`
+
+Uses classifier model (`@cf/ibm-granite/granite-4.0-h-micro`) to assess complexity and reasoning need, then routes to the best model for the job.
+
 ## POST /api/visual-search
 
 Search for presets visually similar to a text description.
@@ -15,15 +24,19 @@ When `embedOnly: true`, returns `{ embedding: number[] }` instead.
 
 Generate MilkDrop preset equations from a text description.
 
-**Body:** `{ description: string, complexity?: 'simple' | 'moderate' | 'complex' }`
-**Response:** `{ milkSource: string }`
+**Body:** `{ description: string, complexity?: 'simple' | 'moderate' | 'complex', model?: string }`
+**Response:** `{ milkSource: string, cached?: true }`
+
+The `model` param overrides automatic classification-based model selection. If the description matches a cached embedding (cosine > 0.88), returns cached result without generating.
 
 ## POST /api/refine-preset
 
 Iteratively refine an existing MilkDrop preset using AI.
 
-**Body:** `{ currentSource: string, instruction: string, history?: Array<{ role: string, content: string }> }`
+**Body:** `{ currentSource: string, instruction: string, history?: Array<{ role: string, content: string }>, model?: string }`
 **Response:** `{ milkSource: string }`
+
+The `model` param overrides the default refine model (Llama 4 Scout). Explain/describe instructions use the micro model (`@cf/ibm-granite/granite-4.0-h-micro`) regardless of `model`.
 
 ## POST /api/generate-thumbnail
 
@@ -37,7 +50,9 @@ Generate a thumbnail image for a preset via FLUX.
 Generate a MilkDrop preset from an uploaded image.
 
 **Body:** `{ image: string }` (base64 encoded image)
-**Response:** `{ description: string, milkSource: string }`
+**Response:** `{ description: string, milkSource: string, cached?: true }`
+
+Uses Gemma 4 for vision description and Qwen 2.5 Coder for preset generation. Checks embedding cache to avoid redundant generation.
 
 ## POST /api/store-embedding
 
