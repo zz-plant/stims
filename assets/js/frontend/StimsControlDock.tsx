@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { searchByFrame } from '../core/services/visual-embedding.ts';
+import { searchByFrame, extractFrameStats, describeFrame } from '../core/services/visual-embedding.ts';
+import { saveCheckpoint } from '../core/services/temporal-memory.ts';
 import { useEngine, useUI } from './workspace-context.tsx';
 import { UiIcon } from './workspace-ui.tsx';
 
@@ -60,6 +61,22 @@ export function StimsControlDock({
     } finally {
       setSimilarLoading(false);
     }
+  };
+
+  const handleSaveThisLook = () => {
+    const canvas = ui.stageRef.current?.querySelector(
+      'canvas',
+    ) as HTMLCanvasElement | null;
+    if (!canvas) {
+      ui.setStatusMessage('No visual frame available yet.');
+      return;
+    }
+    const stats = extractFrameStats(canvas);
+    const frameDesc = describeFrame(stats);
+    const presetId = engine.engineSnapshot?.activePresetId ?? 'unknown';
+    const name = engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? 'preset';
+    saveCheckpoint(name, `Visual: ${frameDesc}`, presetId);
+    ui.setStatusMessage(`Saved look: "${name}"`);
   };
 
   const barRef = useDirectCSSProperty<HTMLSpanElement>(
@@ -208,8 +225,18 @@ export function StimsControlDock({
           <span className="stims-shell__stage-tool-label">
             {similarLoading ? 'Searching\u2026' : 'More like \u00D7'}
           </span>
-        </button>
-      </div>
+          </button>
+          <button
+            type="button"
+            className="cta-button stims-shell__stage-tool-ghost"
+            aria-label="Save current look"
+            title="Save this look"
+            disabled={!runtimeReady}
+            onClick={handleSaveThisLook}
+          >
+            <span className="stims-shell__stage-tool-label">Save</span>
+          </button>
+        </div>
       {similarPresets.length > 0 ? (
         <div className="stims-shell__similar-presets">
           <p className="stims-shell__meta-copy">Similar presets</p>

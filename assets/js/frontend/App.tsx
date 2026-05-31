@@ -3,6 +3,7 @@ import { Component, useCallback, useEffect, useRef, useState } from 'react';
 import '../../css/app-shell.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import { useTemporalMemory } from '../core/services/temporal-memory.ts';
+import { buildAudioProfile, searchByAudioProfile } from '../core/services/audio-matcher.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   applyTheme,
@@ -321,6 +322,23 @@ function StimsWorkspaceAppShell() {
     ) as HTMLCanvasElement | null;
     temporalMemory.record(activePresetId, canvas);
   }, [engine.engineSnapshot?.activePresetId]);
+
+  useEffect(() => {
+    if (!engine.engineSnapshot?.audioActive) return;
+    const snap = engine.engineSnapshot;
+    const profile = buildAudioProfile({ audioEnergy: snap.audioEnergy });
+    if (profile.rms < 0.02) return;
+
+    void searchByAudioProfile(profile).then((results) => {
+      if (results.length === 0) return;
+      const top = results[0];
+      if (top.score < 0.6) return;
+      const presetName = top.presetId || 'unknown preset';
+      ui.setStatusMessage(
+        `Audio match: try "${presetName}" (${(top.score * 100).toFixed(0)}% match)`,
+      );
+    });
+  }, [engine.engineSnapshot?.audioActive, engine.engineSnapshot?.audioSource]);
 
   const filteredCatalogRef = useRef(engine.filteredCatalog);
   filteredCatalogRef.current = engine.filteredCatalog;
