@@ -30,6 +30,13 @@ bass, mid, treb, bass_att, mid_att, treb_att, beat, rms, vol, time, frame, fps
 ### State Registers (read/write)
 q1-q8: Persistent global state (set in per_frame, read anywhere)
 t1-t32: Temporary per-slot state
+
+### GLSL Shader Blocks (use for complex image processing)
+- [warp_shader]: GLSL fragment shader. Distorts texture coordinates. Built-in uniforms: sampler_main (frame buffer), sampler_blur1-3, sampler_noise_lq (2D), sampler_noisevol_hq (3D volume), q1-q8 as float uniforms, bass_att/mid_att/treb_att.
+- [comp_shader]: GLSL fragment shader. Composites color. Same uniforms + sampler_fc_main.
+- Use ret = vec2(dx, dy) in warp_shader. Use ret = vec3(r, g, b) in comp_shader.
+- GLSL 1.20: no gl_FragCoord. Use vec2/vec3. No texture() with LOD.
+- Do NOT use GLSL blocks unless the user specifically asks for image processing effects.
 `;
 
 export function buildGeneratePrompt(
@@ -208,6 +215,7 @@ per_frame settable: decay, zoom, rot, warp, cx, cy, dx, dy, wave_r, wave_g, wave
 - clamp color: r=min(1,max(0,r+dr)) to prevent white blowout
 - frame rate correction: multiply accumulators by (75/fps)
 - set warp=0 in per_frame, drive distortion through per_pixel instead
+- GLSL warp/comp shader: use sampler_main for feedback, sampler_noise_lq for noise, sampler_noisevol_hq for 3D noise volume at time-varying Z, clamp ret to [0,1]
 
 ## Anti-Patterns to FIX (if present)
 ❌ warp=1.0 with high decay → change to warp=0, add per_pixel motion
@@ -215,6 +223,7 @@ per_frame settable: decay, zoom, rot, warp, cx, cy, dx, dy, wave_r, wave_g, wave
 ❌ raw bass/mid/treb with no smoothing → use bass_att or RC filter
 ❌ zero per_pixel code → add at least one rad/ang-based per_pixel line
 ❌ unchecked color overflow → clamp to [0,1]
+❌ over-reliance on video echo → use per_pixel dx/dy/rot or warp shader instead
 
 Original preset:
 ${currentSource}
