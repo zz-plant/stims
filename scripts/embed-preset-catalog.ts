@@ -72,12 +72,12 @@ async function storeEmbedding(
   embedding: number[],
   description: string,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/api/embeddings`, {
+  const response = await fetch(`${API_BASE}/api/store-embedding`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       presetId,
-      embedding: JSON.stringify(embedding),
+      embedding: embedding,
       description,
     }),
   });
