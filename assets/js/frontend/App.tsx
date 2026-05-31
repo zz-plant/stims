@@ -2,6 +2,7 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { Component, useCallback, useEffect, useRef, useState } from 'react';
 import '../../css/app-shell.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
+import { useTemporalMemory } from '../core/services/temporal-memory.ts';
 import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   applyTheme,
@@ -153,6 +154,7 @@ class StimsErrorBoundary extends Component<
 function StimsWorkspaceAppShell() {
   const { ui, engine } = useWorkspace();
   const isWideEnough = useMediaQuery('(min-width: 1024px)');
+  const temporalMemory = useTemporalMemory();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -310,6 +312,15 @@ function StimsWorkspaceAppShell() {
       showHint('editor-open');
     }
   }, [ui.routeState.panel, showHint]);
+
+  useEffect(() => {
+    const activePresetId = engine.engineSnapshot?.activePresetId;
+    if (!activePresetId) return;
+    const canvas = ui.stageRef.current?.querySelector(
+      'canvas',
+    ) as HTMLCanvasElement | null;
+    temporalMemory.record(activePresetId, canvas);
+  }, [engine.engineSnapshot?.activePresetId]);
 
   const filteredCatalogRef = useRef(engine.filteredCatalog);
   filteredCatalogRef.current = engine.filteredCatalog;

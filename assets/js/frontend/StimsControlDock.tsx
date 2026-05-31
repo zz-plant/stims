@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { useEngine, useUI } from './workspace-context.tsx';
 import { UiIcon } from './workspace-ui.tsx';
 
@@ -36,6 +37,30 @@ export function StimsControlDock({
     engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? '';
   const presetAuthor =
     engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? '';
+
+  const [similarPresets, setSimilarPresets] = useState<
+    Array<{ presetId: string; score: number }>
+  >([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+
+  const handleMoreLikeThis = async () => {
+    const canvas = ui.stageRef.current?.querySelector(
+      'canvas',
+    ) as HTMLCanvasElement | null;
+    if (!canvas) {
+      ui.setStatusMessage('No visual frame available yet.');
+      return;
+    }
+    setSimilarLoading(true);
+    try {
+      const results = await searchByFrame(canvas);
+      setSimilarPresets(results);
+    } catch {
+      ui.setStatusMessage('Visual search failed.');
+    } finally {
+      setSimilarLoading(false);
+    }
+  };
 
   const barRef = useDirectCSSProperty<HTMLSpanElement>(
     '--stims-energy',
@@ -168,7 +193,41 @@ export function StimsControlDock({
             <span className="stims-shell__stage-tool-label">Theme</span>
           </button>
         ) : null}
+        <button
+          type="button"
+          className="cta-button stims-shell__stage-tool-ghost"
+          aria-label="Find similar presets"
+          title="More like this"
+          disabled={!runtimeReady || similarLoading}
+          onClick={() => void handleMoreLikeThis()}
+        >
+          <UiIcon
+            name="sparkles"
+            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__stage-tool-label">
+            {similarLoading ? 'Searching\u2026' : 'More like \u00D7'}
+          </span>
+        </button>
       </div>
+      {similarPresets.length > 0 ? (
+        <div className="stims-shell__similar-presets">
+          <p className="stims-shell__meta-copy">Similar presets</p>
+          <ul className="stims-shell__similar-list">
+            {similarPresets.map((p) => (
+              <li key={p.presetId}>
+                <button
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={() => engine.handlePresetSelection(p.presetId)}
+                >
+                  {p.presetId} — {(p.score * 100).toFixed(0)}% match
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

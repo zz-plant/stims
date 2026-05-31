@@ -24,3 +24,12 @@ CREATE TABLE IF NOT EXISTS favorites (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(preset_id, session_id)
 );
+
+CREATE TABLE IF NOT EXISTS preset_embeddings (
+  preset_id TEXT PRIMARY KEY,
+  embedding TEXT NOT NULL,
+  description TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_embeddings_preset ON preset_embeddings(preset_id);

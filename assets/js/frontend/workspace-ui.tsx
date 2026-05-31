@@ -6,9 +6,11 @@ import {
   useRef,
   useState,
 } from 'react';
+import { searchByFrame } from '../core/services/visual-embedding.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
-import type { PresetCatalogEntry } from './contracts.ts';
 import { PRESET_PREVIEW_REQUEST_LIMIT } from '../milkdrop/preset-preview.ts';
+import type { PresetCatalogEntry } from './contracts.ts';
+import { EditorPanel } from './EditorPanel.tsx';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import {
   PresetShelfSection,
@@ -24,7 +26,6 @@ import {
 } from './StimsStageFrame.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useUI, useWorkspace } from './workspace-context.tsx';
-import { EditorPanel } from './EditorPanel.tsx';
 
 import {
   buildAppliedFilterSummary,
@@ -357,9 +358,52 @@ function BrowseSheetPanel({
   const starterPresets = engine.starterPresets;
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [communityPresets, setCommunityPresets] = useState<PresetCatalogEntry[]>([]);
+  const [communityPresets, setCommunityPresets] = useState<
+    PresetCatalogEntry[]
+  >([]);
   const [communityLoading, setCommunityLoading] = useState(false);
   const [communityError, setCommunityError] = useState<string | null>(null);
+  const [visualSearchResults, setVisualSearchResults] = useState<
+    Array<{ presetId: string; score: number }>
+  >([]);
+  const [visualSearchLoading, setVisualSearchLoading] = useState(false);
+  const [visualSearchActive, setVisualSearchActive] = useState(false);
+  const [imageImportResult, setImageImportResult] = useState<{
+    description: string;
+    presetId: string;
+  } | null>(null);
+  const [imageImportLoading, setImageImportLoading] = useState(false);
+
+  const handleImageImport = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setImageImportLoading(true);
+    setImageImportResult(null);
+    try {
+      const res = await fetch('/api/image-to-preset', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const data = (await res.json()) as {
+        description: string;
+        presetId: string;
+      };
+      setImageImportResult(data);
+      if (data.presetId) {
+        engine.handlePresetSelection(data.presetId);
+      }
+    } catch (err) {
+      ui.setStatusMessage(
+        `Image import failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
+    } finally {
+      setImageImportLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (routeState.collectionTag === 'collection:community') {
@@ -377,6 +421,31 @@ function BrowseSheetPanel({
         });
     }
   }, [routeState.collectionTag]);
+
+  const handleVisualSearch = async () => {
+    const canvas = ui.stageRef.current?.querySelector(
+      'canvas',
+    ) as HTMLCanvasElement | null;
+    if (!canvas) {
+      ui.setStatusMessage('No visual frame available yet.');
+      return;
+    }
+    setVisualSearchLoading(true);
+    setVisualSearchActive(true);
+    try {
+      const results = await searchByFrame(canvas);
+      setVisualSearchResults(results);
+    } catch {
+      ui.setStatusMessage('Visual search failed.');
+    } finally {
+      setVisualSearchLoading(false);
+    }
+  };
+
+  const handleDeselectVisualSearch = () => {
+    setVisualSearchActive(false);
+    setVisualSearchResults([]);
+  };
 
   const showStarterPresets =
     searchQuery.trim().length === 0 && routeState.collectionTag === null;
@@ -573,6 +642,19 @@ function BrowseSheetPanel({
           >
             Community
           </button>
+          <button
+            type="button"
+            className="stims-shell__collection-pill"
+            data-active={String(visualSearchActive)}
+            disabled={visualSearchLoading}
+            onClick={() =>
+              visualSearchActive
+                ? handleDeselectVisualSearch()
+                : void handleVisualSearch()
+            }
+          >
+            {visualSearchLoading ? 'Searching\u2026' : 'Visual search'}
+          </button>
         </nav>
         <div
           className="stims-shell__browse-toolbar-extras"
@@ -664,11 +746,21 @@ function BrowseSheetPanel({
         {catalogError ? (
           <p className="stims-shell__meta-copy">{catalogError}</p>
         ) : null}
-        {routeState.collectionTag === 'collection:community' ? (
+        {visualSearchActive ? (
+          <div className="stims-shell__section-heading">
+            <p className="stims-shell__section-label">Visual search</p>
+            <p className="stims-shell__meta-copy">
+              {visualSearchResults.length} result
+              {visualSearchResults.length === 1 ? '' : 's'}
+            </p>
+          </div>
+        ) : routeState.collectionTag === 'collection:community' ? (
           <div className="stims-shell__section-heading">
             <p className="stims-shell__section-label">Community</p>
             {communityLoading ? (
-              <p className="stims-shell__meta-copy">Loading community presets...</p>
+              <p className="stims-shell__meta-copy">
+                Loading community presets...
+              </p>
             ) : communityError ? (
               <p className="stims-shell__meta-copy">{communityError}</p>
             ) : (
@@ -689,72 +781,91 @@ function BrowseSheetPanel({
           </div>
         )}
         <ul className="stims-shell__preset-list">
-          {(routeState.collectionTag === 'collection:community'
-            ? communityPresets
-            : filteredCatalog
-          ).map((entry) => {
-            const supportLabel = getPresetCardSupportLabel(entry);
-
-            return (
-              <li key={entry.id}>
-                <div className="stims-shell__preset-card-wrap">
+          {visualSearchActive
+            ? visualSearchResults.map((r) => (
+                <li key={r.presetId}>
                   <button
                     type="button"
                     className="stims-shell__preset-card"
-                    data-active={String(entry.id === currentPresetId)}
-                    onClick={() => engine.handlePresetSelection(entry.id)}
+                    onClick={() => engine.handlePresetSelection(r.presetId)}
                   >
-                    <PresetArtwork
-                      entry={entry}
-                      compact
-                      preview={presetPreviews[entry.id] ?? null}
-                    />
                     <span className="stims-shell__preset-card-copy">
                       <span className="stims-shell__preset-title">
-                        {entry.title}
+                        {r.presetId}
                       </span>
                       <span className="stims-shell__preset-vibe">
-                        {describePresetMood(entry)}
-                      </span>
-                      <span className="stims-shell__preset-meta-row">
-                        <span className="stims-shell__preset-meta">
-                          {entry.author || 'Unknown author'}
-                        </span>
-                        {supportLabel ? (
-                          <span className="stims-shell__preset-tech">
-                            {supportLabel}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="stims-shell__meta-copy">
-                        {formatPresetSupportNote(entry)}
+                        {(r.score * 100).toFixed(0)}% similarity
                       </span>
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    className="stims-shell__preset-fav"
-                    aria-label={
-                      entry.isFavorite ? 'Remove from saved' : 'Save preset'
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void engine.toggleFavoritePreset(
-                        entry.id,
-                        !entry.isFavorite,
-                      );
-                    }}
-                  >
-                    <span
-                      className="stims-shell__preset-fav-icon"
-                      data-active={String(entry.isFavorite)}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
-              </li>
-            );
-          })}
+                </li>
+              ))
+            : (routeState.collectionTag === 'collection:community'
+                ? communityPresets
+                : filteredCatalog
+              ).map((entry) => {
+                const supportLabel = getPresetCardSupportLabel(entry);
+
+                return (
+                  <li key={entry.id}>
+                    <div className="stims-shell__preset-card-wrap">
+                      <button
+                        type="button"
+                        className="stims-shell__preset-card"
+                        data-active={String(entry.id === currentPresetId)}
+                        onClick={() => engine.handlePresetSelection(entry.id)}
+                      >
+                        <PresetArtwork
+                          entry={entry}
+                          compact
+                          preview={presetPreviews[entry.id] ?? null}
+                        />
+                        <span className="stims-shell__preset-card-copy">
+                          <span className="stims-shell__preset-title">
+                            {entry.title}
+                          </span>
+                          <span className="stims-shell__preset-vibe">
+                            {describePresetMood(entry)}
+                          </span>
+                          <span className="stims-shell__preset-meta-row">
+                            <span className="stims-shell__preset-meta">
+                              {entry.author || 'Unknown author'}
+                            </span>
+                            {supportLabel ? (
+                              <span className="stims-shell__preset-tech">
+                                {supportLabel}
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className="stims-shell__meta-copy">
+                            {formatPresetSupportNote(entry)}
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="stims-shell__preset-fav"
+                        aria-label={
+                          entry.isFavorite ? 'Remove from saved' : 'Save preset'
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void engine.toggleFavoritePreset(
+                            entry.id,
+                            !entry.isFavorite,
+                          );
+                        }}
+                      >
+                        <span
+                          className="stims-shell__preset-fav-icon"
+                          data-active={String(entry.isFavorite)}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
         </ul>
 
         <div className="stims-shell__session-actions">
@@ -774,6 +885,14 @@ function BrowseSheetPanel({
               onChange={(event) => onImport(event.target.files)}
             />
           </label>
+          <label className="cta-button stims-shell__file-button">
+            {imageImportLoading ? 'Importing\u2026' : 'Import from image'}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={(event) => void handleImageImport(event.target.files)}
+            />
+          </label>
           <button
             type="button"
             className="cta-button"
@@ -782,6 +901,17 @@ function BrowseSheetPanel({
             Copy link
           </button>
         </div>
+        {imageImportResult ? (
+          <div className="stims-shell__image-import-result">
+            <p className="stims-shell__section-label">Import result</p>
+            <p className="stims-shell__meta-copy">
+              {imageImportResult.description}
+            </p>
+            <p className="stims-shell__meta-copy">
+              Preset: {imageImportResult.presetId}
+            </p>
+          </div>
+        ) : null}
       </section>
     </div>
   );
