@@ -11,14 +11,14 @@ compatibility_date = "2026-02-24"
 [env.production.placement]
 mode = "smart"
 
-[[ai]]
+[env.production.ai]
 binding = "AI"
 
-[[d1_databases]]
+[[env.production.d1_databases]]
 binding = "DB"
 database_name = "stims-gallery"
 database_id = "89718825-6d36-4578-b97e-9eba1d60d75d"
 
-[[r2_buckets]]
+[[env.production.r2_buckets]]
 binding = "GALLERY_R2"
 bucket_name = "stims-gallery"
