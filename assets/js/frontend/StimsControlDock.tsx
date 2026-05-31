@@ -1,8 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { searchByFrame, extractFrameStats, describeFrame } from '../core/services/visual-embedding.ts';
+import {
+  searchByFrame,
+  extractFrameStats,
+  describeFrame,
+} from '../core/services/visual-embedding.ts';
 import { saveCheckpoint } from '../core/services/temporal-memory.ts';
 import { useEngine, useUI } from './workspace-context.tsx';
-import { UiIcon } from './workspace-ui.tsx';
+import { PresetArtwork, UiIcon } from './workspace-ui.tsx';
 
 function useDirectCSSProperty<T extends HTMLElement>(
   name: string,
@@ -74,7 +78,8 @@ export function StimsControlDock({
     const stats = extractFrameStats(canvas);
     const frameDesc = describeFrame(stats);
     const presetId = engine.engineSnapshot?.activePresetId ?? 'unknown';
-    const name = engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? 'preset';
+    const name =
+      engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? 'preset';
     saveCheckpoint(name, `Visual: ${frameDesc}`, presetId);
     ui.setStatusMessage(`Saved look: "${name}"`);
   };
@@ -225,34 +230,45 @@ export function StimsControlDock({
           <span className="stims-shell__stage-tool-label">
             {similarLoading ? 'Searching\u2026' : 'More like \u00D7'}
           </span>
-          </button>
-          <button
-            type="button"
-            className="cta-button stims-shell__stage-tool-ghost"
-            aria-label="Save current look"
-            title="Save this look"
-            disabled={!runtimeReady}
-            onClick={handleSaveThisLook}
-          >
-            <span className="stims-shell__stage-tool-label">Save</span>
-          </button>
-        </div>
+        </button>
+        <button
+          type="button"
+          className="cta-button stims-shell__stage-tool-ghost"
+          aria-label="Save current look"
+          title="Save this look"
+          disabled={!runtimeReady}
+          onClick={handleSaveThisLook}
+        >
+          <span className="stims-shell__stage-tool-label">Save</span>
+        </button>
+      </div>
       {similarPresets.length > 0 ? (
         <div className="stims-shell__similar-presets">
-          <p className="stims-shell__meta-copy">Similar presets</p>
-          <ul className="stims-shell__similar-list">
-            {similarPresets.map((p) => (
-              <li key={p.presetId}>
+          <h2 className="stims-shell__section-label">Similar presets</h2>
+          <div className="stims-shell__starter-grid">
+            {similarPresets.map((p) => {
+              const entry = engine.catalog.find((e) => e.id === p.presetId);
+              if (!entry) return null;
+              return (
                 <button
+                  key={p.presetId}
                   type="button"
-                  className="stims-shell__text-button"
+                  className="stims-shell__starter-card"
                   onClick={() => engine.handlePresetSelection(p.presetId)}
                 >
-                  {p.presetId} — {(p.score * 100).toFixed(0)}% match
+                  <PresetArtwork
+                    entry={entry}
+                    compact
+                    preview={engine.presetPreviews[p.presetId] ?? null}
+                  />
+                  <strong>{entry.title}</strong>
+                  <span className="stims-shell__meta-copy">
+                    {(p.score * 100).toFixed(0)}% match
+                  </span>
                 </button>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </div>
       ) : null}
     </div>
