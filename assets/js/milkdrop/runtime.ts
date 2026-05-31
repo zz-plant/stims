@@ -585,7 +585,14 @@ export function createMilkdropExperience({
       onExport: presetFileActions.exportPreset,
       onDuplicatePreset: presetFileActions.duplicatePreset,
       onDeletePreset: presetFileActions.deleteActivePreset,
-      onEditorSourceChange: (source) => session.applySource(source),
+      onEditorSourceChange: async (source) => {
+        const state = await session.applySource(source);
+        window.dispatchEvent(
+          new CustomEvent('stims:editor:diagnostics', {
+            detail: { diagnostics: state.diagnostics, source: state.source },
+          }),
+        );
+      },
       onRevertToActive: () => session.resetToActive(),
       onInspectorFieldChange: (key, value) => session.updateField(key, value),
     },

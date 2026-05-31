@@ -482,11 +482,62 @@ export class EditorPanel {
     this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
     editorConsole.append(editorConsoleLabel, this.diagnosticsList);
 
+    // ── AI refinement bar ──────────────────────────────
+    const refineSection = document.createElement('section');
+    refineSection.className = 'milkdrop-overlay__editor-section';
+    const refineLabel = document.createElement('span');
+    refineLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
+    refineLabel.textContent = 'Refine with AI';
+    const refineForm = document.createElement('div');
+    refineForm.className = 'milkdrop-overlay__refine-form';
+    const refineInput = document.createElement('input');
+    refineInput.type = 'text';
+    refineInput.placeholder = '"make it more blue" or "add a slow rotation"';
+    refineInput.className = 'milkdrop-overlay__refine-input';
+    const refineBtn = document.createElement('button');
+    refineBtn.type = 'button';
+    refineBtn.textContent = 'Refine';
+    refineBtn.className = 'milkdrop-overlay__refine-btn';
+    let refining = false;
+    refineBtn.addEventListener('click', async () => {
+      const instruction = refineInput.value.trim();
+      if (!instruction || refining) return;
+      refining = true;
+      refineBtn.textContent = '...';
+      refineBtn.disabled = true;
+      try {
+        const currentSource = this.editor.state.doc.toString();
+        const res = await fetch('/api/refine-preset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentSource, instruction }),
+        });
+        if (!res.ok) throw new Error(`Refine API: ${res.status}`);
+        const { milkSource } = await res.json();
+        if (milkSource) {
+          callbacks.onEditorSourceChange(milkSource);
+          refineInput.value = '';
+        }
+      } catch (err) {
+        console.error('Refinement failed:', err);
+      } finally {
+        refining = false;
+        refineBtn.textContent = 'Refine';
+        refineBtn.disabled = false;
+      }
+    });
+    refineInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') refineBtn.click();
+    });
+    refineForm.append(refineInput, refineBtn);
+    refineSection.append(refineLabel, refineForm);
+
     editorRail.append(
       editorCueSection,
       editorQuickIdeas,
       editorTips,
       editorConsole,
+      refineSection,
     );
     editorWorkbench.append(editorMain, editorRail);
     this.element.append(editorTransport, editorActions, editorWorkbench);
@@ -506,6 +557,13 @@ export class EditorPanel {
     this.clearEditorDebounce = editorViewState.clearDebounce;
     this.flushEditorDocChange = editorViewState.flushDocChange;
     this.setEditorDiagnostics = editorViewState.setDiagnostics;
+
+    window.addEventListener(
+      'stims:editor:diagnostics',
+      ((e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>) => {
+        this.setEditorDiagnostics(e.detail.diagnostics);
+      }) as EventListener,
+    );
   }
 
   setVisible(visible: boolean) {
