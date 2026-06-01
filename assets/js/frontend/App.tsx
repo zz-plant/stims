@@ -339,11 +339,13 @@ function StimsWorkspaceAppShell() {
       setAudioMatch(null);
       return;
     }
+    const controller = new AbortController();
     const snap = engine.engineSnapshot;
     const profile = buildAudioProfile({ audioEnergy: snap.audioEnergy });
     if (profile.rms < 0.02) return;
 
-    void searchByAudioProfile(profile).then((results) => {
+    void searchByAudioProfile(profile, controller.signal).then((results) => {
+      if (controller.signal.aborted) return;
       if (results.length === 0) return;
       const top = results[0];
       if (top.score < 0.75) return;
@@ -354,6 +356,8 @@ function StimsWorkspaceAppShell() {
         score: top.score,
       });
     });
+
+    return () => controller.abort();
   }, [engine.engineSnapshot?.audioActive, engine.engineSnapshot?.audioSource]);
 
   const filteredCatalogRef = useRef(engine.filteredCatalog);

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
 import { shareOrCopyLink } from '../utils/share-link.ts';
@@ -58,6 +58,9 @@ export function useWorkspaceShellOrchestration({
   startAudioSource,
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
+  const audioStartInProgressRef = useRef(false);
+  const playPresetInProgressRef = useRef(false);
+
   const enrichedCatalog = useMemo(() => {
     const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
       mapRuntimeCatalogEntry,
@@ -330,6 +333,8 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handlePlayPreset = async (presetId: string) => {
+    if (playPresetInProgressRef.current) return;
+    playPresetInProgressRef.current = true;
     try {
       setStatusMessage(null);
       const nextRouteState = {
@@ -344,12 +349,16 @@ export function useWorkspaceShellOrchestration({
       setStatusMessage(
         error instanceof Error ? error.message : 'Audio start failed.',
       );
+    } finally {
+      playPresetInProgressRef.current = false;
     }
   };
 
   const handleAudioStart = async (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
   ) => {
+    if (audioStartInProgressRef.current) return;
+    audioStartInProgressRef.current = true;
     try {
       setStatusMessage(null);
       const healedPresetId = shellState.missingRequestedPreset
@@ -416,6 +425,8 @@ export function useWorkspaceShellOrchestration({
       setStatusMessage(
         error instanceof Error ? error.message : 'Audio start failed.',
       );
+    } finally {
+      audioStartInProgressRef.current = false;
     }
   };
 

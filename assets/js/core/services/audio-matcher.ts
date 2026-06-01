@@ -54,12 +54,14 @@ export function describeAudioProfile(profile: AudioProfile): string {
 
 export async function searchByAudioProfile(
   profile: AudioProfile,
+  signal?: AbortSignal,
 ): Promise<Array<{ presetId: string; score: number }>> {
   const description = describeAudioProfile(profile);
   const res = await fetch('/api/visual-search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ description }),
+    signal,
   });
   if (!res.ok) return [];
   const data = (await res.json()) as {

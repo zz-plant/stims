@@ -104,6 +104,8 @@ export function useWorkspaceSessionState({
     null,
   );
   const engineUnsubscribeRef = useRef<(() => void) | null>(null);
+  const ensureEngineMountPromiseRef =
+    useRef<Promise<MilkdropEngineAdapter> | null>(null);
   const pendingPresetIdRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
   const readinessItems = useWorkspaceReadiness();
@@ -179,13 +181,27 @@ export function useWorkspaceSessionState({
         throw new Error('Visualizer stage is not ready yet.');
       }
 
-      const adapter = await ensureEngineAdapter();
-      if (adapter.isMounted()) {
-        return adapter;
+      if (ensureEngineMountPromiseRef.current) {
+        return ensureEngineMountPromiseRef.current;
       }
 
-      await adapter.mount(stage, launchIntent);
-      return adapter;
+      const mountPromise = (async () => {
+        const adapter = await ensureEngineAdapter();
+        if (adapter.isMounted()) {
+          return adapter;
+        }
+
+        await adapter.mount(stage, launchIntent);
+        return adapter;
+      })();
+
+      ensureEngineMountPromiseRef.current = mountPromise;
+
+      try {
+        return await mountPromise;
+      } finally {
+        ensureEngineMountPromiseRef.current = null;
+      }
     },
   );
 
@@ -201,6 +217,7 @@ export function useWorkspaceSessionState({
       engineRef.current?.dispose();
       engineRef.current = null;
       engineAdapterPromiseRef.current = null;
+      ensureEngineMountPromiseRef.current = null;
     };
   }, []);
 

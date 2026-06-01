@@ -56,9 +56,14 @@ export function StimsControlDock({
   >([]);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [showMoods, setShowMoods] = useState(false);
+  const moodAbortRef = useRef<AbortController | null>(null);
+  const moreLikeThisAbortRef = useRef<AbortController | null>(null);
 
   const handleMoodGenerate = useCallback(
     (mood: { label: string; desc: string }) => {
+      moodAbortRef.current?.abort();
+      const controller = new AbortController();
+      moodAbortRef.current = controller;
       fetch('/api/generate-preset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,9 +71,11 @@ export function StimsControlDock({
           description: `${mood.desc} ${mood.label.toLowerCase()} visualizer preset`,
           complexity: 'moderate',
         }),
+        signal: controller.signal,
       })
         .then((r) => r.json())
         .then((data) => {
+          if (controller.signal.aborted) return;
           if (data.milkSource) {
             document.dispatchEvent(
               new CustomEvent('stims:editor:source-change', {
@@ -80,6 +87,9 @@ export function StimsControlDock({
             );
             ui.updatePanel('editor');
           }
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError') return;
         });
     },
     [ui],
@@ -93,14 +103,19 @@ export function StimsControlDock({
       ui.setStatusMessage('No visual frame available yet.');
       return;
     }
+    moreLikeThisAbortRef.current?.abort();
+    const controller = new AbortController();
+    moreLikeThisAbortRef.current = controller;
     setSimilarLoading(true);
     try {
-      const results = await searchByFrame(canvas);
+      const results = await searchByFrame(canvas, controller.signal);
+      if (controller.signal.aborted) return;
       setSimilarPresets(results);
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       ui.setStatusMessage('Visual search failed.');
     } finally {
-      setSimilarLoading(false);
+      if (!controller.signal.aborted) setSimilarLoading(false);
     }
   };
 

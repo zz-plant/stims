@@ -33,6 +33,8 @@ export function MobileControlBar({
   const [visible, setVisible] = useState(true);
   const [showMoods, setShowMoods] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moodAbortRef = useRef<AbortController | null>(null);
+  const similarAbortRef = useRef<AbortController | null>(null);
   const energyPercent = `${Math.min(100, Math.max(0, audioEnergy * 100)).toFixed(0)}%`;
 
   const resetHideTimer = useCallback(() => {
@@ -84,12 +86,18 @@ export function MobileControlBar({
       '#stims-main canvas',
     ) as HTMLCanvasElement | null;
     if (!canvas) return;
+    similarAbortRef.current?.abort();
+    const controller = new AbortController();
+    similarAbortRef.current = controller;
     try {
-      const results = await searchByFrame(canvas);
+      const results = await searchByFrame(canvas, controller.signal);
+      if (controller.signal.aborted) return;
       if (results.length > 0) {
         engine.handlePresetSelection(results[0].presetId);
       }
-    } catch {}
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+    }
   }, [engine, resetHideTimer]);
 
   const handleEditor = useCallback(() => {
@@ -110,6 +118,9 @@ export function MobileControlBar({
   const handleMoodGenerate = useCallback(
     (mood: { label: string; desc: string }) => {
       resetHideTimer();
+      moodAbortRef.current?.abort();
+      const controller = new AbortController();
+      moodAbortRef.current = controller;
       fetch('/api/generate-preset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -117,9 +128,11 @@ export function MobileControlBar({
           description: `${mood.desc} ${mood.label.toLowerCase()} visualizer preset`,
           complexity: 'moderate',
         }),
+        signal: controller.signal,
       })
         .then((r) => r.json())
         .then((data) => {
+          if (controller.signal.aborted) return;
           if (data.milkSource) {
             document.dispatchEvent(
               new CustomEvent('stims:editor:source-change', {
@@ -131,6 +144,9 @@ export function MobileControlBar({
             );
             ui.updatePanel('editor');
           }
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError') return;
         });
     },
     [resetHideTimer, ui],

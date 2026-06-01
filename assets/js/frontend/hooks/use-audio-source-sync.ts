@@ -25,6 +25,10 @@ export function useAudioSourceSync({
       return;
     }
 
+    if (engineSnapshot?.audioSource === routeState.audioSource) {
+      return;
+    }
+
     void engineRef.current.setAudioSource({ source: 'demo' }).catch((error) => {
       setStatusMessage(
         error instanceof Error ? error.message : 'Unable to start demo audio.',
@@ -33,6 +37,7 @@ export function useAudioSourceSync({
   }, [
     engineRef,
     engineSnapshot?.audioActive,
+    engineSnapshot?.audioSource,
     routeState.audioSource,
     setStatusMessage,
   ]);

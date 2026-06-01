@@ -142,6 +142,7 @@ export function describeFrame(stats: FrameStats): string {
 
 export async function searchByFrame(
   canvas: HTMLCanvasElement,
+  signal?: AbortSignal,
 ): Promise<Array<{ presetId: string; score: number }>> {
   const stats = extractFrameStats(canvas);
   const description = describeFrame(stats);
@@ -150,6 +151,7 @@ export async function searchByFrame(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ description }),
+    signal,
   });
 
   if (!response.ok) {
