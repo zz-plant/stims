@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/MobileControlBar.module.css';
+import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { useWorkspace } from './workspace-context';
 import { UiIcon } from './workspace-ui';
 
@@ -70,6 +71,20 @@ export function MobileControlBar({
     void engine.handleShufflePreset();
   }, [engine, resetHideTimer]);
 
+  const handleSimilar = useCallback(async () => {
+    resetHideTimer();
+    const canvas = document.querySelector(
+      '#stims-main canvas',
+    ) as HTMLCanvasElement | null;
+    if (!canvas) return;
+    try {
+      const results = await searchByFrame(canvas);
+      if (results.length > 0) {
+        engine.handlePresetSelection(results[0].presetId);
+      }
+    } catch {}
+  }, [engine, resetHideTimer]);
+
   const handleEditor = useCallback(() => {
     resetHideTimer();
     ui.updatePanel(panel === 'editor' ? null : 'editor');
@@ -112,10 +127,11 @@ export function MobileControlBar({
                 },
               }),
             );
+            ui.updatePanel('editor');
           }
         });
     },
-    [resetHideTimer],
+    [resetHideTimer, ui],
   );
 
   const moods = [
@@ -189,6 +205,18 @@ export function MobileControlBar({
             className="stims-icon-slot stims-icon-slot--sm"
           />
           <span className={styles.actionLabel}>Surprise</span>
+        </button>
+        <button
+          type="button"
+          className={styles.action}
+          onClick={handleSimilar}
+          aria-label="Find similar presets"
+        >
+          <UiIcon
+            name="menu"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className={styles.actionLabel}>Similar</span>
         </button>
         <button
           type="button"

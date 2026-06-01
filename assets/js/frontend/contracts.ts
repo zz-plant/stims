@@ -52,7 +52,6 @@ export type PresetCatalogEntry = {
     webgl?: boolean;
     webgpu?: boolean;
   };
-  lineage?: Array<{ id: string; title: string; role: string }>;
 };
 
 export type PresetCatalogManifest = {

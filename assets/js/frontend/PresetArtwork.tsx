@@ -67,29 +67,7 @@ export function PresetArtwork({
           loading="lazy"
         />
       ) : null}
-      {entry.lineage && entry.lineage.length > 0 && (
-        <div
-          className="preset-artwork-lineage"
-          title={`Blend of ${entry.lineage.map((l) => l.title).join(' + ')}`}
-        >
-          <svg
-            className="preset-artwork-lineage__icon"
-            viewBox="0 0 16 16"
-            width="12"
-            height="12"
-            aria-hidden="true"
-          >
-            <title>Lineage</title>
-            <path
-              d="M8 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM4.5 8L7 5.5l1 1L4.5 8z"
-              fill="currentColor"
-            />
-          </svg>
-          <span className="preset-artwork-lineage__label">
-            {entry.lineage.map((l) => l.title).join(' + ')}
-          </span>
-        </div>
-      )}
+
       <span className="stims-shell__preset-art-grid" />
       <span className="stims-shell__preset-art-orbit" />
       <span className="stims-shell__preset-art-core" />

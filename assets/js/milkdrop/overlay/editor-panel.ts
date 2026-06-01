@@ -699,8 +699,12 @@ export class EditorPanel {
           const explanationMsg = document.createElement('div');
           explanationMsg.className = 'milkdrop-overlay__refine-explanation';
           explanationMsg.textContent = json.explanation;
+          const closeBtn = document.createElement('button');
+          closeBtn.textContent = '\u2715';
+          closeBtn.className = 'editor-explanation-close';
+          closeBtn.addEventListener('click', () => explanationMsg.remove());
+          explanationMsg.appendChild(closeBtn);
           refineForm.appendChild(explanationMsg);
-          setTimeout(() => explanationMsg.remove(), 8000);
         }
 
         if (json.milkSource) {
@@ -773,8 +777,12 @@ export class EditorPanel {
           const explanationMsg = document.createElement('div');
           explanationMsg.className = 'milkdrop-overlay__refine-explanation';
           explanationMsg.textContent = json.explanation;
+          const closeBtn = document.createElement('button');
+          closeBtn.textContent = '\u2715';
+          closeBtn.className = 'editor-explanation-close';
+          closeBtn.addEventListener('click', () => explanationMsg.remove());
+          explanationMsg.appendChild(closeBtn);
           refineForm.appendChild(explanationMsg);
-          setTimeout(() => explanationMsg.remove(), 8000);
         }
         explaining = false;
         explainBtn.textContent = 'Explain';
@@ -802,7 +810,7 @@ export class EditorPanel {
       refineSection,
     );
     editorWorkbench.append(editorMain, editorRail);
-    this.element.append(editorTransport, editorActions, editorWorkbench);
+    this.element.append(editorTransport, editorActions, this.renderBlendInput(), editorWorkbench);
 
     const editorViewState = createEditorView({
       parent: editorHost,
@@ -1149,17 +1157,11 @@ export class EditorPanel {
 
   private handleBatchGenerate() {
     const source = this.editor.state.doc.toString();
-    const count = window.prompt('How many variations? (1-5)', '3');
-    if (!count) return;
-
     this.setRefinePending(true);
     fetch('https://toil.fyi/api/batch-generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        description: source.slice(0, 500),
-        count: parseInt(count, 10),
-      }),
+      body: JSON.stringify({ description: source.slice(0, 500), count: 3 }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -1167,13 +1169,14 @@ export class EditorPanel {
           const currentSource = this.editor.state.doc.toString();
           this.snapshots.push({ source: currentSource, timestamp: Date.now() });
           this.editor.dispatch({
-            changes: {
-              from: 0,
-              to: currentSource.length,
-              insert: data.presets[0],
-            },
+            changes: { from: 0, to: currentSource.length, insert: data.presets[0] },
           });
           this.callbacks.onEditorSourceChange(data.presets[0]);
+          document.dispatchEvent(
+            new CustomEvent('stims:batch-results', {
+              detail: { presets: data.presets.slice(1) },
+            }),
+          );
         }
         this.setRefinePending(false);
       })
@@ -1181,12 +1184,14 @@ export class EditorPanel {
   }
 
   private handleBlend() {
-    const source = this.editor.state.doc.toString();
-    const sourceB = window.prompt(
-      'Paste the second preset source (or preset ID):',
-    );
-    if (!sourceB) return;
+    const container = this.element.querySelector('.editor-blend-input') as HTMLElement | null;
+    if (container) {
+      container.style.display = container.style.display === 'none' ? '' : 'none';
+    }
+  }
 
+  private doBlend(sourceB: string) {
+    const source = this.editor.state.doc.toString();
     this.setRefinePending(true);
     fetch('https://toil.fyi/api/blend-presets', {
       method: 'POST',
@@ -1210,6 +1215,46 @@ export class EditorPanel {
         this.setRefinePending(false);
       })
       .catch(() => this.setRefinePending(false));
+  }
+
+  private renderBlendInput(): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'editor-blend-input';
+    container.style.display = 'none';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'editor-blend-textarea';
+    textarea.placeholder = 'Paste second preset source or preset ID';
+    textarea.rows = 4;
+
+    const btnRow = document.createElement('div');
+    btnRow.style.display = 'flex';
+    btnRow.style.gap = '6px';
+
+    const submitBtn = document.createElement('button');
+    submitBtn.className = 'editor-blend-submit';
+    submitBtn.textContent = 'Blend';
+    submitBtn.addEventListener('click', () => {
+      const sourceB = textarea.value.trim();
+      if (!sourceB) return;
+      this.doBlend(sourceB);
+      container.style.display = 'none';
+      textarea.value = '';
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'editor-blend-cancel';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => {
+      container.style.display = 'none';
+      textarea.value = '';
+    });
+
+    btnRow.appendChild(submitBtn);
+    btnRow.appendChild(cancelBtn);
+    container.appendChild(textarea);
+    container.appendChild(btnRow);
+    return container;
   }
 
   private setRefinePending(_pending: boolean) {

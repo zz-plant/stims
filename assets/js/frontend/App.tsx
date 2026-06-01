@@ -344,7 +344,7 @@ function StimsWorkspaceAppShell() {
     void searchByAudioProfile(profile).then((results) => {
       if (results.length === 0) return;
       const top = results[0];
-      if (top.score < 0.6) return;
+      if (top.score < 0.75) return;
       const preset = engine.catalog.find((e) => e.id === top.presetId);
       setAudioMatch({
         presetId: top.presetId,
@@ -566,6 +566,17 @@ function StimsWorkspaceAppShell() {
             onClick={() => engine.handlePresetSelection(audioMatch.presetId)}
           >
             {audioMatch.name} — {(audioMatch.score * 100).toFixed(0)}% match
+          </button>
+          <button
+            type="button"
+            className="stims-shell__audio-match-close"
+            onClick={(e) => {
+              e.stopPropagation();
+              setAudioMatch(null);
+            }}
+            aria-label="Dismiss"
+          >
+            ×
           </button>
         </div>
       ) : null}

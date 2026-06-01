@@ -2,15 +2,6 @@
 
 All endpoints are served from `https://toil.fyi/api/` as Cloudflare Pages Functions.
 
-## POST /api/model-router
-
-Classify a request and select the optimal AI model for the task.
-
-**Body:** `{ description: string, task: 'generate' | 'refine' | 'explain' | 'vision' }`
-**Response:** `{ model: string, tier: string, classification: { complexity: string, needsReasoning: boolean } }`
-
-Uses classifier model (`@cf/ibm-granite/granite-4.0-h-micro`) to assess complexity and reasoning need, then routes to the best model for the job.
-
 ## POST /api/visual-search
 
 Search for presets visually similar to a text description.
