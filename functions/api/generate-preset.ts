@@ -82,10 +82,7 @@ async function classify(
   return classification;
 }
 
-function selectModel(
-  task: string,
-  c: Classification,
-): string {
+function selectModel(_task: string, c: Classification): string {
   if (!c.needsReasoning && c.complexity === 'moderate') {
     return '@cf/qwen/qwen3-30b-a3b-fp8';
   }
@@ -143,7 +140,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
             if (score > 0.88) {
               return new Response(
                 JSON.stringify({
-                  milkSource: '/* cached from: ' + row.preset_id + ' */',
+                  milkSource: `/* cached from: ${row.preset_id} */`,
                   cached: true,
                 }),
                 {
@@ -185,9 +182,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
       const response = result.response || '';
       const startIdx = response.indexOf('[preset00]');
       if (startIdx >= 0) {
-        milkSource = '[preset00]\n' + response.slice(startIdx + 9).trim();
+        milkSource = `[preset00]\n${response.slice(startIdx + 9).trim()}`;
       } else {
-        milkSource = '[preset00]\n' + response.trim();
+        milkSource = `[preset00]\n${response.trim()}`;
       }
     } else {
       milkSource =
@@ -197,12 +194,19 @@ export async function onRequest(context: { request: Request; env: Env }) {
     let title = 'AI Generated';
     if (env.AI) {
       try {
-        const nameResult = await env.AI.run('@cf/ibm-granite/granite-4.0-h-micro', {
-          messages: [
-            { role: 'system', content: 'Generate a short, evocative title (3-6 words) for this MilkDrop visualizer preset. Be creative. Output only the title.' },
-            { role: 'user', content: milkSource.slice(0, 500) },
-          ],
-        });
+        const nameResult = await env.AI.run(
+          '@cf/ibm-granite/granite-4.0-h-micro',
+          {
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Generate a short, evocative title (3-6 words) for this MilkDrop visualizer preset. Be creative. Output only the title.',
+              },
+              { role: 'user', content: milkSource.slice(0, 500) },
+            ],
+          },
+        );
         title = (nameResult.response || '').trim().replace(/["']/g, '');
         if (title.length > 60) title = title.slice(0, 60);
       } catch {

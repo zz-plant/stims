@@ -30,10 +30,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-export async function onRequest(context: {
-  request: Request;
-  env: Env;
-}) {
+export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
   if (request.method === 'OPTIONS') {

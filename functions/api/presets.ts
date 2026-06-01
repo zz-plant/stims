@@ -133,7 +133,7 @@ export async function onRequest(context: {
         return json({ error: 'title and milkSource are required' }, 400);
       }
 
-      const id = slugify(body.title) + '-' + Date.now().toString(36);
+      const id = `${slugify(body.title)}-${Date.now().toString(36)}`;
 
       // Store in R2
       await env.GALLERY_R2.put(`presets/${id}.milk`, body.milkSource, {

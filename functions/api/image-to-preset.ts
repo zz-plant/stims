@@ -39,10 +39,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-export async function onRequest(context: {
-  request: Request;
-  env: Env;
-}) {
+export async function onRequest(context: { request: Request; env: Env }) {
   const { request, env } = context;
 
   if (request.method === 'OPTIONS') {
@@ -69,9 +66,7 @@ export async function onRequest(context: {
       const file = formData.get('image');
       if (file instanceof File) {
         const buffer = await file.arrayBuffer();
-        imageBase64 = btoa(
-          String.fromCharCode(...new Uint8Array(buffer)),
-        );
+        imageBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
       }
     } else {
       const body = (await request.json()) as { image: string };
@@ -79,10 +74,10 @@ export async function onRequest(context: {
     }
 
     if (!imageBase64) {
-      return new Response(
-        JSON.stringify({ error: 'No image provided' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } },
-      );
+      return new Response(JSON.stringify({ error: 'No image provided' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     let description = '';
@@ -121,7 +116,7 @@ export async function onRequest(context: {
               return new Response(
                 JSON.stringify({
                   description,
-                  milkSource: '/* cached from: ' + row.preset_id + ' */',
+                  milkSource: `/* cached from: ${row.preset_id} */`,
                   cached: true,
                 }),
                 {
@@ -155,28 +150,26 @@ export async function onRequest(context: {
       const response = genResult.response || '';
       const startIdx = response.indexOf('[preset00]');
       if (startIdx >= 0) {
-        milkSource = '[preset00]\n' + response.slice(startIdx + 9).trim();
+        milkSource = `[preset00]\n${response.slice(startIdx + 9).trim()}`;
       } else {
-        milkSource = '[preset00]\n' + response.trim();
+        milkSource = `[preset00]\n${response.trim()}`;
       }
     } else {
       milkSource =
         '[preset00]\nfRating=4.0\nfDecay=0.96\nnWaveMode=1\nfZoom=1.0\nfWarp=1.0\nfRot=0.0\n';
     }
 
-    return new Response(
-      JSON.stringify({ description, milkSource }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
+    return new Response(JSON.stringify({ description, milkSource }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
       },
-    );
+    });
   } catch (error) {
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Image-to-preset failed',
+        error:
+          error instanceof Error ? error.message : 'Image-to-preset failed',
       }),
       {
         status: 500,

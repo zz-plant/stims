@@ -8,6 +8,7 @@ import {
 } from 'bun:test';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import { createMilkdropEditorSession } from '../assets/js/milkdrop/editor-session.ts';
+import type { MilkdropPresetSource } from '../assets/js/milkdrop/types.ts';
 
 describe('milkdrop editor session', () => {
   let OriginalWorker: typeof Worker;
@@ -20,28 +21,31 @@ describe('milkdrop editor session', () => {
       workerCreations += 1;
     }
 
-    addEventListener(type: string, listener: any) {
+    addEventListener(type: string, listener: (...args: unknown[]) => void) {
       if (type === 'message') {
-        this.messageListener = listener;
+        this.messageListener = listener as (event: MessageEvent) => void;
       }
     }
 
     removeEventListener() {}
 
-    postMessage(message: any) {
-      if (
-        message &&
-        message.type === 'APPLY' &&
-        message.path?.[0] === 'compile'
-      ) {
-        const source = message.argumentList[0].value;
-        const preset = message.argumentList[1].value;
+    postMessage(message: unknown) {
+      const msg = message as {
+        type?: string;
+        path?: string[];
+        argumentList: { value: unknown }[];
+        id?: string;
+      } | null;
+      if (msg && msg.type === 'APPLY' && msg.path?.[0] === 'compile') {
+        const source = msg.argumentList[0].value as string;
+        const preset = msg.argumentList[1]
+          .value as Partial<MilkdropPresetSource>;
         try {
           const compiled = compileMilkdropPresetSource(source, preset);
           setTimeout(() => {
             this.messageListener?.({
               data: {
-                id: message.id,
+                id: msg.id,
                 type: 'RAW',
                 value: compiled,
               },
@@ -51,7 +55,7 @@ describe('milkdrop editor session', () => {
           setTimeout(() => {
             this.messageListener?.({
               data: {
-                id: message.id,
+                id: msg.id,
                 type: 'RAW',
                 value: compileMilkdropPresetSource(source, preset),
               },
@@ -173,7 +177,7 @@ describe('milkdrop editor session', () => {
   });
 
   test('ignores stale worker commits after a newer preset load', async () => {
-    const postedMessages: Array<any> = [];
+    const postedMessages: Array<unknown> = [];
     let messageListeners: Array<(event: MessageEvent<unknown>) => void> = [];
 
     globalThis.Worker = class {
@@ -196,7 +200,7 @@ describe('milkdrop editor session', () => {
         );
       }
 
-      postMessage(payload: any) {
+      postMessage(payload: unknown) {
         postedMessages.push(payload);
       }
 
@@ -230,14 +234,19 @@ describe('milkdrop editor session', () => {
       throw new Error('Expected a pending worker payload.');
     }
 
+    const wp = workerPayload as {
+      argumentList: { value: unknown }[];
+      id?: string;
+    };
+
     const compiled = compileMilkdropPresetSource(
-      workerPayload.argumentList[0].value,
-      workerPayload.argumentList[1].value,
+      wp.argumentList[0].value as string,
+      wp.argumentList[1].value as Partial<MilkdropPresetSource>,
     );
     [...messageListeners].forEach((listener) =>
       listener({
         data: {
-          id: workerPayload.id,
+          id: wp.id,
           type: 'RAW',
           value: compiled,
         },

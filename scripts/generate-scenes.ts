@@ -223,8 +223,9 @@ function main() {
       } else {
         ok++;
       }
-    } catch (e: any) {
-      console.error(`  ❌ ${scene}: ${e.stderr || e.message}`);
+    } catch (e: unknown) {
+      const caught = e as { stderr?: string; message?: string };
+      console.error(`  ❌ ${scene}: ${caught.stderr || caught.message}`);
       err++;
     } finally {
       try {

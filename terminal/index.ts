@@ -285,6 +285,7 @@ if (isStreaming) {
       stop();
       return;
     }
+    // biome-ignore lint/suspicious/noExplicitAny: frame shape varies by data source
     const frame = rawFrame as any;
     applyVibe(frame);
     if (normalizer) {
