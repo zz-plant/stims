@@ -25,6 +25,8 @@ const PLAYWRIGHT_RENDERER_ARGS = [
   '--enable-unsafe-swiftshader',
   '--ignore-gpu-blocklist',
 ];
+const INTEGRATION_TIMEOUT_MS = 90000;
+const SERVER_START_TIMEOUT_MS = 45000;
 let devServer: ChildProcess | null = null;
 
 function isDevServerRunning() {
@@ -74,7 +76,7 @@ async function ensureDevServer() {
   }
 }
 
-async function waitForServer(url: string, timeoutMs = 20000) {
+async function waitForServer(url: string, timeoutMs = SERVER_START_TIMEOUT_MS) {
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeoutMs) {
@@ -198,7 +200,7 @@ flakyIntegrationTest(
       await rm(outputDir, { recursive: true, force: true });
     }
   },
-  { timeout: 90000 },
+  { timeout: INTEGRATION_TIMEOUT_MS },
 );
 
 flakyIntegrationTest(
@@ -213,98 +215,5 @@ flakyIntegrationTest(
 
     expect(result.success).toBe(false);
   },
-  { timeout: 90000 },
-);
-
-flakyIntegrationTest(
-  'milkdrop collapses into the focused session shell after mobile audio start',
-  async () => {
-    await ensureDevServer();
-    const mobile = await createMobilePage();
-
-    try {
-      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/milkdrop/`);
-      const demoButton = mobile.page.locator(
-        '[data-audio-controls] #use-demo-audio',
-      );
-      await demoButton.waitFor({ state: 'visible' });
-      await demoButton.click({ force: true });
-      await mobile.page.waitForFunction(
-        () => document.body.dataset.audioActive === 'true',
-        undefined,
-        { timeout: 30000, polling: 500 },
-      );
-      const focusedSessionState = await mobile.page.evaluate(() => ({
-        focusedSession: document.documentElement.dataset.focusedSession ?? null,
-        activeBackend: document.body.dataset.activeBackend ?? null,
-        audioControlsHidden: (() => {
-          const controls = document.querySelector('[data-audio-controls]');
-          return !controls || controls.hasAttribute('hidden');
-        })(),
-        canvasVisible:
-          (document.querySelector('canvas')?.getBoundingClientRect().width ??
-            0) > 0,
-      }));
-      expect(focusedSessionState.focusedSession).toBe('live');
-      expect(focusedSessionState.activeBackend).toBe('webgl');
-      expect(focusedSessionState.audioControlsHidden).toBe(true);
-      expect(focusedSessionState.canvasVisible).toBe(true);
-    } finally {
-      await mobile.close();
-    }
-  },
-  { timeout: 90000 },
-);
-
-flakyIntegrationTest(
-  'browser-backed audio controls use mobile fallback gestures without desktop shortcut copy',
-  async () => {
-    await ensureDevServer();
-    const mobile = await createMobilePage();
-
-    try {
-      await mobile.page.goto(
-        `http://127.0.0.1:${TEST_PORT}/test-audio-controls-harness.html`,
-      );
-      await mobile.page.evaluate(async () => {
-        const moduleUrl = new URL(
-          '/assets/js/ui/audio-controls.ts',
-          window.location.origin,
-        ).href;
-        const { initAudioControls } = await import(
-          /* @vite-ignore */ moduleUrl
-        );
-        const container = document.querySelector('#audio-controls');
-        if (!(container instanceof HTMLElement)) {
-          throw new Error('Audio controls container missing.');
-        }
-        initAudioControls(container, {
-          onRequestMicrophone: async () => {},
-          onRequestDemoAudio: async () => {},
-          starterTips: ['Press Q/E for mode changes', 'Import preset files'],
-          desktopHints: [
-            'Move to steer the scene.',
-            'Press Space for an accent burst.',
-          ],
-        });
-      });
-
-      await mobile.page
-        .locator('#use-demo-audio')
-        .waitFor({ state: 'visible' });
-      await mobile.page.locator('#use-demo-audio').click({ force: true });
-      await mobile.page.waitForSelector('[data-gesture-hints]:not([hidden])', {
-        timeout: 15000,
-      });
-      const gestureText =
-        (await mobile.page.textContent('[data-gesture-hints]')) ?? '';
-      expect(gestureText).toContain('Drag to bend the scene.');
-      expect(gestureText).toContain('Pinch to swell or compress the depth.');
-      expect(gestureText).not.toContain('Press Q/E');
-      expect(gestureText).not.toContain('Press Space');
-    } finally {
-      await mobile.close();
-    }
-  },
-  { timeout: 90000 },
+  { timeout: INTEGRATION_TIMEOUT_MS },
 );

@@ -99,6 +99,8 @@ bun run check:quick
 It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `assets/data/milkdrop-parity/measured-results.json`.
 Its independent checks run in parallel by default; add `-- --serial` when debugging a specific failing step.
 
+The quality gate now also runs architecture dependency checks via `dependency-cruiser`.
+
 ## Task-specific checks
 
 - Toy registration/docs consistency:
@@ -123,6 +125,12 @@ Its independent checks run in parallel by default; add `-- --serial` when debugg
 
   ```bash
   bun run test tests/path/to/spec.test.ts
+  ```
+
+- Architecture/import-boundary validation:
+
+  ```bash
+  bun run check:architecture
   ```
 
 - Unit-only test sweep:

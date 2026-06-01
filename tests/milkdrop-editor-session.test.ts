@@ -1,61 +1,105 @@
-import { describe, expect, test } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from 'bun:test';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import { createMilkdropEditorSession } from '../assets/js/milkdrop/editor-session.ts';
-import type { MilkdropPresetSource } from '../assets/js/milkdrop/types.ts';
 
 describe('milkdrop editor session', () => {
-  test('loads presets without starting the editor worker', async () => {
-    const OriginalWorker = globalThis.Worker;
-    let workerCreations = 0;
+  let OriginalWorker: typeof Worker;
+  let workerCreations = 0;
 
-    globalThis.Worker = class {
-      private errorListener: ((event: Event) => void) | null = null;
+  class DefaultMockWorker {
+    private messageListener: ((event: MessageEvent) => void) | null = null;
 
-      constructor() {
-        workerCreations += 1;
+    constructor() {
+      workerCreations += 1;
+    }
+
+    addEventListener(type: string, listener: any) {
+      if (type === 'message') {
+        this.messageListener = listener;
       }
+    }
 
-      addEventListener(type: string, listener: (event: Event) => void) {
-        if (type === 'error') {
-          this.errorListener = listener;
+    removeEventListener() {}
+
+    postMessage(message: any) {
+      if (
+        message &&
+        message.type === 'APPLY' &&
+        message.path?.[0] === 'compile'
+      ) {
+        const source = message.argumentList[0].value;
+        const preset = message.argumentList[1].value;
+        try {
+          const compiled = compileMilkdropPresetSource(source, preset);
+          setTimeout(() => {
+            this.messageListener?.({
+              data: {
+                id: message.id,
+                type: 'RAW',
+                value: compiled,
+              },
+            } as MessageEvent);
+          }, 0);
+        } catch (_err) {
+          setTimeout(() => {
+            this.messageListener?.({
+              data: {
+                id: message.id,
+                type: 'RAW',
+                value: compileMilkdropPresetSource(source, preset),
+              },
+            } as MessageEvent);
+          }, 0);
         }
       }
-
-      removeEventListener() {}
-
-      postMessage() {
-        this.errorListener?.(new Event('error'));
-      }
-
-      terminate() {}
-    } as unknown as typeof Worker;
-
-    try {
-      const session = createMilkdropEditorSession({
-        initialPreset: {
-          id: 'editor-load-no-worker',
-          title: 'Editor Load No Worker',
-          raw: 'title=Editor Load No Worker\nwave_r=0.4\n',
-          origin: 'user',
-        },
-      });
-
-      await session.loadPreset({
-        id: 'editor-load-no-worker-2',
-        title: 'Editor Load No Worker 2',
-        raw: 'title=Editor Load No Worker 2\nwave_g=0.5\n',
-        origin: 'bundled',
-      });
-
-      expect(workerCreations).toBe(0);
-
-      await session.applySource('title=Editor Load No Worker 2\nwave_g=0.75\n');
-      expect(workerCreations).toBe(1);
-
-      session.dispose();
-    } finally {
-      globalThis.Worker = OriginalWorker;
     }
+
+    terminate() {}
+  }
+
+  beforeAll(() => {
+    OriginalWorker = globalThis.Worker;
+  });
+
+  afterAll(() => {
+    globalThis.Worker = OriginalWorker;
+  });
+
+  beforeEach(() => {
+    workerCreations = 0;
+    globalThis.Worker = DefaultMockWorker as unknown as typeof Worker;
+  });
+
+  test('loads presets without starting the editor worker', async () => {
+    const session = createMilkdropEditorSession({
+      initialPreset: {
+        id: 'editor-load-no-worker',
+        title: 'Editor Load No Worker',
+        raw: 'title=Editor Load No Worker\nwave_r=0.4\n',
+        origin: 'user',
+      },
+    });
+
+    await session.loadPreset({
+      id: 'editor-load-no-worker-2',
+      title: 'Editor Load No Worker 2',
+      raw: 'title=Editor Load No Worker 2\nwave_g=0.5\n',
+      origin: 'bundled',
+    });
+
+    expect(workerCreations).toBe(0);
+
+    await session.applySource('title=Editor Load No Worker 2\nwave_g=0.75\n');
+    expect(workerCreations).toBe(1);
+
+    session.dispose();
   });
 
   test('keeps the last good preset active when new source has errors', async () => {
@@ -129,13 +173,7 @@ describe('milkdrop editor session', () => {
   });
 
   test('ignores stale worker commits after a newer preset load', async () => {
-    const OriginalWorker = globalThis.Worker;
-    const postedMessages: Array<{
-      id: number;
-      type: 'compile';
-      source: string;
-      preset: Partial<MilkdropPresetSource>;
-    }> = [];
+    const postedMessages: Array<any> = [];
     let messageListeners: Array<(event: MessageEvent<unknown>) => void> = [];
 
     globalThis.Worker = class {
@@ -158,66 +196,63 @@ describe('milkdrop editor session', () => {
         );
       }
 
-      postMessage(payload: (typeof postedMessages)[number]) {
+      postMessage(payload: any) {
         postedMessages.push(payload);
       }
 
       terminate() {}
     } as unknown as typeof Worker;
 
-    try {
-      const session = createMilkdropEditorSession({
-        initialPreset: {
-          id: 'stale-commit-a',
-          title: 'Stale Commit A',
-          raw: 'title=Stale Commit A\nwave_r=0.4\n',
-          origin: 'user',
-        },
-      });
+    const session = createMilkdropEditorSession({
+      initialPreset: {
+        id: 'stale-commit-a',
+        title: 'Stale Commit A',
+        raw: 'title=Stale Commit A\nwave_r=0.4\n',
+        origin: 'user',
+      },
+    });
 
-      const pendingDraft = session.applySource(
-        'title=Stale Commit A\nwave_r=0.75\n',
-      );
-      expect(postedMessages).toHaveLength(1);
+    const pendingDraft = session.applySource(
+      'title=Stale Commit A\nwave_r=0.75\n',
+    );
+    expect(postedMessages).toHaveLength(1);
 
-      const loaded = await session.loadPreset({
-        id: 'stale-commit-b',
-        title: 'Stale Commit B',
-        raw: 'title=Stale Commit B\nwave_g=0.5\n',
-        origin: 'bundled',
-      });
-      expect(loaded.activeCompiled?.title).toBe('Stale Commit B');
+    const loaded = await session.loadPreset({
+      id: 'stale-commit-b',
+      title: 'Stale Commit B',
+      raw: 'title=Stale Commit B\nwave_g=0.5\n',
+      origin: 'bundled',
+    });
+    expect(loaded.activeCompiled?.title).toBe('Stale Commit B');
 
-      const workerPayload = postedMessages[0];
-      if (!workerPayload) {
-        throw new Error('Expected a pending worker payload.');
-      }
-
-      const compiled = compileMilkdropPresetSource(
-        workerPayload.source,
-        workerPayload.preset,
-      );
-      [...messageListeners].forEach((listener) =>
-        listener({
-          data: {
-            id: workerPayload.id,
-            compiled,
-          },
-        } as MessageEvent<unknown>),
-      );
-
-      const resolvedState = await pendingDraft;
-      expect(resolvedState.activeCompiled?.title).toBe('Stale Commit B');
-      const finalState = session.getState();
-      expect(finalState.activeCompiled?.title).toBe('Stale Commit B');
-      if (!finalState.activeCompiled) {
-        throw new Error('Expected the latest preset to stay compiled.');
-      }
-      expect(finalState.source).toBe(finalState.activeCompiled.formattedSource);
-
-      session.dispose();
-    } finally {
-      globalThis.Worker = OriginalWorker;
+    const workerPayload = postedMessages[0];
+    if (!workerPayload) {
+      throw new Error('Expected a pending worker payload.');
     }
+
+    const compiled = compileMilkdropPresetSource(
+      workerPayload.argumentList[0].value,
+      workerPayload.argumentList[1].value,
+    );
+    [...messageListeners].forEach((listener) =>
+      listener({
+        data: {
+          id: workerPayload.id,
+          type: 'RAW',
+          value: compiled,
+        },
+      } as MessageEvent<unknown>),
+    );
+
+    const resolvedState = await pendingDraft;
+    expect(resolvedState.activeCompiled?.title).toBe('Stale Commit B');
+    const finalState = session.getState();
+    expect(finalState.activeCompiled?.title).toBe('Stale Commit B');
+    if (!finalState.activeCompiled) {
+      throw new Error('Expected the latest preset to stay compiled.');
+    }
+    expect(finalState.source).toBe(finalState.activeCompiled.formattedSource);
+
+    session.dispose();
   });
 });
