@@ -31,3 +31,5 @@ opencode.json
 .cmux/
 .agent/
 .wrangler/
+
+scratch/
