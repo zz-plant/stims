@@ -78,7 +78,7 @@ async function main() {
   });
 
   console.log('Opening app...');
-  await page.goto(`${DEV_SERVER}/?agent=true&embedded=true`, {
+  await page.goto(`${DEV_SERVER}/?agent=true&embedded=true&audio=demo`, {
     waitUntil: 'domcontentloaded',
   });
 
@@ -107,21 +107,26 @@ async function main() {
     const t0 = Date.now();
 
     try {
-      // Load preset via URL + popstate event to trigger React route sync
+      // Load preset via URL + popstate. Keep audio=demo so the engine
+      // has audio registers to drive motion (many presets render black without).
       const loaded = await page.evaluate(
         async (presetId) => {
           const url = new URL(window.location.href);
           url.searchParams.set('preset', presetId);
+          url.searchParams.set('audio', 'demo');
           window.history.pushState({}, '', url.toString());
           window.dispatchEvent(new PopStateEvent('popstate'));
 
-          // Wait for canvas to have content (preset loaded + frame rendered)
+          // Wait for live mode + canvas to have rendered content.
+          // Some presets (Swarm, Snakeskin) render dark frames — that's
+          // inherent to the preset, not a script failure.
           return new Promise<boolean>((resolve) => {
-            const timeout = setTimeout(() => resolve(false), 15000);
+            const timeout = setTimeout(() => resolve(false), 20000);
             let checks = 0;
             const interval = setInterval(() => {
+              const shell = document.querySelector('[data-mode="live"]');
               const canvas = document.querySelector('canvas');
-              if (canvas && canvas.width > 0) {
+              if (shell && canvas && canvas.width > 0) {
                 checks++;
                 if (checks >= 20) {
                   clearTimeout(timeout);
