@@ -584,6 +584,12 @@ body[data-page="workspace"] {
     gap: 20px;
   }
 
+  .stims-shell__launch {
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
+  }
+
   .stims-shell__launch-panel {
     position: relative;
     width: min(74rem, 100%);
@@ -1524,6 +1530,12 @@ body[data-page="workspace"] {
     margin-top: calc(100dvh - 40px);
   }
 
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__launch {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+  }
+
   .stims-shell__stage-frame::before,
   .stims-shell__stage-frame::after {
     content: "";
@@ -1894,6 +1906,7 @@ body[data-page="workspace"] {
   .stims-shell__frame-header {
     top: max(72px, 10vh);
     align-items: flex-start;
+    transition: opacity 0.3s ease;
   }
 
   .stims-shell__frame-chrome > *,
@@ -2137,7 +2150,9 @@ body[data-page="workspace"] {
     box-shadow:
       0 18px 34px var(--stims-shadow-22),
       inset 0 1px 0 var(--stims-white-05);
-    transition: box-shadow 0.15s ease;
+    transition:
+      box-shadow 0.15s ease,
+      opacity 0.3s ease;
   }
 
   /* Audio-reactive glow on the control dock */
@@ -2228,6 +2243,12 @@ body[data-page="workspace"] {
     right: auto;
     bottom: 24px;
     left: 24px;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__frame-header,
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-dock {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .stims-shell__stage-recovery {

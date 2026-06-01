@@ -4,6 +4,13 @@ import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { useWorkspace } from './workspace-context';
 import { UiIcon } from './workspace-ui';
 
+const moods = [
+  { label: 'Chill', desc: 'slow drifting ambient', icon: '\uD83C\uDF0A' },
+  { label: 'Aggressive', desc: 'fast intense heavy', icon: '\u26A1' },
+  { label: 'Retro', desc: 'classic geometric 90s', icon: '\uD83D\uDCFA' },
+  { label: 'Cosmic', desc: 'space nebula starfield', icon: '\u2728' },
+];
+
 type MobileControlBarProps = {
   audioEnergy: number;
   presetTitle: string;
@@ -100,11 +107,6 @@ export function MobileControlBar({
     onToggleFullscreen();
   }, [onToggleFullscreen, resetHideTimer]);
 
-  const handleTheme = useCallback(() => {
-    resetHideTimer();
-    onToggleTheme?.();
-  }, [onToggleTheme, resetHideTimer]);
-
   const handleMoodGenerate = useCallback(
     (mood: { label: string; desc: string }) => {
       resetHideTimer();
@@ -133,13 +135,6 @@ export function MobileControlBar({
     },
     [resetHideTimer, ui],
   );
-
-  const moods = [
-    { label: 'Chill', desc: 'slow drifting ambient', icon: '\uD83C\uDF0A' },
-    { label: 'Aggressive', desc: 'fast intense heavy', icon: '\u26A1' },
-    { label: 'Retro', desc: 'classic geometric 90s', icon: '\uD83D\uDCFA' },
-    { label: 'Cosmic', desc: 'space nebula starfield', icon: '\u2728' },
-  ];
 
   return (
     <div className={styles.bar} data-visible={String(visible)}>
@@ -186,25 +181,25 @@ export function MobileControlBar({
           className={styles.action}
           data-active={String(panel === 'settings')}
           onClick={handleSettings}
-          aria-label="Style settings"
+          aria-label="Settings panel"
         >
           <UiIcon
             name="sliders"
             className="stims-icon-slot stims-icon-slot--sm"
           />
-          <span className={styles.actionLabel}>Style</span>
+          <span className={styles.actionLabel}>Settings</span>
         </button>
         <button
           type="button"
           className={styles.action}
           onClick={handleShuffle}
-          aria-label="Surprise me"
+          aria-label="Shuffle preset"
         >
           <UiIcon
             name="pulse"
             className="stims-icon-slot stims-icon-slot--sm"
           />
-          <span className={styles.actionLabel}>Surprise</span>
+          <span className={styles.actionLabel}>Shuffle</span>
         </button>
         <button
           type="button"
@@ -213,10 +208,10 @@ export function MobileControlBar({
           aria-label="Find similar presets"
         >
           <UiIcon
-            name="menu"
+            name="pulse"
             className="stims-icon-slot stims-icon-slot--sm"
           />
-          <span className={styles.actionLabel}>Similar</span>
+          <span className={styles.actionLabel}>More</span>
         </button>
         <button
           type="button"
@@ -231,6 +226,36 @@ export function MobileControlBar({
           />
           <span className={styles.actionLabel}>Edit</span>
         </button>
+        <button
+          type="button"
+          className={styles.action}
+          onClick={() => {
+            resetHideTimer();
+            setShowMoods((s) => !s);
+          }}
+          aria-label="Generate from mood"
+        >
+          <UiIcon
+            name="sparkles"
+            className="stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className={styles.actionLabel}>Generate</span>
+        </button>
+        {engine.engineSnapshot?.audioSource ? (
+          <button
+            type="button"
+            className={styles.action}
+            aria-label="Stop audio"
+            title="Stop audio"
+            onClick={engine.handleAudioStop}
+          >
+            <UiIcon
+              name="close"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>Stop</span>
+          </button>
+        ) : null}
         <button
           type="button"
           className={styles.action}
@@ -254,37 +279,6 @@ export function MobileControlBar({
           <UiIcon name="link" className="stims-icon-slot stims-icon-slot--sm" />
           <span className={styles.actionLabel}>Share</span>
         </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={() => {
-            resetHideTimer();
-            setShowMoods((s) => !s);
-          }}
-          aria-label="Mood presets"
-        >
-          <UiIcon
-            name="sparkles"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className={styles.actionLabel}>
-            {showMoods ? 'Close' : 'Vibe'}
-          </span>
-        </button>
-        {onToggleTheme ? (
-          <button
-            type="button"
-            className={styles.action}
-            onClick={handleTheme}
-            aria-label="Toggle theme"
-          >
-            <UiIcon
-              name="moon"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>Theme</span>
-          </button>
-        ) : null}
       </div>
     </div>
   );

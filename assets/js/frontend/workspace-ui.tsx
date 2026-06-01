@@ -275,7 +275,7 @@ export function WorkspaceStagePanel({
                 {getToolLabel(panel)} open
               </span>
             ) : null}
-            {liveMode && !missingRequestedPreset && !invalidExperienceSlug ? (
+            {!missingRequestedPreset && !invalidExperienceSlug ? (
               <StimsControlDock
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={onToggleFullscreen}
@@ -292,34 +292,30 @@ export function WorkspaceStagePanel({
             </a>
           </StimsRailActions>
         </StimsFrameChrome>
-        {liveMode ? (
-          <StimsFrameHeader>
-            <div className="stims-shell__stage-copy">
-              <p className="stims-shell__eyebrow">{stageEyebrow}</p>
-              <h2>{stageTitle}</h2>
-              <p className="stims-shell__meta-copy stims-shell__stage-summary">
-                {stageSummary}
-              </p>
+        <StimsFrameHeader>
+          <div className="stims-shell__stage-copy">
+            <p className="stims-shell__eyebrow">{stageEyebrow}</p>
+            <h2>{stageTitle}</h2>
+            <p className="stims-shell__meta-copy stims-shell__stage-summary">
+              {stageSummary}
+            </p>
+          </div>
+          {audioSource === 'demo' ? (
+            <div className="stims-shell__frame-sidecar">
+              <button
+                type="button"
+                className="stims-shell__text-button stims-shell__audio-bridge-link"
+                onClick={ui.toggleExtendedSources}
+              >
+                {ui.showExtendedSources
+                  ? 'Hide sources'
+                  : 'Switch to your music \u2192'}
+              </button>
+              {ui.showExtendedSources ? <AudioSourcePanel /> : null}
             </div>
-            {audioSource === 'demo' ? (
-              <div className="stims-shell__frame-sidecar">
-                <button
-                  type="button"
-                  className="stims-shell__text-button stims-shell__audio-bridge-link"
-                  onClick={ui.toggleExtendedSources}
-                >
-                  {ui.showExtendedSources
-                    ? 'Hide sources'
-                    : 'Switch to your music \u2192'}
-                </button>
-                {ui.showExtendedSources ? <AudioSourcePanel /> : null}
-              </div>
-            ) : null}
-          </StimsFrameHeader>
-        ) : null}
-        {!liveMode ? (
-          <div className="stims-shell__stage-hero">{launchPanel}</div>
-        ) : null}
+          ) : null}
+        </StimsFrameHeader>
+        <div className="stims-shell__stage-hero">{launchPanel}</div>
         {invalidExperienceSlug ? (
           <div className="active-toy-status is-error">
             <div className="active-toy-status__content">
@@ -1035,21 +1031,7 @@ function SettingsSheetPanel({
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
       <section className="stims-shell__sheet-surface">
-        <p className="stims-shell__section-label">Renderer</p>
-        <p className="stims-shell__meta-copy">
-          {engine.engineSnapshot?.backend
-            ? `Running on ${engine.engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
-            : engine.engineReady
-              ? 'Renderer ready'
-              : 'Initializing renderer\u2026'}
-          {engine.engineSnapshot?.backend === 'webgl'
-            ? ' — WebGPU was unavailable or disabled.'
-            : ''}
-        </p>
-      </section>
-
-      <section className="stims-shell__sheet-surface">
-        <p className="stims-shell__section-label">Quick looks</p>
+        <p className="stims-shell__section-label">Quality presets</p>
         <ul className="stims-shell__preset-guides">
           {guidedPresets.map((preset) => (
             <li key={preset.id}>
@@ -1087,9 +1069,11 @@ function SettingsSheetPanel({
         </p>
       </section>
 
+      <PerformanceSection />
+
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
-          <span>Advanced controls</span>
+          <span>Accessibility</span>
           <span className="stims-shell__meta-copy">
             Open this only if you want manual controls
           </span>
@@ -1129,7 +1113,19 @@ function SettingsSheetPanel({
         </div>
       </details>
 
-      <PerformanceSection />
+      <section className="stims-shell__sheet-surface">
+        <p className="stims-shell__section-label">Renderer</p>
+        <p className="stims-shell__meta-copy">
+          {engine.engineSnapshot?.backend
+            ? `Running on ${engine.engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
+            : engine.engineReady
+              ? 'Renderer ready'
+              : 'Initializing renderer\u2026'}
+          {engine.engineSnapshot?.backend === 'webgl'
+            ? ' — WebGPU was unavailable or disabled.'
+            : ''}
+        </p>
+      </section>
     </div>
   );
 }

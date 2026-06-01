@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { saveCheckpoint } from '../core/services/temporal-memory.ts';
 import {
   describeFrame,
@@ -7,6 +7,13 @@ import {
 } from '../core/services/visual-embedding.ts';
 import { useEngine, useUI } from './workspace-context.tsx';
 import { PresetArtwork, UiIcon } from './workspace-ui.tsx';
+
+const moods = [
+  { label: 'Chill', desc: 'slow drifting ambient', icon: '\uD83C\uDF0A' },
+  { label: 'Aggressive', desc: 'fast intense heavy', icon: '\u26A1' },
+  { label: 'Retro', desc: 'classic geometric 90s', icon: '\uD83D\uDCFA' },
+  { label: 'Cosmic', desc: 'space nebula starfield', icon: '\u2728' },
+];
 
 function useDirectCSSProperty<T extends HTMLElement>(
   name: string,
@@ -47,7 +54,35 @@ export function StimsControlDock({
     Array<{ presetId: string; score: number }>
   >([]);
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [showMoods, setShowMoods] = useState(false);
 
+  const handleMoodGenerate = useCallback(
+    (mood: { label: string; desc: string }) => {
+      fetch('/api/generate-preset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: `${mood.desc} ${mood.label.toLowerCase()} visualizer preset`,
+          complexity: 'moderate',
+        }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.milkSource) {
+            document.dispatchEvent(
+              new CustomEvent('stims:editor:source-change', {
+                detail: {
+                  source: data.milkSource,
+                  title: data.title || mood.label,
+                },
+              }),
+            );
+            ui.updatePanel('editor');
+          }
+        });
+    },
+    [ui],
+  );
 
   const handleMoreLikeThis = async () => {
     const canvas = ui.stageRef.current?.querySelector(
@@ -135,29 +170,72 @@ export function StimsControlDock({
           type="button"
           className="stims-shell__stage-tool"
           data-active={String(panel === 'settings')}
-          aria-label="Open look settings"
-          title="Open look settings"
+          aria-label="Open settings panel"
+          title="Open settings panel"
           onClick={() => ui.updatePanel('settings')}
         >
           <UiIcon
             name="sliders"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
-          <span className="stims-shell__stage-tool-label">Style</span>
+          <span className="stims-shell__stage-tool-label">Settings</span>
         </button>
         <button
           type="button"
           className="stims-shell__stage-tool"
-          aria-label="Surprise me"
-          title="Surprise me"
+          aria-label="Shuffle preset"
+          title="Shuffle preset"
           onClick={engine.handleShufflePreset}
         >
           <UiIcon
             name="pulse"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
-          <span className="stims-shell__stage-tool-label">Surprise me</span>
+          <span className="stims-shell__stage-tool-label">Shuffle</span>
         </button>
+        <button
+          type="button"
+          className="stims-shell__stage-tool"
+          data-active={String(panel === 'editor')}
+          aria-label="Open editor panel"
+          title="Open editor panel"
+          onClick={() => ui.updatePanel('editor')}
+        >
+          <UiIcon
+            name="gauge"
+            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__stage-tool-label">Edit</span>
+        </button>
+        <button
+          type="button"
+          className="stims-shell__stage-tool"
+          aria-label="Generate from mood"
+          title="Generate from mood"
+          onClick={() => setShowMoods((s) => !s)}
+        >
+          <UiIcon
+            name="sparkles"
+            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__stage-tool-label">Generate</span>
+        </button>
+        {showMoods && (
+          <div className="stims-shell__mood-row">
+            {moods.map((mood) => (
+              <button
+                key={mood.label}
+                type="button"
+                className="stims-shell__stage-tool"
+                onClick={() => handleMoodGenerate(mood)}
+              >
+                <span className="stims-shell__stage-tool-label">
+                  {mood.icon} {mood.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
         {audioSource ? (
           <button
             type="button"
@@ -185,7 +263,7 @@ export function StimsControlDock({
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
           <span className="stims-shell__stage-tool-label">
-            {isFullscreen ? 'Exit full screen' : 'Full screen'}
+            {isFullscreen ? 'Exit' : 'Full'}
           </span>
         </button>
         <button
@@ -201,21 +279,6 @@ export function StimsControlDock({
           />
           <span className="stims-shell__stage-tool-label">Share</span>
         </button>
-        {onToggleTheme ? (
-          <button
-            type="button"
-            className="stims-shell__stage-tool"
-            aria-label="Toggle theme"
-            title="Toggle theme"
-            onClick={onToggleTheme}
-          >
-            <UiIcon
-              name="moon"
-              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className="stims-shell__stage-tool-label">Theme</span>
-          </button>
-        ) : null}
         <button
           type="button"
           className="cta-button stims-shell__stage-tool-ghost"
@@ -242,7 +305,21 @@ export function StimsControlDock({
         >
           <span className="stims-shell__stage-tool-label">Save</span>
         </button>
-
+        {onToggleTheme ? (
+          <button
+            type="button"
+            className="stims-shell__stage-tool"
+            aria-label="Toggle theme"
+            title="Toggle theme"
+            onClick={onToggleTheme}
+          >
+            <UiIcon
+              name="moon"
+              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className="stims-shell__stage-tool-label">Theme</span>
+          </button>
+        ) : null}
       </div>
       {similarPresets.length > 0 ? (
         <div className="stims-shell__similar-presets">
