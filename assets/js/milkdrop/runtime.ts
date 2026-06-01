@@ -9,6 +9,7 @@ import {
   type QualityPreset,
   setQualityPresetById,
 } from '../core/settings-panel.ts';
+import { createStatsOverlay } from '../core/stats-overlay.ts';
 import type { QualityPresetManager } from '../core/toy-quality';
 import { createRendererQualityManager } from '../core/toy-quality.ts';
 import type { ToyRuntimeInstance } from '../core/toy-runtime';
@@ -115,6 +116,7 @@ export function createMilkdropExperience({
   const signalTracker = createMilkdropSignalTracker();
   const capturedVideoReactivityTracker =
     createMilkdropCapturedVideoReactivityTracker();
+  const statsOverlay = createStatsOverlay();
   const session = createMilkdropEditorSession({
     initialPreset: defaultPreset.source,
     initialCompiled: defaultPreset,
@@ -901,6 +903,7 @@ export function createMilkdropExperience({
     emitChange,
     clearDeferredCatalogSync,
     disposePostprocessingPipeline,
+    statsOverlay,
     // biome-ignore lint/suspicious/noExplicitAny: builder pattern
   } as any);
 }
@@ -984,10 +987,21 @@ function buildExperienceController(deps: any) {
     setStatus(message: string) {
       deps.setOverlayStatus(message);
     },
-    attachRuntime: deps.attachmentController.attachRuntime,
-    update: deps.frameLoop.update,
+    attachRuntime(nextRuntime: any) {
+      const result = deps.attachmentController.attachRuntime(nextRuntime);
+      nextRuntime.toy.rendererReady.then((handle: any) => {
+        void deps.statsOverlay.init(handle?.renderer);
+      });
+      return result;
+    },
+    update(frame: any, options?: any) {
+      const result = deps.frameLoop.update(frame, options);
+      deps.statsOverlay.update();
+      return result;
+    },
 
     dispose() {
+      deps.statsOverlay.dispose();
       deps.lifetime.dispose();
       deps.clearDebugSnapshot?.('milkdrop');
       deps.disposeSessionSubscription?.();

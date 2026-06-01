@@ -1,3 +1,4 @@
+import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
@@ -8,6 +9,19 @@ const FREQUENCY_ANALYSER_PROCESSOR = new URL(
   '../utils/frequency-analyser-processor.ts',
   import.meta.url,
 );
+const MEYDA_FEATURES = [
+  'rms',
+  'spectralCentroid',
+  'spectralFlatness',
+  'spectralRolloff',
+] satisfies MeydaAudioFeature[];
+
+type SpectralFeatureSnapshot = {
+  rms: number;
+  spectralCentroid: number;
+  spectralFlatness: number;
+  spectralRolloff: number;
+};
 
 const DEFAULT_FREQUENCY_BAND_RANGES = {
   bass: { minHz: 24, maxHz: 320 },
@@ -104,7 +118,9 @@ export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
   private waveformData: Uint8Array;
+  private timeDomainData: Float32Array;
   private rms = 0;
+  private spectralFeatures: SpectralFeatureSnapshot | null = null;
   private readonly historySize = 64;
   private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
     bass: new Array(this.historySize).fill(0),
@@ -145,11 +161,13 @@ export class FrequencyAnalyser {
     this.frequencyData = new Uint8Array(this.frequencyBinCount);
     this.waveformData = new Uint8Array(fftSize);
     this.waveformData.fill(128);
+    this.timeDomainData = new Float32Array(fftSize);
     this.silentGain = silentGain;
 
     if (this.workletNode) {
       this.workletNode.port.onmessage = (event: MessageEvent) => {
-        const { frequencyData, waveformData, rms } = event.data ?? {};
+        const { frequencyData, waveformData, rms, timeDomainData } =
+          event.data ?? {};
         if (frequencyData) {
           const nextFreq =
             frequencyData instanceof Uint8Array
@@ -175,6 +193,17 @@ export class FrequencyAnalyser {
             this.waveformData.fill(128);
           }
           this.waveformData.set(nextWave);
+        }
+        if (timeDomainData) {
+          const nextTimeDomain =
+            timeDomainData instanceof Float32Array
+              ? timeDomainData
+              : new Float32Array(timeDomainData);
+          if (this.timeDomainData.length !== nextTimeDomain.length) {
+            this.timeDomainData = new Float32Array(nextTimeDomain.length);
+          }
+          this.timeDomainData.set(nextTimeDomain);
+          this.updateSpectralFeatures();
         }
         if (typeof rms === 'number') {
           this.rms = rms;
@@ -247,11 +276,13 @@ export class FrequencyAnalyser {
   }
 
   getFrequencyData() {
+    this.updateTimeDomainData();
     if (this.analyserNode) {
       this.analyserNode.getByteFrequencyData(
         this.frequencyData as Uint8Array<ArrayBuffer>,
       );
       this.dataVersion += 1;
+      this.updateSpectralFeatures();
     }
 
     return this.frequencyData;
@@ -269,6 +300,80 @@ export class FrequencyAnalyser {
     }
 
     return this.waveformData;
+  }
+
+  getSpectralFeatures() {
+    this.updateTimeDomainData();
+    this.updateSpectralFeatures();
+    return this.spectralFeatures;
+  }
+
+  getSampleRate() {
+    return this.sampleRate;
+  }
+
+  private updateTimeDomainData() {
+    if (!this.analyserNode) {
+      return;
+    }
+
+    if (typeof this.analyserNode.getFloatTimeDomainData === 'function') {
+      this.analyserNode.getFloatTimeDomainData(
+        this.timeDomainData as Float32Array<ArrayBuffer>,
+      );
+      return;
+    }
+
+    if (typeof this.analyserNode.getByteTimeDomainData === 'function') {
+      const byteData = new Uint8Array(this.timeDomainData.length);
+      this.analyserNode.getByteTimeDomainData(byteData);
+      for (let i = 0; i < byteData.length; i += 1) {
+        this.timeDomainData[i] = (byteData[i] - 128) / 128;
+      }
+    }
+  }
+
+  private updateSpectralFeatures() {
+    if (this.timeDomainData.length === 0) {
+      return;
+    }
+
+    try {
+      Meyda.bufferSize = this.timeDomainData.length;
+      Meyda.sampleRate = this.sampleRate;
+      const features = Meyda.extract(
+        MEYDA_FEATURES,
+        this.timeDomainData,
+      ) as Partial<MeydaFeaturesObject> | null;
+
+      if (!features) {
+        return;
+      }
+
+      this.spectralFeatures = {
+        rms:
+          typeof features.rms === 'number' && Number.isFinite(features.rms)
+            ? features.rms
+            : this.rms,
+        spectralCentroid:
+          typeof features.spectralCentroid === 'number' &&
+          Number.isFinite(features.spectralCentroid)
+            ? features.spectralCentroid
+            : 0,
+        spectralFlatness:
+          typeof features.spectralFlatness === 'number' &&
+          Number.isFinite(features.spectralFlatness)
+            ? features.spectralFlatness
+            : 0,
+        spectralRolloff:
+          typeof features.spectralRolloff === 'number' &&
+          Number.isFinite(features.spectralRolloff)
+            ? features.spectralRolloff
+            : 0,
+      };
+    } catch {
+      // Ignore feature extraction failures and keep the last usable snapshot.
+    }
   }
 
   private calculateMultiBandEnergy(data: Uint8Array) {
@@ -310,11 +415,7 @@ export class FrequencyAnalyser {
   }
 
   getRmsLevel() {
-    return this.rms;
-  }
-
-  getSampleRate() {
-    return this.sampleRate;
+    return this.spectralFeatures?.rms ?? this.rms;
   }
 
   disconnect() {

@@ -173,3 +173,10 @@ export interface MilkdropEditorSession {
   subscribe(listener: (state: MilkdropEditorSessionState) => void): () => void;
   dispose(): void;
 }
+
+export interface MilkdropEditorCompiler {
+  compile(
+    source: string,
+    preset: Partial<MilkdropPresetSource>,
+  ): Promise<MilkdropCompiledPreset>;
+}

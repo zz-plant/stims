@@ -5,8 +5,9 @@ import {
   extractFrameStats,
   searchByFrame,
 } from '../core/services/visual-embedding.ts';
+import { PresetArtwork } from './PresetArtwork.tsx';
+import { UiIcon } from './UiIcon.tsx';
 import { useEngine, useUI } from './workspace-context.tsx';
-import { PresetArtwork, UiIcon } from './workspace-ui.tsx';
 
 const moods = [
   { label: 'Chill', desc: 'slow drifting ambient', icon: '\uD83C\uDF0A' },

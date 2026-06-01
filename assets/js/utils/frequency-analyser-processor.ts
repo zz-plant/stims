@@ -134,9 +134,15 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
           Math.max(0, Math.round((sample * 0.5 + 0.5) * 255)),
         );
       }
+      const timeDomainBuf = this.buffer.slice();
       this.port.postMessage(
-        { frequencyData: freqBuf.buffer, waveformData: waveBuf.buffer, rms },
-        [freqBuf.buffer, waveBuf.buffer],
+        {
+          frequencyData: freqBuf.buffer,
+          waveformData: waveBuf.buffer,
+          timeDomainData: timeDomainBuf.buffer,
+          rms,
+        },
+        [freqBuf.buffer, waveBuf.buffer, timeDomainBuf.buffer],
       );
     }
   }

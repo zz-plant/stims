@@ -190,6 +190,24 @@ export function createMilkdropSignalTracker(options?: {
       });
       const { bands, attenuatedBands, rawWeightedEnergy, weightedEnergy } =
         processedSignals;
+
+      // Query Meyda spectral features and calculate dynamic boost
+      const spectral = analyser?.getSpectralFeatures?.() ?? null;
+      const rate = sampleRate ?? analyser?.getSampleRate?.() ?? 48_000;
+      const spectralBrightness = spectral
+        ? Math.min(1, spectral.spectralCentroid / Math.max(1, rate / 2))
+        : 0;
+      const spectralFocus = spectral
+        ? 1 - Math.min(1, spectral.spectralFlatness)
+        : 0;
+      const spectralBoost =
+        1.0 + spectralBrightness * 0.18 + spectralFocus * 0.14;
+      const finalWeightedEnergy = Math.min(1, weightedEnergy * spectralBoost);
+      const finalRawWeightedEnergy = Math.min(
+        1,
+        rawWeightedEnergy * spectralBoost,
+      );
+
       const update = beatTracker.update(
         {
           bands: {
@@ -197,14 +215,16 @@ export function createMilkdropSignalTracker(options?: {
             mid: bands.mid,
             treble: bands.treble,
           },
-          weightedEnergy: rawWeightedEnergy * 0.62 + weightedEnergy * 0.38,
+          weightedEnergy:
+            finalRawWeightedEnergy * 0.62 + finalWeightedEnergy * 0.38,
           deltaMs,
         },
         time * 1000,
       );
+
       rms = smoothLevel(
         rms,
-        analyser?.getRmsLevel() ?? weightedEnergy,
+        spectral?.rms ?? analyser?.getRmsLevel() ?? finalWeightedEnergy,
         deltaMs,
         44,
         180,
@@ -230,7 +250,7 @@ export function createMilkdropSignalTracker(options?: {
       signalCache.treble_att = attenuatedBands.treble;
       signalCache.rms = rms;
       signalCache.vol = rms;
-      signalCache.music = weightedEnergy;
+      signalCache.music = finalWeightedEnergy;
       signalCache.beat = update.isBeat ? 1 : 0;
       signalCache.beatPulse = update.beatIntensity;
       signalCache.beat_pulse = update.beatIntensity;
@@ -243,10 +263,10 @@ export function createMilkdropSignalTracker(options?: {
       signalCache.beat_bass = update.beatBass ? 1 : 0;
       signalCache.beat_mid = update.beatMid ? 1 : 0;
       signalCache.beat_treb = update.beatTreble ? 1 : 0;
-      signalCache.weightedEnergy = weightedEnergy;
+      signalCache.weightedEnergy = finalWeightedEnergy;
       signalCache.frequencyData = processedSignals.frequencyData;
       signalCache.waveformData = resolvedWaveformData;
-      latestWeightedEnergy = weightedEnergy;
+      latestWeightedEnergy = finalWeightedEnergy;
 
       return signalCache;
     },
