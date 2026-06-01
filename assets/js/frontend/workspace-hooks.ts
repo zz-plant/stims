@@ -326,7 +326,6 @@ export function useWorkspaceSessionState({
       () => {
         clearTimeout(timeoutId);
         if (timedOut) return;
-        log.warn(`failed to load ${requestedPresetId}`);
         if (pendingPresetIdRef.current === requestedPresetId) {
           pendingPresetIdRef.current = null;
           setStatusMessage(
@@ -335,6 +334,8 @@ export function useWorkspaceSessionState({
         }
       },
     );
+
+    return () => clearTimeout(timeoutId);
   }, [
     engineSnapshot?.activePresetId,
     engineSnapshot?.catalogEntries,

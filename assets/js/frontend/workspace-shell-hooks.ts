@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
 import { shareOrCopyLink } from '../utils/share-link.ts';
@@ -60,6 +60,7 @@ export function useWorkspaceShellOrchestration({
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
   const playPresetInProgressRef = useRef(false);
+  const fileAudioContextRef = useRef<AudioContext | null>(null);
 
   const enrichedCatalog = useMemo(() => {
     const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
@@ -292,7 +293,10 @@ export function useWorkspaceShellOrchestration({
     }
     try {
       setStatusMessage(null);
+
+      fileAudioContextRef.current?.close();
       const audioContext = new AudioContext();
+      fileAudioContextRef.current = audioContext;
       const arrayBuffer = await file.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       const source = audioContext.createBufferSource();
@@ -469,6 +473,12 @@ export function useWorkspaceShellOrchestration({
       `Current link: ${currentUrl.pathname}${currentUrl.search}`,
     );
   };
+
+  useEffect(() => {
+    return () => {
+      fileAudioContextRef.current?.close();
+    };
+  }, []);
 
   return {
     ...shellState,
