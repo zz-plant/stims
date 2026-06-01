@@ -279,7 +279,7 @@ function presetToMilkContent(preset: ButterchurnPreset): string {
     parts.push('');
   }
 
-  return parts.join('\n').trim() + '\n';
+  return `${parts.join('\n').trim()}\n`;
 }
 
 function loadExistingCatalog(): {
@@ -452,7 +452,7 @@ async function main() {
 
     fs.writeFileSync(
       CATALOG_PATH,
-      JSON.stringify(catalog, null, 2) + '\n',
+      `${JSON.stringify(catalog, null, 2)}\n`,
       'utf-8',
     );
   }
