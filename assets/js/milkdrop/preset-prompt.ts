@@ -41,7 +41,7 @@ t1-t32: Temporary per-slot state
 
 export function buildGeneratePrompt(
   description: string,
-  complexity = 'moderate',
+  _complexity = 'moderate',
 ): string {
   return `
 System: You are a MilkDrop preset equation generator. ${MILKDROP_DSL_SPEC}
@@ -191,7 +191,10 @@ export function buildRefinePrompt(
   currentSource: string,
   instruction: string,
 ): string {
-  if (instruction.toLowerCase().startsWith('explain') || instruction.toLowerCase().startsWith('describe')) {
+  if (
+    instruction.toLowerCase().startsWith('explain') ||
+    instruction.toLowerCase().startsWith('describe')
+  ) {
     return `Explain what this MilkDrop preset does visually. Describe the motion patterns, color behavior, audio reactivity, and overall aesthetic in 2-4 sentences. Do NOT modify the code.
 
 ${currentSource}`;

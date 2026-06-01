@@ -111,6 +111,12 @@ export function readSessionRouteStateFromSearch(
 ): SessionRouteState {
   const legacyExperience = readSearchValue(search.experience);
 
+  if (legacyExperience && legacyExperience !== 'milkdrop') {
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete('experience');
+    window.location.replace(clean.toString());
+  }
+
   return {
     presetId: readSearchValue(search.preset)?.trim() || null,
     collectionTag: normalizeCollectionTag(search.collection),
@@ -120,10 +126,7 @@ export function readSessionRouteStateFromSearch(
     previewMode:
       readSearchValue(search.embedded) === 'true' ||
       readSearchValue(search.preview) === 'true',
-    invalidExperienceSlug:
-      legacyExperience && legacyExperience !== 'milkdrop'
-        ? legacyExperience
-        : null,
+    invalidExperienceSlug: null,
   };
 }
 

@@ -1,4 +1,5 @@
 import type { MilkdropExpressionNode } from './common-types.ts';
+import { aliasMap } from './field-normalization.ts';
 
 type JitFn = (env: Record<string, number>, r: () => number) => number;
 
@@ -10,6 +11,11 @@ function compileNode(node: MilkdropExpressionNode): string {
       const name = node.name.toLowerCase();
       if (name === 'pi') return 'Math.PI';
       if (name === 'e') return 'Math.E';
+      const normalized = name.replace(/[^a-z0-9_]+/gu, '_');
+      const aliased = aliasMap[normalized] || normalized;
+      if (aliased !== node.name) {
+        return `(e[${JSON.stringify(node.name)}] ?? e[${JSON.stringify(aliased)}] ?? 0)`;
+      }
       return `(e[${JSON.stringify(node.name)}] ?? 0)`;
     }
     case 'unary': {

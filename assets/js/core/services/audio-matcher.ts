@@ -41,10 +41,13 @@ export function describeAudioProfile(profile: AudioProfile): string {
   if (rms < 0.005) return 'silent';
 
   const intensity =
-    rms < 0.02 ? 'quiet calm ambient slow drift' :
-    rms < 0.06 ? 'moderate gentle pulsing smooth motion' :
-    rms < 0.12 ? 'energetic driving rhythmic dynamic motion' :
-    'intense aggressive chaotic explosive heavy';
+    rms < 0.02
+      ? 'quiet calm ambient slow drift'
+      : rms < 0.06
+        ? 'moderate gentle pulsing smooth motion'
+        : rms < 0.12
+          ? 'energetic driving rhythmic dynamic motion'
+          : 'intense aggressive chaotic explosive heavy';
 
   return intensity;
 }

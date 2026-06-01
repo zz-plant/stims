@@ -16,7 +16,7 @@ export const embeddingsReady = new Promise<void>((resolve) => {
   }
 });
 
-function histogramDistance(a: number[], b: number[]): number {
+function _histogramDistance(a: number[], b: number[]): number {
   let sum = 0;
   const len = Math.min(a.length, b.length);
   for (let i = 0; i < len; i++) {
@@ -112,7 +112,7 @@ function dominantHue(histogram: number[]): string {
 
 function paletteDescription(histogram: number[]): string {
   const hue = dominantHue(histogram);
-  const total = histogram.reduce((a, v) => a + v, 0);
+  const _total = histogram.reduce((a, v) => a + v, 0);
   const vibrant = histogram.reduce((a, v) => a + (v > 0.05 ? 1 : 0), 0);
 
   if (vibrant <= 3) return `monochrome ${hue}`;

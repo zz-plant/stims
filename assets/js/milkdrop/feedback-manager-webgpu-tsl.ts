@@ -552,7 +552,10 @@ function compileShaderExpressionNode(
             ).rgb,
           );
         }
-        if (resolvedBinding.canonicalSource === 'pw_main' || resolvedBinding.canonicalSource === 'pc_main') {
+        if (
+          resolvedBinding.canonicalSource === 'pw_main' ||
+          resolvedBinding.canonicalSource === 'pc_main'
+        ) {
           return makeShaderValue(
             'vec3',
             env.uniforms.previousTex.sample(

@@ -191,7 +191,7 @@ export function StimsControlDock({
             name="pulse"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
-          <span className="stims-shell__stage-tool-label">Shuffle</span>
+          <span className="stims-shell__stage-tool-label">Surprise me</span>
         </button>
         <button
           type="button"

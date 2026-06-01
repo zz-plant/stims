@@ -53,7 +53,9 @@ export function NewHomePage() {
   const handleStartAudio = useCallback(
     (source: 'demo' | 'microphone' | 'tab') => {
       setLoadingAudio(true);
-      void engine.handleAudioStart(source).finally(() => setLoadingAudio(false));
+      void engine
+        .handleAudioStart(source)
+        .finally(() => setLoadingAudio(false));
     },
     [engine.handleAudioStart],
   );
@@ -105,7 +107,7 @@ export function NewHomePage() {
               onClick={() => handleStartAudio('demo')}
             >
               <span className="stims-shell__action-label">
-                {loadingAudio ? 'Loading visualizer...' : 'Add sound'}
+                {loadingAudio ? 'Loading visualizer...' : 'See visuals now'}
               </span>
               <span className="stims-shell__action-hint">
                 Space to start — built-in audio, drops onto stage

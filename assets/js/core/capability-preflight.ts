@@ -11,13 +11,13 @@ import {
   updateModalQueryParam,
 } from './modal-utils.ts';
 import {
-  getActiveQualityPreset,
-  setQualityPresetById,
-} from './state/quality-preset-store.ts';
-import {
   type CapabilityPreflightResult,
   runCapabilityProbe,
 } from './services/capability-probe-service.ts';
+import {
+  getActiveQualityPreset,
+  setQualityPresetById,
+} from './state/quality-preset-store.ts';
 
 export type { CapabilityPreflightResult } from './services/capability-probe-service.ts';
 
@@ -352,8 +352,7 @@ export function attachCapabilityPreflight({
 
     const preset = getActiveQualityPreset();
     const performanceEnabled =
-      preset.maxPixelRatio <=
-        result.performance.recommendedMaxPixelRatio ||
+      preset.maxPixelRatio <= result.performance.recommendedMaxPixelRatio ||
       (preset.renderScale ?? 1) <= result.performance.recommendedRenderScale;
 
     if (performanceEnabled) {

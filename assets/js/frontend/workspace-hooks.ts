@@ -225,7 +225,12 @@ export function useWorkspaceSessionState({
           : 'Unable to start the visualizer runtime.',
       );
     });
-  }, [engineSnapshot?.runtimeReady, routeState.invalidExperienceSlug, routeState.presetId, routeState.audioSource]);
+  }, [
+    engineSnapshot?.runtimeReady,
+    routeState.invalidExperienceSlug,
+    routeState.presetId,
+    routeState.audioSource,
+  ]);
 
   usePresetRouteSync({
     engineSnapshot,

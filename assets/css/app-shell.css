@@ -3506,7 +3506,7 @@ body[data-page="workspace"] {
       border-color: rgba(119, 201, 255, 0.24);
     }
 
-    .cta-button.primary {
+    .stims-shell .cta-button.primary {
       background: linear-gradient(135deg, #e8f5c8, #b8e2a3);
       border-color: rgba(255, 255, 255, 0.24);
     }
@@ -3519,7 +3519,7 @@ body[data-page="workspace"] {
       --stims-header-gap: 44px;
     }
 
-    :scope[data-has-toast="true"] {
+    .stims-shell[data-has-toast="true"] {
       padding-bottom: calc(96px + env(safe-area-inset-bottom));
     }
 
@@ -4428,8 +4428,6 @@ body[data-page="workspace"] {
   border-radius: 3px;
 }
 
-
-
 /* ===== Macro moods in mobile bar ===== */
 .mc-bar__mood-row {
   display: flex;
@@ -4486,11 +4484,11 @@ body[data-page="workspace"] {
 .editor-blend-textarea {
   width: 100%;
   min-height: 80px;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--stims-border);
   border-radius: 6px;
   color: var(--stims-ink);
-  font-family: 'Space Mono', monospace;
+  font-family: "Space Mono", monospace;
   font-size: 0.72rem;
   padding: 8px;
   resize: vertical;
@@ -4532,5 +4530,3 @@ body[data-page="workspace"] {
 .editor-explanation-close:hover {
   color: var(--stims-ink);
 }
-
-

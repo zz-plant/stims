@@ -1,6 +1,5 @@
 import {
   evaluateMilkdropExpression,
-  findNearestMatch,
   MILKDROP_INTRINSIC_FUNCTIONS,
   MILKDROP_INTRINSIC_IDENTIFIERS,
   parseMilkdropExpression,
@@ -166,22 +165,13 @@ export function collectExpressionCompatibilityGaps(
     supportedIdentifiers.add(target.toLowerCase());
   }
 
-  const allKnown = [
-    ...MILKDROP_INTRINSIC_FUNCTIONS,
-    ...MILKDROP_INTRINSIC_IDENTIFIERS,
-    ...supportedIdentifiers,
-  ];
-
   const missing = new Set<string>();
   for (const expression of expressions) {
     walkMilkdropExpression(expression, (node) => {
       if (node.type === 'identifier') {
         if (!isSupportedExpressionIdentifier(node.name, supportedIdentifiers)) {
           const name = node.name.toLowerCase();
-          const suggestion = findNearestMatch(name, allKnown);
-          missing.add(
-            suggestion ? `${name} (did you mean '${suggestion}'?)` : name,
-          );
+          missing.add(name);
         }
         return;
       }
@@ -190,10 +180,7 @@ export function collectExpressionCompatibilityGaps(
         !MILKDROP_INTRINSIC_FUNCTIONS.has(node.name.toLowerCase())
       ) {
         const name = node.name.toLowerCase();
-        const suggestion = findNearestMatch(name, allKnown);
-        missing.add(
-          suggestion ? `${name} (did you mean '${suggestion}'?)` : name,
-        );
+        missing.add(name);
       }
     });
   }

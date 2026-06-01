@@ -578,6 +578,23 @@ export class EditorPanel {
     editorMain.className = 'milkdrop-overlay__editor-main';
     const editorHost = document.createElement('div');
     editorHost.className = 'milkdrop-overlay__editor';
+
+    const editorViewState = createEditorView({
+      parent: editorHost,
+      onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
+      onBufferedEdit: () => {
+        this.hasBufferedEdits = true;
+        if (this.lastSessionState) {
+          this.renderSessionState(this.lastSessionState);
+        }
+      },
+      isChangeSuppressed: () => this.suppressEditorChange,
+    });
+    this.editor = editorViewState.view;
+    this.clearEditorDebounce = editorViewState.clearDebounce;
+    this.flushEditorDocChange = editorViewState.flushDocChange;
+    this.setEditorDiagnostics = editorViewState.setDiagnostics;
+
     const editorBody = document.createElement('div');
     editorBody.className = 'editor-body';
     editorBody.appendChild(editorHost);
@@ -810,23 +827,12 @@ export class EditorPanel {
       refineSection,
     );
     editorWorkbench.append(editorMain, editorRail);
-    this.element.append(editorTransport, editorActions, this.renderBlendInput(), editorWorkbench);
-
-    const editorViewState = createEditorView({
-      parent: editorHost,
-      onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
-      onBufferedEdit: () => {
-        this.hasBufferedEdits = true;
-        if (this.lastSessionState) {
-          this.renderSessionState(this.lastSessionState);
-        }
-      },
-      isChangeSuppressed: () => this.suppressEditorChange,
-    });
-    this.editor = editorViewState.view;
-    this.clearEditorDebounce = editorViewState.clearDebounce;
-    this.flushEditorDocChange = editorViewState.flushDocChange;
-    this.setEditorDiagnostics = editorViewState.setDiagnostics;
+    this.element.append(
+      editorTransport,
+      editorActions,
+      this.renderBlendInput(),
+      editorWorkbench,
+    );
 
     window.addEventListener('stims:editor:diagnostics', ((
       e: CustomEvent<{ diagnostics: MilkdropDiagnostic[] }>,
@@ -1169,7 +1175,11 @@ export class EditorPanel {
           const currentSource = this.editor.state.doc.toString();
           this.snapshots.push({ source: currentSource, timestamp: Date.now() });
           this.editor.dispatch({
-            changes: { from: 0, to: currentSource.length, insert: data.presets[0] },
+            changes: {
+              from: 0,
+              to: currentSource.length,
+              insert: data.presets[0],
+            },
           });
           this.callbacks.onEditorSourceChange(data.presets[0]);
           document.dispatchEvent(
@@ -1184,9 +1194,12 @@ export class EditorPanel {
   }
 
   private handleBlend() {
-    const container = this.element.querySelector('.editor-blend-input') as HTMLElement | null;
+    const container = this.element.querySelector(
+      '.editor-blend-input',
+    ) as HTMLElement | null;
     if (container) {
-      container.style.display = container.style.display === 'none' ? '' : 'none';
+      container.style.display =
+        container.style.display === 'none' ? '' : 'none';
     }
   }
 

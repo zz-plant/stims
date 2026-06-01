@@ -26,7 +26,7 @@ export function MobileControlBar({
   presetAuthor,
   isFullscreen,
   onToggleFullscreen,
-  onToggleTheme,
+  onToggleTheme: _onToggleTheme,
 }: MobileControlBarProps) {
   const { ui, engine } = useWorkspace();
   const panel = ui.routeState.panel;

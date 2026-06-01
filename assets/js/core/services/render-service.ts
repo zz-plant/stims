@@ -78,8 +78,7 @@ function getRenderDefaults(): Partial<RendererInitConfig> {
   return {
     maxPixelRatio: activeQuality.maxPixelRatio,
     renderScale:
-      activeRuntimeControls.renderScale *
-      (activeQuality.renderScale ?? 1),
+      activeRuntimeControls.renderScale * (activeQuality.renderScale ?? 1),
   };
 }
 

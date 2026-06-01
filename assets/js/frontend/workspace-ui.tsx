@@ -402,8 +402,7 @@ function BrowseSheetPanel({
         engine.handlePresetSelection(data.presetId);
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : 'Unknown error';
       ui.setStatusMessage(`Image import failed: ${message}`);
     } finally {
       setImageImportLoading(false);

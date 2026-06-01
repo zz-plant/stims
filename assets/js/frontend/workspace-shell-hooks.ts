@@ -391,7 +391,9 @@ export function useWorkspaceShellOrchestration({
       if (source === 'microphone') {
         commitRoute(nextRouteState);
         if (!navigator.mediaDevices?.getUserMedia) {
-          setStatusMessage('Microphone capture is not available in this browser.');
+          setStatusMessage(
+            'Microphone capture is not available in this browser.',
+          );
           return;
         }
         try {

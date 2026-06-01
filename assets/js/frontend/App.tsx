@@ -323,6 +323,7 @@ function StimsWorkspaceAppShell() {
     }
   }, [ui.routeState.panel, showHint]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: internal refs and service methods don't change
   useEffect(() => {
     const activePresetId = engine.engineSnapshot?.activePresetId;
     if (!activePresetId) return;
@@ -332,6 +333,7 @@ function StimsWorkspaceAppShell() {
     temporalMemory.record(activePresetId, canvas);
   }, [engine.engineSnapshot?.activePresetId]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: ignore snapshot sub-properties
   useEffect(() => {
     if (!engine.engineSnapshot?.audioActive) {
       setAudioMatch(null);
@@ -581,16 +583,16 @@ function StimsWorkspaceAppShell() {
         </div>
       ) : null}
       {showShortcuts ? (
-        // biome-ignore lint/a11y/useKeyWithClickEvents: Escape-to-dismiss handled via global key handler
         <div
           className="stims-shell__shortcut-overlay"
           role="dialog"
           aria-label="Keyboard shortcuts"
           onClick={() => setShowShortcuts(false)}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowShortcuts(false); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setShowShortcuts(false);
+          }}
         >
           {/* biome-ignore lint/a11y/noStaticElementInteractions: card is visual-only, backdrop handles dismiss */}
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: card is visual-only */}
           <div
             className="stims-shell__shortcut-card"
             onClick={(e) => e.stopPropagation()}
