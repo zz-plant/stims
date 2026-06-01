@@ -41,7 +41,6 @@ export function useWorkspaceToast({
     if (
       !engineSnapshot?.runtimeReady ||
       engineSnapshot.backend !== 'webgl' ||
-      routeState.invalidExperienceSlug ||
       webglWarningShownRef.current
     ) {
       return;
@@ -56,11 +55,7 @@ export function useWorkspaceToast({
       setToast(null);
       toastTimerRef.current = null;
     }, 4200);
-  }, [
-    engineSnapshot?.backend,
-    engineSnapshot?.runtimeReady,
-    routeState.invalidExperienceSlug,
-  ]);
+  }, [engineSnapshot?.backend, engineSnapshot?.runtimeReady]);
 
   const showToast = useEffectEvent(
     (message: string, tone: 'info' | 'warn' | 'error' = 'info') => {

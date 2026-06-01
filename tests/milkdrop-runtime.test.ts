@@ -77,7 +77,7 @@ describe('milkdrop runtime blend state', () => {
     const blendState = __milkdropRuntimeTestUtils.cloneBlendState(frameState);
 
     expect(blendState?.mode).toBe('gpu');
-    if (!blendState || blendState.mode !== 'gpu') {
+    if (blendState?.mode !== 'gpu') {
       throw new Error('Expected a GPU blend state.');
     }
     expect(blendState.alpha).toBe(1);

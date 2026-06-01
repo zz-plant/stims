@@ -58,11 +58,7 @@ export function usePresetRouteSync({
 
   // Resolve preset IDs from engine catalog
   useEffect(() => {
-    if (
-      !routeState.presetId ||
-      routeState.invalidExperienceSlug ||
-      !engineSnapshot?.runtimeReady
-    ) {
+    if (!routeState.presetId || !engineSnapshot?.runtimeReady) {
       return;
     }
 
@@ -85,7 +81,6 @@ export function usePresetRouteSync({
   }, [
     engineSnapshot?.catalogEntries,
     engineSnapshot?.runtimeReady,
-    routeState.invalidExperienceSlug,
     routeState.presetId,
     setRouteState,
   ]);

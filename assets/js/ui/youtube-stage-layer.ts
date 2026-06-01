@@ -134,11 +134,7 @@ export function syncYouTubeStagePreview(doc: Document) {
 
   const preview = ensurePreviewHost(layer);
   const canvas = getMilkdropCapturedVideoCanvas();
-  if (
-    !canvas ||
-    canvas.tagName !== 'CANVAS' ||
-    !isMilkdropCapturedVideoReady()
-  ) {
+  if (canvas?.tagName !== 'CANVAS' || !isMilkdropCapturedVideoReady()) {
     layer.classList.remove('youtube-stage-layer--captured');
     preview.hidden = true;
     return;

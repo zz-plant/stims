@@ -64,33 +64,19 @@ export function useWorkspaceShellOrchestration({
     );
     const runtimeCatalogReady =
       (engineSnapshot?.runtimeReady ?? false) || runtimeCatalog.length > 0;
-    const rawCatalog = routeState.invalidExperienceSlug
-      ? fallbackCatalog
-      : runtimeCatalogReady
-        ? runtimeCatalog
-        : fallbackCatalog;
+    const rawCatalog = runtimeCatalogReady ? runtimeCatalog : fallbackCatalog;
     return mergeCatalogActivity(rawCatalog, activityCatalog);
-  }, [
-    engineSnapshot,
-    fallbackCatalog,
-    activityCatalog,
-    routeState.invalidExperienceSlug,
-  ]);
+  }, [engineSnapshot, fallbackCatalog, activityCatalog]);
 
   const catalogReady = useMemo(
     () =>
-      routeState.invalidExperienceSlug
-        ? fallbackCatalogReady
-        : (engineSnapshot?.runtimeReady ?? false) ||
-          (engineSnapshot?.catalogEntries ?? []).length > 0 ||
-          fallbackCatalogReady,
-    [engineSnapshot, fallbackCatalogReady, routeState.invalidExperienceSlug],
+      (engineSnapshot?.runtimeReady ?? false) ||
+      (engineSnapshot?.catalogEntries ?? []).length > 0 ||
+      fallbackCatalogReady,
+    [engineSnapshot, fallbackCatalogReady],
   );
 
-  const catalogError = useMemo(
-    () => (routeState.invalidExperienceSlug ? fallbackCatalogError : null),
-    [routeState.invalidExperienceSlug, fallbackCatalogError],
-  );
+  const catalogError = useMemo(() => null, []);
 
   const filteredCatalog = useMemo(
     () =>
@@ -149,30 +135,24 @@ export function useWorkspaceShellOrchestration({
   );
 
   const runtimeReady = useMemo(
-    () =>
-      Boolean(engineSnapshot?.runtimeReady) &&
-      !routeState.invalidExperienceSlug,
-    [engineSnapshot?.runtimeReady, routeState.invalidExperienceSlug],
+    () => Boolean(engineSnapshot?.runtimeReady),
+    [engineSnapshot?.runtimeReady],
   );
 
   const engineReady = useMemo(
-    () => !routeState.invalidExperienceSlug && fallbackCatalogError === null,
-    [routeState.invalidExperienceSlug, fallbackCatalogError],
+    () => fallbackCatalogError === null,
+    [fallbackCatalogError],
   );
 
   const missingRequestedPreset = Boolean(
     routeState.presetId &&
       catalogReady &&
       !resolvedRequestedPreset &&
-      !routeState.invalidExperienceSlug &&
       pendingPresetIdRef.current !== routeState.presetId,
   );
 
   const loadingRequestedPreset = Boolean(
-    routeState.presetId &&
-      !selectedPreset &&
-      !routeState.invalidExperienceSlug &&
-      !missingRequestedPreset,
+    routeState.presetId && !selectedPreset && !missingRequestedPreset,
   );
 
   const shellState = useMemo(

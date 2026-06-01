@@ -72,7 +72,7 @@ export function createMilkdropExperience({
   quality,
   qualityControl,
   initialPresetId,
-  showOverlayToggle = true,
+  _showOverlayToggle = true,
   enableOverlay = true,
   previewMode = false,
 }: {
@@ -83,7 +83,7 @@ export function createMilkdropExperience({
     storageKey: string;
   };
   initialPresetId?: string;
-  showOverlayToggle?: boolean;
+  _showOverlayToggle?: boolean;
   enableOverlay?: boolean;
   previewMode?: boolean;
 }) {
@@ -417,7 +417,7 @@ export function createMilkdropExperience({
       quality: previewQuality,
       qualityControl,
       initialPresetId: presetId,
-      showOverlayToggle: false,
+      _showOverlayToggle: false,
       enableOverlay: false,
       previewMode: true,
     });
@@ -911,13 +911,13 @@ export function createMilkdropExperience({
 // biome-ignore lint/suspicious/noExplicitAny: builder pattern needs dynamic deps
 function buildExperienceController(deps: any) {
   return {
-    subscribe(listener: any) {
+    subscribe(listener: unknown) {
       return deps.subscribe(listener);
     },
     getStateSnapshot() {
       return deps.buildSnapshot();
     },
-    applyFields(updates: any) {
+    applyFields(updates: unknown) {
       return deps.applyFieldValues(updates);
     },
     getActiveCompiledPreset() {
@@ -987,14 +987,17 @@ function buildExperienceController(deps: any) {
     setStatus(message: string) {
       deps.setOverlayStatus(message);
     },
-    attachRuntime(nextRuntime: any) {
+    attachRuntime(nextRuntime: unknown) {
       const result = deps.attachmentController.attachRuntime(nextRuntime);
-      nextRuntime.toy.rendererReady.then((handle: any) => {
-        void deps.statsOverlay.init(handle?.renderer);
+      const rt = nextRuntime as { toy: { rendererReady: Promise<unknown> } };
+      rt.toy.rendererReady.then((handle: unknown) => {
+        void deps.statsOverlay.init(
+          (handle as { renderer?: unknown }).renderer,
+        );
       });
       return result;
     },
-    update(frame: any, options?: any) {
+    update(frame: unknown, options?: unknown) {
       const result = deps.frameLoop.update(frame, options);
       deps.statsOverlay.update();
       return result;

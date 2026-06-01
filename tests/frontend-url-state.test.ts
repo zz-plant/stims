@@ -21,16 +21,7 @@ describe('frontend url state', () => {
       audioSource: 'demo',
       agentMode: true,
       previewMode: false,
-      invalidExperienceSlug: null,
     });
-  });
-
-  test('flags unsupported legacy experience slugs', () => {
-    const state = readSessionRouteState(
-      'https://toil.fyi/milkdrop/?experience=non-existent-toy',
-    );
-
-    expect(state.invalidExperienceSlug).toBe('non-existent-toy');
   });
 
   test('normalizes supported panel and audio aliases', () => {
@@ -68,7 +59,6 @@ describe('frontend url state', () => {
         audioSource: 'demo',
         agentMode: true,
         previewMode: false,
-        invalidExperienceSlug: null,
       },
       'https://toil.fyi/milkdrop/?landing=1&experience=milkdrop',
     );
@@ -88,7 +78,6 @@ describe('frontend url state', () => {
         audioSource: null,
         agentMode: false,
         previewMode: false,
-        invalidExperienceSlug: 'seary',
       },
       'https://toil.fyi/milkdrop/?experience=seary&panel=browse&audio=demo',
     );
@@ -123,7 +112,6 @@ describe('frontend url state', () => {
             audioSource: null,
             agentMode: true,
             previewMode: false,
-            invalidExperienceSlug: null,
           },
           parsePlainSearch('?landing=1&experience=milkdrop'),
         ),
@@ -147,7 +135,6 @@ describe('frontend url state', () => {
           audioSource: 'demo',
           agentMode: true,
           previewMode: true,
-          invalidExperienceSlug: null,
         },
         {},
       ),

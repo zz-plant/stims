@@ -211,7 +211,7 @@ export function useWorkspaceSessionState({
   }, [routeState]);
 
   useEffect(() => {
-    if (routeState.invalidExperienceSlug || engineSnapshot?.runtimeReady) {
+    if (engineSnapshot?.runtimeReady) {
       return;
     }
     if (!routeState.presetId && !routeState.audioSource) {
@@ -227,7 +227,6 @@ export function useWorkspaceSessionState({
     });
   }, [
     engineSnapshot?.runtimeReady,
-    routeState.invalidExperienceSlug,
     routeState.presetId,
     routeState.audioSource,
   ]);

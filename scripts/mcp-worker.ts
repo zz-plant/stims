@@ -130,7 +130,7 @@ async function handleHttp(request: Request) {
 async function handleWebSocket(request: Request) {
   const upgradeHeader = request.headers.get('upgrade');
 
-  if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
+  if (upgradeHeader?.toLowerCase() !== 'websocket') {
     return new Response('Expected a WebSocket upgrade request.', {
       status: 400,
     });

@@ -109,8 +109,6 @@ export function normalizeCollectionTag(value: unknown) {
 export function readSessionRouteStateFromSearch(
   search: Record<string, unknown>,
 ): SessionRouteState {
-  const legacyExperience = readSearchValue(search.experience);
-
   return {
     presetId: readSearchValue(search.preset)?.trim() || null,
     collectionTag: normalizeCollectionTag(search.collection),
@@ -120,10 +118,6 @@ export function readSessionRouteStateFromSearch(
     previewMode:
       readSearchValue(search.embedded) === 'true' ||
       readSearchValue(search.preview) === 'true',
-    invalidExperienceSlug:
-      legacyExperience && legacyExperience !== 'milkdrop'
-        ? legacyExperience
-        : null,
   };
 }
 

@@ -1,5 +1,7 @@
 interface Env {
-  AI: any;
+  AI: {
+    run: (model: string, opts: { messages: Array<{ role: string; content: string }> }) => Promise<{ response: string }>;
+  };
 }
 
 export async function onRequest(context: { request: Request; env: Env }) {
@@ -61,7 +63,7 @@ Instruction: ${defaultInstruction}`,
 
 function cleanSource(raw: string): string {
   let s = raw.replace(/```[\w]*\n?/g, '').trim();
-  if (!s.includes('[preset00]')) s = '[preset00]\n' + s;
+  if (!s.includes('[preset00]')) s = `[preset00]\n${s}`;
   return s;
 }
 

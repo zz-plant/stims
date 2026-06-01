@@ -28,12 +28,13 @@ export async function onRequest(context: { request: Request; env: Env }) {
   }
 
   try {
-    const { currentSource, instruction, history, model } = (await request.json()) as {
-      currentSource: string;
-      instruction: string;
-      history?: Array<{ role: string; content: string }>;
-      model?: string;
-    };
+    const { currentSource, instruction, history, model } =
+      (await request.json()) as {
+        currentSource: string;
+        instruction: string;
+        history?: Array<{ role: string; content: string }>;
+        model?: string;
+      };
 
     if (!currentSource || !instruction) {
       return new Response('Missing currentSource or instruction', {
@@ -77,7 +78,7 @@ Rules:
 4. Preserve the original structure and formatting
 5. Do NOT add new wave/shape definitions unless asked
 6. Do NOT include explanations or markdown
-${history ? 'Previous refinements:\n' + history.map((h) => `${h.role}: ${h.content}`).join('\n') : ''}`;
+${history ? `Previous refinements:\n${history.map((h) => `${h.role}: ${h.content}`).join('\n')}` : ''}`;
 
     const userPrompt = `Existing preset (active features: wave rendering, audio-reactive zoom, per-frame expressions):
 ${currentSource}
@@ -123,7 +124,7 @@ Return the complete modified preset. Keep all unchanged fields identical.`;
 }
 
 function extractMilkSection(response: string): string {
-  let cleaned = response.replace(/```[\w]*\n?/g, '').trim();
+  const cleaned = response.replace(/```[\w]*\n?/g, '').trim();
 
   const start = cleaned.indexOf('[preset00]');
   if (start < 0) return cleaned;
@@ -131,7 +132,7 @@ function extractMilkSection(response: string): string {
   const after = cleaned.slice(start);
   const nextSection = after.slice('[preset00]'.length).match(/\n\[(\w+)\]/);
   const end = nextSection
-    ? after.indexOf('\n[' + nextSection[1] + ']', '[preset00]'.length)
+    ? after.indexOf(`\n[${nextSection[1]}]`, '[preset00]'.length)
     : after.length;
 
   return after.slice(0, end).trim();

@@ -46,7 +46,6 @@ export type WorkspaceStageState = {
   backend: 'webgl' | 'webgpu' | null | undefined;
   featuredPreset: PresetCatalogEntry | null;
   missingRequestedPreset: boolean;
-  invalidExperienceSlug: string | null;
   stageEyebrow: string;
   stageTitle: string;
   stageSummary: string;

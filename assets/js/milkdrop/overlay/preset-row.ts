@@ -244,10 +244,7 @@ function formatVisualCertificationNotice({
   activeBackend: 'webgl' | 'webgpu';
 }) {
   const visualCertification = preset.visualCertification;
-  if (
-    !visualCertification ||
-    visualCertification.requiredBackend !== 'webgpu'
-  ) {
+  if (visualCertification?.requiredBackend !== 'webgpu') {
     return null;
   }
 

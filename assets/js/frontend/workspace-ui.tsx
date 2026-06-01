@@ -219,7 +219,6 @@ export function WorkspaceStagePanel({
   const backend = engine.engineSnapshot?.backend;
   const panel = ui.routeState.panel;
   const missingRequestedPreset = engine.missingRequestedPreset;
-  const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
   const audioSource =
     engine.engineSnapshot?.audioSource ?? ui.routeState.audioSource;
 
@@ -275,7 +274,7 @@ export function WorkspaceStagePanel({
                 {getToolLabel(panel)} open
               </span>
             ) : null}
-            {!missingRequestedPreset && !invalidExperienceSlug ? (
+            {!missingRequestedPreset ? (
               <StimsControlDock
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={onToggleFullscreen}
@@ -316,17 +315,6 @@ export function WorkspaceStagePanel({
           ) : null}
         </StimsFrameHeader>
         <div className="stims-shell__stage-hero">{launchPanel}</div>
-        {invalidExperienceSlug ? (
-          <div className="active-toy-status is-error">
-            <div className="active-toy-status__content">
-              <h2>Link no longer works</h2>
-              <p>
-                This Stims link points to a view that is no longer available: "
-                {invalidExperienceSlug}".
-              </p>
-            </div>
-          </div>
-        ) : null}
       </StimsStageFrame>
     </section>
   );

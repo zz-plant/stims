@@ -157,7 +157,7 @@ describe('Workspace performance regressions', () => {
     };
 
     const blendState = cloneBlendState(frameState as never);
-    if (!blendState || blendState.mode !== 'gpu') {
+    if (blendState?.mode !== 'gpu') {
       throw new Error('Expected a GPU blend state.');
     }
 

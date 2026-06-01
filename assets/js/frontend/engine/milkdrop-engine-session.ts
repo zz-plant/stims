@@ -139,7 +139,7 @@ export function createMilkdropEngineAdapter() {
           storageKey: QUALITY_STORAGE_KEY,
         },
         initialPresetId: intent.presetId ?? undefined,
-        showOverlayToggle: false,
+        _showOverlayToggle: false,
         enableOverlay: !intent.previewMode,
         previewMode: Boolean(intent.previewMode),
       });
