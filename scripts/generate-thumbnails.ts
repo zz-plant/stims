@@ -144,10 +144,26 @@ async function main() {
         // Capture the canvas
         const canvas = await page.$('canvas');
         if (canvas) {
-          await canvas.screenshot({
-            path: `${OUTPUT_DIR}/${preset.id}.png`,
-            type: 'png',
-          });
+          const filePath = `${OUTPUT_DIR}/${preset.id}.png`;
+          await canvas.screenshot({ path: filePath, type: 'png' });
+
+          // Post-capture: check if the frame has visible content.
+          // Near-black frames produce tiny PNGs (< 10KB at 800×600).
+          const { size } = await Bun.file(filePath).stat();
+
+          if (size < 10000) {
+            console.log(
+              `    ${(size / 1024).toFixed(1)}KB — waiting 5s for animation...`,
+            );
+            await page.waitForTimeout(5000);
+            await canvas.screenshot({ path: filePath, type: 'png' });
+            const { size: retrySize } = await Bun.file(filePath).stat();
+            if (retrySize < 10000) {
+              console.log(
+                `    ${(retrySize / 1024).toFixed(1)}KB — still dark, kept anyway`,
+              );
+            }
+          }
         }
 
         const elapsed = (Date.now() - t0) / 1000;
