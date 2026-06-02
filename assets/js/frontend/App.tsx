@@ -22,16 +22,11 @@ import {
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
-import { OnboardingFlow, useOnboarding } from './OnboardingFlow.tsx';
 import { SplitViewBrowse } from './SplitViewBrowse.tsx';
 import { connectWakeLock } from './wake-lock.ts';
-import { useWorkspace, WorkspaceProvider } from './workspace-context.tsx';
+import { useEngineSnapshot, useWorkspace, WorkspaceProvider } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
-import {
-  WorkspaceStagePanel,
-  WorkspaceToast,
-  WorkspaceToolSheet,
-} from './workspace-ui.tsx';
+import { WorkspaceStagePanel, WorkspaceToolSheet } from './workspace-ui.tsx';
 
 class StimsErrorBoundary extends Component<
   { children: ReactNode },
@@ -157,6 +152,7 @@ class StimsErrorBoundary extends Component<
 
 function StimsWorkspaceAppShell() {
   const { ui, engine } = useWorkspace();
+  const { engineSnapshot } = useEngineSnapshot();
   const isWideEnough = useMediaQuery('(min-width: 1024px)');
   const temporalMemory = useTemporalMemory();
 
@@ -168,19 +164,47 @@ function StimsWorkspaceAppShell() {
     score: number;
   } | null>(null);
 
-  const stageAnchoredToolOpen =
-    ui.routeState.panel === 'editor' || ui.routeState.panel === 'inspector';
+  const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
   const liveMode = engine.launchControlsHidden;
-  const audioEnergy = engine.engineSnapshot?.audioEnergy ?? 0;
+  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const currentAudioSource =
-    engine.engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+    engineSnapshot?.audioSource ?? ui.routeState.audioSource;
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
 
-  const { showOnboarding, dismissOnboarding } = useOnboarding();
-  const showOnboardingFlow =
-    showOnboarding && !ui.routeState.previewMode && !ui.routeState.agentMode;
   const { visibleHint, showHint, dismissHint } = useHelpHints();
+
+  // Auto-play demo audio on load
+  const autoPlayedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !ui.routeState.agentMode &&
+      !ui.routeState.previewMode &&
+      engine.engineReady &&
+      engine.catalogReady &&
+      engine.featuredPreset &&
+      !liveMode &&
+      !autoPlayedRef.current
+    ) {
+      autoPlayedRef.current = true;
+      void engine.handlePlayPreset(engine.featuredPreset.id);
+    }
+  }, [
+    engine.engineReady,
+    engine.catalogReady,
+    engine.featuredPreset,
+    engine.handlePlayPreset,
+    liveMode,
+    ui.routeState.agentMode,
+    ui.routeState.previewMode,
+  ]);
+
+  // Dismiss contextual help when a toast appears to avoid bottom overlap
+  useEffect(() => {
+    if (ui.toast && visibleHint) {
+      dismissHint();
+    }
+  }, [ui.toast, visibleHint, dismissHint]);
 
   const handleToggleFullscreen = useCallback(() => {
     const stageElement = ui.stageRef.current?.parentElement;
@@ -203,7 +227,7 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     if (
       !liveMode ||
-      !engine.engineSnapshot?.audioActive ||
+      !engineSnapshot?.audioActive ||
       currentAudioSource === 'demo'
     ) {
       quietAtRef.current = null;
@@ -231,7 +255,7 @@ function StimsWorkspaceAppShell() {
     audioEnergy,
     currentAudioSource,
     liveMode,
-    engine.engineSnapshot?.audioActive,
+    engineSnapshot?.audioActive,
     ui.setStatusMessage,
   ]);
 
@@ -270,10 +294,10 @@ function StimsWorkspaceAppShell() {
     return connectWakeLock(() => {
       return (
         isFullscreen ||
-        (liveMode && (engine.engineSnapshot?.audioActive ?? false))
+        (liveMode && (engineSnapshot?.audioActive ?? false))
       );
     });
-  }, [isFullscreen, liveMode, engine.engineSnapshot?.audioActive]);
+  }, [isFullscreen, liveMode, engineSnapshot?.audioActive]);
 
   useEffect(() => {
     let title = 'Stims';
@@ -306,10 +330,10 @@ function StimsWorkspaceAppShell() {
   ]);
 
   useEffect(() => {
-    if (liveMode && engine.engineSnapshot?.audioActive) {
+    if (liveMode && engineSnapshot?.audioActive) {
       showHint('first-play');
     }
-  }, [liveMode, engine.engineSnapshot?.audioActive, showHint]);
+  }, [liveMode, engineSnapshot?.audioActive, showHint]);
 
   useEffect(() => {
     if (ui.routeState.panel === 'browse') {
@@ -325,22 +349,22 @@ function StimsWorkspaceAppShell() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: internal refs and service methods don't change
   useEffect(() => {
-    const activePresetId = engine.engineSnapshot?.activePresetId;
+    const activePresetId = engineSnapshot?.activePresetId;
     if (!activePresetId) return;
     const canvas = ui.stageRef.current?.querySelector(
       'canvas',
     ) as HTMLCanvasElement | null;
     temporalMemory.record(activePresetId, canvas);
-  }, [engine.engineSnapshot?.activePresetId]);
+  }, [engineSnapshot?.activePresetId]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore snapshot sub-properties
   useEffect(() => {
-    if (!engine.engineSnapshot?.audioActive) {
+    if (!engineSnapshot?.audioActive) {
       setAudioMatch(null);
       return;
     }
     const controller = new AbortController();
-    const snap = engine.engineSnapshot;
+    const snap = engineSnapshot;
     const profile = buildAudioProfile({ audioEnergy: snap.audioEnergy });
     if (profile.rms < 0.02) return;
 
@@ -358,7 +382,7 @@ function StimsWorkspaceAppShell() {
     });
 
     return () => controller.abort();
-  }, [engine.engineSnapshot?.audioActive, engine.engineSnapshot?.audioSource]);
+  }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
   const filteredCatalogRef = useRef(engine.filteredCatalog);
   filteredCatalogRef.current = engine.filteredCatalog;
@@ -403,11 +427,6 @@ function StimsWorkspaceAppShell() {
         event.preventDefault();
         updatePanelRef.current(
           ui.routeState.panel === 'editor' ? null : 'editor',
-        );
-      } else if (key === 'i') {
-        event.preventDefault();
-        updatePanelRef.current(
-          ui.routeState.panel === 'inspector' ? null : 'inspector',
         );
       } else if (key === 'n' || key === 'arrowright') {
         event.preventDefault();
@@ -506,7 +525,6 @@ function StimsWorkspaceAppShell() {
         Skip to main content
       </a>
       <WorkspaceStagePanel
-        audioEnergy={audioEnergy}
         isFullscreen={isFullscreen}
         launchPanel={<NewHomePage />}
         liveMode={liveMode}
@@ -528,22 +546,13 @@ function StimsWorkspaceAppShell() {
       engine.filteredCatalog.length > 0 ? (
         <SplitViewBrowse
           presets={engine.filteredCatalog}
-          currentPresetId={engine.engineSnapshot?.activePresetId ?? null}
+          currentPresetId={engineSnapshot?.activePresetId ?? null}
           onSelect={engine.handlePresetSelection}
           onClose={() => ui.updatePanel(null)}
           onPlay={(presetId) => {
             engine.handlePresetSelection(presetId);
             ui.updatePanel(null);
           }}
-        />
-      ) : null}
-
-      <WorkspaceToast toast={ui.toast} onDismiss={ui.dismissToast} />
-
-      {showOnboardingFlow ? (
-        <OnboardingFlow
-          onDismiss={dismissOnboarding}
-          onStartDemo={() => void engine.handleAudioStart('demo')}
         />
       ) : null}
 

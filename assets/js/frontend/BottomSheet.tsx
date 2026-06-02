@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import styles from '../../css/BottomSheet.module.css';
-import { UiIcon } from './workspace-ui';
+import { UiIcon } from './UiIcon';
 
 type BottomSheetTab = {
   id: string;

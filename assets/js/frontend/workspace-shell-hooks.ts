@@ -17,7 +17,6 @@ import {
   mergeCatalogActivity,
   pickFavoritePresets,
   pickRecentPresets,
-  type ReadinessItem,
 } from './workspace-helpers.ts';
 
 type WorkspaceShellOrchestrationArgs = {
@@ -30,7 +29,6 @@ type WorkspaceShellOrchestrationArgs = {
   activityCatalog: PresetCatalogEntry[];
   importPresetFiles: (files: FileList | null) => Promise<void>;
   pendingPresetIdRef: { current: string | null };
-  readinessItems: ReadinessItem[];
   routeState: SessionRouteState;
   setStatusMessage: (message: string | null) => void;
   startAudioSource: (request: {
@@ -52,7 +50,6 @@ export function useWorkspaceShellOrchestration({
   activityCatalog,
   importPresetFiles,
   pendingPresetIdRef,
-  readinessItems,
   routeState,
   setStatusMessage,
   startAudioSource,
@@ -80,7 +77,7 @@ export function useWorkspaceShellOrchestration({
     [engineSnapshot, fallbackCatalogReady],
   );
 
-  const catalogError = useMemo(() => null, []);
+  const catalogError = null;
 
   const filteredCatalog = useMemo(
     () =>
@@ -177,12 +174,10 @@ export function useWorkspaceShellOrchestration({
       runtimeReady,
       selectedPreset,
       starterPresets,
-      stageAnchoredToolOpen:
-        routeState.panel === 'editor' || routeState.panel === 'inspector',
+      stageAnchoredToolOpen: routeState.panel === 'editor',
     }),
     [
       enrichedCatalog,
-      catalogError,
       catalogReady,
       currentPreset,
       engineReady,
@@ -196,11 +191,6 @@ export function useWorkspaceShellOrchestration({
       selectedPreset,
       starterPresets,
     ],
-  );
-
-  const readinessAlerts = useMemo(
-    () => readinessItems.filter((item) => item.state !== 'ready'),
-    [readinessItems],
   );
 
   const updatePanel = (panel: PanelState) => {
@@ -492,7 +482,6 @@ export function useWorkspaceShellOrchestration({
     handleShowCurrentLink,
     handleAudioFile,
     handleShufflePreset,
-    readinessAlerts,
     updatePanel,
   };
 }

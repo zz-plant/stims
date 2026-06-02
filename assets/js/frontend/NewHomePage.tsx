@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
-import { useWorkspace } from './workspace-context.tsx';
+import { PresetArtwork } from './PresetArtwork.tsx';
+import { PresetShelfSection } from './PresetShelfSection.tsx';
+import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
-import { PresetArtwork, PresetShelfSection, UiIcon } from './workspace-ui.tsx';
 
 function buildJumpBackEntries(
   favoritePresets: PresetCatalogEntry[],
@@ -12,7 +13,7 @@ function buildJumpBackEntries(
     ...favoritePresets.map((entry) => ({
       entry,
       label: 'Saved pick' as const,
-      summary: 'A favorite you saved for an easy return.',
+      summary: '',
     })),
     ...recentPresets
       .filter(
@@ -24,13 +25,14 @@ function buildJumpBackEntries(
       .map((entry) => ({
         entry,
         label: 'Recent' as const,
-        summary: 'Something you opened recently and can jump back into.',
+        summary: '',
       })),
   ].slice(0, 3);
 }
 
 export function NewHomePage() {
   const { ui, engine } = useWorkspace();
+  const { engineSnapshot } = useEngineSnapshot();
   const featuredPreset = engine.featuredPreset;
   const favoritePresets = engine.favoritePresets;
   const missingRequestedPreset = engine.missingRequestedPreset;
@@ -44,7 +46,6 @@ export function NewHomePage() {
   const showJumpBack = hasFavorites;
 
   const [loadingAudio, setLoadingAudio] = useState(false);
-  const engineSnapshot = engine.engineSnapshot;
 
   useEffect(() => {
     if (engineSnapshot?.audioActive) setLoadingAudio(false);
@@ -81,38 +82,13 @@ export function NewHomePage() {
             <p className="stims-shell__eyebrow">Browser visualizer</p>
             <h1 id="stims-launch-title">Sound into motion.</h1>
             <p className="stims-shell__launch-summary">
-              Start with demo audio, then switch to your own music. No sign-up,
-              no setup.
+              Demo audio starts automatically. Switch to your own music anytime.
               {catalogReady
                 ? ` ${catalog.length} presets run in WebGL or WebGPU.`
                 : ' Presets run in WebGL or WebGPU.'}
             </p>
-            <div className="stims-shell__launch-kicker-row">
-              <span>Instant demo</span>
-              <span>
-                {catalogReady
-                  ? `${catalog.length} classic presets`
-                  : 'Classic presets'}
-              </span>
-              <span>Shuffle anytime</span>
-            </div>
           </div>
           <div className="stims-shell__launch-stack">
-            <button
-              id="use-demo-audio"
-              data-demo-audio-btn="true"
-              className="cta-button primary stims-shell__action-button"
-              type="button"
-              disabled={loadingAudio}
-              onClick={() => handleStartAudio('demo')}
-            >
-              <span className="stims-shell__action-label">
-                {loadingAudio ? 'Loading visualizer...' : 'See visuals now'}
-              </span>
-              <span className="stims-shell__action-hint">
-                Space to start — built-in audio, drops onto stage
-              </span>
-            </button>
             <div className="stims-shell__launch-supplement stims-shell__launch-actions">
               <button
                 type="button"
@@ -131,25 +107,6 @@ export function NewHomePage() {
                 Capture tab audio
               </button>
             </div>
-            <div className="stims-shell__launch-mini-mixer" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-            <a
-              href="https://github.com/zz-plant/stims"
-              className="cta-button ghost"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <UiIcon
-                name="github"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              GitHub
-            </a>
           </div>
         </div>
       </div>
@@ -210,7 +167,7 @@ export function NewHomePage() {
       {showJumpBack ? (
         <PresetShelfSection
           entries={buildJumpBackEntries(favoritePresets, recentPresets)}
-          summary="Saved picks and recent stops."
+          summary=""
           title="Jump back in"
           onSelect={engine.handlePlayPreset}
           presetPreviews={presetPreviews}
@@ -223,7 +180,7 @@ export function NewHomePage() {
             label: entry.author || 'Unknown',
             summary: describePresetMood(entry),
           }))}
-          summary="Pick a preset to start with."
+          summary=""
           title="Browse all presets"
           titleAction={{
             label: `See all ${catalog.length} \u2192`,

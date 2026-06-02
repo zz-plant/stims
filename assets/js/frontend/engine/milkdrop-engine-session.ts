@@ -309,7 +309,7 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
-    openTool(tool: 'browse' | 'editor' | 'inspector') {
+    openTool(tool: 'browse' | 'editor') {
       experience?.openTab(tool);
       emit();
     },

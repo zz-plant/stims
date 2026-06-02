@@ -76,10 +76,6 @@ describe('Workspace shell mobile layout regression', () => {
   test('adds compatibility fallbacks for older mobile browser CSS support', () => {
     const css = readAppShellCss();
 
-    expect(css).toContain(
-      '-webkit-backdrop-filter: blur(12px) saturate(118%);',
-    );
-    expect(css).toContain('-webkit-mask-image: radial-gradient(');
     expect(css).toMatch(
       /@supports not \(color: color-mix\(in srgb, white, black\)\) \{[\s\S]*?\.stims-shell \.cta-button\.primary/u,
     );

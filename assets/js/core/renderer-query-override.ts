@@ -157,8 +157,8 @@ export function shouldPreferWebGLForKnownCompatibilityGaps() {
     return false;
   }
 
-  // Default: prefer WebGL for compatibility
-  return true;
+  // Default: only prefer WebGL in browsers where WebGPU isn't stable
+  return !isWebGPUStableInThisBrowser();
 }
 
 // Re-export for telemetry/diagnostics

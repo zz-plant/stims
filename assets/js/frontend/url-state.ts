@@ -7,7 +7,6 @@ import type {
 const VALID_PANELS = new Set<Exclude<PanelState, null>>([
   'browse',
   'editor',
-  'inspector',
   'settings',
 ]);
 const VALID_AUDIO_SOURCES = new Set<AudioSource>([
@@ -19,7 +18,6 @@ const VALID_AUDIO_SOURCES = new Set<AudioSource>([
 
 const LEGACY_PANEL_ALIASES: Record<string, Exclude<PanelState, null>> = {
   looks: 'browse',
-  inspect: 'inspector',
 };
 
 const LEGACY_AUDIO_ALIASES: Record<string, AudioSource> = {

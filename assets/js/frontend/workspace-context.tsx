@@ -9,10 +9,12 @@ import type {
 } from './contracts.ts';
 import {
   type EngineContextValue,
+  type EngineSnapshotValue,
   EngineCtx,
   EngineProvider,
+  useEngine,
+  useEngineSnapshot,
 } from './engine-context.tsx';
-import type { ReadinessItem } from './workspace-helpers.ts';
 import {
   useWorkspaceRouteState,
   useWorkspaceSessionState,
@@ -28,8 +30,6 @@ export interface WorkspaceContextValue {
   motionPreference: MotionPreference;
   pendingPresetIdRef: { current: string | null };
   qualityPreset: QualityPreset;
-  readinessItems: ReadinessItem[];
-  readinessAlerts: ReadinessItem[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   setStatusMessage: (message: string | null) => void;
@@ -73,7 +73,7 @@ export function useUI(): WorkspaceContextValue {
   return ctx;
 }
 
-export { useEngine } from './engine-context.tsx';
+export { useEngine, useEngineSnapshot } from './engine-context.tsx';
 
 export function useWorkspace(): {
   ui: WorkspaceContextValue;
@@ -102,16 +102,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     activityCatalog: sessionState.activityCatalog,
     importPresetFiles: sessionState.importPresetFiles,
     pendingPresetIdRef: sessionState.pendingPresetIdRef,
-    readinessItems: sessionState.readinessItems,
     routeState,
     setStatusMessage: sessionState.setStatusMessage,
     startAudioSource: sessionState.startAudioSource,
     youtubePreviewRef: sessionState.youtubePreviewRef,
   });
 
-  const engineValue: EngineContextValue = useMemo(
+  const engineSnapshotValue: EngineSnapshotValue = useMemo(
     () => ({
       engineSnapshot: sessionState.engineSnapshot,
+      engineReady: shellOrchestration.engineReady,
+    }),
+    [sessionState.engineSnapshot, shellOrchestration.engineReady],
+  );
+
+  const engineDataValue: EngineContextValue = useMemo(
+    () => ({
       presetPreviews: sessionState.presetPreviews,
       catalog: shellOrchestration.catalog,
       catalogError: shellOrchestration.catalogError,
@@ -144,7 +150,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setQualityPreset: sessionState.setQualityPreset,
     }),
     [
-      sessionState.engineSnapshot,
       sessionState.presetPreviews,
       shellOrchestration.catalog,
       shellOrchestration.catalogError,
@@ -187,8 +192,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       motionPreference: sessionState.motionPreference,
       pendingPresetIdRef: sessionState.pendingPresetIdRef,
       qualityPreset: sessionState.qualityPreset,
-      readinessItems: sessionState.readinessItems,
-      readinessAlerts: shellOrchestration.readinessAlerts,
       searchQuery: sessionState.searchQuery,
       setSearchQuery: sessionState.setSearchQuery,
       setStatusMessage: sessionState.setStatusMessage,
@@ -226,8 +229,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.motionPreference,
       sessionState.pendingPresetIdRef,
       sessionState.qualityPreset,
-      sessionState.readinessItems,
-      shellOrchestration.readinessAlerts,
       sessionState.searchQuery,
       sessionState.setSearchQuery,
       sessionState.setStatusMessage,
@@ -260,7 +261,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <WorkspaceContext.Provider value={uiValue}>
-      <EngineProvider value={engineValue}>{children}</EngineProvider>
+      <EngineProvider
+        snapshot={engineSnapshotValue}
+        data={engineDataValue}
+      >
+        {children}
+      </EngineProvider>
     </WorkspaceContext.Provider>
   );
 }

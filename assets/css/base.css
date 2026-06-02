@@ -5225,7 +5225,7 @@ body {
       rgba(255, 159, 104, 0.08),
       transparent 26%
     );
-  filter: blur(48px);
+  filter: blur(24px);
   opacity: 0.88;
 }
 
@@ -6139,7 +6139,7 @@ body {
   inset: 6% 8% 12%;
   border-radius: 56px;
   opacity: 0.68;
-  filter: blur(60px);
+  filter: blur(28px);
 }
 
 :root[data-focused-session="live"] .active-toy-nav {

@@ -35,7 +35,6 @@ import {
 } from './url-state.ts';
 import { createLazyFactory } from './use-lazy-factory.ts';
 import { buildLaunchIntent } from './workspace-helpers.ts';
-import { useWorkspaceReadiness } from './workspace-readiness.ts';
 import { useWorkspaceToast } from './workspace-toast.ts';
 import { useWorkspaceYouTubePreview } from './workspace-youtube-preview.ts';
 
@@ -108,7 +107,6 @@ export function useWorkspaceSessionState({
     useRef<Promise<MilkdropEngineAdapter> | null>(null);
   const pendingPresetIdRef = useRef<string | null>(null);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
-  const readinessItems = useWorkspaceReadiness();
 
   const {
     activityCatalog,
@@ -260,8 +258,8 @@ export function useWorkspaceSessionState({
       return;
     }
 
-    if (routeState.panel === 'editor' || routeState.panel === 'inspector') {
-      engineRef.current.openTool(routeState.panel);
+    if (routeState.panel === 'editor') {
+      engineRef.current.openTool('editor');
       return;
     }
 
@@ -378,7 +376,6 @@ export function useWorkspaceSessionState({
     motionPreference,
     pendingPresetIdRef,
     qualityPreset,
-    readinessItems,
     recentYouTubeVideos,
     refreshCatalogActivity,
     renderPreferences,

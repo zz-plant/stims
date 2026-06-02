@@ -1,23 +1,25 @@
 /**
- * Batch thumbnail generator — renders presets headlessly via Playwright + WebGL.
- * Stays on a single page across all presets (no bundle reload between captures).
+ * Batch thumbnail generator — renders presets via Playwright + WebGL.
+ * Uses fresh browser context per preset for clean GPU state.
  *
  * Usage:
- *   bun run scripts/generate-thumbnails.ts           # all presets
+ *   bun run scripts/generate-thumbnails.ts           # all presets with previews
  *   bun run scripts/generate-thumbnails.ts --count=5 # first N
  *   bun run scripts/generate-thumbnails.ts --ids=geiss-casino,flexi-dawn
  *
  * Requires: dev server running (bun run dev) and Playwright Chromium installed.
- * Outputs: thumbnails/{presetId}.png
+ * Outputs: thumbnails/{presetId}.png + thumbnails/{presetId}.thumb.png
  */
 
-import { chromium } from 'playwright';
 import { existsSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { chromium } from 'playwright';
+import sharp from 'sharp';
 
 const DEV_SERVER = 'http://localhost:5173';
 const OUTPUT_DIR = 'thumbnails';
-const THUMBNAIL_W = 480;
-const THUMBNAIL_H = 270;
+const THUMB_W = 480;
+const THUMB_H = 270;
 
 interface PresetEntry {
   id: string;
@@ -27,15 +29,16 @@ interface PresetEntry {
 function parseArgs(): { count?: number; ids?: string[] } {
   const args: { count?: number; ids?: string[] } = {};
   for (const arg of process.argv.slice(2)) {
-    if (arg.startsWith('--count=')) args.count = parseInt(arg.slice(8));
+    if (arg.startsWith('--count=')) args.count = parseInt(arg.slice(8), 10);
     if (arg.startsWith('--ids=')) args.ids = arg.slice(6).split(',');
   }
   return args;
 }
 
-async function getPresets(
-  filter: { count?: number; ids?: string[] },
-): Promise<PresetEntry[]> {
+async function getPresets(filter: {
+  count?: number;
+  ids?: string[];
+}): Promise<PresetEntry[]> {
   const catalogPath = new URL(
     '../public/milkdrop-presets/catalog.json',
     import.meta.url,
@@ -49,7 +52,34 @@ async function getPresets(
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
-  return (all as any[]).filter((p: any) => p.preview).slice(0, filter.count) as PresetEntry[];
+  return (all as any[])
+    .filter((p: any) => p.preview)
+    .slice(0, filter.count) as PresetEntry[];
+}
+
+function hideUIElements() {
+  const canvas = document.querySelector('canvas');
+  if (!canvas) return;
+  const ancestors = new Set<Element>();
+  let el: Element | null = canvas.parentElement;
+  while (el) {
+    ancestors.add(el);
+    el = el.parentElement;
+  }
+  const all = document.querySelectorAll('body *');
+  for (const node of all) {
+    if (node === canvas || ancestors.has(node)) continue;
+    (node as HTMLElement).style.display = 'none';
+  }
+}
+
+async function downscaleFull(filePath: string): Promise<string> {
+  const thumbPath = filePath.replace(/\.png$/, '.thumb.png');
+  await sharp(filePath)
+    .resize(THUMB_W, THUMB_H, { fit: 'contain', background: '#000' })
+    .png({ quality: 85, compressionLevel: 9 })
+    .toFile(thumbPath);
+  return thumbPath;
 }
 
 async function main() {
@@ -64,40 +94,14 @@ async function main() {
   console.log(`${presets.length} presets to render`);
   if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  // Verify dev server
   try {
     await fetch(DEV_SERVER);
   } catch {
-    console.error(`Dev server not running. Start: bun run dev`);
+    console.error('Dev server not running. Start: bun run dev');
     process.exit(1);
   }
 
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({
-    viewport: { width: 800, height: 600 },
-  });
-
-  console.log('Opening app...');
-  await page.goto(`${DEV_SERVER}/?agent=true&embedded=true&audio=demo`, {
-    waitUntil: 'domcontentloaded',
-  });
-
-  // Wait for the React app + engine to mount
-  await page.waitForSelector('#stims-main', { timeout: 15000 });
-  console.log('App loaded. Mounting engine...');
-
-  // Mount engine by triggering demo audio (this calls ensureEngineMounted internally)
-  await page.evaluate(() => {
-    const btn = document.querySelector(
-      '#use-demo-audio,[data-demo-audio-btn]',
-    ) as HTMLButtonElement | null;
-    btn?.click();
-  });
-
-  // Wait for canvas to appear (engine is mounted and rendering)
-  await page.waitForSelector('canvas', { timeout: 30000 });
-  console.log('Engine mounted. Starting captures...\n');
-
+  const browser = await chromium.launch({ headless: false });
   const startTime = Date.now();
   let success = 0;
   let fail = 0;
@@ -105,98 +109,72 @@ async function main() {
   for (let i = 0; i < presets.length; i++) {
     const preset = presets[i];
     const t0 = Date.now();
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      deviceScaleFactor: 2,
+    });
+    await context.addInitScript(() => {
+      localStorage.setItem('stims:quality-preset', 'ultra');
+      localStorage.setItem('stims:renderer-preference', 'webgpu');
+    });
+    const page = await context.newPage();
 
     try {
-      // Load preset via URL + popstate. Keep audio=demo so the engine
-      // has audio registers to drive motion (many presets render black without).
-      const loaded = await page.evaluate(
-        async (presetId) => {
-          const url = new URL(window.location.href);
-          url.searchParams.set('preset', presetId);
-          url.searchParams.set('audio', 'demo');
-          window.history.pushState({}, '', url.toString());
-          window.dispatchEvent(new PopStateEvent('popstate'));
+      await page.goto(`${DEV_SERVER}/?preset=${preset.id}&audio=demo`, {
+        waitUntil: 'domcontentloaded',
+      });
 
-          // Wait for live mode + canvas to have rendered content.
-          // Some presets (Swarm, Snakeskin) render dark frames — that's
-          // inherent to the preset, not a script failure.
-          return new Promise<boolean>((resolve) => {
-            const timeout = setTimeout(() => resolve(false), 20000);
-            let checks = 0;
-            const interval = setInterval(() => {
-              const shell = document.querySelector('[data-mode="live"]');
-              const canvas = document.querySelector('canvas');
-              if (shell && canvas && canvas.width > 0) {
-                checks++;
-                if (checks >= 20) {
-                  clearTimeout(timeout);
-                  clearInterval(interval);
-                  resolve(true);
-                }
-              }
-            }, 100);
-          });
-        },
-        preset.id,
-      );
+      await page.waitForSelector('#stims-main', { timeout: 10000 });
 
-      if (loaded) {
-        // Capture the canvas
-        const canvas = await page.$('canvas');
-        if (canvas) {
-          const filePath = `${OUTPUT_DIR}/${preset.id}.png`;
-          await canvas.screenshot({ path: filePath, type: 'png' });
+      await page.evaluate(() => {
+        const btn = document.querySelector(
+          '#use-demo-audio',
+        ) as HTMLButtonElement | null;
+        btn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
 
-          // Post-capture: check if the frame has visible content.
-          // Near-black frames produce tiny PNGs (< 10KB at 800×600).
-          const { size } = await Bun.file(filePath).stat();
+      await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
+      await page.waitForTimeout(2000);
 
-          if (size < 10000) {
-            console.log(
-              `    ${(size / 1024).toFixed(1)}KB — waiting 5s for animation...`,
-            );
-            await page.waitForTimeout(5000);
-            await canvas.screenshot({ path: filePath, type: 'png' });
-            const { size: retrySize } = await Bun.file(filePath).stat();
-            if (retrySize < 10000) {
-              console.log(
-                `    ${(retrySize / 1024).toFixed(1)}KB — still dark, kept anyway`,
-              );
-            }
-          }
-        }
+      await page.evaluate(hideUIElements);
+      await page.waitForTimeout(300);
 
-        const elapsed = (Date.now() - t0) / 1000;
-        success++;
-        const pct = (((i + 1) / presets.length) * 100).toFixed(0);
-        console.log(`  [${pct}%] ${preset.id} — ${elapsed.toFixed(1)}s`);
-      } else {
-        throw new Error('Preset load timeout');
+      const canvas = await page.$('canvas');
+      if (!canvas) throw new Error('No canvas');
+
+      const filePath = join(OUTPUT_DIR, `${preset.id}.png`);
+      await canvas.screenshot({ path: filePath, type: 'png' });
+
+      const { size } = await Bun.file(filePath).stat();
+      if (size < 10000) {
+        console.log(`    ${(size / 1024).toFixed(1)}KB — retrying after 5s...`);
+        await page.waitForTimeout(5000);
+        await canvas.screenshot({ path: filePath, type: 'png' });
       }
+
+      await downscaleFull(filePath);
+
+      success++;
+      const elapsed = (Date.now() - t0) / 1000;
+      const pct = (((i + 1) / presets.length) * 100).toFixed(0);
+      console.log(`  [${pct}%] ${preset.id} — ${elapsed.toFixed(1)}s`);
     } catch (err) {
       fail++;
       const elapsed = (Date.now() - t0) / 1000;
       console.log(`  [FAIL] ${preset.id} — ${elapsed.toFixed(1)}s: ${err}`);
-    }
-
-    // Progress estimate
-    if (i === 4 && presets.length > 5) {
-      const avgMs = (Date.now() - startTime) / (i + 1);
-      const remaining = (presets.length - i - 1) * avgMs;
-      console.log(
-        `  ... ~${(remaining / 60000).toFixed(0)}m remaining for ${presets.length - i - 1} presets\n`,
-      );
+    } finally {
+      await page.close();
+      await context.close();
     }
   }
 
   const totalTime = (Date.now() - startTime) / 1000;
   console.log('');
-  console.log(`=== Done ===`);
+  console.log('=== Done ===');
   console.log(`Total: ${(totalTime / 60).toFixed(1)}m`);
   console.log(`Success: ${success}  Failed: ${fail}`);
-  console.log(
-    `Avg: ${(totalTime / Math.max(1, success)).toFixed(1)}s/preset`,
-  );
+  if (success > 0)
+    console.log(`Avg: ${(totalTime / success).toFixed(1)}s/preset`);
 
   await browser.close();
 }

@@ -4,8 +4,28 @@ import type { PresetCatalogEntry, SessionRouteState } from './contracts.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { StarterPreset } from './workspace-helpers.ts';
 
-export interface EngineContextValue {
+/* ── Engine Snapshot (changes every frame) ──────────────────────── */
+
+export interface EngineSnapshotValue {
   engineSnapshot: EngineSnapshot | null;
+  engineReady: boolean;
+}
+
+const EngineSnapshotCtx = createContext<EngineSnapshotValue | null>(null);
+
+export function useEngineSnapshot(): EngineSnapshotValue {
+  const ctx = useContext(EngineSnapshotCtx);
+  if (!ctx) {
+    throw new Error(
+      'useEngineSnapshot must be used within an EngineProvider',
+    );
+  }
+  return ctx;
+}
+
+/* ── Engine Data + Actions (stable between user actions / preset switches) ─── */
+
+export interface EngineContextValue {
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
   catalog: PresetCatalogEntry[];
   catalogError: string | null;
@@ -59,11 +79,17 @@ export function useEngine(): EngineContextValue {
 }
 
 export function EngineProvider({
-  value,
+  snapshot,
+  data,
   children,
 }: {
-  value: EngineContextValue;
+  snapshot: EngineSnapshotValue;
+  data: EngineContextValue;
   children: ReactNode;
 }) {
-  return <EngineCtx.Provider value={value}>{children}</EngineCtx.Provider>;
+  return (
+    <EngineSnapshotCtx.Provider value={snapshot}>
+      <EngineCtx.Provider value={data}>{children}</EngineCtx.Provider>
+    </EngineSnapshotCtx.Provider>
+  );
 }

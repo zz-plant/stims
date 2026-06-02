@@ -561,8 +561,10 @@ export const initGamepadNavigation = (
     if (pad) {
       handleDirectional(now, pad);
       handleButtons(pad);
+      rafId = window.requestAnimationFrame(tick);
+    } else {
+      rafId = null;
     }
-    rafId = window.requestAnimationFrame(tick);
   };
 
   const handleConnect = () => {

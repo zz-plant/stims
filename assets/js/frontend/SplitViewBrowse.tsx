@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
 import styles from '../../css/SplitViewBrowse.module.css';
 import type { PresetCatalogEntry } from './contracts';
+import { PresetArtwork } from './PresetArtwork.tsx';
+import { UiIcon } from './UiIcon.tsx';
 import {
   describePresetMood,
   getPresetCardSupportLabel,
 } from './workspace-helpers';
-import { PresetArtwork, UiIcon } from './workspace-ui';
 
 type SplitViewBrowseProps = {
   presets: PresetCatalogEntry[];

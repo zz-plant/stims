@@ -14,13 +14,6 @@ import type {
   SessionRouteState,
 } from './contracts.ts';
 
-export type ReadinessItem = {
-  id: string;
-  label: string;
-  state: 'ready' | 'warn' | 'blocked';
-  summary: string;
-};
-
 export type StarterPreset = {
   key: string;
   label: string;
@@ -35,7 +28,6 @@ export type WorkspaceLaunchState = {
   launchEyebrow: string;
   launchTitle: string;
   launchSummary: string;
-  readinessAlerts: ReadinessItem[];
   showExtendedSources: boolean;
   youtubeReady: boolean;
   youtubeUrl: string;
@@ -71,7 +63,6 @@ export type WorkspaceBrowseState = {
 export const TOOL_TABS: Array<Exclude<PanelState, null>> = [
   'browse',
   'editor',
-  'inspector',
   'settings',
 ];
 
@@ -81,23 +72,19 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
       return 'Browse';
     case 'editor':
       return 'Edit';
-    case 'inspector':
-      return 'Inspect';
     case 'settings':
       return 'Style';
+    default:
+      return '';
   }
 }
 
 export function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
-    case 'browse':
-      return 'Start with one fast launch, then roam the full list when you want more modes.';
-    case 'editor':
-      return 'Edit the active preset.';
-    case 'inspector':
-      return 'Inspect the active preset.';
     case 'settings':
       return 'Pick a feel first, then fine-tune only if you want more control.';
+    default:
+      return '';
   }
 }
 

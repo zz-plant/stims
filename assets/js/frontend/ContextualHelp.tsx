@@ -10,18 +10,8 @@ type HelpHint = {
 const HINTS: HelpHint[] = [
   {
     id: 'first-play',
-    message: 'Space or tap to switch presets',
+    message: 'Space to switch presets, E to edit shaders',
     autoHideMs: 6000,
-  },
-  {
-    id: 'first-shuffle',
-    message: 'Try Browse to find a different visual vibe',
-    autoHideMs: 5000,
-  },
-  {
-    id: 'quiet-hint',
-    message: 'Not hearing much? Switch to demo audio for guaranteed motion',
-    autoHideMs: 8000,
   },
   {
     id: 'browse-open',

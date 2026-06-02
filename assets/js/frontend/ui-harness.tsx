@@ -41,7 +41,6 @@ function useHarnessState() {
 function MockWorkspaceStagePanel(overrides: Record<string, unknown>) {
   return (
     <WorkspaceStagePanel
-      audioEnergy={0.5}
       isFullscreen={false}
       launchPanel={
         <div style={{ padding: 24 }}>

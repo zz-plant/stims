@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/MobileControlBar.module.css';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
-import { useWorkspace } from './workspace-context';
-import { UiIcon } from './workspace-ui';
+import { UiIcon } from './UiIcon.tsx';
+import { useEngineSnapshot, useWorkspace } from './workspace-context';
 
 const moods = [
   { label: 'Chill', desc: 'slow drifting ambient', icon: '\uD83C\uDF0A' },
@@ -29,6 +29,7 @@ export function MobileControlBar({
   onToggleTheme: _onToggleTheme,
 }: MobileControlBarProps) {
   const { ui, engine } = useWorkspace();
+  const { engineSnapshot } = useEngineSnapshot();
   const panel = ui.routeState.panel;
   const [visible, setVisible] = useState(true);
   const [showMoods, setShowMoods] = useState(false);
@@ -257,7 +258,7 @@ export function MobileControlBar({
           />
           <span className={styles.actionLabel}>Generate</span>
         </button>
-        {engine.engineSnapshot?.audioSource ? (
+        {engineSnapshot?.audioSource ? (
           <button
             type="button"
             className={styles.action}

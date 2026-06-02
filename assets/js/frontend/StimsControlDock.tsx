@@ -7,7 +7,7 @@ import {
 } from '../core/services/visual-embedding.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
-import { useEngine, useUI } from './workspace-context.tsx';
+import { useEngine, useEngineSnapshot, useUI } from './workspace-context.tsx';
 
 const moods = [
   { label: 'Chill', desc: 'slow drifting ambient', icon: '\uD83C\uDF0A' },
@@ -40,12 +40,13 @@ export function StimsControlDock({
 }) {
   const ui = useUI();
   const engine = useEngine();
+  const { engineSnapshot } = useEngineSnapshot();
   const panel = ui.routeState.panel;
   const audioSource =
-    engine.engineSnapshot?.audioSource ?? ui.routeState.audioSource;
-  const audioEnergy = engine.engineSnapshot?.audioEnergy ?? 0;
+    engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const energyNorm = Math.min(1, Math.max(0, audioEnergy));
-  const runtimeReady = engine.engineSnapshot?.runtimeReady ?? false;
+  const runtimeReady = engineSnapshot?.runtimeReady ?? false;
   const presetTitle =
     engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? '';
   const presetAuthor =
@@ -129,7 +130,7 @@ export function StimsControlDock({
     }
     const stats = extractFrameStats(canvas);
     const frameDesc = describeFrame(stats);
-    const presetId = engine.engineSnapshot?.activePresetId ?? 'unknown';
+    const presetId = engineSnapshot?.activePresetId ?? 'unknown';
     const name =
       engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? 'preset';
     saveCheckpoint(name, `Visual: ${frameDesc}`, presetId);

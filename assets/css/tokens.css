@@ -445,20 +445,6 @@ html.light {
   --stims-white-02: rgba(255, 255, 255, 0.01);
   --stims-white-04: rgba(255, 255, 255, 0.02);
   --stims-white-05: rgba(255, 255, 255, 0.03);
-  --stims-white-06: rgba(255, 255, 255, 0.03);
-  --stims-white-08: rgba(255, 255, 255, 0.04);
-  --stims-white-12: rgba(255, 255, 255, 0.06);
-}
-
-[data-device-tier="low"] .stims-shell__stage-ambient-beam,
-[data-device-tier="low"] .stims-shell__stage-ambient-ring,
-[data-device-tier="low"] .stims-shell__stage-ambient-grid {
-  display: none;
-}
-
-[data-device-tier="low"] .stims-shell__stage-ambient-orb {
-  animation: none;
-  opacity: 0.25;
 }
 
 [data-device-tier="low"] .stims-shell__backdrop-filter,

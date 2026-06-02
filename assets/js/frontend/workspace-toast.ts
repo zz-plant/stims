@@ -88,13 +88,18 @@ export function useWorkspaceToast({
       return;
     }
 
-    const key = `${statusMessage ? 'error' : 'info'}:${runtimeMessage}`;
+    const resolvedTone =
+      statusMessage &&
+      /^(Unable to|error|failed|denied|blocked)/i.test(statusMessage)
+        ? 'error'
+        : 'info';
+    const key = `${resolvedTone}:${runtimeMessage}`;
     if (shownToastKeysRef.current.has(key)) {
       return;
     }
 
     shownToastKeysRef.current.add(key);
-    showToast(runtimeMessage, statusMessage ? 'error' : 'info');
+    showToast(runtimeMessage, resolvedTone);
   }, [
     engineSnapshot?.catalogEntries,
     engineSnapshot?.status,

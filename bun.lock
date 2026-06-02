@@ -42,6 +42,7 @@
         "dependency-cruiser": "^17.3.9",
         "happy-dom": "^20.9.0",
         "playwright": "^1.60.0",
+        "sharp": "^0.34.5",
         "typescript": "^6.0.3",
         "vite": "8.0.13",
         "wrangler": "^4.92.0",
