@@ -63,6 +63,28 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
+    const audioSourcePanelSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'AudioSourcePanel.tsx',
+      ),
+      'utf8',
+    );
+    const browseSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'BrowseSheetPanel.tsx',
+      ),
+      'utf8',
+    );
     const homeSource = readFileSync(
       join(
         import.meta.dir,
@@ -76,13 +98,10 @@ describe('Workspace shell UI simplification regression', () => {
     );
 
     expect(helperSource).toContain(
-      'Start with one fast launch, then roam the full list when you want more modes.',
-    );
-    expect(helperSource).toContain(
       'Pick a feel first, then fine-tune only if you want more control.',
     );
     expect(homeSource).toContain(
-      'Start with demo audio, then switch to your own music.',
+      'Demo audio starts automatically. Switch to your own music anytime.',
     );
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain("? 'Now playing'");
@@ -94,13 +113,14 @@ describe('Workspace shell UI simplification regression', () => {
     expect(dockSource).toContain('className="stims-shell__stage-dock"');
     expect(homeSource).toContain('Featured pick');
     expect(dockSource).toMatch(/>\s*Surprise me\s*</u);
-    expect(homeSource).toContain('See visuals now');
+    expect(homeSource).toContain('Demo audio starts automatically');
+    expect(homeSource).not.toContain('See visuals now');
     expect(homeSource).not.toContain('Explore modes');
-    expect(uiSource).toContain('Use my music');
-    expect(uiSource).toContain('Live mic input');
-    expect(uiSource).toContain('Audio from this browser tab');
-    expect(uiSource).toContain('YouTube link');
-    expect(uiSource).toContain('Start capture');
+    expect(audioSourcePanelSource).toContain('Use my music');
+    expect(audioSourcePanelSource).toContain('Live mic input');
+    expect(audioSourcePanelSource).toContain('Audio from this browser tab');
+    expect(audioSourcePanelSource).toContain('YouTube link');
+    expect(audioSourcePanelSource).toContain('Start capture');
     expect(uiSource).toContain('Switch to your music \\u2192');
     expect(uiSource).not.toContain('Demo audio is running.');
     expect(uiSource).not.toContain('Easy on demo audio');
@@ -111,7 +131,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('launch-recommendation-footer');
     expect(uiSource).not.toContain('stims-shell__session-meta');
     expect(uiSource).not.toContain('stims-shell__audio-bridge"');
-    expect(uiSource).toContain('Copy link');
+    expect(browseSource).toContain('Copy link');
     expect(uiSource).not.toContain('The editor opens on the stage.');
     expect(uiSource).not.toContain('The inspector opens on the stage.');
     expect(homeSource).toContain('className="stims-shell__launch-summary"');

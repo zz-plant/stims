@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 describe('workspace first-fold launch hierarchy', () => {
-  test('keeps one dominant primary CTA with secondary audio starts in the first fold', () => {
+  test('shows alternative audio sources, no primary CTA (demo auto-plays)', () => {
     const homeSource = readFileSync(
       join(
         import.meta.dir,
@@ -21,16 +21,9 @@ describe('workspace first-fold launch hierarchy', () => {
         /<div className="stims-shell__launch-stack">([\s\S]*?)<\/div>/u,
       )?.[1] ?? '';
 
-    expect(
-      (
-        launchStackBlock.match(
-          /cta-button primary stims-shell__action-button/gu,
-        ) ?? []
-      ).length,
-    ).toBe(1);
-    expect(launchStackBlock).toContain('See visuals now');
+    expect(launchStackBlock).not.toContain('See visuals now');
+    expect(launchStackBlock).not.toContain('cta-button primary');
     expect(launchStackBlock).toContain('Use microphone');
     expect(launchStackBlock).toContain('Capture tab audio');
-    expect(launchStackBlock).not.toContain('Explore modes');
   });
 });

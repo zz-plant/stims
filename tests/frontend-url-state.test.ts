@@ -26,10 +26,10 @@ describe('frontend url state', () => {
 
   test('normalizes supported panel and audio aliases', () => {
     const state = readSessionRouteState(
-      'https://toil.fyi/?tool=inspect&audio=mic',
+      'https://toil.fyi/?tool=looks&audio=mic',
     );
 
-    expect(state.panel).toBe('inspector');
+    expect(state.panel).toBe('browse');
     expect(state.audioSource).toBe('microphone');
   });
 

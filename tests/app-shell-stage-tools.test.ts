@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 describe('Workspace shell stage tool interaction regression', () => {
-  test('keeps the global tools backdrop off the stage-anchored editor and inspector', () => {
+  test('stage-anchored editor has no backdrop overlay', () => {
     const appSource = readFileSync(
       join(import.meta.dir, '..', 'assets', 'js', 'frontend', 'App.tsx'),
       'utf8',
@@ -21,10 +21,8 @@ describe('Workspace shell stage tool interaction regression', () => {
     );
 
     expect(appSource).toMatch(
-      /const stageAnchoredToolOpen =[\s\S]*?(?:ui|w)\.routeState\.panel === 'editor' \|\| (?:ui|w)\.routeState\.panel === 'inspector'/u,
+      /const stageAnchoredToolOpen =[\s\S]*?(?:ui|w)\.routeState\.panel === 'editor'/u,
     );
-    expect(uiSource).toMatch(
-      /\{!stageAnchoredToolOpen \? \(\s*<button[\s\S]*?className="stims-shell__sheet-backdrop"/u,
-    );
+    expect(uiSource).not.toContain('stims-shell__sheet-backdrop');
   });
 });
