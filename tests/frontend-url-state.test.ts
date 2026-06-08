@@ -21,6 +21,7 @@ describe('frontend url state', () => {
       audioSource: 'demo',
       agentMode: true,
       previewMode: false,
+      invalidExperienceSlug: null,
     });
   });
 

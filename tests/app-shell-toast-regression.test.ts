@@ -20,7 +20,7 @@ describe('Workspace shell toast regression', () => {
       'const webglWarningShownRef = useRef(false);',
     );
     expect(toastHookSource).toMatch(
-      /useEffect\(\(\) => \{[\s\S]*?engineSnapshot\.backend !== 'webgl'[\s\S]*?webglWarningShownRef\.current = true;[\s\S]*?setToast\(\{ message: 'Using lighter visual mode\.', tone: 'warn' \}\);[\s\S]*?window\.setTimeout\([\s\S]*?4200\);\s*\}, \[\s*engineSnapshot\?\.backend,\s*engineSnapshot\?\.runtimeReady,\s*\]\);/u,
+      /useEffect\(\(\) => \{[\s\S]*?engineSnapshot\.backend !== 'webgl'[\s\S]*?webglWarningShownRef\.current = true;[\s\S]*?setToast\(\{ message: 'Using lighter visual mode\.', tone: 'warn' \}\);[\s\S]*?window\.setTimeout\([\s\S]*?4200\);\s*\}, \[\s*engineSnapshot\?\.backend,\s*engineSnapshot\?\.runtimeReady,?\s*\]\);/u,
     );
   });
 

@@ -17,9 +17,9 @@ describe('Workspace performance regressions', () => {
       'utf8',
     );
 
-    expect(shellHookSource).toContain(': runtimeCatalogReady');
-    expect(shellHookSource).toContain('? runtimeCatalog');
-    expect(shellHookSource).toContain(': fallbackCatalog;');
+    expect(shellHookSource).toContain(
+      'const rawCatalog = runtimeCatalogReady ? runtimeCatalog : fallbackCatalog;',
+    );
   });
 
   test('loads the MilkDrop runtime lazily instead of importing it into the app shell eagerly', () => {
