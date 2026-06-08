@@ -42,8 +42,7 @@ export function StimsControlDock({
   const engine = useEngine();
   const { engineSnapshot } = useEngineSnapshot();
   const panel = ui.routeState.panel;
-  const audioSource =
-    engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+  const audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
   const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const energyNorm = Math.min(1, Math.max(0, audioEnergy));
   const runtimeReady = engineSnapshot?.runtimeReady ?? false;

@@ -21,6 +21,7 @@ export type SessionRouteState = {
   audioSource: AudioSource | null;
   agentMode: boolean;
   previewMode?: boolean;
+  invalidExperienceSlug?: string | null;
 };
 
 export type EngineAudioRequest =

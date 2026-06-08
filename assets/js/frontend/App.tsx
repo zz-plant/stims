@@ -24,7 +24,11 @@ import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { SplitViewBrowse } from './SplitViewBrowse.tsx';
 import { connectWakeLock } from './wake-lock.ts';
-import { useEngineSnapshot, useWorkspace, WorkspaceProvider } from './workspace-context.tsx';
+import {
+  useEngineSnapshot,
+  useWorkspace,
+  WorkspaceProvider,
+} from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 import { WorkspaceStagePanel, WorkspaceToolSheet } from './workspace-ui.tsx';
 
@@ -293,8 +297,7 @@ function StimsWorkspaceAppShell() {
   useEffect(() => {
     return connectWakeLock(() => {
       return (
-        isFullscreen ||
-        (liveMode && (engineSnapshot?.audioActive ?? false))
+        isFullscreen || (liveMode && (engineSnapshot?.audioActive ?? false))
       );
     });
   }, [isFullscreen, liveMode, engineSnapshot?.audioActive]);

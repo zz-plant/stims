@@ -13,7 +13,11 @@ import {
 } from './StimsStageFrame.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { WorkspaceToast } from './WorkspaceToast.tsx';
-import { useEngineSnapshot, useUI, useWorkspace } from './workspace-context.tsx';
+import {
+  useEngineSnapshot,
+  useUI,
+  useWorkspace,
+} from './workspace-context.tsx';
 import {
   getToolDescription,
   getToolLabel,
@@ -50,8 +54,8 @@ export function WorkspaceStagePanel({
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const missingRequestedPreset = engine.missingRequestedPreset;
-  const audioSource =
-    engineSnapshot?.audioSource ?? ui.routeState.audioSource;
+  const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
+  const audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
 
   return (
     <section
@@ -103,6 +107,17 @@ export function WorkspaceStagePanel({
           ) : null}
         </StimsFrameHeader>
         <div className="stims-shell__stage-hero">{launchPanel}</div>
+        {invalidExperienceSlug ? (
+          <div className="active-toy-status is-error">
+            <div className="active-toy-status__content">
+              <h2>Link no longer works</h2>
+              <p>
+                This Stims link points to a view that is no longer available: "
+                {invalidExperienceSlug}".
+              </p>
+            </div>
+          </div>
+        ) : null}
         <WorkspaceToast toast={ui.toast} onDismiss={ui.dismissToast} />
       </StimsStageFrame>
     </section>
@@ -199,85 +214,80 @@ export function WorkspaceToolSheet({
       aria-label="Tools"
       tabIndex={-1}
     >
-        <div className="stims-shell__sheet-header">
-          <div className="stims-shell__sheet-heading">
-            <h2>{getToolLabel(panel)}</h2>
-            <p className="stims-shell__meta-copy">
-              {getToolDescription(panel)}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="stims-shell__icon-button"
-            onClick={() => w.updatePanel(null)}
-          >
-            <UiIcon
-              name="close"
-              className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className="stims-shell__button-label">Close</span>
-          </button>
+      <div className="stims-shell__sheet-header">
+        <div className="stims-shell__sheet-heading">
+          <h2>{getToolLabel(panel)}</h2>
+          <p className="stims-shell__meta-copy">{getToolDescription(panel)}</p>
         </div>
+        <button
+          type="button"
+          className="stims-shell__icon-button"
+          onClick={() => w.updatePanel(null)}
+        >
+          <UiIcon
+            name="close"
+            className="stims-shell__button-icon stims-icon-slot stims-icon-slot--sm"
+          />
+          <span className="stims-shell__button-label">Close</span>
+        </button>
+      </div>
 
-        {visibleTabs.length > 2 ? (
-          <nav className="stims-shell__tool-tabs" aria-label="Tool sections">
-            {visibleTabs.map((tool) => (
+      {visibleTabs.length > 2 ? (
+        <nav className="stims-shell__tool-tabs" aria-label="Tool sections">
+          {visibleTabs.map((tool) => (
+            <button
+              key={tool}
+              type="button"
+              className="stims-shell__sheet-tab"
+              data-active={String(panel === tool)}
+              onClick={() => w.updatePanel(tool)}
+            >
+              {getToolLabel(tool)}
+            </button>
+          ))}
+        </nav>
+      ) : (
+        <nav className="stims-shell__tool-jumplink" aria-label="Tool sections">
+          {visibleTabs
+            .filter((tool) => tool !== panel)
+            .map((tool) => (
               <button
                 key={tool}
                 type="button"
-                className="stims-shell__sheet-tab"
-                data-active={String(panel === tool)}
+                className="stims-shell__text-button"
                 onClick={() => w.updatePanel(tool)}
               >
-                {getToolLabel(tool)}
+                {panel === 'browse' && tool === 'settings'
+                  ? 'Style \u2192'
+                  : panel === 'settings' && tool === 'browse'
+                    ? '\u2190 Browse presets'
+                    : `Open ${getToolLabel(tool).toLowerCase()}`}
               </button>
             ))}
-          </nav>
-        ) : (
-          <nav
-            className="stims-shell__tool-jumplink"
-            aria-label="Tool sections"
-          >
-            {visibleTabs
-              .filter((tool) => tool !== panel)
-              .map((tool) => (
-                <button
-                  key={tool}
-                  type="button"
-                  className="stims-shell__text-button"
-                  onClick={() => w.updatePanel(tool)}
-                >
-                  {panel === 'browse' && tool === 'settings'
-                    ? 'Style \u2192'
-                    : panel === 'settings' && tool === 'browse'
-                      ? '\u2190 Browse presets'
-                      : `Open ${getToolLabel(tool).toLowerCase()}`}
-                </button>
-              ))}
-          </nav>
-        )}
+        </nav>
+      )}
 
-        <div className="stims-shell__sheet-body">
-          {panel === 'editor' ? <EditorPanel /> : null}
+      <div className="stims-shell__sheet-body">
+        {panel === 'editor' ? <EditorPanel /> : null}
 
-          {panel === 'browse' ? (
-            <BrowseSheetPanel
-              onCollectionTagChange={(collectionTag) =>
-                w.commitRoute({ ...w.routeState, collectionTag })
-              }
-              onImport={(files) => {
-                void w.handleImport(files);
-              }}
-            />
-          ) : null}
+        {panel === 'browse' ? (
+          <BrowseSheetPanel
+            onCollectionTagChange={(collectionTag) =>
+              w.commitRoute({ ...w.routeState, collectionTag })
+            }
+            onImport={(files) => {
+              void w.handleImport(files);
+            }}
+          />
+        ) : null}
 
-          {panel === 'settings' ? (
-            <SettingsSheetPanel
-              onCompatibilityModeChange={onCompatibilityModeChange}
-              onMotionPreferenceChange={onMotionPreferenceChange}
-            />
-          ) : null}
-        </div>
-      </aside>
+        {panel === 'settings' ? (
+          <SettingsSheetPanel
+            onCompatibilityModeChange={onCompatibilityModeChange}
+            onMotionPreferenceChange={onMotionPreferenceChange}
+          />
+        ) : null}
+      </div>
+    </aside>
   );
 }

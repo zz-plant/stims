@@ -16,9 +16,7 @@ const EngineSnapshotCtx = createContext<EngineSnapshotValue | null>(null);
 export function useEngineSnapshot(): EngineSnapshotValue {
   const ctx = useContext(EngineSnapshotCtx);
   if (!ctx) {
-    throw new Error(
-      'useEngineSnapshot must be used within an EngineProvider',
-    );
+    throw new Error('useEngineSnapshot must be used within an EngineProvider');
   }
   return ctx;
 }

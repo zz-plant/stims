@@ -107,15 +107,33 @@ export function normalizeCollectionTag(value: unknown) {
 export function readSessionRouteStateFromSearch(
   search: Record<string, unknown>,
 ): SessionRouteState {
+  const legacyExperience = readSearchValue(search.experience);
+  const isAgent = readSearchValue(search.agent) === 'true';
+
+  if (
+    legacyExperience &&
+    legacyExperience !== 'milkdrop' &&
+    !isAgent &&
+    typeof window !== 'undefined'
+  ) {
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete('experience');
+    window.location.replace(clean.toString());
+  }
+
   return {
     presetId: readSearchValue(search.preset)?.trim() || null,
     collectionTag: normalizeCollectionTag(search.collection),
     panel: normalizePanel(search.tool ?? search.panel),
     audioSource: normalizeAudioSource(search.audio),
-    agentMode: readSearchValue(search.agent) === 'true',
+    agentMode: isAgent,
     previewMode:
       readSearchValue(search.embedded) === 'true' ||
       readSearchValue(search.preview) === 'true',
+    invalidExperienceSlug:
+      legacyExperience && legacyExperience !== 'milkdrop'
+        ? legacyExperience
+        : null,
   };
 }
 
@@ -191,6 +209,9 @@ export function buildSessionRouteSearch(
   }
   if (state.previewMode) {
     nextSearch.embedded = 'true';
+  }
+  if (state.invalidExperienceSlug) {
+    nextSearch.experience = state.invalidExperienceSlug;
   }
 
   return nextSearch;

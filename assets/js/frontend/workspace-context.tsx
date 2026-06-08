@@ -9,11 +9,9 @@ import type {
 } from './contracts.ts';
 import {
   type EngineContextValue,
-  type EngineSnapshotValue,
   EngineCtx,
   EngineProvider,
-  useEngine,
-  useEngineSnapshot,
+  type EngineSnapshotValue,
 } from './engine-context.tsx';
 import {
   useWorkspaceRouteState,
@@ -261,10 +259,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <WorkspaceContext.Provider value={uiValue}>
-      <EngineProvider
-        snapshot={engineSnapshotValue}
-        data={engineDataValue}
-      >
+      <EngineProvider snapshot={engineSnapshotValue} data={engineDataValue}>
         {children}
       </EngineProvider>
     </WorkspaceContext.Provider>
