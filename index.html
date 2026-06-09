@@ -50,18 +50,28 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
     />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <link rel="preload" href="assets/css/tokens.css" as="style" />
     <link rel="preload" href="assets/css/motion.css" as="style" />
-    <link rel="preload" href="assets/css/base.css" as="style" />
-    <link rel="preload" href="assets/css/index.css" as="style" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="assets/css/tokens.css" />
-    <link rel="stylesheet" href="assets/css/motion.css" />
-    <link rel="stylesheet" href="assets/css/base.css" />
-    <link rel="stylesheet" href="assets/css/index.css" />
+    <link rel="stylesheet" href="assets/css/tokens.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/motion.css" media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href="assets/css/tokens.css" />
+      <link rel="stylesheet" href="assets/css/motion.css" />
+    </noscript>
+    <link rel="stylesheet" href="assets/css/base.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/index.css" media="print" onload="this.media='all'" />
     <script>
       (() => {
         try {

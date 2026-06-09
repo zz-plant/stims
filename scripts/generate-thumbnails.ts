@@ -24,6 +24,7 @@ const THUMB_H = 270;
 interface PresetEntry {
   id: string;
   title: string;
+  preview?: boolean;
 }
 
 function parseArgs(): { count?: number; ids?: string[] } {
@@ -44,17 +45,14 @@ async function getPresets(filter: {
     import.meta.url,
   );
   const data = await Bun.file(catalogPath).json();
-  const all: PresetEntry[] = data.presets || [];
+  const all = (data.presets || []) as PresetEntry[];
 
   if (filter.ids) {
     const idSet = new Set(filter.ids);
     return all.filter((p) => idSet.has(p.id));
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
-  return (all as any[])
-    .filter((p: any) => p.preview)
-    .slice(0, filter.count) as PresetEntry[];
+  return all.filter((p) => p.preview).slice(0, filter.count);
 }
 
 function hideUIElements() {
