@@ -6,8 +6,8 @@ export function AudioSourcePanel() {
   const engineReady = engine.engineReady;
   const onAudioStart = (source: 'demo' | 'microphone' | 'tab' | 'youtube') =>
     engine.handleAudioStart(source);
-  const onLoadRecentYouTubeVideo = engine.loadRecentYouTubeVideo;
-  const onLoadYouTube = () => engine.loadYouTubePreview();
+  const onLoadRecentYouTubeVideo = (videoId: string) =>
+    engine.loadRecentYouTubeVideo(videoId, () => onAudioStart('youtube'));
   const onYoutubeUrlChange = ui.setYoutubeUrl;
   const onYoutubeUrlKeyDown = engine.handleYoutubeUrlKeyDown;
   const recentYouTubeVideos = ui.recentYouTubeVideos;
@@ -18,6 +18,14 @@ export function AudioSourcePanel() {
   const youtubePreviewRef = ui.youtubePreviewRef;
   const youtubeReady = ui.youtubeReady;
   const youtubeUrl = ui.youtubeUrl;
+
+  const handlePlayYouTube = () => {
+    if (youtubeReady) {
+      void onAudioStart('youtube');
+    } else {
+      void engine.loadYouTubePreview(youtubeUrl, () => onAudioStart('youtube'));
+    }
+  };
 
   return (
     <section
@@ -68,34 +76,29 @@ export function AudioSourcePanel() {
             aria-invalid={youtubeInputInvalid}
             value={youtubeUrl}
             onChange={(event) => onYoutubeUrlChange(event.target.value)}
-            onKeyDown={onYoutubeUrlKeyDown}
+            onKeyDown={(e) =>
+              onYoutubeUrlKeyDown(e, () => onAudioStart('youtube'))
+            }
           />
           <button
             id="load-youtube"
-            className="cta-button"
+            className="cta-button primary"
             type="button"
-            disabled={!engineReady || !youtubeCanLoad}
-            aria-disabled={!engineReady || !youtubeCanLoad}
+            disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
+            aria-disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
             aria-busy={youtubeLoading}
-            onClick={onLoadYouTube}
+            onClick={handlePlayYouTube}
           >
             {youtubeLoading ? (
               <>
                 <UiIcon name="spinner" className="stims-shell__button-icon" />
                 Loading…
               </>
+            ) : youtubeReady ? (
+              'Start capture'
             ) : (
-              'Load'
+              'Load & Start'
             )}
-          </button>
-          <button
-            id="use-youtube-audio"
-            className="cta-button"
-            type="button"
-            disabled={!engineReady || !youtubeReady}
-            onClick={() => onAudioStart('youtube')}
-          >
-            Start capture
           </button>
         </div>
         <p
@@ -111,7 +114,26 @@ export function AudioSourcePanel() {
         </p>
         {recentYouTubeVideos.length > 0 ? (
           <div className="stims-shell__youtube-recent">
-            <p className="stims-shell__field-label">Recent videos</p>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <p className="stims-shell__field-label" style={{ margin: 0 }}>
+                Recent videos
+              </p>
+              <button
+                type="button"
+                className="stims-shell__clear-filters"
+                onClick={engine.clearRecentYouTubeVideos}
+                style={{ fontSize: '0.75rem', opacity: 0.6 }}
+              >
+                Clear history
+              </button>
+            </div>
             <div className="stims-shell__chip-list">
               {recentYouTubeVideos.map((video) => (
                 <button
@@ -122,7 +144,6 @@ export function AudioSourcePanel() {
                 >
                   <span className="stims-shell__chip-copy">
                     <strong>{video.title}</strong>
-                    <span>{video.id}</span>
                   </span>
                 </button>
               ))}

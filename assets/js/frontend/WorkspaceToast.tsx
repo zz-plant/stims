@@ -12,6 +12,13 @@ export function WorkspaceToast({
     return null;
   }
 
+  const symbols = {
+    info: 'ℹ️',
+    warn: '⚠️',
+    error: '🚫',
+  };
+  const symbol = symbols[toast.tone] ?? 'ℹ️';
+
   return (
     <output
       className="stims-shell__toast"
@@ -20,7 +27,12 @@ export function WorkspaceToast({
       aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
       aria-atomic="true"
     >
-      <span>{toast.message}</span>
+      <span>
+        <span style={{ marginRight: 6 }} aria-hidden="true">
+          {symbol}
+        </span>
+        {toast.message}
+      </span>
       <button
         type="button"
         className="stims-shell__toast-dismiss"

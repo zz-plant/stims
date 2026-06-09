@@ -285,6 +285,18 @@ export function BrowseSheetPanel({
             searchQuery,
             collectionTag: routeState.collectionTag,
           })}
+          {searchQuery || routeState.collectionTag ? (
+            <button
+              type="button"
+              className="stims-shell__clear-filters"
+              onClick={() => {
+                ui.setSearchQuery('');
+                onCollectionTagChange(null);
+              }}
+            >
+              Reset all
+            </button>
+          ) : null}
         </p>
 
         <nav
@@ -470,93 +482,131 @@ export function BrowseSheetPanel({
             </p>
           </div>
         )}
-        <ul className="stims-shell__preset-list">
-          {visualSearchActive
-            ? visualSearchResults.map((r) => (
-                <li key={r.presetId}>
-                  <button
-                    type="button"
-                    className="stims-shell__preset-card"
-                    onClick={() => engine.handlePresetSelection(r.presetId)}
-                  >
-                    <span className="stims-shell__preset-card-copy">
-                      <span className="stims-shell__preset-title">
-                        {r.presetId}
-                      </span>
-                      <span className="stims-shell__preset-vibe">
-                        {(r.score * 100).toFixed(0)}% similarity
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))
-            : (routeState.collectionTag === 'collection:community'
-                ? communityPresets
-                : filteredCatalog
-              ).map((entry) => {
-                const supportLabel = getPresetCardSupportLabel(entry);
-
-                return (
-                  <li key={entry.id}>
-                    <div className="stims-shell__preset-card-wrap">
-                      <button
-                        type="button"
-                        className="stims-shell__preset-card"
-                        data-active={String(entry.id === currentPresetId)}
-                        onClick={() => engine.handlePresetSelection(entry.id)}
-                      >
-                        <PresetArtwork
-                          entry={entry}
-                          compact
-                          preview={presetPreviews[entry.id] ?? null}
-                        />
-                        <span className="stims-shell__preset-card-copy">
-                          <span className="stims-shell__preset-title">
-                            {entry.title}
-                          </span>
-                          <span className="stims-shell__preset-vibe">
-                            {describePresetMood(entry)}
-                          </span>
-                          <span className="stims-shell__preset-meta-row">
-                            <span className="stims-shell__preset-meta">
-                              {entry.author || 'Unknown author'}
-                            </span>
-                            {supportLabel ? (
-                              <span className="stims-shell__preset-tech">
-                                {supportLabel}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className="stims-shell__meta-copy">
-                            {formatPresetSupportNote(entry)}
-                          </span>
+        {(!visualSearchActive &&
+          routeState.collectionTag === 'collection:community' &&
+          communityPresets.length === 0) ||
+        (!visualSearchActive &&
+          routeState.collectionTag !== 'collection:community' &&
+          filteredCatalog.length === 0) ? (
+          <div className="stims-shell__empty-state">
+            <strong>No matching presets found</strong>
+            <p>
+              We couldn't find any presets matching your query in this
+              collection.
+            </p>
+            <button
+              type="button"
+              className="cta-button primary"
+              onClick={() => {
+                ui.setSearchQuery('');
+                onCollectionTagChange(null);
+              }}
+            >
+              Reset filters
+            </button>
+          </div>
+        ) : (
+          <ul className="stims-shell__preset-list">
+            {visualSearchActive
+              ? visualSearchResults.map((r) => (
+                  <li key={r.presetId}>
+                    <button
+                      type="button"
+                      className="stims-shell__preset-card"
+                      onClick={() => engine.handlePresetSelection(r.presetId)}
+                    >
+                      <span className="stims-shell__preset-card-copy">
+                        <span className="stims-shell__preset-title">
+                          {r.presetId}
                         </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="stims-shell__preset-fav"
-                        aria-label={
-                          entry.isFavorite ? 'Remove from saved' : 'Save preset'
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void engine.toggleFavoritePreset(
-                            entry.id,
-                            !entry.isFavorite,
-                          );
-                        }}
-                      >
-                        <span
-                          className="stims-shell__preset-fav-icon"
-                          data-active={String(entry.isFavorite)}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    </div>
+                        <span className="stims-shell__preset-vibe">
+                          {(r.score * 100).toFixed(0)}% similarity
+                        </span>
+                      </span>
+                    </button>
                   </li>
-                );
-              })}
-        </ul>
+                ))
+              : (routeState.collectionTag === 'collection:community'
+                  ? communityPresets
+                  : filteredCatalog
+                ).map((entry) => {
+                  const supportLabel = getPresetCardSupportLabel(entry);
+
+                  return (
+                    <li key={entry.id}>
+                      <div className="stims-shell__preset-card-wrap">
+                        <button
+                          type="button"
+                          className="stims-shell__preset-card"
+                          data-active={String(entry.id === currentPresetId)}
+                          onClick={() => engine.handlePresetSelection(entry.id)}
+                        >
+                          <PresetArtwork
+                            entry={entry}
+                            compact
+                            preview={presetPreviews[entry.id] ?? null}
+                          />
+                          <span className="stims-shell__preset-card-copy">
+                            <span className="stims-shell__preset-title">
+                              {entry.title}
+                            </span>
+                            <span className="stims-shell__preset-vibe">
+                              {describePresetMood(entry)}
+                            </span>
+                            <span className="stims-shell__preset-meta-row">
+                              <span className="stims-shell__preset-meta">
+                                {entry.author || 'Unknown author'}
+                              </span>
+                              {supportLabel ? (
+                                <span className="stims-shell__preset-tech">
+                                  {supportLabel}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="stims-shell__preset-tech-badges">
+                              {entry.supports?.webgpu ? (
+                                <span className="tech-badge webgpu">
+                                  WebGPU
+                                </span>
+                              ) : null}
+                              {entry.supports?.webgl ? (
+                                <span className="tech-badge webgl">WebGL</span>
+                              ) : null}
+                              <span className="tech-badge audio">Audio</span>
+                            </span>
+                            <span className="stims-shell__meta-copy">
+                              {formatPresetSupportNote(entry)}
+                            </span>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="stims-shell__preset-fav"
+                          aria-label={
+                            entry.isFavorite
+                              ? 'Remove from saved'
+                              : 'Save preset'
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void engine.toggleFavoritePreset(
+                              entry.id,
+                              !entry.isFavorite,
+                            );
+                          }}
+                        >
+                          <span
+                            className="stims-shell__preset-fav-icon"
+                            data-active={String(entry.isFavorite)}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+          </ul>
+        )}
 
         <div className="stims-shell__session-actions">
           <button

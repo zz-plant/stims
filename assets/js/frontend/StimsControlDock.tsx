@@ -159,7 +159,16 @@ export function StimsControlDock({
               </span>
             ) : null}
           </div>
-          <span ref={barRef} className="stims-shell__now-playing-bar" />
+          {/* biome-ignore lint/a11y/useSemanticElements: custom visual span designed specifically for visual status/metering */}
+          <span
+            ref={barRef}
+            className="stims-shell__now-playing-bar"
+            role="meter"
+            aria-label="Audio energy level"
+            aria-valuenow={Math.round(audioEnergy * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          />
         </div>
       ) : null}
       <div
@@ -204,7 +213,7 @@ export function StimsControlDock({
           onClick={engine.handleShufflePreset}
         >
           <UiIcon
-            name="pulse"
+            name="shuffle"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
           <span className="stims-shell__stage-tool-label">Surprise me</span>
@@ -231,7 +240,7 @@ export function StimsControlDock({
           onClick={() => setShowMoods((s) => !s)}
         >
           <UiIcon
-            name="sparkles"
+            name="wand"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
           <span className="stims-shell__stage-tool-label">Generate</span>
@@ -304,7 +313,7 @@ export function StimsControlDock({
           onClick={() => void handleMoreLikeThis()}
         >
           <UiIcon
-            name="sparkles"
+            name="eye"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
           <span className="stims-shell__stage-tool-label">
@@ -339,7 +348,26 @@ export function StimsControlDock({
       </div>
       {similarPresets.length > 0 ? (
         <div className="stims-shell__similar-presets">
-          <h2 className="stims-shell__section-label">Similar presets</h2>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
+          >
+            <h2 className="stims-shell__section-label" style={{ margin: 0 }}>
+              Similar presets
+            </h2>
+            <button
+              type="button"
+              className="stims-shell__clear-filters"
+              onClick={() => setSimilarPresets([])}
+              style={{ fontSize: '0.8rem', opacity: 0.8 }}
+            >
+              Close
+            </button>
+          </div>
           <div className="stims-shell__starter-grid">
             {similarPresets.map((p) => {
               const entry = engine.catalog.find((e) => e.id === p.presetId);

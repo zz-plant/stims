@@ -92,20 +92,36 @@ export function NewHomePage() {
             <div className="stims-shell__launch-supplement stims-shell__launch-actions">
               <button
                 type="button"
-                className="cta-button ghost"
+                className="cta-button primary"
                 disabled={loadingAudio}
-                onClick={() => handleStartAudio('microphone')}
+                onClick={() => handleStartAudio('demo')}
               >
-                Use microphone
+                Play with demo audio
               </button>
-              <button
-                type="button"
-                className="cta-button ghost"
-                disabled={loadingAudio}
-                onClick={() => handleStartAudio('tab')}
-              >
-                Capture tab audio
-              </button>
+              <details className="stims-shell__audio-setup-details">
+                <summary>Advanced audio setup</summary>
+                <div
+                  className="stims-shell__launch-actions"
+                  style={{ marginTop: 10 }}
+                >
+                  <button
+                    type="button"
+                    className="cta-button ghost"
+                    disabled={loadingAudio}
+                    onClick={() => handleStartAudio('microphone')}
+                  >
+                    Use microphone
+                  </button>
+                  <button
+                    type="button"
+                    className="cta-button ghost"
+                    disabled={loadingAudio}
+                    onClick={() => handleStartAudio('tab')}
+                  >
+                    Capture tab audio
+                  </button>
+                </div>
+              </details>
             </div>
           </div>
         </div>

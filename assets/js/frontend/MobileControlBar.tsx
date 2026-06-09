@@ -155,7 +155,16 @@ export function MobileControlBar({
 
   return (
     <div className={styles.bar} data-visible={String(visible)}>
-      <div className={styles.energyMeter} style={{ width: energyPercent }} />
+      {/* biome-ignore lint/a11y/useSemanticElements: custom visual div designed specifically for visual status/metering */}
+      <div
+        className={styles.energyMeter}
+        style={{ width: energyPercent }}
+        role="meter"
+        aria-label="Audio energy level"
+        aria-valuenow={Math.round(audioEnergy * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      />
       {presetTitle ? (
         <div className={styles.nowPlaying}>
           <span className={styles.nowPlayingTitle}>{presetTitle}</span>
@@ -213,7 +222,7 @@ export function MobileControlBar({
           aria-label="Shuffle preset"
         >
           <UiIcon
-            name="pulse"
+            name="shuffle"
             className="stims-icon-slot stims-icon-slot--sm"
           />
           <span className={styles.actionLabel}>Shuffle</span>
@@ -224,10 +233,7 @@ export function MobileControlBar({
           onClick={handleSimilar}
           aria-label="Find similar presets"
         >
-          <UiIcon
-            name="pulse"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
+          <UiIcon name="eye" className="stims-icon-slot stims-icon-slot--sm" />
           <span className={styles.actionLabel}>More</span>
         </button>
         <button
@@ -252,10 +258,7 @@ export function MobileControlBar({
           }}
           aria-label="Generate from mood"
         >
-          <UiIcon
-            name="sparkles"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
+          <UiIcon name="wand" className="stims-icon-slot stims-icon-slot--sm" />
           <span className={styles.actionLabel}>Generate</span>
         </button>
         {engineSnapshot?.audioSource ? (

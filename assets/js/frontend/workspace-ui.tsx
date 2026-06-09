@@ -91,20 +91,54 @@ export function WorkspaceStagePanel({
               {stageSummary}
             </p>
           </div>
-          {audioSource === 'demo' ? (
+          {liveMode ? (
             <div className="stims-shell__frame-sidecar">
               <button
                 type="button"
                 className="stims-shell__text-button stims-shell__audio-bridge-link"
-                onClick={ui.toggleExtendedSources}
+                onClick={engine.handleAudioStop}
               >
-                {ui.showExtendedSources
-                  ? 'Hide sources'
-                  : 'Switch to your music \u2192'}
+                ← Back to library
               </button>
-              {ui.showExtendedSources ? <AudioSourcePanel /> : null}
+              <button
+                type="button"
+                className="stims-shell__text-button stims-shell__shortcuts-trigger"
+                style={{ marginLeft: 12 }}
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent('stims:shortcuts:open'))
+                }
+              >
+                Shortcuts
+              </button>
             </div>
-          ) : null}
+          ) : (
+            <div className="stims-shell__frame-sidecar">
+              {audioSource === 'demo' ? (
+                <button
+                  type="button"
+                  className="stims-shell__text-button stims-shell__audio-bridge-link"
+                  onClick={ui.toggleExtendedSources}
+                >
+                  {ui.showExtendedSources
+                    ? 'Hide sources'
+                    : 'Switch to your music \u2192'}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="stims-shell__text-button stims-shell__shortcuts-trigger"
+                style={{ marginLeft: 12 }}
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent('stims:shortcuts:open'))
+                }
+              >
+                Shortcuts
+              </button>
+              {audioSource === 'demo' && ui.showExtendedSources ? (
+                <AudioSourcePanel />
+              ) : null}
+            </div>
+          )}
         </StimsFrameHeader>
         <div className="stims-shell__stage-hero">{launchPanel}</div>
         {invalidExperienceSlug ? (

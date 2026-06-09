@@ -10,7 +10,7 @@ type HelpHint = {
 const HINTS: HelpHint[] = [
   {
     id: 'first-play',
-    message: 'Space to switch presets, E to edit shaders',
+    message: 'ArrowRight to switch presets, E to edit shaders',
     autoHideMs: 6000,
   },
   {

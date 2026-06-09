@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 describe('workspace first-fold launch hierarchy', () => {
-  test('shows alternative audio sources, no primary CTA (demo auto-plays)', () => {
+  test('shows a primary CTA for demo audio and collapsible alternative audio sources', () => {
     const homeSource = readFileSync(
       join(
         import.meta.dir,
@@ -22,7 +22,9 @@ describe('workspace first-fold launch hierarchy', () => {
       )?.[1] ?? '';
 
     expect(launchStackBlock).not.toContain('See visuals now');
-    expect(launchStackBlock).not.toContain('cta-button primary');
+    expect(launchStackBlock).toContain('Play with demo audio');
+    expect(launchStackBlock).toContain('cta-button primary');
+    expect(launchStackBlock).toContain('Advanced audio setup');
     expect(launchStackBlock).toContain('Use microphone');
     expect(launchStackBlock).toContain('Capture tab audio');
   });

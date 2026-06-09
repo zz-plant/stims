@@ -128,6 +128,7 @@ export function useWorkspaceSessionState({
     handleYoutubeUrlKeyDown,
     loadRecentYouTubeVideo,
     loadYouTubePreview,
+    clearRecentYouTubeVideos,
     recentYouTubeVideos,
     youtubeCanLoad,
     youtubeFeedback,
@@ -441,6 +442,7 @@ export function useWorkspaceSessionState({
     youtubePreviewRef,
     youtubeReady,
     youtubeUrl,
+    clearRecentYouTubeVideos,
     stopAudio: async () => {
       await engineRef.current?.stopAudio().catch((error) => {
         console.debug('Audio stop failed.', error);

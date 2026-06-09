@@ -397,22 +397,39 @@ function StimsWorkspaceAppShell() {
   updatePanelRef.current = ui.updatePanel;
   const handleShufflePresetRef = useRef(engine.handleShufflePreset);
   handleShufflePresetRef.current = engine.handleShufflePreset;
+  useEffect(() => {
+    const handleOpenShortcuts = () => setShowShortcuts(true);
+    window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
+    return () =>
+      window.removeEventListener('stims:shortcuts:open', handleOpenShortcuts);
+  }, []);
+
   const handleAudioStartRef = useRef(engine.handleAudioStart);
   handleAudioStartRef.current = engine.handleAudioStart;
+  const handleAudioStopRef = useRef(engine.handleAudioStop);
+  handleAudioStopRef.current = engine.handleAudioStop;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
         event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement
+        event.target instanceof HTMLTextAreaElement ||
+        (event.target instanceof HTMLElement &&
+          event.target.isContentEditable) ||
+        (event.target instanceof HTMLElement &&
+          event.target.closest('.cm-editor'))
       ) {
         return;
       }
 
       const key = event.key.toLowerCase();
-      if (key === ' ' && liveMode && engine.engineReady) {
+      if (key === ' ') {
         event.preventDefault();
-        void handleAudioStartRef.current('demo');
+        if (liveMode) {
+          handleAudioStopRef.current();
+        } else if (engine.engineReady) {
+          void handleAudioStartRef.current('demo');
+        }
       } else if (key === 'f') {
         event.preventDefault();
         handleToggleFullscreen();

@@ -121,6 +121,37 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M9 18c-4.51 2-5-2-7-2' } },
   ],
   spinner: [{ tag: 'path', attrs: { d: 'M21 12a9 9 0 1 1-6.219-8.56' } }],
+  shuffle: [
+    { tag: 'path', attrs: { d: 'M18 8h3V5' } },
+    {
+      tag: 'path',
+      attrs: { d: 'M3 19h4a4 4 0 0 0 3.2-1.6l3.6-4.8A4 4 0 0 1 17 11h4' },
+    },
+    { tag: 'path', attrs: { d: 'M18 16v3h3' } },
+    {
+      tag: 'path',
+      attrs: { d: 'M3 5h4a4 4 0 0 1 3.2 1.6l3.6 4.8A4 4 0 0 0 17 13h4' },
+    },
+  ],
+  eye: [
+    {
+      tag: 'path',
+      attrs: { d: 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z' },
+    },
+    { tag: 'circle', attrs: { cx: 12, cy: 12, r: 3 } },
+  ],
+  wand: [
+    { tag: 'path', attrs: { d: 'm10 10-8 8V22h4l8-8' } },
+    { tag: 'path', attrs: { d: 'm14 6 4 4' } },
+    { tag: 'path', attrs: { d: 'M18 2h.01' } },
+    { tag: 'path', attrs: { d: 'M22 6h.01' } },
+    { tag: 'path', attrs: { d: 'M22 2h.01' } },
+  ],
+  trash: [
+    { tag: 'path', attrs: { d: 'M3 6h18' } },
+    { tag: 'path', attrs: { d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' } },
+    { tag: 'path', attrs: { d: 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2' } },
+  ],
 } as const satisfies Record<string, readonly IconNode[]>;
 
 export type UiIconName = keyof typeof ICON_NODES;

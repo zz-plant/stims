@@ -79,6 +79,7 @@ function PerformanceSection() {
           step="1"
           className="stims-shell__range"
           value={perf.shaderDetail}
+          aria-label="Shader detail level"
           onChange={(e) =>
             setOption('shaderDetail', parseInt(e.target.value, 10))
           }
@@ -92,6 +93,8 @@ function PerformanceSection() {
           type="button"
           className={`stims-shell__toggle ${perf.ecoMode ? 'is-active' : ''}`}
           onClick={() => setOption('ecoMode', !perf.ecoMode)}
+          aria-label="Toggle Eco Mode"
+          aria-pressed={perf.ecoMode}
         >
           <span className="stims-shell__toggle-knob" />
         </button>
@@ -162,7 +165,7 @@ export function SettingsSheetPanel({
 
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
-          <span>Accessibility</span>
+          <span>Advanced Preferences</span>
           <span className="stims-shell__meta-copy">
             Open this only if you want manual controls
           </span>

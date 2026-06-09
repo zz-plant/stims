@@ -4028,3 +4028,149 @@ body[data-page="workspace"] {
 .editor-explanation-close:hover {
   color: var(--stims-ink);
 }
+
+/* ===== UI/UX Fixes: Active Chips, Flex layout, badging, home details ===== */
+@scope (.stims-shell) {
+  .stims-shell__nav-pill[data-active="true"],
+  .stims-shell__sheet-tab[data-active="true"],
+  .stims-shell__collection-pill[data-active="true"] {
+    border-color: var(--stims-accent);
+    font-weight: 700;
+  }
+
+  html.light :scope .stims-shell__collection-pill[data-active="true"],
+  html.light :scope .stims-shell__nav-pill[data-active="true"],
+  html.light :scope .stims-shell__sheet-tab[data-active="true"] {
+    border-color: #d15632;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  .stims-shell__sheet-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .stims-shell__sheet-panel--browse {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__preset-list {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .stims-shell__preset-tech-badges {
+    display: inline-flex;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .tech-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--stims-white-08);
+    color: var(--stims-ink);
+    border: 1px solid var(--stims-line);
+  }
+
+  .tech-badge.webgpu {
+    background: rgba(95, 192, 181, 0.15);
+    color: #9fd4cb;
+    border-color: rgba(95, 192, 181, 0.3);
+  }
+
+  html.light :scope .tech-badge.webgpu {
+    background: rgba(47, 139, 131, 0.15);
+    color: #2f6f6a;
+    border-color: rgba(47, 139, 131, 0.3);
+  }
+
+  .tech-badge.webgl {
+    background: rgba(119, 201, 255, 0.15);
+    color: #77c9ff;
+    border-color: rgba(119, 201, 255, 0.3);
+  }
+
+  html.light :scope .tech-badge.webgl {
+    background: rgba(0, 100, 180, 0.1);
+    color: #0050a0;
+    border-color: rgba(0, 100, 180, 0.2);
+  }
+
+  .tech-badge.audio {
+    background: rgba(244, 122, 84, 0.15);
+    color: #ffd166;
+    border-color: rgba(244, 122, 84, 0.3);
+  }
+
+  html.light :scope .tech-badge.audio {
+    background: rgba(244, 122, 84, 0.1);
+    color: #a04000;
+    border-color: rgba(244, 122, 84, 0.2);
+  }
+
+  .stims-shell__audio-setup-details {
+    margin-top: 12px;
+    width: 100%;
+    text-align: left;
+  }
+
+  .stims-shell__audio-setup-details summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--stims-ink);
+    opacity: 0.8;
+    user-select: none;
+    outline: none;
+  }
+
+  .stims-shell__audio-setup-details[open] summary {
+    margin-bottom: 10px;
+  }
+
+  .stims-shell__clear-filters {
+    background: none;
+    border: none;
+    color: var(--stims-ink);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+
+  .stims-shell__clear-filters:hover {
+    opacity: 1;
+  }
+
+  .stims-shell__empty-state {
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 40px 20px;
+    border: 1px dashed var(--stims-line);
+    border-radius: var(--stims-radius-card);
+    background: var(--stims-white-02);
+    margin: 20px 0;
+  }
+
+  .stims-shell__empty-state strong {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+
+  .stims-shell__empty-state p {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin-bottom: 16px;
+  }
+}

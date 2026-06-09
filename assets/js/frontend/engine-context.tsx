@@ -58,10 +58,12 @@ export interface EngineContextValue {
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
   ) => Promise<void>;
   handleAudioStop: () => void;
-  loadRecentYouTubeVideo: (videoId: string) => void;
-  loadYouTubePreview: () => void;
+  loadRecentYouTubeVideo: (videoId: string, onLoaded?: () => void) => void;
+  loadYouTubePreview: (requestedUrl?: string, onLoaded?: () => void) => void;
+  clearRecentYouTubeVideos: () => void;
   handleYoutubeUrlKeyDown: (
     event: React.KeyboardEvent<HTMLInputElement>,
+    onLoaded?: () => void,
   ) => void;
   setQualityPreset: (presetId: string) => void;
 }

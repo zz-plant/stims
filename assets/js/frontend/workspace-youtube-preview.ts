@@ -122,7 +122,10 @@ export function useWorkspaceYouTubePreview({
     setYoutubeUrlState(value);
   };
 
-  const loadYouTubePreview = async (requestedUrl = youtubeUrl) => {
+  const loadYouTubePreview = async (
+    requestedUrl = youtubeUrl,
+    onLoaded?: () => void,
+  ) => {
     const previewHost = youtubePreviewRef.current;
     const value = requestedUrl.trim();
     if (!previewHost || !value) {
@@ -152,6 +155,7 @@ export function useWorkspaceYouTubePreview({
         (state) => {
           if (state === 1) {
             setYoutubeReady(true);
+            onLoaded?.();
           }
         },
       );
@@ -174,28 +178,39 @@ export function useWorkspaceYouTubePreview({
     }
   };
 
-  const handleYoutubeUrlKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleYoutubeUrlKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>,
+    onLoaded?: () => void,
+  ) => {
     if (event.key !== 'Enter' || !youtubeInputState.canLoad) {
       return;
     }
 
     event.preventDefault();
-    void loadYouTubePreview();
+    void loadYouTubePreview(youtubeUrl, onLoaded);
   };
 
-  const loadRecentYouTubeVideo = (videoId: string) => {
+  const loadRecentYouTubeVideo = (videoId: string, onLoaded?: () => void) => {
     const nextUrl = `https://www.youtube.com/watch?v=${videoId}`;
     writeStoredWorkspaceYouTubeUrl(nextUrl);
     setYoutubeUrlState(nextUrl);
     setYoutubeReady(false);
     setLoadedVideoKey(null);
-    void loadYouTubePreview(nextUrl);
+    void loadYouTubePreview(nextUrl, onLoaded);
+  };
+
+  const clearRecentYouTubeVideos = () => {
+    try {
+      window.localStorage.removeItem('stims_recent_youtube');
+      setRecentYouTubeVideos([]);
+    } catch {}
   };
 
   return {
     handleYoutubeUrlKeyDown,
     loadRecentYouTubeVideo,
     loadYouTubePreview,
+    clearRecentYouTubeVideos,
     recentYouTubeVideos,
     youtubeCanLoad: youtubeInputState.canLoad,
     youtubeFeedback: youtubeInputState.feedback,

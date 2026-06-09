@@ -424,17 +424,17 @@ html.light {
   --shadow-surface:
     0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
 
-  /* App-shell dark defaults. Light mode overrides these in the media query below. */
+  /* App-shell light values. */
   --stims-ink: var(--text-color);
-  --stims-ink-strong: #fff8ef;
-  --stims-muted: rgba(246, 239, 228, 0.74);
-  --stims-line: var(--stims-white-12);
-  --stims-line-strong: rgba(255, 255, 255, 0.2);
-  --stims-line-soft: var(--stims-white-08);
-  --stims-panel: rgba(10, 14, 23, 0.8);
-  --stims-panel-strong: rgba(10, 14, 23, 0.94);
+  --stims-ink-strong: #0f172a;
+  --stims-muted: rgba(35, 48, 56, 0.72);
+  --stims-line: rgba(43, 56, 77, 0.14);
+  --stims-line-strong: rgba(43, 56, 77, 0.22);
+  --stims-line-soft: rgba(43, 56, 77, 0.08);
+  --stims-panel: rgba(255, 250, 240, 0.8);
+  --stims-panel-strong: rgba(255, 250, 240, 0.94);
 
-  color-scheme: dark;
+  color-scheme: light;
 
   scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);
@@ -453,6 +453,39 @@ html.light {
 [data-device-tier="low"] .stims-shell::before,
 [data-device-tier="low"] .stims-shell::after {
   display: none;
+}
+
+/* ── Performance Tier: Low + Mid — disable backdrop-filter ────────── */
+/* backdrop-filter: blur() forces expensive GPU compositing.
+   Replace with opaque backgrounds on constrained devices. */
+[data-device-tier="low"],
+[data-device-tier="mid"] {
+  /* Disable backdrop-filter globally via CSS revert-layer fallback */
+}
+
+[data-device-tier="low"] *,
+[data-device-tier="mid"] * {
+  /* biome-ignore lint/complexity/noImportantStyles: must override all child backdrop-filter for GPU perf */
+  backdrop-filter: none !important;
+  /* biome-ignore lint/complexity/noImportantStyles: must override all child for GPU perf */
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Restore readability on panels that relied on blur for contrast */
+[data-device-tier="low"] .shell-header,
+[data-device-tier="mid"] .shell-header,
+[data-device-tier="low"] .top-nav,
+[data-device-tier="mid"] .top-nav,
+[data-device-tier="low"] .library-search,
+[data-device-tier="mid"] .library-search {
+  background: var(--bg-color);
+}
+
+[data-device-tier="low"] .stims-shell__sheet,
+[data-device-tier="mid"] .stims-shell__sheet,
+[data-device-tier="low"] .stims-shell__modal-panel,
+[data-device-tier="mid"] .stims-shell__modal-panel {
+  background: var(--bg-color);
 }
 
 /* ── System Theme Detection ───────────────────────────────────────── */
