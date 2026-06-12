@@ -1,14 +1,15 @@
 /**
  * Batch thumbnail generator — renders presets via Playwright + WebGL.
- * Uses fresh browser context per preset for clean GPU state.
+ * Fresh browser context per preset for clean GPU state.
  *
  * Usage:
- *   bun run scripts/generate-thumbnails.ts           # all presets with previews
- *   bun run scripts/generate-thumbnails.ts --count=5 # first N
+ *   bun run scripts/generate-thumbnails.ts              # all presets with previews
+ *   bun run scripts/generate-thumbnails.ts --count=5    # first N
  *   bun run scripts/generate-thumbnails.ts --ids=geiss-casino,flexi-dawn
+ *   bun run scripts/generate-thumbnails.ts --all         # all 1,791 presets
  *
  * Requires: dev server running (bun run dev) and Playwright Chromium installed.
- * Outputs: thumbnails/{presetId}.png + thumbnails/{presetId}.thumb.png
+ * Outputs: thumbnails/{presetId}.png + thumbnails/{presetId}.thumb.png (480×270)
  */
 
 import { existsSync, mkdirSync } from 'node:fs';
@@ -20,18 +21,19 @@ const DEV_SERVER = 'http://localhost:5173';
 const OUTPUT_DIR = 'thumbnails';
 const THUMB_W = 480;
 const THUMB_H = 270;
+const INIT_TIMEOUT = 30000;
 
 interface PresetEntry {
   id: string;
   title: string;
-  preview?: boolean;
 }
 
-function parseArgs(): { count?: number; ids?: string[] } {
-  const args: { count?: number; ids?: string[] } = {};
+function parseArgs(): { count?: number; ids?: string[]; all?: boolean } {
+  const args: { count?: number; ids?: string[]; all?: boolean } = {};
   for (const arg of process.argv.slice(2)) {
     if (arg.startsWith('--count=')) args.count = parseInt(arg.slice(8), 10);
     if (arg.startsWith('--ids=')) args.ids = arg.slice(6).split(',');
+    if (arg === '--all') args.all = true;
   }
   return args;
 }
@@ -39,36 +41,28 @@ function parseArgs(): { count?: number; ids?: string[] } {
 async function getPresets(filter: {
   count?: number;
   ids?: string[];
+  all?: boolean;
 }): Promise<PresetEntry[]> {
   const catalogPath = new URL(
     '../public/milkdrop-presets/catalog.json',
     import.meta.url,
   );
   const data = await Bun.file(catalogPath).json();
-  const all = (data.presets || []) as PresetEntry[];
+  // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
+  const all: PresetEntry[] = data.presets || [];
 
   if (filter.ids) {
     const idSet = new Set(filter.ids);
     return all.filter((p) => idSet.has(p.id));
   }
 
-  return all.filter((p) => p.preview).slice(0, filter.count);
-}
+  if (filter.all) return all;
 
-function hideUIElements() {
-  const canvas = document.querySelector('canvas');
-  if (!canvas) return;
-  const ancestors = new Set<Element>();
-  let el: Element | null = canvas.parentElement;
-  while (el) {
-    ancestors.add(el);
-    el = el.parentElement;
-  }
-  const all = document.querySelectorAll('body *');
-  for (const node of all) {
-    if (node === canvas || ancestors.has(node)) continue;
-    (node as HTMLElement).style.display = 'none';
-  }
+  // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
+  // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
+  return (all as any[])
+    .filter((p: any) => p.preview)
+    .slice(0, filter.count) as PresetEntry[];
 }
 
 async function downscaleFull(filePath: string): Promise<string> {
@@ -107,15 +101,15 @@ async function main() {
   for (let i = 0; i < presets.length; i++) {
     const preset = presets[i];
     const t0 = Date.now();
-    const context = await browser.newContext({
+    const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
       deviceScaleFactor: 2,
     });
-    await context.addInitScript(() => {
+    await ctx.addInitScript(() => {
       localStorage.setItem('stims:quality-preset', 'ultra');
       localStorage.setItem('stims:renderer-preference', 'webgpu');
     });
-    const page = await context.newPage();
+    const page = await ctx.newPage();
 
     try {
       await page.goto(`${DEV_SERVER}/?preset=${preset.id}&audio=demo`, {
@@ -125,17 +119,19 @@ async function main() {
       await page.waitForSelector('#stims-main', { timeout: 10000 });
 
       await page.evaluate(() => {
-        const btn = document.querySelector(
-          '#use-demo-audio',
-        ) as HTMLButtonElement | null;
-        btn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        const btns = [...document.querySelectorAll('button')];
+        const demo = btns.find(
+          (b) =>
+            b.textContent?.includes('demo audio') ||
+            b.textContent?.includes('Play with demo'),
+        );
+        demo?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       });
 
-      await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
+      await page.waitForSelector('[data-mode="live"]', {
+        timeout: INIT_TIMEOUT,
+      });
       await page.waitForTimeout(2000);
-
-      await page.evaluate(hideUIElements);
-      await page.waitForTimeout(300);
 
       const canvas = await page.$('canvas');
       if (!canvas) throw new Error('No canvas');
@@ -162,7 +158,7 @@ async function main() {
       console.log(`  [FAIL] ${preset.id} — ${elapsed.toFixed(1)}s: ${err}`);
     } finally {
       await page.close();
-      await context.close();
+      await ctx.close();
     }
   }
 
