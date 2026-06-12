@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: var(--z-modal-backdrop);
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   animation: backdrop-in 0.25s ease both;
@@ -34,7 +34,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 45;
+  z-index: var(--z-modal);
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -84,7 +84,7 @@
 .handleBar {
   width: 36px;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--stims-white-12);
 }
 
@@ -160,7 +160,7 @@
   align-items: center;
   padding: 8px 14px;
   border: 1px solid var(--stims-line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--stims-muted);
   font: inherit;

@@ -316,16 +316,27 @@ html.light {
   --z-frame-chrome: 3; /* Corner brand, rail actions */
   --z-search-sticky: 6; /* Sticky search bar */
   --z-nav: 10; /* Top navigation */
+  --z-panel: 15; /* Generic panels */
+  --z-overlay: 18; /* Panel overlays */
+  --z-dropdown: 20; /* Dropdown menus */
   --z-dock: 25; /* Control dock / tool panels */
+  --z-filter-bar: 28; /* Active filter bar */
   --z-toast: 30; /* Toast notifications */
+  --z-alert: 35; /* Alert banners */
   --z-modal-backdrop: 40; /* Modal / sheet backdrop */
   --z-modal: 45; /* Modal / sheet panel */
-  --z-loading: 9999; /* Global loading overlay */
+  --z-shortcut-overlay: 100; /* Keyboard shortcut overlay */
   --z-home-link: 1000; /* Floating home link */
   --z-control-panel: 1100; /* Floating control panels */
   --z-sheet: 1125; /* Tool sheets */
+  --z-sheet-active: 1151; /* Active tool sheet */
+  --z-shell-panel: 1190; /* Shell panels */
   --z-active-nav: 1200; /* Active toy nav bar */
+  --z-settings-panel: 1250; /* Settings panel */
+  --z-fullscreen-panel: 1260; /* Fullscreen panel */
   --z-error-overlay: 2000; /* Error / rendering overlay */
+  --z-audio-match: 2100; /* Audio match overlay */
+  --z-loading: 9999; /* Global loading overlay */
 }
 
 /* ── TV Mode Scaling ──────────────────────────────────────────────── */

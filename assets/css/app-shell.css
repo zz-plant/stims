@@ -88,7 +88,7 @@ body[data-page="workspace"] {
     right: 14px;
     top: 0;
     height: 3px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: linear-gradient(
       90deg,
       #8ff54a,
@@ -498,7 +498,7 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-hero {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-stage-root);
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     column-gap: 20px;
@@ -764,17 +764,6 @@ body[data-page="workspace"] {
     background: var(--stims-white-02);
   }
 
-  .stims-shell__preset-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-    gap: 12px;
-    min-height: 240px;
-    max-height: min(56vh, 680px);
-    overflow: auto;
-    padding-right: 4px;
-    align-content: start;
-  }
-
   .stims-shell__sheet-body .stims-shell__preset-list {
     min-height: 0;
     max-height: none;
@@ -985,7 +974,7 @@ body[data-page="workspace"] {
     position: absolute;
     top: 6px;
     right: 6px;
-    z-index: 1;
+    z-index: var(--z-stage-root);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -993,7 +982,7 @@ body[data-page="workspace"] {
     height: 32px;
     padding: 0;
     border: 1px solid var(--stims-white-12);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(0, 0, 0, 0.38);
     color: rgba(255, 255, 255, 0.7);
     font-size: 1rem;
@@ -1149,7 +1138,7 @@ body[data-page="workspace"] {
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero {
     position: absolute;
     inset: 0;
-    z-index: 2;
+    z-index: var(--z-stage-hero);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1216,7 +1205,7 @@ body[data-page="workspace"] {
     inset: 0;
     width: 100%;
     height: 100%;
-    z-index: 1;
+    z-index: var(--z-stage-root);
   }
 
   .stims-shell__frame-chrome,
@@ -1224,7 +1213,7 @@ body[data-page="workspace"] {
     position: absolute;
     left: 22px;
     right: 22px;
-    z-index: 3;
+    z-index: var(--z-frame-chrome);
     display: flex;
     gap: 16px;
     justify-content: space-between;
@@ -1308,7 +1297,7 @@ body[data-page="workspace"] {
   .stims-shell__stage-hero {
     position: absolute;
     inset: max(72px, 8vh) auto 26px 28px;
-    z-index: 2;
+    z-index: var(--z-stage-hero);
     display: grid;
     width: min(46rem, calc(100% - 84px));
     align-items: start;
@@ -1379,7 +1368,7 @@ body[data-page="workspace"] {
 
   .stims-shell__stage-dock {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-stage-root);
     display: inline-flex;
     flex-wrap: nowrap;
     gap: 8px;
@@ -1560,7 +1549,7 @@ body[data-page="workspace"] {
   .stims-shell__preset-tech {
     padding: 4px 8px;
     border: 1px solid var(--stims-line-soft);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(255, 255, 255, 0.035);
     color: color-mix(in srgb, var(--stims-cool) 58%, var(--stims-ink));
   }
@@ -1787,7 +1776,7 @@ body[data-page="workspace"] {
   .stims-shell__preset-preview-image {
     position: absolute;
     inset: 0;
-    z-index: 1;
+    z-index: var(--z-stage-root);
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -1797,7 +1786,7 @@ body[data-page="workspace"] {
   .stims-shell__preset-art-scene {
     position: absolute;
     inset: 0;
-    z-index: 0;
+    z-index: var(--z-ambient);
     pointer-events: none;
   }
 
@@ -1970,7 +1959,7 @@ body[data-page="workspace"] {
     position: fixed;
     top: 24px;
     right: 24px;
-    z-index: 1151;
+    z-index: var(--z-sheet-active);
     width: min(540px, calc(100vw - 48px));
     height: calc(100vh - 48px);
     height: calc(100dvh - 48px);
@@ -2100,7 +2089,7 @@ body[data-page="workspace"] {
   .stims-shell__sheet-surface--sticky {
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: var(--z-stage-root);
   }
 
   .stims-shell__sheet-callout {
@@ -2149,7 +2138,7 @@ body[data-page="workspace"] {
     position: fixed;
     right: 24px;
     bottom: 24px;
-    z-index: 2100;
+    z-index: var(--z-audio-match);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -2694,20 +2683,6 @@ body[data-page="workspace"] {
       }
     }
 
-    .stims-shell__stage-frame[data-mode="home"]
-      .stims-shell__stage-root::before {
-      inset: 42% 8% 18% 8%;
-      border-radius: 24px;
-      transform: none;
-    }
-
-    .stims-shell__stage-frame[data-mode="home"]
-      .stims-shell__stage-root::after {
-      inset: 44% 10% 20% 10%;
-      border-radius: 20px;
-      transform: none;
-    }
-
     .stims-shell__frame-chrome,
     .stims-shell__frame-header {
       left: 10px;
@@ -2961,35 +2936,6 @@ body[data-page="workspace"] {
       opacity: 1;
     }
 
-    /* Print styles for readable output */
-    @media print {
-      :scope {
-        background: white;
-        color: black;
-      }
-
-      .stims-shell__sheet,
-      .stims-shell__stage-dock,
-      .stims-shell__frame-chrome,
-      .stims-shell__frame-header,
-      .stims-shell__toast {
-        display: none;
-      }
-
-      .stims-shell__stage-frame {
-        border: 1px solid #ccc;
-        background: white;
-      }
-
-      .stims-shell__preset-art {
-        background: #f5f5f5;
-      }
-
-      a {
-        color: #0000ee;
-      }
-    }
-
     /* High contrast mode support */
     @media (prefers-contrast: high) {
       :scope {
@@ -3135,10 +3081,10 @@ body[data-page="workspace"] {
   gap: 12px;
   padding: 8px 16px;
   border: 1px solid var(--stims-white-12);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(3, 5, 11, 0.7);
   backdrop-filter: blur(12px);
-  z-index: 10;
+  z-index: var(--z-nav);
   font-size: 0.82rem;
   animation: fade-in 0.3s ease;
 }
@@ -3174,7 +3120,7 @@ body[data-page="workspace"] {
 .stims-shell__shortcut-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-shortcut-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3653,5 +3599,34 @@ body[data-page="workspace"] {
     font-size: 0.9rem;
     opacity: 0.7;
     margin-bottom: 16px;
+  }
+
+  /* Print styles for readable output */
+  @media print {
+    :scope {
+      background: white;
+      color: black;
+    }
+
+    .stims-shell__sheet,
+    .stims-shell__stage-dock,
+    .stims-shell__frame-chrome,
+    .stims-shell__frame-header,
+    .stims-shell__toast {
+      display: none;
+    }
+
+    .stims-shell__stage-frame {
+      border: 1px solid #ccc;
+      background: white;
+    }
+
+    .stims-shell__preset-art {
+      background: #f5f5f5;
+    }
+
+    a {
+      color: #0000ee;
+    }
   }
 }

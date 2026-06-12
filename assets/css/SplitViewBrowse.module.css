@@ -9,7 +9,7 @@
     gap: 0;
     position: fixed;
     inset: 0;
-    z-index: 1200;
+    z-index: var(--z-active-nav);
     background: rgba(5, 7, 13, 0.94);
     backdrop-filter: blur(8px);
     color: #eef7ff;
@@ -85,7 +85,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 2;
+    z-index: var(--z-stage-hero);
     display: flex;
     align-items: center;
     justify-content: space-between;
