@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { PresetShelfSection } from './PresetShelfSection.tsx';
@@ -46,6 +46,7 @@ export function NewHomePage() {
   const showJumpBack = hasFavorites;
 
   const [loadingAudio, setLoadingAudio] = useState(false);
+  const loadingAudioRef = useRef(false);
 
   useEffect(() => {
     if (engineSnapshot?.audioActive) setLoadingAudio(false);
@@ -53,12 +54,15 @@ export function NewHomePage() {
 
   const handleStartAudio = useCallback(
     (source: 'demo' | 'microphone' | 'tab') => {
+      if (loadingAudioRef.current) return;
+      loadingAudioRef.current = true;
       setLoadingAudio(true);
-      void engine
-        .handleAudioStart(source)
-        .finally(() => setLoadingAudio(false));
+      void engine.handleAudioStart(source).finally(() => {
+        loadingAudioRef.current = false;
+        if (!engineSnapshot?.audioActive) setLoadingAudio(false);
+      });
     },
-    [engine.handleAudioStart],
+    [engine.handleAudioStart, engineSnapshot?.audioActive],
   );
 
   useEffect(() => {

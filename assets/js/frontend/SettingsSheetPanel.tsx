@@ -171,7 +171,7 @@ export function SettingsSheetPanel({
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
-          <label className="stims-shell__toggle">
+          <label className="stims-shell__toggle-card">
             <input
               type="checkbox"
               checked={renderPreferences.compatibilityMode}
@@ -187,7 +187,7 @@ export function SettingsSheetPanel({
             </span>
           </label>
 
-          <label className="stims-shell__toggle">
+          <label className="stims-shell__toggle-card">
             <input
               type="checkbox"
               checked={motionPreference.enabled}

@@ -187,6 +187,7 @@ footer {
   padding-top: 0.45rem;
   margin-bottom: clamp(0.6rem, 1.2vw, 1rem);
   backdrop-filter: blur(14px) saturate(130%);
+  contain: layout style paint;
 }
 
 .top-nav {
@@ -876,6 +877,7 @@ h1 {
   position: sticky;
   top: clamp(4.6rem, 9vh, 6rem);
   z-index: 6;
+  contain: layout style paint;
   transition:
     border-color 0.25s ease,
     box-shadow 0.25s ease,

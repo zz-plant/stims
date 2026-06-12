@@ -1,4 +1,3 @@
-import { setMilkdropCapturedVideoStream } from '../core/services/captured-video-texture.ts';
 import {
   type MicrophonePermissionState,
   queryMicrophonePermissionState,
@@ -526,6 +525,9 @@ export function initAudioControls(
         const stream = await captureDisplayAudioStream({
           unavailableMessage: 'Tab audio capture unavailable.',
         });
+        const { setMilkdropCapturedVideoStream } = await import(
+          '../core/services/captured-video-texture.ts'
+        );
         await setMilkdropCapturedVideoStream(stream);
         await requestTabAudio(stream);
       },

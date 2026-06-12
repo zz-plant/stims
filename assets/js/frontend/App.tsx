@@ -169,7 +169,7 @@ function StimsWorkspaceAppShell() {
   } | null>(null);
 
   const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
-  const liveMode = engine.launchControlsHidden;
+  const liveMode = engine.audioActive;
   const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const currentAudioSource =
     engineSnapshot?.audioSource ?? ui.routeState.audioSource;
@@ -540,6 +540,9 @@ function StimsWorkspaceAppShell() {
       data-has-toast={ui.toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
       data-preview={ui.routeState.previewMode ? 'true' : undefined}
+      data-sheet-open={
+        ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined
+      }
     >
       <a href="#stims-main" className="skip-link">
         Skip to main content

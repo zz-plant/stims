@@ -109,9 +109,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const engineSnapshotValue: EngineSnapshotValue = useMemo(
     () => ({
       engineSnapshot: sessionState.engineSnapshot,
-      engineReady: shellOrchestration.engineReady,
     }),
-    [sessionState.engineSnapshot, shellOrchestration.engineReady],
+    [sessionState.engineSnapshot],
   );
 
   const engineDataValue: EngineContextValue = useMemo(
@@ -125,7 +124,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       favoritePresets: shellOrchestration.favoritePresets,
       featuredPreset: shellOrchestration.featuredPreset,
       filteredCatalog: shellOrchestration.filteredCatalog,
-      launchControlsHidden: shellOrchestration.launchControlsHidden,
+      audioActive: shellOrchestration.audioActive,
       loadingRequestedPreset: shellOrchestration.loadingRequestedPreset,
       missingRequestedPreset: shellOrchestration.missingRequestedPreset,
       recentPresets: shellOrchestration.recentPresets,
@@ -163,7 +162,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       shellOrchestration.recentPresets,
       shellOrchestration.selectedPreset,
       shellOrchestration.starterPresets,
-      shellOrchestration.launchControlsHidden,
+      shellOrchestration.audioActive,
       shellOrchestration.handleAudioStart,
       shellOrchestration.handleAudioStop,
       shellOrchestration.handlePresetSelection,

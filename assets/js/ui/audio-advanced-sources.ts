@@ -1,4 +1,3 @@
-import { setMilkdropCapturedVideoStream } from '../core/services/captured-video-texture.ts';
 import type { AudioControlsOptions } from './audio-controls.ts';
 import { YouTubeController } from './youtube-controller';
 import {
@@ -307,7 +306,7 @@ export function setupYouTubeAudioControls(
           setUseButtonReadyState();
         }
       });
-      mountYouTubeStageLayer(playerContainer);
+      await mountYouTubeStageLayer(playerContainer);
       loadedVideoKey = reference.canonicalUrl;
       updateStatus('Ready to capture audio.', 'success');
       setLoadButtonValidityState();
@@ -389,10 +388,13 @@ export function setupYouTubeAudioControls(
       const stream = await captureDisplayAudioStream({
         unavailableMessage: 'Screen capture unavailable.',
       });
+      const { setMilkdropCapturedVideoStream } = await import(
+        '../core/services/captured-video-texture.ts'
+      );
       await setMilkdropCapturedVideoStream(stream, {
         cropTarget: playerContainer,
       });
-      syncYouTubeStagePreview(doc);
+      await syncYouTubeStagePreview(doc);
       await onUse(stream);
       onSuccess?.();
       updateStatus('YouTube video is feeding the preset.', 'success');

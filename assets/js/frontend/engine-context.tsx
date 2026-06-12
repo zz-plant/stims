@@ -8,7 +8,6 @@ import type { StarterPreset } from './workspace-helpers.ts';
 
 export interface EngineSnapshotValue {
   engineSnapshot: EngineSnapshot | null;
-  engineReady: boolean;
 }
 
 const EngineSnapshotCtx = createContext<EngineSnapshotValue | null>(null);
@@ -33,7 +32,7 @@ export interface EngineContextValue {
   favoritePresets: PresetCatalogEntry[];
   featuredPreset: PresetCatalogEntry | null;
   filteredCatalog: PresetCatalogEntry[];
-  launchControlsHidden: boolean;
+  audioActive: boolean;
   loadingRequestedPreset: boolean;
   missingRequestedPreset: boolean;
   recentPresets: PresetCatalogEntry[];

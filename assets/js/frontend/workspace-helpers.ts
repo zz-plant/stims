@@ -24,7 +24,7 @@ export type StarterPreset = {
 export type WorkspaceLaunchState = {
   engineReady: boolean;
   featuredPreset: PresetCatalogEntry | null;
-  launchControlsHidden: boolean;
+  audioActive: boolean;
   launchEyebrow: string;
   launchTitle: string;
   launchSummary: string;

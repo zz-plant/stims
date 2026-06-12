@@ -66,7 +66,7 @@ describe('Workspace shell mobile layout regression', () => {
       /@media \(max-height: 480px\)[\s\S]*?\.stims-shell__stage-frame,\s*\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*calc\(100vh - 20px\);/u,
     );
     expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-hero,[\s\S]*?\.stims-shell__source-grid\s*\{[\s\S]*?grid-template-columns:\s*1fr;/u,
+      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-hero\s*\{[\s\S]*?grid-template-columns:\s*1fr;/u,
     );
     expect(css).toMatch(
       /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-recommendation\s*\{[\s\S]*?min-height:\s*0;/u,

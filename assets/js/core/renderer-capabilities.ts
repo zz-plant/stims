@@ -1,6 +1,5 @@
 /* global GPUAdapter, GPUDevice, GPU */
 
-import WebGL from 'three/examples/jsm/capabilities/WebGL.js';
 import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
@@ -483,10 +482,7 @@ export function getRenderingSupport(): RenderingSupport {
   const hasWebGPU =
     typeof navigator !== 'undefined' &&
     Boolean((navigator as Navigator & { gpu?: GPU }).gpu);
-  const libraryWebGLSupport =
-    typeof WebGL !== 'undefined' &&
-    (WebGL as { isWebGLAvailable?: () => boolean }).isWebGLAvailable?.();
-  const hasWebGL = Boolean(libraryWebGLSupport) || probeCanvasWebGLContext();
+  const hasWebGL = probeCanvasWebGLContext();
 
   return {
     hasWebGPU,

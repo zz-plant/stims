@@ -1,8 +1,3 @@
-import {
-  getMilkdropCapturedVideoCanvas,
-  isMilkdropCapturedVideoReady,
-} from '../core/services/captured-video-texture.ts';
-
 const STAGE_LAYER_SELECTOR = '[data-youtube-stage-layer]';
 const ACTIVE_TOY_CONTAINER_ID = 'active-toy-container';
 const PREVIEW_SELECTOR = '[data-youtube-stage-preview]';
@@ -109,7 +104,7 @@ function ensureStageLayer(doc: Document) {
   return layer;
 }
 
-export function mountYouTubeStageLayer(playerContainer: HTMLElement) {
+export async function mountYouTubeStageLayer(playerContainer: HTMLElement) {
   const doc = playerContainer.ownerDocument;
   const layer = ensureStageLayer(doc);
   if (!(layer instanceof HTMLElement)) {
@@ -122,17 +117,19 @@ export function mountYouTubeStageLayer(playerContainer: HTMLElement) {
   playerContainer.hidden = false;
   playerContainer.classList.add('control-panel__embed--stage-layer');
   layer.appendChild(playerContainer);
-  syncYouTubeStagePreview(doc);
+  await syncYouTubeStagePreview(doc);
   return layer;
 }
 
-export function syncYouTubeStagePreview(doc: Document) {
+export async function syncYouTubeStagePreview(doc: Document) {
   const layer = doc.querySelector(STAGE_LAYER_SELECTOR);
   if (!(layer instanceof HTMLElement)) {
     return;
   }
 
   const preview = ensurePreviewHost(layer);
+  const { getMilkdropCapturedVideoCanvas, isMilkdropCapturedVideoReady } =
+    await import('../core/services/captured-video-texture.ts');
   const canvas = getMilkdropCapturedVideoCanvas();
   if (canvas?.tagName !== 'CANVAS' || !isMilkdropCapturedVideoReady()) {
     layer.classList.remove('youtube-stage-layer--captured');

@@ -56,7 +56,6 @@ export function useWorkspaceShellOrchestration({
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
-  const playPresetInProgressRef = useRef(false);
   const fileAudioContextRef = useRef<AudioContext | null>(null);
 
   const enrichedCatalog = useMemo(() => {
@@ -128,7 +127,7 @@ export function useWorkspaceShellOrchestration({
     [resolvedRequestedPreset, currentPreset],
   );
 
-  const launchControlsHidden = useMemo(
+  const audioActive = useMemo(
     () =>
       engineSnapshot?.audioActive ||
       document.body.dataset.audioActive === 'true',
@@ -167,7 +166,7 @@ export function useWorkspaceShellOrchestration({
       favoritePresets: pickFavoritePresets(enrichedCatalog),
       featuredPreset,
       filteredCatalog,
-      launchControlsHidden,
+      audioActive,
       loadingRequestedPreset,
       missingRequestedPreset,
       recentPresets: pickRecentPresets(enrichedCatalog),
@@ -183,7 +182,7 @@ export function useWorkspaceShellOrchestration({
       engineReady,
       featuredPreset,
       filteredCatalog,
-      launchControlsHidden,
+      audioActive,
       loadingRequestedPreset,
       missingRequestedPreset,
       routeState.panel,
@@ -327,25 +326,13 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handlePlayPreset = async (presetId: string) => {
-    if (playPresetInProgressRef.current) return;
-    playPresetInProgressRef.current = true;
-    try {
-      setStatusMessage(null);
-      const nextRouteState = {
-        ...routeState,
-        audioSource: 'demo' as const,
-        panel: null,
-        presetId,
-      };
-      commitRoute(nextRouteState);
-      await startAudioSource({ source: 'demo', launchState: nextRouteState });
-    } catch (error) {
-      setStatusMessage(
-        error instanceof Error ? error.message : 'Audio start failed.',
-      );
-    } finally {
-      playPresetInProgressRef.current = false;
-    }
+    commitRoute({
+      ...routeState,
+      audioSource: 'demo' as const,
+      panel: null,
+      presetId,
+    });
+    await handleAudioStart('demo');
   };
 
   const handleAudioStart = async (

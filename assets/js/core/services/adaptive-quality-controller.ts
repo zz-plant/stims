@@ -129,24 +129,10 @@ function getDisplayRefreshRate(): number {
     if (rate > 0) return rate;
   }
 
-  const mediaQuery = window.matchMedia('(update: fast)');
-  if (!mediaQuery.matches) return 60;
+  if (!window.matchMedia('(update: fast)').matches) return 60;
 
-  const canvas = document.createElement('canvas');
-  const gl = canvas.getContext('webgl');
-  if (gl) {
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    if (ext) {
-      const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
-      if (renderer && /mali/i.test(renderer)) return 60;
-    }
-    // After getting GL info, clean up
-    const loseCtx = gl.getExtension('WEBGL_lose_context');
-    loseCtx?.loseContext();
-    canvas.width = 0;
-    canvas.height = 0;
-  }
-
+  // Avoid creating a WebGL context just for GPU detection.
+  // Low concurrency is a reliable proxy for low-end/mobile GPUs.
   try {
     const concurrency = navigator.hardwareConcurrency ?? 4;
     if (concurrency <= 4) return 60;
@@ -359,7 +345,11 @@ export function createAdaptiveQualityController({
       }
 
       if (sampleCount < MIN_WARMUP_SAMPLES) {
-        return publish();
+        // During warmup, only publish every 4th sample to reduce GC pressure
+        if (sampleCount % 4 === 0 || sampleCount === 1) {
+          return publish();
+        }
+        return state;
       }
 
       const renderPressure =
@@ -448,7 +438,7 @@ export function createAdaptiveQualityController({
         adaptation = 'steady';
       }
 
-      return publish();
+      return state;
     },
     subscribe: (subscriber) => {
       subscribers.add(subscriber);
