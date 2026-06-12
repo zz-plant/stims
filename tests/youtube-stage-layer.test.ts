@@ -9,7 +9,7 @@ describe('YouTube stage layer', () => {
     document.body.innerHTML = '';
   });
 
-  test('mounts the player container into the active toy container overlay', () => {
+  test('mounts the player container into the active toy container overlay', async () => {
     document.body.innerHTML = `
       <div id="active-toy-container"></div>
       <div id="youtube-player-container"><iframe id="youtube-player"></iframe></div>
@@ -18,7 +18,7 @@ describe('YouTube stage layer', () => {
     const playerContainer = document.getElementById(
       'youtube-player-container',
     ) as HTMLElement;
-    const layer = mountYouTubeStageLayer(playerContainer);
+    const layer = await mountYouTubeStageLayer(playerContainer);
 
     expect(layer).not.toBeNull();
     expect(layer?.dataset.youtubeStageLayer).toBe('true');
@@ -30,7 +30,7 @@ describe('YouTube stage layer', () => {
     expect(layer?.hidden).toBe(false);
   });
 
-  test('hides the stage layer without removing the mounted player', () => {
+  test('hides the stage layer without removing the mounted player', async () => {
     document.body.innerHTML = `
       <div id="active-toy-container"></div>
       <div id="youtube-player-container"><iframe id="youtube-player"></iframe></div>
@@ -39,7 +39,7 @@ describe('YouTube stage layer', () => {
     const playerContainer = document.getElementById(
       'youtube-player-container',
     ) as HTMLElement;
-    const layer = mountYouTubeStageLayer(playerContainer);
+    const layer = await mountYouTubeStageLayer(playerContainer);
     hideYouTubeStageLayer(document);
 
     expect(layer?.hidden).toBe(true);
