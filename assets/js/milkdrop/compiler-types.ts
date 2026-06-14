@@ -176,7 +176,10 @@ export type MilkdropShaderTextureSampler =
   | 'fractal'
   | 'video'
   | 'pw_main'
-  | 'pc_main';
+  | 'pc_main'
+  | 'blur1'
+  | 'blur2'
+  | 'blur3';
 
 export type MilkdropShaderTextureBlendMode =
   | 'none'

@@ -16,6 +16,9 @@ export const MILKDROP_SHADER_TEXTURE_SAMPLERS = new Set<
   'video',
   'pw_main',
   'pc_main',
+  'blur1',
+  'blur2',
+  'blur3',
 ]);
 
 const MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS =
@@ -71,6 +74,9 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   cartunemask1: 'noise',
   manyfish: 'noise',
   onefish: 'noise',
+  sampler_blur1: 'blur1',
+  sampler_blur2: 'blur2',
+  sampler_blur3: 'blur3',
 };
 
 export function normalizeMilkdropShaderSamplerName(

@@ -395,6 +395,14 @@ function emitTextureSample(
     return `texture2D(previousTex, sampleUv(${coordArg}, textureWrap)).rgb`;
   }
 
+  if (
+    normalizedName === 'blur1' ||
+    normalizedName === 'blur2' ||
+    normalizedName === 'blur3'
+  ) {
+    return `texture2D(${normalizedName}Tex, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
+
   if (normalizedName === 'main') {
     // Sample from the main framebuffer texture
     return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
