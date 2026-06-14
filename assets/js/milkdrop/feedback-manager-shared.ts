@@ -268,6 +268,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D warpTex;
         uniform sampler2D blur1Tex;
         uniform sampler2D blur2Tex;
         uniform sampler2D blur3Tex;
@@ -610,6 +611,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly compositeMaterial: ShaderMaterial;
   readonly presentMaterial: MeshBasicMaterial;
   readonly sceneTarget: WebGLRenderTarget;
+  readonly warpTarget: WebGLRenderTarget;
   readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
   readonly blurTargets: [
     WebGLRenderTarget,
@@ -629,7 +631,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   viewportHeight: number;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
+  private hasWarpCode = false;
   private index = 0;
+  readonly warpMaterial: ShaderMaterial;
+  readonly warpScene: Scene;
 
   constructor(
     width: number,
@@ -648,6 +653,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       resolutionScale: this.sceneResolutionScale,
       useHalfFloatFeedback: behavior.useHalfFloatFeedback,
       samples: this.profile.samples,
+    });
+    this.warpTarget = createFeedbackRenderTarget(width, height, {
+      resolutionScale: this.currentFeedbackResolutionScale,
+      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: 1,
     });
     this.targets = [
       createFeedbackRenderTarget(width, height, {
@@ -715,6 +725,106 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.blurScene = new Scene();
     this.blurQuad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.blurMaterial);
     this.blurScene.add(this.blurQuad);
+    this.warpMaterial = new ShaderMaterial({
+      uniforms: {
+        currentTex: { value: this.sceneTarget.texture },
+        previousTex: { value: this.targets[0].texture },
+        warpScale: { value: 1 },
+        zoom: { value: 1.02 },
+        zoomMul: { value: 1 },
+        rotation: { value: 0 },
+        offsetX: { value: 0 },
+        offsetY: { value: 0 },
+        textureWrap: { value: 0 },
+        warpTextureSource: { value: 0 },
+        warpTextureSampleDimension: { value: 0 },
+        warpTextureAmount: { value: 0 },
+        warpTextureScale: { value: [1, 1] },
+        warpTextureOffset: { value: [0, 0] },
+        warpTextureVolumeSliceZ: { value: 0 },
+        signalTime: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D currentTex;
+        uniform sampler2D previousTex;
+        uniform float warpScale;
+        uniform float zoom;
+        uniform float zoomMul;
+        uniform float rotation;
+        uniform float offsetX;
+        uniform float offsetY;
+        uniform float textureWrap;
+        uniform float warpTextureSource;
+        uniform float warpTextureSampleDimension;
+        uniform float warpTextureAmount;
+        uniform vec2 warpTextureScale;
+        uniform vec2 warpTextureOffset;
+        uniform float warpTextureVolumeSliceZ;
+        uniform float signalTime;
+        varying vec2 vUv;
+
+        float sq(float x) { return x * x; }
+        float cube(float x) { return x * x * x; }
+        float sigmoid(float x, float sharpness) { return 1.0 / (1.0 + exp(-x * sharpness)); }
+        float between(float val, float low, float high) { return step(low, val) * step(val, high); }
+        float above(float val, float threshold) { return step(threshold, val); }
+        float below(float val, float threshold) { return 1.0 - step(threshold, val); }
+        float equalF(float a, float b) { return 1.0 - step(0.0001, abs(a - b)); }
+        float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+        float noise(vec2 uv) { vec2 i = floor(uv); vec2 f = fract(uv); f = f*f*(3.0-2.0*f); return mix(mix(rand(i+vec2(0.0,0.0)), rand(i+vec2(1.0,0.0)), f.x), mix(rand(i+vec2(0.0,1.0)), rand(i+vec2(1.0,1.0)), f.x), f.y); }
+
+        vec2 sampleUv(vec2 uv, float wrap) {
+          return wrap > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+
+        vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
+          vec2 centered = uv - 0.5;
+          float cosR = cos(rot);
+          float sinR = sin(rot);
+          vec2 rotated = vec2(centered.x * cosR - centered.y * sinR, centered.x * sinR + centered.y * cosR);
+          float angle = atan(rotated.y, rotated.x);
+          float radius = length(rotated);
+          float power = 0.5 + sin(angle * 3.0) * 0.15;
+          radius = pow(radius, power - scale * 0.25);
+          float spiral = sin(radius * 18.0 - angle * 4.0) * scale * 0.08;
+          angle += spiral + rot * 0.22;
+          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * scale * 0.05;
+          return vec2(cos(angle), sin(angle)) * radius + 0.5;
+        }
+
+        // --- DIRECT_WARP_START ---
+        // --- DIRECT_WARP_END ---
+
+        void main() {
+          vec2 centeredUv = vUv - 0.5;
+          float rotSin = sin(rotation);
+          float rotCos = cos(rotation);
+          vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
+          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+
+          // --- DIRECT_WARP_START ---
+          // --- DIRECT_WARP_END ---
+
+          vec2 warpedUv = applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
+            vec2 warpUv = warpedUv * warpTextureScale + warpTextureOffset;
+            // Simplified warp texture: sample currentTex at displaced UV
+            vec2 warpVector = texture2D(currentTex, sampleUv(warpUv, textureWrap)).rg - 0.5;
+            warpedUv += warpVector * warpTextureAmount * 0.12;
+          }
+          gl_FragColor = texture2D(currentTex, sampleUv(warpedUv, textureWrap));
+        }
+      `,
+    });
+    this.warpScene = new Scene();
+    this.warpScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.warpMaterial));
     this.compositeMaterial = this.createCompositeMaterial(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
     );
@@ -744,6 +854,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        warpTex: { value: this.warpTarget.texture },
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
@@ -833,6 +944,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.index = (this.index + 1) % 2;
     this.presentMaterial.map = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
+    this.warpMaterial.uniforms.previousTex.value = this.readTarget.texture;
   }
 
   setDirectShaderPrograms(
@@ -853,10 +965,21 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
+    this.hasWarpCode = warpGlsl !== null;
 
-    const injectedShader = injectDirectShaderGlsl(
+    // Rebuild warp shader with warp GLSL injected (or pass-through when null)
+    const injectedWarp = injectDirectShaderGlsl(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
       warpGlsl,
+      null,
+    );
+    this.warpMaterial.fragmentShader = injectedWarp;
+    this.warpMaterial.needsUpdate = true;
+
+    // Build composite shader: warp section kept empty since warp runs separate
+    const injectedShader = injectDirectShaderGlsl(
+      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+      null,
       compGlsl,
     );
 
@@ -975,6 +1098,31 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.signalBeatPulse.value = state.signalBeatPulse;
     uniforms.signalEnergy.value = state.signalEnergy;
     uniforms.signalTime.value = state.signalTime;
+
+    // Sync warp shader uniforms (subset of composite state)
+    const wu = this.warpMaterial.uniforms;
+    wu.currentTex.value = this.sceneTarget.texture;
+    wu.previousTex.value = this.readTarget.texture;
+    wu.warpScale.value = state.warpScale;
+    wu.zoom.value = state.zoom;
+    wu.zoomMul.value = state.zoomMul;
+    wu.rotation.value = state.rotation;
+    wu.offsetX.value = state.offsetX;
+    wu.offsetY.value = state.offsetY;
+    wu.textureWrap.value = state.textureWrap;
+    wu.warpTextureSource.value = state.warpTextureSource;
+    wu.warpTextureSampleDimension.value = state.warpTextureSampleDimension;
+    wu.warpTextureAmount.value = state.warpTextureAmount;
+    wu.warpTextureScale.value.set(
+      state.warpTextureScale.x,
+      state.warpTextureScale.y,
+    );
+    wu.warpTextureOffset.value.set(
+      state.warpTextureOffset.x,
+      state.warpTextureOffset.y,
+    );
+    wu.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
+    wu.signalTime.value = state.signalTime;
   }
 
   render(
@@ -991,6 +1139,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     renderer.setRenderTarget(this.sceneTarget);
     renderer.render(sourceScene, sourceCamera);
+
+    renderer.setRenderTarget(this.warpTarget);
+    renderer.render(this.warpScene, this.camera);
+
     renderer.setRenderTarget(this.writeTarget);
     renderer.render(this.compositeScene, this.camera);
 
@@ -1064,6 +1216,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       Math.round(height * this.currentFeedbackResolutionScale),
     );
     this.sceneTarget.setSize(sceneWidth, sceneHeight);
+    this.warpTarget.setSize(feedbackWidth, feedbackHeight);
     this.targets.forEach((target) =>
       target.setSize(feedbackWidth, feedbackHeight),
     );
@@ -1084,14 +1237,17 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
   dispose() {
     this.sceneTarget.dispose();
+    this.warpTarget.dispose();
     this.targets.forEach((target) => target.dispose());
     this.blurTargets.forEach((target) => target.dispose());
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
     disposeMaterial(this.blurMaterial);
+    disposeMaterial(this.warpMaterial);
     this.compositeScene.clear();
     this.presentScene.clear();
     this.blurScene.clear();
+    this.warpScene.clear();
   }
 }
 

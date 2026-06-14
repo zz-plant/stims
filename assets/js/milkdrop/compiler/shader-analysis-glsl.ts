@@ -395,6 +395,10 @@ function emitTextureSample(
     return `texture2D(previousTex, sampleUv(${coordArg}, textureWrap)).rgb`;
   }
 
+  if (normalizedName === 'fc_main') {
+    return `texture2D(warpTex, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
+
   if (
     normalizedName === 'blur1' ||
     normalizedName === 'blur2' ||

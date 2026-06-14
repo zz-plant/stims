@@ -177,6 +177,7 @@ export type MilkdropShaderTextureSampler =
   | 'video'
   | 'pw_main'
   | 'pc_main'
+  | 'fc_main'
   | 'blur1'
   | 'blur2'
   | 'blur3';
