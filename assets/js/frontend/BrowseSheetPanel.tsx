@@ -126,7 +126,7 @@ export function BrowseSheetPanel({
       const results = await searchByFrame(canvas);
       setVisualSearchResults(results);
     } catch {
-      ui.setStatusMessage('Visual search failed.');
+      ui.setStatusMessage('Finding similar presets failed.');
     } finally {
       setVisualSearchLoading(false);
     }
@@ -220,9 +220,10 @@ export function BrowseSheetPanel({
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
         <div className="stims-shell__browse-toolbar">
           <div className="stims-shell__browse-toolbar-copy">
-            <strong>Select a preset and press play.</strong>
+            <strong>Choose a preset to start playing.</strong>
             <p className="stims-shell__meta-copy">
-              Tap any card to play it. Previews update as they finish loading.
+              Tap any card to load it on the stage. Thumbnail previews fill in
+              as they are ready.
             </p>
           </div>
           <div className="stims-shell__browse-toolbar-actions">
@@ -232,21 +233,21 @@ export function BrowseSheetPanel({
               onClick={engine.handleShufflePreset}
               disabled={catalog.length === 0}
             >
-              Shuffle
+              Surprise me
             </button>
             <details className="stims-shell__browse-toolbar-extras">
               <summary
                 className="stims-shell__text-button"
-                aria-label="More browse tools"
+                aria-label="Preview tools"
               >
-                More
+                Preview tools
               </summary>
               <div className="stims-shell__browse-toolbar-extras-body">
                 <p
                   className="stims-shell__meta-copy"
                   data-testid="browse-preview-summary"
                 >
-                  Previews: {previewSummary || 'waiting on captures'}
+                  Preview status: {previewSummary || 'loading thumbnails'}
                 </p>
                 <button
                   type="button"
@@ -270,7 +271,7 @@ export function BrowseSheetPanel({
           id="preset-search"
           className="stims-shell__input"
           type="search"
-          placeholder="Search by title, mood, creator, or collection"
+          placeholder="Search presets by title, creator, mood, or collection"
           spellCheck={false}
           value={searchQuery}
           onChange={(event) => ui.setSearchQuery(event.target.value)}
@@ -294,14 +295,14 @@ export function BrowseSheetPanel({
                 onCollectionTagChange(null);
               }}
             >
-              Reset all
+              Clear search
             </button>
           ) : null}
         </p>
 
         <nav
           className="stims-shell__collections"
-          aria-label="Popular collections"
+          aria-label="Preset collections"
         >
           <button
             type="button"
@@ -355,7 +356,9 @@ export function BrowseSheetPanel({
                 : void handleVisualSearch()
             }
           >
-            {visualSearchLoading ? 'Searching\u2026' : 'Visual search'}
+            {visualSearchLoading
+              ? 'Searching\u2026'
+              : 'Find similar to current look'}
           </button>
         </nav>
         <div
@@ -369,7 +372,7 @@ export function BrowseSheetPanel({
               setShowAdvancedFilters((current) => !current);
             }}
           >
-            Advanced filters
+            More collections
           </button>
           {showAdvancedFilters && hiddenCollectionTags.length > 0 ? (
             <nav
@@ -397,7 +400,9 @@ export function BrowseSheetPanel({
               ))}
             </nav>
           ) : showAdvancedFilters ? (
-            <p className="stims-shell__meta-copy">No additional filters.</p>
+            <p className="stims-shell__meta-copy">
+              No more collections available.
+            </p>
           ) : null}
         </div>
       </section>
@@ -450,7 +455,9 @@ export function BrowseSheetPanel({
         ) : null}
         {visualSearchActive ? (
           <div className="stims-shell__section-heading">
-            <p className="stims-shell__section-label">Visual search</p>
+            <p className="stims-shell__section-label">
+              Find similar to current look
+            </p>
             <p className="stims-shell__meta-copy">
               {visualSearchResults.length} result
               {visualSearchResults.length === 1 ? '' : 's'}
@@ -474,11 +481,11 @@ export function BrowseSheetPanel({
           </div>
         ) : (
           <div className="stims-shell__section-heading">
-            <p className="stims-shell__section-label">Everything</p>
+            <p className="stims-shell__section-label">All presets</p>
             <p className="stims-shell__meta-copy">
               {filteredCatalog.length} result
               {filteredCatalog.length === 1 ? '' : 's'}
-              ready to explore.
+              available.
             </p>
           </div>
         )}
@@ -489,10 +496,10 @@ export function BrowseSheetPanel({
           routeState.collectionTag !== 'collection:community' &&
           filteredCatalog.length === 0) ? (
           <div className="stims-shell__empty-state">
-            <strong>No matching presets found</strong>
+            <strong>No presets match those filters</strong>
             <p>
-              We couldn't find any presets matching your query in this
-              collection.
+              Try a different search, choose another collection, or clear the
+              filters.
             </p>
             <button
               type="button"
@@ -502,7 +509,7 @@ export function BrowseSheetPanel({
                 onCollectionTagChange(null);
               }}
             >
-              Reset filters
+              Clear filters
             </button>
           </div>
         ) : (
@@ -614,10 +621,10 @@ export function BrowseSheetPanel({
             className="cta-button"
             onClick={engine.exportPreset}
           >
-            Export preset
+            Download current preset
           </button>
           <label className="cta-button stims-shell__file-button">
-            Import preset
+            Add preset file
             <input
               type="file"
               accept=".milk,.txt,text/plain"
@@ -626,7 +633,9 @@ export function BrowseSheetPanel({
             />
           </label>
           <label className="cta-button stims-shell__file-button">
-            {imageImportLoading ? 'Importing\u2026' : 'Import from image'}
+            {imageImportLoading
+              ? 'Importing\u2026'
+              : 'Create preset from image'}
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
@@ -638,12 +647,12 @@ export function BrowseSheetPanel({
             className="cta-button"
             onClick={() => void ui.handleShowCurrentLink()}
           >
-            Copy link
+            Copy share link
           </button>
         </div>
         {imageImportResult ? (
           <div className="stims-shell__image-import-result">
-            <p className="stims-shell__section-label">Import result</p>
+            <p className="stims-shell__section-label">Created preset</p>
             <p className="stims-shell__meta-copy">
               {imageImportResult.description}
             </p>

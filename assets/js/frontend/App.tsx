@@ -248,7 +248,7 @@ function StimsWorkspaceAppShell() {
       ) {
         quietDemoSuggestedRef.current = true;
         ui.setStatusMessage(
-          'Not hearing much? Switch to demo audio for guaranteed motion.',
+          'Not seeing much movement? Try demo audio for a stronger signal.',
         );
       }
     } else {
@@ -267,23 +267,23 @@ function StimsWorkspaceAppShell() {
     ? 'Loading preset'
     : liveMode
       ? 'Now playing'
-      : 'Stage ready';
+      : 'Ready to play';
   const stageTitle = engine.loadingRequestedPreset
     ? 'Loading preset'
     : engine.selectedPreset
       ? engine.selectedPreset.title
       : engine.missingRequestedPreset
-        ? 'Change preset'
-        : (engine.featuredPreset?.title ?? 'Featured pick');
+        ? 'Choose another preset'
+        : (engine.featuredPreset?.title ?? 'Recommended preset');
   const stageSummary = engine.loadingRequestedPreset
     ? `Loading ${ui.routeState.presetId}.`
     : engine.selectedPreset
       ? engine.selectedPreset.author || 'Unknown author'
       : engine.missingRequestedPreset
-        ? 'Start with the featured pick or open the full list.'
+        ? 'Start with the recommended preset, or browse the full list.'
         : engine.featuredPreset
           ? describePresetMood(engine.featuredPreset)
-          : 'Press play with demo audio, or open the full list first.';
+          : 'Start demo audio, or browse presets first.';
 
   useEffect(() => {
     const handleFullscreenChange = () => {

@@ -123,7 +123,7 @@ export function SettingsSheetPanel({
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
       <section className="stims-shell__sheet-surface">
-        <p className="stims-shell__section-label">Quality presets</p>
+        <p className="stims-shell__section-label">Visual quality</p>
         <ul className="stims-shell__preset-guides">
           {guidedPresets.map((preset) => (
             <li key={preset.id}>
@@ -142,7 +142,7 @@ export function SettingsSheetPanel({
           ))}
         </ul>
         <label className="stims-shell__field-label" htmlFor="quality-select">
-          Or pick an exact render profile
+          Choose a specific quality profile
         </label>
         <select
           id="quality-select"
@@ -165,9 +165,9 @@ export function SettingsSheetPanel({
 
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
-          <span>Advanced Preferences</span>
+          <span>Manual preferences</span>
           <span className="stims-shell__meta-copy">
-            Open this only if you want manual controls
+            Optional controls for compatibility and device motion
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
@@ -180,9 +180,9 @@ export function SettingsSheetPanel({
               }
             />
             <span className="stims-shell__toggle-copy">
-              <strong>Keep things steadier on tricky hardware</strong>
+              <strong>Stability mode for older or unstable devices</strong>
               <small>
-                Back off riskier graphics paths when the browser gets unstable.
+                Uses safer rendering choices if your browser or GPU has trouble.
               </small>
             </span>
           </label>
@@ -196,9 +196,9 @@ export function SettingsSheetPanel({
               }
             />
             <span className="stims-shell__toggle-copy">
-              <strong>Use motion controls on supported devices</strong>
+              <strong>Let phone or tablet movement affect visuals</strong>
               <small>
-                Mostly useful on phones and tablets that can react to tilt.
+                Works on supported mobile devices after permission is granted.
               </small>
             </span>
           </label>
@@ -206,13 +206,13 @@ export function SettingsSheetPanel({
       </details>
 
       <section className="stims-shell__sheet-surface">
-        <p className="stims-shell__section-label">Renderer</p>
+        <p className="stims-shell__section-label">Graphics backend</p>
         <p className="stims-shell__meta-copy">
           {engineSnapshot?.backend
             ? `Running on ${engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
             : engine.engineReady
-              ? 'Renderer ready'
-              : 'Initializing renderer\u2026'}
+              ? 'Graphics backend ready'
+              : 'Starting graphics\u2026'}
           {engineSnapshot?.backend === 'webgl'
             ? ' — WebGPU was unavailable or disabled.'
             : ''}
