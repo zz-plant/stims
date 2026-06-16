@@ -181,8 +181,8 @@ export function StimsControlDock({
           type="button"
           className="stims-shell__stage-tool"
           data-active={String(panel === 'browse')}
-          aria-label="Open browse panel"
-          title="Open browse panel"
+          aria-label="Browse presets"
+          title="Browse presets"
           onClick={() => ui.updatePanel('browse')}
         >
           <UiIcon
@@ -195,8 +195,8 @@ export function StimsControlDock({
           type="button"
           className="stims-shell__stage-tool"
           data-active={String(panel === 'settings')}
-          aria-label="Open settings panel"
-          title="Open settings panel"
+          aria-label="Adjust settings"
+          title="Adjust settings"
           onClick={() => ui.updatePanel('settings')}
         >
           <UiIcon
@@ -208,8 +208,8 @@ export function StimsControlDock({
         <button
           type="button"
           className="stims-shell__stage-tool"
-          aria-label="Shuffle preset"
-          title="Shuffle preset"
+          aria-label="Play a random preset"
+          title="Play a random preset"
           onClick={engine.handleShufflePreset}
         >
           <UiIcon
@@ -222,8 +222,8 @@ export function StimsControlDock({
           type="button"
           className="stims-shell__stage-tool"
           data-active={String(panel === 'editor')}
-          aria-label="Open editor panel"
-          title="Open editor panel"
+          aria-label="Edit the current preset"
+          title="Edit the current preset"
           onClick={() => ui.updatePanel('editor')}
         >
           <UiIcon
@@ -235,8 +235,8 @@ export function StimsControlDock({
         <button
           type="button"
           className="stims-shell__stage-tool"
-          aria-label="Generate from mood"
-          title="Generate from mood"
+          aria-label="Create a preset from a mood"
+          title="Create a preset from a mood"
           onClick={() => setShowMoods((s) => !s)}
         >
           <UiIcon
@@ -265,8 +265,8 @@ export function StimsControlDock({
           <button
             type="button"
             className="stims-shell__stage-tool"
-            aria-label="Stop audio"
-            title="Stop audio"
+            aria-label="Stop audio input"
+            title="Stop audio input"
             onClick={engine.handleAudioStop}
           >
             <UiIcon
@@ -288,14 +288,14 @@ export function StimsControlDock({
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
           <span className="stims-shell__stage-tool-label">
-            {isFullscreen ? 'Exit' : 'Full'}
+            {isFullscreen ? 'Exit full screen' : 'Full screen'}
           </span>
         </button>
         <button
           type="button"
           className="stims-shell__stage-tool"
-          aria-label="Share current link"
-          title="Share current link"
+          aria-label="Copy a share link"
+          title="Copy a share link"
           onClick={() => void ui.handleShowCurrentLink()}
         >
           <UiIcon
@@ -307,8 +307,8 @@ export function StimsControlDock({
         <button
           type="button"
           className="cta-button stims-shell__stage-tool-ghost"
-          aria-label="Find similar presets"
-          title="More like this"
+          aria-label="Find presets that look similar"
+          title="Find presets that look similar"
           disabled={!runtimeReady || similarLoading}
           onClick={() => void handleMoreLikeThis()}
         >
@@ -317,14 +317,14 @@ export function StimsControlDock({
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
           <span className="stims-shell__stage-tool-label">
-            {similarLoading ? 'Searching\u2026' : 'More like \u00D7'}
+            {similarLoading ? 'Searching\u2026' : 'More like this'}
           </span>
         </button>
         <button
           type="button"
           className="cta-button stims-shell__stage-tool-ghost"
-          aria-label="Save current look"
-          title="Save this look"
+          aria-label="Save the current look"
+          title="Save the current look"
           disabled={!runtimeReady}
           onClick={handleSaveThisLook}
         >
@@ -334,8 +334,8 @@ export function StimsControlDock({
           <button
             type="button"
             className="stims-shell__stage-tool"
-            aria-label="Toggle theme"
-            title="Toggle theme"
+            aria-label="Switch light or dark theme"
+            title="Switch light or dark theme"
             onClick={onToggleTheme}
           >
             <UiIcon
@@ -357,7 +357,7 @@ export function StimsControlDock({
             }}
           >
             <h2 className="stims-shell__section-label" style={{ margin: 0 }}>
-              Similar presets
+              Similar looks
             </h2>
             <button
               type="button"

@@ -83,10 +83,11 @@ export function NewHomePage() {
       <div className="stims-shell__launch-hero">
         <div className="stims-shell__launch-header">
           <div className="stims-shell__launch-copy">
-            <p className="stims-shell__eyebrow">Browser visualizer</p>
-            <h1 id="stims-launch-title">Sound into motion.</h1>
+            <p className="stims-shell__eyebrow">Audio visualizer</p>
+            <h1 id="stims-launch-title">Play music. Watch it move.</h1>
             <p className="stims-shell__launch-summary">
-              Demo audio starts automatically. Switch to your own music anytime.
+              Start instantly with demo audio, or connect your own sound when
+              you’re ready.
               {catalogReady
                 ? ` ${catalog.length} presets run in WebGL or WebGPU.`
                 : ' Presets run in WebGL or WebGPU.'}
@@ -103,7 +104,7 @@ export function NewHomePage() {
                 Play with demo audio
               </button>
               <details className="stims-shell__audio-setup-details">
-                <summary>Advanced audio setup</summary>
+                <summary>Use your own audio</summary>
                 <div
                   className="stims-shell__launch-actions"
                   style={{ marginTop: 10 }}
@@ -114,7 +115,7 @@ export function NewHomePage() {
                     disabled={loadingAudio}
                     onClick={() => handleStartAudio('microphone')}
                   >
-                    Use microphone
+                    Use microphone input
                   </button>
                   <button
                     type="button"
@@ -122,7 +123,7 @@ export function NewHomePage() {
                     disabled={loadingAudio}
                     onClick={() => handleStartAudio('tab')}
                   >
-                    Capture tab audio
+                    Use audio from a tab
                   </button>
                 </div>
               </details>
@@ -139,7 +140,7 @@ export function NewHomePage() {
         >
           <PresetArtwork entry={featuredPreset} compact />
           <div className="stims-shell__launch-recommendation-copy">
-            <p className="stims-shell__section-label">Featured pick</p>
+            <p className="stims-shell__section-label">Recommended preset</p>
             <strong>{featuredPreset.title}</strong>
             <span className="stims-shell__meta-copy">
               {describePresetMood(featuredPreset)}
@@ -159,7 +160,7 @@ export function NewHomePage() {
             </strong>
             <p className="stims-shell__meta-copy">
               {featuredPreset
-                ? `Try ${featuredPreset.title} instead, or browse everything.`
+                ? `Try ${featuredPreset.title} instead, or browse all presets.`
                 : 'Open the full list to pick another one.'}
             </p>
           </div>
@@ -170,7 +171,7 @@ export function NewHomePage() {
                 className="cta-button primary"
                 onClick={ui.handleFeaturedPresetSelection}
               >
-                Try featured pick
+                Play recommended preset
               </button>
             ) : null}
             <button
@@ -178,7 +179,7 @@ export function NewHomePage() {
               className="cta-button"
               onClick={ui.handleBrowseRecovery}
             >
-              Browse everything
+              Explore presets
             </button>
           </div>
         </section>
@@ -188,7 +189,7 @@ export function NewHomePage() {
         <PresetShelfSection
           entries={buildJumpBackEntries(favoritePresets, recentPresets)}
           summary=""
-          title="Jump back in"
+          title="Saved presets"
           onSelect={engine.handlePlayPreset}
           presetPreviews={presetPreviews}
         />
@@ -201,7 +202,7 @@ export function NewHomePage() {
             summary: describePresetMood(entry),
           }))}
           summary=""
-          title="Browse all presets"
+          title="Explore presets"
           titleAction={{
             label: `See all ${catalog.length} \u2192`,
             onClick: () => ui.updatePanel('browse'),
