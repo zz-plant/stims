@@ -631,7 +631,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   viewportHeight: number;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
-  private hasWarpCode = false;
   private index = 0;
   readonly warpMaterial: ShaderMaterial;
   readonly warpScene: Scene;
@@ -965,7 +964,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
-    this.hasWarpCode = warpGlsl !== null;
 
     // Rebuild warp shader with warp GLSL injected (or pass-through when null)
     const injectedWarp = injectDirectShaderGlsl(

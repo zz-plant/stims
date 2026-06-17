@@ -1,0 +1,76 @@
+  .stims-shell__collections,
+  .stims-shell__launch-actions,
+  .stims-shell__session-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stims-shell__collection-pill,
+  .stims-shell__sheet-tab {
+    border: 1px solid var(--stims-line);
+    border-radius: var(--stims-radius-control);
+    padding: 8px 13px;
+    background: var(--stims-control-fill);
+    color: inherit;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    box-shadow: var(--stims-shadow-control);
+    transition:
+      transform 160ms ease,
+      box-shadow 180ms ease,
+      border-color 180ms ease,
+      background 180ms ease,
+      color 180ms ease;
+  }
+
+  .stims-shell__collection-pill:hover,
+  .stims-shell__sheet-tab:hover,
+  .stims-shell__text-button:hover,
+  .stims-shell__icon-button:hover {
+    transform: translateY(-1px);
+    border-color: var(--stims-line-strong);
+    background: var(--stims-control-fill-hover);
+    box-shadow:
+      0 16px 26px var(--stims-shadow-22),
+      inset 0 1px 0 var(--stims-white-08);
+  }
+
+  .stims-shell__nav-pill[data-active="true"],
+  .stims-shell__sheet-tab[data-active="true"],
+  .stims-shell__collection-pill[data-active="true"] {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--stims-accent) 84%, #ffe9c0),
+      color-mix(in srgb, var(--stims-cool) 42%, #ffc07b)
+    );
+    color: #091114;
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      0 18px 30px rgba(0, 0, 0, 0.26),
+      0 0 28px rgba(244, 122, 84, 0.18);
+  }
+
+  .stims-shell__collection-pill:disabled,
+  .stims-shell__sheet-tab:disabled,
+  .stims-shell__starter-card:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .stims-shell__collection-pill:focus-visible,
+  .stims-shell__sheet-tab:focus-visible,
+  .stims-shell__text-button:focus-visible,
+  .stims-shell__stage-tool:focus-visible,
+  .stims-shell__starter-card:focus-visible,
+  .stims-shell__icon-button:focus-visible,
+  .cta-button:focus-visible,
+  .stims-shell__input:focus {
+    outline: 2px solid var(--stims-accent);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring), var(--focus-ring-offset);
+  }

@@ -1,0 +1,135 @@
+{
+  "timestamp": "2026-06-17T19:49:04.009Z",
+  "target": "http://localhost:5173",
+  "total": 18,
+  "critical": 8,
+  "minor": 10,
+  "issues": [
+    {
+      "type": "images-missing-alt",
+      "severity": "lifecycle",
+      "element": "img",
+      "attributes": "alt, src",
+      "suggestion": "Add alt text for screen readers"
+    },
+    {
+      "type": "images-missing-alt",
+      "severity": "lifecycle",
+      "element": "img",
+      "attributes": "alt, src",
+      "suggestion": "Add alt text for screen readers"
+    },
+    {
+      "type": "images-missing-alt",
+      "severity": "lifecycle",
+      "element": "img",
+      "attributes": "alt, src",
+      "suggestion": "Add alt text for screen readers"
+    },
+    {
+      "type": "images-missing-alt",
+      "severity": "lifecycle",
+      "element": "img",
+      "attributes": "alt, src",
+      "suggestion": "Add alt text for screen readers"
+    },
+    {
+      "type": "images-missing-alt",
+      "severity": "lifecycle",
+      "element": "img",
+      "attributes": "alt, src",
+      "suggestion": "Add alt text for screen readers"
+    },
+    {
+      "type": "label",
+      "severity": "lifecycle",
+      "element": "input",
+      "attributes": "aria-label, aria-labelledby",
+      "suggestion": "Wrap in label element or add aria-label/aria-labelledby"
+    },
+    {
+      "type": "label",
+      "severity": "lifecycle",
+      "element": "select",
+      "attributes": "aria-label, aria-labelledby",
+      "suggestion": "Wrap in label element or add aria-label/aria-labelledby"
+    },
+    {
+      "type": "label",
+      "severity": "lifecycle",
+      "element": "input",
+      "attributes": "aria-label, aria-labelledby",
+      "suggestion": "Wrap in label element or add aria-label/aria-labelledby"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "a",
+      "attributes": "width=161, height=20",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    },
+    {
+      "type": "target-size",
+      "severity": "usability",
+      "element": "button",
+      "attributes": "width=0, height=0",
+      "suggestion": "Ensure interactive elements are at least 24x24px"
+    }
+  ]
+}

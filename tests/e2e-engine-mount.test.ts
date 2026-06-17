@@ -77,8 +77,8 @@ test(
       // Wait for engine to enter live mode
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
 
-      // Canvas must be present and rendering non-blank content
-      const canvas = await page.$('canvas');
+      // Canvas must appear once engine finishes mounting
+      const canvas = await page.waitForSelector('canvas', { timeout: 15000 });
       expect(canvas).not.toBeNull();
 
       await page.waitForTimeout(3000);
@@ -96,9 +96,10 @@ test(
       });
 
       expect(info).not.toBeNull();
-      expect(info!.width).toBeGreaterThan(0);
-      expect(info!.height).toBeGreaterThan(0);
-      expect(info!.hasContent).toBe(true);
+      if (!info) throw new Error('canvas info is null');
+      expect(info.width).toBeGreaterThan(0);
+      expect(info.height).toBeGreaterThan(0);
+      expect(info.hasContent).toBe(true);
     } finally {
       await ctx.close();
       await browser.close();
@@ -134,6 +135,7 @@ test(
         demo?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       });
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
+      await page.waitForSelector('canvas', { timeout: 15000 });
       await page.waitForTimeout(2000);
 
       const hash1 = await page.evaluate(
@@ -155,6 +157,10 @@ test(
         demo?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       });
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
+      await page.waitForSelector('canvas', { timeout: 15000 });
+      await page.waitForFunction(() => document.title.includes('Geiss'), {
+        timeout: 30000,
+      });
       await page.waitForTimeout(2000);
 
       const hash2 = await page.evaluate(

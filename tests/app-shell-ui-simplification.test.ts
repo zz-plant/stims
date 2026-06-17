@@ -101,7 +101,7 @@ describe('Workspace shell UI simplification regression', () => {
       'Pick a feel first, then fine-tune only if you want more control.',
     );
     expect(homeSource).toContain(
-      'Demo audio starts automatically. Switch to your own music anytime.',
+      'Start with demo audio, or use your microphone, tab, or YouTube.',
     );
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain("? 'Now playing'");
@@ -113,7 +113,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(dockSource).toContain('className="stims-shell__stage-dock"');
     expect(homeSource).toContain('Featured pick');
     expect(dockSource).toMatch(/>\s*Surprise me\s*</u);
-    expect(homeSource).toContain('Demo audio starts automatically');
+    expect(homeSource).toContain('Start with demo audio');
     expect(homeSource).not.toContain('See visuals now');
     expect(homeSource).not.toContain('Explore modes');
     expect(audioSourcePanelSource).toContain('Use my music');

@@ -1,0 +1,55 @@
+    }
+
+    /* Tighten the sticky toolbar so preset cards are reachable below it */
+    .stims-shell__sheet-surface--sticky {
+      padding: 10px;
+      gap: 8px;
+    }
+
+    /* Hide browse toolbar description ("Tap any card to play it…") — redundant at small heights */
+    .stims-shell__browse-toolbar-copy .stims-shell__meta-copy {
+      display: none;
+    }
+
+    /* Hide "Search" field label — the input placeholder is sufficient */
+    .stims-shell__sheet-surface--sticky .stims-shell__field-label {
+      display: none;
+    }
+
+    /* Tighten overall sheet gap to reclaim vertical space */
+    .stims-shell__sheet {
+      gap: 8px;
+    }
+
+    .stims-shell__stage-frame,
+    .stims-shell__stage-frame[data-mode="home"] {
+      min-height: calc(100vh - 28px);
+      min-height: calc(100dvh - 28px);
+    }
+
+    .stims-shell__frame-chrome {
+      top: 14px;
+    }
+
+    .stims-shell__stage-hero {
+      inset: 106px 18px 16px;
+      width: auto;
+      align-content: start;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+    }
+
+    .stims-shell__launch-panel {
+      width: min(62rem, 100%);
+      padding: 22px;
+      border-radius: 26px;
+    }
+
+    .stims-shell__launch-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .stims-shell__launch-header,
+    .stims-shell__launch-stack {

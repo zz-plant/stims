@@ -1,0 +1,124 @@
+  .stims-shell__content {
+    display: grid;
+    gap: 20px;
+    margin-top: 14px;
+  }
+
+  /* Skeleton loading states */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .stims-shell__skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--stims-white-04);
+    border-radius: var(--stims-radius-card);
+  }
+
+  .stims-shell__skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--stims-white-08) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  .stims-shell__skeleton--card {
+    min-height: 120px;
+    border: 1px solid var(--stims-line-soft);
+  }
+
+  .stims-shell__skeleton--text {
+    height: 1em;
+    border-radius: 4px;
+  }
+
+  .stims-shell__skeleton--text-sm {
+    width: 60%;
+  }
+
+  .stims-shell__skeleton--text-md {
+    width: 80%;
+  }
+
+  .stims-shell__skeleton--circle {
+    border-radius: 50%;
+  }
+
+  /* Scroll anchoring for smooth user experience */
+  .stims-shell__preset-list,
+  .stims-shell__sheet-body {
+    scroll-behavior: smooth;
+  }
+
+  /* Confirmation dialog styling */
+  .stims-shell__confirm-dialog {
+    background: var(--stims-panel-strong);
+    border: 1px solid var(--stims-line-strong);
+    border-radius: var(--stims-radius-panel);
+    padding: 24px;
+    max-width: 420px;
+    width: calc(100% - 48px);
+    box-shadow: var(--stims-shadow);
+  }
+
+  .stims-shell__confirm-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .stims-shell__confirm-dialog h3 {
+    margin: 0 0 12px;
+    color: var(--stims-ink-strong);
+  }
+
+  .stims-shell__confirm-dialog p {
+    margin: 0 0 20px;
+    color: var(--stims-muted);
+    line-height: 1.5;
+  }
+
+  .stims-shell__confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+
+  /* Breadcrumb navigation */
+  .stims-shell__breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    font-size: var(--text-sm);
+    color: var(--stims-muted);
+  }
+
+  .stims-shell__breadcrumb {
+    color: inherit;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+  }
+
+  .stims-shell__breadcrumb:hover {
+    background: var(--stims-white-08);
+    color: var(--stims-ink);
+  }
+
+  .stims-shell__breadcrumb[aria-current="page"] {
+    color: var(--stims-ink-strong);
+    font-weight: 600;
+  }

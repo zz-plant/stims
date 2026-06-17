@@ -1,5 +1,7 @@
 /* All design tokens now live in tokens.css — loaded before this file.
    HTML reset and component styles follow. */
+
+@import './shell-loader.css';
 html {
   color-scheme: dark;
 }

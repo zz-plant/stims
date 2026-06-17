@@ -1,0 +1,117 @@
+  .stims-shell__stage-frame[data-mode="home"] .milkdrop-overlay__toolbar {
+    display: none;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-hero > * {
+    pointer-events: auto;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-copy h1,
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-copy p {
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-header,
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-stack {
+    max-width: 560px;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
+    margin-top: calc(100dvh - 40px);
+  }
+
+  .stims-shell__stage-frame[data-mode="live"] .stims-shell__launch {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+  }
+
+  .stims-shell__stage-frame::before,
+  .stims-shell__stage-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .stims-shell__stage-frame::before {
+    background: linear-gradient(
+      120deg,
+      var(--stims-white-05),
+      transparent 16%,
+      transparent 56%,
+      rgba(119, 201, 255, 0.07)
+    );
+    mix-blend-mode: screen;
+  }
+
+  .stims-shell__stage-frame::after {
+    inset: 1px;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 56px rgba(0, 0, 0, 0.24),
+      inset 0 0 0 1px var(--stims-white-04);
+  }
+
+  .stims-shell__stage-root {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: var(--z-stage-root);
+  }
+
+  .stims-shell__frame-chrome,
+  .stims-shell__frame-header {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    z-index: var(--z-frame-chrome);
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .stims-shell__frame-chrome {
+    top: 22px;
+    align-items: flex-start;
+  }
+
+  .stims-shell__frame-header {
+    top: max(72px, 10vh);
+    align-items: flex-start;
+    transition: opacity 0.3s ease;
+  }
+
+  .stims-shell__frame-chrome > *,
+  .stims-shell__frame-header > * {
+    pointer-events: auto;
+  }
+
+  .stims-shell__corner-brand,
+  .stims-shell__rail-actions,
+  .stims-shell__stage-copy,
+  .stims-shell__frame-sidecar {
+    display: grid;
+    gap: 10px;
+  }
+
+  .stims-shell__corner-brand {
+    justify-items: start;
+  }
+
+  .stims-shell__rail-actions,
+  .stims-shell__frame-sidecar {
+    justify-items: end;
+    align-content: start;
+    pointer-events: none;
+  }
+
+  .stims-shell__rail-actions > *,
+  .stims-shell__frame-sidecar > * {
+    pointer-events: auto;
+  }
+
+  .stims-shell__rail-actions {
+    display: flex;
