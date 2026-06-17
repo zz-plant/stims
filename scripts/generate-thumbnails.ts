@@ -26,6 +26,7 @@ const INIT_TIMEOUT = 30000;
 interface PresetEntry {
   id: string;
   title: string;
+  preview?: unknown;
 }
 
 function parseArgs(): { count?: number; ids?: string[]; all?: boolean } {
@@ -48,8 +49,9 @@ async function getPresets(filter: {
     import.meta.url,
   );
   const data = await Bun.file(catalogPath).json();
-  // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
-  const all: PresetEntry[] = data.presets || [];
+  const all = Array.isArray(data.presets)
+    ? (data.presets as PresetEntry[])
+    : [];
 
   if (filter.ids) {
     const idSet = new Set(filter.ids);
@@ -58,11 +60,7 @@ async function getPresets(filter: {
 
   if (filter.all) return all;
 
-  // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
-  // biome-ignore lint/suspicious/noExplicitAny: catalog data shape varies
-  return (all as any[])
-    .filter((p: any) => p.preview)
-    .slice(0, filter.count) as PresetEntry[];
+  return all.filter((p) => p.preview).slice(0, filter.count);
 }
 
 async function downscaleFull(filePath: string): Promise<string> {
