@@ -363,12 +363,17 @@ function buildPresetRow({
 }) {
   const row = document.createElement('div');
   row.className = 'milkdrop-overlay__preset';
-  row.dataset.active = String(preset.id === activePresetId);
+  const isActive = preset.id === activePresetId;
+  row.dataset.active = String(isActive);
   row.dataset.previewStatus = preview?.status ?? 'queued';
+  if (isActive) {
+    row.setAttribute('aria-current', 'true');
+  }
 
   const launch = document.createElement('button');
   launch.type = 'button';
   launch.className = 'milkdrop-overlay__preset-launch';
+  launch.setAttribute('aria-label', `Load preset ${preset.title}`);
   launch.addEventListener('click', () => callbacks.onSelectPreset(preset.id));
 
   const previewFrame = document.createElement('div');

@@ -22,6 +22,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const detailsId = details ? 'confirm-dialog-details' : undefined;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -39,10 +40,11 @@ export function ConfirmDialog({
       ref={dialogRef}
       className="stims-shell__confirm-dialog"
       aria-label={message}
+      aria-describedby={detailsId}
       onClose={handleClose}
     >
       <h3>{message}</h3>
-      {details ? <p>{details}</p> : null}
+      {details ? <p id={detailsId}>{details}</p> : null}
       {children}
       <div className="stims-shell__confirm-actions">
         <button type="button" className="cta-button" onClick={onCancel}>

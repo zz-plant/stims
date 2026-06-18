@@ -94,7 +94,14 @@ export function NewHomePage() {
             </p>
           </div>
           <div className="stims-shell__launch-stack">
-            <div className="stims-shell__launch-supplement stims-shell__launch-actions">
+            <div
+              className="stims-shell__launch-supplement stims-shell__launch-actions"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {loadingAudio ? (
+                <span className="sr-only">Starting audio input…</span>
+              ) : null}
               <button
                 type="button"
                 className="cta-button primary"
@@ -103,7 +110,10 @@ export function NewHomePage() {
               >
                 Play with demo audio
               </button>
-              <details className="stims-shell__audio-setup-details">
+              <details
+                className="stims-shell__audio-setup-details"
+                aria-label="Audio input options"
+              >
                 <summary>Use your own audio</summary>
                 <div
                   className="stims-shell__launch-actions"

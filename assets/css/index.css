@@ -1,7 +1,5 @@
 /* All design tokens now live in tokens.css — loaded before this file.
    HTML reset and component styles follow. */
-
-@import './shell-loader.css';
 html {
   color-scheme: dark;
 }
@@ -72,7 +70,7 @@ canvas {
     background 0.2s ease,
     border-color 0.2s ease;
   z-index: var(--z-dropdown);
-  min-height: 44px;
+  min-height: 46px;
   min-width: 44px;
   display: inline-flex;
   align-items: center;

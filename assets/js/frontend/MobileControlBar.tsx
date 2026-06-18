@@ -180,6 +180,7 @@ export function MobileControlBar({
               key={mood.label}
               type="button"
               className="mc-bar__mood-btn"
+              aria-label={`Generate ${mood.label.toLowerCase()} preset`}
               onClick={() => handleMoodGenerate(mood)}
             >
               <span className="mc-bar__mood-icon">{mood.icon}</span>
@@ -193,6 +194,7 @@ export function MobileControlBar({
           type="button"
           className={styles.action}
           data-active={String(panel === 'browse')}
+          aria-expanded={panel === 'browse'}
           onClick={handleBrowse}
           aria-label="Browse presets"
         >
@@ -206,6 +208,7 @@ export function MobileControlBar({
           type="button"
           className={styles.action}
           data-active={String(panel === 'settings')}
+          aria-expanded={panel === 'settings'}
           onClick={handleSettings}
           aria-label="Settings panel"
         >
@@ -240,6 +243,7 @@ export function MobileControlBar({
           type="button"
           className={styles.action}
           data-active={String(panel === 'editor')}
+          aria-expanded={panel === 'editor'}
           onClick={handleEditor}
           aria-label="Edit preset code"
         >

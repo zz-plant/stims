@@ -181,6 +181,7 @@ export function StimsControlDock({
           type="button"
           className="stims-shell__stage-tool"
           data-active={String(panel === 'browse')}
+          aria-expanded={panel === 'browse'}
           aria-label="Browse presets"
           title="Browse presets"
           onClick={() => ui.updatePanel('browse')}
@@ -195,6 +196,7 @@ export function StimsControlDock({
           type="button"
           className="stims-shell__stage-tool"
           data-active={String(panel === 'settings')}
+          aria-expanded={panel === 'settings'}
           aria-label="Adjust settings"
           title="Adjust settings"
           onClick={() => ui.updatePanel('settings')}
@@ -222,6 +224,7 @@ export function StimsControlDock({
           type="button"
           className="stims-shell__stage-tool"
           data-active={String(panel === 'editor')}
+          aria-expanded={panel === 'editor'}
           aria-label="Edit the current preset"
           title="Edit the current preset"
           onClick={() => ui.updatePanel('editor')}
@@ -252,6 +255,7 @@ export function StimsControlDock({
                 key={mood.label}
                 type="button"
                 className="stims-shell__stage-tool"
+                aria-label={`Generate ${mood.label.toLowerCase()} preset`}
                 onClick={() => handleMoodGenerate(mood)}
               >
                 <span className="stims-shell__stage-tool-label">

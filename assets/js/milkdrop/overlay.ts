@@ -51,10 +51,12 @@ export class MilkdropOverlay {
     const prevBtn = document.createElement('button');
     prevBtn.type = 'button';
     prevBtn.textContent = 'Prev';
+    prevBtn.setAttribute('aria-label', 'Play previous preset');
     prevBtn.addEventListener('click', () => callbacks.onPreviousPreset());
     const nextBtn = document.createElement('button');
     nextBtn.type = 'button';
     nextBtn.textContent = 'Next';
+    nextBtn.setAttribute('aria-label', 'Play next preset');
     nextBtn.addEventListener('click', () => callbacks.onNextPreset());
     transportGroup.append(prevBtn, nextBtn);
 
@@ -67,10 +69,11 @@ export class MilkdropOverlay {
       callbacks.onToggleAutoplay(this.autoplayToggle.checked);
     });
     const autoplayLabel = document.createElement('label');
-    autoplayLabel.append('Auto', this.autoplayToggle);
+    autoplayLabel.append('Autoplay', this.autoplayToggle);
 
     this.transitionModeSelect = document.createElement('select');
     this.transitionModeSelect.className = 'milkdrop-overlay__rating-select';
+    this.transitionModeSelect.setAttribute('aria-label', 'Transition mode');
     (['blend', 'cut'] as const).forEach((mode) => {
       const opt = document.createElement('option');
       opt.value = mode;
@@ -109,6 +112,9 @@ export class MilkdropOverlay {
 
     this.statusLabel = document.createElement('div');
     this.statusLabel.className = 'milkdrop-overlay__status';
+    this.statusLabel.setAttribute('role', 'status');
+    this.statusLabel.setAttribute('aria-live', 'polite');
+    this.statusLabel.setAttribute('aria-atomic', 'true');
     this.statusLabel.hidden = true;
 
     this.root.append(

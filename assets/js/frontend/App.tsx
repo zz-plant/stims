@@ -1,6 +1,6 @@
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component, useCallback, useEffect, useRef, useState } from 'react';
-import '../../css/app-shell.css';
+import '../../css/shell-loader.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   buildAudioProfile,
@@ -51,7 +51,6 @@ class StimsErrorBoundary extends Component<
       return (
         <div
           className="stims-shell"
-          id="stims-main"
           style={{
             display: 'grid',
             placeItems: 'center',
@@ -175,11 +174,12 @@ function StimsWorkspaceAppShell() {
     engineSnapshot?.audioSource ?? ui.routeState.audioSource;
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
+  const autoPlayedRef = useRef(false);
+  const shortcutsRef = useRef<HTMLDivElement | null>(null);
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
   // Auto-play demo audio on load
-  const autoPlayedRef = useRef(false);
   useEffect(() => {
     if (
       !ui.routeState.agentMode &&
@@ -209,6 +209,15 @@ function StimsWorkspaceAppShell() {
       dismissHint();
     }
   }, [ui.toast, visibleHint, dismissHint]);
+
+  // Focus the first focusable element when keyboard shortcuts dialog opens
+  useEffect(() => {
+    if (!showShortcuts || !shortcutsRef.current) return;
+    const focusable = shortcutsRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    focusable[0]?.focus();
+  }, [showShortcuts]);
 
   const handleToggleFullscreen = useCallback(() => {
     const stageElement = ui.stageRef.current?.parentElement;
@@ -622,6 +631,7 @@ function StimsWorkspaceAppShell() {
         <div
           className="stims-shell__shortcut-overlay"
           role="dialog"
+          aria-modal="true"
           aria-label="Keyboard shortcuts"
           onClick={() => setShowShortcuts(false)}
           onKeyDown={(e) => {
@@ -630,9 +640,28 @@ function StimsWorkspaceAppShell() {
         >
           {/* biome-ignore lint/a11y/noStaticElementInteractions: card is visual-only, backdrop handles dismiss */}
           <div
+            ref={shortcutsRef}
             className="stims-shell__shortcut-card"
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Tab' && shortcutsRef.current) {
+                const focusable =
+                  shortcutsRef.current.querySelectorAll<HTMLElement>(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+                  );
+                if (focusable.length === 0) return;
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                  e.preventDefault();
+                  last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                  e.preventDefault();
+                  first.focus();
+                }
+              }
+            }}
             role="presentation"
           >
             <h2>Keyboard shortcuts</h2>
