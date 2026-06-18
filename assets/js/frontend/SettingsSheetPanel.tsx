@@ -54,10 +54,14 @@ function PerformanceSection() {
       <h3 className="stims-shell__settings-label">Performance</h3>
 
       <div className="stims-shell__settings-row">
-        <span className="stims-shell__settings-option-label">
+        <label
+          className="stims-shell__settings-option-label"
+          htmlFor="render-resolution"
+        >
           Render resolution
-        </span>
+        </label>
         <select
+          id="render-resolution"
           className="stims-shell__select"
           value={perf.renderScale}
           onChange={(e) => setOption('renderScale', parseFloat(e.target.value))}
