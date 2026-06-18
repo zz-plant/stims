@@ -1,6 +1,9 @@
 interface Env {
   AI: {
-    run: (model: string, opts: { messages: Array<{ role: string; content: string }> }) => Promise<{ response: string }>;
+    run: (
+      model: string,
+      opts: { messages: Array<{ role: string; content: string }> },
+    ) => Promise<{ response: string }>;
   };
 }
 

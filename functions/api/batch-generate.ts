@@ -1,6 +1,9 @@
 interface Env {
   AI: {
-    run: (model: string, opts: { messages: Array<{ role: string; content: string }> }) => Promise<{ response: string }>;
+    run: (
+      model: string,
+      opts: { messages: Array<{ role: string; content: string }> },
+    ) => Promise<{ response: string }>;
   };
   DB: unknown;
 }
@@ -43,7 +46,11 @@ export async function onRequest(context: { request: Request; env: Env }) {
       });
 
       const responses = await Promise.all(promises);
-      results.push(...responses.map((r: { response: string }) => cleanMilkSource(r.response)));
+      results.push(
+        ...responses.map((r: { response: string }) =>
+          cleanMilkSource(r.response),
+        ),
+      );
     }
 
     return json({ presets: results });

@@ -61,6 +61,20 @@
           }
         }
       }
+    },
+    {
+      "includes": [
+        "public/toys.json",
+        "public/milkdrop-presets/catalog.json",
+        "screenshots/parity/**",
+        "tests/accessibility/**"
+      ],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      }
     }
   ]
 }
