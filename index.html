@@ -13,6 +13,139 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://toil.fyi/" />
+    <link rel="modulepreload" href="/assets/js/app.ts" />
+    <style>
+      /* Critical CSS: paint initial loading state and skip-link before external stylesheets arrive. */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+      }
+      body {
+        background: #0a0f19;
+        color: #e9fbff;
+        font-family: system-ui, sans-serif;
+      }
+      .stims-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 30% 20%, rgba(95, 192, 181, 0.08), transparent 50%),
+          radial-gradient(circle at 70% 80%, rgba(211, 137, 84, 0.06), transparent 50%),
+          #0a0f19;
+        color: #e9fbff;
+        font-family: system-ui, sans-serif;
+      }
+      .stims-loading[hidden] {
+        display: none;
+      }
+      .stims-loading__spinner {
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 16px;
+        position: relative;
+        border-radius: 50%;
+        background: conic-gradient(
+          from 0deg,
+          rgba(95, 192, 181, 0.95),
+          rgba(233, 212, 155, 0.85),
+          rgba(211, 137, 84, 0.95),
+          rgba(95, 192, 181, 0.95)
+        );
+        animation: stims-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      .stims-loading__spinner::after {
+        content: "";
+        position: absolute;
+        inset: 4px;
+        border-radius: 50%;
+        background: #0a0f19;
+      }
+      .stims-loading__text {
+        font-size: 0.9rem;
+        letter-spacing: 0.02em;
+        opacity: 0.7;
+        animation: stims-pulse 2s ease-in-out infinite;
+      }
+      .stims-loading__dots {
+        display: inline-flex;
+        gap: 3px;
+        margin-left: 2px;
+      }
+      .stims-loading__dots span {
+        width: 4px;
+        height: 4px;
+        display: inline-block;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.7;
+        animation: stims-bounce 1.4s ease-in-out infinite both;
+      }
+      .stims-loading__dots span:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      .stims-loading__dots span:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      @keyframes stims-spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes stims-pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 0.9; }
+      }
+      @keyframes stims-bounce {
+        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 0.9; }
+      }
+      .skip-link {
+        position: fixed;
+        left: max(0.9rem, env(safe-area-inset-left));
+        right: auto;
+        top: -6rem;
+        padding: 0.65rem 1rem;
+        border-radius: 999px;
+        background: rgba(22, 33, 47, 0.95);
+        color: #e9fbff;
+        text-decoration: none;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        transition:
+          top 0.2s ease,
+          opacity 0.2s ease,
+          box-shadow 0.2s ease,
+          background 0.2s ease,
+          border-color 0.2s ease;
+        z-index: 1000;
+        min-height: 46px;
+        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+      }
+      .skip-link:focus-visible {
+        top: max(4.2rem, calc(env(safe-area-inset-top) + 3.4rem));
+        opacity: 1;
+        outline: 3px solid #38bdf8;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      }
+      @media (hover: none) and (pointer: coarse) {
+        .skip-link {
+          display: none;
+        }
+      }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
