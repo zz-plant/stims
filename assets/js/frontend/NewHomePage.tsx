@@ -71,7 +71,23 @@ export function NewHomePage() {
     if (featuredPreset && !ids.includes(featuredPreset.id)) {
       ids.unshift(featuredPreset.id);
     }
-    void engine.requestPresetPreviews(ids);
+    // Defer preview generation until the main thread is idle so the initial
+    // render and interactivity aren't blocked by compiling the renderer.
+    const request = () => void engine.requestPresetPreviews(ids);
+    const handle =
+      typeof requestIdleCallback === 'function'
+        ? requestIdleCallback(request, { timeout: 2000 })
+        : setTimeout(request, 1000);
+    return () => {
+      if (
+        typeof cancelIdleCallback === 'function' &&
+        typeof handle === 'number'
+      ) {
+        cancelIdleCallback(handle);
+      } else {
+        clearTimeout(handle);
+      }
+    };
   }, [catalogReady, catalog, featuredPreset, engine.requestPresetPreviews]);
 
   return (
