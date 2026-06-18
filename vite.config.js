@@ -43,6 +43,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     target: 'es2020',
+    minify: true,
+    cssMinify: true,
     // The WebGPU renderer bundle is intentionally large and loaded on demand.
     // Chunks are split into vendor-react, vendor-three, and vendor-codemirror.
     chunkSizeWarningLimit: 400,

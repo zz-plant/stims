@@ -47,9 +47,17 @@
     <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+      />
+    </noscript>
     <link
       rel="preload"
       as="style"

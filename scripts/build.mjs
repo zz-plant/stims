@@ -3,7 +3,7 @@
 /* global process, console */
 
 import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const normalizeBoolean = (value) => value?.toLowerCase?.() ?? '';
@@ -65,3 +65,33 @@ if (!existsSync(vitePackagePath)) {
 
 console.log(`[build] Running Vite build with "${viteCommand}"...`);
 execSync(viteCommand, { stdio: 'inherit' });
+
+// Vite/Rolldown in this project does not minify CSS comments and whitespace.
+// Post-process CSS assets with esbuild for smaller transfer and parse cost.
+const esbuildPackagePath = join(
+  process.cwd(),
+  'node_modules',
+  'esbuild',
+  'package.json',
+);
+if (existsSync(esbuildPackagePath)) {
+  console.log('[build] Minifying CSS assets...');
+  const cssFiles = readdirSync(distDir, { recursive: true })
+    .map((entry) => join(distDir, entry))
+    .filter(
+      (file) =>
+        file.endsWith('.css') && existsSync(file) && !file.endsWith('.map'),
+    );
+  for (const file of cssFiles) {
+    const original = readFileSync(file, 'utf8');
+    if (original.length === 0) continue;
+    const minified = execSync(`bunx esbuild "${file}" --minify`, {
+      encoding: 'utf8',
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    if (minified.length < original.length) {
+      writeFileSync(file, minified);
+    }
+  }
+  console.log(`[build] Minified ${cssFiles.length} CSS file(s).`);
+}
