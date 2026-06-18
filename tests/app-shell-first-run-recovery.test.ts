@@ -64,12 +64,11 @@ describe('Workspace shell first-run and recovery regression', () => {
       'utf8',
     );
 
-    expect(appSource).toContain('Change preset');
     expect(appSource).toContain(
-      'Start with the featured pick or open the full list.',
+      'Start with the recommended preset, or browse the full list.',
     );
-    expect(homeSource).toContain('Try featured pick');
-    expect(homeSource).toContain('Browse everything');
+    expect(homeSource).toContain('Play recommended preset');
+    expect(homeSource).toContain('Explore presets');
     expect(homeSource).toContain('Saved pick not found');
     expect(homeSource).toContain("isn't available here anymore.");
     expect(uiSource).not.toContain('This preset is no longer bundled here.');

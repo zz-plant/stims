@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-06-17T19:49:04.009Z",
+  "timestamp": "2026-06-18T20:07:12.571Z",
   "target": "http://localhost:5173",
   "checklist": {
-    "issues": 18,
-    "passed": false,
-    "critical": false
+    "issues": 0,
+    "passed": true,
+    "critical": true
   }
 }
