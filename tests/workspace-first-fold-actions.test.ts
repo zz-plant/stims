@@ -25,7 +25,7 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(launchStackBlock).toContain('Play with demo audio');
     expect(launchStackBlock).toContain('cta-button primary');
     expect(launchStackBlock).toContain('Use microphone');
-    expect(launchStackBlock).toContain('Capture tab audio');
+    expect(launchStackBlock).toContain('Use audio from a tab');
     expect(launchStackBlock).not.toContain('Advanced audio setup');
   });
 });

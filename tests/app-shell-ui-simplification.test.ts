@@ -101,7 +101,7 @@ describe('Workspace shell UI simplification regression', () => {
       'Pick a feel first, then fine-tune only if you want more control.',
     );
     expect(homeSource).toContain(
-      'Start with demo audio, or use your microphone, tab, or YouTube.',
+      'Start instantly with demo audio, or connect your own sound when',
     );
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain("? 'Now playing'");
@@ -111,9 +111,9 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Single-route workspace');
     expect(stageSource).toContain('className="stims-shell__rail-actions"');
     expect(dockSource).toContain('className="stims-shell__stage-dock"');
-    expect(homeSource).toContain('Featured pick');
+    expect(homeSource).toContain('Recommended preset');
     expect(dockSource).toMatch(/>\s*Surprise me\s*</u);
-    expect(homeSource).toContain('Start with demo audio');
+    expect(homeSource).toContain('Start instantly with demo audio');
     expect(homeSource).not.toContain('See visuals now');
     expect(homeSource).not.toContain('Explore modes');
     expect(audioSourcePanelSource).toContain('Use my music');
@@ -131,7 +131,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('launch-recommendation-footer');
     expect(uiSource).not.toContain('stims-shell__session-meta');
     expect(uiSource).not.toContain('stims-shell__audio-bridge"');
-    expect(browseSource).toContain('Copy link');
+    expect(browseSource).toContain('Copy share link');
     expect(uiSource).not.toContain('The editor opens on the stage.');
     expect(uiSource).not.toContain('The inspector opens on the stage.');
     expect(homeSource).toContain('className="stims-shell__launch-summary"');
@@ -151,6 +151,6 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('Recommended first run: start demo');
     expect(uiSource).not.toContain('Show current link');
     expect(homeSource).toContain('Saved pick not found');
-    expect(homeSource).toContain('Browse everything');
+    expect(homeSource).toContain('Explore presets');
   });
 });
