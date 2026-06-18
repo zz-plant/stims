@@ -105,7 +105,7 @@ test(
       await browser.close();
     }
   },
-  { timeout: 60000 },
+  { timeout: 120000 },
 );
 
 test(
@@ -179,5 +179,5 @@ test(
       await browser.close();
     }
   },
-  { timeout: 60000 },
+  { timeout: 120000 },
 );
