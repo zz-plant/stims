@@ -19,6 +19,7 @@ const SLOW_TESTS = new Set([
   'tests/certification-corpus.test.ts',
   'tests/certification-corpus-perf-suite.test.ts',
   'tests/certification-corpus-runtime.test.ts',
+  'tests/e2e-engine-mount.test.ts',
   'tests/milkdrop-corpus-compat.test.ts',
   'tests/milkdrop-parity.test.ts',
   'tests/milkdrop-projectm-compat.test.ts',
