@@ -1,29 +1,12 @@
 /**
- * Shell CSS Unified Loader
- * Imports all shell module CSS files
+ * Shell CSS loader
+ *
+ * `app-shell.css` currently contains the full shell stylesheet as a single
+ * source of truth. This loader is the stable entry point for that stylesheet
+ * and the future home of per-module imports once the rules are split at
+ * valid CSS boundaries (selectors, @scope blocks, media queries).
+ *
+ * Keep all new shell imports below this comment.
  */
 
-@import './shell/root.css';
-@import './shell/scope-base.css';
-@import './shell/root-variables.css';
-@import './shell/layout-grid.css';
-@import './shell/breadcrumbs.css';
-@import './shell/helpers.css';
-@import './shell/scroll-behavior.css';
-@import './shell/skip-link.css';
-@import './shell/buttons-pills.css';
-@import './shell/actions.css';
-@import './shell/frame-chrome.css';
-@import './shell/home-preview.css';
-@import './shell/logo-typography.css';
-@import './shell/mobile-dock.css';
-@import './shell/toast-animations.css';
-@import './shell/sheets.css';
-@import './shell/sheet-body.css';
-@import './shell/panel-collections.css';
-@import './shell/card-grid.css';
-@import './shell/skeleton-loading.css';
-@import './shell/touch-targets.css';
-@import './shell/confirm-dialog.css';
-@import './shell/stage-dock.css';
-@import './shell/stage-hero.css';
+@import "./app-shell.css";
