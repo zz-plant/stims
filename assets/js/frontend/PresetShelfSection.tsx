@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
@@ -34,6 +35,7 @@ export function PresetShelfSection({
   titleAction,
   onSelect,
   presetPreviews,
+  onVisible,
 }: {
   entries: Array<{
     entry: PresetCatalogEntry;
@@ -45,7 +47,38 @@ export function PresetShelfSection({
   titleAction?: { label: string; onClick: () => void };
   onSelect: (presetId: string) => void;
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
+  onVisible?: () => void;
 }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [hasTriggered, setHasTriggered] = useState(false);
+
+  useEffect(() => {
+    if (!onVisible || hasTriggered) {
+      return;
+    }
+    if (typeof IntersectionObserver === 'undefined') {
+      setHasTriggered(true);
+      onVisible();
+      return;
+    }
+    const section = sectionRef.current;
+    if (!section) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setHasTriggered(true);
+          onVisible();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [onVisible, hasTriggered]);
+
   if (entries.length === 0) {
     return null;
   }
@@ -56,6 +89,7 @@ export function PresetShelfSection({
 
   return (
     <section
+      ref={sectionRef}
       className="stims-shell__starter-section"
       aria-labelledby={sectionId}
     >

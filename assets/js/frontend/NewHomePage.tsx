@@ -220,6 +220,13 @@ export function NewHomePage() {
           title="Saved presets"
           onSelect={engine.handlePlayPreset}
           presetPreviews={presetPreviews}
+          onVisible={() => {
+            const ids = buildJumpBackEntries(
+              favoritePresets,
+              recentPresets,
+            ).map(({ entry }) => entry.id);
+            if (ids.length > 0) void engine.requestPresetPreviews(ids);
+          }}
         />
       ) : null}
       {catalogReady && catalog.length > 0 ? (
@@ -237,6 +244,10 @@ export function NewHomePage() {
           }}
           onSelect={engine.handlePlayPreset}
           presetPreviews={presetPreviews}
+          onVisible={() => {
+            const ids = catalog.slice(0, 6).map((entry) => entry.id);
+            if (ids.length > 0) void engine.requestPresetPreviews(ids);
+          }}
         />
       ) : null}
     </section>
