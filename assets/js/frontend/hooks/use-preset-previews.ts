@@ -3,13 +3,20 @@ import type { MilkdropPresetRenderPreview } from '../../milkdrop/preset-preview.
 import type { EngineSnapshot } from '../engine/engine-snapshot.ts';
 import { createLazyFactory } from '../use-lazy-factory.ts';
 
+type PreviewControlEngine = {
+  pausePreview: () => void;
+  resumePreview: () => void;
+};
+
 export function usePresetPreviews({
   stageRef,
+  engine,
   engineSnapshot,
   fallbackCatalogReady,
   isDisposed,
 }: {
   stageRef: React.RefObject<HTMLDivElement | null>;
+  engine: PreviewControlEngine;
   engineSnapshot: EngineSnapshot | null;
   fallbackCatalogReady: boolean;
   isDisposed: () => boolean;
@@ -27,6 +34,7 @@ export function usePresetPreviews({
     refreshPreviews: (presetIds: string[]) => void;
     requestPreviews: (presetIds: string[]) => void;
   }> | null>(null);
+  const requestedIdsRef = useRef<Set<string>>(new Set());
 
   const ensurePresetPreviewService = useEffectEvent(
     createLazyFactory({
@@ -38,19 +46,23 @@ export function usePresetPreviews({
 
         const service = createMilkdropPresetPreviewService({
           capturePreview: async (_presetId) => {
+            engine.resumePreview();
             const stage = stageRef.current;
             const canvas = stage?.querySelector('canvas');
             if (!(canvas instanceof HTMLCanvasElement)) {
+              engine.pausePreview();
               throw new Error('Preview canvas was not available.');
             }
 
-            return {
+            const result = {
               imageUrl: canvas.toDataURL('image/webp', 0.82),
               actualBackend: engineSnapshot?.backend ?? null,
               updatedAt: Date.now(),
               error: null,
               source: 'runtime-snapshot' as const,
             };
+            engine.pausePreview();
+            return result;
           },
           onPreviewChanged: (preview) => {
             setPresetPreviews((current) => ({
@@ -82,17 +94,50 @@ export function usePresetPreviews({
     void ensurePresetPreviewService().catch(() => {});
   }, [engineSnapshot?.runtimeReady, fallbackCatalogReady]);
 
+  useEffect(() => {
+    if (
+      !engineSnapshot?.runtimeReady ||
+      engineSnapshot?.audioActive ||
+      requestedIdsRef.current.size === 0 ||
+      isDisposed()
+    ) {
+      return;
+    }
+
+    const requestedIds = [...requestedIdsRef.current];
+    const allReady = requestedIds.every(
+      (id) => presetPreviews[id]?.status === 'ready',
+    );
+    if (allReady) {
+      engine.pausePreview();
+    }
+  }, [
+    engineSnapshot?.runtimeReady,
+    engineSnapshot?.audioActive,
+    presetPreviews,
+    engine,
+    isDisposed,
+  ]);
+
   return {
     ensurePresetPreviewService,
     presetPreviews,
     previewServiceRef,
     previewServicePromiseRef,
     requestPresetPreviews: async (presetIds: string[]) => {
+      for (const id of presetIds) {
+        requestedIdsRef.current.add(id);
+      }
       const service = await ensurePresetPreviewService();
+      engine.resumePreview();
       service.requestPreviews(presetIds);
     },
     refreshPresetPreviews: async (presetIds: string[]) => {
+      for (const id of presetIds) {
+        requestedIdsRef.current.add(id);
+      }
       const service = await ensurePresetPreviewService();
+      engine.resumePreview();
       service.refreshPreviews(presetIds);
     },
   };

@@ -193,6 +193,18 @@ export function createMilkdropEngineAdapter() {
       subscribers.clear();
     },
 
+    pausePreview() {
+      if (!audioActive && runtime?.pausePreview) {
+        runtime.pausePreview();
+      }
+    },
+
+    resumePreview() {
+      if (runtime?.resumePreview) {
+        runtime.resumePreview();
+      }
+    },
+
     /** Pre-warm the WebGPU pipeline cache during idle time */
     prewarmWebGpu() {
       if (typeof window === 'undefined') return;
@@ -223,6 +235,9 @@ export function createMilkdropEngineAdapter() {
     async loadPreset(presetId: string) {
       if (!experience) {
         throw new Error('MilkDrop engine session is not mounted.');
+      }
+      if (runtime?.resumePreview) {
+        runtime.resumePreview();
       }
       await experience.selectPreset(presetId);
       emit();

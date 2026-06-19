@@ -117,9 +117,14 @@ export function useWorkspaceSessionState({
     refreshCatalogActivity,
   } = useCatalogLoading();
 
+  const previewEngineRef = useRef({
+    pausePreview: () => engineRef.current?.pausePreview(),
+    resumePreview: () => engineRef.current?.resumePreview(),
+  });
   const { presetPreviews, requestPresetPreviews, refreshPresetPreviews } =
     usePresetPreviews({
       stageRef,
+      engine: previewEngineRef.current,
       engineSnapshot,
       fallbackCatalogReady,
       isDisposed: () => sessionDisposedRef.current,
@@ -443,6 +448,12 @@ export function useWorkspaceSessionState({
     youtubeReady,
     youtubeUrl,
     clearRecentYouTubeVideos,
+    pausePreview: () => {
+      engineRef.current?.pausePreview();
+    },
+    resumePreview: () => {
+      engineRef.current?.resumePreview();
+    },
     stopAudio: async () => {
       await engineRef.current?.stopAudio().catch((error) => {
         console.debug('Audio stop failed.', error);

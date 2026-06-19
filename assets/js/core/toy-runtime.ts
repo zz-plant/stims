@@ -75,6 +75,10 @@ export type ToyRuntimeInstance = ToyInstance & {
   toy: WebToy;
   startAudio: (request?: ToyAudioRequest) => Promise<AnimationContext>;
   stopAudio: () => void;
+  /** Pause the idle preview loop to free the main thread. */
+  pausePreview?: () => void;
+  /** Resume the idle preview loop. */
+  resumePreview?: () => void;
   addPlugin: (plugin: ToyRuntimePlugin) => void;
   getInputState: () => UnifiedInputState | null;
   getPerformanceSettings: () => PerformanceSettings;
@@ -449,6 +453,8 @@ export function createToyRuntime({
       lastFrameTime = 0;
       startPreviewLoop();
     },
+    pausePreview: stopPreviewLoop,
+    resumePreview: startPreviewLoop,
     addPlugin: (plugin) => {
       pluginManager.add(plugin);
       plugin.setup?.(runtime as ToyRuntimeInstance);

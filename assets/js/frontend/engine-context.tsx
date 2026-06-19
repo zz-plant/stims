@@ -42,6 +42,8 @@ export interface EngineContextValue {
   exportPreset: () => void;
   importPresetFiles: (files: FileList | null) => Promise<void>;
   requestPresetPreviews: (presetIds: string[]) => Promise<void>;
+  pausePreview: () => void;
+  resumePreview: () => void;
   refreshPresetPreviews: (presetIds: string[]) => Promise<void>;
   startAudioSource: (request: {
     cropTarget?: HTMLElement | null;
