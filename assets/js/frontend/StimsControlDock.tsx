@@ -6,6 +6,7 @@ import {
   searchByFrame,
 } from '../core/services/visual-embedding.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
+import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngine, useEngineSnapshot, useUI } from './workspace-context.tsx';
 
@@ -55,6 +56,8 @@ export function StimsControlDock({
     Array<{ presetId: string; score: number }>
   >([]);
   const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarSearched, setSimilarSearched] = useState(false);
+  const [similarError, setSimilarError] = useState(false);
   const [showMoods, setShowMoods] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const moodAbortRef = useRef<AbortController | null>(null);
@@ -108,15 +111,21 @@ export function StimsControlDock({
     const controller = new AbortController();
     moreLikeThisAbortRef.current = controller;
     setSimilarLoading(true);
+    setSimilarError(false);
+    setSimilarSearched(false);
     try {
       const results = await searchByFrame(canvas, controller.signal);
       if (controller.signal.aborted) return;
       setSimilarPresets(results);
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
+      setSimilarError(true);
       ui.setStatusMessage('Visual search failed.');
     } finally {
-      if (!controller.signal.aborted) setSimilarLoading(false);
+      if (!controller.signal.aborted) {
+        setSimilarLoading(false);
+        setSimilarSearched(true);
+      }
     }
   };
 
@@ -374,7 +383,10 @@ export function StimsControlDock({
           ))}
         </div>
       )}
-      {similarPresets.length > 0 ? (
+      {similarLoading ||
+      similarError ||
+      (similarSearched && similarPresets.length === 0) ||
+      similarPresets.length > 0 ? (
         <div className="stims-shell__similar-presets">
           <div
             style={{
@@ -387,39 +399,72 @@ export function StimsControlDock({
             <h2 className="stims-shell__section-label" style={{ margin: 0 }}>
               Similar looks
             </h2>
-            <button
-              type="button"
-              className="stims-shell__clear-filters"
-              onClick={() => setSimilarPresets([])}
-              style={{ fontSize: '0.8rem', opacity: 0.8 }}
-            >
-              Close
-            </button>
+            {!similarLoading ? (
+              <button
+                type="button"
+                className="stims-shell__clear-filters"
+                onClick={() => {
+                  setSimilarPresets([]);
+                  setSimilarSearched(false);
+                  setSimilarError(false);
+                }}
+                style={{ fontSize: '0.8rem', opacity: 0.8 }}
+              >
+                Close
+              </button>
+            ) : null}
           </div>
-          <div className="stims-shell__starter-grid">
-            {similarPresets.map((p) => {
-              const entry = engine.catalog.find((e) => e.id === p.presetId);
-              if (!entry) return null;
-              return (
-                <button
-                  key={p.presetId}
-                  type="button"
-                  className="stims-shell__starter-card"
-                  onClick={() => engine.handlePresetSelection(p.presetId)}
-                >
-                  <PresetArtwork
-                    entry={entry}
-                    compact
-                    preview={engine.presetPreviews[p.presetId] ?? null}
-                  />
-                  <strong>{entry.title}</strong>
-                  <span className="stims-shell__meta-copy">
-                    {(p.score * 100).toFixed(0)}% match
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {similarError ? (
+            <div className="stims-shell__empty-state" role="alert">
+              <p className="stims-shell__meta-copy">
+                Couldn’t find similar looks right now.
+              </p>
+              <button
+                type="button"
+                className="cta-button ghost"
+                onClick={() => void handleMoreLikeThis()}
+              >
+                Try again
+              </button>
+            </div>
+          ) : similarLoading ? (
+            <div className="stims-shell__starter-grid">
+              <SkeletonPresetCard />
+              <SkeletonPresetCard />
+              <SkeletonPresetCard />
+            </div>
+          ) : similarSearched && similarPresets.length === 0 ? (
+            <div className="stims-shell__empty-state">
+              <p className="stims-shell__meta-copy">
+                No matching presets for this look.
+              </p>
+            </div>
+          ) : (
+            <div className="stims-shell__starter-grid">
+              {similarPresets.map((p) => {
+                const entry = engine.catalog.find((e) => e.id === p.presetId);
+                if (!entry) return null;
+                return (
+                  <button
+                    key={p.presetId}
+                    type="button"
+                    className="stims-shell__starter-card"
+                    onClick={() => engine.handlePresetSelection(p.presetId)}
+                  >
+                    <PresetArtwork
+                      entry={entry}
+                      compact
+                      preview={engine.presetPreviews[p.presetId] ?? null}
+                    />
+                    <strong>{entry.title}</strong>
+                    <span className="stims-shell__meta-copy">
+                      {(p.score * 100).toFixed(0)}% match
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : null}
     </div>
