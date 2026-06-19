@@ -1530,8 +1530,8 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
     max-width: none;
   }
 
@@ -1633,9 +1633,71 @@ body[data-page="workspace"] {
     gap: 10px;
   }
 
+  .stims-shell__source-panel {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .stims-shell__source-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .stims-shell__source-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stims-shell__source-card {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    min-height: 72px;
+    padding: 12px;
+    border: 1px solid var(--stims-line-soft);
+    border-radius: var(--stims-radius-card);
+    background:
+      linear-gradient(180deg, var(--stims-white-06), var(--stims-white-02)),
+      radial-gradient(
+        circle at top right,
+        var(--stims-accent-blue-08),
+        transparent 34%
+      );
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    box-shadow: var(--stims-shadow-control);
+  }
+
+  .stims-shell__source-card strong,
+  .stims-shell__source-card span {
+    min-width: 0;
+  }
+
+  .stims-shell__source-card strong {
+    color: var(--stims-ink-strong);
+    font-size: 0.95rem;
+    line-height: 1.2;
+  }
+
+  .stims-shell__source-card span {
+    color: var(--stims-muted);
+    font-size: 0.84rem;
+    line-height: 1.35;
+  }
+
+  .stims-shell__source-card:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .stims-shell__youtube-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
   }
 
@@ -2629,8 +2691,8 @@ body[data-page="workspace"] {
 
     .stims-shell__launch-actions {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 6px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
     }
 
     .stims-shell__browse-toolbar,
@@ -2640,6 +2702,11 @@ body[data-page="workspace"] {
 
     .stims-shell__launch-actions > * {
       width: 100%;
+    }
+
+    .stims-shell__source-grid,
+    .stims-shell__youtube-row {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .stims-shell__text-button,
