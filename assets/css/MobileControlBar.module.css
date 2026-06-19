@@ -118,7 +118,47 @@
   background: rgba(5, 7, 13, 0.98);
 }
 
+.handle {
+  position: fixed;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-dock);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(5, 7, 13, 0.9);
+  color: var(--stims-ink);
+  border: 1px solid var(--stims-line-soft);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  backdrop-filter: blur(8px);
+  opacity: 1;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.handle[hidden] {
+  display: none;
+}
+
+.handleLabel {
+  display: inline;
+}
+
+@media (width >= 768px) {
+  .handle {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .handle,
   .bar {
     transition: none;
   }

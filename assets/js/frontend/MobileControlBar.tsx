@@ -304,6 +304,19 @@ export function MobileControlBar({
           <span className={styles.actionLabel}>Share</span>
         </button>
       </div>
+      {!visible ? (
+        <button
+          type="button"
+          className={styles.handle}
+          aria-label="Show controls"
+          onClick={() => {
+            resetHideTimer();
+          }}
+        >
+          <span aria-hidden="true">^</span>
+          <span className={styles.handleLabel}>Controls</span>
+        </button>
+      ) : null}
     </div>
   );
 }
