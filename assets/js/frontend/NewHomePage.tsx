@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { PresetShelfSection } from './PresetShelfSection.tsx';
@@ -128,33 +129,9 @@ export function NewHomePage() {
               >
                 Play with demo audio
               </button>
-              <details
-                className="stims-shell__audio-setup-details"
-                aria-label="Audio input options"
-              >
-                <summary>Use your own audio</summary>
-                <div
-                  className="stims-shell__launch-actions"
-                  style={{ marginTop: 10 }}
-                >
-                  <button
-                    type="button"
-                    className="cta-button ghost"
-                    disabled={loadingAudio}
-                    onClick={() => handleStartAudio('microphone')}
-                  >
-                    Use microphone input
-                  </button>
-                  <button
-                    type="button"
-                    className="cta-button ghost"
-                    disabled={loadingAudio}
-                    onClick={() => handleStartAudio('tab')}
-                  >
-                    Use audio from a tab
-                  </button>
-                </div>
-              </details>
+              <div className="stims-shell__audio-setup-details">
+                <AudioSourcePanel />
+              </div>
             </div>
           </div>
         </div>

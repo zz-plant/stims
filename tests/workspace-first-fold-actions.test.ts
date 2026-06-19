@@ -16,16 +16,24 @@ describe('workspace first-fold launch hierarchy', () => {
       'utf8',
     );
 
-    const launchStackBlock =
-      homeSource.match(
-        /<div className="stims-shell__launch-stack">([\s\S]*?)<\/div>/u,
-      )?.[1] ?? '';
+    const audioSourceSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'AudioSourcePanel.tsx',
+      ),
+      'utf8',
+    );
 
-    expect(launchStackBlock).not.toContain('See visuals now');
-    expect(launchStackBlock).toContain('Play with demo audio');
-    expect(launchStackBlock).toContain('cta-button primary');
-    expect(launchStackBlock).toContain('Use microphone');
-    expect(launchStackBlock).toContain('Use audio from a tab');
-    expect(launchStackBlock).not.toContain('Advanced audio setup');
+    expect(homeSource).not.toContain('See visuals now');
+    expect(homeSource).toContain('Play with demo audio');
+    expect(homeSource).toContain('cta-button primary');
+    expect(homeSource).toContain('<AudioSourcePanel');
+    expect(audioSourceSource).toContain('Microphone');
+    expect(audioSourceSource).toContain('Audio from this browser tab');
+    expect(audioSourceSource).not.toContain('Advanced audio setup');
   });
 });
