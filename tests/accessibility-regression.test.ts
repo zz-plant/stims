@@ -23,7 +23,9 @@ describe('Accessibility regression guards', () => {
   test('skip link uses class styles, not inline dimensions', () => {
     const app = readSource('frontend', 'App.tsx');
 
-    expect(app).toMatch(/<a\s+href="#stims-main"\s+className="skip-link">/u);
+    expect(app).toMatch(
+      /<a\s+href="#stims-visualizer"\s+className="skip-link">/u,
+    );
     expect(app).not.toMatch(/skip-link"[\s\S]*?style=\{\{/u);
   });
 
