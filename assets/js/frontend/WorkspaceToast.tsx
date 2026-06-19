@@ -1,3 +1,5 @@
+import { UiIcon } from './UiIcon.tsx';
+
 export function WorkspaceToast({
   onDismiss,
   toast,
@@ -12,12 +14,12 @@ export function WorkspaceToast({
     return null;
   }
 
-  const symbols = {
-    info: 'ℹ️',
-    warn: '⚠️',
-    error: '🚫',
-  };
-  const symbol = symbols[toast.tone] ?? 'ℹ️';
+  const iconName =
+    toast.tone === 'error'
+      ? 'error'
+      : toast.tone === 'warn'
+        ? 'warning'
+        : 'info';
 
   return (
     <output
@@ -27,10 +29,11 @@ export function WorkspaceToast({
       aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
       aria-atomic="true"
     >
-      <span>
-        <span style={{ marginRight: 6 }} aria-hidden="true">
-          {symbol}
-        </span>
+      <span className="stims-shell__toast-content">
+        <UiIcon
+          name={iconName}
+          className="stims-shell__toast-icon stims-icon-slot stims-icon-slot--sm"
+        />
         {toast.message}
       </span>
       <button

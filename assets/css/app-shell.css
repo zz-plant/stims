@@ -2224,6 +2224,18 @@ body[data-page="workspace"] {
     min-width: 0;
   }
 
+  .stims-shell__toast-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stims-shell__toast-icon {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+  }
+
   .stims-shell__toast[data-tone="warn"] {
     border-color: rgba(255, 209, 102, 0.36);
     color: #ffe0a2;

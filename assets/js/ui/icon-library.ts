@@ -24,6 +24,11 @@ const ICON_NODES = {
       },
     },
   ],
+  error: [
+    { tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } },
+    { tag: 'path', attrs: { d: 'm15 9-6 6' } },
+    { tag: 'path', attrs: { d: 'm9 9 6 6' } },
+  ],
   expand: [
     { tag: 'path', attrs: { d: 'M9 3H3v6' } },
     { tag: 'path', attrs: { d: 'm3 3 7 7' } },
@@ -38,6 +43,11 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M4.5 14a7.5 7.5 0 1 1 15 0' } },
     { tag: 'path', attrs: { d: 'm12 14 4-4' } },
     { tag: 'path', attrs: { d: 'M12 14h.01' } },
+  ],
+  info: [
+    { tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } },
+    { tag: 'path', attrs: { d: 'M12 16v-4' } },
+    { tag: 'path', attrs: { d: 'M12 8h.01' } },
   ],
   link: [
     {
@@ -99,6 +109,11 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M4 18h2' } },
     { tag: 'path', attrs: { d: 'M10 18h10' } },
     { tag: 'circle', attrs: { cx: 8, cy: 18, r: 2 } },
+  ],
+  warning: [
+    { tag: 'path', attrs: { d: 'm12 4 10 17H2L12 4Z' } },
+    { tag: 'path', attrs: { d: 'M12 9v5' } },
+    { tag: 'path', attrs: { d: 'M12 17h.01' } },
   ],
   sun: [
     { tag: 'circle', attrs: { cx: 12, cy: 12, r: 4 } },
