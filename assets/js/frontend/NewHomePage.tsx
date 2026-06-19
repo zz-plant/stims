@@ -205,6 +205,40 @@ export function NewHomePage() {
             if (ids.length > 0) void engine.requestPresetPreviews(ids);
           }}
         />
+      ) : catalogReady ? (
+        <section
+          className="stims-shell__starter-section"
+          aria-labelledby="stims-saved-empty"
+        >
+          <div className="stims-shell__section-heading">
+            <h2 id="stims-saved-empty" className="stims-shell__section-label">
+              Saved presets
+            </h2>
+          </div>
+          <div className="stims-shell__starter-grid">
+            <button
+              type="button"
+              className="stims-shell__starter-card"
+              onClick={() => ui.updatePanel('browse')}
+            >
+              <div
+                className="stims-shell__preset-art"
+                data-tone="instant"
+                data-preview-status="queued"
+                aria-hidden="true"
+              >
+                <span className="stims-shell__preset-art-grid" />
+                <span className="stims-shell__preset-art-orbit" />
+                <span className="stims-shell__preset-art-core" />
+              </div>
+              <span className="stims-shell__starter-label">Empty</span>
+              <strong>Save your first preset</strong>
+              <span className="stims-shell__meta-copy">
+                Browse and save anything you want to replay later.
+              </span>
+            </button>
+          </div>
+        </section>
       ) : null}
       {catalogReady && catalog.length > 0 ? (
         <PresetShelfSection
