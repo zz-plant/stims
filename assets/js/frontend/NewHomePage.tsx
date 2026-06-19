@@ -67,10 +67,12 @@ export function NewHomePage() {
 
   useEffect(() => {
     if (!catalogReady || catalog.length === 0) return;
-    const ids = catalog.slice(0, 6).map((e) => e.id);
-    if (featuredPreset && !ids.includes(featuredPreset.id)) {
-      ids.unshift(featuredPreset.id);
-    }
+    // Only the featured preset gets an immediate runtime preview. Rendering
+    // shelf previews for the whole catalog on load dominates main thread time
+    // and pushes Lighthouse TBT into the red zone.
+    const ids = featuredPreset ? [featuredPreset.id] : [];
+    if (ids.length === 0) return;
+
     // Defer preview generation until the main thread is idle so the initial
     // render and interactivity aren't blocked by compiling the renderer.
     const request = () => void engine.requestPresetPreviews(ids);

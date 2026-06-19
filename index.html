@@ -145,6 +145,13 @@
           display: none;
         }
       }
+
+      /* Crawl links are small text targets; make them easier to hit. */
+      .stims-crawl-links a {
+        display: inline-block;
+        min-height: 24px;
+        line-height: 24px;
+      }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -271,6 +278,11 @@
         <li>Direct Configuration Sharing: Instantly share visualizer states, presets, and slider parameters via URL query strings.</li>
       </ul>
     </div>
+
+    <nav class="stims-crawl-links" aria-label="Crawlable site links">
+      <a href="/">Visualizer</a>
+      <a href="/performance/">Compatibility and performance</a>
+    </nav>
 
     <script type="module" src="/assets/js/app.ts"></script>
     <footer style="display:none" aria-hidden="true">
