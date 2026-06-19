@@ -283,6 +283,29 @@
       <a href="/">Visualizer</a>
       <a href="/performance/">Compatibility and performance</a>
     </nav>
+    <noscript>
+      <div class="stims-loading" role="alert">
+        <div>
+          <p>JavaScript is required to run Stims.</p>
+          <p>Please enable JavaScript in your browser and reload the page.</p>
+        </div>
+      </div>
+    </noscript>
+    <script>
+      (() => {
+        const TIMEOUT_MS = 10000;
+        const timer = setTimeout(() => {
+          const loading = document.getElementById('stims-loading');
+          if (!loading || document.getElementById('stims-main')) return;
+          loading.innerHTML =
+            '<div>' +
+            '<p>Stims is taking longer than expected to load.</p>' +
+            '<p><a href="." class="stims-loading__retry">Reload page</a></p>' +
+            '</div>';
+        }, TIMEOUT_MS);
+        window.addEventListener('load', () => clearTimeout(timer), { once: true });
+      })();
+    </script>
 
     <script type="module" src="/assets/js/app.ts"></script>
     <footer style="display:none" aria-hidden="true">

@@ -41,6 +41,7 @@ export function NewHomePage() {
   const recentPresets = engine.recentPresets;
   const requestedPresetId = ui.routeState.presetId;
   const catalog = engine.catalog;
+  const catalogError = engine.catalogError;
   const catalogReady = engine.catalogReady;
 
   const hasFavorites = favoritePresets.length > 0;
@@ -185,6 +186,31 @@ export function NewHomePage() {
               onClick={ui.handleBrowseRecovery}
             >
               Explore presets
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {catalogError && catalog.length === 0 ? (
+        <section className="stims-shell__launch-alert" data-tone="error">
+          <div className="stims-shell__launch-alert-copy">
+            <p className="stims-shell__section-label">Couldn’t load presets</p>
+            <strong>{catalogError}</strong>
+          </div>
+          <div className="stims-shell__session-actions">
+            <button
+              type="button"
+              className="cta-button primary"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              className="cta-button"
+              onClick={() => ui.updatePanel('browse')}
+            >
+              Browse presets
             </button>
           </div>
         </section>
