@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { QualityPreset } from '../core/settings-panel.ts';
+import { DEFAULT_PERFORMANCE_SETTINGS } from '../core/state/performance-settings-store.ts';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   getQualityImpactSummary,
@@ -49,9 +50,38 @@ function PerformanceSection() {
 
   const shaderLabel = ['Low', 'Medium', 'High'][perf.shaderDetail] ?? 'Medium';
 
+  const resetPerformance = () => {
+    import('../core/state/performance-settings-store.ts').then(
+      ({ resetPerformanceSettingsStore, setPerformanceOption }) => {
+        resetPerformanceSettingsStore();
+        setPerformanceOption(
+          'renderScale',
+          DEFAULT_PERFORMANCE_SETTINGS.renderScale,
+        );
+        setPerformanceOption(
+          'shaderDetail',
+          DEFAULT_PERFORMANCE_SETTINGS.shaderDetail,
+        );
+        setPerformanceOption('ecoMode', DEFAULT_PERFORMANCE_SETTINGS.ecoMode);
+        setPerf({ ...DEFAULT_PERFORMANCE_SETTINGS, loaded: true });
+      },
+    );
+  };
+
   return (
     <div className="stims-shell__settings-section">
-      <h3 className="stims-shell__settings-label">Performance</h3>
+      <div className="stims-shell__settings-section-header">
+        <h3 className="stims-shell__settings-label">Performance</h3>
+        {perf.loaded ? (
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={resetPerformance}
+          >
+            Reset
+          </button>
+        ) : null}
+      </div>
 
       <div className="stims-shell__settings-row">
         <label
@@ -127,7 +157,9 @@ export function SettingsSheetPanel({
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
       <section className="stims-shell__sheet-surface">
-        <p className="stims-shell__section-label">Visual quality</p>
+        <h3 className="stims-shell__settings-section-heading">
+          Visual quality
+        </h3>
         <ul className="stims-shell__preset-guides">
           {guidedPresets.map((preset) => (
             <li key={preset.id}>
@@ -163,15 +195,24 @@ export function SettingsSheetPanel({
         <p className="stims-shell__meta-copy">
           {qualityPreset.description ?? describeQuickLook(qualityPreset)}
         </p>
+        {qualityPreset.id !== 'balanced' ? (
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={() => engine.setQualityPreset('balanced')}
+          >
+            Reset to recommended
+          </button>
+        ) : null}
       </section>
 
       <PerformanceSection />
 
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
-          <span>Manual preferences</span>
+          <span>Compatibility & motion</span>
           <span className="stims-shell__meta-copy">
-            Optional controls for compatibility and device motion
+            Optional controls for older devices and device motion
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">

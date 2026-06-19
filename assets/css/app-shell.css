@@ -3239,6 +3239,21 @@ body[data-page="workspace"] {
   padding: 4px 0;
 }
 
+.stims-shell__settings-section-heading {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--stims-ink);
+}
+
+.stims-shell__settings-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
 .stims-shell__select {
   background: var(--stims-surface);
   color: var(--stims-ink);
