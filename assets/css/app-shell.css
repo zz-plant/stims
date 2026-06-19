@@ -3630,3 +3630,25 @@ body[data-page="workspace"] {
     }
   }
 }
+
+/* Overflow menu for the live control dock */
+.stims-shell__dock-overflow,
+.stims-shell__mood-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(5, 7, 13, 0.6);
+  border: 1px solid var(--stims-line-soft);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.stims-shell__dock-overflow {
+  margin: 8px 12px 0;
+}
+
+.stims-shell__mood-row {
+  margin: 8px 12px;
+}

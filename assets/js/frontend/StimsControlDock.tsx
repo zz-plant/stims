@@ -56,6 +56,7 @@ export function StimsControlDock({
   >([]);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [showMoods, setShowMoods] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const moodAbortRef = useRef<AbortController | null>(null);
   const moreLikeThisAbortRef = useRef<AbortController | null>(null);
 
@@ -238,33 +239,18 @@ export function StimsControlDock({
         <button
           type="button"
           className="stims-shell__stage-tool"
-          aria-label="Create a preset from a mood"
-          title="Create a preset from a mood"
-          onClick={() => setShowMoods((s) => !s)}
+          aria-expanded={showMore}
+          aria-haspopup="menu"
+          aria-label="More actions"
+          title="More actions"
+          onClick={() => setShowMore((s) => !s)}
         >
           <UiIcon
-            name="wand"
+            name="menu"
             className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
           />
-          <span className="stims-shell__stage-tool-label">Generate</span>
+          <span className="stims-shell__stage-tool-label">More</span>
         </button>
-        {showMoods && (
-          <div className="stims-shell__mood-row">
-            {moods.map((mood) => (
-              <button
-                key={mood.label}
-                type="button"
-                className="stims-shell__stage-tool"
-                aria-label={`Generate ${mood.label.toLowerCase()} preset`}
-                onClick={() => handleMoodGenerate(mood)}
-              >
-                <span className="stims-shell__stage-tool-label">
-                  {mood.icon} {mood.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
         {audioSource ? (
           <button
             type="button"
@@ -295,45 +281,6 @@ export function StimsControlDock({
             {isFullscreen ? 'Exit full screen' : 'Full screen'}
           </span>
         </button>
-        <button
-          type="button"
-          className="stims-shell__stage-tool"
-          aria-label="Copy a share link"
-          title="Copy a share link"
-          onClick={() => void ui.handleShowCurrentLink()}
-        >
-          <UiIcon
-            name="link"
-            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className="stims-shell__stage-tool-label">Share</span>
-        </button>
-        <button
-          type="button"
-          className="cta-button stims-shell__stage-tool-ghost"
-          aria-label="Find presets that look similar"
-          title="Find presets that look similar"
-          disabled={!runtimeReady || similarLoading}
-          onClick={() => void handleMoreLikeThis()}
-        >
-          <UiIcon
-            name="eye"
-            className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className="stims-shell__stage-tool-label">
-            {similarLoading ? 'Searching\u2026' : 'More like this'}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="cta-button stims-shell__stage-tool-ghost"
-          aria-label="Save the current look"
-          title="Save the current look"
-          disabled={!runtimeReady}
-          onClick={handleSaveThisLook}
-        >
-          <span className="stims-shell__stage-tool-label">Save</span>
-        </button>
         {onToggleTheme ? (
           <button
             type="button"
@@ -350,6 +297,83 @@ export function StimsControlDock({
           </button>
         ) : null}
       </div>
+      {showMore ? (
+        <div
+          className="stims-shell__dock-overflow"
+          role="menu"
+          aria-label="More actions"
+        >
+          <button
+            type="button"
+            className="stims-shell__stage-tool"
+            aria-label="Create a preset from a mood"
+            title="Create a preset from a mood"
+            onClick={() => setShowMoods((s) => !s)}
+          >
+            <UiIcon
+              name="wand"
+              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className="stims-shell__stage-tool-label">Generate</span>
+          </button>
+          <button
+            type="button"
+            className="cta-button stims-shell__stage-tool-ghost"
+            aria-label="Find presets that look similar"
+            title="Find presets that look similar"
+            disabled={!runtimeReady || similarLoading}
+            onClick={() => void handleMoreLikeThis()}
+          >
+            <UiIcon
+              name="eye"
+              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className="stims-shell__stage-tool-label">
+              {similarLoading ? 'Searching\u2026' : 'More like this'}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="cta-button stims-shell__stage-tool-ghost"
+            aria-label="Save the current look"
+            title="Save the current look"
+            disabled={!runtimeReady}
+            onClick={handleSaveThisLook}
+          >
+            <span className="stims-shell__stage-tool-label">Save</span>
+          </button>
+          <button
+            type="button"
+            className="stims-shell__stage-tool"
+            aria-label="Copy a share link"
+            title="Copy a share link"
+            onClick={() => void ui.handleShowCurrentLink()}
+          >
+            <UiIcon
+              name="link"
+              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className="stims-shell__stage-tool-label">Share</span>
+          </button>
+        </div>
+      ) : null}
+      {showMoods && (
+        <div className="stims-shell__mood-row">
+          {moods.map((mood) => (
+            <button
+              key={mood.label}
+              type="button"
+              className="stims-shell__stage-tool"
+              aria-label={`Generate ${mood.label.toLowerCase()} preset`}
+              onClick={() => handleMoodGenerate(mood)}
+            >
+              <span className="stims-shell__stage-tool-label">
+                {mood.icon} {mood.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       {similarPresets.length > 0 ? (
         <div className="stims-shell__similar-presets">
           <div
