@@ -19,10 +19,12 @@ export function StimsStageFrame({
         data-mode={liveMode ? 'live' : 'home'}
       >
         <div
+          id="stims-visualizer"
           ref={stageRef}
           className="stims-shell__stage-root"
           role="img"
           aria-label="Audio-reactive visual output"
+          tabIndex={-1}
         />
         {children}
       </div>

@@ -43,11 +43,25 @@ const requiredInIndexHtml = [
   '<script type="application/ld+json">',
 ];
 
+const requiredHomepageCrawlLinks = [
+  '<nav class="stims-crawl-links" aria-label="Crawlable site links">',
+  '<a href="/">Visualizer</a>',
+  '<a href="/performance/">Compatibility and performance</a>',
+];
+
 const requiredInPerformanceHtml = [
   '<link rel="canonical" href="https://toil.fyi/performance/" />',
   '<meta property="og:image" content="https://toil.fyi/og/performance.png" />',
   '<meta property="og:image:type" content="image/png" />',
   '<meta name="twitter:image" content="https://toil.fyi/og/performance.png" />',
+];
+
+const requiredInMilkdropAliasHtml = [
+  '<meta name="robots" content="noindex,follow" />',
+  '<link rel="canonical" href="https://toil.fyi/" />',
+  'Compatibility alias for old /milkdrop/ links.',
+  "const target = new URL('/', window.location.origin);",
+  'window.location.replace(target.toString());',
 ];
 
 const normalizeSitemapXml = (value: string) =>
@@ -122,6 +136,30 @@ export async function runSeoChecks(rootDir = repoRoot) {
       name: `Homepage contains ${snippet}`,
       passed: homepage.includes(snippet),
       details: 'index.html',
+    });
+  }
+  for (const snippet of requiredHomepageCrawlLinks) {
+    results.push({
+      name: `Homepage exposes crawlable canonical links: ${snippet}`,
+      passed: homepage.includes(snippet),
+      details: 'index.html',
+    });
+  }
+  results.push({
+    name: 'Homepage does not link to the milkdrop compatibility alias',
+    passed: !homepage.includes('href="/milkdrop/"'),
+    details: 'index.html',
+  });
+
+  const milkdropAlias = await fs.readFile(
+    path.join(rootDir, 'milkdrop/index.html'),
+    'utf8',
+  );
+  for (const snippet of requiredInMilkdropAliasHtml) {
+    results.push({
+      name: `Milkdrop alias is a noindex canonical redirect: ${snippet}`,
+      passed: milkdropAlias.includes(snippet),
+      details: 'milkdrop/index.html',
     });
   }
 

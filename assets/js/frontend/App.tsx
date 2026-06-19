@@ -553,8 +553,8 @@ function StimsWorkspaceAppShell() {
         ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined
       }
     >
-      <a href="#stims-main" className="skip-link">
-        Skip to main content
+      <a href="#stims-visualizer" className="skip-link">
+        Skip to visualizer
       </a>
       <WorkspaceStagePanel
         isFullscreen={isFullscreen}
