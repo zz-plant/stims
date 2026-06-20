@@ -138,6 +138,8 @@ export function NewHomePage() {
         </div>
       </div>
 
+      <p className="stims-shell__scroll-hint">Scroll to explore presets</p>
+
       {featuredPreset ? (
         <button
           type="button"

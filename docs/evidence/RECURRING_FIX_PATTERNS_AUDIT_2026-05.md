@@ -45,6 +45,8 @@ Files appearing most often in the 300 fix-captioned commits:
 | 19 | `assets/js/core/capability-preflight.ts` | 5 | 15 | 33.3% |
 | 20 | `toys/symph.html` | 4 | 10 | 40.0% |
 
+\* File removed in Jun 2026 refactor — capability probe logic folded into `engine-context.tsx`.
+
 ## 3. Instability clusters
 
 Files that are both high-churn (top 20 in all-commit frequency) AND high-fix-density (≥25% fix rate):
@@ -101,7 +103,7 @@ This category covers: standalone toy HTML files (`toys/*.html`, `multi.html`, `d
 ### review-renderer-fallback
 - **Update:** The "~25%" claim needs correction to 8.0%.
 - **Add checklist item:** Before any change to `renderer-setup.ts`, run the full capability matrix: `webgpu+webgl × preferred × timeout × queryOverride`. This file has a 77.8% fix rate.
-- **Add checklist item:** Changes to `capability-preflight.ts` must update `tests/setup.ts` or `tests/renderer-capabilities.test.js` to cover the new probe path.
+- ~~**Add checklist item:** Changes to `capability-preflight.ts` must update `tests/setup.ts` or `tests/renderer-capabilities.test.js` to cover the new probe path.~~ (File removed Jun 2026)
 
 ### review-test-harness
 - **Update:** The "~20%" claim is close (15.2%).

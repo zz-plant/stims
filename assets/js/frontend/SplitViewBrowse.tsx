@@ -50,6 +50,7 @@ export function SplitViewBrowse({
           <button
             type="button"
             className={styles.previewPlay}
+            aria-label="Close browse presets"
             onClick={onClose}
           >
             <UiIcon

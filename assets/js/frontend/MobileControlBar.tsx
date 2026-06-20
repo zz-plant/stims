@@ -11,6 +11,8 @@ const moods = [
   { label: 'Cosmic', desc: 'space nebula starfield', icon: '\u2728' },
 ];
 
+const MOBILE_CONTROL_IDLE_MS = 12_000;
+
 type MobileControlBarProps = {
   audioEnergy: number;
   presetTitle: string;
@@ -41,7 +43,10 @@ export function MobileControlBar({
   const resetHideTimer = useCallback(() => {
     setVisible(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setVisible(false), 4000);
+    hideTimer.current = setTimeout(
+      () => setVisible(false),
+      MOBILE_CONTROL_IDLE_MS,
+    );
   }, []);
 
   useEffect(() => {
@@ -154,155 +159,170 @@ export function MobileControlBar({
   );
 
   return (
-    <div className={styles.bar} data-visible={String(visible)}>
-      {/* biome-ignore lint/a11y/useSemanticElements: custom visual div designed specifically for visual status/metering */}
-      <div
-        className={styles.energyMeter}
-        style={{ width: energyPercent }}
-        role="meter"
-        aria-label="Audio energy level"
-        aria-valuenow={Math.round(audioEnergy * 100)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      />
-      {presetTitle ? (
-        <div className={styles.nowPlaying}>
-          <span className={styles.nowPlayingTitle}>{presetTitle}</span>
-          {presetAuthor ? (
-            <span className={styles.nowPlayingAuthor}>{presetAuthor}</span>
-          ) : null}
-        </div>
-      ) : null}
-      {showMoods && (
-        <fieldset className="mc-bar__mood-row" aria-label="Mood presets">
-          {moods.map((mood) => (
-            <button
-              key={mood.label}
-              type="button"
-              className="mc-bar__mood-btn"
-              aria-label={`Generate ${mood.label.toLowerCase()} preset`}
-              onClick={() => handleMoodGenerate(mood)}
-            >
-              <span className="mc-bar__mood-icon">{mood.icon}</span>
-              <span className="mc-bar__mood-label">{mood.label}</span>
-            </button>
-          ))}
-        </fieldset>
-      )}
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.action}
-          data-active={String(panel === 'browse')}
-          aria-expanded={panel === 'browse'}
-          onClick={handleBrowse}
-          aria-label="Browse presets"
-        >
-          <UiIcon
-            name="sparkles"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className={styles.actionLabel}>Browse</span>
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          data-active={String(panel === 'settings')}
-          aria-expanded={panel === 'settings'}
-          onClick={handleSettings}
-          aria-label="Settings panel"
-        >
-          <UiIcon
-            name="sliders"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className={styles.actionLabel}>Settings</span>
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={handleShuffle}
-          aria-label="Shuffle preset"
-        >
-          <UiIcon
-            name="shuffle"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className={styles.actionLabel}>Shuffle</span>
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={handleSimilar}
-          aria-label="Find similar presets"
-        >
-          <UiIcon name="eye" className="stims-icon-slot stims-icon-slot--sm" />
-          <span className={styles.actionLabel}>More</span>
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          data-active={String(panel === 'editor')}
-          aria-expanded={panel === 'editor'}
-          onClick={handleEditor}
-          aria-label="Edit preset code"
-        >
-          <UiIcon
-            name="gauge"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className={styles.actionLabel}>Edit</span>
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={() => {
-            resetHideTimer();
-            setShowMoods((s) => !s);
-          }}
-          aria-label="Generate from mood"
-        >
-          <UiIcon name="wand" className="stims-icon-slot stims-icon-slot--sm" />
-          <span className={styles.actionLabel}>Generate</span>
-        </button>
-        {engineSnapshot?.audioSource ? (
+    <>
+      <div className={styles.bar} data-visible={String(visible)}>
+        {/* biome-ignore lint/a11y/useSemanticElements: custom visual div designed specifically for visual status/metering */}
+        <div
+          className={styles.energyMeter}
+          style={{ width: energyPercent }}
+          role="meter"
+          aria-label="Audio energy level"
+          aria-valuenow={Math.round(audioEnergy * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        />
+        {presetTitle ? (
+          <div className={styles.nowPlaying}>
+            <span className={styles.nowPlayingTitle}>{presetTitle}</span>
+            {presetAuthor ? (
+              <span className={styles.nowPlayingAuthor}>{presetAuthor}</span>
+            ) : null}
+          </div>
+        ) : null}
+        {showMoods && (
+          <fieldset className="mc-bar__mood-row" aria-label="Mood presets">
+            {moods.map((mood) => (
+              <button
+                key={mood.label}
+                type="button"
+                className="mc-bar__mood-btn"
+                aria-label={`Generate ${mood.label.toLowerCase()} preset`}
+                onClick={() => handleMoodGenerate(mood)}
+              >
+                <span className="mc-bar__mood-icon">{mood.icon}</span>
+                <span className="mc-bar__mood-label">{mood.label}</span>
+              </button>
+            ))}
+          </fieldset>
+        )}
+        <div className={styles.actions}>
           <button
             type="button"
             className={styles.action}
-            aria-label="Stop audio"
-            title="Stop audio"
-            onClick={engine.handleAudioStop}
+            data-active={String(panel === 'browse')}
+            aria-expanded={panel === 'browse'}
+            onClick={handleBrowse}
+            aria-label="Browse presets"
           >
             <UiIcon
-              name="close"
+              name="sparkles"
               className="stims-icon-slot stims-icon-slot--sm"
             />
-            <span className={styles.actionLabel}>Stop</span>
+            <span className={styles.actionLabel}>Browse</span>
           </button>
-        ) : null}
-        <button
-          type="button"
-          className={styles.action}
-          onClick={handleFullscreen}
-          aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
-        >
-          <UiIcon
-            name="expand"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
-          <span className={styles.actionLabel}>
-            {isFullscreen ? 'Exit' : 'Full'}
-          </span>
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={handleShare}
-          aria-label="Share link"
-        >
-          <UiIcon name="link" className="stims-icon-slot stims-icon-slot--sm" />
-          <span className={styles.actionLabel}>Share</span>
-        </button>
+          <button
+            type="button"
+            className={styles.action}
+            data-active={String(panel === 'settings')}
+            aria-expanded={panel === 'settings'}
+            onClick={handleSettings}
+            aria-label="Settings panel"
+          >
+            <UiIcon
+              name="sliders"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>Settings</span>
+          </button>
+          <button
+            type="button"
+            className={styles.action}
+            onClick={handleShuffle}
+            aria-label="Shuffle preset"
+          >
+            <UiIcon
+              name="shuffle"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>Shuffle</span>
+          </button>
+          <button
+            type="button"
+            className={styles.action}
+            onClick={handleSimilar}
+            aria-label="Find similar presets"
+          >
+            <UiIcon
+              name="eye"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>More</span>
+          </button>
+          <button
+            type="button"
+            className={styles.action}
+            data-active={String(panel === 'editor')}
+            aria-expanded={panel === 'editor'}
+            onClick={handleEditor}
+            aria-label="Edit preset code"
+          >
+            <UiIcon
+              name="gauge"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>Edit</span>
+          </button>
+          <button
+            type="button"
+            className={styles.action}
+            onClick={() => {
+              resetHideTimer();
+              const nextShowMoods = !showMoods;
+              setShowMoods(nextShowMoods);
+              if (nextShowMoods) {
+                ui.updatePanel(null);
+              }
+            }}
+            aria-label="Generate from mood"
+          >
+            <UiIcon
+              name="wand"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>Generate</span>
+          </button>
+          {engineSnapshot?.audioSource ? (
+            <button
+              type="button"
+              className={styles.action}
+              aria-label="Stop audio"
+              title="Stop audio"
+              onClick={engine.handleAudioStop}
+            >
+              <UiIcon
+                name="close"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className={styles.actionLabel}>Stop</span>
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className={styles.action}
+            onClick={handleFullscreen}
+            aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+          >
+            <UiIcon
+              name="expand"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>
+              {isFullscreen ? 'Exit' : 'Full'}
+            </span>
+          </button>
+          <button
+            type="button"
+            className={styles.action}
+            onClick={handleShare}
+            aria-label="Share link"
+          >
+            <UiIcon
+              name="link"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>Share</span>
+          </button>
+        </div>
       </div>
       {!visible ? (
         <button
@@ -317,6 +337,6 @@ export function MobileControlBar({
           <span className={styles.handleLabel}>Controls</span>
         </button>
       ) : null}
-    </div>
+    </>
   );
 }

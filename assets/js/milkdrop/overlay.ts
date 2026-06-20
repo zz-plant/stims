@@ -102,7 +102,7 @@ export class MilkdropOverlay {
 
     const blendWrap = document.createElement('label');
     blendWrap.className = 'milkdrop-overlay__blend';
-    blendWrap.append('Blend', this.blendSlider, this.blendValue);
+    blendWrap.append('Blend time', this.blendSlider, this.blendValue);
 
     sessionGroup.append(autoplayLabel, this.transitionModeSelect, blendWrap);
     toolbar.append(transportGroup, sessionGroup);

@@ -312,77 +312,91 @@ export function StimsControlDock({
           role="menu"
           aria-label="More actions"
         >
-          <button
-            type="button"
-            className="stims-shell__stage-tool"
-            aria-label="Create a preset from a mood"
-            title="Create a preset from a mood"
-            onClick={() => setShowMoods((s) => !s)}
-          >
-            <UiIcon
-              name="wand"
-              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className="stims-shell__stage-tool-label">Generate</span>
-          </button>
-          <button
-            type="button"
-            className="cta-button stims-shell__stage-tool-ghost"
-            aria-label="Find presets that look similar"
-            title="Find presets that look similar"
-            disabled={!runtimeReady || similarLoading}
-            onClick={() => void handleMoreLikeThis()}
-          >
-            <UiIcon
-              name="eye"
-              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className="stims-shell__stage-tool-label">
-              {similarLoading ? 'Searching\u2026' : 'More like this'}
-            </span>
-          </button>
-          <button
-            type="button"
-            className="cta-button stims-shell__stage-tool-ghost"
-            aria-label="Save the current look"
-            title="Save the current look"
-            disabled={!runtimeReady}
-            onClick={handleSaveThisLook}
-          >
-            <span className="stims-shell__stage-tool-label">Save</span>
-          </button>
-          <button
-            type="button"
-            className="stims-shell__stage-tool"
-            aria-label="Copy a share link"
-            title="Copy a share link"
-            onClick={() => void ui.handleShowCurrentLink()}
-          >
-            <UiIcon
-              name="link"
-              className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className="stims-shell__stage-tool-label">Share</span>
-          </button>
-        </div>
-      ) : null}
-      {showMoods && (
-        <div className="stims-shell__mood-row">
-          {moods.map((mood) => (
+          <fieldset className="stims-shell__dock-overflow-group">
             <button
-              key={mood.label}
               type="button"
               className="stims-shell__stage-tool"
-              aria-label={`Generate ${mood.label.toLowerCase()} preset`}
-              onClick={() => handleMoodGenerate(mood)}
+              data-active={String(showMoods)}
+              aria-expanded={showMoods}
+              aria-label="Create a preset from a mood"
+              title="Create a preset from a mood"
+              onClick={() => setShowMoods((s) => !s)}
             >
+              <UiIcon
+                name="wand"
+                className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className="stims-shell__stage-tool-label">Generate</span>
+            </button>
+            <button
+              type="button"
+              className="stims-shell__stage-tool"
+              aria-label="Find presets that look similar"
+              title="Find presets that look similar"
+              disabled={!runtimeReady || similarLoading}
+              onClick={() => void handleMoreLikeThis()}
+            >
+              <UiIcon
+                name="eye"
+                className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+              />
               <span className="stims-shell__stage-tool-label">
-                {mood.icon} {mood.label}
+                {similarLoading ? 'Searching\u2026' : 'More like this'}
               </span>
             </button>
-          ))}
+            <button
+              type="button"
+              className="stims-shell__stage-tool"
+              aria-label="Save the current look"
+              title="Save the current look"
+              disabled={!runtimeReady}
+              onClick={handleSaveThisLook}
+            >
+              <UiIcon
+                name="bookmark"
+                className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className="stims-shell__stage-tool-label">Save</span>
+            </button>
+            <button
+              type="button"
+              className="stims-shell__stage-tool"
+              aria-label="Copy a share link"
+              title="Copy a share link"
+              onClick={() => void ui.handleShowCurrentLink()}
+            >
+              <UiIcon
+                name="link"
+                className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className="stims-shell__stage-tool-label">Share</span>
+            </button>
+          </fieldset>
+          {showMoods ? (
+            <>
+              <div className="stims-shell__dock-overflow-divider" />
+              <fieldset
+                className="stims-shell__dock-overflow-group"
+                aria-label="Generate from a mood"
+              >
+                {moods.map((mood) => (
+                  <button
+                    key={mood.label}
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    aria-label={`Generate ${mood.label.toLowerCase()} preset`}
+                    onClick={() => handleMoodGenerate(mood)}
+                  >
+                    <span className="stims-shell__stage-tool-label">
+                      {mood.icon} {mood.label}
+                    </span>
+                  </button>
+                ))}
+              </fieldset>
+            </>
+          ) : null}
         </div>
-      )}
+      ) : null}
       {similarLoading ||
       similarError ||
       (similarSearched && similarPresets.length === 0) ||

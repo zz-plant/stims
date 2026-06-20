@@ -63,8 +63,9 @@
 }
 
 .actions {
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(44px, 1fr);
   align-items: center;
   padding: 4px 4px 2px;
 }
@@ -74,7 +75,7 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  min-width: 52px;
+  min-width: 0;
   min-height: 48px;
   padding: 6px 4px;
   border: none;
@@ -101,15 +102,46 @@
 }
 
 .actionLabel {
+  max-width: 100%;
+  overflow: hidden;
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.03em;
   line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (width >= 768px) {
   .bar {
     display: none;
+  }
+}
+
+@media (width <= 420px) {
+  .bar {
+    --mobile-bar-height: 132px;
+  }
+
+  .nowPlaying {
+    padding-inline: 10px;
+  }
+
+  .actions {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    padding: 4px 6px 6px;
+  }
+
+  .action {
+    min-height: 44px;
+    padding: 5px 2px;
+  }
+
+  .actionLabel {
+    font-size: 0.58rem;
+    letter-spacing: 0;
   }
 }
 

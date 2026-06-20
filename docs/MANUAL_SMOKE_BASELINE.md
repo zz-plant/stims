@@ -21,7 +21,6 @@ Milestone A baseline evidence is the combination of:
     tests/app-shell.test.js \
     tests/frontend-url-state.test.ts \
     tests/agent-integration.test.ts \
-    tests/microphone-flow.test.ts \
     tests/settings-panel.test.ts
   ```
 

@@ -73,7 +73,7 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
     case 'editor':
       return 'Edit';
     case 'settings':
-      return 'Style';
+      return 'Settings';
     default:
       return '';
   }
@@ -82,7 +82,7 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
 export function getToolDescription(tool: Exclude<PanelState, null>) {
   switch (tool) {
     case 'settings':
-      return 'Pick a feel first, then fine-tune only if you want more control.';
+      return 'Choose a quality preset, then adjust performance and motion options.';
     default:
       return '';
   }

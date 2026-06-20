@@ -17,6 +17,8 @@ import {
   prettifyCollectionTag,
 } from './workspace-helpers.ts';
 
+const BROWSE_RESULT_BATCH_SIZE = 24;
+
 export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
@@ -55,6 +57,10 @@ export function BrowseSheetPanel({
     presetId: string;
   } | null>(null);
   const [imageImportLoading, setImageImportLoading] = useState(false);
+  const [visibleCatalogState, setVisibleCatalogState] = useState({
+    key: '',
+    limit: BROWSE_RESULT_BATCH_SIZE,
+  });
 
   const handleImageImport = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -147,6 +153,21 @@ export function BrowseSheetPanel({
   const usingHiddenCollectionFilter =
     routeState.collectionTag !== null &&
     !featuredCollectionTags.includes(routeState.collectionTag);
+  const browseResetKey = `${routeState.collectionTag ?? 'all'}::${searchQuery}`;
+  const visibleCatalogLimit =
+    visibleCatalogState.key === browseResetKey
+      ? visibleCatalogState.limit
+      : BROWSE_RESULT_BATCH_SIZE;
+  const browseEntries =
+    routeState.collectionTag === 'collection:community'
+      ? communityPresets
+      : filteredCatalog;
+  const visibleBrowseEntries =
+    routeState.collectionTag === 'collection:community'
+      ? browseEntries
+      : browseEntries.slice(0, visibleCatalogLimit);
+  const hiddenBrowseEntryCount =
+    browseEntries.length - visibleBrowseEntries.length;
   const visiblePreviewIds = useMemo(() => {
     const seen = new Set<string>();
     const ids: string[] = [];
@@ -533,10 +554,7 @@ export function BrowseSheetPanel({
                     </button>
                   </li>
                 ))
-              : (routeState.collectionTag === 'collection:community'
-                  ? communityPresets
-                  : filteredCatalog
-                ).map((entry) => {
+              : visibleBrowseEntries.map((entry) => {
                   const supportLabel = getPresetCardSupportLabel(entry);
 
                   return (
@@ -614,6 +632,34 @@ export function BrowseSheetPanel({
                 })}
           </ul>
         )}
+        {hiddenBrowseEntryCount > 0 && !visualSearchActive ? (
+          <div className="stims-shell__preset-list-more">
+            <button
+              type="button"
+              className="stims-shell__text-button"
+              onClick={() => {
+                setVisibleCatalogState((current) => {
+                  const currentLimit =
+                    current.key === browseResetKey
+                      ? current.limit
+                      : BROWSE_RESULT_BATCH_SIZE;
+                  return {
+                    key: browseResetKey,
+                    limit: Math.min(
+                      currentLimit + BROWSE_RESULT_BATCH_SIZE,
+                      browseEntries.length,
+                    ),
+                  };
+                });
+              }}
+            >
+              Show more presets
+            </button>
+            <p className="stims-shell__meta-copy">
+              Showing {visibleBrowseEntries.length} of {browseEntries.length}.
+            </p>
+          </div>
+        ) : null}
 
         <div className="stims-shell__session-actions">
           <button

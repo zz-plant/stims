@@ -8,17 +8,26 @@ _Current release status: actively developed. The latest tagged release is **1.0.
 
 ### Added
 
-- Capability preflight panel with compatibility checks, retry guidance, and clear fallback messaging.
-- Preflight support links that explain why rendering is blocked and point to supported browsers and demo-audio toys.
 - Performance controls with persistent pixel ratio, particle budget, and shader-quality presets.
 - Low-motion quality preset and inline preset descriptions to clarify performance tradeoffs.
-- Audio source controls that surface demo audio alongside the microphone option with clearer status copy.
-- Immediate “starting” status feedback when launching microphone, demo, or tab audio.
-- Shared touch/gesture handling that normalizes multi-touch input and touch-action defaults across toys.
+- Demo audio auto-plays on load with the featured preset — no CTA required.
+- `EngineSnapshotCtx` with `useEngineSnapshot()` hook for frame-accurate state without re-rendering the full UI tree.
 
 ### Changed
 
-- Clarified the roadmap to distinguish delivered foundations from upcoming priorities.
+- Engine snapshot split from catalog context — UI-only components no longer re-render 60fps.
+- Workspace UI extracted from monolithic `workspace-ui.tsx` (1260→294 lines) into `AudioSourcePanel`, `BrowseSheetPanel`, `SettingsSheetPanel`.
+- `launchControlsHidden` renamed to `audioActive` across engine, workspace, and shell hooks.
+- Sheet backdrop removed — stage interaction guarded by `pointer-events: none` while sheet is open.
+
+### Removed
+
+- Capability preflight panel, readiness probes, and `microphone-flow` — capability detection folded into engine-context startup.
+- `OnboardingFlow` first-time popup, Inspector panel, GitHub corner link.
+- `StimsStageAmbient` decorative layer (orbs, beams, rings, pulse, grid, EQ bars).
+- ~300 lines of dead CSS (ambient animations, nav classes, source grid, launch hero, section headings, sheet backdrop).
+- `quiet-hint` and `first-shuffle` contextual help hints (duplicate or untriggered).
+- `tests/microphone-flow.test.ts`, `tests/capability-preflight*.ts` — test-only production files.
 
 ## [1.0.0] - 2025-02-04
 

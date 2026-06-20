@@ -711,9 +711,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           float r = radius;
           for (float y = -r; y <= r; y += 1.0) {
             for (float x = -r; x <= r; x += 1.0) {
-              vec4 sample = texture2D(sourceTex, vUv + vec2(x, y) * texelSize);
+              vec4 sourceSample = texture2D(sourceTex, vUv + vec2(x, y) * texelSize);
               float weight = 1.0;
-              result += sample * weight;
+              result += sourceSample * weight;
               totalWeight += weight;
             }
           }

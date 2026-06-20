@@ -17,10 +17,10 @@ This audit identifies user-facing copy that may feel unclear, jargony, or less w
 
 | Location | Current copy | Why it may feel unfriendly | Suggested direction |
 | --- | --- | --- | --- |
-| `assets/js/core/capability-preflight.ts` | "Microphone permission is blocked" | Sounds final and punitive, even when users can still continue with demo audio. | Lead with available path first (continue now, then optional fix). |
-| `assets/js/core/capability-preflight.ts` | "Audio permission flow" | Internal/process wording; less natural for end users. | Use outcome-focused heading (for example, "Set up audio access"). |
-| `assets/js/core/capability-preflight.ts` | "WebGPU fallback reason: ..." | Exposes implementation detail and technical jargon that many users do not need. | Translate into user impact (quality/performance) rather than backend names. |
-| `assets/js/core/capability-preflight.ts` | "No reduced-motion preference detected in system settings." | Reads diagnostic and mechanical. | Frame as user-facing behavior (for example, "Standard motion effects are enabled"). |
+| ~~`assets/js/core/capability-preflight.ts`~~ (removed Jun 2026 — capabilities folded into `engine-context.tsx`) | "Microphone permission is blocked" | Sounds final and punitive, even when users can still continue with demo audio. | Lead with available path first (continue now, then optional fix). |
+| ~~`assets/js/core/capability-preflight.ts`~~ | "Audio permission flow" | Internal/process wording; less natural for end users. | Use outcome-focused heading (for example, "Set up audio access"). |
+| ~~`assets/js/core/capability-preflight.ts`~~ | "WebGPU fallback reason: ..." | Exposes implementation detail and technical jargon that many users do not need. | Translate into user impact (quality/performance) rather than backend names. |
+| ~~`assets/js/core/capability-preflight.ts`~~ | "No reduced-motion preference detected in system settings." | Reads diagnostic and mechanical. | Frame as user-facing behavior (for example, "Standard motion effects are enabled"). |
 
 ## Tone pattern to standardize
 

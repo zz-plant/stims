@@ -98,7 +98,7 @@ describe('Workspace shell UI simplification regression', () => {
     );
 
     expect(helperSource).toContain(
-      'Pick a feel first, then fine-tune only if you want more control.',
+      'Choose a quality preset, then adjust performance and motion options.',
     );
     expect(homeSource).toContain(
       'Start instantly with demo audio, or connect your own sound when',
@@ -132,6 +132,9 @@ describe('Workspace shell UI simplification regression', () => {
     expect(uiSource).not.toContain('stims-shell__session-meta');
     expect(uiSource).not.toContain('stims-shell__audio-bridge"');
     expect(browseSource).toContain('Copy share link');
+    expect(browseSource).toContain('const BROWSE_RESULT_BATCH_SIZE = 24;');
+    expect(browseSource).toContain('visibleBrowseEntries.map');
+    expect(browseSource).toContain('Show more presets');
     expect(uiSource).not.toContain('The editor opens on the stage.');
     expect(uiSource).not.toContain('The inspector opens on the stage.');
     expect(homeSource).toContain('className="stims-shell__launch-summary"');

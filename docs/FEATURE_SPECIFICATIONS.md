@@ -46,8 +46,8 @@ This document describes the shipped React workspace frontend and the preserved M
 
 ### Tools and settings
 
-- The workspace exposes browse, editor, inspector, and settings entry points.
-- In v1, editor and inspector capabilities are still fulfilled by the MilkDrop overlay/runtime internals behind the adapter seam.
+- The workspace exposes browse, editor, and settings entry points.
+- Editor capability is still fulfilled by the MilkDrop overlay/runtime internals behind the adapter seam.
 - Session settings include:
   - quality preset
   - compatibility mode
