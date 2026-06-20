@@ -334,16 +334,14 @@ Completed slices:
 - `MilkdropVisualCertification` now carries the measured `mismatchRatio` and `failThreshold` so downstream UI can surface drift figures without re-loading the suite manifest.
 - Catalog projection (`catalog-store-analysis.ts`) plumbs measured ratio/threshold from the suite manifest into each catalog entry's visual certification.
 - Preset rows render a "projectM verified" badge when measured parity passes and a "Drifts from projectM (~X%)" badge when measured parity fails, with the certification reason exposed via tooltip.
-- Inspector panel adds a "Measured drift" metric that shows the measured pixel-mismatch percentage for measured presets and reads "not measured" for inferred-only presets.
+- ~~Inspector panel adds a "Measured drift" metric that shows the measured pixel-mismatch percentage for measured presets and reads "not measured" for inferred-only presets.~~
 
 Current remaining focus:
 - Expose a per-preset link to checked-in diff/reference artifacts (currently only the certification reason text is surfaced).
-- Reflect the same measured-vs-inferred distinction in catalog rollups and exported diagnostics, not just the row + inspector.
-- Once Milestones 4-8 land more measured passes, audit copy in the inspector + browse list to ensure no remaining wording implies visual parity from semantic-only success.
+- Reflect the same measured-vs-inferred distinction in catalog rollups and exported diagnostics, not just the row.
 
 Acceptance criteria:
 - The UI never implies visual parity when only semantic compatibility is known.
-- Inspector and catalog status are aligned with the certified visual results.
 
 ## Suggested execution order
 

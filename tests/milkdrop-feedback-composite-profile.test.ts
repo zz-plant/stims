@@ -61,6 +61,26 @@ test('keeps overlay replace mode distinct from overlay mix mode in the shared fe
   }
 });
 
+test('avoids reserved GLSL identifiers in the shared blur shader', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    blurMaterial: { fragmentShader: string };
+    dispose: () => void;
+  };
+
+  try {
+    expect(manager.blurMaterial.fragmentShader).toContain(
+      'vec4 sourceSample = texture2D(sourceTex, vUv + vec2(x, y) * texelSize);',
+    );
+    expect(manager.blurMaterial.fragmentShader).not.toContain('vec4 sample =');
+  } finally {
+    manager.dispose();
+  }
+});
+
 test('samples warp textures in warp-stage UV space inside the shared feedback shader', () => {
   const manager = createSharedMilkdropFeedbackManager(
     320,

@@ -82,22 +82,6 @@ Recommended follow-up:
 - Coalesce queued catalog refreshes to the latest requested state before they hit the overlay.
 - Throttle or batch catalog refreshes behind `requestAnimationFrame()` or a microtask queue.
 
-### 5. Inspector work still performs string-heavy summaries in active sessions
-
-When the inspector tab is open, `setInspectorState()` assembles a large HTML string containing compatibility, feature, and frame metrics, then writes it with `innerHTML` on a throttled cadence.
-
-Why this matters:
-
-- The method reads many nested runtime fields and performs multiple joins/string interpolations.
-- Even throttled, it competes with rendering on slower devices.
-- It encourages the runtime to continue producing rich per-frame diagnostic state.
-
-Recommended follow-up:
-
-- Render inspector fields once and patch only changing metric text nodes.
-- Reduce the diagnostic payload while animation is running.
-- Consider a lower refresh rate for diagnostics than for visuals.
-
 ## Secondary bottlenecks
 
 ### Blend-state cloning is expensive during preset transitions
@@ -113,7 +97,7 @@ The adapter frequently uses `group.children.slice(...)` and similar array-copy p
 1. **Reduce per-frame allocations in `vm.ts` and `runtime.ts`.** This should produce the biggest frame-time improvement.
 2. **Stop full overlay re-renders for browse/search/catalog changes.** This should improve responsiveness while the panel is open.
 3. **Trim catalog refresh frequency.** This removes repeated UI work during editing and metadata tweaks.
-4. **Simplify inspector updates.** This lowers diagnostic overhead without changing visuals.
+4. ~~**Simplify inspector updates.**~~ (Inspector panel removed Jun 2026)
 5. **Optimize transition cloning and adapter reconciliation.** These are worthwhile once the bigger hotspots are addressed.
 
 ## Evidence reviewed

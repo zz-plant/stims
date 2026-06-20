@@ -44,16 +44,27 @@ describe('launch shell skip-to-visualizer flow', () => {
       '.stims-shell__stage-frame[data-mode="live"] .stims-shell__launch',
     );
     expect(shellCss).toContain('pointer-events: none;');
+    expect(shellCss).toContain('visibility: hidden;');
   });
 
   test('only exposes the mobile control bar after the visualizer is live and hides it on tablet widths', () => {
     const appSource = frontendSource('App.tsx');
+    const mobileBarSource = frontendSource('MobileControlBar.tsx');
     const mobileBarCss = cssSource('assets/css/MobileControlBar.module.css');
 
     expect(appSource).toMatch(
       /\{liveMode \? \(\s*<MobileControlBar[\s\S]*?\) : null\}/u,
     );
+    expect(mobileBarSource).toMatch(
+      /<>\s*<div className=\{styles\.bar\}[\s\S]*?<\/div>\s*\{!visible \? \(/u,
+    );
+    expect(mobileBarSource).toContain('const MOBILE_CONTROL_IDLE_MS = 12_000;');
+    expect(mobileBarSource).toContain('ui.updatePanel(null);');
     expect(mobileBarCss).toContain('.bar[data-visible="true"]');
+    expect(mobileBarCss).toContain('grid-auto-flow: column;');
+    expect(mobileBarCss).toContain(
+      'grid-template-columns: repeat(5, minmax(0, 1fr));',
+    );
     expect(mobileBarCss).toContain('@media (width >= 768px)');
     expect(mobileBarCss).toMatch(/\.bar\s*\{\s*display: none;/u);
   });

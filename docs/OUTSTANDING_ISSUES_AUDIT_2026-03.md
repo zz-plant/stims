@@ -42,15 +42,15 @@ From `docs/IMPLEMENTATION_STATUS.md`, notable outstanding queues include:
   - Toy-page touch polish.
 - **Refactor milestones A-E:** all still unchecked.
 - **Technical debt queue:** module splitting, deterministic generated-artifact validation, toy smoke coverage expansion, metadata drift checks.
-- **UX delivery queue:** reduce first-view control density, de-duplicate first-step prompts, simplify preflight/error CTA structure.
+- **UX delivery queue:** ~~reduce first-view control density, de-duplicate first-step prompts, simplify preflight/error CTA structure.~~ ✅ Resolved in Jun 2026 refactor (auto-play on load, no preflight panel, no competing CTAs).
 
 ## 3) UX friction still affecting first-session success
 
 From `docs/USER_JOURNEY_CRITIQUE.md`, the highest-impact unresolved UX themes are:
 
-- competing first-step CTAs during onboarding,
+- ~~competing first-step CTAs during onboarding,~~ ✅ Resolved in Jun 2026 (auto-play on load, no CTA)
 - filter-state visibility and reset-action consistency issues,
-- preflight density before first interactive success.
+- ~~preflight density before first interactive success.~~ ✅ Resolved in Jun 2026 (preflight panel removed)
 
 These should remain high-priority because they directly affect activation and return probability.
 

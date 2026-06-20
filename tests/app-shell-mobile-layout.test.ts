@@ -80,4 +80,18 @@ describe('Workspace shell mobile layout regression', () => {
       /@supports not \(color: color-mix\(in srgb, white, black\)\) \{[\s\S]*?\.stims-shell \.cta-button\.primary/u,
     );
   });
+
+  test('keeps live mobile sheets above the bottom control bar', () => {
+    const css = readAppShellCss();
+
+    expect(css).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?:scope\[data-mode="live"\]\s*\{[\s\S]*?--mobile-bar-height:\s*86px;/u,
+    );
+    expect(css).toMatch(
+      /:scope\[data-mode="live"\] \.stims-shell__sheet\s*\{[\s\S]*?bottom:\s*calc\([\s\S]*?var\(--mobile-bar-height, 86px\)[\s\S]*?max-height:\s*calc\(/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 420px\)[\s\S]*?:scope\[data-mode="live"\]\s*\{[\s\S]*?--mobile-bar-height:\s*132px;/u,
+    );
+  });
 });

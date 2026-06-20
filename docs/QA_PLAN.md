@@ -17,7 +17,6 @@ For Milestone A refactor sign-off, use [`MANUAL_SMOKE_BASELINE.md`](./MANUAL_SMO
   - Automation: `tests/settings-panel.test.ts` covers subscription notifications plus panel reuse without losing the selected preset.
 - **Microphone readiness and fallbacks**
   - What to verify: microphone setup resolves permissions, falls back to demo audio when blocked, and emits state changes that toys can react to.
-  - Automation: `tests/microphone-flow.test.ts` validates the state machine around permission requests, error handling, and fallback triggers.
 
 ## Quick manual checklist (UI smoke pass)
 
@@ -47,7 +46,7 @@ Use Bun to match the repository tooling:
 
 - Run the happy-dom suites for the app shell, route contract, settings panel, and microphone flows:
   ```bash
-  bun run test tests/app-shell.test.js tests/frontend-url-state.test.ts tests/settings-panel.test.ts tests/microphone-flow.test.ts
+  bun run test tests/app-shell.test.js tests/frontend-url-state.test.ts tests/settings-panel.test.ts
   ```
 
 - Run the focused workspace/session regression suites:
