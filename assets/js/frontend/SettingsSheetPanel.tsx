@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
+import {
+  hasWebGPUCompatibilityGapOverride,
+  setWebGPUCompatibilityGapOverride,
+} from '../core/renderer-query-override.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import { DEFAULT_PERFORMANCE_SETTINGS } from '../core/state/performance-settings-store.ts';
+import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   getQualityImpactSummary,
@@ -206,6 +211,10 @@ export function SettingsSheetPanel({
         ) : null}
       </section>
 
+      <section className="stims-shell__sheet-surface">
+        <AudioSourcePanel />
+      </section>
+
       <PerformanceSection />
 
       <details className="stims-shell__settings-advanced">
@@ -251,16 +260,62 @@ export function SettingsSheetPanel({
       </details>
 
       <section className="stims-shell__sheet-surface">
-        <p className="stims-shell__section-label">Graphics backend</p>
-        <p className="stims-shell__meta-copy">
+        <h3 className="stims-shell__settings-section-heading">
+          Graphics backend
+        </h3>
+        <p className="stims-shell__meta-copy" style={{ marginBottom: 12 }}>
           {engineSnapshot?.backend
-            ? `Running on ${engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
+            ? `Currently running on ${engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
             : engine.engineReady
               ? 'Graphics backend ready'
               : 'Starting graphics\u2026'}
           {engineSnapshot?.backend === 'webgl'
             ? ' — WebGPU was unavailable or disabled.'
             : ''}
+        </p>
+
+        <label
+          className="stims-shell__field-label"
+          htmlFor="backend-select"
+          style={{ marginTop: 8 }}
+        >
+          Graphics override
+        </label>
+        <select
+          id="backend-select"
+          className="stims-shell__select"
+          value={
+            renderPreferences.compatibilityMode
+              ? 'webgl'
+              : hasWebGPUCompatibilityGapOverride()
+                ? 'webgpu'
+                : 'auto'
+          }
+          onChange={(event) => {
+            const val = event.target.value as 'auto' | 'webgl' | 'webgpu';
+            if (val === 'webgl') {
+              onCompatibilityModeChange(true);
+              setWebGPUCompatibilityGapOverride(false);
+            } else if (val === 'webgpu') {
+              onCompatibilityModeChange(false);
+              setWebGPUCompatibilityGapOverride(true);
+            } else {
+              onCompatibilityModeChange(false);
+              setWebGPUCompatibilityGapOverride(false);
+            }
+            ui.setStatusMessage(
+              'Graphics backend preference changed. Please reload.',
+            );
+          }}
+        >
+          <option value="auto">Auto (Recommended)</option>
+          <option value="webgpu">Force WebGPU</option>
+          <option value="webgl">Force WebGL (Stability mode)</option>
+        </select>
+        <p className="stims-shell__meta-copy" style={{ marginTop: 8 }}>
+          Auto uses browser stability rules. Force WebGPU enables WebGPU on
+          supported but gated platforms (Safari/mobile). Force WebGL uses safer
+          compatibility rendering.
         </p>
       </section>
     </div>

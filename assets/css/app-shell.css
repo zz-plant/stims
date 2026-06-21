@@ -3942,6 +3942,15 @@ body[data-page="workspace"] {
   border: 0;
 }
 
+.stims-shell__dock-overflow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .stims-shell__dock-overflow .stims-shell__stage-tool {
   justify-content: flex-start;
   width: 100%;

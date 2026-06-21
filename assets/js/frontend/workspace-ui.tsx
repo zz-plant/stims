@@ -100,6 +100,18 @@ export function WorkspaceStagePanel({
               >
                 ← Back to library
               </button>
+              {audioSource === 'demo' ? (
+                <button
+                  type="button"
+                  className="stims-shell__text-button stims-shell__audio-bridge-link"
+                  style={{ marginLeft: 12 }}
+                  onClick={ui.toggleExtendedSources}
+                >
+                  {ui.showExtendedSources
+                    ? 'Hide sources'
+                    : 'Switch to your music \u2192'}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="stims-shell__text-button stims-shell__shortcuts-trigger"
@@ -110,6 +122,9 @@ export function WorkspaceStagePanel({
               >
                 Shortcuts
               </button>
+              {audioSource === 'demo' && ui.showExtendedSources ? (
+                <AudioSourcePanel />
+              ) : null}
             </div>
           ) : (
             <div className="stims-shell__frame-sidecar">

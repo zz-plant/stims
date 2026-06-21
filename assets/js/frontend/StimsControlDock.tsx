@@ -312,7 +312,7 @@ export function StimsControlDock({
           role="menu"
           aria-label="More actions"
         >
-          <fieldset className="stims-shell__dock-overflow-group">
+          <fieldset className="stims-shell__dock-overflow-grid">
             <button
               type="button"
               className="stims-shell__stage-tool"
