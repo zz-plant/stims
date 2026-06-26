@@ -14,6 +14,7 @@ const cssSource = (relativePath: string) =>
 describe('launch shell skip-to-visualizer flow', () => {
   test('targets the visualizer stage instead of looping focus to the shell container', () => {
     const appSource = frontendSource('App.tsx');
+    const uiSource = frontendSource('workspace-ui.tsx');
     const stageSource = frontendSource('StimsStageFrame.tsx');
     const accessibilityTestSource = readFileSync(
       join(import.meta.dir, 'accessibility-regression.test.ts'),
@@ -24,6 +25,7 @@ describe('launch shell skip-to-visualizer flow', () => {
       '<a href="#stims-visualizer" className="skip-link">',
     );
     expect(appSource).toContain('Skip to visualizer');
+    expect(uiSource).toContain('#preset-search, .milkdrop-overlay__search');
     expect(stageSource).toContain('id="stims-visualizer"');
     expect(stageSource).toContain('tabIndex={-1}');
     expect(accessibilityTestSource).toContain('href="#stims-visualizer"');

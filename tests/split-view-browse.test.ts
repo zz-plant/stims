@@ -158,6 +158,44 @@ describe('SplitViewBrowse', () => {
     expect(previewPanel.textContent).toContain('Play now');
   });
 
+  test('batches large preset lists so desktop browse opens quickly', () => {
+    const onSelect = mock();
+    const onClose = mock();
+    const onPlay = mock();
+
+    const presets = Array.from({ length: 120 }, (_, index) =>
+      makePreset({
+        id: `preset-${index}`,
+        title: `Preset ${index}`,
+      }),
+    );
+
+    const { container, root } = render({
+      presets,
+      currentPresetId: null,
+      onSelect,
+      onClose,
+      onPlay,
+    });
+
+    expect(container.querySelectorAll('.stims-shell__preset-card').length).toBe(
+      80,
+    );
+    expect(container.textContent).toContain('Showing 80 of 120.');
+
+    const showMore = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Show more presets',
+    );
+    expect(showMore).not.toBeNull();
+
+    (showMore as HTMLElement).click();
+    flushRender(root);
+
+    expect(container.querySelectorAll('.stims-shell__preset-card').length).toBe(
+      120,
+    );
+  });
+
   test('selecting a preset fires onSelect and updates active indicator', () => {
     const onSelect = mock();
     const onClose = mock();
