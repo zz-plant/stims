@@ -81,9 +81,7 @@ export function PresetArtwork({
               : 'Runtime preview'
           : preview?.status === 'capturing'
             ? 'Capturing'
-            : preview?.status === 'failed'
-              ? 'Preview failed'
-              : ''}
+            : ''}
       </span>
     </div>
   );

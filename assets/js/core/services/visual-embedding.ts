@@ -1,3 +1,5 @@
+import { resolveOptionalApiUrl } from './optional-api.ts';
+
 export interface FrameStats {
   histogram: number[];
   edgeDensity: number;
@@ -144,10 +146,15 @@ export async function searchByFrame(
   canvas: HTMLCanvasElement,
   signal?: AbortSignal,
 ): Promise<Array<{ presetId: string; score: number }>> {
+  const endpoint = resolveOptionalApiUrl('/api/visual-search');
+  if (!endpoint) {
+    throw new Error('Visual search API is unavailable in the Vite dev server.');
+  }
+
   const stats = extractFrameStats(canvas);
   const description = describeFrame(stats);
 
-  const response = await fetch('/api/visual-search', {
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ description }),

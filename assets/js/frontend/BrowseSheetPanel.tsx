@@ -227,7 +227,24 @@ export function BrowseSheetPanel({
   );
 
   useEffect(() => {
-    engine.requestPresetPreviews(visiblePreviewIds);
+    if (visiblePreviewIds.length === 0) return;
+
+    const request = () => engine.requestPresetPreviews(visiblePreviewIds);
+    const handle =
+      typeof requestIdleCallback === 'function'
+        ? requestIdleCallback(request, { timeout: 1500 })
+        : setTimeout(request, 750);
+
+    return () => {
+      if (
+        typeof cancelIdleCallback === 'function' &&
+        typeof handle === 'number'
+      ) {
+        cancelIdleCallback(handle);
+      } else {
+        clearTimeout(handle);
+      }
+    };
   }, [visiblePreviewIds, engine.requestPresetPreviews]);
 
   useEffect(() => {

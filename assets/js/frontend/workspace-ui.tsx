@@ -231,7 +231,7 @@ export function WorkspaceToolSheet({
     requestAnimationFrame(() => {
       if (w.routeState.panel === 'browse') {
         const searchEl = document.querySelector<HTMLElement>(
-          '.milkdrop-overlay__search',
+          '#preset-search, .milkdrop-overlay__search',
         );
         (searchEl ?? sheetElement)?.focus();
       } else {

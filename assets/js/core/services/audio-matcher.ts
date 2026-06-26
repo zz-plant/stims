@@ -1,3 +1,5 @@
+import { resolveOptionalApiUrl } from './optional-api.ts';
+
 export interface AudioProfile {
   bassEnergy: number;
   midEnergy: number;
@@ -56,8 +58,11 @@ export async function searchByAudioProfile(
   profile: AudioProfile,
   signal?: AbortSignal,
 ): Promise<Array<{ presetId: string; score: number }>> {
+  const endpoint = resolveOptionalApiUrl('/api/visual-search');
+  if (!endpoint) return [];
+
   const description = describeAudioProfile(profile);
-  const res = await fetch('/api/visual-search', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ description }),

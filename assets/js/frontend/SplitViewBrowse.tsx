@@ -8,6 +8,8 @@ import {
   getPresetCardSupportLabel,
 } from './workspace-helpers';
 
+const SPLIT_VIEW_PRESET_BATCH_SIZE = 80;
+
 type SplitViewBrowseProps = {
   presets: PresetCatalogEntry[];
   currentPresetId: string | null;
@@ -26,8 +28,13 @@ export function SplitViewBrowse({
   const [previewPresetId, setPreviewPresetId] = useState<string | null>(
     currentPresetId ?? presets[0]?.id ?? null,
   );
+  const [visibleLimit, setVisibleLimit] = useState(
+    SPLIT_VIEW_PRESET_BATCH_SIZE,
+  );
   const selectedPreset =
     presets.find((p) => p.id === previewPresetId) ?? presets[0] ?? null;
+  const visiblePresets = presets.slice(0, visibleLimit);
+  const hiddenPresetCount = presets.length - visiblePresets.length;
 
   const handleSelect = useCallback(
     (presetId: string) => {
@@ -64,7 +71,7 @@ export function SplitViewBrowse({
             className="stims-shell__preset-list"
             style={{ maxHeight: 'none', overflow: 'visible' }}
           >
-            {presets.map((entry) => {
+            {visiblePresets.map((entry) => {
               const supportLabel = getPresetCardSupportLabel(entry);
 
               return (
@@ -99,6 +106,27 @@ export function SplitViewBrowse({
               );
             })}
           </ul>
+          {hiddenPresetCount > 0 ? (
+            <div className={styles.listMore}>
+              <button
+                type="button"
+                className="stims-shell__text-button"
+                onClick={() =>
+                  setVisibleLimit((current) =>
+                    Math.min(
+                      current + SPLIT_VIEW_PRESET_BATCH_SIZE,
+                      presets.length,
+                    ),
+                  )
+                }
+              >
+                Show more presets
+              </button>
+              <p className="stims-shell__meta-copy">
+                Showing {visiblePresets.length} of {presets.length}.
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
 
