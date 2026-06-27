@@ -3,12 +3,16 @@
 // when offline. The visualizer itself needs audio input, so full offline
 // functionality is about keeping navigation and toy browsing available.
 
-const CACHE_NAME = 'stims-shell-v2';
+const CACHE_NAME = 'stims-shell-v3';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
   '/assets/css/base.css',
   '/assets/css/index.css',
+  '/assets/css/tokens.css',
+  '/assets/css/motion.css',
+  '/vendor/normalize.min.css',
+  '/milkdrop-presets/catalog.json',
   '/manifest.json',
   '/icons/favicon.svg',
   '/icons/favicon-32.png',

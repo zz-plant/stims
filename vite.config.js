@@ -64,10 +64,7 @@ export default defineConfig({
           ) {
             return 'vendor-react';
           }
-          if (
-            id.includes('node_modules/three') ||
-            id.includes('node_modules/@react-three')
-          ) {
+          if (id.includes('node_modules/three')) {
             return 'vendor-three';
           }
           if (id.includes('node_modules/@codemirror')) {
