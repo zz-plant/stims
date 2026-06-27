@@ -65,20 +65,31 @@ function getBandAverageForRange(
   const { start, end } = resolveBandIndexes(data.length, sampleRate, range);
   if (end <= start) return 0;
 
+  const span = end - start;
+  const denom = Math.max(1, span - 1);
+
   let sum = 0;
   let weightTotal = 0;
 
-  for (let index = start; index < end; index += 1) {
-    const position =
-      end - start <= 1 ? 0 : (index - start) / Math.max(1, end - start - 1);
-    const weight =
-      band === 'bass'
-        ? 1.2 - position * 0.3
-        : band === 'treble'
-          ? 0.9 + position * 0.25
-          : 1;
-    sum += (data[index] ?? 0) * weight;
-    weightTotal += weight;
+  if (band === 'bass') {
+    for (let index = start; index < end; index += 1) {
+      const position = span <= 1 ? 0 : (index - start) / denom;
+      const weight = 1.2 - position * 0.3;
+      sum += (data[index] ?? 0) * weight;
+      weightTotal += weight;
+    }
+  } else if (band === 'treble') {
+    for (let index = start; index < end; index += 1) {
+      const position = span <= 1 ? 0 : (index - start) / denom;
+      const weight = 0.9 + position * 0.25;
+      sum += (data[index] ?? 0) * weight;
+      weightTotal += weight;
+    }
+  } else {
+    for (let index = start; index < end; index += 1) {
+      sum += data[index] ?? 0;
+      weightTotal += 1;
+    }
   }
 
   return weightTotal > 0 ? sum / weightTotal : 0;

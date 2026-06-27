@@ -16,18 +16,54 @@ interface Env {
   DB: D1Database;
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
+type CachedEmbedding = {
+  presetId: string;
+  vector: Float32Array;
+  norm: number;
+};
+
+let embeddingCache: CachedEmbedding[] | null = null;
+let embeddingCacheTimestamp = 0;
+const EMBEDDING_CACHE_TTL_MS = 60_000;
+const MAX_EMBEDDINGS_SCAN = 5000;
+
+async function loadEmbeddingCache(env: Env): Promise<CachedEmbedding[]> {
+  if (
+    embeddingCache &&
+    Date.now() - embeddingCacheTimestamp < EMBEDDING_CACHE_TTL_MS
+  ) {
+    return embeddingCache;
+  }
+
+  const { results } = await env.DB.prepare(
+    'SELECT preset_id, embedding FROM preset_embeddings LIMIT ?1',
+  )
+    .bind(MAX_EMBEDDINGS_SCAN)
+    .all<{ preset_id: string; embedding: string }>();
+
+  embeddingCache = results.map((row) => {
+    const vector = new Float32Array(JSON.parse(row.embedding) as number[]);
+    let norm = 0;
+    for (let i = 0; i < vector.length; i++) {
+      norm += vector[i] * vector[i];
+    }
+    return {
+      presetId: row.preset_id,
+      vector,
+      norm: Math.sqrt(norm),
+    };
+  });
+  embeddingCacheTimestamp = Date.now();
+  return embeddingCache;
+}
+
+function dotProduct(a: Float32Array, b: Float32Array): number {
   let dot = 0;
-  let normA = 0;
-  let normB = 0;
   const len = Math.min(a.length, b.length);
   for (let i = 0; i < len; i++) {
     dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
   }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+  return dot;
 }
 
 export async function onRequest(context: { request: Request; env: Env }) {
@@ -75,22 +111,46 @@ export async function onRequest(context: { request: Request; env: Env }) {
       });
     }
 
-    const { results } = await env.DB.prepare(
-      'SELECT preset_id, embedding FROM preset_embeddings',
-    ).all<{ preset_id: string; embedding: string }>();
+    if (!queryEmbedding.length) {
+      return new Response(JSON.stringify({ results: [] }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
 
-    const scored = results
-      .map((row) => {
-        const storedEmbedding = JSON.parse(row.embedding) as number[];
-        const score = queryEmbedding.length
-          ? cosineSimilarity(queryEmbedding, storedEmbedding)
-          : 0;
-        return { presetId: row.preset_id, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+    const cache = await loadEmbeddingCache(env);
+    const queryVec = new Float32Array(queryEmbedding);
+    let queryNorm = 0;
+    for (let i = 0; i < queryVec.length; i++) {
+      queryNorm += queryVec[i] * queryVec[i];
+    }
+    queryNorm = Math.sqrt(queryNorm);
 
-    return new Response(JSON.stringify({ results: scored }), {
+    if (queryNorm === 0) {
+      return new Response(JSON.stringify({ results: [] }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    const scored: Array<{ presetId: string; score: number }> = [];
+    for (let i = 0; i < cache.length; i++) {
+      const entry = cache[i];
+      if (!entry || entry.norm === 0) continue;
+      const dot = dotProduct(queryVec, entry.vector);
+      scored.push({
+        presetId: entry.presetId,
+        score: dot / (queryNorm * entry.norm),
+      });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+
+    return new Response(JSON.stringify({ results: scored.slice(0, 5) }), {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',

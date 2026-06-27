@@ -5712,6 +5712,14 @@ body {
   padding-bottom: 0.25rem;
 }
 
+.milkdrop-overlay__browse-load-more {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .milkdrop-overlay__preset {
   gap: 0.85rem;
   padding: 14px;

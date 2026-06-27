@@ -26,6 +26,8 @@ const CLASSIC_MILKDROP_TAGS = new Set([
   'original-pack',
 ]);
 const CLASSIC_AUTHOR_MARKERS = ['rovastar', 'eo.s.', 'krash', 'phat', 'geiss'];
+const MAX_INITIAL_ROWS = 150;
+const ROW_LOAD_MORE_TRIGGER_PX = 400;
 
 function normalizeBrowseSearchValue(value: string) {
   return value
@@ -283,6 +285,8 @@ export class BrowsePanel {
   private lastPreviewRequestSignature = '';
   private visible = true;
   private displayedPresetIds: string[] = [];
+  private browseVisibleRowCount = MAX_INITIAL_ROWS;
+  private browseLoadMoreSentinel: HTMLElement | null = null;
   private readonly previewStates = new Map<
     string,
     MilkdropPresetRenderPreview
@@ -449,6 +453,14 @@ export class BrowsePanel {
 
     this.browseList = document.createElement('div');
     this.browseList.className = 'milkdrop-overlay__browse';
+    this.browseList.addEventListener('scroll', () => {
+      if (
+        this.browseList.scrollTop + this.browseList.clientHeight >=
+        this.browseList.scrollHeight - ROW_LOAD_MORE_TRIGGER_PX
+      ) {
+        this.loadMoreRows();
+      }
+    });
     this.browseEmptyState = document.createElement('div');
     this.browseEmptyState.className = 'milkdrop-overlay__browse-empty';
     this.browseEmptyState.textContent = 'No matches found.';
@@ -785,6 +797,7 @@ export class BrowsePanel {
     this.renderCollectionFilters();
     if (filteredPresetSignature !== this.lastFilteredPresetSignature) {
       this.lastFilteredPresetSignature = filteredPresetSignature;
+      this.browseVisibleRowCount = MAX_INITIAL_ROWS;
       this.lastFilteredPresets = sortBrowsePresets({
         presets: this.presets.filter((preset) =>
           this.matchesActiveBrowseFilters(preset, query),
@@ -793,7 +806,6 @@ export class BrowsePanel {
       });
     }
     const filtered = this.lastFilteredPresets;
-    const displayedPresetIds = filtered.map((preset) => preset.id);
 
     this.renderBrowseSummary(filtered.length);
     if (filtered.length === 0) {
@@ -811,22 +823,7 @@ export class BrowsePanel {
       this.browseSort === 'recommended';
 
     if (!useSections) {
-      this.displayedPresetIds = displayedPresetIds;
-      const previewTargetIds = this.getPreviewTargetIds(
-        this.displayedPresetIds,
-      );
-      this.renderPreviewQaSummary(previewTargetIds);
-      this.requestPresetPreviews(previewTargetIds);
-      this.syncBrowseChildren(
-        filtered.map((preset) =>
-          this.rowRenderer.render({
-            preset,
-            activePresetId: this.activePresetId,
-            activeBackend: this.activeBackend,
-            preview: this.previewStates.get(preset.id) ?? null,
-          }),
-        ),
-      );
+      this.appendVisibleRows(filtered);
       return;
     }
 
@@ -888,6 +885,46 @@ export class BrowsePanel {
       return;
     }
     this.browseList.replaceChildren(...nextChildren);
+  }
+
+  private loadMoreRows() {
+    const filtered = this.lastFilteredPresets;
+    if (this.browseVisibleRowCount >= filtered.length) {
+      return;
+    }
+    this.browseVisibleRowCount = Math.min(
+      this.browseVisibleRowCount + MAX_INITIAL_ROWS,
+      filtered.length,
+    );
+    this.appendVisibleRows(filtered);
+  }
+
+  private appendVisibleRows(filtered: MilkdropCatalogEntry[]) {
+    const slice = filtered.slice(0, this.browseVisibleRowCount);
+    this.displayedPresetIds = slice.map((preset) => preset.id);
+    const previewTargetIds = this.getPreviewTargetIds(this.displayedPresetIds);
+    this.renderPreviewQaSummary(previewTargetIds);
+    this.requestPresetPreviews(previewTargetIds);
+    const rows = slice.map((preset) =>
+      this.rowRenderer.render({
+        preset,
+        activePresetId: this.activePresetId,
+        activeBackend: this.activeBackend,
+        preview: this.previewStates.get(preset.id) ?? null,
+      }),
+    );
+    if (this.browseVisibleRowCount < filtered.length) {
+      if (!this.browseLoadMoreSentinel) {
+        this.browseLoadMoreSentinel = document.createElement('div');
+        this.browseLoadMoreSentinel.className =
+          'milkdrop-overlay__browse-load-more';
+        this.browseLoadMoreSentinel.textContent = `Showing ${this.browseVisibleRowCount} of ${filtered.length}…`;
+      } else {
+        this.browseLoadMoreSentinel.textContent = `Showing ${this.browseVisibleRowCount} of ${filtered.length}…`;
+      }
+      rows.push(this.browseLoadMoreSentinel);
+    }
+    this.syncBrowseChildren(rows);
   }
 
   private renderPreviewQaSummary(presetIds: string[]) {
