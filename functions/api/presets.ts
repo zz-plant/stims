@@ -62,50 +62,50 @@ export async function onRequest(context: {
       );
       const offset = (page - 1) * limit;
 
-      let query =
-        'SELECT id, title, author, tags, rating, downloads, created_at FROM presets WHERE 1=1';
+      let whereClause = ' WHERE 1=1';
       const params: unknown[] = [];
 
       if (search) {
-        query += ' AND (title LIKE ?1 OR author LIKE ?1)';
+        whereClause += ' AND (title LIKE ?1 OR author LIKE ?1)';
         params.push(`%${search}%`);
       }
       if (tag) {
-        query += ' AND tags LIKE ?';
+        whereClause += ' AND tags LIKE ?';
         params.push(`%${tag}%`);
       }
 
+      let orderBy = ' ORDER BY created_at DESC';
       switch (sort) {
         case 'oldest':
-          query += ' ORDER BY created_at ASC';
+          orderBy = ' ORDER BY created_at ASC';
           break;
         case 'top':
-          query += ' ORDER BY rating DESC, downloads DESC';
+          orderBy = ' ORDER BY rating DESC, downloads DESC';
           break;
         case 'downloads':
-          query += ' ORDER BY downloads DESC';
+          orderBy = ' ORDER BY downloads DESC';
           break;
-        default:
-          query += ' ORDER BY created_at DESC';
       }
 
-      query += ` LIMIT ${limit} OFFSET ${offset}`;
+      const listQuery = `SELECT id, title, author, tags, rating, downloads, created_at FROM presets${whereClause}${orderBy} LIMIT ? OFFSET ?`;
+      const listParams = [...params, limit, offset];
 
-      const { results } = await env.DB.prepare(query)
-        .bind(...params)
-        .all<{
-          id: string;
-          title: string;
-          author: string;
-          tags: string;
-          rating: number;
-          downloads: number;
-          created_at: string;
-        }>();
+      const countQuery = `SELECT COUNT(*) as count FROM presets${whereClause}`;
 
-      const { results: countResult } = await env.DB.prepare(
-        'SELECT COUNT(*) as count FROM presets',
-      ).all<{ count: number }>();
+      const [{ results }, { results: countResult }] = await Promise.all([
+        env.DB.prepare(listQuery)
+          .bind(...listParams)
+          .all<{
+            id: string;
+            title: string;
+            author: string;
+            tags: string;
+            rating: number;
+            downloads: number;
+            created_at: string;
+          }>(),
+        env.DB.prepare(countQuery).bind(...params).all<{ count: number }>(),
+      ]);
 
       return json({
         presets: results.map((r) => ({

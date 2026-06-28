@@ -1144,7 +1144,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     renderer.setRenderTarget(this.writeTarget);
     renderer.render(this.compositeScene, this.camera);
 
-    this.renderBlurPasses(renderer);
+    if (this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD) {
+      this.renderBlurPasses(renderer);
+    }
 
     renderer.setRenderTarget(null);
     renderer.render(this.presentScene, this.camera);

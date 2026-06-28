@@ -25,15 +25,25 @@ function mix(start: number, end: number, amount: number) {
   return start + (end - start) * amount;
 }
 
+const reusableInterpBuffer: number[] = [];
+
 function catmullRomInterpolatePositions(
   positions: readonly number[],
   subdiv: number,
 ): number[] {
   const ptCount = positions.length / 3;
-  if (ptCount < 2 || subdiv < 2) return [...positions];
+  if (ptCount < 2 || subdiv < 2) {
+    const out = reusableInterpBuffer;
+    out.length = positions.length;
+    for (let i = 0; i < positions.length; i++) {
+      out[i] = positions[i];
+    }
+    return out;
+  }
 
   const outLen = (ptCount - 1) * subdiv * 3 + 3;
-  const out = new Array<number>(outLen);
+  const out = reusableInterpBuffer;
+  out.length = outLen;
   let writeIdx = 0;
   const lastIdx = ptCount - 1;
 

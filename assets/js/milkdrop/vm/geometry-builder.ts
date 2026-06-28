@@ -425,9 +425,11 @@ export function buildMeshField({
 export function buildMesh({
   state,
   meshField,
+  geometryState,
 }: {
   state: MutableState;
   meshField: MeshField;
+  geometryState?: GeometryBuilderState;
 }): MilkdropMeshVisual {
   const colorValue = color(
     state.mesh_r ?? 0.4,
@@ -446,7 +448,13 @@ export function buildMesh({
   }
 
   const capacity = meshField.density * Math.max(0, meshField.density - 1) * 12;
-  const positions = new Array<number>(capacity);
+  let positions = geometryState?.meshPositions;
+  if (!positions) {
+    positions = new Array<number>(capacity);
+    if (geometryState) {
+      geometryState.meshPositions = positions;
+    }
+  }
   let writeIndex = 0;
 
   for (let row = 0; row < meshField.density; row += 1) {
@@ -592,7 +600,7 @@ export function buildGpuGeometryHints({
 } {
   return {
     mainWave: null,
-    trailWaves: trailWaves.slice(),
+    trailWaves,
     customWaves: [],
     meshField: getProceduralMeshFieldVisual({ state, meshField }),
     particleField: buildParticleFieldVisual({

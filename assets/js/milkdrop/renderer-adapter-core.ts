@@ -114,6 +114,12 @@ export type {
   MilkdropRendererBatcher,
 } from './renderer-adapter-shared';
 
+const reusableInterpolatedShapes: MilkdropShapeVisual[] = [];
+const reusableInterpolatedCustomWaves: {
+  previous: import('./types').MilkdropProceduralCustomWaveVisual;
+  current: import('./types').MilkdropProceduralCustomWaveVisual;
+}[] = [];
+
 function lerpColor(
   previousColor: MilkdropColor,
   currentColor: MilkdropColor,
@@ -793,12 +799,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     mix: number,
     alphaMultiplier = 1,
   ) {
-    const interpolatedShapes = previousShapes.map((previousShape, index) => {
-      const currentShape = currentShapes[index];
-      return currentShape
+    const interpolatedShapes = reusableInterpolatedShapes;
+    interpolatedShapes.length = previousShapes.length;
+    for (let i = 0; i < previousShapes.length; i++) {
+      const previousShape = previousShapes[i];
+      const currentShape = currentShapes[i];
+      interpolatedShapes[i] = currentShape
         ? interpolateShapeVisual(previousShape, currentShape, mix)
         : previousShape;
-    });
+    }
     this.renderShapeGroup(
       'blend-shapes',
       group,
@@ -1062,10 +1071,15 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         canProcedural('custom-wave') &&
         prev.gpuGeometry.customWaves.length > 0
       ) {
-        const interpolated = prev.gpuGeometry.customWaves.map((wave, i) => ({
-          previous: wave,
-          current: payload.frameState.gpuGeometry.customWaves[i] ?? wave,
-        }));
+        const interpolated = reusableInterpolatedCustomWaves;
+        interpolated.length = prev.gpuGeometry.customWaves.length;
+        for (let i = 0; i < prev.gpuGeometry.customWaves.length; i++) {
+          const wave = prev.gpuGeometry.customWaves[i];
+          interpolated[i] = {
+            previous: wave,
+            current: payload.frameState.gpuGeometry.customWaves[i] ?? wave,
+          };
+        }
         const interp = (
           t: 'offsetX' | 'offsetY' | 'rotation' | 'scale' | 'alphaMultiplier',
           def: number,
