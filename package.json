@@ -106,7 +106,7 @@
     "@types/node": "^25.8.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.183.1",
+    "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^6.0.2",
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^17.3.9",
