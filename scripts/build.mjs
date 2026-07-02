@@ -73,16 +73,27 @@ if (!existsSync(vitePackagePath)) {
 console.log(`[build] Running Vite build with "${viteCommand}"...`);
 execSync(viteCommand, { stdio: 'inherit' });
 
-// Rolldown (Vite 8) preserves .ts extension in new URL() output chunks.
-// Rename to .js and fix references so the browser loads JavaScript, not
-// TypeScript (which would be served with wrong MIME type or 404).
+// Rolldown (Vite 8) preserves .ts extension in new URL() output chunks
+// and does not strip TypeScript annotations. Fix both: rename to .js and
+// strip types with esbuild so the browser can parse the result.
 const tsAssets = readdirSync(join(distDir, 'assets'), { recursive: false })
   .filter((f) => f.endsWith('.ts') && existsSync(join(distDir, 'assets', f)));
 if (tsAssets.length > 0) {
   for (const file of tsAssets) {
     const oldPath = join(distDir, 'assets', file);
     const newPath = oldPath.replace(/\.ts$/, '.js');
-    writeFileSync(newPath, readFileSync(oldPath));
+    const oldContent = readFileSync(oldPath, 'utf8');
+    let jsContent = oldContent;
+    try {
+      jsContent = execSync(
+        `bunx esbuild --loader=ts --target=es2020`,
+        { input: oldContent, stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' },
+      );
+    } catch {
+      // esbuild unavailable — emit raw content (broken, but better than 404)
+    }
+    const strippedContent = oldContent !== jsContent ? jsContent : oldContent;
+    writeFileSync(newPath, strippedContent);
     rmSync(oldPath);
     console.log(`[build] Renamed ${file} -> ${file.replace(/\.ts$/, '.js')}`);
   }
@@ -105,7 +116,6 @@ if (tsAssets.length > 0) {
       }
     }
   }
-  // Also fix references in dist root (e.g. service-worker or worklet-init)
   for (const entry of readdirSync(distDir, { recursive: false })) {
     const file = join(distDir, entry);
     if (!existsSync(file) || statSync(file).isDirectory()) continue;
