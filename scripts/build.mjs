@@ -76,8 +76,9 @@ execSync(viteCommand, { stdio: 'inherit' });
 // Rolldown (Vite 8) preserves .ts extension in new URL() output chunks
 // and does not strip TypeScript annotations. Fix both: rename to .js and
 // strip types with esbuild so the browser can parse the result.
-const tsAssets = readdirSync(join(distDir, 'assets'), { recursive: false })
-  .filter((f) => f.endsWith('.ts') && existsSync(join(distDir, 'assets', f)));
+const tsAssets = readdirSync(join(distDir, 'assets'), {
+  recursive: false,
+}).filter((f) => f.endsWith('.ts') && existsSync(join(distDir, 'assets', f)));
 if (tsAssets.length > 0) {
   for (const file of tsAssets) {
     const oldPath = join(distDir, 'assets', file);
@@ -85,10 +86,11 @@ if (tsAssets.length > 0) {
     const oldContent = readFileSync(oldPath, 'utf8');
     let jsContent = oldContent;
     try {
-      jsContent = execSync(
-        `bunx esbuild --loader=ts --target=es2020`,
-        { input: oldContent, stdio: ['pipe', 'pipe', 'pipe'], encoding: 'utf8' },
-      );
+      jsContent = execSync(`bunx esbuild --loader=ts --target=es2020`, {
+        input: oldContent,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        encoding: 'utf8',
+      });
     } catch {
       // esbuild unavailable — emit raw content (broken, but better than 404)
     }
