@@ -1,4 +1,10 @@
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useMemo,
+  useRef,
+} from 'react';
 import type { MotionPreference } from '../core/motion-preferences.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
 import type { RenderPreferences } from '../core/state/render-preference-store.ts';
@@ -7,6 +13,7 @@ import type {
   PresetCatalogEntry,
   SessionRouteState,
 } from './contracts.ts';
+import { setAudioEnergy } from './engine-audio-energy-store.ts';
 import {
   type EngineContextValue,
   EngineCtx,
@@ -106,12 +113,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     youtubePreviewRef: sessionState.youtubePreviewRef,
   });
 
-  const engineSnapshotValue: EngineSnapshotValue = useMemo(
-    () => ({
-      engineSnapshot: sessionState.engineSnapshot,
-    }),
-    [sessionState.engineSnapshot],
-  );
+  const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
+
+  const engineSnapshotValue: EngineSnapshotValue = useMemo(() => {
+    const snap = sessionState.engineSnapshot;
+    if (snap) {
+      setAudioEnergy(snap.audioEnergy);
+    }
+    const prev = coarseRef.current;
+    if (
+      prev &&
+      snap &&
+      prev.activePresetId === snap.activePresetId &&
+      prev.backend === snap.backend &&
+      prev.status === snap.status &&
+      prev.runtimeReady === snap.runtimeReady &&
+      prev.audioActive === snap.audioActive &&
+      prev.audioSource === snap.audioSource &&
+      prev.adaptiveQuality === snap.adaptiveQuality &&
+      prev.catalogEntries === snap.catalogEntries &&
+      prev.sessionState === snap.sessionState
+    ) {
+      return { engineSnapshot: prev };
+    }
+    coarseRef.current = snap;
+    return { engineSnapshot: snap };
+  }, [sessionState.engineSnapshot]);
 
   const engineDataValue: EngineContextValue = useMemo(
     () => ({

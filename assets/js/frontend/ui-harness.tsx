@@ -1,11 +1,7 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { WorkspaceProvider } from './workspace-context.tsx';
-import {
-  WorkspaceStagePanel,
-  WorkspaceToast,
-  WorkspaceToolSheet,
-} from './workspace-ui.tsx';
+import { WorkspaceStagePanel, WorkspaceToast } from './workspace-ui.tsx';
 
 function getQueryParams() {
   const url = new URL(window.location.href);
@@ -58,17 +54,6 @@ function MockWorkspaceStagePanel(overrides: Record<string, unknown>) {
   );
 }
 
-function MockWorkspaceToolSheet(overrides: Record<string, unknown>) {
-  return (
-    <WorkspaceToolSheet
-      onCompatibilityModeChange={() => {}}
-      onMotionPreferenceChange={() => {}}
-      stageAnchoredToolOpen={false}
-      {...overrides}
-    />
-  );
-}
-
 function MockWorkspaceToast(overrides: Record<string, unknown>) {
   return (
     <WorkspaceToast
@@ -84,7 +69,6 @@ const COMPONENT_REGISTRY: Record<
   (props: Record<string, unknown>) => React.ReactElement
 > = {
   WorkspaceStagePanel: MockWorkspaceStagePanel,
-  WorkspaceToolSheet: MockWorkspaceToolSheet,
   WorkspaceToast: MockWorkspaceToast,
 };
 

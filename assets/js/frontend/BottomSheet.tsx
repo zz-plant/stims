@@ -16,6 +16,8 @@ type BottomSheetTab = {
   onSelect: () => void;
 };
 
+type SheetPosition = 'bottom' | 'right' | 'left';
+
 type BottomSheetProps = {
   open: boolean;
   onClose: () => void;
@@ -23,6 +25,8 @@ type BottomSheetProps = {
   description: string;
   children: ReactNode;
   tabs?: BottomSheetTab[];
+  position?: SheetPosition;
+  onOpen?: () => void;
 };
 
 export function BottomSheet({
@@ -32,11 +36,13 @@ export function BottomSheet({
   description,
   children,
   tabs,
+  position = 'bottom',
+  onOpen,
 }: BottomSheetProps) {
   const [exiting, setExiting] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
-  const dragStartY = useRef(0);
-  const dragCurrentY = useRef(0);
+  const dragStart = useRef(0);
+  const dragCurrent = useRef(0);
   const dragging = useRef(false);
 
   const startClose = useCallback(() => {
@@ -45,10 +51,13 @@ export function BottomSheet({
   }, [onClose]);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
       setExiting(false);
+      if (onOpen) {
+        requestAnimationFrame(onOpen);
+      }
     }
-  }, [open]);
+  }, [open, onOpen]);
 
   useEffect(() => {
     if (!open || exiting) return;
@@ -82,33 +91,66 @@ export function BottomSheet({
     return () => document.removeEventListener('keydown', handleKey);
   }, [open, exiting, startClose]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    dragStartY.current = e.touches[0].clientY;
+  const _dragAxis = position === 'bottom' ? 'Y' : 'X';
+  const dragThreshold = 100;
+
+  const handleDragStart = useCallback((clientPos: number) => {
+    dragStart.current = clientPos;
     dragging.current = true;
   }, []);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragging.current) return;
-    dragCurrentY.current = e.touches[0].clientY;
-    const dy = dragCurrentY.current - dragStartY.current;
-    if (dy > 0 && sheetRef.current) {
-      sheetRef.current.style.transform = `translateY(${dy}px)`;
-    }
-  }, []);
+  const handleDragMove = useCallback(
+    (clientPos: number) => {
+      if (!dragging.current) return;
+      dragCurrent.current = clientPos;
+      const delta = dragCurrent.current - dragStart.current;
+      const isPositive = position === 'bottom' ? delta > 0 : delta < 0;
+      if (isPositive && sheetRef.current) {
+        const translate =
+          position === 'bottom'
+            ? `translateY(${delta}px)`
+            : `translateX(${Math.abs(delta)}px)`;
+        sheetRef.current.style.transform = translate;
+      }
+    },
+    [position],
+  );
 
-  const handleTouchEnd = useCallback(() => {
+  const handleDragEnd = useCallback(() => {
     if (!dragging.current) return;
     dragging.current = false;
-    const dy = dragCurrentY.current - dragStartY.current;
+    const delta = dragCurrent.current - dragStart.current;
     if (sheetRef.current) {
       sheetRef.current.style.transform = '';
     }
-    if (dy > 100) {
+    if (Math.abs(delta) > dragThreshold) {
       startClose();
     }
-    dragStartY.current = 0;
-    dragCurrentY.current = 0;
+    dragStart.current = 0;
+    dragCurrent.current = 0;
   }, [startClose]);
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      handleDragStart(
+        position === 'bottom' ? e.touches[0].clientY : e.touches[0].clientX,
+      );
+    },
+    [handleDragStart, position],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      handleDragMove(
+        position === 'bottom' ? e.touches[0].clientY : e.touches[0].clientX,
+      );
+    },
+    [handleDragMove, position],
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    handleDragEnd();
+  }, [handleDragEnd]);
 
   if (!open && !exiting) return null;
 
@@ -125,20 +167,23 @@ export function BottomSheet({
       <div
         ref={sheetRef}
         className={styles.sheet}
+        data-position={position}
         data-exiting={String(exiting)}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
       >
-        <div
-          className={styles.handle}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <span className={styles.handleBar} />
-        </div>
+        {position === 'bottom' ? (
+          <div
+            className={styles.handle}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <span className={styles.handleBar} />
+          </div>
+        ) : null}
 
         <div className={styles.header}>
           <div className={styles.headingGroup}>

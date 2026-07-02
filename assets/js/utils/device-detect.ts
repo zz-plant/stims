@@ -1,4 +1,4 @@
-type NavigatorWithUserAgentData = Navigator & {
+type NavigatorWithUserAgentData = {
   userAgentData?: {
     mobile?: boolean;
     platform?: string;

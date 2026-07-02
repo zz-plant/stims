@@ -1,5 +1,11 @@
-import type { ErrorInfo, ReactNode } from 'react';
-import { Component, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import '../../css/shell-loader.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
@@ -13,146 +19,47 @@ import {
   getActiveThemePreference,
   setThemePreference,
 } from '../core/theme-preferences.ts';
+import { AudioMatchToast } from './AudioMatchToast.tsx';
+import { BottomSheet } from './BottomSheet.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
-import {
-  getFullscreenElement,
-  subscribeToFullscreenChange,
-  toggleElementFullscreen,
-} from './fullscreen.ts';
+import { StimsErrorBoundary } from './ErrorBoundary.tsx';
+import { useAudioEnergy } from './hooks/useAudioEnergy';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
+import { useFullscreen } from './hooks/useFullscreen';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useMediaQuery } from './hooks/useMediaQuery';
+import { useStageGesture } from './hooks/useStageGesture';
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
-import { SplitViewBrowse } from './SplitViewBrowse.tsx';
+import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   useEngineSnapshot,
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import { describePresetMood } from './workspace-helpers.ts';
-import { WorkspaceStagePanel, WorkspaceToolSheet } from './workspace-ui.tsx';
+import {
+  describePresetMood,
+  getToolDescription,
+  getToolLabel,
+  TOOL_TABS,
+} from './workspace-helpers.ts';
+import { WorkspaceStagePanel } from './workspace-ui.tsx';
 
-class StimsErrorBoundary extends Component<
-  { children: ReactNode },
-  { error: Error | null }
-> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { error: null };
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { error };
-  }
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Stims crashed:', error, info);
-  }
-  render() {
-    if (this.state.error) {
-      return (
-        <div
-          className="stims-shell"
-          style={{
-            display: 'grid',
-            placeItems: 'center',
-            height: '100vh',
-            background: '#0a0f19',
-            color: '#e9fbff',
-            fontFamily: 'system-ui,sans-serif',
-            textAlign: 'center',
-            padding: '24px',
-          }}
-        >
-          <div>
-            <h1 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>Error</h1>
-            <p style={{ opacity: 0.6, fontSize: '0.9rem', margin: 0 }}>
-              Reload to retry.
-            </p>
-            <div style={{ marginTop: '24px' }}>
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                style={{
-                  margin: '8px',
-                  padding: '8px 16px',
-                  background: '#1a2a3a',
-                  color: '#e9fbff',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                }}
-              >
-                Reload page
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    window.sessionStorage.removeItem(
-                      'stims:webgpu-compat-override',
-                    );
-                  } catch {}
-                  try {
-                    window.localStorage.setItem(
-                      'stims:compatibility-mode',
-                      'true',
-                    );
-                  } catch {}
-                  window.location.reload();
-                }}
-                style={{
-                  margin: '8px',
-                  padding: '8px 16px',
-                  background: '#1a2a3a',
-                  color: '#e9fbff',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                }}
-              >
-                Try WebGL mode
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    const keys: string[] = [];
-                    for (let i = 0; i < window.localStorage.length; i++) {
-                      const key = window.localStorage.key(i);
-                      if (key?.startsWith('stims:')) {
-                        keys.push(key);
-                      }
-                    }
-                    keys.forEach((key) => window.localStorage.removeItem(key));
-                    window.sessionStorage.removeItem(
-                      'stims:webgpu-compat-override',
-                    );
-                  } catch {}
-                  window.location.href = '/';
-                }}
-                style={{
-                  margin: '8px',
-                  padding: '8px 16px',
-                  background: '#1a2a3a',
-                  color: '#e9fbff',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                }}
-              >
-                Reset settings
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
+const BrowseSheetPanel = lazy(() =>
+  import('./BrowseSheetPanel.tsx').then((m) => ({
+    default: m.BrowseSheetPanel,
+  })),
+);
+const EditorPanel = lazy(() =>
+  import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
+);
+const SettingsSheetPanel = lazy(() =>
+  import('./SettingsSheetPanel.tsx').then((m) => ({
+    default: m.SettingsSheetPanel,
+  })),
+);
 
 function StimsWorkspaceAppShell() {
   const { ui, engine } = useWorkspace();
@@ -160,7 +67,12 @@ function StimsWorkspaceAppShell() {
   const isWideEnough = useMediaQuery('(min-width: 1024px)');
   const temporalMemory = useTemporalMemory();
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const audioEnergy = useAudioEnergy();
+  const { isFullscreen, handleToggleFullscreen } = useFullscreen(
+    ui.stageRef,
+    ui.setStatusMessage,
+  );
+
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [audioMatch, setAudioMatch] = useState<{
     presetId: string;
@@ -168,9 +80,7 @@ function StimsWorkspaceAppShell() {
     score: number;
   } | null>(null);
 
-  const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
   const liveMode = engine.audioActive;
-  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const currentAudioSource =
     engineSnapshot?.audioSource ?? ui.routeState.audioSource;
   const quietAtRef = useRef<number | null>(null);
@@ -180,7 +90,35 @@ function StimsWorkspaceAppShell() {
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
-  // Auto-play demo audio on load
+  useDocumentTitle({
+    loadingPreset: engine.loadingRequestedPreset,
+    selectedPresetTitle: engine.selectedPreset?.title ?? null,
+    panel: ui.routeState.panel,
+    liveMode,
+    engineReady: engine.engineReady,
+  });
+
+  useKeyboardShortcuts({
+    liveMode,
+    engineReady: engine.engineReady,
+    panel: ui.routeState.panel,
+    filteredCatalog: engine.filteredCatalog,
+    updatePanel: ui.updatePanel,
+    handlePresetSelection: engine.handlePresetSelection,
+    handleShufflePreset: engine.handleShufflePreset,
+    handlePreviousPreset: engine.handlePreviousPreset,
+    handleAudioStart: engine.handleAudioStart,
+    handleAudioStop: engine.handleAudioStop,
+    handleToggleFullscreen,
+    setShowShortcuts,
+  });
+
+  useStageGesture({
+    enabled: liveMode,
+    handleShufflePreset: engine.handleShufflePreset,
+    handlePreviousPreset: engine.handlePreviousPreset,
+  });
+
   useEffect(() => {
     if (
       !ui.routeState.agentMode &&
@@ -204,39 +142,11 @@ function StimsWorkspaceAppShell() {
     ui.routeState.previewMode,
   ]);
 
-  // Dismiss contextual help when a toast appears to avoid bottom overlap
   useEffect(() => {
     if (ui.toast && visibleHint) {
       dismissHint();
     }
   }, [ui.toast, visibleHint, dismissHint]);
-
-  // Focus the first focusable element when keyboard shortcuts dialog opens
-  useEffect(() => {
-    if (!showShortcuts || !shortcutsRef.current) return;
-    const focusable = shortcutsRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    focusable[0]?.focus();
-  }, [showShortcuts]);
-
-  const handleToggleFullscreen = useCallback(() => {
-    const stageElement = ui.stageRef.current?.parentElement;
-    if (!stageElement) {
-      return;
-    }
-
-    void (async () => {
-      try {
-        const toggled = await toggleElementFullscreen(stageElement, document);
-        if (!toggled) {
-          ui.setStatusMessage('Full screen unavailable.');
-        }
-      } catch (_error) {
-        ui.setStatusMessage('Full screen unavailable.');
-      }
-    })();
-  }, [ui.stageRef, ui.setStatusMessage]);
 
   useEffect(() => {
     if (
@@ -296,51 +206,12 @@ function StimsWorkspaceAppShell() {
           : 'Start demo audio, or browse presets first.';
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(getFullscreenElement(document)));
-    };
-
-    handleFullscreenChange();
-    return subscribeToFullscreenChange(handleFullscreenChange, document);
-  }, []);
-
-  useEffect(() => {
     return connectWakeLock(() => {
       return (
         isFullscreen || (liveMode && (engineSnapshot?.audioActive ?? false))
       );
     });
   }, [isFullscreen, liveMode, engineSnapshot?.audioActive]);
-
-  useEffect(() => {
-    let title = 'Stims';
-    if (engine.loadingRequestedPreset) {
-      title = `Loading\u2026 \u00B7 ${title}`;
-    } else if (engine.selectedPreset && liveMode) {
-      title = `${engine.selectedPreset.title} \u00B7 ${title}`;
-    } else if (ui.routeState.panel) {
-      const panelLabel =
-        ui.routeState.panel === 'browse'
-          ? 'Browse'
-          : ui.routeState.panel === 'settings'
-            ? 'Settings'
-            : ui.routeState.panel === 'editor'
-              ? 'Editor'
-              : 'Inspector';
-      title = `${panelLabel} \u00B7 ${title}`;
-    } else if (liveMode) {
-      title = `Now Playing \u00B7 ${title}`;
-    } else if (!engine.engineReady) {
-      title = `Loading\u2026 \u00B7 ${title}`;
-    }
-    document.title = title;
-  }, [
-    engine.loadingRequestedPreset,
-    engine.selectedPreset,
-    ui.routeState.panel,
-    liveMode,
-    engine.engineReady,
-  ]);
 
   useEffect(() => {
     if (liveMode && engineSnapshot?.audioActive) {
@@ -397,130 +268,12 @@ function StimsWorkspaceAppShell() {
     return () => controller.abort();
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
-  const filteredCatalogRef = useRef(engine.filteredCatalog);
-  filteredCatalogRef.current = engine.filteredCatalog;
-  const handlePresetSelectionRef = useRef(engine.handlePresetSelection);
-  handlePresetSelectionRef.current = engine.handlePresetSelection;
-  const updatePanelRef = useRef(ui.updatePanel);
-  updatePanelRef.current = ui.updatePanel;
-  const handleShufflePresetRef = useRef(engine.handleShufflePreset);
-  handleShufflePresetRef.current = engine.handleShufflePreset;
-  const handlePreviousPresetRef = useRef(engine.handlePreviousPreset);
-  handlePreviousPresetRef.current = engine.handlePreviousPreset;
   useEffect(() => {
     const handleOpenShortcuts = () => setShowShortcuts(true);
     window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
     return () =>
       window.removeEventListener('stims:shortcuts:open', handleOpenShortcuts);
   }, []);
-
-  const handleAudioStartRef = useRef(engine.handleAudioStart);
-  handleAudioStartRef.current = engine.handleAudioStart;
-  const handleAudioStopRef = useRef(engine.handleAudioStop);
-  handleAudioStopRef.current = engine.handleAudioStop;
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement ||
-        (event.target instanceof HTMLElement &&
-          event.target.isContentEditable) ||
-        (event.target instanceof HTMLElement &&
-          event.target.closest('.cm-editor'))
-      ) {
-        return;
-      }
-
-      const key = event.key.toLowerCase();
-      if (key === ' ') {
-        event.preventDefault();
-        if (liveMode) {
-          handleAudioStopRef.current();
-        } else if (engine.engineReady) {
-          void handleAudioStartRef.current('demo');
-        }
-      } else if (key === 'f') {
-        event.preventDefault();
-        handleToggleFullscreen();
-      } else if (key === 'b') {
-        event.preventDefault();
-        updatePanelRef.current(
-          ui.routeState.panel === 'browse' ? null : 'browse',
-        );
-      } else if (key === 's') {
-        event.preventDefault();
-        updatePanelRef.current(
-          ui.routeState.panel === 'settings' ? null : 'settings',
-        );
-      } else if (key === 'e') {
-        event.preventDefault();
-        updatePanelRef.current(
-          ui.routeState.panel === 'editor' ? null : 'editor',
-        );
-      } else if (key === 'n' || key === 'arrowright') {
-        event.preventDefault();
-        void handleShufflePresetRef.current();
-      } else if (key === 'p' || key === 'arrowleft') {
-        event.preventDefault();
-        void handlePreviousPresetRef.current();
-      } else if (/^[1-9]$/.test(key) && liveMode) {
-        event.preventDefault();
-        const index = Number.parseInt(key, 10) - 1;
-        const preset = filteredCatalogRef.current[index];
-        if (preset) {
-          handlePresetSelectionRef.current(preset.id);
-        }
-      } else if (key === '?') {
-        event.preventDefault();
-        setShowShortcuts((s) => !s);
-      }
-    };
-
-    let touchStartX = 0;
-    let touchStartY = 0;
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) return;
-      touchStartX = event.touches[0].clientX;
-      touchStartY = event.touches[0].clientY;
-    };
-    const handleTouchEnd = (event: TouchEvent) => {
-      if (!touchStartX || !touchStartY) return;
-      const dx = event.changedTouches[0].clientX - touchStartX;
-      const dy = event.changedTouches[0].clientY - touchStartY;
-      touchStartX = 0;
-      touchStartY = 0;
-      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      if (dx > 0) {
-        void handlePreviousPresetRef.current();
-      } else {
-        void handleShufflePresetRef.current();
-      }
-    };
-
-    document.addEventListener(
-      'keydown',
-      handleKeyDown as unknown as EventListener,
-    );
-    document.addEventListener('touchstart', handleTouchStart, {
-      passive: true,
-    });
-    document.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-    return () => {
-      document.removeEventListener(
-        'keydown',
-        handleKeyDown as unknown as EventListener,
-      );
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [
-    handleToggleFullscreen,
-    liveMode,
-    engine.engineReady,
-    ui.routeState.panel,
-  ]);
 
   useEffect(() => {
     const preference = getActiveThemePreference();
@@ -532,14 +285,14 @@ function StimsWorkspaceAppShell() {
     if (el) el.hidden = true;
   }, []);
 
-  const handleToggleTheme = () => {
+  const handleToggleTheme = useCallback(() => {
     const current = getActiveThemePreference();
     const next = current.theme === 'dark' ? 'light' : 'dark';
     setThemePreference({ theme: next });
     applyTheme(next);
-  };
+  }, []);
 
-  const shell = (
+  return (
     <main
       className="stims-shell"
       id="stims-main"
@@ -547,7 +300,9 @@ function StimsWorkspaceAppShell() {
       data-mode={liveMode ? 'live' : 'home'}
       data-preview={ui.routeState.previewMode ? 'true' : undefined}
       data-sheet-open={
-        ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined
+        ui.routeState.panel && ui.routeState.panel !== 'editor'
+          ? 'true'
+          : undefined
       }
     >
       <a href="#stims-visualizer" className="skip-link">
@@ -566,26 +321,59 @@ function StimsWorkspaceAppShell() {
 
       <RendererFallbackBadge />
 
-      <WorkspaceToolSheet
-        onCompatibilityModeChange={setCompatibilityMode}
-        onMotionPreferenceChange={(enabled) => setMotionPreference({ enabled })}
-        stageAnchoredToolOpen={stageAnchoredToolOpen}
-      />
-
-      {isWideEnough &&
-      ui.routeState.panel === 'browse' &&
-      engine.filteredCatalog.length > 0 ? (
-        <SplitViewBrowse
-          presets={engine.filteredCatalog}
-          currentPresetId={engineSnapshot?.activePresetId ?? null}
-          onSelect={engine.handlePresetSelection}
-          onClose={() => ui.updatePanel(null)}
-          onPlay={(presetId) => {
-            engine.handlePresetSelection(presetId);
-            ui.updatePanel(null);
-          }}
-        />
-      ) : null}
+      <BottomSheet
+        open={ui.routeState.panel !== null}
+        onClose={() => ui.updatePanel(null)}
+        title={getToolLabel(ui.routeState.panel ?? 'browse')}
+        description={getToolDescription(ui.routeState.panel ?? 'browse')}
+        position={
+          isWideEnough && ui.routeState.panel !== 'browse' ? 'right' : 'bottom'
+        }
+        tabs={
+          ui.routeState.panel
+            ? TOOL_TABS.filter(
+                (t) =>
+                  t !== 'inspector' &&
+                  (ui.routeState.panel === 'editor' || t !== 'editor'),
+              ).map((tool) => ({
+                id: tool,
+                label: getToolLabel(tool),
+                active: ui.routeState.panel === tool,
+                onSelect: () => ui.updatePanel(tool),
+              }))
+            : undefined
+        }
+        onOpen={() => {
+          if (ui.routeState.panel === 'browse') {
+            const el = document.querySelector<HTMLElement>(
+              '#preset-search, .milkdrop-overlay__search',
+            );
+            el?.focus();
+          }
+        }}
+      >
+        <Suspense fallback={null}>
+          {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
+          {ui.routeState.panel === 'browse' ? (
+            <BrowseSheetPanel
+              onCollectionTagChange={(collectionTag) =>
+                ui.commitRoute({ ...ui.routeState, collectionTag })
+              }
+              onImport={(files) => {
+                void ui.handleImport(files);
+              }}
+            />
+          ) : null}
+          {ui.routeState.panel === 'settings' ? (
+            <SettingsSheetPanel
+              onCompatibilityModeChange={setCompatibilityMode}
+              onMotionPreferenceChange={(enabled) =>
+                setMotionPreference({ enabled })
+              }
+            />
+          ) : null}
+        </Suspense>
+      </BottomSheet>
 
       <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
 
@@ -603,107 +391,18 @@ function StimsWorkspaceAppShell() {
           onToggleTheme={handleToggleTheme}
         />
       ) : null}
-      {audioMatch ? (
-        <div className="stims-shell__audio-match">
-          <span className="stims-shell__eyebrow">Audio match</span>
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            onClick={() => engine.handlePresetSelection(audioMatch.presetId)}
-          >
-            {audioMatch.name} — {(audioMatch.score * 100).toFixed(0)}% match
-          </button>
-          <button
-            type="button"
-            className="stims-shell__audio-match-close"
-            onClick={(e) => {
-              e.stopPropagation();
-              setAudioMatch(null);
-            }}
-            aria-label="Dismiss"
-          >
-            ×
-          </button>
-        </div>
-      ) : null}
-      {showShortcuts ? (
-        <div
-          className="stims-shell__shortcut-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Keyboard shortcuts"
-          onClick={() => setShowShortcuts(false)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setShowShortcuts(false);
-          }}
-        >
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: card is visual-only, backdrop handles dismiss */}
-          <div
-            ref={shortcutsRef}
-            className="stims-shell__shortcut-card"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              e.stopPropagation();
-              if (e.key === 'Tab' && shortcutsRef.current) {
-                const focusable =
-                  shortcutsRef.current.querySelectorAll<HTMLElement>(
-                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-                  );
-                if (focusable.length === 0) return;
-                const first = focusable[0];
-                const last = focusable[focusable.length - 1];
-                if (e.shiftKey && document.activeElement === first) {
-                  e.preventDefault();
-                  last.focus();
-                } else if (!e.shiftKey && document.activeElement === last) {
-                  e.preventDefault();
-                  first.focus();
-                }
-              }
-            }}
-            role="presentation"
-          >
-            <h2>Keyboard shortcuts</h2>
-            <div className="stims-shell__shortcut-grid">
-              <kbd>Space</kbd>
-              <span>Demo audio</span>
-              <kbd>F</kbd>
-              <span>Fullscreen</span>
-              <kbd>B</kbd>
-              <span>Browse panel</span>
-              <kbd>S</kbd>
-              <span>Settings</span>
-              <kbd>E</kbd>
-              <span>Editor</span>
-              <kbd>I</kbd>
-              <span>Inspector</span>
-              <kbd>N / →</kbd>
-              <span>Shuffle preset</span>
-              <kbd>P / ←</kbd>
-              <span>Previous preset</span>
-              <kbd>1–9</kbd>
-              <span>Quick-select preset</span>
-              <kbd>?</kbd>
-              <span>This help</span>
-              <kbd>Esc</kbd>
-              <span>Close panels / dismiss</span>
-              <kbd>Cmd+Enter</kbd>
-              <span>Compile in editor</span>
-            </div>
-            <button
-              type="button"
-              className="cta-button ghost"
-              onClick={() => setShowShortcuts(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <AudioMatchToast
+        match={audioMatch}
+        onSelect={engine.handlePresetSelection}
+        onDismiss={() => setAudioMatch(null)}
+      />
+      <ShortcutsDialog
+        open={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+        shortcutsRef={shortcutsRef}
+      />
     </main>
   );
-
-  return shell;
 }
 
 export function StimsWorkspaceApp() {

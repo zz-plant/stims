@@ -1291,6 +1291,24 @@ body[data-page="workspace"] {
     min-width: 80px;
   }
 
+  .stims-shell__stage-dock-wrap[data-visible="false"] {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease;
+    transform: translateY(8px);
+  }
+
+  .stims-shell__stage-dock-wrap[data-visible="true"] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
   .stims-shell__stage-frame[data-mode="live"]
     .milkdrop-overlay--compact
     .milkdrop-overlay__title {
@@ -4110,4 +4128,28 @@ body[data-page="workspace"] {
 
 .renderer-fallback-badge__dismiss:hover {
   background: rgba(255, 255, 255, 0.22);
+}
+
+@supports (view-transition-name: none) {
+  .stims-shell__stage-root {
+    view-transition-name: stims-stage;
+  }
+
+  ::view-transition-old(stims-stage) {
+    animation: 0.3s ease both;
+  }
+  ::view-transition-new(stims-stage) {
+    animation: 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .stims-shell__audio-match {
+    view-transition-name: stims-audio-match;
+  }
+
+  ::view-transition-old(stims-audio-match) {
+    animation: 0.15s ease both;
+  }
+  ::view-transition-new(stims-audio-match) {
+    animation: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
 }

@@ -31,25 +31,63 @@
 
 .sheet {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
   z-index: var(--z-modal);
-  max-height: 85vh;
   display: flex;
   flex-direction: column;
   background: var(--stims-panel-fill-strong);
   border: 1px solid var(--stims-line-strong);
-  border-bottom: none;
-  border-radius: 20px 20px 0 0;
   box-shadow: var(--stims-shadow);
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-  animation: sheet-rise 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   overflow: hidden;
 }
 
-.sheet[data-exiting="true"] {
+/* Bottom position */
+.sheet[data-position="bottom"] {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 85vh;
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  animation: sheet-rise 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.sheet[data-position="bottom"][data-exiting="true"] {
   animation: sheet-fall 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Right position */
+.sheet[data-position="right"] {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-height: none;
+  border-right: none;
+  border-radius: 18px 0 0 18px;
+  padding-bottom: 0;
+  animation: sheet-slide-in-right 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.sheet[data-position="right"][data-exiting="true"] {
+  animation: sheet-slide-out-right 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Left position */
+.sheet[data-position="left"] {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 380px;
+  max-height: none;
+  border-left: none;
+  border-radius: 0 18px 18px 0;
+  padding-bottom: 0;
+  animation: sheet-slide-in-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.sheet[data-position="left"][data-exiting="true"] {
+  animation: sheet-slide-out-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes sheet-rise {
@@ -74,6 +112,42 @@
   }
 }
 
+@keyframes sheet-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sheet-slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes sheet-slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sheet-slide-out-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
 .handle {
   display: flex;
   justify-content: center;
@@ -95,6 +169,11 @@
   gap: 12px;
   padding: 0 20px 14px;
   flex-shrink: 0;
+}
+
+.sheet[data-position="right"] .header,
+.sheet[data-position="left"] .header {
+  padding-top: 20px;
 }
 
 .headingGroup {
@@ -191,52 +270,9 @@
   overscroll-behavior: contain;
 }
 
-@media (width >= 768px) {
-  .sheet {
-    left: auto;
-    top: 0;
-    bottom: 0;
-    width: 420px;
-    max-height: none;
-    border-radius: 18px 0 0 18px;
-    border-bottom: 1px solid var(--stims-line-strong);
-    animation: sheet-slide-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    padding-bottom: 0;
-  }
-
-  .sheet[data-exiting="true"] {
-    animation: sheet-slide-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-
-  @keyframes sheet-slide-in {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes sheet-slide-out {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(100%);
-    }
-  }
-
-  .handle {
-    display: none;
-  }
-
-  .header {
-    padding-top: 20px;
-  }
-
-  .body {
-    padding-bottom: 20px;
-  }
+.sheet[data-position="right"] .body,
+.sheet[data-position="left"] .body {
+  padding-bottom: 20px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -245,5 +281,27 @@
   .backdrop,
   .backdrop[data-exiting="true"] {
     animation-duration: 0.01ms;
+  }
+}
+
+@supports (view-transition-name: none) {
+  .sheet {
+    view-transition-name: stims-sheet;
+  }
+  .backdrop {
+    view-transition-name: stims-backdrop;
+  }
+
+  ::view-transition-old(stims-sheet) {
+    animation: 0.2s ease both;
+  }
+  ::view-transition-new(stims-sheet) {
+    animation: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  ::view-transition-old(stims-backdrop) {
+    animation: 0.15s ease both;
+  }
+  ::view-transition-new(stims-backdrop) {
+    animation: 0.25s ease both;
   }
 }

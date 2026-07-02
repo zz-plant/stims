@@ -1,10 +1,18 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { saveCheckpoint } from '../core/services/temporal-memory.ts';
 import {
   describeFrame,
   extractFrameStats,
   searchByFrame,
 } from '../core/services/visual-embedding.ts';
+import { useAudioEnergy } from './hooks/useAudioEnergy';
+import { useAutoHideActivity } from './hooks/useAutoHideActivity';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { UiIcon } from './UiIcon.tsx';
@@ -42,9 +50,9 @@ export function StimsControlDock({
   const ui = useUI();
   const engine = useEngine();
   const { engineSnapshot } = useEngineSnapshot();
+  const audioEnergy = useAudioEnergy();
   const panel = ui.routeState.panel;
   const audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
-  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
   const energyNorm = Math.min(1, Math.max(0, audioEnergy));
   const runtimeReady = engineSnapshot?.runtimeReady ?? false;
   const presetTitle =
@@ -155,8 +163,19 @@ export function StimsControlDock({
     energyNorm,
   );
 
+  const { visible, signalActivity } = useAutoHideActivity(3000, false);
+
+  useEffect(() => {
+    const handleMove = () => signalActivity();
+    document.addEventListener('mousemove', handleMove, { passive: true });
+    return () => document.removeEventListener('mousemove', handleMove);
+  }, [signalActivity]);
+
   return (
-    <div className="stims-shell__stage-dock-wrap">
+    <div
+      className="stims-shell__stage-dock-wrap"
+      data-visible={String(visible)}
+    >
       {runtimeReady && presetTitle ? (
         <div className="stims-shell__now-playing">
           <div className="stims-shell__now-playing-info">
