@@ -110,6 +110,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "butterchurn-presets": "^2.4.7",
     "dependency-cruiser": "^17.3.9",
+    "esbuild": "^0.28.1",
     "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
     "lighthouse": "^13.4.0",

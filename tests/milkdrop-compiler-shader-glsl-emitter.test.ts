@@ -164,6 +164,20 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
     expect(glsl).toContain('sampleUv(');
   });
 
+  test('tex3d(sampler_simplex, vec3(uv, z)).rgb uses 3D lookup (sampleDim = 1.0)', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex3d(sampler_simplex, vec3(uv, 0.5)).rgb',
+    );
+    expect(glsl).toContain('sampleAuxTexture(vec4(2.0, 0, 0, 0).x, 1.0,');
+  });
+
+  test('tex3d(sampler_noise, vec3(uv, z)).rgb degrades to 2D lookup (sampleDim = 0.0)', () => {
+    const glsl = emitShaderExpression(
+      'ret = tex3d(sampler_noise, vec3(uv, 0.5)).rgb',
+    );
+    expect(glsl).toContain('sampleAuxTexture(vec4(1.0, 0, 0, 0).x, 0.0,');
+  });
+
   test('texture2d alias normalizes to tex2d', () => {
     const glsl = emitShaderExpression('ret = texture2D(sampler_main, uv).rgb');
     expect(glsl).toContain('texture2D(currentTex, sampleUv(');
@@ -332,6 +346,20 @@ describe('milkdrop compiler shader GLSL emitter — ^ exponent operator', () => 
     expect(glsl).toContain('pow(');
     expect(glsl).toContain('signalBass + 1.0');
     expect(glsl).toContain('signalTreb * 2.0');
+  });
+});
+
+// ─── Bitwise Operators & and | ───────────────────────────────────────
+
+describe('milkdrop compiler shader GLSL emitter — & and | bitwise operators', () => {
+  test('& maps to float-int workaround', () => {
+    const glsl = emitShaderExpression('x = bass & 2.0');
+    expect(glsl).toBe('x = float(int(signalBass) & int(2.0));');
+  });
+
+  test('| maps to float-int workaround', () => {
+    const glsl = emitShaderExpression('x = mid | 3.0');
+    expect(glsl).toBe('x = float(int(signalMid) | int(3.0));');
   });
 });
 
