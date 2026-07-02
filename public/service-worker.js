@@ -1,17 +1,12 @@
-// Minimal offline-first service worker for Stims
-// Caches the app shell (HTML, CSS, JS) so the library/shell stays functional
-// when offline. The visualizer itself needs audio input, so full offline
-// functionality is about keeping navigation and toy browsing available.
+// Offline-first service worker for Stims
+// Caches the app shell so navigation stays functional offline.
+// Hashed assets (/assets/*) are immutable with 1-year Cache-Control
+// and are served from browser HTTP cache — no SW intervention needed.
 
-const CACHE_NAME = 'stims-shell-v3';
+const CACHE_NAME = 'stims-shell-v4';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
-  '/assets/css/base.css',
-  '/assets/css/index.css',
-  '/assets/css/tokens.css',
-  '/assets/css/motion.css',
-  '/vendor/normalize.min.css',
   '/milkdrop-presets/catalog.json',
   '/manifest.json',
   '/icons/favicon.svg',
@@ -24,10 +19,9 @@ self.addEventListener('install', (event) => {
     (async () => {
       const cache = await caches.open(CACHE_NAME);
       await cache.addAll(SHELL_ASSETS);
+      self.skipWaiting();
     })(),
   );
-  // Activate immediately so stale versions don't linger
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
