@@ -3,6 +3,7 @@ import {
   parseMilkdropShaderStatement,
 } from '../shader-ast';
 import type {
+  MilkdropExpressionNode,
   MilkdropShaderControlExpressions,
   MilkdropShaderControls,
   MilkdropShaderExpressionNode,
@@ -140,7 +141,15 @@ function applyShaderAstStatement({
       resolvedExpression.type === 'identifier'
         ? normalizeShaderSamplerName(resolvedExpression.name)
         : parseShaderSamplerSource(statement.rawValue);
-    if (!source || !isAuxShaderSamplerName(source)) {
+    if (!source) {
+      return false;
+    }
+    if (source === 'main') {
+      controls.textureLayer.source = 'none';
+      controls.textureLayer.mode = 'none';
+      return true;
+    }
+    if (!isAuxShaderSamplerName(source)) {
       return false;
     }
     controls.textureLayer.source = source;
@@ -495,130 +504,157 @@ function applyShaderAstStatement({
     if (
       resolvedExpression.type === 'call' &&
       resolvedExpression.name.toLowerCase() === 'mix' &&
-      resolvedExpression.args.length >= 3 &&
-      isShaderSampleRgbExpression(
-        resolvedExpression.args[0] as MilkdropShaderExpressionNode,
-      )
+      resolvedExpression.args.length >= 3
     ) {
-      const baseSample = getShaderSampleInfo(
+      // Canonical: mix(main, aux, amount)
+      const isArg0Main = isShaderSampleRgbExpression(
         resolvedExpression.args[0] as MilkdropShaderExpressionNode,
       );
-      const amount = evaluateShaderScalarResult(
-        resolvedExpression.args[2] as MilkdropShaderExpressionNode,
-        shaderValueEnv,
-        shaderEnv,
-        shaderExpressionEnv,
-      );
-      if (amount && baseSample?.source === 'main') {
-        const targetNode = resolvedExpression
-          .args[1] as MilkdropShaderExpressionNode;
-        const auxSample = getShaderSampleInfo(targetNode);
-        if (
-          auxSample &&
-          auxSample.source !== 'main' &&
-          auxSample.source !== 'none'
-        ) {
-          if (!isAuxShaderSamplerName(auxSample.source)) {
-            return false;
-          }
-          controls.textureLayer.mode = 'mix';
-          controls.textureLayer.amount = amount.value;
-          expressions.textureLayer.amount = amount.expression;
-          applyTextureLayerSample(controls, expressions, auxSample);
-          return true;
-        }
-        const invertedSample =
-          extractShaderInvertedSampleExpression(targetNode);
-        if (invertedSample) {
-          if (invertedSample === 'main') {
-            const next = applyShaderControlValue(
-              operator,
-              controls.invertBoost,
-              expressions.invertBoost,
-              amount.value,
-              amount.expression,
-            );
-            controls.invertBoost = next.value;
-            expressions.invertBoost = next.expression;
-            shaderEnv.invert = next.value;
-            return true;
-          }
-          if (!isAuxShaderSamplerName(invertedSample.source)) {
-            return false;
-          }
-          controls.textureLayer.mode = 'mix';
-          controls.textureLayer.amount = amount.value;
-          expressions.textureLayer.amount = amount.expression;
-          applyTextureLayerSample(controls, expressions, invertedSample, {
-            inverted: true,
-          });
-          return true;
-        }
-        if (isShaderSolarizeSampleExpression(targetNode)) {
-          const next = applyShaderControlValue(
-            operator,
-            controls.solarizeBoost,
-            expressions.solarizeBoost,
-            amount.value,
-            amount.expression,
-          );
-          controls.solarizeBoost = next.value;
-          expressions.solarizeBoost = next.expression;
-          shaderEnv.solarize = next.value;
-          return true;
-        }
-        const tint = evaluateShaderVectorResult(
-          targetNode,
-          3,
+      // Swapped: mix(aux, main, amount) — treat as mix(main, aux, 1-amount)
+      const isArg1Main =
+        !isArg0Main &&
+        isShaderSampleRgbExpression(
+          resolvedExpression.args[1] as MilkdropShaderExpressionNode,
+        );
+
+      if (isArg0Main || isArg1Main) {
+        const baseSampleArg = isArg0Main
+          ? (resolvedExpression.args[0] as MilkdropShaderExpressionNode)
+          : (resolvedExpression.args[1] as MilkdropShaderExpressionNode);
+        const baseSample = getShaderSampleInfo(baseSampleArg);
+        const rawAmount = evaluateShaderScalarResult(
+          resolvedExpression.args[2] as MilkdropShaderExpressionNode,
           shaderValueEnv,
           shaderEnv,
           shaderExpressionEnv,
         );
-        if (tint) {
-          const nextR = applyShaderControlValue(
-            operator,
-            controls.tint.r,
-            expressions.tint.r,
-            1 + (tint.values[0] - 1) * amount.value,
-            buildTintBlendExpression(
-              tint.expressions[0] ?? null,
+        // When args are swapped (mix(aux, main, t)) the effective amount is (1-t)
+        const amount =
+          rawAmount && isArg1Main
+            ? {
+                value: 1 - rawAmount.value,
+                expression: rawAmount.expression
+                  ? ({
+                      type: 'binary' as const,
+                      operator: '-' as const,
+                      left: createLiteralExpression(1),
+                      right: rawAmount.expression,
+                    } as MilkdropExpressionNode)
+                  : null,
+              }
+            : rawAmount;
+        if (amount && baseSample?.source === 'main') {
+          const targetNode = isArg0Main
+            ? (resolvedExpression.args[1] as MilkdropShaderExpressionNode)
+            : (resolvedExpression.args[0] as MilkdropShaderExpressionNode);
+          const auxSample = getShaderSampleInfo(targetNode);
+          if (
+            auxSample &&
+            auxSample.source !== 'main' &&
+            auxSample.source !== 'none'
+          ) {
+            if (!isAuxShaderSamplerName(auxSample.source)) {
+              return false;
+            }
+            controls.textureLayer.mode = 'mix';
+            controls.textureLayer.amount = amount.value;
+            expressions.textureLayer.amount = amount.expression;
+            applyTextureLayerSample(controls, expressions, auxSample);
+            return true;
+          }
+          const invertedSample =
+            extractShaderInvertedSampleExpression(targetNode);
+          if (invertedSample) {
+            if (invertedSample === 'main') {
+              const next = applyShaderControlValue(
+                operator,
+                controls.invertBoost,
+                expressions.invertBoost,
+                amount.value,
+                amount.expression,
+              );
+              controls.invertBoost = next.value;
+              expressions.invertBoost = next.expression;
+              shaderEnv.invert = next.value;
+              return true;
+            }
+            if (!isAuxShaderSamplerName(invertedSample.source)) {
+              return false;
+            }
+            controls.textureLayer.mode = 'mix';
+            controls.textureLayer.amount = amount.value;
+            expressions.textureLayer.amount = amount.expression;
+            applyTextureLayerSample(controls, expressions, invertedSample, {
+              inverted: true,
+            });
+            return true;
+          }
+          if (isShaderSolarizeSampleExpression(targetNode)) {
+            const next = applyShaderControlValue(
+              operator,
+              controls.solarizeBoost,
+              expressions.solarizeBoost,
+              amount.value,
               amount.expression,
-            ),
+            );
+            controls.solarizeBoost = next.value;
+            expressions.solarizeBoost = next.expression;
+            shaderEnv.solarize = next.value;
+            return true;
+          }
+          const tint = evaluateShaderVectorResult(
+            targetNode,
+            3,
+            shaderValueEnv,
+            shaderEnv,
+            shaderExpressionEnv,
           );
-          const nextG = applyShaderControlValue(
-            operator,
-            controls.tint.g,
-            expressions.tint.g,
-            1 + (tint.values[1] - 1) * amount.value,
-            buildTintBlendExpression(
-              tint.expressions[1] ?? null,
-              amount.expression,
-            ),
-          );
-          const nextB = applyShaderControlValue(
-            operator,
-            controls.tint.b,
-            expressions.tint.b,
-            1 + (tint.values[2] - 1) * amount.value,
-            buildTintBlendExpression(
-              tint.expressions[2] ?? null,
-              amount.expression,
-            ),
-          );
-          controls.tint = {
-            r: nextR.value,
-            g: nextG.value,
-            b: nextB.value,
-          };
-          expressions.tint = {
-            r: nextR.expression,
-            g: nextG.expression,
-            b: nextB.expression,
-          };
-          shaderEnv.tint_r = nextR.value;
-          shaderEnv.tint_g = nextG.value;
-          shaderEnv.tint_b = nextB.value;
-          return true;
+          if (tint) {
+            const nextR = applyShaderControlValue(
+              operator,
+              controls.tint.r,
+              expressions.tint.r,
+              1 + (tint.values[0] - 1) * amount.value,
+              buildTintBlendExpression(
+                tint.expressions[0] ?? null,
+                amount.expression,
+              ),
+            );
+            const nextG = applyShaderControlValue(
+              operator,
+              controls.tint.g,
+              expressions.tint.g,
+              1 + (tint.values[1] - 1) * amount.value,
+              buildTintBlendExpression(
+                tint.expressions[1] ?? null,
+                amount.expression,
+              ),
+            );
+            const nextB = applyShaderControlValue(
+              operator,
+              controls.tint.b,
+              expressions.tint.b,
+              1 + (tint.values[2] - 1) * amount.value,
+              buildTintBlendExpression(
+                tint.expressions[2] ?? null,
+                amount.expression,
+              ),
+            );
+            controls.tint = {
+              r: nextR.value,
+              g: nextG.value,
+              b: nextB.value,
+            };
+            expressions.tint = {
+              r: nextR.expression,
+              g: nextG.expression,
+              b: nextB.expression,
+            };
+            shaderEnv.tint_r = nextR.value;
+            shaderEnv.tint_g = nextG.value;
+            shaderEnv.tint_b = nextB.value;
+            return true;
+          }
         }
       }
     }
@@ -666,7 +702,28 @@ function applyShaderAstStatement({
         return true;
       }
     }
-  }
+
+    if (
+      resolvedExpression.type === 'binary' &&
+      resolvedExpression.operator === '-' &&
+      isShaderMainSampleExpression(resolvedExpression.left)
+    ) {
+      // Only main - aux*amount is meaningful (not aux - main)
+      const auxSample = extractScaledShaderSampleExpression(
+        resolvedExpression.right,
+      );
+      if (auxSample) {
+        if (!isAuxShaderSamplerName(auxSample.sample.source)) {
+          return false;
+        }
+        controls.textureLayer.mode = 'subtract';
+        controls.textureLayer.amount = auxSample.amountValue;
+        expressions.textureLayer.amount = auxSample.amountExpression;
+        applyTextureLayerSample(controls, expressions, auxSample.sample);
+        return true;
+      }
+    }
+  } // end if (key === 'ret' || key === 'shader_body')
 
   const numeric = scalarResult();
   if (

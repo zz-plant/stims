@@ -11,7 +11,7 @@ const moods = [
   { label: 'Cosmic', desc: 'space nebula starfield', icon: '\u2728' },
 ];
 
-const MOBILE_CONTROL_IDLE_MS = 12_000;
+const MOBILE_CONTROL_IDLE_MS = 4_000;
 
 type MobileControlBarProps = {
   audioEnergy: number;
@@ -84,6 +84,11 @@ export function MobileControlBar({
   const handleShuffle = useCallback(() => {
     resetHideTimer();
     void engine.handleShufflePreset();
+  }, [engine, resetHideTimer]);
+
+  const handlePrevious = useCallback(() => {
+    resetHideTimer();
+    void engine.handlePreviousPreset();
   }, [engine, resetHideTimer]);
 
   const handleSimilar = useCallback(async () => {
@@ -227,14 +232,26 @@ export function MobileControlBar({
           <button
             type="button"
             className={styles.action}
+            onClick={handlePrevious}
+            aria-label="Previous preset"
+          >
+            <UiIcon
+              name="arrow-left"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+            <span className={styles.actionLabel}>Back</span>
+          </button>
+          <button
+            type="button"
+            className={styles.action}
             onClick={handleShuffle}
-            aria-label="Shuffle preset"
+            aria-label="Next preset"
           >
             <UiIcon
               name="shuffle"
               className="stims-icon-slot stims-icon-slot--sm"
             />
-            <span className={styles.actionLabel}>Shuffle</span>
+            <span className={styles.actionLabel}>Next</span>
           </button>
           <button
             type="button"

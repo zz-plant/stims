@@ -404,7 +404,7 @@ export function buildMilkdropInputSignalOverrides(
   const dragDelta = input?.dragDelta;
   const hover = performance?.hover;
   const numericTarget = target as Partial<Record<NumericSignalName, number>>;
-  const inputSpeed = Math.hypot(dragDelta?.x ?? 0, dragDelta?.y ?? 0);
+  const inputSpeed = dragDelta ? Math.hypot(dragDelta.x, dragDelta.y) : 0;
   const assignAliasedValue = (
     camelKey: NumericSignalName,
     snakeKey: NumericSignalName,

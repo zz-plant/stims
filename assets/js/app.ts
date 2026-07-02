@@ -1,6 +1,7 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
+import { stopAllAudioForBfcache } from './core/audio-handler.ts';
 import { applyDeviceTierToDocument } from './core/device-profile.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
@@ -68,3 +69,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js');
   });
 }
+
+window.addEventListener('pagehide', () => {
+  stopAllAudioForBfcache();
+});

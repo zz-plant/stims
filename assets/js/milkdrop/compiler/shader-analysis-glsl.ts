@@ -145,6 +145,12 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       if (op === '^') {
         return `pow(${left}, ${right})`;
       }
+      if (op === '&') {
+        return `float(int(${left}) & int(${right}))`;
+      }
+      if (op === '|') {
+        return `float(int(${left}) | int(${right}))`;
+      }
       return `(${left} ${glslOp} ${right})`;
     },
 
@@ -414,9 +420,12 @@ function emitTextureSample(
 
   if (isAuxShaderSamplerName(normalizedName)) {
     const sourceId = getAuxTextureSourceId(normalizedName);
-    const sampleDim = dimension === '3d' ? '1.0' : '0.0';
+    const isVolume = normalizedName === 'simplex';
+    const sampleDim = dimension === '3d' && isVolume ? '1.0' : '0.0';
     const zSlice =
-      dimension === '3d' && args.length >= 3 ? (args[2] ?? '0.0') : '0.0';
+      dimension === '3d' && isVolume && args.length >= 3
+        ? (args[2] ?? '0.0')
+        : '0.0';
     return `sampleAuxTexture(vec4(${sourceId}, 0, 0, 0).x, ${sampleDim}, sampleUv(${coordArg}, textureWrap), ${zSlice}).rgb`;
   }
 

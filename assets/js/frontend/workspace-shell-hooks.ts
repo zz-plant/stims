@@ -57,6 +57,7 @@ export function useWorkspaceShellOrchestration({
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
   const fileAudioContextRef = useRef<AudioContext | null>(null);
+  const lastPresetIdRef = useRef<string | null>(null);
 
   const enrichedCatalog = useMemo(() => {
     const runtimeCatalog = (engineSnapshot?.catalogEntries ?? []).map(
@@ -70,10 +71,9 @@ export function useWorkspaceShellOrchestration({
 
   const catalogReady = useMemo(
     () =>
-      (engineSnapshot?.runtimeReady ?? false) ||
-      (engineSnapshot?.catalogEntries ?? []).length > 0 ||
-      fallbackCatalogReady,
-    [engineSnapshot, fallbackCatalogReady],
+      ((engineSnapshot?.runtimeReady ?? false) || fallbackCatalogReady) &&
+      enrichedCatalog.length > 0,
+    [engineSnapshot, fallbackCatalogReady, enrichedCatalog],
   );
 
   const catalogError = null;
@@ -197,6 +197,9 @@ export function useWorkspaceShellOrchestration({
   };
 
   const handlePresetSelection = (presetId: string) => {
+    if (routeState.presetId && routeState.presetId !== presetId) {
+      lastPresetIdRef.current = routeState.presetId;
+    }
     commitRoute({ ...routeState, presetId, panel: null });
   };
 
@@ -271,6 +274,16 @@ export function useWorkspaceShellOrchestration({
     }
 
     handlePresetSelection(nextPreset.id);
+  };
+
+  const handlePreviousPreset = () => {
+    if (lastPresetIdRef.current) {
+      const prevId = lastPresetIdRef.current;
+      lastPresetIdRef.current = null;
+      commitRoute({ ...routeState, presetId: prevId, panel: null });
+    } else {
+      handleShufflePreset();
+    }
   };
 
   const handleAudioFile = async (file: File) => {
@@ -466,6 +479,7 @@ export function useWorkspaceShellOrchestration({
     handleImport,
     handlePlayPreset,
     handlePresetSelection,
+    handlePreviousPreset,
     handleShowCurrentLink,
     handleAudioFile,
     handleShufflePreset,

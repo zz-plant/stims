@@ -266,23 +266,21 @@ export function buildCustomWaves({
         continue;
       }
 
-      Object.assign(pointLocals, frameLocals, {
-        sample: waveChannels.sample,
-        value: waveChannels.value,
-        value1: waveChannels.value1,
-        value2: waveChannels.value2,
-        x: centerX + (-1 + sample * 2) * 0.85,
-        y:
-          (frameLocals.spectrum ?? 0) >= 0.5
-            ? baseY
-            : centerY +
-              Math.sin(
-                sample * Math.PI * 2 * (1 + (frameLocals.mystery ?? 0)) +
-                  signals.time,
-              ) *
-                0.18 *
-                scaling,
-      });
+      pointLocals.sample = waveChannels.sample;
+      pointLocals.value = waveChannels.value;
+      pointLocals.value1 = waveChannels.value1;
+      pointLocals.value2 = waveChannels.value2;
+      pointLocals.x = centerX + (-1 + sample * 2) * 0.85;
+      pointLocals.y =
+        (frameLocals.spectrum ?? 0) >= 0.5
+          ? baseY
+          : centerY +
+            Math.sin(
+              sample * Math.PI * 2 * (1 + (frameLocals.mystery ?? 0)) +
+                signals.time,
+            ) *
+              0.18 *
+              scaling;
       pointLocals.rad = Math.sqrt(
         pointLocals.x * pointLocals.x + pointLocals.y * pointLocals.y,
       );

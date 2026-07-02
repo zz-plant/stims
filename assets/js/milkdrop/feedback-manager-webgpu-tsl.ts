@@ -102,7 +102,9 @@ type ShaderBinaryOperator =
   | '=='
   | '!='
   | '&&'
-  | '||';
+  | '||'
+  | '&'
+  | '|';
 
 type ShaderNodeEnv = {
   values: Map<string, ShaderNodeValue>;
@@ -1075,6 +1077,10 @@ function createCompositeOutputNode(
     const overlayMultiply = color.mul(
       mix(vec3(1), overlayColor, overlayMixAmount),
     );
+    const overlaySubtract = max(
+      vec3(0),
+      color.sub(overlayColor.mul(overlayAmount)),
+    );
     const overlayResult = select(
       uniforms.overlayTextureMode.lessThan(1.5),
       overlayReplace,
@@ -1084,7 +1090,11 @@ function createCompositeOutputNode(
         select(
           uniforms.overlayTextureMode.lessThan(3.5),
           overlayAdd,
-          overlayMultiply,
+          select(
+            uniforms.overlayTextureMode.lessThan(4.5),
+            overlayMultiply,
+            overlaySubtract,
+          ),
         ),
       ),
     );

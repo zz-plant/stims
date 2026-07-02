@@ -4,6 +4,7 @@ export async function resolveWithTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
   message: string,
+  abortController?: AbortController,
 ): Promise<T> {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     return promise;
@@ -12,6 +13,7 @@ export async function resolveWithTimeout<T>(
   let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
   const timeoutPromise = new Promise<T>((_, reject) => {
     timeoutId = globalThis.setTimeout(() => {
+      abortController?.abort();
       reject(new Error(message));
     }, timeoutMs);
   });

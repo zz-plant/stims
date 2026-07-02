@@ -1199,43 +1199,51 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   render(payload: MilkdropRenderPayload) {
-    const backgroundMaterial = this.background.material as MeshBasicMaterial;
-    setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
+    try {
+      const backgroundMaterial = this.background.material as MeshBasicMaterial;
+      setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
 
-    this.renderMesh(
-      payload.frameState.mesh,
-      payload.frameState.gpuGeometry,
-      payload.frameState.signals,
-      payload.frameState.interaction?.mesh,
-    );
-    this.renderFrameVisuals(
-      payload.frameState,
-      this.mainWaveGroup,
-      this.customWaveGroup,
-      this.trailGroup,
-      this.particleFieldGroup,
-      this.shapesGroup,
-      this.borderGroup,
-      this.motionVectorCpuGroup,
-      this.proceduralMotionVectors,
-    );
+      this.renderMesh(
+        payload.frameState.mesh,
+        payload.frameState.gpuGeometry,
+        payload.frameState.signals,
+        payload.frameState.interaction?.mesh,
+      );
+      this.renderFrameVisuals(
+        payload.frameState,
+        this.mainWaveGroup,
+        this.customWaveGroup,
+        this.trailGroup,
+        this.particleFieldGroup,
+        this.shapesGroup,
+        this.borderGroup,
+        this.motionVectorCpuGroup,
+        this.proceduralMotionVectors,
+      );
 
-    const blend = payload.blendState;
-    if (blend) {
-      this.renderBlendVisuals(payload, blend);
-    }
+      const blend = payload.blendState;
+      if (blend) {
+        this.renderBlendVisuals(payload, blend);
+      }
 
-    if (
-      !isFeedbackCapableRenderer(this.renderer) ||
-      !this.feedback ||
-      !payload.frameState.post.shaderEnabled
-    ) {
+      if (
+        !isFeedbackCapableRenderer(this.renderer) ||
+        !this.feedback ||
+        !payload.frameState.post.shaderEnabled
+      ) {
+        return false;
+      }
+      this.feedback.applyCompositeState(
+        this.buildFeedbackCompositeState(payload.frameState),
+      );
+      return this.feedback.render(this.renderer, this.scene, this.camera);
+    } catch (error) {
+      console.warn(
+        'ThreeMilkdropAdapter: render failed (potentially during fallback/transition)',
+        error,
+      );
       return false;
     }
-    this.feedback.applyCompositeState(
-      this.buildFeedbackCompositeState(payload.frameState),
-    );
-    return this.feedback.render(this.renderer, this.scene, this.camera);
   }
 
   dispose() {

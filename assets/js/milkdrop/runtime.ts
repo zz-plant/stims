@@ -674,7 +674,7 @@ export function createMilkdropExperience({
     ? preferences.consumeFallbackNotice()
     : null;
   if (fallbackNotice) {
-    setOverlayStatus(fallbackNotice);
+    console.info('[Stims] Renderer fallback:', fallbackNotice);
   }
 
   const { applyFieldValues, nudgeNumericField, cycleWaveMode } =

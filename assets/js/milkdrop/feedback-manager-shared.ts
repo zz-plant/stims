@@ -557,8 +557,10 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
               color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
             } else if (overlayTextureMode < 3.5) {
               color = min(vec3(1.0), color + overlayColor * amount);
-            } else {
+            } else if (overlayTextureMode < 4.5) {
               color *= mix(vec3(1.0), overlayColor, clamp(amount, 0.0, 1.0));
+            } else {
+              color = max(vec3(0.0), color - overlayColor * amount);
             }
           }
           if (brighten > 0.01 || brightenBoost > 0.01) {

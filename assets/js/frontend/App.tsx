@@ -22,6 +22,7 @@ import {
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
+import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
 import { SplitViewBrowse } from './SplitViewBrowse.tsx';
 import { connectWakeLock } from './wake-lock.ts';
 import {
@@ -400,12 +401,12 @@ function StimsWorkspaceAppShell() {
   filteredCatalogRef.current = engine.filteredCatalog;
   const handlePresetSelectionRef = useRef(engine.handlePresetSelection);
   handlePresetSelectionRef.current = engine.handlePresetSelection;
-  const setStatusMessageRef = useRef(ui.setStatusMessage);
-  setStatusMessageRef.current = ui.setStatusMessage;
   const updatePanelRef = useRef(ui.updatePanel);
   updatePanelRef.current = ui.updatePanel;
   const handleShufflePresetRef = useRef(engine.handleShufflePreset);
   handleShufflePresetRef.current = engine.handleShufflePreset;
+  const handlePreviousPresetRef = useRef(engine.handlePreviousPreset);
+  handlePreviousPresetRef.current = engine.handlePreviousPreset;
   useEffect(() => {
     const handleOpenShortcuts = () => setShowShortcuts(true);
     window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
@@ -462,9 +463,7 @@ function StimsWorkspaceAppShell() {
         void handleShufflePresetRef.current();
       } else if (key === 'p' || key === 'arrowleft') {
         event.preventDefault();
-        setStatusMessageRef.current(
-          'Previous preset \u2014 use Shuffle for random',
-        );
+        void handlePreviousPresetRef.current();
       } else if (/^[1-9]$/.test(key) && liveMode) {
         event.preventDefault();
         const index = Number.parseInt(key, 10) - 1;
@@ -493,9 +492,7 @@ function StimsWorkspaceAppShell() {
       touchStartY = 0;
       if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
       if (dx > 0) {
-        setStatusMessageRef.current(
-          'Previous preset \u2014 use Shuffle for random',
-        );
+        void handlePreviousPresetRef.current();
       } else {
         void handleShufflePresetRef.current();
       }
@@ -566,6 +563,8 @@ function StimsWorkspaceAppShell() {
         stageSummary={stageSummary}
         stageTitle={stageTitle}
       />
+
+      <RendererFallbackBadge />
 
       <WorkspaceToolSheet
         onCompatibilityModeChange={setCompatibilityMode}

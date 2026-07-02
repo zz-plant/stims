@@ -615,6 +615,29 @@ async function probeRendererCapabilities({
       );
     }
 
+    let hasPresentationContext = false;
+    try {
+      const testCanvas = document.createElement('canvas');
+      const testCtx = testCanvas.getContext('webgpu');
+      if (testCtx) {
+        hasPresentationContext = true;
+      }
+    } catch (e) {
+      console.warn('WebGPU canvas context verification failed.', e);
+    }
+
+    if (!hasPresentationContext) {
+      device.destroy?.();
+      return cacheResult(
+        buildFallback(
+          'WebGPU presentation context is not supported in this browser.',
+          {
+            shouldRetryWebGPU: true,
+          },
+        ),
+      );
+    }
+
     observeCapabilityDevice(device);
 
     return cacheResult({

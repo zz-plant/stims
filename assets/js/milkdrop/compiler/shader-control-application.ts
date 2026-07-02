@@ -93,7 +93,20 @@ function applyTextureSourceAssignment({
     resolvedExpression?.type === 'identifier'
       ? normalizeShaderSamplerName(resolvedExpression.name)
       : parseShaderSamplerSource(rawValue);
-  if (!source || !isAuxShaderSamplerName(source)) {
+  if (!source) {
+    return false;
+  }
+  // Explicitly setting source back to main resets the overlay layer to none
+  if (source === 'main') {
+    if (target === 'texture_source') {
+      context.controls.textureLayer.source = 'none';
+      context.controls.textureLayer.mode = 'none';
+    } else {
+      context.controls.warpTexture.source = 'none';
+    }
+    return true;
+  }
+  if (!isAuxShaderSamplerName(source)) {
     return false;
   }
   if (target === 'texture_source') {

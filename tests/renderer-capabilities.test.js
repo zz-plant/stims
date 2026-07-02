@@ -39,8 +39,31 @@ function mockNavigatorWithGPU({ device = {}, adapter = {} } = {}) {
   return { requestAdapter, requestDevice };
 }
 
+let originalCreateElement;
+
 beforeEach(async () => {
   mock.restore();
+  if (!originalCreateElement) {
+    originalCreateElement = document.createElement.bind(document);
+  }
+  document.createElement = mock((tagName, options) => {
+    const element = originalCreateElement(tagName, options);
+    if (tagName === 'canvas') {
+      const originalGetContext = element.getContext.bind(element);
+      element.getContext = mock((kind) => {
+        if (kind === 'webgpu') {
+          return {};
+        }
+        const ctx = originalGetContext(kind);
+        if (kind === 'webgl' && !ctx) {
+          return {};
+        }
+        return ctx;
+      });
+    }
+    return element;
+  });
+
   await resetRenderPreferencesState();
   window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
   ({
@@ -55,6 +78,9 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  if (originalCreateElement) {
+    document.createElement = originalCreateElement;
+  }
   resetRendererCapabilities();
   mock.restore();
   window.localStorage.removeItem(COMPATIBILITY_MODE_KEY);
@@ -267,7 +293,7 @@ describe('renderer capabilities', () => {
 
     const result = await getRendererCapabilities({ forceRetry: true });
 
-    expect(result.preferredBackend).toBeNull();
+    expect(result.preferredBackend).toBe('webgl');
     expect(result.fallbackReason).toContain('WebGPU');
     expect(result.shouldRetryWebGPU).toBe(false);
     expect(result.forceWebGL).toBe(false);

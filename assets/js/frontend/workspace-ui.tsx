@@ -1,9 +1,28 @@
-import { type KeyboardEvent, type ReactNode, useEffect, useRef } from 'react';
+import {
+  type KeyboardEvent,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useRef,
+} from 'react';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
-import { BrowseSheetPanel } from './BrowseSheetPanel.tsx';
-import { EditorPanel } from './EditorPanel.tsx';
-import { SettingsSheetPanel } from './SettingsSheetPanel.tsx';
 import { StimsControlDock } from './StimsControlDock.tsx';
+
+const BrowseSheetPanel = lazy(() =>
+  import('./BrowseSheetPanel.tsx').then((m) => ({
+    default: m.BrowseSheetPanel,
+  })),
+);
+const EditorPanel = lazy(() =>
+  import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
+);
+const SettingsSheetPanel = lazy(() =>
+  import('./SettingsSheetPanel.tsx').then((m) => ({
+    default: m.SettingsSheetPanel,
+  })),
+);
+
 import {
   StimsCornerBrand,
   StimsFrameChrome,
@@ -317,25 +336,27 @@ export function WorkspaceToolSheet({
       )}
 
       <div className="stims-shell__sheet-body">
-        {panel === 'editor' ? <EditorPanel /> : null}
+        <Suspense fallback={null}>
+          {panel === 'editor' ? <EditorPanel /> : null}
 
-        {panel === 'browse' ? (
-          <BrowseSheetPanel
-            onCollectionTagChange={(collectionTag) =>
-              w.commitRoute({ ...w.routeState, collectionTag })
-            }
-            onImport={(files) => {
-              void w.handleImport(files);
-            }}
-          />
-        ) : null}
+          {panel === 'browse' ? (
+            <BrowseSheetPanel
+              onCollectionTagChange={(collectionTag) =>
+                w.commitRoute({ ...w.routeState, collectionTag })
+              }
+              onImport={(files) => {
+                void w.handleImport(files);
+              }}
+            />
+          ) : null}
 
-        {panel === 'settings' ? (
-          <SettingsSheetPanel
-            onCompatibilityModeChange={onCompatibilityModeChange}
-            onMotionPreferenceChange={onMotionPreferenceChange}
-          />
-        ) : null}
+          {panel === 'settings' ? (
+            <SettingsSheetPanel
+              onCompatibilityModeChange={onCompatibilityModeChange}
+              onMotionPreferenceChange={onMotionPreferenceChange}
+            />
+          ) : null}
+        </Suspense>
       </div>
     </aside>
   );

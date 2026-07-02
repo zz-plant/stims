@@ -93,7 +93,7 @@ function tokenize(source: string) {
       continue;
     }
 
-    if ('+-*/%^<>!='.includes(current)) {
+    if ('+-*/%^<>!=&|'.includes(current)) {
       tokens.push({ type: 'operator', value: current });
       index += 1;
       continue;
@@ -211,12 +211,58 @@ class ShaderExpressionParser {
   }
 
   private parseLogicalAnd(): MilkdropShaderExpressionNode | null {
-    let node = this.parseEquality();
+    let node = this.parseBitwiseOr();
     if (!node) {
       return null;
     }
     while (true) {
       const operator = this.matchOperator('&&');
+      if (!operator) {
+        return node;
+      }
+      const right = this.parseBitwiseOr();
+      if (!right) {
+        return null;
+      }
+      node = {
+        type: 'binary',
+        operator: '&&',
+        left: node,
+        right,
+      };
+    }
+  }
+
+  private parseBitwiseOr(): MilkdropShaderExpressionNode | null {
+    let node = this.parseBitwiseAnd();
+    if (!node) {
+      return null;
+    }
+    while (true) {
+      const operator = this.matchOperator('|');
+      if (!operator) {
+        return node;
+      }
+      const right = this.parseBitwiseAnd();
+      if (!right) {
+        return null;
+      }
+      node = {
+        type: 'binary',
+        operator: '|',
+        left: node,
+        right,
+      };
+    }
+  }
+
+  private parseBitwiseAnd(): MilkdropShaderExpressionNode | null {
+    let node = this.parseEquality();
+    if (!node) {
+      return null;
+    }
+    while (true) {
+      const operator = this.matchOperator('&');
       if (!operator) {
         return node;
       }
@@ -226,7 +272,7 @@ class ShaderExpressionParser {
       }
       node = {
         type: 'binary',
-        operator: '&&',
+        operator: '&',
         left: node,
         right,
       };
@@ -554,7 +600,9 @@ function mapScalarBinary(
     | '=='
     | '!='
     | '&&'
-    | '||',
+    | '||'
+    | '&'
+    | '|',
   a: number,
   b: number,
 ) {
@@ -587,6 +635,10 @@ function mapScalarBinary(
       return isTruthy(a) && isTruthy(b) ? 1 : 0;
     case '||':
       return isTruthy(a) || isTruthy(b) ? 1 : 0;
+    case '&':
+      return Math.trunc(a) & Math.trunc(b);
+    case '|':
+      return Math.trunc(a) | Math.trunc(b);
   }
 }
 
@@ -605,7 +657,9 @@ function applyBinary(
     | '=='
     | '!='
     | '&&'
-    | '||',
+    | '||'
+    | '&'
+    | '|',
   left: ShaderValue,
   right: ShaderValue,
 ) {

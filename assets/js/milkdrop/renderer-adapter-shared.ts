@@ -164,6 +164,8 @@ export function getShaderTextureBlendModeId(mode: string) {
       return 3;
     case 'multiply':
       return 4;
+    case 'subtract':
+      return 5;
     default:
       return 0;
   }

@@ -156,16 +156,24 @@ export function evaluateJit(
   env: Record<string, number>,
   nextRandom?: () => number,
 ): number {
-  const key = JSON.stringify(node);
-  let fn = rawCache.get(key);
+  let fn = (node as any).compiledFn;
   if (!fn) {
-    const body = compileNode(node);
-    fn = new Function(
-      'e',
-      'r',
-      `"use strict";return (${body});`,
-    ) as unknown as JitFn;
-    rawCache.set(key, fn);
+    const key = JSON.stringify(node);
+    fn = rawCache.get(key);
+    if (!fn) {
+      const body = compileNode(node);
+      fn = new Function(
+        'e',
+        'r',
+        `"use strict";return (${body});`,
+      ) as unknown as JitFn;
+      rawCache.set(key, fn);
+    }
+    try {
+      (node as any).compiledFn = fn;
+    } catch {
+      // Safe fallback if node is frozen
+    }
   }
   return fn(env, nextRandom ?? (() => Math.random()));
 }

@@ -187,7 +187,8 @@ export type MilkdropShaderTextureBlendMode =
   | 'replace'
   | 'mix'
   | 'add'
-  | 'multiply';
+  | 'multiply'
+  | 'subtract';
 
 export type MilkdropShaderSampleDimension = '2d' | '3d';
 
@@ -272,7 +273,9 @@ export type MilkdropShaderExpressionNode =
         | '=='
         | '!='
         | '&&'
-        | '||';
+        | '||'
+        | '&'
+        | '|';
       left: MilkdropShaderExpressionNode;
       right: MilkdropShaderExpressionNode;
     }

@@ -46,10 +46,13 @@ test(
       deviceScaleFactor: 2,
     });
     const page = await ctx.newPage();
+    page.on('console', (msg) => {
+      console.log(`[TEST BROWSER CONSOLE 1] ${msg.type()}: ${msg.text()}`);
+    });
 
     try {
       await page.goto(
-        `${SERVER_URL}/?preset=aderrasi-potion-of-spirits&audio=demo`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=demo`,
         { waitUntil: 'domcontentloaded' },
       );
 
@@ -117,11 +120,14 @@ test(
       deviceScaleFactor: 2,
     });
     const page = await ctx.newPage();
+    page.on('console', (msg) => {
+      console.log(`[TEST BROWSER CONSOLE] ${msg.type()}: ${msg.text()}`);
+    });
 
     try {
       // Load first preset
       await page.goto(
-        `${SERVER_URL}/?preset=aderrasi-potion-of-spirits&audio=demo`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=demo`,
         { waitUntil: 'domcontentloaded' },
       );
       await page.waitForSelector('#stims-main', { timeout: 15000 });
@@ -136,6 +142,9 @@ test(
       });
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
       await page.waitForSelector('canvas', { timeout: 15000 });
+      await page.waitForFunction(() => document.title.includes('Glowsticks'), {
+        timeout: 30000,
+      });
       await page.waitForTimeout(2000);
 
       const hash1 = await page.evaluate(
@@ -143,9 +152,12 @@ test(
       );
 
       // Load a different preset via URL change (page.goto with new preset)
-      await page.goto(`${SERVER_URL}/?preset=geiss-casino&audio=demo`, {
-        waitUntil: 'domcontentloaded',
-      });
+      await page.goto(
+        `${SERVER_URL}/?preset=rovastar-parallel-universe&audio=demo`,
+        {
+          waitUntil: 'domcontentloaded',
+        },
+      );
       await page.waitForSelector('#stims-main', { timeout: 15000 });
       await page.evaluate(() => {
         const btns = [...document.querySelectorAll('button')];
@@ -158,7 +170,7 @@ test(
       });
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
       await page.waitForSelector('canvas', { timeout: 15000 });
-      await page.waitForFunction(() => document.title.includes('Geiss'), {
+      await page.waitForFunction(() => document.title.includes('Parallel'), {
         timeout: 30000,
       });
       await page.waitForTimeout(2000);
@@ -169,7 +181,7 @@ test(
 
       // Verify presets are distinct
       const title = await page.evaluate(() => document.title);
-      expect(title).toContain('Geiss');
+      expect(title).toContain('Parallel');
 
       // Both must have content
       expect(hash1).toBeGreaterThan(1000);

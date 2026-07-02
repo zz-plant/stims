@@ -102,6 +102,7 @@ export type GeometryBuilderState = {
     MotionVectorHistoryPoint[],
   ];
   motionVectorHistoryBufferIndex: 0 | 1;
+  meshPositions?: number[];
 };
 
 export type ShapeBuilderState = {

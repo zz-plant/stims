@@ -60,7 +60,7 @@ describe('launch shell skip-to-visualizer flow', () => {
     expect(mobileBarSource).toMatch(
       /<>\s*<div className=\{styles\.bar\}[\s\S]*?<\/div>\s*\{!visible \? \(/u,
     );
-    expect(mobileBarSource).toContain('const MOBILE_CONTROL_IDLE_MS = 12_000;');
+    expect(mobileBarSource).toContain('const MOBILE_CONTROL_IDLE_MS = 4_000;');
     expect(mobileBarSource).toContain('ui.updatePanel(null);');
     expect(mobileBarCss).toContain('.bar[data-visible="true"]');
     expect(mobileBarCss).toContain('grid-auto-flow: column;');

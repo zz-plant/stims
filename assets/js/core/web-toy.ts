@@ -216,7 +216,14 @@ export default class WebToy {
   }
 
   render() {
-    this.renderer?.render(this.scene, this.camera);
+    try {
+      this.renderer?.render(this.scene, this.camera);
+    } catch (error) {
+      console.warn(
+        'WebToy: render failed (potentially during fallback/transition)',
+        error,
+      );
+    }
   }
 
   dispose() {

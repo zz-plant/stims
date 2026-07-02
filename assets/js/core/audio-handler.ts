@@ -240,6 +240,12 @@ export class FrequencyAnalyser {
     let workletNode: AudioWorkletNode | undefined;
     if (context.audioWorklet?.addModule) {
       try {
+        // Ensure the AudioContext is running before registering the worklet.
+        // Browsers suspend it until a user gesture has been processed, and
+        // addModule() or the resulting node may fail silently if suspended.
+        if (context.state === 'suspended') {
+          await context.resume();
+        }
         await context.audioWorklet.addModule(FREQUENCY_ANALYSER_PROCESSOR);
         workletNode = new AudioWorkletNode(context, 'frequency-analyser', {
           numberOfInputs: 1,
@@ -495,6 +501,51 @@ export const DEFAULT_MICROPHONE_CONSTRAINTS: MediaStreamConstraints = {
   },
 };
 
+const activeContexts = new Set<AudioContext>();
+const activeStreams = new Set<MediaStream>();
+
+export function registerAudioContext(context: AudioContext) {
+  activeContexts.add(context);
+}
+
+export function unregisterAudioContext(context: AudioContext) {
+  activeContexts.delete(context);
+}
+
+export function registerMediaStream(stream: MediaStream) {
+  activeStreams.add(stream);
+}
+
+export function unregisterMediaStream(stream: MediaStream) {
+  activeStreams.delete(stream);
+}
+
+export function stopAllAudioForBfcache() {
+  for (const stream of activeStreams) {
+    try {
+      stream.getTracks().forEach((track) => track.stop());
+    } catch (_) {}
+  }
+  activeStreams.clear();
+
+  for (const context of activeContexts) {
+    try {
+      if (context.state !== 'closed') {
+        context.close();
+      }
+    } catch (_) {}
+  }
+  activeContexts.clear();
+
+  if (cachedDemoAudio) {
+    try {
+      cachedDemoAudio.teardown();
+    } catch (_) {}
+    cachedDemoAudio = null;
+    cachedDemoUsers = 0;
+  }
+}
+
 export function createSyntheticAudioStream({
   frequency = 220,
   type = 'sawtooth',
@@ -505,6 +556,7 @@ export function createSyntheticAudioStream({
   gain?: number;
 } = {}) {
   const context = new AudioContext();
+  registerAudioContext(context);
 
   const oscillator = context.createOscillator();
   oscillator.frequency.value = frequency;
@@ -514,6 +566,7 @@ export function createSyntheticAudioStream({
   gainNode.gain.value = gain;
 
   const destination = context.createMediaStreamDestination();
+  registerMediaStream(destination.stream);
 
   oscillator.connect(gainNode);
   gainNode.connect(destination);
@@ -536,6 +589,8 @@ export function createSyntheticAudioStream({
 
     oscillator.disconnect();
     gainNode.disconnect();
+    unregisterMediaStream(destination.stream);
+    unregisterAudioContext(context);
     context.close();
   };
 
@@ -551,10 +606,12 @@ let cachedDemoUsers = 0;
 
 function createProceduralDemoAudio() {
   const context = new AudioContext();
+  registerAudioContext(context);
 
   const mainGain = context.createGain();
   mainGain.gain.value = 0.12;
   const destination = context.createMediaStreamDestination();
+  registerMediaStream(destination.stream);
   mainGain.connect(destination);
 
   // ── Arpeggiator ──────────────────────────────────────────────
@@ -688,6 +745,8 @@ function createProceduralDemoAudio() {
     sub.disconnect();
     subGain.disconnect();
     mainGain.disconnect();
+    unregisterMediaStream(destination.stream);
+    unregisterAudioContext(context);
     try {
       await context.close();
     } catch (_) {}
@@ -756,6 +815,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
   try {
     const activeListener = new AudioListener();
     listener = activeListener;
+    registerAudioContext(activeListener.context);
     if (activeListener.context.state === 'suspended') {
       await activeListener.context.resume();
     }
@@ -789,6 +849,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
         'Microphone access is unavailable. Please check your device settings.',
       );
     }
+    registerMediaStream(streamSource);
 
     const audio = positional
       ? new PositionalAudio(activeListener)
@@ -826,8 +887,11 @@ export async function initAudio(options: AudioInitOptions = {}) {
 
       analyser?.disconnect();
 
-      if (streamSource && stopStreamOnCleanup) {
-        streamSource.getTracks().forEach((track) => track.stop());
+      if (streamSource) {
+        unregisterMediaStream(streamSource);
+        if (stopStreamOnCleanup) {
+          streamSource.getTracks().forEach((track) => track.stop());
+        }
       }
 
       if (camera && 'remove' in camera && listener) {
@@ -836,8 +900,11 @@ export async function initAudio(options: AudioInitOptions = {}) {
         );
       }
 
-      if (listener?.context?.close && closeContextOnCleanup) {
-        listener.context.close();
+      if (listener?.context) {
+        unregisterAudioContext(listener.context);
+        if (closeContextOnCleanup && listener.context.close) {
+          listener.context.close();
+        }
       }
 
       if (positional && object && 'remove' in object) {
@@ -869,12 +936,18 @@ export async function initAudio(options: AudioInitOptions = {}) {
   } catch (error) {
     console.error('Error accessing audio:', error);
 
-    if (resolvedStream && ownsStream) {
-      resolvedStream.getTracks().forEach((track) => track.stop());
+    if (resolvedStream) {
+      unregisterMediaStream(resolvedStream);
+      if (ownsStream) {
+        resolvedStream.getTracks().forEach((track) => track.stop());
+      }
     }
 
-    if (listener?.context?.close && closeContextOnCleanup) {
-      listener.context.close();
+    if (listener?.context) {
+      unregisterAudioContext(listener.context);
+      if (closeContextOnCleanup && listener.context.close) {
+        listener.context.close();
+      }
     }
 
     if (camera && 'remove' in camera && listener) {

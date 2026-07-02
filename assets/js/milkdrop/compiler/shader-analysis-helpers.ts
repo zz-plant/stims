@@ -28,6 +28,7 @@ const SHADER_TEXTURE_BLEND_MODES = new Set([
   'mix',
   'add',
   'multiply',
+  'subtract',
 ]);
 
 export function createDefaultShaderControls(): MilkdropShaderControls {
@@ -276,7 +277,9 @@ export function createShaderBinaryNode(
     | '=='
     | '!='
     | '&&'
-    | '||',
+    | '||'
+    | '&'
+    | '|',
   left: MilkdropShaderExpressionNode,
   right: MilkdropShaderExpressionNode,
 ): MilkdropShaderExpressionNode {

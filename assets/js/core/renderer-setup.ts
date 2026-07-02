@@ -214,6 +214,7 @@ export async function initRenderer(
           adapter.requestDevice(),
           webgpuInitTimeoutMs,
           'WebGPU device initialization timed out.',
+          initAbortController,
         );
       } catch (error) {
         teardownAbort();
@@ -246,7 +247,6 @@ export async function initRenderer(
           if (rendererDisposed) {
             return;
           }
-
           rendererDisposed = true;
           disposeRenderer(renderer);
         };
@@ -256,6 +256,7 @@ export async function initRenderer(
             initPromise,
             webgpuInitTimeoutMs,
             'WebGPU renderer initialization timed out.',
+            initAbortController,
           );
         } catch (error) {
           disposeTimedOutRenderer();
@@ -266,7 +267,11 @@ export async function initRenderer(
           teardownAbort();
           void initPromise
             .then(() => {
-              if (!initAbortController.signal.aborted) {
+              // By the time the deferred init resolves the user may have
+              // navigated away, removing the canvas from the DOM. Only
+              // dispose if the abort controller hasn't been cancelled and
+              // the canvas is still connected (i.e. still in the document).
+              if (!initAbortController.signal.aborted && canvas.isConnected) {
                 disposeTimedOutRenderer();
               }
             })

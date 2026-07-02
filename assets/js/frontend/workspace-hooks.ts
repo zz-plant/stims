@@ -105,7 +105,7 @@ export function useWorkspaceSessionState({
   const engineUnsubscribeRef = useRef<(() => void) | null>(null);
   const ensureEngineMountPromiseRef =
     useRef<Promise<MilkdropEngineAdapter> | null>(null);
-  const pendingPresetIdRef = useRef<string | null>(null);
+  const pendingPresetIdRef = useRef<string | null>(routeState.presetId);
   const initialLaunchIntentRef = useRef(buildLaunchIntent(routeState));
 
   const {
@@ -179,7 +179,7 @@ export function useWorkspaceSessionState({
   );
 
   const ensureEngineMounted = useEffectEvent(
-    async (launchIntent: LaunchIntent = initialLaunchIntentRef.current) => {
+    async (launchIntent?: LaunchIntent) => {
       const stage = stageRef.current;
       if (!stage) {
         throw new Error('Visualizer stage is not ready yet.');
@@ -189,13 +189,15 @@ export function useWorkspaceSessionState({
         return ensureEngineMountPromiseRef.current;
       }
 
+      const intent = launchIntent ?? buildLaunchIntent(routeState);
+
       const mountPromise = (async () => {
         const adapter = await ensureEngineAdapter();
         if (adapter.isMounted()) {
           return adapter;
         }
 
-        await adapter.mount(stage, launchIntent);
+        await adapter.mount(stage, intent);
         return adapter;
       })();
 
@@ -260,24 +262,26 @@ export function useWorkspaceSessionState({
   });
 
   useEffect(() => {
-    if (!engineRef.current?.isMounted()) {
+    const engine = engineRef.current;
+    if (!engine?.isMounted()) {
       return;
     }
 
     if (routeState.panel === 'editor') {
-      engineRef.current.openTool('editor');
+      engine.openTool('editor');
       return;
     }
 
-    engineRef.current.setOverlayOpen(false);
+    engine.setOverlayOpen(false);
   }, [routeState.panel]);
 
   useEffect(() => {
-    if (!engineRef.current?.isMounted() || !routeState.collectionTag) {
+    const engine = engineRef.current;
+    if (!engine?.isMounted() || !routeState.collectionTag) {
       return;
     }
 
-    engineRef.current.setCollectionTag(routeState.collectionTag);
+    engine.setCollectionTag(routeState.collectionTag);
   }, [routeState.collectionTag]);
 
   useEffect(() => {

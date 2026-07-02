@@ -69,98 +69,131 @@ export function createMilkdropPresetNavigationController({
       return entry.supports[backend].status !== 'unsupported';
     })?.id ?? null;
 
+  let currentLoadRequestRevision = 0;
+
   const selectPreset = async (
     id: string,
     options: { recordHistory?: boolean } = {},
   ) => {
+    const requestRevision = ++currentLoadRequestRevision;
     const trace = createPresetLoadTrace(id);
-    trace.step('getPresetSource');
+    try {
+      trace.step('getPresetSource');
 
-    const source = await catalogStore.getPresetSource(id);
-    trace.step('resolveSource');
-    if (!source) {
-      trace.error(`Preset ${id} not found in store or bundle`);
-      setOverlayStatus(`Preset ${id} could not be loaded.`);
-      trace.done('not found');
-      return;
-    }
-    trace.adapter('source origin', source.origin);
+      const source = await catalogStore.getPresetSource(id);
+      if (requestRevision !== currentLoadRequestRevision) {
+        trace.done('superseded');
+        return;
+      }
+      trace.step('resolveSource');
+      if (!source) {
+        trace.error(`Preset ${id} not found in store or bundle`);
+        setOverlayStatus(`Preset ${id} could not be loaded.`);
+        trace.done('not found');
+        return;
+      }
+      trace.adapter('source origin', source.origin);
 
-    const draft = await catalogStore.getDraft(id);
-    if (draft) {
-      trace.adapter('draft applied', `overriding raw source with edited draft`);
-    }
-    const resolvedSource: MilkdropPresetSource = {
-      ...source,
-      raw: draft ?? source.raw,
-    };
+      const draft = await catalogStore.getDraft(id);
+      if (requestRevision !== currentLoadRequestRevision) {
+        trace.done('superseded');
+        return;
+      }
+      if (draft) {
+        trace.adapter(
+          'draft applied',
+          `overriding raw source with edited draft`,
+        );
+      }
+      const resolvedSource: MilkdropPresetSource = {
+        ...source,
+        raw: draft ?? source.raw,
+      };
 
-    trace.step('compile');
-    const nextState = await session.loadPreset(resolvedSource);
-    const nextCompiled = nextState.activeCompiled;
-    trace.step('compilationResult');
-    if (!nextCompiled) {
-      trace.error(`Compilation failed for ${id}`);
-      setOverlayStatus(`Preset ${id} did not compile.`);
-      trace.done('compile failed');
-      return;
-    }
+      trace.step('compile');
+      const nextState = await session.loadPreset(resolvedSource);
+      if (requestRevision !== currentLoadRequestRevision) {
+        trace.done('superseded');
+        return;
+      }
+      const nextCompiled = nextState.activeCompiled;
+      trace.step('compilationResult');
+      if (!nextCompiled) {
+        trace.error(`Compilation failed for ${id}`);
+        setOverlayStatus(`Preset ${id} did not compile.`);
+        trace.done('compile failed');
+        return;
+      }
 
-    const hasErrors =
-      nextState.diagnostics?.some?.((d) => d.severity === 'error') ?? false;
-    if (hasErrors) {
-      const errorCount =
-        nextState.diagnostics?.filter?.((d) => d.severity === 'error').length ??
-        0;
-      trace.warn(
-        `Compilation had ${errorCount} error(s) — using last-good fallback`,
-      );
-    }
+      const hasErrors =
+        nextState.diagnostics?.some?.((d) => d.severity === 'error') ?? false;
+      if (hasErrors) {
+        const errorCount =
+          nextState.diagnostics?.filter?.((d) => d.severity === 'error')
+            .length ?? 0;
+        trace.warn(
+          `Compilation had ${errorCount} error(s) — using last-good fallback`,
+        );
+      }
 
-    if (shouldFallbackToWebgl(nextCompiled)) {
+      if (shouldFallbackToWebgl(nextCompiled)) {
+        trace.adapter(
+          'WebGL fallback',
+          `${nextCompiled.title} uses features unsupported on WebGPU`,
+        );
+        triggerWebglFallback({
+          presetId: id,
+          reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+        });
+        trace.done('fallback to WebGL');
+        return;
+      }
+
+      trace.step('performanceOverride');
+      applyPresetPerformanceOverride(nextCompiled.source.id);
+
+      trace.step('blendTransition');
+      const currentFrameState = getCurrentFrameState();
+      const canBlend =
+        getTransitionMode() === 'blend' &&
+        getBlendDuration() > 0 &&
+        estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
       trace.adapter(
-        'WebGL fallback',
-        `${nextCompiled.title} uses features unsupported on WebGPU`,
+        'transition',
+        canBlend ? `blend (${getBlendDuration()}ms)` : 'cut',
       );
-      triggerWebglFallback({
-        presetId: id,
-        reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
-      });
-      trace.done('fallback to WebGL');
-      return;
+      preparePresetTransition(
+        canBlend ? cloneBlendState(currentFrameState) : null,
+      );
+      markPresetSwitched();
+
+      if (options.recordHistory !== false) {
+        await catalogCoordinator.rememberSelection(id);
+        if (requestRevision !== currentLoadRequestRevision) {
+          trace.done('superseded');
+          return;
+        }
+      }
+
+      rememberLastPreset(id);
+
+      trace.step('applyCompiledPreset');
+      applyCompiledPreset(nextCompiled);
+      setOverlayStatus(`Loaded ${nextCompiled.title}.`);
+
+      trace.step('catalogSync');
+      await syncCatalog();
+      trace.done();
+    } catch (error) {
+      if (requestRevision === currentLoadRequestRevision) {
+        trace.error(`Unexpected failure loading preset: ${error}`);
+        setOverlayStatus(`Failed to load preset "${id}".`);
+        trace.done('error');
+      } else {
+        trace.done('superseded error');
+      }
+      throw error;
     }
-
-    trace.step('performanceOverride');
-    applyPresetPerformanceOverride(nextCompiled.source.id);
-
-    trace.step('blendTransition');
-    const currentFrameState = getCurrentFrameState();
-    const canBlend =
-      getTransitionMode() === 'blend' &&
-      getBlendDuration() > 0 &&
-      estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
-    trace.adapter(
-      'transition',
-      canBlend ? `blend (${getBlendDuration()}ms)` : 'cut',
-    );
-    preparePresetTransition(
-      canBlend ? cloneBlendState(currentFrameState) : null,
-    );
-    markPresetSwitched();
-
-    if (options.recordHistory !== false) {
-      await catalogCoordinator.rememberSelection(id);
-    }
-
-    rememberLastPreset(id);
-
-    trace.step('applyCompiledPreset');
-    applyCompiledPreset(nextCompiled);
-    setOverlayStatus(`Loaded ${nextCompiled.title}.`);
-
-    trace.step('catalogSync');
-    await syncCatalog();
-    trace.done();
   };
 
   const selectAdjacentPreset = async (direction: 1 | -1) => {
