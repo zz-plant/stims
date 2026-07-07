@@ -106,22 +106,22 @@ function getStoredSettings(storageKey = PERFORMANCE_SETTINGS_STORAGE_KEY) {
       ...parsed,
       ...overrides,
       maxPixelRatio: clampPerformanceValue(
-        parsed.maxPixelRatio ??
-          overrides.maxPixelRatio ??
+        overrides.maxPixelRatio ??
+          parsed.maxPixelRatio ??
           DEFAULT_PERFORMANCE_SETTINGS.maxPixelRatio,
         MIN_PIXEL_RATIO,
         MAX_PIXEL_RATIO,
       ),
       particleBudget: clampPerformanceValue(
-        parsed.particleBudget ??
-          overrides.particleBudget ??
+        overrides.particleBudget ??
+          parsed.particleBudget ??
           DEFAULT_PERFORMANCE_SETTINGS.particleBudget,
         MIN_PARTICLE_BUDGET,
         MAX_PARTICLE_BUDGET,
       ),
       shaderQuality:
-        parseShaderQuality(parsed.shaderQuality ?? '') ||
         overrides.shaderQuality ||
+        parseShaderQuality(parsed.shaderQuality ?? '') ||
         DEFAULT_PERFORMANCE_SETTINGS.shaderQuality,
     };
   } catch (error) {

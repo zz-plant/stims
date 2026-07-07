@@ -35,6 +35,14 @@ export function isPartyModeEnabled() {
   }
 }
 
+function hasRestoreState() {
+  try {
+    return window.sessionStorage.getItem(PARTY_MODE_RESTORE_KEY) !== null;
+  } catch (_error) {
+    return false;
+  }
+}
+
 function writeRestoreState(state: PartyModeRestoreState | null) {
   try {
     if (state) {
@@ -68,12 +76,14 @@ export function applyPartyMode({ enabled }: PartyModeOptions) {
   writePartyMode(enabled);
 
   if (enabled) {
-    const motionPreference = getActiveMotionPreference();
-    const renderPreferences = getActiveRenderPreferences();
-    writeRestoreState({
-      motionEnabled: motionPreference.enabled,
-      compatibilityMode: renderPreferences.compatibilityMode,
-    });
+    if (!hasRestoreState()) {
+      const motionPreference = getActiveMotionPreference();
+      const renderPreferences = getActiveRenderPreferences();
+      writeRestoreState({
+        motionEnabled: motionPreference.enabled,
+        compatibilityMode: renderPreferences.compatibilityMode,
+      });
+    }
 
     setMotionPreference({ enabled: true });
     setRenderPreferences({

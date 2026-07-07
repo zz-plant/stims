@@ -174,11 +174,21 @@ function resolveSourceRect(video: HTMLVideoElement) {
 
   const scaleX = sourceWidth / Math.max(1, cachedViewportWidth || 1);
   const scaleY = sourceHeight / Math.max(1, cachedViewportHeight || 1);
+  const sx = Math.max(0, Math.round(viewportRect.left * scaleX));
+  const sy = Math.max(0, Math.round(viewportRect.top * scaleY));
+  const remainingWidth = Math.max(1, sourceWidth - sx);
+  const remainingHeight = Math.max(1, sourceHeight - sy);
   return {
-    sx: Math.max(0, Math.round(viewportRect.left * scaleX)),
-    sy: Math.max(0, Math.round(viewportRect.top * scaleY)),
-    sw: Math.max(MIN_CAPTURE_SIZE, Math.round(viewportRect.width * scaleX)),
-    sh: Math.max(MIN_CAPTURE_SIZE, Math.round(viewportRect.height * scaleY)),
+    sx,
+    sy,
+    sw: Math.min(
+      remainingWidth,
+      Math.max(MIN_CAPTURE_SIZE, Math.round(viewportRect.width * scaleX)),
+    ),
+    sh: Math.min(
+      remainingHeight,
+      Math.max(MIN_CAPTURE_SIZE, Math.round(viewportRect.height * scaleY)),
+    ),
   };
 }
 

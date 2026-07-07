@@ -99,7 +99,12 @@ export async function acquireAudioHandle(
     throw error;
   }
 
+  let released = false;
   const release = () => {
+    if (released) {
+      return;
+    }
+    released = true;
     audio.cleanup?.();
 
     if (reuseMicrophone && pooledStream && stream === pooledStream.stream) {

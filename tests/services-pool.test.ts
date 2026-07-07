@@ -520,4 +520,37 @@ describe('audio-service pooling', () => {
     expect(mediaDevices.getUserMedia).toHaveBeenCalledTimes(2);
     next.release();
   });
+
+  test('audio handle release is idempotent', async () => {
+    const cleanup = mock();
+    trackStop.mockReset();
+    const fakeStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+
+    Object.defineProperty(globalThis.navigator, 'mediaDevices', {
+      configurable: true,
+      writable: true,
+      value: { getUserMedia: mock(async () => fakeStream) },
+    });
+
+    const initAudioImpl = mock(async ({ stream }) => ({
+      analyser: {} as FrequencyAnalyser,
+      listener: { context: { close: mock() } } as unknown as AudioListener,
+      audio: {} as Audio | PositionalAudio,
+      stream,
+      cleanup,
+      permissionState: 'granted' as PermissionState,
+    }));
+
+    const handle = await acquireAudioHandle({
+      initAudioImpl,
+      teardownOnRelease: true,
+    });
+    handle.release();
+    handle.release();
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+    expect(trackStop).toHaveBeenCalledTimes(1);
+  });
 });

@@ -14,6 +14,9 @@ const buffer: MemoryEntry[] = [];
 function histogramDistance(a: number[], b: number[]): number {
   let sum = 0;
   const len = Math.min(a.length, b.length);
+  if (len === 0) {
+    return a.length === b.length ? 0 : Number.POSITIVE_INFINITY;
+  }
   for (let i = 0; i < len; i++) {
     sum += Math.abs(a[i] - b[i]) / 256;
   }
@@ -55,7 +58,10 @@ export function useTemporalMemory() {
 
   const recordFn = useCallback(
     (presetId: string, canvas: HTMLCanvasElement | null) => {
-      recordRef.current(presetId, canvas as HTMLCanvasElement);
+      if (!canvas) {
+        return;
+      }
+      recordRef.current(presetId, canvas);
     },
     [],
   );
@@ -89,7 +95,7 @@ export function createVisualCheckpoint(
   presetId: string,
 ): VisualCheckpoint {
   return {
-    id: crypto.randomUUID(),
+    id: globalThis.crypto?.randomUUID?.() ?? `checkpoint-${Date.now()}`,
     name,
     description,
     presetId,
@@ -99,9 +105,17 @@ export function createVisualCheckpoint(
 
 const SAVED_CHECKPOINTS_KEY = 'stims:visual-checkpoints';
 
+function getCheckpointStorage() {
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getSavedCheckpoints(): VisualCheckpoint[] {
   try {
-    const raw = localStorage.getItem(SAVED_CHECKPOINTS_KEY);
+    const raw = getCheckpointStorage()?.getItem(SAVED_CHECKPOINTS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -113,10 +127,18 @@ export function saveCheckpoint(
   description: string,
   presetId: string,
 ) {
-  const checkpoints = getSavedCheckpoints();
-  checkpoints.unshift(createVisualCheckpoint(name, description, presetId));
-  localStorage.setItem(
-    SAVED_CHECKPOINTS_KEY,
-    JSON.stringify(checkpoints.slice(0, 50)),
-  );
+  try {
+    const storage = getCheckpointStorage();
+    if (!storage) {
+      return;
+    }
+    const checkpoints = getSavedCheckpoints();
+    checkpoints.unshift(createVisualCheckpoint(name, description, presetId));
+    storage.setItem(
+      SAVED_CHECKPOINTS_KEY,
+      JSON.stringify(checkpoints.slice(0, 50)),
+    );
+  } catch {
+    // Ignore unavailable checkpoint persistence.
+  }
 }
