@@ -44,11 +44,28 @@ export function BottomSheet({
   const dragStart = useRef(0);
   const dragCurrent = useRef(0);
   const dragging = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startClose = useCallback(() => {
+    if (exiting || closeTimerRef.current) {
+      return;
+    }
     setExiting(true);
-    setTimeout(onClose, 250);
-  }, [onClose]);
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      onClose();
+    }, 250);
+  }, [exiting, onClose]);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (open) {
@@ -104,12 +121,16 @@ export function BottomSheet({
       if (!dragging.current) return;
       dragCurrent.current = clientPos;
       const delta = dragCurrent.current - dragStart.current;
-      const isPositive = position === 'bottom' ? delta > 0 : delta < 0;
-      if (isPositive && sheetRef.current) {
+      const isClosingDirection =
+        position === 'bottom'
+          ? delta > 0
+          : (position === 'left' && delta < 0) ||
+            (position === 'right' && delta > 0);
+      if (isClosingDirection && sheetRef.current) {
         const translate =
           position === 'bottom'
             ? `translateY(${delta}px)`
-            : `translateX(${Math.abs(delta)}px)`;
+            : `translateX(${delta}px)`;
         sheetRef.current.style.transform = translate;
       }
     },
@@ -123,12 +144,17 @@ export function BottomSheet({
     if (sheetRef.current) {
       sheetRef.current.style.transform = '';
     }
-    if (Math.abs(delta) > dragThreshold) {
+    const isClosingDirection =
+      position === 'bottom'
+        ? delta > 0
+        : (position === 'left' && delta < 0) ||
+          (position === 'right' && delta > 0);
+    if (isClosingDirection && Math.abs(delta) > dragThreshold) {
       startClose();
     }
     dragStart.current = 0;
     dragCurrent.current = 0;
-  }, [startClose]);
+  }, [position, startClose]);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {

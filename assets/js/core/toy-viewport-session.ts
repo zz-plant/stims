@@ -107,7 +107,11 @@ export function createToyViewportSession({
       scheduleResize();
     }
   };
-  dprQuery.addEventListener('change', handleDprChange);
+  if (typeof dprQuery.addEventListener === 'function') {
+    dprQuery.addEventListener('change', handleDprChange);
+  } else {
+    dprQuery.addListener?.(handleDprChange);
+  }
 
   handleResize();
 
@@ -135,7 +139,11 @@ export function createToyViewportSession({
         viewportResizeHandler = null;
       }
 
-      dprQuery.removeEventListener('change', handleDprChange);
+      if (typeof dprQuery.removeEventListener === 'function') {
+        dprQuery.removeEventListener('change', handleDprChange);
+      } else {
+        dprQuery.removeListener?.(handleDprChange);
+      }
 
       if (resizeFrameId !== null) {
         window.cancelAnimationFrame(resizeFrameId);

@@ -38,19 +38,6 @@ function getRequestedRenderer() {
   );
 }
 
-function isCertificationSession() {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  return (
-    new URLSearchParams(window.location.search)
-      .get('corpus')
-      ?.trim()
-      .toLowerCase() === 'certification'
-  );
-}
-
 function parseChromeMajorVersion(userAgent: string): number | null {
   const match = userAgent.match(/Chrome\/(\d+)\./);
   if (!match?.[1]) return null;
@@ -149,7 +136,7 @@ export function shouldPreferWebGLForKnownCompatibilityGaps() {
   }
 
   if (requestedRenderer === 'webgpu') {
-    return !isCertificationSession();
+    return false;
   }
 
   // Session-level gap override forces WebGPU

@@ -58,4 +58,25 @@ describe('applyPartyMode', () => {
       compatibilityMode: true,
     });
   });
+
+  test('keeps the original restore state when party mode is enabled repeatedly', () => {
+    setMotionPreference({ enabled: false });
+    setRenderPreferences({
+      compatibilityMode: true,
+    });
+
+    applyPartyMode({ enabled: true });
+    setMotionPreference({ enabled: true });
+    setRenderPreferences({
+      compatibilityMode: false,
+    });
+    applyPartyMode({ enabled: true });
+
+    applyPartyMode({ enabled: false });
+
+    expect(getActiveMotionPreference().enabled).toBe(false);
+    expect(getActiveRenderPreferences()).toEqual({
+      compatibilityMode: true,
+    });
+  });
 });
