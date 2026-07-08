@@ -107,20 +107,20 @@ function requirePid(pid: number | undefined) {
 }
 
 async function waitForExit(child: ReturnType<typeof spawn>) {
-  if (child.exitCode !== null) {
-    return;
+  const pid = requirePid(child.pid);
+  for (let attempts = 0; attempts < 30; attempts += 1) {
+    if (child.exitCode !== null) {
+      return;
+    }
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  await new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error('Timed out waiting for child process to exit.'));
-    }, 3000);
-
-    child.once('exit', () => {
-      clearTimeout(timer);
-      resolve();
-    });
-  });
+  throw new Error('Timed out waiting for child process to exit.');
 }
 
 test('codex session script prints a review profile plan', () => {
