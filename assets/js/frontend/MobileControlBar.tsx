@@ -35,6 +35,8 @@ export function MobileControlBar({
   const panel = ui.routeState.panel;
   const [visible, setVisible] = useState(true);
   const [showMoods, setShowMoods] = useState(false);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [generatingMood, setGeneratingMood] = useState<string | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const moodAbortRef = useRef<AbortController | null>(null);
   const similarAbortRef = useRef<AbortController | null>(null);
@@ -96,20 +98,29 @@ export function MobileControlBar({
     const canvas = document.querySelector(
       '#stims-main canvas',
     ) as HTMLCanvasElement | null;
-    if (!canvas) return;
+    if (!canvas) {
+      ui.setStatusMessage('No visual frame available yet.');
+      return;
+    }
     similarAbortRef.current?.abort();
     const controller = new AbortController();
     similarAbortRef.current = controller;
+    setSimilarLoading(true);
     try {
       const results = await searchByFrame(canvas, controller.signal);
       if (controller.signal.aborted) return;
       if (results.length > 0) {
         engine.handlePresetSelection(results[0].presetId);
+      } else {
+        ui.setStatusMessage('No similar presets found yet.');
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
+      ui.setStatusMessage('Finding similar presets failed.');
+    } finally {
+      if (!controller.signal.aborted) setSimilarLoading(false);
     }
-  }, [engine, resetHideTimer]);
+  }, [engine, resetHideTimer, ui]);
 
   const handleEditor = useCallback(() => {
     resetHideTimer();
@@ -132,6 +143,8 @@ export function MobileControlBar({
       moodAbortRef.current?.abort();
       const controller = new AbortController();
       moodAbortRef.current = controller;
+      setGeneratingMood(mood.label);
+      ui.setStatusMessage(`Generating a ${mood.label} preset…`);
       fetch('/api/generate-preset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,7 +154,10 @@ export function MobileControlBar({
         }),
         signal: controller.signal,
       })
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`Server returned ${r.status}`);
+          return r.json();
+        })
         .then((data) => {
           if (controller.signal.aborted) return;
           if (data.milkSource) {
@@ -153,11 +169,18 @@ export function MobileControlBar({
                 },
               }),
             );
+            ui.setStatusMessage(
+              `Generated ${mood.label} preset. Opening editor.`,
+            );
             ui.updatePanel('editor');
           }
         })
         .catch((err) => {
           if (err.name === 'AbortError') return;
+          ui.setStatusMessage('Preset generation failed. Try again.');
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setGeneratingMood(null);
         });
     },
     [resetHideTimer, ui],
@@ -192,6 +215,8 @@ export function MobileControlBar({
                 type="button"
                 className="mc-bar__mood-btn"
                 aria-label={`Generate ${mood.label.toLowerCase()} preset`}
+                disabled={generatingMood !== null}
+                aria-busy={generatingMood === mood.label}
                 onClick={() => handleMoodGenerate(mood)}
               >
                 <span className="mc-bar__mood-icon">{mood.icon}</span>
@@ -245,25 +270,28 @@ export function MobileControlBar({
             type="button"
             className={styles.action}
             onClick={handleShuffle}
-            aria-label="Next preset"
+            aria-label="Play a random preset"
           >
             <UiIcon
               name="shuffle"
               className="stims-icon-slot stims-icon-slot--sm"
             />
-            <span className={styles.actionLabel}>Next</span>
+            <span className={styles.actionLabel}>Shuffle</span>
           </button>
           <button
             type="button"
             className={styles.action}
             onClick={handleSimilar}
             aria-label="Find similar presets"
+            disabled={similarLoading}
           >
             <UiIcon
               name="eye"
               className="stims-icon-slot stims-icon-slot--sm"
             />
-            <span className={styles.actionLabel}>More</span>
+            <span className={styles.actionLabel}>
+              {similarLoading ? 'Searching…' : 'Similar'}
+            </span>
           </button>
           <button
             type="button"

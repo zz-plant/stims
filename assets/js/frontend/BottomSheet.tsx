@@ -47,6 +47,8 @@ export function BottomSheet({
   const dragCurrent = useRef(0);
   const dragging = useRef(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
 
   const startClose = useCallback(() => {
     if (exiting || closeTimerRef.current) {
@@ -72,11 +74,28 @@ export function BottomSheet({
   useEffect(() => {
     if (open) {
       setExiting(false);
+      const activeElement = document.activeElement;
+      previouslyFocusedRef.current =
+        activeElement instanceof HTMLElement ? activeElement : null;
+      wasOpenRef.current = true;
       if (onOpen) {
         requestAnimationFrame(onOpen);
       }
     }
   }, [open, onOpen]);
+
+  useEffect(() => {
+    if (open || !wasOpenRef.current) return;
+    wasOpenRef.current = false;
+    const previouslyFocused = previouslyFocusedRef.current;
+    previouslyFocusedRef.current = null;
+    if (
+      previouslyFocused?.isConnected &&
+      !document.activeElement?.closest('[role="dialog"]')
+    ) {
+      previouslyFocused.focus();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open || exiting) return;
