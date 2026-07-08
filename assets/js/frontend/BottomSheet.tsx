@@ -27,6 +27,7 @@ type BottomSheetProps = {
   tabs?: BottomSheetTab[];
   position?: SheetPosition;
   onOpen?: () => void;
+  withBackdrop?: boolean;
 };
 
 export function BottomSheet({
@@ -38,6 +39,7 @@ export function BottomSheet({
   tabs,
   position = 'bottom',
   onOpen,
+  withBackdrop = true,
 }: BottomSheetProps) {
   const [exiting, setExiting] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -182,14 +184,16 @@ export function BottomSheet({
 
   return (
     <>
-      <button
-        type="button"
-        className={styles.backdrop}
-        data-exiting={String(exiting)}
-        onClick={startClose}
-        aria-label="Close"
-        tabIndex={-1}
-      />
+      {withBackdrop ? (
+        <button
+          type="button"
+          className={styles.backdrop}
+          data-exiting={String(exiting)}
+          onClick={startClose}
+          aria-label="Close"
+          tabIndex={-1}
+        />
+      ) : null}
       <div
         ref={sheetRef}
         className={styles.sheet}

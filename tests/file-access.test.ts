@@ -41,8 +41,12 @@ describe('milkdrop file access helpers', () => {
   });
 
   test('ignores cancelled import/export dialogs', async () => {
-    fileOpenMock.mockRejectedValue(new DOMException('Cancelled', 'AbortError'));
-    fileSaveMock.mockRejectedValue(new DOMException('Cancelled', 'AbortError'));
+    fileOpenMock.mockImplementation(() => {
+      throw new DOMException('Cancelled', 'AbortError');
+    });
+    fileSaveMock.mockImplementation(() => {
+      throw new DOMException('Cancelled', 'AbortError');
+    });
 
     await expect(openMilkdropPresetFiles()).resolves.toEqual([]);
     await expect(

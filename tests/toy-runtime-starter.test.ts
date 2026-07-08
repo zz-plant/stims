@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { getSettingsPanel } from '../assets/js/core/settings-panel.ts';
 
 const freshImport = async () =>
   import(
@@ -7,18 +8,18 @@ const freshImport = async () =>
 
 describe('toy runtime starter', () => {
   const createToyRuntime = mock(() => ({ runtime: true }));
-  const configure = mock();
-  const panel = { configure };
-  const getSettingsPanel = mock(() => panel);
   const configureQualityPresets = mock(() => panel);
+  let configure: ReturnType<typeof mock>;
+  let panel: ReturnType<typeof getSettingsPanel>;
 
   beforeEach(() => {
     mock.restore();
+    document.body.innerHTML = '';
+    panel = getSettingsPanel();
+    configure = mock(panel.configure.bind(panel));
+    panel.configure = configure;
     mock.module('../assets/js/core/toy-runtime', () => ({
       createToyRuntime,
-    }));
-    mock.module('../assets/js/core/settings-panel', () => ({
-      getSettingsPanel,
     }));
   });
 
@@ -49,7 +50,6 @@ describe('toy runtime starter', () => {
         canvas: undefined,
       }),
     );
-    expect(getSettingsPanel).toHaveBeenCalled();
     expect(configure).toHaveBeenCalledWith({
       title: 'MilkDrop',
       description: 'Live preset controls',
