@@ -210,7 +210,12 @@ stop_managed_process() {
   fi
 
   kill "$pid" >/dev/null 2>&1 || true
-  sleep 1
+  for _ in {1..10}; do
+    if ! process_is_running "$pid"; then
+      break
+    fi
+    sleep 0.1
+  done
 
   if process_is_running "$pid"; then
     kill -9 "$pid" >/dev/null 2>&1 || true

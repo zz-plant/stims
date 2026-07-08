@@ -97,13 +97,11 @@ export function getStoredQualityPreset({
     return fromStorage;
   }
 
-  if (defaultPresetId !== DEFAULT_PRESET_ID) {
-    const customDefault = presets.find(
-      (preset) => preset.id === defaultPresetId,
-    );
-    if (customDefault) {
-      return customDefault;
-    }
+  const requestedDefault = presets.find(
+    (preset) => preset.id === defaultPresetId,
+  );
+  if (requestedDefault) {
+    return requestedDefault;
   }
 
   const recommendedId = getRecommendedQualityPresetId();

@@ -45,7 +45,10 @@ import {
   getToolLabel,
   TOOL_TABS,
 } from './workspace-helpers.ts';
-import { WorkspaceStagePanel } from './workspace-ui.tsx';
+import {
+  BROWSE_PANEL_FOCUS_SELECTOR,
+  WorkspaceStagePanel,
+} from './workspace-ui.tsx';
 
 const BrowseSheetPanel = lazy(() =>
   import('./BrowseSheetPanel.tsx').then((m) => ({
@@ -86,6 +89,8 @@ function StimsWorkspaceAppShell() {
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
   const autoPlayedRef = useRef(false);
+  // ShortcutsDialog owns the `e.key === 'Tab'` focus trap and initial
+  // `focusable[0]?.focus()` call while this shell controls when it opens.
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
@@ -292,6 +297,8 @@ function StimsWorkspaceAppShell() {
     applyTheme(next);
   }, []);
 
+  const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
+
   return (
     <main
       className="stims-shell"
@@ -300,9 +307,7 @@ function StimsWorkspaceAppShell() {
       data-mode={liveMode ? 'live' : 'home'}
       data-preview={ui.routeState.previewMode ? 'true' : undefined}
       data-sheet-open={
-        ui.routeState.panel && ui.routeState.panel !== 'editor'
-          ? 'true'
-          : undefined
+        ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined
       }
     >
       <a href="#stims-visualizer" className="skip-link">
@@ -329,6 +334,7 @@ function StimsWorkspaceAppShell() {
         position={
           isWideEnough && ui.routeState.panel !== 'browse' ? 'right' : 'bottom'
         }
+        withBackdrop={!stageAnchoredToolOpen}
         tabs={
           ui.routeState.panel
             ? TOOL_TABS.filter(
@@ -346,7 +352,7 @@ function StimsWorkspaceAppShell() {
         onOpen={() => {
           if (ui.routeState.panel === 'browse') {
             const el = document.querySelector<HTMLElement>(
-              '#preset-search, .milkdrop-overlay__search',
+              BROWSE_PANEL_FOCUS_SELECTOR,
             );
             el?.focus();
           }

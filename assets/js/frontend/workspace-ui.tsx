@@ -20,6 +20,9 @@ export {
 export { UiIcon } from './UiIcon.tsx';
 export { WorkspaceToast } from './WorkspaceToast.tsx';
 
+export const BROWSE_PANEL_FOCUS_SELECTOR =
+  '#preset-search, .milkdrop-overlay__search';
+
 export function WorkspaceStagePanel({
   isFullscreen,
   launchPanel,

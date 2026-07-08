@@ -2,6 +2,7 @@ import type { MilkdropExpressionNode } from './common-types.ts';
 import { aliasMap } from './field-normalization.ts';
 
 type JitFn = (env: Record<string, number>, r: () => number) => number;
+type CachedExpressionNode = MilkdropExpressionNode & { compiledFn?: JitFn };
 
 function compileNode(node: MilkdropExpressionNode): string {
   switch (node.type) {
@@ -156,7 +157,8 @@ export function evaluateJit(
   env: Record<string, number>,
   nextRandom?: () => number,
 ): number {
-  let fn = (node as any).compiledFn;
+  const cacheableNode = node as CachedExpressionNode;
+  let fn = cacheableNode.compiledFn;
   if (!fn) {
     const key = JSON.stringify(node);
     fn = rawCache.get(key);
@@ -170,7 +172,7 @@ export function evaluateJit(
       rawCache.set(key, fn);
     }
     try {
-      (node as any).compiledFn = fn;
+      cacheableNode.compiledFn = fn;
     } catch {
       // Safe fallback if node is frozen
     }
