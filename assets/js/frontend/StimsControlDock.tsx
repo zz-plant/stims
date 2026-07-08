@@ -67,6 +67,7 @@ export function StimsControlDock({
   const [similarSearched, setSimilarSearched] = useState(false);
   const [similarError, setSimilarError] = useState(false);
   const [showMoods, setShowMoods] = useState(false);
+  const [generatingMood, setGeneratingMood] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
   const moodAbortRef = useRef<AbortController | null>(null);
   const moreLikeThisAbortRef = useRef<AbortController | null>(null);
@@ -76,6 +77,8 @@ export function StimsControlDock({
       moodAbortRef.current?.abort();
       const controller = new AbortController();
       moodAbortRef.current = controller;
+      setGeneratingMood(mood.label);
+      ui.setStatusMessage(`Generating a ${mood.label} preset…`);
       fetch('/api/generate-preset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,7 +88,10 @@ export function StimsControlDock({
         }),
         signal: controller.signal,
       })
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`Server returned ${r.status}`);
+          return r.json();
+        })
         .then((data) => {
           if (controller.signal.aborted) return;
           if (data.milkSource) {
@@ -97,11 +103,18 @@ export function StimsControlDock({
                 },
               }),
             );
+            ui.setStatusMessage(
+              `Generated ${mood.label} preset. Opening editor.`,
+            );
             ui.updatePanel('editor');
           }
         })
         .catch((err) => {
           if (err.name === 'AbortError') return;
+          ui.setStatusMessage('Preset generation failed. Try again.');
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setGeneratingMood(null);
         });
     },
     [ui],
@@ -125,6 +138,9 @@ export function StimsControlDock({
       const results = await searchByFrame(canvas, controller.signal);
       if (controller.signal.aborted) return;
       setSimilarPresets(results);
+      if (results.length === 0) {
+        ui.setStatusMessage('No similar presets found yet.');
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       setSimilarError(true);
@@ -404,6 +420,8 @@ export function StimsControlDock({
                     type="button"
                     className="stims-shell__stage-tool"
                     aria-label={`Generate ${mood.label.toLowerCase()} preset`}
+                    disabled={generatingMood !== null}
+                    aria-busy={generatingMood === mood.label}
                     onClick={() => handleMoodGenerate(mood)}
                   >
                     <span className="stims-shell__stage-tool-label">

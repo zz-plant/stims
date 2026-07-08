@@ -1,7 +1,15 @@
+import { useId } from 'react';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
 export function AudioSourcePanel() {
+  const sourcePanelId = useId();
+  const sourceHeadingId = `${sourcePanelId}-source-heading`;
+  const engineStatusId = `${sourcePanelId}-engine-status`;
+  const youtubeInputId = `${sourcePanelId}-youtube-url`;
+  const youtubeFeedbackId = `${sourcePanelId}-youtube-feedback`;
+  const youtubeContainerId = `${sourcePanelId}-youtube-player-container`;
+  const disabledDescription = engineStatusId;
   const { ui, engine } = useWorkspace();
   const engineReady = engine.engineReady;
   const onAudioStart = (source: 'demo' | 'microphone' | 'tab' | 'youtube') =>
@@ -30,19 +38,30 @@ export function AudioSourcePanel() {
   return (
     <section
       className="stims-shell__source-panel"
-      aria-labelledby="stims-source-heading"
+      aria-labelledby={sourceHeadingId}
+      aria-busy={!engineReady}
     >
       <div className="stims-shell__source-heading">
-        <h2 id="stims-source-heading" className="stims-shell__section-label">
+        <h2 id={sourceHeadingId} className="stims-shell__section-label">
           Use my music
         </h2>
       </div>
+      {!engineReady ? (
+        <p
+          id={engineStatusId}
+          className="stims-shell__meta-copy"
+          aria-live="polite"
+        >
+          Audio engine is starting. Sources will unlock in a moment.
+        </p>
+      ) : null}
       <div className="stims-shell__source-grid">
         <button
           id="start-audio-btn"
           type="button"
           className="stims-shell__source-card"
           disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('microphone')}
         >
           <strong>Microphone</strong>
@@ -53,6 +72,7 @@ export function AudioSourcePanel() {
           id="use-tab-audio"
           className="stims-shell__source-card"
           disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('tab')}
         >
           <strong>This tab</strong>
@@ -60,19 +80,23 @@ export function AudioSourcePanel() {
         </button>
       </div>
       <div className="stims-shell__youtube">
-        <label className="stims-shell__field-label" htmlFor="youtube-url">
+        <label className="stims-shell__field-label" htmlFor={youtubeInputId}>
           YouTube link
         </label>
         <div className="stims-shell__youtube-row">
           <input
-            id="youtube-url"
+            id={youtubeInputId}
             className="stims-shell__input"
             type="url"
             placeholder="https://youtube.com/watch?v=..."
             autoComplete="off"
             inputMode="url"
             spellCheck={false}
-            aria-describedby="youtube-url-feedback"
+            aria-describedby={
+              !engineReady
+                ? `${youtubeFeedbackId} ${disabledDescription}`
+                : youtubeFeedbackId
+            }
             aria-invalid={youtubeInputInvalid}
             value={youtubeUrl}
             onChange={(event) => onYoutubeUrlChange(event.target.value)}
@@ -86,6 +110,7 @@ export function AudioSourcePanel() {
             type="button"
             disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
             aria-disabled={!engineReady || !youtubeCanLoad || youtubeLoading}
+            aria-describedby={!engineReady ? disabledDescription : undefined}
             aria-busy={youtubeLoading}
             onClick={handlePlayYouTube}
           >
@@ -102,7 +127,7 @@ export function AudioSourcePanel() {
           </button>
         </div>
         <p
-          id="youtube-url-feedback"
+          id={youtubeFeedbackId}
           className="stims-shell__youtube-feedback"
           data-state={
             youtubeInputInvalid ? 'invalid' : youtubeReady ? 'ready' : 'idle'
@@ -151,7 +176,7 @@ export function AudioSourcePanel() {
           </div>
         ) : null}
         <div
-          id="youtube-player-container"
+          id={youtubeContainerId}
           ref={youtubePreviewRef}
           className="stims-shell__youtube-preview"
           hidden

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { PRESET_PREVIEW_REQUEST_LIMIT } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
@@ -57,6 +57,7 @@ export function BrowseSheetPanel({
     presetId: string;
   } | null>(null);
   const [imageImportLoading, setImageImportLoading] = useState(false);
+  const [fileImportStatus, setFileImportStatus] = useState('');
   const [visibleCatalogState, setVisibleCatalogState] = useState({
     key: '',
     limit: BROWSE_RESULT_BATCH_SIZE,
@@ -101,22 +102,32 @@ export function BrowseSheetPanel({
     }
   };
 
+  const loadCommunityPresets = useCallback(() => {
+    setCommunityLoading(true);
+    setCommunityError(null);
+    fetch('/api/presets?sort=top&limit=20')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Unable to load community presets (${res.status}).`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        const presets = Array.isArray(data.presets) ? data.presets : [];
+        setCommunityPresets(presets);
+        setCommunityLoading(false);
+      })
+      .catch((err: Error) => {
+        setCommunityError(err.message);
+        setCommunityLoading(false);
+      });
+  }, []);
+
   useEffect(() => {
     if (routeState.collectionTag === 'collection:community') {
-      setCommunityLoading(true);
-      setCommunityError(null);
-      fetch('/api/presets?sort=top&limit=20')
-        .then((res) => res.json())
-        .then((data) => {
-          setCommunityPresets(data.presets || []);
-          setCommunityLoading(false);
-        })
-        .catch((err: Error) => {
-          setCommunityError(err.message);
-          setCommunityLoading(false);
-        });
+      loadCommunityPresets();
     }
-  }, [routeState.collectionTag]);
+  }, [routeState.collectionTag, loadCommunityPresets]);
 
   const handleVisualSearch = async () => {
     const canvas = ui.stageRef.current?.querySelector(
@@ -136,6 +147,17 @@ export function BrowseSheetPanel({
     } finally {
       setVisualSearchLoading(false);
     }
+  };
+
+  const handleImportFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setFileImportStatus(
+      `Importing ${files.length} preset file${files.length === 1 ? '' : 's'}…`,
+    );
+    onImport(files);
+    setFileImportStatus(
+      `Import started for ${files.length} preset file${files.length === 1 ? '' : 's'}.`,
+    );
   };
 
   const handleDeselectVisualSearch = () => {
@@ -406,6 +428,8 @@ export function BrowseSheetPanel({
           <button
             type="button"
             className="stims-shell__text-button"
+            aria-expanded={showAdvancedFilters}
+            aria-controls="stims-more-collections"
             onClick={() => {
               setShowAdvancedFilters((current) => !current);
             }}
@@ -414,6 +438,7 @@ export function BrowseSheetPanel({
           </button>
           {showAdvancedFilters && hiddenCollectionTags.length > 0 ? (
             <nav
+              id="stims-more-collections"
               className="stims-shell__collections"
               aria-label="All collections"
             >
@@ -438,7 +463,7 @@ export function BrowseSheetPanel({
               ))}
             </nav>
           ) : showAdvancedFilters ? (
-            <p className="stims-shell__meta-copy">
+            <p id="stims-more-collections" className="stims-shell__meta-copy">
               No more collections available.
             </p>
           ) : null}
@@ -509,7 +534,16 @@ export function BrowseSheetPanel({
                 Loading community presets...
               </p>
             ) : communityError ? (
-              <p className="stims-shell__meta-copy">{communityError}</p>
+              <div>
+                <p className="stims-shell__meta-copy">{communityError}</p>
+                <button
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={loadCommunityPresets}
+                >
+                  Retry community presets
+                </button>
+              </div>
             ) : (
               <p className="stims-shell__meta-copy">
                 {communityPresets.length} result
@@ -527,12 +561,36 @@ export function BrowseSheetPanel({
             </p>
           </div>
         )}
-        {(!visualSearchActive &&
-          routeState.collectionTag === 'collection:community' &&
-          communityPresets.length === 0) ||
-        (!visualSearchActive &&
-          routeState.collectionTag !== 'collection:community' &&
-          filteredCatalog.length === 0) ? (
+        {visualSearchActive &&
+        !visualSearchLoading &&
+        visualSearchResults.length === 0 ? (
+          <div className="stims-shell__empty-state">
+            <strong>No similar presets found</strong>
+            <p>
+              The current frame may not have a close match yet. Try another
+              moment in the visualizer or browse everything instead.
+            </p>
+            <button
+              type="button"
+              className="cta-button primary"
+              onClick={() => void handleVisualSearch()}
+            >
+              Try again
+            </button>
+            <button
+              type="button"
+              className="cta-button"
+              onClick={handleDeselectVisualSearch}
+            >
+              Browse all presets
+            </button>
+          </div>
+        ) : (!visualSearchActive &&
+            routeState.collectionTag === 'collection:community' &&
+            communityPresets.length === 0) ||
+          (!visualSearchActive &&
+            routeState.collectionTag !== 'collection:community' &&
+            filteredCatalog.length === 0) ? (
           <div className="stims-shell__empty-state">
             <strong>No presets match those filters</strong>
             <p>
@@ -692,16 +750,20 @@ export function BrowseSheetPanel({
               type="file"
               accept=".milk,.txt,text/plain"
               multiple
-              onChange={(event) => onImport(event.target.files)}
+              onChange={(event) => handleImportFiles(event.target.files)}
             />
           </label>
-          <label className="cta-button stims-shell__file-button">
+          <label
+            className="cta-button stims-shell__file-button"
+            aria-disabled={imageImportLoading}
+          >
             {imageImportLoading
               ? 'Importing\u2026'
               : 'Create preset from image'}
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
+              disabled={imageImportLoading}
               onChange={(event) => void handleImageImport(event.target.files)}
             />
           </label>
@@ -713,6 +775,17 @@ export function BrowseSheetPanel({
             Copy share link
           </button>
         </div>
+        <p
+          className="stims-shell__meta-copy"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {imageImportLoading
+            ? 'Importing image…'
+            : imageImportResult
+              ? 'Image preset created.'
+              : fileImportStatus}
+        </p>
         {imageImportResult ? (
           <div className="stims-shell__image-import-result">
             <p className="stims-shell__section-label">Created preset</p>
