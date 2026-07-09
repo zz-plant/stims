@@ -111,6 +111,63 @@ describe('milkdrop wave renderer', () => {
     expect((firstLayer.material as PointsMaterial).size).toBe(1);
   });
 
+  test('enables vertex colors when custom waves provide per-point color buffers', () => {
+    const helpers = makeHelpers();
+    const behavior = {
+      useLineLoopPrimitives: true,
+    } as MilkdropBackendBehavior;
+
+    const group = createWaveObject(
+      makeWave({
+        thickness: 1,
+        colors: [1, 0, 0, 0, 1, 1],
+      }),
+      behavior,
+      helpers,
+    ) as Group;
+
+    const line = group.children[0] as Line;
+    const material = line.material as LineBasicMaterial;
+    expect(material.vertexColors).toBe(true);
+    expect(Array.from(line.geometry.getAttribute('color').array)).toEqual([
+      1, 0, 0, 0, 1, 1,
+    ]);
+
+    syncWaveObject(
+      group,
+      makeWave({ thickness: 1, colors: undefined }),
+      behavior,
+      helpers,
+      1,
+    );
+
+    expect(material.vertexColors).toBe(false);
+    expect(line.geometry.getAttribute('color')).toBeUndefined();
+  });
+
+  test('enables vertex colors on dotted custom waves with per-point color buffers', () => {
+    const helpers = makeHelpers();
+    const behavior = {
+      useLineLoopPrimitives: true,
+    } as MilkdropBackendBehavior;
+
+    const group = createWaveObject(
+      makeWave({
+        drawMode: 'dots',
+        thickness: 1,
+        colors: [1, 0, 0, 0, 0, 1],
+      }),
+      behavior,
+      helpers,
+    ) as Group;
+
+    const points = group.children[0] as Points;
+    expect((points.material as PointsMaterial).vertexColors).toBe(true);
+    expect(Array.from(points.geometry.getAttribute('color').array)).toEqual([
+      1, 0, 0, 0, 0, 1,
+    ]);
+  });
+
   test('keeps existing thick wave groups stable across sync updates', () => {
     const helpers = makeHelpers();
     const behavior = {
