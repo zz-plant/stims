@@ -295,6 +295,70 @@ wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
     expect(frameState.customWaves[0]?.positions.length).toBe(512 * 3);
   });
 
+  test('normalizes legacy bUseDots custom-wave fields to dot draw mode', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Dot Custom Wave
+wavecode_0_enabled=1
+wavecode_0_bUseDots=1
+wavecode_0_samples=16
+wave_0_per_point1=x = sample * 2 - 1;
+      `.trim(),
+      { id: 'legacy-dot-custom-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.customWaves).toHaveLength(1);
+    expect(frameState.customWaves[0]?.drawMode).toBe('dots');
+  });
+
+  test('keeps custom-wave t registers local to each wave slot', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave Local T Registers
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wave_0_per_frame1=t1=0.1;
+wave_0_per_point1=y=t1;
+wavecode_1_enabled=1
+wavecode_1_samples=8
+wave_1_per_frame1=t1=0.4;
+wave_1_per_point1=y=t1;
+      `.trim(),
+      { id: 'wave-local-t-registers' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.customWaves).toHaveLength(2);
+    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.1, 6);
+    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(0.4, 6);
+    expect(frameState.variables.t1).toBeCloseTo(0, 6);
+  });
+
+  test('does not leak arbitrary custom-wave point locals between wave slots', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Wave Point Local Isolation
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wave_0_per_point1=xp=999;
+wave_0_per_point2=y=0.25;
+wavecode_1_enabled=1
+wavecode_1_samples=8
+wave_1_per_point1=y=xp;
+      `.trim(),
+      { id: 'wave-point-local-isolation' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.customWaves).toHaveLength(2);
+    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.25, 6);
+    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(0, 6);
+  });
+
   test('keeps shape texture-control locals and projectM instance aliases available at runtime', () => {
     const signals = makeSignals({ frame: 1 });
     const preset = compileMilkdropPresetSource(
