@@ -342,6 +342,34 @@ wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
     expect(frameState.customWaves[0]?.positions.length).toBe(512 * 3);
   });
 
+  test('emits custom-wave per-point colors when points override frame color', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Per Point Color Custom Wave
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wavecode_0_r=0.25
+wavecode_0_g=0.25
+wavecode_0_b=0.25
+wave_0_per_point1=r = if(equal(sample, 0), 1, if(equal(sample, 1), 0, r));
+wave_0_per_point2=g = if(equal(sample, 0), 0, if(equal(sample, 1), 1, g));
+wave_0_per_point3=b = if(equal(sample, 0), 0, if(equal(sample, 1), 1, b));
+      `.trim(),
+      { id: 'per-point-color-custom-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset, {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralCustomWaves: false,
+    }).step(makeSignals({ frame: 1 }));
+
+    const customWave = frameState.customWaves[0];
+    expect(customWave?.colors).toBeDefined();
+    expect(customWave?.colors).toHaveLength(8 * 3);
+    expect(customWave?.colors?.slice(0, 3)).toEqual([1, 0, 0]);
+    expect(customWave?.colors?.slice(-3)).toEqual([0, 1, 1]);
+  });
+
   test('normalizes legacy bUseDots custom-wave fields to dot draw mode', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -437,6 +465,59 @@ shape_0_init1=ang=tex_ang+instance*0.1;
     });
     expect(frameState.shapes[0]?.rotation).toBeCloseTo(
       0.25 + signals.time * 0.08,
+      6,
+    );
+  });
+
+  test('supports bundled preset legacy audio aliases at compile time and runtime', () => {
+    const signals = makeSignals({ frame: 1 });
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Audio Aliases
+per_frame_1=volume = 0.3*(bass+mid+att)
+per_frame_2=v = med + med_att
+      `.trim(),
+      { id: 'legacy-audio-aliases' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(signals);
+
+    expect(preset.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(frameState.variables.volume).toBeCloseTo(
+      0.3 * (signals.bass + signals.mid + signals.treb),
+      6,
+    );
+    expect(frameState.variables.v).toBeCloseTo(
+      signals.mid + signals.mid_att,
+      6,
+    );
+  });
+
+  test('seeds legacy basstime as a projectM global for orb-radiation style usage', () => {
+    const signals = makeSignals({ frame: 1 });
+    const preset = compileMilkdropPresetSource(
+      `
+title=Basstime Legacy Global
+per_frame_1=diff = 2
+per_frame_2=state = 0
+per_frame_3=xs = xs + equal(state,0)*cos(basstime*1.2)*diff
+per_frame_4=q1 = basstime
+per_frame_5=basstime = basstime + bass_att*0.03
+      `.trim(),
+      { id: 'basstime-legacy-global' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(signals);
+
+    expect(preset.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(frameState.variables.xs).toBeCloseTo(2, 6);
+    expect(frameState.variables.q1).toBeCloseTo(0, 6);
+    expect(frameState.variables.basstime).toBeCloseTo(
+      signals.bass_att * 0.03,
       6,
     );
   });
