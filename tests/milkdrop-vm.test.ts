@@ -277,6 +277,53 @@ per_frame_2=wave_a = beat_pulse;
     expect(second.mainWave.alpha).toBeCloseTo(0.35, 6);
   });
 
+  test('converts MilkDrop custom-wave per-point coordinates to renderer space', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Custom Wave Coordinate Conversion
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wave_0_per_point1=x=0.5;y=0.5;
+      `.trim(),
+      { id: 'custom-wave-coordinate-conversion' },
+    );
+
+    const frameState = createMilkdropVM(preset, {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralCustomWaves: false,
+    }).step(makeSignals({ frame: 1 }));
+    const firstPoint = frameState.customWaves[0]?.positions;
+
+    expect(firstPoint).toBeDefined();
+    expect(firstPoint?.[0]).toBeCloseTo(0, 6);
+    expect(firstPoint?.[1]).toBeCloseTo(0, 6);
+    expect(firstPoint?.[0]).not.toBeCloseTo(0.5, 6);
+    expect(firstPoint?.[1]).not.toBeCloseTo(0.5, 6);
+  });
+
+  test('converts bundled-style projected custom-wave coordinates to renderer space', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Custom Wave Projection Coordinate Conversion
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wave_0_per_point1=xp=0;yp=0;zp=1;
+wave_0_per_point2=x=xp/zp+0.5;y=yp/zp+0.5;
+      `.trim(),
+      { id: 'custom-wave-projection-coordinate-conversion' },
+    );
+
+    const frameState = createMilkdropVM(preset, {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralCustomWaves: false,
+    }).step(makeSignals({ frame: 1 }));
+    const firstPoint = frameState.customWaves[0]?.positions;
+
+    expect(firstPoint).toBeDefined();
+    expect(firstPoint?.[0]).toBeCloseTo(0, 6);
+    expect(firstPoint?.[1]).toBeCloseTo(0, 6);
+  });
+
   test('preserves 512-sample custom waves for imported projectM presets', () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -332,8 +379,8 @@ wave_1_per_point1=y=t1;
     const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
 
     expect(frameState.customWaves).toHaveLength(2);
-    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.1, 6);
-    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(0.4, 6);
+    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.8, 6);
+    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(0.2, 6);
     expect(frameState.variables.t1).toBeCloseTo(0, 6);
   });
 
@@ -355,8 +402,8 @@ wave_1_per_point1=y=xp;
     const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
 
     expect(frameState.customWaves).toHaveLength(2);
-    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.25, 6);
-    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(0, 6);
+    expect(frameState.customWaves[0]?.positions[1]).toBeCloseTo(0.5, 6);
+    expect(frameState.customWaves[1]?.positions[1]).toBeCloseTo(1, 6);
   });
 
   test('keeps shape texture-control locals and projectM instance aliases available at runtime', () => {
@@ -610,8 +657,8 @@ wave_0_per_point2=y = value2;
     const firstPoint = frameState.customWaves[0]?.positions;
 
     expect(firstPoint).toBeDefined();
-    expect(firstPoint?.[0]).toBeCloseTo(normalizedValue * 2, 6);
-    expect(firstPoint?.[1]).toBeCloseTo(normalizedValue, 6);
+    expect(firstPoint?.[0]).toBeCloseTo((normalizedValue * 2 - 0.5) * 2, 6);
+    expect(firstPoint?.[1]).toBeCloseTo((0.5 - normalizedValue) * 2, 6);
   });
 
   test('applies legacy cx/cy/sx/sy/dx/dy mesh transforms', () => {

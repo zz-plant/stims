@@ -20,6 +20,9 @@ import {
 
 const MAX_CUSTOM_WAVE_SAMPLES = 1024;
 
+const toRendererWaveX = (value: number) => (value - 0.5) * 2;
+const toRendererWaveY = (value: number) => (0.5 - value) * 2;
+
 export function buildMainWave({
   state,
   signals,
@@ -168,6 +171,12 @@ export function buildCustomWaves({
       drawMode,
     );
     const useProcedural = proceduralDescriptor !== null;
+    const perPointWritesX = wave.programs.perPoint.statements.some(
+      (statement) => statement.target === 'x',
+    );
+    const perPointWritesY = wave.programs.perPoint.statements.some(
+      (statement) => statement.target === 'y',
+    );
     const pointLocals = { ...frameLocals };
     waveState.pointLocalsScratch = pointLocals;
     const pointEnv = useProcedural
@@ -287,8 +296,12 @@ export function buildCustomWaves({
       }
       const writeIndex = point * 3;
       if (positions) {
-        positions[writeIndex] = pointLocals.x;
-        positions[writeIndex + 1] = pointLocals.y;
+        positions[writeIndex] = perPointWritesX
+          ? toRendererWaveX(pointLocals.x)
+          : pointLocals.x;
+        positions[writeIndex + 1] = perPointWritesY
+          ? toRendererWaveY(pointLocals.y)
+          : pointLocals.y;
         positions[writeIndex + 2] = 0.28;
       }
     }
