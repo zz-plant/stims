@@ -27,6 +27,7 @@ const legacyCustomWaveSuffixMap: Record<string, string | null> = {
   mode: 'spectrum',
   bspectrum: 'spectrum',
   bdrawthick: 'thick',
+  busedots: 'usedots',
   badditive: 'additive',
 };
 
