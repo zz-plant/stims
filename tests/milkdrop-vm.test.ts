@@ -295,6 +295,34 @@ wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
     expect(frameState.customWaves[0]?.positions.length).toBe(512 * 3);
   });
 
+  test('emits custom-wave per-point colors when points override frame color', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Per Point Color Custom Wave
+wavecode_0_enabled=1
+wavecode_0_samples=8
+wavecode_0_r=0.25
+wavecode_0_g=0.25
+wavecode_0_b=0.25
+wave_0_per_point1=r = if(equal(sample, 0), 1, if(equal(sample, 1), 0, r));
+wave_0_per_point2=g = if(equal(sample, 0), 0, if(equal(sample, 1), 1, g));
+wave_0_per_point3=b = if(equal(sample, 0), 0, if(equal(sample, 1), 1, b));
+      `.trim(),
+      { id: 'per-point-color-custom-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset, {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralCustomWaves: false,
+    }).step(makeSignals({ frame: 1 }));
+
+    const customWave = frameState.customWaves[0];
+    expect(customWave?.colors).toBeDefined();
+    expect(customWave?.colors).toHaveLength(8 * 3);
+    expect(customWave?.colors?.slice(0, 3)).toEqual([1, 0, 0]);
+    expect(customWave?.colors?.slice(-3)).toEqual([0, 1, 1]);
+  });
+
   test('normalizes legacy bUseDots custom-wave fields to dot draw mode', () => {
     const preset = compileMilkdropPresetSource(
       `
