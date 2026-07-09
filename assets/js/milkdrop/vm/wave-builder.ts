@@ -193,6 +193,11 @@ export function buildCustomWaves({
       spectrum: false,
     };
     const positions = useProcedural ? null : visualWave.positions;
+    const pointColors = useProcedural ? null : (visualWave.colors ?? []);
+    let hasPerPointColors = false;
+    if (pointColors) {
+      pointColors.length = sampleCount * 3;
+    }
     if (positions) {
       positions.length = sampleCount * 3;
     } else {
@@ -304,6 +309,18 @@ export function buildCustomWaves({
           : pointLocals.y;
         positions[writeIndex + 2] = 0.28;
       }
+      if (pointColors) {
+        const pointR = clamp(pointLocals.r ?? waveColor.r, 0, 1);
+        const pointG = clamp(pointLocals.g ?? waveColor.g, 0, 1);
+        const pointB = clamp(pointLocals.b ?? waveColor.b, 0, 1);
+        pointColors[writeIndex] = pointR;
+        pointColors[writeIndex + 1] = pointG;
+        pointColors[writeIndex + 2] = pointB;
+        hasPerPointColors ||=
+          pointR !== waveColor.r ||
+          pointG !== waveColor.g ||
+          pointB !== waveColor.b;
+      }
     }
 
     if (visualWave && (positions || useProcedural)) {
@@ -314,6 +331,11 @@ export function buildCustomWaves({
       visualWave.additive = additive;
       visualWave.pointSize = clamp((frameLocals.thick ?? 1) * 3.2, 1, 14);
       visualWave.spectrum = (frameLocals.spectrum ?? 0) >= 0.5;
+      if (hasPerPointColors && pointColors) {
+        visualWave.colors = pointColors;
+      } else {
+        visualWave.colors = undefined;
+      }
       waves[visualWaveCount] = visualWave;
       visualWaveCount += 1;
     }
