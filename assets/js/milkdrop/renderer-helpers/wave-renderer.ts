@@ -2,6 +2,7 @@ import type { Group, Line, LineLoop, Points } from 'three';
 import {
   AdditiveBlending,
   BufferGeometry,
+  Float32BufferAttribute,
   LineBasicMaterial,
   NormalBlending,
   PointsMaterial,
@@ -19,6 +20,31 @@ import type { MilkdropColor, MilkdropWaveVisual } from '../types';
 type WaveLayerObject = Line | LineLoop | Points;
 
 const THICK_WAVE_BASE_OFFSET = 1 / 512;
+
+function syncWaveVertexColors(
+  geometry: BufferGeometry,
+  material: LineBasicMaterial | PointsMaterial,
+  colors: number[] | undefined,
+) {
+  if (!colors || colors.length === 0) {
+    geometry.deleteAttribute('color');
+    material.vertexColors = false;
+    return;
+  }
+
+  const existing = geometry.getAttribute('color');
+  if (
+    existing instanceof Float32BufferAttribute &&
+    existing.itemSize === 3 &&
+    existing.array.length === colors.length
+  ) {
+    existing.array.set(colors);
+    existing.needsUpdate = true;
+  } else {
+    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
+  }
+  material.vertexColors = true;
+}
 
 function getWaveLayerCount(wave: MilkdropWaveVisual) {
   return wave.drawMode === 'dots' || wave.thickness > 1 ? 4 : 1;
@@ -80,6 +106,7 @@ function createWaveLayerObject(
       wave.color,
       wave.alpha * alphaMultiplier,
     );
+    syncWaveVertexColors(object.geometry, object.material, wave.colors);
     object.position.set(offsetX, offsetY, 0.24);
     return object;
   }
@@ -103,6 +130,7 @@ function createWaveLayerObject(
     wave.color,
     wave.alpha * alphaMultiplier,
   );
+  syncWaveVertexColors(object.geometry, object.material, wave.colors);
   object.position.set(offsetX, offsetY, 0.24);
   return object;
 }
@@ -163,6 +191,7 @@ function syncWaveLayerObject(
       wave.color,
       wave.alpha * alphaMultiplier,
     );
+    syncWaveVertexColors(existing.geometry, material, wave.colors);
   } else {
     const material = existing.material as LineBasicMaterial;
     material.linewidth = 1;
@@ -172,6 +201,7 @@ function syncWaveLayerObject(
       wave.color,
       wave.alpha * alphaMultiplier,
     );
+    syncWaveVertexColors(existing.geometry, material, wave.colors);
   }
   existing.position.set(offsetX, offsetY, 0.24);
   return existing;

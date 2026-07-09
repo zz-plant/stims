@@ -41,6 +41,8 @@ export type MilkdropPolyline = {
 };
 
 export type MilkdropWaveVisual = MilkdropPolyline & {
+  /** Optional RGB triplets, one per vertex, used for custom-wave per-point colors. */
+  colors?: number[];
   drawMode: 'line' | 'dots';
   additive: boolean;
   blendMode?: 'subtractive' | 'multiplicative';
