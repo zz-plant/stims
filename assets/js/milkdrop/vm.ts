@@ -61,11 +61,14 @@ class MilkdropPresetVM implements MilkdropVM {
     fps: 60,
     bass: 0,
     mid: 0,
+    med: 0,
     mids: 0,
     treb: 0,
+    att: 0,
     treble: 0,
     bass_att: 0,
     mid_att: 0,
+    med_att: 0,
     mids_att: 0,
     treb_att: 0,
     treble_att: 0,
@@ -398,11 +401,14 @@ class MilkdropPresetVM implements MilkdropVM {
     this.signalEnv.fps = signals.fps;
     this.signalEnv.bass = signals.bass;
     this.signalEnv.mid = signals.mid;
+    this.signalEnv.med = signals.mid;
     this.signalEnv.mids = signals.mids;
     this.signalEnv.treb = signals.treb;
+    this.signalEnv.att = signals.treb;
     this.signalEnv.treble = signals.treble;
     this.signalEnv.bass_att = signals.bass_att;
     this.signalEnv.mid_att = signals.mid_att;
+    this.signalEnv.med_att = signals.mid_att;
     this.signalEnv.mids_att = signals.mids_att;
     this.signalEnv.treb_att = signals.treb_att;
     this.signalEnv.treble_att = signals.treble_att;
