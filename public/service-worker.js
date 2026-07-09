@@ -3,7 +3,7 @@
 // Hashed assets (/assets/*) are immutable with 1-year Cache-Control
 // and are served from browser HTTP cache — no SW intervention needed.
 
-const CACHE_NAME = 'stims-shell-v4';
+const CACHE_NAME = 'stims-shell-v5';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -12,6 +12,12 @@ const SHELL_ASSETS = [
   '/icons/favicon.svg',
   '/icons/favicon-32.png',
   '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/screenshots/hero-narrow.png',
+  '/screenshots/hero-wide.png',
+  '/milkdrop-presets/previews/eos-dark-side-of-the-moon-clean-mix.png',
+  '/milkdrop-presets/previews/rovastar-mosaics-of-ages.png',
+  '/milkdrop-presets/previews/geiss-bipolar-x.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -56,8 +62,8 @@ self.addEventListener('fetch', (event) => {
       // Try network first for the freshest content
       try {
         const networkResponse = await fetch(request);
-        // Cache successful responses for future offline use
-        if (networkResponse.ok) {
+        // Cache successful responses for future offline party mode use.
+        if (networkResponse.ok && !url.pathname.startsWith('/api/')) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(request, networkResponse.clone());
         }
