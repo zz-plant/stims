@@ -2095,6 +2095,31 @@ per_frame_1=mv_dx=0.05;
     );
   });
 
+  test('joins per-pixel continuation while parenthesized expression remains open', () => {
+    const fixturePath = join(
+      process.cwd(),
+      'public/milkdrop-presets/libraries/projectm-cream-of-the-crop/illusion-unchained-new-strategy.milk',
+    );
+    const compiled = compileMilkdropPresetSource(
+      readFileSync(fixturePath, 'utf8'),
+      {
+        id: 'illusion-unchained-new-strategy',
+        origin: 'bundled',
+        path: fixturePath,
+      },
+    );
+
+    expect(compiled.ir.programs.perPixel.sourceLines).toContain(
+      'zoom=if(Above(q2,q5),zoom+.10*sin(rad-.10+.2-newrad*q4),zoom-.10*cos(rad+.10 +.2+newrad*q5))',
+    );
+    expect(compiled.diagnostics.map((entry) => entry.code)).not.toContain(
+      'expr_expected_comma',
+    );
+    expect(compiled.diagnostics.map((entry) => entry.code)).not.toContain(
+      'expr_expected_closing_paren',
+    );
+  });
+
   test('lowers supported custom-wave per-point programs into webgpu descriptor plans', () => {
     const compiled = compileMilkdropPresetSource(
       `
