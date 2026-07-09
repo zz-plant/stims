@@ -168,11 +168,8 @@ export function buildCustomWaves({
       drawMode,
     );
     const useProcedural = proceduralDescriptor !== null;
-    waveState.pointLocalsScratch = Object.assign(
-      waveState.pointLocalsScratch,
-      frameLocals,
-    );
-    const pointLocals = waveState.pointLocalsScratch;
+    const pointLocals = { ...frameLocals };
+    waveState.pointLocalsScratch = pointLocals;
     const pointEnv = useProcedural
       ? null
       : createEnv(signals, pointLocals, { reuseExtraAsEnv: true });

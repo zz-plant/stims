@@ -339,6 +339,12 @@ class MilkdropPresetVM implements MilkdropVM {
       g: wave.fields.g ?? this.state[`custom_wave_${wave.index}_g`] ?? 1,
       b: wave.fields.b ?? this.state[`custom_wave_${wave.index}_b`] ?? 1,
       a: wave.fields.a ?? this.state[`custom_wave_${wave.index}_a`] ?? 0.4,
+      ...Object.fromEntries(
+        Array.from({ length: MAX_CUSTOM_WAVE_SLOTS }, (_, index) => [
+          `t${index + 1}`,
+          0,
+        ]),
+      ),
     };
   }
 
@@ -452,13 +458,14 @@ class MilkdropPresetVM implements MilkdropVM {
     value: number,
     locals: MutableState | null = null,
   ) {
-    const registerMatch = target.toLowerCase().match(/^([qt])(\d+)$/u);
-    if (registerMatch) {
-      this.registers[target.toLowerCase()] = value;
+    const normalizedTarget = target.toLowerCase();
+    const registerMatch = normalizedTarget.match(/^([qt])(\d+)$/u);
+    if (locals && registerMatch?.[1] !== 'q') {
+      locals[target] = value;
       return;
     }
-    if (locals && objectHasOwn(locals, target)) {
-      locals[target] = value;
+    if (registerMatch) {
+      this.registers[normalizedTarget] = value;
       return;
     }
     this.state[target] = value;
