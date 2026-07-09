@@ -148,9 +148,19 @@ function PerformanceSection() {
 export function SettingsSheetPanel({
   onCompatibilityModeChange,
   onMotionPreferenceChange,
+  thumbMode = false,
+  onThumbModeChange,
+  offline = false,
+  installAvailable = false,
+  onInstallApp,
 }: {
   onCompatibilityModeChange: (enabled: boolean) => void;
   onMotionPreferenceChange: (enabled: boolean) => void;
+  thumbMode?: boolean;
+  onThumbModeChange?: (enabled: boolean) => void;
+  offline?: boolean;
+  installAvailable?: boolean;
+  onInstallApp?: () => void;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -209,6 +219,44 @@ export function SettingsSheetPanel({
             Reset to recommended
           </button>
         ) : null}
+      </section>
+
+      <section className="stims-shell__sheet-surface">
+        <h3 className="stims-shell__settings-section-heading">
+          Mobile experience
+        </h3>
+        <label className="stims-shell__toggle-card">
+          <input
+            type="checkbox"
+            checked={thumbMode}
+            onChange={(event) => onThumbModeChange?.(event.target.checked)}
+          />
+          <span className="stims-shell__toggle-copy">
+            <strong>Thumb mode</strong>
+            <small>
+              Keeps quick browse and sharing actions at the bottom of mobile
+              sheets.
+            </small>
+          </span>
+        </label>
+        {offline ? (
+          <p className="stims-shell__meta-copy">
+            Offline party mode is active. Community and AI-backed imports are
+            paused.
+          </p>
+        ) : installAvailable ? (
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={onInstallApp}
+          >
+            Install Stims on this device
+          </button>
+        ) : (
+          <p className="stims-shell__meta-copy">
+            Rotate your phone in a live session for a cleaner theater layout.
+          </p>
+        )}
       </section>
 
       <section className="stims-shell__sheet-surface">

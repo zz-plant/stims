@@ -22,9 +22,11 @@ const BROWSE_RESULT_BATCH_SIZE = 24;
 export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
+  offline = false,
 }: {
   onCollectionTagChange: (collectionTag: string | null) => void;
   onImport: (files: FileList | null) => void;
+  offline?: boolean;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -65,6 +67,10 @@ export function BrowseSheetPanel({
 
   const handleImageImport = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    if (offline) {
+      ui.setStatusMessage('Image-to-preset needs a network connection.');
+      return;
+    }
     const file = files[0];
     const formData = new FormData();
     formData.append('image', file);
@@ -103,6 +109,12 @@ export function BrowseSheetPanel({
   };
 
   const loadCommunityPresets = useCallback(() => {
+    if (offline) {
+      setCommunityError(
+        'Community presets are unavailable in offline party mode.',
+      );
+      return;
+    }
     setCommunityLoading(true);
     setCommunityError(null);
     fetch('/api/presets?sort=top&limit=20')
@@ -121,13 +133,13 @@ export function BrowseSheetPanel({
         setCommunityError(err.message);
         setCommunityLoading(false);
       });
-  }, []);
+  }, [offline]);
 
   useEffect(() => {
-    if (routeState.collectionTag === 'collection:community') {
+    if (routeState.collectionTag === 'collection:community' && !offline) {
       loadCommunityPresets();
     }
-  }, [routeState.collectionTag, loadCommunityPresets]);
+  }, [routeState.collectionTag, loadCommunityPresets, offline]);
 
   const handleVisualSearch = async () => {
     const canvas = ui.stageRef.current?.querySelector(
@@ -395,6 +407,12 @@ export function BrowseSheetPanel({
             data-active={String(
               routeState.collectionTag === 'collection:community',
             )}
+            disabled={offline}
+            title={
+              offline
+                ? 'Community presets need a network connection'
+                : undefined
+            }
             onClick={() =>
               onCollectionTagChange(
                 routeState.collectionTag === 'collection:community'
@@ -759,11 +777,13 @@ export function BrowseSheetPanel({
           >
             {imageImportLoading
               ? 'Importing\u2026'
-              : 'Create preset from image'}
+              : offline
+                ? 'Image creation offline'
+                : 'Create preset from image'}
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
-              disabled={imageImportLoading}
+              disabled={imageImportLoading || offline}
               onChange={(event) => void handleImageImport(event.target.files)}
             />
           </label>
@@ -798,6 +818,34 @@ export function BrowseSheetPanel({
           </div>
         ) : null}
       </section>
+
+      <nav
+        className="stims-shell__thumb-actions"
+        aria-label="Thumb mode quick actions"
+      >
+        <button
+          type="button"
+          className="stims-shell__text-button"
+          onClick={engine.handleShufflePreset}
+        >
+          Surprise me
+        </button>
+        <button
+          type="button"
+          className="stims-shell__text-button"
+          onClick={() => ui.setSearchQuery('')}
+          disabled={!searchQuery}
+        >
+          Clear search
+        </button>
+        <button
+          type="button"
+          className="stims-shell__text-button"
+          onClick={() => void ui.handleShowCurrentLink()}
+        >
+          Share
+        </button>
+      </nav>
     </div>
   );
 }
