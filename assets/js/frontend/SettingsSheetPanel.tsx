@@ -150,6 +150,10 @@ export function SettingsSheetPanel({
   onMotionPreferenceChange,
   thumbMode = false,
   onThumbModeChange,
+  partyRemoteMode = false,
+  onPartyRemoteModeChange,
+  hapticsEnabled = true,
+  onHapticsEnabledChange,
   offline = false,
   installAvailable = false,
   onInstallApp,
@@ -158,6 +162,10 @@ export function SettingsSheetPanel({
   onMotionPreferenceChange: (enabled: boolean) => void;
   thumbMode?: boolean;
   onThumbModeChange?: (enabled: boolean) => void;
+  partyRemoteMode?: boolean;
+  onPartyRemoteModeChange?: (enabled: boolean) => void;
+  hapticsEnabled?: boolean;
+  onHapticsEnabledChange?: (enabled: boolean) => void;
   offline?: boolean;
   installAvailable?: boolean;
   onInstallApp?: () => void;
@@ -236,6 +244,36 @@ export function SettingsSheetPanel({
             <small>
               Keeps quick browse and sharing actions at the bottom of mobile
               sheets.
+            </small>
+          </span>
+        </label>
+        <label className="stims-shell__toggle-card">
+          <input
+            type="checkbox"
+            checked={partyRemoteMode}
+            onChange={(event) =>
+              onPartyRemoteModeChange?.(event.target.checked)
+            }
+          />
+          <span className="stims-shell__toggle-copy">
+            <strong>Party remote</strong>
+            <small>
+              Simplifies the phone bar to shuffle, save, fullscreen, and audio
+              controls.
+            </small>
+          </span>
+        </label>
+        <label className="stims-shell__toggle-card">
+          <input
+            type="checkbox"
+            checked={hapticsEnabled}
+            onChange={(event) => onHapticsEnabledChange?.(event.target.checked)}
+          />
+          <span className="stims-shell__toggle-copy">
+            <strong>Touch haptics</strong>
+            <small>
+              Adds a subtle vibration for swipes, long-press saves, and key
+              controls when supported.
             </small>
           </span>
         </label>

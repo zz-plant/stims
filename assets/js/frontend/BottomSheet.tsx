@@ -17,6 +17,7 @@ type BottomSheetTab = {
 };
 
 type SheetPosition = 'bottom' | 'right' | 'left';
+type BottomSheetSnapPoint = 'compact' | 'half' | 'full';
 
 type BottomSheetProps = {
   open: boolean;
@@ -28,6 +29,8 @@ type BottomSheetProps = {
   position?: SheetPosition;
   onOpen?: () => void;
   withBackdrop?: boolean;
+  snapPoints?: BottomSheetSnapPoint[];
+  defaultSnapPoint?: BottomSheetSnapPoint;
 };
 
 export function BottomSheet({
@@ -40,8 +43,12 @@ export function BottomSheet({
   position = 'bottom',
   onOpen,
   withBackdrop = true,
+  snapPoints = ['half'],
+  defaultSnapPoint = 'half',
 }: BottomSheetProps) {
   const [exiting, setExiting] = useState(false);
+  const [snapPoint, setSnapPoint] =
+    useState<BottomSheetSnapPoint>(defaultSnapPoint);
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef(0);
   const dragCurrent = useRef(0);
@@ -74,6 +81,7 @@ export function BottomSheet({
   useEffect(() => {
     if (open) {
       setExiting(false);
+      setSnapPoint(defaultSnapPoint);
       const activeElement = document.activeElement;
       previouslyFocusedRef.current =
         activeElement instanceof HTMLElement ? activeElement : null;
@@ -82,7 +90,7 @@ export function BottomSheet({
         requestAnimationFrame(onOpen);
       }
     }
-  }, [open, onOpen]);
+  }, [open, onOpen, defaultSnapPoint]);
 
   useEffect(() => {
     if (open || !wasOpenRef.current) return;
@@ -170,12 +178,21 @@ export function BottomSheet({
         ? delta > 0
         : (position === 'left' && delta < 0) ||
           (position === 'right' && delta > 0);
-    if (isClosingDirection && Math.abs(delta) > dragThreshold) {
+    const snapIndex = snapPoints.indexOf(snapPoint);
+    if (position === 'bottom' && Math.abs(delta) > dragThreshold) {
+      if (delta < 0 && snapIndex < snapPoints.length - 1) {
+        setSnapPoint(snapPoints[snapIndex + 1]);
+      } else if (delta > 0 && snapIndex > 0) {
+        setSnapPoint(snapPoints[snapIndex - 1]);
+      } else if (isClosingDirection) {
+        startClose();
+      }
+    } else if (isClosingDirection && Math.abs(delta) > dragThreshold) {
       startClose();
     }
     dragStart.current = 0;
     dragCurrent.current = 0;
-  }, [position, startClose]);
+  }, [position, snapPoint, snapPoints, startClose]);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
@@ -217,6 +234,7 @@ export function BottomSheet({
         ref={sheetRef}
         className={styles.sheet}
         data-position={position}
+        data-snap={position === 'bottom' ? snapPoint : undefined}
         data-exiting={String(exiting)}
         role="dialog"
         aria-modal="true"

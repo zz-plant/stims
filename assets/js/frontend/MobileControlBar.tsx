@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/MobileControlBar.module.css';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
+import { pulseHaptic } from './haptics.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context';
 
@@ -21,6 +22,8 @@ type MobileControlBarProps = {
   onToggleFullscreen: () => void;
   onToggleTheme?: () => void;
   thumbMode?: boolean;
+  partyRemoteMode?: boolean;
+  hapticsEnabled?: boolean;
 };
 
 export function MobileControlBar({
@@ -31,6 +34,8 @@ export function MobileControlBar({
   onToggleFullscreen,
   onToggleTheme: _onToggleTheme,
   thumbMode = false,
+  partyRemoteMode = false,
+  hapticsEnabled = true,
 }: MobileControlBarProps) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -88,13 +93,15 @@ export function MobileControlBar({
 
   const handleShuffle = useCallback(() => {
     resetHideTimer();
+    pulseHaptic(12, hapticsEnabled);
     void engine.handleShufflePreset();
-  }, [engine, resetHideTimer]);
+  }, [engine, hapticsEnabled, resetHideTimer]);
 
   const handlePrevious = useCallback(() => {
     resetHideTimer();
+    pulseHaptic(12, hapticsEnabled);
     void engine.handlePreviousPreset();
-  }, [engine, resetHideTimer]);
+  }, [engine, hapticsEnabled, resetHideTimer]);
 
   const handleSimilar = useCallback(async () => {
     resetHideTimer();
@@ -137,8 +144,30 @@ export function MobileControlBar({
 
   const handleFullscreen = useCallback(() => {
     resetHideTimer();
+    pulseHaptic(10, hapticsEnabled);
     onToggleFullscreen();
-  }, [onToggleFullscreen, resetHideTimer]);
+  }, [hapticsEnabled, onToggleFullscreen, resetHideTimer]);
+
+  const handleFavorite = useCallback(() => {
+    resetHideTimer();
+    const presetId = engineSnapshot?.activePresetId;
+    if (!presetId) {
+      ui.setStatusMessage('No preset is active yet.');
+      return;
+    }
+    pulseHaptic(24, hapticsEnabled);
+    const favorite = !engine.favoritePresets.some(
+      (entry) => entry.id === presetId,
+    );
+    void engine.toggleFavoritePreset(presetId, favorite);
+    ui.setStatusMessage(favorite ? 'Preset saved.' : 'Preset unsaved.');
+  }, [
+    engine,
+    engineSnapshot?.activePresetId,
+    hapticsEnabled,
+    resetHideTimer,
+    ui,
+  ]);
 
   const handleMoodGenerate = useCallback(
     (mood: { label: string; desc: string }) => {
@@ -190,6 +219,17 @@ export function MobileControlBar({
   );
 
   const mobileActions = [
+    {
+      id: 'favorite',
+      label: engine.favoritePresets.some(
+        (entry) => entry.id === engineSnapshot?.activePresetId,
+      )
+        ? 'Saved'
+        : 'Save',
+      ariaLabel: 'Save current preset',
+      icon: 'sparkles' as const,
+      onClick: handleFavorite,
+    },
     {
       id: 'browse',
       label: 'Browse',
@@ -277,8 +317,10 @@ export function MobileControlBar({
       : []),
   ];
   const primaryActionIds = thumbMode
-    ? ['browse', 'shuffle', 'similar', 'settings']
-    : ['browse', 'shuffle', 'previous', 'similar', 'settings'];
+    ? ['browse', 'shuffle', 'favorite', 'settings']
+    : partyRemoteMode
+      ? ['shuffle', 'favorite', 'fullscreen']
+      : ['browse', 'shuffle', 'previous', 'similar', 'settings'];
   const primaryActions = mobileActions.filter((action) =>
     primaryActionIds.includes(action.id),
   );
@@ -354,6 +396,7 @@ export function MobileControlBar({
             aria-expanded={showMoreActions}
             onClick={() => {
               resetHideTimer();
+              pulseHaptic(8, hapticsEnabled);
               setShowMoreActions((current) => !current);
             }}
             aria-label="More mobile actions"
@@ -384,7 +427,7 @@ export function MobileControlBar({
             resetHideTimer();
           }}
         >
-          <span aria-hidden="true">^</span>
+          <span aria-hidden="true">⌃</span>
           <span className={styles.handleLabel}>Controls</span>
         </button>
       ) : null}

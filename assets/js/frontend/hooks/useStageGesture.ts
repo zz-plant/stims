@@ -1,4 +1,5 @@
 import { type RefObject, useEffect, useRef } from 'react';
+import { pulseHaptic } from '../haptics.ts';
 
 const WHEEL_DEBOUNCE_MS = 400;
 const SWIPE_MIN_DISTANCE_PX = 64;
@@ -40,6 +41,7 @@ export function useStageGesture({
   closePanel,
   toggleFavoritePreset,
   setStatusMessage,
+  hapticsEnabled = true,
 }: {
   enabled: boolean;
   stageRef?: RefObject<HTMLElement | null>;
@@ -49,6 +51,7 @@ export function useStageGesture({
   closePanel?: () => void;
   toggleFavoritePreset?: () => void;
   setStatusMessage?: (message: string) => void;
+  hapticsEnabled?: boolean;
 }) {
   const shuffleRef = useRef(handleShufflePreset);
   shuffleRef.current = handleShufflePreset;
@@ -115,6 +118,7 @@ export function useStageGesture({
       clearLongPress();
       longPressTimerRef.current = setTimeout(() => {
         longPressFired = true;
+        pulseHaptic(24, hapticsEnabled);
         toggleFavoriteRef.current?.();
       }, LONG_PRESS_MS);
     };
@@ -146,11 +150,13 @@ export function useStageGesture({
         lastSwipeRef.current = now;
         if (dx > 0) {
           prevRef.current();
+          pulseHaptic(12, hapticsEnabled);
           statusRef.current?.(
             'Previous preset. Swipe left for another surprise.',
           );
         } else {
           shuffleRef.current();
+          pulseHaptic(12, hapticsEnabled);
           statusRef.current?.('Shuffled preset. Swipe right to go back.');
         }
         return;
@@ -160,11 +166,13 @@ export function useStageGesture({
         lastSwipeRef.current = now;
         if (dy < 0) {
           openBrowseRef.current?.();
+          pulseHaptic([8, 20, 8], hapticsEnabled);
           statusRef.current?.(
             'Browse opened. Swipe down on the stage to close.',
           );
         } else {
           closePanelRef.current?.();
+          pulseHaptic(10, hapticsEnabled);
           statusRef.current?.('Panel closed.');
         }
       }
@@ -190,5 +198,5 @@ export function useStageGesture({
       stage.removeEventListener('pointerup', handlePointerEnd);
       stage.removeEventListener('pointercancel', handlePointerCancel);
     };
-  }, [enabled, stageRef]);
+  }, [enabled, stageRef, hapticsEnabled]);
 }

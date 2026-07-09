@@ -60,6 +60,7 @@ export function BrowseSheetPanel({
   } | null>(null);
   const [imageImportLoading, setImageImportLoading] = useState(false);
   const [fileImportStatus, setFileImportStatus] = useState('');
+  const [presetQueue, setPresetQueue] = useState<PresetCatalogEntry[]>([]);
   const [visibleCatalogState, setVisibleCatalogState] = useState({
     key: '',
     limit: BROWSE_RESULT_BATCH_SIZE,
@@ -175,6 +176,22 @@ export function BrowseSheetPanel({
   const handleDeselectVisualSearch = () => {
     setVisualSearchActive(false);
     setVisualSearchResults([]);
+  };
+  const handleQueuePreset = (presetId: string) => {
+    const entry = catalog.find((preset) => preset.id === presetId);
+    if (!entry) return;
+    setPresetQueue((current) =>
+      current.some((preset) => preset.id === presetId)
+        ? current
+        : [...current, entry].slice(-12),
+    );
+    ui.setStatusMessage(`${entry.title} added to queue.`);
+  };
+  const playNextQueuedPreset = () => {
+    const [next, ...rest] = presetQueue;
+    if (!next) return;
+    setPresetQueue(rest);
+    engine.handlePresetSelection(next.id);
   };
 
   const showStarterPresets =
@@ -498,6 +515,7 @@ export function BrowseSheetPanel({
           summary=""
           title="Recent"
           onSelect={engine.handlePresetSelection}
+          onQueue={handleQueuePreset}
           presetPreviews={presetPreviews}
         />
       ) : null}
@@ -512,8 +530,46 @@ export function BrowseSheetPanel({
           summary=""
           title="Saved"
           onSelect={engine.handlePresetSelection}
+          onQueue={handleQueuePreset}
           presetPreviews={presetPreviews}
         />
+      ) : null}
+
+      {presetQueue.length > 0 ? (
+        <section className="stims-shell__sheet-surface">
+          <div className="stims-shell__section-heading">
+            <h2 className="stims-shell__section-label">Up next</h2>
+            <p className="stims-shell__meta-copy">
+              Long-press cards to build a quick phone-friendly queue.
+            </p>
+          </div>
+          <div className="stims-shell__chip-list">
+            {presetQueue.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                className="stims-shell__chip"
+                onClick={() =>
+                  setPresetQueue((current) =>
+                    current.filter((preset) => preset.id !== entry.id),
+                  )
+                }
+              >
+                <span className="stims-shell__chip-copy">
+                  <strong>{entry.title}</strong>
+                  <small>Tap to remove</small>
+                </span>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="cta-button"
+            onClick={playNextQueuedPreset}
+          >
+            Play next queued preset
+          </button>
+        </section>
       ) : null}
 
       <section className="stims-shell__sheet-surface">
@@ -783,6 +839,19 @@ export function BrowseSheetPanel({
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
+              disabled={imageImportLoading || offline}
+              onChange={(event) => void handleImageImport(event.target.files)}
+            />
+          </label>
+          <label
+            className="cta-button stims-shell__file-button"
+            aria-disabled={imageImportLoading || offline}
+          >
+            Camera vibe
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
               disabled={imageImportLoading || offline}
               onChange={(event) => void handleImageImport(event.target.files)}
             />
