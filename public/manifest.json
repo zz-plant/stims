@@ -39,5 +39,32 @@
   "related_applications": [],
   "prefer_related_applications": false,
   "dir": "ltr",
-  "lang": "en-US"
+  "lang": "en-US",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "shortcuts": [
+    {
+      "name": "Start visualizer",
+      "short_name": "Play",
+      "description": "Open Stims ready to play visuals.",
+      "url": "/?source=pwa",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Browse presets",
+      "short_name": "Browse",
+      "description": "Open directly to the preset browser.",
+      "url": "/?panel=browse&source=pwa",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }

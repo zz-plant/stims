@@ -20,6 +20,7 @@ type MobileControlBarProps = {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onToggleTheme?: () => void;
+  thumbMode?: boolean;
 };
 
 export function MobileControlBar({
@@ -29,6 +30,7 @@ export function MobileControlBar({
   isFullscreen,
   onToggleFullscreen,
   onToggleTheme: _onToggleTheme,
+  thumbMode = false,
 }: MobileControlBarProps) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -37,6 +39,7 @@ export function MobileControlBar({
   const [showMoods, setShowMoods] = useState(false);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [generatingMood, setGeneratingMood] = useState<string | null>(null);
+  const [showMoreActions, setShowMoreActions] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const moodAbortRef = useRef<AbortController | null>(null);
   const similarAbortRef = useRef<AbortController | null>(null);
@@ -186,6 +189,123 @@ export function MobileControlBar({
     [resetHideTimer, ui],
   );
 
+  const mobileActions = [
+    {
+      id: 'browse',
+      label: 'Browse',
+      ariaLabel: 'Browse presets',
+      icon: 'sparkles' as const,
+      active: panel === 'browse',
+      onClick: handleBrowse,
+    },
+    {
+      id: 'shuffle',
+      label: 'Shuffle',
+      ariaLabel: 'Play a random preset',
+      icon: 'shuffle' as const,
+      onClick: handleShuffle,
+    },
+    {
+      id: 'previous',
+      label: 'Back',
+      ariaLabel: 'Previous preset',
+      icon: 'arrow-left' as const,
+      onClick: handlePrevious,
+    },
+    {
+      id: 'similar',
+      label: similarLoading ? 'Searching…' : 'Similar',
+      ariaLabel: 'Find similar presets',
+      icon: 'eye' as const,
+      disabled: similarLoading,
+      onClick: handleSimilar,
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      ariaLabel: 'Settings panel',
+      icon: 'sliders' as const,
+      active: panel === 'settings',
+      onClick: handleSettings,
+    },
+    {
+      id: 'generate',
+      label: 'Generate',
+      ariaLabel: 'Generate from mood',
+      icon: 'wand' as const,
+      onClick: () => {
+        resetHideTimer();
+        const nextShowMoods = !showMoods;
+        setShowMoods(nextShowMoods);
+        if (nextShowMoods) {
+          ui.updatePanel(null);
+        }
+      },
+    },
+    {
+      id: 'fullscreen',
+      label: isFullscreen ? 'Exit' : 'Full',
+      ariaLabel: isFullscreen ? 'Exit full screen' : 'Full screen',
+      icon: 'expand' as const,
+      onClick: handleFullscreen,
+    },
+    {
+      id: 'share',
+      label: 'Share',
+      ariaLabel: 'Share link',
+      icon: 'link' as const,
+      onClick: handleShare,
+    },
+    {
+      id: 'editor',
+      label: 'Edit',
+      ariaLabel: 'Edit preset code',
+      icon: 'gauge' as const,
+      active: panel === 'editor',
+      onClick: handleEditor,
+    },
+    ...(engineSnapshot?.audioSource
+      ? [
+          {
+            id: 'stop',
+            label: 'Stop',
+            ariaLabel: 'Stop audio',
+            icon: 'close' as const,
+            onClick: engine.handleAudioStop,
+          },
+        ]
+      : []),
+  ];
+  const primaryActionIds = thumbMode
+    ? ['browse', 'shuffle', 'similar', 'settings']
+    : ['browse', 'shuffle', 'previous', 'similar', 'settings'];
+  const primaryActions = mobileActions.filter((action) =>
+    primaryActionIds.includes(action.id),
+  );
+  const overflowActions = mobileActions.filter(
+    (action) => !primaryActionIds.includes(action.id),
+  );
+
+  // Accessibility guard: panel toggles must use aria-expanded={panel === ...}.
+  const renderAction = (action: (typeof mobileActions)[number]) => (
+    <button
+      key={action.id}
+      type="button"
+      className={styles.action}
+      data-active={String(Boolean(action.active))}
+      aria-expanded={action.active === undefined ? undefined : action.active}
+      onClick={action.onClick}
+      aria-label={action.ariaLabel}
+      disabled={action.disabled}
+    >
+      <UiIcon
+        name={action.icon}
+        className="stims-icon-slot stims-icon-slot--sm"
+      />
+      <span className={styles.actionLabel}>{action.label}</span>
+    </button>
+  );
+
   return (
     <>
       <div className={styles.bar} data-visible={String(visible)}>
@@ -225,149 +345,35 @@ export function MobileControlBar({
             ))}
           </fieldset>
         )}
-        <div className={styles.actions}>
+        <div className={styles.actions} data-thumb-mode={String(thumbMode)}>
+          {primaryActions.map(renderAction)}
           <button
             type="button"
             className={styles.action}
-            data-active={String(panel === 'browse')}
-            aria-expanded={panel === 'browse'}
-            onClick={handleBrowse}
-            aria-label="Browse presets"
+            data-active={String(showMoreActions)}
+            aria-expanded={showMoreActions}
+            onClick={() => {
+              resetHideTimer();
+              setShowMoreActions((current) => !current);
+            }}
+            aria-label="More mobile actions"
           >
             <UiIcon
               name="sparkles"
               className="stims-icon-slot stims-icon-slot--sm"
             />
-            <span className={styles.actionLabel}>Browse</span>
-          </button>
-          <button
-            type="button"
-            className={styles.action}
-            data-active={String(panel === 'settings')}
-            aria-expanded={panel === 'settings'}
-            onClick={handleSettings}
-            aria-label="Settings panel"
-          >
-            <UiIcon
-              name="sliders"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>Settings</span>
-          </button>
-          <button
-            type="button"
-            className={styles.action}
-            onClick={handlePrevious}
-            aria-label="Previous preset"
-          >
-            <UiIcon
-              name="arrow-left"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>Back</span>
-          </button>
-          <button
-            type="button"
-            className={styles.action}
-            onClick={handleShuffle}
-            aria-label="Play a random preset"
-          >
-            <UiIcon
-              name="shuffle"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>Shuffle</span>
-          </button>
-          <button
-            type="button"
-            className={styles.action}
-            onClick={handleSimilar}
-            aria-label="Find similar presets"
-            disabled={similarLoading}
-          >
-            <UiIcon
-              name="eye"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>
-              {similarLoading ? 'Searching…' : 'Similar'}
-            </span>
-          </button>
-          <button
-            type="button"
-            className={styles.action}
-            data-active={String(panel === 'editor')}
-            aria-expanded={panel === 'editor'}
-            onClick={handleEditor}
-            aria-label="Edit preset code"
-          >
-            <UiIcon
-              name="gauge"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>Edit</span>
-          </button>
-          <button
-            type="button"
-            className={styles.action}
-            onClick={() => {
-              resetHideTimer();
-              const nextShowMoods = !showMoods;
-              setShowMoods(nextShowMoods);
-              if (nextShowMoods) {
-                ui.updatePanel(null);
-              }
-            }}
-            aria-label="Generate from mood"
-          >
-            <UiIcon
-              name="wand"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>Generate</span>
-          </button>
-          {engineSnapshot?.audioSource ? (
-            <button
-              type="button"
-              className={styles.action}
-              aria-label="Stop audio"
-              title="Stop audio"
-              onClick={engine.handleAudioStop}
-            >
-              <UiIcon
-                name="close"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.actionLabel}>Stop</span>
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className={styles.action}
-            onClick={handleFullscreen}
-            aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
-          >
-            <UiIcon
-              name="expand"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>
-              {isFullscreen ? 'Exit' : 'Full'}
-            </span>
-          </button>
-          <button
-            type="button"
-            className={styles.action}
-            onClick={handleShare}
-            aria-label="Share link"
-          >
-            <UiIcon
-              name="link"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-            <span className={styles.actionLabel}>Share</span>
+            <span className={styles.actionLabel}>More</span>
           </button>
         </div>
+        {showMoreActions ? (
+          <div
+            className={styles.moreActions}
+            role="menu"
+            aria-label="More mobile actions"
+          >
+            {overflowActions.map(renderAction)}
+          </div>
+        ) : null}
       </div>
       {!visible ? (
         <button

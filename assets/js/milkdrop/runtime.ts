@@ -32,6 +32,11 @@ import { createMilkdropEditorActions } from './runtime/editor-actions';
 import { createMilkdropExperienceAttachmentController } from './runtime/experience-attachment.ts';
 import { createMilkdropExperienceFrameLoop } from './runtime/experience-frame-loop.ts';
 import { createMilkdropRuntimeInteractionPresenter } from './runtime/interaction-presenter';
+import {
+  applyMilkdropInteractionResponse as applyMilkdropInteractionResponseImpl,
+  buildMilkdropInputSignalOverrides as buildMilkdropInputSignalOverridesImpl,
+  getMilkdropDetailScale as getMilkdropDetailScaleImpl,
+} from './runtime/interaction-response';
 import { createMilkdropRuntimeLifetime } from './runtime/lifetime';
 import { createMilkdropRuntimePerformanceTracker } from './runtime/performance-tracker';
 import { createMilkdropPresentationController } from './runtime/presentation-controller';
@@ -61,11 +66,11 @@ import {
 
 const log = createLogger('MilkdropRuntime');
 
-export {
-  applyMilkdropInteractionResponse,
-  buildMilkdropInputSignalOverrides,
-  getMilkdropDetailScale,
-} from './runtime/interaction-response';
+export const applyMilkdropInteractionResponse =
+  applyMilkdropInteractionResponseImpl;
+export const buildMilkdropInputSignalOverrides =
+  buildMilkdropInputSignalOverridesImpl;
+export const getMilkdropDetailScale = getMilkdropDetailScaleImpl;
 
 export function createMilkdropExperience({
   container,

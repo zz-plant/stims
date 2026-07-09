@@ -82,6 +82,18 @@ function StimsWorkspaceAppShell() {
     name: string;
     score: number;
   } | null>(null);
+  const [thumbMode, setThumbMode] = useState(() => {
+    try {
+      return localStorage.getItem('stims:mobile-thumb-mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [offline, setOffline] = useState(() =>
+    typeof navigator === 'undefined' ? false : !navigator.onLine,
+  );
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [showRotateHint, setShowRotateHint] = useState(false);
 
   const liveMode = engine.audioActive;
   const currentAudioSource =
@@ -120,8 +132,31 @@ function StimsWorkspaceAppShell() {
 
   useStageGesture({
     enabled: liveMode,
+    stageRef: ui.stageRef,
     handleShufflePreset: engine.handleShufflePreset,
     handlePreviousPreset: engine.handlePreviousPreset,
+    openBrowse: () => ui.updatePanel('browse'),
+    closePanel: () => ui.updatePanel(null),
+    toggleFavoritePreset: () => {
+      const activePresetId = engineSnapshot?.activePresetId;
+      const activePreset = activePresetId
+        ? engine.catalog.find((preset) => preset.id === activePresetId)
+        : null;
+      if (!activePresetId) {
+        ui.setStatusMessage('Load a preset before saving it.');
+        return;
+      }
+      void engine.toggleFavoritePreset(
+        activePresetId,
+        !activePreset?.isFavorite,
+      );
+      ui.setStatusMessage(
+        activePreset?.isFavorite
+          ? 'Removed from saved presets.'
+          : 'Saved preset.',
+      );
+    },
+    setStatusMessage: ui.setStatusMessage,
   });
 
   useEffect(() => {
@@ -187,6 +222,64 @@ function StimsWorkspaceAppShell() {
     engineSnapshot?.audioActive,
     ui.setStatusMessage,
   ]);
+
+  useEffect(() => {
+    const syncOnlineState = () => setOffline(!navigator.onLine);
+    window.addEventListener('online', syncOnlineState);
+    window.addEventListener('offline', syncOnlineState);
+    return () => {
+      window.removeEventListener('online', syncOnlineState);
+      window.removeEventListener('offline', syncOnlineState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
+    window.addEventListener('beforeinstallprompt', handleInstallPrompt);
+    return () =>
+      window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia(
+      '(orientation: portrait) and (pointer: coarse) and (max-width: 767px)',
+    );
+    const update = () => {
+      if (!liveMode || !media.matches) {
+        setShowRotateHint(false);
+        return;
+      }
+      try {
+        if (localStorage.getItem('stims:rotate-hint-dismissed') === 'true') {
+          setShowRotateHint(false);
+          return;
+        }
+      } catch {}
+      setShowRotateHint(true);
+    };
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [liveMode]);
+
+  const updateThumbMode = useCallback((enabled: boolean) => {
+    setThumbMode(enabled);
+    try {
+      localStorage.setItem('stims:mobile-thumb-mode', String(enabled));
+    } catch {}
+  }, []);
+
+  const handleInstallApp = useCallback(() => {
+    const prompt = installPrompt as
+      | (Event & { prompt?: () => Promise<void> })
+      | null;
+    if (!prompt?.prompt) return;
+    void prompt.prompt();
+    setInstallPrompt(null);
+  }, [installPrompt]);
 
   const stageEyebrow = engine.loadingRequestedPreset
     ? 'Loading preset'
@@ -309,6 +402,8 @@ function StimsWorkspaceAppShell() {
       data-sheet-open={
         ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined
       }
+      data-thumb-mode={thumbMode ? 'true' : undefined}
+      data-offline={offline ? 'true' : undefined}
     >
       <a href="#stims-visualizer" className="skip-link">
         Skip to visualizer
@@ -362,6 +457,7 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel
+              offline={offline}
               onCollectionTagChange={(collectionTag) =>
                 ui.commitRoute({ ...ui.routeState, collectionTag })
               }
@@ -372,6 +468,11 @@ function StimsWorkspaceAppShell() {
           ) : null}
           {ui.routeState.panel === 'settings' ? (
             <SettingsSheetPanel
+              thumbMode={thumbMode}
+              onThumbModeChange={updateThumbMode}
+              offline={offline}
+              installAvailable={installPrompt !== null}
+              onInstallApp={handleInstallApp}
               onCompatibilityModeChange={setCompatibilityMode}
               onMotionPreferenceChange={(enabled) =>
                 setMotionPreference({ enabled })
@@ -380,6 +481,39 @@ function StimsWorkspaceAppShell() {
           ) : null}
         </Suspense>
       </BottomSheet>
+
+      {offline ? (
+        <div className="stims-shell__mobile-notice" role="status">
+          Offline party mode: saved presets and cached previews still work.
+        </div>
+      ) : installPrompt ? (
+        <div className="stims-shell__mobile-notice" role="status">
+          <span>Install Stims for faster mobile launch.</span>
+          <button type="button" onClick={handleInstallApp}>
+            Install
+          </button>
+          <button type="button" onClick={() => setInstallPrompt(null)}>
+            Not now
+          </button>
+        </div>
+      ) : null}
+
+      {showRotateHint ? (
+        <div className="stims-shell__rotate-hint" role="status">
+          <span>Rotate your phone for theater mode.</span>
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                localStorage.setItem('stims:rotate-hint-dismissed', 'true');
+              } catch {}
+              setShowRotateHint(false);
+            }}
+          >
+            Got it
+          </button>
+        </div>
+      ) : null}
 
       <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
 
@@ -395,6 +529,7 @@ function StimsWorkspaceAppShell() {
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
           onToggleTheme={handleToggleTheme}
+          thumbMode={thumbMode}
         />
       ) : null}
       <AudioMatchToast
