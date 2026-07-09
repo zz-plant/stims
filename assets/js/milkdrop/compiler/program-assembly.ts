@@ -284,10 +284,59 @@ export function pushProgramStatement(
   });
 }
 
+function scanMilkdropProgramExpressionContext(sourceLine: string) {
+  let parenthesisDepth = 0;
+  let quote: '"' | "'" | null = null;
+
+  for (let index = 0; index < sourceLine.length; index += 1) {
+    const current = sourceLine[index];
+    const next = sourceLine[index + 1];
+
+    if (quote) {
+      if (current === '\\') {
+        index += 1;
+        continue;
+      }
+      if (current === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (current === '/' && next === '/') {
+      break;
+    }
+
+    if (current === '"' || current === "'") {
+      quote = current;
+      continue;
+    }
+
+    if (current === '(') {
+      parenthesisDepth += 1;
+      continue;
+    }
+
+    if (current === ')') {
+      parenthesisDepth = Math.max(0, parenthesisDepth - 1);
+    }
+  }
+
+  return { parenthesisDepth, hasOpenQuote: quote !== null };
+}
+
 function canContinueMilkdropProgramLine(sourceLine: string) {
   const trimmed = sourceLine.trim();
   if (!trimmed) {
     return false;
+  }
+
+  const expressionContext = scanMilkdropProgramExpressionContext(trimmed);
+  if (
+    expressionContext.parenthesisDepth > 0 ||
+    expressionContext.hasOpenQuote
+  ) {
+    return true;
   }
 
   return /(?:[+\-*/,(]|\b(?:and|or)\b)$/iu.test(trimmed);
