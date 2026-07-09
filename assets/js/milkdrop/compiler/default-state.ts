@@ -57,6 +57,7 @@ const DEFAULT_MILKDROP_STATE: Record<string, number> = {
   psversion_warp: 2,
   beat_sensitivity: 0.5,
   blend_duration: 3,
+  basstime: 0,
   decay: 0.98,
   zoom: 1,
   zoomexp: 1,
