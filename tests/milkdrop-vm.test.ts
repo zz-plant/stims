@@ -394,6 +394,59 @@ shape_0_init1=ang=tex_ang+instance*0.1;
     );
   });
 
+  test('supports bundled preset legacy audio aliases at compile time and runtime', () => {
+    const signals = makeSignals({ frame: 1 });
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Audio Aliases
+per_frame_1=volume = 0.3*(bass+mid+att)
+per_frame_2=v = med + med_att
+      `.trim(),
+      { id: 'legacy-audio-aliases' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(signals);
+
+    expect(preset.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(frameState.variables.volume).toBeCloseTo(
+      0.3 * (signals.bass + signals.mid + signals.treb),
+      6,
+    );
+    expect(frameState.variables.v).toBeCloseTo(
+      signals.mid + signals.mid_att,
+      6,
+    );
+  });
+
+  test('seeds legacy basstime as a projectM global for orb-radiation style usage', () => {
+    const signals = makeSignals({ frame: 1 });
+    const preset = compileMilkdropPresetSource(
+      `
+title=Basstime Legacy Global
+per_frame_1=diff = 2
+per_frame_2=state = 0
+per_frame_3=xs = xs + equal(state,0)*cos(basstime*1.2)*diff
+per_frame_4=q1 = basstime
+per_frame_5=basstime = basstime + bass_att*0.03
+      `.trim(),
+      { id: 'basstime-legacy-global' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(signals);
+
+    expect(preset.ir.compatibility.parity.missingAliasesOrFunctions).toEqual(
+      [],
+    );
+    expect(frameState.variables.xs).toBeCloseTo(2, 6);
+    expect(frameState.variables.q1).toBeCloseTo(0, 6);
+    expect(frameState.variables.basstime).toBeCloseTo(
+      signals.bass_att * 0.03,
+      6,
+    );
+  });
+
   test('applies wave_brighten normalization and gamma-adjusted post state', () => {
     const preset = compileMilkdropPresetSource(
       `
