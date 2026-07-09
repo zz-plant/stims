@@ -152,15 +152,18 @@
 
 .handle {
   position: fixed;
-  bottom: max(8px, env(safe-area-inset-bottom));
+  bottom: max(10px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-dock);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
+  min-width: min(360px, calc(100vw - 32px));
+  min-height: 48px;
+  padding: 10px 18px;
+  border-radius: 18px;
   background: rgba(5, 7, 13, 0.9);
   color: var(--stims-ink);
   border: 1px solid var(--stims-line-soft);

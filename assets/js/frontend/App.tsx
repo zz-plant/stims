@@ -89,6 +89,20 @@ function StimsWorkspaceAppShell() {
       return false;
     }
   });
+  const [partyRemoteMode, setPartyRemoteMode] = useState(() => {
+    try {
+      return localStorage.getItem('stims:mobile-party-remote') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [hapticsEnabled, setHapticsEnabled] = useState(() => {
+    try {
+      return localStorage.getItem('stims:mobile-haptics') !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const [offline, setOffline] = useState(() =>
     typeof navigator === 'undefined' ? false : !navigator.onLine,
   );
@@ -157,6 +171,7 @@ function StimsWorkspaceAppShell() {
       );
     },
     setStatusMessage: ui.setStatusMessage,
+    hapticsEnabled,
   });
 
   useEffect(() => {
@@ -269,6 +284,20 @@ function StimsWorkspaceAppShell() {
     setThumbMode(enabled);
     try {
       localStorage.setItem('stims:mobile-thumb-mode', String(enabled));
+    } catch {}
+  }, []);
+
+  const updatePartyRemoteMode = useCallback((enabled: boolean) => {
+    setPartyRemoteMode(enabled);
+    try {
+      localStorage.setItem('stims:mobile-party-remote', String(enabled));
+    } catch {}
+  }, []);
+
+  const updateHapticsEnabled = useCallback((enabled: boolean) => {
+    setHapticsEnabled(enabled);
+    try {
+      localStorage.setItem('stims:mobile-haptics', String(enabled));
     } catch {}
   }, []);
 
@@ -430,6 +459,12 @@ function StimsWorkspaceAppShell() {
           isWideEnough && ui.routeState.panel !== 'browse' ? 'right' : 'bottom'
         }
         withBackdrop={!stageAnchoredToolOpen}
+        snapPoints={
+          ui.routeState.panel === 'browse'
+            ? ['half', 'full']
+            : ['compact', 'half', 'full']
+        }
+        defaultSnapPoint={ui.routeState.panel === 'browse' ? 'half' : 'compact'}
         tabs={
           ui.routeState.panel
             ? TOOL_TABS.filter(
@@ -470,6 +505,10 @@ function StimsWorkspaceAppShell() {
             <SettingsSheetPanel
               thumbMode={thumbMode}
               onThumbModeChange={updateThumbMode}
+              partyRemoteMode={partyRemoteMode}
+              onPartyRemoteModeChange={updatePartyRemoteMode}
+              hapticsEnabled={hapticsEnabled}
+              onHapticsEnabledChange={updateHapticsEnabled}
               offline={offline}
               installAvailable={installPrompt !== null}
               onInstallApp={handleInstallApp}
@@ -530,6 +569,8 @@ function StimsWorkspaceAppShell() {
           onToggleFullscreen={handleToggleFullscreen}
           onToggleTheme={handleToggleTheme}
           thumbMode={thumbMode}
+          partyRemoteMode={partyRemoteMode}
+          hapticsEnabled={hapticsEnabled}
         />
       ) : null}
       <AudioMatchToast

@@ -34,6 +34,7 @@ export function PresetShelfSection({
   title,
   titleAction,
   onSelect,
+  onQueue,
   presetPreviews,
   onVisible,
 }: {
@@ -46,11 +47,14 @@ export function PresetShelfSection({
   title: string;
   titleAction?: { label: string; onClick: () => void };
   onSelect: (presetId: string) => void;
+  onQueue?: (presetId: string) => void;
   presetPreviews: Record<string, MilkdropPresetRenderPreview>;
   onVisible?: () => void;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [hasTriggered, setHasTriggered] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queuedByLongPressRef = useRef(false);
 
   useEffect(() => {
     if (!onVisible || hasTriggered) {
@@ -82,6 +86,13 @@ export function PresetShelfSection({
   if (entries.length === 0) {
     return null;
   }
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
   const sectionId = `stims-shelf-${title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -114,7 +125,25 @@ export function PresetShelfSection({
             key={`${title}-${entry.id}`}
             type="button"
             className="stims-shell__starter-card"
-            onClick={() => onSelect(entry.id)}
+            onPointerDown={(event) => {
+              if (!onQueue || event.pointerType !== 'touch') return;
+              queuedByLongPressRef.current = false;
+              longPressTimerRef.current = setTimeout(() => {
+                queuedByLongPressRef.current = true;
+                onQueue(entry.id);
+              }, 550);
+            }}
+            onPointerMove={clearLongPress}
+            onPointerCancel={clearLongPress}
+            onPointerUp={clearLongPress}
+            onClick={(event) => {
+              if (queuedByLongPressRef.current) {
+                queuedByLongPressRef.current = false;
+                event.preventDefault();
+                return;
+              }
+              onSelect(entry.id);
+            }}
           >
             <PresetArtwork
               entry={entry}
@@ -123,6 +152,11 @@ export function PresetShelfSection({
             <span className="stims-shell__starter-label">{label}</span>
             <strong>{entry.title}</strong>
             <span className="stims-shell__meta-copy">{cardSummary}</span>
+            {onQueue ? (
+              <span className="stims-shell__meta-copy">
+                Long-press to queue
+              </span>
+            ) : null}
           </button>
         ))}
       </div>

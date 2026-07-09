@@ -45,11 +45,24 @@
   left: 0;
   right: 0;
   bottom: 0;
-  max-height: 85vh;
+  height: min(55dvh, 85vh);
+  max-height: calc(100dvh - max(10px, env(safe-area-inset-top)));
   border-bottom: none;
   border-radius: 20px 20px 0 0;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   animation: sheet-rise 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.sheet[data-position="bottom"][data-snap="compact"] {
+  height: min(34dvh, 420px);
+}
+
+.sheet[data-position="bottom"][data-snap="half"] {
+  height: min(58dvh, 720px);
+}
+
+.sheet[data-position="bottom"][data-snap="full"] {
+  height: calc(100dvh - max(10px, env(safe-area-inset-top)));
 }
 
 .sheet[data-position="bottom"][data-exiting="true"] {
