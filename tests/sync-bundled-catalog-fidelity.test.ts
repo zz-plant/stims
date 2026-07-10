@@ -132,3 +132,35 @@ test('measured bundled presets keep certified visual fidelity in the published c
     }),
   ]);
 });
+
+test('shader-text-dependent presets keep conservative fallback metadata during sync', () => {
+  expect(
+    syncBundledCatalogPresetFidelity(
+      {
+        id: 'martin-tunnel-race',
+        title: 'martin - tunnel race',
+        file: '/milkdrop-presets/butterchurn/martin-tunnel-race.milk',
+        expectedFidelityClass: 'near-exact',
+        visualEvidenceTier: 'visual',
+        supports: { webgl: true, webgpu: true },
+      },
+      undefined,
+    ),
+  ).toMatchObject({
+    id: 'martin-tunnel-race',
+    tags: ['shader-text-dependent', 'compatibility-fallback'],
+    expectedFidelityClass: 'fallback',
+    visualEvidenceTier: 'compile',
+    supports: { webgl: false, webgpu: false },
+    visualCertification: {
+      status: 'uncertified',
+      measured: false,
+      source: 'inferred',
+      fidelityClass: 'fallback',
+      visualEvidenceTier: 'compile',
+      requiredBackend: 'webgpu',
+      actualBackend: null,
+      reasons: expect.arrayContaining([expect.stringContaining('shader text')]),
+    },
+  });
+});
