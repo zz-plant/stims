@@ -2,7 +2,10 @@ import { expect, test } from 'bun:test';
 import { buildAgentMilkdropDebugSnapshot } from '../assets/js/milkdrop/runtime/debug-snapshot.ts';
 import { buildBlendStateForRender } from '../assets/js/milkdrop/runtime/lifecycle.ts';
 import { createMilkdropRuntimePerformanceTracker } from '../assets/js/milkdrop/runtime/performance-tracker.ts';
-import { createMilkdropPresentationController } from '../assets/js/milkdrop/runtime/presentation-controller.ts';
+import {
+  createMilkdropPresentationController,
+  DEFAULT_AGENT_DEBUG_SNAPSHOT_INTERVAL_MS,
+} from '../assets/js/milkdrop/runtime/presentation-controller.ts';
 
 test('tracks rolling performance metrics and exposes p95 frame time', () => {
   const tracker = createMilkdropRuntimePerformanceTracker(5);
@@ -76,6 +79,8 @@ test('buildBlendStateForRender reuses the active blend payload', () => {
 
 test('presentation controller throttles agent debug snapshot refreshes', () => {
   const setDebugSnapshotCalls: Array<{ tool: string; snapshot: unknown }> = [];
+  let now = 0;
+  let status: string | null = null;
 
   const controller = createMilkdropPresentationController({
     getOverlay: () => null,
@@ -95,7 +100,7 @@ test('presentation controller throttles agent debug snapshot refreshes', () => {
       } as never,
       frameState: null,
       backend: 'webgpu',
-      status: null,
+      status,
       adaptiveQuality: null,
     }),
     setCompiledState: () => {},
@@ -113,12 +118,95 @@ test('presentation controller throttles agent debug snapshot refreshes', () => {
       maxFrameMs: 12,
       gpuTimings: null,
     }),
+    getNow: () => now,
   });
 
+  status = 'initial';
   controller.updateAgentDebugSnapshot(true);
+  expect(setDebugSnapshotCalls).toHaveLength(1);
+
+  status = 'same-frame update';
+  now = 16;
   controller.updateAgentDebugSnapshot();
   expect(setDebugSnapshotCalls).toHaveLength(1);
 
-  controller.updateAgentDebugSnapshot(true);
+  status = 'second-frame update';
+  now = DEFAULT_AGENT_DEBUG_SNAPSHOT_INTERVAL_MS - 1;
+  controller.updateAgentDebugSnapshot();
+  expect(setDebugSnapshotCalls).toHaveLength(1);
+
+  status = 'interval update';
+  now = DEFAULT_AGENT_DEBUG_SNAPSHOT_INTERVAL_MS;
+  controller.updateAgentDebugSnapshot();
   expect(setDebugSnapshotCalls).toHaveLength(2);
+  expect(
+    (
+      setDebugSnapshotCalls[setDebugSnapshotCalls.length - 1]?.snapshot as {
+        status: string;
+      }
+    ).status,
+  ).toBe('interval update');
+
+  status = 'forced update';
+  now = DEFAULT_AGENT_DEBUG_SNAPSHOT_INTERVAL_MS + 1;
+  controller.updateAgentDebugSnapshot(true);
+  expect(setDebugSnapshotCalls).toHaveLength(3);
+  expect(
+    (
+      setDebugSnapshotCalls[setDebugSnapshotCalls.length - 1]?.snapshot as {
+        status: string;
+      }
+    ).status,
+  ).toBe('forced update');
+});
+
+test('presentation controller supports tighter debug snapshot intervals', () => {
+  const setDebugSnapshotCalls: Array<{ tool: string; snapshot: unknown }> = [];
+  let now = 0;
+  let status = 'initial';
+
+  const controller = createMilkdropPresentationController({
+    getOverlay: () => null,
+    session: {
+      getState: () => ({}),
+    } as never,
+    vm: {
+      setPreset: () => {},
+      setRenderBackend: () => {},
+    } as never,
+    getAdapter: () => null,
+    getState: () => ({
+      activePresetId: 'rovastar-parallel-universe',
+      compiledPreset: {
+        source: { id: 'rovastar-parallel-universe' },
+        title: 'Rovastar Parallel Universe',
+      } as never,
+      frameState: null,
+      backend: 'webgpu',
+      status,
+      adaptiveQuality: null,
+    }),
+    setCompiledState: () => {},
+    isAgentMode: () => true,
+    setDebugSnapshot: (tool, snapshot) => {
+      setDebugSnapshotCalls.push({ tool, snapshot });
+    },
+    getPerformanceMetrics: () => null,
+    debugSnapshotIntervalMs: 16,
+    getNow: () => now,
+  });
+
+  controller.updateAgentDebugSnapshot(true);
+  status = 'captured on next frame';
+  now = 16;
+  controller.updateAgentDebugSnapshot();
+
+  expect(setDebugSnapshotCalls).toHaveLength(2);
+  expect(
+    (
+      setDebugSnapshotCalls[setDebugSnapshotCalls.length - 1]?.snapshot as {
+        status: string;
+      }
+    ).status,
+  ).toBe('captured on next frame');
 });

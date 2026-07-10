@@ -7,6 +7,8 @@ import { buildAgentMilkdropDebugSnapshot } from './debug-snapshot.ts';
 import type { MilkdropRuntimePerformanceSnapshot } from './performance-tracker.ts';
 import type { ReturnTypeOfCreateMilkdropVM } from './presentation-types.ts';
 
+export const DEFAULT_AGENT_DEBUG_SNAPSHOT_INTERVAL_MS = 32;
+
 type PresentationState = {
   activePresetId: string;
   compiledPreset: MilkdropCompiledPreset;
@@ -26,6 +28,8 @@ export function createMilkdropPresentationController({
   isAgentMode,
   setDebugSnapshot,
   getPerformanceMetrics,
+  debugSnapshotIntervalMs = DEFAULT_AGENT_DEBUG_SNAPSHOT_INTERVAL_MS,
+  getNow = () => performance.now(),
 }: {
   getOverlay: () => MilkdropOverlay | null;
   session: Pick<ReturnType<typeof createMilkdropEditorSession>, 'getState'>;
@@ -36,8 +40,9 @@ export function createMilkdropPresentationController({
   isAgentMode: () => boolean;
   setDebugSnapshot: (tool: string, snapshot: unknown) => void;
   getPerformanceMetrics: () => MilkdropRuntimePerformanceSnapshot | null;
+  debugSnapshotIntervalMs?: number;
+  getNow?: () => number;
 }) {
-  const DEBUG_SNAPSHOT_INTERVAL_MS = 120;
   let lastDebugSnapshotAt = 0;
 
   const updateAgentDebugSnapshot = (force = false) => {
@@ -45,8 +50,8 @@ export function createMilkdropPresentationController({
       return;
     }
 
-    const now = performance.now();
-    if (!force && now - lastDebugSnapshotAt < DEBUG_SNAPSHOT_INTERVAL_MS) {
+    const now = getNow();
+    if (!force && now - lastDebugSnapshotAt < debugSnapshotIntervalMs) {
       return;
     }
     lastDebugSnapshotAt = now;
