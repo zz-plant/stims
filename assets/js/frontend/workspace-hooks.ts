@@ -27,6 +27,7 @@ import { usePresetPreviews } from './hooks/use-preset-previews.ts';
 import { usePresetRouteSync } from './hooks/use-preset-route-sync.ts';
 import { useStageCanvasSync } from './hooks/use-stage-canvas-sync.ts';
 import { useStoreSubscriptions } from './hooks/use-store-subscriptions.ts';
+import { reportLoadStatus } from './load-status.ts';
 import {
   buildSessionRouteSearch,
   parsePlainSearch,
@@ -114,6 +115,7 @@ export function useWorkspaceSessionState({
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    hydrateFullCatalogNow,
     refreshCatalogActivity,
   } = useCatalogLoading();
 
@@ -192,6 +194,7 @@ export function useWorkspaceSessionState({
       const intent = launchIntent ?? buildLaunchIntent(routeState);
 
       const mountPromise = (async () => {
+        reportLoadStatus('runtime');
         const adapter = await ensureEngineAdapter();
         if (adapter.isMounted()) {
           return adapter;
@@ -212,6 +215,12 @@ export function useWorkspaceSessionState({
   );
 
   useStageCanvasSync(stageRef);
+
+  useEffect(() => {
+    if (routeState.panel === 'browse' || routeState.presetId) {
+      void hydrateFullCatalogNow();
+    }
+  }, [routeState.panel, routeState.presetId, hydrateFullCatalogNow]);
 
   useEffect(() => {
     sessionDisposedRef.current = false;

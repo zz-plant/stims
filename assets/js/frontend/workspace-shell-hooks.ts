@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
-import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';
 import { shareOrCopyLink } from '../utils/share-link.ts';
 import type {
   PanelState,
@@ -401,6 +400,9 @@ export function useWorkspaceShellOrchestration({
         return;
       }
 
+      const { captureDisplayAudioStream } = await import(
+        '../ui/audio-advanced-sources.ts'
+      );
       const stream = await captureDisplayAudioStream({
         unavailableMessage: 'Display capture is unavailable in this browser.',
         missingAudioMessage:

@@ -29,6 +29,7 @@ import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { useStageGesture } from './hooks/useStageGesture';
+import { reportLoadStatus } from './load-status.ts';
 import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
@@ -188,7 +189,22 @@ function StimsWorkspaceAppShell() {
       !autoPlayedRef.current
     ) {
       autoPlayedRef.current = true;
-      void engine.handlePlayPreset(engine.featuredPreset.id);
+      const presetId = engine.featuredPreset.id;
+      const request = () => void engine.handlePlayPreset(presetId);
+      const handle =
+        typeof requestIdleCallback === 'function'
+          ? requestIdleCallback(request, { timeout: 2500 })
+          : setTimeout(request, 1500);
+      return () => {
+        if (
+          typeof cancelIdleCallback === 'function' &&
+          typeof handle === 'number'
+        ) {
+          cancelIdleCallback(handle);
+        } else {
+          clearTimeout(handle);
+        }
+      };
     }
   }, [
     engine.engineReady,
@@ -421,6 +437,7 @@ function StimsWorkspaceAppShell() {
   }, []);
 
   useEffect(() => {
+    reportLoadStatus('shell-rendered');
     const el = document.getElementById('stims-loading');
     if (el) el.hidden = true;
   }, []);

@@ -57,6 +57,49 @@ describe('Workspace performance regressions', () => {
     );
   });
 
+  test('keeps heavy startup data and audio capture behind staged lazy loading', () => {
+    const appSource = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'js', 'app.ts'),
+      'utf8',
+    );
+    const catalogHookSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'hooks',
+        'use-catalog-loading.ts',
+      ),
+      'utf8',
+    );
+    const shellHookSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'workspace-shell-hooks.ts',
+      ),
+      'utf8',
+    );
+
+    expect(appSource).not.toContain(
+      "import { stopAllAudioForBfcache } from './core/audio-handler.ts';",
+    );
+    expect(appSource).toContain("import('./core/audio-handler.ts')");
+    expect(catalogHookSource).toContain('STARTER_CATALOG_URL');
+    expect(catalogHookSource).toContain('scheduleBackgroundTask');
+    expect(shellHookSource).not.toContain(
+      "import { captureDisplayAudioStream } from '../ui/audio-advanced-sources.ts';",
+    );
+    expect(shellHookSource).toContain(
+      "import(\n        '../ui/audio-advanced-sources.ts'",
+    );
+  });
+
   test('caches overlay browse filtering and uses video frame callbacks for captured video when available', () => {
     const browsePanelSource = readFileSync(
       join(
