@@ -291,7 +291,18 @@ export type MilkdropShaderExpressionNode =
     };
 
 export type MilkdropShaderStatement = {
-  declaration: 'const' | 'float' | 'vec2' | 'vec3' | null;
+  declaration:
+    | 'const'
+    | 'float'
+    | 'vec2'
+    | 'vec3'
+    | 'vec4'
+    | 'mat2'
+    | 'mat3'
+    | 'mat4'
+    | 'int'
+    | 'bool'
+    | null;
   target: string;
   operator: '=' | '+=' | '-=' | '*=' | '/=';
   rawValue: string;
@@ -315,6 +326,7 @@ export type MilkdropShaderProgramPayload = {
   source: string;
   normalizedLines: string[];
   statements: MilkdropShaderStatement[];
+  rawGlsl?: string;
   execution: MilkdropShaderProgramExecutionDescriptor;
 };
 

@@ -162,6 +162,7 @@ type ShaderAssemblyHelpers = {
     normalizedLines: string[];
     requiresControlFallback: boolean;
     supportedBackends: Array<'webgl' | 'webgpu'>;
+    rawGlsl?: string;
   }) => NonNullable<MilkdropPresetIR['shaderText']['warpProgram']>;
   normalizeBlockedConstructValue: (value: string) => string;
   buildUnsupportedVolumeSamplerWarnings: (
@@ -563,6 +564,10 @@ export function createMilkdropIr({
           shaderWarpAnalysis.unsupportedLines.length === 0
             ? ['webgl', 'webgpu']
             : [],
+        rawGlsl:
+          shaderWarpAnalysis.directProgramStatements.length === 0
+            ? shaderWarpAnalysis.directProgramLines.join('\n')
+            : undefined,
       })
     : null;
   const compShaderProgram = shaderCompAnalysis.directProgramRequired
@@ -577,6 +582,10 @@ export function createMilkdropIr({
           shaderCompAnalysis.unsupportedLines.length === 0
             ? ['webgl', 'webgpu']
             : [],
+        rawGlsl:
+          shaderCompAnalysis.directProgramStatements.length === 0
+            ? shaderCompAnalysis.directProgramLines.join('\n')
+            : undefined,
       })
     : null;
   const ignoredFields = [
