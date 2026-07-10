@@ -146,8 +146,10 @@ test('unmeasured native shader-text presets sync to runtime fidelity like other 
       },
       undefined,
     ),
-  ).toMatchObject({
+  ).toEqual({
     id: 'martin-tunnel-race',
+    title: 'martin - tunnel race',
+    file: '/milkdrop-presets/butterchurn/martin-tunnel-race.milk',
     expectedFidelityClass: 'partial',
     visualEvidenceTier: 'runtime',
     supports: { webgl: true, webgpu: true },
@@ -159,7 +161,10 @@ test('unmeasured native shader-text presets sync to runtime fidelity like other 
       visualEvidenceTier: 'runtime',
       requiredBackend: 'webgpu',
       actualBackend: null,
-      reasons: ['No measured WebGPU reference capture is recorded yet.'],
+      reasons: [
+        'No measured WebGPU reference capture is recorded yet.',
+        'Direct native shader_body extraction now recognizes this warp/comp shader text, feedback texture reads, and standard noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
+      ],
     },
   });
 });

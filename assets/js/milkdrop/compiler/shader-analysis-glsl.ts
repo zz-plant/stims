@@ -509,8 +509,8 @@ export function injectDirectShaderGlsl(
     // Replace the warp section between markers
     const warpStartMarker = '// --- DIRECT_WARP_START ---';
     const warpEndMarker = '// --- DIRECT_WARP_END ---';
-    const warpStartIndex = modified.indexOf(warpStartMarker);
-    const warpEndIndex = modified.indexOf(warpEndMarker);
+    const warpStartIndex = modified.lastIndexOf(warpStartMarker);
+    const warpEndIndex = modified.indexOf(warpEndMarker, warpStartIndex);
 
     if (warpStartIndex >= 0 && warpEndIndex > warpStartIndex) {
       // There's already a marker block - replace its content
@@ -527,8 +527,8 @@ export function injectDirectShaderGlsl(
     // Replace the comp section between markers
     const compStartMarker = '// --- DIRECT_COMP_START ---';
     const compEndMarker = '// --- DIRECT_COMP_END ---';
-    const compStartIndex = modified.indexOf(compStartMarker);
-    const compEndIndex = modified.indexOf(compEndMarker);
+    const compStartIndex = modified.lastIndexOf(compStartMarker);
+    const compEndIndex = modified.indexOf(compEndMarker, compStartIndex);
 
     if (compStartIndex >= 0 && compEndIndex > compStartIndex) {
       const before = modified.substring(
