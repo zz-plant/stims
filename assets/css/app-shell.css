@@ -1419,6 +1419,13 @@ body[data-page="workspace"] {
     pointer-events: auto;
   }
 
+  .stims-shell__frame-sidecar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 12px;
+  }
+
   .stims-shell__rail-actions {
     display: flex;
     flex-wrap: nowrap;
@@ -2651,6 +2658,10 @@ body[data-page="workspace"] {
       justify-items: start;
     }
 
+    .stims-shell__frame-sidecar-actions {
+      justify-content: flex-start;
+    }
+
     .stims-shell__stage-hero {
       width: min(46rem, calc(100% - 64px));
     }
@@ -2987,14 +2998,15 @@ body[data-page="workspace"] {
       grid-column: 1 / -1;
     }
 
-    .stims-shell__stage-frame {
-      min-height: max(72svh, 640px);
+    .stims-shell__stage-frame[data-mode="live"] {
+      min-height: min(640px, calc(100svh - 20px));
       border-radius: 14px;
     }
 
     .stims-shell__stage-frame[data-mode="home"] {
       min-height: auto;
       overflow: visible;
+      border-radius: 14px;
     }
 
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
@@ -3059,6 +3071,10 @@ body[data-page="workspace"] {
     .stims-shell__rail-actions,
     .stims-shell__frame-sidecar {
       justify-items: start;
+    }
+
+    .stims-shell__frame-sidecar-actions {
+      justify-content: flex-start;
     }
 
     .stims-shell__rail-actions {
