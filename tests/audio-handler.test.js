@@ -320,6 +320,8 @@ describe('audio-handler utilities', () => {
 
     expect(result).toHaveLength(data.length);
     expect(result).not.toBe(data);
+    const second = getFrequencyData(analyser);
+    expect(second).toBe(result);
     expect([...data]).toEqual([8, 12, 17, 15, 10, 7, 4, 2]);
     expect(Math.max(...result)).toBeLessThan(17);
     expect(analyser.getFrequencyData).toHaveBeenCalled();
