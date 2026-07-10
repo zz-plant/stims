@@ -1,5 +1,4 @@
 .bar {
-  --mobile-bar-height: 56px;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -119,10 +118,6 @@
 }
 
 @media (width <= 420px) {
-  .bar {
-    --mobile-bar-height: 132px;
-  }
-
   .nowPlaying {
     padding-inline: 10px;
   }
