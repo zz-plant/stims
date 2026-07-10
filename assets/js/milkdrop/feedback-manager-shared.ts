@@ -954,10 +954,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     comp: MilkdropShaderProgramPayload | null,
   ) {
     const warpGlsl = warp
-      ? generateGlslFromShaderStatements(warp.statements, 'warp')
+      ? (warp.rawGlsl ??
+        generateGlslFromShaderStatements(warp.statements, 'warp'))
       : null;
     const compGlsl = comp
-      ? generateGlslFromShaderStatements(comp.statements, 'comp')
+      ? (comp.rawGlsl ??
+        generateGlslFromShaderStatements(comp.statements, 'comp'))
       : null;
 
     // Skip rebuild if nothing changed

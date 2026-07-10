@@ -64,6 +64,18 @@ export function parseMilkdropPreset(source: string): {
 
     const equalsIndex = withoutComments.indexOf('=');
     if (equalsIndex < 0) {
+      if (
+        currentSection === 'warp_shader' ||
+        currentSection === 'comp_shader'
+      ) {
+        fields.push({
+          key: currentSection,
+          rawValue: withoutComments,
+          line: number,
+          section: currentSection,
+        });
+        return;
+      }
       diagnostics.push({
         severity: 'warning',
         code: 'preset_line_ignored',
@@ -73,8 +85,14 @@ export function parseMilkdropPreset(source: string): {
       return;
     }
 
-    const key = withoutComments.slice(0, equalsIndex).trim();
-    const rawValue = withoutComments.slice(equalsIndex + 1).trim();
+    const key =
+      currentSection === 'warp_shader' || currentSection === 'comp_shader'
+        ? currentSection
+        : withoutComments.slice(0, equalsIndex).trim();
+    const rawValue =
+      currentSection === 'warp_shader' || currentSection === 'comp_shader'
+        ? withoutComments
+        : withoutComments.slice(equalsIndex + 1).trim();
     if (!key) {
       diagnostics.push({
         severity: 'warning',
