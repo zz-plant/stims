@@ -31,7 +31,7 @@ export function getRendererBackendMaxPixelRatioCap({
 }) {
   if (isMobile) {
     if (platformFamily === 'ios' && browserFamily === 'safari') {
-      return backend === 'webgpu' ? 1.4 : 1.15;
+      return backend === 'webgpu' ? 1.2 : 1;
     }
 
     if (
@@ -40,10 +40,10 @@ export function getRendererBackendMaxPixelRatioCap({
       browserFamily === 'edge' ||
       browserFamily === 'samsung-internet'
     ) {
-      return backend === 'webgpu' ? 1.35 : 1.1;
+      return backend === 'webgpu' ? 1.2 : 1;
     }
 
-    return backend === 'webgpu' ? 1.4 : 1.15;
+    return backend === 'webgpu' ? 1.2 : 1;
   }
 
   return backend === 'webgpu' ? 4 : 1.75;

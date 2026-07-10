@@ -46,3 +46,16 @@ test('captured video source crop stays inside video dimensions at viewport edges
   expect(source.sx + source.sw).toBeLessThanOrEqual(200);
   expect(source.sy + source.sh).toBeLessThanOrEqual(100);
 });
+
+test('captured video limits use smaller mobile caps and lower fallback upload cadence', () => {
+  const mobile =
+    __milkdropCapturedVideoTextureTestUtils.resolveCapturedVideoLimits(true);
+  const desktop =
+    __milkdropCapturedVideoTextureTestUtils.resolveCapturedVideoLimits(false);
+
+  expect(mobile.maxWidth).toBeLessThan(desktop.maxWidth);
+  expect(mobile.maxHeight).toBeLessThan(desktop.maxHeight);
+  expect(mobile.fallbackFrameIntervalMs).toBeGreaterThan(
+    desktop.fallbackFrameIntervalMs,
+  );
+});

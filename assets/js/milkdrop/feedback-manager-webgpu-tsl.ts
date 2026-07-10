@@ -1206,6 +1206,7 @@ class WebGPUMilkdropFeedbackManager {
   currentFeedbackResolutionScale = this.feedbackResolutionScale;
   viewportWidth: number;
   viewportHeight: number;
+  private adaptiveResizeFrameId: number | null = null;
   private index = 0;
 
   constructor(width: number, height: number) {
@@ -1439,12 +1440,29 @@ class WebGPUMilkdropFeedbackManager {
     ) {
       return;
     }
+    const previousFeedbackResolutionScale = this.currentFeedbackResolutionScale;
     this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
-    this.currentFeedbackResolutionScale = Math.min(
-      this.currentFeedbackResolutionScale,
-      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier,
-    );
-    this.resize(this.viewportWidth, this.viewportHeight);
+    this.currentFeedbackResolutionScale =
+      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier;
+    if (this.currentFeedbackResolutionScale < previousFeedbackResolutionScale) {
+      this.resize(this.viewportWidth, this.viewportHeight);
+      return;
+    }
+    this.scheduleAdaptiveResize();
+  }
+
+  private scheduleAdaptiveResize() {
+    if (this.adaptiveResizeFrameId !== null) {
+      return;
+    }
+    if (typeof requestAnimationFrame !== 'function') {
+      this.resize(this.viewportWidth, this.viewportHeight);
+      return;
+    }
+    this.adaptiveResizeFrameId = requestAnimationFrame(() => {
+      this.adaptiveResizeFrameId = null;
+      this.resize(this.viewportWidth, this.viewportHeight);
+    });
   }
 
   render(renderer: FeedbackRendererLike, scene: Scene, camera: Camera) {
@@ -1491,6 +1509,13 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   dispose() {
+    if (
+      this.adaptiveResizeFrameId !== null &&
+      typeof cancelAnimationFrame === 'function'
+    ) {
+      cancelAnimationFrame(this.adaptiveResizeFrameId);
+      this.adaptiveResizeFrameId = null;
+    }
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
     disposeMaterial(this.compositeMaterial);

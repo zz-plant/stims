@@ -29,6 +29,7 @@ const DEFAULT_FREQUENCY_BAND_RANGES = {
   treble: { minHz: 2800, maxHz: 12000 },
 } as const;
 const DEFAULT_SAMPLE_RATE = 44_100;
+const stylizedFrequencyBuffers = new WeakMap<object, Uint8Array>();
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -982,8 +983,15 @@ export async function initAudio(options: AudioInitOptions = {}) {
 
 export function getFrequencyData(analyser: FrequencyAnalyser) {
   const rawFrequencyData = analyser.getFrequencyData();
+  const key = analyser as unknown as object;
+  let stylized = stylizedFrequencyBuffers.get(key);
+  if (!stylized || stylized.length !== rawFrequencyData.length) {
+    stylized = new Uint8Array(rawFrequencyData.length);
+    stylizedFrequencyBuffers.set(key, stylized);
+  }
+  stylized.set(rawFrequencyData);
 
-  return stylizeFrequencyData(rawFrequencyData.slice());
+  return stylizeFrequencyData(stylized);
 }
 
 /**

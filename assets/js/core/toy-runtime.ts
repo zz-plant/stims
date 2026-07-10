@@ -313,6 +313,7 @@ export function createToyRuntime({
   let previewActive = false;
   let previewStart = 0;
   let previewLastFrame = 0;
+  let previewLastDataUpdate = -Infinity;
   let previewVisibilityCleanup: (() => void) | null = null;
 
   const updatePreviewFrequencyData = (time: number) => {
@@ -377,7 +378,16 @@ export function createToyRuntime({
       frameState.time = time;
       frameState.realTimeMs = now;
       frameState.analyser = null;
-      updatePreviewFrequencyData(time);
+      const previewDataIntervalMs =
+        typeof navigator !== 'undefined' &&
+        ((navigator.maxTouchPoints ?? 0) > 0 ||
+          /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent ?? ''))
+          ? 1000 / 30
+          : 0;
+      if (now - previewLastDataUpdate >= previewDataIntervalMs) {
+        updatePreviewFrequencyData(time);
+        previewLastDataUpdate = now;
+      }
       frameState.frequencyData = previewFrequencyData;
       frameState.waveformData = previewWaveformData;
       frameState.input = inputController.getState();

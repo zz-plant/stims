@@ -84,7 +84,7 @@ function disposeRenderer(renderer: Partial<WebGLRenderer | WebGPURenderer>) {
 export async function initRenderer(
   canvas: HTMLCanvasElement,
   config: RendererInitConfig = {
-    antialias: true,
+    antialias: !isMobileUserAgent,
     exposure: 1,
     maxPixelRatio: isMobileUserAgent ? 1.1 : 1.5,
     alpha: false,
@@ -104,7 +104,7 @@ export async function initRenderer(
   currentState = validateTransition(currentState, FallbackState.ProbingWebgl);
 
   const {
-    antialias = true,
+    antialias = !isMobileUserAgent,
     exposure = 1,
     maxPixelRatio = isMobileUserAgent ? 1.1 : 1.5,
     alpha = false,
