@@ -191,4 +191,76 @@ describe('createAdaptiveQualityController', () => {
       'Balanced startup quality is preferred on touch-first devices for steadier frame pacing.',
     );
   });
+
+  test('uses a sustained 60hz budget and balanced start on mobile webgpu', () => {
+    const originalMaxTouchPoints = navigator.maxTouchPoints;
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      configurable: true,
+      value: 5,
+    });
+    window.matchMedia = ((query: string) =>
+      ({
+        media: query,
+        matches: query === '(pointer: coarse)' || query === '(hover: none)',
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia;
+
+    try {
+      const controller = createAdaptiveQualityController({
+        backend: 'webgpu',
+        capabilities: {
+          preferredCanvasFormat: 'bgra8unorm',
+          performanceTier: 'high-end',
+          recommendedQualityPreset: 'hi-fi',
+          workers: {
+            workers: true,
+            offscreenCanvas: true,
+            transferControlToOffscreen: true,
+          },
+          optimization: {
+            timestampQuery: true,
+            shaderF16: true,
+            subgroups: true,
+            workers: true,
+            offscreenCanvas: true,
+            transferControlToOffscreen: true,
+            workerOffscreenPipeline: true,
+          },
+          features: {
+            bgra8unormStorage: true,
+            float32Blendable: true,
+            float32Filterable: true,
+            shaderF16: true,
+            subgroups: true,
+            timestampQuery: true,
+          },
+          limits: {
+            maxColorAttachments: 8,
+            maxComputeInvocationsPerWorkgroup: 1024,
+            maxStorageBufferBindingSize: 4294967292,
+            maxTextureDimension2D: 16384,
+          },
+        },
+      });
+
+      const state = controller.getState();
+      expect(state.qualityStep).toBe(2);
+      expect(state.frameBudgetMs).toBeCloseTo(1000 / 60, 4);
+      expect(state.reasons).toContain(
+        'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+      );
+    } finally {
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        configurable: true,
+        value: originalMaxTouchPoints,
+      });
+      window.matchMedia = originalMatchMedia;
+    }
+  });
 });

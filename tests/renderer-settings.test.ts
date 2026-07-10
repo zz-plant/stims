@@ -30,7 +30,7 @@ describe('applyRendererSettings', () => {
         browserFamily: 'safari',
         platformFamily: 'ios',
       }),
-    ).toBe(1.15);
+    ).toBe(1);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',
@@ -38,7 +38,7 @@ describe('applyRendererSettings', () => {
         browserFamily: 'safari',
         platformFamily: 'ios',
       }),
-    ).toBe(1.4);
+    ).toBe(1.2);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',
@@ -46,7 +46,7 @@ describe('applyRendererSettings', () => {
         browserFamily: 'chrome',
         platformFamily: 'android',
       }),
-    ).toBe(1.35);
+    ).toBe(1.2);
   });
 
   test('applies explicit viewport dimensions when provided', () => {
