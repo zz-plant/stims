@@ -21,6 +21,7 @@ type MobileAction = {
   ariaLabel: string;
   icon:
     | 'arrow-left'
+    | 'bookmark'
     | 'close'
     | 'expand'
     | 'eye'
@@ -227,16 +228,16 @@ export function MobileControlBar({
     [generateMoodPreset, resetHideTimer],
   );
 
+  const favoriteActive = engine.favoritePresets.some(
+    (entry) => entry.id === engineSnapshot?.activePresetId,
+  );
+
   const mobileActions: MobileAction[] = [
     {
       id: 'favorite',
-      label: engine.favoritePresets.some(
-        (entry) => entry.id === engineSnapshot?.activePresetId,
-      )
-        ? 'Saved'
-        : 'Save',
-      ariaLabel: 'Save current preset',
-      icon: 'sparkles' as const,
+      label: favoriteActive ? 'Saved' : 'Save',
+      ariaLabel: favoriteActive ? 'Remove saved preset' : 'Save current preset',
+      icon: 'bookmark' as const,
       onClick: handleFavorite,
     },
     {
