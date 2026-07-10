@@ -2148,3 +2148,70 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.08;
     );
   });
 });
+
+describe('packed MilkDrop sampler compatibility', () => {
+  const packedSamplerFixtures = [
+    'martin-city-of-shadows.milk',
+    'martin-tunnel-race.milk',
+  ] as const;
+
+  packedSamplerFixtures.forEach((fileName) => {
+    test(`keeps packed sampler preset ${fileName} in the direct shader compatibility path`, () => {
+      const raw = readFileSync(
+        join(
+          process.cwd(),
+          'public',
+          'milkdrop-presets',
+          'butterchurn',
+          fileName,
+        ),
+        'utf8',
+      );
+      const compiled = compileMilkdropPresetSource(raw, {
+        id: fileName.replace(/\.milk$/u, ''),
+        fileName,
+        path: join('public', 'milkdrop-presets', 'butterchurn', fileName),
+        origin: 'bundled',
+      });
+
+      expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+      expect(compiled.ir.compatibility.parity.blockedConstructs).not.toContain(
+        expect.stringContaining('sampler_pc_main'),
+      );
+      expect(compiled.ir.compatibility.parity.blockedConstructs).not.toContain(
+        expect.stringContaining('sampler_pw_noise_lq'),
+      );
+    });
+  });
+
+  test('preserves packed sampler aliases and reports WebGPU fc_main gaps clearly', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Packed Sampler Smoke
+comp_1=vec2 packed = texture(sampler_pc_main, uv).yz;
+comp_2=vec3 noisePacked = texture(sampler_pw_noise_lq, uv).xyz;
+comp_3=ret = texture(sampler_fc_main, packed + noisePacked.xy).xyz;
+      `.trim(),
+      { id: 'packed-sampler-smoke' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.compProgram?.source).toContain(
+      'sampler_pc_main',
+    );
+    expect(compiled.ir.shaderText.compProgram?.source).toContain(
+      'sampler_pw_noise_lq',
+    );
+    expect(compiled.ir.shaderText.compProgram?.source).toContain(
+      'sampler_fc_main',
+    );
+    expect(compiled.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'preset_shader_packed_sampler_backend_gap',
+          message: expect.stringContaining('sampler_fc_main'),
+        }),
+      ]),
+    );
+  });
+});
