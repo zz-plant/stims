@@ -311,7 +311,7 @@ export function createMilkdropExperienceFrameLoop({
       });
       if (
         overlay?.shouldRenderInspectorMetrics() &&
-        now - getLastInspectorOverlaySyncAt() >= 180
+        now - getLastInspectorOverlaySyncAt() >= 120
       ) {
         setLastInspectorOverlaySyncAt(now);
         presentationController.syncInspectorState();

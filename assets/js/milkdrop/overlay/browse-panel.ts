@@ -756,7 +756,7 @@ export class BrowsePanel {
     return sections;
   }
 
-  private scheduleRender(delayMs = 120) {
+  private scheduleRender(delayMs = 48) {
     this.browseDirty = true;
     if (!this.visible) {
       return;

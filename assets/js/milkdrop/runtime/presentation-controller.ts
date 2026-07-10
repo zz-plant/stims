@@ -37,7 +37,7 @@ export function createMilkdropPresentationController({
   setDebugSnapshot: (tool: string, snapshot: unknown) => void;
   getPerformanceMetrics: () => MilkdropRuntimePerformanceSnapshot | null;
 }) {
-  const DEBUG_SNAPSHOT_INTERVAL_MS = 120;
+  const DEBUG_SNAPSHOT_INTERVAL_MS = 60;
   let lastDebugSnapshotAt = 0;
 
   const updateAgentDebugSnapshot = (force = false) => {
