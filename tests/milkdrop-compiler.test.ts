@@ -2148,3 +2148,51 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.08;
     );
   });
 });
+
+test('detects custom shader sampler declarations and reports missing bundled textures', () => {
+  const source = readFileSync(
+    join(
+      process.cwd(),
+      'public/milkdrop-presets/butterchurn/martin-anandamide-mandelbox-explorer-quantum-timepiece-remix.milk',
+    ),
+    'utf8',
+  );
+  const compiled = compileMilkdropPresetSource(source, {
+    id: 'anandamide-custom-sampler',
+    origin: 'bundled',
+  });
+
+  expect(compiled.ir.shaderText.customSamplers).toContainEqual({
+    name: 'sampler_anandamideCTFree00',
+    textureFile: null,
+  });
+  expect(compiled.diagnostics).toContainEqual(
+    expect.objectContaining({
+      code: 'preset_missing_custom_sampler_texture',
+      severity: 'warning',
+    }),
+  );
+});
+
+test('resolves custom shader sampler declarations to bundled texture assets', () => {
+  const compiled = compileMilkdropPresetSource(
+    `
+shader=1
+comp_shader=uniform sampler2D sampler_water_caustics; ret = texture(sampler_water_caustics, uv).rgb
+    `.trim(),
+    { id: 'custom-sampler-texture', origin: 'bundled' },
+  );
+
+  expect(compiled.ir.shaderText.customSamplers).toEqual([
+    {
+      name: 'sampler_water_caustics',
+      textureFile: 'water_caustics.png',
+    },
+  ]);
+  expect(
+    compiled.diagnostics.some(
+      (diagnostic) =>
+        diagnostic.code === 'preset_missing_custom_sampler_texture',
+    ),
+  ).toBe(false);
+});
