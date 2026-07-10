@@ -292,6 +292,21 @@
     <script>
       (() => {
         const TIMEOUT_MS = 10000;
+        const phaseLabels = {
+          'app-module': 'Starting app shell',
+          'shell-rendered': 'Showing controls',
+          'starter-catalog': 'Loading featured presets',
+          'full-catalog': 'Preparing full preset library',
+          runtime: 'Starting visualizer runtime',
+        };
+        const text = () => document.querySelector('.stims-loading__text');
+        window.addEventListener('stims:load-status', (event) => {
+          const phase = event?.detail?.phase;
+          const label = phaseLabels[phase];
+          const target = text();
+          if (!target || !label) return;
+          target.textContent = label;
+        });
         const timer = setTimeout(() => {
           const loading = document.getElementById('stims-loading');
           if (!loading || document.getElementById('stims-main')) return;

@@ -1,9 +1,9 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
-import { stopAllAudioForBfcache } from './core/audio-handler.ts';
 import { applyDeviceTierToDocument } from './core/device-profile.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
+import { reportLoadStatus } from './frontend/load-status.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/device-detect.ts';
 import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
@@ -21,6 +21,7 @@ function ensureRootContainer() {
 }
 
 const startApp = async () => {
+  reportLoadStatus('app-module');
   installRendererTelemetryPersistence();
   initAgentAPI();
   initGamepadNavigation();
@@ -71,5 +72,7 @@ if ('serviceWorker' in navigator) {
 }
 
 window.addEventListener('pagehide', () => {
-  stopAllAudioForBfcache();
+  void import('./core/audio-handler.ts').then(({ stopAllAudioForBfcache }) => {
+    stopAllAudioForBfcache();
+  });
 });

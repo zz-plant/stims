@@ -1,0 +1,662 @@
+{
+  "presets": [
+    {
+      "id": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-glowsticks-v2-03-music.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:rovastar-and-collaborators",
+        "popular",
+        "glowsticks",
+        "original-pack",
+        "preset"
+      ],
+      "expectedFidelityClass": "near-exact",
+      "visualCertification": {
+        "status": "certified",
+        "measured": true,
+        "source": "reference-suite",
+        "fidelityClass": "near-exact",
+        "visualEvidenceTier": "visual",
+        "requiredBackend": "webgpu",
+        "actualBackend": "webgpu",
+        "reasons": [
+          "Stims reference capture recorded. Certified against the bundled reference corpus."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "author": "Rovastar",
+      "file": "/milkdrop-presets/rovastar-parallel-universe.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
+        "popular",
+        "lasers",
+        "cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "near-exact",
+      "visualCertification": {
+        "status": "certified",
+        "measured": true,
+        "source": "reference-suite",
+        "fidelityClass": "near-exact",
+        "visualEvidenceTier": "visual",
+        "requiredBackend": "webgpu",
+        "actualBackend": "webgpu",
+        "reasons": [
+          "WebGPU reference capture recorded. Backend consistency verified at capture time."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "author": "Eo.S. + Phat",
+      "file": "/milkdrop-presets/eos-phat-cubetrace-v2.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
+        "popular",
+        "geometry",
+        "cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "near-exact",
+      "visualCertification": {
+        "status": "certified",
+        "measured": true,
+        "source": "reference-suite",
+        "fidelityClass": "near-exact",
+        "visualEvidenceTier": "visual",
+        "requiredBackend": "webgpu",
+        "actualBackend": "webgpu",
+        "reasons": [
+          "WebGPU reference capture recorded. Backend consistency verified at capture time."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "author": "Krash & Rovastar",
+      "file": "/milkdrop-presets/krash-rovastar-cerebral-demons-stars.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
+        "popular",
+        "comets",
+        "cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "near-exact",
+      "visualCertification": {
+        "status": "certified",
+        "measured": true,
+        "source": "reference-suite",
+        "fidelityClass": "near-exact",
+        "visualEvidenceTier": "visual",
+        "requiredBackend": "webgpu",
+        "actualBackend": "webgpu",
+        "reasons": [
+          "WebGPU reference capture recorded. Backend consistency verified at capture time."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "aderrasi-potion-of-spirits",
+      "title": "Aderrasi - Potion of Spirits",
+      "author": "Aderrasi",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/aderrasi-potion-of-spirits.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "geiss-casino",
+      "title": "Geiss - Casino",
+      "author": "Ryan Geiss",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/geiss-casino.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "geiss-original",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "shifter-snakeskin",
+      "title": "Shifter - Snakeskin",
+      "author": "Shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-snakeskin.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "shifter-swarm",
+      "title": "Shifter - Swarm",
+      "author": "Shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-swarm.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "shifter-curlique",
+      "title": "Shifter - Curlique",
+      "author": "Shifter",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/shifter-curlique.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "rovastar-harlequins-liquid-dragon",
+      "title": "Rovastar - Harlequin's Liquid Dragon",
+      "author": "Rovastar",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/rovastar-harlequins-liquid-dragon.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "eos-heater-core-c",
+      "title": "Eo.S. - Heater Core C",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/eos-heater-core-c.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "collection:rovastar-and-collaborators",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "orb-radiation",
+      "title": "Orb - Radiation",
+      "author": "Orb",
+      "file": "/milkdrop-presets/libraries/projectm-cream-of-the-crop/orb-radiation.milk",
+      "preview": true,
+      "tags": [
+        "collection:classic-milkdrop",
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      }
+    },
+    {
+      "id": "eos-apocalypse",
+      "title": "Eo.S. - Apocalypse",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-apocalypse.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "geometry",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "dbleja-hovering-over-mars",
+      "title": "Dbleja - Hovering - Over - Mars",
+      "author": "Dbleja",
+      "file": "/milkdrop-presets/dbleja-hovering-over-mars.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "dbleja-hovering-over-pluto",
+      "title": "Dbleja - Hovering - Over - Pluto",
+      "author": "Dbleja",
+      "file": "/milkdrop-presets/dbleja-hovering-over-pluto.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "dbleja-inside-the-tree-blue-mix",
+      "title": "Dbleja - Inside - The - Tree - Blue - Mix",
+      "author": "Dbleja",
+      "file": "/milkdrop-presets/dbleja-inside-the-tree-blue-mix.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-dark-side-of-the-moon-clean-mix",
+      "title": "Eos - Dark - Side - Of - The - Moon - Clean - Mix",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-dark-side-of-the-moon-clean-mix.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-ether-posession-phat-edit-v3",
+      "title": "Eos - Ether - Posession - Phat - Edit - V3",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-ether-posession-phat-edit-v3.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset",
+        "ambient"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-ether",
+      "title": "Eos - Ether",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-ether.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset",
+        "ambient"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-matrix-cube-c",
+      "title": "Eos - Matrix - Cube - C",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-matrix-cube-c.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset",
+        "geometry"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-phat-cat-scan-nirvana",
+      "title": "Eos - Phat - Cat - Scan - Nirvana",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-phat-cat-scan-nirvana.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-phat-dark-heart",
+      "title": "Eos - Phat - Dark - Heart",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-phat-dark-heart.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-phat-linear-clouds-v2",
+      "title": "Eos - Phat - Linear - Clouds - V2",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-phat-linear-clouds-v2.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    },
+    {
+      "id": "eos-phat-magnetosphere-13-pulsar",
+      "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
+      "author": "Eo.S.",
+      "file": "/milkdrop-presets/eos-phat-magnetosphere-13-pulsar.milk",
+      "preview": true,
+      "tags": [
+        "collection:cream-of-the-crop",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      }
+    }
+  ]
+}

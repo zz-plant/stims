@@ -3,8 +3,33 @@ import type {
   MilkdropCatalogEntry,
   MilkdropCatalogStore,
 } from '../../milkdrop/catalog-types.ts';
-import type { PresetCatalogEntry } from '../contracts.ts';
+import type {
+  PresetCatalogEntry,
+  PresetCatalogManifest,
+} from '../contracts.ts';
+import { reportLoadStatus } from '../load-status.ts';
 import { mapRuntimeCatalogEntry } from '../workspace-helpers.ts';
+
+const STARTER_CATALOG_URL = '/milkdrop-presets/starter-catalog.json';
+
+async function loadStarterCatalog() {
+  const response = await fetch(STARTER_CATALOG_URL);
+  if (!response.ok) {
+    throw new Error(`Unable to load starter catalog (${response.status}).`);
+  }
+  const document = (await response.json()) as PresetCatalogManifest;
+  return document.presets ?? [];
+}
+
+const scheduleBackgroundTask = (callback: () => void) => {
+  if (typeof requestIdleCallback === 'function') {
+    const handle = requestIdleCallback(callback, { timeout: 2500 });
+    return () => cancelIdleCallback(handle);
+  }
+
+  const handle = setTimeout(callback, 1200);
+  return () => clearTimeout(handle);
+};
 
 export function useCatalogLoading() {
   const [fallbackCatalog, setFallbackCatalog] = useState<PresetCatalogEntry[]>(
@@ -45,34 +70,69 @@ export function useCatalogLoading() {
     }
   });
 
+  const loadFullCatalog = useEffectEvent(async () => {
+    const store = await ensureCatalogStore();
+    const entries = await store.listPresets();
+    return entries.map((entry: MilkdropCatalogEntry) =>
+      mapRuntimeCatalogEntry(entry),
+    );
+  });
+
   useEffect(() => {
     let cancelled = false;
     setFallbackCatalogError(null);
     setFallbackCatalogReady(false);
 
-    void ensureCatalogStore()
-      .then((store) => store.listPresets())
-      .then((entries) => {
+    void loadStarterCatalog()
+      .then((presets) => {
         if (cancelled) return;
-        const mapped = entries.map((entry: MilkdropCatalogEntry) =>
-          mapRuntimeCatalogEntry(entry),
-        );
-        setFallbackCatalog(mapped);
+        setFallbackCatalog(presets);
         setFallbackCatalogReady(true);
-        setActivityCatalog(mapped);
+        reportLoadStatus('starter-catalog');
       })
-      .catch((error) => {
+      .catch(() => {
         if (cancelled) return;
-        setFallbackCatalogError(
-          error instanceof Error ? error.message : 'Unable to load catalog.',
-        );
-        setActivityCatalog([]);
+        setFallbackCatalogReady(false);
       });
+
+    const cancelBackgroundLoad = scheduleBackgroundTask(() => {
+      void loadFullCatalog()
+        .then((mapped) => {
+          if (cancelled) return;
+          setFallbackCatalog(mapped);
+          setFallbackCatalogReady(true);
+          setActivityCatalog(mapped);
+          reportLoadStatus('full-catalog');
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          setFallbackCatalogError(
+            error instanceof Error ? error.message : 'Unable to load catalog.',
+          );
+          setActivityCatalog([]);
+        });
+    });
 
     return () => {
       cancelled = true;
+      cancelBackgroundLoad();
     };
   }, []);
+
+  const hydrateFullCatalogNow = useEffectEvent(async () => {
+    try {
+      const mapped = await loadFullCatalog();
+      setFallbackCatalog(mapped);
+      setFallbackCatalogReady(true);
+      setActivityCatalog(mapped);
+      reportLoadStatus('full-catalog');
+    } catch (error) {
+      setFallbackCatalogError(
+        error instanceof Error ? error.message : 'Unable to load catalog.',
+      );
+      setActivityCatalog([]);
+    }
+  });
 
   return {
     activityCatalog,
@@ -81,6 +141,7 @@ export function useCatalogLoading() {
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
+    hydrateFullCatalogNow,
     refreshCatalogActivity,
     setActivityCatalog,
   };
