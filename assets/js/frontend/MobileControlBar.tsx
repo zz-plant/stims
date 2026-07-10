@@ -69,14 +69,33 @@ export function MobileControlBar({
   const similarAbortRef = useRef<AbortController | null>(null);
   const energyPercent = `${Math.min(100, Math.max(0, audioEnergy * 100)).toFixed(0)}%`;
 
+  const {
+    generatingMood,
+    generate: generateMoodPreset,
+    cancel: cancelMoodGeneration,
+    retry: retryMoodGeneration,
+    canRetry: canRetryMoodGeneration,
+  } = useMoodPresetGeneration({
+    offline: typeof navigator !== 'undefined' && !navigator.onLine,
+    setStatusMessage: ui.setStatusMessage,
+    openEditor: () => ui.updatePanel('editor'),
+  });
+
+  const keepBarVisible =
+    showMoreActions || showMoods || generatingMood !== null;
+
   const resetHideTimer = useCallback(() => {
     setVisible(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = null;
+
+    if (keepBarVisible) return;
+
     hideTimer.current = setTimeout(
       () => setVisible(false),
       MOBILE_CONTROL_IDLE_MS,
     );
-  }, []);
+  }, [keepBarVisible]);
 
   useEffect(() => {
     resetHideTimer();
@@ -187,18 +206,6 @@ export function MobileControlBar({
     resetHideTimer,
     ui,
   ]);
-
-  const {
-    generatingMood,
-    generate: generateMoodPreset,
-    cancel: cancelMoodGeneration,
-    retry: retryMoodGeneration,
-    canRetry: canRetryMoodGeneration,
-  } = useMoodPresetGeneration({
-    offline: typeof navigator !== 'undefined' && !navigator.onLine,
-    setStatusMessage: ui.setStatusMessage,
-    openEditor: () => ui.updatePanel('editor'),
-  });
 
   useEffect(() => {
     const handleOutsidePointer = (event: PointerEvent) => {
