@@ -631,6 +631,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   currentFeedbackResolutionScale: number;
   viewportWidth: number;
   viewportHeight: number;
+  private adaptiveResizeFrameId: number | null = null;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
   private index = 0;
@@ -1192,10 +1193,29 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     ) {
       return;
     }
+    const previousFeedbackResolutionScale = this.currentFeedbackResolutionScale;
     this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
     this.currentFeedbackResolutionScale =
       this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier;
-    this.resize(this.viewportWidth, this.viewportHeight);
+    if (this.currentFeedbackResolutionScale < previousFeedbackResolutionScale) {
+      this.resize(this.viewportWidth, this.viewportHeight);
+      return;
+    }
+    this.scheduleAdaptiveResize();
+  }
+
+  private scheduleAdaptiveResize() {
+    if (this.adaptiveResizeFrameId !== null) {
+      return;
+    }
+    if (typeof requestAnimationFrame !== 'function') {
+      this.resize(this.viewportWidth, this.viewportHeight);
+      return;
+    }
+    this.adaptiveResizeFrameId = requestAnimationFrame(() => {
+      this.adaptiveResizeFrameId = null;
+      this.resize(this.viewportWidth, this.viewportHeight);
+    });
   }
 
   resize(width: number, height: number) {
@@ -1238,6 +1258,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   }
 
   dispose() {
+    if (
+      this.adaptiveResizeFrameId !== null &&
+      typeof cancelAnimationFrame === 'function'
+    ) {
+      cancelAnimationFrame(this.adaptiveResizeFrameId);
+      this.adaptiveResizeFrameId = null;
+    }
     this.sceneTarget.dispose();
     this.warpTarget.dispose();
     this.targets.forEach((target) => target.dispose());

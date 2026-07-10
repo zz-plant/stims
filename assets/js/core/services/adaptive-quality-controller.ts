@@ -1,3 +1,4 @@
+import { isMobileDevice } from '../../utils/device-detect.ts';
 import type {
   RendererBackend,
   WebGPUCapabilitySummary,
@@ -121,8 +122,10 @@ function updateEma(previous: number | null, next: number) {
   return previous + (next - previous) * EMA_ALPHA;
 }
 
-function getDisplayRefreshRate(): number {
+export function getAdaptiveQualityDisplayRefreshRate(): number {
   if (typeof window === 'undefined') return 60;
+
+  if (isMobileDevice()) return 60;
 
   if (typeof screen !== 'undefined' && 'refreshRate' in screen) {
     const rate = (screen as unknown as { refreshRate: number }).refreshRate;
@@ -142,7 +145,7 @@ function getDisplayRefreshRate(): number {
 }
 
 function estimateFrameBudgetMs(): number {
-  const hz = getDisplayRefreshRate();
+  const hz = getAdaptiveQualityDisplayRefreshRate();
   return 1000 / hz;
 }
 
@@ -211,6 +214,13 @@ function buildHeuristicProfile(
   ) {
     reasons.push(
       'Balanced startup quality is preferred on touch-first devices for steadier frame pacing.',
+    );
+  }
+
+  if (isMobileDevice()) {
+    initialStep = Math.max(initialStep, 2);
+    reasons.push(
+      'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
     );
   }
 

@@ -6,6 +6,7 @@ import {
   SRGBColorSpace,
   Texture,
 } from 'three';
+import { isMobileDevice } from '../../utils/device-detect.ts';
 
 type CaptureDrawSurface = {
   canvas: HTMLCanvasElement;
@@ -20,8 +21,26 @@ type VideoFrameCallbackVideo = HTMLVideoElement & {
 };
 
 const MIN_CAPTURE_SIZE = 64;
-const MAX_CAPTURE_WIDTH = 960;
-const MAX_CAPTURE_HEIGHT = 540;
+const DESKTOP_MAX_CAPTURE_WIDTH = 960;
+const DESKTOP_MAX_CAPTURE_HEIGHT = 540;
+const MOBILE_MAX_CAPTURE_WIDTH = 640;
+const MOBILE_MAX_CAPTURE_HEIGHT = 360;
+const DESKTOP_FALLBACK_CAPTURE_FPS = 30;
+const MOBILE_FALLBACK_CAPTURE_FPS = 15;
+
+export function resolveCapturedVideoLimits(isMobile = isMobileDevice()) {
+  return isMobile
+    ? {
+        maxWidth: MOBILE_MAX_CAPTURE_WIDTH,
+        maxHeight: MOBILE_MAX_CAPTURE_HEIGHT,
+        fallbackFrameIntervalMs: 1000 / MOBILE_FALLBACK_CAPTURE_FPS,
+      }
+    : {
+        maxWidth: DESKTOP_MAX_CAPTURE_WIDTH,
+        maxHeight: DESKTOP_MAX_CAPTURE_HEIGHT,
+        fallbackFrameIntervalMs: 1000 / DESKTOP_FALLBACK_CAPTURE_FPS,
+      };
+}
 
 let activeStream: MediaStream | null = null;
 let captureReady = false;
@@ -85,8 +104,9 @@ function ensureCaptureSurface() {
   }
 
   const canvas = document.createElement('canvas');
-  canvas.width = MAX_CAPTURE_WIDTH;
-  canvas.height = MAX_CAPTURE_HEIGHT;
+  const limits = resolveCapturedVideoLimits();
+  canvas.width = limits.maxWidth;
+  canvas.height = limits.maxHeight;
   const context = canvas.getContext('2d', {
     alpha: false,
     desynchronized: true,
@@ -200,8 +220,8 @@ function resizeCaptureSurface(width: number, height: number) {
 
   const scale = Math.min(
     1,
-    MAX_CAPTURE_WIDTH / Math.max(1, width),
-    MAX_CAPTURE_HEIGHT / Math.max(1, height),
+    resolveCapturedVideoLimits().maxWidth / Math.max(1, width),
+    resolveCapturedVideoLimits().maxHeight / Math.max(1, height),
   );
   const nextWidth = Math.max(MIN_CAPTURE_SIZE, Math.round(width * scale));
   const nextHeight = Math.max(MIN_CAPTURE_SIZE, Math.round(height * scale));
@@ -260,8 +280,13 @@ function startCaptureLoop() {
     return;
   }
 
-  const step = () => {
-    drawCaptureFrame();
+  const limits = resolveCapturedVideoLimits();
+  let lastDrawAt = -Infinity;
+  const step = (now: number) => {
+    if (now - lastDrawAt >= limits.fallbackFrameIntervalMs) {
+      drawCaptureFrame();
+      lastDrawAt = now;
+    }
     captureFrameId = requestAnimationFrame(step);
   };
 
@@ -402,4 +427,5 @@ export function clearMilkdropCapturedVideoStream() {
 export const __milkdropCapturedVideoTextureTestUtils = {
   resolveViewportRect,
   resolveSourceRect,
+  resolveCapturedVideoLimits,
 };

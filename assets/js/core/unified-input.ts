@@ -171,6 +171,7 @@ export function createUnifiedInput({
   const activePointers = new Map<number, UnifiedPointer>();
   let hoverPointer: UnifiedPointer | null = null;
   const pendingPointerEvents: PointerEvent[] = [];
+  const pendingPointerMoveIndexes = new Map<number, number>();
   const keyState = new Set<string>();
   let keyboardPointer = { normalizedX: 0, normalizedY: 0 };
   let gamepadPointer = { normalizedX: 0, normalizedY: 0 };
@@ -256,6 +257,18 @@ export function createUnifiedInput({
   };
 
   const queuePointerEvent = (event: PointerEvent) => {
+    if (event.type === 'pointermove') {
+      const existingIndex = pendingPointerMoveIndexes.get(event.pointerId);
+      if (typeof existingIndex === 'number') {
+        pendingPointerEvents[existingIndex] = event;
+        scheduleFrame();
+        return;
+      }
+      pendingPointerMoveIndexes.set(
+        event.pointerId,
+        pendingPointerEvents.length,
+      );
+    }
     pendingPointerEvents.push(event);
     scheduleFrame();
   };
@@ -447,7 +460,9 @@ export function createUnifiedInput({
   };
 
   const processPointerEvents = () => {
-    for (const event of pendingPointerEvents.splice(0)) {
+    const events = pendingPointerEvents.splice(0);
+    pendingPointerMoveIndexes.clear();
+    for (const event of events) {
       if (event.type === 'pointerup' || event.type === 'pointercancel') {
         activePointers.delete(event.pointerId);
         if (hoverPointer && hoverPointer.id === event.pointerId) {
