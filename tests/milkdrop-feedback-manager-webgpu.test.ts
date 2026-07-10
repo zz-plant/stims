@@ -7,6 +7,7 @@ import {
   resolveDirectShaderSwizzle,
 } from '../assets/js/milkdrop/feedback-manager-webgpu.ts';
 import {
+  bindCustomMilkdropSamplerTexture,
   configureMilkdropTexture,
   getSharedMilkdropAuxTextures,
   resolveAuxTextureName,
@@ -428,4 +429,21 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       sharedTextures.noise.dispose = originalDispose;
     }
   });
+});
+
+test('binds resolved custom sampler textures through the shared MilkDrop texture cache', () => {
+  const first = bindCustomMilkdropSamplerTexture(
+    'sampler_water_caustics',
+    'water_caustics.png',
+  );
+  const second = bindCustomMilkdropSamplerTexture(
+    'sampler_water_caustics',
+    'water_caustics.png',
+  );
+
+  expect(first).not.toBeNull();
+  expect(first?.name).toBe('sampler_water_caustics');
+  expect(first?.textureFile).toBe('water_caustics.png');
+  expect(first?.texture).toBe(second?.texture);
+  expect(bindCustomMilkdropSamplerTexture('sampler_missing', null)).toBeNull();
 });

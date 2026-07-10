@@ -1,103 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { MilkdropBundledCatalogEntry } from '../assets/js/milkdrop/catalog-types.ts';
-import type {
-  MilkdropFidelityClass,
-  MilkdropVisualCertification,
-} from '../assets/js/milkdrop/common-types.ts';
+import type { MilkdropFidelityClass } from '../assets/js/milkdrop/common-types.ts';
 import {
   loadMeasuredVisualResultsManifest,
   type MeasuredVisualPresetResult,
 } from './measured-visual-results.ts';
 
 export const BUNDLED_CATALOG_PATH = 'public/milkdrop-presets/catalog.json';
-
-type ShaderDependentPresetOverride = {
-  reason: string;
-};
-
-const SHADER_DEPENDENT_PRESET_OVERRIDES = new Map<
-  string,
-  ShaderDependentPresetOverride
->([
-  [
-    'martin-anandamide-mandelbox-explorer-quantum-timepiece-remix',
-    {
-      reason:
-        'Embedded shader text uses previous-frame/noise samplers plus GLSL constructs that Stims cannot execute directly yet.',
-    },
-  ],
-  [
-    'martin-elusive-impressions-mix2-flacc-mess-proph-nz-2',
-    {
-      reason:
-        'Embedded shader text uses noise-volume, blur, and main samplers that require native shader-text compatibility.',
-    },
-  ],
-  [
-    'martin-city-of-shadows',
-    {
-      reason:
-        'Embedded shader text depends on packed previous-frame and noise sampler reads that are not directly executable yet.',
-    },
-  ],
-  [
-    'martin-tunnel-race',
-    {
-      reason:
-        'Embedded shader text uses GLSL matrix/vector/texture constructs that are not supported by the current MilkDrop expression runtime.',
-    },
-  ],
-  [
-    'martin-castle-in-the-air',
-    {
-      reason:
-        'Embedded shader text depends on blur, noise, and previous-frame samplers that need a shader-text compatibility path.',
-    },
-  ],
-]);
-
-function buildShaderDependentVisualCertification(
-  override: ShaderDependentPresetOverride,
-): MilkdropVisualCertification {
-  return {
-    status: 'uncertified',
-    measured: false,
-    source: 'inferred',
-    fidelityClass: 'fallback',
-    visualEvidenceTier: 'compile',
-    requiredBackend: 'webgpu',
-    actualBackend: null,
-    reasons: [
-      override.reason,
-      'Needs native shader-text sampler/uniform translation or a certified compatibility renderer before it can be marked supported.',
-    ],
-  };
-}
-
-function applyShaderDependentPresetOverride(
-  preset: MilkdropBundledCatalogEntry,
-): MilkdropBundledCatalogEntry | null {
-  const override = SHADER_DEPENDENT_PRESET_OVERRIDES.get(preset.id);
-  if (!override) {
-    return null;
-  }
-
-  return {
-    ...preset,
-    tags: Array.from(
-      new Set([
-        ...(preset.tags ?? []),
-        'shader-text-dependent',
-        'compatibility-fallback',
-      ]),
-    ),
-    supports: { webgl: false, webgpu: false },
-    expectedFidelityClass: 'fallback',
-    visualEvidenceTier: 'compile',
-    visualCertification: buildShaderDependentVisualCertification(override),
-  };
-}
 
 export type BundledCatalogDocument = {
   version: number;
@@ -115,11 +25,6 @@ export function syncBundledCatalogPresetFidelity(
   preset: MilkdropBundledCatalogEntry,
   measuredResult: MeasuredVisualPresetResult | undefined,
 ): MilkdropBundledCatalogEntry {
-  const shaderDependentOverride = applyShaderDependentPresetOverride(preset);
-  if (shaderDependentOverride) {
-    return shaderDependentOverride;
-  }
-
   if (!measuredResult) {
     return {
       ...preset,

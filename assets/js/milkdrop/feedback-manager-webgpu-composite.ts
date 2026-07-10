@@ -78,6 +78,11 @@ const AUX_TEXTURE_SPECS = {
 
 type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
 type SharedAuxTextureName = AuxTextureName | 'video';
+export type MilkdropCustomSamplerTextureBinding = {
+  name: string;
+  textureFile: string;
+  texture: Texture;
+};
 
 const sharedMilkdropTextureCache = new Map<string, Texture>();
 const milkdropTextureLoader = new TextureLoader();
@@ -137,6 +142,17 @@ export function getSharedMilkdropTexturePlaceholder() {
 }
 
 export const MILKDROP_NOISE_VOLUME_SIZE = AUX_TEXTURE_ATLAS_SLICE_COUNT;
+export function bindCustomMilkdropSamplerTexture(
+  name: string,
+  textureFile: string | null,
+): MilkdropCustomSamplerTextureBinding | null {
+  if (!textureFile) return null;
+  return {
+    name,
+    textureFile,
+    texture: getSharedMilkdropTexture(textureFile, true),
+  };
+}
 
 let sharedSimplex3dTexture: Data3DTexture | null = null;
 let sharedSimplexLoading: Promise<Data3DTexture> | null = null;
