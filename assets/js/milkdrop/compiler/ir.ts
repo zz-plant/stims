@@ -738,6 +738,18 @@ export function createMilkdropIr({
       message,
     );
   });
+  if (
+    /\bsampler_fc_main\b/iu.test(
+      `${warpShaderText ?? ''}\n${compShaderText ?? ''}`,
+    )
+  ) {
+    fieldHelpers.addDiagnostic(
+      diagnostics,
+      'warning',
+      'preset_shader_packed_sampler_backend_gap',
+      'Packed sampler sampler_fc_main maps to the feedback composite texture on WebGL; WebGPU direct shader execution does not expose this intermediate texture and will use the translated compatibility path when required.',
+    );
+  }
   const backends = {
     webgl: compatibilityHelpers.buildBackendSupport({
       backend: 'webgl',

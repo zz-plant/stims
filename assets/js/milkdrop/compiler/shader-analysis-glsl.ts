@@ -389,6 +389,9 @@ function emitTextureSample(
   if (rawSamplerName === 'fw_noise_hq') {
     return `vec3(noise((${coordArg}) * 16.0 + vec2(signalTime * 1.2, signalTime * 0.9)))`;
   }
+  if (rawSamplerName === 'pw_noise_lq') {
+    return `texture2D(noiseTex, sampleUv(${coordArg}, textureWrap)).rgba`;
+  }
 
   const normalizedName = normalizeShaderSamplerName(samplerName);
 
