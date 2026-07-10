@@ -2987,14 +2987,15 @@ body[data-page="workspace"] {
       grid-column: 1 / -1;
     }
 
-    .stims-shell__stage-frame {
-      min-height: max(72svh, 640px);
+    .stims-shell__stage-frame[data-mode="live"] {
+      min-height: min(640px, calc(100svh - 20px));
       border-radius: 14px;
     }
 
     .stims-shell__stage-frame[data-mode="home"] {
       min-height: auto;
       overflow: visible;
+      border-radius: 14px;
     }
 
     .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
