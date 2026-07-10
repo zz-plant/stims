@@ -4227,3 +4227,52 @@ body[data-page="workspace"] {
     bottom: 72px;
   }
 }
+
+.stims-shell__preset-preview-action {
+  position: absolute;
+  right: 52px;
+  top: 10px;
+  z-index: 2;
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-pill);
+  background: rgba(3, 5, 11, 0.72);
+  color: var(--stims-ink);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.stims-shell__preset-peek {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--stims-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.stims-shell__shortcut-grid--editable {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-height: min(58vh, 560px);
+  overflow: auto;
+}
+
+.stims-shell__shortcut-row {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.stims-shell__shortcut-row form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.stims-shell__chip-list > .stims-shell__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

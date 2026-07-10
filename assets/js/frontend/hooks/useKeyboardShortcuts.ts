@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { PanelState, PresetCatalogEntry } from '../contracts';
+import {
+  eventMatchesShortcut,
+  readShortcutOverrides,
+} from '../shortcut-registry.ts';
 
 export function useKeyboardShortcuts({
   liveMode,
@@ -46,6 +50,7 @@ export function useKeyboardShortcuts({
   handleToggleFullscreenRef.current = handleToggleFullscreen;
 
   useEffect(() => {
+    const shortcutOverrides = readShortcutOverrides();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
         event.target instanceof HTMLInputElement ||
@@ -59,29 +64,29 @@ export function useKeyboardShortcuts({
       }
 
       const key = event.key.toLowerCase();
-      if (key === ' ') {
+      if (eventMatchesShortcut(event, 'audio', shortcutOverrides)) {
         event.preventDefault();
         if (liveMode) {
           handleAudioStopRef.current();
         } else if (engineReady) {
           void handleAudioStartRef.current('demo');
         }
-      } else if (key === 'f') {
+      } else if (eventMatchesShortcut(event, 'fullscreen', shortcutOverrides)) {
         event.preventDefault();
         handleToggleFullscreenRef.current();
-      } else if (key === 'b') {
+      } else if (eventMatchesShortcut(event, 'browse', shortcutOverrides)) {
         event.preventDefault();
         updatePanelRef.current(panel === 'browse' ? null : 'browse');
-      } else if (key === 's') {
+      } else if (eventMatchesShortcut(event, 'settings', shortcutOverrides)) {
         event.preventDefault();
         updatePanelRef.current(panel === 'settings' ? null : 'settings');
-      } else if (key === 'e') {
+      } else if (eventMatchesShortcut(event, 'editor', shortcutOverrides)) {
         event.preventDefault();
         updatePanelRef.current(panel === 'editor' ? null : 'editor');
-      } else if (key === 'n' || key === 'arrowright') {
+      } else if (eventMatchesShortcut(event, 'shuffle', shortcutOverrides)) {
         event.preventDefault();
         void handleShufflePresetRef.current();
-      } else if (key === 'p' || key === 'arrowleft') {
+      } else if (eventMatchesShortcut(event, 'previous', shortcutOverrides)) {
         event.preventDefault();
         void handlePreviousPresetRef.current();
       } else if (/^[1-9]$/.test(key) && liveMode) {
@@ -91,7 +96,7 @@ export function useKeyboardShortcuts({
         if (preset) {
           handlePresetSelectionRef.current(preset.id);
         }
-      } else if (key === '?') {
+      } else if (eventMatchesShortcut(event, 'help', shortcutOverrides)) {
         event.preventDefault();
         setShowShortcuts((s) => !s);
       }

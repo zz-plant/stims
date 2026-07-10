@@ -108,6 +108,9 @@ function StimsWorkspaceAppShell() {
   );
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const [showRotateHint, setShowRotateHint] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState<
+    Array<{ presetId: string; title: string; at: number }>
+  >([]);
 
   const liveMode = engine.audioActive;
   const currentAudioSource =
@@ -368,6 +371,16 @@ function StimsWorkspaceAppShell() {
     temporalMemory.record(activePresetId, canvas);
   }, [engineSnapshot?.activePresetId]);
 
+  useEffect(() => {
+    const presetId = engineSnapshot?.activePresetId;
+    const title = engine.selectedPreset?.title;
+    if (!presetId || !title) return;
+    setSessionHistory((current) => {
+      if (current[0]?.presetId === presetId) return current;
+      return [{ presetId, title, at: Date.now() }, ...current].slice(0, 50);
+    });
+  }, [engineSnapshot?.activePresetId, engine.selectedPreset?.title]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: ignore snapshot sub-properties
   useEffect(() => {
     if (!engineSnapshot?.audioActive) {
@@ -493,6 +506,7 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel
               offline={offline}
+              sessionHistory={sessionHistory}
               onCollectionTagChange={(collectionTag) =>
                 ui.commitRoute({ ...ui.routeState, collectionTag })
               }

@@ -20,6 +20,7 @@ import {
   EngineProvider,
   type EngineSnapshotValue,
 } from './engine-context.tsx';
+import { usePersistentPresetQueue } from './preset-queue.ts';
 import {
   useWorkspaceRouteState,
   useWorkspaceSessionState,
@@ -60,6 +61,15 @@ export interface WorkspaceContextValue {
   fallbackCatalogError: string | null;
   fallbackCatalogReady: boolean;
   activityCatalog: PresetCatalogEntry[];
+  presetQueue: {
+    presetIds: string[];
+    entries: PresetCatalogEntry[];
+    add: (presetId: string) => void;
+    remove: (presetId: string) => void;
+    clear: () => void;
+    move: (presetId: string, direction: -1 | 1) => void;
+    popNext: () => string | null;
+  };
 
   handleBrowseRecovery: () => void;
   handleFeaturedPresetSelection: () => void;
@@ -114,6 +124,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   });
 
   const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
+  const presetQueue = usePersistentPresetQueue(shellOrchestration.catalog);
 
   const engineSnapshotValue: EngineSnapshotValue = useMemo(() => {
     const snap = sessionState.engineSnapshot;
@@ -246,6 +257,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       fallbackCatalogError: sessionState.fallbackCatalogError,
       fallbackCatalogReady: sessionState.fallbackCatalogReady,
       activityCatalog: sessionState.activityCatalog,
+      presetQueue,
       handleBrowseRecovery: shellOrchestration.handleBrowseRecovery,
       handleFeaturedPresetSelection:
         shellOrchestration.handleFeaturedPresetSelection,
@@ -283,6 +295,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.fallbackCatalogError,
       sessionState.fallbackCatalogReady,
       sessionState.activityCatalog,
+      presetQueue,
       shellOrchestration.handleBrowseRecovery,
       shellOrchestration.handleFeaturedPresetSelection,
       shellOrchestration.handleImport,

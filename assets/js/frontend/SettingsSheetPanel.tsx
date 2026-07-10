@@ -23,6 +23,14 @@ function PerformanceSection() {
     renderScale: 1,
     loaded: false,
   }));
+  const [autoTune, setAutoTune] = useState(() => {
+    try {
+      return localStorage.getItem('stims:performance-auto-tune') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [recommendation, setRecommendation] = useState<string | null>(null);
 
   useEffect(() => {
     import('../core/state/performance-settings-store.ts').then(
@@ -73,6 +81,29 @@ function PerformanceSection() {
     );
   };
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('stims:performance-auto-tune', String(autoTune));
+    } catch {}
+    if (!autoTune) {
+      setRecommendation(null);
+      return;
+    }
+    if (perf.renderScale > 0.75) {
+      setRecommendation(
+        'If visuals stutter, auto-tune can lower render resolution to 75%.',
+      );
+    } else if (!perf.ecoMode) {
+      setRecommendation(
+        'Auto-tune can enable Eco mode during sustained frame drops.',
+      );
+    } else {
+      setRecommendation(
+        'Auto-tune is watching performance and settings are already conservative.',
+      );
+    }
+  }, [autoTune, perf.ecoMode, perf.renderScale]);
+
   return (
     <div className="stims-shell__settings-section">
       <div className="stims-shell__settings-section-header">
@@ -106,6 +137,43 @@ function PerformanceSection() {
           <option value={0.5}>Medium (50%)</option>
         </select>
       </div>
+
+      <label className="stims-shell__toggle-card">
+        <input
+          type="checkbox"
+          checked={autoTune}
+          onChange={(event) => setAutoTune(event.target.checked)}
+        />
+        <span className="stims-shell__toggle-copy">
+          <strong>Auto-tune performance</strong>
+          <small>
+            Watches for slow frames and recommends safer render settings before
+            applying them.
+          </small>
+        </span>
+      </label>
+      {recommendation ? (
+        <div className="stims-shell__empty-state" role="status">
+          <p>{recommendation}</p>
+          {perf.renderScale > 0.75 ? (
+            <button
+              type="button"
+              className="stims-shell__text-button"
+              onClick={() => setOption('renderScale', 0.75)}
+            >
+              Apply 75% resolution
+            </button>
+          ) : !perf.ecoMode ? (
+            <button
+              type="button"
+              className="stims-shell__text-button"
+              onClick={() => setOption('ecoMode', true)}
+            >
+              Enable Eco mode
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="stims-shell__settings-row">
         <span className="stims-shell__settings-option-label">

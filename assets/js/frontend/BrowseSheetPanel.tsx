@@ -18,15 +18,71 @@ import {
 } from './workspace-helpers.ts';
 
 const BROWSE_RESULT_BATCH_SIZE = 24;
+type SortMode =
+  | 'relevance'
+  | 'title'
+  | 'author'
+  | 'recent'
+  | 'favorites-first'
+  | 'webgpu-supported'
+  | 'random';
+
+function readSortMode(): SortMode {
+  try {
+    const value = localStorage.getItem('stims:browse-sort') as SortMode | null;
+    return value ?? 'relevance';
+  } catch {
+    return 'relevance';
+  }
+}
+
+function sortPresetEntries(
+  entries: PresetCatalogEntry[],
+  sortMode: SortMode,
+  randomSeed: number,
+) {
+  const sorted = [...entries];
+  if (sortMode === 'title') {
+    return sorted.sort((a, b) => a.title.localeCompare(b.title));
+  }
+  if (sortMode === 'author') {
+    return sorted.sort((a, b) =>
+      (a.author ?? 'Unknown').localeCompare(b.author ?? 'Unknown'),
+    );
+  }
+  if (sortMode === 'recent') {
+    return sorted.sort((a, b) => (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0));
+  }
+  if (sortMode === 'favorites-first') {
+    return sorted.sort(
+      (a, b) => Number(Boolean(b.isFavorite)) - Number(Boolean(a.isFavorite)),
+    );
+  }
+  if (sortMode === 'webgpu-supported') {
+    return sorted.sort(
+      (a, b) =>
+        Number(Boolean(b.supports?.webgpu)) -
+        Number(Boolean(a.supports?.webgpu)),
+    );
+  }
+  if (sortMode === 'random') {
+    return sorted.sort((a, b) =>
+      `${a.id}:${randomSeed}`.localeCompare(`${b.id}:${randomSeed}`),
+    );
+  }
+  return sorted;
+}
 
 export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
   offline = false,
+  sessionHistory = [],
 }: {
   onCollectionTagChange: (collectionTag: string | null) => void;
   onImport: (files: FileList | null) => void;
   offline?: boolean;
+  sessionHistory?: Array<{ presetId: string; title: string; at: number }>;
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
@@ -60,7 +116,11 @@ export function BrowseSheetPanel({
   } | null>(null);
   const [imageImportLoading, setImageImportLoading] = useState(false);
   const [fileImportStatus, setFileImportStatus] = useState('');
-  const [presetQueue, setPresetQueue] = useState<PresetCatalogEntry[]>([]);
+  const [sortMode, setSortMode] = useState<SortMode>(readSortMode);
+  const [randomSeed, setRandomSeed] = useState(() => Date.now());
+  const [previewingPresetId, setPreviewingPresetId] = useState<string | null>(
+    null,
+  );
   const [visibleCatalogState, setVisibleCatalogState] = useState({
     key: '',
     limit: BROWSE_RESULT_BATCH_SIZE,
@@ -180,18 +240,13 @@ export function BrowseSheetPanel({
   const handleQueuePreset = (presetId: string) => {
     const entry = catalog.find((preset) => preset.id === presetId);
     if (!entry) return;
-    setPresetQueue((current) =>
-      current.some((preset) => preset.id === presetId)
-        ? current
-        : [...current, entry].slice(-12),
-    );
+    ui.presetQueue.add(entry.id);
     ui.setStatusMessage(`${entry.title} added to queue.`);
   };
   const playNextQueuedPreset = () => {
-    const [next, ...rest] = presetQueue;
-    if (!next) return;
-    setPresetQueue(rest);
-    engine.handlePresetSelection(next.id);
+    const nextId = ui.presetQueue.popNext();
+    if (!nextId) return;
+    engine.handlePresetSelection(nextId);
   };
 
   const showStarterPresets =
@@ -213,12 +268,17 @@ export function BrowseSheetPanel({
     routeState.collectionTag === 'collection:community'
       ? communityPresets
       : filteredCatalog;
+  const sortedBrowseEntries = sortPresetEntries(
+    browseEntries,
+    sortMode,
+    randomSeed,
+  );
   const visibleBrowseEntries =
     routeState.collectionTag === 'collection:community'
-      ? browseEntries
-      : browseEntries.slice(0, visibleCatalogLimit);
+      ? sortedBrowseEntries
+      : sortedBrowseEntries.slice(0, visibleCatalogLimit);
   const hiddenBrowseEntryCount =
-    browseEntries.length - visibleBrowseEntries.length;
+    sortedBrowseEntries.length - visibleBrowseEntries.length;
   const visiblePreviewIds = useMemo(() => {
     const seen = new Set<string>();
     const ids: string[] = [];
@@ -366,6 +426,33 @@ export function BrowseSheetPanel({
           onChange={(event) => ui.setSearchQuery(event.target.value)}
         />
 
+        <div className="stims-shell__settings-row">
+          <label className="stims-shell__field-label" htmlFor="preset-sort">
+            Sort presets
+          </label>
+          <select
+            id="preset-sort"
+            className="stims-shell__select"
+            value={sortMode}
+            onChange={(event) => {
+              const next = event.target.value as SortMode;
+              setSortMode(next);
+              if (next === 'random') setRandomSeed(Date.now());
+              try {
+                localStorage.setItem('stims:browse-sort', next);
+              } catch {}
+            }}
+          >
+            <option value="relevance">Recommended order</option>
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+            <option value="recent">Recently played</option>
+            <option value="favorites-first">Saved first</option>
+            <option value="webgpu-supported">WebGPU support</option>
+            <option value="random">Randomized</option>
+          </select>
+        </div>
+
         <p
           className="stims-shell__active-filters"
           aria-live="polite"
@@ -506,6 +593,38 @@ export function BrowseSheetPanel({
       </section>
 
       {showActivitySections ? (
+        <section className="stims-shell__sheet-surface">
+          <div className="stims-shell__section-heading">
+            <h2 className="stims-shell__section-label">Session history</h2>
+            <p className="stims-shell__meta-copy">
+              Jump back to looks from this listening session.
+            </p>
+          </div>
+          {sessionHistory.length > 0 ? (
+            <div className="stims-shell__chip-list">
+              {sessionHistory.slice(0, 10).map((item) => (
+                <button
+                  key={`${item.presetId}-${item.at}`}
+                  type="button"
+                  className="stims-shell__chip"
+                  onClick={() => engine.handlePresetSelection(item.presetId)}
+                >
+                  <span className="stims-shell__chip-copy">
+                    <strong>{item.title}</strong>
+                    <small>{new Date(item.at).toLocaleTimeString()}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="stims-shell__meta-copy">
+              Played presets will appear here.
+            </p>
+          )}
+        </section>
+      ) : null}
+
+      {showActivitySections ? (
         <PresetShelfSection
           entries={recentPresets.map((entry) => ({
             entry,
@@ -535,7 +654,7 @@ export function BrowseSheetPanel({
         />
       ) : null}
 
-      {presetQueue.length > 0 ? (
+      {ui.presetQueue.entries.length > 0 ? (
         <section className="stims-shell__sheet-surface">
           <div className="stims-shell__section-heading">
             <h2 className="stims-shell__section-label">Up next</h2>
@@ -544,22 +663,36 @@ export function BrowseSheetPanel({
             </p>
           </div>
           <div className="stims-shell__chip-list">
-            {presetQueue.map((entry) => (
-              <button
-                key={entry.id}
-                type="button"
-                className="stims-shell__chip"
-                onClick={() =>
-                  setPresetQueue((current) =>
-                    current.filter((preset) => preset.id !== entry.id),
-                  )
-                }
-              >
+            {ui.presetQueue.entries.map((entry, index) => (
+              <div key={entry.id} className="stims-shell__chip">
                 <span className="stims-shell__chip-copy">
                   <strong>{entry.title}</strong>
-                  <small>Tap to remove</small>
+                  <small>Queue position {index + 1}</small>
                 </span>
-              </button>
+                <button
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={() => ui.presetQueue.move(entry.id, -1)}
+                  disabled={index === 0}
+                >
+                  Up
+                </button>
+                <button
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={() => ui.presetQueue.move(entry.id, 1)}
+                  disabled={index === ui.presetQueue.entries.length - 1}
+                >
+                  Down
+                </button>
+                <button
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={() => ui.presetQueue.remove(entry.id)}
+                >
+                  Remove
+                </button>
+              </div>
             ))}
           </div>
           <button
@@ -568,6 +701,13 @@ export function BrowseSheetPanel({
             onClick={playNextQueuedPreset}
           >
             Play next queued preset
+          </button>
+          <button
+            type="button"
+            className="stims-shell__text-button"
+            onClick={ui.presetQueue.clear}
+          >
+            Clear queue
           </button>
         </section>
       ) : null}
@@ -685,24 +825,71 @@ export function BrowseSheetPanel({
         ) : (
           <ul className="stims-shell__preset-list">
             {visualSearchActive
-              ? visualSearchResults.map((r) => (
-                  <li key={r.presetId}>
-                    <button
-                      type="button"
-                      className="stims-shell__preset-card"
-                      onClick={() => engine.handlePresetSelection(r.presetId)}
-                    >
-                      <span className="stims-shell__preset-card-copy">
-                        <span className="stims-shell__preset-title">
-                          {r.presetId}
-                        </span>
-                        <span className="stims-shell__preset-vibe">
-                          {(r.score * 100).toFixed(0)}% similarity
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))
+              ? visualSearchResults.map((r) => {
+                  const entry = catalog.find(
+                    (preset) => preset.id === r.presetId,
+                  );
+                  if (!entry) {
+                    return (
+                      <li key={r.presetId}>
+                        <button
+                          type="button"
+                          className="stims-shell__preset-card"
+                          onClick={() =>
+                            engine.handlePresetSelection(r.presetId)
+                          }
+                        >
+                          <span className="stims-shell__preset-card-copy">
+                            <span className="stims-shell__preset-title">
+                              {r.presetId}
+                            </span>
+                            <span className="stims-shell__preset-vibe">
+                              {(r.score * 100).toFixed(0)}% similarity
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  }
+                  const supportLabel = getPresetCardSupportLabel(entry);
+                  return (
+                    <li key={r.presetId}>
+                      <div className="stims-shell__preset-card-wrap">
+                        <button
+                          type="button"
+                          className="stims-shell__preset-card"
+                          data-active={String(entry.id === currentPresetId)}
+                          onClick={() => engine.handlePresetSelection(entry.id)}
+                        >
+                          <PresetArtwork
+                            entry={entry}
+                            compact
+                            preview={presetPreviews[entry.id] ?? null}
+                          />
+                          <span className="stims-shell__preset-card-copy">
+                            <span className="stims-shell__preset-title">
+                              {entry.title}
+                            </span>
+                            <span className="stims-shell__preset-vibe">
+                              {(r.score * 100).toFixed(0)}% similar ·{' '}
+                              {describePresetMood(entry)}
+                            </span>
+                            <span className="stims-shell__preset-meta-row">
+                              <span className="stims-shell__preset-meta">
+                                {entry.author || 'Unknown author'}
+                              </span>
+                              {supportLabel ? (
+                                <span className="stims-shell__preset-tech">
+                                  {supportLabel}
+                                </span>
+                              ) : null}
+                            </span>
+                          </span>
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })
               : visibleBrowseEntries.map((entry) => {
                   const supportLabel = getPresetCardSupportLabel(entry);
 
@@ -755,6 +942,21 @@ export function BrowseSheetPanel({
                         </button>
                         <button
                           type="button"
+                          className="stims-shell__preset-preview-action"
+                          aria-expanded={previewingPresetId === entry.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewingPresetId((current) =>
+                              current === entry.id ? null : entry.id,
+                            );
+                          }}
+                        >
+                          {previewingPresetId === entry.id
+                            ? 'Hide preview'
+                            : 'Preview'}
+                        </button>
+                        <button
+                          type="button"
                           className="stims-shell__preset-fav"
                           aria-label={
                             entry.isFavorite
@@ -775,6 +977,23 @@ export function BrowseSheetPanel({
                             aria-hidden="true"
                           />
                         </button>
+                        {previewingPresetId === entry.id ? (
+                          <div className="stims-shell__preset-peek">
+                            <PresetArtwork
+                              entry={entry}
+                              preview={presetPreviews[entry.id] ?? null}
+                            />
+                            <button
+                              type="button"
+                              className="cta-button primary"
+                              onClick={() =>
+                                engine.handlePresetSelection(entry.id)
+                              }
+                            >
+                              Load this preset
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </li>
                   );
@@ -796,7 +1015,7 @@ export function BrowseSheetPanel({
                     key: browseResetKey,
                     limit: Math.min(
                       currentLimit + BROWSE_RESULT_BATCH_SIZE,
-                      browseEntries.length,
+                      sortedBrowseEntries.length,
                     ),
                   };
                 });
@@ -805,7 +1024,8 @@ export function BrowseSheetPanel({
               Show more presets
             </button>
             <p className="stims-shell__meta-copy">
-              Showing {visibleBrowseEntries.length} of {browseEntries.length}.
+              Showing {visibleBrowseEntries.length} of{' '}
+              {sortedBrowseEntries.length}.
             </p>
           </div>
         ) : null}
