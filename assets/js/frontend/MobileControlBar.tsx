@@ -14,6 +14,8 @@ const moods = [
 ];
 
 const MOBILE_CONTROL_IDLE_MS = 4_000;
+const MOBILE_MORE_ACTIONS_ID = 'mobile-control-more-actions';
+const MOBILE_MOOD_ACTIONS_ID = 'mobile-control-mood-actions';
 
 type MobileAction = {
   id: string;
@@ -387,7 +389,8 @@ export function MobileControlBar({
           </div>
         ) : null}
         {showMoods && (
-          <fieldset className="mc-bar__mood-row" aria-label="Mood presets">
+          <fieldset id={MOBILE_MOOD_ACTIONS_ID} className="mc-bar__mood-row">
+            <legend className="sr-only">Mood presets</legend>
             {moods.map((mood) => (
               <button
                 key={mood.label}
@@ -428,6 +431,7 @@ export function MobileControlBar({
             className={styles.action}
             data-active={String(showMoreActions)}
             aria-expanded={showMoreActions}
+            aria-controls={showMoreActions ? MOBILE_MORE_ACTIONS_ID : undefined}
             onClick={() => {
               resetHideTimer();
               pulseHaptic(8, hapticsEnabled);
@@ -443,11 +447,8 @@ export function MobileControlBar({
           </button>
         </div>
         {showMoreActions ? (
-          <div
-            className={styles.moreActions}
-            role="menu"
-            aria-label="More mobile actions"
-          >
+          <fieldset id={MOBILE_MORE_ACTIONS_ID} className={styles.moreActions}>
+            <legend className="sr-only">More mobile actions</legend>
             {overflowActions.map((action) =>
               renderAction({
                 ...action,
@@ -457,7 +458,7 @@ export function MobileControlBar({
                 },
               }),
             )}
-          </div>
+          </fieldset>
         ) : null}
       </div>
       {!visible ? (
