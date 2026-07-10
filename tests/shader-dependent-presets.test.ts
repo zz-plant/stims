@@ -91,10 +91,15 @@ test('elusive impressions fixture exercises MilkDrop volume-noise shader text wi
 
   expect(source).toContain('texture (sampler_noisevol_hq,');
   expect(source).toContain('texsize_noisevol_hq.zww');
-  expect(preset?.supports).toEqual({ webgl: false, webgpu: false });
+  expect(preset?.supports).toEqual({ webgl: true, webgpu: true });
   expect(preset?.visualCertification).toMatchObject({
     status: 'uncertified',
     measured: false,
     source: 'inferred',
+    fidelityClass: 'partial',
+    visualEvidenceTier: 'runtime',
   });
+  expect(preset?.visualCertification?.reasons).toContain(
+    'Direct native shader_body extraction now recognizes volume-noise shader text, texsize_noisevol_hq aliases, and feedback sampler reads; retained at partial/runtime because volume sampler translation remains approximate and unmeasured.',
+  );
 });
