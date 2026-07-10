@@ -19,6 +19,26 @@ const URL_PARAM_CORPUS = 'corpus';
 /** Valid modes for the force-mode override. */
 export type WebGpuForceMode = 'auto' | 'safe' | 'full';
 
+export type MilkdropWebGpuFeatureName =
+  | 'proceduralMainWave'
+  | 'proceduralTrailWaves'
+  | 'proceduralCustomWaves'
+  | 'proceduralMesh'
+  | 'proceduralMotionVectors'
+  | 'directFeedbackShaders'
+  | 'gpuComputeVM'
+  | 'renderBundles';
+
+export type MilkdropWebGpuFeatureDecision = {
+  enabled: boolean;
+  reason: string | null;
+};
+
+export type MilkdropWebGpuFeatureRouting = Record<
+  MilkdropWebGpuFeatureName,
+  MilkdropWebGpuFeatureDecision
+>;
+
 /**
  * Persist a manual safe-path override to localStorage.
  * Use `null` to clear the override and return to auto-detection.
@@ -149,6 +169,34 @@ export function shouldUseFullMilkdropWebGpuPath(
   location?: Pick<Location, 'search'> | null,
 ): boolean {
   return !shouldUseSafeMilkdropWebGpuPath(location);
+}
+
+export function resolveMilkdropWebGpuFeatureRouting(
+  location?: Pick<Location, 'search'> | null,
+): MilkdropWebGpuFeatureRouting {
+  const description = getWebGpuPathDescription(location);
+  const safeMode = description.mode === 'safe';
+  const safeReason = safeMode
+    ? `disabled by ${description.source} WebGPU safe path`
+    : null;
+
+  return {
+    proceduralMainWave: { enabled: !safeMode, reason: safeReason },
+    proceduralTrailWaves: { enabled: !safeMode, reason: safeReason },
+    proceduralCustomWaves: { enabled: !safeMode, reason: safeReason },
+    proceduralMesh: { enabled: !safeMode, reason: safeReason },
+    proceduralMotionVectors: { enabled: !safeMode, reason: safeReason },
+    directFeedbackShaders: { enabled: !safeMode, reason: safeReason },
+    gpuComputeVM: { enabled: !safeMode, reason: safeReason },
+    renderBundles: {
+      enabled: !safeMode && description.source !== 'default',
+      reason:
+        safeReason ??
+        (description.source === 'default'
+          ? 'render bundles remain opt-in until parity telemetry is stable'
+          : null),
+    },
+  };
 }
 
 /**

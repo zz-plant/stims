@@ -9,8 +9,6 @@ import {
   MeshBasicMaterial,
   Vector2,
 } from 'three';
-// @ts-expect-error - BundleGroup available in three/webgpu at runtime
-import { BundleGroup as WebGpuBundleGroup } from 'three/webgpu';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import {
   type MilkdropBackendBehavior,
@@ -47,6 +45,7 @@ import {
   trimGroupChildren,
   withRenderOrder,
 } from './renderer-adapter-shared';
+import { createMilkdropStaticBundleGroup } from './renderer-bundles.ts';
 import {
   createBorderObject as createBorderObjectHelper,
   renderBorderGroup as renderBorderGroupHelper,
@@ -373,14 +372,18 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     // lifetime instead of every frame.
     const useBundles =
       backend === 'webgpu' && this.webgpuOptimizationFlags.renderBundles;
-    if (useBundles && WebGpuBundleGroup) {
-      const staticBundle = new WebGpuBundleGroup();
-      staticBundle.add(this.background);
-      staticBundle.add(this.meshLines);
-      staticBundle.add(this.borderGroup);
-      staticBundle.add(this.motionVectorCpuGroup);
-      staticBundle.add(this.blendBorderGroup);
-      staticBundle.add(this.blendMotionVectorCpuGroup);
+    const staticBundle = createMilkdropStaticBundleGroup({
+      enabled: useBundles,
+      objects: [
+        this.background,
+        this.meshLines,
+        this.borderGroup,
+        this.motionVectorCpuGroup,
+        this.blendBorderGroup,
+        this.blendMotionVectorCpuGroup,
+      ],
+    });
+    if (staticBundle) {
       this.root.add(staticBundle);
     } else {
       this.root.add(this.background);

@@ -1,3 +1,4 @@
+import { recordRendererOptimizationTelemetry } from '../core/renderer-capabilities.ts';
 import type {
   MilkdropGpuDescriptorRouting,
   MilkdropRenderBackend,
@@ -210,12 +211,17 @@ export function shouldFallbackMilkdropPresetToWebgl({
   descriptorPlan: MilkdropWebGpuDescriptorPlan;
   flags: MilkdropWebGpuOptimizationFlags;
 }) {
-  return (
+  const shouldFallback =
     backend === 'webgpu' &&
     !compatibilityMode &&
     applyMilkdropWebGpuOptimizationFlags(descriptorPlan, flags).routing ===
-      'fallback-webgl'
-  );
+      'fallback-webgl';
+  if (shouldFallback) {
+    recordRendererOptimizationTelemetry({
+      counter: 'milkdropWebGpuFallbackRouting',
+    });
+  }
+  return shouldFallback;
 }
 
 export function getDisabledMilkdropWebGpuOptimizationFlags(

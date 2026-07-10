@@ -13,6 +13,7 @@
 import type { Object3D } from 'three';
 // @ts-expect-error - BundleGroup is exposed by the WebGPU entrypoint at runtime.
 import { BundleGroup as WebGpuBundleGroup } from 'three/webgpu';
+import { recordRendererOptimizationTelemetry } from '../core/renderer-capabilities.ts';
 
 type BundleGroupLike = Object3D & {
   needsUpdate: boolean;
@@ -54,6 +55,8 @@ export class MilkdropRenderBundleManager {
 
     if (this.config.enabled && !hadGroup) {
       this.bundleGroup = new WebGpuBundleGroup() as BundleGroupLike;
+      this.bundleGroup.userData.stimsBundleKind = 'milkdrop-static';
+      recordRendererOptimizationTelemetry({ counter: 'renderBundlesUsage' });
     } else if (!this.config.enabled && hadGroup) {
       this.bundleGroup = null;
     }
@@ -114,4 +117,33 @@ export function getMilkdropRenderBundleManager(
 export function disposeMilkdropRenderBundleManager() {
   sharedBundleManager?.dispose();
   sharedBundleManager = null;
+}
+
+export function createMilkdropStaticBundleGroup({
+  enabled,
+  objects,
+}: {
+  enabled: boolean;
+  objects: Object3D[];
+}): Object3D | null {
+  if (!enabled) {
+    return null;
+  }
+
+  const manager = new MilkdropRenderBundleManager({ enabled: true });
+  manager.setConfig({ enabled: true });
+  const group = manager.getGroup();
+  if (!group) {
+    recordRendererOptimizationTelemetry({ counter: 'renderBundleUnavailable' });
+    return null;
+  }
+
+  for (const object of objects) {
+    manager.add(object);
+  }
+  return group;
+}
+
+export function isMilkdropBundleSupportAvailable() {
+  return Boolean(WebGpuBundleGroup);
 }

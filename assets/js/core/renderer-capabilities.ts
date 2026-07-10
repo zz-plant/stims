@@ -16,6 +16,13 @@ import {
   DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
   resolveWithTimeout,
 } from './renderer-init-timeout.ts';
+import {
+  getRendererRetrySnapshot,
+  type RendererRetrySnapshot,
+  recordRendererRetryFailure,
+  recordRendererRetrySuccess,
+  resetRendererRetryPolicy,
+} from './renderer-retry-policy.ts';
 
 export type RendererBackend = 'webgl' | 'webgpu';
 
@@ -72,6 +79,7 @@ export type RendererCapabilities = {
   shouldRetryWebGPU: boolean;
   forceWebGL: boolean;
   webgpu: WebGPUCapabilitySummary | null;
+  retry?: RendererRetrySnapshot;
 };
 
 export type RendererTelemetryEvent = {
@@ -81,6 +89,7 @@ export type RendererTelemetryEvent = {
   isWebGPUSupported: boolean;
   forceWebGL: boolean;
   webgpu: WebGPUCapabilitySummary | null;
+  retry?: RendererRetrySnapshot;
 };
 
 export type RendererTelemetryHandler = (
@@ -102,7 +111,11 @@ export type KnownOptimizationTelemetryCounter =
   | 'timestampQueryUsage'
   | 'shaderF16Usage'
   | 'subgroupsUsage'
-  | 'workerOffscreenUsage';
+  | 'workerOffscreenUsage'
+  | 'renderBundlesUsage'
+  | 'renderBundleUnavailable'
+  | 'milkdropWebGpuFeatureDisabled'
+  | 'milkdropWebGpuFallbackRouting';
 
 export type RendererOptimizationTelemetryCounterName =
   | KnownOptimizationTelemetryCounter
@@ -148,6 +161,7 @@ const buildFallback = (
   shouldRetryWebGPU,
   forceWebGL,
   webgpu: null,
+  retry: getRendererRetrySnapshot(String(cachedEnvironmentKey ?? 'default')),
 });
 
 const reportRendererTelemetry = (result: RendererCapabilities) => {
@@ -161,6 +175,7 @@ const reportRendererTelemetry = (result: RendererCapabilities) => {
     isWebGPUSupported: result.preferredBackend === 'webgpu',
     forceWebGL: result.forceWebGL,
     webgpu: result.webgpu,
+    retry: result.retry,
   };
   telemetryHandler?.('renderer_capabilities', detail);
 };
@@ -187,6 +202,21 @@ function getEnvironmentKey({
     ? 'webgpu-gap-guard-on'
     : 'webgpu-gap-guard-off';
   return `${hasGpu}:${userAgent}:${compatibilityMode}:${webgpuCompatibilityMode}`;
+}
+
+function getCurrentRetrySnapshot() {
+  return getRendererRetrySnapshot(String(cachedEnvironmentKey ?? 'default'));
+}
+
+function recordRetryableWebGPUFailure(
+  failureKind: Parameters<typeof recordRendererRetryFailure>[0]['failureKind'],
+  reason: string,
+) {
+  return recordRendererRetryFailure({
+    environmentKey: String(cachedEnvironmentKey ?? getEnvironmentKey()),
+    failureKind,
+    reason,
+  });
 }
 
 function isGuardedMobileWebGPUEnvironment() {
@@ -437,6 +467,7 @@ function observeCapabilityDevice(device: GPUDevice) {
         backend: getFallbackBackend(),
         shouldRetryWebGPU: true,
       });
+      recordRetryableWebGPUFailure('device-lost', message);
     })
     .catch(() => {
       observedCapabilityDevices.delete(device);
@@ -497,6 +528,16 @@ async function probeRendererCapabilities({
   preferWebGLForKnownCompatibilityGaps?: boolean;
   webgpuInitTimeoutMs?: number;
 } = {}): Promise<RendererCapabilities> {
+  const retry = getCurrentRetrySnapshot();
+  if (!retry.canRetryNow && retry.attempts > 0) {
+    return cacheResult(
+      buildFallback(
+        `WebGPU retry is cooling down after ${retry.lastFailureKind ?? 'unknown'} failure. Using WebGL until the retry backoff expires.`,
+        { shouldRetryWebGPU: true },
+      ),
+    );
+  }
+
   if (typeof navigator === 'undefined') {
     return cacheResult(
       buildFallback(
@@ -595,6 +636,12 @@ async function probeRendererCapabilities({
         'WebGPU device request failed. Falling back to WebGL.',
         error,
       );
+      recordRetryableWebGPUFailure(
+        'device-request',
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.noDevice,
+        ),
+      );
       return cacheResult(
         buildFallback(
           getRendererFallbackReasonMessage(
@@ -608,6 +655,10 @@ async function probeRendererCapabilities({
     }
 
     if (!device) {
+      recordRetryableWebGPUFailure(
+        'device-request',
+        'WebGPU device request returned no device.',
+      );
       return cacheResult(
         buildFallback('WebGPU device request returned no device.', {
           shouldRetryWebGPU: true,
@@ -628,6 +679,10 @@ async function probeRendererCapabilities({
 
     if (!hasPresentationContext) {
       device.destroy?.();
+      recordRetryableWebGPUFailure(
+        'presentation-context',
+        'WebGPU presentation context is not supported in this browser.',
+      );
       return cacheResult(
         buildFallback(
           'WebGPU presentation context is not supported in this browser.',
@@ -639,6 +694,7 @@ async function probeRendererCapabilities({
     }
 
     observeCapabilityDevice(device);
+    recordRendererRetrySuccess(String(cachedEnvironmentKey ?? 'default'));
 
     return cacheResult({
       preferredBackend: 'webgpu',
@@ -649,9 +705,16 @@ async function probeRendererCapabilities({
       shouldRetryWebGPU: false,
       forceWebGL: false,
       webgpu: summarizeWebGPUCapabilities(adapter),
+      retry: getCurrentRetrySnapshot(),
     });
   } catch (error) {
     console.warn('WebGPU initialization failed. Falling back to WebGL.', error);
+    recordRetryableWebGPUFailure(
+      'unknown',
+      getRendererFallbackReasonMessage(
+        RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
+      ),
+    );
     return cacheResult(
       buildFallback(
         getRendererFallbackReasonMessage(
@@ -668,6 +731,7 @@ async function probeRendererCapabilities({
 export function resetRendererCapabilities() {
   resetCache();
   cachedEnvironmentKey = null;
+  resetRendererRetryPolicy();
 }
 
 export function setRendererTelemetryHandler(
@@ -695,6 +759,9 @@ export function rememberRendererFallback(
     fallbackReasonCode && !fallbackReason
       ? getRendererFallbackReasonMessage(fallbackReasonCode)
       : fallbackReason;
+  if (shouldRetryWebGPU) {
+    recordRetryableWebGPUFailure('renderer-init', resolvedFallbackReason);
+  }
   const result = cacheResult({
     ...buildFallback(resolvedFallbackReason, {
       shouldRetryWebGPU,
