@@ -2863,6 +2863,17 @@ body[data-page="workspace"] {
 
     :scope[data-mode="live"] {
       --mobile-bar-height: 86px;
+      --mobile-bar-height-expanded: 206px;
+      --mobile-bar-height-mood-open: 150px;
+      --mobile-control-offset: var(--mobile-bar-height);
+    }
+
+    :scope[data-mode="live"]:has(.mc-bar[data-expanded="true"]) {
+      --mobile-control-offset: var(--mobile-bar-height-expanded);
+    }
+
+    :scope[data-mode="live"]:has(.mc-bar[data-mood-open="true"]) {
+      --mobile-control-offset: var(--mobile-bar-height-mood-open);
     }
 
     .stims-shell[data-has-toast="true"] {
@@ -3181,13 +3192,13 @@ body[data-page="workspace"] {
 
     :scope[data-mode="live"] .stims-shell__sheet {
       bottom: calc(
-        var(--mobile-bar-height, 86px) +
+        var(--mobile-control-offset, var(--mobile-bar-height, 86px)) +
         10px +
         env(safe-area-inset-bottom)
       );
       max-height: calc(
         100dvh -
-        var(--mobile-bar-height, 86px) -
+        var(--mobile-control-offset, var(--mobile-bar-height, 86px)) -
         20px -
         env(safe-area-inset-bottom)
       );
@@ -3208,7 +3219,7 @@ body[data-page="workspace"] {
 
     :scope[data-mode="live"] .stims-shell__toast {
       bottom: calc(
-        var(--mobile-bar-height, 86px) +
+        var(--mobile-control-offset, var(--mobile-bar-height, 86px)) +
         6px +
         env(safe-area-inset-bottom)
       );
@@ -3218,6 +3229,8 @@ body[data-page="workspace"] {
   @media (max-width: 420px) {
     :scope[data-mode="live"] {
       --mobile-bar-height: 132px;
+      --mobile-bar-height-expanded: 252px;
+      --mobile-bar-height-mood-open: 200px;
     }
   }
 
@@ -4176,7 +4189,7 @@ body[data-page="workspace"] {
   left: max(12px, env(safe-area-inset-left));
   right: max(12px, env(safe-area-inset-right));
   bottom: calc(
-    var(--mobile-bar-height, 86px) +
+    var(--mobile-control-offset, var(--mobile-bar-height, 86px)) +
     env(safe-area-inset-bottom) +
     12px
   );

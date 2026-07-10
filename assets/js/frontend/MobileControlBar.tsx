@@ -367,7 +367,12 @@ export function MobileControlBar({
 
   return (
     <>
-      <div className={styles.bar} data-visible={String(visible)}>
+      <div
+        className={`${styles.bar} mc-bar`}
+        data-visible={String(visible)}
+        data-expanded={String(showMoreActions)}
+        data-mood-open={String(showMoods)}
+      >
         {/* biome-ignore lint/a11y/useSemanticElements: custom visual div designed specifically for visual status/metering */}
         <div
           className={styles.energyMeter}
