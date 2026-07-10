@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/MobileControlBar.module.css';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { pulseHaptic } from './haptics.ts';
+import { useMoodPresetGeneration } from './hooks/useMoodPresetGeneration.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context';
 
@@ -13,6 +14,26 @@ const moods = [
 ];
 
 const MOBILE_CONTROL_IDLE_MS = 4_000;
+
+type MobileAction = {
+  id: string;
+  label: string;
+  ariaLabel: string;
+  icon:
+    | 'arrow-left'
+    | 'close'
+    | 'expand'
+    | 'eye'
+    | 'gauge'
+    | 'link'
+    | 'shuffle'
+    | 'sliders'
+    | 'sparkles'
+    | 'wand';
+  active?: boolean;
+  disabled?: boolean;
+  onClick: () => void | Promise<void>;
+};
 
 type MobileControlBarProps = {
   audioEnergy: number;
@@ -43,10 +64,8 @@ export function MobileControlBar({
   const [visible, setVisible] = useState(true);
   const [showMoods, setShowMoods] = useState(false);
   const [similarLoading, setSimilarLoading] = useState(false);
-  const [generatingMood, setGeneratingMood] = useState<string | null>(null);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const moodAbortRef = useRef<AbortController | null>(null);
   const similarAbortRef = useRef<AbortController | null>(null);
   const energyPercent = `${Math.min(100, Math.max(0, audioEnergy * 100)).toFixed(0)}%`;
 
@@ -169,56 +188,46 @@ export function MobileControlBar({
     ui,
   ]);
 
+  const {
+    generatingMood,
+    generate: generateMoodPreset,
+    cancel: cancelMoodGeneration,
+    retry: retryMoodGeneration,
+    canRetry: canRetryMoodGeneration,
+  } = useMoodPresetGeneration({
+    offline: typeof navigator !== 'undefined' && !navigator.onLine,
+    setStatusMessage: ui.setStatusMessage,
+    openEditor: () => ui.updatePanel('editor'),
+  });
+
+  useEffect(() => {
+    const handleOutsidePointer = (event: PointerEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest(`.${styles.bar}`)
+      ) {
+        return;
+      }
+      setShowMoreActions(false);
+      setShowMoods(false);
+    };
+    document.addEventListener('pointerdown', handleOutsidePointer, {
+      passive: true,
+    });
+    return () =>
+      document.removeEventListener('pointerdown', handleOutsidePointer);
+  }, []);
+
   const handleMoodGenerate = useCallback(
-    (mood: { label: string; desc: string }) => {
+    (mood: (typeof moods)[number]) => {
       resetHideTimer();
-      moodAbortRef.current?.abort();
-      const controller = new AbortController();
-      moodAbortRef.current = controller;
-      setGeneratingMood(mood.label);
-      ui.setStatusMessage(`Generating a ${mood.label} preset…`);
-      fetch('/api/generate-preset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: `${mood.desc} ${mood.label.toLowerCase()} visualizer preset`,
-          complexity: 'moderate',
-        }),
-        signal: controller.signal,
-      })
-        .then((r) => {
-          if (!r.ok) throw new Error(`Server returned ${r.status}`);
-          return r.json();
-        })
-        .then((data) => {
-          if (controller.signal.aborted) return;
-          if (data.milkSource) {
-            document.dispatchEvent(
-              new CustomEvent('stims:editor:source-change', {
-                detail: {
-                  source: data.milkSource,
-                  title: data.title || mood.label,
-                },
-              }),
-            );
-            ui.setStatusMessage(
-              `Generated ${mood.label} preset. Opening editor.`,
-            );
-            ui.updatePanel('editor');
-          }
-        })
-        .catch((err) => {
-          if (err.name === 'AbortError') return;
-          ui.setStatusMessage('Preset generation failed. Try again.');
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setGeneratingMood(null);
-        });
+      setShowMoods(false);
+      generateMoodPreset(mood);
     },
-    [resetHideTimer, ui],
+    [generateMoodPreset, resetHideTimer],
   );
 
-  const mobileActions = [
+  const mobileActions: MobileAction[] = [
     {
       id: 'favorite',
       label: engine.favoritePresets.some(
@@ -329,7 +338,7 @@ export function MobileControlBar({
   );
 
   // Accessibility guard: panel toggles must use aria-expanded={panel === ...}.
-  const renderAction = (action: (typeof mobileActions)[number]) => (
+  const renderAction = (action: MobileAction) => (
     <button
       key={action.id}
       type="button"
@@ -385,6 +394,23 @@ export function MobileControlBar({
                 <span className="mc-bar__mood-label">{mood.label}</span>
               </button>
             ))}
+            {generatingMood ? (
+              <button
+                type="button"
+                className="mc-bar__mood-btn"
+                onClick={cancelMoodGeneration}
+              >
+                Cancel
+              </button>
+            ) : canRetryMoodGeneration ? (
+              <button
+                type="button"
+                className="mc-bar__mood-btn"
+                onClick={retryMoodGeneration}
+              >
+                Retry
+              </button>
+            ) : null}
           </fieldset>
         )}
         <div className={styles.actions} data-thumb-mode={String(thumbMode)}>
@@ -414,7 +440,15 @@ export function MobileControlBar({
             role="menu"
             aria-label="More mobile actions"
           >
-            {overflowActions.map(renderAction)}
+            {overflowActions.map((action) =>
+              renderAction({
+                ...action,
+                onClick: () => {
+                  action.onClick();
+                  if (action.id !== 'generate') setShowMoreActions(false);
+                },
+              }),
+            )}
           </div>
         ) : null}
       </div>

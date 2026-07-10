@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { saveCheckpoint } from '../core/services/temporal-memory.ts';
 import {
   describeFrame,
@@ -13,6 +7,7 @@ import {
 } from '../core/services/visual-embedding.ts';
 import { useAudioEnergy } from './hooks/useAudioEnergy';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity';
+import { useMoodPresetGeneration } from './hooks/useMoodPresetGeneration.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
 import { UiIcon } from './UiIcon.tsx';
@@ -67,58 +62,19 @@ export function StimsControlDock({
   const [similarSearched, setSimilarSearched] = useState(false);
   const [similarError, setSimilarError] = useState(false);
   const [showMoods, setShowMoods] = useState(false);
-  const [generatingMood, setGeneratingMood] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
-  const moodAbortRef = useRef<AbortController | null>(null);
   const moreLikeThisAbortRef = useRef<AbortController | null>(null);
-
-  const handleMoodGenerate = useCallback(
-    (mood: { label: string; desc: string }) => {
-      moodAbortRef.current?.abort();
-      const controller = new AbortController();
-      moodAbortRef.current = controller;
-      setGeneratingMood(mood.label);
-      ui.setStatusMessage(`Generating a ${mood.label} preset…`);
-      fetch('/api/generate-preset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: `${mood.desc} ${mood.label.toLowerCase()} visualizer preset`,
-          complexity: 'moderate',
-        }),
-        signal: controller.signal,
-      })
-        .then((r) => {
-          if (!r.ok) throw new Error(`Server returned ${r.status}`);
-          return r.json();
-        })
-        .then((data) => {
-          if (controller.signal.aborted) return;
-          if (data.milkSource) {
-            document.dispatchEvent(
-              new CustomEvent('stims:editor:source-change', {
-                detail: {
-                  source: data.milkSource,
-                  title: data.title || mood.label,
-                },
-              }),
-            );
-            ui.setStatusMessage(
-              `Generated ${mood.label} preset. Opening editor.`,
-            );
-            ui.updatePanel('editor');
-          }
-        })
-        .catch((err) => {
-          if (err.name === 'AbortError') return;
-          ui.setStatusMessage('Preset generation failed. Try again.');
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setGeneratingMood(null);
-        });
-    },
-    [ui],
-  );
+  const {
+    generatingMood,
+    generate: handleMoodGenerate,
+    cancel: cancelMoodGeneration,
+    retry: retryMoodGeneration,
+    canRetry: canRetryMoodGeneration,
+  } = useMoodPresetGeneration({
+    offline: typeof navigator !== 'undefined' && !navigator.onLine,
+    setStatusMessage: ui.setStatusMessage,
+    openEditor: () => ui.updatePanel('editor'),
+  });
 
   const handleMoreLikeThis = async () => {
     const canvas = ui.stageRef.current?.querySelector(
@@ -366,6 +322,19 @@ export function StimsControlDock({
             <button
               type="button"
               className="stims-shell__stage-tool"
+              aria-label="Go back to the previous preset"
+              title="Go back to the previous preset"
+              onClick={engine.handlePreviousPreset}
+            >
+              <UiIcon
+                name="arrow-left"
+                className="stims-shell__stage-tool-icon stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className="stims-shell__stage-tool-label">Back</span>
+            </button>
+            <button
+              type="button"
+              className="stims-shell__stage-tool"
               aria-label="Find presets that look similar"
               title="Find presets that look similar"
               disabled={!runtimeReady || similarLoading}
@@ -429,6 +398,25 @@ export function StimsControlDock({
                     </span>
                   </button>
                 ))}
+                {generatingMood ? (
+                  <button
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    onClick={cancelMoodGeneration}
+                  >
+                    <span className="stims-shell__stage-tool-label">
+                      Cancel
+                    </span>
+                  </button>
+                ) : canRetryMoodGeneration ? (
+                  <button
+                    type="button"
+                    className="stims-shell__stage-tool"
+                    onClick={retryMoodGeneration}
+                  >
+                    <span className="stims-shell__stage-tool-label">Retry</span>
+                  </button>
+                ) : null}
               </fieldset>
             </>
           ) : null}

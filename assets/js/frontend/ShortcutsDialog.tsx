@@ -1,5 +1,13 @@
 import type { RefObject } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  getShortcutKeys,
+  readShortcutOverrides,
+  SHORTCUT_REGISTRY,
+  type ShortcutActionId,
+  type ShortcutOverrides,
+  writeShortcutOverrides,
+} from './shortcut-registry.ts';
 
 export function ShortcutsDialog({
   open,
@@ -10,6 +18,14 @@ export function ShortcutsDialog({
   onClose: () => void;
   shortcutsRef: RefObject<HTMLDivElement | null>;
 }) {
+  const [overrides, setOverrides] = useState<ShortcutOverrides>({});
+  const [editing, setEditing] = useState<ShortcutActionId | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setOverrides(readShortcutOverrides());
+  }, [open]);
+
   useEffect(() => {
     if (!open || !shortcutsRef.current) return;
     const focusable = shortcutsRef.current.querySelectorAll<HTMLElement>(
@@ -19,6 +35,34 @@ export function ShortcutsDialog({
   }, [open, shortcutsRef]);
 
   if (!open) return null;
+
+  const saveOverride = (actionId: ShortcutActionId, rawValue: string) => {
+    const def = SHORTCUT_REGISTRY.find((entry) => entry.id === actionId);
+    if (!def?.configurable && def?.configurable !== undefined) return;
+    const keys = rawValue
+      .split(',')
+      .map((key) => key.trim())
+      .filter(Boolean);
+    const normalized = keys.map((key) => key.toLowerCase());
+    const conflict = SHORTCUT_REGISTRY.find(
+      (entry) =>
+        entry.id !== actionId &&
+        getShortcutKeys(entry.id, overrides).some((key) =>
+          normalized.includes(key.toLowerCase()),
+        ),
+    );
+    if (conflict) {
+      setWarning(
+        `Shortcut already used by ${conflict.label}. Choose another key.`,
+      );
+      return;
+    }
+    const next = { ...overrides, [actionId]: keys };
+    setOverrides(next);
+    writeShortcutOverrides(next);
+    setEditing(null);
+    setWarning(null);
+  };
 
   return (
     <div
@@ -58,31 +102,49 @@ export function ShortcutsDialog({
         role="presentation"
       >
         <h2>Keyboard shortcuts</h2>
-        <div className="stims-shell__shortcut-grid">
-          <kbd>Space</kbd>
-          <span>Demo audio</span>
-          <kbd>F</kbd>
-          <span>Fullscreen</span>
-          <kbd>B</kbd>
-          <span>Browse panel</span>
-          <kbd>S</kbd>
-          <span>Settings</span>
-          <kbd>E</kbd>
-          <span>Editor</span>
-          <kbd>I</kbd>
-          <span>Inspector</span>
-          <kbd>N / →</kbd>
-          <span>Shuffle preset</span>
-          <kbd>P / ←</kbd>
-          <span>Previous preset</span>
-          <kbd>1–9</kbd>
-          <span>Quick-select preset</span>
-          <kbd>?</kbd>
-          <span>This help</span>
-          <kbd>Esc</kbd>
-          <span>Close panels / dismiss</span>
-          <kbd>Cmd+Enter</kbd>
-          <span>Compile in editor</span>
+        {warning ? (
+          <p className="stims-shell__meta-copy" role="alert">
+            {warning}
+          </p>
+        ) : null}
+        <div className="stims-shell__shortcut-grid stims-shell__shortcut-grid--editable">
+          {SHORTCUT_REGISTRY.map((shortcut) => (
+            <div className="stims-shell__shortcut-row" key={shortcut.id}>
+              <kbd>{getShortcutKeys(shortcut.id, overrides).join(' / ')}</kbd>
+              <span>{shortcut.label}</span>
+              {shortcut.configurable === false ? null : editing ===
+                shortcut.id ? (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const form = event.currentTarget;
+                    const data = new FormData(form);
+                    saveOverride(shortcut.id, String(data.get('keys') ?? ''));
+                  }}
+                >
+                  <input
+                    className="stims-shell__input"
+                    name="keys"
+                    defaultValue={getShortcutKeys(shortcut.id, overrides).join(
+                      ', ',
+                    )}
+                    aria-label={`Shortcut keys for ${shortcut.label}`}
+                  />
+                  <button type="submit" className="stims-shell__text-button">
+                    Save
+                  </button>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  className="stims-shell__text-button"
+                  onClick={() => setEditing(shortcut.id)}
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+          ))}
         </div>
         <button type="button" className="cta-button ghost" onClick={onClose}>
           Close
