@@ -13,6 +13,7 @@ import {
   TextureLoader,
   UnsignedByteType,
   Vector2,
+  Vector4,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' is available at runtime but not under the repo's current moduleResolution.
 import { RenderTarget, TSL } from 'three/webgpu';
@@ -140,6 +141,7 @@ export function getSharedMilkdropTexturePlaceholder() {
   return sharedMilkdropTexturePlaceholder;
 }
 
+export const MILKDROP_NOISE_VOLUME_SIZE = AUX_TEXTURE_ATLAS_SLICE_COUNT;
 export function bindCustomMilkdropSamplerTexture(
   name: string,
   textureFile: string | null,
@@ -402,6 +404,17 @@ export function createCompositeUniforms(
     signalTime: uniform(0),
     decay: uniform(0.98),
     texelSize: uniform(new Vector2(1, 1)),
+    texsize: uniform(new Vector4(1, 1, 1, 1)),
+    texsizeNoiseLq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
+    texsizeNoiseHq: uniform(new Vector4(256, 256, 1 / 256, 1 / 256)),
+    texsizeNoisevolHq: uniform(
+      new Vector4(
+        MILKDROP_NOISE_VOLUME_SIZE,
+        MILKDROP_NOISE_VOLUME_SIZE,
+        1 / MILKDROP_NOISE_VOLUME_SIZE,
+        1 / MILKDROP_NOISE_VOLUME_SIZE,
+      ),
+    ),
   } satisfies CompositeUniformBag;
 }
 
