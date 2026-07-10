@@ -66,6 +66,58 @@ export {
 } from './shader-analysis-evaluation';
 export { buildUnsupportedVolumeSamplerWarnings } from './shader-analysis-helpers';
 
+function extractNativeShaderBody(shaderText: string) {
+  const marker = shaderText.toLowerCase().indexOf('shader_body');
+  if (marker < 0) {
+    return null;
+  }
+  const openBrace = shaderText.indexOf('{', marker);
+  if (openBrace < 0) {
+    return null;
+  }
+  const prefix = shaderText.slice(0, marker);
+  const declarations = prefix
+    .split(/[\r\n;]+/u)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('uniform '))
+    .filter((line) =>
+      /^(?:float|int|bool|vec[234]|mat[234])\s+[a-z_][a-z0-9_]*(?:\s*=.+)?$/iu.test(
+        line,
+      ),
+    )
+    .map((line) => `  ${line};`);
+  const body = shaderText
+    .slice(openBrace + 1)
+    .replace(/;\s*}\s*;?\s*$/, '')
+    .replace(/}\s*;?\s*$/, '')
+    .replace(/\btexture\s*\(/giu, 'texture2D(')
+    .replace(/\buint\s*\(([^)]+)\)/giu, 'int($1)')
+    .replace(/\b(\d+)u\b/giu, '$1')
+    .replace(/\bsampler_main\b/giu, 'currentTex')
+    .replace(/\bsampler_pc_main\b/giu, 'previousTex')
+    .replace(/\bsampler_pw_main\b/giu, 'previousTex')
+    .replace(/\bsampler_fc_main\b/giu, 'warpTex')
+    .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
+    .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
+    .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
+    .replace(
+      /\bsampler_noise_lq\b|\bsampler_noise_mq\b|\bsampler_noise_hq\b|\bsampler_pw_noise_lq\b/giu,
+      'noiseTex',
+    )
+    .replace(/\bsampler_noisevol_hq\b|\bsampler_noisevol_lq\b/giu, 'simplexTex')
+    .replace(
+      /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_hq\b/giu,
+      'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
+    )
+    .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
+    .replace(/\baspect\b/giu, 'vec4(1.0, 1.0, 1.0, 1.0)')
+    .replace(/\btime\b/giu, 'signalTime')
+    .replace(/\bbass_att\b|\bbass\b/giu, 'signalBass')
+    .replace(/\bmid_att\b|\bmid\b/giu, 'signalMid')
+    .replace(/\btreb_att\b|\btreb\b/giu, 'signalTreb');
+  return [...declarations, body].join('\n');
+}
+
 function applyShaderAstStatement({
   statement,
   controls,
@@ -1152,6 +1204,20 @@ export function extractShaderControls(
       directProgramStatements: [],
       directProgramLines: [],
       directProgramRequired: false,
+    };
+  }
+
+  const nativeShaderBody = extractNativeShaderBody(shaderText);
+  if (nativeShaderBody) {
+    return {
+      controls: createDefaultShaderControls(),
+      expressions: createDefaultShaderControlExpressions(),
+      unsupportedLines: [],
+      supported: true,
+      statements: [],
+      directProgramStatements: [],
+      directProgramLines: [nativeShaderBody],
+      directProgramRequired: true,
     };
   }
 

@@ -30,12 +30,14 @@ export function buildShaderProgramPayload({
   normalizedLines,
   requiresControlFallback,
   supportedBackends,
+  rawGlsl,
 }: {
   stage: MilkdropShaderProgramStage;
   statements: MilkdropShaderStatement[];
   normalizedLines: string[];
   requiresControlFallback: boolean;
   supportedBackends: MilkdropRenderBackend[];
+  rawGlsl?: string;
 }): MilkdropShaderProgramPayload {
   const hasTranslatedControlFallback = statements.some((statement) =>
     shouldUseTranslatedControlsForDirectAuxSample(statement),
@@ -53,6 +55,7 @@ export function buildShaderProgramPayload({
     source: normalizedLines.join('; '),
     normalizedLines,
     statements: programStatements,
+    ...(rawGlsl ? { rawGlsl } : {}),
     execution: {
       kind: 'direct-feedback-program',
       stage,
