@@ -158,7 +158,7 @@ const historyEditorKeymap = historyKeymap as readonly KeyBinding[];
 const indentWithTabKeybinding = indentWithTab as KeyBinding;
 
 const EDITOR_FLOW_TIPS = [
-  'Queued edits patch the stage after 220ms of calm typing.',
+  'Queued edits patch the stage after 120ms of calm typing.',
   'Cmd/Ctrl+Enter punches the current draft in immediately.',
   'Compiler errors keep the last stable frame visible while you recover.',
 ] as const;
@@ -407,7 +407,7 @@ function createEditorView({
           debounceId = window.setTimeout(() => {
             debounceId = null;
             onDocChange(update.state.doc.toString());
-          }, 220);
+          }, 120);
         }),
       ],
     }),
@@ -487,7 +487,7 @@ export class EditorPanel {
     this.editorLiveBadge = document.createElement('span');
     this.editorLiveBadge.className =
       'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--live';
-    this.editorLiveBadge.textContent = 'Auto 220ms';
+    this.editorLiveBadge.textContent = 'Auto 120ms';
     this.editorSyncBadge = document.createElement('span');
     this.editorSyncBadge.className =
       'milkdrop-overlay__editor-badge milkdrop-overlay__editor-badge--sync';
@@ -910,7 +910,7 @@ export class EditorPanel {
     this.editorStatus.hidden = !shouldShowStatus;
     this.editorLiveBadge.textContent = hasErrors
       ? 'Last good frame'
-      : 'Auto 220ms';
+      : 'Auto 120ms';
     this.editorLiveBadge.dataset.tone = hasErrors ? 'warning' : 'accent';
     this.editorLiveBadge.hidden = false;
     this.editorSyncBadge.textContent = this.hasBufferedEdits

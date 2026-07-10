@@ -25,8 +25,8 @@ const DESKTOP_MAX_CAPTURE_WIDTH = 960;
 const DESKTOP_MAX_CAPTURE_HEIGHT = 540;
 const MOBILE_MAX_CAPTURE_WIDTH = 640;
 const MOBILE_MAX_CAPTURE_HEIGHT = 360;
-const DESKTOP_FALLBACK_CAPTURE_FPS = 30;
-const MOBILE_FALLBACK_CAPTURE_FPS = 15;
+const DESKTOP_FALLBACK_CAPTURE_FPS = 60;
+const MOBILE_FALLBACK_CAPTURE_FPS = 24;
 
 export function resolveCapturedVideoLimits(isMobile = isMobileDevice()) {
   return isMobile

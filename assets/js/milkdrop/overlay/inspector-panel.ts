@@ -420,7 +420,7 @@ export class InspectorPanel {
       typeof performance !== 'undefined' ? performance.now() : Date.now();
     if (
       metricsSignature === this.lastMetricsSignature &&
-      now - this.lastMetricsRenderAt < 240
+      now - this.lastMetricsRenderAt < 120
     ) {
       this.syncSceneSelectionSummary();
       return;

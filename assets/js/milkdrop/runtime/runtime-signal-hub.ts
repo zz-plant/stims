@@ -21,7 +21,7 @@ export function createMilkdropRuntimeSignalHub<TSnapshot>({
     deferredCatalogSyncTimeoutId = null;
   };
 
-  const scheduleDeferredCatalogSync = (delayMs = 180) => {
+  const scheduleDeferredCatalogSync = (delayMs = 48) => {
     clearDeferredCatalogSync();
     deferredCatalogSyncTimeoutId = window.setTimeout(() => {
       deferredCatalogSyncTimeoutId = null;
