@@ -1,4 +1,7 @@
 import { expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type { MilkdropBundledCatalogEntry } from '../assets/js/milkdrop/types.ts';
 import catalogJson from '../public/milkdrop-presets/catalog.json' with {
   type: 'json',
@@ -10,7 +13,7 @@ type BundledCatalogDocument = {
 
 const catalog = catalogJson as BundledCatalogDocument;
 
-const shaderDependentPresetIds = [
+const nativeShaderPresetIds = [
   'martin-anandamide-mandelbox-explorer-quantum-timepiece-remix',
   'martin-elusive-impressions-mix2-flacc-mess-proph-nz-2',
   'martin-city-of-shadows',
@@ -18,27 +21,59 @@ const shaderDependentPresetIds = [
   'martin-castle-in-the-air',
 ];
 
-test('known shader-text-dependent presets are conservatively classified', () => {
-  for (const presetId of shaderDependentPresetIds) {
+test('known native shader-text presets are no longer cataloged as fallback compile-only', () => {
+  for (const presetId of nativeShaderPresetIds) {
     const preset = catalog.presets.find((entry) => entry.id === presetId);
 
     expect(preset, presetId).toBeDefined();
-    expect(preset?.expectedFidelityClass).toBe('fallback');
-    expect(preset?.visualEvidenceTier).toBe('compile');
-    expect(preset?.supports).toEqual({ webgl: false, webgpu: false });
-    expect(preset?.tags).toContain('shader-text-dependent');
-    expect(preset?.tags).toContain('compatibility-fallback');
+    expect(preset?.expectedFidelityClass).not.toBe('fallback');
+    expect(preset?.visualEvidenceTier).not.toBe('compile');
+    expect(preset?.supports).toEqual({ webgl: true, webgpu: true });
+    expect(preset?.tags ?? []).not.toContain('compatibility-fallback');
     expect(preset?.visualCertification).toMatchObject({
       status: 'uncertified',
       measured: false,
       source: 'inferred',
-      fidelityClass: 'fallback',
-      visualEvidenceTier: 'compile',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'runtime',
       requiredBackend: 'webgpu',
       actualBackend: null,
     });
-    expect(preset?.visualCertification?.reasons.join(' ')).toContain(
-      'shader-text',
+  }
+});
+
+test('known native shader-text presets compile to direct shader-text programs', () => {
+  for (const presetId of nativeShaderPresetIds) {
+    const source = readFileSync(
+      join(
+        process.cwd(),
+        'public',
+        'milkdrop-presets',
+        'butterchurn',
+        `${presetId}.milk`,
+      ),
+      'utf8',
     );
+    const compiled = compileMilkdropPresetSource(source, {
+      id: presetId,
+      origin: 'bundled',
+    });
+
+    expect(compiled.ir.shaderText.supported, presetId).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines, presetId).toEqual([]);
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+      presetId,
+    ).toEqual({ webgl: 'direct', webgpu: 'direct' });
+    expect(compiled.ir.compatibility.backends.webgl.status, presetId).not.toBe(
+      'fallback',
+    );
+    expect(compiled.ir.compatibility.backends.webgpu.status, presetId).not.toBe(
+      'fallback',
+    );
+    expect(
+      compiled.ir.shaderText.warpProgram || compiled.ir.shaderText.compProgram,
+      presetId,
+    ).not.toBeNull();
   }
 });

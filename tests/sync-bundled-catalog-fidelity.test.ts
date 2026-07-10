@@ -133,7 +133,7 @@ test('measured bundled presets keep certified visual fidelity in the published c
   ]);
 });
 
-test('shader-text-dependent presets keep conservative fallback metadata during sync', () => {
+test('unmeasured native shader-text presets sync to runtime fidelity like other supported presets', () => {
   expect(
     syncBundledCatalogPresetFidelity(
       {
@@ -148,19 +148,18 @@ test('shader-text-dependent presets keep conservative fallback metadata during s
     ),
   ).toMatchObject({
     id: 'martin-tunnel-race',
-    tags: ['shader-text-dependent', 'compatibility-fallback'],
-    expectedFidelityClass: 'fallback',
-    visualEvidenceTier: 'compile',
-    supports: { webgl: false, webgpu: false },
+    expectedFidelityClass: 'partial',
+    visualEvidenceTier: 'runtime',
+    supports: { webgl: true, webgpu: true },
     visualCertification: {
       status: 'uncertified',
       measured: false,
       source: 'inferred',
-      fidelityClass: 'fallback',
-      visualEvidenceTier: 'compile',
+      fidelityClass: 'partial',
+      visualEvidenceTier: 'runtime',
       requiredBackend: 'webgpu',
       actualBackend: null,
-      reasons: expect.arrayContaining([expect.stringContaining('shader text')]),
+      reasons: ['No measured WebGPU reference capture is recorded yet.'],
     },
   });
 });
