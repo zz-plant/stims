@@ -1,3 +1,4 @@
+import { recordRendererOptimizationTelemetry } from '../core/renderer-capabilities.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import { createMilkdropWebGLFeedbackManager } from './feedback-manager-webgl.ts';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
@@ -8,7 +9,10 @@ import {
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags.ts';
-import { shouldUseSafeMilkdropWebGpuPath } from './webgpu-query-override.ts';
+import {
+  resolveMilkdropWebGpuFeatureRouting,
+  shouldUseSafeMilkdropWebGpuPath,
+} from './webgpu-query-override.ts';
 
 export type MilkdropWebGPURendererAdapterConfig = Omit<
   MilkdropRendererAdapterConfig,
@@ -25,15 +29,29 @@ const WEBGPU_BEHAVIOR = {
 function buildSafeWebGpuOptimizationFlags(
   flags: MilkdropWebGpuOptimizationFlags | undefined,
 ): MilkdropWebGpuOptimizationFlags {
+  const featureRouting = resolveMilkdropWebGpuFeatureRouting();
+  for (const [featureName, decision] of Object.entries(featureRouting)) {
+    if (!decision.enabled) {
+      recordRendererOptimizationTelemetry({
+        counter: 'milkdropWebGpuFeatureDisabled',
+      });
+      console.info(
+        `[Stims] MilkDrop WebGPU ${featureName} disabled: ${decision.reason}`,
+      );
+    }
+  }
+
   return {
     ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
     ...flags,
-    proceduralMainWave: false,
-    proceduralTrailWaves: false,
-    proceduralCustomWaves: false,
-    proceduralMesh: false,
-    proceduralMotionVectors: false,
-    directFeedbackShaders: false,
+    proceduralMainWave: featureRouting.proceduralMainWave.enabled,
+    proceduralTrailWaves: featureRouting.proceduralTrailWaves.enabled,
+    proceduralCustomWaves: featureRouting.proceduralCustomWaves.enabled,
+    proceduralMesh: featureRouting.proceduralMesh.enabled,
+    proceduralMotionVectors: featureRouting.proceduralMotionVectors.enabled,
+    directFeedbackShaders: featureRouting.directFeedbackShaders.enabled,
+    gpuComputeVM: featureRouting.gpuComputeVM.enabled,
+    renderBundles: featureRouting.renderBundles.enabled,
   };
 }
 

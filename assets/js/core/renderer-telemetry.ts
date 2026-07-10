@@ -43,6 +43,7 @@ function installRendererSupportTelemetry() {
         lastPreferredCanvasFormat: detail.webgpu?.preferredCanvasFormat ?? null,
         lastPerformanceTier: detail.webgpu?.performanceTier ?? null,
         lastOptimizationSupport: detail.webgpu?.optimization ?? null,
+        lastRetryPolicy: detail.retry,
         optimizationCounters:
           existing.optimizationCounters &&
           typeof existing.optimizationCounters === 'object'
