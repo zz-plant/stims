@@ -134,19 +134,79 @@ export function StimsControlDock({
     '--stims-audio-glow',
     energyNorm,
   );
+  const dockWrapRef = useRef<HTMLDivElement>(null);
 
   const { visible, signalActivity } = useAutoHideActivity(3000, false);
+  const [focusInsideDock, setFocusInsideDock] = useState(false);
+  const similarResultsOpen =
+    similarLoading ||
+    similarError ||
+    (similarSearched && similarPresets.length === 0) ||
+    similarPresets.length > 0;
+  const pauseAutoHide =
+    showMore || showMoods || similarResultsOpen || focusInsideDock;
+  const dockVisible = visible || pauseAutoHide;
+  const wasPausedRef = useRef(pauseAutoHide);
+  const focusOutTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const handleMove = () => signalActivity();
-    document.addEventListener('mousemove', handleMove, { passive: true });
-    return () => document.removeEventListener('mousemove', handleMove);
+    const passiveOptions = { passive: true };
+    const handleActivity = () => signalActivity();
+    const handleFocusIn = (event: FocusEvent) => {
+      if (dockWrapRef.current?.contains(event.target as Node | null)) {
+        setFocusInsideDock(true);
+        signalActivity();
+      }
+    };
+    const handleFocusOut = () => {
+      if (focusOutTimerRef.current) {
+        window.clearTimeout(focusOutTimerRef.current);
+      }
+      focusOutTimerRef.current = window.setTimeout(() => {
+        const activeElement = document.activeElement;
+        focusOutTimerRef.current = null;
+        if (!dockWrapRef.current?.contains(activeElement)) {
+          setFocusInsideDock(false);
+          signalActivity();
+        }
+      }, 0);
+    };
+
+    document.addEventListener('mousemove', handleActivity, passiveOptions);
+    document.addEventListener('pointerdown', handleActivity, passiveOptions);
+    document.addEventListener('pointermove', handleActivity, passiveOptions);
+    document.addEventListener('wheel', handleActivity, passiveOptions);
+    document.addEventListener('keydown', handleActivity);
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      if (focusOutTimerRef.current) {
+        window.clearTimeout(focusOutTimerRef.current);
+        focusOutTimerRef.current = null;
+      }
+      document.removeEventListener('mousemove', handleActivity);
+      document.removeEventListener('pointerdown', handleActivity);
+      document.removeEventListener('pointermove', handleActivity);
+      document.removeEventListener('wheel', handleActivity);
+      document.removeEventListener('keydown', handleActivity);
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
   }, [signalActivity]);
+
+  useEffect(() => {
+    if (wasPausedRef.current && !pauseAutoHide) {
+      signalActivity();
+    }
+    wasPausedRef.current = pauseAutoHide;
+  }, [pauseAutoHide, signalActivity]);
 
   return (
     <div
+      ref={dockWrapRef}
       className="stims-shell__stage-dock-wrap"
-      data-visible={String(visible)}
+      data-visible={String(dockVisible)}
     >
       {runtimeReady && presetTitle ? (
         <div className="stims-shell__now-playing">
