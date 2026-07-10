@@ -58,7 +58,7 @@ describe('launch shell skip-to-visualizer flow', () => {
       /\{liveMode \? \(\s*<MobileControlBar[\s\S]*?\) : null\}/u,
     );
     expect(mobileBarSource).toMatch(
-      /<>\s*<div className=\{styles\.bar\}[\s\S]*?<\/div>\s*\{!visible \? \(/u,
+      /<>\s*<div[\s\S]*?className=\{`\$\{styles\.bar\} mc-bar`\}[\s\S]*?<\/div>\s*\{!visible \? \(/u,
     );
     expect(mobileBarSource).toContain('const MOBILE_CONTROL_IDLE_MS = 4_000;');
     expect(mobileBarSource).toContain('ui.updatePanel(null);');
