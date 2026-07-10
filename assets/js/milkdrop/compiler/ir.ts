@@ -16,6 +16,7 @@ import type {
   MilkdropVisualCertification,
   MilkdropWaveDefinition,
 } from '../types';
+import { extractCustomSamplerDeclarations } from './custom-samplers';
 import type { buildWebGpuDescriptorPlan } from './gpu-descriptor-plan';
 import type {
   buildBackendSupport,
@@ -697,6 +698,25 @@ export function createMilkdropIr({
         `Unsupported feature "${feature}" from preset field "${key}": ${message}`,
     ),
   ];
+  const customSamplers = [
+    ...extractCustomSamplerDeclarations(warpShaderText),
+    ...extractCustomSamplerDeclarations(compShaderText),
+    ...extractCustomSamplerDeclarations(ast.source),
+  ].filter(
+    (sampler, index, samplers) =>
+      samplers.findIndex((candidate) => candidate.name === sampler.name) ===
+      index,
+  );
+  customSamplers
+    .filter((sampler) => sampler.textureFile === null)
+    .forEach((sampler) => {
+      fieldHelpers.addDiagnostic(
+        diagnostics,
+        'warning',
+        'preset_missing_custom_sampler_texture',
+        `Custom shader sampler "${sampler.name}" does not match a bundled MilkDrop texture asset.`,
+      );
+    });
   const unsupportedVolumeSamplerWarnings =
     shaderHelpers.buildUnsupportedVolumeSamplerWarnings(
       mergedShaderControls.controls,
@@ -946,6 +966,7 @@ export function createMilkdropIr({
       unsupportedLines: approximatedShaderLines,
       controls: mergedShaderControls.controls,
       controlExpressions: mergedShaderControls.expressions,
+      customSamplers,
     },
     borders: {
       outer: {

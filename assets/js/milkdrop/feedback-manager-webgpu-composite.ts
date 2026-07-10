@@ -77,6 +77,11 @@ const AUX_TEXTURE_SPECS = {
 
 type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
 type SharedAuxTextureName = AuxTextureName | 'video';
+export type MilkdropCustomSamplerTextureBinding = {
+  name: string;
+  textureFile: string;
+  texture: Texture;
+};
 
 const sharedMilkdropTextureCache = new Map<string, Texture>();
 const milkdropTextureLoader = new TextureLoader();
@@ -133,6 +138,18 @@ export function getSharedMilkdropTexture(
 
 export function getSharedMilkdropTexturePlaceholder() {
   return sharedMilkdropTexturePlaceholder;
+}
+
+export function bindCustomMilkdropSamplerTexture(
+  name: string,
+  textureFile: string | null,
+): MilkdropCustomSamplerTextureBinding | null {
+  if (!textureFile) return null;
+  return {
+    name,
+    textureFile,
+    texture: getSharedMilkdropTexture(textureFile, true),
+  };
 }
 
 let sharedSimplex3dTexture: Data3DTexture | null = null;

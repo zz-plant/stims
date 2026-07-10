@@ -390,6 +390,11 @@ export type MilkdropPostEffects = {
   videoEchoOrientation: MilkdropVideoEchoOrientation;
 };
 
+export type MilkdropCustomSamplerDeclaration = {
+  name: string;
+  textureFile: string | null;
+};
+
 export type MilkdropPresetIR = {
   title: string;
   author?: string;
@@ -417,6 +422,7 @@ export type MilkdropPresetIR = {
     unsupportedLines: string[];
     controls: MilkdropShaderControls;
     controlExpressions: MilkdropShaderControlExpressions;
+    customSamplers: MilkdropCustomSamplerDeclaration[];
   };
   post: MilkdropPostEffects;
   compatibility: MilkdropCompatibilityReport;
