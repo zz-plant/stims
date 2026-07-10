@@ -84,62 +84,67 @@ export function WorkspaceStagePanel({
           </div>
           {liveMode ? (
             <div className="stims-shell__frame-sidecar">
-              <button
-                type="button"
-                className="stims-shell__text-button stims-shell__audio-bridge-link"
-                onClick={engine.handleAudioStop}
-              >
-                ← Back to library
-              </button>
-              {audioSource === 'demo' ? (
+              <div className="stims-shell__frame-sidecar-actions">
                 <button
                   type="button"
                   className="stims-shell__text-button stims-shell__audio-bridge-link"
-                  style={{ marginLeft: 12 }}
-                  onClick={ui.toggleExtendedSources}
+                  onClick={engine.handleAudioStop}
                 >
-                  {ui.showExtendedSources
-                    ? 'Hide sources'
-                    : 'Switch to your music \u2192'}
+                  ← Back to library
                 </button>
-              ) : null}
-              <button
-                type="button"
-                className="stims-shell__text-button stims-shell__shortcuts-trigger"
-                style={{ marginLeft: 12 }}
-                onClick={() =>
-                  window.dispatchEvent(new CustomEvent('stims:shortcuts:open'))
-                }
-              >
-                Shortcuts
-              </button>
+                {audioSource === 'demo' ? (
+                  <button
+                    type="button"
+                    className="stims-shell__text-button stims-shell__audio-bridge-link"
+                    onClick={ui.toggleExtendedSources}
+                  >
+                    {ui.showExtendedSources
+                      ? 'Hide sources'
+                      : 'Switch to your music \u2192'}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="stims-shell__text-button stims-shell__shortcuts-trigger"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent('stims:shortcuts:open'),
+                    )
+                  }
+                >
+                  Shortcuts
+                </button>
+              </div>
               {audioSource === 'demo' && ui.showExtendedSources ? (
                 <AudioSourcePanel />
               ) : null}
             </div>
           ) : (
             <div className="stims-shell__frame-sidecar">
-              {audioSource === 'demo' ? (
+              <div className="stims-shell__frame-sidecar-actions">
+                {audioSource === 'demo' ? (
+                  <button
+                    type="button"
+                    className="stims-shell__text-button stims-shell__audio-bridge-link"
+                    onClick={ui.toggleExtendedSources}
+                  >
+                    {ui.showExtendedSources
+                      ? 'Hide sources'
+                      : 'Switch to your music \u2192'}
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  className="stims-shell__text-button stims-shell__audio-bridge-link"
-                  onClick={ui.toggleExtendedSources}
+                  className="stims-shell__text-button stims-shell__shortcuts-trigger"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent('stims:shortcuts:open'),
+                    )
+                  }
                 >
-                  {ui.showExtendedSources
-                    ? 'Hide sources'
-                    : 'Switch to your music \u2192'}
+                  Shortcuts
                 </button>
-              ) : null}
-              <button
-                type="button"
-                className="stims-shell__text-button stims-shell__shortcuts-trigger"
-                style={{ marginLeft: 12 }}
-                onClick={() =>
-                  window.dispatchEvent(new CustomEvent('stims:shortcuts:open'))
-                }
-              >
-                Shortcuts
-              </button>
+              </div>
               {audioSource === 'demo' && ui.showExtendedSources ? (
                 <AudioSourcePanel />
               ) : null}

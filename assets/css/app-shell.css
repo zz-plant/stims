@@ -1419,6 +1419,13 @@ body[data-page="workspace"] {
     pointer-events: auto;
   }
 
+  .stims-shell__frame-sidecar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 12px;
+  }
+
   .stims-shell__rail-actions {
     display: flex;
     flex-wrap: nowrap;
@@ -2651,6 +2658,10 @@ body[data-page="workspace"] {
       justify-items: start;
     }
 
+    .stims-shell__frame-sidecar-actions {
+      justify-content: flex-start;
+    }
+
     .stims-shell__stage-hero {
       width: min(46rem, calc(100% - 64px));
     }
@@ -3060,6 +3071,10 @@ body[data-page="workspace"] {
     .stims-shell__rail-actions,
     .stims-shell__frame-sidecar {
       justify-items: start;
+    }
+
+    .stims-shell__frame-sidecar-actions {
+      justify-content: flex-start;
     }
 
     .stims-shell__rail-actions {
