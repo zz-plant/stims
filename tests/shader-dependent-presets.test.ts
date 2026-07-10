@@ -1,4 +1,6 @@
 import { expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { MilkdropBundledCatalogEntry } from '../assets/js/milkdrop/types.ts';
 import catalogJson from '../public/milkdrop-presets/catalog.json' with {
   type: 'json',
@@ -41,4 +43,25 @@ test('known shader-text-dependent presets are conservatively classified', () => 
       'shader-text',
     );
   }
+});
+
+test('elusive impressions fixture exercises MilkDrop volume-noise shader text without certification upgrade', () => {
+  const presetId = 'martin-elusive-impressions-mix2-flacc-mess-proph-nz-2';
+  const preset = catalog.presets.find((entry) => entry.id === presetId);
+  const source = readFileSync(
+    join(
+      import.meta.dir,
+      '../public/milkdrop-presets/butterchurn/martin-elusive-impressions-mix2-flacc-mess-proph-nz-2.milk',
+    ),
+    'utf8',
+  );
+
+  expect(source).toContain('texture (sampler_noisevol_hq,');
+  expect(source).toContain('texsize_noisevol_hq.zww');
+  expect(preset?.supports).toEqual({ webgl: false, webgpu: false });
+  expect(preset?.visualCertification).toMatchObject({
+    status: 'uncertified',
+    measured: false,
+    source: 'inferred',
+  });
 });

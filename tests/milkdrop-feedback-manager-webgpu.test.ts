@@ -36,6 +36,12 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       canonicalSource: 'simplex',
       sourceId: 2,
     });
+    expect(
+      resolveDirectShaderSamplerBinding('sampler_noisevol_hq', '3d'),
+    ).toEqual({
+      canonicalSource: 'simplex',
+      sourceId: 2,
+    });
     expect(resolveDirectShaderSamplerBinding('sampler_perlin', '2d')).toEqual({
       canonicalSource: 'perlin',
       sourceId: 1,
