@@ -410,11 +410,6 @@ html.light {
   background: var(--bg-color);
 }
 
-/* ── Explicit Dark Mode Override ──────────────────────────────────── */
-html.dark {
-  color-scheme: dark;
-}
-
 /* ── Reduced Motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   :root {

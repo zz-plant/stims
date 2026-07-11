@@ -164,15 +164,23 @@
 .handle {
   display: flex;
   justify-content: center;
-  padding: 10px 0 6px;
+  padding: 12px 0 6px;
   flex-shrink: 0;
 }
 
 .handleBar {
-  width: 36px;
+  width: 40px;
   height: 5px;
   border-radius: var(--radius-pill);
   background: var(--stims-white-12);
+  transition:
+    width 0.2s ease,
+    background 0.2s ease;
+}
+
+.handle:hover .handleBar {
+  width: 52px;
+  background: var(--stims-white-18);
 }
 
 .header {
@@ -232,6 +240,17 @@
 .closeButton:hover {
   background: var(--stims-control-fill-hover);
   border-color: var(--stims-line-strong);
+  transform: scale(1.04);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+  transition-duration: 60ms;
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--stims-accent);
+  outline-offset: 2px;
 }
 
 .tabs {
@@ -263,7 +282,20 @@
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease;
+}
+
+.tab:hover {
+  background: var(--stims-white-06);
+  color: var(--stims-ink);
+  transform: translateY(-1px);
+}
+
+.tab:active {
+  transform: scale(0.96);
+  transition-duration: 60ms;
 }
 
 .tab[data-active="true"] {
@@ -274,6 +306,10 @@
   );
   color: #091114;
   border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 0 12px rgba(244, 122, 84, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+  font-weight: 700;
 }
 
 .body {
