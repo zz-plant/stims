@@ -552,6 +552,16 @@ export function createMilkdropIr({
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const warpShaderReferencesFeedbackComposite = /\bsampler_fc_main\b/iu.test(
+    warpShaderText ?? '',
+  );
+  const compShaderReferencesFeedbackComposite = /\bsampler_fc_main\b/iu.test(
+    compShaderText ?? '',
+  );
+  const shaderReferencesFeedbackComposite =
+    warpShaderReferencesFeedbackComposite ||
+    compShaderReferencesFeedbackComposite;
+
   const warpShaderProgram = shaderWarpAnalysis.directProgramRequired
     ? shaderHelpers.buildShaderProgramPayload({
         stage: 'warp',
@@ -562,7 +572,9 @@ export function createMilkdropIr({
           shaderWarpAnalysis.statements.length,
         supportedBackends:
           shaderWarpAnalysis.unsupportedLines.length === 0
-            ? ['webgl', 'webgpu']
+            ? warpShaderReferencesFeedbackComposite
+              ? ['webgl']
+              : ['webgl', 'webgpu']
             : [],
         rawGlsl:
           shaderWarpAnalysis.directProgramStatements.length === 0
@@ -580,7 +592,9 @@ export function createMilkdropIr({
           shaderCompAnalysis.statements.length,
         supportedBackends:
           shaderCompAnalysis.unsupportedLines.length === 0
-            ? ['webgl', 'webgpu']
+            ? compShaderReferencesFeedbackComposite
+              ? ['webgl']
+              : ['webgl', 'webgpu']
             : [],
         rawGlsl:
           shaderCompAnalysis.directProgramStatements.length === 0
@@ -738,16 +752,12 @@ export function createMilkdropIr({
       message,
     );
   });
-  if (
-    /\bsampler_fc_main\b/iu.test(
-      `${warpShaderText ?? ''}\n${compShaderText ?? ''}`,
-    )
-  ) {
+  if (shaderReferencesFeedbackComposite) {
     fieldHelpers.addDiagnostic(
       diagnostics,
       'warning',
       'preset_shader_packed_sampler_backend_gap',
-      'Packed sampler sampler_fc_main maps to the feedback composite texture on WebGL; WebGPU direct shader execution does not expose this intermediate texture and will use the translated compatibility path when required.',
+      'Packed sampler sampler_fc_main maps to the feedback composite texture on WebGL; WebGPU direct shader execution is disabled for this preset and routes through the translated compatibility path for parity.',
     );
   }
   const backends = {
