@@ -73,6 +73,8 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       const uniformMap: Record<string, string> = {
         time: 'signalTime',
         bass: 'signalBass',
+        // Composite shader lacks separate attenuated signal uniforms;
+        // bass_att maps to signalBass as the best available approximation.
         bass_att: 'signalBass',
         mid: 'signalMid',
         mids: 'signalMid',
@@ -82,13 +84,19 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         treble: 'signalTreb',
         // MilkDrop shader snippets commonly use camelCase attenuated bands;
         // identifiers are lower-cased before lookup, so keep normalized entries here.
+        // Same approximation as above — no separate attenuated uniform exists.
         bassatt: 'signalBass',
         midatt: 'signalMid',
         trebatt: 'signalTreb',
         trebleatt: 'signalTreb',
         beat: 'signalBeat',
         beat_pulse: 'signalBeatPulse',
+        // progress is frame count in ProjectM; signalTime (seconds) is the best proxy.
         progress: 'signalTime',
+        // frame and fps are not available as composite shader uniforms.
+        // frame uses signalTime as a proxy; fps is a literal 60.0 approximation.
+        frame: 'signalTime',
+        fps: '60.0',
         vol: 'signalEnergy',
         rms: 'signalEnergy',
         music: 'signalEnergy',
@@ -121,6 +129,9 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         mix: 'mixAlpha',
         feedback: 'mixAlpha',
         feedback_alpha: 'mixAlpha',
+        // brighten/invert/solarize are scalar shader controls in ProjectM;
+        // the composite shader combines them with post-effect toggles via the
+        // *Boost uniforms, so mapping here is the best available approximation.
         brighten: 'brightenBoost',
         invert: 'invertBoost',
         solarize: 'solarizeBoost',
@@ -421,7 +432,13 @@ function emitTextureSample(
   const normalizedName = normalizeShaderSamplerName(samplerName);
 
   if (normalizedName === null) {
-    // Unknown sampler - fall back to main texture
+    // Unknown sampler — if it starts with `sampler_`, emit a named texture
+    // binding (<name>Tex) so the texture can be wired later. Otherwise fall
+    // back to the main texture.
+    if (samplerName.startsWith('sampler_')) {
+      const texName = `${samplerName}Tex`;
+      return `texture2D(${texName}, sampleUv(${coordArg}, textureWrap)).rgb`;
+    }
     return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
   }
 
@@ -453,7 +470,11 @@ function emitTextureSample(
     return `sampleAuxTexture(vec4(${sourceId}, 0, 0, 0).x, ${sampleDim}, sampleUv(${coordArg}, textureWrap), ${dimension === '3d' && isVolume ? zSlice : '0.0'}).rgb`;
   }
 
-  // Unknown sampler - fall back to main texture
+  // Unknown sampler — same fallback logic as above
+  if (samplerName.startsWith('sampler_')) {
+    const texName = `${samplerName}Tex`;
+    return `texture2D(${texName}, sampleUv(${coordArg}, textureWrap)).rgb`;
+  }
   return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
 }
 

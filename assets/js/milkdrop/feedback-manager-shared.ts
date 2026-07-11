@@ -27,6 +27,10 @@ import type {
   MilkdropBackendBehavior,
 } from './backend-behavior';
 import {
+  extractCustomSamplerDeclarations,
+  type MilkdropCustomSamplerDeclaration,
+} from './compiler/custom-samplers.ts';
+import {
   generateGlslFromShaderStatements,
   injectDirectShaderGlsl,
 } from './compiler/shader-analysis-glsl.ts';
@@ -440,6 +444,13 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           float sliceIndexA = mod(floor(scaledSlice), sliceCount);
           float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
           float sliceBlend = fract(scaledSlice);
+          float edgeMargin = 0.02;
+          if (sliceBlend < edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          }
+          if (sliceBlend > 1.0 - edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          }
           vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
           vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
           return mix(sliceA, sliceB, sliceBlend);
@@ -513,14 +524,18 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
           vec3 previousColor = previous.rgb;
           if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
-            vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
+            vec2 off = texelSize * (0.75 + feedbackSoftness * 0.5);
             vec3 softened = (
-              previous.rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb
-            ) / 5.0;
+              previous.rgb * 4.0 +
+              texture2D(previousTex, sampleUv(prevUv + vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(previousTex, sampleUv(prevUv - vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(previousTex, sampleUv(prevUv + vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(previousTex, sampleUv(prevUv - vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(previousTex, sampleUv(prevUv + vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(previousTex, sampleUv(prevUv - vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(previousTex, sampleUv(prevUv + vec2(off.x, -off.y), textureWrap)).rgb +
+              texture2D(previousTex, sampleUv(prevUv - vec2(off.x, -off.y), textureWrap)).rgb
+            ) / 16.0;
             previousColor = mix(
               previousColor,
               softened,
@@ -572,6 +587,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
               color = max(vec3(0.0), color - overlayColor * amount);
             }
           }
+          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           if (brighten > 0.01 || brightenBoost > 0.01) {
             color = min(vec3(1.0), mix(color, color * (1.0 + 0.18 + brightenBoost * 0.35), clamp(max(brighten, brightenBoost), 0.0, 1.0)));
           }
@@ -610,7 +626,6 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
             vec3 rightColor = texture2D(previousTex, sampleUv(prevUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
           }
-          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
           gl_FragColor = vec4(color, 1.0);
         }
       `;
@@ -643,6 +658,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   private adaptiveResizeFrameId: number | null = null;
   private lastWarpGlsl: string | null = null;
   private lastCompGlsl: string | null = null;
+  private customSamplers: MilkdropCustomSamplerDeclaration[] = [];
   private index = 0;
   readonly warpMaterial: ShaderMaterial;
   readonly warpScene: Scene;
@@ -740,6 +756,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
         previousTex: { value: this.targets[0].texture },
+        noiseTex: { value: this.auxTextures.noise },
+        simplexTex: { value: this.auxTextures.simplex },
+        voronoiTex: { value: this.auxTextures.voronoi },
+        auraTex: { value: this.auxTextures.aura },
+        causticsTex: { value: this.auxTextures.caustics },
+        patternTex: { value: this.auxTextures.pattern },
+        fractalTex: { value: this.auxTextures.fractal },
+        videoTex: { value: this.auxTextures.video },
+        perlinTex: { value: this.auxTextures.perlin },
         warpScale: { value: 1 },
         zoom: { value: 1.02 },
         zoomMul: { value: 1 },
@@ -766,6 +791,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       fragmentShader: `
         uniform sampler2D currentTex;
         uniform sampler2D previousTex;
+        uniform sampler2D noiseTex;
+        uniform sampler2D simplexTex;
+        uniform sampler2D voronoiTex;
+        uniform sampler2D auraTex;
+        uniform sampler2D causticsTex;
+        uniform sampler2D patternTex;
+        uniform sampler2D fractalTex;
+        uniform sampler2D videoTex;
+        uniform sampler2D perlinTex;
         uniform float warpScale;
         uniform float zoom;
         uniform float zoomMul;
@@ -795,6 +829,72 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
         vec2 sampleUv(vec2 uv, float wrap) {
           return wrap > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+
+        vec4 sampleAuxTexture2d(float source, vec2 uv) {
+          if (source < 0.5) {
+            return vec4(0.5, 0.5, 0.5, 1.0);
+          }
+          if (source < 1.5) {
+            return texture2D(noiseTex, uv);
+          }
+          if (source < 2.5) {
+            return texture2D(simplexTex, uv);
+          }
+          if (source < 3.5) {
+            return texture2D(voronoiTex, uv);
+          }
+          if (source < 4.5) {
+            return texture2D(auraTex, uv);
+          }
+          if (source < 5.5) {
+            return texture2D(causticsTex, uv);
+          }
+          if (source < 6.5) {
+            return texture2D(patternTex, uv);
+          }
+          if (source < 7.5) {
+            return texture2D(fractalTex, uv);
+          }
+          if (source < 8.5) {
+            return texture2D(videoTex, uv);
+          }
+          if (source < 9.5) {
+            return texture2D(perlinTex, uv);
+          }
+          return vec4(0.5, 0.5, 0.5, 1.0);
+        }
+
+        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
+          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
+          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
+          vec2 tileSize = vec2(1.0 / gridSize);
+          float column = mod(sliceIndex, gridSize);
+          float row = floor(sliceIndex / gridSize);
+          return (vec2(column, row) + localUv) * tileSize;
+        }
+
+        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
+          vec2 wrappedUv = fract(uv);
+          if (sampleDimension < 0.5) {
+            return sampleAuxTexture2d(source, wrappedUv);
+          }
+          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
+          float wrappedSliceZ = fract(sliceZ);
+          float scaledSlice = wrappedSliceZ * sliceCount;
+          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
+          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
+          float sliceBlend = fract(scaledSlice);
+          float edgeMargin = 0.02;
+          if (sliceBlend < edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          }
+          if (sliceBlend > 1.0 - edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          }
+          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          return mix(sliceA, sliceB, sliceBlend);
         }
 
         vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
@@ -830,10 +930,16 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
             : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
             vec2 warpUv = warpedUv * warpTextureScale + warpTextureOffset;
-            vec2 warpVector = texture2D(currentTex, sampleUv(warpUv, textureWrap)).rg - 0.5;
+            vec2 warpVector =
+              sampleAuxTexture(
+                warpTextureSource,
+                warpTextureSampleDimension,
+                warpUv,
+                warpTextureVolumeSliceZ
+              ).rg - 0.5;
             warpedUv += warpVector * warpTextureAmount * 0.12;
           }
-          gl_FragColor = texture2D(currentTex, sampleUv(warpedUv, textureWrap));
+          gl_FragColor = texture2D(previousTex, sampleUv(warpedUv, textureWrap));
         }
       `,
     });
@@ -855,7 +961,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   }
 
   private createCompositeMaterial(fragmentShader: string): ShaderMaterial {
-    return new ShaderMaterial({
+    const material = new ShaderMaterial({
       uniforms: {
         currentTex: { value: this.sceneTarget.texture },
         previousTex: { value: this.targets[0].texture },
@@ -941,6 +1047,14 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       `,
       fragmentShader,
     });
+    for (const sampler of this.customSamplers) {
+      if (sampler.textureFile) {
+        material.uniforms[sampler.name] = {
+          value: getSharedMilkdropTexture(sampler.textureFile, true),
+        };
+      }
+    }
+    return material;
   }
 
   get readTarget() {
@@ -982,6 +1096,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
+
+    this.customSamplers = compGlsl
+      ? extractCustomSamplerDeclarations(compGlsl)
+      : [];
 
     const hasDirectWarp = warpGlsl !== null ? 1.0 : 0.0;
 
@@ -1123,6 +1241,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     const wu = this.warpMaterial.uniforms;
     wu.currentTex.value = this.sceneTarget.texture;
     wu.previousTex.value = this.readTarget.texture;
+    if (warpTextureName) {
+      wu[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
+        AUX_TEXTURE_SPECS[warpTextureName].fileName,
+        AUX_TEXTURE_SPECS[warpTextureName].colorTexture,
+      );
+    }
     wu.warpScale.value = state.warpScale;
     wu.zoom.value = state.zoom;
     wu.zoomMul.value = state.zoomMul;

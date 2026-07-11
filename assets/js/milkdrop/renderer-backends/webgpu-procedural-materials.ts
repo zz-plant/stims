@@ -12,6 +12,13 @@ import type {
   MilkdropGpuFieldProgramDescriptor,
 } from '../types';
 
+// NOTE: The WebGPU path loads a true Data3DTexture for simplex noise (see
+// feedback-manager-webgpu-composite.ts) but samples it via 2D atlas slicing
+// in the GLSL shaders because Three.js WebGPU/TSL does not expose
+// texture3D() natively. The 2D atlas sampling approximates the GLSL path's
+// atlas slicing approach. True 3D texture sampling would require TSL nodes
+// or a custom WGSL shader once the API supports it.
+
 const PROCEDURAL_INTERACTION_SHADER_CHUNK = `
   vec2 applyMilkdropInteraction(vec2 point) {
     vec2 scaled = point * interactionScale;
@@ -901,31 +908,23 @@ export function createProceduralWaveMaterial() {
         float pointBeatPulse,
         float pointTrebleAtt
       ) {
-        float centeredSample = sampleValue - 0.5;
+        // sampleValue is in [-1, 1] (from sampleByteData: ((data[i] - 128) / 128)).
+        // Do NOT recenter with sampleValue - 0.5.
         float x = 0.0;
         float y = 0.0;
 
         if (mode < 0.5) {
-          x = -1.1 + t * 2.2;
-          y =
-            pointCenterY +
-            sin(
-              t * 3.141592653589793 * 2.0 +
-                pointSignalTime * (0.55 + pointMystery)
-            ) * (0.06 + pointTrebleAtt * 0.08) +
-            centeredSample * pointScale * 1.7 +
-            velocity * 0.12;
+          // Circle — matches CPU path (frame-generation.ts mode 0).
+          float angle = t * 6.28318 + pointSignalTime * 0.2;
+          float radius = 0.5 + 0.4 * sampleValue + pointMystery;
+          x = pointCenterX + cos(angle) * radius;
+          y = pointCenterY + sin(angle) * radius;
         } else if (mode < 1.5) {
-          float angle =
-            t * 3.141592653589793 * 2.0 +
-            pointSignalTime * 0.32 +
-            centeredSample * 0.8 +
-            velocity * 2.5;
-          float radius =
-            0.22 +
-            sampleValue * pointScale +
-            pointBeatPulse * 0.08 +
-            sin(t * 3.141592653589793 * 4.0 + pointSignalTime) * 0.015;
+          // XYOscillationSpiral — matches CPU path (frame-generation.ts mode 1).
+          float sampleR = sampleValue;
+          float sampleL = sampleOffset32;
+          float radius = 0.53 + 0.43 * sampleR + pointMystery;
+          float angle = sampleL * 1.5708 + pointSignalTime * 2.3;
           x = pointCenterX + cos(angle) * radius;
           y = pointCenterY + sin(angle) * radius;
         } else if (mode < 2.5) {
@@ -935,11 +934,14 @@ export function createProceduralWaveMaterial() {
           x = pointCenterX + sampleValue * pointScale;
           y = pointCenterY + sampleOffset32 * pointScale;
         } else if (mode < 4.5) {
-          x =
-            pointCenterX +
-            (sampleValue - 0.5) * pointScale * 1.85 +
-            sin(t * 3.141592653589793 * 10.0 + pointSignalTime * 0.5) * 0.04;
-          y = 1.08 - t * 2.16 + velocity * 0.22;
+          // DerivativeLine (HORIZONTAL) — matches CPU path (frame-generation.ts mode 4).
+          float w1 = 0.45 + 0.5 * (pointMystery * 0.5 + 0.5);
+          float w2 = 1.0 - w1;
+          x = -1.0 + 2.0 * t + pointCenterX + sampleValue * 0.44 * pointScale;
+          y = pointCenterY + sampleOffset32 * 0.47 * pointScale;
+          // Intra-frame momentum (simplified for GPU).
+          x = x * w2 + w1 * sampleOffset64 * pointScale;
+          y = y * w2 + w1 * sampleOffset96 * pointScale;
         } else if (mode < 5.5) {
           float x0 = sampleValue * sampleOffset64 + sampleOffset32 * sampleOffset96;
           float y0 = sampleValue * sampleValue - sampleOffset32 * sampleOffset64;
@@ -949,13 +951,9 @@ export function createProceduralWaveMaterial() {
           x = pointCenterX + (x0 * cosR - y0 * sinR) * pointScale;
           y = pointCenterY + (x0 * sinR + y0 * cosR) * pointScale;
         } else if (mode < 6.5) {
-          float band = (sampleValue - 0.5) * pointScale * 1.4;
-          x = -1.05 + t * 2.1;
-          y =
-            pointCenterY +
-            (mod(floor(t * 512.0), 2.0) < 0.5 ? band : -band) +
-            sin(t * 3.141592653589793 * 8.0 + pointSignalTime * 0.55) * 0.03 +
-            velocity * 0.18;
+          // Line — matches CPU path (frame-generation.ts mode 6).
+          x = -1.0 + 2.0 * t;
+          y = pointCenterY + sampleValue * 0.25 * pointScale;
         } else {
           float separation = 0.1 + pointMystery * 0.2;
           x = -1.0 + 2.0 * t;

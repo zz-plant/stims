@@ -117,13 +117,14 @@ describe('milkdrop renderer seams', () => {
     expect(outlineChildren.every((child) => child instanceof LineLoop)).toBe(
       true,
     );
+    const thickOffset = (1 / 1024) * 0.9 * 0.5;
     expect(outlineChildren[0]?.position.x).toBeCloseTo(0.2, 6);
     expect(outlineChildren[0]?.position.y).toBeCloseTo(-0.1, 6);
-    expect(outlineChildren[1]?.position.x).toBeCloseTo(0.2 + 1 / 1024, 6);
+    expect(outlineChildren[1]?.position.x).toBeCloseTo(0.2 + thickOffset, 6);
     expect(outlineChildren[1]?.position.y).toBeCloseTo(-0.1, 6);
-    expect(outlineChildren[2]?.position.x).toBeCloseTo(0.2 + 1 / 1024, 6);
-    expect(outlineChildren[2]?.position.y).toBeCloseTo(-0.1 + 1 / 1024, 6);
+    expect(outlineChildren[2]?.position.x).toBeCloseTo(0.2 + thickOffset, 6);
+    expect(outlineChildren[2]?.position.y).toBeCloseTo(-0.1 + thickOffset, 6);
     expect(outlineChildren[3]?.position.x).toBeCloseTo(0.2, 6);
-    expect(outlineChildren[3]?.position.y).toBeCloseTo(-0.1 + 1 / 1024, 6);
+    expect(outlineChildren[3]?.position.y).toBeCloseTo(-0.1 + thickOffset, 6);
   });
 });

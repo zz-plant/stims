@@ -111,7 +111,7 @@ export function shouldUseTranslatedControlsForDirectAuxSample(
 
     if (
       expression.type === 'binary' &&
-      ['+', '*'].includes(expression.operator) &&
+      ['+', '*', '-'].includes(expression.operator) &&
       (isShaderMainSampleExpression(expression.left) ||
         isShaderMainSampleExpression(expression.right))
     ) {

@@ -421,7 +421,6 @@ export function buildMainWaveFrame({
   const scale = clamp((state.wave_scale ?? 1) * 0.45, 0.08, 1.4);
   const smoothing = clamp(state.wave_smoothing ?? 0.72, 0, 0.98);
   const mystery = normalizeProjectMMystery(state.wave_mystery ?? 0);
-  const mysteryPhase = mystery * Math.PI;
   const modWaveAlphaStart = clamp(state.modwavealphastart ?? 1, 0, 2);
   const modWaveAlphaEnd = clamp(state.modwavealphaend ?? 1, 0, 2);
   const alphaByVolume = (state.bmodwavealphabyvolume ?? 0) >= 0.5;
@@ -447,15 +446,17 @@ export function buildMainWaveFrame({
   // IIR causal filter along sample axis (matching ProjectM's WaveformMath).
   // Each sample blends with its predecessor, creating a "comet tail" within
   // a single frame rather than frame-to-frame persistence.
+  const iirScale = 1.0;
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
     const raw = sampleWaveformData(signals, t);
     liveSamples[index] = raw;
     if (index === 0) {
-      smoothedSamples[index] = raw;
+      smoothedSamples[index] = iirScale * raw;
     } else {
       smoothedSamples[index] =
-        scale * (1 - smoothing) * raw + smoothing * smoothedSamples[index - 1];
+        iirScale * (1 - smoothing) * raw +
+        smoothing * smoothedSamples[index - 1];
     }
   }
 
@@ -506,6 +507,11 @@ export function buildMainWaveFrame({
     proceduralVelocities.length = samples;
   }
 
+  let prevX = 0;
+  let prevY = 0;
+  let prevPrevX = 0;
+  let prevPrevY = 0;
+
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
     const sampleValue =
@@ -527,32 +533,19 @@ export function buildMainWaveFrame({
     let y = 0;
     switch (mode) {
       case 0: {
-        const angle = t * TWO_PI;
-        const radius =
-          0.3 +
-          Math.abs(sampleValue) * scale * (0.9 + mystery * 0.25) +
-          signals.beatPulse * 0.04;
-        x =
-          centerX +
-          Math.cos(angle) * radius +
-          Math.sin(angle * 3 + mysteryPhase + signals.time * 0.4) * 0.025;
-        y =
-          centerY +
-          Math.sin(angle) * radius +
-          Math.cos(angle * 2 - mysteryPhase + signals.time * 0.3) * 0.025;
+        const angle = t * TWO_PI + signals.time * 0.2;
+        const radius = 0.5 + 0.4 * sampleValue + mystery;
+        x = centerX + Math.cos(angle) * radius;
+        y = centerY + Math.sin(angle) * radius;
         break;
       }
       case 1: {
-        const angle = t * TWO_PI + sampleValue * (0.6 + mystery * 0.4);
-        const radius =
-          0.24 +
-          (0.22 + sampleValue * 0.16) * (1 + (signals.trebleAtt ?? 0) * 0.12) +
-          Math.sin(signals.time * 0.2 + t * TWO_PI * 2) * 0.02;
+        const sampleR = sampleValue;
+        const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
+        const radius = 0.53 + 0.43 * sampleR + mystery;
+        const angle = sampleL * 1.57 + signals.time * 2.3;
         x = centerX + Math.cos(angle) * radius;
-        y =
-          centerY +
-          Math.sin(angle) * radius * (0.6 + mystery * 0.5) +
-          derivative * 0.1;
+        y = centerY + Math.sin(angle) * radius;
         break;
       }
       case 2: {
@@ -572,12 +565,16 @@ export function buildMainWaveFrame({
         break;
       }
       case 4: {
-        x =
-          centerX +
-          sampleValue * scale * 1.5 +
-          momentum * 0.42 +
-          Math.sin(t * TWO_PI * 4 + signals.time * 0.25) * 0.03;
-        y = 1.02 - t * 2.04 + derivative * 0.16;
+        const w1 = 0.45 + 0.5 * (mystery * 0.5 + 0.5);
+        const w2 = 1 - w1;
+        x = -1 + 2 * t + centerX + sampleValue * 0.44 * scale;
+        y =
+          centerY +
+          sampleWaveformDataOffset(signals, t, 25 / 512) * 0.47 * scale;
+        if (index > 1) {
+          x = x * w2 + w1 * (prevX * 2 - prevPrevX);
+          y = y * w2 + w1 * (prevY * 2 - prevPrevY);
+        }
         break;
       }
       case 5: {
@@ -602,13 +599,11 @@ export function buildMainWaveFrame({
         break;
       }
       case 6: {
-        const band = sampleValue * scale * 1.3;
-        x = -1.05 + t * 2.1;
-        y =
-          centerY +
-          (index % 2 === 0 ? band : -band) +
-          momentum * 0.3 +
-          Math.sin(t * TWO_PI * 3 + signals.time * 0.2) * 0.02;
+        const clipCount = Math.round((1.57 * mystery * samples) / 2);
+        const clipped =
+          index < clipCount || index >= samples - clipCount ? 0 : sampleValue;
+        x = -1 + 2 * t;
+        y = centerY + clipped * 0.25 * scale;
         break;
       }
       case 7: {
@@ -629,6 +624,10 @@ export function buildMainWaveFrame({
         x = -1.1 + t * 2.2;
         y = centerY + sampleValue * scale * 1.7 + velocity * 0.12;
     }
+    prevPrevX = prevX;
+    prevPrevY = prevY;
+    prevX = x;
+    prevY = y;
     if (useProcedural && proceduralSamples && proceduralVelocities) {
       proceduralSamples[index] = sampleValue;
       proceduralVelocities[index] = momentum;

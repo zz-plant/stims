@@ -41,31 +41,19 @@ function shouldUseShapeShaderFill(
   );
 }
 
-function getTextureAspectY(texture: Texture | null) {
-  const image = texture?.image as
-    | { width?: number; height?: number }
-    | undefined;
-  const width = image?.width ?? 0;
-  const height = image?.height ?? 0;
-  if (width > 0 && height > 0) {
-    return height / width;
-  }
-  return 1;
-}
-
 function getShapeOutlineOffsets(shape: MilkdropShapeVisual) {
   if (!shape.thickOutline) {
     return [{ x: 0, y: 0 }];
   }
 
+  const thickness = shape.borderColor.a ?? 1;
+  const offset = MILKDROP_THICK_SHAPE_PASS_OFFSET * thickness * 0.5;
+
   return [
     { x: 0, y: 0 },
-    { x: MILKDROP_THICK_SHAPE_PASS_OFFSET, y: 0 },
-    {
-      x: MILKDROP_THICK_SHAPE_PASS_OFFSET,
-      y: MILKDROP_THICK_SHAPE_PASS_OFFSET,
-    },
-    { x: 0, y: MILKDROP_THICK_SHAPE_PASS_OFFSET },
+    { x: offset, y: 0 },
+    { x: offset, y: offset },
+    { x: 0, y: offset },
   ];
 }
 
@@ -97,7 +85,6 @@ function syncShapeShaderUniforms(
     shape.textureZoom ?? 1,
   );
   material.uniforms.textureAngle.value = shape.textureAngle ?? 0;
-  material.uniforms.textureAspectY.value = getTextureAspectY(texture);
 }
 
 function createShapeFillShaderMaterial(
@@ -125,9 +112,6 @@ function createShapeFillShaderMaterial(
       },
       shapeTexture: {
         value: texture,
-      },
-      textureAspectY: {
-        value: getTextureAspectY(texture),
       },
       useGradient: {
         value: shape.secondaryColor ? 1 : 0,
@@ -159,7 +143,6 @@ function createShapeFillShaderMaterial(
       uniform float primaryAlpha;
       uniform float secondaryAlpha;
       uniform sampler2D shapeTexture;
-      uniform float textureAspectY;
       uniform float useGradient;
       uniform float textured;
       uniform float textureZoom;
@@ -183,13 +166,11 @@ function createShapeFillShaderMaterial(
 
         if (textured > 0.5) {
           vec2 rotated = rotate2d(vLocal, textureAngle);
-          vec2 sampleUv =
-            vec2(
-              0.5 +
-                0.5 * rotated.x * textureAspectY / max(textureZoom, 0.0001),
-              1.0 -
-                (0.5 - 0.5 * rotated.y / max(textureZoom, 0.0001))
-            );
+          float zoom = max(textureZoom, 0.0001);
+          vec2 sampleUv = vec2(
+            0.5 + 0.5 * rotated.x / zoom,
+            0.5 + 0.5 * rotated.y / zoom
+          );
           vec4 sampled = texture2D(shapeTexture, fract(sampleUv));
           color = sampled.rgb * tint;
           alpha *= sampled.a;

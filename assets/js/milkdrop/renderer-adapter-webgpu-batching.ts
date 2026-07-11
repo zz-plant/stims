@@ -766,31 +766,29 @@ function buildProceduralWavePoint(
   sampleT: number,
   sampleIndex: number,
   sampleValue: number,
-  velocity: number,
+  _velocity: number,
 ) {
-  const centeredSample = sampleValue - 0.5;
+  // sampleValue is in [-1, 1] (from sampleByteData: ((data[i] - 128) / 128)).
+  // Do NOT recenter with sampleValue - 0.5.
   let x = 0;
   let y = 0;
 
   if (wave.mode < 0.5) {
-    x = -1.1 + sampleT * 2.2;
-    y =
-      wave.centerY +
-      Math.sin(sampleT * Math.PI * 2 + wave.time * (0.55 + wave.mystery)) *
-        (0.06 + wave.trebleAtt * 0.08) +
-      centeredSample * wave.scale * 1.7 +
-      velocity * 0.12;
+    // Circle — matches CPU path (frame-generation.ts mode 0).
+    const angle = sampleT * 6.28318 + wave.time * 0.2;
+    const radius = 0.5 + 0.4 * sampleValue + wave.mystery;
+    x = wave.centerX + Math.cos(angle) * radius;
+    y = wave.centerY + Math.sin(angle) * radius;
   } else if (wave.mode < 1.5) {
-    const angle =
-      sampleT * Math.PI * 2 +
-      wave.time * 0.32 +
-      centeredSample * 0.8 +
-      velocity * 2.5;
-    const radius =
-      0.22 +
-      sampleValue * wave.scale +
-      wave.beatPulse * 0.08 +
-      Math.sin(sampleT * Math.PI * 4 + wave.time) * 0.015;
+    // XYOscillationSpiral — matches CPU path (frame-generation.ts mode 1).
+    const sampleR = sampleValue;
+    const sampleL = sampleProceduralWaveOffset(
+      wave.samples,
+      sampleT,
+      PROJECTM_STEREO_OFFSET,
+    );
+    const radius = 0.53 + 0.43 * sampleR + wave.mystery;
+    const angle = sampleL * 1.5708 + wave.time * 2.3;
     x = wave.centerX + Math.cos(angle) * radius;
     y = wave.centerY + Math.sin(angle) * radius;
   } else if (wave.mode < 2.5) {
@@ -814,11 +812,32 @@ function buildProceduralWavePoint(
       ) *
         wave.scale;
   } else if (wave.mode < 4.5) {
-    x =
-      wave.centerX +
-      (sampleValue - 0.5) * wave.scale * 1.85 +
-      Math.sin(sampleT * Math.PI * 10 + wave.time * 0.5) * 0.04;
-    y = 1.08 - sampleT * 2.16 + velocity * 0.22;
+    // DerivativeLine (HORIZONTAL) — matches CPU path (frame-generation.ts mode 4).
+    const w1 = 0.45 + 0.5 * (wave.mystery * 0.5 + 0.5);
+    const w2 = 1 - w1;
+    const sampleOffset64 = sampleProceduralWaveOffset(
+      wave.samples,
+      sampleT,
+      PROJECTM_STEREO_OFFSET * 2,
+    );
+    const sampleOffset96 = sampleProceduralWaveOffset(
+      wave.samples,
+      sampleT,
+      PROJECTM_STEREO_OFFSET * 3,
+    );
+    x = -1.0 + 2.0 * sampleT + wave.centerX + sampleValue * 0.44 * wave.scale;
+    y =
+      wave.centerY +
+      sampleProceduralWaveOffset(
+        wave.samples,
+        sampleT,
+        PROJECTM_STEREO_OFFSET,
+      ) *
+        0.47 *
+        wave.scale;
+    // Intra-frame momentum (simplified for GPU parity).
+    x = x * w2 + w1 * sampleOffset64 * wave.scale;
+    y = y * w2 + w1 * sampleOffset96 * wave.scale;
   } else if (wave.mode < 5.5) {
     const sampleL = sampleProceduralWaveOffset(
       wave.samples,
@@ -843,13 +862,9 @@ function buildProceduralWavePoint(
     x = wave.centerX + (x0 * cosR - y0 * sinR) * wave.scale;
     y = wave.centerY + (x0 * sinR + y0 * cosR) * wave.scale;
   } else if (wave.mode < 6.5) {
-    const band = (sampleValue - 0.5) * wave.scale * 1.4;
-    x = -1.05 + sampleT * 2.1;
-    y =
-      wave.centerY +
-      (Math.floor(sampleT * 512) % 2 === 0 ? 1 : -1) * band +
-      Math.sin(sampleT * Math.PI * 8 + wave.time * 0.55) * 0.03 +
-      velocity * 0.18;
+    // Line — matches CPU path (frame-generation.ts mode 6).
+    x = -1.0 + 2.0 * sampleT;
+    y = wave.centerY + sampleValue * 0.25 * wave.scale;
   } else {
     const sampleL = sampleProceduralWaveOffset(
       wave.samples,

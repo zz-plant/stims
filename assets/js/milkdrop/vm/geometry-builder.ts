@@ -228,34 +228,41 @@ function transformMeshPoint({
   );
 
   const warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
-  const angle = local.ang + local.rot;
   const centerX = normalizeTransformCenter(local.cx ?? 0.5);
   const centerY = normalizeTransformCenter(local.cy ?? 0.5);
   const scaleX = local.sx ?? 1;
   const scaleY = local.sy ?? 1;
-  const translateX = (local.dx ?? 0) * 2;
-  const translateY = (local.dy ?? 0) * 2;
-  const transformedX = (local.x - centerX) * scaleX + centerX + translateX;
-  const transformedY = (local.y - centerY) * scaleY + centerY + translateY;
-  const ripple =
-    Math.sin(
-      local.rad * 12 +
-        signals.time * (0.6 + signals.trebleAtt) * (0.35 + warpAnimSpeed),
-    ) *
-    local.warp *
-    0.08;
-  const radiusNormalized = clamp(local.rad / Math.SQRT2, 0, 1);
+  const translateX = local.dx ?? 0;
+  const translateY = local.dy ?? 0;
+
+  const cosRot = Math.cos(local.rot);
+  const sinRot = Math.sin(local.rot);
+  const relX = local.x - centerX;
+  const relY = local.y - centerY;
+  const rx = relX * cosRot - relY * sinRot + centerX;
+  const ry = relX * sinRot + relY * cosRot + centerY;
+
+  const zoomRadius = Math.hypot(rx - centerX, ry - centerY);
+  const radiusNormalized = clamp(zoomRadius / Math.SQRT2, 0, 1);
   const zoomExponent = Math.max(local.zoomexp ?? 1, 0.0001);
   const zoom = Math.max(local.zoom ?? 1, 0);
   const zoomScale =
     zoom === 0 ? 0 : zoom ** (zoomExponent ** (radiusNormalized * 2 - 1));
-  const px = (transformedX + Math.cos(angle * 3) * ripple) * zoomScale;
-  const py = (transformedY + Math.sin(angle * 4) * ripple) * zoomScale;
-  const cos = Math.cos(local.rot);
-  const sin = Math.sin(local.rot);
+  const zx = centerX + (rx - centerX) * zoomScale;
+  const zy = centerY + (ry - centerY) * zoomScale;
+
+  const ripple =
+    Math.sin(local.rad * 8.0 + signals.time * (0.35 + warpAnimSpeed)) * local.warp * 0.1;
+  const rippleAngle = Math.atan2(zy - centerY, zx - centerX);
+  const wx = zx + Math.cos(rippleAngle) * ripple;
+  const wy = zy + Math.sin(rippleAngle) * ripple;
+
+  const tx = wx + translateX;
+  const ty = wy + translateY;
+
   const transformed = {
-    x: px * cos - py * sin,
-    y: px * sin + py * cos,
+    x: (tx - centerX) * scaleX + centerX,
+    y: (ty - centerY) * scaleY + centerY,
   };
   geometryState.frameTransformCache.set(cacheKey, transformed);
   return transformed;
@@ -317,8 +324,8 @@ export function buildProceduralFieldTransform(state: MutableState) {
     centerY: normalizeTransformCenter(state.cy ?? 0.5),
     scaleX: state.sx ?? 1,
     scaleY: state.sy ?? 1,
-    translateX: (state.dx ?? 0) * 2,
-    translateY: (state.dy ?? 0) * 2,
+    translateX: state.dx ?? 0,
+    translateY: state.dy ?? 0,
   };
 }
 
@@ -737,8 +744,8 @@ export function buildMotionVectors({
         x: sourceX,
         y: sourceY,
       };
-      const sourceDx = (currentPoint.x - sourceX) * 1.35;
-      const sourceDy = (currentPoint.y - sourceY) * 1.35;
+      const sourceDx = currentPoint.x - sourceX;
+      const sourceDy = currentPoint.y - sourceY;
       const historyDx = hasPerPixelPrograms
         ? (currentPoint.x - previous.x) * 1.1
         : 0;
@@ -748,8 +755,8 @@ export function buildMotionVectors({
       const baseDx = sourceDx + historyDx;
       const baseDy = sourceDy + historyDy;
       const baseMagnitude = Math.hypot(baseDx, baseDy);
-      let dx = clamp(baseDx, -0.24, 0.24);
-      let dy = clamp(baseDy, -0.24, 0.24);
+      let dx = baseDx;
+      let dy = baseDy;
 
       if (hasLegacyMotionVectorControls && explicitLegacyMagnitude > 0.0001) {
         if (baseMagnitude < 0.0001) {
@@ -780,12 +787,8 @@ export function buildMotionVectors({
       positions[4] = currentPoint.y + dy;
       positions[5] = 0.18;
       vector.color = colorValue;
-      vector.alpha = hasLegacyMotionVectorControls
-        ? alpha
-        : clamp(alpha * (0.75 + magnitude * 2.2), 0.02, 1);
-      vector.thickness = hasLegacyMotionVectorControls
-        ? clamp(1 + magnitude * 10, 1, 4)
-        : clamp(1 + magnitude * 18, 1, 4);
+      vector.alpha = alpha;
+      vector.thickness = 1.0;
       vector.additive = false;
       vectors[vectorCount] = vector;
       vectorCount += 1;

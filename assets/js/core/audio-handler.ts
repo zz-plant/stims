@@ -304,9 +304,11 @@ export class FrequencyAnalyser {
       }
     }
 
-    const hasStereoTrack = stream
-      .getAudioTracks()
-      .some((track) => (track.getSettings().channelCount ?? 1) >= 2);
+    const hasStereoTrack =
+      typeof stream.getAudioTracks === 'function' &&
+      stream
+        .getAudioTracks()
+        .some((track) => (track.getSettings().channelCount ?? 1) >= 2);
     let analyserNodeL: AnalyserNode | undefined;
     let analyserNodeR: AnalyserNode | undefined;
     const analyserNode = workletNode
