@@ -163,6 +163,32 @@ warp_texture_scale = vec2(1.1, 1.2)
     expect(glsl).toContain('float(int(signalMid) & int(1.0))');
   });
 
+  test('emits tex3D vec3 coordinates with a real z slice in GLSL', () => {
+    const twoArgStatement = parseMilkdropShaderStatement(
+      'ret = tex3D(sampler_fw_noisevol_lq, vec3(uv, time / 10.0)).xyz',
+    );
+    const threeArgStatement = parseMilkdropShaderStatement(
+      'ret = tex3D(sampler_noisevol_lq, vec3(uv.x, uv.y, time / 5.0)).xyz',
+    );
+
+    expect(twoArgStatement).not.toBeNull();
+    expect(threeArgStatement).not.toBeNull();
+    if (!twoArgStatement || !threeArgStatement) {
+      throw new Error('Expected tex3D statements to parse');
+    }
+
+    const glsl = generateGlslFromShaderStatements(
+      [twoArgStatement, threeArgStatement],
+      'comp',
+    );
+
+    expect(glsl).not.toBeNull();
+    expect(glsl).toContain('sampleUv(vUv, textureWrap), (signalTime / 10.0)');
+    expect(glsl).toContain(
+      'sampleUv(vec2(vUv.x, vUv.y), textureWrap), (signalTime / 5.0)',
+    );
+  });
+
   test('keeps pure projectM volume samples direct on both WebGL and WebGPU backends', () => {
     const compiled = compileMilkdropPresetSource(projectmNoiseVolumeFixture, {
       id: '261-compshader-noisevol_lq',

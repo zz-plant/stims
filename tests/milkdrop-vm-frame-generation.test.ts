@@ -140,6 +140,7 @@ describe('milkdrop vm frame generation', () => {
       alpha: 0,
       additive: false,
       thickness: 0,
+      closed: false,
     };
 
     const visualFrame = buildMainWaveFrame({
@@ -192,5 +193,31 @@ describe('milkdrop vm frame generation', () => {
       reusableProcedural.velocities,
     );
     expect(proceduralFrame.procedural?.samples.length).toBeGreaterThan(3);
+  });
+
+  test('uses real stereo waveform channels for ProjectM spiro modes', () => {
+    const signals = defaultSignalEnv();
+    signals.waveformData = new Uint8Array(64).fill(128);
+    signals.waveformDataL = new Uint8Array(64).fill(128);
+    signals.waveformDataR = new Uint8Array(64).fill(255);
+
+    const frame = buildMainWaveFrame({
+      state: {
+        wave_mode: 2,
+        wave_x: 0.5,
+        wave_y: 0.5,
+        wave_scale: 1,
+        wave_smoothing: 0,
+        wave_a: 0.9,
+      },
+      signals,
+      detailScale: 1,
+      previousSamples: new Float32Array(64),
+      previousMomentum: new Float32Array(64),
+      useProcedural: false,
+    });
+
+    expect(frame.visual.positions[0]).toBeGreaterThan(0.4);
+    expect(Math.abs(frame.visual.positions[1] ?? 1)).toBeLessThan(0.01);
   });
 });

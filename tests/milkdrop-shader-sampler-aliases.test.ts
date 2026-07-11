@@ -123,6 +123,13 @@ describe('milkdrop shader sampler aliases', () => {
     }
 
     expect(normalizeMilkdropShaderSamplerName('sampler_video')).toBe('video');
+    expect(normalizeMilkdropShaderSamplerName('sampler_noise')).toBe('noise');
+    expect(normalizeMilkdropShaderSamplerName('sampler_fw_noise')).toBe(
+      'noise',
+    );
+    expect(normalizeMilkdropShaderSamplerName('sampler_fw_noise_mq')).toBe(
+      'noise',
+    );
     expect(normalizeMilkdropShaderSamplerName('sampler_unknown_alias')).toBe(
       null,
     );
