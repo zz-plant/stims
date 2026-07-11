@@ -1,4 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { saveCheckpoint } from '../core/services/temporal-memory.ts';
 import {
   describeFrame,
@@ -135,6 +141,8 @@ export function StimsControlDock({
     energyNorm,
   );
   const dockWrapRef = useRef<HTMLDivElement>(null);
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
 
   const { visible, signalActivity } = useAutoHideActivity(3000, false);
   const [focusInsideDock, setFocusInsideDock] = useState(false);
@@ -201,6 +209,79 @@ export function StimsControlDock({
     }
     wasPausedRef.current = pauseAutoHide;
   }, [pauseAutoHide, signalActivity]);
+
+  // Click-outside-to-close for overflow menu
+  useEffect(() => {
+    if (!showMore) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        event.target instanceof Element &&
+        dockWrapRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setShowMore(false);
+      setShowMoods(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown, {
+      passive: true,
+    });
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [showMore]);
+
+  // Escape key to close overflow menu
+  useEffect(() => {
+    if (!showMore) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setShowMore(false);
+        setShowMoods(false);
+        moreTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showMore]);
+
+  // Focus first item when overflow menu opens
+  useEffect(() => {
+    if (!showMore) return;
+    const timer = requestAnimationFrame(() => {
+      const first = overflowMenuRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled])',
+      );
+      first?.focus();
+    });
+    return () => cancelAnimationFrame(timer);
+  }, [showMore]);
+
+  // Arrow key navigation inside overflow menu
+  const handleOverflowKeyDown = useCallback((event: React.KeyboardEvent) => {
+    const menu = overflowMenuRef.current;
+    if (!menu) return;
+    const items = Array.from(
+      menu.querySelectorAll<HTMLElement>('button:not([disabled])'),
+    );
+    if (items.length === 0) return;
+    const currentIndex = items.indexOf(event.target as HTMLElement);
+
+    let nextIndex = -1;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      nextIndex = items.length - 1;
+    }
+    if (nextIndex >= 0) items[nextIndex].focus();
+  }, []);
 
   return (
     <div
@@ -297,6 +378,7 @@ export function StimsControlDock({
           <span className="stims-shell__stage-tool-label">Edit</span>
         </button>
         <button
+          ref={moreTriggerRef}
           type="button"
           className="stims-shell__stage-tool"
           aria-expanded={showMore}
@@ -359,16 +441,20 @@ export function StimsControlDock({
       </div>
       {showMore ? (
         <div
+          ref={overflowMenuRef}
           className="stims-shell__dock-overflow"
           role="menu"
           aria-label="More actions"
+          onKeyDown={handleOverflowKeyDown}
         >
           <fieldset className="stims-shell__dock-overflow-grid">
             <button
               type="button"
+              role="menuitem"
               className="stims-shell__stage-tool"
               data-active={String(showMoods)}
               aria-expanded={showMoods}
+              aria-controls={showMoods ? 'dock-mood-actions' : undefined}
               aria-label="Create a preset from a mood"
               title="Create a preset from a mood"
               onClick={() => setShowMoods((s) => !s)}
@@ -381,6 +467,7 @@ export function StimsControlDock({
             </button>
             <button
               type="button"
+              role="menuitem"
               className="stims-shell__stage-tool"
               aria-label="Go back to the previous preset"
               title="Go back to the previous preset"
@@ -394,6 +481,7 @@ export function StimsControlDock({
             </button>
             <button
               type="button"
+              role="menuitem"
               className="stims-shell__stage-tool"
               aria-label="Find presets that look similar"
               title="Find presets that look similar"
@@ -410,6 +498,7 @@ export function StimsControlDock({
             </button>
             <button
               type="button"
+              role="menuitem"
               className="stims-shell__stage-tool"
               aria-label="Save the current look"
               title="Save the current look"
@@ -424,6 +513,7 @@ export function StimsControlDock({
             </button>
             <button
               type="button"
+              role="menuitem"
               className="stims-shell__stage-tool"
               aria-label="Copy a share link"
               title="Copy a share link"
@@ -440,6 +530,7 @@ export function StimsControlDock({
             <>
               <div className="stims-shell__dock-overflow-divider" />
               <fieldset
+                id="dock-mood-actions"
                 className="stims-shell__dock-overflow-group"
                 aria-label="Generate from a mood"
               >
@@ -447,6 +538,7 @@ export function StimsControlDock({
                   <button
                     key={mood.label}
                     type="button"
+                    role="menuitem"
                     className="stims-shell__stage-tool"
                     aria-label={`Generate ${mood.label.toLowerCase()} preset`}
                     disabled={generatingMood !== null}

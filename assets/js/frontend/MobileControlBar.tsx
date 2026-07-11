@@ -436,16 +436,20 @@ export function MobileControlBar({
             className={styles.action}
             data-active={String(showMoreActions)}
             aria-expanded={showMoreActions}
+            aria-haspopup="menu"
             aria-controls={showMoreActions ? MOBILE_MORE_ACTIONS_ID : undefined}
             onClick={() => {
               resetHideTimer();
               pulseHaptic(8, hapticsEnabled);
-              setShowMoreActions((current) => !current);
+              setShowMoreActions((current) => {
+                if (current) setShowMoods(false);
+                return !current;
+              });
             }}
             aria-label="More mobile actions"
           >
             <UiIcon
-              name="sparkles"
+              name="menu"
               className="stims-icon-slot stims-icon-slot--sm"
             />
             <span className={styles.actionLabel}>More</span>

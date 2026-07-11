@@ -324,6 +324,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalEnergy;
         uniform float signalTime;
         uniform float decay;
+        uniform float hasDirectWarp;
         uniform vec2 texelSize;
         varying vec2 vUv;
 
@@ -482,16 +483,16 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           // --- DIRECT_WARP_START ---
           // --- DIRECT_WARP_END ---
 
-          vec2 currentUv = applyFeedbackWarp(
-            transformedUv + 0.5,
-            warpScale,
-            rotation
-          );
-          vec2 prevUv = applyFeedbackWarp(
-            (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
-            warpScale * 0.8,
-            rotation * 0.6
-          );
+          vec2 currentUv = hasDirectWarp > 0.5
+            ? transformedUv + 0.5
+            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          vec2 prevUv = hasDirectWarp > 0.5
+            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
+            : applyFeedbackWarp(
+                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
+                warpScale * 0.8,
+                rotation * 0.6
+              );
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
             vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
             vec2 warpVector =
@@ -752,6 +753,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         warpTextureScale: { value: new Vector2(1, 1) },
         warpTextureOffset: { value: new Vector2(0, 0) },
         warpTextureVolumeSliceZ: { value: 0 },
+        hasDirectWarp: { value: 0 },
         signalTime: { value: 0 },
       },
       vertexShader: `
@@ -777,6 +779,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform vec2 warpTextureScale;
         uniform vec2 warpTextureOffset;
         uniform float warpTextureVolumeSliceZ;
+        uniform float hasDirectWarp;
         uniform float signalTime;
         varying vec2 vUv;
 
@@ -822,10 +825,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           // --- DIRECT_WARP_START ---
           // --- DIRECT_WARP_END ---
 
-          vec2 warpedUv = applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          vec2 warpedUv = hasDirectWarp > 0.5
+            ? transformedUv + 0.5
+            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
             vec2 warpUv = warpedUv * warpTextureScale + warpTextureOffset;
-            // Simplified warp texture: sample currentTex at displaced UV
             vec2 warpVector = texture2D(currentTex, sampleUv(warpUv, textureWrap)).rg - 0.5;
             warpedUv += warpVector * warpTextureAmount * 0.12;
           }
@@ -920,6 +924,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         signalEnergy: { value: 0 },
         signalTime: { value: 0 },
         decay: { value: 0.98 },
+        hasDirectWarp: { value: 0 },
         texelSize: {
           value: new Vector2(
             1 / Math.max(1, this.sceneTarget.width),
@@ -978,6 +983,8 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.lastWarpGlsl = warpGlsl;
     this.lastCompGlsl = compGlsl;
 
+    const hasDirectWarp = warpGlsl !== null ? 1.0 : 0.0;
+
     // Rebuild warp shader with warp GLSL injected (or pass-through when null)
     const injectedWarp = injectDirectShaderGlsl(
       MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
@@ -986,6 +993,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     this.warpMaterial.fragmentShader = injectedWarp;
     this.warpMaterial.needsUpdate = true;
+    this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
 
     // Build composite shader: warp section kept empty since warp runs separate
     const injectedShader = injectDirectShaderGlsl(
@@ -1007,6 +1015,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     const newMaterial = this.createCompositeMaterial(injectedShader);
     // Restore uniform values from old material
     Object.assign(newMaterial.uniforms, oldUniforms);
+    newMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
 
     (this as { compositeMaterial: ShaderMaterial }).compositeMaterial =
       newMaterial;

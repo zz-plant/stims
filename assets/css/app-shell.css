@@ -3871,6 +3871,12 @@ body[data-page="workspace"] {
   font-size: 1.1rem;
 }
 
+.mc-bar__mood-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 @media (max-width: 480px) {
   .editor-sliders {
     display: none;
@@ -4120,7 +4126,7 @@ body[data-page="workspace"] {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: var(--z-toast);
+  z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -4134,6 +4140,12 @@ body[data-page="workspace"] {
     0 24px 60px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .stims-shell__dock-overflow-group {
@@ -4158,6 +4170,21 @@ body[data-page="workspace"] {
   justify-content: flex-start;
   width: 100%;
   min-height: 40px;
+}
+
+.stims-shell__stage-frame[data-mode="live"]
+  .stims-shell__dock-overflow
+  .stims-shell__stage-tool {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 12px;
+}
+
+.stims-shell__stage-frame[data-mode="live"]
+  .stims-shell__dock-overflow
+  .stims-shell__stage-tool-label {
+  display: inline;
 }
 
 .stims-shell__dock-overflow .stims-shell__stage-tool[data-active="true"] {
