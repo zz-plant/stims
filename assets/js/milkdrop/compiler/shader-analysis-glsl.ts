@@ -80,8 +80,11 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         treb: 'signalTreb',
         treb_att: 'signalTreb',
         treble: 'signalTreb',
+        // MilkDrop shader snippets commonly use camelCase attenuated bands;
+        // identifiers are lower-cased before lookup, so keep normalized entries here.
         bassatt: 'signalBass',
         midatt: 'signalMid',
+        trebatt: 'signalTreb',
         trebleatt: 'signalTreb',
         beat: 'signalBeat',
         beat_pulse: 'signalBeatPulse',
@@ -143,12 +146,17 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         return `(${left} + ${right} - ${left} * ${right})`;
       }
       if (op === '^') {
+        // MilkDrop treats ^ as scalar exponentiation; GLSL reserves ^ for
+        // integer bitwise XOR, so emit an explicit floating-point pow().
         return `pow(${left}, ${right})`;
       }
       if (op === '&') {
+        // GLSL ES does not accept bitwise operators on floats. MilkDrop values
+        // are float-like, so cast through int and back to keep emission valid.
         return `float(int(${left}) & int(${right}))`;
       }
       if (op === '|') {
+        // See '&' above: avoid passing a float bitwise expression through.
         return `float(int(${left}) | int(${right}))`;
       }
       return `(${left} ${glslOp} ${right})`;
