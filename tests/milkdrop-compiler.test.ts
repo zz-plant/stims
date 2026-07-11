@@ -957,6 +957,36 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
     );
   });
 
+  test('keeps MilkDrop exponent, bitwise, and attenuated signal aliases in direct shader programs', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Known Constructs
+comp_shader=float gain = bassAtt ^ 2.0; float mask = midAtt | 2.0; ret = tex2d(sampler_main, uv).rgb * vec3(gain, mask, trebleAtt & 1.0)
+      `.trim(),
+      { id: 'shader-known-constructs' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'float gain = bassAtt ^ 2.0; float mask = midAtt | 2.0; ret = tex2d(sampler_main, uv).rgb * vec3(gain, mask, trebleAtt & 1.0)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          supportedBackends: ['webgl', 'webgpu'],
+        }),
+      }),
+    );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'direct',
+      webgpu: 'direct',
+    });
+  });
+
   test('builds direct comp programs that can reference translated control values', () => {
     const compiled = compileMilkdropPresetSource(
       `
