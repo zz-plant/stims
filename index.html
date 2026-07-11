@@ -17,18 +17,21 @@
       *,:after,:before{box-sizing:border-box}
       body,html{margin:0;padding:0;min-height:100%}
       body{background:#0a0f19;color:#e9fbff;font-family:system-ui,sans-serif}
-      .stims-loading{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,rgba(95,192,181,.08),transparent 50%),radial-gradient(circle at 70% 80%,rgba(211,137,84,.06),transparent 50%),#0a0f19;color:#e9fbff;font-family:system-ui,sans-serif}
+      .stims-loading{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,rgba(95,192,181,.08),transparent 50%),radial-gradient(circle at 70% 80%,rgba(211,137,84,.06),transparent 50%),#0a0f19;color:#e9fbff;font-family:system-ui,sans-serif;animation:loading-breathe 4s ease-in-out infinite}
       .stims-loading[hidden]{display:none}
-      .stims-loading__spinner{width:52px;height:52px;margin:0 auto 16px;position:relative;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,192,181,.95),rgba(233,212,155,.85),rgba(211,137,84,.95),rgba(95,192,181,.95));animation:stims-spin 1s cubic-bezier(.4,0,.2,1)infinite}
-      .stims-loading__spinner:after{content:"";position:absolute;inset:4px;border-radius:50%;background:#0a0f19}
-      .stims-loading__text{font-size:.9rem;letter-spacing:.02em;opacity:.7;animation:stims-pulse 2s ease-in-out infinite}
+      .stims-loading__spinner{width:56px;height:56px;margin:0 auto 20px;position:relative;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,192,181,.95),rgba(233,212,155,.85),rgba(211,137,84,.95),rgba(119,201,255,.85),rgba(95,192,181,.95));animation:stims-spin 1.2s cubic-bezier(.4,0,.2,1)infinite}
+      .stims-loading__spinner:before{content:"";position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(from 180deg,transparent,rgba(119,201,255,.12),transparent,rgba(95,192,181,.08));animation:stims-spin 2s cubic-bezier(.4,0,.2,1)infinite reverse;opacity:.6}
+      .stims-loading__spinner:after{content:"";position:absolute;inset:5px;border-radius:50%;background:#0a0f19}
+      .stims-loading__text{font-size:.95rem;letter-spacing:.03em;opacity:.7;background:linear-gradient(135deg,#e9fbff,rgba(119,201,255,.85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:stims-pulse 2s ease-in-out infinite}
       .stims-loading__dots{display:inline-flex;gap:3px;margin-left:2px}
-      .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:currentColor;opacity:.7;animation:stims-bounce 1.4s ease-in-out infinite both}
+      .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:rgba(119,201,255,.8);opacity:.6;animation:stims-bounce 1.4s ease-in-out infinite both}
       .stims-loading__dots span:first-child{animation-delay:-.32s}
       .stims-loading__dots span:nth-child(2){animation-delay:-.16s}
       @keyframes stims-spin{to{transform:rotate(360deg)}}
-      @keyframes stims-pulse{0%,to{opacity:.6}50%{opacity:.9}}
-      @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:.9}}
+      @keyframes stims-pulse{0%,to{opacity:.5}50%{opacity:.85}}
+      @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:.9}}
+      @keyframes loading-breathe{0%,to{opacity:.85}50%{opacity:1}}
+      @media(prefers-reduced-motion:reduce){.stims-loading,.stims-loading__spinner,.stims-loading__spinner:before,.stims-loading__text,.stims-loading__dots span{animation:none}}
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
