@@ -33,6 +33,7 @@ function createDefaultCustomWaveSlot(index: number): Record<string, number> {
   return {
     [`custom_wave_${index}_enabled`]: 0,
     [`custom_wave_${index}_samples`]: 512,
+    [`custom_wave_${index}_sep`]: 0,
     [`custom_wave_${index}_spectrum`]: 0,
     [`custom_wave_${index}_additive`]: 0,
     [`custom_wave_${index}_usedots`]: 0,

@@ -28,7 +28,7 @@ import {
   getProgramBlock,
   normalizeProgramTarget,
   presetProgramPatterns,
-  resolveLegacyCustomSlotIndex,
+  resolveCustomProgramSlotIndex,
 } from './preset-normalization.ts';
 
 const LEGACY_MOTION_VECTOR_CONTROL_TARGETS = new Set([
@@ -467,14 +467,21 @@ export function compileProgramsFromField(
 
   const waveMatch = rawKey.match(customWaveProgramPattern);
   if (waveMatch) {
-    const index = resolveLegacyCustomSlotIndex(
-      Number.parseInt(waveMatch[1] ?? '0', 10),
-      MAX_CUSTOM_WAVES,
-    );
+    const wavePrefix = waveMatch[1] ?? 'wave';
+    const rawIndex = Number.parseInt(waveMatch[2] ?? '0', 10);
+    let index = resolveCustomProgramSlotIndex(rawIndex, MAX_CUSTOM_WAVES);
+    if (
+      wavePrefix === 'wave' &&
+      rawIndex > 0 &&
+      rawIndex < MAX_CUSTOM_WAVES &&
+      customWaves.has(rawIndex + 1)
+    ) {
+      index = rawIndex + 1;
+    }
     if (index !== null) {
       const wave = ensureWaveDefinition(customWaves, index);
       const block = getProgramBlock(
-        waveMatch[2] as 'init' | 'per_frame' | 'per_point',
+        waveMatch[3] as 'init' | 'per_frame' | 'per_point',
         {
           init: wave.programs.init,
           perFrame: wave.programs.perFrame,
@@ -496,10 +503,15 @@ export function compileProgramsFromField(
 
   const shapeMatch = rawKey.match(customShapeProgramPattern);
   if (shapeMatch) {
-    const index = resolveLegacyCustomSlotIndex(
-      Number.parseInt(shapeMatch[1] ?? '0', 10),
-      MAX_CUSTOM_SHAPES,
-    );
+    const rawIndex = Number.parseInt(shapeMatch[1] ?? '0', 10);
+    let index = resolveCustomProgramSlotIndex(rawIndex, MAX_CUSTOM_SHAPES);
+    if (
+      rawIndex > 0 &&
+      rawIndex < MAX_CUSTOM_SHAPES &&
+      customShapes.has(rawIndex + 1)
+    ) {
+      index = rawIndex + 1;
+    }
     if (index !== null) {
       const shape = ensureShapeDefinition(customShapes, index);
       const block = getProgramBlock(shapeMatch[2] as 'init' | 'per_frame', {
