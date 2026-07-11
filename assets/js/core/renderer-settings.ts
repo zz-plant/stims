@@ -76,6 +76,7 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   alpha: false,
   webgpuInitTimeoutMs: DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
   forceRetryCapabilities: false,
+  preserveDrawingBuffer: false,
 };
 const deviceEnvironment = getDeviceEnvironmentProfile();
 

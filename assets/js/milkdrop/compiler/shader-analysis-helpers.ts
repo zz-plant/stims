@@ -784,14 +784,6 @@ function splitShaderSampleCoordinate(
     coordinate.type === 'call' &&
     normalizeShaderCallName(coordinate.name) === 'vec3'
   ) {
-    if (coordinate.args.length >= 2) {
-      return {
-        dimension: '3d',
-        uv: coordinate.args[0] as MilkdropShaderExpressionNode,
-        z: coordinate.args[1] as MilkdropShaderExpressionNode,
-      };
-    }
-
     if (coordinate.args.length >= 3) {
       const [x, y, z] = coordinate.args;
       if (x && y && z) {
@@ -805,6 +797,14 @@ function splitShaderSampleCoordinate(
           z,
         };
       }
+    }
+
+    if (coordinate.args.length >= 2) {
+      return {
+        dimension: '3d',
+        uv: coordinate.args[0] as MilkdropShaderExpressionNode,
+        z: coordinate.args[1] as MilkdropShaderExpressionNode,
+      };
     }
   }
 

@@ -23,6 +23,7 @@ import { syncProceduralInteractionUniforms } from './procedural-field-uniforms';
 
 const SHARED_GEOMETRY_FLAG = 'milkdropSharedGeometry';
 const PROCEDURAL_WAVE_BOUNDS_RADIUS = Math.SQRT2 * 2.2;
+const PROJECTM_STEREO_OFFSET = 32 / 512;
 const proceduralWaveGeometryCache = new Map<number, BufferGeometry>();
 
 function markSharedGeometry<T extends BufferGeometry>(geometry: T) {
@@ -81,6 +82,59 @@ function createProceduralWaveObjectGeometry(sampleCount: number) {
     PROCEDURAL_WAVE_BOUNDS_RADIUS,
   );
   return geometry;
+}
+
+function getProceduralWaveRenderCount(wave: MilkdropProceduralWaveVisual) {
+  return wave.samples.length + (wave.closed ? 1 : 0);
+}
+
+function buildProceduralWaveSampleT(
+  sourceLength: number,
+  closed: boolean,
+): number[] {
+  const renderCount = sourceLength + (closed ? 1 : 0);
+  const values = new Array<number>(renderCount);
+  const maxIndex = Math.max(1, sourceLength - 1);
+  for (let index = 0; index < renderCount; index += 1) {
+    values[index] = closed && index === sourceLength ? 0 : index / maxIndex;
+  }
+  return values;
+}
+
+function sampleScalarValueAt(values: number[], t: number) {
+  if (values.length === 0) {
+    return 0;
+  }
+  if (values.length === 1) {
+    return values[0] ?? 0;
+  }
+  const clampedT = Math.min(Math.max(t, 0), 1);
+  const scaledIndex = clampedT * (values.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(values.length - 1, lowerIndex + 1);
+  const mix = scaledIndex - lowerIndex;
+  return lerpNumber(values[lowerIndex] ?? 0, values[upperIndex] ?? 0, mix);
+}
+
+function buildProceduralWaveAttributeValues(
+  values: number[],
+  closed: boolean,
+  offset = 0,
+) {
+  const sampleT = buildProceduralWaveSampleT(values.length, closed);
+  return sampleT.map((t) => sampleScalarValueAt(values, t + offset));
+}
+
+function buildProceduralWaveParity(sourceLength: number, closed: boolean) {
+  const renderCount = sourceLength + (closed ? 1 : 0);
+  const values = new Array<number>(renderCount);
+  for (let index = 0; index < renderCount; index += 1) {
+    values[index] = index % 2 === 0 ? 0 : 1;
+  }
+  if (closed && renderCount > 0) {
+    values[renderCount - 1] = 0;
+  }
+  return values;
 }
 
 function setOrUpdateScalarAttribute(
@@ -144,7 +198,7 @@ export function syncProceduralWaveObject(
   const next =
     object ??
     new Line(
-      createProceduralWaveObjectGeometry(wave.samples.length),
+      createProceduralWaveObjectGeometry(getProceduralWaveRenderCount(wave)),
       createProceduralWaveMaterial(),
     );
   if (!(next.material instanceof ShaderMaterial)) {
@@ -152,30 +206,103 @@ export function syncProceduralWaveObject(
     next.material = createProceduralWaveMaterial();
   }
 
+  const renderCount = getProceduralWaveRenderCount(wave);
   const sampleTAttribute = next.geometry.getAttribute('sampleT');
   if (
     !(
       sampleTAttribute instanceof Float32BufferAttribute &&
-      sampleTAttribute.array.length === wave.samples.length
+      sampleTAttribute.array.length === renderCount
     )
   ) {
     if (!isSharedGeometry(next.geometry)) {
       disposeGeometry(next.geometry);
     }
-    next.geometry = createProceduralWaveObjectGeometry(wave.samples.length);
+    next.geometry = createProceduralWaveObjectGeometry(renderCount);
   }
 
-  setOrUpdateScalarAttribute(next.geometry, 'sampleValue', wave.samples);
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleT',
+    buildProceduralWaveSampleT(wave.samples.length, wave.closed),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleValue',
+    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleOffset32',
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleOffset64',
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET * 2,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleOffset96',
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET * 3,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleParity',
+    buildProceduralWaveParity(wave.samples.length, wave.closed),
+  );
   setOrUpdateScalarAttribute(
     next.geometry,
     'previousSampleValue',
-    wave.samples,
+    buildProceduralWaveAttributeValues(wave.samples, wave.closed),
   );
-  setOrUpdateScalarAttribute(next.geometry, 'sampleVelocity', wave.velocities);
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleOffset32',
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleOffset64',
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET * 2,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleOffset96',
+    buildProceduralWaveAttributeValues(
+      wave.samples,
+      wave.closed,
+      PROJECTM_STEREO_OFFSET * 3,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleVelocity',
+    buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
+  );
   setOrUpdateScalarAttribute(
     next.geometry,
     'previousSampleVelocity',
-    wave.velocities,
+    buildProceduralWaveAttributeValues(wave.velocities, wave.closed),
   );
 
   const material = next.material as ShaderMaterial;
@@ -321,24 +448,90 @@ export function syncInterpolatedProceduralWaveObject(
   interaction: MilkdropGpuInteractionTransform | null | undefined,
 ) {
   const next = syncProceduralWaveObject(object, currentWave, interaction);
-  setOrUpdateScalarAttribute(next.geometry, 'sampleValue', currentWave.samples);
+  const previousSamples = resampleScalarValues(
+    previousWave.samples,
+    currentWave.samples.length,
+  );
+  const previousVelocities = resampleScalarValues(
+    previousWave.velocities,
+    currentWave.velocities.length,
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleValue',
+    buildProceduralWaveAttributeValues(currentWave.samples, currentWave.closed),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleOffset32',
+    buildProceduralWaveAttributeValues(
+      currentWave.samples,
+      currentWave.closed,
+      PROJECTM_STEREO_OFFSET,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleOffset64',
+    buildProceduralWaveAttributeValues(
+      currentWave.samples,
+      currentWave.closed,
+      PROJECTM_STEREO_OFFSET * 2,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'sampleOffset96',
+    buildProceduralWaveAttributeValues(
+      currentWave.samples,
+      currentWave.closed,
+      PROJECTM_STEREO_OFFSET * 3,
+    ),
+  );
   setOrUpdateScalarAttribute(
     next.geometry,
     'previousSampleValue',
-    resampleScalarValues(previousWave.samples, currentWave.samples.length),
+    buildProceduralWaveAttributeValues(previousSamples, currentWave.closed),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleOffset32',
+    buildProceduralWaveAttributeValues(
+      previousSamples,
+      currentWave.closed,
+      PROJECTM_STEREO_OFFSET,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleOffset64',
+    buildProceduralWaveAttributeValues(
+      previousSamples,
+      currentWave.closed,
+      PROJECTM_STEREO_OFFSET * 2,
+    ),
+  );
+  setOrUpdateScalarAttribute(
+    next.geometry,
+    'previousSampleOffset96',
+    buildProceduralWaveAttributeValues(
+      previousSamples,
+      currentWave.closed,
+      PROJECTM_STEREO_OFFSET * 3,
+    ),
   );
   setOrUpdateScalarAttribute(
     next.geometry,
     'sampleVelocity',
-    currentWave.velocities,
+    buildProceduralWaveAttributeValues(
+      currentWave.velocities,
+      currentWave.closed,
+    ),
   );
   setOrUpdateScalarAttribute(
     next.geometry,
     'previousSampleVelocity',
-    resampleScalarValues(
-      previousWave.velocities,
-      currentWave.velocities.length,
-    ),
+    buildProceduralWaveAttributeValues(previousVelocities, currentWave.closed),
   );
   const material = next.material as ShaderMaterial;
   material.uniforms.previousCenterX.value = previousWave.centerX;

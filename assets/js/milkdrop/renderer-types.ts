@@ -146,6 +146,7 @@ export type MilkdropProceduralWaveVisual = {
   alpha: number;
   additive: boolean;
   thickness: number;
+  closed: boolean;
 };
 
 export type MilkdropProceduralCustomWaveVisual = {

@@ -35,6 +35,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
+  return data instanceof Uint8Array ? data : new Uint8Array(data);
+}
+
 function resolveBandIndexes(
   dataLength: number,
   sampleRate: number,
@@ -130,6 +134,10 @@ export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
   private waveformData: Uint8Array;
+  private frequencyDataL: Uint8Array | null = null;
+  private frequencyDataR: Uint8Array | null = null;
+  private waveformDataL: Uint8Array | null = null;
+  private waveformDataR: Uint8Array | null = null;
   private timeDomainData: Float32Array;
   private rms = 0;
   private spectralFeatures: SpectralFeatureSnapshot | null = null;
@@ -145,6 +153,8 @@ export class FrequencyAnalyser {
   private readonly silentGain: GainNode;
   private readonly workletNode?: AudioWorkletNode;
   private readonly analyserNode?: AnalyserNode;
+  private readonly analyserNodeL?: AnalyserNode;
+  private readonly analyserNodeR?: AnalyserNode;
   private readonly sampleRate: number;
   private dataVersion = 0;
   private energyVersion = -1;
@@ -154,6 +164,8 @@ export class FrequencyAnalyser {
     sourceNode,
     workletNode,
     analyserNode,
+    analyserNodeL,
+    analyserNodeR,
     fftSize,
     silentGain,
     sampleRate,
@@ -161,6 +173,8 @@ export class FrequencyAnalyser {
     sourceNode: MediaStreamAudioSourceNode;
     workletNode?: AudioWorkletNode;
     analyserNode?: AnalyserNode;
+    analyserNodeL?: AnalyserNode;
+    analyserNodeR?: AnalyserNode;
     fftSize: number;
     silentGain: GainNode;
     sampleRate: number;
@@ -168,6 +182,8 @@ export class FrequencyAnalyser {
     this.sourceNode = sourceNode;
     this.workletNode = workletNode;
     this.analyserNode = analyserNode;
+    this.analyserNodeL = analyserNodeL;
+    this.analyserNodeR = analyserNodeR;
     this.sampleRate = sampleRate;
     this.frequencyBinCount = fftSize / 2;
     this.frequencyData = new Uint8Array(this.frequencyBinCount);
@@ -178,8 +194,16 @@ export class FrequencyAnalyser {
 
     if (this.workletNode) {
       this.workletNode.port.onmessage = (event: MessageEvent) => {
-        const { frequencyData, waveformData, rms, timeDomainData } =
-          event.data ?? {};
+        const {
+          frequencyData,
+          waveformData,
+          frequencyDataL,
+          frequencyDataR,
+          waveformDataL,
+          waveformDataR,
+          rms,
+          timeDomainData,
+        } = event.data ?? {};
         if (frequencyData) {
           const nextFreq =
             frequencyData instanceof Uint8Array
@@ -205,6 +229,20 @@ export class FrequencyAnalyser {
             this.waveformData.fill(128);
           }
           this.waveformData.set(nextWave);
+        }
+        if (frequencyDataL && frequencyDataR) {
+          this.frequencyDataL = toUint8Array(frequencyDataL);
+          this.frequencyDataR = toUint8Array(frequencyDataR);
+        } else {
+          this.frequencyDataL = null;
+          this.frequencyDataR = null;
+        }
+        if (waveformDataL && waveformDataR) {
+          this.waveformDataL = toUint8Array(waveformDataL);
+          this.waveformDataR = toUint8Array(waveformDataR);
+        } else {
+          this.waveformDataL = null;
+          this.waveformDataR = null;
         }
         if (timeDomainData) {
           const nextTimeDomain =
@@ -266,6 +304,11 @@ export class FrequencyAnalyser {
       }
     }
 
+    const hasStereoTrack = stream
+      .getAudioTracks()
+      .some((track) => (track.getSettings().channelCount ?? 1) >= 2);
+    let analyserNodeL: AnalyserNode | undefined;
+    let analyserNodeR: AnalyserNode | undefined;
     const analyserNode = workletNode
       ? undefined
       : (() => {
@@ -275,6 +318,22 @@ export class FrequencyAnalyser {
             node.smoothingTimeConstant = smoothingTimeConstant;
           }
           sourceNode.connect(node);
+
+          if (hasStereoTrack) {
+            const splitter = context.createChannelSplitter(2);
+            analyserNodeL = context.createAnalyser();
+            analyserNodeR = context.createAnalyser();
+            analyserNodeL.fftSize = fftSize;
+            analyserNodeR.fftSize = fftSize;
+            if (typeof smoothingTimeConstant === 'number') {
+              analyserNodeL.smoothingTimeConstant = smoothingTimeConstant;
+              analyserNodeR.smoothingTimeConstant = smoothingTimeConstant;
+            }
+            sourceNode.connect(splitter);
+            splitter.connect(analyserNodeL, 0);
+            splitter.connect(analyserNodeR, 1);
+          }
+
           return node;
         })();
 
@@ -287,6 +346,8 @@ export class FrequencyAnalyser {
       sourceNode,
       workletNode,
       analyserNode,
+      analyserNodeL,
+      analyserNodeR,
       fftSize,
       silentGain,
       sampleRate,
@@ -318,6 +379,68 @@ export class FrequencyAnalyser {
     }
 
     return this.waveformData;
+  }
+
+  getFrequencyDataL() {
+    if (this.analyserNodeL && this.analyserNodeR) {
+      if (
+        this.frequencyDataL?.length !== this.analyserNodeL.frequencyBinCount
+      ) {
+        this.frequencyDataL = new Uint8Array(
+          this.analyserNodeL.frequencyBinCount,
+        );
+      }
+      this.analyserNodeL.getByteFrequencyData(
+        this.frequencyDataL as Uint8Array<ArrayBuffer>,
+      );
+    }
+
+    return this.frequencyDataL;
+  }
+
+  getFrequencyDataR() {
+    if (this.analyserNodeL && this.analyserNodeR) {
+      if (
+        this.frequencyDataR?.length !== this.analyserNodeR.frequencyBinCount
+      ) {
+        this.frequencyDataR = new Uint8Array(
+          this.analyserNodeR.frequencyBinCount,
+        );
+      }
+      this.analyserNodeR.getByteFrequencyData(
+        this.frequencyDataR as Uint8Array<ArrayBuffer>,
+      );
+    }
+
+    return this.frequencyDataR;
+  }
+
+  getWaveformDataL() {
+    if (this.analyserNodeL && this.analyserNodeR) {
+      if (this.waveformDataL?.length !== this.analyserNodeL.fftSize) {
+        this.waveformDataL = new Uint8Array(this.analyserNodeL.fftSize);
+        this.waveformDataL.fill(128);
+      }
+      this.analyserNodeL.getByteTimeDomainData(
+        this.waveformDataL as Uint8Array<ArrayBuffer>,
+      );
+    }
+
+    return this.waveformDataL;
+  }
+
+  getWaveformDataR() {
+    if (this.analyserNodeL && this.analyserNodeR) {
+      if (this.waveformDataR?.length !== this.analyserNodeR.fftSize) {
+        this.waveformDataR = new Uint8Array(this.analyserNodeR.fftSize);
+        this.waveformDataR.fill(128);
+      }
+      this.analyserNodeR.getByteTimeDomainData(
+        this.waveformDataR as Uint8Array<ArrayBuffer>,
+      );
+    }
+
+    return this.waveformDataR;
   }
 
   getSpectralFeatures() {
@@ -443,6 +566,12 @@ export class FrequencyAnalyser {
     }
     if (this.analyserNode) {
       this.analyserNode.disconnect();
+    }
+    if (this.analyserNodeL) {
+      this.analyserNodeL.disconnect();
+    }
+    if (this.analyserNodeR) {
+      this.analyserNodeR.disconnect();
     }
     this.sourceNode.disconnect();
     this.silentGain.disconnect();

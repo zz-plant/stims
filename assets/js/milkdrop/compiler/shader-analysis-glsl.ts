@@ -308,6 +308,9 @@ export function createCompositeGlslEmitter(): GlslEmitter {
       }
       if (lower === 'vec3') {
         const x = args[0] ?? '0.0';
+        if (args.length === 2) {
+          return `vec3(${x}, ${args[1] ?? x})`;
+        }
         const y = args[1] ?? x;
         const z = args[2] ?? x;
         return `vec3(${x}, ${y}, ${z})`;
@@ -379,8 +382,22 @@ function emitTextureSample(
   dimension: '2d' | '3d',
 ): string | null {
   const samplerArg = args[0];
-  const coordArg = args[1] ?? args[0];
+  let coordArg = args[1] ?? args[0];
   if (!samplerArg || !coordArg) return null;
+  let zSlice = args[2] ?? '0.0';
+
+  if (dimension === '3d') {
+    const vec3Args = splitGlslConstructorArgs(coordArg, 'vec3');
+    if (vec3Args) {
+      if (vec3Args.length >= 3) {
+        coordArg = `vec2(${vec3Args[0]}, ${vec3Args[1]})`;
+        zSlice = vec3Args[2] ?? '0.0';
+      } else if (vec3Args.length >= 2) {
+        coordArg = vec3Args[0] ?? coordArg;
+        zSlice = vec3Args[1] ?? '0.0';
+      }
+    }
+  }
 
   // Check if sampler is a named identifier
   const samplerName = samplerArg.toLowerCase();
@@ -433,15 +450,37 @@ function emitTextureSample(
     const sourceId = getAuxTextureSourceId(normalizedName);
     const isVolume = normalizedName === 'simplex';
     const sampleDim = dimension === '3d' && isVolume ? '1.0' : '0.0';
-    const zSlice =
-      dimension === '3d' && isVolume && args.length >= 3
-        ? (args[2] ?? '0.0')
-        : '0.0';
-    return `sampleAuxTexture(vec4(${sourceId}, 0, 0, 0).x, ${sampleDim}, sampleUv(${coordArg}, textureWrap), ${zSlice}).rgb`;
+    return `sampleAuxTexture(vec4(${sourceId}, 0, 0, 0).x, ${sampleDim}, sampleUv(${coordArg}, textureWrap), ${dimension === '3d' && isVolume ? zSlice : '0.0'}).rgb`;
   }
 
   // Unknown sampler - fall back to main texture
   return `texture2D(currentTex, sampleUv(${coordArg}, textureWrap)).rgb`;
+}
+
+function splitGlslConstructorArgs(
+  expression: string,
+  constructorName: 'vec3',
+): string[] | null {
+  const trimmed = expression.trim();
+  const prefix = `${constructorName}(`;
+  if (!trimmed.startsWith(prefix) || !trimmed.endsWith(')')) {
+    return null;
+  }
+  const body = trimmed.slice(prefix.length, -1);
+  const args: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < body.length; index += 1) {
+    const char = body[index];
+    if (char === '(') depth += 1;
+    if (char === ')') depth = Math.max(0, depth - 1);
+    if (char === ',' && depth === 0) {
+      args.push(body.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  args.push(body.slice(start).trim());
+  return args.every(Boolean) ? args : null;
 }
 
 /**

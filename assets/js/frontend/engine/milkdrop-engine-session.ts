@@ -151,7 +151,10 @@ export function createMilkdropEngineAdapter() {
       const startRuntime = createToyRuntimeStarter({
         toyOptions: {
           cameraOptions: { position: { x: 0, y: 0, z: 5 } },
-          rendererOptions: { antialias: false },
+          rendererOptions: {
+            antialias: false,
+            preserveDrawingBuffer: intent.agentMode,
+          },
         },
         audio: {
           fftSize: 1024,

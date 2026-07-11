@@ -137,6 +137,42 @@ function sampleFrequencyDataOffset(
   return sampleByteData(signals.frequencyData, clamp(t + offset, 0, 1));
 }
 
+function sampleStereoWaveformData(
+  signals: MilkdropRuntimeSignals,
+  channel: 'left' | 'right',
+  t: number,
+  offset: number,
+): number {
+  const left = signals.waveformDataL;
+  const right = signals.waveformDataR;
+  if (left && left.length > 0 && right && right.length > 0) {
+    return sampleByteData(
+      channel === 'left' ? left : right,
+      clamp(t + offset, 0, 1),
+    );
+  }
+
+  return sampleWaveformDataOffset(signals, t, offset);
+}
+
+function sampleStereoFrequencyData(
+  signals: MilkdropRuntimeSignals,
+  channel: 'left' | 'right',
+  t: number,
+  offset: number,
+): number {
+  const left = signals.frequencyDataL;
+  const right = signals.frequencyDataR;
+  if (left && left.length > 0 && right && right.length > 0) {
+    return sampleByteData(
+      channel === 'left' ? left : right,
+      clamp(t + offset, 0, 1),
+    );
+  }
+
+  return sampleFrequencyDataOffset(signals, t, offset);
+}
+
 function normalizeWaveMode(value: number) {
   const rounded = Math.round(value);
   return ((rounded % 8) + 8) % 8;
@@ -336,6 +372,10 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
     motion_strength: 0,
     frequencyData,
     waveformData,
+    frequencyDataL: null,
+    frequencyDataR: null,
+    waveformDataL: null,
+    waveformDataR: null,
   };
 }
 
@@ -461,6 +501,7 @@ export function buildMainWaveFrame({
         alpha: 1,
         additive: false,
         thickness: 1,
+        closed: false,
       })
     : null;
   const proceduralSamples = procedural?.samples ?? null;
@@ -523,17 +564,16 @@ export function buildMainWaveFrame({
       }
       case 2: {
         // CenteredSpiro: ProjectM plots R->X, L[i+32]->Y (stereo Lissajous).
-        // Approximate with offset sampling from the single channel.
-        const sampleR = sampleValue;
-        const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
+        const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
+        const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
         x = centerX + sampleR * scale;
         y = centerY + sampleL * scale;
         break;
       }
       case 3: {
         // CenteredSpiroVolume: same XY mapping but from spectrum data.
-        const sampleR = sampleFrequencyDataOffset(signals, t, 0);
-        const sampleL = sampleFrequencyDataOffset(signals, t, 32 / 512);
+        const sampleR = sampleStereoFrequencyData(signals, 'right', t, 0);
+        const sampleL = sampleStereoFrequencyData(signals, 'left', t, 32 / 512);
         x = centerX + sampleR * scale;
         y = centerY + sampleL * scale;
         break;
@@ -549,15 +589,18 @@ export function buildMainWaveFrame({
       }
       case 5: {
         // ExplosiveHash: ProjectM computes complex multiplication of L/R
-        // channels and rotates by time. Approximate with offset sampling.
-        const sampleR = sampleValue;
-        const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
-        const x0 =
-          sampleR * sampleWaveformDataOffset(signals, t, 64 / 512) +
-          sampleL * sampleWaveformDataOffset(signals, t, 96 / 512);
-        const y0 =
-          sampleR * sampleR -
-          sampleL * sampleWaveformDataOffset(signals, t, 64 / 512);
+        // channels and rotates by time.
+        const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
+        const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
+        const sampleR2 = sampleStereoWaveformData(
+          signals,
+          'right',
+          t,
+          64 / 512,
+        );
+        const sampleL2 = sampleStereoWaveformData(signals, 'left', t, 96 / 512);
+        const x0 = sampleR * sampleR2 + sampleL * sampleL2;
+        const y0 = sampleR * sampleR - sampleL * sampleR2;
         const rot = signals.time * 0.3;
         const cosR = Math.cos(rot);
         const sinR = Math.sin(rot);
@@ -577,9 +620,8 @@ export function buildMainWaveFrame({
       }
       case 7: {
         // DoubleLine: ProjectM shows two parallel lines from L and R channels.
-        // Interleave L and R samples to approximate two lines in a single draw.
-        const sampleR = sampleValue;
-        const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
+        const sampleR = sampleStereoWaveformData(signals, 'right', t, 0);
+        const sampleL = sampleStereoWaveformData(signals, 'left', t, 32 / 512);
         const separation = 0.1 + mystery * 0.2;
         if (index % 2 === 0) {
           x = -1 + 2 * t;
@@ -659,6 +701,7 @@ export function buildMainWaveFrame({
     procedural.alpha = alpha;
     procedural.additive = additive;
     procedural.thickness = thickness;
+    procedural.closed = closed;
   }
 
   visual.color = assignColor(visual.color, finalWaveColor);

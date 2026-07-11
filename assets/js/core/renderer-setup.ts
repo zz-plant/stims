@@ -58,6 +58,7 @@ export type RendererInitConfig = {
   adaptiveDensityMultiplier?: number;
   webgpuInitTimeoutMs?: number;
   forceRetryCapabilities?: boolean;
+  preserveDrawingBuffer?: boolean;
 };
 
 async function loadWebGPURenderer() {
@@ -67,6 +68,13 @@ async function loadWebGPURenderer() {
 
 const isMobileUserAgent = isMobileDevice();
 const deviceEnvironment = getDeviceEnvironmentProfile();
+
+function shouldPreserveDrawingBufferForValidation() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  return new URLSearchParams(window.location.search).get('agent') === 'true';
+}
 
 function disposeRenderer(renderer: Partial<WebGLRenderer | WebGPURenderer>) {
   if (
@@ -114,6 +122,7 @@ export async function initRenderer(
     adaptiveDensityMultiplier = 1,
     webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
     forceRetryCapabilities = false,
+    preserveDrawingBuffer = false,
   } = config;
 
   const effectiveRenderScale: RenderScale =
@@ -179,7 +188,8 @@ export async function initRenderer(
       powerPreference: isMobileUserAgent ? 'default' : 'high-performance',
       failIfMajorPerformanceCaveat: false,
       stencil: true,
-      preserveDrawingBuffer: false,
+      preserveDrawingBuffer:
+        preserveDrawingBuffer || shouldPreserveDrawingBufferForValidation(),
     });
     return finalize(renderer, 'webgl', null, null);
   };

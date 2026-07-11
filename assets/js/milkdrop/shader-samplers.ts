@@ -40,7 +40,10 @@ const SHADER_TEXTURE_SAMPLER_ALIASES: Record<
   MilkdropShaderTextureSampler | 'main'
 > = {
   fw_noise_lq: 'noise',
+  fw_noise_mq: 'noise',
   fw_noise_hq: 'noise',
+  fw_noise: 'noise',
+  noise: 'noise',
   noise_lq: 'noise',
   noise_hq: 'noise',
   noise_mq: 'noise',

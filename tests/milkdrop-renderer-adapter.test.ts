@@ -481,7 +481,7 @@ shapecode_0_tex_ang=0.35
     );
 
     const frameState = createMilkdropVM(preset).step(makeSignals());
-    const feedbackTexture = new Texture();
+    const feedbackTexture = new Texture({ width: 200, height: 100 });
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
     const adapter = (await createMilkdropRendererAdapter({
@@ -518,7 +518,10 @@ shapecode_0_tex_ang=0.35
     ) as
       | {
           material?: ShaderMaterial & {
-            uniforms?: { shapeTexture?: { value: Texture | null } };
+            uniforms?: {
+              shapeTexture?: { value: Texture | null };
+              textureAspectY?: { value: number };
+            };
           };
         }
       | undefined;
@@ -530,6 +533,13 @@ shapecode_0_tex_ang=0.35
     expect(batchedFill?.material).toBeInstanceOf(ShaderMaterial);
     expect(batchedFill?.material?.uniforms?.shapeTexture?.value).toBe(
       feedbackTexture,
+    );
+    expect(batchedFill?.material?.uniforms?.textureAspectY?.value).toBeCloseTo(
+      0.5,
+      6,
+    );
+    expect(batchedFill?.material?.fragmentShader).toContain(
+      'textureAspectY / max(vTextureZoom, 0.0001)',
     );
     expect(
       getFloat32AttributeArray(batchedFill, 'instanceFillControl'),
@@ -2504,6 +2514,7 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
       alpha: 0.4,
       additive: false,
       thickness: 1,
+      closed: false,
     };
     const previousWave = {
       ...currentWave,
@@ -2551,6 +2562,7 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
           alpha: 0.5,
           additive: false,
           thickness: 1,
+          closed: false,
         },
         {
           samples: [0.2, -0.1, 0.3, -0.25, 0.15],
@@ -2567,6 +2579,7 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
           alpha: 0.5,
           additive: false,
           thickness: 1,
+          closed: false,
         },
         0.6,
         0.4,
@@ -2646,6 +2659,7 @@ wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
       alpha: 0.2,
       additive: false,
       thickness: 1,
+      closed: false,
     };
     const currentWave = {
       ...previousWave,
@@ -3904,6 +3918,53 @@ wave_a=0.8
     expect(lineMaterial?.blendEquation).toBe(ReverseSubtractEquation);
   });
 
+  test('falls back from WebGPU wave batching for custom blend modes', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Subtractive WebGPU Wave
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+      `.trim(),
+      { id: 'subtractive-webgpu-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    frameState.mainWave.blendMode = 'subtractive';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveGroup = getRootChildByRenderOrder(root, 20);
+    const batchedWave = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceLine') !== undefined &&
+        child.renderOrder === 20,
+    );
+    const waveLine = waveGroup?.children?.[0] as RenderTreeNode;
+    const lineChild = waveLine.children?.[0] as {
+      material?: LineBasicMaterial;
+    };
+
+    expect(batchedWave).toBeUndefined();
+    expect(lineChild?.material?.blending).toBe(CustomBlending);
+    expect(lineChild?.material?.blendEquation).toBe(ReverseSubtractEquation);
+  });
+
   test('applies multiplicative blend mode on shapes via CustomBlending', async () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -3955,6 +4016,62 @@ shapecode_0_b=0.1
     expect(fillMaterial?.blending).toBe(CustomBlending);
     expect(fillMaterial?.blendSrc).toBe(DstColorFactor);
     expect(fillMaterial?.blendDst).toBe(ZeroFactor);
+  });
+
+  test('falls back from WebGPU shape batching for custom blend modes', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Multiplicative WebGPU Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_additive=0
+shapecode_0_a=0.7
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+      `.trim(),
+      { id: 'multiplicative-webgpu-shape' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const shape = frameState.shapes[0];
+    if (!shape) {
+      throw new Error('expected shape');
+    }
+    shape.blendMode = 'multiplicative';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
+    const batchedShape = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.renderOrder === 50,
+    );
+    const shapeObject = shapesGroup?.children?.[0] as RenderTreeNode;
+    const fillMesh = shapeObject?.children?.[0] as
+      | { material?: MeshBasicMaterial }
+      | undefined;
+
+    expect(batchedShape).toBeUndefined();
+    expect(fillMesh?.material?.blending).toBe(CustomBlending);
+    expect(fillMesh?.material?.blendSrc).toBe(DstColorFactor);
+    expect(fillMesh?.material?.blendDst).toBe(ZeroFactor);
   });
 
   test('ensures wave blend state precedes shape blend state in render order', async () => {

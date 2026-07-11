@@ -853,8 +853,15 @@ export function createProceduralWaveMaterial() {
     vertexShader: `
       attribute float sampleT;
       attribute float sampleValue;
+      attribute float sampleOffset32;
+      attribute float sampleOffset64;
+      attribute float sampleOffset96;
+      attribute float sampleParity;
       attribute float sampleVelocity;
       attribute float previousSampleValue;
+      attribute float previousSampleOffset32;
+      attribute float previousSampleOffset64;
+      attribute float previousSampleOffset96;
       attribute float previousSampleVelocity;
       uniform float mode;
       uniform float centerX;
@@ -881,6 +888,10 @@ export function createProceduralWaveMaterial() {
       vec2 milkdropWavePoint(
         float t,
         float sampleValue,
+        float sampleOffset32,
+        float sampleOffset64,
+        float sampleOffset96,
+        float parity,
         float velocity,
         float pointCenterX,
         float pointCenterY,
@@ -891,7 +902,6 @@ export function createProceduralWaveMaterial() {
         float pointTrebleAtt
       ) {
         float centeredSample = sampleValue - 0.5;
-        float mysteryPhase = pointMystery * 3.141592653589793;
         float x = 0.0;
         float y = 0.0;
 
@@ -919,25 +929,11 @@ export function createProceduralWaveMaterial() {
           x = pointCenterX + cos(angle) * radius;
           y = pointCenterY + sin(angle) * radius;
         } else if (mode < 2.5) {
-          float angle =
-            t * 3.141592653589793 * 5.0 +
-            pointSignalTime * (0.4 + pointMystery * 0.2) +
-            centeredSample * 0.65;
-          float radius =
-            0.08 + t * 0.6 + sampleValue * pointScale * 0.6 + velocity * 0.12;
-          x = pointCenterX + cos(angle) * radius;
-          y = pointCenterY + sin(angle) * radius;
+          x = pointCenterX + sampleValue * pointScale;
+          y = pointCenterY + sampleOffset32 * pointScale;
         } else if (mode < 3.5) {
-          float angle = t * 3.141592653589793 * 2.0 + pointSignalTime * 0.22;
-          float spoke =
-            0.2 +
-            sampleValue * pointScale * 1.05 +
-            sin(t * 3.141592653589793 * 12.0 + mysteryPhase) * 0.05 +
-            velocity * 0.09;
-          float pinch =
-            0.55 + cos(t * 3.141592653589793 * 6.0 + pointSignalTime) * 0.2;
-          x = pointCenterX + cos(angle) * spoke;
-          y = pointCenterY + sin(angle) * spoke * pinch;
+          x = pointCenterX + sampleValue * pointScale;
+          y = pointCenterY + sampleOffset32 * pointScale;
         } else if (mode < 4.5) {
           x =
             pointCenterX +
@@ -945,18 +941,13 @@ export function createProceduralWaveMaterial() {
             sin(t * 3.141592653589793 * 10.0 + pointSignalTime * 0.5) * 0.04;
           y = 1.08 - t * 2.16 + velocity * 0.22;
         } else if (mode < 5.5) {
-          float angle = t * 3.141592653589793 * 2.0 + pointSignalTime * 0.18;
-          float xAmp = 0.26 + sampleValue * pointScale * 0.75;
-          float yAmp = 0.18 + sampleValue * pointScale;
-          x =
-            pointCenterX +
-            sin(angle * (2.0 + pointMystery * 0.6)) * xAmp +
-            cos(angle * 4.0 + mysteryPhase) * 0.04 +
-            velocity * 0.16;
-          y =
-            pointCenterY +
-            sin(angle * (3.0 + pointMystery * 0.5) + 3.141592653589793 / 2.0) *
-              yAmp;
+          float x0 = sampleValue * sampleOffset64 + sampleOffset32 * sampleOffset96;
+          float y0 = sampleValue * sampleValue - sampleOffset32 * sampleOffset64;
+          float rot = pointSignalTime * 0.3;
+          float cosR = cos(rot);
+          float sinR = sin(rot);
+          x = pointCenterX + (x0 * cosR - y0 * sinR) * pointScale;
+          y = pointCenterY + (x0 * sinR + y0 * cosR) * pointScale;
         } else if (mode < 6.5) {
           float band = (sampleValue - 0.5) * pointScale * 1.4;
           x = -1.05 + t * 2.1;
@@ -966,18 +957,12 @@ export function createProceduralWaveMaterial() {
             sin(t * 3.141592653589793 * 8.0 + pointSignalTime * 0.55) * 0.03 +
             velocity * 0.18;
         } else {
-          float angle =
-            t * 3.141592653589793 * 2.0 +
-            pointSignalTime * (0.24 + pointMystery * 0.1);
-          float petals =
-            3.0 + floor(clamp(pointMystery * 3.0, 0.0, 3.0) + 0.5);
-          float radius =
-            0.12 +
-            (0.2 + sampleValue * pointScale * 0.9) *
-              cos(petals * angle + mysteryPhase) +
-            velocity * 0.14;
-          x = pointCenterX + cos(angle) * radius;
-          y = pointCenterY + sin(angle) * radius;
+          float separation = 0.1 + pointMystery * 0.2;
+          x = -1.0 + 2.0 * t;
+          y = pointCenterY +
+            (parity < 0.5
+              ? sampleValue * pointScale * 0.5 + separation
+              : sampleOffset32 * pointScale * 0.5 - separation);
         }
 
         return vec2(x, y);
@@ -989,6 +974,21 @@ export function createProceduralWaveMaterial() {
           sampleValue,
           blendMix
         );
+        float blendedSampleOffset32 = mix(
+          previousSampleOffset32,
+          sampleOffset32,
+          blendMix
+        );
+        float blendedSampleOffset64 = mix(
+          previousSampleOffset64,
+          sampleOffset64,
+          blendMix
+        );
+        float blendedSampleOffset96 = mix(
+          previousSampleOffset96,
+          sampleOffset96,
+          blendMix
+        );
         float blendedVelocity = mix(
           previousSampleVelocity,
           sampleVelocity,
@@ -997,6 +997,10 @@ export function createProceduralWaveMaterial() {
         vec2 point = milkdropWavePoint(
           sampleT,
           blendedSampleValue,
+          blendedSampleOffset32,
+          blendedSampleOffset64,
+          blendedSampleOffset96,
+          sampleParity,
           blendedVelocity,
           mix(previousCenterX, centerX, blendMix),
           mix(previousCenterY, centerY, blendMix),

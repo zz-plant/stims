@@ -103,12 +103,15 @@ function extractNativeShaderBody(shaderText: string) {
     .replace(/\bsampler_blur2\b/giu, 'blur2Tex')
     .replace(/\bsampler_blur3\b/giu, 'blur3Tex')
     .replace(
-      /\bsampler_noise_lq\b|\bsampler_noise_mq\b|\bsampler_noise_hq\b|\bsampler_pw_noise_lq\b/giu,
+      /\bsampler_noise\b|\bsampler_noise_lq\b|\bsampler_noise_mq\b|\bsampler_noise_hq\b|\bsampler_fw_noise_lq\b|\bsampler_fw_noise_hq\b|\bsampler_pw_noise_lq\b/giu,
       'noiseTex',
     )
-    .replace(/\bsampler_noisevol_hq\b|\bsampler_noisevol_lq\b/giu, 'simplexTex')
     .replace(
-      /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_hq\b/giu,
+      /\bsampler_noisevol\b|\bsampler_noisevol_hq\b|\bsampler_noisevol_lq\b|\bsampler_fw_noisevol\b|\bsampler_fw_noisevol_hq\b|\bsampler_fw_noisevol_lq\b/giu,
+      'simplexTex',
+    )
+    .replace(
+      /\btexsize_noise_lq\b|\btexsize_noise_mq\b|\btexsize_noise_hq\b|\btexsize_noisevol_lq\b|\btexsize_noisevol_hq\b/giu,
       'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
     )
     .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')

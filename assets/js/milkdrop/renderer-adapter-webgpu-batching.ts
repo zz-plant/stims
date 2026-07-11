@@ -73,6 +73,7 @@ const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
 const SHAPE_OUTLINE_INNER_OFFSET = 0;
 const SHAPE_THICK_OUTLINE_OUTER_OFFSET = MILKDROP_THICK_SHAPE_PASS_OFFSET;
+const PROJECTM_STEREO_OFFSET = 32 / 512;
 const polygonFillGeometryCache = new Map<number, BufferGeometry>();
 const polygonRingGeometryCache = new Map<number, InstancedBufferGeometry>();
 
@@ -445,6 +446,18 @@ function ensureInstancedAttribute(
   return attribute;
 }
 
+function getTextureAspectY(texture: Texture | null) {
+  const image = texture?.image as
+    | { width?: number; height?: number }
+    | undefined;
+  const width = image?.width ?? 0;
+  const height = image?.height ?? 0;
+  if (width > 0 && height > 0) {
+    return height / width;
+  }
+  return 1;
+}
+
 function getBatchedTargetRenderOrder(key: string) {
   switch (key) {
     case 'wave:main-wave':
@@ -650,12 +663,13 @@ class CompactSegmentUploadBuffer {
       const point = buildProceduralWavePoint(
         wave,
         sampleT,
+        index,
         wave.samples[index] ?? 0,
         wave.velocities[index] ?? 0,
       );
       positions.push(point.x, point.y, MILKDROP_WAVE_Z);
     }
-    this.appendPolyline(positions, wave.color, wave.alpha, width);
+    this.appendPolyline(positions, wave.color, wave.alpha, width, wave.closed);
   }
 
   appendProceduralCustomWave(wave: MilkdropProceduralCustomWaveVisual) {
@@ -750,11 +764,11 @@ function computeJoinExtension(
 function buildProceduralWavePoint(
   wave: MilkdropProceduralWaveVisual,
   sampleT: number,
+  sampleIndex: number,
   sampleValue: number,
   velocity: number,
 ) {
   const centeredSample = sampleValue - 0.5;
-  const mysteryPhase = wave.mystery * Math.PI;
   let x = 0;
   let y = 0;
 
@@ -780,24 +794,25 @@ function buildProceduralWavePoint(
     x = wave.centerX + Math.cos(angle) * radius;
     y = wave.centerY + Math.sin(angle) * radius;
   } else if (wave.mode < 2.5) {
-    const angle =
-      sampleT * Math.PI * 5 +
-      wave.time * (0.4 + wave.mystery * 0.2) +
-      centeredSample * 0.65;
-    const radius =
-      0.08 + sampleT * 0.6 + sampleValue * wave.scale * 0.6 + velocity * 0.12;
-    x = wave.centerX + Math.cos(angle) * radius;
-    y = wave.centerY + Math.sin(angle) * radius;
+    x = wave.centerX + sampleValue * wave.scale;
+    y =
+      wave.centerY +
+      sampleProceduralWaveOffset(
+        wave.samples,
+        sampleT,
+        PROJECTM_STEREO_OFFSET,
+      ) *
+        wave.scale;
   } else if (wave.mode < 3.5) {
-    const angle = sampleT * Math.PI * 2 + wave.time * 0.22;
-    const spoke =
-      0.2 +
-      sampleValue * wave.scale * 1.05 +
-      Math.sin(sampleT * Math.PI * 12 + mysteryPhase) * 0.05 +
-      velocity * 0.09;
-    const pinch = 0.55 + Math.cos(sampleT * Math.PI * 6 + wave.time) * 0.2;
-    x = wave.centerX + Math.cos(angle) * spoke;
-    y = wave.centerY + Math.sin(angle) * spoke * pinch;
+    x = wave.centerX + sampleValue * wave.scale;
+    y =
+      wave.centerY +
+      sampleProceduralWaveOffset(
+        wave.samples,
+        sampleT,
+        PROJECTM_STEREO_OFFSET,
+      ) *
+        wave.scale;
   } else if (wave.mode < 4.5) {
     x =
       wave.centerX +
@@ -805,17 +820,28 @@ function buildProceduralWavePoint(
       Math.sin(sampleT * Math.PI * 10 + wave.time * 0.5) * 0.04;
     y = 1.08 - sampleT * 2.16 + velocity * 0.22;
   } else if (wave.mode < 5.5) {
-    const angle = sampleT * Math.PI * 2 + wave.time * 0.18;
-    const xAmp = 0.26 + sampleValue * wave.scale * 0.75;
-    const yAmp = 0.18 + sampleValue * wave.scale;
-    x =
-      wave.centerX +
-      Math.sin(angle * (2 + wave.mystery * 0.6)) * xAmp +
-      Math.cos(angle * 4 + mysteryPhase) * 0.04 +
-      velocity * 0.16;
-    y =
-      wave.centerY +
-      Math.sin(angle * (3 + wave.mystery * 0.5) + Math.PI / 2) * yAmp;
+    const sampleL = sampleProceduralWaveOffset(
+      wave.samples,
+      sampleT,
+      PROJECTM_STEREO_OFFSET,
+    );
+    const sample64 = sampleProceduralWaveOffset(
+      wave.samples,
+      sampleT,
+      PROJECTM_STEREO_OFFSET * 2,
+    );
+    const sample96 = sampleProceduralWaveOffset(
+      wave.samples,
+      sampleT,
+      PROJECTM_STEREO_OFFSET * 3,
+    );
+    const x0 = sampleValue * sample64 + sampleL * sample96;
+    const y0 = sampleValue * sampleValue - sampleL * sample64;
+    const rot = wave.time * 0.3;
+    const cosR = Math.cos(rot);
+    const sinR = Math.sin(rot);
+    x = wave.centerX + (x0 * cosR - y0 * sinR) * wave.scale;
+    y = wave.centerY + (x0 * sinR + y0 * cosR) * wave.scale;
   } else if (wave.mode < 6.5) {
     const band = (sampleValue - 0.5) * wave.scale * 1.4;
     x = -1.05 + sampleT * 2.1;
@@ -825,20 +851,42 @@ function buildProceduralWavePoint(
       Math.sin(sampleT * Math.PI * 8 + wave.time * 0.55) * 0.03 +
       velocity * 0.18;
   } else {
-    const angle =
-      sampleT * Math.PI * 2 + wave.time * (0.24 + wave.mystery * 0.1);
-    const petals =
-      3 + Math.floor(Math.min(Math.max(wave.mystery * 3, 0), 3) + 0.5);
-    const radius =
-      0.12 +
-      (0.2 + sampleValue * wave.scale * 0.9) *
-        Math.cos(petals * angle + mysteryPhase) +
-      velocity * 0.14;
-    x = wave.centerX + Math.cos(angle) * radius;
-    y = wave.centerY + Math.sin(angle) * radius;
+    const sampleL = sampleProceduralWaveOffset(
+      wave.samples,
+      sampleT,
+      PROJECTM_STEREO_OFFSET,
+    );
+    const separation = 0.1 + wave.mystery * 0.2;
+    x = -1 + 2 * sampleT;
+    y =
+      wave.centerY +
+      (sampleIndex % 2 === 0
+        ? sampleValue * wave.scale * 0.5 + separation
+        : sampleL * wave.scale * 0.5 - separation);
   }
 
   return { x, y };
+}
+
+function sampleProceduralWaveOffset(
+  values: number[],
+  sampleT: number,
+  offset: number,
+) {
+  if (values.length === 0) {
+    return 0;
+  }
+  if (values.length === 1) {
+    return values[0] ?? 0;
+  }
+  const clampedT = Math.min(Math.max(sampleT + offset, 0), 1);
+  const scaledIndex = clampedT * (values.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(values.length - 1, lowerIndex + 1);
+  const mix = scaledIndex - lowerIndex;
+  const lower = values[lowerIndex] ?? 0;
+  const upper = values[upperIndex] ?? lower;
+  return lower + (upper - lower) * mix;
 }
 
 class InstancedSegmentBatch {
@@ -1140,6 +1188,9 @@ class InstancedShapeFillBatch {
           shapeTexture: {
             value: null,
           },
+          textureAspectY: {
+            value: 1,
+          },
         },
         vertexShader: `
           attribute vec4 instanceTransform;
@@ -1180,6 +1231,7 @@ class InstancedShapeFillBatch {
         `,
         fragmentShader: `
           uniform sampler2D shapeTexture;
+          uniform float textureAspectY;
           varying vec4 vPrimaryColor;
           varying vec4 vSecondaryColor;
           varying float vGradient;
@@ -1201,10 +1253,12 @@ class InstancedShapeFillBatch {
           void main() {
             vec4 color = mix(vPrimaryColor, vSecondaryColor, vBlend * vGradient);
             if (vTextured > 0.5) {
-              vec2 sampleUv =
-                rotate2d(vLocal, vTextureAngle) *
-                  (0.5 * max(vTextureZoom, 0.0001)) +
-                0.5;
+              vec2 rotated = rotate2d(vLocal, vTextureAngle);
+              vec2 sampleUv = vec2(
+                0.5 +
+                  0.5 * rotated.x * textureAspectY / max(vTextureZoom, 0.0001),
+                0.5 + 0.5 * rotated.y / max(vTextureZoom, 0.0001)
+              );
               vec4 sampled = texture2D(shapeTexture, fract(sampleUv));
               color = vec4(sampled.rgb * color.rgb, color.a * sampled.a);
             }
@@ -1221,7 +1275,9 @@ class InstancedShapeFillBatch {
     geometry.instanceCount = instances.length;
     this.mesh.visible = instances.length > 0;
     const material = this.mesh.material as ShaderMaterial;
-    material.uniforms.shapeTexture.value = this.getShapeTexture();
+    const shapeTexture = this.getShapeTexture();
+    material.uniforms.shapeTexture.value = shapeTexture;
+    material.uniforms.textureAspectY.value = getTextureAspectY(shapeTexture);
     const transform = ensureInstancedAttribute(
       geometry,
       'instanceTransform',
@@ -1568,6 +1624,16 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     this.waveTargets.delete(key);
   }
 
+  private clearShapeTarget(key: string) {
+    const target = this.shapeTargets.get(key);
+    if (!target) {
+      return;
+    }
+    target.dispose();
+    this.root.remove(target.group);
+    this.shapeTargets.delete(key);
+  }
+
   private getShapeTarget(key: string) {
     let target = this.shapeTargets.get(key);
     if (!target) {
@@ -1597,7 +1663,8 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     waves: MilkdropWaveVisual[],
     alphaMultiplier: number,
   ) {
-    if (waves.some((wave) => wave.drawMode === 'dots')) {
+    if (waves.some((wave) => wave.drawMode === 'dots' || wave.blendMode)) {
+      this.clearWaveTarget(`wave:${target}`);
       return false;
     }
     this.resetSegmentUploads();
@@ -1667,6 +1734,10 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier: number,
   ) {
+    if (shapes.some((shape) => shape.blendMode)) {
+      this.clearShapeTarget(target);
+      return false;
+    }
     this.getShapeTarget(target).sync(shapes, alphaMultiplier);
     return true;
   }

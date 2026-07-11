@@ -148,6 +148,10 @@ export function createMilkdropSignalTracker(options?: {
     motion_strength: 0,
     frequencyData: null as Uint8Array | null,
     waveformData: null as Uint8Array | null,
+    frequencyDataL: null as Uint8Array | null,
+    frequencyDataR: null as Uint8Array | null,
+    waveformDataL: null as Uint8Array | null,
+    waveformDataR: null as Uint8Array | null,
   } as unknown as MilkdropRuntimeSignals;
 
   let latestWeightedEnergy = 0;
@@ -169,14 +173,30 @@ export function createMilkdropSignalTracker(options?: {
       analyser,
       frequencyData,
       waveformData,
+      frequencyDataL,
+      frequencyDataR,
+      waveformDataL,
+      waveformDataR,
     }: {
       time: number;
       deltaMs: number;
       analyser: FrequencyAnalyser | null;
       frequencyData: Uint8Array;
       waveformData?: Uint8Array;
+      frequencyDataL?: Uint8Array | null;
+      frequencyDataR?: Uint8Array | null;
+      waveformDataL?: Uint8Array | null;
+      waveformDataR?: Uint8Array | null;
     }): MilkdropRuntimeSignals {
       const resolvedWaveformData = waveformData ?? analyser?.getWaveformData();
+      const resolvedFrequencyDataL =
+        frequencyDataL ?? analyser?.getFrequencyDataL?.() ?? null;
+      const resolvedFrequencyDataR =
+        frequencyDataR ?? analyser?.getFrequencyDataR?.() ?? null;
+      const resolvedWaveformDataL =
+        waveformDataL ?? analyser?.getWaveformDataL?.() ?? null;
+      const resolvedWaveformDataR =
+        waveformDataR ?? analyser?.getWaveformDataR?.() ?? null;
       const sampleRate =
         typeof analyser?.getSampleRate === 'function'
           ? analyser.getSampleRate()
@@ -266,6 +286,10 @@ export function createMilkdropSignalTracker(options?: {
       signalCache.weightedEnergy = finalWeightedEnergy;
       signalCache.frequencyData = processedSignals.frequencyData;
       signalCache.waveformData = resolvedWaveformData;
+      signalCache.frequencyDataL = resolvedFrequencyDataL;
+      signalCache.frequencyDataR = resolvedFrequencyDataR;
+      signalCache.waveformDataL = resolvedWaveformDataL;
+      signalCache.waveformDataR = resolvedWaveformDataR;
       latestWeightedEnergy = finalWeightedEnergy;
 
       return signalCache;
