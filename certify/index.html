@@ -73,6 +73,10 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
+      .cert-controls button:focus-visible {
+        outline: 2px solid var(--cool);
+        outline-offset: 2px;
+      }
       .cert-controls select {
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -210,6 +214,13 @@
       .cert-submit:hover {
         background: rgba(119, 201, 255, 0.2);
       }
+      .cert-submit:focus-visible {
+        outline: 2px solid var(--cool);
+        outline-offset: 2px;
+      }
+      .cert-submit:active {
+        transform: scale(0.97);
+      }
       @media (max-width: 720px) {
         .cert-grid {
           grid-template-columns: 1fr;
@@ -218,7 +229,8 @@
     </style>
   </head>
   <body>
-    <main class="cert-shell">
+    <a href="#main-content" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;:focus{position:static;width:auto;height:auto;overflow:visible}">Skip to main content</a>
+    <main class="cert-shell" id="main-content">
       <header class="cert-header">
         <h1>Stims Certification Suite</h1>
         <p>
@@ -241,13 +253,13 @@
       <section class="cert-grid" aria-label="Renderer comparison">
         <article class="cert-pane">
           <h2>WebGPU</h2>
-          <div id="webgpu-canvas-target" class="cert-placeholder">
+          <div id="webgpu-canvas-target" class="cert-placeholder" role="img" aria-label="WebGPU renderer output">
             Waiting for renderer…
           </div>
         </article>
         <article class="cert-pane">
           <h2>WebGL</h2>
-          <div id="webgl-canvas-target" class="cert-placeholder">
+          <div id="webgl-canvas-target" class="cert-placeholder" role="img" aria-label="WebGL renderer output">
             Waiting for renderer…
           </div>
         </article>
