@@ -177,12 +177,14 @@ export function buildWebGpuDescriptorPlan({
       : featureAnalysis.shaderTextExecution.webgpu === 'none'
         ? 'none'
         : 'controls';
-  const feedback: MilkdropFeedbackPostEffectDescriptorPlan | null =
+  const feedbackNeedsCompatibilityFallback =
     post.videoEchoEnabled ||
     post.feedbackTexture ||
     feedbackUsesShaderPrograms ||
     feedbackUsesShaderTextures ||
-    feedbackUsesPostEffects
+    feedbackUsesPostEffects;
+  const feedback: MilkdropFeedbackPostEffectDescriptorPlan | null =
+    feedbackNeedsCompatibilityFallback
       ? {
           kind: 'feedback-post-effect',
           shaderExecution,
@@ -197,20 +199,17 @@ export function buildWebGpuDescriptorPlan({
             feedbackUsesPostEffects
               ? 'scene'
               : 'adaptive',
-          fallbackToLegacyFeedback: webgpu.evidence.some(
-            (entry) =>
-              entry.code === 'video-echo-gap' ||
-              entry.code === 'post-effects-gap',
-          ),
+          fallbackToLegacyFeedback: feedbackNeedsCompatibilityFallback,
         }
       : null;
 
   return {
-    routing:
-      proceduralWaves.length > 0 ||
-      proceduralMesh ||
-      proceduralMotionVectors ||
-      feedback
+    routing: feedbackNeedsCompatibilityFallback
+      ? 'fallback-webgl'
+      : proceduralWaves.length > 0 ||
+          proceduralMesh ||
+          proceduralMotionVectors ||
+          feedback
         ? 'descriptor-plan'
         : 'generic-frame-payload',
     proceduralWaves,

@@ -8,6 +8,7 @@ export function buildFeedbackCompositeState({
   backend,
   directFeedbackShaders,
   webgpuFeedbackPlanShaderExecution,
+  webgpuFeedbackPlanFallback = false,
   getShaderTextureSourceId,
   getShaderTextureBlendModeId,
   getShaderSampleDimensionId,
@@ -16,6 +17,7 @@ export function buildFeedbackCompositeState({
   backend: 'webgl' | 'webgpu';
   directFeedbackShaders: boolean;
   webgpuFeedbackPlanShaderExecution: 'direct' | 'controls' | 'none' | undefined;
+  webgpuFeedbackPlanFallback?: boolean;
   getShaderTextureSourceId: (source: string) => number;
   getShaderTextureBlendModeId: (mode: string) => number;
   getShaderSampleDimensionId: (dimension: '2d' | '3d') => number;
@@ -23,9 +25,18 @@ export function buildFeedbackCompositeState({
   const controls = frameState.post.shaderControls;
   const feedbackOptimizationEnabled =
     backend !== 'webgpu' || directFeedbackShaders;
+  const plannedShaderExecution =
+    backend === 'webgpu'
+      ? feedbackOptimizationEnabled && !webgpuFeedbackPlanFallback
+        ? (webgpuFeedbackPlanShaderExecution ?? 'controls')
+        : 'controls'
+      : null;
+  const allowDirectShaderPrograms =
+    backend !== 'webgpu' || plannedShaderExecution === 'direct';
   const shaderPrograms = {
     warp:
       feedbackOptimizationEnabled &&
+      allowDirectShaderPrograms &&
       frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
         backend,
       )
@@ -33,18 +44,13 @@ export function buildFeedbackCompositeState({
         : null,
     comp:
       feedbackOptimizationEnabled &&
+      allowDirectShaderPrograms &&
       frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
         backend,
       )
         ? frameState.post.shaderPrograms.comp
         : null,
   };
-  const plannedShaderExecution =
-    backend === 'webgpu'
-      ? feedbackOptimizationEnabled
-        ? webgpuFeedbackPlanShaderExecution
-        : 'controls'
-      : null;
   const usesDirectShaderPrograms =
     plannedShaderExecution === 'direct'
       ? true
