@@ -5,6 +5,7 @@ import {
   buildShaderProgramPayload,
   extractShaderControls,
 } from '../assets/js/milkdrop/compiler/shader-analysis.ts';
+import { generateGlslFromShaderStatements } from '../assets/js/milkdrop/compiler/shader-analysis-glsl.ts';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import { parseMilkdropShaderStatement } from '../assets/js/milkdrop/shader-ast.ts';
 
@@ -129,6 +130,37 @@ warp_texture_scale = vec2(1.1, 1.2)
     expect(payload.execution.statementTargets).toEqual(['ret']);
     expect(payload.execution.requiresControlFallback).toBe(true);
     expect(payload.source).toBe('ret=tex2d(sampler_main,uv).rgb*gain');
+  });
+
+  test('emits known MilkDrop shader operators and signal aliases to valid GLSL', () => {
+    const powStatement = parseMilkdropShaderStatement(
+      'ret = tex2d(sampler_main, uv).rgb * vec3(bassAtt ^ 2.0, midAtt, trebleAtt)',
+    );
+    const bitwiseOrStatement = parseMilkdropShaderStatement(
+      'gain = bassAtt | 2.0',
+    );
+    const bitwiseAndStatement = parseMilkdropShaderStatement(
+      'mask = midAtt & 1.0',
+    );
+
+    expect(powStatement).not.toBeNull();
+    expect(bitwiseOrStatement).not.toBeNull();
+    expect(bitwiseAndStatement).not.toBeNull();
+    if (!powStatement || !bitwiseOrStatement || !bitwiseAndStatement) {
+      throw new Error('Expected known MilkDrop shader constructs to parse');
+    }
+
+    const glsl = generateGlslFromShaderStatements(
+      [powStatement, bitwiseOrStatement, bitwiseAndStatement],
+      'comp',
+    );
+
+    expect(glsl).not.toBeNull();
+    expect(glsl).toContain('pow(signalBass, 2.0)');
+    expect(glsl).toContain('signalMid');
+    expect(glsl).toContain('signalTreb');
+    expect(glsl).toContain('float(int(signalBass) | int(2.0))');
+    expect(glsl).toContain('float(int(signalMid) & int(1.0))');
   });
 
   test('keeps pure projectM volume samples direct on both WebGL and WebGPU backends', () => {
