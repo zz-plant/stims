@@ -51,6 +51,43 @@ describe('frontend url state', () => {
     expect(state.audioSource).toBe('youtube');
   });
 
+  test('preserves file audio route state in canonical session urls', () => {
+    const state = readSessionRouteState('?audio=file');
+
+    expect(state.audioSource).toBe('file');
+
+    const search = stringifyPlainSearch(
+      buildSessionRouteSearch(
+        {
+          presetId: null,
+          collectionTag: null,
+          panel: null,
+          audioSource: 'file',
+          agentMode: false,
+          previewMode: false,
+        },
+        parsePlainSearch('?landing=1&audio=demo'),
+      ),
+    );
+
+    expect(search).toBe('?landing=1&audio=file');
+
+    const url = buildCanonicalUrl(
+      {
+        presetId: null,
+        collectionTag: null,
+        panel: null,
+        audioSource: 'file',
+        agentMode: false,
+        previewMode: false,
+      },
+      'https://toil.fyi/milkdrop/?landing=1&audio=demo',
+    );
+
+    expect(url.pathname).toBe('/');
+    expect(url.search).toBe('?landing=1&audio=file');
+  });
+
   test('preserves unrelated query params while writing canonical urls', () => {
     const url = buildCanonicalUrl(
       {
