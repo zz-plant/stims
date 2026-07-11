@@ -16,6 +16,7 @@ import {
   getMilkdropLayerRenderOrder,
   type MilkdropRendererBatcher,
 } from './renderer-adapter-shared';
+import { getMilkdropSegmentWidth } from './renderer-helpers/primitive-rasterization-metrics';
 import type { MilkdropColor, MilkdropWaveVisual } from './types';
 
 type SegmentBatchTarget =
@@ -472,7 +473,7 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
         wave.positions,
         wave.color,
         wave.alpha * alphaMultiplier,
-        0.0025 * Math.max(1, wave.thickness),
+        getMilkdropSegmentWidth(wave.thickness),
         wave.closed,
       );
     }
@@ -500,7 +501,7 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
         line.positions,
         line.color,
         line.alpha * alphaMultiplier,
-        0.0025,
+        getMilkdropSegmentWidth(1),
       );
     }
     this.getTarget(target).syncSplit(this.normalUploads, this.additiveUploads);

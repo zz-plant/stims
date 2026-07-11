@@ -1,5 +1,9 @@
 import { Color, ShaderMaterial } from 'three';
 import {
+  MILKDROP_CUSTOM_WAVE_Z,
+  MILKDROP_WAVE_Z,
+} from '../renderer-helpers/primitive-rasterization-metrics';
+import {
   createProceduralFieldUniformState,
   createProceduralInteractionUniformState,
 } from '../renderer-helpers/procedural-field-uniforms';
@@ -556,7 +560,7 @@ export function createProceduralMeshMaterial(
         );
         gl_Position = projectionMatrix * modelViewMatrix * vec4(
           transformed.xy,
-          sourcePosition.z,
+          clamp(sourcePosition.z, ${MILKDROP_WAVE_Z.toFixed(2)}, ${MILKDROP_CUSTOM_WAVE_Z.toFixed(2)}),
           1.0
         );
       }
@@ -803,7 +807,7 @@ export function createProceduralMotionVectorMaterial(
           step(0.002, magnitude);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(
           renderPoint.xy,
-          sourcePosition.z,
+          clamp(sourcePosition.z, ${MILKDROP_WAVE_Z.toFixed(2)}, ${MILKDROP_CUSTOM_WAVE_Z.toFixed(2)}),
           1.0
         );
       }

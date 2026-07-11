@@ -18,6 +18,12 @@ import {
   getUnitPolygonVertices,
   normalizeMilkdropPolygonSides,
 } from './renderer-adapter-shared';
+import {
+  getMilkdropSegmentWidth,
+  MILKDROP_CUSTOM_WAVE_Z,
+  MILKDROP_THICK_SHAPE_PASS_OFFSET,
+  MILKDROP_WAVE_Z,
+} from './renderer-helpers/primitive-rasterization-metrics';
 import type {
   MilkdropBorderVisual,
   MilkdropColor,
@@ -65,8 +71,8 @@ type BorderRingInstance = {
 
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 const BORDER_RING_GEOMETRY = createBorderRingGeometry();
-const SHAPE_OUTLINE_INNER_OFFSET = -0.007;
-const SHAPE_THICK_OUTLINE_OUTER_OFFSET = 0.009;
+const SHAPE_OUTLINE_INNER_OFFSET = 0;
+const SHAPE_THICK_OUTLINE_OUTER_OFFSET = MILKDROP_THICK_SHAPE_PASS_OFFSET;
 const polygonFillGeometryCache = new Map<number, BufferGeometry>();
 const polygonRingGeometryCache = new Map<number, InstancedBufferGeometry>();
 
@@ -638,7 +644,7 @@ class CompactSegmentUploadBuffer {
 
   appendProceduralWave(wave: MilkdropProceduralWaveVisual) {
     const positions: number[] = [];
-    const width = 0.0025 * Math.max(1, wave.thickness);
+    const width = getMilkdropSegmentWidth(wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
       const point = buildProceduralWavePoint(
@@ -647,14 +653,14 @@ class CompactSegmentUploadBuffer {
         wave.samples[index] ?? 0,
         wave.velocities[index] ?? 0,
       );
-      positions.push(point.x, point.y, 0.24);
+      positions.push(point.x, point.y, MILKDROP_WAVE_Z);
     }
     this.appendPolyline(positions, wave.color, wave.alpha, width);
   }
 
   appendProceduralCustomWave(wave: MilkdropProceduralCustomWaveVisual) {
     const positions: number[] = [];
-    const width = 0.0025 * Math.max(1, wave.thickness);
+    const width = getMilkdropSegmentWidth(wave.thickness);
     for (let index = 0; index < wave.samples.length; index += 1) {
       const sampleT = index / Math.max(1, wave.samples.length - 1);
       const sampleValue = wave.samples[index] ?? 0;
@@ -668,7 +674,7 @@ class CompactSegmentUploadBuffer {
           0.18 *
           wave.scaling;
       const pointY = wave.spectrum ? baseY : orbitalY;
-      positions.push(x, pointY, 0.28);
+      positions.push(x, pointY, MILKDROP_CUSTOM_WAVE_Z);
     }
     this.appendPolyline(positions, wave.color, wave.alpha, width);
   }
@@ -1388,6 +1394,7 @@ class ShapeBatchBucket {
   readonly group = new Group();
   private readonly fill: InstancedShapeFillBatch;
   private readonly outline: InstancedShapeRingBatch;
+  private readonly getShapeTexture: () => Texture | null;
 
   constructor(
     sides: number,
@@ -1397,6 +1404,7 @@ class ShapeBatchBucket {
   ) {
     const bucketRenderOrder = renderOrder + (additive ? 1 : 0);
     const blending = additive ? AdditiveBlending : NormalBlending;
+    this.getShapeTexture = getShapeTexture;
     this.group.renderOrder = bucketRenderOrder;
     this.fill = new InstancedShapeFillBatch(
       sides,
@@ -1432,7 +1440,7 @@ class ShapeBatchBucket {
         secondaryAlpha:
           (shape.secondaryColor?.a ?? shape.color.a ?? 0.4) * alphaMultiplier,
         useGradient: shape.secondaryColor ? 1 : 0,
-        textured: shape.textured ? 1 : 0,
+        textured: shape.textured && this.getShapeTexture() !== null ? 1 : 0,
         textureZoom: Math.max(0.0001, shape.textureZoom ?? 1),
         textureAngle: shape.textureAngle ?? 0,
       });
@@ -1567,16 +1575,6 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     return target;
   }
 
-  private clearShapeTarget(key: string) {
-    const target = this.shapeTargets.get(key);
-    if (!target) {
-      return;
-    }
-    target.dispose();
-    this.root.remove(target.group);
-    this.shapeTargets.delete(key);
-  }
-
   private getBorderTarget(key: string) {
     let target = this.borderTargets.get(key);
     if (!target) {
@@ -1605,7 +1603,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
         wave.positions,
         wave.color,
         wave.alpha * alphaMultiplier,
-        0.0025 * Math.max(1, wave.thickness),
+        getMilkdropSegmentWidth(wave.thickness),
         wave.closed,
       );
     }
@@ -1663,10 +1661,6 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier: number,
   ) {
-    if (shapes.some((shape) => shape.textured) && this.shapeTexture === null) {
-      this.clearShapeTarget(target);
-      return false;
-    }
     this.getShapeTarget(target).sync(shapes, alphaMultiplier);
     return true;
   }
@@ -1701,7 +1695,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
         line.positions,
         line.color,
         line.alpha * alphaMultiplier,
-        0.0025,
+        getMilkdropSegmentWidth(1),
       );
     }
     this.getWaveTarget(`line:${target}`).syncSplit(
