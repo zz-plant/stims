@@ -149,6 +149,15 @@ body[data-page="performance"] {
   text-decoration: none;
   background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.stims-performance__button:active {
+  transform: scale(0.97);
+  transition-duration: 60ms;
 }
 
 .stims-performance__button:focus-visible {
