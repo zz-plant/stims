@@ -92,9 +92,7 @@ export function createMilkdropPresentationController({
     updateAgentDebugSnapshot(true);
 
     const total = performance.now() - start;
-    console.log(
-      `[PresetLoad:${presetId}] apply: vm=${vmDuration.toFixed(1)}ms adapter=${adapterDuration.toFixed(1)}ms total=${total.toFixed(1)}ms`,
-    );
+    void total;
   };
 
   const syncInspectorState = () => {

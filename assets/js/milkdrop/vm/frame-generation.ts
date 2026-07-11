@@ -32,7 +32,7 @@ function catmullRomInterpolatePositions(
   subdiv: number,
 ): number[] {
   const ptCount = positions.length / 3;
-  if (ptCount < 2 || subdiv < 2) {
+  if (ptCount < 2 || subdiv < 1) {
     const out = reusableInterpBuffer;
     out.length = positions.length;
     for (let i = 0; i < positions.length; i++) {
@@ -41,14 +41,19 @@ function catmullRomInterpolatePositions(
     return out;
   }
 
-  const outLen = (ptCount - 1) * subdiv * 3 + 3;
+  // ProjectM always inserts one midpoint per segment (subdiv=1), doubling
+  // the vertex count. Output: start, mid0, mid1, ..., last.
+  const outLen = (ptCount - 1) * 2 * 3 + 3;
   const out = reusableInterpBuffer;
   out.length = outLen;
   let writeIdx = 0;
   const lastIdx = ptCount - 1;
 
-  // First segment (i=0): p0 = p1 (clamped)
-  let baseI = 0;
+  // Write first point
+  out[writeIdx++] = positions[0];
+  out[writeIdx++] = positions[1];
+  out[writeIdx++] = positions[2];
+
   let p0x = positions[0],
     p0y = positions[1];
   let p1x = p0x,
@@ -57,11 +62,9 @@ function catmullRomInterpolatePositions(
     p2y = positions[4];
   let p3x = positions[Math.min(lastIdx, 2) * 3];
   let p3y = positions[Math.min(lastIdx, 2) * 3 + 1];
-  let z = positions[2];
 
   for (let i = 0; i < lastIdx; i++) {
     if (i > 0) {
-      baseI = i * 3;
       p0x = p1x;
       p0y = p1y;
       p1x = p2x;
@@ -78,29 +81,18 @@ function catmullRomInterpolatePositions(
         p3x = p2x;
         p3y = p2y;
       }
-      z = positions[baseI + 2];
     }
 
-    for (let j = 0; j < subdiv; j++) {
-      const t = j / subdiv;
-      const t2 = t * t;
-      const t3 = t2 * t;
-      out[writeIdx++] =
-        0.5 *
-        (2 * p1x +
-          (-p0x + p2x) * t +
-          (2 * p0x - 5 * p1x + 4 * p2x - p3x) * t2 +
-          (-p0x + 3 * p1x - 3 * p2x + p3x) * t3);
-      out[writeIdx++] =
-        0.5 *
-        (2 * p1y +
-          (-p0y + p2y) * t +
-          (2 * p0y - 5 * p1y + 4 * p2y - p3y) * t2 +
-          (-p0y + 3 * p1y - 3 * p2y + p3y) * t3);
-      out[writeIdx++] = z;
-    }
+    // Insert midpoint using ProjectM's fixed weights at t=0.5:
+    // [-0.15, 1.15, 1.15, -0.15] / 2.0
+    out[writeIdx++] =
+      (-0.15 * p0x + 1.15 * p1x + 1.15 * p2x - 0.15 * p3x) * 0.5;
+    out[writeIdx++] =
+      (-0.15 * p0y + 1.15 * p1y + 1.15 * p2y - 0.15 * p3y) * 0.5;
+    out[writeIdx++] = positions[i * 3 + 2];
   }
 
+  // Write last point
   const lastOut = lastIdx * 3;
   out[writeIdx++] = positions[lastOut];
   out[writeIdx++] = positions[lastOut + 1];
@@ -108,21 +100,41 @@ function catmullRomInterpolatePositions(
   return out;
 }
 
+function sampleByteData(data: Uint8Array, t: number) {
+  if (data.length === 0) {
+    return 0;
+  }
+  const scaledIndex = clamp(t, 0, 1) * Math.max(0, data.length - 1);
+  const lowerIndex = Math.floor(scaledIndex);
+  const upperIndex = Math.min(data.length - 1, lowerIndex + 1);
+  const amount = scaledIndex - lowerIndex;
+  const lower = ((data[lowerIndex] ?? 128) - 128) / 128;
+  const upper = ((data[upperIndex] ?? 128) - 128) / 128;
+  return mix(lower, upper, amount);
+}
+
 function sampleWaveformData(signals: MilkdropRuntimeSignals, t: number) {
   const waveformData =
     signals.waveformData && signals.waveformData.length > 0
       ? signals.waveformData
       : signals.frequencyData;
-  if (waveformData.length === 0) {
-    return 0;
-  }
-  const scaledIndex = clamp(t, 0, 1) * Math.max(0, waveformData.length - 1);
-  const lowerIndex = Math.floor(scaledIndex);
-  const upperIndex = Math.min(waveformData.length - 1, lowerIndex + 1);
-  const amount = scaledIndex - lowerIndex;
-  const lower = ((waveformData[lowerIndex] ?? 128) - 128) / 128;
-  const upper = ((waveformData[upperIndex] ?? 128) - 128) / 128;
-  return mix(lower, upper, amount);
+  return sampleByteData(waveformData, t);
+}
+
+function sampleWaveformDataOffset(
+  signals: MilkdropRuntimeSignals,
+  t: number,
+  offset: number,
+): number {
+  return sampleWaveformData(signals, clamp(t + offset, 0, 1));
+}
+
+function sampleFrequencyDataOffset(
+  signals: MilkdropRuntimeSignals,
+  t: number,
+  offset: number,
+): number {
+  return sampleByteData(signals.frequencyData, clamp(t + offset, 0, 1));
 }
 
 function normalizeWaveMode(value: number) {
@@ -134,7 +146,12 @@ function normalizeProjectMMystery(value: number) {
   if (!Number.isFinite(value)) {
     return 0;
   }
-  return ((value % 1) + 1) % 1;
+  if (Math.abs(value) <= 1) {
+    return value;
+  }
+  let v = value * 0.5 + 0.5;
+  v -= Math.floor(v);
+  return Math.abs(v * 2 - 1);
 }
 
 function brightenWaveColor(waveColor: {
@@ -169,28 +186,19 @@ function assignColor(target: MilkdropColor | undefined, source: MilkdropColor) {
 }
 
 function isClosedMainWaveMode(mode: number) {
-  return (
-    mode === 0 ||
-    mode === 1 ||
-    mode === 2 ||
-    mode === 3 ||
-    mode === 5 ||
-    mode === 7
-  );
+  return mode === 0 || mode === 1;
 }
 
 function getMainWaveSampleCount(
   mode: number,
   detailScale: number,
-  sourceLength: number,
+  _sourceLength: number,
 ) {
-  const baseCountByMode = [176, 168, 160, 152, 192, 176, 192, 160];
-  const sourceFloor = sourceLength > 0 ? Math.min(sourceLength, 1024) : 64;
+  // ProjectM uses WaveformSamples/2 (256) for most modes, WaveformSamples
+  // (512) for CenteredSpiro, CenteredSpiroVolume, DerivativeLine, ExplosiveHash.
+  const baseCountByMode = [256, 256, 512, 512, 512, 512, 256, 256];
   return clamp(
-    Math.round(
-      mix(baseCountByMode[mode] ?? 168, sourceFloor, 0.45) *
-        clamp(detailScale, 0.5, 3.5),
-    ),
+    Math.round((baseCountByMode[mode] ?? 256) * clamp(detailScale, 0.5, 3.5)),
     48,
     1024,
   );
@@ -394,16 +402,19 @@ export function buildMainWaveFrame({
   } else {
     nextMomentum = new Float32Array(samples);
   }
-  const smoothingBlend = clamp(1 - smoothing, 0.04, 1);
+  // IIR causal filter along sample axis (matching ProjectM's WaveformMath).
+  // Each sample blends with its predecessor, creating a "comet tail" within
+  // a single frame rather than frame-to-frame persistence.
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
-    const value = sampleWaveformData(signals, t);
-    liveSamples[index] = value;
-    smoothedSamples[index] = mix(
-      previousSamples[index] ?? value,
-      value,
-      smoothingBlend,
-    );
+    const raw = sampleWaveformData(signals, t);
+    liveSamples[index] = raw;
+    if (index === 0) {
+      smoothedSamples[index] = raw;
+    } else {
+      smoothedSamples[index] =
+        scale * (1 - smoothing) * raw + smoothing * smoothedSamples[index - 1];
+    }
   }
 
   const drawMode = (state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
@@ -454,7 +465,8 @@ export function buildMainWaveFrame({
 
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
-    const sampleValue = liveSamples[index] ?? sampleWaveformData(signals, t);
+    const sampleValue =
+      smoothedSamples[index] ?? sampleWaveformData(signals, t);
     const prevSample = previousSamples[index] ?? sampleValue;
     const prevMomentum = previousMomentum[index] ?? 0;
     const prevCurrent = smoothedSamples[Math.max(0, index - 1)] ?? sampleValue;
@@ -501,19 +513,20 @@ export function buildMainWaveFrame({
         break;
       }
       case 2: {
-        const angle = t * TWO_PI * (1.5 + mystery * 1.5) + signals.time * 0.12;
-        const radius =
-          0.08 + t * 0.5 + sampleValue * scale * 0.45 + momentum * 0.1;
-        x = centerX + Math.cos(angle) * radius;
-        y = centerY + Math.sin(angle) * radius;
+        // CenteredSpiro: ProjectM plots R->X, L[i+32]->Y (stereo Lissajous).
+        // Approximate with offset sampling from the single channel.
+        const sampleR = sampleValue;
+        const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
+        x = centerX + sampleR * scale;
+        y = centerY + sampleL * scale;
         break;
       }
       case 3: {
-        const angle = t * TWO_PI;
-        const lissajousX = Math.sin(angle * 2 + mysteryPhase);
-        const lissajousY = Math.sin(angle * 3 + mysteryPhase * 1.7);
-        x = centerX + lissajousX * (0.28 + Math.abs(sampleValue) * scale * 0.7);
-        y = centerY + lissajousY * (0.2 + Math.abs(sampleValue) * scale * 0.9);
+        // CenteredSpiroVolume: same XY mapping but from spectrum data.
+        const sampleR = sampleFrequencyDataOffset(signals, t, 0);
+        const sampleL = sampleFrequencyDataOffset(signals, t, 32 / 512);
+        x = centerX + sampleR * scale;
+        y = centerY + sampleL * scale;
         break;
       }
       case 4: {
@@ -526,17 +539,21 @@ export function buildMainWaveFrame({
         break;
       }
       case 5: {
-        const angle = t * TWO_PI;
-        const xAmp = 0.2 + Math.abs(sampleValue) * scale * 0.9;
-        const yAmp = 0.14 + Math.abs(sampleValue) * scale * 0.95;
-        x =
-          centerX +
-          Math.sin(angle * (2 + mystery)) * xAmp +
-          Math.cos(angle * 4 + mysteryPhase) * 0.05;
-        y =
-          centerY +
-          Math.sin(angle * (3 + mystery * 0.5) + Math.PI / 2) * yAmp +
-          sampleValue * scale * 0.2;
+        // ExplosiveHash: ProjectM computes complex multiplication of L/R
+        // channels and rotates by time. Approximate with offset sampling.
+        const sampleR = sampleValue;
+        const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
+        const x0 =
+          sampleR * sampleWaveformDataOffset(signals, t, 64 / 512) +
+          sampleL * sampleWaveformDataOffset(signals, t, 96 / 512);
+        const y0 =
+          sampleR * sampleR -
+          sampleL * sampleWaveformDataOffset(signals, t, 64 / 512);
+        const rot = signals.time * 0.3;
+        const cosR = Math.cos(rot);
+        const sinR = Math.sin(rot);
+        x = centerX + (x0 * cosR - y0 * sinR) * scale;
+        y = centerY + (x0 * sinR + y0 * cosR) * scale;
         break;
       }
       case 6: {
@@ -550,15 +567,18 @@ export function buildMainWaveFrame({
         break;
       }
       case 7: {
-        const angle = t * TWO_PI;
-        const petals = 3 + Math.round(clamp(mystery * 4, 0, 4));
-        const radius =
-          0.12 +
-          (0.18 + Math.abs(sampleValue) * scale * 0.9) *
-            Math.cos(petals * angle + mysteryPhase) +
-          derivative * 0.08;
-        x = centerX + Math.cos(angle) * radius;
-        y = centerY + Math.sin(angle) * radius;
+        // DoubleLine: ProjectM shows two parallel lines from L and R channels.
+        // Interleave L and R samples to approximate two lines in a single draw.
+        const sampleR = sampleValue;
+        const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
+        const separation = 0.1 + mystery * 0.2;
+        if (index % 2 === 0) {
+          x = -1 + 2 * t;
+          y = centerY + sampleR * scale * 0.5 + separation;
+        } else {
+          x = -1 + 2 * t;
+          y = centerY + sampleL * scale * 0.5 - separation;
+        }
         break;
       }
       default:
@@ -576,17 +596,11 @@ export function buildMainWaveFrame({
     positions[writeIndex + 2] = 0.22 + momentum * 0.06;
   }
 
-  // Apply Catmull-Rom interpolation to smooth the wave path.
-  // wave_smoothing maps to subdivision count: more subdiv = smoother curve.
-  // At smoothing=0 the wave uses raw sample-to-sample straight lines (angular).
-  // At smoothing=0.75 (default) ~5 subdiv creates visibly smooth curves.
-  // At smoothing=0.98 ~7 subdiv creates very smooth organic shapes.
-  const catmullSubdiv = Math.max(1, 1 + Math.round(smoothing * 6));
-  if (catmullSubdiv > 1 && !useProcedural) {
-    const interpolated = catmullRomInterpolatePositions(
-      positions,
-      catmullSubdiv,
-    );
+  // ProjectM inserts exactly one midpoint per segment using fixed weights
+  // [-0.15, 1.15, 1.15, -0.15] / 2.0, doubling the vertex count. The
+  // wave_smoothing parameter controls the IIR filter, not subdivision.
+  if (!useProcedural) {
+    const interpolated = catmullRomInterpolatePositions(positions, 1);
     positions.length = 0;
     for (let i = 0; i < interpolated.length; i++) {
       positions[i] = interpolated[i];
