@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import '../../css/shell-loader.css';
+import '../../css/app-shell.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   buildAudioProfile,

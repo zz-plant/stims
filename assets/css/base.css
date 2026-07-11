@@ -7,9 +7,7 @@ body {
   font-family: var(--font-family-base);
   color: var(--text-color);
   line-height: var(--line-height-normal);
-  /* Mobile-specific improvements */
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
 }
 
 /* All design tokens now live in tokens.css — loaded before this file. */
@@ -20,11 +18,6 @@ html {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent-color) 45%, transparent);
-  color: var(--text-color);
-}
-
-::-moz-selection {
   background: color-mix(in srgb, var(--accent-color) 45%, transparent);
   color: var(--text-color);
 }
@@ -425,7 +418,7 @@ body {
 
 .active-toy-status h2 {
   margin: var(--space-md) 0 var(--space-sm);
-  font-size: var(--font-size-2xl);
+  font-size: var(--text-2xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.01em;
   text-shadow: 0 0 18px color-mix(in srgb, var(--accent-color) 18%, transparent);
@@ -435,7 +428,7 @@ body {
   margin: 0;
   color: var(--text-muted);
   line-height: var(--line-height-normal);
-  font-size: var(--font-size-base);
+  font-size: var(--text-base);
   letter-spacing: 0.01em;
 }
 

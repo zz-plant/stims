@@ -14,143 +14,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://toil.fyi/" />
     <style>
-      /* Critical CSS: paint initial loading state and skip-link before external stylesheets arrive. */
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        min-height: 100%;
-      }
-      body {
-        background: #0a0f19;
-        color: #e9fbff;
-        font-family: system-ui, sans-serif;
-      }
-      .stims-loading {
-        position: fixed;
-        inset: 0;
-        z-index: 2147483647;
-        display: grid;
-        place-items: center;
-        background:
-          radial-gradient(circle at 30% 20%, rgba(95, 192, 181, 0.08), transparent 50%),
-          radial-gradient(circle at 70% 80%, rgba(211, 137, 84, 0.06), transparent 50%),
-          #0a0f19;
-        color: #e9fbff;
-        font-family: system-ui, sans-serif;
-      }
-      .stims-loading[hidden] {
-        display: none;
-      }
-      .stims-loading__spinner {
-        width: 52px;
-        height: 52px;
-        margin: 0 auto 16px;
-        position: relative;
-        border-radius: 50%;
-        background: conic-gradient(
-          from 0deg,
-          rgba(95, 192, 181, 0.95),
-          rgba(233, 212, 155, 0.85),
-          rgba(211, 137, 84, 0.95),
-          rgba(95, 192, 181, 0.95)
-        );
-        animation: stims-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-      }
-      .stims-loading__spinner::after {
-        content: "";
-        position: absolute;
-        inset: 4px;
-        border-radius: 50%;
-        background: #0a0f19;
-      }
-      .stims-loading__text {
-        font-size: 0.9rem;
-        letter-spacing: 0.02em;
-        opacity: 0.7;
-        animation: stims-pulse 2s ease-in-out infinite;
-      }
-      .stims-loading__dots {
-        display: inline-flex;
-        gap: 3px;
-        margin-left: 2px;
-      }
-      .stims-loading__dots span {
-        width: 4px;
-        height: 4px;
-        display: inline-block;
-        border-radius: 50%;
-        background: currentColor;
-        opacity: 0.7;
-        animation: stims-bounce 1.4s ease-in-out infinite both;
-      }
-      .stims-loading__dots span:nth-child(1) {
-        animation-delay: -0.32s;
-      }
-      .stims-loading__dots span:nth-child(2) {
-        animation-delay: -0.16s;
-      }
-      @keyframes stims-spin {
-        to { transform: rotate(360deg); }
-      }
-      @keyframes stims-pulse {
-        0%, 100% { opacity: 0.6; }
-        50% { opacity: 0.9; }
-      }
-      @keyframes stims-bounce {
-        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-        40% { transform: scale(1); opacity: 0.9; }
-      }
-      .skip-link {
-        position: fixed;
-        left: max(0.9rem, env(safe-area-inset-left));
-        right: auto;
-        top: -6rem;
-        padding: 0.65rem 1rem;
-        border-radius: 999px;
-        background: rgba(22, 33, 47, 0.95);
-        color: #e9fbff;
-        text-decoration: none;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        transition:
-          top 0.2s ease,
-          opacity 0.2s ease,
-          box-shadow 0.2s ease,
-          background 0.2s ease,
-          border-color 0.2s ease;
-        z-index: 1000;
-        min-height: 46px;
-        min-width: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-      }
-      .skip-link:focus-visible {
-        top: max(4.2rem, calc(env(safe-area-inset-top) + 3.4rem));
-        opacity: 1;
-        outline: 3px solid #38bdf8;
-        outline-offset: 2px;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-      }
-      @media (hover: none) and (pointer: coarse) {
-        .skip-link {
-          display: none;
-        }
-      }
-
-      /* Crawl links are small text targets; make them easier to hit. */
-      .stims-crawl-links a {
-        display: inline-block;
-        min-height: 24px;
-        line-height: 24px;
-      }
+      *,:after,:before{box-sizing:border-box}
+      body,html{margin:0;padding:0;min-height:100%}
+      body{background:#0a0f19;color:#e9fbff;font-family:system-ui,sans-serif}
+      .stims-loading{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,rgba(95,192,181,.08),transparent 50%),radial-gradient(circle at 70% 80%,rgba(211,137,84,.06),transparent 50%),#0a0f19;color:#e9fbff;font-family:system-ui,sans-serif}
+      .stims-loading[hidden]{display:none}
+      .stims-loading__spinner{width:52px;height:52px;margin:0 auto 16px;position:relative;border-radius:50%;background:conic-gradient(from 0deg,rgba(95,192,181,.95),rgba(233,212,155,.85),rgba(211,137,84,.95),rgba(95,192,181,.95));animation:stims-spin 1s cubic-bezier(.4,0,.2,1)infinite}
+      .stims-loading__spinner:after{content:"";position:absolute;inset:4px;border-radius:50%;background:#0a0f19}
+      .stims-loading__text{font-size:.9rem;letter-spacing:.02em;opacity:.7;animation:stims-pulse 2s ease-in-out infinite}
+      .stims-loading__dots{display:inline-flex;gap:3px;margin-left:2px}
+      .stims-loading__dots span{width:4px;height:4px;display:inline-block;border-radius:50%;background:currentColor;opacity:.7;animation:stims-bounce 1.4s ease-in-out infinite both}
+      .stims-loading__dots span:first-child{animation-delay:-.32s}
+      .stims-loading__dots span:nth-child(2){animation-delay:-.16s}
+      @keyframes stims-spin{to{transform:rotate(360deg)}}
+      @keyframes stims-pulse{0%,to{opacity:.6}50%{opacity:.9}}
+      @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:.9}}
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -184,38 +62,15 @@
     />
     <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
+    <link rel="stylesheet" href="/vendor/normalize.min.css" media="print" onload="this.media='all'" />
     <link
-      rel="preload"
-      as="style"
-      href="/vendor/normalize.min.css"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="/vendor/normalize.min.css"
-      />
-    </noscript>
-    <link
-      rel="preload"
-      as="style"
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
-        rel="stylesheet"
-      />
-    </noscript>
-    <link rel="preload" href="assets/css/tokens.css" as="style" />
-    <link rel="preload" href="assets/css/motion.css" as="style" />
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
     <link rel="stylesheet" href="assets/css/tokens.css" media="print" onload="this.media='all'" />
     <link rel="stylesheet" href="assets/css/motion.css" media="print" onload="this.media='all'" />
-    <noscript>
-      <link rel="stylesheet" href="assets/css/tokens.css" />
-      <link rel="stylesheet" href="assets/css/motion.css" />
-    </noscript>
     <link rel="stylesheet" href="assets/css/base.css" media="print" onload="this.media='all'" />
     <link rel="stylesheet" href="assets/css/index.css" media="print" onload="this.media='all'" />
     <script>
@@ -224,7 +79,8 @@
           const stored = localStorage.getItem('stims:theme');
           if (stored === 'light') document.documentElement.classList.add('light');
           else if (stored === 'dark') document.documentElement.classList.add('dark');
-          /* If no stored preference, CSS @media (prefers-color-scheme) handles it */
+          else if (window.matchMedia('(prefers-color-scheme: light)').matches)
+            document.documentElement.classList.add('light');
         } catch (_e) {}
       })();
     </script>
@@ -259,23 +115,7 @@
         </div>
       </div>
     </div>
-    <!-- Static SEO Feature Indexing for Search Bots -->
-    <div style="display: none;" aria-hidden="true">
-      <h1>Stims — MilkDrop-Inspired Audio Visualizer</h1>
-      <p>
-        Experience high-performance, browser-native music visualization powered by WebGPU and WebGL rendering paths. 
-        Stims compiles and runs classic MilkDrop preset equations (equations for wave, shape, pixel, and motion vectors) 
-        using three.js and custom shader compilation pipelines.
-      </p>
-      <h2>Key Features:</h2>
-      <ul>
-        <li>WebGPU &amp; WebGL Renderers: Smooth 60FPS fluid simulation and audio-reactive wave rendering.</li>
-        <li>Classic MilkDrop Preset Compiler: Runs .milk files directly in the browser with full equations compatibility.</li>
-        <li>Live Shader Sandbox: Real-time preset equations editing, shader code injection, and prompt-based preset drafting.</li>
-        <li>Curated Visualizer Presets: Hand-picked visuals reactive to microphone, tab audio, or YouTube streams.</li>
-        <li>Direct Configuration Sharing: Instantly share visualizer states, presets, and slider parameters via URL query strings.</li>
-      </ul>
-    </div>
+
 
     <nav class="stims-crawl-links" aria-label="Crawlable site links">
       <a href="/">Visualizer</a>
@@ -321,13 +161,5 @@
     </script>
 
     <script type="module" src="/assets/js/app.ts"></script>
-    <footer style="display:none" aria-hidden="true">
-      <details>
-        <summary>SEO</summary>
-        <div>
-          MilkDrop browser music visualizer · WebGPU WebGL audio visualization · real-time shader presets · live music reactive graphics · MilkDrop compiler online · preset share link · microphone audio capture visualizer · YouTube music visualizer · tab audio capture · 60fps fluid simulation · toil.fyi
-        </div>
-      </details>
-    </footer>
   </body>
 </html>
