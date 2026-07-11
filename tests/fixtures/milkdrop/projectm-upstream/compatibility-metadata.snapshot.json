@@ -214,7 +214,9 @@
     "diagnostics": [],
     "normalizedPrograms": {
       "init": [],
-      "perFrame": ["ib_r=0.7+0.4*sin(3*time)"],
+      "perFrame": [
+        "ib_r=0.7+0.4*sin(3*time)"
+      ],
       "perPixel": [],
       "customWaves": [],
       "customShapes": []
@@ -435,7 +437,9 @@
     "diagnostics": [],
     "normalizedPrograms": {
       "init": [],
-      "perFrame": ["ib_r=0.7+0.4* sin(3*time)"],
+      "perFrame": [
+        "ib_r=0.7+0.4* sin(3*time)"
+      ],
       "perPixel": [],
       "customWaves": [],
       "customShapes": []
@@ -505,8 +509,12 @@
     "file": "105-per_frame_init.milk",
     "diagnostics": [],
     "normalizedPrograms": {
-      "init": ["SPEED=10"],
-      "perFrame": ["ib_r=0.7+0.4*sin(time*SPEED)"],
+      "init": [
+        "SPEED=10"
+      ],
+      "perFrame": [
+        "ib_r=0.7+0.4*sin(time*SPEED)"
+      ],
       "perPixel": [],
       "customWaves": [],
       "customShapes": []
@@ -582,7 +590,9 @@
         "ib_g=0.7+0.4*sin(4*time)",
         "ib_b=0.7+0.4*sin(5*time)"
       ],
-      "perPixel": ["zoom=0.9615-rad*0.1"],
+      "perPixel": [
+        "zoom=0.9615-rad*0.1"
+      ],
       "customWaves": [],
       "customShapes": []
     },
@@ -1838,7 +1848,10 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=y+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=y+value1"
+          ]
         }
       ],
       "customShapes": []
@@ -1951,7 +1964,10 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=y+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=y+value1"
+          ]
         }
       ],
       "customShapes": []
@@ -2064,7 +2080,10 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=y+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=y+value1"
+          ]
         }
       ],
       "customShapes": []
@@ -2177,7 +2196,10 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=0.4+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=0.4+value1"
+          ]
         }
       ],
       "customShapes": []
@@ -2290,7 +2312,10 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=y+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=y+value1"
+          ]
         }
       ],
       "customShapes": []
@@ -2403,7 +2428,10 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=y+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=y+value1"
+          ]
         }
       ],
       "customShapes": []
@@ -2509,14 +2537,19 @@
     "diagnostics": [],
     "normalizedPrograms": {
       "init": [],
-      "perFrame": ["zoom=1"],
+      "perFrame": [
+        "zoom=1"
+      ],
       "perPixel": [],
       "customWaves": [
         {
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=x+value1/2", "y=y+value2/2"]
+          "perPoint": [
+            "x=x+value1/2",
+            "y=y+value2/2"
+          ]
         }
       ],
       "customShapes": []
@@ -2654,13 +2687,19 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=y+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=y+value1"
+          ]
         },
         {
           "index": 2,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=0.25+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=0.25+value1"
+          ]
         }
       ],
       "customShapes": []
@@ -2808,7 +2847,10 @@
           "index": 1,
           "init": [],
           "perFrame": [],
-          "perPoint": ["x=sample", "y=y+value1"]
+          "perPoint": [
+            "x=sample",
+            "y=y+value1"
+          ]
         },
         {
           "index": 2,
@@ -2950,7 +2992,7 @@
         "post-effects"
       ],
       "gpuDescriptorPlan": {
-        "routing": "descriptor-plan",
+        "routing": "fallback-webgl",
         "proceduralWaves": [
           {
             "kind": "procedural-wave",
@@ -2983,7 +3025,7 @@
           "usesFeedbackTexture": false,
           "usesVideoEcho": false,
           "usesPostEffects": false,
-          "fallbackToLegacyFeedback": false
+          "fallbackToLegacyFeedback": true
         },
         "unsupported": []
       },
@@ -3011,9 +3053,9 @@
     "file": "261-compshader-noisevol_lq.milk",
     "diagnostics": [
       {
+        "severity": "warning",
         "code": "preset_shader_volume_approximation",
-        "field": null,
-        "severity": "warning"
+        "field": null
       }
     ],
     "normalizedPrograms": {
@@ -3035,7 +3077,7 @@
         "post-effects"
       ],
       "gpuDescriptorPlan": {
-        "routing": "descriptor-plan",
+        "routing": "fallback-webgl",
         "proceduralWaves": [
           {
             "kind": "procedural-wave",
@@ -3068,7 +3110,7 @@
           "usesFeedbackTexture": false,
           "usesVideoEcho": false,
           "usesPostEffects": false,
-          "fallbackToLegacyFeedback": false
+          "fallbackToLegacyFeedback": true
         },
         "unsupported": []
       },
@@ -3077,10 +3119,10 @@
           "status": "partial",
           "evidence": [
             {
-              "code": "volume-sampler-gap",
-              "feature": null,
               "scope": "backend",
-              "status": "partial"
+              "status": "partial",
+              "code": "volume-sampler-gap",
+              "feature": null
             }
           ]
         },
@@ -3088,10 +3130,10 @@
           "status": "partial",
           "evidence": [
             {
-              "code": "volume-sampler-gap",
-              "feature": null,
               "scope": "backend",
-              "status": "partial"
+              "status": "partial",
+              "code": "volume-sampler-gap",
+              "feature": null
             }
           ]
         }
@@ -3112,25 +3154,42 @@
     "normalizedPrograms": {
       "init": [],
       "perFrame": [],
-      "perPixel": ["cx=x"],
+      "perPixel": [
+        "cx=x"
+      ],
       "customWaves": [
         {
           "index": 1,
           "init": [],
-          "perFrame": ["t1=if(above(bass,9.5),0.95,bass/10)"],
-          "perPoint": ["x=0.01666 + 0.3*sample", "y=t1 + value1/20"]
+          "perFrame": [
+            "t1=if(above(bass,9.5),0.95,bass/10)"
+          ],
+          "perPoint": [
+            "x=0.01666 + 0.3*sample",
+            "y=t1 + value1/20"
+          ]
         },
         {
           "index": 2,
           "init": [],
-          "perFrame": ["t1=if(above(mid,9.5),0.95,mid/10)"],
-          "perPoint": ["x=0.35 + 0.3*sample", "y=t1 + value2/20"]
+          "perFrame": [
+            "t1=if(above(mid,9.5),0.95,mid/10)"
+          ],
+          "perPoint": [
+            "x=0.35 + 0.3*sample",
+            "y=t1 + value2/20"
+          ]
         },
         {
           "index": 3,
           "init": [],
-          "perFrame": ["t1=if(above(treb,9.5),0.95,treb/10)"],
-          "perPoint": ["x=0.6833 + 0.3*sample", "y=t1 + value1/20"]
+          "perFrame": [
+            "t1=if(above(treb,9.5),0.95,treb/10)"
+          ],
+          "perPoint": [
+            "x=0.6833 + 0.3*sample",
+            "y=t1 + value1/20"
+          ]
         }
       ],
       "customShapes": []

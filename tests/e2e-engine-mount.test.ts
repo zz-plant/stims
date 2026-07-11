@@ -61,21 +61,10 @@ test(
       const shell = await page.$('#stims-main');
       expect(shell).not.toBeNull();
 
-      // Click demo audio button
-      const clicked = await page.evaluate(() => {
-        const btns = [...document.querySelectorAll('button')];
-        const demo = btns.find(
-          (b) =>
-            b.textContent?.includes('demo audio') ||
-            b.textContent?.includes('Play with demo'),
-        );
-        if (demo) {
-          demo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-          return true;
-        }
-        return false;
-      });
-      expect(clicked).toBe(true);
+      // Wait for demo audio button to be present and click it
+      const demoBtn = page.locator('button', { hasText: /Play with demo|demo audio/ }).first();
+      await demoBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await demoBtn.click();
 
       // Wait for engine to enter live mode
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
@@ -131,18 +120,17 @@ test(
         { waitUntil: 'domcontentloaded' },
       );
       await page.waitForSelector('#stims-main', { timeout: 15000 });
-      await page.evaluate(() => {
-        const btns = [...document.querySelectorAll('button')];
-        const demo = btns.find(
-          (b) =>
-            b.textContent?.includes('demo audio') ||
-            b.textContent?.includes('Play with demo'),
-        );
-        demo?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      });
+      // Wait for demo audio button to be present and click it
+      const demoBtn2 = page.locator('button', { hasText: /Play with demo|demo audio/ }).first();
+      await demoBtn2.waitFor({ state: 'visible', timeout: 15000 });
+      await demoBtn2.click();
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
       await page.waitForSelector('canvas', { timeout: 15000 });
-      await page.waitForFunction(() => document.title.includes('Glowsticks'), {
+      console.log('E2E TEST DOCUMENT TITLE:', await page.title());
+      await page.waitForFunction(() => {
+        console.log('PAGE TITLE IN FN:', document.title);
+        return document.title.includes('Glowsticks');
+      }, {
         timeout: 30000,
       });
       await page.waitForTimeout(2000);

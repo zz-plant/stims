@@ -12,7 +12,7 @@ export type AudioHandle = {
   listener: THREE.AudioListener;
   audio: THREE.Audio | THREE.PositionalAudio;
   stream?: MediaStream;
-  release: () => void;
+  release: () => void | Promise<void>;
 };
 
 type AudioPoolEntry = {
@@ -105,7 +105,7 @@ export async function acquireAudioHandle(
       return;
     }
     released = true;
-    audio.cleanup?.();
+    const cleanupResult = audio.cleanup?.();
 
     if (reuseMicrophone && pooledStream && stream === pooledStream.stream) {
       pooledStream.users = Math.max(0, pooledStream.users - 1);
@@ -114,6 +114,7 @@ export async function acquireAudioHandle(
         stopPooledStream();
       }
     }
+    return cleanupResult;
   };
 
   return {

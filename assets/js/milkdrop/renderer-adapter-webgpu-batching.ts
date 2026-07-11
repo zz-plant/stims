@@ -1042,21 +1042,27 @@ class InstancedBorderBatch {
   sync(borders: MilkdropBorderVisual[], alphaMultiplier: number) {
     const fills: BorderRingInstance[] = [];
     const outlines: BorderRingInstance[] = [];
+    const outerBorder = borders.find((b) => b.key === 'outer');
+    const outerBorderSize = outerBorder ? outerBorder.size : 0;
+
     for (const border of borders) {
-      const inset = border.key === 'outer' ? border.size : border.size + 0.08;
+      const isOuter = border.key === 'outer';
+      const outerInset = isOuter ? 0 : outerBorderSize;
+      const innerInset = isOuter ? border.size : outerBorderSize + border.size;
+
       fills.push({
-        inset,
-        outerInset: 0,
-        innerInset: inset,
+        inset: innerInset,
+        outerInset,
+        innerInset,
         scale: 1,
         z: 0.285,
         color: border.color,
         alpha: border.alpha * 0.45 * alphaMultiplier,
       });
       outlines.push({
-        inset,
-        outerInset: Math.max(0, inset - 0.0035),
-        innerInset: Math.min(0.98, inset + 0.0035),
+        inset: innerInset,
+        outerInset: Math.max(0, innerInset - 0.0035),
+        innerInset: Math.min(0.98, innerInset + 0.0035),
         scale: 1,
         z: 0.3,
         color: border.color,

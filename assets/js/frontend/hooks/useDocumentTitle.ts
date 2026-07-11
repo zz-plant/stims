@@ -15,6 +15,13 @@ export function useDocumentTitle({
 }) {
   useEffect(() => {
     let title = 'Stims';
+    console.log('useDocumentTitle state:', {
+      loadingPreset,
+      selectedPresetTitle,
+      panel,
+      liveMode,
+      engineReady,
+    });
     if (loadingPreset) {
       title = `Loading\u2026 \u00B7 ${title}`;
     } else if (selectedPresetTitle && liveMode) {
@@ -34,6 +41,7 @@ export function useDocumentTitle({
     } else if (!engineReady) {
       title = `Loading\u2026 \u00B7 ${title}`;
     }
+    console.log('Setting document.title to:', title);
     document.title = title;
   }, [loadingPreset, selectedPresetTitle, panel, liveMode, engineReady]);
 }

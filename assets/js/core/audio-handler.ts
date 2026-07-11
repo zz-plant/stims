@@ -794,23 +794,32 @@ export async function initAudio(options: AudioInitOptions = {}) {
     monitorInput = false,
   } = options;
 
+  const urlParams =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const mockAudioType = urlParams?.get('mockAudio');
+  let mockCleanup: (() => void | Promise<void>) | undefined;
+
   let listener: AudioListener | null = null;
   let resolvedStream: MediaStream | null = null;
   let ownsStream = false;
   let permissionState: PermissionState | undefined;
 
-  if (typeof navigator === 'undefined') {
-    throw new AudioAccessError(
-      'unsupported',
-      'Audio capture is not available in this environment.',
-    );
-  }
+  if (!mockAudioType || stream) {
+    if (typeof navigator === 'undefined') {
+      throw new AudioAccessError(
+        'unsupported',
+        'Audio capture is not available in this environment.',
+      );
+    }
 
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new AudioAccessError(
-      'unsupported',
-      'This browser does not support microphone capture.',
-    );
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new AudioAccessError(
+        'unsupported',
+        'This browser does not support microphone capture.',
+      );
+    }
   }
 
   try {
@@ -826,6 +835,30 @@ export async function initAudio(options: AudioInitOptions = {}) {
 
     if (stream) {
       resolvedStream = stream;
+    } else if (mockAudioType) {
+      if (mockAudioType === 'demo') {
+        const demo = getCachedDemoAudioStream();
+        resolvedStream = demo.stream;
+        mockCleanup = demo.cleanup;
+        await demo.resume();
+      } else {
+        const type = ['sine', 'square', 'sawtooth', 'triangle'].includes(
+          mockAudioType,
+        )
+          ? mockAudioType
+          : 'sawtooth';
+        const mockFreqVal = urlParams?.get('mockFrequency');
+        const frequency = mockFreqVal ? parseFloat(mockFreqVal) : 220;
+        const synth = createSyntheticAudioStream({
+          frequency,
+          type: type as OscillatorType,
+        });
+        resolvedStream = synth.stream;
+        mockCleanup = synth.cleanup;
+        await synth.resume();
+      }
+      ownsStream = true;
+      permissionState = 'granted';
     } else {
       permissionState = await queryMicrophonePermissionState();
 
@@ -870,7 +903,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
     );
 
     let cleanedUp = false;
-    const cleanup = () => {
+    const cleanup = async () => {
       if (cleanedUp) return;
       cleanedUp = true;
 
@@ -893,6 +926,12 @@ export async function initAudio(options: AudioInitOptions = {}) {
         if (stopStreamOnCleanup) {
           streamSource.getTracks().forEach((track) => track.stop());
         }
+      }
+
+      if (mockCleanup) {
+        try {
+          await mockCleanup();
+        } catch (_) {}
       }
 
       if (camera && 'remove' in camera && listener) {
@@ -931,11 +970,17 @@ export async function initAudio(options: AudioInitOptions = {}) {
       listener: activeListener,
       audio,
       stream: streamSource,
-      cleanup,
+      cleanup: cleanup as () => void | Promise<void>,
       permissionState: effectivePermissionState,
     };
   } catch (error) {
     console.error('Error accessing audio:', error);
+
+    if (mockCleanup) {
+      try {
+        await mockCleanup();
+      } catch (_) {}
+    }
 
     if (resolvedStream) {
       unregisterMediaStream(resolvedStream);

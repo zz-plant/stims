@@ -537,6 +537,14 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           color = applyContrast(color, contrast);
           color *= colorScale;
           color *= tint;
+
+          vec2 uv = vUv;
+          vec3 ret = color;
+
+          // --- DIRECT_COMP_START ---
+          // --- DIRECT_COMP_END ---
+
+          color = ret;
           bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;
           bool overlayBlend = overlayTextureMode >= 1.5 && overlayTextureAmount > 0.0001;
           if (overlayTextureSource > 0.5 && (overlayReplace || overlayBlend)) {

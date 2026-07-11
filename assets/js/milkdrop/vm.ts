@@ -640,6 +640,52 @@ class MilkdropPresetVM implements MilkdropVM {
     });
 
     let variablesSnapshot: Record<string, number> | null = null;
+    const commonVars: Record<string, number | undefined> = {
+      mv_r: this.state.mv_r,
+      mv_g: this.state.mv_g,
+      mv_b: this.state.mv_b,
+      mv_a: this.state.mv_a,
+    };
+
+    const variablesProxy = new Proxy({} as Record<string, number>, {
+      get: (_target, prop) => {
+        if (typeof prop !== 'string') {
+          return undefined;
+        }
+        if (prop in commonVars) {
+          return commonVars[prop];
+        }
+        if (variablesSnapshot === null) {
+          variablesSnapshot = this.getStateSnapshot();
+        }
+        return variablesSnapshot[prop];
+      },
+      has: (_target, prop) => {
+        if (typeof prop !== 'string') {
+          return false;
+        }
+        if (prop in commonVars) {
+          return commonVars[prop] !== undefined;
+        }
+        if (variablesSnapshot === null) {
+          variablesSnapshot = this.getStateSnapshot();
+        }
+        return prop in variablesSnapshot;
+      },
+      ownKeys: () => {
+        if (variablesSnapshot === null) {
+          variablesSnapshot = this.getStateSnapshot();
+        }
+        return Reflect.ownKeys(variablesSnapshot);
+      },
+      getOwnPropertyDescriptor: (_target, prop) => {
+        if (variablesSnapshot === null) {
+          variablesSnapshot = this.getStateSnapshot();
+        }
+        return Reflect.getOwnPropertyDescriptor(variablesSnapshot, prop);
+      },
+    });
+
     const frameState: MilkdropFrameState = buildMilkdropFrameState({
       presetId: this.preset.source.id,
       title: this.preset.title,
@@ -658,19 +704,9 @@ class MilkdropPresetVM implements MilkdropVM {
       motionVectors,
       post,
       signals,
-      variables: {} as Record<string, number>,
+      variables: variablesProxy,
       compatibility: this.preset.ir.compatibility,
       gpuGeometry,
-    });
-    Object.defineProperty(frameState, 'variables', {
-      configurable: true,
-      enumerable: true,
-      get: () => {
-        if (variablesSnapshot === null) {
-          variablesSnapshot = this.getStateSnapshot();
-        }
-        return variablesSnapshot;
-      },
     });
     gpuGeometry.customWaves = customWaves.procedural;
     this.geometryState.frameTransformCache.clear();

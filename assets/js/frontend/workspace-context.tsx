@@ -2,6 +2,7 @@ import {
   createContext,
   type ReactNode,
   useContext,
+  useEffect,
   useMemo,
   useRef,
 } from 'react';
@@ -126,11 +127,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
   const presetQueue = usePersistentPresetQueue(shellOrchestration.catalog);
 
-  const engineSnapshotValue: EngineSnapshotValue = useMemo(() => {
+  useEffect(() => {
     const snap = sessionState.engineSnapshot;
     if (snap) {
       setAudioEnergy(snap.audioEnergy);
     }
+  }, [sessionState.engineSnapshot]);
+
+  const engineSnapshotValue: EngineSnapshotValue = useMemo(() => {
+    const snap = sessionState.engineSnapshot;
     const prev = coarseRef.current;
     if (
       prev &&

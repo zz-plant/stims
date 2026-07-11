@@ -88,6 +88,50 @@
         "audioMode": "demo",
         "vibeMode": true
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260711161218",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-glowsticks-v2-03-music",
+      "title": null,
+      "createdAt": "2026-07-11T16:12:18.071Z",
+      "files": {
+        "image": "milkdrop--preset-eos-glowsticks-v2-03-music-1783786337742.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-glowsticks-v2-03-music",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260711161451",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-glowsticks-v2-03-music",
+      "title": null,
+      "createdAt": "2026-07-11T16:14:51.714Z",
+      "files": {
+        "image": "milkdrop--preset-eos-glowsticks-v2-03-music-1783786491476.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=eos-glowsticks-v2-03-music",
+        "durationMs": 3000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": true
+      }
     }
   ]
 }
