@@ -510,16 +510,16 @@ describe('milkdrop vendored projectM fixture corpus', () => {
   });
 
   test('keeps compiled compatibility metadata and normalized program sources stable', () => {
-     const corpus = loadProjectMPresetCorpus();
-     const actualSnapshot = corpus.map(({ file, compiled }) =>
-       buildCompatibilitySnapshot(file, compiled),
-     );
-     const expectedSnapshot = JSON.parse(
-       readFileSync(PROJECTM_COMPATIBILITY_SNAPSHOT_PATH, 'utf8'),
-     );
+    const corpus = loadProjectMPresetCorpus();
+    const actualSnapshot = corpus.map(({ file, compiled }) =>
+      buildCompatibilitySnapshot(file, compiled),
+    );
+    const expectedSnapshot = JSON.parse(
+      readFileSync(PROJECTM_COMPATIBILITY_SNAPSHOT_PATH, 'utf8'),
+    );
 
-     expect(actualSnapshot).toEqual(expectedSnapshot);
-   });
+    expect(actualSnapshot).toEqual(expectedSnapshot);
+  });
 
   test(
     'steps the vendored upstream fixture corpus through the VM without invalid frame output',

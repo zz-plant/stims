@@ -62,7 +62,9 @@ test(
       expect(shell).not.toBeNull();
 
       // Wait for demo audio button to be present and click it
-      const demoBtn = page.locator('button', { hasText: /Play with demo|demo audio/ }).first();
+      const demoBtn = page
+        .locator('button', { hasText: /Play with demo|demo audio/ })
+        .first();
       await demoBtn.waitFor({ state: 'visible', timeout: 15000 });
       await demoBtn.click();
 
@@ -121,18 +123,23 @@ test(
       );
       await page.waitForSelector('#stims-main', { timeout: 15000 });
       // Wait for demo audio button to be present and click it
-      const demoBtn2 = page.locator('button', { hasText: /Play with demo|demo audio/ }).first();
+      const demoBtn2 = page
+        .locator('button', { hasText: /Play with demo|demo audio/ })
+        .first();
       await demoBtn2.waitFor({ state: 'visible', timeout: 15000 });
       await demoBtn2.click();
       await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
       await page.waitForSelector('canvas', { timeout: 15000 });
       console.log('E2E TEST DOCUMENT TITLE:', await page.title());
-      await page.waitForFunction(() => {
-        console.log('PAGE TITLE IN FN:', document.title);
-        return document.title.includes('Glowsticks');
-      }, {
-        timeout: 30000,
-      });
+      await page.waitForFunction(
+        () => {
+          console.log('PAGE TITLE IN FN:', document.title);
+          return document.title.includes('Glowsticks');
+        },
+        {
+          timeout: 30000,
+        },
+      );
       await page.waitForTimeout(2000);
 
       const hash1 = await page.evaluate(
