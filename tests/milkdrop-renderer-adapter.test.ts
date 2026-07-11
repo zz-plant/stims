@@ -1948,11 +1948,11 @@ comp_shader=ret = tex2d(sampler_main, uv).rgb * 1.2;
       }),
     ).toBe(true);
 
-    expect(compositeStates[0]?.shaderExecution).toBe('direct');
-    expect(compositeStates[0]?.shaderPrograms.comp).not.toBeNull();
+    expect(compositeStates[0]?.shaderExecution).toBe('controls');
+    expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
   });
 
-  test('forwards direct shader programs into the webgpu feedback composite state', async () => {
+  test('keeps direct shader programs off the webgpu feedback composite state without proven fallback parity', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Direct Shader Program Feedback
@@ -1998,20 +1998,11 @@ comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
       }),
     ).toBe(true);
 
-    expect(compositeStates[0]?.shaderExecution).toBe('direct');
-    expect(compositeStates[0]?.shaderPrograms.comp).toEqual(
-      expect.objectContaining({
-        source: 'ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)',
-        execution: expect.objectContaining({
-          kind: 'direct-feedback-program',
-          stage: 'comp',
-          requiresControlFallback: true,
-        }),
-      }),
-    );
+    expect(compositeStates[0]?.shaderExecution).toBe('controls');
+    expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
   });
 
-  test('forwards direct warp shader_body programs into the webgpu feedback composite state', async () => {
+  test('keeps direct warp shader_body programs off the webgpu feedback composite state without proven fallback parity', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Direct Warp Shader Body Feedback
@@ -2057,15 +2048,31 @@ warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
       }),
     ).toBe(true);
 
-    expect(compositeStates[0]?.shaderExecution).toBe('direct');
-    expect(compositeStates[0]?.shaderPrograms.warp).toEqual(
+    expect(compositeStates[0]?.shaderExecution).toBe('controls');
+    expect(compositeStates[0]?.shaderPrograms.warp).toBeNull();
+  });
+
+  test('marks feedback-heavy WebGPU descriptor plans for WebGL compatibility fallback', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Heavy WebGPU Fallback
+fShader=1
+video_echo=1
+feedback_texture=1
+comp_shader=ret = tex2d(sampler_main, uv).rgb * 1.1
+      `.trim(),
+      { id: 'feedback-heavy-webgpu-fallback' },
+    );
+
+    expect(preset.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
       expect.objectContaining({
-        source: 'shader_body=uv + vec2(time * 0.02, 0.0)',
-        execution: expect.objectContaining({
-          kind: 'direct-feedback-program',
-          stage: 'warp',
-          entryTarget: 'uv',
-          supportedBackends: expect.arrayContaining(['webgpu']),
+        routing: 'fallback-webgl',
+        feedback: expect.objectContaining({
+          kind: 'feedback-post-effect',
+          shaderExecution: 'direct',
+          usesFeedbackTexture: true,
+          usesVideoEcho: true,
+          fallbackToLegacyFeedback: true,
         }),
       }),
     );

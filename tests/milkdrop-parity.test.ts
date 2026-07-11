@@ -321,7 +321,12 @@ describe('milkdrop parity corpus harness', () => {
         );
         expect(
           compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
-        ).toBe('descriptor-plan');
+        ).toBe(
+          compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+            ?.fallbackToLegacyFeedback
+            ? 'fallback-webgl'
+            : 'descriptor-plan',
+        );
         expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
           expect.arrayContaining(expected.divergence),
         );
@@ -411,12 +416,12 @@ test('keeps former shader-gap parity fixtures out of the allowlist when only vid
   expect(compiled.ir.compatibility.parity.blockingConstructDetails).toEqual([]);
   expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
     expect.objectContaining({
-      routing: 'descriptor-plan',
+      routing: 'fallback-webgl',
       feedback: expect.objectContaining({
         kind: 'feedback-post-effect',
         shaderExecution: 'direct',
         usesVideoEcho: true,
-        fallbackToLegacyFeedback: false,
+        fallbackToLegacyFeedback: true,
       }),
       unsupported: [],
     }),
