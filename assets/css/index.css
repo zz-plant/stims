@@ -3790,6 +3790,7 @@ body[data-page="home"] .content {
 .shell-header--launch .shell-panel--tune {
   position: sticky;
   top: clamp(1rem, 2vw, 1.4rem);
+  z-index: var(--z-stage-root);
 }
 
 .shell-header--launch .shell-panel[data-audio-controls] > .control-panel,
@@ -4910,6 +4911,7 @@ section.intro,
 .launch-panels .shell-panel--tune {
   position: sticky;
   top: clamp(1rem, 2vw, 1.4rem);
+  z-index: var(--z-stage-root);
 }
 
 .launch-panels .shell-panel[data-audio-controls] > .control-panel,

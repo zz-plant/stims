@@ -50,6 +50,10 @@ body[data-page="workspace"] {
     isolation: isolate;
   }
 
+  :scope [id] {
+    scroll-margin-top: var(--stims-header-top);
+  }
+
   :scope[data-preview="true"] {
     min-height: 100vh;
     min-height: 100dvh;
@@ -3226,6 +3230,7 @@ body[data-page="workspace"] {
     .stims-shell__preset-list {
       min-height: 0;
       max-height: max(34vh, 240px);
+      max-height: max(34dvh, 240px);
     }
 
     .stims-shell__sheet {
@@ -4202,7 +4207,7 @@ body[data-page="workspace"] {
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 20;
+  z-index: var(--z-dropdown);
   display: flex;
   align-items: center;
   gap: 2px;
@@ -4333,7 +4338,7 @@ body[data-page="workspace"] {
   .stims-shell[data-thumb-mode="true"] .stims-shell__thumb-actions {
     position: sticky;
     bottom: 0;
-    z-index: 2;
+    z-index: var(--z-dock);
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
@@ -4363,7 +4368,7 @@ body[data-page="workspace"] {
   position: absolute;
   right: 52px;
   top: 10px;
-  z-index: 2;
+  z-index: var(--z-stage-hero);
   border: 1px solid var(--stims-line);
   border-radius: var(--radius-pill);
   background: rgba(3, 5, 11, 0.72);

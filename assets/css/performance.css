@@ -1,3 +1,4 @@
+/* Overrides base.css html{overflow:hidden} — must load after base.css */
 html {
   height: auto;
   min-height: 100%;
@@ -29,6 +30,7 @@ body[data-page="performance"] {
   padding: 32px 0 72px;
   display: grid;
   gap: 24px;
+  container-type: inline-size;
 }
 
 .stims-performance__hero,
@@ -220,7 +222,7 @@ body[data-page="performance"] {
   color: var(--text-color);
 }
 
-@media (max-width: 900px) {
+@container (max-width: 900px) {
   .stims-performance__grid,
   .stims-performance__section--split,
   .stims-performance__hero-actions {
@@ -228,7 +230,7 @@ body[data-page="performance"] {
   }
 }
 
-@media (max-width: 640px) {
+@container (max-width: 640px) {
   .stims-performance {
     width: min(100% - 20px, 1100px);
     padding-top: 20px;
