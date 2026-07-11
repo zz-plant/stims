@@ -915,6 +915,8 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       directFeedbackShaders: this.webgpuOptimizationFlags.directFeedbackShaders,
       webgpuFeedbackPlanShaderExecution:
         this.webgpuDescriptorPlan?.feedback?.shaderExecution,
+      webgpuFeedbackPlanFallback:
+        this.webgpuDescriptorPlan?.feedback?.fallbackToLegacyFeedback ?? false,
       getShaderTextureSourceId,
       getShaderTextureBlendModeId,
       getShaderSampleDimensionId,
