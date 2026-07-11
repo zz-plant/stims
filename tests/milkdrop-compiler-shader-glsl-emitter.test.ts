@@ -195,9 +195,9 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
     expect(glsl).toContain('sampleAuxTexture(');
   });
 
-  test('unknown sampler falls back to main texture', () => {
+  test('unknown sampler emits custom texture binding', () => {
     const glsl = emitShaderExpression('ret = tex2d(sampler_gizmo, uv).rgb');
-    expect(glsl).toContain('texture2D(currentTex, sampleUv(');
+    expect(glsl).toContain('texture2D(sampler_gizmoTex, sampleUv(');
   });
 });
 
