@@ -430,6 +430,58 @@ wave_0_per_point2=y = value2;
     ).toMatchObject(['x = value + value1', 'y = value2']);
   });
 
+  test('places zero-based legacy custom wave and shape programs in runtime slot one', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Zero Based Custom Slot Fixture
+wavecode_0_enabled=1
+wave_0_per_point1=x = sample;
+shapecode_0_enabled=1
+shape_0_per_frame1=rad = 0.2;
+      `.trim(),
+      { id: 'zero-based-custom-slot-fixture' },
+    );
+
+    expect(compiled.ir.customWaves).toHaveLength(1);
+    expect(compiled.ir.customWaves[0]?.index).toBe(1);
+    expect(compiled.ir.customWaves[0]?.fields.enabled).toBe(1);
+    expect(compiled.ir.customWaves[0]?.programs.perPoint.sourceLines).toEqual([
+      'x = sample',
+    ]);
+    expect(compiled.ir.customShapes).toHaveLength(1);
+    expect(compiled.ir.customShapes[0]?.index).toBe(1);
+    expect(compiled.ir.customShapes[0]?.fields.enabled).toBe(1);
+    expect(compiled.ir.customShapes[0]?.programs.perFrame.sourceLines).toEqual([
+      'rad = 0.2',
+    ]);
+  });
+
+  test('keeps one-based custom wave and shape programs in their runtime slot', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=One Based Custom Slot Fixture
+custom_wave_1_enabled=1
+custom_wave_1_per_point1=x = sample;
+shape_1_enabled=1
+shape_1_per_frame1=rad = 0.3;
+      `.trim(),
+      { id: 'one-based-custom-slot-fixture' },
+    );
+
+    expect(compiled.ir.customWaves).toHaveLength(1);
+    expect(compiled.ir.customWaves[0]?.index).toBe(1);
+    expect(compiled.ir.customWaves[0]?.fields.enabled).toBe(1);
+    expect(compiled.ir.customWaves[0]?.programs.perPoint.sourceLines).toEqual([
+      'x = sample',
+    ]);
+    expect(compiled.ir.customShapes).toHaveLength(1);
+    expect(compiled.ir.customShapes[0]?.index).toBe(1);
+    expect(compiled.ir.customShapes[0]?.fields.enabled).toBe(1);
+    expect(compiled.ir.customShapes[0]?.programs.perFrame.sourceLines).toEqual([
+      'rad = 0.3',
+    ]);
+  });
+
   test('supports shader-text subset and feedback-style flags', () => {
     const compiled = compileMilkdropPresetSource(
       `
