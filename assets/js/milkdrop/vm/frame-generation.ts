@@ -222,14 +222,7 @@ function assignColor(target: MilkdropColor | undefined, source: MilkdropColor) {
 }
 
 function isClosedMainWaveMode(mode: number) {
-  return (
-    mode === 0 ||
-    mode === 1 ||
-    mode === 2 ||
-    mode === 3 ||
-    mode === 5 ||
-    mode === 7
-  );
+  return mode === 0 || mode === 1;
 }
 
 function getMainWaveSampleCount(

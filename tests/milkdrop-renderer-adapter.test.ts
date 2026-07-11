@@ -2319,7 +2319,7 @@ wave_a=0.7
     const preset = compileMilkdropPresetSource(
       `
 title=Closed Join Metadata
-wave_mode=5
+wave_mode=1
 wave_usedots=0
 wave_additive=0
 wave_a=0.7
