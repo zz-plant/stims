@@ -14,12 +14,13 @@
     transparent
   );
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--stims-line-soft);
   transform: translateY(100%);
   opacity: 0;
   transition:
-    transform 0.3s ease,
-    opacity 0.3s ease;
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s ease;
 }
 
 .bar[data-visible="true"] {
@@ -84,15 +85,21 @@
   font: inherit;
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease,
-    transform 0.15s ease;
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
   -webkit-tap-highlight-color: transparent;
 }
 
 .action:active {
   color: var(--stims-accent);
-  transform: scale(1.08);
+  transform: scale(0.93);
+  transition-duration: 60ms;
+}
+
+.action:hover {
+  color: var(--stims-ink);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .action[data-active="true"] {
@@ -161,16 +168,24 @@
   border-radius: 18px;
   background: rgba(5, 7, 13, 0.9);
   color: var(--stims-ink);
-  border: 1px solid var(--stims-line-soft);
+  border: 1px solid var(--stims-line);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   opacity: 1;
   transition:
     opacity 0.25s ease,
-    transform 0.25s ease;
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.2s ease;
+}
+
+.handle:hover {
+  border-color: var(--stims-line-strong);
+  transform: translateX(-50%) translateY(-1px);
 }
 
 .handle[hidden] {
