@@ -962,7 +962,7 @@ export function extractScaledShaderSampleExpression(
   };
 }
 
-function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
+export type ShaderUvTransformAnalysis = {
   scaleX: number;
   scaleY: number;
   offsetX: number;
@@ -973,7 +973,11 @@ function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
     offsetX: MilkdropExpressionNode | null;
     offsetY: MilkdropExpressionNode | null;
   };
-} | null {
+};
+
+export function analyzeShaderUvTransform(
+  node: MilkdropShaderExpressionNode,
+): ShaderUvTransformAnalysis | null {
   if (isShaderUvIdentifier(node)) {
     return {
       scaleX: 1,
@@ -1034,40 +1038,12 @@ function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
   }
 
   if (node.type === 'binary' && node.operator === '*') {
-    const uvSide = isShaderUvIdentifier(node.left)
-      ? node.left
-      : isShaderUvIdentifier(node.right)
-        ? node.right
-        : null;
-    const scaleSide =
-      uvSide === node.left
-        ? node.right
-        : uvSide === node.right
-          ? node.left
-          : null;
-    if (!uvSide || !scaleSide) {
+    const leftBase = analyzeShaderUvTransform(node.left);
+    const rightBase = leftBase ? null : analyzeShaderUvTransform(node.right);
+    const base = leftBase ?? rightBase;
+    const scaleSide = leftBase ? node.right : rightBase ? node.left : null;
+    if (!base || !scaleSide) {
       return null;
-    }
-
-    const scalar = evaluateShaderScalarResult(
-      scaleSide,
-      { uv: { kind: 'vec2', value: [0, 0] } },
-      DEFAULT_MILKDROP_STATE,
-      {},
-    );
-    if (scalar) {
-      return {
-        scaleX: scalar.value,
-        scaleY: scalar.value,
-        offsetX: 0,
-        offsetY: 0,
-        expressions: {
-          scaleX: scalar.expression,
-          scaleY: scalar.expression,
-          offsetX: null,
-          offsetY: null,
-        },
-      };
     }
 
     const vector = evaluateShaderVectorResult(
@@ -1077,19 +1053,40 @@ function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
       DEFAULT_MILKDROP_STATE,
       {},
     );
-    if (!vector) {
+    if (vector) {
+      return {
+        scaleX: base.scaleX * vector.values[0],
+        scaleY: base.scaleY * vector.values[1],
+        offsetX: base.offsetX * vector.values[0],
+        offsetY: base.offsetY * vector.values[1],
+        expressions: {
+          scaleX: vector.expressions[0] ?? base.expressions.scaleX,
+          scaleY: vector.expressions[1] ?? base.expressions.scaleY,
+          offsetX: base.expressions.offsetX,
+          offsetY: base.expressions.offsetY,
+        },
+      };
+    }
+
+    const scalar = evaluateShaderScalarResult(
+      scaleSide,
+      { uv: { kind: 'vec2', value: [0, 0] } },
+      DEFAULT_MILKDROP_STATE,
+      {},
+    );
+    if (!scalar) {
       return null;
     }
     return {
-      scaleX: vector.values[0],
-      scaleY: vector.values[1],
-      offsetX: 0,
-      offsetY: 0,
+      scaleX: base.scaleX * scalar.value,
+      scaleY: base.scaleY * scalar.value,
+      offsetX: base.offsetX * scalar.value,
+      offsetY: base.offsetY * scalar.value,
       expressions: {
-        scaleX: vector.expressions[0] ?? null,
-        scaleY: vector.expressions[1] ?? null,
-        offsetX: null,
-        offsetY: null,
+        scaleX: scalar.expression ?? base.expressions.scaleX,
+        scaleY: scalar.expression ?? base.expressions.scaleY,
+        offsetX: base.expressions.offsetX,
+        offsetY: base.expressions.offsetY,
       },
     };
   }
@@ -1126,6 +1123,89 @@ function analyzeShaderUvTransform(node: MilkdropShaderExpressionNode): {
   }
 
   return null;
+}
+
+function invertUvScaleExpression(expression: MilkdropExpressionNode | null) {
+  if (!expression) {
+    return null;
+  }
+  return {
+    type: 'binary',
+    operator: '/',
+    left: createLiteralExpression(1),
+    right: expression,
+  } satisfies MilkdropExpressionNode;
+}
+
+function buildCenteredUvOffsetExpression(
+  scaleExpression: MilkdropExpressionNode | null,
+  offsetExpression: MilkdropExpressionNode | null,
+) {
+  if (!scaleExpression && !offsetExpression) {
+    return null;
+  }
+  const centeredScaleOffset = {
+    type: 'binary',
+    operator: '*',
+    left: createLiteralExpression(0.5),
+    right: {
+      type: 'binary',
+      operator: '-',
+      left: scaleExpression ?? createLiteralExpression(1),
+      right: createLiteralExpression(1),
+    },
+  } satisfies MilkdropExpressionNode;
+  if (!offsetExpression) {
+    return centeredScaleOffset;
+  }
+  return {
+    type: 'binary',
+    operator: '+',
+    left: offsetExpression,
+    right: centeredScaleOffset,
+  } satisfies MilkdropExpressionNode;
+}
+
+export function applyMainUvTransformControls({
+  transform,
+  controls,
+  expressions,
+  shaderEnv,
+}: {
+  transform: ShaderUvTransformAnalysis;
+  controls: MilkdropShaderControls;
+  expressions: MilkdropShaderControlExpressions;
+  shaderEnv: Record<string, number>;
+}) {
+  if (
+    Math.abs(transform.scaleX - transform.scaleY) > 0.000001 ||
+    transform.scaleX === 0
+  ) {
+    return false;
+  }
+
+  const zoom = 1 / transform.scaleX;
+  const offsetX = transform.offsetX + transform.scaleX * 0.5 - 0.5;
+  const offsetY = transform.offsetY + transform.scaleY * 0.5 - 0.5;
+  controls.zoom = zoom;
+  controls.offsetX = offsetX;
+  controls.offsetY = offsetY;
+  expressions.zoom = invertUvScaleExpression(transform.expressions.scaleX);
+  expressions.offsetX = buildCenteredUvOffsetExpression(
+    transform.expressions.scaleX,
+    transform.expressions.offsetX,
+  );
+  expressions.offsetY = buildCenteredUvOffsetExpression(
+    transform.expressions.scaleY,
+    transform.expressions.offsetY,
+  );
+  shaderEnv.zoom = zoom;
+  shaderEnv.scale = zoom;
+  shaderEnv.offset_x = offsetX;
+  shaderEnv.offset_y = offsetY;
+  shaderEnv.dx = offsetX;
+  shaderEnv.dy = offsetY;
+  return true;
 }
 
 function analyzeShaderVolumeSlice(node: MilkdropShaderExpressionNode | null): {

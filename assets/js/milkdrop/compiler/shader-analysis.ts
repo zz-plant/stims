@@ -18,6 +18,8 @@ import {
 } from './shader-analysis-direct-program';
 import { mergeShaderControlAnalysis } from './shader-analysis-evaluation';
 import {
+  analyzeShaderUvTransform,
+  applyMainUvTransformControls,
   applyShaderControlValue,
   applyShaderExpressionOperator,
   applyTextureLayerSample,
@@ -236,6 +238,26 @@ function applyShaderAstStatement({
   }
 
   if (key === 'uv') {
+    if (operator === '=') {
+      const transform = analyzeShaderUvTransform(resolvedExpression);
+      if (
+        transform &&
+        applyMainUvTransformControls({
+          transform,
+          controls,
+          expressions,
+          shaderEnv,
+        })
+      ) {
+        shaderValueEnv.uv = {
+          kind: 'vec2',
+          value: [0, 0],
+        };
+        shaderExpressionEnv[key] = resolvedExpression;
+        return true;
+      }
+    }
+
     const directVec = vec2Result();
     if ((operator === '+=' || operator === '-=') && directVec) {
       const sign = operator === '-=' ? -1 : 1;

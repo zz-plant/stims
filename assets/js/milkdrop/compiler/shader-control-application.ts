@@ -5,6 +5,8 @@ import type {
   MilkdropShaderExpressionNode,
 } from '../types';
 import {
+  analyzeShaderUvTransform,
+  applyMainUvTransformControls,
   applyShaderExpressionOperator,
   isAuxShaderSamplerName,
   normalizeShaderSamplerName,
@@ -619,6 +621,18 @@ export function applyShaderAstControlStatement({
   }
 
   if (key === 'uv') {
+    if (operator === '=') {
+      const transform = analyzeShaderUvTransform(resolvedExpression);
+      if (transform) {
+        return applyMainUvTransformControls({
+          transform,
+          controls: context.controls,
+          expressions: context.expressions,
+          shaderEnv: context.shaderEnv,
+        });
+      }
+    }
+
     if ((operator === '+=' || operator === '-=') && vec2Result) {
       const sign = operator === '-=' ? -1 : 1;
       const nextX = applyNumericControlValue({
