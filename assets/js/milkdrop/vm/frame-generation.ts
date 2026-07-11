@@ -186,19 +186,28 @@ function assignColor(target: MilkdropColor | undefined, source: MilkdropColor) {
 }
 
 function isClosedMainWaveMode(mode: number) {
-  return mode === 0 || mode === 1;
+  return (
+    mode === 0 ||
+    mode === 1 ||
+    mode === 2 ||
+    mode === 3 ||
+    mode === 5 ||
+    mode === 7
+  );
 }
 
 function getMainWaveSampleCount(
   mode: number,
   detailScale: number,
-  _sourceLength: number,
+  sourceLength: number,
 ) {
-  // ProjectM uses WaveformSamples/2 (256) for most modes, WaveformSamples
-  // (512) for CenteredSpiro, CenteredSpiroVolume, DerivativeLine, ExplosiveHash.
-  const baseCountByMode = [256, 256, 512, 512, 512, 512, 256, 256];
+  const baseCountByMode = [176, 168, 160, 152, 192, 176, 192, 160];
+  const sourceFloor = sourceLength > 0 ? Math.min(sourceLength, 1024) : 64;
   return clamp(
-    Math.round((baseCountByMode[mode] ?? 256) * clamp(detailScale, 0.5, 3.5)),
+    Math.round(
+      mix(baseCountByMode[mode] ?? 168, sourceFloor, 0.45) *
+        clamp(detailScale, 0.5, 3.5),
+    ),
     48,
     1024,
   );

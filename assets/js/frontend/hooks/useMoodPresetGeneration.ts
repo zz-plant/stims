@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type MoodPreset = { label: string; desc: string; icon: string };
 export type MoodGenerationState =
@@ -21,6 +21,13 @@ export function useMoodPresetGeneration({
   const [generatingMood, setGeneratingMood] = useState<string | null>(null);
   const [lastMood, setLastMood] = useState<MoodPreset | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
+  }, []);
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { PRESET_PREVIEW_REQUEST_LIMIT } from '../milkdrop/preset-preview.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
@@ -121,10 +121,21 @@ export function BrowseSheetPanel({
   const [previewingPresetId, setPreviewingPresetId] = useState<string | null>(
     null,
   );
+  const imageImportAbortRef = useRef<AbortController | null>(null);
+  const communityAbortRef = useRef<AbortController | null>(null);
+  const visualSearchAbortRef = useRef<AbortController | null>(null);
   const [visibleCatalogState, setVisibleCatalogState] = useState({
     key: '',
     limit: BROWSE_RESULT_BATCH_SIZE,
   });
+
+  useEffect(() => {
+    return () => {
+      imageImportAbortRef.current?.abort();
+      communityAbortRef.current?.abort();
+      visualSearchAbortRef.current?.abort();
+    };
+  }, []);
 
   const handleImageImport = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -136,13 +147,18 @@ export function BrowseSheetPanel({
     const formData = new FormData();
     formData.append('image', file);
 
+    imageImportAbortRef.current?.abort();
+    const controller = new AbortController();
+    imageImportAbortRef.current = controller;
     setImageImportLoading(true);
     setImageImportResult(null);
     try {
       const res = await fetch('/api/image-to-preset', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
+      if (controller.signal.aborted) return;
       if (!res.ok) {
         let serverMessage = `Server returned ${res.status}`;
         try {
@@ -157,15 +173,20 @@ export function BrowseSheetPanel({
         description: string;
         presetId: string;
       };
+      if (controller.signal.aborted) return;
       setImageImportResult(data);
       if (data.presetId) {
         engine.handlePresetSelection(data.presetId);
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       const message = err instanceof Error ? err.message : 'Unknown error';
       ui.setStatusMessage(`Image import failed: ${message}`);
     } finally {
-      setImageImportLoading(false);
+      if (imageImportAbortRef.current === controller) {
+        imageImportAbortRef.current = null;
+        setImageImportLoading(false);
+      }
     }
   };
 
@@ -176,23 +197,33 @@ export function BrowseSheetPanel({
       );
       return;
     }
+    communityAbortRef.current?.abort();
+    const controller = new AbortController();
+    communityAbortRef.current = controller;
     setCommunityLoading(true);
     setCommunityError(null);
-    fetch('/api/presets?sort=top&limit=20')
+    fetch('/api/presets?sort=top&limit=20', { signal: controller.signal })
       .then((res) => {
+        if (controller.signal.aborted) return null;
         if (!res.ok) {
           throw new Error(`Unable to load community presets (${res.status}).`);
         }
         return res.json();
       })
       .then((data) => {
+        if (!data || controller.signal.aborted) return;
         const presets = Array.isArray(data.presets) ? data.presets : [];
         setCommunityPresets(presets);
-        setCommunityLoading(false);
       })
       .catch((err: Error) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setCommunityError(err.message);
-        setCommunityLoading(false);
+      })
+      .finally(() => {
+        if (communityAbortRef.current === controller) {
+          communityAbortRef.current = null;
+          setCommunityLoading(false);
+        }
       });
   }, [offline]);
 
@@ -210,15 +241,23 @@ export function BrowseSheetPanel({
       ui.setStatusMessage('No visual frame available yet.');
       return;
     }
+    visualSearchAbortRef.current?.abort();
+    const controller = new AbortController();
+    visualSearchAbortRef.current = controller;
     setVisualSearchLoading(true);
     setVisualSearchActive(true);
     try {
-      const results = await searchByFrame(canvas);
+      const results = await searchByFrame(canvas, controller.signal);
+      if (controller.signal.aborted) return;
       setVisualSearchResults(results);
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       ui.setStatusMessage('Finding similar presets failed.');
     } finally {
-      setVisualSearchLoading(false);
+      if (visualSearchAbortRef.current === controller) {
+        visualSearchAbortRef.current = null;
+        setVisualSearchLoading(false);
+      }
     }
   };
 

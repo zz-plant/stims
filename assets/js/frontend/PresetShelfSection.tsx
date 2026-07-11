@@ -57,6 +57,12 @@ export function PresetShelfSection({
   const queuedByLongPressRef = useRef(false);
 
   useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!onVisible || hasTriggered) {
       return;
     }
