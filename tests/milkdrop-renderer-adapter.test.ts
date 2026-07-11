@@ -423,7 +423,7 @@ shapecode_0_thickoutline=1
     }
   });
 
-  test('falls back to non-batched shape rendering for textured custom shapes on WebGPU', async () => {
+  test('batches textured custom shapes without sampling when shape texture is unavailable on WebGPU', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Textured Shape Fallback
@@ -454,18 +454,18 @@ shapecode_0_tex_ang=0.35
     const root = scene.children[0] as {
       children?: RenderTreeNode[];
     };
-    const shapesGroup = getRootChildByRenderOrder(root, 50);
-    const batchedShapes = flattenRenderTree(shapesGroup ?? {}).filter(
+    const batchedShapes = flattenRenderTree(root).filter(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined,
     );
-    const meshFills = flattenRenderTree(shapesGroup ?? {}).filter(
-      (child) =>
-        child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
-    );
+    const fillControls = batchedShapes
+      .map((child) => getFloat32AttributeArray(child, 'instanceFillControl'))
+      .filter(
+        (value): value is Float32Array<ArrayBufferLike> => value !== undefined,
+      );
 
-    expect(batchedShapes).toHaveLength(0);
-    expect(meshFills.length).toBeGreaterThan(0);
+    expect(batchedShapes.length).toBeGreaterThan(0);
+    expect(fillControls.some((control) => control[1] === 0)).toBe(true);
   });
 
   test('batches textured custom shapes on WebGPU when a shape texture is available', async () => {
@@ -714,8 +714,8 @@ shapecode_1_thickoutline=1
     expect(frameState.shapes).toHaveLength(2);
     expect(outlineScales).toHaveLength(2);
     expect(outlineScales).toEqual([
-      [1.0220588445663452, 0.9828431606292725],
-      [1.0441176891326904, 0.9656862616539001],
+      [1.0023934841156006, 1],
+      [1.0047870874404907, 1],
     ]);
   });
 

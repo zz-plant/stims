@@ -831,6 +831,49 @@ warp_shader=uv=(uv-0.5)/1.25+0.5+vec2(0.03,-0.02);
     expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(-0.02, 6);
   });
 
+  test('maps direct scalar uv shader transforms into compatible controls', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Scalar UV Shader
+warp_shader=uv=uv*2.0+vec2(0.1,-0.2); shader_body=tex2d(sampler_main,uv).rgb;
+      `.trim(),
+      { id: 'direct-scalar-uv-shader' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(0.5, 6);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0.6, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(0.3, 6);
+  });
+
+  test('keeps per-axis uv shader transforms on the direct-program path when controls cannot preserve them', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Direct Per Axis UV Shader
+warp_shader=uv=uv*vec2(1.5,0.75); shader_body=tex2d(sampler_main,uv).rgb;
+      `.trim(),
+      { id: 'direct-per-axis-uv-shader' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.shaderText.warpProgram).not.toBeNull();
+    expect(compiled.ir.shaderText.warpProgram?.source).toContain(
+      'uv=uv*vec2(1.5,0.75)',
+    );
+    expect(
+      compiled.ir.shaderText.warpProgram?.execution.requiresControlFallback,
+    ).toBe(false);
+    expect(compiled.ir.post.shaderControls.zoom).toBeCloseTo(1, 6);
+    expect(compiled.ir.post.shaderControls.offsetX).toBeCloseTo(0, 6);
+    expect(compiled.ir.post.shaderControls.offsetY).toBeCloseTo(0, 6);
+    expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
+      [],
+    );
+  });
+
   test('supports mix-based shader-body post patterns', () => {
     const compiled = compileMilkdropPresetSource(
       `
@@ -912,6 +955,36 @@ comp_shader=float3 wash = float3(1.2, 0.9, 0.7); ret = tex2d(sampler_main, uv).r
         expect.objectContaining({ target: 'return' }),
       ]),
     );
+  });
+
+  test('keeps MilkDrop exponent, bitwise, and attenuated signal aliases in direct shader programs', () => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Shader Known Constructs
+comp_shader=float gain = bassAtt ^ 2.0; float mask = midAtt | 2.0; ret = tex2d(sampler_main, uv).rgb * vec3(gain, mask, trebleAtt & 1.0)
+      `.trim(),
+      { id: 'shader-known-constructs' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'float gain = bassAtt ^ 2.0; float mask = midAtt | 2.0; ret = tex2d(sampler_main, uv).rgb * vec3(gain, mask, trebleAtt & 1.0)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          stage: 'comp',
+          supportedBackends: ['webgl', 'webgpu'],
+        }),
+      }),
+    );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'direct',
+      webgpu: 'direct',
+    });
   });
 
   test('builds direct comp programs that can reference translated control values', () => {
