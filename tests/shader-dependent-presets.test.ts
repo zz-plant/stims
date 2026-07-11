@@ -61,10 +61,16 @@ test('known native shader-text presets compile to direct shader-text programs', 
 
     expect(compiled.ir.shaderText.supported, presetId).toBe(true);
     expect(compiled.ir.shaderText.unsupportedLines, presetId).toEqual([]);
+    const expectsWebGpuTranslation =
+      presetId ===
+      'martin-anandamide-mandelbox-explorer-quantum-timepiece-remix';
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
       presetId,
-    ).toEqual({ webgl: 'direct', webgpu: 'direct' });
+    ).toEqual({
+      webgl: 'direct',
+      webgpu: expectsWebGpuTranslation ? 'translated' : 'direct',
+    });
     expect(compiled.ir.compatibility.backends.webgl.status, presetId).not.toBe(
       'fallback',
     );

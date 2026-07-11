@@ -2205,11 +2205,28 @@ comp_3=ret = texture(sampler_fc_main, packed + noisePacked.xy).xyz;
     expect(compiled.ir.shaderText.compProgram?.source).toContain(
       'sampler_fc_main',
     );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({
+      webgl: 'direct',
+      webgpu: 'translated',
+    });
+    expect(
+      compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback,
+    ).toEqual(
+      expect.objectContaining({
+        shaderExecution: 'controls',
+        targetResolution: 'scene',
+      }),
+    );
+    expect(compiled.ir.compatibility.parity.visualFallbacks).toContain(
+      'webgpu->webgl',
+    );
     expect(compiled.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: 'preset_shader_packed_sampler_backend_gap',
-          message: expect.stringContaining('sampler_fc_main'),
+          message: expect.stringContaining('translated compatibility path'),
         }),
       ]),
     );
