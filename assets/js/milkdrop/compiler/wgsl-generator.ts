@@ -388,10 +388,7 @@ function buildWgslProgram(
   });
 
   const registerDeclarationLines = registerKeys.length
-    ? [
-        '',
-        ...registerKeys.map((key) => `  var reg_${key}: f32 = 0.0;`),
-      ]
+    ? ['', ...registerKeys.map((key) => `  var reg_${key}: f32 = 0.0;`)]
     : [];
 
   const body = [
