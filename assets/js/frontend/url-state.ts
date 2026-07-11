@@ -11,6 +11,7 @@ const VALID_PANELS = new Set<Exclude<PanelState, null>>([
 ]);
 const VALID_AUDIO_SOURCES = new Set<AudioSource>([
   'demo',
+  'file',
   'microphone',
   'tab',
   'youtube',
