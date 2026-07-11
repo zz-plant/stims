@@ -16,10 +16,9 @@ import type {
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
 import type { MilkdropColor, MilkdropWaveVisual } from '../types';
+import { getMilkdropThickWaveSpread } from './primitive-rasterization-metrics';
 
 type WaveLayerObject = Line | LineLoop | Points;
-
-const THICK_WAVE_BASE_OFFSET = 1 / 512;
 
 function syncWaveVertexColors(
   geometry: BufferGeometry,
@@ -56,7 +55,7 @@ function getWaveLayerOffsets(layerCount: number, thickness: number) {
   }
   // Use thickness to determine offset: thicker = wider multi-pass spread.
   // At thickness=2, offset ~2px at 1080p. At thickness=5, offset ~6px.
-  const spread = THICK_WAVE_BASE_OFFSET * Math.max(1, thickness * 1.5);
+  const spread = getMilkdropThickWaveSpread(thickness);
   return [
     { x: 0, y: 0 },
     { x: spread, y: 0 },

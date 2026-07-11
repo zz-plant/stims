@@ -17,6 +17,7 @@ import type {
   MilkdropRendererBatcher,
 } from '../renderer-adapter';
 import type { MilkdropShapeVisual } from '../types';
+import { MILKDROP_THICK_SHAPE_PASS_OFFSET } from './primitive-rasterization-metrics';
 
 type ShapeFillHelpers = {
   getShapeFillFallbackColor: (
@@ -26,8 +27,6 @@ type ShapeFillHelpers = {
 };
 
 type ShapeOutlineLayerObject = Line | LineLoop;
-
-const THICK_SHAPE_PASS_OFFSET = 1 / 1024;
 
 function shouldUseShapeShaderFill(
   shape: MilkdropShapeVisual,
@@ -61,9 +60,12 @@ function getShapeOutlineOffsets(shape: MilkdropShapeVisual) {
 
   return [
     { x: 0, y: 0 },
-    { x: THICK_SHAPE_PASS_OFFSET, y: 0 },
-    { x: THICK_SHAPE_PASS_OFFSET, y: THICK_SHAPE_PASS_OFFSET },
-    { x: 0, y: THICK_SHAPE_PASS_OFFSET },
+    { x: MILKDROP_THICK_SHAPE_PASS_OFFSET, y: 0 },
+    {
+      x: MILKDROP_THICK_SHAPE_PASS_OFFSET,
+      y: MILKDROP_THICK_SHAPE_PASS_OFFSET,
+    },
+    { x: 0, y: MILKDROP_THICK_SHAPE_PASS_OFFSET },
   ];
 }
 

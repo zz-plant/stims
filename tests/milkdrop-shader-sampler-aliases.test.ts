@@ -183,6 +183,30 @@ describe('milkdrop shader sampler aliases', () => {
     ).toEqual({ webgl: 'direct', webgpu: 'direct' });
   });
 
+  test('keeps direct shader execution with sampler aliases and GLSL-only constructs', () => {
+    const compiled = compileMilkdropPresetSource(
+      `title=Alias Construct Sample
+comp_shader=ret = tex2d(sampler_perlin, uv).rgb * vec3(bassAtt ^ 2.0, midAtt | 2.0, trebleAtt & 1.0)`,
+      { id: 'alias-construct-sample' },
+    );
+
+    expect(compiled.ir.shaderText.supported).toBe(true);
+    expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
+    expect(compiled.ir.shaderText.compProgram).toEqual(
+      expect.objectContaining({
+        source:
+          'ret = tex2d(sampler_perlin, uv).rgb * vec3(bassAtt ^ 2.0, midAtt | 2.0, trebleAtt & 1.0)',
+        execution: expect.objectContaining({
+          kind: 'direct-feedback-program',
+          supportedBackends: ['webgl', 'webgpu'],
+        }),
+      }),
+    );
+    expect(
+      compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
+    ).toEqual({ webgl: 'direct', webgpu: 'direct' });
+  });
+
   test('identifies all aux samplers as runtime volume samplers', () => {
     expect(isVolumeSamplerName('simplex')).toBe(true);
     expect(isVolumeSamplerName('noise')).toBe(true);
