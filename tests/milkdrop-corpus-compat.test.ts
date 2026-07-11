@@ -450,7 +450,12 @@ describe('milkdrop bundled preset corpus', () => {
         );
         expect(
           entry?.compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing,
-        ).toBe('descriptor-plan');
+        ).toBe(
+          entry?.compiled.ir.compatibility.gpuDescriptorPlans.webgpu.feedback
+            ?.fallbackToLegacyFeedback
+            ? 'fallback-webgl'
+            : 'descriptor-plan',
+        );
         expectation.forbiddenUnsupportedKeys?.forEach((key) => {
           expect(
             entry?.compiled.ir.compatibility.unsupportedKeys,

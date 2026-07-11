@@ -2,10 +2,10 @@
   "version": 1,
   "presetId": "100-square",
   "title": "100 Square",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260530060229",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260711161752",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
   "requiredBackend": "webgpu",
-  "actualBackend": "webgpu",
+  "actualBackend": "webgl",
   "sourceFamily": "projectm-fixture",
   "strata": [
     "projectm-upstream",
@@ -16,16 +16,8 @@
   "threshold": 16,
   "failThreshold": 0.02,
   "metrics": {
-    "width": 2550,
-    "height": 1794,
-    "totalPixels": 4574700,
-    "mismatchedPixels": 3237972,
-    "mismatchRatio": 0.7077998557282444,
-    "maxChannelDelta": 255,
-    "meanAbsoluteError": 0.0947911298444371,
-    "rmse": 0.16352592211742972,
-    "exactMatch": false,
-    "threshold": 16
+    "mismatchRatio": null
   },
-  "status": "fail"
+  "status": "backend-mismatch",
+  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
 }

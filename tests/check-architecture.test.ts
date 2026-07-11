@@ -64,6 +64,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'core',
         targetLayer: 'utils',
+        sourcePath: workspacePath('assets/js/core/web-toy.ts'),
         targetPath: workspacePath('assets/js/utils/device-detect.ts'),
       }),
     ).toBe(true);
@@ -71,6 +72,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'core',
         targetLayer: 'utils',
+        sourcePath: workspacePath('assets/js/core/web-toy.ts'),
         targetPath: workspacePath('assets/js/utils/manifest-client.ts'),
       }),
     ).toBe(false);
@@ -81,6 +83,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'toy',
         targetLayer: 'data',
+        sourcePath: workspacePath('assets/js/toys/milkdrop-toy.ts'),
         targetPath: workspacePath('assets/js/data/toy-manifest.ts'),
       }),
     ).toBe(true);
@@ -88,6 +91,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'data',
         targetLayer: 'core',
+        sourcePath: workspacePath('assets/js/data/toy-manifest.ts'),
         targetPath: workspacePath('assets/js/core/render-preferences.ts'),
       }),
     ).toBe(false);
@@ -98,6 +102,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'frontend',
         targetLayer: 'milkdrop-public',
+        sourcePath: workspacePath('assets/js/frontend/App.tsx'),
         targetPath: workspacePath(
           'assets/js/milkdrop/public/launch-intents.ts',
         ),
@@ -107,6 +112,9 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'milkdrop-public',
         targetLayer: 'milkdrop',
+        sourcePath: workspacePath(
+          'assets/js/milkdrop/public/launch-intents.ts',
+        ),
         targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
       }),
     ).toBe(true);
@@ -114,7 +122,37 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'frontend',
         targetLayer: 'utils',
+        sourcePath: workspacePath('assets/js/frontend/App.tsx'),
         targetPath: workspacePath('assets/js/utils/device-detect.ts'),
+      }),
+    ).toBe(true);
+  });
+
+  test('rejects frontend to critical milkdrop internals unless it is the engine adapter', () => {
+    expect(
+      isArchitectureDependencyAllowed({
+        sourceLayer: 'frontend',
+        targetLayer: 'milkdrop',
+        sourcePath: workspacePath('assets/js/frontend/BrowseSheetPanel.tsx'),
+        targetPath: workspacePath('assets/js/milkdrop/runtime.ts'),
+      }),
+    ).toBe(false);
+    expect(
+      isArchitectureDependencyAllowed({
+        sourceLayer: 'frontend',
+        targetLayer: 'milkdrop',
+        sourcePath: workspacePath(
+          'assets/js/frontend/engine/milkdrop-engine-adapter.ts',
+        ),
+        targetPath: workspacePath('assets/js/milkdrop/runtime.ts'),
+      }),
+    ).toBe(true);
+    expect(
+      isArchitectureDependencyAllowed({
+        sourceLayer: 'frontend',
+        targetLayer: 'milkdrop',
+        sourcePath: workspacePath('assets/js/frontend/BrowseSheetPanel.tsx'),
+        targetPath: workspacePath('assets/js/milkdrop/preset-id-resolution.ts'),
       }),
     ).toBe(true);
   });
@@ -124,6 +162,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'app',
         targetLayer: 'frontend',
+        sourcePath: workspacePath('assets/js/app.ts'),
         targetPath: workspacePath('assets/js/frontend/App.tsx'),
       }),
     ).toBe(true);
@@ -131,6 +170,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'app',
         targetLayer: 'milkdrop',
+        sourcePath: workspacePath('assets/js/app.ts'),
         targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
       }),
     ).toBe(false);
@@ -141,6 +181,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
         targetLayer: 'core',
+        sourcePath: workspacePath('assets/js/utils/device-detect.ts'),
         targetPath: workspacePath('assets/js/core/render-preferences.ts'),
       }),
     ).toBe(false);
@@ -148,6 +189,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
         targetLayer: 'toy',
+        sourcePath: workspacePath('assets/js/utils/device-detect.ts'),
         targetPath: workspacePath('assets/js/toys/milkdrop-toy.ts'),
       }),
     ).toBe(false);

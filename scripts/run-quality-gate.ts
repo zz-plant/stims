@@ -69,6 +69,10 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:catalog-fidelity'],
       },
       {
+        label: 'Bundled catalog integrity',
+        cmd: ['bun', 'run', 'check:catalog-integrity'],
+      },
+      {
         label: 'Toy manifest and docs drift',
         cmd: ['bun', 'run', 'check:toys'],
       },

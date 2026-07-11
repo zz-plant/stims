@@ -20,6 +20,7 @@ test('quick gate plan keeps tests out of the concurrent lane', () => {
   expect(plan.concurrent.map((step) => step.label)).toEqual([
     'Biome check',
     'Bundled catalog fidelity',
+    'Bundled catalog integrity',
     'Toy manifest and docs drift',
     'SEO surface check',
     'Architecture boundary check',

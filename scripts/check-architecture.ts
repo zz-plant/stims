@@ -58,13 +58,16 @@ export function classifyArchitectureLayer(
 export function isArchitectureDependencyAllowed({
   sourceLayer,
   targetLayer,
+  sourcePath,
   targetPath,
 }: {
   sourceLayer: ArchitectureLayer;
   targetLayer: ArchitectureLayer;
+  sourcePath: string;
   targetPath: string;
 }) {
   const relativeTarget = normalizeRelative(targetPath);
+  const relativeSource = normalizeRelative(sourcePath);
 
   if (sourceLayer === 'data') {
     return targetLayer === 'data';
@@ -98,6 +101,19 @@ export function isArchitectureDependencyAllowed({
   }
 
   if (sourceLayer === 'frontend') {
+    if (targetLayer === 'milkdrop') {
+      const isEngineAdapter = relativeSource.startsWith(
+        'assets/js/frontend/engine/',
+      );
+      const isCriticalEngineInternal =
+        relativeTarget === 'assets/js/milkdrop/runtime.ts' ||
+        relativeTarget === 'assets/js/milkdrop/vm.ts' ||
+        relativeTarget.startsWith('assets/js/milkdrop/compiler/');
+
+      if (isCriticalEngineInternal && !isEngineAdapter) {
+        return false;
+      }
+    }
     return (
       targetLayer === 'frontend' ||
       targetLayer === 'core' ||
@@ -236,6 +252,7 @@ export async function collectArchitectureViolations() {
         isArchitectureDependencyAllowed({
           sourceLayer,
           targetLayer,
+          sourcePath: filePath,
           targetPath: resolvedPath,
         })
       ) {
