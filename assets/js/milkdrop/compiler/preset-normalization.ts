@@ -17,7 +17,7 @@ import { MAX_CUSTOM_SHAPES, MAX_CUSTOM_WAVES } from './default-state.ts';
 const waveformSectionNames = new Set(['wave', 'waveform']);
 const rootProgramPattern = /^(init|per_frame|per_frame_init|per_pixel)_(\d+)$/u;
 const customWaveProgramPattern =
-  /^wave_(\d+)_(init|per_frame|per_point)(\d+)?$/u;
+  /^(wave|custom_wave)_(\d+)_(init|per_frame|per_point)(\d+)?$/u;
 const customShapeProgramPattern = /^shape_(\d+)_(init|per_frame)(\d+)?$/u;
 const shapeSectionPattern = /^shape_(\d+)$/u;
 const wavecodeFieldPattern = /^wavecode_(\d+)_(.+)$/u;
@@ -68,6 +68,22 @@ export function resolveLegacyCustomSlotIndex(
   }
   if (rawIndex === maxSlots) {
     return maxSlots;
+  }
+  return null;
+}
+
+export function resolveCustomProgramSlotIndex(
+  rawIndex: number,
+  maxSlots: number,
+) {
+  if (!Number.isFinite(rawIndex)) {
+    return null;
+  }
+  if (rawIndex === 0) {
+    return 1;
+  }
+  if (rawIndex >= 1 && rawIndex <= maxSlots) {
+    return rawIndex;
   }
   return null;
 }
