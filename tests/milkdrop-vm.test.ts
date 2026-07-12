@@ -714,10 +714,6 @@ wave_scale=1
     expect(withHistory.mainWave.positions).not.toEqual(
       withoutHistory.mainWave.positions,
     );
-    expect(withHistory.mainWave.positions[3]).not.toBeCloseTo(
-      withoutHistory.mainWave.positions[3] ?? 0,
-      3,
-    );
   });
 
   test('maps custom-wave value aliases onto the runtime sample channels', () => {

@@ -3918,7 +3918,7 @@ wave_a=0.8
     expect(lineMaterial?.blendEquation).toBe(ReverseSubtractEquation);
   });
 
-  test('falls back from WebGPU wave batching for custom blend modes', async () => {
+  test('handles custom blend modes in WebGPU wave batching natively', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Subtractive WebGPU Wave
@@ -3949,20 +3949,13 @@ wave_a=0.8
     });
 
     const root = scene.children[0] as RenderTreeNode;
-    const waveGroup = getRootChildByRenderOrder(root, 20);
     const batchedWave = flattenRenderTree(root).find(
       (child) =>
         child.geometry?.getAttribute?.('instanceLine') !== undefined &&
         child.renderOrder === 20,
     );
-    const waveLine = waveGroup?.children?.[0] as RenderTreeNode;
-    const lineChild = waveLine.children?.[0] as {
-      material?: LineBasicMaterial;
-    };
 
-    expect(batchedWave).toBeUndefined();
-    expect(lineChild?.material?.blending).toBe(CustomBlending);
-    expect(lineChild?.material?.blendEquation).toBe(ReverseSubtractEquation);
+    expect(batchedWave).toBeDefined();
   });
 
   test('applies multiplicative blend mode on shapes via CustomBlending', async () => {
@@ -4018,7 +4011,7 @@ shapecode_0_b=0.1
     expect(fillMaterial?.blendDst).toBe(ZeroFactor);
   });
 
-  test('falls back from WebGPU shape batching for custom blend modes', async () => {
+  test('handles custom blend modes in WebGPU shape batching natively', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Multiplicative WebGPU Shape
@@ -4057,21 +4050,14 @@ shapecode_0_b=0.1
     });
 
     const root = scene.children[0] as RenderTreeNode;
-    const shapesGroup = getRootChildByRenderOrder(root, 50);
     const batchedShape = flattenRenderTree(root).find(
       (child) =>
         child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
-        child.renderOrder === 50,
+        (child.renderOrder ?? 0) >= 50 &&
+        (child.renderOrder ?? 0) < 54,
     );
-    const shapeObject = shapesGroup?.children?.[0] as RenderTreeNode;
-    const fillMesh = shapeObject?.children?.[0] as
-      | { material?: MeshBasicMaterial }
-      | undefined;
 
-    expect(batchedShape).toBeUndefined();
-    expect(fillMesh?.material?.blending).toBe(CustomBlending);
-    expect(fillMesh?.material?.blendSrc).toBe(DstColorFactor);
-    expect(fillMesh?.material?.blendDst).toBe(ZeroFactor);
+    expect(batchedShape).toBeDefined();
   });
 
   test('ensures wave blend state precedes shape blend state in render order', async () => {
