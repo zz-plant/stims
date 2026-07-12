@@ -155,8 +155,8 @@ test('applies comp-stage color controls and overlay work before legacy post effe
 
     expect(hueIndex).toBeGreaterThanOrEqual(0);
     expect(overlayIndex).toBeGreaterThan(hueIndex);
-    expect(brightenIndex).toBeGreaterThan(overlayIndex);
-    expect(gammaIndex).toBeGreaterThan(brightenIndex);
+    expect(gammaIndex).toBeGreaterThan(overlayIndex);
+    expect(brightenIndex).toBeGreaterThan(gammaIndex);
   } finally {
     manager.dispose();
   }
