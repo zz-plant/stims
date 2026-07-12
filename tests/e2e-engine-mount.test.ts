@@ -69,7 +69,10 @@ test(
       await demoBtn.click();
 
       // Wait for engine to enter live mode
-      await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
+      await page.waitForSelector('[data-mode="live"]', {
+        timeout: 30000,
+        state: 'attached',
+      });
 
       // Canvas must appear once engine finishes mounting
       const canvas = await page.waitForSelector('canvas', { timeout: 15000 });
@@ -128,7 +131,10 @@ test(
         .first();
       await demoBtn2.waitFor({ state: 'visible', timeout: 15000 });
       await demoBtn2.click();
-      await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
+      await page.waitForSelector('[data-mode="live"]', {
+        timeout: 30000,
+        state: 'attached',
+      });
       await page.waitForSelector('canvas', { timeout: 15000 });
       console.log('E2E TEST DOCUMENT TITLE:', await page.title());
       await page.waitForFunction(
@@ -154,16 +160,15 @@ test(
         },
       );
       await page.waitForSelector('#stims-main', { timeout: 15000 });
-      await page.evaluate(() => {
-        const btns = [...document.querySelectorAll('button')];
-        const demo = btns.find(
-          (b) =>
-            b.textContent?.includes('demo audio') ||
-            b.textContent?.includes('Play with demo'),
-        );
-        demo?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      const demoBtn3 = page
+        .locator('button', { hasText: /Play with demo|demo audio/ })
+        .first();
+      await demoBtn3.waitFor({ state: 'visible', timeout: 15000 });
+      await demoBtn3.click();
+      await page.waitForSelector('[data-mode="live"]', {
+        timeout: 30000,
+        state: 'attached',
       });
-      await page.waitForSelector('[data-mode="live"]', { timeout: 30000 });
       await page.waitForSelector('canvas', { timeout: 15000 });
       await page.waitForFunction(() => document.title.includes('Parallel'), {
         timeout: 30000,
