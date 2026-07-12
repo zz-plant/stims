@@ -252,7 +252,9 @@ function transformMeshPoint({
   const zy = centerY + (ry - centerY) * zoomScale;
 
   const ripple =
-    Math.sin(local.rad * 8.0 + signals.time * (0.35 + warpAnimSpeed)) * local.warp * 0.1;
+    Math.sin(local.rad * 8.0 + signals.time * (0.35 + warpAnimSpeed)) *
+    local.warp *
+    0.1;
   const rippleAngle = Math.atan2(zy - centerY, zx - centerX);
   const wx = zx + Math.cos(rippleAngle) * ripple;
   const wy = zy + Math.sin(rippleAngle) * ripple;

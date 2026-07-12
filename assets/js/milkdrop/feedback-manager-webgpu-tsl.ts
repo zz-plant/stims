@@ -989,8 +989,9 @@ function createCompositeOutputNode(
     uniforms.auraTex,
     uniforms.causticsTex,
     uniforms.patternTex,
-    uniforms.fractalTex,
+    uniforms.fractTex,
     uniforms.videoTex,
+    uniforms.simplexTex3D,
   );
 
   return Fn(() => {
@@ -1327,9 +1328,8 @@ class WebGPUMilkdropFeedbackManager {
     this.viewportHeight = height;
     this.auxTextures = getSharedMilkdropAuxTextures();
     void getSharedSimplex3dTexture().then((simplexTexture) => {
-      this.auxTextures.simplex = simplexTexture;
-      if (this.compositeMaterial?.uniforms.simplexTex) {
-        this.compositeMaterial.uniforms.simplexTex.value = simplexTexture;
+      if (this.compositeMaterial?.uniforms.simplexTex3D) {
+        this.compositeMaterial.uniforms.simplexTex3D.value = simplexTexture;
       }
     });
     this.sceneTarget = createFeedbackRenderTarget(

@@ -218,14 +218,14 @@ export function createCompositeFragmentShaderVariant(
             vec2 sampleOffset = texelSize * (0.65 + feedbackSoftness * 0.6);
             vec3 softened = (
               previous.rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + sampleOffset, textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - sampleOffset, textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, -sampleOffset.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(-sampleOffset.x, sampleOffset.y), textureWrap)).rgb
+              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + sampleOffset, textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - sampleOffset, textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, -sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(-sampleOffset.x, sampleOffset.y), textureWrap)).rgb
             ) / 9.0;
             previousColor = mix(
               previousColor,
@@ -237,10 +237,10 @@ export function createCompositeFragmentShaderVariant(
             vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
             vec3 softened = (
               previous.rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb
+              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb
             ) / 5.0;
             previousColor = mix(
               previousColor,
@@ -497,13 +497,6 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           vec2 currentUv = hasDirectWarp > 0.5
             ? transformedUv + 0.5
             : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
-          vec2 prevUv = hasDirectWarp > 0.5
-            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
-            : applyFeedbackWarp(
-                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
-                warpScale * 0.8,
-                rotation * 0.6
-              );
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
             vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
             vec2 warpVector =
@@ -514,27 +507,22 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
                 warpTextureVolumeSliceZ
               ).rg - 0.5;
             currentUv += warpVector * warpTextureAmount * 0.12;
-            prevUv += warpVector * warpTextureAmount * 0.08;
           }
-          prevUv = applyVideoEchoOrientationTransform(
-            prevUv,
-            videoEchoOrientation
-          );
           vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
-          vec4 previous = texture2D(previousTex, sampleUv(prevUv, textureWrap));
+          vec4 previous = texture2D(warpTex, sampleUv(vUv, textureWrap));
           vec3 previousColor = previous.rgb;
           if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
             vec2 off = texelSize * (0.75 + feedbackSoftness * 0.5);
             vec3 softened = (
               previous.rgb * 4.0 +
-              texture2D(previousTex, sampleUv(prevUv + vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
-              texture2D(previousTex, sampleUv(prevUv - vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
-              texture2D(previousTex, sampleUv(prevUv + vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
-              texture2D(previousTex, sampleUv(prevUv - vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
-              texture2D(previousTex, sampleUv(prevUv + vec2(off.x, off.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(off.x, off.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv + vec2(off.x, -off.y), textureWrap)).rgb +
-              texture2D(previousTex, sampleUv(prevUv - vec2(off.x, -off.y), textureWrap)).rgb
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv - vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, -off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, -off.y), textureWrap)).rgb
             ) / 16.0;
             previousColor = mix(
               previousColor,
@@ -622,8 +610,8 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           if (redBlueStereo > 0.5) {
             float stereoOffset = 0.003 + signalEnergy * 0.003;
             vec2 stereoShift = vec2(stereoOffset, 0.0);
-            vec3 leftColor = texture2D(previousTex, sampleUv(prevUv - stereoShift, textureWrap)).rgb;
-            vec3 rightColor = texture2D(previousTex, sampleUv(prevUv + stereoShift, textureWrap)).rgb;
+            vec3 leftColor = texture2D(warpTex, sampleUv(vUv - stereoShift, textureWrap)).rgb;
+            vec3 rightColor = texture2D(warpTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
             color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
           }
           gl_FragColor = vec4(color, 1.0);
@@ -780,6 +768,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         warpTextureVolumeSliceZ: { value: 0 },
         hasDirectWarp: { value: 0 },
         signalTime: { value: 0 },
+        videoEchoOrientation: { value: 0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -815,6 +804,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         uniform float warpTextureVolumeSliceZ;
         uniform float hasDirectWarp;
         uniform float signalTime;
+        uniform float videoEchoOrientation;
         varying vec2 vUv;
 
         float sq(float x) { return x * x; }
@@ -912,6 +902,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           return vec2(cos(angle), sin(angle)) * radius + 0.5;
         }
 
+        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
+          float flipU = step(0.5, mod(orientation, 2.0));
+          float flipV = step(1.5, mod(orientation, 4.0));
+          return vec2(
+            mix(uv.x, 1.0 - uv.x, flipU),
+            mix(uv.y, 1.0 - uv.y, flipV)
+          );
+        }
+
         // --- DIRECT_WARP_START ---
         // --- DIRECT_WARP_END ---
 
@@ -925,11 +924,18 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           // --- DIRECT_WARP_START ---
           // --- DIRECT_WARP_END ---
 
-          vec2 warpedUv = hasDirectWarp > 0.5
+          vec2 currentUv = hasDirectWarp > 0.5
             ? transformedUv + 0.5
             : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          vec2 prevUv = hasDirectWarp > 0.5
+            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
+            : applyFeedbackWarp(
+                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
+                warpScale * 0.8,
+                rotation * 0.6
+              );
           if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
-            vec2 warpUv = warpedUv * warpTextureScale + warpTextureOffset;
+            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
             vec2 warpVector =
               sampleAuxTexture(
                 warpTextureSource,
@@ -937,9 +943,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
                 warpUv,
                 warpTextureVolumeSliceZ
               ).rg - 0.5;
-            warpedUv += warpVector * warpTextureAmount * 0.12;
+            prevUv += warpVector * warpTextureAmount * 0.08;
           }
-          gl_FragColor = texture2D(previousTex, sampleUv(warpedUv, textureWrap));
+          prevUv = applyVideoEchoOrientationTransform(prevUv, videoEchoOrientation);
+          gl_FragColor = texture2D(previousTex, sampleUv(prevUv, textureWrap));
         }
       `,
     });
@@ -1267,6 +1274,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     wu.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
     wu.signalTime.value = state.signalTime;
+    wu.videoEchoOrientation.value = state.videoEchoOrientation;
   }
 
   render(

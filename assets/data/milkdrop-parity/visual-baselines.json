@@ -1,11 +1,6 @@
 {
   "version": 1,
-  "frames": [
-    1,
-    2,
-    3,
-    10
-  ],
+  "frames": [1, 2, 3, 10],
   "tolerance": 0.000001,
   "generatedAt": "2026-04-15",
   "presets": [

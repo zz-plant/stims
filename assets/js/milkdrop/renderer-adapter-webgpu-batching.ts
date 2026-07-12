@@ -1,8 +1,11 @@
 import type { Texture } from 'three';
 import {
+  AddEquation,
   AdditiveBlending,
   BufferGeometry,
+  CustomBlending,
   DoubleSide,
+  DstColorFactor,
   DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
@@ -10,7 +13,10 @@ import {
   InstancedBufferGeometry,
   Mesh,
   NormalBlending,
+  OneFactor,
+  ReverseSubtractEquation,
   ShaderMaterial,
+  ZeroFactor,
 } from 'three';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import type { MilkdropRendererBatcher } from './renderer-adapter.ts';
@@ -32,6 +38,47 @@ import type {
   MilkdropShapeVisual,
   MilkdropWaveVisual,
 } from './types';
+
+type BlendModeKey = 'normal' | 'additive' | 'subtractive' | 'multiplicative';
+
+const BLEND_MODE_KEYS: readonly BlendModeKey[] = [
+  'normal',
+  'additive',
+  'subtractive',
+  'multiplicative',
+];
+
+function applyBlendMode(material: ShaderMaterial, mode: BlendModeKey): void {
+  switch (mode) {
+    case 'additive':
+      material.blending = AdditiveBlending;
+      break;
+    case 'subtractive':
+      material.blending = CustomBlending;
+      material.blendSrc = OneFactor;
+      material.blendDst = OneFactor;
+      material.blendEquation = ReverseSubtractEquation;
+      break;
+    case 'multiplicative':
+      material.blending = CustomBlending;
+      material.blendSrc = DstColorFactor;
+      material.blendDst = ZeroFactor;
+      material.blendEquation = AddEquation;
+      break;
+    default:
+      material.blending = NormalBlending;
+      break;
+  }
+}
+
+function getVisualBlendMode(visual: {
+  additive: boolean;
+  blendMode?: 'subtractive' | 'multiplicative';
+}): BlendModeKey {
+  if (visual.blendMode === 'subtractive') return 'subtractive';
+  if (visual.blendMode === 'multiplicative') return 'multiplicative';
+  return visual.additive ? 'additive' : 'normal';
+}
 
 type ShapeFillInstance = {
   x: number;
@@ -906,29 +953,27 @@ function sampleProceduralWaveOffset(
 
 class InstancedSegmentBatch {
   readonly group = new Group();
-  private readonly normalMesh: Mesh;
-  private readonly additiveMesh: Mesh;
+  private readonly meshes: Record<BlendModeKey, Mesh>;
 
   constructor(renderOrder: number) {
     this.group.renderOrder = renderOrder;
-    this.normalMesh = this.createMesh(NormalBlending, renderOrder);
-    this.additiveMesh = this.createMesh(AdditiveBlending, renderOrder + 1);
-    this.group.add(this.normalMesh, this.additiveMesh);
+    this.meshes = {} as Record<BlendModeKey, Mesh>;
+    for (let index = 0; index < BLEND_MODE_KEYS.length; index += 1) {
+      const mode = BLEND_MODE_KEYS[index] as BlendModeKey;
+      const mesh = this.createMesh(mode, renderOrder + index);
+      this.meshes[mode] = mesh;
+      this.group.add(mesh);
+    }
   }
 
-  private createMesh(
-    blending: typeof NormalBlending | typeof AdditiveBlending,
-    renderOrder: number,
-  ) {
-    const mesh = new Mesh(
-      SEGMENT_QUAD_GEOMETRY.clone(),
-      new ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        depthTest: true,
-        side: DoubleSide,
-        blending,
-        vertexShader: `
+  private createMesh(mode: BlendModeKey, renderOrder: number) {
+    const material = new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      side: DoubleSide,
+      blending: NormalBlending,
+      vertexShader: `
           attribute vec2 segmentCoord;
           attribute vec4 instanceLine;
           attribute vec4 instanceColorAlpha;
@@ -965,7 +1010,7 @@ class InstancedSegmentBatch {
             gl_Position = projectionMatrix * modelViewMatrix * vec4(point, z, 1.0);
           }
         `,
-        fragmentShader: `
+      fragmentShader: `
           varying vec4 vColor;
           varying vec4 vJoin;
           varying vec2 vSegmentLocal;
@@ -995,18 +1040,17 @@ class InstancedSegmentBatch {
             gl_FragColor = vec4(vColor.rgb, vColor.a * alpha);
           }
         `,
-      }),
-    );
+    });
+    applyBlendMode(material, mode);
+    const mesh = new Mesh(SEGMENT_QUAD_GEOMETRY.clone(), material);
     mesh.renderOrder = renderOrder;
     return mesh;
   }
 
-  syncSplit(
-    normalInstances: CompactSegmentUploadBuffer,
-    additiveInstances: CompactSegmentUploadBuffer,
-  ) {
-    this.syncMesh(this.normalMesh, normalInstances);
-    this.syncMesh(this.additiveMesh, additiveInstances);
+  syncSplit(buffers: Record<BlendModeKey, CompactSegmentUploadBuffer>) {
+    for (const mode of BLEND_MODE_KEYS) {
+      this.syncMesh(this.meshes[mode], buffers[mode]);
+    }
   }
 
   private syncMesh(mesh: Mesh, instances: CompactSegmentUploadBuffer) {
@@ -1048,10 +1092,10 @@ class InstancedSegmentBatch {
   }
 
   dispose() {
-    [this.normalMesh, this.additiveMesh].forEach((mesh) => {
-      disposeGeometry(mesh.geometry);
-      disposeMaterial(mesh.material);
-    });
+    for (const mode of BLEND_MODE_KEYS) {
+      disposeGeometry(this.meshes[mode].geometry);
+      disposeMaterial(this.meshes[mode].material);
+    }
   }
 }
 
@@ -1187,27 +1231,25 @@ class InstancedShapeFillBatch {
 
   constructor(
     sides: number,
-    blending: typeof NormalBlending | typeof AdditiveBlending,
+    mode: BlendModeKey,
     getShapeTexture: () => Texture | null,
     renderOrder: number,
   ) {
     this.getShapeTexture = getShapeTexture;
-    this.mesh = new Mesh(
-      cloneAsInstancedGeometry(getUnitPolygonFillGeometry(sides)),
-      new ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        side: DoubleSide,
-        blending,
-        uniforms: {
-          shapeTexture: {
-            value: null,
-          },
-          textureAspectY: {
-            value: 1,
-          },
+    const material = new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: DoubleSide,
+      blending: NormalBlending,
+      uniforms: {
+        shapeTexture: {
+          value: null,
         },
-        vertexShader: `
+        textureAspectY: {
+          value: 1,
+        },
+      },
+      vertexShader: `
           attribute vec4 instanceTransform;
           attribute vec4 instancePrimaryColorAlpha;
           attribute vec4 instanceSecondaryColorAlpha;
@@ -1244,7 +1286,7 @@ class InstancedShapeFillBatch {
             );
           }
         `,
-        fragmentShader: `
+      fragmentShader: `
           uniform sampler2D shapeTexture;
           uniform float textureAspectY;
           varying vec4 vPrimaryColor;
@@ -1280,7 +1322,11 @@ class InstancedShapeFillBatch {
             gl_FragColor = color;
           }
         `,
-      }),
+    });
+    applyBlendMode(material, mode);
+    this.mesh = new Mesh(
+      cloneAsInstancedGeometry(getUnitPolygonFillGeometry(sides)),
+      material,
     );
     this.mesh.renderOrder = renderOrder;
   }
@@ -1365,21 +1411,19 @@ class InstancedShapeRingBatch {
 
   constructor(
     sides: number,
-    blending: typeof NormalBlending | typeof AdditiveBlending,
+    mode: BlendModeKey,
     layerZ: number,
     renderOrder: number,
   ) {
-    this.mesh = new Mesh(
-      getUnitPolygonRingGeometry(sides).clone(),
-      new ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        side: DoubleSide,
-        blending,
-        uniforms: {
-          layerZ: { value: layerZ },
-        },
-        vertexShader: `
+    const material = new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: DoubleSide,
+      blending: NormalBlending,
+      uniforms: {
+        layerZ: { value: layerZ },
+      },
+      vertexShader: `
           uniform float layerZ;
           attribute vec2 unitCorner;
           attribute float innerWeight;
@@ -1405,14 +1449,15 @@ class InstancedShapeRingBatch {
             );
           }
         `,
-        fragmentShader: `
+      fragmentShader: `
           varying vec4 vColor;
           void main() {
             gl_FragColor = vColor;
           }
         `,
-      }),
-    );
+    });
+    applyBlendMode(material, mode);
+    this.mesh = new Mesh(getUnitPolygonRingGeometry(sides).clone(), material);
     this.mesh.renderOrder = renderOrder;
   }
 
@@ -1475,23 +1520,22 @@ class ShapeBatchBucket {
 
   constructor(
     sides: number,
-    additive: boolean,
+    mode: BlendModeKey,
     getShapeTexture: () => Texture | null,
     renderOrder: number,
   ) {
-    const bucketRenderOrder = renderOrder + (additive ? 1 : 0);
-    const blending = additive ? AdditiveBlending : NormalBlending;
+    const bucketRenderOrder = renderOrder + BLEND_MODE_KEYS.indexOf(mode);
     this.getShapeTexture = getShapeTexture;
     this.group.renderOrder = bucketRenderOrder;
     this.fill = new InstancedShapeFillBatch(
       sides,
-      blending,
+      mode,
       getShapeTexture,
       bucketRenderOrder,
     );
     this.outline = new InstancedShapeRingBatch(
       sides,
-      blending,
+      mode,
       0.16,
       bucketRenderOrder,
     );
@@ -1557,7 +1601,7 @@ class ShapeBatchTarget {
   sync(shapes: MilkdropShapeVisual[], alphaMultiplier: number) {
     const grouped = new Map<string, MilkdropShapeVisual[]>();
     for (const shape of shapes) {
-      const key = `${shape.sides}:${shape.additive ? 'add' : 'norm'}`;
+      const key = `${shape.sides}:${getVisualBlendMode(shape)}`;
       const bucket = grouped.get(key) ?? [];
       bucket.push(shape);
       grouped.set(key, bucket);
@@ -1566,10 +1610,10 @@ class ShapeBatchTarget {
     for (const [key, bucketShapes] of grouped) {
       let bucket = this.buckets.get(key);
       if (!bucket) {
-        const [sides, mode] = key.split(':');
+        const [sidesStr, mode] = key.split(':') as [string, BlendModeKey];
         bucket = new ShapeBatchBucket(
-          Number(sides),
-          mode === 'add',
+          Number(sidesStr),
+          mode,
           this.getShapeTexture,
           this.renderOrder,
         );
@@ -1602,8 +1646,15 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   private readonly waveTargets = new Map<string, InstancedSegmentBatch>();
   private readonly shapeTargets = new Map<string, ShapeBatchTarget>();
   private readonly borderTargets = new Map<string, InstancedBorderBatch>();
-  private readonly normalSegmentUploads = new CompactSegmentUploadBuffer();
-  private readonly additiveSegmentUploads = new CompactSegmentUploadBuffer();
+  private readonly segmentUploads: Record<
+    BlendModeKey,
+    CompactSegmentUploadBuffer
+  > = {
+    normal: new CompactSegmentUploadBuffer(),
+    additive: new CompactSegmentUploadBuffer(),
+    subtractive: new CompactSegmentUploadBuffer(),
+    multiplicative: new CompactSegmentUploadBuffer(),
+  };
   private shapeTexture: Texture | null = null;
 
   setShapeTexture(texture: Texture | null) {
@@ -1611,8 +1662,9 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
   }
 
   private resetSegmentUploads() {
-    this.normalSegmentUploads.reset();
-    this.additiveSegmentUploads.reset();
+    for (const mode of BLEND_MODE_KEYS) {
+      this.segmentUploads[mode].reset();
+    }
   }
 
   attach(root: Group) {
@@ -1637,16 +1689,6 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     target.dispose();
     this.root.remove(target.group);
     this.waveTargets.delete(key);
-  }
-
-  private clearShapeTarget(key: string) {
-    const target = this.shapeTargets.get(key);
-    if (!target) {
-      return;
-    }
-    target.dispose();
-    this.root.remove(target.group);
-    this.shapeTargets.delete(key);
   }
 
   private getShapeTarget(key: string) {
@@ -1678,16 +1720,13 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     waves: MilkdropWaveVisual[],
     alphaMultiplier: number,
   ) {
-    if (waves.some((wave) => wave.drawMode === 'dots' || wave.blendMode)) {
+    if (waves.some((wave) => wave.drawMode === 'dots')) {
       this.clearWaveTarget(`wave:${target}`);
       return false;
     }
     this.resetSegmentUploads();
     for (const wave of waves) {
-      const destination = wave.additive
-        ? this.additiveSegmentUploads
-        : this.normalSegmentUploads;
-      destination.appendPolyline(
+      this.segmentUploads[getVisualBlendMode(wave)].appendPolyline(
         wave.positions,
         wave.color,
         wave.alpha * alphaMultiplier,
@@ -1695,10 +1734,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
         wave.closed,
       );
     }
-    this.getWaveTarget(`wave:${target}`).syncSplit(
-      this.normalSegmentUploads,
-      this.additiveSegmentUploads,
-    );
+    this.getWaveTarget(`wave:${target}`).syncSplit(this.segmentUploads);
     return true;
   }
 
@@ -1710,13 +1746,12 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     this.resetSegmentUploads();
     for (const wave of waves) {
       (wave.additive
-        ? this.additiveSegmentUploads
-        : this.normalSegmentUploads
+        ? this.segmentUploads.additive
+        : this.segmentUploads.normal
       ).appendProceduralWave(wave);
     }
     this.getWaveTarget(`procedural-wave:${target}`).syncSplit(
-      this.normalSegmentUploads,
-      this.additiveSegmentUploads,
+      this.segmentUploads,
     );
     return true;
   }
@@ -1732,14 +1767,11 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     this.resetSegmentUploads();
     for (const wave of waves) {
       (wave.additive
-        ? this.additiveSegmentUploads
-        : this.normalSegmentUploads
+        ? this.segmentUploads.additive
+        : this.segmentUploads.normal
       ).appendProceduralCustomWave(wave);
     }
-    this.getWaveTarget('procedural-custom-wave').syncSplit(
-      this.normalSegmentUploads,
-      this.additiveSegmentUploads,
-    );
+    this.getWaveTarget('procedural-custom-wave').syncSplit(this.segmentUploads);
     return true;
   }
 
@@ -1749,10 +1781,6 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     shapes: MilkdropShapeVisual[],
     alphaMultiplier: number,
   ) {
-    if (shapes.some((shape) => shape.blendMode)) {
-      this.clearShapeTarget(target);
-      return false;
-    }
     this.getShapeTarget(target).sync(shapes, alphaMultiplier);
     return true;
   }
@@ -1781,8 +1809,8 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     this.resetSegmentUploads();
     for (const line of lines) {
       ((line.additive ?? false)
-        ? this.additiveSegmentUploads
-        : this.normalSegmentUploads
+        ? this.segmentUploads.additive
+        : this.segmentUploads.normal
       ).appendPolyline(
         line.positions,
         line.color,
@@ -1790,10 +1818,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
         getMilkdropSegmentWidth(1),
       );
     }
-    this.getWaveTarget(`line:${target}`).syncSplit(
-      this.normalSegmentUploads,
-      this.additiveSegmentUploads,
-    );
+    this.getWaveTarget(`line:${target}`).syncSplit(this.segmentUploads);
     return true;
   }
 

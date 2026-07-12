@@ -39,8 +39,10 @@ const {
   sin,
   step,
   texture,
+  texture3D,
   uniform,
   vec2,
+  vec3,
   vec4,
 } = TSL;
 
@@ -141,6 +143,14 @@ export function getSharedMilkdropTexturePlaceholder() {
   return sharedMilkdropTexturePlaceholder;
 }
 
+const sharedSimplex3DPlaceholder = (() => {
+  const tex = new Data3DTexture(new Uint8Array([128]), 1, 1, 1);
+  tex.format = RedFormat;
+  tex.type = UnsignedByteType;
+  tex.needsUpdate = true;
+  return tex;
+})();
+
 export const MILKDROP_NOISE_VOLUME_SIZE = AUX_TEXTURE_ATLAS_SLICE_COUNT;
 export function bindCustomMilkdropSamplerTexture(
   name: string,
@@ -240,8 +250,7 @@ export function getSharedMilkdropAuxTextures() {
   return {
     noise: getSharedMilkdropTexturePlaceholder(),
     perlin: getSharedMilkdropTexturePlaceholder(),
-    simplex: (sharedSimplex3dTexture ??
-      getSharedMilkdropTexturePlaceholder()) as Texture,
+    simplex: getSharedMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex, false),
     voronoi: getSharedMilkdropTexturePlaceholder(),
     aura: getSharedMilkdropTexturePlaceholder(),
     caustics: getSharedMilkdropTexturePlaceholder(),
@@ -339,6 +348,9 @@ export function createCompositeUniforms(
     noiseTex: texture(auxTextures.noise),
     perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),
+    simplexTex3D: texture3D(
+      sharedSimplex3dTexture ?? sharedSimplex3DPlaceholder,
+    ),
     voronoiTex: texture(auxTextures.voronoi),
     auraTex: texture(auxTextures.aura),
     causticsTex: texture(auxTextures.caustics),
@@ -456,6 +468,7 @@ export function createSampleAuxTextureNode(
   patternTexNode: ReturnType<typeof texture>,
   fractalTexNode: ReturnType<typeof texture>,
   videoTexNode: ReturnType<typeof texture>,
+  simplex3DTexNode: ReturnType<typeof texture3D>,
 ) {
   const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
@@ -520,25 +533,29 @@ export function createSampleAuxTextureNode(
       return select(
         sampleDimension.lessThan(0.5),
         sampleAuxTexture2dNode(source, wrappedUv),
-        (() => {
-          const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
-          const wrappedSlice = fract(sliceZ);
-          const scaledSlice = wrappedSlice.mul(sliceCount);
-          const lowerSlice = floor(scaledSlice);
-          const upperSlice = lowerSlice
-            .add(1)
-            .sub(floor(lowerSlice.add(1).div(sliceCount)).mul(sliceCount));
-          const blend = fract(scaledSlice);
-          const lowerSample = sampleAuxTexture2dNode(
-            source,
-            atlasSliceUvNode(wrappedUv, lowerSlice),
-          );
-          const upperSample = sampleAuxTexture2dNode(
-            source,
-            atlasSliceUvNode(wrappedUv, upperSlice),
-          );
-          return mix(lowerSample, upperSample, blend);
-        })(),
+        select(
+          source.greaterThanEqual(1.5).and(source.lessThan(2.5)),
+          simplex3DTexNode.sample(vec3(wrappedUv, fract(sliceZ))),
+          (() => {
+            const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
+            const wrappedSlice = fract(sliceZ);
+            const scaledSlice = wrappedSlice.mul(sliceCount);
+            const lowerSlice = floor(scaledSlice);
+            const upperSlice = lowerSlice
+              .add(1)
+              .sub(floor(lowerSlice.add(1).div(sliceCount)).mul(sliceCount));
+            const blend = fract(scaledSlice);
+            const lowerSample = sampleAuxTexture2dNode(
+              source,
+              atlasSliceUvNode(wrappedUv, lowerSlice),
+            );
+            const upperSample = sampleAuxTexture2dNode(
+              source,
+              atlasSliceUvNode(wrappedUv, upperSlice),
+            );
+            return mix(lowerSample, upperSample, blend);
+          })(),
+        ),
       );
     },
   );
