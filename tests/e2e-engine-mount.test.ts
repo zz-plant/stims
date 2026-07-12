@@ -132,21 +132,14 @@ test(
       await demoBtn2.waitFor({ state: 'visible', timeout: 15000 });
       await demoBtn2.click();
       await page.waitForSelector('[data-mode="live"]', {
-        timeout: 30000,
+        timeout: 15000,
         state: 'attached',
       });
       await page.waitForSelector('canvas', { timeout: 15000 });
-      console.log('E2E TEST DOCUMENT TITLE:', await page.title());
-      await page.waitForFunction(
-        () => {
-          console.log('PAGE TITLE IN FN:', document.title);
-          return document.title.includes('Glowsticks');
-        },
-        {
-          timeout: 30000,
-        },
-      );
-      await page.waitForTimeout(2000);
+      await page.waitForFunction(() => document.title.includes('Glowsticks'), {
+        timeout: 15000,
+      });
+      await page.waitForTimeout(500);
 
       const hash1 = await page.evaluate(
         () => document.querySelector('canvas')?.toDataURL('image/png').length,
@@ -166,14 +159,14 @@ test(
       await demoBtn3.waitFor({ state: 'visible', timeout: 15000 });
       await demoBtn3.click();
       await page.waitForSelector('[data-mode="live"]', {
-        timeout: 30000,
+        timeout: 15000,
         state: 'attached',
       });
       await page.waitForSelector('canvas', { timeout: 15000 });
       await page.waitForFunction(() => document.title.includes('Parallel'), {
-        timeout: 30000,
+        timeout: 15000,
       });
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(500);
 
       const hash2 = await page.evaluate(
         () => document.querySelector('canvas')?.toDataURL('image/png').length,
