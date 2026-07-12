@@ -42,7 +42,7 @@ test('known native shader-text presets are no longer cataloged as fallback compi
   }
 });
 
-test('known native shader-text presets compile to direct shader-text programs', () => {
+test('known native shader-text presets do not advertise raw-only shader bodies as direct programs', () => {
   for (const presetId of nativeShaderPresetIds) {
     const source = readFileSync(
       join(
@@ -64,7 +64,7 @@ test('known native shader-text presets compile to direct shader-text programs', 
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
       presetId,
-    ).toEqual({ webgl: 'direct', webgpu: 'direct' });
+    ).toEqual({ webgl: 'translated', webgpu: 'translated' });
     expect(compiled.ir.compatibility.backends.webgl.status, presetId).not.toBe(
       'fallback',
     );
@@ -75,6 +75,18 @@ test('known native shader-text presets compile to direct shader-text programs', 
       compiled.ir.shaderText.warpProgram || compiled.ir.shaderText.compProgram,
       presetId,
     ).not.toBeNull();
+    for (const program of [
+      compiled.ir.shaderText.warpProgram,
+      compiled.ir.shaderText.compProgram,
+    ]) {
+      if (!program) {
+        continue;
+      }
+      expect(program.rawGlsl, presetId).toBeString();
+      expect(program.statements, presetId).toEqual([]);
+      expect(program.execution.supportedBackends, presetId).toEqual([]);
+      expect(program.execution.requiresControlFallback, presetId).toBe(true);
+    }
   }
 });
 
@@ -100,6 +112,6 @@ test('elusive impressions fixture exercises MilkDrop volume-noise shader text wi
     visualEvidenceTier: 'runtime',
   });
   expect(preset?.visualCertification?.reasons).toContain(
-    'Direct native shader_body extraction now recognizes volume-noise shader text, texsize_noisevol_hq aliases, and feedback sampler reads; retained at partial/runtime because volume sampler translation remains approximate and unmeasured.',
+    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the volume-noise shader; retained at partial/runtime because volume sampler parity remains approximate and unmeasured.',
   );
 });

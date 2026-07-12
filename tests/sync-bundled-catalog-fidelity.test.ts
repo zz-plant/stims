@@ -163,7 +163,7 @@ test('unmeasured native shader-text presets sync to runtime fidelity like other 
       actualBackend: null,
       reasons: [
         'No measured WebGPU reference capture is recorded yet.',
-        'Direct native shader_body extraction now recognizes this warp/comp shader text, feedback texture reads, and standard noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
+        'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate feedback reads and standard noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
       ],
     },
   });

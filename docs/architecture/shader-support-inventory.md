@@ -158,7 +158,7 @@ Below are constructs that parse successfully (produce a `MilkdropShaderStatement
 ### 2.3 `ret =` / `shader_body =` with `-` (subtraction) between main and aux samples
 
 **What it should do**: `ret = tex2d(sampler_main, uv).rgb - tex2d(sampler_noise, uv).rgb * amount` — subtract an aux layer from the main sample.  
-**What actually happens**: The AST handler at `shader-analysis.ts:626-646` only handles `+` (add mode). There is no handler for `-` (subtract mode), `-` with scaled aux sample, or `/` (divide mode). The line falls through to scalar/vector evaluation, may extract partial or no controls, and ends up in the `directProgram` path without translated controls.  
+**What actually happens**: The AST handler at `shader-analysis.ts:626-646` only handles `+` (add mode). There is no handler for `-` (subtract mode), `-` with scaled aux sample, or `/` (divide mode). The line falls through to scalar/vector evaluation and may extract partial or no controls. Current compiler output preserves the raw GLSL but marks raw-only direct programs as requiring control fallback instead of advertising a backend-native direct shader path.
 **Corpus presets affected**: None in certification corpus. Would affect presets using `main - aux * factor`.  
 **Estimated fix effort**: Low — add a `case '-'` handler mirroring the `+` handler at line 626.
 
@@ -178,7 +178,7 @@ Below are constructs that parse successfully (produce a `MilkdropShaderStatement
 ### 2.6 `ret = mix(main, tex2d(sampler_main, uv).rgb * 2.0, 0.5)` — non-trivial second argument
 
 **What it should do**: Mix main sample with a scaled version of itself.  
-**What actually happens**: The mix handler at `shader-analysis.ts:513-529` dispatches through `getShaderSampleInfo(targetNode)` then `extractShaderInvertedSampleExpression`. Since the target is not an aux sample, not an inverted sample, not a solarize pattern, and not a vec3 tint, all branches return false. No controls extracted. Falls to direct-program execution without translated control fallback.  
+**What actually happens**: The mix handler at `shader-analysis.ts:513-529` dispatches through `getShaderSampleInfo(targetNode)` then `extractShaderInvertedSampleExpression`. Since the target is not an aux sample, not an inverted sample, not a solarize pattern, and not a vec3 tint, all branches return false. No controls are extracted. Current compiler output preserves the raw GLSL and marks raw-only direct programs as requiring control fallback rather than treating the unlowered shader body as backend-supported.
 **Corpus presets affected**: None.  
 **Estimated fix effort**: Medium — would require expanding the AST analysis to recognize `main * scalar` as a brightness adjustment in mix context.
 

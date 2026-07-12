@@ -71,6 +71,8 @@ The MilkDrop runtime can now gate each WebGPU descriptor optimization independen
 
 When any flag is disabled and the runtime still starts on WebGPU, the overlay status includes a short `WebGPU rollout flags active: ...` message so test runs and manual QA can confirm which descriptor paths remain guarded.
 
+`assets/js/milkdrop/renderer-execution-plan.ts` is the runtime decision point for applying these flags to a compiled descriptor plan. The same plan result drives backend fallback checks, the effective descriptor plan stored by the renderer core, and the WebGPU adapter feedback-manager mode. Current WebGPU feedback mode is `none` on both safe and full paths until native feedback parity is stable.
+
 ## Testing expectations
 
 Use both layers:

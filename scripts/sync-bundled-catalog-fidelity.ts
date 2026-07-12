@@ -23,15 +23,15 @@ export function inferredCatalogFidelityWithoutMeasuredResult(): MilkdropFidelity
 
 const SHADER_TEXT_CERTIFICATION_REASONS: Record<string, string> = {
   'martin-anandamide-mandelbox-explorer-quantum-timepiece-remix':
-    'Direct native shader_body extraction now recognizes this warp/comp shader text and standard 2D sampler aliases; retained at partial/runtime because q-register uniform binding and custom anandamide sampler parity are not yet measured against projectM.',
+    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the standard 2D sampler path; retained at partial/runtime because q-register uniform binding and custom anandamide sampler parity are not yet measured against projectM.',
   'martin-castle-in-the-air':
-    'Direct native shader_body extraction now recognizes this warp/comp shader text, feedback texture reads, and noise sampler aliases; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
+    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate feedback reads and noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
   'martin-city-of-shadows':
-    'Direct native shader_body extraction now recognizes this comp shader text and framebuffer sampling path; retained at partial/runtime because the shader-text output still lacks measured projectM reference parity.',
+    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the framebuffer sampling path; retained at partial/runtime because the shader-text output still lacks measured projectM reference parity.',
   'martin-elusive-impressions-mix2-flacc-mess-proph-nz-2':
-    'Direct native shader_body extraction now recognizes volume-noise shader text, texsize_noisevol_hq aliases, and feedback sampler reads; retained at partial/runtime because volume sampler translation remains approximate and unmeasured.',
+    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the volume-noise shader; retained at partial/runtime because volume sampler parity remains approximate and unmeasured.',
   'martin-tunnel-race':
-    'Direct native shader_body extraction now recognizes this warp/comp shader text, feedback texture reads, and standard noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
+    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate feedback reads and standard noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
 };
 
 function buildInferredCertificationReasons(presetId: string) {
