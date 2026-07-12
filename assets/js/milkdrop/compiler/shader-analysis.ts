@@ -98,6 +98,9 @@ function extractNativeShaderBody(shaderText: string) {
     .replace(/\bsampler_main\b/giu, 'currentTex')
     .replace(/\bsampler_pc_main\b/giu, 'previousTex')
     .replace(/\bsampler_pw_main\b/giu, 'previousTex')
+    // fc_main is MilkDrop's feedback-composite sampler. WebGL direct
+    // shaders bind it as warpTex; WebGPU direct shaders are routed to the
+    // translated compatibility path before this normalized body is executed.
     .replace(/\bsampler_fc_main\b/giu, 'warpTex')
     .replace(/\bsampler_blur1\b/giu, 'blur1Tex')
     .replace(/\bsampler_blur2\b/giu, 'blur2Tex')

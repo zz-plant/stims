@@ -236,6 +236,24 @@ export function buildBackendSupport({
     );
   });
 
+  if (
+    backend === 'webgpu' &&
+    featureAnalysis.shaderTextExecution.webgpu === 'translated' &&
+    featureAnalysis.shaderTextExecution.webgl === 'direct'
+  ) {
+    evidence.push(
+      createBackendEvidence({
+        backend,
+        scope: 'backend',
+        status: 'partial',
+        code: 'translated-shader-text-gap',
+        message:
+          'WebGPU routes direct shader text through translated compatibility controls while WebGL can execute the direct feedback shader.',
+        feature: 'unsupported-shader-text',
+      }),
+    );
+  }
+
   if (featureAnalysis.shaderTextExecution[backend] === 'unsupported') {
     const unsupportedMessage = backendShaderTextGaps[backend].unsupportedSubset;
     if (unsupportedMessage) {
