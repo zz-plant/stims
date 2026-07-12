@@ -2099,6 +2099,34 @@ motion_vectors_y=5
     });
   });
 
+  test.each([
+    ['brighten', 'brighten=1'],
+    ['darken', 'darken=1'],
+    ['darken center', 'bDarkenCenter=1'],
+    ['solarize', 'solarize=1'],
+    ['invert', 'invert=1'],
+    ['gamma adjustment', 'fGammaAdj=1.75'],
+  ])('marks WebGPU descriptor plans with %s post effects for WebGL compatibility fallback', (_label, fieldSource) => {
+    const compiled = compileMilkdropPresetSource(
+      `
+title=Descriptor Plan Post Effect Fallback
+${fieldSource}
+        `.trim(),
+      { id: `descriptor-plan-post-effect-${fieldSource}` },
+    );
+
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
+      expect.objectContaining({
+        routing: 'fallback-webgl',
+        feedback: expect.objectContaining({
+          kind: 'feedback-post-effect',
+          usesPostEffects: true,
+          fallbackToLegacyFeedback: true,
+        }),
+      }),
+    );
+  });
+
   test('lowers a supported per-pixel subset into the WebGPU descriptor plan', () => {
     const compiled = compileMilkdropPresetSource(
       `

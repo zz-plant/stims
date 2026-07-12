@@ -160,6 +160,48 @@ export async function onRequest(context: {
       return json({ id: `community:${id}`, title: body.title });
     }
 
+    // POST /api/presets/:id/favorite — toggle favorite for this browser session
+    if (
+      method === 'POST' &&
+      pathParts.length === 2 &&
+      pathParts[1] === 'favorite'
+    ) {
+      const id = pathParts[0].replace('community:', '');
+      const sessionId = getSessionId(request);
+
+      const existing = await env.DB.prepare(
+        'SELECT id FROM favorites WHERE preset_id = ? AND session_id = ?',
+      )
+        .bind(id, sessionId)
+        .first<{ id: number }>();
+
+      if (existing) {
+        await env.DB.prepare(
+          'DELETE FROM favorites WHERE preset_id = ? AND session_id = ?',
+        )
+          .bind(id, sessionId)
+          .run();
+        await env.DB.prepare(
+          'UPDATE presets SET rating = MAX(rating - 1, 0), updated_at = datetime(\'now\') WHERE id = ?',
+        )
+          .bind(id)
+          .run();
+        return json({ favorited: false });
+      }
+
+      await env.DB.prepare(
+        'INSERT INTO favorites (preset_id, session_id) VALUES (?, ?)',
+      )
+        .bind(id, sessionId)
+        .run();
+      await env.DB.prepare(
+        'UPDATE presets SET rating = rating + 1, updated_at = datetime(\'now\') WHERE id = ?',
+      )
+        .bind(id)
+        .run();
+      return json({ favorited: true });
+    }
+
     // GET /api/presets/:id — single
     if (method === 'GET' && pathParts.length === 1) {
       const id = pathParts[0].replace('community:', '');
@@ -210,6 +252,14 @@ function slugify(text: string): string {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') || 'preset'
   );
+}
+
+function getSessionId(request: Request): string {
+  const raw =
+    request.headers.get('x-stims-session-id') ||
+    request.headers.get('cf-connecting-ip') ||
+    'anonymous';
+  return raw.trim().slice(0, 128) || 'anonymous';
 }
 
 function cors() {
