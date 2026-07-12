@@ -4,7 +4,7 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 
 ## Problem Summary
 
-1. **WebGPU feedback pipeline goes through WebGL internals** — `WebGLRenderTarget` is used exclusively in the shared feedback manager, meaning even WebGPU sessions run feedback through WebGL
+1. **WebGPU feedback pipeline still has split ownership** — WebGPU sessions no longer allocate the shared WebGL feedback manager while native feedback remains disabled for browser parity, and the WebGL feedback target factory is still only a first extracted slice rather than a backend-neutral target API
 2. **1400-line TSL duplication** — `feedback-manager-webgpu-tsl.ts` manually mirrors the GLSL composite shader as TSL node graphs
 3. **Worker renderer is WebGPU-only with no fallback** — `renderer-worker.ts` throws if WebGPU is unavailable
 4. **WGSL codegen is scalar-only** — `wgsl-generator.ts` never vectorizes
@@ -18,11 +18,14 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 **Objective**: Make feedback render targets backend-aware so WebGPU sessions don't round-trip through WebGL internals.
 
 **Key changes**:
-- Extract `createFeedbackRenderTarget` as a backend-aware factory
+- Keep renderer feedback/fallback decisions in `renderer-execution-plan.ts`
+- Extract WebGL feedback target construction behind `feedback-render-targets.ts`
 - Implement WebGPU render target variant using `three/webgpu`
 - Route `setRenderTarget` calls through the renderer, not hardcoded WebGL assumptions
 
 **Files**:
+- `assets/js/milkdrop/renderer-execution-plan.ts`
+- `assets/js/milkdrop/feedback-render-targets.ts`
 - `assets/js/milkdrop/feedback-manager-shared.ts`
 - `assets/js/milkdrop/feedback-manager-webgpu-tsl.ts`  
 - `assets/js/milkdrop/renderer-adapter-core.ts`
@@ -96,7 +99,7 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 
 | Milestone | Workstream(s) | Dependency |
 |---|---|---|
-| **A: Safe Wins** | 4 (Vectorize WGSL), 5 (RenderBundles) | None — additive |
+| **A: Safe Wins** | 1 (Execution-plan centralization), 4 (Vectorize WGSL), 5 (RenderBundles) | None — additive |
 | **B: Worker Completeness** | 3 (Worker WebGL fallback) | None — additive |
 | **C: Pipeline Unification** | 1 (Backend-native feedback), 2 (Single IR) | Matures together |
 | **D: Rollout** | 6 (Gradual enablement) | After C passes visual parity |
@@ -111,3 +114,9 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 ## Rollback
 
 Each workstream ships behind a feature flag (optimization flag or URL param), allowing per-workstream rollback without reverting the entire revamp.
+
+## Current Status
+
+- `renderer-execution-plan.ts` centralizes WebGPU descriptor fallback and feedback-manager mode decisions for backend fallback, renderer core descriptor planning, and WebGPU adapter creation. Current WebGPU feedback mode is `none`; native WebGPU feedback remains a planned parity-gated follow-up.
+- `feedback-render-targets.ts` owns the WebGL feedback render-target allocation details formerly embedded in `feedback-manager-shared.ts`.
+- Remaining feedback work is to introduce a WebGPU target implementation behind the same factory boundary and reduce the GLSL/TSL composite duplication.

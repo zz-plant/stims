@@ -530,11 +530,7 @@ export function BrowseSheetPanel({
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
         <div className="stims-shell__browse-toolbar">
           <div className="stims-shell__browse-toolbar-copy">
-            <strong>Choose a preset to start playing.</strong>
-            <p className="stims-shell__meta-copy">
-              Tap any card to load it on the stage. Thumbnail previews fill in
-              as they are ready.
-            </p>
+            <strong>Browse presets</strong>
           </div>
           <div className="stims-shell__browse-toolbar-actions">
             <button
@@ -548,9 +544,9 @@ export function BrowseSheetPanel({
             <details className="stims-shell__browse-toolbar-extras">
               <summary
                 className="stims-shell__text-button"
-                aria-label="Preview tools"
+                aria-label="Preset preview tools"
               >
-                Preview tools
+                Previews
               </summary>
               <div className="stims-shell__browse-toolbar-extras-body">
                 <p
@@ -581,7 +577,7 @@ export function BrowseSheetPanel({
           id="preset-search"
           className="stims-shell__input"
           type="search"
-          placeholder="Search presets by title, creator, mood, or collection"
+          placeholder="Search presets"
           spellCheck={false}
           value={searchQuery}
           onChange={(event) => ui.setSearchQuery(event.target.value)}
@@ -589,7 +585,7 @@ export function BrowseSheetPanel({
 
         <div className="stims-shell__settings-row">
           <label className="stims-shell__field-label" htmlFor="preset-sort">
-            Sort presets
+            Sort
           </label>
           <select
             id="preset-sort"
@@ -632,7 +628,7 @@ export function BrowseSheetPanel({
                 onCollectionTagChange(null);
               }}
             >
-              Clear search
+              Clear
             </button>
           ) : null}
         </p>
@@ -701,7 +697,7 @@ export function BrowseSheetPanel({
           >
             {visualSearchLoading
               ? 'Searching\u2026'
-              : 'Find similar to current look'}
+              : 'Similar'}
           </button>
         </nav>
         <div
@@ -717,7 +713,7 @@ export function BrowseSheetPanel({
               setShowAdvancedFilters((current) => !current);
             }}
           >
-            More collections
+            Collections
           </button>
           {showAdvancedFilters && hiddenCollectionTags.length > 0 ? (
             <nav
@@ -757,9 +753,6 @@ export function BrowseSheetPanel({
         <section className="stims-shell__sheet-surface">
           <div className="stims-shell__section-heading">
             <h2 className="stims-shell__section-label">Session history</h2>
-            <p className="stims-shell__meta-copy">
-              Jump back to looks from this listening session.
-            </p>
           </div>
           {sessionHistory.length > 0 ? (
             <div className="stims-shell__chip-list">
@@ -779,7 +772,7 @@ export function BrowseSheetPanel({
             </div>
           ) : (
             <p className="stims-shell__meta-copy">
-              Played presets will appear here.
+              Empty for now.
             </p>
           )}
         </section>
@@ -819,9 +812,6 @@ export function BrowseSheetPanel({
         <section className="stims-shell__sheet-surface">
           <div className="stims-shell__section-heading">
             <h2 className="stims-shell__section-label">Up next</h2>
-            <p className="stims-shell__meta-copy">
-              Long-press cards to build a quick phone-friendly queue.
-            </p>
           </div>
           <div className="stims-shell__chip-list">
             {ui.presetQueue.entries.map((entry, index) => (
@@ -894,7 +884,7 @@ export function BrowseSheetPanel({
         {visualSearchActive ? (
           <div className="stims-shell__section-heading">
             <p className="stims-shell__section-label">
-              Find similar to current look
+              Similar
             </p>
             <p className="stims-shell__meta-copy">
               {visualSearchResults.length} result
@@ -932,7 +922,6 @@ export function BrowseSheetPanel({
             <p className="stims-shell__meta-copy">
               {filteredCatalog.length} result
               {filteredCatalog.length === 1 ? '' : 's'}
-              available.
             </p>
           </div>
         )}
@@ -942,8 +931,7 @@ export function BrowseSheetPanel({
           <div className="stims-shell__empty-state">
             <strong>No similar presets found</strong>
             <p>
-              The current frame may not have a close match yet. Try another
-              moment in the visualizer or browse everything instead.
+              Try another visual moment or browse everything.
             </p>
             <button
               type="button"
@@ -968,10 +956,7 @@ export function BrowseSheetPanel({
             filteredCatalog.length === 0) ? (
           <div className="stims-shell__empty-state">
             <strong>No presets match those filters</strong>
-            <p>
-              Try a different search, choose another collection, or clear the
-              filters.
-            </p>
+            <p>Try another search or clear filters.</p>
             <button
               type="button"
               className="cta-button primary"

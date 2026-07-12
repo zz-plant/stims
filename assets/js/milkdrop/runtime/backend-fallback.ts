@@ -2,8 +2,8 @@ import {
   isCompatibilityModeEnabled,
   setCompatibilityMode,
 } from '../../core/render-preferences.ts';
+import { shouldFallbackMilkdropPresetToWebgl } from '../renderer-execution-plan.ts';
 import type { MilkdropCompiledPreset } from '../types.ts';
-import { shouldFallbackMilkdropPresetToWebgl } from '../webgpu-optimization-flags.ts';
 
 export function shouldPresetFallbackToWebgl({
   compiled,

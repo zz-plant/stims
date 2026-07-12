@@ -66,9 +66,6 @@ export function AudioSourcePanel() {
         >
           <strong>Microphone</strong>
           <span>Live mic input</span>
-          <small>
-            Browser permission required; headphones reduce feedback.
-          </small>
         </button>
         <button
           type="button"
@@ -80,22 +77,19 @@ export function AudioSourcePanel() {
         >
           <strong>This tab</strong>
           <span>Audio from this browser tab</span>
-          <small>Pick “This tab” and enable “Share audio” when prompted.</small>
         </button>
       </div>
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
-          <span>Having trouble with audio?</span>
+          <span>Audio help</span>
           <span className="stims-shell__meta-copy">
-            Permission and browser capture tips
+            Permissions and capture
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
           <p className="stims-shell__meta-copy">
-            If microphone access is denied, reopen your browser’s site
-            permissions and allow microphone capture for Stims. For tab or
-            YouTube audio, Chrome-based browsers work best: choose the current
-            tab and tick Share audio.
+            Allow microphone access in site permissions. For tab audio, share
+            the current tab with audio enabled.
           </p>
           <button
             type="button"
@@ -150,7 +144,7 @@ export function AudioSourcePanel() {
             ) : youtubeReady ? (
               'Start capture'
             ) : (
-              'Load & Start'
+              'Load'
             )}
           </button>
         </div>

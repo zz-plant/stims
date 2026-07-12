@@ -552,22 +552,27 @@ export function createMilkdropIr({
     shaderWarpAnalysis,
     shaderCompAnalysis,
   );
+  const warpHasTranslatedDirectStatements =
+    shaderWarpAnalysis.directProgramStatements.length > 0;
+  const compHasTranslatedDirectStatements =
+    shaderCompAnalysis.directProgramStatements.length > 0;
   const warpShaderProgram = shaderWarpAnalysis.directProgramRequired
     ? shaderHelpers.buildShaderProgramPayload({
         stage: 'warp',
         statements: shaderWarpAnalysis.directProgramStatements,
         normalizedLines: shaderWarpAnalysis.directProgramLines,
         requiresControlFallback:
+          !warpHasTranslatedDirectStatements ||
           shaderWarpAnalysis.directProgramStatements.length !==
-          shaderWarpAnalysis.statements.length,
+            shaderWarpAnalysis.statements.length,
         supportedBackends:
+          warpHasTranslatedDirectStatements &&
           shaderWarpAnalysis.unsupportedLines.length === 0
             ? ['webgl', 'webgpu']
             : [],
-        rawGlsl:
-          shaderWarpAnalysis.directProgramStatements.length === 0
-            ? shaderWarpAnalysis.directProgramLines.join('\n')
-            : undefined,
+        rawGlsl: !warpHasTranslatedDirectStatements
+          ? shaderWarpAnalysis.directProgramLines.join('\n')
+          : undefined,
       })
     : null;
   const compShaderProgram = shaderCompAnalysis.directProgramRequired
@@ -576,16 +581,17 @@ export function createMilkdropIr({
         statements: shaderCompAnalysis.directProgramStatements,
         normalizedLines: shaderCompAnalysis.directProgramLines,
         requiresControlFallback:
+          !compHasTranslatedDirectStatements ||
           shaderCompAnalysis.directProgramStatements.length !==
-          shaderCompAnalysis.statements.length,
+            shaderCompAnalysis.statements.length,
         supportedBackends:
+          compHasTranslatedDirectStatements &&
           shaderCompAnalysis.unsupportedLines.length === 0
             ? ['webgl', 'webgpu']
             : [],
-        rawGlsl:
-          shaderCompAnalysis.directProgramStatements.length === 0
-            ? shaderCompAnalysis.directProgramLines.join('\n')
-            : undefined,
+        rawGlsl: !compHasTranslatedDirectStatements
+          ? shaderCompAnalysis.directProgramLines.join('\n')
+          : undefined,
       })
     : null;
   const ignoredFields = [

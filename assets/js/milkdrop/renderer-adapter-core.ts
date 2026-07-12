@@ -46,6 +46,7 @@ import {
   withRenderOrder,
 } from './renderer-adapter-shared';
 import { createMilkdropStaticBundleGroup } from './renderer-bundles.ts';
+import { resolveMilkdropRendererExecutionPlan } from './renderer-execution-plan.ts';
 import {
   createBorderObject as createBorderObjectHelper,
   renderBorderGroup as renderBorderGroupHelper,
@@ -94,7 +95,6 @@ import type {
   MilkdropWebGpuDescriptorPlan,
 } from './types';
 import {
-  applyMilkdropWebGpuOptimizationFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags';
@@ -444,13 +444,11 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   }
 
   setPreset(preset: MilkdropCompiledPreset) {
-    this.webgpuDescriptorPlan =
-      this.backend === 'webgpu'
-        ? applyMilkdropWebGpuOptimizationFlags(
-            preset.ir.compatibility.gpuDescriptorPlans.webgpu,
-            this.webgpuOptimizationFlags,
-          )
-        : null;
+    this.webgpuDescriptorPlan = resolveMilkdropRendererExecutionPlan({
+      backend: this.backend,
+      descriptorPlan: preset.ir.compatibility.gpuDescriptorPlans.webgpu,
+      flags: this.webgpuOptimizationFlags,
+    }).effectiveWebGpuDescriptorPlan;
   }
 
   assessSupport(preset: MilkdropCompiledPreset) {

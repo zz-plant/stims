@@ -255,43 +255,47 @@ export function createMilkdropExperienceFrameLoop({
         blendState: activeBlendState,
       });
       if (!adapterPresentedFrame) {
-        const profile = renderFrameState.post.postprocessingProfile ?? null;
-        const webglRenderer = resolveWebGLRenderer(
-          activeBackend,
-          runtime.toy.renderer,
-        );
+        if (activeBackend === 'webgpu' && renderFrameState.post.shaderEnabled) {
+          disposePostprocessingPipeline();
+        } else {
+          const profile = renderFrameState.post.postprocessingProfile ?? null;
+          const webglRenderer = resolveWebGLRenderer(
+            activeBackend,
+            runtime.toy.renderer,
+          );
 
-        if (
-          profile &&
-          shouldRenderMilkdropPostprocessing({
-            backend: activeBackend,
-            renderer: runtime.toy.renderer,
-            profile,
-          }) &&
-          webglRenderer
-        ) {
-          let postprocessingPipeline = getPostprocessingPipeline();
-          if (!postprocessingPipeline) {
-            postprocessingPipeline = createMilkdropPostprocessingComposer({
-              renderer: webglRenderer,
-              scene: runtime.toy.scene,
-              camera: runtime.toy.camera,
+          if (
+            profile &&
+            shouldRenderMilkdropPostprocessing({
+              backend: activeBackend,
+              renderer: runtime.toy.renderer,
               profile,
-            });
-            setPostprocessingPipeline(postprocessingPipeline);
-          } else {
-            postprocessingPipeline.applyProfile(profile);
-          }
+            }) &&
+            webglRenderer
+          ) {
+            let postprocessingPipeline = getPostprocessingPipeline();
+            if (!postprocessingPipeline) {
+              postprocessingPipeline = createMilkdropPostprocessingComposer({
+                renderer: webglRenderer,
+                scene: runtime.toy.scene,
+                camera: runtime.toy.camera,
+                profile,
+              });
+              setPostprocessingPipeline(postprocessingPipeline);
+            } else {
+              postprocessingPipeline.applyProfile(profile);
+            }
 
-          if (postprocessingPipeline) {
-            postprocessingPipeline.updateSize();
-            postprocessingPipeline.render();
+            if (postprocessingPipeline) {
+              postprocessingPipeline.updateSize();
+              postprocessingPipeline.render();
+            } else {
+              runtime.toy.render();
+            }
           } else {
+            disposePostprocessingPipeline();
             runtime.toy.render();
           }
-        } else {
-          disposePostprocessingPipeline();
-          runtime.toy.render();
         }
       } else {
         disposePostprocessingPipeline();

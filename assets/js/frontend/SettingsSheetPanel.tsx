@@ -269,7 +269,7 @@ export function SettingsSheetPanel({
           ))}
         </ul>
         <label className="stims-shell__field-label" htmlFor="quality-select">
-          Choose a specific quality profile
+          Quality profile
         </label>
         <select
           id="quality-select"
@@ -284,7 +284,7 @@ export function SettingsSheetPanel({
           ))}
         </select>
         <p className="stims-shell__meta-copy">
-          {qualityPreset.description ?? describeQuickLook(qualityPreset)}
+          {describeQuickLook(qualityPreset)}
         </p>
         {qualityPreset.id !== 'balanced' ? (
           <button
@@ -309,10 +309,7 @@ export function SettingsSheetPanel({
           />
           <span className="stims-shell__toggle-copy">
             <strong>Thumb mode</strong>
-            <small>
-              Keeps quick browse and sharing actions at the bottom of mobile
-              sheets.
-            </small>
+            <small>Bottom-first phone controls.</small>
           </span>
         </label>
         <label className="stims-shell__toggle-card">
@@ -325,10 +322,7 @@ export function SettingsSheetPanel({
           />
           <span className="stims-shell__toggle-copy">
             <strong>Party remote</strong>
-            <small>
-              Simplifies the phone bar to shuffle, save, fullscreen, and audio
-              controls.
-            </small>
+            <small>Shuffle, save, fullscreen, and audio.</small>
           </span>
         </label>
         <label className="stims-shell__toggle-card">
@@ -339,10 +333,7 @@ export function SettingsSheetPanel({
           />
           <span className="stims-shell__toggle-copy">
             <strong>Touch haptics</strong>
-            <small>
-              Adds a subtle vibration for swipes, long-press saves, and key
-              controls when supported.
-            </small>
+            <small>Subtle feedback on supported phones.</small>
           </span>
         </label>
         {offline ? (
@@ -375,7 +366,7 @@ export function SettingsSheetPanel({
         <summary className="stims-shell__settings-summary">
           <span>Compatibility & motion</span>
           <span className="stims-shell__meta-copy">
-            Optional controls for older devices and device motion
+            Device fallbacks
           </span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
@@ -388,10 +379,8 @@ export function SettingsSheetPanel({
               }
             />
             <span className="stims-shell__toggle-copy">
-              <strong>Stability mode for older or unstable devices</strong>
-              <small>
-                Uses safer rendering choices if your browser or GPU has trouble.
-              </small>
+              <strong>Stability mode</strong>
+              <small>Safer rendering for older browsers or GPUs.</small>
             </span>
           </label>
 
@@ -404,10 +393,8 @@ export function SettingsSheetPanel({
               }
             />
             <span className="stims-shell__toggle-copy">
-              <strong>Let phone or tablet movement affect visuals</strong>
-              <small>
-                Works on supported mobile devices after permission is granted.
-              </small>
+              <strong>Motion control</strong>
+              <small>Use supported device movement.</small>
             </span>
           </label>
         </div>
@@ -467,9 +454,7 @@ export function SettingsSheetPanel({
           <option value="webgl">Force WebGL (Stability mode)</option>
         </select>
         <p className="stims-shell__meta-copy" style={{ marginTop: 8 }}>
-          Auto uses browser stability rules. Force WebGPU enables WebGPU on
-          supported but gated platforms (Safari/mobile). Force WebGL uses safer
-          compatibility rendering.
+          Auto follows browser stability rules. WebGL is the safer fallback.
         </p>
       </section>
     </div>

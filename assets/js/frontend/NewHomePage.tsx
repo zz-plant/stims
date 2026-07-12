@@ -1,51 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
-import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
-import { PresetShelfSection } from './PresetShelfSection.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
-
-function buildJumpBackEntries(
-  favoritePresets: PresetCatalogEntry[],
-  recentPresets: PresetCatalogEntry[],
-) {
-  return [
-    ...favoritePresets.map((entry) => ({
-      entry,
-      label: 'Saved pick' as const,
-      summary: '',
-    })),
-    ...recentPresets
-      .filter(
-        (entry) =>
-          !favoritePresets.some(
-            (favoriteEntry) => favoriteEntry.id === entry.id,
-          ),
-      )
-      .map((entry) => ({
-        entry,
-        label: 'Recent' as const,
-        summary: '',
-      })),
-  ].slice(0, 3);
-}
 
 export function NewHomePage() {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
   const featuredPreset = engine.featuredPreset;
-  const favoritePresets = engine.favoritePresets;
   const missingRequestedPreset = engine.missingRequestedPreset;
-  const presetPreviews = engine.presetPreviews;
-  const recentPresets = engine.recentPresets;
   const requestedPresetId = ui.routeState.presetId;
   const catalog = engine.catalog;
   const catalogError = engine.catalogError;
   const catalogReady = engine.catalogReady;
-
-  const hasFavorites = favoritePresets.length > 0;
-  const showJumpBack = hasFavorites;
 
   const [loadingAudio, setLoadingAudio] = useState(false);
   const loadingAudioRef = useRef(false);
@@ -104,13 +71,10 @@ export function NewHomePage() {
         <div className="stims-shell__launch-header">
           <div className="stims-shell__launch-copy">
             <p className="stims-shell__eyebrow">Audio visualizer</p>
-            <h1 id="stims-launch-title">Play music. Watch it move.</h1>
+            <h1 id="stims-launch-title">Stims</h1>
             <p className="stims-shell__launch-summary">
               Start instantly with demo audio, or connect your own sound when
               you’re ready.
-              {catalogReady
-                ? ` ${catalog.length} presets run in WebGL or WebGPU.`
-                : ' Presets run in WebGL or WebGPU.'}
             </p>
           </div>
           <div className="stims-shell__launch-stack">
@@ -130,15 +94,26 @@ export function NewHomePage() {
               >
                 Play with demo audio
               </button>
-              <div className="stims-shell__audio-setup-details">
+              <button
+                type="button"
+                className="cta-button ghost"
+                onClick={() => ui.updatePanel('browse')}
+              >
+                Explore presets
+              </button>
+              <details className="stims-shell__audio-setup-details">
+                <summary className="stims-shell__settings-summary">
+                  <span>Use my music</span>
+                  <span className="stims-shell__meta-copy">
+                    Mic, tab, or YouTube
+                  </span>
+                </summary>
                 <AudioSourcePanel />
-              </div>
+              </details>
             </div>
           </div>
         </div>
       </div>
-
-      <p className="stims-shell__scroll-hint">Scroll to explore presets</p>
 
       {featuredPreset ? (
         <button
@@ -216,78 +191,6 @@ export function NewHomePage() {
             </button>
           </div>
         </section>
-      ) : null}
-
-      {showJumpBack ? (
-        <PresetShelfSection
-          entries={buildJumpBackEntries(favoritePresets, recentPresets)}
-          summary=""
-          title="Saved presets"
-          onSelect={engine.handlePlayPreset}
-          presetPreviews={presetPreviews}
-          onVisible={() => {
-            const ids = buildJumpBackEntries(
-              favoritePresets,
-              recentPresets,
-            ).map(({ entry }) => entry.id);
-            if (ids.length > 0) void engine.requestPresetPreviews(ids);
-          }}
-        />
-      ) : catalogReady ? (
-        <section
-          className="stims-shell__starter-section"
-          aria-labelledby="stims-saved-empty"
-        >
-          <div className="stims-shell__section-heading">
-            <h2 id="stims-saved-empty" className="stims-shell__section-label">
-              Saved presets
-            </h2>
-          </div>
-          <div className="stims-shell__starter-grid">
-            <button
-              type="button"
-              className="stims-shell__starter-card"
-              onClick={() => ui.updatePanel('browse')}
-            >
-              <div
-                className="stims-shell__preset-art"
-                data-tone="instant"
-                data-preview-status="queued"
-                aria-hidden="true"
-              >
-                <span className="stims-shell__preset-art-grid" />
-                <span className="stims-shell__preset-art-orbit" />
-                <span className="stims-shell__preset-art-core" />
-              </div>
-              <span className="stims-shell__starter-label">Empty</span>
-              <strong>Save your first preset</strong>
-              <span className="stims-shell__meta-copy">
-                Browse and save anything you want to replay later.
-              </span>
-            </button>
-          </div>
-        </section>
-      ) : null}
-      {catalogReady && catalog.length > 0 ? (
-        <PresetShelfSection
-          entries={catalog.slice(0, 6).map((entry) => ({
-            entry,
-            label: entry.author || 'Unknown',
-            summary: describePresetMood(entry),
-          }))}
-          summary=""
-          title="Explore presets"
-          titleAction={{
-            label: `See all ${catalog.length} \u2192`,
-            onClick: () => ui.updatePanel('browse'),
-          }}
-          onSelect={engine.handlePlayPreset}
-          presetPreviews={presetPreviews}
-          onVisible={() => {
-            const ids = catalog.slice(0, 6).map((entry) => entry.id);
-            if (ids.length > 0) void engine.requestPresetPreviews(ids);
-          }}
-        />
       ) : null}
     </section>
   );

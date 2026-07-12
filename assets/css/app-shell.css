@@ -498,6 +498,7 @@ body[data-page="workspace"] {
     transition:
       opacity 0.3s ease,
       transform 0.3s ease;
+    width: min(34rem, 100%);
   }
 
   .stims-shell__launch-panel {
@@ -561,13 +562,12 @@ body[data-page="workspace"] {
     z-index: var(--z-stage-root);
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
-    column-gap: 20px;
-    row-gap: 18px;
+    gap: 18px;
   }
 
   .stims-shell__launch-header {
     display: grid;
-    gap: 16px;
+    gap: 18px;
     align-items: start;
     grid-column: 1;
     grid-row: 1;
@@ -575,24 +575,16 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-stack {
     display: grid;
-    gap: 14px;
+    gap: 0;
     width: 100%;
     max-width: none;
     grid-column: 1;
     grid-row: 2;
-    padding: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    background:
-      linear-gradient(180deg, var(--stims-white-05), rgba(255, 255, 255, 0.018)),
-      radial-gradient(
-        circle at top right,
-        var(--stims-accent-blue-08),
-        transparent 34%
-      );
-    box-shadow:
-      inset 0 1px 0 var(--stims-white-05),
-      0 18px 32px rgba(0, 0, 0, 0.16);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .stims-shell__confidence-bar,
@@ -633,6 +625,12 @@ body[data-page="workspace"] {
     letter-spacing: -0.035em;
     color: var(--stims-ink-strong);
     text-wrap: balance;
+  }
+
+  .stims-shell__launch-copy h1 {
+    margin-bottom: 0;
+    font-size: clamp(3.6rem, 9vw, 7.25rem);
+    line-height: 0.86;
   }
 
   .stims-shell__workspace {
@@ -676,8 +674,8 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-copy {
     display: grid;
-    gap: 12px;
-    max-width: min(42rem, 100%);
+    gap: 14px;
+    max-width: min(34rem, 100%);
   }
 
   .stims-shell__launch-copy p {
@@ -691,34 +689,16 @@ body[data-page="workspace"] {
   .stims-shell__launch-recommendation {
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 12px;
     align-items: center;
-    padding: 16px 20px;
-    border: 1px solid var(--stims-white-12);
-    border-radius: 24px;
-    background:
-      linear-gradient(
-        152deg,
-        rgba(255, 255, 255, 0.03),
-        transparent 30%,
-        var(--stims-white-04) 52%,
-        rgba(255, 255, 255, 0.018) 100%
-      ),
-      radial-gradient(
-        circle at top right,
-        rgba(244, 122, 84, 0.14),
-        transparent 34%
-      ),
-      radial-gradient(
-        circle at bottom left,
-        rgba(119, 201, 255, 0.1),
-        transparent 30%
-      );
+    padding: 10px 0 0;
+    border: 0;
+    border-top: 1px solid var(--stims-line-soft);
+    border-radius: 0;
+    background: transparent;
     color: inherit;
     text-align: left;
-    box-shadow:
-      0 14px 28px rgba(0, 0, 0, 0.22),
-      inset 0 1px 0 var(--stims-white-05);
+    box-shadow: none;
     transition:
       transform 180ms ease,
       border-color 180ms ease,
@@ -728,26 +708,31 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__launch-recommendation:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     border-color: rgba(255, 255, 255, 0.18);
-    box-shadow:
-      0 34px 52px rgba(0, 0, 0, 0.3),
-      0 0 34px rgba(244, 122, 84, 0.1);
+    box-shadow: none;
   }
 
   .stims-shell__launch-recommendation-top,
   .stims-shell__launch-recommendation-copy {
     display: grid;
     align-content: start;
-    gap: 8px;
+    gap: 4px;
+  }
+
+  .stims-shell__launch-recommendation .stims-shell__preset-art {
+    width: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    border-radius: 14px;
   }
 
   .stims-shell__launch-recommendation strong {
     color: var(--stims-ink-strong);
     font-family: var(--stims-display);
-    font-size: clamp(1.8rem, 3vw, 2.35rem);
+    font-size: clamp(1.05rem, 2vw, 1.25rem);
     font-weight: 600;
-    line-height: 0.95;
+    line-height: 1.1;
   }
 
   .stims-shell__launch-alert {
@@ -1213,23 +1198,7 @@ body[data-page="workspace"] {
     min-height: calc(100vh - 40px);
     min-height: calc(100dvh - 40px);
     overflow: visible;
-    background:
-      radial-gradient(
-        circle at 18% 20%,
-        rgba(244, 122, 84, 0.18),
-        transparent 24%
-      ),
-      radial-gradient(
-        circle at 76% 18%,
-        rgba(119, 201, 255, 0.18),
-        transparent 22%
-      ),
-      radial-gradient(
-        circle at 76% 72%,
-        rgba(125, 224, 162, 0.12),
-        transparent 24%
-      ),
-      linear-gradient(145deg, rgba(7, 9, 16, 0.98), rgba(3, 6, 12, 1));
+    background: linear-gradient(145deg, rgba(7, 9, 16, 0.98), #03060c);
   }
 
   .stims-shell__stage-frame[data-mode="live"] {
@@ -1266,7 +1235,7 @@ body[data-page="workspace"] {
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-header,
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-stack {
-    max-width: 560px;
+    max-width: 520px;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch {
@@ -1556,28 +1525,7 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__scroll-hint {
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
-    left: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 0;
-    padding: 10px 14px;
-    width: fit-content;
-    border-radius: 999px;
-    background: rgba(9, 15, 26, 0.72);
-    border: 1px solid rgba(119, 201, 255, 0.14);
-    color: var(--stims-muted);
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-align: center;
-    pointer-events: none;
-    backdrop-filter: blur(8px);
-    animation: bounceScrollHint 2s ease-in-out infinite;
+    display: none;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__scroll-hint::after {
@@ -1853,7 +1801,7 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-actions {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     max-width: none;
   }
@@ -1886,6 +1834,31 @@ body[data-page="workspace"] {
       0 12px 24px rgba(0, 0, 0, 0.12);
   }
 
+  .stims-shell__audio-setup-details {
+    grid-column: 1 / -1;
+    border: 1px solid var(--stims-line-soft);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .stims-shell__audio-setup-details > .stims-shell__settings-summary {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+
+  .stims-shell__audio-setup-details > .stims-shell__source-panel {
+    padding: 0 12px 12px;
+  }
+
+  .stims-shell__audio-setup-details .stims-shell__source-heading {
+    display: none;
+  }
+
+  .stims-shell__audio-setup-details[open] .stims-shell__settings-summary {
+    border-bottom: 1px solid var(--stims-line-soft);
+    margin-bottom: 12px;
+  }
+
   .stims-shell__settings-summary {
     list-style: none;
     display: flex;
@@ -1908,6 +1881,11 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__settings-advanced[open] .stims-shell__settings-summary::after {
+    content: "−";
+  }
+
+  .stims-shell__audio-setup-details[open]
+    > .stims-shell__settings-summary::after {
     content: "−";
   }
 
@@ -3035,7 +3013,8 @@ body[data-page="workspace"] {
     }
 
     .stims-shell__logo small {
-      font-size: 0.84rem;
+      font-size: 0.64rem;
+      letter-spacing: 0.12em;
     }
 
     .stims-shell__launch-actions,
@@ -3060,6 +3039,11 @@ body[data-page="workspace"] {
     .stims-shell__sheet-heading h2 {
       font-size: clamp(1.35rem, 7vw, 2rem);
       margin-bottom: 6px;
+    }
+
+    .stims-shell__launch-copy h1 {
+      font-size: clamp(2.45rem, 17vw, 4rem);
+      line-height: 0.9;
     }
 
     .stims-shell__eyebrow,
@@ -3103,7 +3087,7 @@ body[data-page="workspace"] {
 
     .stims-shell__launch-actions {
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
     }
 
@@ -3609,8 +3593,8 @@ body[data-page="workspace"] {
     }
 
     .stims-shell__launch-copy h1 {
-      font-size: clamp(1.25rem, 6.8vw, 1.7rem);
-      line-height: 0.96;
+      font-size: clamp(2.35rem, 16vw, 3.5rem);
+      line-height: 0.9;
     }
 
     .stims-shell__launch-copy p {

@@ -90,6 +90,14 @@ export function createMilkdropExperienceAttachmentController({
           return;
         }
         const nextBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
+        const compiled = activeCompiled();
+        if (nextBackend === 'webgpu' && shouldFallbackToWebgl(compiled)) {
+          triggerWebglFallback({
+            presetId: compiled.source.id,
+            reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+          });
+          return;
+        }
         const nextAdapter =
           nextBackend === 'webgpu'
             ? await createMilkdropRendererAdapter({
@@ -97,7 +105,7 @@ export function createMilkdropExperienceAttachmentController({
                 camera: nextRuntime.toy.camera,
                 renderer: handle?.renderer,
                 backend: 'webgpu',
-                preset: activeCompiled(),
+                preset: compiled,
                 webgpuOptimizationFlags,
               })
             : createMilkdropRendererAdapter({
@@ -105,7 +113,7 @@ export function createMilkdropExperienceAttachmentController({
                 camera: nextRuntime.toy.camera,
                 renderer: handle?.renderer,
                 backend: 'webgl',
-                preset: activeCompiled(),
+                preset: compiled,
                 webgpuOptimizationFlags,
               });
         if (

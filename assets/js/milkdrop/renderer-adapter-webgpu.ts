@@ -1,10 +1,10 @@
 import { recordRendererOptimizationTelemetry } from '../core/renderer-capabilities.ts';
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
-import { createMilkdropWebGLFeedbackManager } from './feedback-manager-webgl.ts';
 import { createMilkdropWebGPUFeedbackManager } from './feedback-manager-webgpu.ts';
 import type { MilkdropRendererAdapterConfig } from './renderer-adapter.ts';
 import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
 import { createWebGPUBatchingLayer } from './renderer-adapter-webgpu-batching.ts';
+import { resolveMilkdropRendererExecutionPlan } from './renderer-execution-plan.ts';
 import {
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
@@ -59,16 +59,27 @@ export function createMilkdropWebGPURendererAdapter(
   config: MilkdropWebGPURendererAdapterConfig,
 ) {
   const useSafeWebGpuPath = shouldUseSafeMilkdropWebGpuPath();
+  const webgpuOptimizationFlags = useSafeWebGpuPath
+    ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
+    : config.webgpuOptimizationFlags;
+  const executionPlan = resolveMilkdropRendererExecutionPlan({
+    backend: 'webgpu',
+    safeWebGpuPath: useSafeWebGpuPath,
+    flags: {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      ...webgpuOptimizationFlags,
+    },
+  });
+
   return createMilkdropRendererAdapterCore({
     ...config,
     backend: 'webgpu',
     behavior: WEBGPU_BEHAVIOR,
-    createFeedbackManager: useSafeWebGpuPath
-      ? createMilkdropWebGLFeedbackManager
-      : createMilkdropWebGPUFeedbackManager,
+    createFeedbackManager:
+      executionPlan.feedbackMode === 'webgpu-native'
+        ? createMilkdropWebGPUFeedbackManager
+        : undefined,
     batcher: createWebGPUBatchingLayer(),
-    webgpuOptimizationFlags: useSafeWebGpuPath
-      ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
-      : config.webgpuOptimizationFlags,
+    webgpuOptimizationFlags,
   });
 }

@@ -2,8 +2,6 @@ import {
   type Camera,
   Color,
   DataTexture,
-  HalfFloatType,
-  LinearFilter,
   Mesh,
   MeshBasicMaterial,
   OrthographicCamera,
@@ -18,7 +16,7 @@ import {
   TextureLoader,
   UnsignedByteType,
   Vector2,
-  WebGLRenderTarget,
+  type WebGLRenderTarget,
 } from 'three';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
 import { disposeMaterial } from '../utils/three-dispose';
@@ -41,6 +39,7 @@ import {
   MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
 } from './feedback-composite-profile.ts';
+import { createWebGLFeedbackRenderTarget } from './feedback-render-targets.ts';
 import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
@@ -179,34 +178,6 @@ function resolveAuxTextureName(source: number) {
     return 'perlin';
   }
   return null;
-}
-
-function createFeedbackRenderTarget(
-  width: number,
-  height: number,
-  {
-    resolutionScale,
-    useHalfFloatFeedback,
-    samples,
-  }: {
-    resolutionScale: number;
-    useHalfFloatFeedback: boolean;
-    samples: number;
-  },
-) {
-  const scaledWidth = Math.max(1, Math.round(width * resolutionScale));
-  const scaledHeight = Math.max(1, Math.round(height * resolutionScale));
-  const target = new WebGLRenderTarget(scaledWidth, scaledHeight, {
-    minFilter: LinearFilter,
-    magFilter: LinearFilter,
-    ...(useHalfFloatFeedback
-      ? {
-          type: HalfFloatType,
-        }
-      : {}),
-  });
-  target.samples = samples;
-  return target;
 }
 
 export function createCompositeFragmentShaderVariant(
@@ -792,40 +763,40 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
     this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
     this.auxTextures = getSharedAuxTextures();
-    this.sceneTarget = createFeedbackRenderTarget(width, height, {
+    this.sceneTarget = createWebGLFeedbackRenderTarget(width, height, {
       resolutionScale: this.sceneResolutionScale,
       useHalfFloatFeedback: behavior.useHalfFloatFeedback,
       samples: this.profile.samples,
     });
-    this.warpTarget = createFeedbackRenderTarget(width, height, {
+    this.warpTarget = createWebGLFeedbackRenderTarget(width, height, {
       resolutionScale: this.currentFeedbackResolutionScale,
       useHalfFloatFeedback: behavior.useHalfFloatFeedback,
       samples: 1,
     });
     this.targets = [
-      createFeedbackRenderTarget(width, height, {
+      createWebGLFeedbackRenderTarget(width, height, {
         resolutionScale: this.currentFeedbackResolutionScale,
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: this.profile.samples,
       }),
-      createFeedbackRenderTarget(width, height, {
+      createWebGLFeedbackRenderTarget(width, height, {
         resolutionScale: this.currentFeedbackResolutionScale,
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: this.profile.samples,
       }),
     ];
     this.blurTargets = [
-      createFeedbackRenderTarget(width, height, {
+      createWebGLFeedbackRenderTarget(width, height, {
         resolutionScale: this.currentFeedbackResolutionScale,
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
-      createFeedbackRenderTarget(width, height, {
+      createWebGLFeedbackRenderTarget(width, height, {
         resolutionScale: this.currentFeedbackResolutionScale * 0.5,
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
       }),
-      createFeedbackRenderTarget(width, height, {
+      createWebGLFeedbackRenderTarget(width, height, {
         resolutionScale: this.currentFeedbackResolutionScale * 0.25,
         useHalfFloatFeedback: behavior.useHalfFloatFeedback,
         samples: 1,
@@ -1039,13 +1010,17 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     warp: MilkdropShaderProgramPayload | null,
     comp: MilkdropShaderProgramPayload | null,
   ) {
-    const warpGlsl = warp
-      ? (warp.rawGlsl ??
-        generateGlslFromShaderStatements(warp.statements, 'warp'))
+    const executableWarp =
+      warp && warp.execution.supportedBackends.length > 0 ? warp : null;
+    const executableComp =
+      comp && comp.execution.supportedBackends.length > 0 ? comp : null;
+    const warpGlsl = executableWarp
+      ? (executableWarp.rawGlsl ??
+        generateGlslFromShaderStatements(executableWarp.statements, 'warp'))
       : null;
-    const compGlsl = comp
-      ? (comp.rawGlsl ??
-        generateGlslFromShaderStatements(comp.statements, 'comp'))
+    const compGlsl = executableComp
+      ? (executableComp.rawGlsl ??
+        generateGlslFromShaderStatements(executableComp.statements, 'comp'))
       : null;
 
     // Skip rebuild if nothing changed

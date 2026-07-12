@@ -35,6 +35,7 @@ import type {
 } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
+import { setWebGpuForceMode } from '../assets/js/milkdrop/webgpu-query-override.ts';
 import { replaceProperty } from './test-helpers.ts';
 
 type RenderTreeNode = {
@@ -3332,7 +3333,8 @@ fShader=0
     expect(fakeRenderer.setRenderTargetCalls).toBe(0);
   });
 
-  test('renders the feedback composite path on webgpu backends', async () => {
+  test('full webgpu path keeps feedback frames on compatibility fallback while native feedback is disabled', async () => {
+    setWebGpuForceMode('full');
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback
@@ -3362,52 +3364,62 @@ ob_border=1
       },
     };
 
-    const adapter = await createMilkdropRendererAdapter({
-      scene,
-      camera,
-      renderer: fakeRenderer,
-      backend: 'webgpu',
-    });
+    try {
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        renderer: fakeRenderer,
+        backend: 'webgpu',
+      });
 
-    adapter.attach();
-    const result = adapter.render({
-      frameState,
-      blendState: null,
-    });
+      adapter.attach();
+      const result = adapter.render({
+        frameState,
+        blendState: null,
+      });
 
-    const feedback = (
-      adapter as unknown as {
-        feedback: {
-          sceneTarget: {
-            width: number;
-            height: number;
-            samples: number;
-            texture: { type: number; minFilter: number; magFilter: number };
-          };
-          compositeMaterial: {
-            uniforms: {
-              feedbackSoftness: { value: number };
-              currentFrameBoost: { value: number };
+      const feedback = (
+        adapter as unknown as {
+          feedback: {
+            sceneTarget: {
+              width: number;
+              height: number;
+              samples: number;
+              texture: { type: number; minFilter: number; magFilter: number };
             };
-          };
-        } | null;
-      }
-    ).feedback;
+            compositeMaterial: {
+              uniforms: {
+                feedbackSoftness: { value: number };
+                currentFrameBoost: { value: number };
+              };
+            };
+          } | null;
+        }
+      ).feedback;
 
-    expect(result).toBe(true);
-    expect(fakeRenderer.setRenderTargetCalls).toBe(3);
-    expect(fakeRenderer.renderCalls).toBe(3);
-    expect(feedback).not.toBeNull();
+      expect(result).toBe(false);
+      expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+      expect(fakeRenderer.renderCalls).toBe(0);
+      expect(feedback).toBeNull();
+    } finally {
+      setWebGpuForceMode('auto');
+    }
   });
 
-  test('allocates a feedback manager on webgpu when shader mode is enabled', async () => {
+  test('safe webgpu path avoids allocating a feedback manager and leaves feedback frames for compatibility fallback', async () => {
+    setWebGpuForceMode('safe');
     const preset = compileMilkdropPresetSource(
       `
-title=Gamma Feedback WebGPU
-fGammaAdj=1.85
+title=Safe WebGPU Feedback
 video_echo=1
+warp_shader=warp=0.6; hue=0.2
+comp_shader=mix=0.25; tint=1,0.5,0.5
+texture_wrap=1
+feedback_texture=1
+ob_size=0.02
+ob_border=1
       `.trim(),
-      { id: 'gamma-feedback-webgpu' },
+      { id: 'safe-webgpu-feedback' },
     );
 
     const frameState = createMilkdropVM(preset).step(makeSignals());
@@ -3419,46 +3431,47 @@ video_echo=1
       render: () => {},
     };
 
-    const adapter = await createMilkdropRendererAdapter({
-      scene,
-      camera,
-      renderer: fakeRenderer,
-      backend: 'webgpu',
-    });
+    try {
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        renderer: fakeRenderer,
+        backend: 'webgpu',
+      });
 
-    adapter.attach();
-    adapter.render({
-      frameState,
-      blendState: null,
-    });
+      adapter.attach();
+      const result = adapter.render({
+        frameState,
+        blendState: null,
+      });
 
-    const feedback = (
-      adapter as unknown as {
-        feedback: {
-          sceneTarget: {
-            width: number;
-            height: number;
-            samples: number;
-            texture: { type: number; minFilter: number; magFilter: number };
-          };
-          compositeMaterial: {
-            uniforms: {
-              feedbackSoftness: { value: number };
-              currentFrameBoost: { value: number };
+      const feedback = (
+        adapter as unknown as {
+          feedback: {
+            sceneTarget: {
+              width: number;
+              height: number;
+              samples: number;
+              texture: { type: number; minFilter: number; magFilter: number };
             };
-          };
-        } | null;
-      }
-    ).feedback;
+            compositeMaterial: {
+              uniforms: {
+                feedbackSoftness: { value: number };
+                currentFrameBoost: { value: number };
+              };
+            };
+          } | null;
+        }
+      ).feedback;
 
-    expect(feedback).not.toBeNull();
-    expect(feedback?.compositeMaterial.uniforms.feedbackSoftness.value).toBe(0);
-    expect(feedback?.compositeMaterial.uniforms.currentFrameBoost.value).toBe(
-      0,
-    );
+      expect(result).toBe(false);
+      expect(feedback).toBeNull();
+    } finally {
+      setWebGpuForceMode('auto');
+    }
   });
 
-  test('routes webgpu audio-only presets through the feedback composite path', async () => {
+  test('routes webgpu audio-only feedback presets to compatibility fallback while native feedback is disabled', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=Signal Field WebGPU
@@ -3513,13 +3526,13 @@ video_echo=1
       }
     ).feedback;
 
-    expect(result).toBe(true);
-    expect(fakeRenderer.setRenderTargetCalls).toBe(3);
-    expect(fakeRenderer.renderCalls).toBe(3);
-    expect(feedback).not.toBeNull();
+    expect(result).toBe(false);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+    expect(fakeRenderer.renderCalls).toBe(0);
+    expect(feedback).toBeNull();
   });
 
-  test('uses mixed-resolution half-float feedback targets on webgpu backends', async () => {
+  test('does not allocate mixed-resolution webgpu feedback targets while native feedback is disabled', async () => {
     const preset = compileMilkdropPresetSource(
       `
 title=WebGPU Feedback Quality
@@ -3545,7 +3558,7 @@ video_echo=1
     });
 
     adapter.attach();
-    adapter.render({
+    const result = adapter.render({
       frameState,
       blendState: null,
     });
@@ -3568,15 +3581,8 @@ video_echo=1
       }
     ).feedback;
 
-    expect(feedback).not.toBeNull();
-    expect(feedback?.sceneTarget.width).toBe(640);
-    expect(feedback?.sceneTarget.height).toBe(360);
-    expect(feedback?.targets[0]?.width).toBe(640);
-    expect(feedback?.targets[0]?.height).toBe(360);
-    expect(feedback?.sceneTarget.samples).toBe(0);
-    expect(feedback?.sceneTarget.texture.type).toBe(HalfFloatType);
-    expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
-    expect(feedback?.sceneTarget.texture.magFilter).toBe(LinearFilter);
+    expect(result).toBe(false);
+    expect(feedback).toBeNull();
   });
 
   test('uses tuned feedback targets on webgl backends', async () => {

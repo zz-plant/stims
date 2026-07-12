@@ -339,7 +339,7 @@ export function MobileControlBar({
     ? ['browse', 'shuffle', 'favorite', 'settings']
     : partyRemoteMode
       ? ['shuffle', 'favorite', 'fullscreen']
-      : ['browse', 'shuffle', 'previous', 'similar', 'settings'];
+      : ['browse', 'shuffle', 'favorite', 'settings'];
   const primaryActions = mobileActions.filter((action) =>
     primaryActionIds.includes(action.id),
   );

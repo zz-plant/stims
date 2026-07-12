@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
+import { shouldFallbackMilkdropPresetToWebgl } from '../assets/js/milkdrop/renderer-execution-plan.ts';
 import {
   applyMilkdropWebGpuOptimizationFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-  shouldFallbackMilkdropPresetToWebgl,
 } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 import {
   assertCertificationSemantics,
