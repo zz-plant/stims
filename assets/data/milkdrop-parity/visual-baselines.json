@@ -1,6 +1,11 @@
 {
   "version": 1,
-  "frames": [1, 2, 3, 10],
+  "frames": [
+    1,
+    2,
+    3,
+    10
+  ],
   "tolerance": 0.000001,
   "generatedAt": "2026-04-15",
   "presets": [
@@ -12,11 +17,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -46,11 +51,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -80,11 +85,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -114,11 +119,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -155,11 +160,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -189,11 +194,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -223,11 +228,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -257,11 +262,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -298,11 +303,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.229126
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.229126
           },
           "customWaves": {
@@ -332,11 +337,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.921026
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.921026
           },
           "customWaves": {
@@ -366,11 +371,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.625164
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.625164
           },
           "customWaves": {
@@ -400,11 +405,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 243.505312
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 243.505312
           },
           "customWaves": {
@@ -441,11 +446,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.040627
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.040627
           },
           "customWaves": {
@@ -475,11 +480,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.544035
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.544035
           },
           "customWaves": {
@@ -509,11 +514,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.059695
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 245.059695
           },
           "customWaves": {
@@ -543,11 +548,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 241.621488
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 241.621488
           },
           "customWaves": {
@@ -584,11 +589,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -618,11 +623,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -652,11 +657,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -686,11 +691,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -727,11 +732,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -761,11 +766,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -795,11 +800,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -829,11 +834,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -870,11 +875,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -904,11 +909,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -938,11 +943,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -972,11 +977,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -1013,11 +1018,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -1047,11 +1052,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -1081,11 +1086,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -1115,11 +1120,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -1156,11 +1161,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -1190,11 +1195,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -1224,11 +1229,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -1258,11 +1263,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -1299,11 +1304,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -1333,11 +1338,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -1367,11 +1372,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -1401,11 +1406,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -1442,11 +1447,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -1476,11 +1481,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -1510,11 +1515,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -1544,11 +1549,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -1585,11 +1590,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -1619,11 +1624,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -1653,11 +1658,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -1687,11 +1692,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -1728,11 +1733,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -1762,11 +1767,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -1796,11 +1801,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -1830,11 +1835,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -1871,11 +1876,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -1905,11 +1910,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -1939,11 +1944,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -1973,11 +1978,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -2014,11 +2019,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -2048,11 +2053,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -2075,18 +2080,18 @@
             "gammaAdj": 2,
             "videoEchoAlpha": 0.15,
             "videoEchoZoom": 1,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 12.614333
           }
         },
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -2116,11 +2121,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -2143,7 +2148,7 @@
             "gammaAdj": 2,
             "videoEchoAlpha": 0.15,
             "videoEchoZoom": 1,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 12.647667
           }
         }
@@ -2157,11 +2162,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -2191,11 +2196,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -2218,18 +2223,18 @@
             "gammaAdj": 2,
             "videoEchoAlpha": 0.2,
             "videoEchoZoom": 1,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 12.714333
           }
         },
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -2259,11 +2264,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -2286,7 +2291,7 @@
             "gammaAdj": 2,
             "videoEchoAlpha": 0.2,
             "videoEchoZoom": 1,
-            "shaderMixAlpha": 0.07,
+            "shaderMixAlpha": 0.06999999999999999,
             "checksum": 12.747667
           }
         }
@@ -2300,11 +2305,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -2334,11 +2339,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -2368,11 +2373,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -2402,11 +2407,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -2443,11 +2448,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -2477,11 +2482,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -2511,11 +2516,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -2545,11 +2550,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -2586,11 +2591,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -2620,11 +2625,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -2654,11 +2659,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -2688,11 +2693,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
@@ -2729,11 +2734,11 @@
         {
           "frame": 1,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.530725
           },
           "customWaves": {
@@ -2763,11 +2768,11 @@
         {
           "frame": 2,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.524223
           },
           "customWaves": {
@@ -2797,11 +2802,11 @@
         {
           "frame": 3,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.529954
           },
           "customWaves": {
@@ -2831,11 +2836,11 @@
         {
           "frame": 10,
           "mainWave": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "waveform": {
-            "count": 2253,
+            "count": 753,
             "checksum": 246.520954
           },
           "customWaves": {
