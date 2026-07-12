@@ -10,16 +10,10 @@ export type PresetPerformanceOverride = {
   disableBlendTransitions?: boolean;
 };
 
-const PRESET_PERFORMANCE_OVERRIDES = {
-  'parity-legacy-wave-01': {
-    qualityPresetId: 'performance',
-    disableBlendTransitions: true,
-  },
-  'parity-legacy-shape-01': {
-    qualityPresetId: 'performance',
-    disableBlendTransitions: true,
-  },
-} as const satisfies Record<string, PresetPerformanceOverride>;
+const PRESET_PERFORMANCE_OVERRIDES = {} as const satisfies Record<
+  string,
+  PresetPerformanceOverride
+>;
 
 export function resolvePresetPerformanceOverride(
   presetId: string,

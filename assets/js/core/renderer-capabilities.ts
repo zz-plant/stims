@@ -582,7 +582,7 @@ async function probeRendererCapabilities({
   if (preferWebGLForKnownCompatibilityGaps) {
     return cacheResult(
       buildFallback(
-        'WebGPU is temporarily disabled for the live visualizer while we stabilize ShaderMaterial compatibility. Using WebGL mode.',
+        'WebGPU is not enabled automatically for this browser or session. Using WebGL mode.',
         { forceWebGL: true },
       ),
     );

@@ -15,7 +15,7 @@ afterEach(() => {
   clearWebGPUCompatibilityGapOverride();
 });
 
-test('renderer query override allows webgpu certification sessions to bypass the live webgl preference', () => {
+test('renderer query override allows webgpu certification sessions to bypass browser stability preference', () => {
   restoreLocation = replaceProperty(
     window,
     'location',
@@ -33,7 +33,7 @@ test('renderer query override honors explicit live webgpu requests', () => {
   expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(false);
 });
 
-test('renderer query override keeps the live visualizer on webgl-preferred mode by default', () => {
+test('renderer query override keeps unknown browsers on webgl-preferred mode by default', () => {
   restoreLocation = replaceProperty(
     window,
     'location',
@@ -42,7 +42,7 @@ test('renderer query override keeps the live visualizer on webgl-preferred mode 
   expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(true);
 });
 
-test('explicit user WebGPU override bypasses the live visualizer webgl preference', () => {
+test('explicit user WebGPU override bypasses the browser stability preference', () => {
   restoreLocation = replaceProperty(
     window,
     'location',
@@ -62,10 +62,10 @@ test('safe MilkDrop WebGPU path stays disabled for certification sessions', () =
   ).toBe(false);
 });
 
-test('safe MilkDrop WebGPU path stays enabled for live query-forced sessions', () => {
+test('explicit MilkDrop WebGPU requests use the full path', () => {
   expect(
     shouldUseSafeMilkdropWebGpuPath(
       new URL('http://localhost/?renderer=webgpu'),
     ),
-  ).toBe(true);
+  ).toBe(false);
 });

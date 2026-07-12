@@ -2,10 +2,9 @@
  * WebGPU safe-path query override module.
  *
  * Controls whether the MilkDrop WebGPU renderer should use the "safe" path
- * (reduced feature set) vs the full-capability path. The safe path is used
- * in the live visualizer by default; the full path is used during
- * certification corpus runs and can be opted into via URL parameter or
- * localStorage toggle.
+ * (reduced feature set) vs the full-capability path. Stable desktop Chromium
+ * and explicit WebGPU URL sessions use the full path; safe mode remains
+ * available through localStorage and force-mode overrides.
  */
 
 import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
@@ -14,7 +13,6 @@ import { isMobileDevice } from '../utils/device-detect.ts';
 const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
 const URL_PARAM_RENDERER = 'renderer';
-const URL_PARAM_CORPUS = 'corpus';
 
 /** Valid modes for the force-mode override. */
 export type WebGpuForceMode = 'auto' | 'safe' | 'full';
@@ -128,8 +126,7 @@ function qualifiesForDefaultWebGPUPath(): boolean {
  * 1. Force-mode localStorage override ('safe' → true, 'full' → false)
  * 2. Safe-path localStorage override (boolean)
  * 3. URL query parameters:
- *    - `?renderer=webgpu&corpus=certification` → full path
- *    - `?renderer=webgpu` (without certification corpus) → safe path
+ *    - `?renderer=webgpu` → full path
  * 4. Default: use full path on Chrome/Edge 130+ desktop; safe path otherwise
  */
 export function shouldUseSafeMilkdropWebGpuPath(
@@ -150,11 +147,10 @@ export function shouldUseSafeMilkdropWebGpuPath(
   if (location?.search) {
     const searchParams = new URLSearchParams(location.search);
     const renderer = searchParams.get(URL_PARAM_RENDERER)?.trim().toLowerCase();
-    const corpus = searchParams.get(URL_PARAM_CORPUS)?.trim().toLowerCase();
 
     if (renderer === 'webgpu') {
-      // Certification corpus runs use the full WebGPU path
-      return corpus !== 'certification';
+      // Explicit WebGPU requests use the full WebGPU path.
+      return false;
     }
   }
 
@@ -228,9 +224,8 @@ export function getWebGpuPathDescription(
     const searchParams = new URLSearchParams(location.search);
     const renderer = searchParams.get(URL_PARAM_RENDERER)?.trim().toLowerCase();
     if (renderer === 'webgpu') {
-      const corpus = searchParams.get(URL_PARAM_CORPUS)?.trim().toLowerCase();
       return {
-        mode: corpus !== 'certification' ? 'safe' : 'full',
+        mode: 'full',
         source: 'url',
       };
     }

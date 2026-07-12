@@ -124,9 +124,9 @@ export function hasWebGPUCompatibilityGapOverride() {
  *
  * Priority order:
  * 1. Explicit URL param `?renderer=webgl` or `?renderer=webgpu`
- * 2. Certification corpus runs (`?corpus=certification&renderer=webgpu`) always use WebGPU
- * 3. Session-level gap override (via `setWebGPUCompatibilityGapOverride`)
- * 4. Default: prefer WebGL for the live visualizer (conservative fallback)
+ * 2. Session-level WebGPU override (via `setWebGPUCompatibilityGapOverride`)
+ * 3. Default: prefer WebGL only when this browser is not in the stable
+ *    desktop Chromium WebGPU set
  */
 export function shouldPreferWebGLForKnownCompatibilityGaps() {
   const requestedRenderer = getRequestedRenderer();
