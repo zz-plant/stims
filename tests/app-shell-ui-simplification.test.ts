@@ -156,4 +156,133 @@ describe('Workspace shell UI simplification regression', () => {
     expect(homeSource).toContain('Saved pick not found');
     expect(homeSource).toContain('Explore presets');
   });
+
+  test('opens browse in the full bottom sheet so filtered results are visible', () => {
+    const appSource = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'js', 'frontend', 'App.tsx'),
+      'utf8',
+    );
+
+    expect(appSource).toContain(
+      "defaultSnapPoint={ui.routeState.panel === 'browse' ? 'full' : 'compact'}",
+    );
+  });
+
+  test('scrolls filtered browse results into view inside the sheet', () => {
+    const browseSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'BrowseSheetPanel.tsx',
+      ),
+      'utf8',
+    );
+    const shellCss = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
+      'utf8',
+    );
+
+    expect(browseSource).toContain('resultsSectionRef');
+    expect(browseSource).toContain('scrollIntoView');
+    expect(browseSource).toContain('findScrollableAncestor');
+    expect(browseSource).toContain('scrollTo');
+    expect(browseSource).toContain('data-filter-active');
+    expect(browseSource).toContain('hasActiveBrowseFilter');
+    expect(shellCss).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse\[data-filter-active="true"\]\s*\.stims-shell__browse-toolbar[\s\S]*?display:\s*none;/u,
+    );
+  });
+
+  test('keeps live stage controls above the render canvas', () => {
+    const shellCss = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
+      'utf8',
+    );
+
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-dock-wrap\s*\{[\s\S]*?z-index:\s*var\(--z-frame-chrome\);/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-dock\s*\{[\s\S]*?z-index:\s*var\(--z-frame-chrome\);/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-dock-wrap\[data-visible="false"\]\s*\{[\s\S]*?visibility:\s*hidden;/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-dock-wrap\[data-visible="true"\]\s*\{[\s\S]*?visibility:\s*visible;/u,
+    );
+    expect(shellCss).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse \.stims-shell__sheet-surface--sticky\s*\{[\s\S]*?position:\s*static;/u,
+    );
+  });
+
+  test('keeps live mode low chrome around the visualizer', () => {
+    const shellCss = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
+      'utf8',
+    );
+    const bottomSheetCss = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'css', 'BottomSheet.module.css'),
+      'utf8',
+    );
+    const mobileControlCss = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'css',
+        'MobileControlBar.module.css',
+      ),
+      'utf8',
+    );
+
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-frame\[data-mode="live"\]\s*\{[\s\S]*?border:\s*0;/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-frame\[data-mode="live"\]\s*\{[\s\S]*?box-shadow:\s*none;/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-frame\[data-mode="live"\]::before,\s*\.stims-shell__stage-frame\[data-mode="live"\]::after\s*\{[\s\S]*?display:\s*none;/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-frame\[data-mode="live"\] \.stims-shell__corner-brand\s*\{[\s\S]*?display:\s*none;/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-frame\[data-mode="live"\] \.stims-shell__stage-dock\s*\{[\s\S]*?background:\s*rgba\(5,\s*8,\s*14,\s*0\.2\);/u,
+    );
+    expect(shellCss).toMatch(
+      /\.stims-shell__stage-frame\[data-mode="live"\]\s*\.stims-shell__stage-root,\s*\.stims-shell__stage-frame\[data-mode="live"\]\s*\.stims-shell__stage-root\s*>\s*canvas\s*\{[\s\S]*?pointer-events:\s*none;/u,
+    );
+    expect(bottomSheetCss).toMatch(
+      /\.sheet\s*\{[\s\S]*?background:\s*color-mix\(\s*in srgb,\s*var\(--stims-panel-fill-strong\) 72%,\s*transparent\s*\);/u,
+    );
+    expect(bottomSheetCss).toMatch(
+      /\.backdrop\s*\{[\s\S]*?background:\s*rgba\(0,\s*0,\s*0,\s*0\.22\);/u,
+    );
+    expect(mobileControlCss).toMatch(
+      /\.bar\s*\{[\s\S]*?rgba\(5,\s*7,\s*13,\s*0\.64\)/u,
+    );
+    expect(mobileControlCss).toMatch(
+      /\.actionLabel\s*\{[\s\S]*?display:\s*none;/u,
+    );
+
+    const dockSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'StimsControlDock.tsx',
+      ),
+      'utf8',
+    );
+    expect(dockSource).toContain('pointerInsideDock');
+    expect(dockSource).toContain('onPointerEnter');
+    expect(dockSource).toContain('onPointerLeave');
+  });
 });
