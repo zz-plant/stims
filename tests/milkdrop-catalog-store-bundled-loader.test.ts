@@ -159,3 +159,46 @@ test('bundled catalog loader stays on the shipped catalog when no certification 
   ]);
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
+
+test('bundled catalog loader falls back silently when supplemental library manifests are absent', async () => {
+  const warn = console.warn;
+  const warnMock = mock(() => {});
+  console.warn = warnMock as unknown as typeof console.warn;
+
+  try {
+    const fetchMock = mock((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/milkdrop-presets/catalog.json')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              presets: [
+                {
+                  id: 'rovastar-parallel-universe',
+                  title: 'Rovastar - Parallel Universe',
+                  file: '/milkdrop-presets/rovastar-parallel-universe.milk',
+                },
+              ],
+            }),
+          ),
+        );
+      }
+
+      return Promise.resolve(new Response('', { status: 404 }));
+    });
+
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const loader = createBundledCatalogLoader({
+      catalogUrl: '/milkdrop-presets/catalog.json',
+    });
+    const entries = await loader.getBundledCatalog();
+
+    expect(entries.map((entry) => entry.id)).toEqual([
+      'rovastar-parallel-universe',
+    ]);
+    expect(warnMock).not.toHaveBeenCalled();
+  } finally {
+    console.warn = warn;
+  }
+});

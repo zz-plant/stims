@@ -8,6 +8,11 @@ import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/device-detect.ts';
 import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
 
+type StimsAppGlobals = typeof globalThis & {
+  __stimsAppDispose?: () => void;
+  __stimsAppReady?: Promise<void>;
+};
+
 function ensureRootContainer() {
   const existing = document.getElementById('app');
   if (existing instanceof HTMLElement) {
@@ -33,7 +38,12 @@ const startApp = async () => {
   }
 
   const container = ensureRootContainer();
-  createRoot(container).render(
+  const root = createRoot(container);
+  (globalThis as StimsAppGlobals).__stimsAppDispose = () => {
+    root.unmount();
+    delete (globalThis as StimsAppGlobals).__stimsAppDispose;
+  };
+  root.render(
     createElement(
       StrictMode,
       null,
@@ -61,9 +71,7 @@ const appReady = new Promise<void>((resolve) => {
   }
 });
 
-(
-  globalThis as typeof globalThis & { __stimsAppReady?: Promise<void> }
-).__stimsAppReady = appReady;
+(globalThis as StimsAppGlobals).__stimsAppReady = appReady;
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

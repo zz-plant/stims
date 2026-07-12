@@ -151,18 +151,23 @@ function toBundledCatalogEntries(document: BundledCatalogDocument) {
 
 async function loadOptionalCatalog(
   catalogUrl: string,
+  { reportFailures = true }: { reportFailures?: boolean } = {},
 ): Promise<MilkdropBundledCatalogEntry[]> {
   return fetch(catalogUrl)
     .then(async (response) => {
       if (!response.ok) {
-        console.warn(`Optional catalog not found: ${catalogUrl}`);
+        if (reportFailures) {
+          console.warn(`Optional catalog not found: ${catalogUrl}`);
+        }
         return [] as MilkdropBundledCatalogEntry[];
       }
       const document = (await response.json()) as BundledCatalogDocument;
       return toBundledCatalogEntries(document);
     })
     .catch((error) => {
-      console.warn(`Failed to load optional catalog: ${catalogUrl}`, error);
+      if (reportFailures) {
+        console.warn(`Failed to load optional catalog: ${catalogUrl}`, error);
+      }
       return [] as MilkdropBundledCatalogEntry[];
     });
 }
@@ -198,7 +203,11 @@ export function createBundledCatalogLoader({
     if (!bundledCatalogPromise) {
       bundledCatalogPromise = Promise.all([
         loadOptionalCatalog(catalogUrl),
-        Promise.all(libraryManifestUrls.map((url) => loadOptionalCatalog(url))),
+        Promise.all(
+          libraryManifestUrls.map((url) =>
+            loadOptionalCatalog(url, { reportFailures: false }),
+          ),
+        ),
       ])
         .then(async ([bundledEntries, libraryCatalogs]) => {
           const supplementalEntries = libraryCatalogs.flat();
