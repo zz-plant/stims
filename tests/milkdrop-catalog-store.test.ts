@@ -397,16 +397,26 @@ describe('milkdrop catalog store', () => {
   });
 
   test('returns an empty bundled catalog when the catalog fetch fails', async () => {
+    const warn = console.warn;
+    const warnMock = mock(() => {});
+    console.warn = warnMock as unknown as typeof console.warn;
     globalThis.fetch = mock(async () => {
       throw new Error('network down');
     }) as unknown as typeof fetch;
 
-    const store = createMilkdropCatalogStore({
-      dbName: 'milkdrop-catalog-store-fetch-failure-test',
-      catalogUrl: '/milkdrop-presets/catalog.json',
-    });
+    try {
+      const store = createMilkdropCatalogStore({
+        dbName: 'milkdrop-catalog-store-fetch-failure-test',
+        catalogUrl: '/milkdrop-presets/catalog.json',
+      });
 
-    await expect(store.listPresets()).resolves.toEqual([]);
-    await expect(store.getPresetSource('missing-bundled')).resolves.toBeNull();
+      await expect(store.listPresets()).resolves.toEqual([]);
+      await expect(
+        store.getPresetSource('missing-bundled'),
+      ).resolves.toBeNull();
+      expect(warnMock).toHaveBeenCalledTimes(1);
+    } finally {
+      console.warn = warn;
+    }
   });
 });

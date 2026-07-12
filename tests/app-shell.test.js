@@ -49,6 +49,8 @@ describe('home shell user journeys', () => {
   });
 
   afterEach(() => {
+    globalThis.__stimsAppDispose?.();
+    delete globalThis.__stimsAppDispose;
     mock.restore();
     globalThis.fetch = originalFetch;
     if (originalScreenDescriptor) {
@@ -83,5 +85,45 @@ describe('home shell user journeys', () => {
     expect(mockLoadFromQuery).not.toHaveBeenCalled();
     expect(mockInitNavigation).not.toHaveBeenCalled();
     expect(mockLoadToy).not.toHaveBeenCalled();
+  });
+
+  test('shell cleanup cancels deferred full-catalog hydration', async () => {
+    const originalWarn = console.warn;
+    const warnMock = mock(() => {});
+    const originalRequestIdleCallback = globalThis.requestIdleCallback;
+    const originalCancelIdleCallback = globalThis.cancelIdleCallback;
+    console.warn = warnMock;
+    globalThis.requestIdleCallback = (callback) =>
+      setTimeout(
+        () =>
+          callback({
+            didTimeout: false,
+            timeRemaining: () => 0,
+          }),
+        20,
+      );
+    globalThis.cancelIdleCallback = (handle) => clearTimeout(handle);
+
+    try {
+      await loadAppShell();
+
+      expect(typeof globalThis.__stimsAppDispose).toBe('function');
+      globalThis.__stimsAppDispose();
+      await new Promise((resolve) => setTimeout(resolve, 40));
+
+      expect(warnMock).not.toHaveBeenCalled();
+    } finally {
+      console.warn = originalWarn;
+      if (originalRequestIdleCallback) {
+        globalThis.requestIdleCallback = originalRequestIdleCallback;
+      } else {
+        delete globalThis.requestIdleCallback;
+      }
+      if (originalCancelIdleCallback) {
+        globalThis.cancelIdleCallback = originalCancelIdleCallback;
+      } else {
+        delete globalThis.cancelIdleCallback;
+      }
+    }
   });
 });
