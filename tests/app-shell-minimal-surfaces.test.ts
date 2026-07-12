@@ -18,8 +18,8 @@ describe('minimal workspace surfaces', () => {
     const browse = frontendSource('BrowseSheetPanel.tsx');
 
     expect(browse).toContain('<strong>Browse presets</strong>');
-    expect(browse).toContain('>Previews<');
-    expect(browse).toContain('>Similar<');
+    expect(browse).toMatch(/>\s*Previews\s*</u);
+    expect(browse).toMatch(/>\s*Similar\s*</u);
     expect(browse).not.toContain('Tap any card to load it on the stage.');
     expect(browse).not.toContain('Find similar to current look');
     expect(browse).not.toContain('Long-press cards to build');
@@ -29,7 +29,7 @@ describe('minimal workspace surfaces', () => {
     const audio = frontendSource('AudioSourcePanel.tsx');
 
     expect(audio).toContain('Audio help');
-    expect(audio).toContain('>Load<');
+    expect(audio).toContain("'Load'");
     expect(audio).not.toContain('Browser permission required');
     expect(audio).not.toContain('Pick “This tab”');
     expect(audio).not.toContain('Chrome-based browsers work best');

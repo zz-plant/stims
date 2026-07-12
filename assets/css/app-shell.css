@@ -879,9 +879,9 @@ body[data-page="workspace"] {
 
   .stims-shell__browse-toolbar {
     display: grid;
-    gap: 10px;
+    gap: 8px;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
+    align-items: center;
   }
 
   .stims-shell__browse-toolbar-actions {
@@ -933,27 +933,15 @@ body[data-page="workspace"] {
 
   .stims-shell__starter-card {
     display: grid;
-    gap: 8px;
-    padding: 14px;
-    border: 1px solid rgba(119, 201, 255, 0.18);
-    border-radius: var(--stims-radius-card);
-    background:
-      radial-gradient(
-        circle at top right,
-        rgba(119, 201, 255, 0.14),
-        transparent 32%
-      ),
-      linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.07),
-        rgba(255, 255, 255, 0.025)
-      );
+    gap: 7px;
+    padding: 10px;
+    border: 1px solid var(--stims-line-soft);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
     color: inherit;
     font: inherit;
     text-align: left;
-    box-shadow:
-      0 16px 28px rgba(0, 0, 0, 0.18),
-      inset 0 1px 0 var(--stims-white-05);
+    box-shadow: none;
     transition:
       transform 160ms ease,
       border-color 180ms ease,
@@ -961,11 +949,9 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__starter-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(119, 201, 255, 0.36);
-    box-shadow:
-      0 24px 38px var(--stims-shadow-22),
-      0 0 28px rgba(119, 201, 255, 0.14);
+    transform: translateY(-1px);
+    border-color: var(--stims-line);
+    box-shadow: none;
   }
 
   .stims-shell__starter-card:active {
@@ -988,23 +974,17 @@ body[data-page="workspace"] {
 
   .stims-shell__preset-card {
     display: grid;
-    grid-template-columns: 88px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
     align-items: start;
-    padding: 12px;
+    padding: 10px;
     text-align: left;
-    border: 1px solid var(--stims-line);
-    border-radius: var(--stims-radius-card);
-    background: linear-gradient(
-      180deg,
-      var(--stims-white-06),
-      rgba(255, 255, 255, 0.025)
-    );
+    border: 1px solid var(--stims-line-soft);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
     color: inherit;
     font: inherit;
-    box-shadow:
-      0 14px 24px rgba(0, 0, 0, 0.16),
-      inset 0 1px 0 var(--stims-white-05);
+    box-shadow: none;
     transition:
       transform 160ms ease,
       border-color 180ms ease,
@@ -1013,16 +993,10 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__preset-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--stims-line-strong);
-    background: linear-gradient(
-      180deg,
-      var(--stims-white-08),
-      rgba(255, 255, 255, 0.03)
-    );
-    box-shadow:
-      0 20px 30px var(--stims-shadow-22),
-      0 0 18px rgba(119, 201, 255, 0.08);
+    transform: translateY(-1px);
+    border-color: var(--stims-line);
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: none;
   }
 
   .stims-shell__preset-card:active {
@@ -1032,16 +1006,8 @@ body[data-page="workspace"] {
 
   .stims-shell__preset-card[data-active="true"] {
     border-color: rgba(244, 122, 84, 0.48);
-    background:
-      linear-gradient(
-        180deg,
-        rgba(244, 122, 84, 0.18),
-        var(--stims-accent-blue-08)
-      ),
-      rgba(255, 255, 255, 0.03);
-    box-shadow:
-      0 18px 30px var(--stims-shadow-22),
-      0 0 28px rgba(244, 122, 84, 0.14);
+    background: rgba(244, 122, 84, 0.12);
+    box-shadow: none;
   }
 
   .stims-shell__preset-title {
@@ -1950,28 +1916,22 @@ body[data-page="workspace"] {
   .stims-shell__source-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
   }
 
   .stims-shell__source-card {
     display: grid;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
-    min-height: 72px;
-    padding: 14px 16px;
+    min-height: 58px;
+    padding: 10px 12px;
     border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: var(--stims-radius-card);
-    background: linear-gradient(
-      135deg,
-      rgba(20, 27, 41, 0.5),
-      rgba(10, 15, 24, 0.3)
-    );
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
     color: inherit;
     font: inherit;
     text-align: left;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: none;
     cursor: pointer;
     transition:
       border-color 0.2s ease,
@@ -1982,23 +1942,14 @@ body[data-page="workspace"] {
 
   .stims-shell__source-card:hover:not(:disabled) {
     border-color: rgba(119, 201, 255, 0.35);
-    background: linear-gradient(
-      135deg,
-      rgba(25, 36, 56, 0.65),
-      rgba(14, 22, 38, 0.45)
-    );
-    transform: translateY(-3px) scale(1.02);
-    box-shadow:
-      0 12px 30px rgba(0, 0, 0, 0.3),
-      0 0 14px rgba(119, 201, 255, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.045);
+    transform: translateY(-1px);
+    box-shadow: none;
   }
 
   .stims-shell__source-card:active:not(:disabled) {
-    transform: translateY(-1px) scale(0.98);
-    box-shadow:
-      0 6px 15px rgba(0, 0, 0, 0.25),
-      0 0 8px rgba(119, 201, 255, 0.1);
+    transform: translateY(0) scale(0.98);
+    box-shadow: none;
   }
 
   .stims-shell__source-card strong,
