@@ -61,7 +61,7 @@ describe('milkdrop renderer execution plan', () => {
     expect(plan.shouldFallbackToWebgl).toBe(false);
   });
 
-  test('keeps native feedback manager disabled on the full webgpu path until browser parity is stable', () => {
+  test('keeps native feedback descriptors disabled on the full webgpu path until browser parity is stable', () => {
     const plan = resolveMilkdropRendererExecutionPlan({
       backend: 'webgpu',
       safeWebGpuPath: false,
@@ -72,8 +72,27 @@ describe('milkdrop renderer execution plan', () => {
 
     expect(plan.webgpuPath).toBe('full');
     expect(plan.feedbackMode).toBe('none');
-    expect(plan.effectiveWebGpuDescriptorPlan?.feedback).toEqual(
-      expect.objectContaining({ shaderExecution: 'direct' }),
+    expect(plan.effectiveWebGpuDescriptorPlan?.feedback).toBeNull();
+    expect(plan.shouldFallbackToWebgl).toBe(false);
+  });
+
+  test('does not route feedback-only webgpu descriptor plans as executable while native feedback is disabled', () => {
+    const plan = resolveMilkdropRendererExecutionPlan({
+      backend: 'webgpu',
+      safeWebGpuPath: false,
+      descriptorPlan: createDescriptorPlan({
+        proceduralWaves: [],
+        proceduralMesh: null,
+        proceduralMotionVectors: null,
+      }),
+      flags: flags(),
+      compatibilityMode: false,
+    });
+
+    expect(plan.feedbackMode).toBe('none');
+    expect(plan.effectiveWebGpuDescriptorPlan?.feedback).toBeNull();
+    expect(plan.effectiveWebGpuDescriptorPlan?.routing).toBe(
+      'generic-frame-payload',
     );
     expect(plan.shouldFallbackToWebgl).toBe(false);
   });

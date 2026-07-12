@@ -25,7 +25,10 @@ describe('MilkDrop WebGPU feature routing', () => {
     });
 
     expect(routing.proceduralMesh.enabled).toBe(true);
-    expect(routing.directFeedbackShaders.enabled).toBe(true);
+    expect(routing.directFeedbackShaders).toMatchObject({
+      enabled: false,
+      reason: expect.stringContaining('native WebGPU feedback'),
+    });
     expect(routing.renderBundles.enabled).toBe(true);
   });
 });
