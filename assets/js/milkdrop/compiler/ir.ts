@@ -855,6 +855,7 @@ export function createMilkdropIr({
   const post = {
     brighten: (numericFields.brighten ?? 0) > 0.5,
     darken: (numericFields.darken ?? 0) > 0.5,
+    darkenCenter: (numericFields.darken_center ?? 0) > 0.5,
     solarize: (numericFields.solarize ?? 0) > 0.5,
     invert: (numericFields.invert ?? 0) > 0.5,
     shaderEnabled: (numericFields.shader ?? 1) > 0.5,

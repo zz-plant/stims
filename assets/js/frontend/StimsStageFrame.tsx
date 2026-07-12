@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
 
 export function StimsStageFrame({
+  activePresetId,
   children,
   liveMode,
   stageRef,
 }: {
+  activePresetId?: string | null;
   children: ReactNode;
   liveMode: boolean;
   stageRef: React.RefObject<HTMLDivElement | null>;
@@ -16,6 +18,7 @@ export function StimsStageFrame({
     >
       <div
         className="stims-shell__stage-frame"
+        data-active-preset-id={activePresetId ?? undefined}
         data-mode={liveMode ? 'live' : 'home'}
       >
         <div

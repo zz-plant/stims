@@ -27,6 +27,52 @@ type SortMode =
   | 'webgpu-supported'
   | 'random';
 
+type ImageToPresetResponse = {
+  description?: string;
+  milkSource?: string;
+  presetId?: string;
+  title?: string;
+};
+
+export type ImageToPresetAction =
+  | {
+      kind: 'generated-source';
+      description: string;
+      source: string;
+      title: string;
+    }
+  | {
+      kind: 'preset-id';
+      description: string;
+      presetId: string;
+    };
+
+export function resolveImageToPresetAction(
+  data: ImageToPresetResponse,
+): ImageToPresetAction | null {
+  const description = data.description?.trim() || 'Generated from image.';
+  const source = data.milkSource?.trim();
+  if (source) {
+    return {
+      kind: 'generated-source',
+      description,
+      source,
+      title: data.title?.trim() || 'Image generated preset',
+    };
+  }
+
+  const presetId = data.presetId?.trim();
+  if (presetId) {
+    return {
+      kind: 'preset-id',
+      description,
+      presetId,
+    };
+  }
+
+  return null;
+}
+
 function readSortMode(): SortMode {
   try {
     const value = localStorage.getItem('stims:browse-sort') as SortMode | null;
@@ -125,7 +171,7 @@ export function BrowseSheetPanel({
   const [visualSearchActive, setVisualSearchActive] = useState(false);
   const [imageImportResult, setImageImportResult] = useState<{
     description: string;
-    presetId: string;
+    label: string;
   } | null>(null);
   const [imageImportLoading, setImageImportLoading] = useState(false);
   const [fileImportStatus, setFileImportStatus] = useState('');
@@ -183,14 +229,34 @@ export function BrowseSheetPanel({
         }
         throw new Error(serverMessage);
       }
-      const data = (await res.json()) as {
-        description: string;
-        presetId: string;
-      };
+      const data = (await res.json()) as ImageToPresetResponse;
       if (controller.signal.aborted) return;
-      setImageImportResult(data);
-      if (data.presetId) {
-        engine.handlePresetSelection(data.presetId);
+      const action = resolveImageToPresetAction(data);
+      if (!action) {
+        throw new Error('No preset source or preset id returned.');
+      }
+
+      if (action.kind === 'generated-source') {
+        document.dispatchEvent(
+          new CustomEvent('stims:editor:source-change', {
+            detail: {
+              source: action.source,
+              title: action.title,
+            },
+          }),
+        );
+        setImageImportResult({
+          description: action.description,
+          label: action.title,
+        });
+        ui.setStatusMessage('Generated preset from image. Opening editor.');
+        ui.updatePanel('editor');
+      } else {
+        setImageImportResult({
+          description: action.description,
+          label: action.presetId,
+        });
+        engine.handlePresetSelection(action.presetId);
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -1197,7 +1263,7 @@ export function BrowseSheetPanel({
               {imageImportResult.description}
             </p>
             <p className="stims-shell__meta-copy">
-              Preset: {imageImportResult.presetId}
+              Preset: {imageImportResult.label}
             </p>
           </div>
         ) : null}

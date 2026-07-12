@@ -46,6 +46,7 @@ export function WorkspaceStagePanel({
   const { engineSnapshot } = useEngineSnapshot();
   const missingRequestedPreset = engine.missingRequestedPreset;
   const invalidExperienceSlug = ui.routeState.invalidExperienceSlug;
+  const activePresetId = engineSnapshot?.activePresetId ?? null;
   const audioSource = engineSnapshot?.audioSource ?? ui.routeState.audioSource;
 
   return (
@@ -54,7 +55,11 @@ export function WorkspaceStagePanel({
       data-mode={liveMode ? 'live' : 'home'}
       aria-label="Stims visualizer workspace"
     >
-      <StimsStageFrame stageRef={ui.stageRef} liveMode={liveMode}>
+      <StimsStageFrame
+        activePresetId={activePresetId}
+        stageRef={ui.stageRef}
+        liveMode={liveMode}
+      >
         <StimsFrameChrome>
           <StimsCornerBrand>
             <span className="stims-shell__logo">

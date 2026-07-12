@@ -457,6 +457,7 @@ function StimsWorkspaceAppShell() {
       id="stims-main"
       data-has-toast={ui.toast ? 'true' : undefined}
       data-mode={liveMode ? 'live' : 'home'}
+      data-active-preset-id={engineSnapshot?.activePresetId ?? undefined}
       data-preview={ui.routeState.previewMode ? 'true' : undefined}
       data-sheet-open={
         ui.routeState.panel && !stageAnchoredToolOpen ? 'true' : undefined

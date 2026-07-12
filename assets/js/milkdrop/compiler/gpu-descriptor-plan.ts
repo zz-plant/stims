@@ -13,6 +13,9 @@ import type {
   MilkdropWebGpuDescriptorPlan,
 } from '../types';
 
+const POST_PASS_EPSILON = 0.0001;
+const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
+
 export function buildWebGpuDescriptorPlan({
   featureAnalysis,
   webgpu,
@@ -34,8 +37,10 @@ export function buildWebGpuDescriptorPlan({
     | 'videoEchoEnabled'
     | 'brighten'
     | 'darken'
+    | 'darkenCenter'
     | 'solarize'
     | 'invert'
+    | 'gammaAdj'
     | 'shaderControls'
     | 'shaderPrograms'
   >;
@@ -161,7 +166,12 @@ export function buildWebGpuDescriptorPlan({
   const feedbackUsesShaderPrograms =
     post.shaderPrograms.warp !== null || post.shaderPrograms.comp !== null;
   const feedbackUsesPostEffects =
-    post.brighten || post.darken || post.solarize || post.invert;
+    post.brighten ||
+    post.darken ||
+    post.darkenCenter ||
+    post.solarize ||
+    post.invert ||
+    Math.abs(post.gammaAdj - DEFAULT_PROJECTM_GAMMA_ADJ) > POST_PASS_EPSILON;
   const feedbackUsesOverlayTexture =
     post.shaderControls.textureLayer.source !== 'none' &&
     (post.shaderControls.textureLayer.mode === 'replace' ||
