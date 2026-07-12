@@ -10,7 +10,7 @@ describe('render-service prewarm', () => {
     renderService.resetRendererPool({ dispose: true });
   });
 
-  test('prewarms renderer capabilities once and pins the live-visualizer fallback option', async () => {
+  test('prewarms renderer capabilities once and pins the automatic WebGPU preference', async () => {
     const getRendererCapabilities = mock(async () => ({
       preferredBackend: 'webgl' as const,
       adapter: null,

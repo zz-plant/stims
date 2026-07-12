@@ -150,7 +150,7 @@ describe('renderer capabilities', () => {
     expect(result.forceWebGL).toBe(true);
   });
 
-  test('can prefer WebGL for known live-visualizer compatibility gaps', async () => {
+  test('can prefer WebGL when automatic WebGPU is blocked for this session', async () => {
     const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
       device: { label: 'desktop-device' },
     });
@@ -166,12 +166,12 @@ describe('renderer capabilities', () => {
       result.preferredBackend === 'webgl' || result.preferredBackend === null,
     ).toBe(true);
     expect(result.fallbackReason).toContain(
-      'temporarily disabled for the live visualizer',
+      'not enabled automatically for this browser or session',
     );
     expect(result.forceWebGL).toBe(true);
   });
 
-  test('keeps cache entries distinct when the live-visualizer compatibility flag changes', async () => {
+  test('keeps cache entries distinct when the automatic WebGPU preference changes', async () => {
     const { requestAdapter, requestDevice } = mockNavigatorWithGPU({
       device: { label: 'desktop-device' },
     });
