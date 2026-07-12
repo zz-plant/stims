@@ -41,7 +41,9 @@ describe('launch shell skip-to-visualizer flow', () => {
     expect(appSource).toContain("data-mode={liveMode ? 'live' : 'home'}");
     expect(workspaceSource).toContain("data-mode={liveMode ? 'live' : 'home'}");
     expect(stageSource).toContain("data-mode={liveMode ? 'live' : 'home'}");
-    expect(homeSource).toContain("handleStartAudio('demo')");
+    expect(homeSource).toContain('setShowPlayback(true)');
+    expect(homeSource).toContain('Visualize YouTube');
+    expect(homeSource).not.toContain("handleStartAudio('demo')");
     expect(shellCss).toContain(
       '.stims-shell__stage-frame[data-mode="live"] .stims-shell__launch',
     );

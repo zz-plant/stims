@@ -21,7 +21,11 @@ export type ShortcutDefinition = {
 export const SHORTCUT_STORAGE_KEY = 'stims:keyboard-shortcuts:v1';
 
 export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
-  { id: 'audio', label: 'Demo audio / stop audio', defaultKeys: ['Space'] },
+  {
+    id: 'audio',
+    label: 'Playback choices / stop audio',
+    defaultKeys: ['Space'],
+  },
   { id: 'fullscreen', label: 'Fullscreen', defaultKeys: ['F'] },
   { id: 'browse', label: 'Browse panel', defaultKeys: ['B'] },
   { id: 'settings', label: 'Settings', defaultKeys: ['S'] },

@@ -10,6 +10,7 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 4. **WGSL codegen is scalar-only** — `wgsl-generator.ts` never vectorizes
 5. **No RenderBundle or OffscreenCanvas transfer** — capability detection exists but implementation is absent
 6. **Default-off posture limits real-world WebGPU testing** — compatibility gap guards keep most users on WebGL
+7. **Compiler IR is still too broad** — `compiler/ir.ts` still assembles field normalization, shader execution support, compatibility reports, and descriptor plans in one module
 
 ## Workstreams
 
@@ -95,11 +96,25 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 **Files**:
 - `assets/js/core/renderer-query-override.ts`
 
+### 7) Split Compiler Execution Contracts
+
+**Objective**: Make shader execution support explicit without spreading raw field checks across compiler and renderer modules.
+
+**Key changes**:
+- Keep direct shader execution classification in `compiler/shader-execution-classification.ts`
+- Move compatibility aggregation out of `compiler/ir.ts` into a narrow compiler compatibility module
+- Move descriptor-plan assembly inputs into a typed compiler output object so renderer planning does not re-derive compiler intent
+
+**Files**:
+- `assets/js/milkdrop/compiler/ir.ts`
+- `assets/js/milkdrop/compiler/shader-execution-classification.ts`
+- New follow-up: `assets/js/milkdrop/compiler/compatibility-report.ts`
+
 ## Sequencing
 
 | Milestone | Workstream(s) | Dependency |
 |---|---|---|
-| **A: Safe Wins** | 1 (Execution-plan centralization), 4 (Vectorize WGSL), 5 (RenderBundles) | None — additive |
+| **A: Safe Wins** | 1 (Execution-plan centralization), 4 (Vectorize WGSL), 5 (RenderBundles), 7 (Compiler execution contracts) | None — additive |
 | **B: Worker Completeness** | 3 (Worker WebGL fallback) | None — additive |
 | **C: Pipeline Unification** | 1 (Backend-native feedback), 2 (Single IR) | Matures together |
 | **D: Rollout** | 6 (Gradual enablement) | After C passes visual parity |
@@ -117,6 +132,7 @@ Each workstream ships behind a feature flag (optimization flag or URL param), al
 
 ## Current Status
 
-- `renderer-execution-plan.ts` centralizes WebGPU descriptor fallback and feedback-manager mode decisions for backend fallback, renderer core descriptor planning, and WebGPU adapter creation. Current WebGPU feedback mode is `none`; native WebGPU feedback remains a planned parity-gated follow-up.
+- `renderer-execution-plan.ts` centralizes WebGPU descriptor fallback and feedback-manager mode decisions for backend fallback, renderer core descriptor planning, and WebGPU adapter creation. It now also returns disabled features, status labels, and structured fallback reasons. Current WebGPU feedback mode is `none`; native WebGPU feedback remains a planned parity-gated follow-up behind `nativeWebGpuFeedbackEnabled`.
 - `feedback-render-targets.ts` owns the WebGL feedback render-target allocation details formerly embedded in `feedback-manager-shared.ts`.
+- `compiler/shader-execution-classification.ts` gives compiler and runtime code one vocabulary for backend-executable, control-fallback, and raw-preserved shader programs.
 - Remaining feedback work is to introduce a WebGPU target implementation behind the same factory boundary and reduce the GLSL/TSL composite duplication.

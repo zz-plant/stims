@@ -71,7 +71,18 @@ The MilkDrop runtime can now gate each WebGPU descriptor optimization independen
 
 When any flag is disabled and the runtime still starts on WebGPU, the overlay status includes a short `WebGPU rollout flags active: ...` message so test runs and manual QA can confirm which descriptor paths remain guarded.
 
-`assets/js/milkdrop/renderer-execution-plan.ts` is the runtime decision point for applying these flags to a compiled descriptor plan. The same plan result drives backend fallback checks, the effective descriptor plan stored by the renderer core, and the WebGPU adapter feedback-manager mode. Current WebGPU feedback mode is `none` on both safe and full paths until native feedback parity is stable.
+`assets/js/milkdrop/renderer-execution-plan.ts` is the runtime decision point for applying these flags to a compiled descriptor plan. The same plan result drives backend fallback checks, the effective descriptor plan stored by the renderer core, and the WebGPU adapter feedback-manager mode. The plan also exposes `disabledFeatures`, `statusLabels`, and structured fallback reasons such as `descriptor-feedback` so overlays, tests, and telemetry can report the same decision.
+
+Current WebGPU feedback mode is `none` on both safe and full paths until native feedback parity is stable. Native feedback has an explicit planner opt-in (`nativeWebGpuFeedbackEnabled`) for future rollout tests, but no production caller enables it yet.
+
+## Shader execution classification
+
+Direct shader payloads keep a separate execution classification in `assets/js/milkdrop/compiler/shader-execution-classification.ts`. Runtime consumers should use this helper instead of checking `supportedBackends`, `rawGlsl`, and `requiresControlFallback` directly. The current categories are:
+
+- `backend-executable`
+- `backend-executable-with-control-fallback`
+- `raw-preserved-fallback-required`
+- `control-fallback-required`
 
 ## Testing expectations
 

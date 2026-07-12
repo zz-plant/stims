@@ -43,7 +43,7 @@ export function AudioSourcePanel() {
     >
       <div className="stims-shell__source-heading">
         <h2 id={sourceHeadingId} className="stims-shell__section-label">
-          Use my music
+          YouTube playback
         </h2>
       </div>
       {!engineReady ? (
@@ -55,52 +55,6 @@ export function AudioSourcePanel() {
           Audio engine is starting. Sources will unlock in a moment.
         </p>
       ) : null}
-      <div className="stims-shell__source-grid">
-        <button
-          id="start-audio-btn"
-          type="button"
-          className="stims-shell__source-card"
-          disabled={!engineReady}
-          aria-describedby={!engineReady ? disabledDescription : undefined}
-          onClick={() => onAudioStart('microphone')}
-        >
-          <strong>Microphone</strong>
-          <span>Live mic input</span>
-        </button>
-        <button
-          type="button"
-          id="use-tab-audio"
-          className="stims-shell__source-card"
-          disabled={!engineReady}
-          aria-describedby={!engineReady ? disabledDescription : undefined}
-          onClick={() => onAudioStart('tab')}
-        >
-          <strong>This tab</strong>
-          <span>Audio from this browser tab</span>
-        </button>
-      </div>
-      <details className="stims-shell__settings-advanced">
-        <summary className="stims-shell__settings-summary">
-          <span>Audio help</span>
-          <span className="stims-shell__meta-copy">
-            Permissions and capture
-          </span>
-        </summary>
-        <div className="stims-shell__settings-advanced-body">
-          <p className="stims-shell__meta-copy">
-            Allow microphone access in site permissions. For tab audio, share
-            the current tab with audio enabled.
-          </p>
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            disabled={!engineReady}
-            onClick={() => onAudioStart('demo')}
-          >
-            Use demo audio instead
-          </button>
-        </div>
-      </details>
       <div className="stims-shell__youtube">
         <label className="stims-shell__field-label" htmlFor={youtubeInputId}>
           YouTube link
@@ -206,6 +160,44 @@ export function AudioSourcePanel() {
           <div id="workspace-youtube-player"></div>
         </div>
       </div>
+      <div className="stims-shell__source-grid">
+        <button
+          id="start-audio-btn"
+          type="button"
+          className="stims-shell__source-card"
+          disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => onAudioStart('microphone')}
+        >
+          <strong>Microphone</strong>
+          <span>Live mic input</span>
+        </button>
+        <button
+          type="button"
+          id="use-tab-audio"
+          className="stims-shell__source-card"
+          disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => onAudioStart('tab')}
+        >
+          <strong>This tab</strong>
+          <span>Audio from this browser tab</span>
+        </button>
+      </div>
+      <details className="stims-shell__settings-advanced">
+        <summary className="stims-shell__settings-summary">
+          <span>Audio help</span>
+          <span className="stims-shell__meta-copy">
+            Permissions and capture
+          </span>
+        </summary>
+        <div className="stims-shell__settings-advanced-body">
+          <p className="stims-shell__meta-copy">
+            Allow microphone access in site permissions. For tab audio and
+            YouTube, share the browser tab with audio enabled.
+          </p>
+        </div>
+      </details>
     </section>
   );
 }

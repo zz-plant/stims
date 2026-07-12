@@ -10,7 +10,10 @@ function frontendSource(file: string) {
 }
 
 function cssSource(file: string) {
-  return readFileSync(join(import.meta.dir, '..', 'assets', 'css', file), 'utf8');
+  return readFileSync(
+    join(import.meta.dir, '..', 'assets', 'css', file),
+    'utf8',
+  );
 }
 
 describe('minimal workspace surfaces', () => {
@@ -23,6 +26,9 @@ describe('minimal workspace surfaces', () => {
     expect(browse).not.toContain('Tap any card to load it on the stage.');
     expect(browse).not.toContain('Find similar to current look');
     expect(browse).not.toContain('Long-press cards to build');
+    expect(browse).not.toContain('formatPresetSupportNote');
+    expect(browse).not.toContain('stims-shell__preset-tech-badges');
+    expect(browse).toContain('sessionHistory.length > 0');
   });
 
   test('keeps audio source setup compact', () => {
@@ -42,7 +48,9 @@ describe('minimal workspace surfaces', () => {
     expect(settings).toContain('<strong>Stability mode</strong>');
     expect(settings).toContain('<strong>Motion control</strong>');
     expect(settings).not.toContain('Choose a specific quality profile');
-    expect(settings).not.toContain('Stability mode for older or unstable devices');
+    expect(settings).not.toContain(
+      'Stability mode for older or unstable devices',
+    );
     expect(settings).not.toContain(
       'Let phone or tablet movement affect visuals',
     );
@@ -54,7 +62,9 @@ describe('minimal workspace surfaces', () => {
     const mobile = frontendSource('MobileControlBar.tsx');
     const css = cssSource('app-shell.css');
 
-    expect(mobile).toContain(": ['browse', 'shuffle', 'favorite', 'settings'];");
+    expect(mobile).toContain(
+      ": ['browse', 'shuffle', 'favorite', 'settings'];",
+    );
     expect(dock).toContain('className="stims-shell__stage-dock"');
     expect(css).toMatch(
       /\.stims-shell__stage-tool-label\s*\{[\s\S]*?display:\s*none;/u,

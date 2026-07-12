@@ -14,7 +14,6 @@ export function useKeyboardShortcuts({
   handlePresetSelection,
   handleShufflePreset,
   handlePreviousPreset,
-  handleAudioStart,
   handleAudioStop,
   handleToggleFullscreen,
   setShowShortcuts,
@@ -27,7 +26,6 @@ export function useKeyboardShortcuts({
   handlePresetSelection: (presetId: string) => void;
   handleShufflePreset: () => void;
   handlePreviousPreset: () => void;
-  handleAudioStart: (source: 'demo') => Promise<void>;
   handleAudioStop: () => void;
   handleToggleFullscreen: () => void;
   setShowShortcuts: React.Dispatch<React.SetStateAction<boolean>>;
@@ -42,8 +40,6 @@ export function useKeyboardShortcuts({
   handleShufflePresetRef.current = handleShufflePreset;
   const handlePreviousPresetRef = useRef(handlePreviousPreset);
   handlePreviousPresetRef.current = handlePreviousPreset;
-  const handleAudioStartRef = useRef(handleAudioStart);
-  handleAudioStartRef.current = handleAudioStart;
   const handleAudioStopRef = useRef(handleAudioStop);
   handleAudioStopRef.current = handleAudioStop;
   const handleToggleFullscreenRef = useRef(handleToggleFullscreen);
@@ -69,7 +65,7 @@ export function useKeyboardShortcuts({
         if (liveMode) {
           handleAudioStopRef.current();
         } else if (engineReady) {
-          void handleAudioStartRef.current('demo');
+          updatePanelRef.current('settings');
         }
       } else if (eventMatchesShortcut(event, 'fullscreen', shortcutOverrides)) {
         event.preventDefault();

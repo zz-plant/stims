@@ -23,6 +23,7 @@ import type {
   buildFeatureAnalysis,
   HardUnsupportedFieldSpec,
 } from './parity';
+import { isMilkdropShaderProgramBackendExecutable } from './shader-execution-classification';
 
 export type PendingHardUnsupportedField = HardUnsupportedFieldSpec & {
   line: number;
@@ -663,15 +664,15 @@ export function createMilkdropIr({
   const webglCanExecuteDirect =
     hasDirectShaderPrograms &&
     (warpShaderProgram === null ||
-      warpShaderProgram.execution.supportedBackends.includes('webgl')) &&
+      isMilkdropShaderProgramBackendExecutable(warpShaderProgram, 'webgl')) &&
     (compShaderProgram === null ||
-      compShaderProgram.execution.supportedBackends.includes('webgl'));
+      isMilkdropShaderProgramBackendExecutable(compShaderProgram, 'webgl'));
   const webgpuCanExecuteDirect =
     hasDirectShaderPrograms &&
     (warpShaderProgram === null ||
-      warpShaderProgram.execution.supportedBackends.includes('webgpu')) &&
+      isMilkdropShaderProgramBackendExecutable(warpShaderProgram, 'webgpu')) &&
     (compShaderProgram === null ||
-      compShaderProgram.execution.supportedBackends.includes('webgpu'));
+      isMilkdropShaderProgramBackendExecutable(compShaderProgram, 'webgpu'));
   const shaderTextExecution: MilkdropFeatureAnalysis['shaderTextExecution'] =
     hasShaderText
       ? unsupportedShaderText

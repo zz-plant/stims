@@ -365,9 +365,7 @@ export function SettingsSheetPanel({
       <details className="stims-shell__settings-advanced">
         <summary className="stims-shell__settings-summary">
           <span>Compatibility & motion</span>
-          <span className="stims-shell__meta-copy">
-            Device fallbacks
-          </span>
+          <span className="stims-shell__meta-copy">Device fallbacks</span>
         </summary>
         <div className="stims-shell__settings-advanced-body">
           <label className="stims-shell__toggle-card">

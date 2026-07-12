@@ -142,7 +142,6 @@ function StimsWorkspaceAppShell() {
     handlePresetSelection: engine.handlePresetSelection,
     handleShufflePreset: engine.handleShufflePreset,
     handlePreviousPreset: engine.handlePreviousPreset,
-    handleAudioStart: engine.handleAudioStart,
     handleAudioStop: engine.handleAudioStop,
     handleToggleFullscreen,
     setShowShortcuts,
@@ -242,7 +241,7 @@ function StimsWorkspaceAppShell() {
       ) {
         quietDemoSuggestedRef.current = true;
         ui.setStatusMessage(
-          'Not seeing much movement? Try demo audio for a stronger signal.',
+          'Not seeing much movement? Check that the captured tab is sharing audio.',
         );
       }
     } else {
@@ -349,7 +348,7 @@ function StimsWorkspaceAppShell() {
         ? 'Start with the recommended preset, or browse the full list.'
         : engine.featuredPreset
           ? describePresetMood(engine.featuredPreset)
-          : 'Start demo audio, or browse presets first.';
+          : 'Start with YouTube, mic, tab audio, or browse presets first.';
 
   useEffect(() => {
     return connectWakeLock(() => {

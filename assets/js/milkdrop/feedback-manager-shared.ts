@@ -32,6 +32,7 @@ import {
   generateGlslFromShaderStatements,
   injectDirectShaderGlsl,
 } from './compiler/shader-analysis-glsl.ts';
+import { isMilkdropShaderProgramBackendExecutable } from './compiler/shader-execution-classification.ts';
 import {
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
@@ -1010,10 +1011,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     warp: MilkdropShaderProgramPayload | null,
     comp: MilkdropShaderProgramPayload | null,
   ) {
-    const executableWarp =
-      warp && warp.execution.supportedBackends.length > 0 ? warp : null;
-    const executableComp =
-      comp && comp.execution.supportedBackends.length > 0 ? comp : null;
+    const executableWarp = isMilkdropShaderProgramBackendExecutable(warp)
+      ? warp
+      : null;
+    const executableComp = isMilkdropShaderProgramBackendExecutable(comp)
+      ? comp
+      : null;
     const warpGlsl = executableWarp
       ? (executableWarp.rawGlsl ??
         generateGlslFromShaderStatements(executableWarp.statements, 'warp'))

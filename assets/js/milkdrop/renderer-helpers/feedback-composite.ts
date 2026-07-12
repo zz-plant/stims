@@ -1,3 +1,4 @@
+import { isMilkdropShaderProgramBackendExecutable } from '../compiler/shader-execution-classification.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropRenderPayload,
@@ -37,7 +38,8 @@ export function buildFeedbackCompositeState({
     warp:
       feedbackOptimizationEnabled &&
       allowDirectShaderPrograms &&
-      frameState.post.shaderPrograms.warp?.execution.supportedBackends.includes(
+      isMilkdropShaderProgramBackendExecutable(
+        frameState.post.shaderPrograms.warp,
         backend,
       )
         ? frameState.post.shaderPrograms.warp
@@ -45,7 +47,8 @@ export function buildFeedbackCompositeState({
     comp:
       feedbackOptimizationEnabled &&
       allowDirectShaderPrograms &&
-      frameState.post.shaderPrograms.comp?.execution.supportedBackends.includes(
+      isMilkdropShaderProgramBackendExecutable(
+        frameState.post.shaderPrograms.comp,
         backend,
       )
         ? frameState.post.shaderPrograms.comp

@@ -1,38 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { PresetArtwork } from './PresetArtwork.tsx';
-import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
+import { useWorkspace } from './workspace-context.tsx';
 import { describePresetMood } from './workspace-helpers.ts';
 
 export function NewHomePage() {
   const { ui, engine } = useWorkspace();
-  const { engineSnapshot } = useEngineSnapshot();
   const featuredPreset = engine.featuredPreset;
   const missingRequestedPreset = engine.missingRequestedPreset;
   const requestedPresetId = ui.routeState.presetId;
   const catalog = engine.catalog;
   const catalogError = engine.catalogError;
   const catalogReady = engine.catalogReady;
-
-  const [loadingAudio, setLoadingAudio] = useState(false);
-  const loadingAudioRef = useRef(false);
-
-  useEffect(() => {
-    if (engineSnapshot?.audioActive) setLoadingAudio(false);
-  }, [engineSnapshot?.audioActive]);
-
-  const handleStartAudio = useCallback(
-    (source: 'demo' | 'microphone' | 'tab') => {
-      if (loadingAudioRef.current) return;
-      loadingAudioRef.current = true;
-      setLoadingAudio(true);
-      void engine.handleAudioStart(source).finally(() => {
-        loadingAudioRef.current = false;
-        if (!engineSnapshot?.audioActive) setLoadingAudio(false);
-      });
-    },
-    [engine.handleAudioStart, engineSnapshot?.audioActive],
-  );
+  const [showPlayback, setShowPlayback] = useState(false);
 
   useEffect(() => {
     if (!catalogReady || catalog.length === 0) return;
@@ -73,8 +53,8 @@ export function NewHomePage() {
             <p className="stims-shell__eyebrow">Audio visualizer</p>
             <h1 id="stims-launch-title">Stims</h1>
             <p className="stims-shell__launch-summary">
-              Start instantly with demo audio, or connect your own sound when
-              you’re ready.
+              Paste a YouTube link, capture a tab, or connect live audio. Stims
+              visualizes music you choose.
             </p>
           </div>
           <div className="stims-shell__launch-stack">
@@ -83,16 +63,12 @@ export function NewHomePage() {
               aria-live="polite"
               aria-atomic="true"
             >
-              {loadingAudio ? (
-                <span className="sr-only">Starting audio input…</span>
-              ) : null}
               <button
                 type="button"
                 className="cta-button primary"
-                disabled={loadingAudio}
-                onClick={() => handleStartAudio('demo')}
+                onClick={() => setShowPlayback(true)}
               >
-                Play with demo audio
+                Visualize YouTube
               </button>
               <button
                 type="button"
@@ -101,11 +77,15 @@ export function NewHomePage() {
               >
                 Explore presets
               </button>
-              <details className="stims-shell__audio-setup-details">
+              <details
+                className="stims-shell__audio-setup-details"
+                open={showPlayback}
+                onToggle={(event) => setShowPlayback(event.currentTarget.open)}
+              >
                 <summary className="stims-shell__settings-summary">
-                  <span>Use my music</span>
+                  <span>YouTube playback</span>
                   <span className="stims-shell__meta-copy">
-                    Mic, tab, or YouTube
+                    Mic or tab alternatives
                   </span>
                 </summary>
                 <AudioSourcePanel />

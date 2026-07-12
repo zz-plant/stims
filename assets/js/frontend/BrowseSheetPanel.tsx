@@ -11,9 +11,7 @@ import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   buildAppliedFilterSummary,
   describePresetMood,
-  formatPresetSupportNote,
   getFeaturedCollectionTags,
-  getPresetCardSupportLabel,
   prettifyCollectionTag,
 } from './workspace-helpers.ts';
 
@@ -695,9 +693,7 @@ export function BrowseSheetPanel({
                 : void handleVisualSearch()
             }
           >
-            {visualSearchLoading
-              ? 'Searching\u2026'
-              : 'Similar'}
+            {visualSearchLoading ? 'Searching\u2026' : 'Similar'}
           </button>
         </nav>
         <div
@@ -749,32 +745,26 @@ export function BrowseSheetPanel({
         </div>
       </section>
 
-      {showActivitySections ? (
+      {showActivitySections && sessionHistory.length > 0 ? (
         <section className="stims-shell__sheet-surface">
           <div className="stims-shell__section-heading">
             <h2 className="stims-shell__section-label">Session history</h2>
           </div>
-          {sessionHistory.length > 0 ? (
-            <div className="stims-shell__chip-list">
-              {sessionHistory.slice(0, 10).map((item) => (
-                <button
-                  key={`${item.presetId}-${item.at}`}
-                  type="button"
-                  className="stims-shell__chip"
-                  onClick={() => engine.handlePresetSelection(item.presetId)}
-                >
-                  <span className="stims-shell__chip-copy">
-                    <strong>{item.title}</strong>
-                    <small>{new Date(item.at).toLocaleTimeString()}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="stims-shell__meta-copy">
-              Empty for now.
-            </p>
-          )}
+          <div className="stims-shell__chip-list">
+            {sessionHistory.slice(0, 10).map((item) => (
+              <button
+                key={`${item.presetId}-${item.at}`}
+                type="button"
+                className="stims-shell__chip"
+                onClick={() => engine.handlePresetSelection(item.presetId)}
+              >
+                <span className="stims-shell__chip-copy">
+                  <strong>{item.title}</strong>
+                  <small>{new Date(item.at).toLocaleTimeString()}</small>
+                </span>
+              </button>
+            ))}
+          </div>
         </section>
       ) : null}
 
@@ -883,9 +873,7 @@ export function BrowseSheetPanel({
         ) : null}
         {visualSearchActive ? (
           <div className="stims-shell__section-heading">
-            <p className="stims-shell__section-label">
-              Similar
-            </p>
+            <p className="stims-shell__section-label">Similar</p>
             <p className="stims-shell__meta-copy">
               {visualSearchResults.length} result
               {visualSearchResults.length === 1 ? '' : 's'}
@@ -930,9 +918,7 @@ export function BrowseSheetPanel({
         visualSearchResults.length === 0 ? (
           <div className="stims-shell__empty-state">
             <strong>No similar presets found</strong>
-            <p>
-              Try another visual moment or browse everything.
-            </p>
+            <p>Try another visual moment or browse everything.</p>
             <button
               type="button"
               className="cta-button primary"
@@ -997,7 +983,6 @@ export function BrowseSheetPanel({
                       </li>
                     );
                   }
-                  const supportLabel = getPresetCardSupportLabel(entry);
                   return (
                     <li key={r.presetId}>
                       <div className="stims-shell__preset-card-wrap">
@@ -1020,15 +1005,8 @@ export function BrowseSheetPanel({
                               {(r.score * 100).toFixed(0)}% similar ·{' '}
                               {describePresetMood(entry)}
                             </span>
-                            <span className="stims-shell__preset-meta-row">
-                              <span className="stims-shell__preset-meta">
-                                {entry.author || 'Unknown author'}
-                              </span>
-                              {supportLabel ? (
-                                <span className="stims-shell__preset-tech">
-                                  {supportLabel}
-                                </span>
-                              ) : null}
+                            <span className="stims-shell__preset-meta">
+                              {entry.author || 'Unknown author'}
                             </span>
                           </span>
                         </button>
@@ -1037,8 +1015,6 @@ export function BrowseSheetPanel({
                   );
                 })
               : visibleBrowseEntries.map((entry) => {
-                  const supportLabel = getPresetCardSupportLabel(entry);
-
                   return (
                     <li key={entry.id}>
                       <div className="stims-shell__preset-card-wrap">
@@ -1060,29 +1036,8 @@ export function BrowseSheetPanel({
                             <span className="stims-shell__preset-vibe">
                               {describePresetMood(entry)}
                             </span>
-                            <span className="stims-shell__preset-meta-row">
-                              <span className="stims-shell__preset-meta">
-                                {entry.author || 'Unknown author'}
-                              </span>
-                              {supportLabel ? (
-                                <span className="stims-shell__preset-tech">
-                                  {supportLabel}
-                                </span>
-                              ) : null}
-                            </span>
-                            <span className="stims-shell__preset-tech-badges">
-                              {entry.supports?.webgpu ? (
-                                <span className="tech-badge webgpu">
-                                  WebGPU
-                                </span>
-                              ) : null}
-                              {entry.supports?.webgl ? (
-                                <span className="tech-badge webgl">WebGL</span>
-                              ) : null}
-                              <span className="tech-badge audio">Audio</span>
-                            </span>
-                            <span className="stims-shell__meta-copy">
-                              {formatPresetSupportNote(entry)}
+                            <span className="stims-shell__preset-meta">
+                              {entry.author || 'Unknown author'}
                             </span>
                           </span>
                         </button>

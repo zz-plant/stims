@@ -340,11 +340,9 @@ export function useWorkspaceShellOrchestration({
   const handlePlayPreset = async (presetId: string) => {
     commitRoute({
       ...routeState,
-      audioSource: 'demo' as const,
       panel: null,
       presetId,
     });
-    await handleAudioStart('demo');
   };
 
   const handleAudioStart = async (
