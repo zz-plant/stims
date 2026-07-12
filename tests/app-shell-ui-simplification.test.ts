@@ -100,9 +100,7 @@ describe('Workspace shell UI simplification regression', () => {
     expect(helperSource).toContain(
       'Choose a quality preset, then adjust performance and motion options.',
     );
-    expect(homeSource).toContain(
-      'Start instantly with demo audio, or connect your own sound when',
-    );
+    expect(homeSource).toContain('Paste a YouTube link, capture a tab');
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain("? 'Now playing'");
     expect(appSource).not.toContain("'Demo is playing'");
@@ -113,14 +111,17 @@ describe('Workspace shell UI simplification regression', () => {
     expect(dockSource).toContain('className="stims-shell__stage-dock"');
     expect(homeSource).toContain('Recommended preset');
     expect(dockSource).toMatch(/>\s*Surprise me\s*</u);
-    expect(homeSource).toContain('Start instantly with demo audio');
+    expect(homeSource).toContain('Visualize YouTube');
+    expect(homeSource).not.toContain('Start instantly with demo audio');
+    expect(homeSource).not.toContain('Play with demo audio');
     expect(homeSource).not.toContain('See visuals now');
     expect(homeSource).not.toContain('Explore modes');
-    expect(audioSourcePanelSource).toContain('Use my music');
+    expect(audioSourcePanelSource).toContain('YouTube playback');
     expect(audioSourcePanelSource).toContain('Live mic input');
     expect(audioSourcePanelSource).toContain('Audio from this browser tab');
     expect(audioSourcePanelSource).toContain('YouTube link');
     expect(audioSourcePanelSource).toContain('Start capture');
+    expect(audioSourcePanelSource).not.toContain('Use demo audio instead');
     expect(uiSource).toContain('Switch to your music \\u2192');
     expect(uiSource).not.toContain('Demo audio is running.');
     expect(uiSource).not.toContain('Easy on demo audio');

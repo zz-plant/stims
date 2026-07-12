@@ -53,10 +53,10 @@ describe('Accessibility regression guards', () => {
     expect(presetRow).toContain("row.setAttribute('aria-current', 'true')");
   });
 
-  test('audio setup surface announces loading state', () => {
+  test('audio setup surface keeps source changes in a polite live region', () => {
     const home = readSource('frontend', 'NewHomePage.tsx');
 
     expect(home).toContain('aria-live="polite"');
-    expect(home).toContain('Starting audio input…');
+    expect(home).toContain('Visualize YouTube');
   });
 });

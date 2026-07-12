@@ -73,7 +73,31 @@ describe('milkdrop renderer execution plan', () => {
     expect(plan.webgpuPath).toBe('full');
     expect(plan.feedbackMode).toBe('none');
     expect(plan.effectiveWebGpuDescriptorPlan?.feedback).toBeNull();
+    expect(plan.disabledFeatures).toContainEqual({
+      feature: 'directFeedbackShaders',
+      reason: 'native-webgpu-feedback-disabled',
+    });
+    expect(plan.statusLabels).toContain('WebGPU native feedback disabled');
     expect(plan.shouldFallbackToWebgl).toBe(false);
+  });
+
+  test('enables native webgpu feedback only when the execution flag is explicitly enabled', () => {
+    const plan = resolveMilkdropRendererExecutionPlan({
+      backend: 'webgpu',
+      safeWebGpuPath: false,
+      nativeWebGpuFeedbackEnabled: true,
+      descriptorPlan: createDescriptorPlan(),
+      flags: flags(),
+      compatibilityMode: false,
+    });
+
+    expect(plan.feedbackMode).toBe('webgpu-native');
+    expect(plan.effectiveWebGpuDescriptorPlan?.feedback).toEqual(
+      expect.objectContaining({ shaderExecution: 'direct' }),
+    );
+    expect(plan.disabledFeatures).not.toContainEqual(
+      expect.objectContaining({ feature: 'directFeedbackShaders' }),
+    );
   });
 
   test('does not route feedback-only webgpu descriptor plans as executable while native feedback is disabled', () => {
@@ -108,7 +132,8 @@ describe('milkdrop renderer execution plan', () => {
 
     expect(plan.effectiveWebGpuDescriptorPlan?.routing).toBe('fallback-webgl');
     expect(plan.shouldFallbackToWebgl).toBe(true);
-    expect(plan.fallbackReason).toBe('descriptor-plan');
+    expect(plan.fallbackReason).toBe('descriptor-feedback');
+    expect(plan.statusLabels).toContain('WebGPU descriptor feedback fallback');
   });
 
   test('keeps descriptor fallback plans on webgpu when fallback gating is disabled', () => {
