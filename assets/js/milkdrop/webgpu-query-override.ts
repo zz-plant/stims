@@ -179,6 +179,9 @@ export function resolveMilkdropWebGpuFeatureRouting(
   const safeReason = safeMode
     ? `disabled by ${description.source} WebGPU safe path`
     : null;
+  const feedbackReason =
+    safeReason ??
+    'native WebGPU feedback remains disabled until ShaderMaterial and TSL composite parity is stable';
 
   return {
     proceduralMainWave: { enabled: !safeMode, reason: safeReason },
@@ -186,7 +189,7 @@ export function resolveMilkdropWebGpuFeatureRouting(
     proceduralCustomWaves: { enabled: !safeMode, reason: safeReason },
     proceduralMesh: { enabled: !safeMode, reason: safeReason },
     proceduralMotionVectors: { enabled: !safeMode, reason: safeReason },
-    directFeedbackShaders: { enabled: !safeMode, reason: safeReason },
+    directFeedbackShaders: { enabled: false, reason: feedbackReason },
     gpuComputeVM: { enabled: !safeMode, reason: safeReason },
     renderBundles: {
       enabled: !safeMode && description.source !== 'default',

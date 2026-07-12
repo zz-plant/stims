@@ -40,9 +40,13 @@ export function resolveMilkdropRendererExecutionPlan({
   flags?: MilkdropWebGpuOptimizationFlags;
   safeWebGpuPath?: boolean;
 }): MilkdropRendererExecutionPlan {
+  const feedbackMode: MilkdropFeedbackExecutionMode =
+    backend === 'webgl' ? 'webgl-shared' : 'none';
+  const effectiveFlags: MilkdropWebGpuOptimizationFlags =
+    backend === 'webgpu' ? { ...flags, directFeedbackShaders: false } : flags;
   const effectiveWebGpuDescriptorPlan =
     backend === 'webgpu' && descriptorPlan
-      ? applyMilkdropWebGpuOptimizationFlags(descriptorPlan, flags)
+      ? applyMilkdropWebGpuOptimizationFlags(descriptorPlan, effectiveFlags)
       : null;
   const shouldFallbackToWebgl =
     backend === 'webgpu' &&
@@ -53,7 +57,7 @@ export function resolveMilkdropRendererExecutionPlan({
     backend,
     webgpuPath:
       backend === 'webgpu' ? (safeWebGpuPath ? 'safe' : 'full') : null,
-    feedbackMode: backend === 'webgl' ? 'webgl-shared' : 'none',
+    feedbackMode,
     effectiveWebGpuDescriptorPlan,
     descriptorRouting: effectiveWebGpuDescriptorPlan?.routing ?? null,
     shouldFallbackToWebgl,
