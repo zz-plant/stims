@@ -146,13 +146,18 @@ export function StimsControlDock({
 
   const { visible, signalActivity } = useAutoHideActivity(3000, false);
   const [focusInsideDock, setFocusInsideDock] = useState(false);
+  const [pointerInsideDock, setPointerInsideDock] = useState(false);
   const similarResultsOpen =
     similarLoading ||
     similarError ||
     (similarSearched && similarPresets.length === 0) ||
     similarPresets.length > 0;
   const pauseAutoHide =
-    showMore || showMoods || similarResultsOpen || focusInsideDock;
+    showMore ||
+    showMoods ||
+    similarResultsOpen ||
+    focusInsideDock ||
+    pointerInsideDock;
   const dockVisible = visible || pauseAutoHide;
   const wasPausedRef = useRef(pauseAutoHide);
   const focusOutTimerRef = useRef<number | null>(null);
@@ -288,6 +293,14 @@ export function StimsControlDock({
       ref={dockWrapRef}
       className="stims-shell__stage-dock-wrap"
       data-visible={String(dockVisible)}
+      onPointerEnter={() => {
+        setPointerInsideDock(true);
+        signalActivity();
+      }}
+      onPointerLeave={() => {
+        setPointerInsideDock(false);
+        signalActivity();
+      }}
     >
       {runtimeReady && presetTitle ? (
         <div className="stims-shell__now-playing">

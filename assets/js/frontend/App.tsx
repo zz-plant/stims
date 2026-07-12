@@ -494,7 +494,7 @@ function StimsWorkspaceAppShell() {
             ? ['half', 'full']
             : ['compact', 'half', 'full']
         }
-        defaultSnapPoint={ui.routeState.panel === 'browse' ? 'half' : 'compact'}
+        defaultSnapPoint={ui.routeState.panel === 'browse' ? 'full' : 'compact'}
         tabs={
           ui.routeState.panel
             ? TOOL_TABS.filter(

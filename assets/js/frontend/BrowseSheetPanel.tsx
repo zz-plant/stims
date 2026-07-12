@@ -73,6 +73,19 @@ function sortPresetEntries(
   return sorted;
 }
 
+function findScrollableAncestor(element: HTMLElement | null) {
+  let parent = element?.parentElement ?? null;
+  while (parent) {
+    const style = window.getComputedStyle(parent);
+    const canScroll =
+      (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+      parent.scrollHeight > parent.clientHeight;
+    if (canScroll) return parent;
+    parent = parent.parentElement;
+  }
+  return null;
+}
+
 export function BrowseSheetPanel({
   onCollectionTagChange,
   onImport,
@@ -124,6 +137,7 @@ export function BrowseSheetPanel({
   const imageImportAbortRef = useRef<AbortController | null>(null);
   const communityAbortRef = useRef<AbortController | null>(null);
   const visualSearchAbortRef = useRef<AbortController | null>(null);
+  const resultsSectionRef = useRef<HTMLElement | null>(null);
   const [visibleCatalogState, setVisibleCatalogState] = useState({
     key: '',
     limit: BROWSE_RESULT_BATCH_SIZE,
@@ -290,6 +304,10 @@ export function BrowseSheetPanel({
 
   const showStarterPresets =
     searchQuery.trim().length === 0 && routeState.collectionTag === null;
+  const hasActiveBrowseFilter =
+    searchQuery.trim().length > 0 ||
+    routeState.collectionTag !== null ||
+    visualSearchActive;
   const showActivitySections = showStarterPresets;
   const featuredCollectionTags = getFeaturedCollectionTags(collectionTags);
   const hiddenCollectionTags = collectionTags.filter(
@@ -318,6 +336,16 @@ export function BrowseSheetPanel({
       : sortedBrowseEntries.slice(0, visibleCatalogLimit);
   const hiddenBrowseEntryCount =
     sortedBrowseEntries.length - visibleBrowseEntries.length;
+  const browseResultsScrollKey = hasActiveBrowseFilter
+    ? [
+        searchQuery.trim(),
+        routeState.collectionTag ?? '',
+        String(visualSearchActive),
+        String(visibleBrowseEntries.length),
+        String(visualSearchResults.length),
+        String(communityPresets.length),
+      ].join('::')
+    : '';
   const visiblePreviewIds = useMemo(() => {
     const seen = new Set<string>();
     const ids: string[] = [];
@@ -403,8 +431,36 @@ export function BrowseSheetPanel({
     }
   }, [usingHiddenCollectionFilter]);
 
+  useEffect(() => {
+    if (!browseResultsScrollKey) return;
+
+    const handle = setTimeout(() => {
+      const resultsSection = resultsSectionRef.current;
+      const scroller = findScrollableAncestor(resultsSection);
+      if (resultsSection && scroller) {
+        const sectionRect = resultsSection.getBoundingClientRect();
+        const scrollerRect = scroller.getBoundingClientRect();
+        scroller.scrollTo({
+          top: scroller.scrollTop + sectionRect.top - scrollerRect.top - 8,
+          behavior: 'smooth',
+        });
+        return;
+      }
+
+      resultsSection?.scrollIntoView({
+        block: 'start',
+        behavior: 'smooth',
+      });
+    }, 150);
+
+    return () => clearTimeout(handle);
+  }, [browseResultsScrollKey]);
+
   return (
-    <div className="stims-shell__sheet-panel stims-shell__sheet-panel--browse">
+    <div
+      className="stims-shell__sheet-panel stims-shell__sheet-panel--browse"
+      data-filter-active={String(hasActiveBrowseFilter)}
+    >
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
         <div className="stims-shell__browse-toolbar">
           <div className="stims-shell__browse-toolbar-copy">
@@ -751,7 +807,7 @@ export function BrowseSheetPanel({
         </section>
       ) : null}
 
-      <section className="stims-shell__sheet-surface">
+      <section ref={resultsSectionRef} className="stims-shell__sheet-surface">
         {!catalogReady && !catalogError ? (
           <ul
             className="stims-shell__preset-list"
