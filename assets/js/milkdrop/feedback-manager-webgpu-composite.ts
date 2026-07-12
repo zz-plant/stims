@@ -143,9 +143,17 @@ export function getSharedMilkdropTexturePlaceholder() {
   return sharedMilkdropTexturePlaceholder;
 }
 
-const sharedSimplex3DPlaceholder = (() => {
+const shared3DPlaceholderRed = (() => {
   const tex = new Data3DTexture(new Uint8Array([128]), 1, 1, 1);
   tex.format = RedFormat;
+  tex.type = UnsignedByteType;
+  tex.needsUpdate = true;
+  return tex;
+})();
+
+const shared3DPlaceholderRGBA = (() => {
+  const tex = new Data3DTexture(new Uint8Array([128, 128, 128, 255]), 1, 1, 1);
+  tex.format = RGBAFormat;
   tex.type = UnsignedByteType;
   tex.needsUpdate = true;
   return tex;
@@ -164,31 +172,33 @@ export function bindCustomMilkdropSamplerTexture(
   };
 }
 
-let sharedSimplex3dTexture: Data3DTexture | null = null;
-let sharedSimplexLoading: Promise<Data3DTexture> | null = null;
-
 function getSliceSize(tex: Texture): number {
   const grid = AUX_TEXTURE_ATLAS_GRID_SIZE;
   const img = tex.image as { width?: number; height?: number } | null;
   return Math.floor(Math.min(img?.width ?? 256, img?.height ?? 256) / grid);
 }
 
-function buildSimplexVolumeData(
+const shared3dTextureCache = new Map<string, Data3DTexture>();
+const shared3dLoadingCache = new Map<string, Promise<Data3DTexture>>();
+
+function buildAtlasVolumeData(
   source: HTMLImageElement | HTMLCanvasElement,
   width: number,
   height: number,
+  useRedChannel: boolean,
 ): Uint8Array {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return new Uint8Array(64 * 64 * 64);
-  ctx.drawImage(source, 0, 0);
-  const imageData = ctx.getImageData(0, 0, width, height);
   const grid = AUX_TEXTURE_ATLAS_GRID_SIZE;
   const sliceSize = Math.floor(width / grid);
-  const volumeSize = sliceSize * sliceSize * AUX_TEXTURE_ATLAS_SLICE_COUNT;
-  const volume = new Uint8Array(volumeSize);
+  const voxelCount = sliceSize * sliceSize * AUX_TEXTURE_ATLAS_SLICE_COUNT;
+  const channelCount = useRedChannel ? 1 : 4;
+  const volume = new Uint8Array(voxelCount * channelCount);
+  if (!ctx) return volume;
+  ctx.drawImage(source, 0, 0);
+  const imageData = ctx.getImageData(0, 0, width, height);
   for (let z = 0; z < AUX_TEXTURE_ATLAS_SLICE_COUNT; z++) {
     const gridY = Math.floor(z / grid);
     const gridX = z % grid;
@@ -196,54 +206,92 @@ function buildSimplexVolumeData(
       for (let x = 0; x < sliceSize; x++) {
         const srcIdx =
           ((gridY * sliceSize + y) * width + (gridX * sliceSize + x)) * 4;
-        const dstIdx = z * sliceSize * sliceSize + y * sliceSize + x;
-        volume[dstIdx] = imageData.data[srcIdx];
+        const dstIdx =
+          (z * sliceSize * sliceSize + y * sliceSize + x) * channelCount;
+        if (useRedChannel) {
+          volume[dstIdx] = imageData.data[srcIdx];
+        } else {
+          volume[dstIdx] = imageData.data[srcIdx];
+          volume[dstIdx + 1] = imageData.data[srcIdx + 1];
+          volume[dstIdx + 2] = imageData.data[srcIdx + 2];
+          volume[dstIdx + 3] = imageData.data[srcIdx + 3];
+        }
       }
     }
   }
   return volume;
 }
 
-export async function getSharedSimplex3dTexture(): Promise<Data3DTexture> {
-  if (sharedSimplex3dTexture) return sharedSimplex3dTexture;
-  if (sharedSimplexLoading) return sharedSimplexLoading;
+export async function getShared3dTexture(
+  fileName: string,
+  useRedChannel: boolean,
+  colorTexture: boolean,
+): Promise<Data3DTexture> {
+  const cacheKey = `${fileName}:${useRedChannel ? 'r' : 'rgba'}`;
+  const existing = shared3dTextureCache.get(cacheKey);
+  if (existing) return existing;
+  const loading = shared3dLoadingCache.get(cacheKey);
+  if (loading) return loading;
 
-  sharedSimplexLoading = new Promise<Data3DTexture>((resolve) => {
+  const promise = new Promise<Data3DTexture>((resolve) => {
     const loader = new TextureLoader();
-    const tex = loader.load(
-      resolveTextureUrl(MILKDROP_TEXTURE_FILES.simplex),
-      () => {
-        const img = tex.image as HTMLImageElement | HTMLCanvasElement | null;
-        if (!img) {
-          resolve(
-            getSharedMilkdropTexturePlaceholder() as unknown as Data3DTexture,
-          );
-          return;
-        }
-        const sliceSize = getSliceSize(tex);
-        const imgWidth = 'width' in img ? (img.width as number) : 256;
-        const imgHeight = 'height' in img ? (img.height as number) : 256;
-        const volumeData = buildSimplexVolumeData(img, imgWidth, imgHeight);
-        const volumeTex = new Data3DTexture(
-          volumeData,
-          sliceSize,
-          sliceSize,
-          AUX_TEXTURE_ATLAS_SLICE_COUNT,
+    const tex = loader.load(resolveTextureUrl(fileName), () => {
+      const img = tex.image as HTMLImageElement | HTMLCanvasElement | null;
+      if (!img) {
+        resolve(
+          (useRedChannel
+            ? shared3DPlaceholderRed
+            : shared3DPlaceholderRGBA) as Data3DTexture,
         );
-        volumeTex.format = RedFormat;
-        volumeTex.type = UnsignedByteType;
-        volumeTex.wrapS = RepeatWrapping;
-        volumeTex.wrapT = RepeatWrapping;
-        volumeTex.wrapR = RepeatWrapping;
-        volumeTex.minFilter = LinearFilter;
-        volumeTex.magFilter = LinearFilter;
-        volumeTex.needsUpdate = true;
-        sharedSimplex3dTexture = volumeTex;
-        resolve(volumeTex);
-      },
-    );
+        return;
+      }
+      const sliceSize = getSliceSize(tex);
+      const imgWidth = 'width' in img ? (img.width as number) : 256;
+      const imgHeight = 'height' in img ? (img.height as number) : 256;
+      const volumeData = buildAtlasVolumeData(
+        img,
+        imgWidth,
+        imgHeight,
+        useRedChannel,
+      );
+      const volumeTex = new Data3DTexture(
+        volumeData,
+        sliceSize,
+        sliceSize,
+        AUX_TEXTURE_ATLAS_SLICE_COUNT,
+      );
+      volumeTex.format = useRedChannel ? RedFormat : RGBAFormat;
+      volumeTex.type = UnsignedByteType;
+      volumeTex.wrapS = RepeatWrapping;
+      volumeTex.wrapT = RepeatWrapping;
+      volumeTex.wrapR = RepeatWrapping;
+      volumeTex.minFilter = LinearFilter;
+      volumeTex.magFilter = LinearFilter;
+      if (colorTexture) {
+        volumeTex.colorSpace = SRGBColorSpace;
+      }
+      volumeTex.needsUpdate = true;
+      shared3dTextureCache.set(cacheKey, volumeTex);
+      resolve(volumeTex);
+    });
   });
-  return sharedSimplexLoading;
+  shared3dLoadingCache.set(cacheKey, promise);
+  return promise;
+}
+
+export async function getSharedSimplex3dTexture(): Promise<Data3DTexture> {
+  return getShared3dTexture(MILKDROP_TEXTURE_FILES.simplex, true, false);
+}
+
+export function getShared3dAuxTexture(
+  name: AuxTextureName,
+): Promise<Data3DTexture> {
+  const spec = AUX_TEXTURE_SPECS[name];
+  return getShared3dTexture(
+    spec.fileName,
+    name === 'simplex',
+    spec.colorTexture,
+  );
 }
 
 export function getSharedMilkdropAuxTextures() {
@@ -348,15 +396,20 @@ export function createCompositeUniforms(
     noiseTex: texture(auxTextures.noise),
     perlinTex: texture(auxTextures.perlin),
     simplexTex: texture(auxTextures.simplex),
-    simplexTex3D: texture3D(
-      sharedSimplex3dTexture ?? sharedSimplex3DPlaceholder,
-    ),
     voronoiTex: texture(auxTextures.voronoi),
     auraTex: texture(auxTextures.aura),
     causticsTex: texture(auxTextures.caustics),
     patternTex: texture(auxTextures.pattern),
     fractalTex: texture(auxTextures.fractal),
     videoTex: texture(auxTextures.video),
+    noiseTex3D: texture3D(shared3DPlaceholderRGBA),
+    perlinTex3D: texture3D(shared3DPlaceholderRGBA),
+    simplexTex3D: texture3D(shared3DPlaceholderRed),
+    voronoiTex3D: texture3D(shared3DPlaceholderRGBA),
+    auraTex3D: texture3D(shared3DPlaceholderRGBA),
+    causticsTex3D: texture3D(shared3DPlaceholderRGBA),
+    patternTex3D: texture3D(shared3DPlaceholderRGBA),
+    fractalTex3D: texture3D(shared3DPlaceholderRGBA),
     mixAlpha: uniform(0.18),
     videoEchoAlpha: uniform(0),
     zoom: uniform(1.02),
@@ -468,7 +521,16 @@ export function createSampleAuxTextureNode(
   patternTexNode: ReturnType<typeof texture>,
   fractalTexNode: ReturnType<typeof texture>,
   videoTexNode: ReturnType<typeof texture>,
-  simplex3DTexNode: ReturnType<typeof texture3D>,
+  tex3DNodes: {
+    noise: ReturnType<typeof texture3D>;
+    simplex: ReturnType<typeof texture3D>;
+    voronoi: ReturnType<typeof texture3D>;
+    aura: ReturnType<typeof texture3D>;
+    caustics: ReturnType<typeof texture3D>;
+    pattern: ReturnType<typeof texture3D>;
+    fractal: ReturnType<typeof texture3D>;
+    perlin: ReturnType<typeof texture3D>;
+  },
 ) {
   const sampleAuxTexture2dNode = Fn(([source, sampleUv]: [any, any]) => {
     const flat = vec4(0.5, 0.5, 0.5, 1);
@@ -527,34 +589,78 @@ export function createSampleAuxTextureNode(
     return vec2(column, row).add(localUv).mul(tileScale);
   });
 
+  const atlasTrilinearSample = Fn(
+    ([source, sampleUv, sliceZ]: [any, any, any]) => {
+      const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
+      const wrappedSlice = fract(sliceZ);
+      const scaledSlice = wrappedSlice.mul(sliceCount);
+      const lowerSlice = floor(scaledSlice);
+      const upperSlice = lowerSlice
+        .add(1)
+        .sub(floor(lowerSlice.add(1).div(sliceCount)).mul(sliceCount));
+      const blend = fract(scaledSlice);
+      const lowerSample = sampleAuxTexture2dNode(
+        source,
+        atlasSliceUvNode(sampleUv, lowerSlice),
+      );
+      const upperSample = sampleAuxTexture2dNode(
+        source,
+        atlasSliceUvNode(sampleUv, upperSlice),
+      );
+      return mix(lowerSample, upperSample, blend);
+    },
+  );
+
   return Fn(
     ([source, sampleDimension, sampleUv, sliceZ]: [any, any, any, any]) => {
       const wrappedUv = fract(sampleUv);
+      const wrappedZ = fract(sliceZ);
+      const flat = vec4(0.5, 0.5, 0.5, 1);
+      const native3dSample = select(
+        source.lessThan(0.5),
+        flat,
+        select(
+          source.lessThan(1.5),
+          tex3DNodes.noise.sample(vec3(wrappedUv, wrappedZ)),
+          select(
+            source.lessThan(2.5),
+            tex3DNodes.simplex.sample(vec3(wrappedUv, wrappedZ)),
+            select(
+              source.lessThan(3.5),
+              tex3DNodes.voronoi.sample(vec3(wrappedUv, wrappedZ)),
+              select(
+                source.lessThan(4.5),
+                tex3DNodes.aura.sample(vec3(wrappedUv, wrappedZ)),
+                select(
+                  source.lessThan(5.5),
+                  tex3DNodes.caustics.sample(vec3(wrappedUv, wrappedZ)),
+                  select(
+                    source.lessThan(6.5),
+                    tex3DNodes.pattern.sample(vec3(wrappedUv, wrappedZ)),
+                    select(
+                      source.lessThan(7.5),
+                      tex3DNodes.fractal.sample(vec3(wrappedUv, wrappedZ)),
+                      select(
+                        source.lessThan(9.5),
+                        tex3DNodes.perlin.sample(vec3(wrappedUv, wrappedZ)),
+                        flat,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      const isVideo = source.greaterThanEqual(7.5).and(source.lessThan(8.5));
       return select(
         sampleDimension.lessThan(0.5),
         sampleAuxTexture2dNode(source, wrappedUv),
         select(
-          source.greaterThanEqual(1.5).and(source.lessThan(2.5)),
-          simplex3DTexNode.sample(vec3(wrappedUv, fract(sliceZ))),
-          (() => {
-            const sliceCount = float(AUX_TEXTURE_ATLAS_SLICE_COUNT);
-            const wrappedSlice = fract(sliceZ);
-            const scaledSlice = wrappedSlice.mul(sliceCount);
-            const lowerSlice = floor(scaledSlice);
-            const upperSlice = lowerSlice
-              .add(1)
-              .sub(floor(lowerSlice.add(1).div(sliceCount)).mul(sliceCount));
-            const blend = fract(scaledSlice);
-            const lowerSample = sampleAuxTexture2dNode(
-              source,
-              atlasSliceUvNode(wrappedUv, lowerSlice),
-            );
-            const upperSample = sampleAuxTexture2dNode(
-              source,
-              atlasSliceUvNode(wrappedUv, upperSlice),
-            );
-            return mix(lowerSample, upperSample, blend);
-          })(),
+          isVideo,
+          atlasTrilinearSample(source, wrappedUv, sliceZ),
+          native3dSample,
         ),
       );
     },

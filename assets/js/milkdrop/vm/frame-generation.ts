@@ -575,8 +575,6 @@ export function buildMainWaveFrame({
           x = x * w2 + w1 * (prevX * 2 - prevPrevX);
           y = y * w2 + w1 * (prevY * 2 - prevPrevY);
         }
-        x += momentum * 1.0;
-        y += derivative * 0.3;
         break;
       }
       case 5: {

@@ -249,15 +249,10 @@ export function createCompositeFragmentShaderVariant(
             );
           }`;
 
-  return source
-    .replace(
-      /if \(feedbackSoftness > 0\.01\) \{[\s\S]*?clamp\(feedbackSoftness \* 0\.45, 0\.0, 0\.5\)\s*\);\s*\}/,
-      blurBlock,
-    )
-    .replace(
-      /color = mix\(\s*current\.rgb,\s*previousColor,\s*clamp\(mixAlpha \+ feedbackTexture \* 0\.2, 0\.0, 1\.0\)\s*\);/,
-      `color = mix(current.rgb, previousColor, clamp(videoEchoAlpha, 0.0, 1.0));`,
-    );
+  return source.replace(
+    /if \(feedbackSoftness > 0\.01\) \{[\s\S]*?clamp\(feedbackSoftness \* 0\.45, 0\.0, 0\.5\)\s*\);\s*\}/,
+    blurBlock,
+  );
 }
 
 const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
@@ -276,10 +271,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D blur1Tex;
         uniform sampler2D blur2Tex;
         uniform sampler2D blur3Tex;
-        uniform float mixAlpha;
         uniform float videoEchoAlpha;
-        uniform float zoom;
-        uniform float videoEchoOrientation;
         uniform float brighten;
         uniform float darken;
         uniform float darkenCenter;
@@ -288,7 +280,6 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float redBlueStereo;
         uniform float gammaAdj;
         uniform float textureWrap;
-        uniform float feedbackTexture;
         uniform float warpScale;
         uniform float offsetX;
         uniform float offsetY;
@@ -466,15 +457,6 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
           return vec2(cos(angle), sin(angle)) * radius + 0.5;
         }
 
-        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
-          float flipU = step(0.5, mod(orientation, 2.0));
-          float flipV = step(1.5, mod(orientation, 4.0));
-          return vec2(
-            mix(uv.x, 1.0 - uv.x, flipU),
-            mix(uv.y, 1.0 - uv.y, flipV)
-          );
-        }
-
         // --- DIRECT_WARP_START ---
         // --- DIRECT_WARP_END ---
 
@@ -618,6 +600,152 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         }
       `;
 
+const MILKDROP_WARP_FRAGMENT_SHADER = `
+        uniform sampler2D previousTex;
+        uniform sampler2D noiseTex;
+        uniform sampler2D simplexTex;
+        uniform sampler2D voronoiTex;
+        uniform sampler2D auraTex;
+        uniform sampler2D causticsTex;
+        uniform sampler2D patternTex;
+        uniform sampler2D fractalTex;
+        uniform sampler2D videoTex;
+        uniform sampler2D perlinTex;
+        uniform float warpScale;
+        uniform float zoom;
+        uniform float zoomMul;
+        uniform float rotation;
+        uniform float offsetX;
+        uniform float offsetY;
+        uniform float textureWrap;
+        uniform float warpTextureSource;
+        uniform float warpTextureSampleDimension;
+        uniform float warpTextureAmount;
+        uniform vec2 warpTextureScale;
+        uniform vec2 warpTextureOffset;
+        uniform float warpTextureVolumeSliceZ;
+        uniform float hasDirectWarp;
+        uniform float signalTime;
+        uniform float videoEchoOrientation;
+        varying vec2 vUv;
+
+        float sq(float x) { return x * x; }
+        float cube(float x) { return x * x * x; }
+        float sigmoid(float x, float sharpness) { return 1.0 / (1.0 + exp(-x * sharpness)); }
+        float between(float val, float low, float high) { return step(low, val) * step(val, high); }
+        float above(float val, float threshold) { return step(threshold, val); }
+        float below(float val, float threshold) { return 1.0 - step(threshold, val); }
+        float equalF(float a, float b) { return 1.0 - step(0.0001, abs(a - b)); }
+        float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+        float noise(vec2 uv) { vec2 i = floor(uv); vec2 f = fract(uv); f = f*f*(3.0-2.0*f); return mix(mix(rand(i+vec2(0.0,0.0)), rand(i+vec2(1.0,0.0)), f.x), mix(rand(i+vec2(0.0,1.0)), rand(i+vec2(1.0,1.0)), f.x), f.y); }
+
+        vec2 sampleUv(vec2 uv, float wrap) {
+          return wrap > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+
+        vec4 sampleAuxTexture2d(float source, vec2 uv) {
+          if (source < 0.5) { return vec4(0.5, 0.5, 0.5, 1.0); }
+          if (source < 1.5) { return texture2D(noiseTex, uv); }
+          if (source < 2.5) { return texture2D(simplexTex, uv); }
+          if (source < 3.5) { return texture2D(voronoiTex, uv); }
+          if (source < 4.5) { return texture2D(auraTex, uv); }
+          if (source < 5.5) { return texture2D(causticsTex, uv); }
+          if (source < 6.5) { return texture2D(patternTex, uv); }
+          if (source < 7.5) { return texture2D(fractalTex, uv); }
+          if (source < 8.5) { return texture2D(videoTex, uv); }
+          if (source < 9.5) { return texture2D(perlinTex, uv); }
+          return vec4(0.5, 0.5, 0.5, 1.0);
+        }
+
+        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
+          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
+          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
+          vec2 tileSize = vec2(1.0 / gridSize);
+          float column = mod(sliceIndex, gridSize);
+          float row = floor(sliceIndex / gridSize);
+          return (vec2(column, row) + localUv) * tileSize;
+        }
+
+        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
+          vec2 wrappedUv = fract(uv);
+          if (sampleDimension < 0.5) { return sampleAuxTexture2d(source, wrappedUv); }
+          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
+          float wrappedSliceZ = fract(sliceZ);
+          float scaledSlice = wrappedSliceZ * sliceCount;
+          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
+          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
+          float sliceBlend = fract(scaledSlice);
+          float edgeMargin = 0.02;
+          if (sliceBlend < edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA)); }
+          if (sliceBlend > 1.0 - edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB)); }
+          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          return mix(sliceA, sliceB, sliceBlend);
+        }
+
+        vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
+          vec2 centered = uv - 0.5;
+          float cosR = cos(rot);
+          float sinR = sin(rot);
+          vec2 rotated = vec2(centered.x * cosR - centered.y * sinR, centered.x * sinR + centered.y * cosR);
+          float angle = atan(rotated.y, rotated.x);
+          float radius = length(rotated);
+          float power = 0.5 + sin(angle * 3.0) * 0.15;
+          radius = pow(radius, power - scale * 0.25);
+          float spiral = sin(radius * 18.0 - angle * 4.0) * scale * 0.08;
+          angle += spiral + rot * 0.22;
+          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * scale * 0.05;
+          return vec2(cos(angle), sin(angle)) * radius + 0.5;
+        }
+
+        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
+          float flipU = step(0.5, mod(orientation, 2.0));
+          float flipV = step(1.5, mod(orientation, 4.0));
+          return vec2(
+            mix(uv.x, 1.0 - uv.x, flipU),
+            mix(uv.y, 1.0 - uv.y, flipV)
+          );
+        }
+
+        // --- DIRECT_WARP_START ---
+        // --- DIRECT_WARP_END ---
+
+        void main() {
+          vec2 centeredUv = vUv - 0.5;
+          float rotSin = sin(rotation);
+          float rotCos = cos(rotation);
+          vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
+          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+
+          // --- DIRECT_WARP_START ---
+          // --- DIRECT_WARP_END ---
+
+          vec2 currentUv = hasDirectWarp > 0.5
+            ? transformedUv + 0.5
+            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          vec2 prevUv = hasDirectWarp > 0.5
+            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
+            : applyFeedbackWarp(
+                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
+                warpScale * 0.8,
+                rotation * 0.6
+              );
+          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
+            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
+            vec2 warpVector =
+              sampleAuxTexture(
+                warpTextureSource,
+                warpTextureSampleDimension,
+                warpUv,
+                warpTextureVolumeSliceZ
+              ).rg - 0.5;
+            prevUv += warpVector * warpTextureAmount * 0.08;
+          }
+          prevUv = applyVideoEchoOrientationTransform(prevUv, videoEchoOrientation);
+          gl_FragColor = texture2D(previousTex, sampleUv(prevUv, textureWrap));
+        }
+      `;
+
 class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
   readonly compositeScene = new Scene();
   readonly presentScene = new Scene();
@@ -742,7 +870,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.blurScene.add(this.blurQuad);
     this.warpMaterial = new ShaderMaterial({
       uniforms: {
-        currentTex: { value: this.sceneTarget.texture },
         previousTex: { value: this.targets[0].texture },
         noiseTex: { value: this.auxTextures.noise },
         simplexTex: { value: this.auxTextures.simplex },
@@ -777,178 +904,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
-      fragmentShader: `
-        uniform sampler2D currentTex;
-        uniform sampler2D previousTex;
-        uniform sampler2D noiseTex;
-        uniform sampler2D simplexTex;
-        uniform sampler2D voronoiTex;
-        uniform sampler2D auraTex;
-        uniform sampler2D causticsTex;
-        uniform sampler2D patternTex;
-        uniform sampler2D fractalTex;
-        uniform sampler2D videoTex;
-        uniform sampler2D perlinTex;
-        uniform float warpScale;
-        uniform float zoom;
-        uniform float zoomMul;
-        uniform float rotation;
-        uniform float offsetX;
-        uniform float offsetY;
-        uniform float textureWrap;
-        uniform float warpTextureSource;
-        uniform float warpTextureSampleDimension;
-        uniform float warpTextureAmount;
-        uniform vec2 warpTextureScale;
-        uniform vec2 warpTextureOffset;
-        uniform float warpTextureVolumeSliceZ;
-        uniform float hasDirectWarp;
-        uniform float signalTime;
-        uniform float videoEchoOrientation;
-        varying vec2 vUv;
-
-        float sq(float x) { return x * x; }
-        float cube(float x) { return x * x * x; }
-        float sigmoid(float x, float sharpness) { return 1.0 / (1.0 + exp(-x * sharpness)); }
-        float between(float val, float low, float high) { return step(low, val) * step(val, high); }
-        float above(float val, float threshold) { return step(threshold, val); }
-        float below(float val, float threshold) { return 1.0 - step(threshold, val); }
-        float equalF(float a, float b) { return 1.0 - step(0.0001, abs(a - b)); }
-        float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
-        float noise(vec2 uv) { vec2 i = floor(uv); vec2 f = fract(uv); f = f*f*(3.0-2.0*f); return mix(mix(rand(i+vec2(0.0,0.0)), rand(i+vec2(1.0,0.0)), f.x), mix(rand(i+vec2(0.0,1.0)), rand(i+vec2(1.0,1.0)), f.x), f.y); }
-
-        vec2 sampleUv(vec2 uv, float wrap) {
-          return wrap > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
-        }
-
-        vec4 sampleAuxTexture2d(float source, vec2 uv) {
-          if (source < 0.5) {
-            return vec4(0.5, 0.5, 0.5, 1.0);
-          }
-          if (source < 1.5) {
-            return texture2D(noiseTex, uv);
-          }
-          if (source < 2.5) {
-            return texture2D(simplexTex, uv);
-          }
-          if (source < 3.5) {
-            return texture2D(voronoiTex, uv);
-          }
-          if (source < 4.5) {
-            return texture2D(auraTex, uv);
-          }
-          if (source < 5.5) {
-            return texture2D(causticsTex, uv);
-          }
-          if (source < 6.5) {
-            return texture2D(patternTex, uv);
-          }
-          if (source < 7.5) {
-            return texture2D(fractalTex, uv);
-          }
-          if (source < 8.5) {
-            return texture2D(videoTex, uv);
-          }
-          if (source < 9.5) {
-            return texture2D(perlinTex, uv);
-          }
-          return vec4(0.5, 0.5, 0.5, 1.0);
-        }
-
-        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
-          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
-          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
-          vec2 tileSize = vec2(1.0 / gridSize);
-          float column = mod(sliceIndex, gridSize);
-          float row = floor(sliceIndex / gridSize);
-          return (vec2(column, row) + localUv) * tileSize;
-        }
-
-        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
-          vec2 wrappedUv = fract(uv);
-          if (sampleDimension < 0.5) {
-            return sampleAuxTexture2d(source, wrappedUv);
-          }
-          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
-          float wrappedSliceZ = fract(sliceZ);
-          float scaledSlice = wrappedSliceZ * sliceCount;
-          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
-          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
-          float sliceBlend = fract(scaledSlice);
-          float edgeMargin = 0.02;
-          if (sliceBlend < edgeMargin) {
-            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
-          }
-          if (sliceBlend > 1.0 - edgeMargin) {
-            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
-          }
-          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
-          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
-          return mix(sliceA, sliceB, sliceBlend);
-        }
-
-        vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
-          vec2 centered = uv - 0.5;
-          float cosR = cos(rot);
-          float sinR = sin(rot);
-          vec2 rotated = vec2(centered.x * cosR - centered.y * sinR, centered.x * sinR + centered.y * cosR);
-          float angle = atan(rotated.y, rotated.x);
-          float radius = length(rotated);
-          float power = 0.5 + sin(angle * 3.0) * 0.15;
-          radius = pow(radius, power - scale * 0.25);
-          float spiral = sin(radius * 18.0 - angle * 4.0) * scale * 0.08;
-          angle += spiral + rot * 0.22;
-          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * scale * 0.05;
-          return vec2(cos(angle), sin(angle)) * radius + 0.5;
-        }
-
-        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
-          float flipU = step(0.5, mod(orientation, 2.0));
-          float flipV = step(1.5, mod(orientation, 4.0));
-          return vec2(
-            mix(uv.x, 1.0 - uv.x, flipU),
-            mix(uv.y, 1.0 - uv.y, flipV)
-          );
-        }
-
-        // --- DIRECT_WARP_START ---
-        // --- DIRECT_WARP_END ---
-
-        void main() {
-          vec2 centeredUv = vUv - 0.5;
-          float rotSin = sin(rotation);
-          float rotCos = cos(rotation);
-          vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
-          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
-
-          // --- DIRECT_WARP_START ---
-          // --- DIRECT_WARP_END ---
-
-          vec2 currentUv = hasDirectWarp > 0.5
-            ? transformedUv + 0.5
-            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
-          vec2 prevUv = hasDirectWarp > 0.5
-            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
-            : applyFeedbackWarp(
-                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
-                warpScale * 0.8,
-                rotation * 0.6
-              );
-          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
-            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
-            vec2 warpVector =
-              sampleAuxTexture(
-                warpTextureSource,
-                warpTextureSampleDimension,
-                warpUv,
-                warpTextureVolumeSliceZ
-              ).rg - 0.5;
-            prevUv += warpVector * warpTextureAmount * 0.08;
-          }
-          prevUv = applyVideoEchoOrientationTransform(prevUv, videoEchoOrientation);
-          gl_FragColor = texture2D(previousTex, sampleUv(prevUv, textureWrap));
-        }
-      `,
+      fragmentShader: MILKDROP_WARP_FRAGMENT_SHADER,
     });
     this.warpScene = new Scene();
     this.warpScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.warpMaterial));
@@ -985,10 +941,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
-        mixAlpha: { value: 0.18 },
         videoEchoAlpha: { value: 0 },
-        zoom: { value: 1.02 },
-        videoEchoOrientation: { value: 0 },
         brighten: { value: 0 },
         darken: { value: 0 },
         darkenCenter: { value: 0 },
@@ -997,7 +950,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         redBlueStereo: { value: 0 },
         gammaAdj: { value: 1 },
         textureWrap: { value: 0 },
-        feedbackTexture: { value: 0 },
         warpScale: { value: 0 },
         offsetX: { value: 0 },
         offsetY: { value: 0 },
@@ -1112,7 +1064,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     // Rebuild warp shader with warp GLSL injected (or pass-through when null)
     const injectedWarp = injectDirectShaderGlsl(
-      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+      MILKDROP_WARP_FRAGMENT_SHADER,
       warpGlsl,
       null,
     );
@@ -1174,10 +1126,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     }
     uniforms.currentTex.value = this.sceneTarget.texture;
     uniforms.previousTex.value = this.readTarget.texture;
-    uniforms.mixAlpha.value = state.mixAlpha;
     uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
-    uniforms.zoom.value = state.zoom;
-    uniforms.videoEchoOrientation.value = state.videoEchoOrientation;
     uniforms.brighten.value = state.brighten;
     uniforms.darken.value = state.darken;
     uniforms.darkenCenter.value = state.darkenCenter;
@@ -1186,7 +1135,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.redBlueStereo.value = state.redBlueStereo ?? 0;
     uniforms.gammaAdj.value = state.gammaAdj;
     uniforms.textureWrap.value = state.textureWrap;
-    uniforms.feedbackTexture.value = state.feedbackTexture;
     uniforms.decay.value = state.decay;
     uniforms.warpScale.value = state.warpScale;
     uniforms.offsetX.value = state.offsetX;
@@ -1246,7 +1194,6 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
-    wu.currentTex.value = this.sceneTarget.texture;
     wu.previousTex.value = this.readTarget.texture;
     if (warpTextureName) {
       wu[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(

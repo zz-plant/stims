@@ -18,9 +18,9 @@ import {
   createSampleAuxTextureNode,
   createSampleUvNode,
   type FeedbackRendererLike,
+  getShared3dAuxTexture,
   getSharedMilkdropAuxTextures,
   getSharedMilkdropTexture,
-  getSharedSimplex3dTexture,
   hasOverlayBlendFeedback,
   hasOverlayReplaceFeedback,
   hasWarpTextureFeedback,
@@ -991,7 +991,16 @@ function createCompositeOutputNode(
     uniforms.patternTex,
     uniforms.fractTex,
     uniforms.videoTex,
-    uniforms.simplexTex3D,
+    {
+      noise: uniforms.noiseTex3D,
+      simplex: uniforms.simplexTex3D,
+      voronoi: uniforms.voronoiTex3D,
+      aura: uniforms.auraTex3D,
+      caustics: uniforms.causticsTex3D,
+      pattern: uniforms.patternTex3D,
+      fractal: uniforms.fractalTex3D,
+      perlin: uniforms.perlinTex3D,
+    },
   );
 
   return Fn(() => {
@@ -1327,11 +1336,16 @@ class WebGPUMilkdropFeedbackManager {
     this.viewportWidth = width;
     this.viewportHeight = height;
     this.auxTextures = getSharedMilkdropAuxTextures();
-    void getSharedSimplex3dTexture().then((simplexTexture) => {
-      if (this.compositeMaterial?.uniforms.simplexTex3D) {
-        this.compositeMaterial.uniforms.simplexTex3D.value = simplexTexture;
-      }
-    });
+    for (const name of Object.keys(MILKDROP_TEXTURE_FILES) as Array<
+      keyof typeof MILKDROP_TEXTURE_FILES
+    >) {
+      void getShared3dAuxTexture(name).then((tex3d) => {
+        const uniformKey = `${name}Tex3D`;
+        if (this.compositeMaterial?.uniforms[uniformKey]) {
+          this.compositeMaterial.uniforms[uniformKey].value = tex3d;
+        }
+      });
+    }
     this.sceneTarget = createFeedbackRenderTarget(
       width,
       height,
