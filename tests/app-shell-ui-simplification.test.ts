@@ -194,6 +194,12 @@ describe('Workspace shell UI simplification regression', () => {
     expect(shellCss).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse\[data-filter-active="true"\]\s*\.stims-shell__browse-toolbar[\s\S]*?display:\s*none;/u,
     );
+    expect(shellCss).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse\[data-filter-active="true"\]\s*\.stims-shell__preset-card\s*\{[\s\S]*?grid-template-columns:\s*64px minmax\(0,\s*1fr\);/u,
+    );
+    expect(shellCss).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse\[data-filter-active="true"\]\s*\.stims-shell__preset-tech-badges,[\s\S]*?\.stims-shell__meta-copy\s*\{[\s\S]*?display:\s*none;/u,
+    );
   });
 
   test('keeps live stage controls above the render canvas', () => {

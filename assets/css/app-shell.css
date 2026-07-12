@@ -3334,6 +3334,37 @@ body[data-page="workspace"] {
       gap: 8px;
     }
 
+    .stims-shell__sheet-panel--browse[data-filter-active="true"]
+      .stims-shell__preset-list {
+      gap: 8px;
+      max-height: none;
+    }
+
+    .stims-shell__sheet-panel--browse[data-filter-active="true"]
+      .stims-shell__preset-card {
+      grid-template-columns: 64px minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .stims-shell__sheet-panel--browse[data-filter-active="true"]
+      .stims-shell__preset-art {
+      min-height: 64px;
+      border-radius: 12px;
+    }
+
+    .stims-shell__sheet-panel--browse[data-filter-active="true"]
+      .stims-shell__preset-card-copy {
+      gap: 4px;
+    }
+
+    .stims-shell__sheet-panel--browse[data-filter-active="true"]
+      .stims-shell__preset-tech-badges,
+    .stims-shell__sheet-panel--browse[data-filter-active="true"]
+      .stims-shell__meta-copy {
+      display: none;
+    }
+
     .stims-shell__sheet {
       top: auto;
       right: 10px;
