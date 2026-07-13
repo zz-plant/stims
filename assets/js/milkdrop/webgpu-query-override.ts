@@ -8,7 +8,9 @@
  */
 
 import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
+import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts';
 import { isMobileDevice } from '../utils/device-detect.ts';
+import { resolveMilkdropWebGpuOptimizationFlags } from './webgpu-optimization-flags.ts';
 
 const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
@@ -115,7 +117,7 @@ function qualifiesForDefaultWebGPUPath(): boolean {
   if (isCompatibilityModeEnabled()) return false;
   if (isMobileDevice()) return false;
 
-  return true;
+  return isWebGPUStableInThisBrowser();
 }
 
 /**
@@ -172,6 +174,7 @@ export function resolveMilkdropWebGpuFeatureRouting(
 ): MilkdropWebGpuFeatureRouting {
   const description = getWebGpuPathDescription(location);
   const safeMode = description.mode === 'safe';
+  const rolloutFlags = resolveMilkdropWebGpuOptimizationFlags({ location });
   const safeReason = safeMode
     ? `disabled by ${description.source} WebGPU safe path`
     : null;
@@ -188,10 +191,10 @@ export function resolveMilkdropWebGpuFeatureRouting(
     directFeedbackShaders: { enabled: false, reason: feedbackReason },
     gpuComputeVM: { enabled: !safeMode, reason: safeReason },
     renderBundles: {
-      enabled: !safeMode && description.source !== 'default',
+      enabled: !safeMode && rolloutFlags.renderBundles,
       reason:
         safeReason ??
-        (description.source === 'default'
+        (!rolloutFlags.renderBundles
           ? 'render bundles remain opt-in until parity telemetry is stable'
           : null),
     },

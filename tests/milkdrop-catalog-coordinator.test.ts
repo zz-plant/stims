@@ -277,4 +277,31 @@ describe('milkdrop catalog coordinator', () => {
       { presetId: 'signal-bloom', backend: 'webgl' },
     ]);
   });
+
+  test('skips catalog change notifications for no-op partial patches', async () => {
+    let changeCalls = 0;
+    const coordinator = createMilkdropCatalogCoordinator({
+      catalogStore: {
+        async listPresets() {
+          return [createCatalogEntry('signal-bloom')];
+        },
+      } as never,
+      onCatalogChanged() {
+        changeCalls += 1;
+      },
+    });
+
+    await coordinator.syncCatalog({
+      activePresetId: 'signal-bloom',
+      activeBackend: 'webgl',
+    });
+    await coordinator.patchCatalogEntry({
+      id: 'signal-bloom',
+      activePresetId: 'signal-bloom',
+      activeBackend: 'webgl',
+      update: { isFavorite: false, rating: 0 },
+    });
+
+    expect(changeCalls).toBe(1);
+  });
 });

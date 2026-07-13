@@ -5,6 +5,38 @@ import type {
   MilkdropRenderBackend,
 } from '../types';
 
+const CATALOG_SORT_FIELDS = [
+  'isFavorite',
+  'historyIndex',
+  'lastOpenedAt',
+  'rating',
+  'curatedRank',
+  'title',
+] as const satisfies Array<keyof MilkdropCatalogEntry>;
+
+function areCatalogEntriesShallowEqual(
+  left: MilkdropCatalogEntry,
+  right: MilkdropCatalogEntry,
+) {
+  const keys = new Set<keyof MilkdropCatalogEntry>([
+    ...(Object.keys(left) as Array<keyof MilkdropCatalogEntry>),
+    ...(Object.keys(right) as Array<keyof MilkdropCatalogEntry>),
+  ]);
+  for (const key of keys) {
+    if (!Object.is(left[key], right[key])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function didCatalogSortFieldsChange(
+  left: MilkdropCatalogEntry,
+  right: MilkdropCatalogEntry,
+) {
+  return CATALOG_SORT_FIELDS.some((field) => !Object.is(left[field], right[field]));
+}
+
 export function createMilkdropCatalogCoordinator({
   catalogStore,
   onCatalogChanged,
@@ -52,7 +84,8 @@ export function createMilkdropCatalogCoordinator({
       | Partial<MilkdropCatalogEntry>
       | ((entry: MilkdropCatalogEntry) => MilkdropCatalogEntry);
   }) => {
-    const currentEntry = catalogEntries.find((entry) => entry.id === id);
+    const currentIndex = catalogEntries.findIndex((entry) => entry.id === id);
+    const currentEntry = catalogEntries[currentIndex];
     if (!currentEntry) {
       await syncCatalog({ activePresetId, activeBackend });
       return;
@@ -65,10 +98,15 @@ export function createMilkdropCatalogCoordinator({
     if (nextEntry === currentEntry) {
       return;
     }
+    if (areCatalogEntriesShallowEqual(currentEntry, nextEntry)) {
+      return;
+    }
 
-    catalogEntries = sortMilkdropCatalogEntries(
-      catalogEntries.map((entry) => (entry.id === id ? nextEntry : entry)),
-    );
+    const patchedEntries = catalogEntries.slice();
+    patchedEntries[currentIndex] = nextEntry;
+    catalogEntries = didCatalogSortFieldsChange(currentEntry, nextEntry)
+      ? sortMilkdropCatalogEntries(patchedEntries)
+      : patchedEntries;
     onCatalogChanged(catalogEntries, activePresetId, activeBackend);
   };
 

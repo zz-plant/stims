@@ -144,6 +144,46 @@ class MilkdropPresetVM implements MilkdropVM {
   private readonly shapeState: ShapeBuilderState = {
     customShapeLocals: [],
   };
+  private frameVariablesSnapshot: Record<string, number> | null = null;
+  private readonly frameCommonVars: Record<string, number | undefined> = {};
+  private readonly variablesProxy = new Proxy({} as Record<string, number>, {
+    get: (_target, prop) => {
+      if (typeof prop !== 'string') {
+        return undefined;
+      }
+      if (prop in this.frameCommonVars) {
+        return this.frameCommonVars[prop];
+      }
+      if (this.frameVariablesSnapshot === null) {
+        this.frameVariablesSnapshot = this.getStateSnapshot();
+      }
+      return this.frameVariablesSnapshot[prop];
+    },
+    has: (_target, prop) => {
+      if (typeof prop !== 'string') {
+        return false;
+      }
+      if (prop in this.frameCommonVars) {
+        return this.frameCommonVars[prop] !== undefined;
+      }
+      if (this.frameVariablesSnapshot === null) {
+        this.frameVariablesSnapshot = this.getStateSnapshot();
+      }
+      return prop in this.frameVariablesSnapshot;
+    },
+    ownKeys: () => {
+      if (this.frameVariablesSnapshot === null) {
+        this.frameVariablesSnapshot = this.getStateSnapshot();
+      }
+      return Reflect.ownKeys(this.frameVariablesSnapshot);
+    },
+    getOwnPropertyDescriptor: (_target, prop) => {
+      if (this.frameVariablesSnapshot === null) {
+        this.frameVariablesSnapshot = this.getStateSnapshot();
+      }
+      return Reflect.getOwnPropertyDescriptor(this.frameVariablesSnapshot, prop);
+    },
+  });
 
   constructor(
     preset: MilkdropCompiledPreset,
@@ -539,7 +579,7 @@ class MilkdropPresetVM implements MilkdropVM {
       this.gpuRunner.isInitialized()
     ) {
       const result = await this.gpuRunner.dispatch(signals);
-      this.state = { ...this.state, ...result.state };
+      Object.assign(this.state, result.state);
       this.randomState = result.randomState;
       this.prepareSignalEnv(signals);
     } else {
@@ -639,52 +679,11 @@ class MilkdropPresetVM implements MilkdropVM {
       createEnv: this.createFlatEnv.bind(this),
     });
 
-    let variablesSnapshot: Record<string, number> | null = null;
-    const commonVars: Record<string, number | undefined> = {
-      mv_r: this.state.mv_r,
-      mv_g: this.state.mv_g,
-      mv_b: this.state.mv_b,
-      mv_a: this.state.mv_a,
-    };
-
-    const variablesProxy = new Proxy({} as Record<string, number>, {
-      get: (_target, prop) => {
-        if (typeof prop !== 'string') {
-          return undefined;
-        }
-        if (prop in commonVars) {
-          return commonVars[prop];
-        }
-        if (variablesSnapshot === null) {
-          variablesSnapshot = this.getStateSnapshot();
-        }
-        return variablesSnapshot[prop];
-      },
-      has: (_target, prop) => {
-        if (typeof prop !== 'string') {
-          return false;
-        }
-        if (prop in commonVars) {
-          return commonVars[prop] !== undefined;
-        }
-        if (variablesSnapshot === null) {
-          variablesSnapshot = this.getStateSnapshot();
-        }
-        return prop in variablesSnapshot;
-      },
-      ownKeys: () => {
-        if (variablesSnapshot === null) {
-          variablesSnapshot = this.getStateSnapshot();
-        }
-        return Reflect.ownKeys(variablesSnapshot);
-      },
-      getOwnPropertyDescriptor: (_target, prop) => {
-        if (variablesSnapshot === null) {
-          variablesSnapshot = this.getStateSnapshot();
-        }
-        return Reflect.getOwnPropertyDescriptor(variablesSnapshot, prop);
-      },
-    });
+    this.frameVariablesSnapshot = null;
+    this.frameCommonVars.mv_r = this.state.mv_r;
+    this.frameCommonVars.mv_g = this.state.mv_g;
+    this.frameCommonVars.mv_b = this.state.mv_b;
+    this.frameCommonVars.mv_a = this.state.mv_a;
 
     const frameState: MilkdropFrameState = buildMilkdropFrameState({
       presetId: this.preset.source.id,
@@ -704,7 +703,7 @@ class MilkdropPresetVM implements MilkdropVM {
       motionVectors,
       post,
       signals,
-      variables: variablesProxy,
+      variables: this.variablesProxy,
       compatibility: this.preset.ir.compatibility,
       gpuGeometry,
     });

@@ -545,10 +545,14 @@ export class BrowsePanel {
 
   setPresetPreview(preview: MilkdropPresetRenderPreview) {
     this.previewStates.set(preview.presetId, preview);
-    this.browseDirty = true;
-    if (this.visible) {
-      this.render();
+    if (!this.visible) {
+      return;
     }
+    if (this.patchVisiblePreviewRow(preview)) {
+      return;
+    }
+    this.browseDirty = true;
+    this.render();
   }
 
   dispose() {
@@ -961,6 +965,40 @@ export class BrowsePanel {
 
     this.browseQaLabel.textContent = `Preview QA: ${parts.join(' · ')}`;
     this.browseQaLabel.hidden = parts.length === 0;
+  }
+
+  private patchVisiblePreviewRow(preview: MilkdropPresetRenderPreview) {
+    if (!this.displayedPresetIds.includes(preview.presetId)) {
+      return true;
+    }
+
+    const preset =
+      this.lastFilteredPresets.find((entry) => entry.id === preview.presetId) ??
+      this.presets.find((entry) => entry.id === preview.presetId);
+    if (!preset) {
+      return false;
+    }
+
+    const currentRow = [
+      ...this.browseList.querySelectorAll<HTMLElement>('[data-preset-id]'),
+    ].find((row) => row.dataset.presetId === preview.presetId);
+    if (!currentRow) {
+      return false;
+    }
+
+    const nextRow = this.rowRenderer.render({
+      preset,
+      activePresetId: this.activePresetId,
+      activeBackend: this.activeBackend,
+      preview,
+    });
+    if (nextRow !== currentRow) {
+      currentRow.parentElement?.replaceChild(nextRow, currentRow);
+    }
+    this.renderPreviewQaSummary(
+      this.getPreviewTargetIds(this.displayedPresetIds),
+    );
+    return true;
   }
 
   private requestPresetPreviews(presetIds: string[]) {

@@ -102,12 +102,7 @@ export function matchesPreset(entry: PresetCatalogEntry, query: string) {
     return true;
   }
 
-  const haystack = [entry.title, entry.author, entry.id, ...(entry.tags ?? [])]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  return haystack.includes(query.toLowerCase());
+  return getPresetSearchIndex(entry).includes(query.toLowerCase());
 }
 
 export function getCollectionTags(entries: PresetCatalogEntry[]) {
@@ -161,6 +156,18 @@ export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+}
+
+const presetSearchIndexCache = new WeakMap<PresetCatalogEntry, string>();
+
+function getPresetSearchIndex(entry: PresetCatalogEntry) {
+  const cached = presetSearchIndexCache.get(entry);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const searchIndex = buildPresetSearchIndex(entry);
+  presetSearchIndexCache.set(entry, searchIndex);
+  return searchIndex;
 }
 
 const moodCache = new Map<string, string>();

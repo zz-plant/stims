@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -12,7 +12,16 @@ export function NewHomePage() {
   const catalog = engine.catalog;
   const catalogError = engine.catalogError;
   const catalogReady = engine.catalogReady;
-  const [showPlayback, setShowPlayback] = useState(false);
+
+  const focusYouTubeInput = () => {
+    requestAnimationFrame(() => {
+      const youtubeInput = document.querySelector<HTMLInputElement>(
+        '[data-youtube-url-input="true"]',
+      );
+      youtubeInput?.focus();
+      youtubeInput?.select();
+    });
+  };
 
   useEffect(() => {
     if (!catalogReady || catalog.length === 0) return;
@@ -66,7 +75,7 @@ export function NewHomePage() {
               <button
                 type="button"
                 className="cta-button primary"
-                onClick={() => setShowPlayback(true)}
+                onClick={focusYouTubeInput}
               >
                 Visualize YouTube
               </button>
@@ -77,19 +86,12 @@ export function NewHomePage() {
               >
                 Explore presets
               </button>
-              <details
-                className="stims-shell__audio-setup-details"
-                open={showPlayback}
-                onToggle={(event) => setShowPlayback(event.currentTarget.open)}
+              <div
+                className="stims-shell__launch-source-dock"
+                aria-label="Audio source choices"
               >
-                <summary className="stims-shell__settings-summary">
-                  <span>YouTube playback</span>
-                  <span className="stims-shell__meta-copy">
-                    Mic or tab alternatives
-                  </span>
-                </summary>
                 <AudioSourcePanel />
-              </details>
+              </div>
             </div>
           </div>
         </div>

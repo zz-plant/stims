@@ -363,6 +363,7 @@ function buildPresetRow({
 }) {
   const row = document.createElement('div');
   row.className = 'milkdrop-overlay__preset';
+  row.dataset.presetId = preset.id;
   const isActive = preset.id === activePresetId;
   row.dataset.active = String(isActive);
   row.dataset.previewStatus = preview?.status ?? 'queued';

@@ -55,7 +55,7 @@ export function AudioSourcePanel() {
           Audio engine is starting. Sources will unlock in a moment.
         </p>
       ) : null}
-      <div className="stims-shell__youtube">
+      <div className="stims-shell__youtube stims-shell__youtube-primary">
         <label className="stims-shell__field-label" htmlFor={youtubeInputId}>
           YouTube link
         </label>
@@ -68,6 +68,7 @@ export function AudioSourcePanel() {
             autoComplete="off"
             inputMode="url"
             spellCheck={false}
+            data-youtube-url-input="true"
             aria-describedby={
               !engineReady
                 ? `${youtubeFeedbackId} ${disabledDescription}`
@@ -115,22 +116,14 @@ export function AudioSourcePanel() {
         </p>
         {recentYouTubeVideos.length > 0 ? (
           <div className="stims-shell__youtube-recent">
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 8,
-              }}
-            >
-              <p className="stims-shell__field-label" style={{ margin: 0 }}>
+            <div className="stims-shell__youtube-recent-header">
+              <p className="stims-shell__field-label">
                 Recent videos
               </p>
               <button
                 type="button"
-                className="stims-shell__clear-filters"
+                className="stims-shell__clear-filters stims-shell__clear-filters--compact"
                 onClick={engine.clearRecentYouTubeVideos}
-                style={{ fontSize: '0.75rem', opacity: 0.6 }}
               >
                 Clear history
               </button>
@@ -169,6 +162,7 @@ export function AudioSourcePanel() {
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('microphone')}
         >
+          <span className="stims-shell__source-card-kicker">Live source</span>
           <strong>Microphone</strong>
           <span>Live mic input</span>
         </button>
@@ -180,6 +174,9 @@ export function AudioSourcePanel() {
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('tab')}
         >
+          <span className="stims-shell__source-card-kicker">
+            Browser audio
+          </span>
           <strong>This tab</strong>
           <span>Audio from this browser tab</span>
         </button>

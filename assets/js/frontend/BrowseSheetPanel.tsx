@@ -155,6 +155,10 @@ export function BrowseSheetPanel({
   const routeState = ui.routeState;
   const searchQuery = ui.searchQuery;
   const starterPresets = engine.starterPresets;
+  const catalogEntryById = useMemo(
+    () => new Map(catalog.map((entry) => [entry.id, entry] as const)),
+    [catalog],
+  );
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [communityPresets, setCommunityPresets] = useState<
@@ -355,7 +359,7 @@ export function BrowseSheetPanel({
     setVisualSearchResults([]);
   };
   const handleQueuePreset = (presetId: string) => {
-    const entry = catalog.find((preset) => preset.id === presetId);
+    const entry = catalogEntryById.get(presetId);
     if (!entry) return;
     ui.presetQueue.add(entry.id);
     ui.setStatusMessage(`${entry.title} added to queue.`);
@@ -389,10 +393,9 @@ export function BrowseSheetPanel({
     routeState.collectionTag === 'collection:community'
       ? communityPresets
       : filteredCatalog;
-  const sortedBrowseEntries = sortPresetEntries(
-    browseEntries,
-    sortMode,
-    randomSeed,
+  const sortedBrowseEntries = useMemo(
+    () => sortPresetEntries(browseEntries, sortMode, randomSeed),
+    [browseEntries, sortMode, randomSeed],
   );
   const visibleBrowseEntries =
     routeState.collectionTag === 'collection:community'
@@ -958,9 +961,7 @@ export function BrowseSheetPanel({
           <ul className="stims-shell__preset-list">
             {visualSearchActive
               ? visualSearchResults.map((r) => {
-                  const entry = catalog.find(
-                    (preset) => preset.id === r.presetId,
-                  );
+                  const entry = catalogEntryById.get(r.presetId);
                   if (!entry) {
                     return (
                       <li key={r.presetId}>
