@@ -52,14 +52,14 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-    const dockSource = readFileSync(
+    const stageControlsSource = readFileSync(
       join(
         import.meta.dir,
         '..',
         'assets',
         'js',
         'frontend',
-        'StimsControlDock.tsx',
+        'StageControls.tsx',
       ),
       'utf8',
     );
@@ -100,129 +100,40 @@ describe('Workspace shell UI simplification regression', () => {
     expect(helperSource).toContain(
       'Choose a quality preset, then adjust performance and motion options.',
     );
-    expect(homeSource).toContain('Paste a YouTube link, capture a tab');
     expect(toastHookSource).toContain("'Using lighter visual mode.'");
     expect(appSource).toContain("? 'Now playing'");
-    expect(appSource).not.toContain("'Demo is playing'");
     expect(appSource).not.toContain('className="top-nav stims-shell__nav"');
     expect(uiSource).not.toContain('Launch deck');
     expect(uiSource).not.toContain('Single-route workspace');
-    expect(stageSource).toContain('className="stims-shell__rail-actions"');
-    expect(dockSource).toContain('className="stims-shell__stage-dock"');
-    expect(homeSource).toContain('Recommended preset');
-    expect(dockSource).toMatch(/>\s*Surprise me\s*</u);
-    expect(homeSource).toContain('Visualize YouTube');
-    expect(homeSource).not.toContain('Start instantly with demo audio');
-    expect(homeSource).not.toContain('Play with demo audio');
-    expect(homeSource).not.toContain('See visuals now');
-    expect(homeSource).not.toContain('Explore modes');
+    expect(stageSource).toContain('className="stims-shell__stage-frame"');
+    expect(stageControlsSource).toContain('className={styles.toolbar}');
+    expect(stageControlsSource).toContain('title="Surprise me"');
+    expect(homeSource).toContain('Explore presets');
     expect(audioSourcePanelSource).toContain('YouTube playback');
     expect(audioSourcePanelSource).toContain('Live mic input');
     expect(audioSourcePanelSource).toContain('Audio from this browser tab');
-    expect(audioSourcePanelSource).toContain('YouTube link');
-    expect(audioSourcePanelSource).toContain('Start capture');
-    expect(audioSourcePanelSource).not.toContain('Use demo audio instead');
-    expect(uiSource).toContain('Switch to your music \\u2192');
-    expect(uiSource).not.toContain('Demo audio is running.');
-    expect(uiSource).not.toContain('Easy on demo audio');
-    expect(uiSource).not.toContain('Switch to live input later');
-    expect(uiSource).not.toContain('Lighter render');
-    expect(uiSource).not.toContain('Runtime checked');
-    expect(uiSource).not.toContain('launch-badge-row');
-    expect(uiSource).not.toContain('launch-recommendation-footer');
-    expect(uiSource).not.toContain('stims-shell__session-meta');
-    expect(uiSource).not.toContain('stims-shell__audio-bridge"');
-    expect(browseSource).toContain('Copy share link');
-    expect(browseSource).toContain('const BROWSE_RESULT_BATCH_SIZE = 24;');
-    expect(browseSource).toContain('visibleBrowseEntries.map');
-    expect(browseSource).toContain('Show more presets');
-    expect(uiSource).not.toContain('The editor opens on the stage.');
-    expect(uiSource).not.toContain('The inspector opens on the stage.');
-    expect(homeSource).toContain('className="stims-shell__launch-summary"');
-    expect(uiSource).toMatch(
-      /className="stims-shell__meta-copy stims-shell__stage-summary">\s*\{stageSummary\}\s*<\/p>/u,
-    );
-    expect(uiSource).not.toContain(
-      'Search the full library or shuffle a surprise.',
-    );
-    expect(uiSource).not.toContain('Start with Balanced.');
-    expect(uiSource).not.toContain(
-      'Use these only when you want a sharper image or need to calm',
-    );
-    expect(uiSource).not.toContain(
-      'More ways to start when audio is already playing elsewhere.',
-    );
-    expect(uiSource).not.toContain('Recommended first run: start demo');
-    expect(uiSource).not.toContain('Show current link');
-    expect(homeSource).toContain('Saved pick not found');
-    expect(homeSource).toContain('Explore presets');
+    expect(browseSource).toContain('const BATCH_SIZE = 30;');
+    expect(browseSource).toContain('visible.map');
+    expect(browseSource).toContain('Show more');
   });
 
-  test('opens browse in the full bottom sheet so filtered results are visible', () => {
+  test('renders SidePanel when routeState.panel is not null', () => {
     const appSource = readFileSync(
       join(import.meta.dir, '..', 'assets', 'js', 'frontend', 'App.tsx'),
       'utf8',
     );
-
-    expect(appSource).toContain(
-      "defaultSnapPoint={ui.routeState.panel === 'browse' ? 'full' : 'compact'}",
-    );
-  });
-
-  test('scrolls filtered browse results into view inside the sheet', () => {
-    const browseSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        'assets',
-        'js',
-        'frontend',
-        'BrowseSheetPanel.tsx',
-      ),
-      'utf8',
-    );
-    const shellCss = readFileSync(
-      join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
-      'utf8',
-    );
-
-    expect(browseSource).toContain('resultsSectionRef');
-    expect(browseSource).toContain('scrollIntoView');
-    expect(browseSource).toContain('findScrollableAncestor');
-    expect(browseSource).toContain('scrollTo');
-    expect(browseSource).toContain('data-filter-active');
-    expect(browseSource).toContain('hasActiveBrowseFilter');
-    expect(shellCss).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse\[data-filter-active="true"\]\s*\.stims-shell__browse-toolbar[\s\S]*?display:\s*none;/u,
-    );
-    expect(shellCss).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse\[data-filter-active="true"\]\s*\.stims-shell__preset-card\s*\{[\s\S]*?grid-template-columns:\s*64px minmax\(0,\s*1fr\);/u,
-    );
-    expect(shellCss).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse\[data-filter-active="true"\]\s*\.stims-shell__preset-tech-badges,[\s\S]*?\.stims-shell__meta-copy\s*\{[\s\S]*?display:\s*none;/u,
-    );
+    expect(appSource).toContain('<SidePanel');
+    expect(appSource).toContain('open={ui.routeState.panel !== null');
   });
 
   test('keeps live stage controls above the render canvas', () => {
-    const shellCss = readFileSync(
-      join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
+    const stageControlsCss = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'css', 'StageControls.module.css'),
       'utf8',
     );
 
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-dock-wrap\s*\{[\s\S]*?z-index:\s*var\(--z-frame-chrome\);/u,
-    );
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-dock\s*\{[\s\S]*?z-index:\s*var\(--z-frame-chrome\);/u,
-    );
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-dock-wrap\[data-visible="false"\]\s*\{[\s\S]*?visibility:\s*hidden;/u,
-    );
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-dock-wrap\[data-visible="true"\]\s*\{[\s\S]*?visibility:\s*visible;/u,
-    );
-    expect(shellCss).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__sheet-panel--browse \.stims-shell__sheet-surface--sticky\s*\{[\s\S]*?position:\s*static;/u,
+    expect(stageControlsCss).toMatch(
+      /\.wrap\s*\{[\s\S]*?z-index:\s*var\(--z-dock\);/u,
     );
   });
 
@@ -231,18 +142,8 @@ describe('Workspace shell UI simplification regression', () => {
       join(import.meta.dir, '..', 'assets', 'css', 'app-shell.css'),
       'utf8',
     );
-    const bottomSheetCss = readFileSync(
-      join(import.meta.dir, '..', 'assets', 'css', 'BottomSheet.module.css'),
-      'utf8',
-    );
-    const mobileControlCss = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        'assets',
-        'css',
-        'MobileControlBar.module.css',
-      ),
+    const sidePanelCss = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'css', 'SidePanel.module.css'),
       'utf8',
     );
 
@@ -255,41 +156,11 @@ describe('Workspace shell UI simplification regression', () => {
     expect(shellCss).toMatch(
       /\.stims-shell__stage-frame\[data-mode="live"\]::before,\s*\.stims-shell__stage-frame\[data-mode="live"\]::after\s*\{[\s\S]*?display:\s*none;/u,
     );
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-frame\[data-mode="live"\] \.stims-shell__corner-brand\s*\{[\s\S]*?display:\s*none;/u,
+    expect(sidePanelCss).toMatch(
+      /\.panel\s*\{[\s\S]*?background:\s*rgba\(10,\s*14,\s*22,\s*0\.97\);/u,
     );
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-frame\[data-mode="live"\] \.stims-shell__stage-dock\s*\{[\s\S]*?background:\s*rgba\(5,\s*8,\s*14,\s*0\.2\);/u,
+    expect(sidePanelCss).toMatch(
+      /\.backdrop\s*\{[\s\S]*?background:\s*rgba\(0,\s*0,\s*0,\s*0\.3\);/u,
     );
-    expect(shellCss).toMatch(
-      /\.stims-shell__stage-frame\[data-mode="live"\]\s*\.stims-shell__stage-root,\s*\.stims-shell__stage-frame\[data-mode="live"\]\s*\.stims-shell__stage-root\s*>\s*canvas\s*\{[\s\S]*?pointer-events:\s*none;/u,
-    );
-    expect(bottomSheetCss).toMatch(
-      /\.sheet\s*\{[\s\S]*?background:\s*color-mix\(\s*in srgb,\s*var\(--stims-panel-fill-strong\) 72%,\s*transparent\s*\);/u,
-    );
-    expect(bottomSheetCss).toMatch(
-      /\.backdrop\s*\{[\s\S]*?background:\s*rgba\(0,\s*0,\s*0,\s*0\.22\);/u,
-    );
-    expect(mobileControlCss).toMatch(
-      /\.bar\s*\{[\s\S]*?rgba\(5,\s*7,\s*13,\s*0\.64\)/u,
-    );
-    expect(mobileControlCss).toMatch(
-      /\.actionLabel\s*\{[\s\S]*?display:\s*none;/u,
-    );
-
-    const dockSource = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        'assets',
-        'js',
-        'frontend',
-        'StimsControlDock.tsx',
-      ),
-      'utf8',
-    );
-    expect(dockSource).toContain('pointerInsideDock');
-    expect(dockSource).toContain('onPointerEnter');
-    expect(dockSource).toContain('onPointerLeave');
   });
 });

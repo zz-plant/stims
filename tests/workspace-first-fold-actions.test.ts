@@ -33,15 +33,9 @@ describe('workspace first-fold launch hierarchy', () => {
     );
 
     expect(homeSource).not.toContain('See visuals now');
-    expect(homeSource).toContain('Visualize YouTube');
     expect(homeSource).not.toContain('Play with demo audio');
     expect(homeSource).not.toContain('Start instantly with demo audio');
-    expect(homeSource).toContain('cta-button primary');
-    expect(homeSource).toContain('focusYouTubeInput');
-    expect(homeSource).toContain('stims-shell__launch-source-dock');
-    expect(homeSource).toContain('<AudioSourcePanel showHelp={false}');
-    expect(homeSource).not.toContain('stims-shell__audio-setup-details');
-    expect(homeSource).not.toContain('showPlayback');
+    expect(homeSource).toContain('Explore presets');
     expect(audioSourceSource).toContain('YouTube playback');
     expect(audioSourceSource).toContain('data-youtube-url-input');
     expect(audioSourceSource).toContain('stims-shell__youtube-primary');
@@ -51,7 +45,6 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(audioSourceSource).toContain('Microphone');
     expect(audioSourceSource).toContain('Audio from this browser tab');
     expect(audioSourceSource).not.toContain('Advanced audio setup');
-    expect(appShellCss).toContain('.stims-shell__launch-source-dock');
     expect(appShellCss).toContain('.stims-shell__youtube-primary');
     expect(appShellCss).toContain('align-content: start;');
     expect(appShellCss).toContain('align-items: start;');

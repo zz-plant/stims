@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import {
   FallbackState,
+  FallbackEvent,
+  FallbackStateMachine,
   getInvalidTransitionMessage,
   isValidTransition,
   transition,
@@ -270,3 +272,63 @@ describe('renderer-types', () => {
     expect(doubled).toBe(1 as RenderScale);
   });
 });
+
+describe('FallbackStateMachine class', () => {
+  test('initializes with default state', () => {
+    const fsm = new FallbackStateMachine();
+    expect(fsm.getState()).toBe(FallbackState.Initial);
+  });
+
+  test('initializes with custom state', () => {
+    const fsm = new FallbackStateMachine(FallbackState.RendererReady);
+    expect(fsm.getState()).toBe(FallbackState.RendererReady);
+  });
+
+  test('valid transition updates state and returns it', () => {
+    const fsm = new FallbackStateMachine();
+    const next = fsm.transition(FallbackEvent.CHECK_WEBGL);
+    expect(next).toBe(FallbackState.ProbingWebgl);
+    expect(fsm.getState()).toBe(FallbackState.ProbingWebgl);
+  });
+
+  test('invalid transition throws error with reason', () => {
+    const fsm = new FallbackStateMachine();
+    expect(() => fsm.transition(FallbackEvent.INIT_AUDIO)).toThrow(
+      /Invalid fallback state transition from initial via event INIT_AUDIO: Audio requires a renderer for the Three.js AudioListener/
+    );
+  });
+
+  test('notifies listeners on transition', () => {
+    const fsm = new FallbackStateMachine();
+    let called = false;
+    let statePassed: FallbackState | null = null;
+    let eventPassed: FallbackEvent | null = null;
+
+    fsm.onTransition((state, event) => {
+      called = true;
+      statePassed = state;
+      eventPassed = event;
+    });
+
+    fsm.transition(FallbackEvent.CHECK_WEBGL);
+    expect(called).toBe(true);
+    expect(statePassed as unknown as FallbackState).toBe(FallbackState.ProbingWebgl);
+    expect(eventPassed as unknown as FallbackEvent).toBe(FallbackEvent.CHECK_WEBGL);
+  });
+
+  test('unsubscribing listeners works', () => {
+    const fsm = new FallbackStateMachine();
+    let count = 0;
+    const unsubscribe = fsm.onTransition(() => {
+      count++;
+    });
+
+    fsm.transition(FallbackEvent.CHECK_WEBGL);
+    expect(count).toBe(1);
+
+    unsubscribe();
+    fsm.transition(FallbackEvent.START_PROBE_WEBGPU);
+    expect(count).toBe(1);
+  });
+});
+

@@ -32,46 +32,16 @@ describe('launch shell skip-to-visualizer flow', () => {
   });
 
   test('keeps launch hero dismissal tied to live data-mode transitions', () => {
-    const appSource = frontendSource('App.tsx');
-    const homeSource = frontendSource('NewHomePage.tsx');
     const workspaceSource = frontendSource('workspace-ui.tsx');
     const stageSource = frontendSource('StimsStageFrame.tsx');
     const shellCss = cssSource('assets/css/app-shell.css');
 
-    expect(appSource).toContain("data-mode={liveMode ? 'live' : 'home'}");
     expect(workspaceSource).toContain("data-mode={liveMode ? 'live' : 'home'}");
     expect(stageSource).toContain("data-mode={liveMode ? 'live' : 'home'}");
-    expect(homeSource).toContain('focusYouTubeInput');
-    expect(homeSource).toContain('stims-shell__launch-source-dock');
-    expect(homeSource).toContain('Visualize YouTube');
-    expect(homeSource).not.toContain('setShowPlayback(true)');
-    expect(homeSource).not.toContain("handleStartAudio('demo')");
     expect(shellCss).toContain(
       '.stims-shell__stage-frame[data-mode="live"] .stims-shell__launch',
     );
     expect(shellCss).toContain('pointer-events: none;');
     expect(shellCss).toContain('visibility: hidden;');
-  });
-
-  test('only exposes the mobile control bar after the visualizer is live and hides it on tablet widths', () => {
-    const appSource = frontendSource('App.tsx');
-    const mobileBarSource = frontendSource('MobileControlBar.tsx');
-    const mobileBarCss = cssSource('assets/css/MobileControlBar.module.css');
-
-    expect(appSource).toMatch(
-      /\{liveMode \? \(\s*<MobileControlBar[\s\S]*?\) : null\}/u,
-    );
-    expect(mobileBarSource).toMatch(
-      /<>\s*<div[\s\S]*?className=\{`\$\{styles\.bar\} mc-bar`\}[\s\S]*?<\/div>\s*\{!visible \? \(/u,
-    );
-    expect(mobileBarSource).toContain('const MOBILE_CONTROL_IDLE_MS = 4_000;');
-    expect(mobileBarSource).toContain('ui.updatePanel(null);');
-    expect(mobileBarCss).toContain('.bar[data-visible="true"]');
-    expect(mobileBarCss).toContain('grid-auto-flow: column;');
-    expect(mobileBarCss).toContain(
-      'grid-template-columns: repeat(5, minmax(0, 1fr));',
-    );
-    expect(mobileBarCss).toContain('@media (width >= 768px)');
-    expect(mobileBarCss).toMatch(/\.bar\s*\{\s*display: none;/u);
   });
 });

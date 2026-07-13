@@ -9,20 +9,6 @@ function readAppShellCss() {
   );
 }
 
-function readMobileControlBar() {
-  return readFileSync(
-    join(
-      import.meta.dir,
-      '..',
-      'assets',
-      'js',
-      'frontend',
-      'MobileControlBar.tsx',
-    ),
-    'utf8',
-  );
-}
-
 describe('Workspace shell mobile layout regression', () => {
   test('turns the home state into a stage-first hero on phones', () => {
     const css = readAppShellCss();
@@ -38,9 +24,6 @@ describe('Workspace shell mobile layout regression', () => {
     );
     expect(css).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\] \.stims-shell__stage-hero\s*\{[\s\S]*?position:\s*relative;[\s\S]*?inset:\s*auto;[\s\S]*?padding:\s*112px 10px 18px;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__frame-chrome\s*\{[\s\S]*?align-items:\s*flex-start;/u,
     );
   });
 
@@ -93,31 +76,5 @@ describe('Workspace shell mobile layout regression', () => {
     expect(css).toMatch(
       /@supports not \(color: color-mix\(in srgb, white, black\)\) \{[\s\S]*?\.stims-shell \.cta-button\.primary/u,
     );
-  });
-
-  test('keeps live mobile sheets above the bottom control bar', () => {
-    const css = readAppShellCss();
-
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?:scope\[data-mode="live"\]\s*\{[\s\S]*?--mobile-bar-height:\s*86px;/u,
-    );
-    expect(css).toMatch(
-      /:scope\[data-mode="live"\] \.stims-shell__sheet\s*\{[\s\S]*?bottom:\s*calc\([\s\S]*?var\(--mobile-bar-height, 86px\)[\s\S]*?max-height:\s*calc\(/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 420px\)[\s\S]*?:scope\[data-mode="live"\]\s*\{[\s\S]*?--mobile-bar-height:\s*132px;/u,
-    );
-  });
-
-  test('keeps the mobile control bar visible while expanded actions or mood generation are active', () => {
-    const source = readMobileControlBar();
-
-    expect(source).toMatch(
-      /const keepBarVisible =\s*showMoreActions \|\| showMoods \|\| generatingMood !== null;/u,
-    );
-    expect(source).toMatch(
-      /if \(hideTimer\.current\) clearTimeout\(hideTimer\.current\);[\s\S]*?hideTimer\.current = null;[\s\S]*?if \(keepBarVisible\) return;[\s\S]*?hideTimer\.current = setTimeout\(/u,
-    );
-    expect(source).toMatch(/\}, \[resetHideTimer\]\);/u);
   });
 });

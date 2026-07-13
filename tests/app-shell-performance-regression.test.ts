@@ -273,15 +273,19 @@ describe('Workspace performance regressions', () => {
       ),
       'utf8',
     );
-
-    expect(browsePanelSource).toContain('const catalogEntryById = useMemo');
-    expect(browsePanelSource).toContain('catalogEntryById.get(r.presetId)');
-    expect(browsePanelSource).not.toContain(
-      'const entry = catalog.find(\n                    (preset) => preset.id === r.presetId,\n                  );',
+    const sidePanelSource = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'js', 'frontend', 'SidePanel.tsx'),
+      'utf8',
     );
-    expect(browsePanelSource).toContain('const sortedBrowseEntries = useMemo');
+
+    expect(sidePanelSource).toContain('const catalogEntryById = useMemo');
+    expect(sidePanelSource).toContain('catalogEntryById.get(r.presetId)');
+    expect(sidePanelSource).not.toContain(
+      'engine.catalog.find((e) => e.id === r.presetId)',
+    );
+    expect(browsePanelSource).toContain('const sorted = useMemo');
     expect(browsePanelSource).toContain(
-      'sortPresetEntries(browseEntries, sortMode, randomSeed)',
+      'sortEntries(browseEntries, sortMode, randomSeed)',
     );
   });
 

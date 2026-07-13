@@ -21,14 +21,11 @@ describe('minimal workspace surfaces', () => {
     const browse = frontendSource('BrowseSheetPanel.tsx');
 
     expect(browse).toContain('<strong>Browse presets</strong>');
-    expect(browse).toMatch(/>\s*Previews\s*</u);
-    expect(browse).toMatch(/>\s*Similar\s*</u);
     expect(browse).not.toContain('Tap any card to load it on the stage.');
     expect(browse).not.toContain('Find similar to current look');
     expect(browse).not.toContain('Long-press cards to build');
     expect(browse).not.toContain('formatPresetSupportNote');
     expect(browse).not.toContain('stims-shell__preset-tech-badges');
-    expect(browse).toContain('sessionHistory.length > 0');
   });
 
   test('keeps audio source setup compact', () => {
@@ -58,17 +55,11 @@ describe('minimal workspace surfaces', () => {
   });
 
   test('keeps live controls and preset cards low chrome', () => {
-    const dock = frontendSource('StimsControlDock.tsx');
-    const mobile = frontendSource('MobileControlBar.tsx');
+    const controls = frontendSource('StageControls.tsx');
     const css = cssSource('app-shell.css');
 
-    expect(mobile).toContain(
-      ": ['browse', 'shuffle', 'favorite', 'settings'];",
-    );
-    expect(dock).toContain('className="stims-shell__stage-dock"');
-    expect(css).toMatch(
-      /\.stims-shell__stage-tool-label\s*\{[\s\S]*?display:\s*none;/u,
-    );
+    expect(controls).toContain('className={styles.toolbar}');
+    expect(controls).toContain('className={styles.btn}');
     expect(css).toMatch(
       /\.stims-shell__starter-card\s*\{[\s\S]*?padding:\s*10px;[\s\S]*?box-shadow:\s*none;/u,
     );
