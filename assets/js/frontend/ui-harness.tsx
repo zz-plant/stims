@@ -45,7 +45,6 @@ function MockWorkspaceStagePanel(overrides: Record<string, unknown>) {
       }
       liveMode={false}
       onToggleFullscreen={() => {}}
-      onToggleTheme={() => {}}
       stageEyebrow="Ready when you are"
       stageSummary="Featured pick"
       stageTitle="Eos Glowsticks"

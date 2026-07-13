@@ -17,35 +17,27 @@ import { setCompatibilityMode } from '../core/state/render-preference-store.ts';
 import {
   applyTheme,
   getActiveThemePreference,
-  setThemePreference,
 } from '../core/theme-preferences.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
-import { BottomSheet } from './BottomSheet.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
 import { useAudioEnergy } from './hooks/useAudioEnergy';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { useMediaQuery } from './hooks/useMediaQuery';
 import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
-import { MobileControlBar } from './MobileControlBar.tsx';
 import { NewHomePage } from './NewHomePage.tsx';
 import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
+import { SidePanel } from './SidePanel.tsx';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   useEngineSnapshot,
   useWorkspace,
   WorkspaceProvider,
 } from './workspace-context.tsx';
-import {
-  describePresetMood,
-  getToolDescription,
-  getToolLabel,
-  TOOL_TABS,
-} from './workspace-helpers.ts';
+import { describePresetMood, getToolLabel } from './workspace-helpers.ts';
 import {
   BROWSE_PANEL_FOCUS_SELECTOR,
   WorkspaceStagePanel,
@@ -68,7 +60,6 @@ const SettingsSheetPanel = lazy(() =>
 function StimsWorkspaceAppShell() {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
-  const isWideEnough = useMediaQuery('(min-width: 1024px)');
   const temporalMemory = useTemporalMemory();
 
   const audioEnergy = useAudioEnergy();
@@ -441,13 +432,6 @@ function StimsWorkspaceAppShell() {
     if (el) el.hidden = true;
   }, []);
 
-  const handleToggleTheme = useCallback(() => {
-    const current = getActiveThemePreference();
-    const next = current.theme === 'dark' ? 'light' : 'dark';
-    setThemePreference({ theme: next });
-    applyTheme(next);
-  }, []);
-
   const stageAnchoredToolOpen = ui.routeState.panel === 'editor';
 
   return (
@@ -472,7 +456,6 @@ function StimsWorkspaceAppShell() {
         launchPanel={<NewHomePage />}
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
-        onToggleTheme={handleToggleTheme}
         stageEyebrow={stageEyebrow}
         stageSummary={stageSummary}
         stageTitle={stageTitle}
@@ -480,35 +463,10 @@ function StimsWorkspaceAppShell() {
 
       <RendererFallbackBadge />
 
-      <BottomSheet
+      <SidePanel
         open={ui.routeState.panel !== null}
         onClose={() => ui.updatePanel(null)}
         title={getToolLabel(ui.routeState.panel ?? 'browse')}
-        description={getToolDescription(ui.routeState.panel ?? 'browse')}
-        position={
-          isWideEnough && ui.routeState.panel !== 'browse' ? 'right' : 'bottom'
-        }
-        withBackdrop={!stageAnchoredToolOpen}
-        snapPoints={
-          ui.routeState.panel === 'browse'
-            ? ['half', 'full']
-            : ['compact', 'half', 'full']
-        }
-        defaultSnapPoint={ui.routeState.panel === 'browse' ? 'full' : 'compact'}
-        tabs={
-          ui.routeState.panel
-            ? TOOL_TABS.filter(
-                (t) =>
-                  t !== 'inspector' &&
-                  (ui.routeState.panel === 'editor' || t !== 'editor'),
-              ).map((tool) => ({
-                id: tool,
-                label: getToolLabel(tool),
-                active: ui.routeState.panel === tool,
-                onSelect: () => ui.updatePanel(tool),
-              }))
-            : undefined
-        }
         onOpen={() => {
           if (ui.routeState.panel === 'browse') {
             const el = document.querySelector<HTMLElement>(
@@ -550,7 +508,7 @@ function StimsWorkspaceAppShell() {
             />
           ) : null}
         </Suspense>
-      </BottomSheet>
+      </SidePanel>
 
       {offline ? (
         <div className="stims-shell__mobile-notice" role="status">
@@ -587,23 +545,6 @@ function StimsWorkspaceAppShell() {
 
       <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
 
-      {liveMode ? (
-        <MobileControlBar
-          audioEnergy={audioEnergy}
-          presetTitle={
-            engine.selectedPreset?.title ?? engine.featuredPreset?.title ?? ''
-          }
-          presetAuthor={
-            engine.selectedPreset?.author ?? engine.featuredPreset?.author ?? ''
-          }
-          isFullscreen={isFullscreen}
-          onToggleFullscreen={handleToggleFullscreen}
-          onToggleTheme={handleToggleTheme}
-          thumbMode={thumbMode}
-          partyRemoteMode={partyRemoteMode}
-          hapticsEnabled={hapticsEnabled}
-        />
-      ) : null}
       <AudioMatchToast
         match={audioMatch}
         onSelect={engine.handlePresetSelection}

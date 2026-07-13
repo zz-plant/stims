@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
-import { StimsControlDock } from './StimsControlDock.tsx';
+import { StageControls } from './StageControls.tsx';
 
 import {
   StimsCornerBrand,
@@ -28,7 +28,6 @@ export function WorkspaceStagePanel({
   launchPanel,
   liveMode,
   onToggleFullscreen,
-  onToggleTheme,
   stageEyebrow,
   stageSummary,
   stageTitle,
@@ -37,7 +36,6 @@ export function WorkspaceStagePanel({
   launchPanel: ReactNode;
   liveMode: boolean;
   onToggleFullscreen: () => void;
-  onToggleTheme: () => void;
   stageEyebrow: string;
   stageSummary: string;
   stageTitle: string;
@@ -71,10 +69,9 @@ export function WorkspaceStagePanel({
           </StimsCornerBrand>
           <StimsRailActions>
             {!missingRequestedPreset ? (
-              <StimsControlDock
+              <StageControls
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={onToggleFullscreen}
-                onToggleTheme={onToggleTheme}
               />
             ) : null}
           </StimsRailActions>
