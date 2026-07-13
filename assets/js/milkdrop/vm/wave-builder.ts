@@ -159,13 +159,27 @@ export function buildCustomWaves({
     const scaling = frameLocals.scaling ?? 1;
     const drawMode = (frameLocals.usedots ?? 0) >= 0.5 ? 'dots' : 'line';
     const additive = (frameLocals.additive ?? 0) >= 0.5;
-    const waveColor = color(
-      frameLocals.r ?? 1,
-      frameLocals.g ?? 1,
-      frameLocals.b ?? 1,
-      frameLocals.a ?? 0.4,
-    );
     const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
+
+    const visualWave = waves[visualWaveCount] ?? {
+      positions: new Float32Array(0),
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      alpha: waveAlpha,
+      thickness: 1,
+      drawMode,
+      additive,
+      pointSize: 1,
+      spectrum: false,
+    };
+    if (!visualWave.color) {
+      visualWave.color = { r: 1, g: 1, b: 1, a: 1 };
+    }
+    const waveColor = visualWave.color;
+    waveColor.r = clamp(frameLocals.r ?? 1, 0, 1);
+    waveColor.g = clamp(frameLocals.g ?? 1, 0, 1);
+    waveColor.b = clamp(frameLocals.b ?? 1, 0, 1);
+    waveColor.a = clamp(frameLocals.a ?? 0.4, 0, 1);
+
     const proceduralDescriptor = getProceduralCustomWaveDescriptor(
       wave,
       drawMode,
@@ -182,31 +196,51 @@ export function buildCustomWaves({
     const pointEnv = useProcedural
       ? null
       : createEnv(signals, pointLocals, { reuseExtraAsEnv: true });
-    const visualWave = waves[visualWaveCount] ?? {
-      positions: [],
-      color: waveColor,
-      alpha: waveAlpha,
-      thickness: 1,
-      drawMode,
-      additive,
-      pointSize: 1,
-      spectrum: false,
-    };
-    const positions = useProcedural ? null : visualWave.positions;
-    const pointColors = useProcedural ? null : (visualWave.colors ?? []);
+
+    let positions = useProcedural ? null : visualWave.positions;
+    let pointColors = useProcedural
+      ? null
+      : ((visualWave as any)._colorsCache ??= new Float32Array(0));
     let hasPerPointColors = false;
-    if (pointColors) {
-      pointColors.length = sampleCount * 3;
-    }
+
     if (positions) {
-      positions.length = sampleCount * 3;
-    } else {
-      visualWave.positions.length = 0;
+      const targetLength = sampleCount * 3;
+      if (positions instanceof Float32Array) {
+        if (positions.length !== targetLength) {
+          positions = new Float32Array(targetLength);
+          visualWave.positions = positions;
+        }
+      } else if (Array.isArray(positions)) {
+        if (positions.length !== targetLength) {
+          positions.length = targetLength;
+        }
+      } else {
+        positions = new Float32Array(targetLength);
+        visualWave.positions = positions;
+      }
     }
+
+    if (pointColors) {
+      const targetLength = sampleCount * 3;
+      if (pointColors instanceof Float32Array) {
+        if (pointColors.length !== targetLength) {
+          pointColors = new Float32Array(targetLength);
+          (visualWave as any)._colorsCache = pointColors;
+        }
+      } else if (Array.isArray(pointColors)) {
+        if (pointColors.length !== targetLength) {
+          pointColors.length = targetLength;
+        }
+      } else {
+        pointColors = new Float32Array(targetLength);
+        (visualWave as any)._colorsCache = pointColors;
+      }
+    }
+
     const proceduralWave = useProcedural
       ? (proceduralWaves[proceduralWaveCount] ?? {
-          samples: [],
-          sampleValues2: [],
+          samples: new Float32Array(0),
+          sampleValues2: new Float32Array(0),
           spectrum: false,
           centerX,
           centerY,
@@ -234,19 +268,25 @@ export function buildCustomWaves({
             weightedEnergy: 0,
           },
           fieldProgram: null,
-          color: waveColor,
+          color: { r: 1, g: 1, b: 1, a: 1 },
           alpha: waveAlpha,
           additive,
           thickness: 1,
         })
       : null;
-    const proceduralSamples = proceduralWave?.samples ?? null;
-    const proceduralSampleValues2 = proceduralWave?.sampleValues2 ?? null;
+    let proceduralSamples = proceduralWave?.samples ?? null;
+    let proceduralSampleValues2 = proceduralWave?.sampleValues2 ?? null;
     if (proceduralSamples) {
-      proceduralSamples.length = sampleCount;
+      if (!(proceduralSamples instanceof Float32Array) || proceduralSamples.length !== sampleCount) {
+        proceduralSamples = new Float32Array(sampleCount);
+        proceduralWave!.samples = proceduralSamples;
+      }
     }
     if (proceduralSampleValues2) {
-      proceduralSampleValues2.length = sampleCount;
+      if (!(proceduralSampleValues2 instanceof Float32Array) || proceduralSampleValues2.length !== sampleCount) {
+        proceduralSampleValues2 = new Float32Array(sampleCount);
+        proceduralWave!.sampleValues2 = proceduralSampleValues2;
+      }
     }
     channelSample.sample = 0;
     channelSample.value = 0;
@@ -319,7 +359,6 @@ export function buildCustomWaves({
     }
 
     if (visualWave && (positions || useProcedural)) {
-      visualWave.color = waveColor;
       visualWave.alpha = waveAlpha;
       visualWave.thickness = clamp(frameLocals.thick ?? 1, 1, 6);
       visualWave.drawMode = drawMode;
@@ -363,7 +402,13 @@ export function buildCustomWaves({
       proceduralWave.time = signals.time;
       proceduralWave.sampleCount = sampleCount;
       proceduralWave.fieldProgram = proceduralDescriptor?.fieldProgram ?? null;
-      proceduralWave.color = waveColor;
+      if (!proceduralWave.color) {
+        proceduralWave.color = { r: 1, g: 1, b: 1, a: 1 };
+      }
+      proceduralWave.color.r = waveColor.r;
+      proceduralWave.color.g = waveColor.g;
+      proceduralWave.color.b = waveColor.b;
+      proceduralWave.color.a = waveColor.a;
       proceduralWave.alpha = waveAlpha;
       proceduralWave.additive = additive;
       proceduralWave.thickness = clamp(frameLocals.thick ?? 1, 1, 6);

@@ -521,116 +521,156 @@ export function getRenderingSupport(): RenderingSupport {
   };
 }
 
-async function probeRendererCapabilities({
-  preferWebGLForKnownCompatibilityGaps = false,
-  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
-}: {
-  preferWebGLForKnownCompatibilityGaps?: boolean;
-  webgpuInitTimeoutMs?: number;
-} = {}): Promise<RendererCapabilities> {
-  const retry = getCurrentRetrySnapshot();
-  if (!retry.canRetryNow && retry.attempts > 0) {
-    return cacheResult(
-      buildFallback(
-        `WebGPU retry is cooling down after ${retry.lastFailureKind ?? 'unknown'} failure. Using WebGL until the retry backoff expires.`,
-        { shouldRetryWebGPU: true },
-      ),
-    );
-  }
+export enum CapabilityProbeState {
+  Initial = 'initial',
+  CheckingRetryCooldown = 'checking-retry-cooldown',
+  CheckingNavigator = 'checking-navigator',
+  CheckingCompatibilityMode = 'checking-compatibility-mode',
+  CheckingMobileGuard = 'checking-mobile-guard',
+  CheckingLowPower = 'checking-low-power',
+  CheckingGapsGuard = 'checking-gaps-guard',
+  CheckingWebGpuAPI = 'checking-webgpu-api',
+  RequestingAdapter = 'requesting-adapter',
+  CheckingFallbackAdapter = 'checking-fallback-adapter',
+  RequestingDevice = 'requesting-device',
+  CheckingPresentationContext = 'checking-presentation-context',
+  Success = 'success',
+}
 
-  if (typeof navigator === 'undefined') {
-    return cacheResult(
-      buildFallback(
+interface CapabilityProbeContext {
+  preferWebGLForKnownCompatibilityGaps: boolean;
+  webgpuInitTimeoutMs: number;
+  retry: RendererRetrySnapshot;
+  adapter: GPUAdapter | null;
+  device: GPUDevice | null;
+}
+
+const CAPABILITY_PROBE_TRANSITIONS: Record<
+  CapabilityProbeState,
+  (ctx: CapabilityProbeContext) => Promise<CapabilityProbeState | RendererCapabilities> | CapabilityProbeState | RendererCapabilities
+> = {
+  [CapabilityProbeState.Initial]: () => CapabilityProbeState.CheckingRetryCooldown,
+  [CapabilityProbeState.CheckingRetryCooldown]: (ctx) => {
+    if (!ctx.retry.canRetryNow && ctx.retry.attempts > 0) {
+      return buildFallback(
+        `WebGPU retry is cooling down after ${ctx.retry.lastFailureKind ?? 'unknown'} failure. Using WebGL until the retry backoff expires.`,
+        { shouldRetryWebGPU: true },
+      );
+    }
+    return CapabilityProbeState.CheckingNavigator;
+  },
+  [CapabilityProbeState.CheckingNavigator]: () => {
+    if (typeof navigator === 'undefined') {
+      return buildFallback(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.rendererUnavailable,
         ),
-      ),
-    );
-  }
-
-  if (isCompatibilityModeEnabled()) {
-    return cacheResult(
-      buildFallback(
+      );
+    }
+    return CapabilityProbeState.CheckingCompatibilityMode;
+  },
+  [CapabilityProbeState.CheckingCompatibilityMode]: () => {
+    if (isCompatibilityModeEnabled()) {
+      return buildFallback(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.compatibilityMode,
         ),
         { forceWebGL: true },
-      ),
-    );
-  }
-
-  if (isGuardedMobileWebGPUEnvironment()) {
-    return cacheResult(
-      buildFallback(
+      );
+    }
+    return CapabilityProbeState.CheckingMobileGuard;
+  },
+  [CapabilityProbeState.CheckingMobileGuard]: () => {
+    if (isGuardedMobileWebGPUEnvironment()) {
+      return buildFallback(
         'WebGPU is temporarily disabled on this mobile browser while we stabilize renderer compatibility. Using WebGL mode.',
         { forceWebGL: true },
-      ),
-    );
-  }
-
-  if (getDevicePerformanceProfile().lowPower) {
-    return cacheResult(
-      buildFallback(
+      );
+    }
+    return CapabilityProbeState.CheckingLowPower;
+  },
+  [CapabilityProbeState.CheckingLowPower]: () => {
+    if (getDevicePerformanceProfile().lowPower) {
+      return buildFallback(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.compatibilityMode,
         ),
         { forceWebGL: true },
-      ),
-    );
-  }
-
-  if (preferWebGLForKnownCompatibilityGaps) {
-    return cacheResult(
-      buildFallback(
+      );
+    }
+    return CapabilityProbeState.CheckingGapsGuard;
+  },
+  [CapabilityProbeState.CheckingGapsGuard]: (ctx) => {
+    if (ctx.preferWebGLForKnownCompatibilityGaps) {
+      return buildFallback(
         'WebGPU is not enabled automatically for this browser or session. Using WebGL mode.',
         { forceWebGL: true },
-      ),
-    );
-  }
-
-  const { gpu } = navigator as Navigator & { gpu?: GPU };
-  if (!gpu?.requestAdapter) {
-    return cacheResult(
-      buildFallback(
+      );
+    }
+    return CapabilityProbeState.CheckingWebGpuAPI;
+  },
+  [CapabilityProbeState.CheckingWebGpuAPI]: () => {
+    const { gpu } = navigator as Navigator & { gpu?: GPU };
+    if (!gpu?.requestAdapter) {
+      return buildFallback(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuUnavailable,
         ),
-      ),
-    );
-  }
-
-  try {
-    const adapter = await gpu.requestAdapter();
-    if (!adapter) {
-      return cacheResult(
-        buildFallback(
+      );
+    }
+    return CapabilityProbeState.RequestingAdapter;
+  },
+  [CapabilityProbeState.RequestingAdapter]: async (ctx) => {
+    const { gpu } = navigator as Navigator & { gpu?: GPU };
+    try {
+      const adapter = await gpu!.requestAdapter();
+      if (!adapter) {
+        return buildFallback(
           getRendererFallbackReasonMessage(
             RENDERER_FALLBACK_REASON_CODES.noAdapter,
           ),
-          {
-            shouldRetryWebGPU: true,
-          },
+          { shouldRetryWebGPU: true },
+        );
+      }
+      ctx.adapter = adapter;
+      return CapabilityProbeState.CheckingFallbackAdapter;
+    } catch (error) {
+      return buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
+        ),
+        { shouldRetryWebGPU: true },
+      );
+    }
+  },
+  [CapabilityProbeState.CheckingFallbackAdapter]: (ctx) => {
+    if (isFallbackAdapter(ctx.adapter)) {
+      return buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.fallbackAdapter,
         ),
       );
     }
-
-    if (isFallbackAdapter(adapter)) {
-      return cacheResult(
-        buildFallback(
-          getRendererFallbackReasonMessage(
-            RENDERER_FALLBACK_REASON_CODES.fallbackAdapter,
-          ),
-        ),
-      );
-    }
-
-    let device: GPUDevice | null = null;
+    return CapabilityProbeState.RequestingDevice;
+  },
+  [CapabilityProbeState.RequestingDevice]: async (ctx) => {
     try {
-      device = await resolveWithTimeout(
-        adapter.requestDevice(),
-        webgpuInitTimeoutMs,
+      const device = await resolveWithTimeout(
+        ctx.adapter!.requestDevice(),
+        ctx.webgpuInitTimeoutMs,
         'WebGPU device initialization timed out.',
       );
+      if (!device) {
+        recordRetryableWebGPUFailure(
+          'device-request',
+          'WebGPU device request returned no device.',
+        );
+        return buildFallback('WebGPU device request returned no device.', {
+          shouldRetryWebGPU: true,
+        });
+      }
+      ctx.device = device;
+      return CapabilityProbeState.CheckingPresentationContext;
     } catch (error) {
       console.warn(
         'WebGPU device request failed. Falling back to WebGL.',
@@ -642,30 +682,15 @@ async function probeRendererCapabilities({
           RENDERER_FALLBACK_REASON_CODES.noDevice,
         ),
       );
-      return cacheResult(
-        buildFallback(
-          getRendererFallbackReasonMessage(
-            RENDERER_FALLBACK_REASON_CODES.noDevice,
-          ),
-          {
-            shouldRetryWebGPU: true,
-          },
+      return buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.noDevice,
         ),
+        { shouldRetryWebGPU: true },
       );
     }
-
-    if (!device) {
-      recordRetryableWebGPUFailure(
-        'device-request',
-        'WebGPU device request returned no device.',
-      );
-      return cacheResult(
-        buildFallback('WebGPU device request returned no device.', {
-          shouldRetryWebGPU: true,
-        }),
-      );
-    }
-
+  },
+  [CapabilityProbeState.CheckingPresentationContext]: (ctx) => {
     let hasPresentationContext = false;
     try {
       const testCanvas = document.createElement('canvas');
@@ -678,35 +703,65 @@ async function probeRendererCapabilities({
     }
 
     if (!hasPresentationContext) {
-      device.destroy?.();
+      ctx.device?.destroy?.();
       recordRetryableWebGPUFailure(
         'presentation-context',
         'WebGPU presentation context is not supported in this browser.',
       );
-      return cacheResult(
-        buildFallback(
-          'WebGPU presentation context is not supported in this browser.',
-          {
-            shouldRetryWebGPU: true,
-          },
-        ),
+      return buildFallback(
+        'WebGPU presentation context is not supported in this browser.',
+        { shouldRetryWebGPU: true },
       );
     }
-
-    observeCapabilityDevice(device);
+    return CapabilityProbeState.Success;
+  },
+  [CapabilityProbeState.Success]: (ctx) => {
+    observeCapabilityDevice(ctx.device!);
     recordRendererRetrySuccess(String(cachedEnvironmentKey ?? 'default'));
 
-    return cacheResult({
+    return {
       preferredBackend: 'webgpu',
-      adapter,
-      device,
+      adapter: ctx.adapter,
+      device: ctx.device,
       fallbackReason: null,
       fallbackReasonCode: null,
       shouldRetryWebGPU: false,
       forceWebGL: false,
-      webgpu: summarizeWebGPUCapabilities(adapter),
-      retry: getCurrentRetrySnapshot(),
-    });
+      webgpu: summarizeWebGPUCapabilities(ctx.adapter!),
+      retry: ctx.retry,
+    };
+  },
+};
+
+async function probeRendererCapabilities({
+  preferWebGLForKnownCompatibilityGaps = false,
+  webgpuInitTimeoutMs = DEFAULT_WEBGPU_INIT_TIMEOUT_MS,
+}: {
+  preferWebGLForKnownCompatibilityGaps?: boolean;
+  webgpuInitTimeoutMs?: number;
+} = {}): Promise<RendererCapabilities> {
+  const ctx: CapabilityProbeContext = {
+    preferWebGLForKnownCompatibilityGaps,
+    webgpuInitTimeoutMs,
+    retry: getCurrentRetrySnapshot(),
+    adapter: null,
+    device: null,
+  };
+
+  let state = CapabilityProbeState.Initial;
+  try {
+    while (true) {
+      const transitionFn = CAPABILITY_PROBE_TRANSITIONS[state];
+      if (!transitionFn) {
+        throw new Error(`Unhandled capability probe state: ${state}`);
+      }
+      const result = await transitionFn(ctx);
+      if (typeof result === 'string') {
+        state = result;
+      } else {
+        return cacheResult(result);
+      }
+    }
   } catch (error) {
     console.warn('WebGPU initialization failed. Falling back to WebGL.', error);
     recordRetryableWebGPUFailure(
@@ -720,13 +775,12 @@ async function probeRendererCapabilities({
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
         ),
-        {
-          shouldRetryWebGPU: true,
-        },
+        { shouldRetryWebGPU: true },
       ),
     );
   }
 }
+
 
 export function resetRendererCapabilities() {
   resetCache();

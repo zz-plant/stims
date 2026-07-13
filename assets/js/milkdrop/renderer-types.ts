@@ -33,7 +33,7 @@ export type MilkdropColor = {
 };
 
 export type MilkdropPolyline = {
-  positions: number[];
+  positions: number[] | Float32Array;
   color: MilkdropColor;
   alpha: number;
   thickness: number;
@@ -42,7 +42,7 @@ export type MilkdropPolyline = {
 
 export type MilkdropWaveVisual = MilkdropPolyline & {
   /** Optional RGB triplets, one per vertex, used for custom-wave per-point colors. */
-  colors?: number[];
+  colors?: number[] | Float32Array;
   drawMode: 'line' | 'dots';
   additive: boolean;
   blendMode?: 'subtractive' | 'multiplicative';
@@ -51,7 +51,7 @@ export type MilkdropWaveVisual = MilkdropPolyline & {
 };
 
 export type MilkdropMeshVisual = {
-  positions: number[];
+  positions: number[] | Float32Array;
   color: MilkdropColor;
   alpha: number;
 };
@@ -132,8 +132,8 @@ export type MilkdropProceduralMeshFieldVisual =
   };
 
 export type MilkdropProceduralWaveVisual = {
-  samples: number[];
-  velocities: number[];
+  samples: number[] | Float32Array;
+  velocities: number[] | Float32Array;
   mode: number;
   centerX: number;
   centerY: number;
@@ -150,8 +150,8 @@ export type MilkdropProceduralWaveVisual = {
 };
 
 export type MilkdropProceduralCustomWaveVisual = {
-  samples: number[];
-  sampleValues2?: number[];
+  samples: number[] | Float32Array;
+  sampleValues2?: number[] | Float32Array;
   spectrum: boolean;
   centerX: number;
   centerY: number;

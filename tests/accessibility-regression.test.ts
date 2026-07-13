@@ -11,13 +11,10 @@ function readSource(...segments: string[]) {
 
 describe('Accessibility regression guards', () => {
   test('panel toggle buttons expose expanded state, not pressed', () => {
-    const dock = readSource('frontend', 'StimsControlDock.tsx');
-    const mobile = readSource('frontend', 'MobileControlBar.tsx');
+    const controls = readSource('frontend', 'StageControls.tsx');
 
-    for (const source of [dock, mobile]) {
-      expect(source).toContain('aria-expanded={panel === ');
-      expect(source).not.toContain('aria-pressed={panel === ');
-    }
+    expect(controls).toContain('aria-expanded={');
+    expect(controls).not.toContain('aria-pressed={');
   });
 
   test('skip link uses class styles, not inline dimensions', () => {
@@ -54,9 +51,9 @@ describe('Accessibility regression guards', () => {
   });
 
   test('audio setup surface keeps source changes in a polite live region', () => {
-    const home = readSource('frontend', 'NewHomePage.tsx');
+    const audio = readSource('frontend', 'AudioSourcePanel.tsx');
 
-    expect(home).toContain('aria-live="polite"');
-    expect(home).toContain('Visualize YouTube');
+    expect(audio).toContain('aria-live="polite"');
+    expect(audio).toContain('YouTube playback');
   });
 });

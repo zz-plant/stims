@@ -13,35 +13,84 @@ export enum FallbackState {
   ErrorNoAudio = 'error-no-audio',
 }
 
-const VALID_TRANSITIONS = new Set([
-  'initial->probing-webgl',
-  'initial->error-no-backend',
-  'probing-webgl->probing-webgpu',
-  'probing-webgl->error-no-backend',
-  'probing-webgpu->renderer-ready',
-  'probing-webgpu->renderer-timeout',
-  'probing-webgpu->error-no-backend',
-  'renderer-timeout->renderer-ready',
-  'renderer-timeout->error-no-backend',
-  'renderer-ready->renderer-degraded',
-  'renderer-ready->renderer-ready',
-  'renderer-ready->pooling-renderer',
-  'pooling-renderer->renderer-ready',
-  'renderer-ready->initial',
-  'renderer-ready->audio-initializing',
-  'pooling-renderer->audio-initializing',
-  'audio-initializing->audio-ready',
-  'audio-initializing->error-no-audio',
-  'audio-ready->error-no-audio',
-  'audio-ready->renderer-degraded',
-  'audio-ready->audio-ready',
-  'renderer-degraded->renderer-ready',
-  'audio-ready->ready',
-  'error-no-audio->renderer-ready',
-  'error-no-audio->ready',
-  'renderer-degraded->pooling-renderer',
-  'renderer-degraded->renderer-degraded',
-]);
+export enum FallbackEvent {
+  CHECK_WEBGL = 'CHECK_WEBGL',
+  START_PROBE_WEBGPU = 'START_PROBE_WEBGPU',
+  RESOLVE_WEBGPU = 'RESOLVE_WEBGPU',
+  TIMEOUT_WEBGPU = 'TIMEOUT_WEBGPU',
+  FAIL_BACKEND = 'FAIL_BACKEND',
+  DEGRADE_RENDERER = 'DEGRADE_RENDERER',
+  POOL_RENDERER = 'POOL_RENDERER',
+  INIT_AUDIO = 'INIT_AUDIO',
+  AUDIO_SUCCESS = 'AUDIO_SUCCESS',
+  AUDIO_FAIL = 'AUDIO_FAIL',
+  COMPLETE = 'COMPLETE',
+  RESET = 'RESET',
+}
+
+export const STATE_TRANSITIONS: Record<
+  FallbackState,
+  Partial<Record<FallbackEvent, FallbackState>>
+> = {
+  [FallbackState.Initial]: {
+    [FallbackEvent.CHECK_WEBGL]: FallbackState.ProbingWebgl,
+    [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
+  },
+  [FallbackState.ProbingWebgl]: {
+    [FallbackEvent.START_PROBE_WEBGPU]: FallbackState.ProbingWebgpu,
+    [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
+  },
+  [FallbackState.ProbingWebgpu]: {
+    [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+    [FallbackEvent.TIMEOUT_WEBGPU]: FallbackState.RendererTimeout,
+    [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
+  },
+  [FallbackState.RendererTimeout]: {
+    [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+    [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
+  },
+  [FallbackState.RendererReady]: {
+    [FallbackEvent.DEGRADE_RENDERER]: FallbackState.RendererDegraded,
+    [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+    [FallbackEvent.POOL_RENDERER]: FallbackState.PoolingRenderer,
+    [FallbackEvent.RESET]: FallbackState.Initial,
+    [FallbackEvent.INIT_AUDIO]: FallbackState.AudioInitializing,
+  },
+  [FallbackState.PoolingRenderer]: {
+    [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+    [FallbackEvent.INIT_AUDIO]: FallbackState.AudioInitializing,
+  },
+  [FallbackState.AudioInitializing]: {
+    [FallbackEvent.AUDIO_SUCCESS]: FallbackState.AudioReady,
+    [FallbackEvent.AUDIO_FAIL]: FallbackState.ErrorNoAudio,
+  },
+  [FallbackState.AudioReady]: {
+    [FallbackEvent.AUDIO_FAIL]: FallbackState.ErrorNoAudio,
+    [FallbackEvent.DEGRADE_RENDERER]: FallbackState.RendererDegraded,
+    [FallbackEvent.AUDIO_SUCCESS]: FallbackState.AudioReady,
+    [FallbackEvent.COMPLETE]: FallbackState.Ready,
+  },
+  [FallbackState.RendererDegraded]: {
+    [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+    [FallbackEvent.POOL_RENDERER]: FallbackState.PoolingRenderer,
+    [FallbackEvent.DEGRADE_RENDERER]: FallbackState.RendererDegraded,
+  },
+  [FallbackState.ErrorNoAudio]: {
+    [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+    [FallbackEvent.COMPLETE]: FallbackState.Ready,
+  },
+  [FallbackState.Ready]: {},
+  [FallbackState.ErrorNoBackend]: {},
+};
+
+const VALID_TRANSITIONS = new Set<string>();
+for (const [from, transitions] of Object.entries(STATE_TRANSITIONS)) {
+  for (const to of Object.values(transitions)) {
+    if (to) {
+      VALID_TRANSITIONS.add(`${from}->${to}`);
+    }
+  }
+}
 
 export function isValidTransition(
   from: FallbackState,
@@ -103,4 +152,70 @@ export function getInvalidTransitionMessage(
     ([f, t]) => f === from && t === to,
   );
   return entry?.[2] ?? null;
+}
+
+const EVENT_TARGET_STATES: Record<FallbackEvent, FallbackState> = {
+  [FallbackEvent.CHECK_WEBGL]: FallbackState.ProbingWebgl,
+  [FallbackEvent.START_PROBE_WEBGPU]: FallbackState.ProbingWebgpu,
+  [FallbackEvent.RESOLVE_WEBGPU]: FallbackState.RendererReady,
+  [FallbackEvent.TIMEOUT_WEBGPU]: FallbackState.RendererTimeout,
+  [FallbackEvent.FAIL_BACKEND]: FallbackState.ErrorNoBackend,
+  [FallbackEvent.DEGRADE_RENDERER]: FallbackState.RendererDegraded,
+  [FallbackEvent.POOL_RENDERER]: FallbackState.PoolingRenderer,
+  [FallbackEvent.INIT_AUDIO]: FallbackState.AudioInitializing,
+  [FallbackEvent.AUDIO_SUCCESS]: FallbackState.AudioReady,
+  [FallbackEvent.AUDIO_FAIL]: FallbackState.ErrorNoAudio,
+  [FallbackEvent.COMPLETE]: FallbackState.Ready,
+  [FallbackEvent.RESET]: FallbackState.Initial,
+};
+
+export function getInvalidTransitionMessageForEvent(
+  from: FallbackState,
+  event: FallbackEvent,
+): string | null {
+  const to = EVENT_TARGET_STATES[event];
+  if (to) {
+    return getInvalidTransitionMessage(from, to);
+  }
+  return null;
+}
+
+
+export class FallbackStateMachine {
+  private currentState: FallbackState;
+  private listeners: Set<(state: FallbackState, event: FallbackEvent) => void> = new Set();
+
+  constructor(initialState: FallbackState = FallbackState.Initial) {
+    this.currentState = initialState;
+  }
+
+  getState(): FallbackState {
+    return this.currentState;
+  }
+
+  transition(event: FallbackEvent): FallbackState {
+    const nextState = STATE_TRANSITIONS[this.currentState]?.[event];
+    if (!nextState) {
+      const reason = getInvalidTransitionMessageForEvent(this.currentState, event);
+      throw new Error(
+        `Invalid fallback state transition from ${this.currentState} via event ${event}${
+          reason ? `: ${reason}` : ''
+        }`
+      );
+    }
+    this.currentState = nextState;
+    for (const listener of this.listeners) {
+      try {
+        listener(this.currentState, event);
+      } catch (err) {
+        console.error('Error in state machine listener:', err);
+      }
+    }
+    return this.currentState;
+  }
+
+  onTransition(listener: (state: FallbackState, event: FallbackEvent) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
 }

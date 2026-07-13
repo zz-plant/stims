@@ -2,6 +2,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -361,6 +362,14 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const { engine, ui } = useWorkspace();
 
+  const catalogEntryById = useMemo(() => {
+    const map = new Map<string, PresetCatalogEntry>();
+    for (const entry of engine.catalog) {
+      map.set(entry.id, entry);
+    }
+    return map;
+  }, [engine.catalog]);
+
   const handleSearch = useCallback(async () => {
     setLoading(true);
     setMatches(null);
@@ -375,7 +384,7 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
         setMatches([]);
       } else {
         const fullMatches = results
-          .map((r) => engine.catalog.find((e) => e.id === r.presetId))
+          .map((r) => catalogEntryById.get(r.presetId))
           .filter((e): e is PresetCatalogEntry => e !== undefined);
         setMatches(fullMatches);
       }
@@ -387,7 +396,7 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
     } finally {
       setLoading(false);
     }
-  }, [engine, ui]);
+  }, [catalogEntryById, ui]);
 
   useEffect(() => {
     handleSearch();

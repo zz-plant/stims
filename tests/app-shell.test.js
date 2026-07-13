@@ -69,7 +69,7 @@ describe('home shell user journeys', () => {
     const currentUrl = new URL(window.location.href);
     expect(currentUrl.pathname).toBe('/');
     expect(document.querySelector('.stims-shell__stage-frame')).not.toBeNull();
-    expect(document.querySelector('.stims-shell__frame-chrome')).not.toBeNull();
+    expect(document.querySelector('.stims-shell__workspace')).not.toBeNull();
     expect(mockInitNavigation).not.toHaveBeenCalled();
     expect(mockLoadToy).not.toHaveBeenCalled();
     expect(mockLoadFromQuery).not.toHaveBeenCalled();

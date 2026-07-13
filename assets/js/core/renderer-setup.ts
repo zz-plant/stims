@@ -11,7 +11,8 @@ import {
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
   FallbackState,
-  transition as validateTransition,
+  FallbackEvent,
+  FallbackStateMachine,
 } from './fallback-state.ts';
 import {
   getRendererCapabilities,
@@ -99,17 +100,14 @@ export async function initRenderer(
     renderScale: createRenderScale(1),
   },
 ): Promise<RendererInitResult | null> {
-  let currentState = FallbackState.Initial;
+  const stateMachine = new FallbackStateMachine(FallbackState.Initial);
 
   if (!ensureWebGL()) {
-    currentState = validateTransition(
-      currentState,
-      FallbackState.ErrorNoBackend,
-    );
+    stateMachine.transition(FallbackEvent.FAIL_BACKEND);
     return null;
   }
 
-  currentState = validateTransition(currentState, FallbackState.ProbingWebgl);
+  stateMachine.transition(FallbackEvent.CHECK_WEBGL);
 
   const {
     antialias = !isMobileUserAgent,
@@ -205,7 +203,7 @@ export async function initRenderer(
     hasWebGL: true,
   });
 
-  currentState = validateTransition(currentState, FallbackState.ProbingWebgpu);
+  stateMachine.transition(FallbackEvent.START_PROBE_WEBGPU);
 
   if (plan.backend === 'webgpu' && capabilities?.adapter) {
     const adapter = capabilities.adapter;
@@ -228,6 +226,7 @@ export async function initRenderer(
         );
       } catch (error) {
         teardownAbort();
+        stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
         return fallbackToWebGL(
           getRendererFallbackReasonMessage(
             RENDERER_FALLBACK_REASON_CODES.noDevice,
@@ -239,6 +238,7 @@ export async function initRenderer(
 
     if (!device) {
       teardownAbort();
+      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       return fallbackToWebGL('WebGPU device request returned no device.');
     }
 
@@ -270,10 +270,7 @@ export async function initRenderer(
           );
         } catch (error) {
           disposeTimedOutRenderer();
-          currentState = validateTransition(
-            currentState,
-            FallbackState.RendererTimeout,
-          );
+          stateMachine.transition(FallbackEvent.TIMEOUT_WEBGPU);
           teardownAbort();
           void initPromise
             .then(() => {
@@ -288,10 +285,7 @@ export async function initRenderer(
             .catch((error: unknown) => {
               console.warn('WebGPU renderer init timed out.', error);
             });
-          currentState = validateTransition(
-            currentState,
-            FallbackState.RendererReady,
-          );
+          stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
           return fallbackToWebGL(
             getRendererFallbackReasonMessage(
               RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
@@ -300,14 +294,12 @@ export async function initRenderer(
           );
         }
       }
-      currentState = validateTransition(
-        currentState,
-        FallbackState.RendererReady,
-      );
+      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       teardownAbort();
       return finalize(renderer, 'webgpu', adapter, device);
     } catch (error) {
       teardownAbort();
+      stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
       return fallbackToWebGL(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuRendererCreationFailed,
@@ -317,7 +309,7 @@ export async function initRenderer(
     }
   }
 
-  currentState = validateTransition(currentState, FallbackState.RendererReady);
+  stateMachine.transition(FallbackEvent.RESOLVE_WEBGPU);
   return fallbackToWebGL(
     plan.reasonMessage ??
       getRendererFallbackReasonMessage(

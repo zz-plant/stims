@@ -25,43 +25,68 @@ function mix(start: number, end: number, amount: number) {
   return start + (end - start) * amount;
 }
 
-const reusableInterpBuffer: number[] = [];
+let tempPositionsBuffer = new Float32Array(1024 * 3);
+function ensureTempPositionsCapacity(size: number) {
+  if (tempPositionsBuffer.length < size) {
+    tempPositionsBuffer = new Float32Array(size);
+  }
+}
 
-function catmullRomInterpolatePositions(
-  positions: readonly number[],
-  subdiv: number,
-): number[] {
-  const ptCount = positions.length / 3;
-  if (ptCount < 2 || subdiv < 1) {
-    const out = reusableInterpBuffer;
-    out.length = positions.length;
-    for (let i = 0; i < positions.length; i++) {
-      out[i] = positions[i];
+const tempWaveColor = { r: 1, g: 1, b: 1, a: 1 };
+const tempFinalColor = { r: 1, g: 1, b: 1, a: 1 };
+
+function colorTo(target: MilkdropColor, r: number, g: number, b: number, a = 1) {
+  target.r = clamp(r, 0, 1);
+  target.g = clamp(g, 0, 1);
+  target.b = clamp(b, 0, 1);
+  target.a = clamp(a, 0, 1);
+}
+
+function brightenWaveColorTo(target: MilkdropColor, source: MilkdropColor) {
+  const peak = Math.max(source.r, source.g, source.b);
+  if (peak <= 0.0001 || peak >= 1) {
+    target.r = source.r;
+    target.g = source.g;
+    target.b = source.b;
+    target.a = source.a;
+    return;
+  }
+  const gain = 1 / peak;
+  target.r = clamp(source.r * gain, 0, 1);
+  target.g = clamp(source.g * gain, 0, 1);
+  target.b = clamp(source.b * gain, 0, 1);
+  target.a = source.a;
+}
+
+function catmullRomInterpolateTo(
+  source: ArrayLike<number>,
+  sourceLen: number,
+  target: { [key: number]: number },
+) {
+  const ptCount = sourceLen / 3;
+  if (ptCount < 2) {
+    for (let i = 0; i < sourceLen; i++) {
+      target[i] = source[i];
     }
-    return out;
+    return;
   }
 
-  // ProjectM always inserts one midpoint per segment (subdiv=1), doubling
-  // the vertex count. Output: start, mid0, mid1, ..., last.
-  const outLen = (ptCount - 1) * 2 * 3 + 3;
-  const out = reusableInterpBuffer;
-  out.length = outLen;
   let writeIdx = 0;
   const lastIdx = ptCount - 1;
 
   // Write first point
-  out[writeIdx++] = positions[0];
-  out[writeIdx++] = positions[1];
-  out[writeIdx++] = positions[2];
+  target[writeIdx++] = source[0];
+  target[writeIdx++] = source[1];
+  target[writeIdx++] = source[2];
 
-  let p0x = positions[0],
-    p0y = positions[1];
+  let p0x = source[0],
+    p0y = source[1];
   let p1x = p0x,
     p1y = p0y;
-  let p2x = positions[3],
-    p2y = positions[4];
-  let p3x = positions[Math.min(lastIdx, 2) * 3];
-  let p3y = positions[Math.min(lastIdx, 2) * 3 + 1];
+  let p2x = source[3],
+    p2y = source[4];
+  let p3x = source[Math.min(lastIdx, 2) * 3];
+  let p3y = source[Math.min(lastIdx, 2) * 3 + 1];
 
   for (let i = 0; i < lastIdx; i++) {
     if (i > 0) {
@@ -71,13 +96,13 @@ function catmullRomInterpolatePositions(
       p1y = p2y;
       if (i + 2 <= lastIdx) {
         const nextI = (i + 1) * 3;
-        p2x = positions[nextI];
-        p2y = positions[nextI + 1];
-        p3x = positions[Math.min(lastIdx, i + 2) * 3];
-        p3y = positions[Math.min(lastIdx, i + 2) * 3 + 1];
+        p2x = source[nextI];
+        p2y = source[nextI + 1];
+        p3x = source[Math.min(lastIdx, i + 2) * 3];
+        p3y = source[Math.min(lastIdx, i + 2) * 3 + 1];
       } else {
-        p2x = positions[lastIdx * 3];
-        p2y = positions[lastIdx * 3 + 1];
+        p2x = source[lastIdx * 3];
+        p2y = source[lastIdx * 3 + 1];
         p3x = p2x;
         p3y = p2y;
       }
@@ -85,19 +110,18 @@ function catmullRomInterpolatePositions(
 
     // Insert midpoint using ProjectM's fixed weights at t=0.5:
     // [-0.15, 1.15, 1.15, -0.15] / 2.0
-    out[writeIdx++] =
+    target[writeIdx++] =
       (-0.15 * p0x + 1.15 * p1x + 1.15 * p2x - 0.15 * p3x) * 0.5;
-    out[writeIdx++] =
+    target[writeIdx++] =
       (-0.15 * p0y + 1.15 * p1y + 1.15 * p2y - 0.15 * p3y) * 0.5;
-    out[writeIdx++] = positions[i * 3 + 2];
+    target[writeIdx++] = source[i * 3 + 2];
   }
 
   // Write last point
   const lastOut = lastIdx * 3;
-  out[writeIdx++] = positions[lastOut];
-  out[writeIdx++] = positions[lastOut + 1];
-  out[writeIdx++] = positions[lastOut + 2];
-  return out;
+  target[writeIdx++] = source[lastOut];
+  target[writeIdx++] = source[lastOut + 1];
+  target[writeIdx++] = source[lastOut + 2];
 }
 
 function sampleByteData(data: Uint8Array, t: number) {
@@ -462,7 +486,7 @@ export function buildMainWaveFrame({
 
   const drawMode = (state.wave_usedots ?? 0) >= 0.5 ? 'dots' : 'line';
   const visual = reusableVisual ?? {
-    positions: [],
+    positions: new Float32Array(0),
     color: color(1, 1, 1, 1),
     alpha: 1,
     thickness: 1,
@@ -471,18 +495,18 @@ export function buildMainWaveFrame({
     pointSize: 1,
     closed: false,
   };
-  const positions = visual.positions;
+  let positions = visual.positions;
   if (useProcedural) {
-    positions.length = 0;
-  } else {
-    if (positions.length !== samples * 3) {
-      positions.length = samples * 3;
+    if (Array.isArray(positions)) {
+      positions.length = 0;
+    } else if (positions.length !== 0) {
+      visual.positions = new Float32Array(0);
     }
   }
   const procedural = useProcedural
     ? (reusableProcedural ?? {
-        samples: [],
-        velocities: [],
+        samples: new Float32Array(0),
+        velocities: new Float32Array(0),
         mode,
         centerX,
         centerY,
@@ -498,13 +522,19 @@ export function buildMainWaveFrame({
         closed: false,
       })
     : null;
-  const proceduralSamples = procedural?.samples ?? null;
-  const proceduralVelocities = procedural?.velocities ?? null;
+  let proceduralSamples = procedural?.samples ?? null;
+  let proceduralVelocities = procedural?.velocities ?? null;
   if (proceduralSamples) {
-    proceduralSamples.length = samples;
+    if (!(proceduralSamples instanceof Float32Array) || proceduralSamples.length !== samples) {
+      proceduralSamples = new Float32Array(samples);
+      procedural!.samples = proceduralSamples;
+    }
   }
   if (proceduralVelocities) {
-    proceduralVelocities.length = samples;
+    if (!(proceduralVelocities instanceof Float32Array) || proceduralVelocities.length !== samples) {
+      proceduralVelocities = new Float32Array(samples);
+      procedural!.velocities = proceduralVelocities;
+    }
   }
 
   let prevX = 0;
@@ -512,19 +542,24 @@ export function buildMainWaveFrame({
   let prevPrevX = 0;
   let prevPrevY = 0;
 
+  const rawLength = samples * 3;
+  if (!useProcedural) {
+    ensureTempPositionsCapacity(rawLength);
+  }
+
   for (let index = 0; index < samples; index += 1) {
     const t = index / Math.max(1, samples - 1);
     const sampleValue =
       smoothedSamples[index] ?? sampleWaveformData(signals, t);
     const prevSample = previousSamples[index] ?? sampleValue;
-    const prevMomentum = previousMomentum[index] ?? 0;
+    const prevMomentumVal = previousMomentum[index] ?? 0;
     const prevCurrent = smoothedSamples[Math.max(0, index - 1)] ?? sampleValue;
     const nextCurrent =
       smoothedSamples[Math.min(samples - 1, index + 1)] ?? sampleValue;
     const derivative = (nextCurrent - prevCurrent) * 0.5;
     const velocity = sampleValue - prevSample;
     const momentum = mix(
-      prevMomentum,
+      prevMomentumVal,
       derivative,
       clamp(0.24 + (1 - smoothing) * 0.58, 0.18, 0.82),
     );
@@ -634,33 +669,46 @@ export function buildMainWaveFrame({
       continue;
     }
     const writeIndex = index * 3;
-    positions[writeIndex] = x;
-    positions[writeIndex + 1] = y;
-    positions[writeIndex + 2] = 0.22 + momentum * 0.06;
+    tempPositionsBuffer[writeIndex] = x;
+    tempPositionsBuffer[writeIndex + 1] = y;
+    tempPositionsBuffer[writeIndex + 2] = 0.22 + momentum * 0.06;
   }
 
   // ProjectM inserts exactly one midpoint per segment using fixed weights
   // [-0.15, 1.15, 1.15, -0.15] / 2.0, doubling the vertex count. The
   // wave_smoothing parameter controls the IIR filter, not subdivision.
   if (!useProcedural) {
-    const interpolated = catmullRomInterpolatePositions(positions, 1);
-    positions.length = 0;
-    for (let i = 0; i < interpolated.length; i++) {
-      positions[i] = interpolated[i];
+    const interpolatedLength = samples < 2 ? rawLength : (samples - 1) * 6 + 3;
+    if (Array.isArray(positions)) {
+      if (positions.length !== interpolatedLength) {
+        positions.length = interpolatedLength;
+      }
+      catmullRomInterpolateTo(tempPositionsBuffer, rawLength, positions);
+    } else {
+      if (positions.length !== interpolatedLength) {
+        visual.positions = new Float32Array(interpolatedLength);
+        positions = visual.positions;
+      }
+      catmullRomInterpolateTo(tempPositionsBuffer, rawLength, positions as any);
     }
-    positions.length = interpolated.length;
   }
 
-  const waveColor = color(
+  colorTo(
+    tempWaveColor,
     state.wave_r ?? 1,
     state.wave_g ?? 1,
     state.wave_b ?? 1,
     state.wave_a ?? 0.9,
   );
-  const finalWaveColor =
-    (state.wave_brighten ?? 0) >= 0.5
-      ? brightenWaveColor(waveColor)
-      : waveColor;
+  if ((state.wave_brighten ?? 0) >= 0.5) {
+    brightenWaveColorTo(tempFinalColor, tempWaveColor);
+  } else {
+    tempFinalColor.r = tempWaveColor.r;
+    tempFinalColor.g = tempWaveColor.g;
+    tempFinalColor.b = tempWaveColor.b;
+    tempFinalColor.a = tempWaveColor.a;
+  }
+
   const additive = (state.wave_additive ?? 0) >= 0.5;
   let alpha = state.wave_a ?? 0.9;
   if (alphaByVolume) {
@@ -689,14 +737,14 @@ export function buildMainWaveFrame({
     procedural.time = signals.time;
     procedural.beatPulse = signals.beatPulse;
     procedural.trebleAtt = signals.trebleAtt;
-    procedural.color = assignColor(procedural.color, finalWaveColor);
+    procedural.color = assignColor(procedural.color, tempFinalColor);
     procedural.alpha = alpha;
     procedural.additive = additive;
     procedural.thickness = thickness;
     procedural.closed = closed;
   }
 
-  visual.color = assignColor(visual.color, finalWaveColor);
+  visual.color = assignColor(visual.color, tempFinalColor);
   visual.alpha = alpha;
   visual.thickness = thickness;
   visual.drawMode = drawMode;
