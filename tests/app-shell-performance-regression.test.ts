@@ -260,4 +260,113 @@ describe('Workspace performance regressions', () => {
       'const vector = vectors[vectorCount]',
     );
   });
+
+  test('memoizes browse sorting and visual-search catalog lookup work', () => {
+    const browsePanelSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'BrowseSheetPanel.tsx',
+      ),
+      'utf8',
+    );
+
+    expect(browsePanelSource).toContain('const catalogEntryById = useMemo');
+    expect(browsePanelSource).toContain('catalogEntryById.get(r.presetId)');
+    expect(browsePanelSource).not.toContain(
+      'const entry = catalog.find(\n                    (preset) => preset.id === r.presetId,\n                  );',
+    );
+    expect(browsePanelSource).toContain('const sortedBrowseEntries = useMemo');
+    expect(browsePanelSource).toContain(
+      'sortPresetEntries(browseEntries, sortMode, randomSeed)',
+    );
+  });
+
+  test('caches frontend preset search indexes instead of rebuilding haystacks per match', () => {
+    const helperSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'frontend',
+        'workspace-helpers.ts',
+      ),
+      'utf8',
+    );
+
+    expect(helperSource).toContain('presetSearchIndexCache');
+    expect(helperSource).toContain('getPresetSearchIndex(entry)');
+    expect(helperSource).not.toContain(
+      'const haystack = [entry.title, entry.author, entry.id, ...(entry.tags ?? [])]',
+    );
+  });
+
+  test('patches visible overlay preview rows without forcing a full browse render', () => {
+    const browsePanelSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'milkdrop',
+        'overlay',
+        'browse-panel.ts',
+      ),
+      'utf8',
+    );
+
+    expect(browsePanelSource).toContain('patchVisiblePreviewRow');
+    expect(browsePanelSource).toContain('replaceChild(nextRow, currentRow)');
+    expect(browsePanelSource).not.toContain(
+      'setPresetPreview(preview: MilkdropPresetRenderPreview) {\n    this.previewStates.set(preview.presetId, preview);\n    this.browseDirty = true;',
+    );
+  });
+
+  test('updates GPU VM state in place after dispatch instead of spreading every frame', () => {
+    const vmSource = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'js', 'milkdrop', 'vm.ts'),
+      'utf8',
+    );
+
+    expect(vmSource).toContain('Object.assign(this.state, result.state)');
+    expect(vmSource).not.toContain(
+      'this.state = { ...this.state, ...result.state };',
+    );
+  });
+
+  test('reuses the MilkDrop frame variables proxy across frames', () => {
+    const vmSource = readFileSync(
+      join(import.meta.dir, '..', 'assets', 'js', 'milkdrop', 'vm.ts'),
+      'utf8',
+    );
+
+    expect(vmSource).toContain('private readonly variablesProxy = new Proxy');
+    expect(vmSource).toContain('this.frameVariablesSnapshot = null');
+    expect(vmSource).not.toContain(
+      'const variablesProxy = new Proxy({} as Record<string, number>, {',
+    );
+  });
+
+  test('avoids JSON serialization and repeated texture lookup in WebGPU feedback state updates', () => {
+    const feedbackSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        'assets',
+        'js',
+        'milkdrop',
+        'feedback-manager-webgpu-tsl.ts',
+      ),
+      'utf8',
+    );
+
+    expect(feedbackSource).toContain('buildCompositeStateKey(state)');
+    expect(feedbackSource).not.toContain('JSON.stringify({');
+    expect(feedbackSource).toContain('currentOverlayTextureName');
+    expect(feedbackSource).toContain('currentWarpTextureName');
+  });
 });

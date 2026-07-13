@@ -4,15 +4,22 @@ import {
   setWebGPUCompatibilityGapOverride,
   shouldPreferWebGLForKnownCompatibilityGaps,
 } from '../assets/js/core/renderer-query-override.ts';
-import { shouldUseSafeMilkdropWebGpuPath } from '../assets/js/milkdrop/webgpu-query-override.ts';
+import {
+  setWebGpuForceMode,
+  shouldUseSafeMilkdropWebGpuPath,
+} from '../assets/js/milkdrop/webgpu-query-override.ts';
 import { replaceProperty } from './test-helpers.ts';
 
 let restoreLocation = () => {};
+let restoreUserAgent = () => {};
 
 afterEach(() => {
   restoreLocation();
   restoreLocation = () => {};
+  restoreUserAgent();
+  restoreUserAgent = () => {};
   clearWebGPUCompatibilityGapOverride();
+  setWebGpuForceMode('auto');
 });
 
 test('renderer query override allows webgpu certification sessions to bypass browser stability preference', () => {
@@ -68,4 +75,31 @@ test('explicit MilkDrop WebGPU requests use the full path', () => {
       new URL('http://localhost/?renderer=webgpu'),
     ),
   ).toBe(false);
+});
+
+test('safe MilkDrop WebGPU path remains the default on unstable browsers', () => {
+  restoreUserAgent = replaceProperty(
+    navigator,
+    'userAgent',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:129.0) Gecko/20100101 Firefox/129.0',
+  );
+
+  expect(shouldPreferWebGLForKnownCompatibilityGaps()).toBe(true);
+  expect(shouldUseSafeMilkdropWebGpuPath(new URL('http://localhost/'))).toBe(
+    true,
+  );
+});
+
+test('force-mode overrides still allow explicit safe and full MilkDrop paths', () => {
+  setWebGpuForceMode('safe');
+  expect(
+    shouldUseSafeMilkdropWebGpuPath(
+      new URL('http://localhost/?renderer=webgpu'),
+    ),
+  ).toBe(true);
+
+  setWebGpuForceMode('full');
+  expect(shouldUseSafeMilkdropWebGpuPath(new URL('http://localhost/'))).toBe(
+    false,
+  );
 });
