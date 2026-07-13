@@ -43,6 +43,9 @@ import {
   WorkspaceStagePanel,
 } from './workspace-ui.tsx';
 
+const AudioMatchPanel = lazy(() =>
+  import('./SidePanel.tsx').then((m) => ({ default: m.AudioMatchPanel })),
+);
 const BrowseSheetPanel = lazy(() =>
   import('./BrowseSheetPanel.tsx').then((m) => ({
     default: m.BrowseSheetPanel,
@@ -51,10 +54,16 @@ const BrowseSheetPanel = lazy(() =>
 const EditorPanel = lazy(() =>
   import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
 );
+const RefinePanel = lazy(() =>
+  import('./SidePanel.tsx').then((m) => ({ default: m.RefinePanel })),
+);
 const SettingsSheetPanel = lazy(() =>
   import('./SettingsSheetPanel.tsx').then((m) => ({
     default: m.SettingsSheetPanel,
   })),
+);
+const VisualSearchPanel = lazy(() =>
+  import('./SidePanel.tsx').then((m) => ({ default: m.VisualSearchPanel })),
 );
 
 function StimsWorkspaceAppShell() {
@@ -503,6 +512,13 @@ function StimsWorkspaceAppShell() {
                 setMotionPreference({ enabled })
               }
             />
+          ) : null}
+          {ui.routeState.panel === 'refine' ? <RefinePanel /> : null}
+          {ui.routeState.panel === 'audiomatch' ? (
+            <AudioMatchPanel onClose={() => ui.updatePanel(null)} />
+          ) : null}
+          {ui.routeState.panel === 'visualsearch' ? (
+            <VisualSearchPanel onClose={() => ui.updatePanel(null)} />
           ) : null}
         </Suspense>
       </SidePanel>

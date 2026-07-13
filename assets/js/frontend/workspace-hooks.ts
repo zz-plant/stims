@@ -413,6 +413,9 @@ export function useWorkspaceSessionState({
     updateEditorSource: (source: string) => {
       engineRef.current?.updateEditorSource(source);
     },
+    updateInspectorField: (key: string, value: number) => {
+      engineRef.current?.updateInspectorField?.(key, value);
+    },
     setSearchQuery,
     setShowExtendedSources,
     setStatusMessage,

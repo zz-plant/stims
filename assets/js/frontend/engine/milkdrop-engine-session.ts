@@ -327,7 +327,7 @@ export function createMilkdropEngineAdapter() {
       emit();
     },
 
-    openTool(tool: 'browse' | 'editor') {
+    openTool(tool: 'browse' | 'editor' | 'inspector') {
       experience?.openTab(tool);
       emit();
     },
@@ -351,6 +351,10 @@ export function createMilkdropEngineAdapter() {
 
     updateEditorSource(source: string) {
       experience?.updateEditorSource(source);
+    },
+
+    updateInspectorField(key: string, value: number) {
+      experience?.updateInspectorField?.(key, value);
     },
 
     async importPreset(target: FileList | File[] | string) {

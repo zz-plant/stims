@@ -195,6 +195,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       handleYoutubeUrlKeyDown: sessionState.handleYoutubeUrlKeyDown,
       setQualityPreset: sessionState.setQualityPreset,
       updateEditorSource: sessionState.updateEditorSource,
+      updateInspectorField: sessionState.updateInspectorField,
       handleVisualSearch: shellOrchestration.handleVisualSearch,
     }),
     [
@@ -233,6 +234,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.handleYoutubeUrlKeyDown,
       sessionState.setQualityPreset,
       sessionState.updateEditorSource,
+      sessionState.updateInspectorField,
       shellOrchestration.handleVisualSearch,
     ],
   );

@@ -78,6 +78,52 @@ export function StageControls({
     };
   }, [signalActivity]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'g':
+          event.preventDefault();
+          ui.updatePanel(panel === 'refine' ? null : 'refine');
+          break;
+        case 'm':
+          event.preventDefault();
+          engine.handleVisualSearch?.();
+          break;
+        case 'r':
+          event.preventDefault();
+          ui.updatePanel(panel === 'refine' ? null : 'refine');
+          break;
+        case 'b':
+          event.preventDefault();
+          ui.updatePanel(panel === 'blend' ? null : 'blend');
+          break;
+        case 'i':
+          event.preventDefault();
+          ui.updatePanel(panel === 'inspector' ? null : 'inspector');
+          break;
+        case ' ':
+          if (engineSnapshot?.audioSource) {
+            event.preventDefault();
+            engine.handleAudioStop();
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [engine, engineSnapshot?.audioSource, panel, ui]);
+
   const handleBrowse = useCallback(() => {
     signalActivity();
     ui.updatePanel(panel === 'browse' ? null : 'browse');

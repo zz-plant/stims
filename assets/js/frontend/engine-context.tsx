@@ -70,6 +70,7 @@ export interface EngineContextValue {
   setQualityPreset: (presetId: string) => void;
   updateEditorSource: (source: string) => void;
   handleVisualSearch: () => Promise<void>;
+  updateInspectorField: (key: string, value: number) => void;
 }
 
 export const EngineCtx = createContext<EngineContextValue | null>(null);

@@ -11,10 +11,11 @@ import {
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
+import type { PresetCatalogEntry } from './contracts.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
-import { PresetArtwork } from './PresetArtwork.tsx';
 
 type SidePanelProps = {
   open: boolean;
@@ -365,7 +366,9 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
     setMatches(null);
     setError(null);
     try {
-      const canvas = ui.stageRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+      const canvas = ui.stageRef.current?.querySelector(
+        'canvas',
+      ) as HTMLCanvasElement | null;
       if (!canvas) throw new Error('No canvas found');
       const results = await searchByFrame(canvas);
       if (results.length === 0) {
@@ -393,20 +396,28 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="stims-shell__visualsearch-panel">
       <div className="stims-shell__visualsearch-header">
-        <UiIcon name="eye" className="stims-shell__visualsearch-icon" aria-hidden="true" />
+        <UiIcon
+          name="eye"
+          className="stims-shell__visualsearch-icon"
+          aria-hidden="true"
+        />
         <h3>More like this</h3>
         <p className="stims-shell__visualsearch-desc">
           Finding visually similar presets…
         </p>
       </div>
       {loading ? (
-        <div className="stims-shell__visualsearch-loading">Analyzing frame…</div>
+        <div className="stims-shell__visualsearch-loading">
+          Analyzing frame…
+        </div>
       ) : error ? (
         <div className="stims-shell__visualsearch-error">{error}</div>
       ) : matches ? (
-        <ul className="stims-shell__visualsearch-results" role="list">
+        <ul className="stims-shell__visualsearch-results">
           {matches.length === 0 ? (
-            <li className="stims-shell__visualsearch-empty">No similar presets found</li>
+            <li className="stims-shell__visualsearch-empty">
+              No similar presets found
+            </li>
           ) : (
             matches.map((entry) => (
               <li key={entry.id} className="stims-shell__visualsearch-item">
@@ -420,7 +431,9 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
                 >
                   <PresetArtwork entry={entry} compact />
                   <div className="stims-shell__visualsearch-info">
-                    <span className="stims-shell__visualsearch-title">{entry.title}</span>
+                    <span className="stims-shell__visualsearch-title">
+                      {entry.title}
+                    </span>
                     <span className="stims-shell__visualsearch-meta">
                       {entry.author ? `by ${entry.author}` : 'Unknown author'}
                     </span>
@@ -436,7 +449,11 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
           className="stims-shell__visualsearch-refresh"
           onClick={handleSearch}
         >
-          <UiIcon name="refresh" className="stims-icon-slot stims-icon-slot--sm" aria-hidden="true" />
+          <UiIcon
+            name="refresh"
+            className="stims-icon-slot stims-icon-slot--sm"
+            aria-hidden="true"
+          />
           Analyze frame
         </button>
       )}
