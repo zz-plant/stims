@@ -3598,6 +3598,52 @@ body[data-page="workspace"] {
       min-height: 46px;
     }
 
+    .stims-shell__launch-source-dock .stims-shell__source-panel {
+      gap: 8px;
+    }
+
+    .stims-shell__launch-source-dock .stims-shell__youtube-primary {
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .stims-shell__launch-source-dock .stims-shell__youtube-row {
+      grid-template-columns: minmax(0, 1fr) 84px;
+    }
+
+    .stims-shell__launch-source-dock
+      .stims-shell__youtube-row
+      > :first-child {
+      grid-column: auto;
+    }
+
+    .stims-shell__launch-source-dock
+      .stims-shell__youtube-feedback[data-state="idle"],
+    .stims-shell__launch-source-dock
+      .stims-shell__settings-summary
+      .stims-shell__meta-copy {
+      display: none;
+    }
+
+    .stims-shell__launch-source-dock .stims-shell__source-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stims-shell__launch-source-dock .stims-shell__source-card {
+      min-height: 58px;
+      padding: 9px 10px;
+    }
+
+    .stims-shell__launch-source-dock
+      .stims-shell__source-card
+      span:not(.stims-shell__source-card-kicker) {
+      display: none;
+    }
+
+    .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
+      font-size: 0.62rem;
+    }
+
     .stims-shell__audio-bridge-copy .stims-shell__meta-copy {
       font-size: 0.82rem;
       line-height: 1.38;
