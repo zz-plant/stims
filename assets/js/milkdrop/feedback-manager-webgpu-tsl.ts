@@ -1311,6 +1311,15 @@ function createCompositeOutputNode(
   })();
 }
 
+function buildCompositeStateKey(state: MilkdropFeedbackCompositeState) {
+  return [
+    state.shaderExecution,
+    state.shaderPrograms.warp?.source ?? '',
+    state.shaderPrograms.comp?.source ?? '',
+    state.perPixelPrograms?.statements?.length ?? 0,
+  ].join('\u001f');
+}
+
 class WebGPUMilkdropFeedbackManager {
   readonly compositeScene = new Scene();
   readonly presentScene = new Scene();
@@ -1326,6 +1335,8 @@ class WebGPUMilkdropFeedbackManager {
   adaptiveFeedbackResolutionMultiplier = 1;
   currentCompositeKey = '';
   currentFeedbackResolutionScale = this.feedbackResolutionScale;
+  currentOverlayTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
+  currentWarpTextureName: keyof typeof MILKDROP_TEXTURE_FILES | null = null;
   viewportWidth: number;
   viewportHeight: number;
   private adaptiveResizeFrameId: number | null = null;
@@ -1414,12 +1425,7 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   applyCompositeState(state: MilkdropFeedbackCompositeState) {
-    const nextCompositeKey = JSON.stringify({
-      shaderExecution: state.shaderExecution,
-      warp: state.shaderPrograms.warp?.source ?? null,
-      comp: state.shaderPrograms.comp?.source ?? null,
-      perPixel: state.perPixelPrograms?.statements?.length ?? 0,
-    });
+    const nextCompositeKey = buildCompositeStateKey(state);
     if (nextCompositeKey !== this.currentCompositeKey) {
       this.currentCompositeKey = nextCompositeKey;
       this.compositeMaterial.outputNode = createCompositeOutputNode(
@@ -1461,19 +1467,25 @@ class WebGPUMilkdropFeedbackManager {
       state.overlayTextureSource,
     );
     const warpTextureName = resolveAuxTextureName(state.warpTextureSource);
-    if (overlayTextureName) {
-      this.compositeMaterial.uniforms[`${overlayTextureName}Tex`].value =
-        getSharedMilkdropTexture(
-          MILKDROP_TEXTURE_FILES[overlayTextureName],
-          overlayTextureName === 'aura',
-        );
+    if (overlayTextureName !== this.currentOverlayTextureName) {
+      this.currentOverlayTextureName = overlayTextureName;
+      if (overlayTextureName) {
+        this.compositeMaterial.uniforms[`${overlayTextureName}Tex`].value =
+          getSharedMilkdropTexture(
+            MILKDROP_TEXTURE_FILES[overlayTextureName],
+            overlayTextureName === 'aura',
+          );
+      }
     }
-    if (warpTextureName) {
-      this.compositeMaterial.uniforms[`${warpTextureName}Tex`].value =
-        getSharedMilkdropTexture(
-          MILKDROP_TEXTURE_FILES[warpTextureName],
-          warpTextureName === 'aura',
-        );
+    if (warpTextureName !== this.currentWarpTextureName) {
+      this.currentWarpTextureName = warpTextureName;
+      if (warpTextureName) {
+        this.compositeMaterial.uniforms[`${warpTextureName}Tex`].value =
+          getSharedMilkdropTexture(
+            MILKDROP_TEXTURE_FILES[warpTextureName],
+            warpTextureName === 'aura',
+          );
+      }
     }
 
     this.compositeMaterial.uniforms.mixAlpha.value = state.mixAlpha;
