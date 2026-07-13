@@ -6,6 +6,10 @@ import {
   useState,
 } from 'react';
 import styles from '../../css/SidePanel.module.css';
+import {
+  buildAudioProfile,
+  searchByAudioProfile,
+} from '../core/services/audio-matcher.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -142,7 +146,7 @@ export function SidePanel({
   );
 }
 
-export function RefinePanel({ onClose }: { onClose: () => void }) {
+export function RefinePanel() {
   const [instruction, setInstruction] = useState('');
   const [state, setState] = useState<'idle' | 'refining' | 'explaining'>(
     'idle',
@@ -173,8 +177,9 @@ export function RefinePanel({ onClose }: { onClose: () => void }) {
       } else {
         throw new Error('No source returned');
       }
-    } catch (err: any) {
-      setResponse(`Error: ${err.message}`);
+    } catch (err) {
+      const error = err as Error;
+      setResponse(`Error: ${error.message}`);
     } finally {
       setState('idle');
       ui.setStatusMessage(null);
@@ -199,8 +204,9 @@ export function RefinePanel({ onClose }: { onClose: () => void }) {
       setResponse(
         data.explanation || data.message || 'No explanation available.',
       );
-    } catch (err: any) {
-      setResponse(`Error: ${err.message}`);
+    } catch (err) {
+      const error = err as Error;
+      setResponse(`Error: ${error.message}`);
     } finally {
       setState('idle');
       ui.setStatusMessage(null);
@@ -249,6 +255,98 @@ export function RefinePanel({ onClose }: { onClose: () => void }) {
         >
           {response}
         </div>
+      )}
+    </div>
+  );
+}
+
+export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
+  const [matches, setMatches] = useState<Array<{
+    presetId: string;
+    score: number;
+  }> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { engine } = useWorkspace();
+  const { engineSnapshot } = useEngineSnapshot();
+  const audioEnergy = engineSnapshot?.audioEnergy ?? 0;
+
+  const handleMatch = useCallback(async () => {
+    if (!audioEnergy || loading) return;
+    setLoading(true);
+    setMatches(null);
+    try {
+      const profile = buildAudioProfile({ audioEnergy });
+      const results = await searchByAudioProfile(profile);
+      setMatches(results.slice(0, 5));
+    } catch (error) {
+      console.error('Audio match failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [audioEnergy, loading]);
+
+  useEffect(() => {
+    if (audioEnergy > 0.02) {
+      handleMatch();
+    }
+  }, [handleMatch, audioEnergy]);
+
+  return (
+    <div className="stims-shell__audiomatch-panel">
+      <div className="stims-shell__audiomatch-header">
+        <UiIcon
+          name="music"
+          className="stims-shell__audiomatch-icon"
+          aria-hidden="true"
+        />
+        <h3>Match my music</h3>
+        <p className="stims-shell__audiomatch-desc">
+          Finding presets that fit the current audio energy…
+        </p>
+      </div>
+      {loading ? (
+        <div className="stims-shell__audiomatch-loading">Analyzing audio…</div>
+      ) : matches ? (
+        <ul className="stims-shell__audiomatch-results">
+          {matches.length === 0 ? (
+            <li className="stims-shell__audiomatch-empty">No matches found</li>
+          ) : (
+            matches.map((match, i) => (
+              <li key={match.presetId} className="stims-shell__audiomatch-item">
+                <button
+                  type="button"
+                  className="stims-shell__audiomatch-btn"
+                  onClick={() => {
+                    engine.handlePlayPreset(match.presetId);
+                    onClose();
+                  }}
+                >
+                  <span className="stims-shell__audiomatch-rank">{i + 1}</span>
+                  <span className="stims-shell__audiomatch-id">
+                    {match.presetId}
+                  </span>
+                  <span className="stims-shell__audiomatch-score">
+                    {(match.score * 100).toFixed(0)}% match
+                  </span>
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : (
+        <button
+          type="button"
+          className="stims-shell__audiomatch-refresh"
+          onClick={handleMatch}
+          disabled={loading || audioEnergy < 0.02}
+        >
+          <UiIcon
+            name="refresh"
+            className="stims-icon-slot stims-icon-slot--sm"
+            aria-hidden="true"
+          />
+          Analyze audio
+        </button>
       )}
     </div>
   );

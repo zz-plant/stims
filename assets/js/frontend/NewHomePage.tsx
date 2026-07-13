@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { UiIconName } from '../ui/icon-library.ts';
 import { useGeneratePreset } from './hooks/useGeneratePreset.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
@@ -17,6 +17,68 @@ const MOOD_SHORTCUTS: Array<{ label: string; desc: string; icon: UiIconName }> =
     },
     { label: 'Cosmic', desc: 'deep space nebula drift', icon: 'sparkles' },
   ];
+
+function ImageDropZone({ onImageSelected }: { onImageSelected: (file: File) => void }) {
+  const [dragActive, setDragActive] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      onImageSelected(file);
+    }
+  };
+
+  const handleClick = () => inputRef.current?.click();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      onImageSelected(file);
+    }
+  };
+
+  return (
+    <button
+      className={`stims-shell__image-dropzone ${dragActive ? 'stims-shell__image-dropzone--active' : ''}`}
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+      onClick={handleClick}
+      type="button"
+      tabIndex={0}
+      aria-label="Upload image to generate preset"
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="stims-shell__image-dropzone-input"
+        hidden
+      />
+      <UiIcon name="image" className="stims-shell__image-dropzone-icon" aria-hidden="true" />
+      <p className="stims-shell__image-dropzone-text">
+        {dragActive ? 'Drop image here' : 'Drop image or click to upload'}
+      </p>
+      <p className="stims-shell__image-dropzone-hint">AI will generate a visualizer from your image</p>
+    </button>
+  );
+}
 
 export function NewHomePage() {
   const { ui, engine } = useWorkspace();

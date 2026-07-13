@@ -162,10 +162,15 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M22 6h.01' } },
     { tag: 'path', attrs: { d: 'M22 2h.01' } },
   ],
-  trash: [
+trash: [
     { tag: 'path', attrs: { d: 'M3 6h18' } },
     { tag: 'path', attrs: { d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' } },
     { tag: 'path', attrs: { d: 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2' } },
+  ],
+  image: [
+    { tag: 'rect', attrs: { x: 3, y: 3, width: 18, height: 18, rx: 2, ry: 2 } },
+    { tag: 'circle', attrs: { cx: 8.5, cy: 8.5, r: 1.5 } },
+    { tag: 'path', attrs: { d: 'M21 15l-5-5L5 17' } },
   ],
 } as const satisfies Record<string, readonly IconNode[]>;
 

@@ -125,6 +125,11 @@ export function StageControls({
     void engine.handleVisualSearch?.();
   }, [engine, signalActivity]);
 
+  const handleAudioMatch = useCallback(() => {
+    signalActivity();
+    ui.updatePanel(panel === 'audiomatch' ? null : 'audiomatch');
+  }, [ui, panel, signalActivity]);
+
   const handleRefine = useCallback(() => {
     signalActivity();
     setShowOverflow(false);
@@ -187,6 +192,22 @@ export function StageControls({
               className="stims-icon-slot stims-icon-slot--sm"
             />
           </button>
+          {engineSnapshot?.audioActive ? (
+            <button
+              type="button"
+              className={styles.btn}
+              data-active={String(panel === 'audiomatch')}
+              aria-expanded={panel === 'audiomatch'}
+              aria-label="Match my music"
+              title="Match my music"
+              onClick={handleAudioMatch}
+            >
+              <UiIcon
+                name="pulse"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+            </button>
+          ) : null}
           <button
             type="button"
             className={styles.btn}

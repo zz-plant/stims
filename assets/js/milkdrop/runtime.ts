@@ -939,7 +939,7 @@ function buildExperienceController(deps: any) {
       deps.emitChange();
     },
 
-    openTab(tab: 'browse' | 'editor' | 'inspector' | 'refine') {
+    openTab(tab: 'browse' | 'editor' | 'inspector' | 'refine' | 'audiomatch') {
       deps.overlay?.openTab(tab);
       deps.emitChange();
     },

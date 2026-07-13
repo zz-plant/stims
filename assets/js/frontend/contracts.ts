@@ -8,6 +8,7 @@ export type PanelState =
   | 'editor'
   | 'inspector'
   | 'refine'
+  | 'audiomatch'
   | 'settings'
   | null;
 

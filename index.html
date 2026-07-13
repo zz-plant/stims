@@ -33,6 +33,11 @@
       @keyframes stims-bounce{0%,80%,to{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:.9}}
       @keyframes loading-breathe{0%,to{opacity:.85}50%{opacity:1}}
       @media(prefers-reduced-motion:reduce){.stims-loading,.stims-loading__spinner,.stims-loading__spinner:before,.stims-loading__text,.stims-loading__dots span{animation:none}}
+      .stims-loading__fallback{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:32px 40px;max-width:420px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.35);backdrop-filter:blur(16px);margin:20px}
+      .stims-loading__fallback p{margin:0 0 24px;font-size:1rem;line-height:1.6;opacity:0.85}
+      .stims-loading__retry{display:inline-block;background:#5fc0b5;color:#0a0f19;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;font-size:0.9rem;letter-spacing:0.02em;transition:transform 150ms ease,opacity 150ms ease}
+      .stims-loading__retry:hover{transform:scale(1.03);opacity:0.95}
+      .stims-loading__retry:active{transform:scale(0.98)}
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -127,7 +132,7 @@
     </nav>
     <noscript>
       <div class="stims-loading" role="alert">
-        <div>
+        <div class="stims-loading__fallback">
           <p>JavaScript is required to run Stims.</p>
           <p>Please enable JavaScript in your browser and reload the page.</p>
         </div>
@@ -155,7 +160,7 @@
           const loading = document.getElementById('stims-loading');
           if (!loading || document.getElementById('stims-main')) return;
           loading.innerHTML =
-            '<div>' +
+            '<div class="stims-loading__fallback">' +
             '<p>Stims is taking longer than expected to load.</p>' +
             '<p><a href="." class="stims-loading__retry">Reload page</a></p>' +
             '</div>';
