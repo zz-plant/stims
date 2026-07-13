@@ -181,7 +181,10 @@ class MilkdropPresetVM implements MilkdropVM {
       if (this.frameVariablesSnapshot === null) {
         this.frameVariablesSnapshot = this.getStateSnapshot();
       }
-      return Reflect.getOwnPropertyDescriptor(this.frameVariablesSnapshot, prop);
+      return Reflect.getOwnPropertyDescriptor(
+        this.frameVariablesSnapshot,
+        prop,
+      );
     },
   });
 

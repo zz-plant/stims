@@ -1914,7 +1914,11 @@ body[data-page="workspace"] {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)),
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.055),
+        rgba(255, 255, 255, 0.02)
+      ),
       radial-gradient(
         circle at 88% 0%,
         rgba(244, 122, 84, 0.12),

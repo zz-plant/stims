@@ -86,10 +86,7 @@ export function NewHomePage() {
               >
                 Explore presets
               </button>
-              <div
-                className="stims-shell__launch-source-dock"
-                aria-label="Audio source choices"
-              >
+              <div className="stims-shell__launch-source-dock">
                 <AudioSourcePanel />
               </div>
             </div>

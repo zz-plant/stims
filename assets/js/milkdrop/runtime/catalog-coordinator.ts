@@ -34,7 +34,9 @@ function didCatalogSortFieldsChange(
   left: MilkdropCatalogEntry,
   right: MilkdropCatalogEntry,
 ) {
-  return CATALOG_SORT_FIELDS.some((field) => !Object.is(left[field], right[field]));
+  return CATALOG_SORT_FIELDS.some(
+    (field) => !Object.is(left[field], right[field]),
+  );
 }
 
 export function createMilkdropCatalogCoordinator({

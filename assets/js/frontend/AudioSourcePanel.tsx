@@ -117,9 +117,7 @@ export function AudioSourcePanel() {
         {recentYouTubeVideos.length > 0 ? (
           <div className="stims-shell__youtube-recent">
             <div className="stims-shell__youtube-recent-header">
-              <p className="stims-shell__field-label">
-                Recent videos
-              </p>
+              <p className="stims-shell__field-label">Recent videos</p>
               <button
                 type="button"
                 className="stims-shell__clear-filters stims-shell__clear-filters--compact"
@@ -174,9 +172,7 @@ export function AudioSourcePanel() {
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() => onAudioStart('tab')}
         >
-          <span className="stims-shell__source-card-kicker">
-            Browser audio
-          </span>
+          <span className="stims-shell__source-card-kicker">Browser audio</span>
           <strong>This tab</strong>
           <span>Audio from this browser tab</span>
         </button>
