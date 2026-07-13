@@ -10,9 +10,11 @@ import {
   buildAudioProfile,
   searchByAudioProfile,
 } from '../core/services/audio-matcher.ts';
+import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
+import { PresetArtwork } from './PresetArtwork.tsx';
 
 type SidePanelProps = {
   open: boolean;
@@ -346,6 +348,96 @@ export function AudioMatchPanel({ onClose }: { onClose: () => void }) {
             aria-hidden="true"
           />
           Analyze audio
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
+  const [matches, setMatches] = useState<PresetCatalogEntry[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { engine, ui } = useWorkspace();
+
+  const handleSearch = useCallback(async () => {
+    setLoading(true);
+    setMatches(null);
+    setError(null);
+    try {
+      const canvas = ui.stageRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!canvas) throw new Error('No canvas found');
+      const results = await searchByFrame(canvas);
+      if (results.length === 0) {
+        setMatches([]);
+      } else {
+        const fullMatches = results
+          .map((r) => engine.catalog.find((e) => e.id === r.presetId))
+          .filter((e): e is PresetCatalogEntry => e !== undefined);
+        setMatches(fullMatches);
+      }
+    } catch (err) {
+      const error = err as Error;
+      if (error.name !== 'AbortError') {
+        setError(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [engine, ui]);
+
+  useEffect(() => {
+    handleSearch();
+  }, [handleSearch]);
+
+  return (
+    <div className="stims-shell__visualsearch-panel">
+      <div className="stims-shell__visualsearch-header">
+        <UiIcon name="eye" className="stims-shell__visualsearch-icon" aria-hidden="true" />
+        <h3>More like this</h3>
+        <p className="stims-shell__visualsearch-desc">
+          Finding visually similar presets…
+        </p>
+      </div>
+      {loading ? (
+        <div className="stims-shell__visualsearch-loading">Analyzing frame…</div>
+      ) : error ? (
+        <div className="stims-shell__visualsearch-error">{error}</div>
+      ) : matches ? (
+        <ul className="stims-shell__visualsearch-results" role="list">
+          {matches.length === 0 ? (
+            <li className="stims-shell__visualsearch-empty">No similar presets found</li>
+          ) : (
+            matches.map((entry) => (
+              <li key={entry.id} className="stims-shell__visualsearch-item">
+                <button
+                  type="button"
+                  className="stims-shell__visualsearch-btn"
+                  onClick={() => {
+                    engine.handlePlayPreset(entry.id);
+                    onClose();
+                  }}
+                >
+                  <PresetArtwork entry={entry} compact />
+                  <div className="stims-shell__visualsearch-info">
+                    <span className="stims-shell__visualsearch-title">{entry.title}</span>
+                    <span className="stims-shell__visualsearch-meta">
+                      {entry.author ? `by ${entry.author}` : 'Unknown author'}
+                    </span>
+                  </div>
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : (
+        <button
+          type="button"
+          className="stims-shell__visualsearch-refresh"
+          onClick={handleSearch}
+        >
+          <UiIcon name="refresh" className="stims-icon-slot stims-icon-slot--sm" aria-hidden="true" />
+          Analyze frame
         </button>
       )}
     </div>

@@ -162,7 +162,7 @@ const ICON_NODES = {
     { tag: 'path', attrs: { d: 'M22 6h.01' } },
     { tag: 'path', attrs: { d: 'M22 2h.01' } },
   ],
-trash: [
+  trash: [
     { tag: 'path', attrs: { d: 'M3 6h18' } },
     { tag: 'path', attrs: { d: 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6' } },
     { tag: 'path', attrs: { d: 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2' } },
@@ -171,6 +171,22 @@ trash: [
     { tag: 'rect', attrs: { x: 3, y: 3, width: 18, height: 18, rx: 2, ry: 2 } },
     { tag: 'circle', attrs: { cx: 8.5, cy: 8.5, r: 1.5 } },
     { tag: 'path', attrs: { d: 'M21 15l-5-5L5 17' } },
+  ],
+  music: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z',
+      },
+    },
+  ],
+  refresh: [
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+      },
+    },
   ],
 } as const satisfies Record<string, readonly IconNode[]>;
 

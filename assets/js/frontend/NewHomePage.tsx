@@ -18,7 +18,11 @@ const MOOD_SHORTCUTS: Array<{ label: string; desc: string; icon: UiIconName }> =
     { label: 'Cosmic', desc: 'deep space nebula drift', icon: 'sparkles' },
   ];
 
-function ImageDropZone({ onImageSelected }: { onImageSelected: (file: File) => void }) {
+function ImageDropZone({
+  onImageSelected,
+}: {
+  onImageSelected: (file: File) => void;
+}) {
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +41,7 @@ function ImageDropZone({ onImageSelected }: { onImageSelected: (file: File) => v
     e.stopPropagation();
     setDragActive(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file?.type.startsWith('image/')) {
       onImageSelected(file);
     }
   };
@@ -46,7 +50,7 @@ function ImageDropZone({ onImageSelected }: { onImageSelected: (file: File) => v
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file?.type.startsWith('image/')) {
       onImageSelected(file);
     }
   };
@@ -71,11 +75,17 @@ function ImageDropZone({ onImageSelected }: { onImageSelected: (file: File) => v
         className="stims-shell__image-dropzone-input"
         hidden
       />
-      <UiIcon name="image" className="stims-shell__image-dropzone-icon" aria-hidden="true" />
+      <UiIcon
+        name="image"
+        className="stims-shell__image-dropzone-icon"
+        aria-hidden="true"
+      />
       <p className="stims-shell__image-dropzone-text">
         {dragActive ? 'Drop image here' : 'Drop image or click to upload'}
       </p>
-      <p className="stims-shell__image-dropzone-hint">AI will generate a visualizer from your image</p>
+      <p className="stims-shell__image-dropzone-hint">
+        AI will generate a visualizer from your image
+      </p>
     </button>
   );
 }
@@ -86,6 +96,31 @@ export function NewHomePage() {
   const catalogReady = engine.catalogReady;
   const catalog = engine.catalog;
   const { state, description, setDescription, generate } = useGeneratePreset();
+
+  const _handleImageSelect = (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    ui.setStatusMessage('Analyzing image…');
+    fetch('/api/image-to-preset', {
+      method: 'POST',
+      body: formData,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (data.milkSource) {
+          engine.updateEditorSource(data.milkSource);
+          ui.setStatusMessage(`Generated: ${data.title || 'New Preset'}`);
+        } else {
+          throw new Error('No source returned');
+        }
+      })
+      .catch((err) => {
+        ui.setStatusMessage(`Failed: ${err.message}`);
+      });
+  };
 
   useEffect(() => {
     if (!catalogReady || catalog.length === 0 || !featuredPreset) return;
@@ -191,6 +226,33 @@ export function NewHomePage() {
               </button>
             ))}
           </fieldset>
+
+          <ImageDropZone
+            onImageSelected={async (file) => {
+              const formData = new FormData();
+              formData.append('image', file);
+              ui.setStatusMessage('Analyzing image…');
+              try {
+                const res = await fetch('/api/image-to-preset', {
+                  method: 'POST',
+                  body: formData,
+                });
+                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+                const data = await res.json();
+                if (data.milkSource) {
+                  await engine.updateEditorSource(data.milkSource);
+                  ui.setStatusMessage(
+                    `Generated: ${data.title || 'New Preset'}`,
+                  );
+                } else {
+                  throw new Error('No source returned');
+                }
+              } catch (err) {
+                const error = err as Error;
+                ui.setStatusMessage(`Image-to-preset failed: ${error.message}`);
+              }
+            }}
+          />
 
           <button
             type="button"
