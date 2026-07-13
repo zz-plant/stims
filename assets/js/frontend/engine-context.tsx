@@ -68,6 +68,7 @@ export interface EngineContextValue {
     onLoaded?: () => void,
   ) => void;
   setQualityPreset: (presetId: string) => void;
+  updateEditorSource: (source: string) => void;
 }
 
 export const EngineCtx = createContext<EngineContextValue | null>(null);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { shareOrCopyLink } from '../utils/share-link.ts';
+import { searchByFrame } from '../core/services/visual-embedding.ts';
 import type {
   PanelState,
   PresetCatalogEntry,
@@ -36,7 +37,9 @@ type WorkspaceShellOrchestrationArgs = {
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
     stream?: MediaStream;
   }) => Promise<void>;
-  youtubePreviewRef: { current: HTMLDivElement | null };
+  updateEditorSource: (source: string) => void;
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  youtubePreviewRef: React.RefObject<HTMLDivElement | null>;
 };
 
 export function useWorkspaceShellOrchestration({
@@ -52,6 +55,8 @@ export function useWorkspaceShellOrchestration({
   routeState,
   setStatusMessage,
   startAudioSource,
+  updateEditorSource,
+  stageRef,
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
@@ -273,6 +278,17 @@ export function useWorkspaceShellOrchestration({
     }
 
     handlePresetSelection(nextPreset.id);
+  };
+
+  const handleVisualSearch = async () => {
+    if (!stageRef.current) return;
+    const canvas = stageRef.current.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!canvas) return;
+    try {
+      await searchByFrame(canvas);
+    } catch (error) {
+      console.error('Visual search failed:', error);
+    }
   };
 
   const handlePreviousPreset = () => {

@@ -122,6 +122,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setStatusMessage: sessionState.setStatusMessage,
     startAudioSource: sessionState.startAudioSource,
     youtubePreviewRef: sessionState.youtubePreviewRef,
+    updateEditorSource: sessionState.updateEditorSource,
   });
 
   const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
@@ -192,6 +193,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       clearRecentYouTubeVideos: sessionState.clearRecentYouTubeVideos,
       handleYoutubeUrlKeyDown: sessionState.handleYoutubeUrlKeyDown,
       setQualityPreset: sessionState.setQualityPreset,
+      updateEditorSource: sessionState.updateEditorSource,
     }),
     [
       sessionState.presetPreviews,
@@ -228,6 +230,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.clearRecentYouTubeVideos,
       sessionState.handleYoutubeUrlKeyDown,
       sessionState.setQualityPreset,
+      sessionState.updateEditorSource,
     ],
   );
 

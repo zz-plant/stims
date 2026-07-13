@@ -410,6 +410,9 @@ export function useWorkspaceSessionState({
         storageKey: QUALITY_STORAGE_KEY,
       });
     },
+    updateEditorSource: (source: string) => {
+      engineRef.current?.updateEditorSource(source);
+    },
     setSearchQuery,
     setShowExtendedSources,
     setStatusMessage,

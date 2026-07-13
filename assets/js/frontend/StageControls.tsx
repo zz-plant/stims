@@ -120,6 +120,17 @@ export function StageControls({
     setShowOverflow((s) => !s);
   }, [signalActivity]);
 
+  const handleVisualSearch = useCallback(() => {
+    signalActivity();
+    void engine.handleVisualSearch?.();
+  }, [engine, signalActivity]);
+
+  const handleRefine = useCallback(() => {
+    signalActivity();
+    setShowOverflow(false);
+    ui.updatePanel(panel === 'refine' ? null : 'refine');
+  }, [ui, panel, signalActivity]);
+
   return (
     <>
       <div
@@ -167,28 +178,12 @@ export function StageControls({
           <button
             type="button"
             className={styles.btn}
-            data-active={String(panel === 'browse')}
-            aria-expanded={panel === 'browse'}
-            aria-label="Browse presets"
-            title="Browse"
-            onClick={handleBrowse}
+            aria-label="More like this"
+            title="More like this"
+            onClick={handleVisualSearch}
           >
             <UiIcon
-              name="sparkles"
-              className="stims-icon-slot stims-icon-slot--sm"
-            />
-          </button>
-          <button
-            type="button"
-            className={styles.btn}
-            data-active={String(panel === 'settings')}
-            aria-expanded={panel === 'settings'}
-            aria-label="Settings"
-            title="Settings"
-            onClick={handleSettings}
-          >
-            <UiIcon
-              name="sliders"
+              name="eye"
               className="stims-icon-slot stims-icon-slot--sm"
             />
           </button>
@@ -251,6 +246,36 @@ export function StageControls({
               type="button"
               role="menuitem"
               className={styles.btn}
+              data-active={String(panel === 'browse')}
+              aria-label="Browse presets"
+              title="Browse"
+              onClick={handleBrowse}
+            >
+              <UiIcon
+                name="sparkles"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className={styles.btnLabel}>Browse</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.btn}
+              data-active={String(panel === 'settings')}
+              aria-label="Settings"
+              title="Settings"
+              onClick={handleSettings}
+            >
+              <UiIcon
+                name="sliders"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className={styles.btnLabel}>Settings</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.btn}
               data-active={String(panel === 'editor')}
               aria-label="Edit preset code"
               title="Edit"
@@ -261,6 +286,21 @@ export function StageControls({
                 className="stims-icon-slot stims-icon-slot--sm"
               />
               <span className={styles.btnLabel}>Edit</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.btn}
+              data-active={String(panel === 'refine')}
+              aria-label="Refine this preset"
+              title="Refine"
+              onClick={handleRefine}
+            >
+              <UiIcon
+                name="wand"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className={styles.btnLabel}>Refine</span>
             </button>
             <button
               type="button"

@@ -3,7 +3,7 @@ import type { MilkdropVisualCertification } from '../milkdrop/types.ts';
 
 export type AudioSource = 'demo' | 'microphone' | 'tab' | 'youtube' | 'file';
 
-export type PanelState = 'browse' | 'editor' | 'inspector' | 'settings' | null;
+export type PanelState = 'browse' | 'editor' | 'inspector' | 'refine' | 'settings' | null;
 
 export type LaunchIntent = {
   presetId: string | null;

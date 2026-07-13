@@ -349,6 +349,10 @@ export function createMilkdropEngineAdapter() {
       return experience?.setQualityPreset(presetId) ?? null;
     },
 
+    updateEditorSource(source: string) {
+      experience?.updateEditorSource(source);
+    },
+
     async importPreset(target: FileList | File[] | string) {
       if (!experience) {
         return;
