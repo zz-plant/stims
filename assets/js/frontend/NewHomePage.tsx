@@ -87,7 +87,7 @@ export function NewHomePage() {
                 Explore presets
               </button>
               <div className="stims-shell__launch-source-dock">
-                <AudioSourcePanel />
+                <AudioSourcePanel showHelp={false} />
               </div>
             </div>
           </div>

@@ -1497,10 +1497,10 @@ body[data-page="workspace"] {
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-    inset: clamp(112px, 15vh, 172px) 44px 44px;
+    inset: clamp(84px, 12vh, 128px) 44px 44px;
     width: auto;
-    align-content: center;
-    align-items: center;
+    align-content: start;
+    align-items: start;
     justify-items: center;
   }
 
@@ -3611,9 +3611,7 @@ body[data-page="workspace"] {
       grid-template-columns: minmax(0, 1fr) 84px;
     }
 
-    .stims-shell__launch-source-dock
-      .stims-shell__youtube-row
-      > :first-child {
+    .stims-shell__launch-source-dock .stims-shell__youtube-row > :first-child {
       grid-column: auto;
     }
 

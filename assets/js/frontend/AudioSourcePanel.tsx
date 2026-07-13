@@ -2,7 +2,11 @@ import { useId } from 'react';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
-export function AudioSourcePanel() {
+type AudioSourcePanelProps = {
+  showHelp?: boolean;
+};
+
+export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const sourcePanelId = useId();
   const sourceHeadingId = `${sourcePanelId}-source-heading`;
   const engineStatusId = `${sourcePanelId}-engine-status`;
@@ -177,20 +181,22 @@ export function AudioSourcePanel() {
           <span>Audio from this browser tab</span>
         </button>
       </div>
-      <details className="stims-shell__settings-advanced">
-        <summary className="stims-shell__settings-summary">
-          <span>Audio help</span>
-          <span className="stims-shell__meta-copy">
-            Permissions and capture
-          </span>
-        </summary>
-        <div className="stims-shell__settings-advanced-body">
-          <p className="stims-shell__meta-copy">
-            Allow microphone access in site permissions. For tab audio and
-            YouTube, share the browser tab with audio enabled.
-          </p>
-        </div>
-      </details>
+      {showHelp ? (
+        <details className="stims-shell__settings-advanced">
+          <summary className="stims-shell__settings-summary">
+            <span>Audio help</span>
+            <span className="stims-shell__meta-copy">
+              Permissions and capture
+            </span>
+          </summary>
+          <div className="stims-shell__settings-advanced-body">
+            <p className="stims-shell__meta-copy">
+              Allow microphone access in site permissions. For tab audio and
+              YouTube, share the browser tab with audio enabled.
+            </p>
+          </div>
+        </details>
+      ) : null}
     </section>
   );
 }

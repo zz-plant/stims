@@ -39,7 +39,7 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(homeSource).toContain('cta-button primary');
     expect(homeSource).toContain('focusYouTubeInput');
     expect(homeSource).toContain('stims-shell__launch-source-dock');
-    expect(homeSource).toContain('<AudioSourcePanel');
+    expect(homeSource).toContain('<AudioSourcePanel showHelp={false}');
     expect(homeSource).not.toContain('stims-shell__audio-setup-details');
     expect(homeSource).not.toContain('showPlayback');
     expect(audioSourceSource).toContain('YouTube playback');
@@ -53,5 +53,7 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(audioSourceSource).not.toContain('Advanced audio setup');
     expect(appShellCss).toContain('.stims-shell__launch-source-dock');
     expect(appShellCss).toContain('.stims-shell__youtube-primary');
+    expect(appShellCss).toContain('align-content: start;');
+    expect(appShellCss).toContain('align-items: start;');
   });
 });
