@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { shareOrCopyLink } from '../utils/share-link.ts';
-import { searchByFrame } from '../core/services/visual-embedding.ts';
 import type {
   PanelState,
   PresetCatalogEntry,
@@ -81,6 +81,19 @@ export function useWorkspaceShellOrchestration({
   );
 
   const catalogError = null;
+
+  const handleVisualSearch = useCallback(async () => {
+    if (!stageRef.current) return;
+    const canvas = stageRef.current.querySelector(
+      'canvas',
+    ) as HTMLCanvasElement | null;
+    if (!canvas) return;
+    try {
+      await searchByFrame(canvas);
+    } catch (error) {
+      console.error('Visual search failed:', error);
+    }
+  }, [stageRef]);
 
   const filteredCatalog = useMemo(
     () =>
@@ -178,6 +191,7 @@ export function useWorkspaceShellOrchestration({
       selectedPreset,
       starterPresets,
       stageAnchoredToolOpen: routeState.panel === 'editor',
+      updateEditorSource,
     }),
     [
       enrichedCatalog,
@@ -193,6 +207,7 @@ export function useWorkspaceShellOrchestration({
       runtimeReady,
       selectedPreset,
       starterPresets,
+      updateEditorSource,
     ],
   );
 
@@ -278,17 +293,6 @@ export function useWorkspaceShellOrchestration({
     }
 
     handlePresetSelection(nextPreset.id);
-  };
-
-  const handleVisualSearch = async () => {
-    if (!stageRef.current) return;
-    const canvas = stageRef.current.querySelector('canvas') as HTMLCanvasElement | null;
-    if (!canvas) return;
-    try {
-      await searchByFrame(canvas);
-    } catch (error) {
-      console.error('Visual search failed:', error);
-    }
   };
 
   const handlePreviousPreset = () => {
@@ -499,6 +503,8 @@ export function useWorkspaceShellOrchestration({
     handleShowCurrentLink,
     handleAudioFile,
     handleShufflePreset,
+    handleVisualSearch,
     updatePanel,
+    updateEditorSource: shellState.updateEditorSource,
   };
 }

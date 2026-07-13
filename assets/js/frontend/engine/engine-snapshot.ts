@@ -12,6 +12,7 @@ export type EngineSnapshot = {
   adaptiveQuality: ExperienceSnapshot['adaptiveQuality'] | null;
   catalogEntries: ExperienceSnapshot['catalogEntries'];
   sessionState: ExperienceSnapshot['sessionState'] | null;
+  currentSource: string;
   runtimeReady: boolean;
   audioActive: boolean;
   audioSource: AudioSource | null;
@@ -26,6 +27,7 @@ export function createEmptyEngineSnapshot(): EngineSnapshot {
     adaptiveQuality: null,
     catalogEntries: [],
     sessionState: null,
+    currentSource: '',
     runtimeReady: false,
     audioActive: false,
     audioSource: null,
@@ -42,6 +44,7 @@ function shallowEqual(a: EngineSnapshot, b: EngineSnapshot): boolean {
     a.adaptiveQuality === b.adaptiveQuality &&
     a.catalogEntries === b.catalogEntries &&
     a.sessionState === b.sessionState &&
+    a.currentSource === b.currentSource &&
     a.runtimeReady === b.runtimeReady &&
     a.audioActive === b.audioActive &&
     a.audioSource === b.audioSource &&
@@ -70,6 +73,7 @@ export function buildEngineSnapshot({
     adaptiveQuality: snapshot?.adaptiveQuality ?? null,
     catalogEntries: snapshot?.catalogEntries ?? [],
     sessionState: snapshot?.sessionState ?? null,
+    currentSource: snapshot?.sessionState?.source ?? '',
     runtimeReady: Boolean(runtime),
     audioActive,
     audioSource,

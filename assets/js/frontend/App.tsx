@@ -319,19 +319,19 @@ function StimsWorkspaceAppShell() {
     setInstallPrompt(null);
   }, [installPrompt]);
 
-  const stageEyebrow = engine.loadingRequestedPreset
+  const _stageEyebrow = engine.loadingRequestedPreset
     ? 'Loading preset'
     : liveMode
       ? 'Now playing'
       : 'Ready to play';
-  const stageTitle = engine.loadingRequestedPreset
+  const _stageTitle = engine.loadingRequestedPreset
     ? 'Loading preset'
     : engine.selectedPreset
       ? engine.selectedPreset.title
       : engine.missingRequestedPreset
         ? 'Choose another preset'
         : (engine.featuredPreset?.title ?? 'Recommended preset');
-  const stageSummary = engine.loadingRequestedPreset
+  const _stageSummary = engine.loadingRequestedPreset
     ? `Loading ${ui.routeState.presetId}.`
     : engine.selectedPreset
       ? engine.selectedPreset.author || 'Unknown author'
@@ -456,9 +456,6 @@ function StimsWorkspaceAppShell() {
         launchPanel={<NewHomePage />}
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
-        stageEyebrow={stageEyebrow}
-        stageSummary={stageSummary}
-        stageTitle={stageTitle}
       />
 
       <RendererFallbackBadge />
