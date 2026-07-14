@@ -68,7 +68,7 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             id={youtubeInputId}
             className="stims-shell__input"
             type="url"
-            placeholder="https://youtube.com/watch?v=..."
+            placeholder="Paste a YouTube link..."
             autoComplete="off"
             inputMode="url"
             spellCheck={false}

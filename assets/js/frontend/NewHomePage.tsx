@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { UiIconName } from '../ui/icon-library.ts';
+import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { useGeneratePreset } from './hooks/useGeneratePreset.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
@@ -95,6 +96,7 @@ export function NewHomePage() {
   const featuredPreset = engine.featuredPreset;
   const catalogReady = engine.catalogReady;
   const catalog = engine.catalog;
+  const [showCreate, setShowCreate] = useState(false);
   const { state, description, setDescription, generate } = useGeneratePreset();
 
   const _handleImageSelect = (file: File) => {
@@ -162,106 +164,139 @@ export function NewHomePage() {
         <div className="stims-shell__launch-header">
           <div className="stims-shell__launch-copy">
             <h1 id="stims-launch-title">Stims</h1>
-            <p className="stims-shell__eyebrow">Sound into motion</p>
+            <p className="stims-shell__eyebrow">Your audio, in motion</p>
+            <p>
+              Paste a YouTube link, share a browser tab, or connect a
+              microphone. Stims turns the music you choose into a live visual.
+            </p>
           </div>
 
-          <form className="stims-shell__generate-form" onSubmit={handleSubmit}>
-            <div className="stims-shell__generate-input-wrap">
-              <label htmlFor="generate-input" className="stims-shell__sr-only">
-                Describe what you want to see
-              </label>
-              <input
-                id="generate-input"
-                type="text"
-                className="stims-shell__generate-input"
-                placeholder="Describe what you want to see..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={state === 'generating'}
-                aria-busy={state === 'generating'}
-              />
-              <button
-                type="submit"
-                className="stims-shell__generate-btn"
-                disabled={state === 'generating' || !description.trim()}
-                aria-label={
-                  state === 'generating' ? 'Generating...' : 'Generate'
-                }
+          <div className="stims-shell__launch-source-dock">
+            <AudioSourcePanel showHelp={false} />
+          </div>
+
+          <div className="stims-shell__launch-actions">
+            <button
+              type="button"
+              className="stims-shell__text-button stims-shell__explore-link"
+              onClick={() => ui.updatePanel('browse')}
+            >
+              Explore presets
+            </button>
+          </div>
+
+          <details
+            className="stims-shell__launch-create"
+            open={showCreate}
+            onToggle={(event) => setShowCreate(event.currentTarget.open)}
+          >
+            <summary className="stims-shell__launch-create-summary">
+              <span>
+                <strong>Create a visual preset</strong>
+                <small>Optional tools for making a look</small>
+              </span>
+            </summary>
+            <div className="stims-shell__launch-create-body">
+              <form
+                className="stims-shell__generate-form"
+                onSubmit={handleSubmit}
               >
-                {state === 'generating' ? (
-                  <>
+                <div className="stims-shell__generate-input-wrap">
+                  <label
+                    htmlFor="generate-input"
+                    className="stims-shell__sr-only"
+                  >
+                    Describe what you want to see
+                  </label>
+                  <input
+                    id="generate-input"
+                    type="text"
+                    className="stims-shell__generate-input"
+                    placeholder="Describe a visual style..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={state === 'generating'}
+                    aria-busy={state === 'generating'}
+                  />
+                  <button
+                    type="submit"
+                    className="stims-shell__generate-btn"
+                    disabled={state === 'generating' || !description.trim()}
+                    aria-label={
+                      state === 'generating'
+                        ? 'Generating...'
+                        : 'Generate visual preset'
+                    }
+                  >
+                    {state === 'generating' ? (
+                      <>
+                        <UiIcon
+                          name="spinner"
+                          className="stims-shell__generate-spinner"
+                          aria-hidden="true"
+                        />
+                        Generating…
+                      </>
+                    ) : (
+                      'Generate preset'
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              <fieldset
+                className="stims-shell__mood-shortcuts"
+                aria-label="Quick moods"
+              >
+                {MOOD_SHORTCUTS.map((mood) => (
+                  <button
+                    key={mood.label}
+                    type="button"
+                    className="stims-shell__mood-btn"
+                    onClick={() => handleMoodClick(mood)}
+                    disabled={state === 'generating'}
+                    aria-label={`Generate ${mood.label.toLowerCase()} preset`}
+                  >
                     <UiIcon
-                      name="spinner"
-                      className="stims-shell__generate-spinner"
+                      name={mood.icon}
+                      className="stims-shell__mood-icon"
                       aria-hidden="true"
                     />
-                    Generating…
-                  </>
-                ) : (
-                  'Generate'
-                )}
-              </button>
+                    <span>{mood.label}</span>
+                  </button>
+                ))}
+              </fieldset>
+
+              <ImageDropZone
+                onImageSelected={async (file) => {
+                  const formData = new FormData();
+                  formData.append('image', file);
+                  ui.setStatusMessage('Analyzing image…');
+                  try {
+                    const res = await fetch('/api/image-to-preset', {
+                      method: 'POST',
+                      body: formData,
+                    });
+                    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+                    const data = await res.json();
+                    if (data.milkSource) {
+                      await engine.updateEditorSource(data.milkSource);
+                      ui.setStatusMessage(
+                        `Generated: ${data.title || 'New Preset'}`,
+                      );
+                    } else {
+                      throw new Error('No source returned');
+                    }
+                  } catch (err) {
+                    const error = err as Error;
+                    ui.setStatusMessage(
+                      `Image-to-preset failed: ${error.message}`,
+                    );
+                  }
+                }}
+              />
             </div>
-          </form>
-
-          <fieldset
-            className="stims-shell__mood-shortcuts"
-            aria-label="Quick moods"
-          >
-            {MOOD_SHORTCUTS.map((mood) => (
-              <button
-                key={mood.label}
-                type="button"
-                className="stims-shell__mood-btn"
-                onClick={() => handleMoodClick(mood)}
-                disabled={state === 'generating'}
-                aria-label={`Generate ${mood.label.toLowerCase()} preset`}
-              >
-                <UiIcon
-                  name={mood.icon}
-                  className="stims-shell__mood-icon"
-                  aria-hidden="true"
-                />
-                <span>{mood.label}</span>
-              </button>
-            ))}
-          </fieldset>
-
-          <ImageDropZone
-            onImageSelected={async (file) => {
-              const formData = new FormData();
-              formData.append('image', file);
-              ui.setStatusMessage('Analyzing image…');
-              try {
-                const res = await fetch('/api/image-to-preset', {
-                  method: 'POST',
-                  body: formData,
-                });
-                if (!res.ok) throw new Error(`Server error: ${res.status}`);
-                const data = await res.json();
-                if (data.milkSource) {
-                  await engine.updateEditorSource(data.milkSource);
-                  ui.setStatusMessage(
-                    `Generated: ${data.title || 'New Preset'}`,
-                  );
-                } else {
-                  throw new Error('No source returned');
-                }
-              } catch (err) {
-                const error = err as Error;
-                ui.setStatusMessage(`Image-to-preset failed: ${error.message}`);
-              }
-            }}
-          />
-
-          <button
-            type="button"
-            className="stims-shell__text-button stims-shell__explore-link"
-            onClick={() => ui.updatePanel('browse')}
-            disabled={state === 'generating'}
-          >
-            Explore presets
-          </button>
+          </details>
         </div>
       </div>
 

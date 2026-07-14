@@ -35,6 +35,13 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(homeSource).not.toContain('See visuals now');
     expect(homeSource).not.toContain('Play with demo audio');
     expect(homeSource).not.toContain('Start instantly with demo audio');
+    expect(homeSource).toContain(
+      "import { AudioSourcePanel } from './AudioSourcePanel.tsx';",
+    );
+    expect(homeSource).toContain('Your audio, in motion');
+    expect(homeSource).toContain('stims-shell__launch-source-dock');
+    expect(homeSource).toContain('<AudioSourcePanel showHelp={false} />');
+    expect(homeSource).toContain('Create a visual preset');
     expect(homeSource).toContain('Explore presets');
     expect(audioSourceSource).toContain('YouTube playback');
     expect(audioSourceSource).toContain('data-youtube-url-input');
