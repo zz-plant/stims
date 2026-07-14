@@ -1377,8 +1377,30 @@ comp_shader=ret = ${sampleCall}(sampler_fw_noisevol_lq, float3(uv, time / 10.0))
       expect(compiled.ir.shaderText.compProgram).not.toBeNull();
       expect(compiled.ir.compatibility.warnings.length).toBeGreaterThan(0);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-      expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'unsupported',
+      );
+      expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+        'volume-textures',
+      );
+      for (const backend of ['webgl', 'webgpu'] as const) {
+        const support = compiled.ir.compatibility.backends[backend];
+        expect(support.requiredFeatures).toContain('volume-textures');
+        expect(support.unsupportedFeatures).toContain('volume-textures');
+        expect(support.evidence).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              backend,
+              code: 'volume-sampler-gap',
+              feature: 'volume-textures',
+              status: backend === 'webgpu' ? 'unsupported' : 'partial',
+            }),
+          ]),
+        );
+      }
+      expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
+        expect.arrayContaining(['status:webgl=partial,webgpu=unsupported']),
+      );
       expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
         [],
       );
@@ -1420,7 +1442,9 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, 1.0 - tex3D(sampler_fw_noisev
     );
     expect(compiled.ir.compatibility.warnings.length).toBeGreaterThan(0);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
     ).toEqual({
@@ -1505,7 +1529,7 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
     );
   });
 
-  test('classifies the projectM noisevol fixture as a pure volume sample that stays direct on WebGPU and translates on WebGL', () => {
+  test('classifies the projectM noisevol fixture as a volume sample that falls back from WebGPU to WebGL', () => {
     const fixturePath = join(
       process.cwd(),
       'tests',
@@ -1552,10 +1576,14 @@ comp_shader=ret = mix(tex2d(sampler_main, uv).rgb, tex3D(sampler_fw_noisevol_lq,
       webgpu: 'direct',
     });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
-    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual([]);
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.parity.backendDivergence).toEqual(
+      expect.arrayContaining(['status:webgl=partial,webgpu=unsupported']),
+    );
     expect(compiled.ir.compatibility.warnings.length).toBeGreaterThan(0);
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('near-exact');
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
   });
 
   test('downgrades non-volume aux tex3D aliases as unsupported shader text', () => {
@@ -1573,12 +1601,20 @@ comp_shader=ret = tex3D(sampler_fw_noise_lq, float3(uv, time / 10.0)).xyz
     expect(compiled.ir.shaderText.unsupportedLines).toEqual([]);
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toEqual([
       'base-globals',
-      'borders',
-      'motion-vectors',
       'post-effects',
+      'volume-textures',
     ]);
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(
+      compiled.ir.compatibility.backends.webgpu.unsupportedFeatures,
+    ).toContain('volume-textures');
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing).toBe(
+      'fallback-webgl',
+    );
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
     expect(compiled.ir.compatibility.parity.approximatedShaderLines).toEqual(
       [],
     );

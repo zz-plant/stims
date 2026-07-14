@@ -219,7 +219,9 @@ export function buildPlayToyPerformanceMetrics({
   };
 }
 
-function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
+export function normalizePlayToyOptions(
+  options: PlayToyOptions,
+): NormalizedPlayToyOptions {
   return {
     ...options,
     port: options.port ?? DEFAULT_OPTIONS.port,
@@ -228,7 +230,7 @@ function normalizeOptions(options: PlayToyOptions): NormalizedPlayToyOptions {
     viewportHeight: options.viewportHeight ?? DEFAULT_OPTIONS.viewportHeight,
     outputDir: options.outputDir ?? DEFAULT_OPTIONS.outputDir,
     headless: options.headless !== false,
-    vibeMode: options.vibeMode !== false,
+    vibeMode: options.vibeMode === true,
     rendererProfile: options.rendererProfile ?? 'compatibility',
     catalogMode: options.catalogMode ?? 'bundled',
     screenshotSurface: options.screenshotSurface ?? 'canvas',
@@ -268,6 +270,31 @@ export function buildPlayToyArtifactStem({
     : slugSegment;
 }
 
+export function isPlayToyPresetReady({
+  requestedPresetId,
+  activePresetId,
+}: {
+  requestedPresetId?: string;
+  activePresetId?: string | null;
+}) {
+  return !requestedPresetId || requestedPresetId === activePresetId;
+}
+
+export function didPlayToyRendererFallback({
+  requestedProfile,
+  actualBackend,
+  explicitFallback,
+}: {
+  requestedProfile: PlayToyRendererProfile;
+  actualBackend: 'webgl' | 'webgpu' | null;
+  explicitFallback: boolean;
+}) {
+  if (explicitFallback) return true;
+  if (actualBackend === null) return false;
+  const requestedBackend = requestedProfile === 'webgpu' ? 'webgpu' : 'webgl';
+  return actualBackend !== requestedBackend;
+}
+
 export function resolveChromiumRendererArgs(
   rendererProfile: PlayToyRendererProfile,
 ) {
@@ -304,9 +331,7 @@ export function buildPlayToyUrl({
   if (presetId?.trim()) {
     params.set('preset', presetId.trim());
   }
-  if (rendererProfile === 'webgpu') {
-    params.set('renderer', 'webgpu');
-  }
+  params.set('renderer', rendererProfile === 'webgpu' ? 'webgpu' : 'webgl');
   if (catalogMode === 'certification') {
     params.set('corpus', 'certification');
   }
@@ -454,31 +479,32 @@ async function waitForAudioActive(
   }
 }
 
-async function isImmersiveSessionReady(page: Page) {
-  return page
-    .evaluate(() => {
-      const canvas =
-        document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container canvas',
-        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
-      const overlayToggle = document.querySelector('.milkdrop-overlay__toggle');
-      const liveNav = document.querySelector('.active-toy-nav');
-      const activeStatus = document.querySelector('.active-toy-status');
-      const rect = canvas?.getBoundingClientRect();
-      const canvasVisible = Boolean(rect && rect.width > 0 && rect.height > 0);
-      return Boolean(
-        document.body.dataset.toyLoaded === 'true' ||
-          activeStatus ||
-          canvasVisible ||
-          overlayToggle ||
-          liveNav,
-      );
-    })
-    .catch(() => false);
+export function shouldRequestDemoAudio({
+  demoRequestedByRoute,
+  audioActive,
+}: {
+  demoRequestedByRoute: boolean;
+  audioActive: boolean;
+}) {
+  return demoRequestedByRoute && !audioActive;
+}
+
+export function getPlayToyAudioActivationError({
+  demoRequestedByRoute,
+  audioActive,
+}: {
+  demoRequestedByRoute: boolean;
+  audioActive: boolean;
+}) {
+  if (!demoRequestedByRoute || audioActive) {
+    return null;
+  }
+
+  return 'Demo audio was requested by the capture route, but audio never became active.';
 }
 
 async function requestDemoAudio(page: Page) {
-  if ((await isAudioActive(page)) || (await isImmersiveSessionReady(page))) {
+  if (await isAudioActive(page)) {
     return true;
   }
 
@@ -941,6 +967,9 @@ export async function captureActiveToyCanvas(
   if (!canvasInfo) {
     return false;
   }
+  const viewport = page.viewportSize();
+  const captureWidth = viewport?.width ?? canvasInfo.viewportWidth;
+  const captureHeight = viewport?.height ?? canvasInfo.viewportHeight;
 
   const canvasDataUrl = await page
     .evaluate(() => {
@@ -961,78 +990,96 @@ export async function captureActiveToyCanvas(
     .catch(() => null);
 
   const [, base64Data = ''] = canvasDataUrl?.split(',', 2) ?? [];
-  if (base64Data) {
-    fs.writeFileSync(screenshotPath, Buffer.from(base64Data, 'base64'));
+  if (!base64Data) {
+    await page
+      .locator('#active-toy-container canvas, canvas')
+      .first()
+      .screenshot({ path: screenshotPath });
     return true;
   }
-
-  const canvasLocator = page
-    .locator('#active-toy-container canvas')
-    .or(page.locator('canvas'))
-    .first();
-
   if (
-    !shouldUseCanvasBitmapCapture({
+    shouldUseCanvasBitmapCapture({
       bitmapWidth: canvasInfo.bitmapWidth,
       bitmapHeight: canvasInfo.bitmapHeight,
       rectWidth: canvasInfo.rectWidth,
       rectHeight: canvasInfo.rectHeight,
-      viewportWidth: canvasInfo.viewportWidth,
-      viewportHeight: canvasInfo.viewportHeight,
+      viewportWidth: captureWidth,
+      viewportHeight: captureHeight,
     })
   ) {
-    const previousStyle = await page
-      .evaluate(({ viewportWidth, viewportHeight }) => {
-        const canvas =
-          document.querySelector<HTMLCanvasElement>(
-            '#active-toy-container canvas',
-          ) ?? document.querySelector<HTMLCanvasElement>('canvas');
-        if (!(canvas instanceof HTMLCanvasElement)) {
-          return null;
-        }
-
-        const previous = {
-          width: canvas.style.width,
-          height: canvas.style.height,
-          maxWidth: canvas.style.maxWidth,
-          maxHeight: canvas.style.maxHeight,
-        };
-        canvas.style.width = `${viewportWidth}px`;
-        canvas.style.height = `${viewportHeight}px`;
-        canvas.style.maxWidth = 'none';
-        canvas.style.maxHeight = 'none';
-        return previous;
-      }, canvasInfo)
-      .catch(() => null);
-
-    try {
-      await canvasLocator.screenshot({ path: screenshotPath });
-    } finally {
-      await page
-        .evaluate((previous) => {
-          const canvas =
-            document.querySelector<HTMLCanvasElement>(
-              '#active-toy-container canvas',
-            ) ?? document.querySelector<HTMLCanvasElement>('canvas');
-          if (!(canvas instanceof HTMLCanvasElement) || previous === null) {
-            return;
-          }
-
-          canvas.style.width = previous.width;
-          canvas.style.height = previous.height;
-          canvas.style.maxWidth = previous.maxWidth;
-          canvas.style.maxHeight = previous.maxHeight;
-        }, previousStyle)
-        .catch(() => undefined);
-    }
+    fs.writeFileSync(screenshotPath, Buffer.from(base64Data, 'base64'));
     return true;
   }
 
-  return false;
+  // The canvas backing buffer can be smaller than its CSS box. Screenshot an
+  // isolated image surface so shell overlays cannot contaminate the artifact.
+  const captureSurfaceState = await page
+    .evaluate(
+      async ({ canvasDataUrl, viewportWidth, viewportHeight }) => {
+        document.querySelector('[data-stims-capture-surface]')?.remove();
+        const previousOverflow = {
+          documentElement: document.documentElement.style.overflow,
+          body: document.body.style.overflow,
+        };
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        const image = document.createElement('img');
+        image.dataset.stimsCaptureSurface = 'true';
+        image.src = canvasDataUrl;
+        image.alt = '';
+        image.style.position = 'fixed';
+        image.style.inset = '0';
+        image.style.width = `${viewportWidth}px`;
+        image.style.height = `${viewportHeight}px`;
+        image.style.objectFit = 'fill';
+        image.style.zIndex = '2147483647';
+        image.style.pointerEvents = 'none';
+        document.body.appendChild(image);
+        if (!image.complete) {
+          await new Promise<void>((resolve) => {
+            image.addEventListener('load', () => resolve(), { once: true });
+            image.addEventListener('error', () => resolve(), { once: true });
+          });
+        }
+        return image.naturalWidth > 0 && image.naturalHeight > 0
+          ? previousOverflow
+          : null;
+      },
+      {
+        canvasDataUrl: canvasDataUrl ?? '',
+        viewportWidth: captureWidth,
+        viewportHeight: captureHeight,
+      },
+    )
+    .catch(() => false);
+
+  if (
+    !captureSurfaceState ||
+    typeof captureSurfaceState !== 'object' ||
+    !('documentElement' in captureSurfaceState)
+  ) {
+    return false;
+  }
+
+  try {
+    await page
+      .locator('[data-stims-capture-surface]')
+      .screenshot({ path: screenshotPath });
+    return true;
+  } finally {
+    await page
+      .evaluate((previousOverflow) => {
+        document.querySelector('[data-stims-capture-surface]')?.remove();
+        document.documentElement.style.overflow =
+          previousOverflow.documentElement;
+        document.body.style.overflow = previousOverflow.body;
+      }, captureSurfaceState)
+      .catch(() => undefined);
+  }
 }
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
-  const normalizedOptions = normalizeOptions(options);
+  const normalizedOptions = normalizePlayToyOptions(options);
   const allowWebglFallback = normalizedOptions.rendererProfile !== 'webgpu';
 
   // Ensure output directory exists
@@ -1180,8 +1227,10 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
 
     // Click demo audio button if present
     if (
-      !demoRequestedByRoute &&
-      !(await isAudioActive(page)) &&
+      shouldRequestDemoAudio({
+        demoRequestedByRoute,
+        audioActive: await isAudioActive(page),
+      }) &&
       (await requestDemoAudio(page))
     ) {
       console.log('Requesting demo audio...');
@@ -1255,16 +1304,23 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
         fallbackOccurred = true;
       }
 
-      if (
-        !demoRequestedByRoute &&
-        !(await isAudioActive(page)) &&
-        (await requestDemoAudio(page))
-      ) {
+      const demoAudioStillInactive = shouldRequestDemoAudio({
+        demoRequestedByRoute,
+        audioActive: await isAudioActive(page),
+      });
+      if (demoAudioStillInactive && (await requestDemoAudio(page))) {
         console.log('Enabling demo audio...');
-      } else if (await clickVisibleButton(page, CONTROL_MIC_SELECTOR)) {
+      } else if (
+        !demoRequestedByRoute &&
+        (await clickVisibleButton(page, CONTROL_MIC_SELECTOR))
+      ) {
         console.log('No demo audio button found. Enabling microphone...');
       } else {
-        console.log('No audio start button found. Checking if auto-started...');
+        console.log(
+          demoRequestedByRoute
+            ? 'Demo audio is still inactive; preserving the requested source.'
+            : 'No audio start button found. Checking if auto-started...',
+        );
       }
     }
 
@@ -1300,17 +1356,64 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
     }
     console.log('Toy loaded.');
 
+    if (normalizedOptions.presetId) {
+      console.log(`Waiting for preset ${normalizedOptions.presetId}...`);
+      await page.waitForFunction(
+        (requestedPresetId) => {
+          const win = window as Window & {
+            __milkdropRuntimeDebug?: {
+              getState?: () => { activePresetId?: string | null };
+            };
+            stimState?: {
+              getDebugSnapshot?: (key: string) => {
+                activePresetId?: string | null;
+              } | null;
+            };
+          };
+          const runtimePresetId =
+            win.__milkdropRuntimeDebug?.getState?.()?.activePresetId;
+          const debugSnapshot = win.stimState?.getDebugSnapshot?.('milkdrop');
+          const debugPresetId =
+            typeof debugSnapshot === 'object' && debugSnapshot !== null
+              ? (debugSnapshot as { activePresetId?: string | null })
+                  .activePresetId
+              : null;
+          const activePresetId = runtimePresetId ?? debugPresetId;
+          return !requestedPresetId || activePresetId === requestedPresetId;
+        },
+        normalizedOptions.presetId,
+        { timeout: TOY_LOAD_TIMEOUT_MS },
+      );
+      console.log(`Preset ${normalizedOptions.presetId} ready.`);
+    }
+
     // Wait for audio activation and retry via the agent API if the initial UI click
     // won the race against the shell but not the runtime audio starter.
-    const audioActivated = await waitForAudioActive(
+    let audioActivated = await waitForAudioActive(
       page,
       AUDIO_ACTIVATION_TIMEOUT_MS,
     );
-    if (!audioActivated && !demoRequestedByRoute) {
+    if (
+      shouldRequestDemoAudio({
+        demoRequestedByRoute,
+        audioActive: audioActivated,
+      })
+    ) {
       console.warn('Audio activation timed out. Retrying demo audio...');
       if (await requestDemoAudio(page)) {
-        await waitForAudioActive(page, AUDIO_ACTIVATION_TIMEOUT_MS);
+        audioActivated = await waitForAudioActive(
+          page,
+          AUDIO_ACTIVATION_TIMEOUT_MS,
+        );
       }
+    }
+
+    const audioActivationError = getPlayToyAudioActivationError({
+      demoRequestedByRoute,
+      audioActive: audioActivated,
+    });
+    if (audioActivationError) {
+      throw new Error(audioActivationError);
     }
 
     // Trigger a temporary vibe mode in agent sessions when available
@@ -1392,15 +1495,17 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       success: true,
       presetId: normalizedOptions.presetId,
       consoleErrors: consoleErrors.length > 0 ? consoleErrors : undefined,
-      fallbackOccurred:
-        fallbackOccurred ||
-        (actualBackend !== null && actualBackend !== 'webgpu'),
+      fallbackOccurred: didPlayToyRendererFallback({
+        requestedProfile: normalizedOptions.rendererProfile,
+        actualBackend,
+        explicitFallback: fallbackOccurred,
+      }),
       performance: performance ?? undefined,
     };
 
     // Check audio state
     const audioState = await isAudioActive(page);
-    result.audioActive = audioState || demoRequestedByRoute;
+    result.audioActive = audioState;
     result.vibeModeActivated = vibeModeActivated;
     const artifactStem = buildPlayToyArtifactStem({
       slug: options.slug,
@@ -1419,6 +1524,9 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
           ? await captureActiveToyCanvas(page, screenshotPath)
           : false;
       if (!capturedCanvas) {
+        if (normalizedOptions.screenshotSurface === 'canvas') {
+          throw new Error('Unable to capture the active toy canvas.');
+        }
         await page.screenshot({ path: screenshotPath });
       }
       result.screenshot = screenshotPath;
@@ -1556,7 +1664,7 @@ if (import.meta.main) {
     console.error(
       '  --catalog-mode <bundled|certification>     Preset corpus to expose in the runtime catalog (default: bundled)',
     );
-    console.error('  --no-vibe-mode      Skip temporary agent vibe mode');
+    console.error('  --vibe-mode         Enable temporary agent vibe mode');
     console.error(
       '  --output <dir>      Output directory (default: ./screenshots)',
     );
@@ -1581,7 +1689,7 @@ if (import.meta.main) {
   const outputDir = getArg('--output', './screenshots') as string;
   const headless = !args.includes('--no-headless');
   const debugSnapshot = args.includes('--debug-snapshot');
-  const vibeMode = !args.includes('--no-vibe-mode');
+  const vibeMode = args.includes('--vibe-mode');
   const rendererProfile = getArg(
     '--renderer-profile',
     'compatibility',

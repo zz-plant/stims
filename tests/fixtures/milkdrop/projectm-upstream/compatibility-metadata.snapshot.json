@@ -12,12 +12,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -41,11 +36,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -82,12 +73,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -111,11 +97,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -152,12 +134,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "borders", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -181,11 +158,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -226,7 +199,6 @@
         "base-globals",
         "per-frame-equations",
         "borders",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -252,11 +224,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -301,7 +269,6 @@
         "base-globals",
         "per-frame-equations",
         "borders",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -327,11 +294,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -376,7 +339,6 @@
         "base-globals",
         "per-frame-equations",
         "borders",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -402,11 +364,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -447,7 +405,6 @@
         "base-globals",
         "per-frame-equations",
         "borders",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -473,11 +430,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -518,7 +471,6 @@
         "base-globals",
         "per-frame-equations",
         "borders",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -544,11 +496,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -594,7 +542,6 @@
         "per-frame-equations",
         "per-pixel-equations",
         "borders",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -649,40 +596,7 @@
             "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"zoom\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":0.9615},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"rad\"},\"right\":{\"type\":\"literal\",\"value\":0.1}}}}]}"
           }
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": true,
-          "fieldProgram": {
-            "kind": "gpu-field-program",
-            "statements": [
-              {
-                "target": "zoom",
-                "expression": {
-                  "type": "binary",
-                  "operator": "-",
-                  "left": {
-                    "type": "literal",
-                    "value": 0.9615
-                  },
-                  "right": {
-                    "type": "binary",
-                    "operator": "*",
-                    "left": {
-                      "type": "identifier",
-                      "name": "rad"
-                    },
-                    "right": {
-                      "type": "literal",
-                      "value": 0.1
-                    }
-                  }
-                }
-              }
-            ],
-            "temporaries": [],
-            "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"zoom\",\"expression\":{\"type\":\"binary\",\"operator\":\"-\",\"left\":{\"type\":\"literal\",\"value\":0.9615},\"right\":{\"type\":\"binary\",\"operator\":\"*\",\"left\":{\"type\":\"identifier\",\"name\":\"rad\"},\"right\":{\"type\":\"literal\",\"value\":0.1}}}}]}"
-          }
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -719,12 +633,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -748,11 +657,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -789,12 +694,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -818,11 +718,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -859,12 +755,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -888,11 +779,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -929,12 +816,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -958,11 +840,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -999,12 +877,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1028,11 +901,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1069,12 +938,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1098,11 +962,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1139,12 +999,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1168,11 +1023,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1209,12 +1060,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1238,11 +1084,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1279,12 +1121,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1308,11 +1145,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1349,12 +1182,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1378,11 +1206,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1419,12 +1243,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1448,11 +1267,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1489,12 +1304,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1518,11 +1328,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1559,12 +1365,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1588,11 +1389,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1629,12 +1426,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1658,11 +1450,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1699,12 +1487,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1728,11 +1511,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1769,12 +1548,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1798,11 +1572,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1846,13 +1616,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -1911,11 +1675,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -1959,13 +1719,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -2024,11 +1778,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2072,13 +1822,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -2137,11 +1881,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2185,13 +1925,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -2250,11 +1984,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2298,13 +2028,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -2363,11 +2087,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2411,13 +2131,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -2476,11 +2190,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2528,8 +2238,6 @@
         "base-globals",
         "per-frame-equations",
         "custom-waves",
-        "borders",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -2614,11 +2322,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2668,13 +2372,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -2768,11 +2466,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2837,13 +2531,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "custom-waves",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "custom-waves", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "descriptor-plan",
         "proceduralWaves": [
@@ -2902,11 +2590,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },
@@ -2943,12 +2627,7 @@
     "compatibility": {
       "unsupportedKeys": [],
       "warnings": [],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects"],
       "gpuDescriptorPlan": {
         "routing": "fallback-webgl",
         "proceduralWaves": [
@@ -2972,11 +2651,7 @@
           "requiresPerPixelProgram": false,
           "fieldProgram": null
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
+        "proceduralMotionVectors": null,
         "feedback": {
           "kind": "feedback-post-effect",
           "shaderExecution": "direct",
@@ -3028,49 +2703,21 @@
       "warnings": [
         "Texture layer shader control uses tex3D/texture3D with volume sampler \"simplex\" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering."
       ],
-      "featuresUsed": [
-        "base-globals",
-        "borders",
-        "motion-vectors",
-        "post-effects"
-      ],
+      "featuresUsed": ["base-globals", "post-effects", "volume-textures"],
       "gpuDescriptorPlan": {
         "routing": "fallback-webgl",
-        "proceduralWaves": [
+        "proceduralWaves": [],
+        "proceduralMesh": null,
+        "proceduralMotionVectors": null,
+        "feedback": null,
+        "unsupported": [
           {
-            "kind": "procedural-wave",
-            "target": "main-wave",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
-          },
-          {
-            "kind": "procedural-wave",
-            "target": "trail-waves",
-            "slotIndex": null,
-            "sampleSource": "waveform",
-            "fieldProgram": null
+            "kind": "unsupported-feature",
+            "feature": "volume-textures",
+            "reason": "Texture layer shader control uses tex3D/texture3D with volume sampler \"simplex\" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.",
+            "recommendedFallback": "webgl"
           }
-        ],
-        "proceduralMesh": {
-          "kind": "procedural-mesh",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": false,
-          "fieldProgram": null
-        },
-        "feedback": {
-          "kind": "feedback-post-effect",
-          "shaderExecution": "direct",
-          "usesFeedbackTexture": false,
-          "usesVideoEcho": false,
-          "usesPostEffects": false,
-          "fallbackToLegacyFeedback": true
-        },
-        "unsupported": []
+        ]
       },
       "backends": {
         "webgl": {
@@ -3080,25 +2727,25 @@
               "scope": "backend",
               "status": "partial",
               "code": "volume-sampler-gap",
-              "feature": null
+              "feature": "volume-textures"
             }
           ]
         },
         "webgpu": {
-          "status": "partial",
+          "status": "unsupported",
           "evidence": [
             {
               "scope": "backend",
-              "status": "partial",
+              "status": "unsupported",
               "code": "volume-sampler-gap",
-              "feature": null
+              "feature": "volume-textures"
             }
           ]
         }
       },
       "parity": {
-        "fidelityClass": "near-exact",
-        "backendDivergence": [],
+        "fidelityClass": "fallback",
+        "backendDivergence": ["status:webgl=partial,webgpu=unsupported"],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],
@@ -3142,7 +2789,6 @@
         "base-globals",
         "per-pixel-equations",
         "custom-waves",
-        "motion-vectors",
         "post-effects"
       ],
       "gpuDescriptorPlan": {
@@ -3181,24 +2827,7 @@
             "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"cx\",\"expression\":{\"type\":\"identifier\",\"name\":\"x\"}}]}"
           }
         },
-        "proceduralMotionVectors": {
-          "kind": "procedural-motion-vectors",
-          "requiresPerPixelProgram": true,
-          "fieldProgram": {
-            "kind": "gpu-field-program",
-            "statements": [
-              {
-                "target": "cx",
-                "expression": {
-                  "type": "identifier",
-                  "name": "x"
-                }
-              }
-            ],
-            "temporaries": [],
-            "signature": "{\"temporaries\":[],\"statements\":[{\"target\":\"cx\",\"expression\":{\"type\":\"identifier\",\"name\":\"x\"}}]}"
-          }
-        },
+        "proceduralMotionVectors": null,
         "feedback": null,
         "unsupported": []
       },

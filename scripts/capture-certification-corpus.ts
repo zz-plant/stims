@@ -5,7 +5,7 @@ import {
 } from './certification-corpus.ts';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
 
-type CaptureCertificationCorpusOptions = {
+export type CaptureCertificationCorpusOptions = {
   repoRoot: string;
   outputDir: string;
   port: number;
@@ -174,7 +174,9 @@ function usage() {
   );
 }
 
-function parseArgs(argv: string[]): CaptureCertificationCorpusOptions {
+export function parseCertificationCorpusArgs(
+  argv: string[],
+): CaptureCertificationCorpusOptions {
   const getArg = (name: string, fallback: string | number) => {
     const idx = argv.indexOf(name);
     if (idx !== -1 && idx + 1 < argv.length) {
@@ -197,7 +199,7 @@ function parseArgs(argv: string[]): CaptureCertificationCorpusOptions {
     outputDir: getArg('--output', './screenshots/parity') as string,
     port: getArg('--port', 5173) as number,
     headless: !argv.includes('--no-headless'),
-    vibeMode: !argv.includes('--no-vibe-mode'),
+    vibeMode: false,
     presetIds: presetIds.length > 0 ? presetIds : undefined,
     corpusGroup,
     duration: getArg('--duration', 1500) as number,
@@ -213,7 +215,7 @@ if (import.meta.main) {
     process.exit(0);
   }
 
-  const options = parseArgs(args);
+  const options = parseCertificationCorpusArgs(args);
   const result = await captureCertificationCorpus(options);
   console.log(JSON.stringify(result, null, 2));
 }

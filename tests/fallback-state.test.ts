@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  FallbackState,
   FallbackEvent,
+  FallbackState,
   FallbackStateMachine,
   getInvalidTransitionMessage,
   isValidTransition,
@@ -294,7 +294,7 @@ describe('FallbackStateMachine class', () => {
   test('invalid transition throws error with reason', () => {
     const fsm = new FallbackStateMachine();
     expect(() => fsm.transition(FallbackEvent.INIT_AUDIO)).toThrow(
-      /Invalid fallback state transition from initial via event INIT_AUDIO: Audio requires a renderer for the Three.js AudioListener/
+      /Invalid fallback state transition from initial via event INIT_AUDIO: Audio requires a renderer for the Three.js AudioListener/,
     );
   });
 
@@ -312,8 +312,12 @@ describe('FallbackStateMachine class', () => {
 
     fsm.transition(FallbackEvent.CHECK_WEBGL);
     expect(called).toBe(true);
-    expect(statePassed as unknown as FallbackState).toBe(FallbackState.ProbingWebgl);
-    expect(eventPassed as unknown as FallbackEvent).toBe(FallbackEvent.CHECK_WEBGL);
+    expect(statePassed as unknown as FallbackState).toBe(
+      FallbackState.ProbingWebgl,
+    );
+    expect(eventPassed as unknown as FallbackEvent).toBe(
+      FallbackEvent.CHECK_WEBGL,
+    );
   });
 
   test('unsubscribing listeners works', () => {
@@ -331,4 +335,3 @@ describe('FallbackStateMachine class', () => {
     expect(count).toBe(1);
   });
 });
-

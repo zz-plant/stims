@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type { MilkdropRuntimeSignals } from '../assets/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
+import { buildMainWaveFrame } from '../assets/js/milkdrop/vm/frame-generation.ts';
 import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 
 function makeSignals({
@@ -366,8 +367,10 @@ wave_0_per_point3=b = if(equal(sample, 0), 0, if(equal(sample, 1), 1, b));
     const customWave = frameState.customWaves[0];
     expect(customWave?.colors).toBeDefined();
     expect(customWave?.colors).toHaveLength(8 * 3);
-    expect(customWave?.colors?.slice(0, 3)).toEqual([1, 0, 0]);
-    expect(customWave?.colors?.slice(-3)).toEqual([0, 1, 1]);
+    expect(Array.from(customWave?.colors?.slice(0, 3) ?? [])).toEqual([
+      1, 0, 0,
+    ]);
+    expect(Array.from(customWave?.colors?.slice(-3) ?? [])).toEqual([0, 1, 1]);
   });
 
   test('normalizes legacy bUseDots custom-wave fields to dot draw mode', () => {
@@ -1402,8 +1405,7 @@ wave_mystery=0.42
 
       expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
       signatures.add(
-        frameState.mainWave.positions
-          .slice(0, 18)
+        Array.from(frameState.mainWave.positions.slice(0, 18))
           .map((value) => value.toFixed(3))
           .join(','),
       );
@@ -1426,5 +1428,51 @@ wave_mystery=0.55
     const second = vm.step(makeSignals({ frame: 2, beatPulse: 0.3 }));
 
     expect(second.mainWave.positions).not.toEqual(first.mainWave.positions);
+  });
+
+  test('double-buffers main-wave samples and retains resized frame buffers', () => {
+    const buffers = {
+      liveSamples: new Float32Array(0),
+      previousSamples: new Float32Array(0),
+      smoothedSamples: new Float32Array(0),
+      momentumSamples: new Float32Array(0),
+    };
+    const build = (
+      frame: number,
+      detailScale: number,
+      previousSamples: Float32Array,
+      previousMomentum: Float32Array,
+    ) =>
+      buildMainWaveFrame({
+        state: { wave_mode: 1, wave_smoothing: 0.72 },
+        signals: makeSignals({ frame }),
+        detailScale,
+        previousSamples,
+        previousMomentum,
+        buffers,
+        useProcedural: false,
+      });
+
+    const first = build(1, 1, new Float32Array(0), new Float32Array(0));
+    const firstLive = buffers.liveSamples;
+    const firstMomentum = first.nextMomentum;
+    expect(buffers.smoothedSamples).toBe(first.nextSamples);
+    expect(buffers.momentumSamples).toBe(firstMomentum);
+
+    const second = build(2, 1, first.nextSamples, firstMomentum);
+    expect(second.nextSamples).not.toBe(first.nextSamples);
+    expect(buffers.previousSamples).toBe(first.nextSamples);
+    expect(buffers.liveSamples).toBe(firstLive);
+    expect(second.nextMomentum).toBe(firstMomentum);
+
+    const third = build(3, 1, second.nextSamples, second.nextMomentum);
+    expect(third.nextSamples).toBe(first.nextSamples);
+
+    const resized = build(4, 0.5, third.nextSamples, third.nextMomentum);
+    expect(resized.nextSamples).not.toBe(third.nextSamples);
+    expect(resized.nextSamples.length).not.toBe(third.nextSamples.length);
+    expect(buffers.liveSamples).not.toBe(firstLive);
+    expect(buffers.smoothedSamples).toBe(resized.nextSamples);
+    expect(buffers.momentumSamples).toBe(resized.nextMomentum);
   });
 });

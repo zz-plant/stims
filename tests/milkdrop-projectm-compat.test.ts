@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import { DEFAULT_MILKDROP_STATE } from '../assets/js/milkdrop/compiler/default-state.ts';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type {
   MilkdropCompiledPreset,
@@ -120,8 +121,8 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '261-compshader-noisevol_lq.milk': {
     diagnostics: ['preset_shader_volume_approximation'],
     webgl: 'partial',
-    webgpu: 'partial',
-    divergence: [],
+    webgpu: 'unsupported',
+    divergence: ['status:webgl=partial,webgpu=unsupported'],
     warnings: [
       'Texture layer shader control uses tex3D/texture3D with volume sampler "simplex" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.',
     ],
@@ -430,6 +431,54 @@ function buildCompatibilitySnapshot(
 }
 
 describe('milkdrop vendored projectM fixture corpus', () => {
+  test('uses projectM builtin defaults for omitted visual parameters', () => {
+    const keys = [
+      'modwavealphastart',
+      'modwavealphaend',
+      'wave_smoothing',
+      'wave_a',
+      'wave_r',
+      'wave_g',
+      'wave_b',
+      'wave_x',
+      'wave_y',
+      'ob_size',
+      'ib_size',
+      'ib_r',
+      'ib_g',
+      'ib_b',
+      'motion_vectors_x',
+      'motion_vectors_y',
+      'mv_l',
+      'mv_r',
+      'mv_g',
+      'mv_b',
+    ] as const;
+    expect(
+      Object.fromEntries(keys.map((key) => [key, DEFAULT_MILKDROP_STATE[key]])),
+    ).toEqual({
+      modwavealphastart: 0,
+      modwavealphaend: 0,
+      wave_smoothing: 0,
+      wave_a: 1,
+      wave_r: 0,
+      wave_g: 0,
+      wave_b: 0,
+      wave_x: 0,
+      wave_y: 0,
+      ob_size: 0,
+      ib_size: 0,
+      ib_r: 0,
+      ib_g: 0,
+      ib_b: 0,
+      motion_vectors_x: 0,
+      motion_vectors_y: 0,
+      mv_l: 0,
+      mv_r: 0,
+      mv_g: 0,
+      mv_b: 0,
+    });
+  });
   test('keeps the vendored upstream fixture selection in sync', () => {
     const files = readdirSync(PROJECTM_CORPUS_DIR)
       .filter((file) => file.endsWith('.milk'))
@@ -543,4 +592,20 @@ describe('milkdrop vendored projectM fixture corpus', () => {
     },
     { timeout: 30000 },
   );
+
+  test('preserves an explicit black preset background under active audio signals', () => {
+    const compiled = loadProjectMPresetCorpus().find(
+      ({ file }) => file === '100-square.milk',
+    )?.compiled;
+
+    if (!compiled) {
+      throw new Error('Expected the 100-square fixture to be available.');
+    }
+
+    const frameState = createMilkdropVM(compiled).step(
+      makeSignals({ beatPulse: 1 }),
+    );
+
+    expect(frameState.background).toEqual({ r: 0, g: 0, b: 0, a: 1 });
+  });
 });
