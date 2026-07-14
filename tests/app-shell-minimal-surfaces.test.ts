@@ -57,14 +57,42 @@ describe('minimal workspace surfaces', () => {
   test('keeps live controls and preset cards low chrome', () => {
     const controls = frontendSource('StageControls.tsx');
     const css = cssSource('app-shell.css');
+    const artwork = frontendSource('PresetArtwork.tsx');
 
     expect(controls).toContain('className={styles.toolbar}');
     expect(controls).toContain('className={styles.btn}');
+    expect(artwork).not.toContain('stims-shell__preset-art-caption');
+    expect(artwork).not.toContain('stims-shell__preset-art-status');
+    expect(artwork).not.toContain('stims-shell__preset-art-grid');
+    expect(artwork).not.toContain('stims-shell__preset-art-orbit');
+    expect(artwork).not.toContain('stims-shell__preset-art-core');
     expect(css).toMatch(
       /\.stims-shell__starter-card\s*\{[\s\S]*?padding:\s*10px;[\s\S]*?box-shadow:\s*none;/u,
     );
     expect(css).toMatch(
       /\.stims-shell__preset-card\s*\{[\s\S]*?padding:\s*10px;[\s\S]*?box-shadow:\s*none;/u,
+    );
+    expect(css).toMatch(
+      /\.stims-shell__launch-source-dock\s*\{[\s\S]*?padding:\s*0;[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/u,
+    );
+    expect(css).toMatch(
+      /\.stims-shell__launch-source-dock\s+\.stims-shell__source-card\s+\+\s+\.stims-shell__source-card\s*\{[\s\S]*?border-left:/u,
+    );
+    expect(css).toMatch(
+      /\.stims-shell__launch-recommendation\s+\.stims-shell__preset-art\s*\{[\s\S]*?width:\s*104px;[\s\S]*?min-height:\s*64px;[\s\S]*?aspect-ratio:\s*16\s*\/\s*9;/u,
+    );
+  });
+
+  test('gives the preset browser room to behave like a visual catalog', () => {
+    const browse = frontendSource('BrowseSheetPanel.tsx');
+    const sidePanel = cssSource('SidePanel.module.css');
+
+    expect(browse).toContain('{hasFilter ? (');
+    expect(sidePanel).toMatch(
+      /@media \(min-width: 768px\)[\s\S]*?\.panel\s*\{[\s\S]*?width:\s*min\(560px, calc\(100vw - 32px\)\);/u,
+    );
+    expect(cssSource('app-shell.css')).toMatch(
+      /\.stims-shell__sheet-panel--browse\s+\.stims-shell__preset-card\s+\.stims-shell__preset-art\s*\{[\s\S]*?min-height:\s*150px;/u,
     );
   });
 });

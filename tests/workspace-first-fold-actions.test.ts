@@ -38,11 +38,14 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(homeSource).toContain(
       "import { AudioSourcePanel } from './AudioSourcePanel.tsx';",
     );
-    expect(homeSource).toContain('Your audio, in motion');
+    expect(homeSource).toContain('Choose a preset');
+    expect(homeSource).toContain('stims-shell__launch-layout');
+    expect(homeSource).toContain('stims-shell__launch-rail');
     expect(homeSource).toContain('stims-shell__launch-source-dock');
     expect(homeSource).toContain('<AudioSourcePanel showHelp={false} />');
-    expect(homeSource).toContain('Create a visual preset');
-    expect(homeSource).toContain('Explore presets');
+    expect(homeSource).not.toContain('Create a visual preset');
+    expect(homeSource).not.toContain('useGeneratePreset');
+    expect(homeSource).toContain('Browse presets');
     expect(audioSourceSource).toContain('YouTube playback');
     expect(audioSourceSource).toContain('data-youtube-url-input');
     expect(audioSourceSource).toContain('stims-shell__youtube-primary');
@@ -53,6 +56,16 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(audioSourceSource).toContain('Audio from this browser tab');
     expect(audioSourceSource).not.toContain('Advanced audio setup');
     expect(appShellCss).toContain('.stims-shell__youtube-primary');
+    expect(appShellCss).toContain('.stims-shell__launch-layout');
+    expect(appShellCss).toContain(
+      'grid-template-columns: minmax(18rem, 0.78fr) minmax(26rem, 1fr);',
+    );
+    expect(appShellCss).toContain(
+      '@media (min-width: 1121px) and (max-width: 1280px)',
+    );
+    expect(appShellCss).toMatch(
+      /\.stims-shell__launch-layout\s*>\s*\.stims-shell__launch-source-dock\s*\{[\s\S]*?align-self:\s*start;/u,
+    );
     expect(appShellCss).toContain('align-content: start;');
     expect(appShellCss).toContain('align-items: start;');
   });
