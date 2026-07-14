@@ -51,6 +51,21 @@ describe('Workspace shell mobile layout regression', () => {
     expect(css).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-panel\s*\{[\s\S]*?width:\s*min\(100%, calc\(100vw - 20px\)\);/u,
     );
+    expect(css).toMatch(
+      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-layout\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-rail\s*\{[\s\S]*?display:\s*contents;/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-copy,[\s\S]*?\.stims-shell__launch-layout > \.stims-shell__launch-source-dock,[\s\S]*?width:\s*100%;/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-copy h1\s*\{[\s\S]*?font-size:\s*clamp\(3rem, 7vw, 5rem\);[\s\S]*?line-height:\s*0\.92;/u,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__browse-toolbar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto;/u,
+    );
   });
 
   test('keeps the launch panel usable on short desktop and landscape viewports', () => {

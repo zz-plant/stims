@@ -96,7 +96,6 @@ describe('Workspace shell UI simplification regression', () => {
       ),
       'utf8',
     );
-
     expect(helperSource).toContain(
       'Choose a quality preset, then adjust performance and motion options.',
     );
@@ -108,13 +107,16 @@ describe('Workspace shell UI simplification regression', () => {
     expect(stageSource).toContain('className="stims-shell__stage-frame"');
     expect(stageControlsSource).toContain('className={styles.toolbar}');
     expect(stageControlsSource).toContain('title="Surprise me"');
-    expect(homeSource).toContain('Explore presets');
+    expect(uiSource).toContain('liveMode && !missingRequestedPreset ?');
+    expect(homeSource).toContain('Browse presets');
     expect(audioSourcePanelSource).toContain('YouTube playback');
     expect(audioSourcePanelSource).toContain('Live mic input');
     expect(audioSourcePanelSource).toContain('Audio from this browser tab');
     expect(browseSource).toContain('const BATCH_SIZE = 30;');
     expect(browseSource).toContain('visible.map');
     expect(browseSource).toContain('Show more');
+    expect(browseSource).toContain("import { UiIcon } from './UiIcon.tsx';");
+    expect(browseSource).toContain('aria-label="Shuffle presets"');
   });
 
   test('renders SidePanel when routeState.panel is not null', () => {

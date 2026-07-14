@@ -44,7 +44,7 @@ export function WorkspaceStagePanel({
         stageRef={ui.stageRef}
         liveMode={liveMode}
       >
-        {!missingRequestedPreset ? (
+        {liveMode && !missingRequestedPreset ? (
           <StageControls
             isFullscreen={isFullscreen}
             onToggleFullscreen={onToggleFullscreen}

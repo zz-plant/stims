@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { SkeletonPresetCard } from './PresetShelfSection.tsx';
+import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   buildAppliedFilterSummary,
@@ -166,11 +167,17 @@ export function BrowseSheetPanel({
           <strong>Browse presets</strong>
           <button
             type="button"
-            className="stims-shell__text-button"
+            className="stims-shell__icon-button"
             onClick={engine.handleShufflePreset}
             disabled={catalog.length === 0}
+            aria-label="Shuffle presets"
+            title="Shuffle presets"
           >
-            Surprise me
+            <UiIcon
+              name="shuffle"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -206,16 +213,16 @@ export function BrowseSheetPanel({
           </select>
         </div>
 
-        <p
-          className="stims-shell__active-filters"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {buildAppliedFilterSummary({
-            searchQuery,
-            collectionTag: routeState.collectionTag,
-          })}
-          {hasFilter ? (
+        {hasFilter ? (
+          <p
+            className="stims-shell__active-filters"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {buildAppliedFilterSummary({
+              searchQuery,
+              collectionTag: routeState.collectionTag,
+            })}
             <button
               type="button"
               className="stims-shell__clear-filters"
@@ -226,8 +233,8 @@ export function BrowseSheetPanel({
             >
               Clear
             </button>
-          ) : null}
-        </p>
+          </p>
+        ) : null}
 
         <nav
           className="stims-shell__collections"

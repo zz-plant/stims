@@ -51,6 +51,16 @@
   animation: slide-out-right 0.2s ease forwards;
 }
 
+@media (min-width: 768px) {
+  .panel {
+    width: min(560px, calc(100vw - 32px));
+  }
+
+  .body {
+    padding: 14px 18px 20px;
+  }
+}
+
 /* Mobile: full-height bottom sheet */
 @media (max-width: 767px) {
   .panel {

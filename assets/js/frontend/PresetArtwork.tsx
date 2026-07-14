@@ -41,8 +41,6 @@ export function PresetArtwork({
   compact?: boolean;
   preview?: MilkdropPresetRenderPreview | null;
 }) {
-  const mood = describePresetMood(entry);
-
   return (
     <div
       className="stims-shell__preset-art"
@@ -67,22 +65,6 @@ export function PresetArtwork({
           loading="lazy"
         />
       ) : null}
-
-      <span className="stims-shell__preset-art-grid" />
-      <span className="stims-shell__preset-art-orbit" />
-      <span className="stims-shell__preset-art-core" />
-      <span className="stims-shell__preset-art-caption">{mood}</span>
-      <span className="stims-shell__preset-art-status">
-        {preview?.status === 'ready'
-          ? preview.actualBackend === 'webgpu'
-            ? 'WebGPU preview'
-            : preview.actualBackend === 'webgl'
-              ? 'WebGL preview'
-              : 'Runtime preview'
-          : preview?.status === 'capturing'
-            ? 'Capturing'
-            : ''}
-      </span>
     </div>
   );
 }

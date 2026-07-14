@@ -574,6 +574,29 @@ body[data-page="workspace"] {
     grid-row: 1;
   }
 
+  .stims-shell__launch-layout {
+    grid-template-columns: minmax(18rem, 0.78fr) minmax(26rem, 1fr);
+    gap: 24px;
+  }
+
+  .stims-shell__launch-rail {
+    display: grid;
+    align-content: start;
+    gap: 18px;
+    min-width: 0;
+  }
+
+  .stims-shell__launch-layout > .stims-shell__launch-source-dock {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
+
+  .stims-shell__launch-layout .stims-shell__launch-recommendation {
+    justify-self: stretch;
+    max-width: none;
+  }
+
   .stims-shell__launch-stack {
     display: grid;
     gap: 0;
@@ -1726,72 +1749,10 @@ body[data-page="workspace"] {
 
   .stims-shell__launch-source-dock {
     grid-column: 1 / -1;
-    padding: 12px;
-    border: 1px solid rgba(119, 201, 255, 0.16);
-    border-radius: 18px;
-    background:
-      radial-gradient(
-        circle at top left,
-        rgba(119, 201, 255, 0.11),
-        transparent 38%
-      ),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(7, 11, 18, 0.3));
-    box-shadow:
-      inset 0 1px 0 var(--stims-white-06),
-      0 18px 36px rgba(0, 0, 0, 0.18);
-  }
-
-  .stims-shell__launch-create {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--stims-line-soft);
-  }
-
-  .stims-shell__launch-create-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 12px 2px 4px;
-    color: var(--stims-ink-strong);
-    cursor: pointer;
-    list-style: none;
-  }
-
-  .stims-shell__launch-create-summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .stims-shell__launch-create-summary::after {
-    content: "+";
-    flex: 0 0 auto;
-    color: var(--stims-cool);
-    font-size: 1.2rem;
-    font-weight: 700;
-  }
-
-  .stims-shell__launch-create[open] .stims-shell__launch-create-summary::after {
-    content: "−";
-  }
-
-  .stims-shell__launch-create-summary span {
-    display: grid;
-    gap: 3px;
-  }
-
-  .stims-shell__launch-create-summary strong {
-    font-size: 0.92rem;
-    font-weight: 700;
-  }
-
-  .stims-shell__launch-create-summary small {
-    color: var(--stims-muted);
-    font-size: 0.78rem;
-  }
-
-  .stims-shell__launch-create-body {
-    display: grid;
-    gap: 12px;
-    padding: 10px 0 2px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .stims-shell__settings-summary {
@@ -1962,6 +1923,45 @@ body[data-page="workspace"] {
   .stims-shell__source-card:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-panel {
+    gap: 10px;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-grid {
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--stims-line-soft);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-card {
+    min-height: 58px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    transform: none;
+  }
+
+  .stims-shell__launch-source-dock
+    .stims-shell__source-card
+    + .stims-shell__source-card {
+    border-left: 1px solid var(--stims-line-soft);
+  }
+
+  .stims-shell__launch-source-dock
+    .stims-shell__source-card
+    span:not(.stims-shell__source-card-kicker) {
+    display: none;
+  }
+
+  .stims-shell__launch-source-dock
+    .stims-shell__source-card:hover:not(:disabled) {
+    transform: none;
+    background: rgba(255, 255, 255, 0.045);
   }
 
   .stims-shell__youtube-row {
@@ -2397,6 +2397,19 @@ body[data-page="workspace"] {
     }
   }
 
+  .stims-shell__sheet-panel--browse
+    .stims-shell__preset-card
+    .stims-shell__preset-art {
+    min-height: 150px;
+  }
+
+  .stims-shell__launch-recommendation .stims-shell__preset-art {
+    width: 104px;
+    min-width: 104px;
+    min-height: 64px;
+    aspect-ratio: 16 / 9;
+  }
+
   .stims-shell__tool-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -2661,8 +2674,28 @@ body[data-page="workspace"] {
       min-height: 0;
     }
 
+    .stims-shell__launch-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .stims-shell__launch-layout > .stims-shell__launch-source-dock {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
     .stims-shell__stage-hero {
       width: min(46rem, calc(100% - 64px));
+    }
+  }
+
+  @media (min-width: 1121px) and (max-width: 1280px) {
+    .stims-shell__launch-layout {
+      grid-template-columns: minmax(18rem, 0.78fr) minmax(26rem, 1fr);
+    }
+
+    .stims-shell__launch-layout > .stims-shell__launch-source-dock {
+      grid-column: 2;
+      grid-row: 1;
     }
   }
 
@@ -2695,6 +2728,41 @@ body[data-page="workspace"] {
     .stims-shell__launch-stack {
       grid-column: auto;
       grid-row: auto;
+    }
+
+    .stims-shell__launch-layout {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stims-shell__launch-layout .stims-shell__launch-rail {
+      display: contents;
+    }
+
+    .stims-shell__launch-copy h1 {
+      font-size: clamp(3rem, 7vw, 5rem);
+      line-height: 0.92;
+    }
+
+    .stims-shell__launch-layout .stims-shell__launch-copy,
+    .stims-shell__launch-layout > .stims-shell__launch-source-dock,
+    .stims-shell__launch-layout .stims-shell__launch-actions,
+    .stims-shell__launch-layout .stims-shell__launch-recommendation {
+      width: 100%;
+      max-width: none;
+    }
+
+    .stims-shell__launch-layout .stims-shell__launch-copy {
+      order: 1;
+    }
+
+    .stims-shell__launch-layout > .stims-shell__launch-source-dock {
+      order: 2;
+    }
+
+    .stims-shell__launch-layout .stims-shell__launch-actions,
+    .stims-shell__launch-layout .stims-shell__launch-recommendation {
+      order: 3;
     }
 
     .stims-shell__launch-recommendation {
@@ -3034,7 +3102,10 @@ body[data-page="workspace"] {
       gap: 10px;
     }
 
-    .stims-shell__browse-toolbar,
+    .stims-shell__browse-toolbar {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
     .stims-shell__starter-grid {
       grid-template-columns: 1fr;
     }
