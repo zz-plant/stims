@@ -9,6 +9,7 @@ let getRenderingSupport;
 let recordRendererOptimizationTelemetry;
 let rememberRendererFallback;
 let resetRendererCapabilities;
+let resolveCapabilityProbeSuccess;
 let summarizeRendererOptimizationSupport;
 
 const COMPATIBILITY_MODE_KEY = 'stims:compatibility-mode';
@@ -73,6 +74,7 @@ beforeEach(async () => {
     recordRendererOptimizationTelemetry,
     rememberRendererFallback,
     resetRendererCapabilities,
+    resolveCapabilityProbeSuccess,
     summarizeRendererOptimizationSupport,
   } = await importFresh(capabilitiesModule));
 });
@@ -223,6 +225,55 @@ describe('renderer capabilities', () => {
     expect(result.shouldRetryWebGPU).toBe(true);
     expect(result.device).toBeNull();
     expect(result.adapter).toBeNull();
+  });
+
+  test('cleans up a device and records a retryable no-adapter invariant failure', () => {
+    const destroy = mock(() => {});
+
+    const result = resolveCapabilityProbeSuccess({
+      adapter: null,
+      device: { destroy },
+      retry: {
+        attempts: 0,
+        maxAttempts: 3,
+        lastFailureKind: null,
+        lastFailureReason: null,
+        nextRetryAt: null,
+        canRetryNow: true,
+      },
+    });
+
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(result.fallbackReasonCode).toBe('NO_ADAPTER');
+    expect(result.shouldRetryWebGPU).toBe(true);
+    expect(result.retry).toMatchObject({
+      attempts: 1,
+      lastFailureKind: 'unknown',
+      lastFailureReason: 'No compatible WebGPU adapter was found.',
+    });
+  });
+
+  test('records a retryable no-device invariant failure', () => {
+    const result = resolveCapabilityProbeSuccess({
+      adapter: { features: new Set(), limits: {} },
+      device: null,
+      retry: {
+        attempts: 0,
+        maxAttempts: 3,
+        lastFailureKind: null,
+        lastFailureReason: null,
+        nextRetryAt: null,
+        canRetryNow: true,
+      },
+    });
+
+    expect(result.fallbackReasonCode).toBe('NO_DEVICE');
+    expect(result.shouldRetryWebGPU).toBe(true);
+    expect(result.retry).toMatchObject({
+      attempts: 1,
+      lastFailureKind: 'device-request',
+      lastFailureReason: 'Unable to acquire a WebGPU device.',
+    });
   });
 
   test('falls back to WebGL when only a fallback WebGPU adapter is available', async () => {

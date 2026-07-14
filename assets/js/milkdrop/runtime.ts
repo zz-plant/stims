@@ -47,6 +47,7 @@ import { createMilkdropPresetPreviewService } from './runtime/preset-preview-ser
 import { createMilkdropRuntimePreferences } from './runtime/runtime-preferences';
 import { createMilkdropRuntimeSignalHub } from './runtime/runtime-signal-hub';
 import { cloneBlendState } from './runtime/session';
+import { shouldDeferStartupPresetFallback } from './runtime/startup.ts';
 import { selectMilkdropStartupPreset } from './runtime/startup-selection';
 import {
   installRequestedOverlayTabListener,
@@ -131,6 +132,7 @@ export function createMilkdropExperience({
   let adapter: MilkdropRendererAdapter | null = null;
   let activeCompiled: MilkdropCompiledPreset = defaultPreset;
   let activePresetId = defaultPreset.source.id;
+  let pendingStartupPresetId = initialPresetId ?? null;
   let activeBackend: 'webgl' | 'webgpu' = 'webgl';
   let currentFrameState: MilkdropFrameState | null = null;
   let blendState = cloneBlendState(currentFrameState);
@@ -346,6 +348,10 @@ export function createMilkdropExperience({
   });
 
   const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
+    !shouldDeferStartupPresetFallback({
+      pendingPresetId: pendingStartupPresetId,
+      activePresetId: compiled.source.id,
+    }) &&
     backendFailover.shouldFallback({
       compiled,
       activeBackend,
@@ -855,6 +861,7 @@ export function createMilkdropExperience({
         initialPresetId,
         activeBackend,
       });
+    pendingStartupPresetId = startupPresetId;
     if (!lifetime.isActive()) {
       return;
     }
@@ -865,6 +872,7 @@ export function createMilkdropExperience({
       await navigation.selectPreset(startupPresetId, {
         recordHistory: false,
       });
+      pendingStartupPresetId = null;
       if (!lifetime.isActive()) {
         return;
       }
@@ -872,6 +880,7 @@ export function createMilkdropExperience({
         return;
       }
     }
+    pendingStartupPresetId = null;
   })();
 
   return buildExperienceController({

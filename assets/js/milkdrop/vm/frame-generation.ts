@@ -35,7 +35,13 @@ function ensureTempPositionsCapacity(size: number) {
 const tempWaveColor = { r: 1, g: 1, b: 1, a: 1 };
 const tempFinalColor = { r: 1, g: 1, b: 1, a: 1 };
 
-function colorTo(target: MilkdropColor, r: number, g: number, b: number, a = 1) {
+function colorTo(
+  target: MilkdropColor,
+  r: number,
+  g: number,
+  b: number,
+  a = 1,
+) {
   target.r = clamp(r, 0, 1);
   target.g = clamp(g, 0, 1);
   target.b = clamp(b, 0, 1);
@@ -214,25 +220,6 @@ function normalizeProjectMMystery(value: number) {
   return Math.abs(v * 2 - 1);
 }
 
-function brightenWaveColor(waveColor: {
-  r: number;
-  g: number;
-  b: number;
-  a?: number;
-}) {
-  const peak = Math.max(waveColor.r, waveColor.g, waveColor.b);
-  if (peak <= 0.0001 || peak >= 1) {
-    return waveColor;
-  }
-  const gain = 1 / peak;
-  return color(
-    clamp(waveColor.r * gain, 0, 1),
-    clamp(waveColor.g * gain, 0, 1),
-    clamp(waveColor.b * gain, 0, 1),
-    waveColor.a,
-  );
-}
-
 function assignColor(target: MilkdropColor | undefined, source: MilkdropColor) {
   if (!target) {
     return source;
@@ -404,6 +391,7 @@ export function buildMainWaveFrame({
   previousMomentum,
   buffers = {
     liveSamples: new Float32Array(0),
+    previousSamples: new Float32Array(0),
     smoothedSamples: new Float32Array(0),
     momentumSamples: new Float32Array(0),
   },
@@ -418,6 +406,7 @@ export function buildMainWaveFrame({
   previousMomentum: Float32Array;
   buffers?: {
     liveSamples: Float32Array;
+    previousSamples: Float32Array;
     smoothedSamples: Float32Array;
     momentumSamples: Float32Array;
   };
@@ -456,16 +445,28 @@ export function buildMainWaveFrame({
     liveSamples = buffers.liveSamples;
   } else {
     liveSamples = new Float32Array(samples);
+    buffers.liveSamples = liveSamples;
   }
-  if (buffers.smoothedSamples.length === samples) {
+  if (
+    buffers.smoothedSamples.length === samples &&
+    buffers.smoothedSamples !== previousSamples
+  ) {
     smoothedSamples = buffers.smoothedSamples;
+  } else if (
+    buffers.previousSamples.length === samples &&
+    buffers.previousSamples !== previousSamples
+  ) {
+    smoothedSamples = buffers.previousSamples;
   } else {
     smoothedSamples = new Float32Array(samples);
   }
+  buffers.previousSamples = previousSamples;
+  buffers.smoothedSamples = smoothedSamples;
   if (buffers.momentumSamples.length === samples) {
     nextMomentum = buffers.momentumSamples;
   } else {
     nextMomentum = new Float32Array(samples);
+    buffers.momentumSamples = nextMomentum;
   }
   // IIR causal filter along sample axis (matching ProjectM's WaveformMath).
   // Each sample blends with its predecessor, creating a "comet tail" within
@@ -524,16 +525,22 @@ export function buildMainWaveFrame({
     : null;
   let proceduralSamples = procedural?.samples ?? null;
   let proceduralVelocities = procedural?.velocities ?? null;
-  if (proceduralSamples) {
-    if (!(proceduralSamples instanceof Float32Array) || proceduralSamples.length !== samples) {
+  if (procedural && proceduralSamples) {
+    if (
+      !(proceduralSamples instanceof Float32Array) ||
+      proceduralSamples.length !== samples
+    ) {
       proceduralSamples = new Float32Array(samples);
-      procedural!.samples = proceduralSamples;
+      procedural.samples = proceduralSamples;
     }
   }
-  if (proceduralVelocities) {
-    if (!(proceduralVelocities instanceof Float32Array) || proceduralVelocities.length !== samples) {
+  if (procedural && proceduralVelocities) {
+    if (
+      !(proceduralVelocities instanceof Float32Array) ||
+      proceduralVelocities.length !== samples
+    ) {
       proceduralVelocities = new Float32Array(samples);
-      procedural!.velocities = proceduralVelocities;
+      procedural.velocities = proceduralVelocities;
     }
   }
 
@@ -689,7 +696,11 @@ export function buildMainWaveFrame({
         visual.positions = new Float32Array(interpolatedLength);
         positions = visual.positions;
       }
-      catmullRomInterpolateTo(tempPositionsBuffer, rawLength, positions as any);
+      catmullRomInterpolateTo(
+        tempPositionsBuffer,
+        rawLength,
+        positions as { [key: number]: number },
+      );
     }
   }
 

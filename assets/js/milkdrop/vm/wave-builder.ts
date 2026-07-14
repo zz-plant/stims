@@ -10,7 +10,6 @@ import type {
 import { buildMainWaveFrame } from './frame-generation';
 import {
   clamp,
-  color,
   MAIN_WAVE_FRAME_HISTORY_SIZE,
   MAX_TRAILS,
   type MutableState,
@@ -198,9 +197,16 @@ export function buildCustomWaves({
       : createEnv(signals, pointLocals, { reuseExtraAsEnv: true });
 
     let positions = useProcedural ? null : visualWave.positions;
+    const visualWaveWithColorCache = visualWave as MilkdropWaveVisual & {
+      _colorsCache?: number[] | Float32Array;
+    };
     let pointColors = useProcedural
       ? null
-      : ((visualWave as any)._colorsCache ??= new Float32Array(0));
+      : visualWaveWithColorCache._colorsCache;
+    if (!useProcedural && !pointColors) {
+      pointColors = new Float32Array(0);
+      visualWaveWithColorCache._colorsCache = pointColors;
+    }
     let hasPerPointColors = false;
 
     if (positions) {
@@ -225,7 +231,7 @@ export function buildCustomWaves({
       if (pointColors instanceof Float32Array) {
         if (pointColors.length !== targetLength) {
           pointColors = new Float32Array(targetLength);
-          (visualWave as any)._colorsCache = pointColors;
+          visualWaveWithColorCache._colorsCache = pointColors;
         }
       } else if (Array.isArray(pointColors)) {
         if (pointColors.length !== targetLength) {
@@ -233,7 +239,7 @@ export function buildCustomWaves({
         }
       } else {
         pointColors = new Float32Array(targetLength);
-        (visualWave as any)._colorsCache = pointColors;
+        visualWaveWithColorCache._colorsCache = pointColors;
       }
     }
 
@@ -277,15 +283,25 @@ export function buildCustomWaves({
     let proceduralSamples = proceduralWave?.samples ?? null;
     let proceduralSampleValues2 = proceduralWave?.sampleValues2 ?? null;
     if (proceduralSamples) {
-      if (!(proceduralSamples instanceof Float32Array) || proceduralSamples.length !== sampleCount) {
+      if (
+        !(proceduralSamples instanceof Float32Array) ||
+        proceduralSamples.length !== sampleCount
+      ) {
         proceduralSamples = new Float32Array(sampleCount);
-        proceduralWave!.samples = proceduralSamples;
+        if (proceduralWave) {
+          proceduralWave.samples = proceduralSamples;
+        }
       }
     }
     if (proceduralSampleValues2) {
-      if (!(proceduralSampleValues2 instanceof Float32Array) || proceduralSampleValues2.length !== sampleCount) {
+      if (
+        !(proceduralSampleValues2 instanceof Float32Array) ||
+        proceduralSampleValues2.length !== sampleCount
+      ) {
         proceduralSampleValues2 = new Float32Array(sampleCount);
-        proceduralWave!.sampleValues2 = proceduralSampleValues2;
+        if (proceduralWave) {
+          proceduralWave.sampleValues2 = proceduralSampleValues2;
+        }
       }
     }
     channelSample.sample = 0;

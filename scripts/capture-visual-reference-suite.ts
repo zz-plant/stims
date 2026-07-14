@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
-type CaptureVisualReferenceSuiteOptions = {
+export type CaptureVisualReferenceSuiteOptions = {
   repoRoot: string;
   outputDir: string;
   port: number;
@@ -61,7 +61,7 @@ export function buildVisualReferenceCaptureRequests({
           ? 'webgpu'
           : 'compatibility',
       catalogMode: 'certification',
-      screenshotSurface: 'page',
+      screenshotSurface: 'canvas',
     }));
 }
 
@@ -164,7 +164,9 @@ function usage() {
   );
 }
 
-function parseArgs(argv: string[]): CaptureVisualReferenceSuiteOptions {
+export function parseVisualReferenceCaptureArgs(
+  argv: string[],
+): CaptureVisualReferenceSuiteOptions {
   const getArg = (name: string, fallback: string | number) => {
     const idx = argv.indexOf(name);
     if (idx !== -1 && idx + 1 < argv.length) {
@@ -183,7 +185,7 @@ function parseArgs(argv: string[]): CaptureVisualReferenceSuiteOptions {
     outputDir: getArg('--output', './screenshots/parity') as string,
     port: getArg('--port', 5173) as number,
     headless: !argv.includes('--no-headless'),
-    vibeMode: !argv.includes('--no-vibe-mode'),
+    vibeMode: false,
     presetIds: presetIds.length > 0 ? presetIds : undefined,
   };
 }
@@ -195,7 +197,7 @@ if (import.meta.main) {
     process.exit(0);
   }
 
-  const options = parseArgs(args);
+  const options = parseVisualReferenceCaptureArgs(args);
   try {
     const result = await captureVisualReferenceSuite(options);
     console.log(JSON.stringify(result, null, 2));

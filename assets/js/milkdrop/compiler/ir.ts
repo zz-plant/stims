@@ -692,11 +692,16 @@ export function createMilkdropIr({
               : 'translated',
           }
       : { webgl: 'none', webgpu: 'none' };
+  const unsupportedVolumeSamplerWarnings =
+    shaderHelpers.buildUnsupportedVolumeSamplerWarnings(
+      mergedShaderControls.controls,
+    );
   const featureAnalysis = compatibilityHelpers.buildFeatureAnalysis({
     programs,
     customWaves,
     customShapes,
     numericFields: runtimeGlobals,
+    volumeTexturesUsed: unsupportedVolumeSamplerWarnings.length > 0,
     unsupportedShaderText,
     supportedShaderText,
     shaderTextExecution,
@@ -733,10 +738,6 @@ export function createMilkdropIr({
         `Custom shader sampler "${sampler.name}" does not match a bundled MilkDrop texture asset.`,
       );
     });
-  const unsupportedVolumeSamplerWarnings =
-    shaderHelpers.buildUnsupportedVolumeSamplerWarnings(
-      mergedShaderControls.controls,
-    );
   unsupportedVolumeSamplerWarnings.forEach((message) => {
     fieldHelpers.addDiagnostic(
       diagnostics,

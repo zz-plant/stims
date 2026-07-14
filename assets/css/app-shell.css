@@ -2129,6 +2129,15 @@ body[data-page="workspace"] {
     opacity: 0.88;
   }
 
+  .stims-shell__preset-art-fallback {
+    position: absolute;
+    inset: auto 12px 10px;
+    color: var(--stims-white-64);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
   .stims-shell__preset-art-scene {
     position: absolute;
     inset: 0;

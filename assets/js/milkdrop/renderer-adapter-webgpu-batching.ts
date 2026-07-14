@@ -635,7 +635,7 @@ class CompactSegmentUploadBuffer {
   }
 
   appendPolyline(
-    positions: number[],
+    positions: ArrayLike<number>,
     color: MilkdropColor,
     alpha: number,
     width: number,
@@ -931,7 +931,7 @@ function buildProceduralWavePoint(
 }
 
 function sampleProceduralWaveOffset(
-  values: number[],
+  values: ArrayLike<number>,
   sampleT: number,
   offset: number,
 ) {
@@ -1799,7 +1799,7 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     target: string,
     _group: Group,
     lines: Array<{
-      positions: number[];
+      positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;

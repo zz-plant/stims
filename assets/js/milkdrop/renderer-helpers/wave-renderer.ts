@@ -23,7 +23,7 @@ type WaveLayerObject = Line | LineLoop | Points;
 function syncWaveVertexColors(
   geometry: BufferGeometry,
   material: LineBasicMaterial | PointsMaterial,
-  colors: number[] | undefined,
+  colors: ArrayLike<number> | undefined,
 ) {
   if (!colors || colors.length === 0) {
     geometry.deleteAttribute('color');
@@ -70,12 +70,12 @@ function createWaveLayerObject(
   helpers: {
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     getWaveLinePositions: (
       wave: MilkdropWaveVisual,
       behavior: MilkdropBackendBehavior,
-    ) => number[];
+    ) => ArrayLike<number>;
     setMaterialColor: (
       material: LineBasicMaterial | PointsMaterial,
       color: MilkdropColor,
@@ -141,12 +141,12 @@ function syncWaveLayerObject(
   helpers: {
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     getWaveLinePositions: (
       wave: MilkdropWaveVisual,
       behavior: MilkdropBackendBehavior,
-    ) => number[];
+    ) => ArrayLike<number>;
     setMaterialColor: (
       material: LineBasicMaterial | PointsMaterial,
       color: MilkdropColor,
@@ -212,12 +212,12 @@ export function createWaveObject(
   helpers: {
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     getWaveLinePositions: (
       wave: MilkdropWaveVisual,
       behavior: MilkdropBackendBehavior,
-    ) => number[];
+    ) => ArrayLike<number>;
     setMaterialColor: (
       material: LineBasicMaterial | PointsMaterial,
       color: MilkdropColor,
@@ -247,12 +247,12 @@ export function updateWaveObject(
     disposeObject: (object: { children?: unknown[] }) => void;
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     getWaveLinePositions: (
       wave: MilkdropWaveVisual,
       behavior: MilkdropBackendBehavior,
-    ) => number[];
+    ) => ArrayLike<number>;
     setMaterialColor: (
       material: LineBasicMaterial | PointsMaterial,
       color: MilkdropColor,
@@ -303,12 +303,12 @@ export function syncWaveObject(
     disposeObject: (object: { children?: unknown[] }) => void;
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     getWaveLinePositions: (
       wave: MilkdropWaveVisual,
       behavior: MilkdropBackendBehavior,
-    ) => number[];
+    ) => ArrayLike<number>;
     setMaterialColor: (
       material: LineBasicMaterial | PointsMaterial,
       color: MilkdropColor,
@@ -336,14 +336,14 @@ export function syncWaveObject(
 }
 
 export function createLineObject(
-  positions: number[],
+  positions: ArrayLike<number>,
   color: MilkdropColor,
   alpha: number,
   additive: boolean,
   helpers: {
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     markAlwaysOnscreen: <T extends ThreeLine>(object: T) => T;
     setMaterialColor: (
@@ -374,7 +374,7 @@ export function createLineObject(
 export function syncLineObject(
   existing: Line | undefined,
   line: {
-    positions: number[];
+    positions: ArrayLike<number>;
     color: MilkdropColor;
     alpha: number;
     additive: boolean;
@@ -384,7 +384,7 @@ export function syncLineObject(
     disposeObject: (object: { children?: unknown[] }) => void;
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     markAlwaysOnscreen: <T extends ThreeLine>(object: T) => T;
     setMaterialColor: (
@@ -479,7 +479,7 @@ export function renderLineVisualGroup({
   target: 'trails' | 'motion-vectors' | 'blend-motion-vectors';
   group: Group;
   lines: Array<{
-    positions: number[];
+    positions: ArrayLike<number>;
     color: MilkdropColor;
     alpha: number;
     additive?: boolean;
@@ -491,7 +491,7 @@ export function renderLineVisualGroup({
   syncLineObject: (
     existing: Line | undefined,
     line: {
-      positions: number[];
+      positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive: boolean;

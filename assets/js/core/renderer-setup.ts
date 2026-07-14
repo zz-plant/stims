@@ -10,8 +10,8 @@ import {
 } from '../utils/device-detect';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
-  FallbackState,
   FallbackEvent,
+  FallbackState,
   FallbackStateMachine,
 } from './fallback-state.ts';
 import {

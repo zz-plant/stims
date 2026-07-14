@@ -2,7 +2,10 @@ import { expect, test } from 'bun:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildVisualReferenceCaptureRequests } from '../scripts/capture-visual-reference-suite.ts';
+import {
+  buildVisualReferenceCaptureRequests,
+  parseVisualReferenceCaptureArgs,
+} from '../scripts/capture-visual-reference-suite.ts';
 import { saveVisualReferenceManifest } from '../scripts/visual-reference-manifest.ts';
 
 test('buildVisualReferenceCaptureRequests derives viewport and timing from the reference manifest', () => {
@@ -102,7 +105,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       vibeMode: false,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
-      screenshotSurface: 'page',
+      screenshotSurface: 'canvas',
     },
     {
       slug: 'milkdrop',
@@ -118,7 +121,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
       vibeMode: false,
       rendererProfile: 'webgpu',
       catalogMode: 'certification',
-      screenshotSurface: 'page',
+      screenshotSurface: 'canvas',
     },
   ]);
 });
@@ -207,4 +210,11 @@ test('buildVisualReferenceCaptureRequests can target a subset of certified prese
       presetIds: ['beta'],
     }).map((request) => request.presetId),
   ).toEqual(['beta']);
+});
+
+test('parseVisualReferenceCaptureArgs keeps parity captures out of vibe mode by default', () => {
+  expect(parseVisualReferenceCaptureArgs([]).vibeMode).toBe(false);
+  expect(parseVisualReferenceCaptureArgs(['--no-vibe-mode']).vibeMode).toBe(
+    false,
+  );
 });

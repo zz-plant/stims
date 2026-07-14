@@ -692,9 +692,9 @@ class MilkdropPresetVM implements MilkdropVM {
       presetId: this.preset.source.id,
       title: this.preset.title,
       background: color(
-        clamp((this.state.bg_r ?? 0.02) + signals.beatPulse * 0.015, 0, 1),
-        clamp((this.state.bg_g ?? 0.03) + signals.midsAtt * 0.01, 0, 1),
-        clamp((this.state.bg_b ?? 0.06) + signals.trebleAtt * 0.015, 0, 1),
+        clamp(this.state.bg_r ?? 0, 0, 1),
+        clamp(this.state.bg_g ?? 0, 0, 1),
+        clamp(this.state.bg_b ?? 0, 0, 1),
       ),
       waveform: mainWave,
       mainWave,

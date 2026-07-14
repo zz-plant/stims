@@ -101,7 +101,7 @@ function buildProceduralWaveSampleT(
   return values;
 }
 
-function sampleScalarValueAt(values: number[], t: number) {
+function sampleScalarValueAt(values: ArrayLike<number>, t: number) {
   if (values.length === 0) {
     return 0;
   }
@@ -117,7 +117,7 @@ function sampleScalarValueAt(values: number[], t: number) {
 }
 
 function buildProceduralWaveAttributeValues(
-  values: number[],
+  values: ArrayLike<number>,
   closed: boolean,
   offset = 0,
 ) {
@@ -140,7 +140,7 @@ function buildProceduralWaveParity(sourceLength: number, closed: boolean) {
 function setOrUpdateScalarAttribute(
   geometry: BufferGeometry,
   name: string,
-  values: number[],
+  values: ArrayLike<number>,
 ) {
   const existing = geometry.getAttribute(name);
   if (
@@ -161,7 +161,7 @@ function lerpNumber(previous: number, current: number, mix: number) {
   return previous + (current - previous) * mix;
 }
 
-function resampleScalarValues(values: number[], targetLength: number) {
+function resampleScalarValues(values: ArrayLike<number>, targetLength: number) {
   if (values.length === targetLength) {
     return values;
   }

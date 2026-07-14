@@ -105,6 +105,7 @@ export type MilkdropFeatureKey =
   | 'motion-vectors'
   | 'video-echo'
   | 'post-effects'
+  | 'volume-textures'
   | 'unsupported-shader-text';
 
 export type MilkdropCompatibilityFeatureKey =

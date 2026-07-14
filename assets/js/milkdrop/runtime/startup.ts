@@ -1,3 +1,13 @@
+export function shouldDeferStartupPresetFallback({
+  pendingPresetId,
+  activePresetId,
+}: {
+  pendingPresetId: string | null;
+  activePresetId: string;
+}) {
+  return pendingPresetId !== null && activePresetId !== pendingPresetId;
+}
+
 export function resolveStartupPresetId({
   requestedPresetId,
   preferredStartupPresetId,

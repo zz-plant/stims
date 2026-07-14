@@ -28,6 +28,10 @@ type SegmentBatchTarget =
   | 'motion-vectors'
   | 'blend-motion-vectors';
 
+export type MilkdropSegmentBatchingOptions = {
+  fallbackCustomWaves?: boolean;
+};
+
 const SEGMENT_QUAD_GEOMETRY = createSegmentQuadGeometry();
 
 function createSegmentQuadGeometry() {
@@ -190,7 +194,7 @@ class CompactSegmentUploadBuffer {
   }
 
   appendPolyline(
-    positions: number[],
+    positions: ArrayLike<number>,
     color: MilkdropColor,
     alpha: number,
     width: number,
@@ -418,6 +422,7 @@ class InstancedSegmentBatch {
 }
 
 class SegmentBatchingLayer implements MilkdropRendererBatcher {
+  private readonly options: MilkdropSegmentBatchingOptions;
   private readonly root = new ThreeGroup();
   private readonly targets = new Map<
     SegmentBatchTarget,
@@ -425,6 +430,10 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
   >();
   private readonly normalUploads = new CompactSegmentUploadBuffer();
   private readonly additiveUploads = new CompactSegmentUploadBuffer();
+
+  constructor(options: MilkdropSegmentBatchingOptions = {}) {
+    this.options = options;
+  }
 
   attach(root: Group) {
     root.add(this.root);
@@ -460,6 +469,12 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
     waves: MilkdropWaveVisual[],
     alphaMultiplier: number,
   ) {
+    if (
+      this.options.fallbackCustomWaves &&
+      (target === 'custom-wave' || target === 'blend-custom-wave')
+    ) {
+      return false;
+    }
     if (waves.some((wave) => wave.drawMode === 'dots')) {
       this.clearTarget(target);
       return false;
@@ -485,7 +500,7 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
     target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
     _group: Group,
     lines: Array<{
-      positions: number[];
+      positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
@@ -516,6 +531,8 @@ class SegmentBatchingLayer implements MilkdropRendererBatcher {
   }
 }
 
-export function createMilkdropSegmentBatchingLayer() {
-  return new SegmentBatchingLayer();
+export function createMilkdropSegmentBatchingLayer(
+  options: MilkdropSegmentBatchingOptions = {},
+) {
+  return new SegmentBatchingLayer(options);
 }

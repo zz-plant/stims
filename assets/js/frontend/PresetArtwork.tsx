@@ -41,6 +41,8 @@ export function PresetArtwork({
   compact?: boolean;
   preview?: MilkdropPresetRenderPreview | null;
 }) {
+  const mood = describePresetMood(entry);
+
   return (
     <div
       className="stims-shell__preset-art"
@@ -64,7 +66,9 @@ export function PresetArtwork({
           alt=""
           loading="lazy"
         />
-      ) : null}
+      ) : (
+        <span className="stims-shell__preset-art-fallback">{mood}</span>
+      )}
     </div>
   );
 }

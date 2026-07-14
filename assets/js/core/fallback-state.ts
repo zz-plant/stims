@@ -180,10 +180,10 @@ export function getInvalidTransitionMessageForEvent(
   return null;
 }
 
-
 export class FallbackStateMachine {
   private currentState: FallbackState;
-  private listeners: Set<(state: FallbackState, event: FallbackEvent) => void> = new Set();
+  private listeners: Set<(state: FallbackState, event: FallbackEvent) => void> =
+    new Set();
 
   constructor(initialState: FallbackState = FallbackState.Initial) {
     this.currentState = initialState;
@@ -196,11 +196,14 @@ export class FallbackStateMachine {
   transition(event: FallbackEvent): FallbackState {
     const nextState = STATE_TRANSITIONS[this.currentState]?.[event];
     if (!nextState) {
-      const reason = getInvalidTransitionMessageForEvent(this.currentState, event);
+      const reason = getInvalidTransitionMessageForEvent(
+        this.currentState,
+        event,
+      );
       throw new Error(
         `Invalid fallback state transition from ${this.currentState} via event ${event}${
           reason ? `: ${reason}` : ''
-        }`
+        }`,
       );
     }
     this.currentState = nextState;
@@ -214,7 +217,9 @@ export class FallbackStateMachine {
     return this.currentState;
   }
 
-  onTransition(listener: (state: FallbackState, event: FallbackEvent) => void): () => void {
+  onTransition(
+    listener: (state: FallbackState, event: FallbackEvent) => void,
+  ): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }

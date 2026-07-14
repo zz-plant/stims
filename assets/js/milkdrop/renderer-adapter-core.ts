@@ -821,7 +821,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
     group: Group,
     lines: Array<{
-      positions: number[];
+      positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;

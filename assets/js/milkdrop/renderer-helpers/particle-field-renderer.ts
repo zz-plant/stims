@@ -28,7 +28,7 @@ type ParticleFieldObject = Mesh<InstancedBufferGeometry, ShaderMaterial>;
 type ParticleFieldSyncContext = {
   particleField: MilkdropParticleFieldVisual | null | undefined;
   mesh: MilkdropRenderPayload['frameState']['mesh'];
-  meshPositions: number[];
+  meshPositions: ArrayLike<number>;
   signals: MilkdropRenderPayload['frameState']['signals'] | null;
   alphaMultiplier?: number;
 };
@@ -184,7 +184,7 @@ function createParticleFieldMaterial(
 
 function getParticleFieldInstanceAnchors(
   particleField: MilkdropParticleFieldVisual,
-  meshPositions: number[],
+  meshPositions: ArrayLike<number>,
 ) {
   if (meshPositions.length < 3) {
     return {
@@ -243,7 +243,7 @@ function fract(value: number) {
 function updateParticleFieldAttributes(
   geometry: InstancedBufferGeometry,
   particleField: MilkdropParticleFieldVisual,
-  meshPositions: number[],
+  meshPositions: ArrayLike<number>,
 ) {
   const { anchors, seeds, ids } = getParticleFieldInstanceAnchors(
     particleField,
@@ -422,7 +422,7 @@ export function renderParticleFieldGroup({
   group: Group;
   particleField: MilkdropParticleFieldVisual | null | undefined;
   mesh: MilkdropRenderPayload['frameState']['mesh'];
-  meshPositions: number[];
+  meshPositions: ArrayLike<number>;
   signals: MilkdropRenderPayload['frameState']['signals'] | null;
   alphaMultiplier?: number;
   trimGroupChildren: typeof trimGroupChildren;

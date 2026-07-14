@@ -70,6 +70,7 @@ const FEATURE_ORDER: MilkdropFeatureKey[] = [
   'motion-vectors',
   'video-echo',
   'post-effects',
+  'volume-textures',
   'unsupported-shader-text',
 ];
 

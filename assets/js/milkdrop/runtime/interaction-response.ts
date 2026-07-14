@@ -16,7 +16,7 @@ function normalizeSceneTranslation(value: number) {
 }
 
 function transformScenePositionsInPlace(
-  positions: number[],
+  positions: number[] | Float32Array,
   {
     offsetX,
     offsetY,

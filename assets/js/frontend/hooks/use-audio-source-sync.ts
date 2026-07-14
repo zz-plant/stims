@@ -20,6 +20,7 @@ export function useAudioSourceSync({
     if (
       !engineRef.current?.isMounted() ||
       routeState.audioSource !== 'demo' ||
+      !engineSnapshot?.runtimeReady ||
       engineSnapshot?.audioActive
     ) {
       return;
@@ -38,6 +39,7 @@ export function useAudioSourceSync({
     engineRef,
     engineSnapshot?.audioActive,
     engineSnapshot?.audioSource,
+    engineSnapshot?.runtimeReady,
     routeState.audioSource,
     setStatusMessage,
   ]);

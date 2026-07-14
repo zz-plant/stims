@@ -62,6 +62,7 @@ export type MilkdropRendererAdapterConfig = {
   behavior?: MilkdropBackendBehavior;
   createFeedbackManager?: MilkdropFeedbackManagerFactory;
   batcher?: MilkdropRendererBatcher | null;
+  fallbackCustomWaves?: boolean;
   webgpuOptimizationFlags?: MilkdropWebGpuOptimizationFlags;
 };
 
@@ -104,7 +105,7 @@ export type MilkdropRendererBatcher = {
     target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',
     group: Group,
     lines: Array<{
-      positions: number[];
+      positions: ArrayLike<number>;
       color: MilkdropColor;
       alpha: number;
       additive?: boolean;
@@ -214,7 +215,7 @@ export function setSharedGeometryBounds(
 
 export function setGeometryBoundsFromPositions(
   geometry: BufferGeometry,
-  positions: number[],
+  positions: ArrayLike<number>,
 ) {
   if (positions.length < 3) {
     return setGeometryBoundingSphere(geometry, new Vector3(0, 0, 0), 0);
@@ -337,7 +338,9 @@ export function getUnitPolygonClosedLineGeometry(sides: number) {
   return geometry;
 }
 
-export function closeLinePositions(positions: number[]) {
+export function closeLinePositions<T extends ArrayLike<number>>(
+  positions: T,
+): T | number[] {
   if (positions.length < 6) {
     return positions;
   }
@@ -352,7 +355,7 @@ export function closeLinePositions(positions: number[]) {
   ) {
     return positions;
   }
-  return [...positions, firstX, firstY, firstZ];
+  return [...Array.from(positions), firstX, firstY, firstZ];
 }
 
 export function getWaveLinePositions(
@@ -465,7 +468,7 @@ export function applyBlendModeToGroup(
 
 export function ensureGeometryPositions(
   geometry: BufferGeometry,
-  positions: number[],
+  positions: ArrayLike<number>,
 ) {
   const existing = geometry.getAttribute('position');
   if (

@@ -1,10 +1,16 @@
-import { expect, test } from 'bun:test';
+import { expect, mock, test } from 'bun:test';
 import {
   buildPlayToyArtifactStem,
   buildPlayToyPerformanceMetrics,
   buildPlayToyPerformanceMetricsFromDebugSnapshot,
   buildPlayToyUrl,
+  captureActiveToyCanvas,
+  didPlayToyRendererFallback,
+  getPlayToyAudioActivationError,
+  isPlayToyPresetReady,
+  normalizePlayToyOptions,
   resolveChromiumRendererArgs,
+  shouldRequestDemoAudio,
   shouldUseCanvasBitmapCapture,
   summarizePlayToyPerformanceSamples,
 } from '../scripts/play-toy.ts';
@@ -17,7 +23,7 @@ test('buildPlayToyUrl includes the requested preset for milkdrop captures', () =
       presetId: 'eos-glowsticks-v2-03-music',
     }),
   ).toBe(
-    'http://127.0.0.1:4173/?agent=true&audio=demo&preset=eos-glowsticks-v2-03-music',
+    'http://127.0.0.1:4173/?agent=true&audio=demo&preset=eos-glowsticks-v2-03-music&renderer=webgl',
   );
 });
 
@@ -27,7 +33,20 @@ test('buildPlayToyUrl omits the preset when none is provided', () => {
       port: 5173,
       slug: 'milkdrop',
     }),
-  ).toBe('http://127.0.0.1:5173/?agent=true&audio=demo');
+  ).toBe('http://127.0.0.1:5173/?agent=true&audio=demo&renderer=webgl');
+});
+
+test('buildPlayToyUrl pins compatibility captures to WebGL', () => {
+  expect(
+    buildPlayToyUrl({
+      port: 4174,
+      slug: 'milkdrop',
+      presetId: '100-square',
+      rendererProfile: 'compatibility',
+    }),
+  ).toBe(
+    'http://127.0.0.1:4174/?agent=true&audio=demo&preset=100-square&renderer=webgl',
+  );
 });
 
 test('buildPlayToyUrl can force the certification corpus and webgpu runtime', () => {
@@ -42,6 +61,105 @@ test('buildPlayToyUrl can force the certification corpus and webgpu runtime', ()
   ).toBe(
     'http://127.0.0.1:4175/?agent=true&audio=demo&preset=100-square&renderer=webgpu&corpus=certification',
   );
+});
+
+test('didPlayToyRendererFallback only reports a departure from the requested backend', () => {
+  expect(
+    didPlayToyRendererFallback({
+      requestedProfile: 'compatibility',
+      actualBackend: 'webgl',
+      explicitFallback: false,
+    }),
+  ).toBe(false);
+  expect(
+    didPlayToyRendererFallback({
+      requestedProfile: 'webgpu',
+      actualBackend: 'webgl',
+      explicitFallback: false,
+    }),
+  ).toBe(true);
+  expect(
+    didPlayToyRendererFallback({
+      requestedProfile: 'webgpu',
+      actualBackend: 'webgpu',
+      explicitFallback: false,
+    }),
+  ).toBe(false);
+});
+
+test('normalizePlayToyOptions keeps vibe mode opt-in for visual captures', () => {
+  expect(normalizePlayToyOptions({ slug: 'milkdrop' }).vibeMode).toBe(false);
+  expect(
+    normalizePlayToyOptions({ slug: 'milkdrop', vibeMode: true }).vibeMode,
+  ).toBe(true);
+});
+
+test('shouldRequestDemoAudio does not treat a loaded canvas as active audio', () => {
+  expect(
+    shouldRequestDemoAudio({
+      demoRequestedByRoute: true,
+      audioActive: false,
+    }),
+  ).toBe(true);
+  expect(
+    shouldRequestDemoAudio({
+      demoRequestedByRoute: true,
+      audioActive: true,
+    }),
+  ).toBe(false);
+  expect(
+    shouldRequestDemoAudio({
+      demoRequestedByRoute: false,
+      audioActive: false,
+    }),
+  ).toBe(false);
+});
+
+test('capture runs fail clearly when requested demo audio never activates', () => {
+  expect(
+    getPlayToyAudioActivationError({
+      demoRequestedByRoute: true,
+      audioActive: false,
+    }),
+  ).toBe(
+    'Demo audio was requested by the capture route, but audio never became active.',
+  );
+});
+
+test('active requested demo audio does not fail capture validation', () => {
+  expect(
+    getPlayToyAudioActivationError({
+      demoRequestedByRoute: true,
+      audioActive: true,
+    }),
+  ).toBeNull();
+  expect(
+    getPlayToyAudioActivationError({
+      demoRequestedByRoute: false,
+      audioActive: false,
+    }),
+  ).toBeNull();
+});
+
+test('isPlayToyPresetReady waits for the requested preset instead of shell readiness', () => {
+  expect(
+    isPlayToyPresetReady({
+      requestedPresetId: '100-square',
+      activePresetId: 'signal-bloom',
+    }),
+  ).toBe(false);
+  expect(
+    isPlayToyPresetReady({
+      requestedPresetId: '100-square',
+      activePresetId: '100-square',
+    }),
+  ).toBe(true);
+  expect(
+    isPlayToyPresetReady({
+      requestedPresetId: undefined,
+      activePresetId: 'signal-bloom',
+    }),
+  ).toBe(true);
 });
 
 test('buildPlayToyArtifactStem normalizes slug and preset ids for saved artifacts', () => {
@@ -90,6 +208,78 @@ test('shouldUseCanvasBitmapCapture only keeps bitmap capture when the live canva
       viewportHeight: 1794,
     }),
   ).toBe(false);
+});
+
+test('captureActiveToyCanvas isolates undersized backing buffers from shell overlays', async () => {
+  const outputPath = '/tmp/stims-canvas-capture-regression.png';
+  const screenshot = mock(async ({ path }: { path: string }) => {
+    expect(path).toBe(outputPath);
+  });
+  const evaluate = mock(async (callback: unknown) => {
+    const source = String(callback);
+    if (source.includes('bitmapWidth:')) {
+      return {
+        bitmapWidth: 910,
+        bitmapHeight: 518,
+        rectWidth: 1215,
+        rectHeight: 690,
+        viewportWidth: 1280,
+        viewportHeight: 720,
+      };
+    }
+    if (source.includes('const previous =')) {
+      return {
+        width: '',
+        height: '',
+        maxWidth: '',
+        maxHeight: '',
+      };
+    }
+    if (source.includes('toDataURL')) {
+      return 'data:image/png;base64,aGVsbG8=';
+    }
+    if (source.includes('data-stims-capture-surface')) {
+      return { documentElement: '', body: '' };
+    }
+    return null;
+  });
+  const locator = {
+    screenshot,
+  };
+  const page = {
+    evaluate,
+    viewportSize: () => ({ width: 1280, height: 720 }),
+    locator: () => locator,
+  } as never;
+
+  await captureActiveToyCanvas(page, outputPath);
+
+  expect(screenshot).toHaveBeenCalledTimes(1);
+});
+
+test('captureActiveToyCanvas screenshots the canvas element when WebGL pixel reads are unavailable', async () => {
+  const screenshot = mock(async () => undefined);
+  const page = {
+    evaluate: mock(async (callback: unknown) => {
+      const source = String(callback);
+      if (source.includes('bitmapWidth:')) {
+        return {
+          bitmapWidth: 1142,
+          bitmapHeight: 648,
+          rectWidth: 1215,
+          rectHeight: 690,
+          viewportWidth: 1265,
+          viewportHeight: 720,
+        };
+      }
+      return null;
+    }),
+    viewportSize: () => ({ width: 1280, height: 720 }),
+    locator: () => ({ first: () => ({ screenshot }) }),
+  } as never;
+
+  expect(await captureActiveToyCanvas(page, '/tmp/canvas-only.png')).toBe(true);
+  expect(screenshot).toHaveBeenCalledTimes(1);
 });
 
 test('summarizePlayToyPerformanceSamples computes average and p95 frame timings', () => {

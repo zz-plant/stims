@@ -28,6 +28,7 @@ import {
 } from '../assets/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../assets/js/milkdrop/renderer-adapter-factory.ts';
 import { createWebGPUBatchingLayer } from '../assets/js/milkdrop/renderer-adapter-webgpu-batching.ts';
+import { createMilkdropSegmentBatchingLayer } from '../assets/js/milkdrop/renderer-segment-batching.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -107,6 +108,33 @@ function getRootChildByRenderOrder(
     (child) => child.renderOrder === renderOrder,
   );
 }
+
+test('can route legacy custom waves through the canonical line path', () => {
+  const batcher = createMilkdropSegmentBatchingLayer({
+    fallbackCustomWaves: true,
+  });
+  const group = new Group();
+  const rendered = batcher.renderWaveGroup?.(
+    'custom-wave',
+    group,
+    [
+      {
+        positions: [-0.5, 0, 0, 0.5, 0, 0],
+        color: { r: 0, g: 1, b: 1, a: 1 },
+        alpha: 1,
+        additive: true,
+        closed: false,
+        drawMode: 'line',
+        pointSize: 1,
+        thickness: 1,
+      },
+    ],
+    1,
+  );
+
+  expect(rendered).toBe(false);
+  batcher.dispose();
+});
 
 function makeSignals(
   overrides: Partial<MilkdropRuntimeSignals> = {},

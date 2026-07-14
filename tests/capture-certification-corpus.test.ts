@@ -2,7 +2,10 @@ import { expect, test } from 'bun:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildCertificationCorpusCaptureRequests } from '../scripts/capture-certification-corpus.ts';
+import {
+  buildCertificationCorpusCaptureRequests,
+  parseCertificationCorpusArgs,
+} from '../scripts/capture-certification-corpus.ts';
 
 test('buildCertificationCorpusCaptureRequests derives requests from the certification corpus manifest', () => {
   const repoRoot = fs.mkdtempSync(
@@ -120,6 +123,11 @@ test('buildCertificationCorpusCaptureRequests derives requests from the certific
       screenshotSurface: 'canvas',
     },
   ]);
+});
+
+test('parseCertificationCorpusArgs keeps certification captures out of vibe mode by default', () => {
+  expect(parseCertificationCorpusArgs([]).vibeMode).toBe(false);
+  expect(parseCertificationCorpusArgs(['--no-vibe-mode']).vibeMode).toBe(false);
 });
 
 test('buildCertificationCorpusCaptureRequests can filter by corpus group and preset id', () => {

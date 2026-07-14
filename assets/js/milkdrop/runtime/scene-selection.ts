@@ -151,7 +151,7 @@ function getMainWaveSourceFields() {
   ];
 }
 
-function getPositionsAsPairs(positions: number[]) {
+function getPositionsAsPairs(positions: ArrayLike<number>) {
   const pairs: Array<{ x: number; y: number }> = [];
   for (let index = 0; index + 1 < positions.length; index += 3) {
     const x = positions[index];
@@ -190,7 +190,7 @@ function distanceToSegment(
 
 function getPolylineDistance(
   point: MilkdropScenePointerPoint,
-  positions: number[],
+  positions: ArrayLike<number>,
   closed = false,
 ) {
   const pairs = getPositionsAsPairs(positions);
@@ -224,7 +224,7 @@ function getPolylineDistance(
   return bestDistance;
 }
 
-function getBounds(positions: number[]) {
+function getBounds(positions: ArrayLike<number>) {
   const pairs = getPositionsAsPairs(positions);
   if (pairs.length === 0) {
     return null;

@@ -12,7 +12,10 @@ import {
   shouldAutoAdvancePreset,
 } from '../assets/js/milkdrop/runtime/lifecycle.ts';
 import { createMilkdropRuntimeLifetime } from '../assets/js/milkdrop/runtime/lifetime.ts';
-import { resolveStartupPresetId } from '../assets/js/milkdrop/runtime/startup.ts';
+import {
+  resolveStartupPresetId,
+  shouldDeferStartupPresetFallback,
+} from '../assets/js/milkdrop/runtime/startup.ts';
 import type {
   MilkdropBlendState,
   MilkdropFrameState,
@@ -66,6 +69,21 @@ function resolveCapturedVideoReactivity({
 }
 
 describe('milkdrop runtime startup seams', () => {
+  test('defers fallback from the placeholder preset while an explicit startup preset is pending', () => {
+    expect(
+      shouldDeferStartupPresetFallback({
+        pendingPresetId: '100-square',
+        activePresetId: 'signal-bloom',
+      }),
+    ).toBe(true);
+    expect(
+      shouldDeferStartupPresetFallback({
+        pendingPresetId: '100-square',
+        activePresetId: '100-square',
+      }),
+    ).toBe(false);
+  });
+
   test('does not auto-select a preset when nothing was explicitly requested', () => {
     const startupId = resolveStartupPresetId({
       requestedPresetId: null,

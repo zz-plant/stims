@@ -19,7 +19,9 @@ export function createMilkdropWebGLRendererAdapter(
     createFeedbackManager: createMilkdropWebGLFeedbackManager,
     batcher:
       config.batcher === undefined
-        ? createMilkdropSegmentBatchingLayer()
+        ? createMilkdropSegmentBatchingLayer({
+            fallbackCustomWaves: config.fallbackCustomWaves,
+          })
         : config.batcher,
   });
 }

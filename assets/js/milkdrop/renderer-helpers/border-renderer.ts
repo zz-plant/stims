@@ -303,13 +303,13 @@ export function createBorderObject(
   helpers: {
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     getBorderLinePositions: (
       border: MilkdropBorderVisual,
       z: number,
       behavior: MilkdropBackendBehavior,
-    ) => number[];
+    ) => ArrayLike<number>;
     markAlwaysOnscreen: <T extends ThreeGroup | ThreeMesh>(object: T) => T;
     setMaterialColor: (
       material: MeshBasicMaterial | LineBasicMaterial,
@@ -332,13 +332,13 @@ export function updateBorderLine(
   helpers: {
     ensureGeometryPositions: (
       geometry: BufferGeometry,
-      positions: number[],
+      positions: ArrayLike<number>,
     ) => void;
     getBorderLinePositions: (
       border: MilkdropBorderVisual,
       z: number,
       behavior: MilkdropBackendBehavior,
-    ) => number[];
+    ) => ArrayLike<number>;
     setMaterialColor: (
       material: LineBasicMaterial,
       color: MilkdropBorderVisual['color'],

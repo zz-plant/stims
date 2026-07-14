@@ -161,7 +161,7 @@ const buildFallback = (
   shouldRetryWebGPU,
   forceWebGL,
   webgpu: null,
-  retry: getRendererRetrySnapshot(String(cachedEnvironmentKey ?? 'default')),
+  retry: getCurrentRetrySnapshot(),
 });
 
 const reportRendererTelemetry = (result: RendererCapabilities) => {
@@ -205,7 +205,9 @@ function getEnvironmentKey({
 }
 
 function getCurrentRetrySnapshot() {
-  return getRendererRetrySnapshot(String(cachedEnvironmentKey ?? 'default'));
+  return getRendererRetrySnapshot(
+    String(cachedEnvironmentKey ?? getEnvironmentKey()),
+  );
 }
 
 function recordRetryableWebGPUFailure(
@@ -545,11 +547,51 @@ interface CapabilityProbeContext {
   device: GPUDevice | null;
 }
 
+export function resolveCapabilityProbeSuccess(
+  ctx: Pick<CapabilityProbeContext, 'adapter' | 'device' | 'retry'>,
+): RendererCapabilities {
+  if (!ctx.adapter) {
+    ctx.device?.destroy?.();
+    const reason = getRendererFallbackReasonMessage(
+      RENDERER_FALLBACK_REASON_CODES.noAdapter,
+    );
+    recordRetryableWebGPUFailure('unknown', reason);
+    return buildFallback(reason, { shouldRetryWebGPU: true });
+  }
+  if (!ctx.device) {
+    const reason = getRendererFallbackReasonMessage(
+      RENDERER_FALLBACK_REASON_CODES.noDevice,
+    );
+    recordRetryableWebGPUFailure('device-request', reason);
+    return buildFallback(reason, { shouldRetryWebGPU: true });
+  }
+  observeCapabilityDevice(ctx.device);
+  recordRendererRetrySuccess(String(cachedEnvironmentKey ?? 'default'));
+
+  return {
+    preferredBackend: 'webgpu',
+    adapter: ctx.adapter,
+    device: ctx.device,
+    fallbackReason: null,
+    fallbackReasonCode: null,
+    shouldRetryWebGPU: false,
+    forceWebGL: false,
+    webgpu: summarizeWebGPUCapabilities(ctx.adapter),
+    retry: ctx.retry,
+  };
+}
+
 const CAPABILITY_PROBE_TRANSITIONS: Record<
   CapabilityProbeState,
-  (ctx: CapabilityProbeContext) => Promise<CapabilityProbeState | RendererCapabilities> | CapabilityProbeState | RendererCapabilities
+  (
+    ctx: CapabilityProbeContext,
+  ) =>
+    | Promise<CapabilityProbeState | RendererCapabilities>
+    | CapabilityProbeState
+    | RendererCapabilities
 > = {
-  [CapabilityProbeState.Initial]: () => CapabilityProbeState.CheckingRetryCooldown,
+  [CapabilityProbeState.Initial]: () =>
+    CapabilityProbeState.CheckingRetryCooldown,
   [CapabilityProbeState.CheckingRetryCooldown]: (ctx) => {
     if (!ctx.retry.canRetryNow && ctx.retry.attempts > 0) {
       return buildFallback(
@@ -622,8 +664,15 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
   },
   [CapabilityProbeState.RequestingAdapter]: async (ctx) => {
     const { gpu } = navigator as Navigator & { gpu?: GPU };
+    if (!gpu) {
+      return buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.webgpuUnavailable,
+        ),
+      );
+    }
     try {
-      const adapter = await gpu!.requestAdapter();
+      const adapter = await gpu.requestAdapter();
       if (!adapter) {
         return buildFallback(
           getRendererFallbackReasonMessage(
@@ -634,7 +683,7 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
       }
       ctx.adapter = adapter;
       return CapabilityProbeState.CheckingFallbackAdapter;
-    } catch (error) {
+    } catch {
       return buildFallback(
         getRendererFallbackReasonMessage(
           RENDERER_FALLBACK_REASON_CODES.webgpuInitFailed,
@@ -654,9 +703,17 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
     return CapabilityProbeState.RequestingDevice;
   },
   [CapabilityProbeState.RequestingDevice]: async (ctx) => {
+    if (!ctx.adapter) {
+      return buildFallback(
+        getRendererFallbackReasonMessage(
+          RENDERER_FALLBACK_REASON_CODES.noAdapter,
+        ),
+        { shouldRetryWebGPU: true },
+      );
+    }
     try {
       const device = await resolveWithTimeout(
-        ctx.adapter!.requestDevice(),
+        ctx.adapter.requestDevice(),
         ctx.webgpuInitTimeoutMs,
         'WebGPU device initialization timed out.',
       );
@@ -715,22 +772,7 @@ const CAPABILITY_PROBE_TRANSITIONS: Record<
     }
     return CapabilityProbeState.Success;
   },
-  [CapabilityProbeState.Success]: (ctx) => {
-    observeCapabilityDevice(ctx.device!);
-    recordRendererRetrySuccess(String(cachedEnvironmentKey ?? 'default'));
-
-    return {
-      preferredBackend: 'webgpu',
-      adapter: ctx.adapter,
-      device: ctx.device,
-      fallbackReason: null,
-      fallbackReasonCode: null,
-      shouldRetryWebGPU: false,
-      forceWebGL: false,
-      webgpu: summarizeWebGPUCapabilities(ctx.adapter!),
-      retry: ctx.retry,
-    };
-  },
+  [CapabilityProbeState.Success]: resolveCapabilityProbeSuccess,
 };
 
 async function probeRendererCapabilities({
@@ -748,16 +790,19 @@ async function probeRendererCapabilities({
     device: null,
   };
 
-  let state = CapabilityProbeState.Initial;
+  let state: CapabilityProbeState = CapabilityProbeState.Initial;
   try {
     while (true) {
-      const transitionFn = CAPABILITY_PROBE_TRANSITIONS[state];
+      const transitionFn:
+        | (typeof CAPABILITY_PROBE_TRANSITIONS)[CapabilityProbeState]
+        | undefined = CAPABILITY_PROBE_TRANSITIONS[state];
       if (!transitionFn) {
         throw new Error(`Unhandled capability probe state: ${state}`);
       }
-      const result = await transitionFn(ctx);
+      const result: CapabilityProbeState | RendererCapabilities =
+        await transitionFn(ctx);
       if (typeof result === 'string') {
-        state = result;
+        state = result as CapabilityProbeState;
       } else {
         return cacheResult(result);
       }
@@ -780,7 +825,6 @@ async function probeRendererCapabilities({
     );
   }
 }
-
 
 export function resetRendererCapabilities() {
   resetCache();

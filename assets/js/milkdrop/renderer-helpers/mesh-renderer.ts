@@ -107,7 +107,7 @@ export function renderMesh({
   disposeMaterial: (material: Material | Material[] | null | undefined) => void;
   ensureGeometryPositions: (
     geometry: BufferGeometry,
-    positions: number[],
+    positions: ArrayLike<number>,
   ) => void;
   setMaterialColor: (
     material: LineBasicMaterial,

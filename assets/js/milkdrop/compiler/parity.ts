@@ -23,6 +23,7 @@ export function buildFeatureAnalysis({
   customWaves,
   customShapes,
   numericFields,
+  volumeTexturesUsed = false,
   unsupportedShaderText,
   supportedShaderText,
   shaderTextExecution,
@@ -38,6 +39,7 @@ export function buildFeatureAnalysis({
   customWaves: MilkdropWaveDefinition[];
   customShapes: MilkdropShapeDefinition[];
   numericFields: Record<string, number>;
+  volumeTexturesUsed?: boolean;
   unsupportedShaderText: boolean;
   supportedShaderText: boolean;
   shaderTextExecution: MilkdropFeatureAnalysis['shaderTextExecution'];
@@ -142,6 +144,10 @@ export function buildFeatureAnalysis({
     features.add('post-effects');
   }
 
+  if (volumeTexturesUsed) {
+    features.add('volume-textures');
+  }
+
   if (unsupportedShaderText) {
     features.add('unsupported-shader-text');
   }
@@ -229,11 +235,13 @@ export function buildBackendSupport({
       createBackendEvidence({
         backend,
         scope: 'backend',
-        status: 'partial',
+        status: backend === 'webgpu' ? 'unsupported' : 'partial',
         code: 'volume-sampler-gap',
         message,
+        feature: 'volume-textures',
       }),
     );
+    unsupportedFeatures.push('volume-textures');
   });
 
   if (featureAnalysis.shaderTextExecution[backend] === 'unsupported') {

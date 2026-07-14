@@ -114,6 +114,7 @@ export function createMilkdropExperienceAttachmentController({
                 renderer: handle?.renderer,
                 backend: 'webgl',
                 preset: compiled,
+                fallbackCustomWaves: true,
                 webgpuOptimizationFlags,
               });
         if (
