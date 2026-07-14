@@ -46,6 +46,9 @@ describe('Workspace shell mobile layout regression', () => {
     );
     expect(css).not.toContain('.stims-shell__launch-actions > :first-child');
     expect(css).toMatch(
+      /@media \(max-width: 480px\)[\s\S]*?\.stims-shell__launch-recommendation\s*\{[\s\S]*?display:\s*none;/u,
+    );
+    expect(css).toMatch(
       /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-panel\s*\{[\s\S]*?width:\s*min\(100%, calc\(100vw - 20px\)\);/u,
     );
   });
