@@ -66,9 +66,9 @@ export function PresetArtwork({
           alt=""
           loading="lazy"
         />
-      ) : (
+      ) : preview?.status === 'failed' ? (
         <span className="stims-shell__preset-art-fallback">{mood}</span>
-      )}
+      ) : null}
     </div>
   );
 }

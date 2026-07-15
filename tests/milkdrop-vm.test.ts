@@ -3,8 +3,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import type { MilkdropRuntimeSignals } from '../assets/js/milkdrop/types.ts';
-import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 import { buildMainWaveFrame } from '../assets/js/milkdrop/vm/frame-generation.ts';
+import type { WaveFrameBuffers } from '../assets/js/milkdrop/vm/shared.ts';
+import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
 import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 
 function makeSignals({
@@ -1380,10 +1381,17 @@ per_frame_2=t1=t1+1;
     );
 
     vm.setPreset(presetB);
-    const resetFrame = vm.step(makeSignals({ frame: 3, beatPulse: 0.2 }));
+    const resetSignals = makeSignals({ frame: 3, beatPulse: 0.2 });
+    const resetFrame = vm.step(resetSignals);
+    const freshVm = createMilkdropVM(presetB);
+    freshVm.setDetailScale(0.5);
+    const freshFrame = freshVm.step(resetSignals);
     expect(resetFrame.presetId).toBe('preset-b');
     expect(resetFrame.variables.q1).toBe(0);
     expect(resetFrame.variables.t1).toBe(0);
+    expect(resetFrame.mainWave.positions).toEqual(
+      freshFrame.mainWave.positions,
+    );
   });
 
   test('renders distinct geometry across all eight main wave modes', () => {
@@ -1431,7 +1439,7 @@ wave_mystery=0.55
   });
 
   test('double-buffers main-wave samples and retains resized frame buffers', () => {
-    const buffers = {
+    const buffers: WaveFrameBuffers = {
       liveSamples: new Float32Array(0),
       previousSamples: new Float32Array(0),
       smoothedSamples: new Float32Array(0),

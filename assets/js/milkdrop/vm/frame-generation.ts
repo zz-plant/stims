@@ -406,7 +406,7 @@ export function buildMainWaveFrame({
   previousMomentum: Float32Array;
   buffers?: {
     liveSamples: Float32Array;
-    previousSamples: Float32Array;
+    previousSamples?: Float32Array;
     smoothedSamples: Float32Array;
     momentumSamples: Float32Array;
   };
@@ -441,22 +441,26 @@ export function buildMainWaveFrame({
   let liveSamples: Float32Array;
   let smoothedSamples: Float32Array;
   let nextMomentum: Float32Array;
-  if (buffers.liveSamples.length === samples) {
+  if (
+    buffers.liveSamples.length === samples &&
+    buffers.liveSamples !== previousSamples
+  ) {
     liveSamples = buffers.liveSamples;
   } else {
     liveSamples = new Float32Array(samples);
     buffers.liveSamples = liveSamples;
   }
+  const alternateSamples = buffers.previousSamples;
   if (
     buffers.smoothedSamples.length === samples &&
     buffers.smoothedSamples !== previousSamples
   ) {
     smoothedSamples = buffers.smoothedSamples;
   } else if (
-    buffers.previousSamples.length === samples &&
-    buffers.previousSamples !== previousSamples
+    alternateSamples?.length === samples &&
+    alternateSamples !== previousSamples
   ) {
-    smoothedSamples = buffers.previousSamples;
+    smoothedSamples = alternateSamples;
   } else {
     smoothedSamples = new Float32Array(samples);
   }

@@ -300,7 +300,26 @@ comp_shader=ret = tex2d(sampler_perlin, uv).rgb * vec3(bassAtt ^ 2.0, midAtt | 2
         expect.stringContaining('no true browser equivalent'),
       ]);
       expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-      expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'unsupported',
+      );
+      for (const backend of ['webgl', 'webgpu'] as const) {
+        const support = compiled.ir.compatibility.backends[backend];
+        expect(support.requiredFeatures).toContain('volume-textures');
+        expect(support.unsupportedFeatures).toContain('volume-textures');
+        expect(support.evidence).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: 'volume-sampler-gap',
+              feature: 'volume-textures',
+              status: backend === 'webgpu' ? 'unsupported' : 'partial',
+            }),
+          ]),
+        );
+      }
+      expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing).toBe(
+        'fallback-webgl',
+      );
     }
   });
 

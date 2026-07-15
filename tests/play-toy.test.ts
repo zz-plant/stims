@@ -215,9 +215,10 @@ test('captureActiveToyCanvas isolates undersized backing buffers from shell over
   const screenshot = mock(async ({ path }: { path: string }) => {
     expect(path).toBe(outputPath);
   });
-  const evaluate = mock(async (callback: unknown) => {
-    const source = String(callback);
-    if (source.includes('bitmapWidth:')) {
+  let evaluateCall = 0;
+  const evaluate = mock(async () => {
+    evaluateCall += 1;
+    if (evaluateCall === 1) {
       return {
         bitmapWidth: 910,
         bitmapHeight: 518,
@@ -227,19 +228,8 @@ test('captureActiveToyCanvas isolates undersized backing buffers from shell over
         viewportHeight: 720,
       };
     }
-    if (source.includes('const previous =')) {
-      return {
-        width: '',
-        height: '',
-        maxWidth: '',
-        maxHeight: '',
-      };
-    }
-    if (source.includes('toDataURL')) {
-      return 'data:image/png;base64,aGVsbG8=';
-    }
-    if (source.includes('data-stims-capture-surface')) {
-      return { documentElement: '', body: '' };
+    if (evaluateCall === 2) {
+      return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==';
     }
     return null;
   });
@@ -252,12 +242,12 @@ test('captureActiveToyCanvas isolates undersized backing buffers from shell over
     locator: () => locator,
   } as never;
 
-  await captureActiveToyCanvas(page, outputPath);
+  expect(await captureActiveToyCanvas(page, outputPath)).toBe(true);
 
-  expect(screenshot).toHaveBeenCalledTimes(1);
+  expect(screenshot).toHaveBeenCalledTimes(0);
 });
 
-test('captureActiveToyCanvas screenshots the canvas element when WebGL pixel reads are unavailable', async () => {
+test('captureActiveToyCanvas fails closed when WebGL pixel reads are unavailable', async () => {
   const screenshot = mock(async () => undefined);
   const page = {
     evaluate: mock(async (callback: unknown) => {
@@ -278,8 +268,10 @@ test('captureActiveToyCanvas screenshots the canvas element when WebGL pixel rea
     locator: () => ({ first: () => ({ screenshot }) }),
   } as never;
 
-  expect(await captureActiveToyCanvas(page, '/tmp/canvas-only.png')).toBe(true);
-  expect(screenshot).toHaveBeenCalledTimes(1);
+  expect(await captureActiveToyCanvas(page, '/tmp/canvas-only.png')).toBe(
+    false,
+  );
+  expect(screenshot).toHaveBeenCalledTimes(0);
 });
 
 test('summarizePlayToyPerformanceSamples computes average and p95 frame timings', () => {

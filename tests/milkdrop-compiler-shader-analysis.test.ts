@@ -189,7 +189,7 @@ warp_texture_scale = vec2(1.1, 1.2)
     );
   });
 
-  test('keeps pure projectM volume samples direct on both WebGL and WebGPU backends', () => {
+  test('keeps the volume shader payload direct while routing WebGPU through WebGL fallback', () => {
     const compiled = compileMilkdropPresetSource(projectmNoiseVolumeFixture, {
       id: '261-compshader-noisevol_lq',
     });
@@ -209,6 +209,15 @@ warp_texture_scale = vec2(1.1, 1.2)
       webgpu: 'direct',
     });
     expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('partial');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+      'unsupported',
+    );
+    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+      'volume-textures',
+    );
+    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing).toBe(
+      'fallback-webgl',
+    );
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
   });
 });

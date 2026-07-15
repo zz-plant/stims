@@ -246,8 +246,6 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.trails = [];
     this.waveState.lastWaveform = null;
     this.waveState.lastProceduralWave = null;
-    this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
-    this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
     this.waveState.mainWaveFrameIndex = -1;
     this.waveState.customWaveLocals = this.preset.ir.customWaves.map((wave) =>
       this.seedCustomWaveState(wave),
@@ -270,6 +268,8 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.buffers.previousSamples = new Float32Array(0);
     this.waveState.buffers.smoothedSamples = new Float32Array(0);
     this.waveState.buffers.momentumSamples = new Float32Array(0);
+    this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
+    this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
     this.geometryState.frameTransformCache.clear();
     Object.setPrototypeOf(this.signalEnv, this.registers);
     this.lastPreparedSignalSource = null;
