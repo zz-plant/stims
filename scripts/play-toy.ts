@@ -7,6 +7,7 @@ import {
   chromium,
   type Page,
 } from 'playwright';
+import sharp from 'sharp';
 import { appendParityArtifactEntry } from './parity-artifacts.ts';
 
 export type PlayToyResult = {
@@ -991,91 +992,14 @@ export async function captureActiveToyCanvas(
 
   const [, base64Data = ''] = canvasDataUrl?.split(',', 2) ?? [];
   if (!base64Data) {
-    await page
-      .locator('#active-toy-container canvas, canvas')
-      .first()
-      .screenshot({ path: screenshotPath });
-    return true;
-  }
-  if (
-    shouldUseCanvasBitmapCapture({
-      bitmapWidth: canvasInfo.bitmapWidth,
-      bitmapHeight: canvasInfo.bitmapHeight,
-      rectWidth: canvasInfo.rectWidth,
-      rectHeight: canvasInfo.rectHeight,
-      viewportWidth: captureWidth,
-      viewportHeight: captureHeight,
-    })
-  ) {
-    fs.writeFileSync(screenshotPath, Buffer.from(base64Data, 'base64'));
-    return true;
-  }
-
-  // The canvas backing buffer can be smaller than its CSS box. Screenshot an
-  // isolated image surface so shell overlays cannot contaminate the artifact.
-  const captureSurfaceState = await page
-    .evaluate(
-      async ({ canvasDataUrl, viewportWidth, viewportHeight }) => {
-        document.querySelector('[data-stims-capture-surface]')?.remove();
-        const previousOverflow = {
-          documentElement: document.documentElement.style.overflow,
-          body: document.body.style.overflow,
-        };
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
-        const image = document.createElement('img');
-        image.dataset.stimsCaptureSurface = 'true';
-        image.src = canvasDataUrl;
-        image.alt = '';
-        image.style.position = 'fixed';
-        image.style.inset = '0';
-        image.style.width = `${viewportWidth}px`;
-        image.style.height = `${viewportHeight}px`;
-        image.style.objectFit = 'fill';
-        image.style.zIndex = '2147483647';
-        image.style.pointerEvents = 'none';
-        document.body.appendChild(image);
-        if (!image.complete) {
-          await new Promise<void>((resolve) => {
-            image.addEventListener('load', () => resolve(), { once: true });
-            image.addEventListener('error', () => resolve(), { once: true });
-          });
-        }
-        return image.naturalWidth > 0 && image.naturalHeight > 0
-          ? previousOverflow
-          : null;
-      },
-      {
-        canvasDataUrl: canvasDataUrl ?? '',
-        viewportWidth: captureWidth,
-        viewportHeight: captureHeight,
-      },
-    )
-    .catch(() => false);
-
-  if (
-    !captureSurfaceState ||
-    typeof captureSurfaceState !== 'object' ||
-    !('documentElement' in captureSurfaceState)
-  ) {
     return false;
   }
 
-  try {
-    await page
-      .locator('[data-stims-capture-surface]')
-      .screenshot({ path: screenshotPath });
-    return true;
-  } finally {
-    await page
-      .evaluate((previousOverflow) => {
-        document.querySelector('[data-stims-capture-surface]')?.remove();
-        document.documentElement.style.overflow =
-          previousOverflow.documentElement;
-        document.body.style.overflow = previousOverflow.body;
-      }, captureSurfaceState)
-      .catch(() => undefined);
-  }
+  await sharp(Buffer.from(base64Data, 'base64'))
+    .resize(captureWidth, captureHeight, { fit: 'fill' })
+    .png()
+    .toFile(screenshotPath);
+  return true;
 }
 
 export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {

@@ -46,7 +46,7 @@ describe('milkdrop vm frame generation', () => {
     expect(built.nextMomentum[0]).not.toBeNaN();
   });
 
-  test('supports reusing previous sample and momentum arrays as output buffers', () => {
+  test('keeps previous samples distinct while reusing alternating output buffers', () => {
     const signals = defaultSignalEnv();
     signals.time = 0.15;
     signals.beatPulse = 0.1;
@@ -58,6 +58,7 @@ describe('milkdrop vm frame generation', () => {
     // mode=1 with 96-source-length produces 136 samples.
     // Float32Array is fixed-size, so allocate the correct size for reuse to work.
     const sharedSamples = new Float32Array(136);
+    const alternateSamples = new Float32Array(136);
     const sharedMomentum = new Float32Array(136);
     const frameState = {
       wave_mode: 1,
@@ -68,17 +69,19 @@ describe('milkdrop vm frame generation', () => {
       wave_a: 0.9,
     };
 
+    const buffers = {
+      liveSamples: sharedSamples,
+      previousSamples: alternateSamples,
+      smoothedSamples: sharedSamples,
+      momentumSamples: sharedMomentum,
+    };
     const first = buildMainWaveFrame({
       state: frameState,
       signals,
       detailScale: 1,
       previousSamples: sharedSamples,
       previousMomentum: sharedMomentum,
-      buffers: {
-        liveSamples: sharedSamples,
-        smoothedSamples: sharedSamples,
-        momentumSamples: sharedMomentum,
-      },
+      buffers,
       useProcedural: false,
     });
     const second = buildMainWaveFrame({
@@ -87,17 +90,15 @@ describe('milkdrop vm frame generation', () => {
       detailScale: 1,
       previousSamples: first.nextSamples,
       previousMomentum: first.nextMomentum,
-      buffers: {
-        liveSamples: first.nextSamples,
-        smoothedSamples: first.nextSamples,
-        momentumSamples: first.nextMomentum,
-      },
+      buffers,
       useProcedural: false,
     });
 
-    expect(first.nextSamples).toBe(sharedSamples);
+    expect(first.nextSamples).toBe(alternateSamples);
+    expect(buffers.liveSamples).not.toBe(sharedSamples);
     expect(first.nextMomentum).toBe(sharedMomentum);
     expect(second.nextSamples).toBe(sharedSamples);
+    expect(second.nextSamples).not.toBe(first.nextSamples);
     expect(second.nextMomentum).toBe(sharedMomentum);
     expect(second.visual.positions.length).toBeGreaterThan(0);
     expect(second.nextSamples.every((value) => Number.isFinite(value))).toBe(
