@@ -36,6 +36,12 @@ body[data-page="workspace"] {
   overflow-y: auto;
 }
 
+html:has(body[data-page="workspace"][data-live="true"]),
+body[data-page="workspace"][data-live="true"] {
+  overflow: hidden;
+  height: 100%;
+}
+
 #app {
   min-height: 100vh;
   min-height: 100dvh;
@@ -3028,6 +3034,11 @@ body[data-page="workspace"] {
       padding: 0;
     }
 
+    .stims-shell__workspace[data-mode="live"] {
+      padding: 0;
+      border-radius: 0;
+    }
+
     .stims-shell__logo span {
       font-size: 1rem;
     }
@@ -3154,8 +3165,9 @@ body[data-page="workspace"] {
     }
 
     .stims-shell__stage-frame[data-mode="live"] {
-      min-height: min(640px, calc(100svh - 20px));
-      border-radius: 14px;
+      min-height: 100vh;
+      min-height: 100dvh;
+      border-radius: 0;
     }
 
     .stims-shell__stage-frame[data-mode="home"] {
