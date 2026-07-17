@@ -49,6 +49,7 @@ type RenderTreeNode = {
   type?: string;
   instanceCount?: number;
   renderOrder?: number;
+  scale?: { x: number; y: number };
 };
 
 function flattenRenderTree(node: RenderTreeNode): RenderTreeNode[] {
@@ -449,6 +450,109 @@ shapecode_0_thickoutline=1
       expect(emptyVisibleLines).toHaveLength(0);
     } finally {
       restoreLocation();
+    }
+  });
+
+  test('keeps the native WebGPU 100-square render tree free of GLSL shader materials', async () => {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL('http://localhost/?renderer=webgpu&corpus=certification'),
+    );
+
+    try {
+      const preset = compileMilkdropPresetSource(
+        readFileSync(
+          './tests/fixtures/milkdrop/projectm-upstream/100-square.milk',
+          'utf8',
+        ),
+        { id: '100-square' },
+      );
+      const vm = createMilkdropVM(preset);
+      vm.setRenderBackend('webgpu');
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const nativeWebGpuRenderer = {
+        isWebGPURenderer: true,
+        depth: true,
+        render() {},
+      };
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        renderer: nativeWebGpuRenderer,
+        backend: 'webgpu',
+        preset,
+      });
+
+      adapter.attach();
+      adapter.render({
+        frameState: vm.step(makeSignals()),
+        blendState: null,
+      });
+
+      const root = scene.children[0] as RenderTreeNode;
+      const visibleGlslMaterials = flattenRenderTree(root).filter(
+        (child) =>
+          child.visible !== false && child.material instanceof ShaderMaterial,
+      );
+      expect(visibleGlslMaterials).toHaveLength(0);
+      expect(nativeWebGpuRenderer.depth).toBe(false);
+    } finally {
+      restoreLocation();
+    }
+  });
+
+  test('maps 100-square border insets to viewport percentages on both backends', async () => {
+    const preset = compileMilkdropPresetSource(
+      readFileSync(
+        './tests/fixtures/milkdrop/projectm-upstream/100-square.milk',
+        'utf8',
+      ),
+      { id: '100-square-aspect' },
+    );
+    const screenAspect = 16 / 9;
+
+    for (const backend of ['webgl', 'webgpu'] as const) {
+      const scene = new Scene();
+      const camera = new OrthographicCamera(
+        -screenAspect,
+        screenAspect,
+        1,
+        -1,
+        0,
+        10,
+      );
+      const adapter =
+        backend === 'webgpu'
+          ? await createMilkdropRendererAdapter({
+              scene,
+              camera,
+              backend,
+              preset,
+            })
+          : createMilkdropRendererAdapter({
+              scene,
+              camera,
+              backend,
+              preset,
+            });
+
+      adapter.attach();
+      adapter.render({
+        frameState: createMilkdropVM(preset).step(makeSignals()),
+        blendState: null,
+      });
+
+      const aspectScaledBorderGroups = flattenRenderTree(
+        scene.children[0] as RenderTreeNode,
+      ).filter(
+        (child) =>
+          Math.abs((child.scale?.x ?? 1) - screenAspect) < 0.000001 &&
+          child.scale?.y === 1,
+      );
+      expect(aspectScaledBorderGroups.length).toBeGreaterThan(0);
+      adapter.dispose();
     }
   });
 

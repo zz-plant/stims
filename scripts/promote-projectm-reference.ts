@@ -1,7 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
-import { loadParityArtifactManifest } from './parity-artifacts.ts';
+import {
+  NATIVE_PROJECTM_HARNESS_PATH,
+  PROJECTM_UPSTREAM_FIXTURE_ROOT,
+  resolveNativeProjectMFixture,
+  validateNativeProjectMReferenceMetadata,
+} from './native-projectm-reference.ts';
+import {
+  hashFileSha256,
+  loadParityArtifactManifest,
+} from './parity-artifacts.ts';
 import {
   loadVisualReferenceManifest,
   upsertVisualReferencePreset,
@@ -168,6 +177,56 @@ async function readImageSize(filePath: string) {
   };
 }
 
+async function validateNativeSource({
+  presetId,
+  imagePath,
+  metadataPath,
+  repoRoot,
+}: {
+  presetId: string;
+  imagePath: string;
+  metadataPath: string | null;
+  repoRoot: string;
+}) {
+  if (!metadataPath || !fs.existsSync(metadataPath)) {
+    throw new Error(
+      `Reference "${presetId}" requires a native projectM metadata sidecar before promotion.`,
+    );
+  }
+  let metadata: unknown;
+  try {
+    metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `Reference "${presetId}" has an unreadable native projectM metadata sidecar: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+  const size = await readImageSize(imagePath);
+  const presetPath = resolveNativeProjectMFixture({
+    repoRoot,
+    fixtureRoot: PROJECTM_UPSTREAM_FIXTURE_ROOT,
+    presetId,
+  });
+  const harnessPath = path.join(repoRoot, NATIVE_PROJECTM_HARNESS_PATH);
+  if (!fs.existsSync(presetPath)) {
+    throw new Error(`Current upstream fixture is missing: ${presetPath}`);
+  }
+  if (!fs.existsSync(harnessPath)) {
+    throw new Error(`Checked-in capture harness is missing: ${harnessPath}`);
+  }
+  validateNativeProjectMReferenceMetadata(metadata, {
+    presetId,
+    imageSha256: hashFileSha256(imagePath),
+    width: size.width,
+    height: size.height,
+    presetSha256: hashFileSha256(presetPath),
+    harnessSha256: hashFileSha256(harnessPath),
+  });
+  return size;
+}
+
 function buildFixturePaths({
   repoRoot,
   presetId,
@@ -222,6 +281,12 @@ export async function promoteProjectMReference(
     );
   }
   const sourceMetadataPath = source.metadataPath;
+  const size = await validateNativeSource({
+    presetId,
+    imagePath: sourceImagePath,
+    metadataPath: sourceMetadataPath,
+    repoRoot: options.repoRoot,
+  });
 
   const fixturePaths = buildFixturePaths({
     repoRoot: options.repoRoot,
@@ -236,7 +301,6 @@ export async function promoteProjectMReference(
   }
 
   const manifest = loadVisualReferenceManifest(options.repoRoot);
-  const size = await readImageSize(fixturePaths.absoluteImagePath);
   const existingEntry = manifest.presets.find((entry) => entry.id === presetId);
   const entry: VisualReferencePresetEntry = {
     id: presetId,

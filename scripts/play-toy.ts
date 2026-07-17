@@ -54,6 +54,7 @@ export type PlayToyBrowserSession = {
 
 export type PlayToyOptions = {
   slug: string;
+  audioMode?: 'demo' | 'none';
   presetId?: string;
   port?: number;
   duration?: number;
@@ -74,6 +75,7 @@ export type PlayToyOptions = {
 };
 
 type NormalizedPlayToyOptions = PlayToyOptions & {
+  audioMode: 'demo' | 'none';
   port: number;
   duration: number;
   viewportWidth: number;
@@ -97,7 +99,6 @@ const DEFAULT_OPTIONS = {
 };
 const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';
 const CONTROL_DEMO_SELECTOR = '#use-demo-audio';
-const CONTROL_MIC_SELECTOR = '#start-audio-btn';
 const AUDIO_DEMO_LABEL = 'Start with demo audio';
 const PREFLIGHT_CONTINUE_LABEL = 'Choose audio';
 const PREFLIGHT_DEMO_LABEL = 'Start with demo';
@@ -116,14 +117,17 @@ const COMPATIBILITY_RENDERER_ARGS = [
 const WEBGPU_RENDERER_ARGS = [
   '--enable-unsafe-webgpu',
   '--ignore-gpu-blocklist',
-  '--enable-features=Vulkan,WebGPU,SharedArrayBuffer',
+  '--enable-features=WebGPU,SharedArrayBuffer',
   '--enable-dawn-features=allow_unsafe_apis',
   '--disable-dawn-features=disallow_unsafe_apis',
-  '--use-angle=vulkan',
-  '--use-gl=angle',
   '--disable-background-timer-throttling',
   '--disable-renderer-backgrounding',
   '--disable-backgrounding-occluded-windows',
+];
+const VULKAN_WEBGPU_RENDERER_ARGS = [
+  '--enable-features=Vulkan',
+  '--use-angle=vulkan',
+  '--use-gl=angle',
 ];
 const INITIAL_SHELL_TIMEOUT_MS = 60000;
 const TOY_LOAD_TIMEOUT_MS = 30000;
@@ -225,6 +229,7 @@ export function normalizePlayToyOptions(
 ): NormalizedPlayToyOptions {
   return {
     ...options,
+    audioMode: options.audioMode ?? 'demo',
     port: options.port ?? DEFAULT_OPTIONS.port,
     duration: options.duration ?? DEFAULT_OPTIONS.duration,
     viewportWidth: options.viewportWidth ?? DEFAULT_OPTIONS.viewportWidth,
@@ -298,10 +303,17 @@ export function didPlayToyRendererFallback({
 
 export function resolveChromiumRendererArgs(
   rendererProfile: PlayToyRendererProfile,
+  platform: NodeJS.Platform = process.platform,
 ) {
-  return rendererProfile === 'webgpu'
+  if (rendererProfile !== 'webgpu') {
+    return COMPATIBILITY_RENDERER_ARGS;
+  }
+  // macOS WebGPU uses Dawn's native Metal backend. Forcing ANGLE/Vulkan there
+  // can create a device whose external instance is lost as soon as rendering
+  // begins, producing a black frame that used to be recorded as evidence.
+  return platform === 'darwin'
     ? WEBGPU_RENDERER_ARGS
-    : COMPATIBILITY_RENDERER_ARGS;
+    : [...WEBGPU_RENDERER_ARGS, ...VULKAN_WEBGPU_RENDERER_ARGS];
 }
 
 export function buildPlayToyUrl({
@@ -943,8 +955,12 @@ export async function captureActiveToyCanvas(
     .evaluate(() => {
       const canvas =
         document.querySelector<HTMLCanvasElement>(
-          '#active-toy-container canvas',
-        ) ?? document.querySelector<HTMLCanvasElement>('canvas');
+          '#active-toy-container .active-toy-stage[data-stage-state="incoming"] canvas',
+        ) ??
+        document.querySelector<HTMLCanvasElement>(
+          '#active-toy-container .active-toy-stage:not([data-stage-state="outgoing"]) canvas',
+        ) ??
+        document.querySelector<HTMLCanvasElement>('canvas');
       if (!(canvas instanceof HTMLCanvasElement)) {
         return null;
       }
@@ -957,10 +973,16 @@ export async function captureActiveToyCanvas(
       return {
         bitmapWidth: canvas.width,
         bitmapHeight: canvas.height,
+        rectX: rect.x,
+        rectY: rect.y,
         rectWidth: Math.round(rect.width),
         rectHeight: Math.round(rect.height),
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
+        backend:
+          document.body.dataset.activeBackend === 'webgpu'
+            ? ('webgpu' as const)
+            : ('webgl' as const),
       };
     })
     .catch(() => null);
@@ -971,6 +993,55 @@ export async function captureActiveToyCanvas(
   const viewport = page.viewportSize();
   const captureWidth = viewport?.width ?? canvasInfo.viewportWidth;
   const captureHeight = viewport?.height ?? canvasInfo.viewportHeight;
+
+  if (canvasInfo.backend === 'webgpu') {
+    await page.evaluate(() => {
+      const canvas =
+        document.querySelector<HTMLCanvasElement>(
+          '#active-toy-container .active-toy-stage[data-stage-state="incoming"] canvas',
+        ) ??
+        document.querySelector<HTMLCanvasElement>(
+          '#active-toy-container .active-toy-stage:not([data-stage-state="outgoing"]) canvas',
+        ) ??
+        document.querySelector<HTMLCanvasElement>('canvas');
+      canvas?.setAttribute('data-stims-capture-target', 'true');
+      const style = document.createElement('style');
+      style.id = 'stims-canvas-capture-isolation';
+      style.textContent =
+        'body *:not(:has(canvas[data-stims-capture-target="true"])):not(canvas[data-stims-capture-target="true"]) { opacity: 0 !important; } body *:has(canvas[data-stims-capture-target="true"]) { background: transparent !important; border-color: transparent !important; box-shadow: none !important; } canvas[data-stims-capture-target="true"] { opacity: 1 !important; }';
+      document.head.append(style);
+    });
+    try {
+      // Capture the compositor region occupied by the canvas. An element
+      // screenshot can transiently hide or resize a WebGPU canvas; transparent
+      // sibling overlays preserve layout while keeping shell UI out of frame.
+      const buffer = await page.screenshot({
+        animations: 'disabled',
+        clip: {
+          x: canvasInfo.rectX,
+          y: canvasInfo.rectY,
+          width: canvasInfo.rectWidth,
+          height: canvasInfo.rectHeight,
+        },
+      });
+      await sharp(buffer)
+        .resize(captureWidth, captureHeight, { fit: 'fill' })
+        .png()
+        .toFile(screenshotPath);
+      return true;
+    } catch (_error) {
+      return false;
+    } finally {
+      await page
+        .evaluate(() => {
+          document.querySelector('#stims-canvas-capture-isolation')?.remove();
+          document
+            .querySelector('[data-stims-capture-target="true"]')
+            ?.removeAttribute('data-stims-capture-target');
+        })
+        .catch(() => undefined);
+    }
+  }
 
   const canvasDataUrl = await page
     .evaluate(() => {
@@ -1064,7 +1135,7 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       consoleErrors.push(err.message);
     });
 
-    const demoRequestedByRoute = true;
+    const demoRequestedByRoute = normalizedOptions.audioMode === 'demo';
     const url = buildPlayToyUrl({
       port: normalizedOptions.port,
       slug: options.slug,
@@ -1234,11 +1305,8 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       });
       if (demoAudioStillInactive && (await requestDemoAudio(page))) {
         console.log('Enabling demo audio...');
-      } else if (
-        !demoRequestedByRoute &&
-        (await clickVisibleButton(page, CONTROL_MIC_SELECTOR))
-      ) {
-        console.log('No demo audio button found. Enabling microphone...');
+      } else if (!demoRequestedByRoute) {
+        console.log('Keeping deterministic capture audio silent.');
       } else {
         console.log(
           demoRequestedByRoute
@@ -1579,6 +1647,7 @@ if (import.meta.main) {
       '  --height <px>       Capture viewport height (default: 720)',
     );
     console.error('  --no-headless       Run in visible window');
+    console.error('  --audio <demo|none> Capture audio mode (default: demo)');
     console.error(
       '  --debug-snapshot    Save the milkdrop agent debug snapshot',
     );
@@ -1610,6 +1679,7 @@ if (import.meta.main) {
   const viewportWidth = getArg('--width', 1280) as number;
   const viewportHeight = getArg('--height', 720) as number;
   const presetId = getArg('--preset', '') as string;
+  const audioMode = getArg('--audio', 'demo') as 'demo' | 'none';
   const outputDir = getArg('--output', './screenshots') as string;
   const headless = !args.includes('--no-headless');
   const debugSnapshot = args.includes('--debug-snapshot');
@@ -1628,6 +1698,7 @@ if (import.meta.main) {
 
   playToy({
     slug,
+    audioMode,
     presetId: presetId.trim() || undefined,
     port,
     screenshot: true,

@@ -2,10 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import type { MilkdropWebGpuDescriptorPlan } from '../assets/js/milkdrop/types.ts';
 import {
   applyMilkdropWebGpuOptimizationFlags,
+  applyNativeWebGpuMaterialCompatibilityFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS,
   MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS,
   resolveMilkdropWebGpuOptimizationFlags,
+  resolveMilkdropWebGpuOptimizationFlagsForBackend,
 } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 
 const basePlan: MilkdropWebGpuDescriptorPlan = {
@@ -89,9 +91,48 @@ describe('milkdrop webgpu optimization flag resolution', () => {
     expect(flags.directFeedbackShaders).toBe(false);
     expect(flags.proceduralMainWave).toBe(true);
   });
+
+  test('applies native compatibility to an automatically resolved WebGPU backend', () => {
+    const flags = resolveMilkdropWebGpuOptimizationFlagsForBackend(
+      DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      'webgpu',
+    );
+
+    expect(flags.proceduralMainWave).toBe(false);
+    expect(flags.directFeedbackShaders).toBe(false);
+    expect(flags.gpuComputeVM).toBe(false);
+  });
+
+  test('restores the configured plan when the resolved backend falls back to WebGL', () => {
+    const configured = {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      renderBundles: true,
+    };
+
+    expect(
+      resolveMilkdropWebGpuOptimizationFlagsForBackend(configured, 'webgl'),
+    ).toEqual(configured);
+  });
 });
 
 describe('milkdrop webgpu descriptor gating', () => {
+  test('keeps native WebGPU sessions on generic built-in materials', () => {
+    const flags = applyNativeWebGpuMaterialCompatibilityFlags(
+      DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    );
+    const gated = applyMilkdropWebGpuOptimizationFlags(
+      { ...basePlan, routing: 'fallback-webgl' },
+      flags,
+    );
+
+    expect(gated.routing).toBe('generic-frame-payload');
+    expect(gated.proceduralWaves).toHaveLength(0);
+    expect(gated.proceduralMesh).toBeNull();
+    expect(gated.proceduralMotionVectors).toBeNull();
+    expect(gated.feedback).toBeNull();
+    expect(flags.gpuComputeVM).toBe(false);
+  });
+
   test('can disable each descriptor path independently without disturbing the others', () => {
     const gated = applyMilkdropWebGpuOptimizationFlags(basePlan, {
       ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,

@@ -10,6 +10,10 @@ import {
   validateMeasuredVisualResultsManifest,
 } from './measured-visual-results.ts';
 import {
+  loadValidatedNativeProjectMReference,
+  type ValidatedNativeProjectMReference,
+} from './native-projectm-reference.ts';
+import {
   loadParityArtifactManifest,
   type ParityArtifactEntry,
 } from './parity-artifacts.ts';
@@ -20,6 +24,7 @@ type RunParityDiffSuiteOptions = {
   outputDir: string;
   writeDiffImages: boolean;
   strict: boolean;
+  presetId?: string;
 };
 
 export type SuitePresetResult = {
@@ -40,6 +45,11 @@ export type SuitePresetResult = {
   actualBackend: 'webgl' | 'webgpu' | null;
   error?: string;
 };
+
+export type SuiteReferenceIdentity = Pick<
+  ValidatedNativeProjectMReference,
+  'imagePath' | 'imageSha256' | 'metadataPath' | 'metadataSha256'
+>;
 
 type SuiteSummary = {
   version: 1;
@@ -68,6 +78,9 @@ function usage() {
   console.error(
     '  --repo-root <path>      Repo root containing the checked-in visual reference manifest',
   );
+  console.error(
+    '  --preset <id>          Run only one projectM reference preset',
+  );
   console.error('  --write-diff-images     Write per-preset diff PNGs');
   console.error(
     '  --strict                Exit non-zero on missing captures, diff failures, or errors',
@@ -89,6 +102,7 @@ function parseArgs(argv: string[]): RunParityDiffSuiteOptions {
       getArg('--output', './screenshots/parity') ?? './screenshots/parity',
     writeDiffImages: argv.includes('--write-diff-images'),
     strict: argv.includes('--strict'),
+    presetId: getArg('--preset'),
   };
 }
 
@@ -155,15 +169,73 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
   const artifactManifest = loadParityArtifactManifest(options.outputDir);
   const suiteDir = path.join(options.outputDir, 'suite');
   fs.mkdirSync(suiteDir, { recursive: true });
+  if (!options.presetId) {
+    for (const fileName of fs.readdirSync(suiteDir)) {
+      if (
+        fileName !== 'summary.json' &&
+        (fileName.endsWith('.json') || fileName.endsWith('.png'))
+      ) {
+        fs.rmSync(path.join(suiteDir, fileName), { force: true });
+      }
+    }
+  }
+  const projectmCandidates = referenceManifest.presets.filter(
+    (preset) =>
+      preset.capture.renderer === 'projectm' &&
+      (!options.presetId || preset.id === options.presetId),
+  );
+
+  if (options.presetId && projectmCandidates.length === 0) {
+    throw new Error(
+      `Preset "${options.presetId}" does not have a projectM reference in the visual reference manifest.`,
+    );
+  }
 
   const results: SuitePresetResult[] = [];
 
-  for (const preset of referenceManifest.presets) {
+  let certifiedPresetCount = 0;
+  for (const preset of projectmCandidates) {
+    const reportPath = path.join(suiteDir, `${preset.id}.json`);
+    const diffImagePath = path.join(suiteDir, `${preset.id}.png`);
+    fs.rmSync(reportPath, { force: true });
+    fs.rmSync(diffImagePath, { force: true });
     const projectmImagePath = path.join(
       options.repoRoot,
       referenceManifest.fixtureRoot,
       preset.image,
     );
+    let projectmReference: SuiteReferenceIdentity;
+    try {
+      const validated = loadValidatedNativeProjectMReference({
+        repoRoot: options.repoRoot,
+        fixtureRoot: referenceManifest.fixtureRoot,
+        entry: preset,
+      });
+      projectmReference = {
+        imagePath: validated.imagePath,
+        imageSha256: validated.imageSha256,
+        metadataPath: validated.metadataPath,
+        metadataSha256: validated.metadataSha256,
+      };
+      certifiedPresetCount += 1;
+    } catch (error) {
+      results.push({
+        presetId: preset.id,
+        title: preset.title,
+        status: 'error',
+        mismatchRatio: null,
+        reportPath: null,
+        diffImagePath: null,
+        stimsArtifactId: null,
+        projectmImagePath,
+        requiredBackend: preset.capture.requiredBackend,
+        actualBackend: null,
+        error: `Untrusted projectM reference for preset "${preset.id}": ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      });
+      continue;
+    }
     const stimsArtifact = latestStimsArtifactForPreset(
       artifactManifest.artifacts,
       preset.id,
@@ -212,7 +284,6 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
 
     const actualBackend = stimsArtifact.capture?.backend ?? null;
     if (actualBackend !== preset.capture.requiredBackend) {
-      const reportPath = path.join(suiteDir, `${preset.id}.json`);
       const mismatchError = [
         `Certified preset requires ${preset.capture.requiredBackend.toUpperCase()}.`,
         actualBackend
@@ -228,6 +299,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
             title: preset.title,
             stimsArtifactId: stimsArtifact.id,
             projectmImagePath,
+            projectmReference,
             requiredBackend: preset.capture.requiredBackend,
             actualBackend,
             sourceFamily: preset.sourceFamily,
@@ -270,8 +342,6 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
         threshold: preset.tolerance.threshold,
       });
 
-      const reportPath = path.join(suiteDir, `${preset.id}.json`);
-      const diffImagePath = path.join(suiteDir, `${preset.id}.png`);
       const status =
         metrics.mismatchRatio <= preset.tolerance.failThreshold
           ? 'pass'
@@ -286,6 +356,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
             title: preset.title,
             stimsArtifactId: stimsArtifact.id,
             projectmImagePath,
+            projectmReference,
             requiredBackend: preset.capture.requiredBackend,
             actualBackend,
             sourceFamily: preset.sourceFamily,
@@ -348,7 +419,7 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
     generatedAt: new Date().toISOString(),
     outputDir: options.outputDir,
     suiteDir,
-    certifiedPresetCount: referenceManifest.presets.length,
+    certifiedPresetCount,
     measuredPresetCount: measuredResultsManifest.presets.length,
     measuredValidationIssueCount: measuredResultsValidation.issueCount,
     measuredSourceReportMissingCount:
@@ -367,7 +438,10 @@ export async function runParityDiffSuite(options: RunParityDiffSuiteOptions) {
     results,
   };
 
-  const summaryPath = path.join(suiteDir, 'summary.json');
+  const summaryPath = path.join(
+    suiteDir,
+    options.presetId ? `${options.presetId}.summary.json` : 'summary.json',
+  );
   fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`);
 
   if (

@@ -1,20 +1,26 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import { compileMilkdropPresetSource } from '../assets/js/milkdrop/compiler.ts';
 import { shouldFallbackMilkdropPresetToWebgl } from '../assets/js/milkdrop/renderer-execution-plan.ts';
 import {
   applyMilkdropWebGpuOptimizationFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
 } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
+import type { ParityArtifactEntry } from '../scripts/parity-artifacts.ts';
 import {
   assertCertificationSemantics,
   type ComparatorDiffResult,
   computeWebGpuCertificationStatus,
+  findProjectmReference,
+  latestStimsArtifactForBackend,
   loadWebGpuCertificationReport,
   validateCertificationReport,
   type WebGpuCertificationReport,
 } from '../scripts/run-webgpu-certification-comparator.ts';
+import type { VisualReferenceManifest } from '../scripts/visual-reference-manifest.ts';
 
 const FIXTURE_DIR = join(
   process.cwd(),
@@ -107,6 +113,64 @@ describe('milkdrop webgpu rollout fixture matrix', () => {
   });
 
   describe('webgpu certification comparator', () => {
+    test('treats stale captures at the wrong dimensions as missing', async () => {
+      const outputDir = mkdtempSync(
+        join(tmpdir(), 'stims-certification-capture-size-'),
+      );
+      const imagePath = join(outputDir, 'stale.png');
+      await sharp({
+        create: {
+          width: 2,
+          height: 1,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 1 },
+        },
+      })
+        .png()
+        .toFile(imagePath);
+      const artifacts: ParityArtifactEntry[] = [
+        {
+          id: 'stale-capture',
+          kind: 'stims-capture',
+          slug: 'milkdrop',
+          presetId: 'preset',
+          createdAt: '2026-07-16T00:00:00.000Z',
+          files: { image: 'stale.png' },
+          capture: { backend: 'webgpu' },
+        },
+      ];
+
+      expect(
+        await latestStimsArtifactForBackend({
+          artifacts,
+          outputDir,
+          presetId: 'preset',
+          backend: 'webgpu',
+          expectedSize: { width: 1280, height: 720 },
+        }),
+      ).toBeUndefined();
+    });
+
+    test('does not treat Stims self-captures as projectM references', () => {
+      const manifest = {
+        presets: [
+          {
+            id: 'self-reference',
+            capture: { renderer: 'stims' },
+          },
+          {
+            id: 'projectm-reference',
+            capture: { renderer: 'projectm' },
+          },
+        ],
+      } as VisualReferenceManifest;
+
+      expect(findProjectmReference(manifest, 'self-reference')).toBeNull();
+      expect(findProjectmReference(manifest, 'projectm-reference')?.id).toBe(
+        'projectm-reference',
+      );
+    });
+
     test('certification report JSON has valid structure', () => {
       const report = loadWebGpuCertificationReport(process.cwd());
       expect(report).not.toBeNull();

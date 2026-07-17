@@ -4,9 +4,72 @@ import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import { saveMeasuredVisualResultsManifest } from '../scripts/measured-visual-results.ts';
-import { appendParityArtifactEntry } from '../scripts/parity-artifacts.ts';
+import { buildNativeProjectMReferenceMetadata } from '../scripts/native-projectm-reference.ts';
+import {
+  appendParityArtifactEntry,
+  hashFileSha256,
+} from '../scripts/parity-artifacts.ts';
 import { runParityDiffSuite } from '../scripts/run-parity-diff-suite.ts';
-import { saveVisualReferenceManifest } from '../scripts/visual-reference-manifest.ts';
+import {
+  saveVisualReferenceManifest as saveVisualReferenceManifestRaw,
+  type VisualReferenceManifest,
+} from '../scripts/visual-reference-manifest.ts';
+
+function saveVisualReferenceManifest(
+  repoRoot: string,
+  manifest: VisualReferenceManifest,
+) {
+  const harnessPath = path.join(
+    repoRoot,
+    'scripts/native-projectm-capture.cpp',
+  );
+  fs.mkdirSync(path.dirname(harnessPath), { recursive: true });
+  fs.writeFileSync(harnessPath, '// native projectM harness\n');
+  for (const entry of manifest.presets) {
+    if (entry.capture.renderer !== 'projectm') continue;
+    const imagePath = path.join(repoRoot, manifest.fixtureRoot, entry.image);
+    const metadataName = `${entry.id}.native-projectm.json`;
+    const metadataPath = path.join(
+      repoRoot,
+      manifest.fixtureRoot,
+      metadataName,
+    );
+    const presetPath = path.join(
+      repoRoot,
+      'tests/fixtures/milkdrop/projectm-upstream',
+      `${entry.id}.milk`,
+    );
+    fs.mkdirSync(path.dirname(presetPath), { recursive: true });
+    fs.writeFileSync(presetPath, `[preset00]\nname=${entry.id}\n`);
+    entry.metadata = metadataName;
+    fs.writeFileSync(
+      metadataPath,
+      `${JSON.stringify(
+        buildNativeProjectMReferenceMetadata({
+          presetId: entry.id,
+          presetPath,
+          presetSha256: hashFileSha256(presetPath),
+          imageSha256: hashFileSha256(imagePath),
+          width: entry.capture.width,
+          height: entry.capture.height,
+          fps: 60,
+          frameCount: 300,
+          projectmVersion: '3.1.12',
+          projectmPrefix: '/opt/homebrew/opt/projectm',
+          libraryPath: '/opt/homebrew/opt/projectm/lib/libprojectM.dylib',
+          librarySha256: 'b'.repeat(64),
+          harnessSha256: hashFileSha256(harnessPath),
+          createdAt: '2026-07-16T00:00:00.000Z',
+          platform: 'darwin',
+          arch: 'arm64',
+        }),
+        null,
+        2,
+      )}\n`,
+    );
+  }
+  return saveVisualReferenceManifestRaw(repoRoot, manifest);
+}
 
 test('runParityDiffSuite ranks failing presets ahead of passing presets', async () => {
   const repoRoot = fs.mkdtempSync(
@@ -141,6 +204,26 @@ test('runParityDiffSuite ranks failing presets ahead of passing presets', async 
   expect(result.summary.results[1]?.status).toBe('pass');
   expect(result.summary.failCount).toBe(1);
   expect(result.summary.passCount).toBe(1);
+
+  const failReportPath = path.join(outputDir, 'suite', 'fail-preset.json');
+  const failReportBeforeFocusedRun = fs.readFileSync(failReportPath, 'utf8');
+  const focusedResult = await runParityDiffSuite({
+    repoRoot,
+    outputDir,
+    writeDiffImages: false,
+    strict: false,
+    presetId: 'pass-preset',
+  });
+
+  expect(focusedResult.summary.results).toHaveLength(1);
+  expect(focusedResult.summary.results[0]?.presetId).toBe('pass-preset');
+  expect(focusedResult.summary.passCount).toBe(1);
+  expect(focusedResult.summaryPath).toBe(
+    path.join(outputDir, 'suite', 'pass-preset.summary.json'),
+  );
+  expect(fs.readFileSync(failReportPath, 'utf8')).toBe(
+    failReportBeforeFocusedRun,
+  );
 });
 
 test('runParityDiffSuite reports missing stims captures', async () => {
@@ -157,6 +240,9 @@ test('runParityDiffSuite reports missing stims captures', async () => {
   const outputDir = path.join(repoRoot, 'screenshots', 'parity');
   fs.mkdirSync(fixtureRoot, { recursive: true });
   fs.mkdirSync(outputDir, { recursive: true });
+  const staleReportPath = path.join(outputDir, 'suite', 'missing-preset.json');
+  fs.mkdirSync(path.dirname(staleReportPath), { recursive: true });
+  fs.writeFileSync(staleReportPath, '{"status":"pass"}\n');
 
   await sharp({
     create: {
@@ -223,6 +309,70 @@ test('runParityDiffSuite reports missing stims captures', async () => {
 
   expect(result.summary.missingCount).toBe(1);
   expect(result.summary.results[0]?.status).toBe('missing-stims-capture');
+  expect(fs.existsSync(staleReportPath)).toBe(false);
+});
+
+test('runParityDiffSuite excludes Stims self-references from projectM certification', async () => {
+  const repoRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stims-parity-suite-self-reference-'),
+  );
+  const outputDir = path.join(repoRoot, 'screenshots', 'parity');
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  saveVisualReferenceManifest(repoRoot, {
+    version: 1,
+    parityTarget: 'projectm-visual-reference',
+    fixtureRoot: 'tests/fixtures/milkdrop/projectm-reference',
+    minimumPresetCount: 0,
+    presetCount: 1,
+    defaults: {
+      renderer: 'projectm',
+      requiredBackend: 'webgpu',
+      width: 1,
+      height: 1,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      toleranceProfile: 'default',
+      threshold: 16,
+      failThreshold: 0.02,
+    },
+    presets: [
+      {
+        id: 'self-reference',
+        title: 'Self Reference',
+        image: 'self-reference.png',
+        sourceFamily: 'bundled',
+        strata: ['feedback'],
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'stims',
+          requiredBackend: 'webgl',
+          width: 1,
+          height: 1,
+          warmupMs: 3000,
+          captureOffsetMs: 0,
+        },
+        provenance: {
+          label: 'Stims self-reference',
+          importedAt: '2026-03-28T00:00:00.000Z',
+        },
+      },
+    ],
+  });
+
+  const result = await runParityDiffSuite({
+    repoRoot,
+    outputDir,
+    writeDiffImages: false,
+    strict: false,
+  });
+
+  expect(result.summary.certifiedPresetCount).toBe(0);
+  expect(result.summary.results).toEqual([]);
 });
 
 test('runParityDiffSuite reports certified backend mismatches before diffing', async () => {

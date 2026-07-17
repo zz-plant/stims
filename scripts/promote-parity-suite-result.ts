@@ -10,6 +10,9 @@ import {
   type MeasuredVisualPresetResult,
   upsertMeasuredVisualPresetResult,
 } from './measured-visual-results.ts';
+import { loadValidatedNativeProjectMReference } from './native-projectm-reference.ts';
+import type { SuiteReferenceIdentity } from './run-parity-diff-suite.ts';
+import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 type PromoteParitySuiteResultOptions = {
   repoRoot: string;
@@ -27,6 +30,7 @@ type SuitePresetReport = {
   toleranceProfile: MilkdropParityToleranceProfile;
   threshold: number;
   failThreshold: number;
+  projectmReference?: SuiteReferenceIdentity;
   metrics: {
     mismatchRatio: number | null;
   };
@@ -137,6 +141,67 @@ export function promoteParitySuiteResult(
   options: PromoteParitySuiteResultOptions,
 ) {
   const { report, reportPath } = loadSuitePresetReport(options);
+  const referenceEntry = loadVisualReferenceManifest(
+    options.repoRoot,
+  ).presets.find(
+    (preset) =>
+      preset.id === options.presetId && preset.capture.renderer === 'projectm',
+  );
+  if (!referenceEntry) {
+    throw new Error(
+      `Preset "${options.presetId}" does not have a projectM reference and cannot be promoted as measured parity evidence.`,
+    );
+  }
+  if (report.presetId !== options.presetId) {
+    throw new Error(
+      `Suite report preset id "${report.presetId}" does not match requested preset "${options.presetId}".`,
+    );
+  }
+  const referenceManifest = loadVisualReferenceManifest(options.repoRoot);
+  const currentReference = loadValidatedNativeProjectMReference({
+    repoRoot: options.repoRoot,
+    fixtureRoot: referenceManifest.fixtureRoot,
+    entry: referenceEntry,
+  });
+  const expectedReference: SuiteReferenceIdentity = {
+    imagePath: currentReference.imagePath,
+    imageSha256: currentReference.imageSha256,
+    metadataPath: currentReference.metadataPath,
+    metadataSha256: currentReference.metadataSha256,
+  };
+  const reportReference = report.projectmReference;
+  if (
+    !reportReference ||
+    Object.entries(expectedReference).some(
+      ([key, value]) =>
+        reportReference[key as keyof SuiteReferenceIdentity] !== value,
+    )
+  ) {
+    throw new Error(
+      `Suite report for preset "${options.presetId}" does not match the current native projectM reference identity. Re-run the parity diff suite before promotion.`,
+    );
+  }
+  const manifestMismatch =
+    report.title !== referenceEntry.title ||
+    report.requiredBackend !== referenceEntry.capture.requiredBackend ||
+    report.sourceFamily !== referenceEntry.sourceFamily ||
+    JSON.stringify(report.strata) !== JSON.stringify(referenceEntry.strata) ||
+    report.toleranceProfile !== referenceEntry.tolerance.profile ||
+    report.threshold !== referenceEntry.tolerance.threshold ||
+    report.failThreshold !== referenceEntry.tolerance.failThreshold;
+  if (manifestMismatch) {
+    throw new Error(
+      `Suite report for preset "${options.presetId}" does not match the current reference backend, tolerance, or catalog metadata. Re-run the parity diff suite before promotion.`,
+    );
+  }
+  if (
+    report.status === 'pass' &&
+    report.actualBackend !== referenceEntry.capture.requiredBackend
+  ) {
+    throw new Error(
+      `Passing suite report for preset "${options.presetId}" used the wrong backend.`,
+    );
+  }
   const entry = measuredResultFromSuiteReport({ report, reportPath });
   const manifestWrite = upsertMeasuredVisualPresetResult(
     options.repoRoot,

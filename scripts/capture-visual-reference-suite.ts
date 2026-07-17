@@ -15,6 +15,7 @@ type VisualReferenceCaptureRequest = Required<
   Pick<
     PlayToyOptions,
     | 'slug'
+    | 'audioMode'
     | 'presetId'
     | 'port'
     | 'duration'
@@ -46,6 +47,7 @@ export function buildVisualReferenceCaptureRequests({
     .filter((preset) => !presetFilter || presetFilter.has(preset.id))
     .map((preset) => ({
       slug: 'milkdrop',
+      audioMode: 'none',
       presetId: preset.id,
       port,
       duration: preset.capture.warmupMs + preset.capture.captureOffsetMs,
@@ -75,6 +77,8 @@ function runPlayToyInChildProcess(
       request.slug,
       '--preset',
       request.presetId,
+      '--audio',
+      request.audioMode,
       '--port',
       String(request.port),
       '--duration',
@@ -142,6 +146,22 @@ function runPlayToyInChildProcess(
   });
 }
 
+export function assertVisualReferenceCaptureSucceeded(
+  result: PlayToyResult,
+): PlayToyResult {
+  if (!result.success) {
+    throw new Error(
+      `Capture failed for ${result.slug}: ${result.error ?? 'unknown error'}`,
+    );
+  }
+  if (result.consoleErrors?.length) {
+    throw new Error(
+      `Capture failed for ${result.slug}: browser reported ${result.consoleErrors.length} console error(s): ${result.consoleErrors[0]}`,
+    );
+  }
+  return result;
+}
+
 export async function captureVisualReferenceSuite(
   options: CaptureVisualReferenceSuiteOptions,
 ) {
@@ -149,7 +169,11 @@ export async function captureVisualReferenceSuite(
   const results = [];
 
   for (const request of requests) {
-    results.push(await runPlayToyInChildProcess(request));
+    results.push(
+      assertVisualReferenceCaptureSucceeded(
+        await runPlayToyInChildProcess(request),
+      ),
+    );
   }
 
   return {

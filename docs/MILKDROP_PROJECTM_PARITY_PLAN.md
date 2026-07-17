@@ -9,6 +9,8 @@ The immediate goal is not to claim broad `projectM` parity. It is to build a rep
 
 Before visual parity claims, the first requirement is simpler: Stims must be able to compile and run `.milk` presets imported from the projectM ecosystem inside the browser runtime. External `projectM` captures are proof inputs for comparison, not a shipped dependency or client runtime requirement.
 
+For upstream fixture oracle captures on macOS, use `bun run parity:capture:projectm-native -- --preset <id> --output <review-dir>`. This route validates that the safe preset ID and fixture root remain inside the repository, compiles the checked-in native harness against Homebrew `libprojectM` and SDL2, calls native `projectM::renderFrame` for the configured frame count in a hidden OpenGL context without adding another throttle, and writes a hash-bound provenance sidecar. Promotion recomputes the current upstream fixture and harness hashes; projectM/SDL/macOS/OpenGL details remain capture-host-only external provenance. The command publishes no partial image/sidecar pair when render or teardown fails. Review and repeat the output before running `parity:promote-reference`; browser/Stims screenshots and legacy `checked-in output/playwright projectM capture` files are not native projectM evidence.
+
 The first bundled shipped presets to carry through that flow are:
 
 - `eos-glowsticks-v2-03-music`

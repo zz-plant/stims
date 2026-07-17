@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  assertVisualReferenceCaptureSucceeded,
   buildVisualReferenceCaptureRequests,
   parseVisualReferenceCaptureArgs,
 } from '../scripts/capture-visual-reference-suite.ts';
@@ -93,6 +94,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
   ).toEqual([
     {
       slug: 'milkdrop',
+      audioMode: 'none',
       presetId: 'alpha',
       port: 4173,
       duration: 5250,
@@ -109,6 +111,7 @@ test('buildVisualReferenceCaptureRequests derives viewport and timing from the r
     },
     {
       slug: 'milkdrop',
+      audioMode: 'none',
       presetId: 'beta',
       port: 4173,
       duration: 3000,
@@ -217,4 +220,26 @@ test('parseVisualReferenceCaptureArgs keeps parity captures out of vibe mode by 
   expect(parseVisualReferenceCaptureArgs(['--no-vibe-mode']).vibeMode).toBe(
     false,
   );
+});
+
+test('capture suite fails closed when play-toy reports an unsuccessful capture', () => {
+  expect(() =>
+    assertVisualReferenceCaptureSucceeded({
+      slug: 'milkdrop',
+      success: false,
+      error: 'renderer unavailable',
+      fallbackOccurred: false,
+    }),
+  ).toThrow('Capture failed for milkdrop: renderer unavailable');
+});
+
+test('capture suite rejects captures with browser renderer errors', () => {
+  expect(() =>
+    assertVisualReferenceCaptureSucceeded({
+      slug: 'milkdrop',
+      success: true,
+      fallbackOccurred: false,
+      consoleErrors: ['WebGPU Device Lost'],
+    }),
+  ).toThrow('browser reported 1 console error(s): WebGPU Device Lost');
 });

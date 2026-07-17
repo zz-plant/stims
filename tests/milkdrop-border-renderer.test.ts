@@ -144,4 +144,37 @@ describe('milkdrop border renderer', () => {
       ],
     );
   });
+
+  test('scales border width to keep normalized insets independent on wide viewports', () => {
+    const group = new Group();
+
+    renderBorderGroup({
+      target: 'borders',
+      group,
+      borders: [
+        makeBorder('outer', 0.2, { alpha: 0 }),
+        makeBorder('inner', 0.1, { alpha: 1 }),
+      ],
+      batcher: null,
+      clearGroup: mock(),
+      trimGroupChildren: mock(),
+      disposeObject: mock(),
+      syncBorderObject: mock(),
+      alphaMultiplier: 1,
+      screenAspect: 16 / 9,
+    });
+
+    expect(group.scale.x).toBeCloseTo(16 / 9, 6);
+    expect(group.scale.y).toBe(1);
+
+    const innerFill = (group.children[1] as Group).children[0] as Mesh;
+    const positions = Array.from(
+      innerFill.geometry.getAttribute('position').array as ArrayLike<number>,
+    );
+    // The inner border begins after ob_size=0.2: at local radius 0.8.
+    // Scaling X by the viewport aspect projects that radius to the same 10%
+    // screen inset as Y under the aspect-aware orthographic camera.
+    expect(positions[0]).toBeCloseTo(0.8, 6);
+    expect(positions[1]).toBeCloseTo(0.8, 6);
+  });
 });

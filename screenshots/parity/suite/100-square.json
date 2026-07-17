@@ -2,10 +2,16 @@
   "version": 1,
   "presetId": "100-square",
   "title": "100 Square",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260711161752",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260716234209",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
+    "imageSha256": "2675936c46efe4926b53114a1e13be1958a47461aa4ac26c6c5875836b714610",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.meta.json",
+    "metadataSha256": "19e2895ab4825f7f5d1156cd5f1b0d325c0adfa836e6480f40a401b7361422f8"
+  },
   "requiredBackend": "webgpu",
-  "actualBackend": "webgl",
+  "actualBackend": "webgpu",
   "sourceFamily": "projectm-fixture",
   "strata": [
     "projectm-upstream",
@@ -16,8 +22,16 @@
   "threshold": 16,
   "failThreshold": 0.02,
   "metrics": {
-    "mismatchRatio": null
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 440282,
+    "mismatchRatio": 0.4777365451388889,
+    "maxChannelDelta": 255,
+    "meanAbsoluteError": 0.21526196129493463,
+    "rmse": 0.4302212873506746,
+    "exactMatch": false,
+    "threshold": 16
   },
-  "status": "backend-mismatch",
-  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+  "status": "fail"
 }
