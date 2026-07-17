@@ -11,6 +11,7 @@ import {
   loadImagePixels,
   writeDiffImage,
 } from './diff-parity-artifacts.ts';
+import { loadValidatedNativeProjectMReference } from './native-projectm-reference.ts';
 import {
   buildParityArtifactStem,
   loadParityArtifactManifest,
@@ -166,7 +167,12 @@ export function findProjectmReference(
   referenceManifest: VisualReferenceManifest,
   presetId: string,
 ): VisualReferencePresetEntry | null {
-  return referenceManifest.presets.find((p) => p.id === presetId) ?? null;
+  return (
+    referenceManifest.presets.find(
+      (preset) =>
+        preset.id === presetId && preset.capture.renderer === 'projectm',
+    ) ?? null
+  );
 }
 
 export function buildComparatorPresetResult({
@@ -237,7 +243,7 @@ function resolveArtifactImagePath(
     : path.join(outputDir, imagePath);
 }
 
-async function latestStimsArtifactForBackend({
+export async function latestStimsArtifactForBackend({
   artifacts,
   outputDir,
   presetId,
@@ -282,45 +288,7 @@ async function latestStimsArtifactForBackend({
     } catch {}
   }
 
-  return candidates[0];
-}
-
-function resolveReferenceImagePath({
-  repoRoot,
-  defaultFixtureRoot,
-  referenceEntry,
-}: {
-  repoRoot: string;
-  defaultFixtureRoot: string;
-  referenceEntry: VisualReferencePresetEntry;
-}) {
-  const defaultPath = path.join(
-    repoRoot,
-    defaultFixtureRoot,
-    referenceEntry.image,
-  );
-  if (fs.existsSync(defaultPath)) {
-    return defaultPath;
-  }
-
-  if (referenceEntry.capture.renderer === 'stims') {
-    for (const referenceRoot of [
-      'tests/fixtures/milkdrop/stims-reference',
-      'public/milkdrop-presets/previews',
-      'output/playwright/projectm-cream-compositor',
-    ]) {
-      const stimsReferencePath = path.join(
-        repoRoot,
-        referenceRoot,
-        referenceEntry.image,
-      );
-      if (fs.existsSync(stimsReferencePath)) {
-        return stimsReferencePath;
-      }
-    }
-  }
-
-  return defaultPath;
+  return undefined;
 }
 
 async function diffBackendCapture({
@@ -431,22 +399,32 @@ export async function buildWebGpuCertificationReport({
         referenceManifest,
         corpusEntry.id,
       );
-      const projectmImagePath = referenceEntry
-        ? resolveReferenceImagePath({
+      let trustedReferenceEntry = referenceEntry;
+      let referenceError: string | null = null;
+      let projectmImagePath: string | null = null;
+      if (referenceEntry) {
+        try {
+          projectmImagePath = loadValidatedNativeProjectMReference({
             repoRoot,
-            defaultFixtureRoot: referenceManifest.fixtureRoot,
-            referenceEntry,
-          })
-        : null;
-      const expectedSize = referenceEntry
+            fixtureRoot: referenceManifest.fixtureRoot,
+            entry: referenceEntry,
+          }).imagePath;
+        } catch (error) {
+          trustedReferenceEntry = null;
+          referenceError = `Untrusted projectM reference: ${
+            error instanceof Error ? error.message : String(error)
+          }`;
+        }
+      }
+      const expectedSize = trustedReferenceEntry
         ? {
-            width: referenceEntry.capture.width,
-            height: referenceEntry.capture.height,
+            width: trustedReferenceEntry.capture.width,
+            height: trustedReferenceEntry.capture.height,
           }
         : undefined;
-      const threshold = referenceEntry?.tolerance.threshold ?? 16;
+      const threshold = trustedReferenceEntry?.tolerance.threshold ?? 16;
       const presetFailThreshold =
-        referenceEntry?.tolerance.failThreshold ?? failThreshold;
+        trustedReferenceEntry?.tolerance.failThreshold ?? failThreshold;
       const webglDiff = projectmImagePath
         ? await diffBackendCapture({
             artifact: await latestStimsArtifactForBackend({
@@ -465,7 +443,13 @@ export async function buildWebGpuCertificationReport({
             failThreshold: presetFailThreshold,
             writeDiffImages,
           })
-        : undefined;
+        : referenceError
+          ? {
+              ...createEmptyDiffResult(),
+              status: 'error' as const,
+              error: referenceError,
+            }
+          : undefined;
       const webgpuDiff = projectmImagePath
         ? await diffBackendCapture({
             artifact: await latestStimsArtifactForBackend({
@@ -484,10 +468,16 @@ export async function buildWebGpuCertificationReport({
             failThreshold: presetFailThreshold,
             writeDiffImages,
           })
-        : undefined;
+        : referenceError
+          ? {
+              ...createEmptyDiffResult(),
+              status: 'error' as const,
+              error: referenceError,
+            }
+          : undefined;
       return buildComparatorPresetResult({
         corpusEntry,
-        referenceEntry,
+        referenceEntry: trustedReferenceEntry,
         failThreshold: presetFailThreshold,
         webglDiff,
         webgpuDiff,
@@ -746,6 +736,11 @@ export async function runWebGpuCertificationComparator(
   const missingWebgpuCaptures = presetsWithReferences.filter(
     (p) => p.webgpuDiff.status === 'missing-capture',
   );
+  const referenceValidationErrors = report.presets.filter(
+    (preset) =>
+      preset.webglDiff.status === 'error' &&
+      preset.webglDiff.error?.startsWith('Untrusted projectM reference:'),
+  );
 
   if (missingWebglCaptures.length > 0 || missingWebgpuCaptures.length > 0) {
     const commands: string[] = [];
@@ -785,11 +780,13 @@ export async function runWebGpuCertificationComparator(
     missingWebglCaptures: missingWebglCaptures.length,
     missingWebgpuCaptures: missingWebgpuCaptures.length,
     semanticsViolations: semanticsViolations.length,
+    referenceValidationErrors: referenceValidationErrors.length,
     strictExitCode:
       options.strict &&
       (missingWebglCaptures.length > 0 ||
         missingWebgpuCaptures.length > 0 ||
-        semanticsViolations.length > 0)
+        semanticsViolations.length > 0 ||
+        referenceValidationErrors.length > 0)
         ? 1
         : 0,
   };
@@ -817,6 +814,7 @@ if (import.meta.main) {
           missingWebglCaptures: result.missingWebglCaptures,
           missingWebgpuCaptures: result.missingWebgpuCaptures,
           semanticsViolations: result.semanticsViolations,
+          referenceValidationErrors: result.referenceValidationErrors,
         },
         null,
         2,

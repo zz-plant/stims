@@ -446,7 +446,7 @@ export function buildMesh({
     state.mesh_b ?? 1,
     state.mesh_alpha ?? 0.2,
   );
-  const alpha = clamp(state.mesh_alpha ?? 0.2, 0.02, 0.9);
+  const alpha = clamp(state.mesh_alpha ?? 0.2, 0, 0.9);
 
   if (meshField.points.length === 0) {
     return {

@@ -1790,8 +1790,11 @@ class WebGPUBatchingLayer implements MilkdropRendererBatcher {
     _group: Group,
     borders: MilkdropBorderVisual[],
     alphaMultiplier: number,
+    screenAspect: number,
   ) {
-    this.getBorderTarget(target).sync(borders, alphaMultiplier);
+    const borderTarget = this.getBorderTarget(target);
+    borderTarget.group.scale.set(Math.max(1, screenAspect), 1, 1);
+    borderTarget.sync(borders, alphaMultiplier);
     return true;
   }
 

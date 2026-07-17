@@ -738,11 +738,25 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     borders: MilkdropBorderVisual[],
     alphaMultiplier = 1,
   ) {
+    const orthographicCamera = this.camera as Camera & {
+      isOrthographicCamera?: boolean;
+      left?: number;
+      right?: number;
+      top?: number;
+      bottom?: number;
+    };
+    const screenAspect = orthographicCamera.isOrthographicCamera
+      ? Math.abs(
+          ((orthographicCamera.right ?? 1) - (orthographicCamera.left ?? -1)) /
+            ((orthographicCamera.top ?? 1) - (orthographicCamera.bottom ?? -1)),
+        )
+      : 1;
     return renderBorderGroupHelper({
       target,
       group,
       borders,
       alphaMultiplier,
+      screenAspect,
       batcher: this.batcher,
       clearGroup,
       trimGroupChildren,

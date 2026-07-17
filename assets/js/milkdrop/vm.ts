@@ -210,8 +210,12 @@ class MilkdropPresetVM implements MilkdropVM {
     this.renderBackend = backend;
   }
 
+  setWebGpuOptimizationFlags(flags: MilkdropWebGpuOptimizationFlags) {
+    this.webgpuOptimizationFlags = { ...flags };
+  }
+
   setGpuDevice(device: GPUDevice | null) {
-    if (!device) {
+    if (!device || !this.webgpuOptimizationFlags.gpuComputeVM) {
       this.gpuRunner.dispose();
       return;
     }

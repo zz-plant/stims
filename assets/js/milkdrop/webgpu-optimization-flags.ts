@@ -54,6 +54,32 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
   renderBundles: false,
 }) satisfies MilkdropWebGpuOptimizationFlags;
 
+export function applyNativeWebGpuMaterialCompatibilityFlags(
+  flags: MilkdropWebGpuOptimizationFlags,
+): MilkdropWebGpuOptimizationFlags {
+  return {
+    ...flags,
+    proceduralMainWave: false,
+    proceduralTrailWaves: false,
+    proceduralCustomWaves: false,
+    proceduralMesh: false,
+    proceduralMotionVectors: false,
+    directFeedbackShaders: false,
+    descriptorFallbackToWebgl: false,
+    gpuComputeVM: false,
+    renderBundles: false,
+  };
+}
+
+export function resolveMilkdropWebGpuOptimizationFlagsForBackend(
+  flags: MilkdropWebGpuOptimizationFlags,
+  backend: 'webgl' | 'webgpu',
+): MilkdropWebGpuOptimizationFlags {
+  return backend === 'webgpu'
+    ? applyNativeWebGpuMaterialCompatibilityFlags(flags)
+    : { ...flags };
+}
+
 const ENABLED_FLAG_VALUES = new Set(['1', 'true', 'on', 'yes', 'enabled']);
 const DISABLED_FLAG_VALUES = new Set(['0', 'false', 'off', 'no', 'disabled']);
 

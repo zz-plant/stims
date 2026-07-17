@@ -85,6 +85,48 @@ describe('applyRendererSettings', () => {
     expect(pixelRatio).toBeGreaterThan(0);
   });
 
+  test('does not recreate WebGPU attachments for unchanged renderer settings', () => {
+    let pixelRatioCalls = 0;
+    let sizeCalls = 0;
+    const drawingBufferCalls: Array<[number, number, number]> = [];
+    const renderer = {
+      setPixelRatio: () => {
+        pixelRatioCalls += 1;
+      },
+      setSize: () => {
+        sizeCalls += 1;
+      },
+      setDrawingBufferSize: (
+        width: number,
+        height: number,
+        pixelRatio: number,
+      ) => {
+        drawingBufferCalls.push([width, height, pixelRatio]);
+      },
+      toneMappingExposure: 1,
+    };
+    const info = {
+      renderer: renderer as never,
+      backend: 'webgpu' as const,
+      maxPixelRatio: 2,
+      renderScale: 1,
+      adaptiveMaxPixelRatioMultiplier: 0.8,
+      adaptiveRenderScaleMultiplier: 0.72,
+      adaptiveDensityMultiplier: 0.6,
+      exposure: 1,
+    };
+    const viewport = { width: 910, height: 518 };
+
+    applyRendererSettings(renderer as never, info, {}, {}, viewport);
+    applyRendererSettings(renderer as never, info, {}, {}, viewport);
+
+    expect(pixelRatioCalls).toBe(0);
+    expect(sizeCalls).toBe(0);
+    expect(drawingBufferCalls).toHaveLength(1);
+    expect(drawingBufferCalls[0]?.slice(0, 2)).toEqual([910, 518]);
+    expect(drawingBufferCalls[0]?.[2]).toBeCloseTo(0.72, 6);
+  });
+
   test('reapplies the backend max pixel-ratio cap for later settings updates', () => {
     const originalDevicePixelRatio = window.devicePixelRatio;
     Object.defineProperty(window, 'devicePixelRatio', {

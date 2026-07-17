@@ -94,6 +94,12 @@ test('normalizePlayToyOptions keeps vibe mode opt-in for visual captures', () =>
   ).toBe(true);
 });
 
+test('normalizePlayToyOptions can keep deterministic captures silent', () => {
+  expect(
+    normalizePlayToyOptions({ slug: 'milkdrop', audioMode: 'none' }).audioMode,
+  ).toBe('none');
+});
+
 test('shouldRequestDemoAudio does not treat a loaded canvas as active audio', () => {
   expect(
     shouldRequestDemoAudio({
@@ -184,6 +190,12 @@ test('resolveChromiumRendererArgs keeps compatibility and webgpu launch profiles
   expect(resolveChromiumRendererArgs('webgpu')).not.toContain(
     '--enable-unsafe-swiftshader',
   );
+  expect(resolveChromiumRendererArgs('webgpu', 'darwin')).not.toContain(
+    '--use-angle=vulkan',
+  );
+  expect(resolveChromiumRendererArgs('webgpu', 'linux')).toContain(
+    '--use-angle=vulkan',
+  );
 });
 
 test('shouldUseCanvasBitmapCapture only keeps bitmap capture when the live canvas already matches the viewport', () => {
@@ -265,13 +277,56 @@ test('captureActiveToyCanvas fails closed when WebGL pixel reads are unavailable
       return null;
     }),
     viewportSize: () => ({ width: 1280, height: 720 }),
-    locator: () => ({ first: () => ({ screenshot }) }),
+    locator: () => ({ screenshot }),
   } as never;
 
   expect(await captureActiveToyCanvas(page, '/tmp/canvas-only.png')).toBe(
     false,
   );
   expect(screenshot).toHaveBeenCalledTimes(0);
+});
+
+test('captureActiveToyCanvas uses compositor pixels for native WebGPU canvases', async () => {
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  const screenshot = mock(async () => png);
+  let evaluateCall = 0;
+  const page = {
+    evaluate: mock(async (callback: unknown) => {
+      evaluateCall += 1;
+      if (evaluateCall === 1) {
+        return {
+          bitmapWidth: 1142,
+          bitmapHeight: 648,
+          rectX: 15,
+          rectY: 10,
+          rectWidth: 1265,
+          rectHeight: 720,
+          viewportWidth: 1280,
+          viewportHeight: 720,
+          backend: 'webgpu',
+        };
+      }
+      if (evaluateCall === 2) {
+        expect(String(callback)).not.toContain('body * { visibility: hidden');
+        expect(String(callback)).toContain(':has(canvas[');
+      }
+      return undefined;
+    }),
+    viewportSize: () => ({ width: 1280, height: 720 }),
+    screenshot,
+  } as never;
+  const outputPath = '/tmp/stims-webgpu-compositor-capture.png';
+
+  expect(await captureActiveToyCanvas(page, outputPath)).toBe(true);
+  expect(screenshot).toHaveBeenCalledTimes(1);
+  expect(screenshot).toHaveBeenCalledWith({
+    animations: 'disabled',
+    clip: { x: 15, y: 10, width: 1265, height: 720 },
+  });
+  expect(evaluateCall).toBe(3);
 });
 
 test('summarizePlayToyPerformanceSamples computes average and p95 frame timings', () => {

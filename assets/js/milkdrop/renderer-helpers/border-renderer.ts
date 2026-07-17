@@ -412,6 +412,7 @@ export function renderBorderGroup({
   group,
   borders,
   alphaMultiplier = 1,
+  screenAspect = 1,
   batcher,
   clearGroup,
   trimGroupChildren,
@@ -422,6 +423,7 @@ export function renderBorderGroup({
   group: Group;
   borders: MilkdropBorderVisual[];
   alphaMultiplier?: number;
+  screenAspect?: number;
   batcher: MilkdropRendererBatcher | null;
   clearGroup: (group: Group) => void;
   trimGroupChildren: (group: Group, keepCount: number) => void;
@@ -432,7 +434,16 @@ export function renderBorderGroup({
     alphaMultiplier: number,
   ) => Group;
 }) {
-  if (batcher?.renderBorderGroup?.(target, group, borders, alphaMultiplier)) {
+  group.scale.set(Math.max(1, screenAspect), 1, 1);
+  if (
+    batcher?.renderBorderGroup?.(
+      target,
+      group,
+      borders,
+      alphaMultiplier,
+      screenAspect,
+    )
+  ) {
     clearGroup(group);
     return;
   }

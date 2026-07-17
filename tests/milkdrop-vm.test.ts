@@ -6,7 +6,10 @@ import type { MilkdropRuntimeSignals } from '../assets/js/milkdrop/types.ts';
 import { buildMainWaveFrame } from '../assets/js/milkdrop/vm/frame-generation.ts';
 import type { WaveFrameBuffers } from '../assets/js/milkdrop/vm/shared.ts';
 import { createMilkdropVM } from '../assets/js/milkdrop/vm.ts';
-import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
+import {
+  applyNativeWebGpuMaterialCompatibilityFlags,
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+} from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 
 function makeSignals({
   frame = 1,
@@ -152,6 +155,23 @@ function makeSignals({
     waveformData,
   };
 }
+
+test('does not allocate GPU VM buffers while compute execution is disabled', () => {
+  const preset = compileMilkdropPresetSource('title=CPU VM', { id: 'cpu-vm' });
+  const vm = createMilkdropVM(preset, {
+    ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+    gpuComputeVM: false,
+  });
+  let bufferAllocations = 0;
+  vm.setGpuDevice({
+    createBuffer() {
+      bufferAllocations += 1;
+      return {};
+    },
+  } as unknown as GPUDevice);
+
+  expect(bufferAllocations).toBe(0);
+});
 
 describe('milkdrop vm', () => {
   test('defers variable snapshot construction until the frame state is read', () => {
@@ -812,6 +832,35 @@ warpanimspeed=1.5
     expect(frameState.gpuGeometry.meshField?.density).toBeGreaterThan(0);
     expect(frameState.gpuGeometry.motionVectorField).not.toBeNull();
     expect(frameState.gpuGeometry.motionVectorField?.countX).toBe(6);
+  });
+
+  test('updates its descriptor plan when the resolved backend flags change', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Resolved Backend Flags
+mesh_density=14
+zoom=1.1
+rot=0.14
+warp=0.2
+      `.trim(),
+      { id: 'resolved-backend-flags' },
+    );
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    vm.setWebGpuOptimizationFlags(
+      applyNativeWebGpuMaterialCompatibilityFlags(
+        DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      ),
+    );
+
+    const compatibleFrame = vm.step(makeSignals({ frame: 1 }));
+    expect(compatibleFrame.mesh.positions.length).toBeGreaterThan(0);
+    expect(compatibleFrame.gpuGeometry.meshField).toBeNull();
+
+    vm.setWebGpuOptimizationFlags(DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS);
+    const optimizedFrame = vm.step(makeSignals({ frame: 2 }));
+    expect(optimizedFrame.mesh.positions).toHaveLength(0);
+    expect(optimizedFrame.gpuGeometry.meshField).not.toBeNull();
   });
 
   test('emits lowered per-pixel field descriptors on supported webgpu presets', () => {

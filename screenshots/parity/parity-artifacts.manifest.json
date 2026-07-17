@@ -3454,6 +3454,402 @@
         "audioMode": "demo",
         "vibeMode": true
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716231554",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:15:54.312Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784243754091.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784243754091.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260716232100",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": null,
+      "createdAt": "2026-07-16T23:21:00.412Z",
+      "files": {
+        "image": "milkdrop--preset-300-beatdetect-bassmidtreb-1784244059904.png",
+        "debugSnapshot": "milkdrop--preset-300-beatdetect-bassmidtreb-1784244059904.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=300-beatdetect-bassmidtreb&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716232211",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:22:11.440Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244131203.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244131203.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716232553",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:25:53.007Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244352411.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244352411.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716232719",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:27:19.233Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244438639.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244438639.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716232757",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:27:57.141Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244476599.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244476599.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716232905",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:29:05.042Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244544847.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244544847.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716232925",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:29:25.043Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244564854.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244564854.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233116",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:31:16.734Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244676570.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233245",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:32:45.948Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244765747.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244765747.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233315",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:33:15.901Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244795732.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233634",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:36:34.812Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784244994629.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784244994629.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233656",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:36:56.046Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784245015861.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233825",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:38:25.425Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784245105185.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233912",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:39:12.822Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784245152623.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784245152623.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716233939",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:39:39.351Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784245179110.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716234140",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:41:40.878Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784245300659.png",
+        "debugSnapshot": "milkdrop--preset-100-square-1784245300659.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--100-square--20260716234209",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "100-square",
+      "title": null,
+      "createdAt": "2026-07-16T23:42:09.792Z",
+      "files": {
+        "image": "milkdrop--preset-100-square-1784245329618.png",
+        "debugSnapshot": null,
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=100-square&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
     }
   ]
 }

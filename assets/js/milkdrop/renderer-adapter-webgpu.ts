@@ -6,6 +6,7 @@ import { createMilkdropRendererAdapterCore } from './renderer-adapter.ts';
 import { createWebGPUBatchingLayer } from './renderer-adapter-webgpu-batching.ts';
 import { resolveMilkdropRendererExecutionPlan } from './renderer-execution-plan.ts';
 import {
+  applyNativeWebGpuMaterialCompatibilityFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
 } from './webgpu-optimization-flags.ts';
@@ -58,10 +59,23 @@ function buildSafeWebGpuOptimizationFlags(
 export function createMilkdropWebGPURendererAdapter(
   config: MilkdropWebGPURendererAdapterConfig,
 ) {
+  const usesNativeWebGpuRenderer = config.renderer?.isWebGPURenderer === true;
+  if (usesNativeWebGpuRenderer && config.renderer) {
+    // MilkDrop's presentation pass is a fullscreen 2D composite. Disabling
+    // the unused default depth attachment also prevents WebGPU from pairing a
+    // stale depth texture with a newly resized canvas during adaptive-quality
+    // changes.
+    config.renderer.depth = false;
+  }
   const useSafeWebGpuPath = shouldUseSafeMilkdropWebGpuPath();
-  const webgpuOptimizationFlags = useSafeWebGpuPath
-    ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
-    : config.webgpuOptimizationFlags;
+  const webgpuOptimizationFlags = usesNativeWebGpuRenderer
+    ? applyNativeWebGpuMaterialCompatibilityFlags({
+        ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+        ...config.webgpuOptimizationFlags,
+      })
+    : useSafeWebGpuPath
+      ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
+      : config.webgpuOptimizationFlags;
   const executionPlan = resolveMilkdropRendererExecutionPlan({
     backend: 'webgpu',
     safeWebGpuPath: useSafeWebGpuPath,
@@ -79,7 +93,7 @@ export function createMilkdropWebGPURendererAdapter(
       executionPlan.feedbackMode === 'webgpu-native'
         ? createMilkdropWebGPUFeedbackManager
         : undefined,
-    batcher: createWebGPUBatchingLayer(),
+    batcher: usesNativeWebGpuRenderer ? undefined : createWebGPUBatchingLayer(),
     webgpuOptimizationFlags,
   });
 }

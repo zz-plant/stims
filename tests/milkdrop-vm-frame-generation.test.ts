@@ -3,8 +3,34 @@ import {
   buildMainWaveFrame,
   defaultSignalEnv,
 } from '../assets/js/milkdrop/vm/frame-generation.ts';
+import { buildMesh } from '../assets/js/milkdrop/vm/geometry-builder.ts';
 
 describe('milkdrop vm frame generation', () => {
+  test('keeps an explicitly disabled mesh fully transparent', () => {
+    const mesh = buildMesh({
+      state: {
+        mesh_alpha: 0,
+        mesh_r: 1,
+        mesh_g: 1,
+        mesh_b: 1,
+      },
+      meshField: {
+        density: 2,
+        points: [
+          { sourceX: -1, sourceY: -1, x: -1, y: -1 },
+          { sourceX: 1, sourceY: -1, x: 1, y: -1 },
+          { sourceX: -1, sourceY: 1, x: -1, y: 1 },
+          { sourceX: 1, sourceY: 1, x: 1, y: 1 },
+        ],
+        program: null,
+        signals: null,
+      },
+    });
+
+    expect(mesh.positions.length).toBeGreaterThan(0);
+    expect(mesh.alpha).toBe(0);
+  });
+
   test('builds deterministic main-wave visuals from explicit inputs', () => {
     const signals = defaultSignalEnv();
     signals.time = 0.25;

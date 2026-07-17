@@ -7,6 +7,9 @@ import type {
   MilkdropRenderBackend,
   MilkdropVisualEvidenceTier,
 } from '../assets/js/milkdrop/common-types.ts';
+import { loadValidatedNativeProjectMReference } from './native-projectm-reference.ts';
+import type { SuiteReferenceIdentity } from './run-parity-diff-suite.ts';
+import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 export const MEASURED_VISUAL_RESULTS_PATH =
   'assets/data/milkdrop-parity/measured-results.json';
@@ -169,6 +172,7 @@ export function validateMeasuredVisualResultsManifest(
 ): MeasuredVisualResultsValidation {
   const issues: MeasuredVisualResultsValidationIssue[] = [];
   const seenIds = new Set<string>();
+  const referenceManifest = loadVisualReferenceManifest(repoRoot);
 
   for (const preset of manifest.presets) {
     if (seenIds.has(preset.id)) {
@@ -214,13 +218,54 @@ export function validateMeasuredVisualResultsManifest(
       sourceFamily?: string;
       strata?: string[];
       toleranceProfile?: string;
-      mismatchRatio?: number;
+      metrics?: {
+        mismatchRatio?: number | null;
+      };
+      projectmReference?: SuiteReferenceIdentity;
       threshold?: number;
       failThreshold?: number;
       status?: string;
     };
 
     const reportIssues: string[] = [];
+    const referenceEntry = referenceManifest.presets.find(
+      (entry) =>
+        entry.id === preset.id && entry.capture.renderer === 'projectm',
+    );
+    if (!referenceEntry) {
+      reportIssues.push('current native projectM reference is missing');
+    } else {
+      try {
+        const currentReference = loadValidatedNativeProjectMReference({
+          repoRoot,
+          fixtureRoot: referenceManifest.fixtureRoot,
+          entry: referenceEntry,
+        });
+        const expectedReference: SuiteReferenceIdentity = {
+          imagePath: currentReference.imagePath,
+          imageSha256: currentReference.imageSha256,
+          metadataPath: currentReference.metadataPath,
+          metadataSha256: currentReference.metadataSha256,
+        };
+        if (
+          !report.projectmReference ||
+          Object.entries(expectedReference).some(
+            ([key, value]) =>
+              report.projectmReference?.[
+                key as keyof SuiteReferenceIdentity
+              ] !== value,
+          )
+        ) {
+          reportIssues.push(
+            'source report does not match the current native projectM reference identity',
+          );
+        }
+      } catch (error) {
+        reportIssues.push(
+          `current projectM reference is untrusted: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     if (report.presetId !== preset.id) {
       reportIssues.push(
         `preset id ${report.presetId ?? '(missing)'} does not match manifest id ${preset.id}`,
@@ -271,12 +316,9 @@ export function validateMeasuredVisualResultsManifest(
         `status ${report.status ?? '(missing)'} does not match manifest suite status ${preset.suiteStatus}`,
       );
     }
-    if (
-      typeof report.mismatchRatio === 'number' &&
-      report.mismatchRatio !== preset.mismatchRatio
-    ) {
+    if (report.metrics?.mismatchRatio !== preset.mismatchRatio) {
       reportIssues.push(
-        `mismatch ratio ${report.mismatchRatio} does not match manifest mismatch ratio ${preset.mismatchRatio}`,
+        `mismatch ratio ${report.metrics?.mismatchRatio ?? '(missing)'} does not match manifest mismatch ratio ${preset.mismatchRatio}`,
       );
     }
 

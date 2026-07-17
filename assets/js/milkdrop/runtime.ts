@@ -60,10 +60,7 @@ import type {
   MilkdropRuntimeSignals,
 } from './types';
 import { createMilkdropVM } from './vm';
-import {
-  getDisabledMilkdropWebGpuOptimizationFlags,
-  resolveMilkdropWebGpuOptimizationFlags,
-} from './webgpu-optimization-flags';
+import { resolveMilkdropWebGpuOptimizationFlags } from './webgpu-optimization-flags';
 
 const log = createLogger('MilkdropRuntime');
 
@@ -115,8 +112,6 @@ export function createMilkdropExperience({
   );
   const preferences = createMilkdropRuntimePreferences();
   const webgpuOptimizationFlags = resolveMilkdropWebGpuOptimizationFlags();
-  const disabledWebGpuOptimizationFlags =
-    getDisabledMilkdropWebGpuOptimizationFlags(webgpuOptimizationFlags);
   const vm = createMilkdropVM(defaultPreset, webgpuOptimizationFlags);
   const performanceTracker = createMilkdropRuntimePerformanceTracker();
   const signalTracker = createMilkdropSignalTracker();
@@ -347,15 +342,19 @@ export function createMilkdropExperience({
     getActiveBackend: () => activeBackend,
   });
 
-  const shouldFallbackToWebgl = (compiled: MilkdropCompiledPreset) =>
+  const shouldFallbackToWebgl = (
+    compiled: MilkdropCompiledPreset,
+    backend = activeBackend,
+    optimizationFlags = webgpuOptimizationFlags,
+  ) =>
     !shouldDeferStartupPresetFallback({
       pendingPresetId: pendingStartupPresetId,
       activePresetId: compiled.source.id,
     }) &&
     backendFailover.shouldFallback({
       compiled,
-      activeBackend,
-      webgpuOptimizationFlags,
+      activeBackend: backend,
+      webgpuOptimizationFlags: optimizationFlags,
     });
 
   const triggerWebglFallback = ({
@@ -737,7 +736,6 @@ export function createMilkdropExperience({
     },
     emitChange,
     setOverlayStatus,
-    disabledWebGpuOptimizationFlags,
     webgpuOptimizationFlags,
     ensureKeyboardShortcuts: () => {
       if (!disposeKeyboardShortcuts) {

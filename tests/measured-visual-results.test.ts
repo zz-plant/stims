@@ -8,10 +8,116 @@ import {
   saveMeasuredVisualResultsManifest,
   validateMeasuredVisualResultsManifest,
 } from '../scripts/measured-visual-results.ts';
+import { buildNativeProjectMReferenceMetadata } from '../scripts/native-projectm-reference.ts';
+import { hashFileSha256 } from '../scripts/parity-artifacts.ts';
 import {
   fidelityClassFromSuiteReport,
   promoteParitySuiteResult,
 } from '../scripts/promote-parity-suite-result.ts';
+import { saveVisualReferenceManifest } from '../scripts/visual-reference-manifest.ts';
+
+function writeProjectmReferenceManifest(repoRoot: string, presetId: string) {
+  const fixtureRoot = path.join(
+    repoRoot,
+    'tests/fixtures/milkdrop/projectm-reference',
+  );
+  fs.mkdirSync(fixtureRoot, { recursive: true });
+  const imagePath = path.join(fixtureRoot, `${presetId}.png`);
+  const metadataPath = path.join(
+    fixtureRoot,
+    `${presetId}.native-projectm.json`,
+  );
+  const presetPath = path.join(
+    repoRoot,
+    'tests/fixtures/milkdrop/projectm-upstream',
+    `${presetId}.milk`,
+  );
+  const harnessPath = path.join(
+    repoRoot,
+    'scripts/native-projectm-capture.cpp',
+  );
+  fs.mkdirSync(path.dirname(presetPath), { recursive: true });
+  fs.mkdirSync(path.dirname(harnessPath), { recursive: true });
+  fs.writeFileSync(presetPath, `[preset00]\nname=${presetId}\n`);
+  fs.writeFileSync(harnessPath, '// native projectM harness\n');
+  fs.writeFileSync(imagePath, 'fixture-image');
+  fs.writeFileSync(
+    metadataPath,
+    `${JSON.stringify(
+      buildNativeProjectMReferenceMetadata({
+        presetId,
+        presetPath,
+        presetSha256: hashFileSha256(presetPath),
+        imageSha256: hashFileSha256(imagePath),
+        width: 1,
+        height: 1,
+        fps: 60,
+        frameCount: 300,
+        projectmVersion: '3.1.12',
+        projectmPrefix: '/opt/homebrew/opt/projectm',
+        libraryPath: '/opt/homebrew/opt/projectm/lib/libprojectM.dylib',
+        librarySha256: 'b'.repeat(64),
+        harnessSha256: hashFileSha256(harnessPath),
+        createdAt: '2026-07-16T00:00:00.000Z',
+        platform: 'darwin',
+        arch: 'arm64',
+      }),
+      null,
+      2,
+    )}\n`,
+  );
+  saveVisualReferenceManifest(repoRoot, {
+    version: 1,
+    parityTarget: 'projectm-visual-reference',
+    fixtureRoot: 'tests/fixtures/milkdrop/projectm-reference',
+    minimumPresetCount: 0,
+    presetCount: 1,
+    defaults: {
+      renderer: 'projectm',
+      requiredBackend: 'webgpu',
+      width: 1,
+      height: 1,
+      warmupMs: 5000,
+      captureOffsetMs: 0,
+      toleranceProfile: 'default',
+      threshold: 16,
+      failThreshold: 0.02,
+    },
+    presets: [
+      {
+        id: presetId,
+        title: 'Signal Bloom',
+        image: `${presetId}.png`,
+        metadata: `${presetId}.native-projectm.json`,
+        sourceFamily: 'bundled',
+        strata: ['feedback', 'bundled'],
+        tolerance: {
+          profile: 'default',
+          threshold: 16,
+          failThreshold: 0.02,
+        },
+        capture: {
+          renderer: 'projectm',
+          requiredBackend: 'webgpu',
+          width: 1,
+          height: 1,
+          warmupMs: 5000,
+          captureOffsetMs: 0,
+        },
+        provenance: {
+          label: 'projectM fixture',
+          importedAt: '2026-03-28T00:00:00.000Z',
+        },
+      },
+    ],
+  });
+  return {
+    imagePath,
+    imageSha256: hashFileSha256(imagePath),
+    metadataPath,
+    metadataSha256: hashFileSha256(metadataPath),
+  };
+}
 
 test('creates an empty measured visual results manifest by default', () => {
   expect(createDefaultMeasuredVisualResultsManifest()).toEqual({
@@ -75,6 +181,10 @@ test('promoteParitySuiteResult writes measured visual results for a certified pr
   );
   const suiteDir = path.join(repoRoot, 'screenshots', 'parity', 'suite');
   fs.mkdirSync(suiteDir, { recursive: true });
+  const projectmReference = writeProjectmReferenceManifest(
+    repoRoot,
+    'signal-bloom',
+  );
   fs.writeFileSync(
     path.join(suiteDir, 'signal-bloom.json'),
     `${JSON.stringify(
@@ -88,6 +198,7 @@ test('promoteParitySuiteResult writes measured visual results for a certified pr
         toleranceProfile: 'default',
         threshold: 16,
         failThreshold: 0.02,
+        projectmReference,
         metrics: { mismatchRatio: 0.01 },
         status: 'pass',
       },
@@ -126,6 +237,54 @@ test('promoteParitySuiteResult writes measured visual results for a certified pr
       fidelityClass: 'near-exact',
     }),
   ]);
+
+  const staleReport = JSON.parse(
+    fs.readFileSync(path.join(suiteDir, 'signal-bloom.json'), 'utf8'),
+  );
+  staleReport.projectmReference.imageSha256 = 'f'.repeat(64);
+  fs.writeFileSync(
+    path.join(suiteDir, 'signal-bloom.json'),
+    `${JSON.stringify(staleReport)}\n`,
+  );
+  expect(() =>
+    promoteParitySuiteResult({
+      repoRoot,
+      outputDir: path.join(repoRoot, 'screenshots', 'parity'),
+      presetId: 'signal-bloom',
+    }),
+  ).toThrow('current native projectM reference identity');
+});
+
+test('promoteParitySuiteResult rejects a pass report without projectM evidence', () => {
+  const repoRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'stims-measured-results-no-projectm-'),
+  );
+  const suiteDir = path.join(repoRoot, 'screenshots', 'parity', 'suite');
+  fs.mkdirSync(suiteDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(suiteDir, 'self-reference.json'),
+    `${JSON.stringify({
+      presetId: 'self-reference',
+      title: 'Self Reference',
+      requiredBackend: 'webgpu',
+      actualBackend: 'webgpu',
+      sourceFamily: 'bundled',
+      strata: ['feedback'],
+      toleranceProfile: 'default',
+      threshold: 16,
+      failThreshold: 0.02,
+      metrics: { mismatchRatio: 0.01 },
+      status: 'pass',
+    })}\n`,
+  );
+
+  expect(() =>
+    promoteParitySuiteResult({
+      repoRoot,
+      outputDir: path.join(repoRoot, 'screenshots', 'parity'),
+      presetId: 'self-reference',
+    }),
+  ).toThrow('does not have a projectM reference');
 });
 
 test('validateMeasuredVisualResultsManifest checks source report provenance', () => {
@@ -134,6 +293,10 @@ test('validateMeasuredVisualResultsManifest checks source report provenance', ()
   );
   const suiteDir = path.join(repoRoot, 'screenshots', 'parity', 'suite');
   fs.mkdirSync(suiteDir, { recursive: true });
+  const validProjectmReference = writeProjectmReferenceManifest(
+    repoRoot,
+    'valid-preset',
+  );
 
   const validReportPath = path.join(suiteDir, 'valid-preset.json');
   fs.writeFileSync(
@@ -150,6 +313,7 @@ test('validateMeasuredVisualResultsManifest checks source report provenance', ()
         threshold: 16,
         failThreshold: 0.02,
         metrics: { mismatchRatio: 0.01 },
+        projectmReference: validProjectmReference,
         status: 'pass',
       },
       null,
@@ -163,15 +327,15 @@ test('validateMeasuredVisualResultsManifest checks source report provenance', ()
     `${JSON.stringify(
       {
         presetId: 'mismatch-preset',
-        title: 'Wrong Title',
-        requiredBackend: 'webgl',
-        actualBackend: 'webgl',
+        title: 'Mismatch Preset',
+        requiredBackend: 'webgpu',
+        actualBackend: 'webgpu',
         sourceFamily: 'bundled',
         strata: ['feedback'],
         toleranceProfile: 'default',
         threshold: 16,
         failThreshold: 0.02,
-        metrics: { mismatchRatio: 0.5 },
+        metrics: { mismatchRatio: 0.4 },
         status: 'fail',
       },
       null,

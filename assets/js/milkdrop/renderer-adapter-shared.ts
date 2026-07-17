@@ -44,6 +44,8 @@ import {
 } from './webgpu-optimization-flags';
 
 export type RendererLike = {
+  isWebGPURenderer?: boolean;
+  depth?: boolean;
   getSize?: (target: Vector2) => Vector2;
   render: (scene: Scene, camera: Camera) => void;
   setRenderTarget?: RendererSetRenderTarget;
@@ -100,6 +102,7 @@ export type MilkdropRendererBatcher = {
     group: Group,
     borders: MilkdropBorderVisual[],
     alphaMultiplier: number,
+    screenAspect: number,
   ) => boolean;
   renderLineVisualGroup?: (
     target: 'trails' | 'motion-vectors' | 'blend-motion-vectors',

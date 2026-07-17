@@ -102,13 +102,8 @@ test('bundled catalog entries downgrade optimistic labels without measured evide
   );
 });
 
-test('deriveFidelityTier returns measured-visual for a preset with a checked-in reference', () => {
-  expect(deriveFidelityTier('eos-glowsticks-v2-03-music')).toBe(
-    'measured-visual',
-  );
-  expect(deriveFidelityTier('rovastar-parallel-universe')).toBe(
-    'measured-visual',
-  );
+test('deriveFidelityTier does not promote reference-only presets without a measured result', () => {
+  expect(deriveFidelityTier('100-square')).toBe('unmeasured');
 });
 
 test('deriveFidelityTier returns measured-checksum for a parity-corpus preset with baseline checksums', () => {

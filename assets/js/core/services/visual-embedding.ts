@@ -9,6 +9,10 @@ export interface FrameStats {
 let previousPixelData: Uint8ClampedArray | null = null;
 let catalogEmbeddingsReady = false;
 let embeddingsReadyResolve: (() => void) | null = null;
+let sampleCanvas: HTMLCanvasElement | null = null;
+let sampleCanvasFactory: typeof document.createElement | null = null;
+
+const MAX_SAMPLE_DIMENSION = 64;
 
 export const embeddingsReady = new Promise<void>((resolve) => {
   if (catalogEmbeddingsReady) {
@@ -27,21 +31,51 @@ function _histogramDistance(a: number[], b: number[]): number {
   return sum / len;
 }
 
+function createEmptyFrameStats(): FrameStats {
+  return {
+    histogram: new Array(24).fill(0),
+    edgeDensity: 0,
+    motionEstimate: 0,
+  };
+}
+
 export function extractFrameStats(canvas: HTMLCanvasElement): FrameStats {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) {
-    return {
-      histogram: new Array(24).fill(0),
-      edgeDensity: 0,
-      motionEstimate: 0,
-    };
+  const sourceWidth = canvas.width;
+  const sourceHeight = canvas.height;
+  if (sourceWidth <= 0 || sourceHeight <= 0) {
+    return createEmptyFrameStats();
   }
 
-  const w = canvas.width;
-  const h = canvas.height;
-  const sampleStep = Math.max(1, Math.floor(Math.min(w, h) / 64));
-  const imageData = ctx.getImageData(0, 0, w, h);
-  const pixels = imageData.data;
+  const scale = Math.min(
+    1,
+    MAX_SAMPLE_DIMENSION / Math.max(sourceWidth, sourceHeight),
+  );
+  const w = Math.max(1, Math.round(sourceWidth * scale));
+  const h = Math.max(1, Math.round(sourceHeight * scale));
+  if (!sampleCanvas || sampleCanvasFactory !== document.createElement) {
+    sampleCanvas = document.createElement('canvas');
+    sampleCanvasFactory = document.createElement;
+  }
+  if (sampleCanvas.width !== w) {
+    sampleCanvas.width = w;
+  }
+  if (sampleCanvas.height !== h) {
+    sampleCanvas.height = h;
+  }
+  const ctx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) {
+    return createEmptyFrameStats();
+  }
+
+  let pixels: Uint8ClampedArray;
+  try {
+    ctx.drawImage(canvas, 0, 0, sourceWidth, sourceHeight, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    pixels = imageData.data;
+  } catch {
+    return createEmptyFrameStats();
+  }
+  const sampleStep = 1;
 
   const histogram = new Array(24).fill(0);
   let sampleCount = 0;

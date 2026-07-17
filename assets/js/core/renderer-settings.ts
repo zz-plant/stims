@@ -11,6 +11,10 @@ import type {
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
 const isMobileUserAgent = isMobileDevice();
+const appliedRendererDimensions = new WeakMap<
+  object,
+  { pixelRatio: number; width: number; height: number }
+>();
 
 export function getRendererBackendMaxPixelRatioCap({
   backend,
@@ -213,13 +217,35 @@ export function applyRendererSettings(
     (window.devicePixelRatio || 1) * effectiveRenderScale,
     effectiveMaxPixelRatio,
   );
+  const width = viewport?.width ?? window.innerWidth;
+  const height = viewport?.height ?? window.innerHeight;
+  const previousDimensions = appliedRendererDimensions.get(renderer);
 
-  renderer.setPixelRatio(effectivePixelRatio);
-  renderer.setSize(
-    viewport?.width ?? window.innerWidth,
-    viewport?.height ?? window.innerHeight,
-    false,
-  );
+  if (
+    !previousDimensions ||
+    previousDimensions.pixelRatio !== effectivePixelRatio ||
+    previousDimensions.width !== width ||
+    previousDimensions.height !== height
+  ) {
+    if (
+      info.backend === 'webgpu' &&
+      typeof renderer.setDrawingBufferSize === 'function'
+    ) {
+      // WebGPURenderer rebuilds its default color/depth attachments on every
+      // resize event. Updating pixel ratio and size separately emits two
+      // events with different dimensions, so a frame between them can pair a
+      // stale depth attachment with the newly sized canvas attachment.
+      renderer.setDrawingBufferSize(width, height, effectivePixelRatio);
+    } else {
+      renderer.setPixelRatio(effectivePixelRatio);
+      renderer.setSize(width, height, false);
+    }
+    appliedRendererDimensions.set(renderer, {
+      pixelRatio: effectivePixelRatio,
+      width,
+      height,
+    });
+  }
   renderer.toneMappingExposure = merged.exposure ?? 1;
 
   info.maxPixelRatio = merged.maxPixelRatio ?? info.maxPixelRatio;

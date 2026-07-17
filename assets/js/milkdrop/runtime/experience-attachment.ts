@@ -7,6 +7,7 @@ import type { MilkdropCompiledPreset } from '../types';
 import {
   getDisabledMilkdropWebGpuOptimizationFlags,
   type MilkdropWebGpuOptimizationFlags,
+  resolveMilkdropWebGpuOptimizationFlagsForBackend,
 } from '../webgpu-optimization-flags.ts';
 
 export function createMilkdropExperienceAttachmentController({
@@ -31,7 +32,6 @@ export function createMilkdropExperienceAttachmentController({
   scheduleCatalogSync,
   emitChange,
   setOverlayStatus,
-  disabledWebGpuOptimizationFlags,
   webgpuOptimizationFlags,
   ensureKeyboardShortcuts,
 }: {
@@ -49,6 +49,9 @@ export function createMilkdropExperienceAttachmentController({
   setDocumentActiveBackend: (backend: 'webgl' | 'webgpu') => void;
   vm: {
     setRenderBackend: (backend: 'webgl' | 'webgpu') => void;
+    setWebGpuOptimizationFlags: (
+      flags: MilkdropWebGpuOptimizationFlags,
+    ) => void;
     setGpuDevice: (device: GPUDevice | null) => void;
   };
   disposePostprocessingPipeline: () => void;
@@ -62,12 +65,15 @@ export function createMilkdropExperienceAttachmentController({
   setAdaptiveQualityUnsubscribe: (unsubscribe: (() => void) | null) => void;
   setAdaptiveQualityState: (state: unknown) => void;
   updateAgentDebugSnapshot: (force?: boolean) => void;
-  shouldFallbackToWebgl: (compiled: MilkdropCompiledPreset) => boolean;
+  shouldFallbackToWebgl: (
+    compiled: MilkdropCompiledPreset,
+    backend: 'webgl' | 'webgpu',
+    flags: MilkdropWebGpuOptimizationFlags,
+  ) => boolean;
   triggerWebglFallback: (args: { presetId: string; reason: string }) => void;
   scheduleCatalogSync: () => void;
   emitChange: () => void;
   setOverlayStatus: (message: string) => void;
-  disabledWebGpuOptimizationFlags: string[];
   webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags;
   ensureKeyboardShortcuts: () => void;
 }) {
@@ -90,8 +96,20 @@ export function createMilkdropExperienceAttachmentController({
           return;
         }
         const nextBackend = handle?.backend === 'webgpu' ? 'webgpu' : 'webgl';
+        const effectiveOptimizationFlags =
+          resolveMilkdropWebGpuOptimizationFlagsForBackend(
+            webgpuOptimizationFlags,
+            nextBackend,
+          );
         const compiled = activeCompiled();
-        if (nextBackend === 'webgpu' && shouldFallbackToWebgl(compiled)) {
+        if (
+          nextBackend === 'webgpu' &&
+          shouldFallbackToWebgl(
+            compiled,
+            nextBackend,
+            effectiveOptimizationFlags,
+          )
+        ) {
           triggerWebglFallback({
             presetId: compiled.source.id,
             reason: `${compiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
@@ -106,7 +124,7 @@ export function createMilkdropExperienceAttachmentController({
                 renderer: handle?.renderer,
                 backend: 'webgpu',
                 preset: compiled,
-                webgpuOptimizationFlags,
+                webgpuOptimizationFlags: effectiveOptimizationFlags,
               })
             : createMilkdropRendererAdapter({
                 scene: nextRuntime.toy.scene,
@@ -115,7 +133,7 @@ export function createMilkdropExperienceAttachmentController({
                 backend: 'webgl',
                 preset: compiled,
                 fallbackCustomWaves: true,
-                webgpuOptimizationFlags,
+                webgpuOptimizationFlags: effectiveOptimizationFlags,
               });
         if (
           !lifetime.isCurrentAttachment(attachmentRevision) ||
@@ -126,6 +144,7 @@ export function createMilkdropExperienceAttachmentController({
         }
         setActiveBackend(nextBackend);
         setDocumentActiveBackend(nextBackend);
+        vm.setWebGpuOptimizationFlags(effectiveOptimizationFlags);
         vm.setRenderBackend(nextBackend);
         vm.setGpuDevice(
           nextBackend === 'webgpu' ? (handle?.info.device ?? null) : null,
@@ -144,9 +163,13 @@ export function createMilkdropExperienceAttachmentController({
               : null,
         });
         setAdaptiveQualityController(adaptiveQualityController);
+        const disabledWebGpuOptimizationFlags =
+          getDisabledMilkdropWebGpuOptimizationFlags(
+            effectiveOptimizationFlags,
+          );
         if (
           nextBackend === 'webgpu' &&
-          disabledWebGpuOptimizationFlags.length > 0
+          disabledWebGpuOptimizationFlags.length
         ) {
           setOverlayStatus(
             `WebGPU rollout flags active: ${disabledWebGpuOptimizationFlags.join(', ')}.`,
@@ -166,7 +189,13 @@ export function createMilkdropExperienceAttachmentController({
             updateAgentDebugSnapshot(true);
           }),
         );
-        if (shouldFallbackToWebgl(activeCompiled())) {
+        if (
+          shouldFallbackToWebgl(
+            activeCompiled(),
+            nextBackend,
+            effectiveOptimizationFlags,
+          )
+        ) {
           const compiled = activeCompiled();
           triggerWebglFallback({
             presetId: compiled.source.id,
