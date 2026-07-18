@@ -458,8 +458,8 @@ export function buildMesh({
 
   const capacity = meshField.density * Math.max(0, meshField.density - 1) * 12;
   let positions = geometryState?.meshPositions;
-  if (!positions) {
-    positions = new Array<number>(capacity);
+  if (!positions || positions.length !== capacity) {
+    positions = new Float32Array(capacity);
     if (geometryState) {
       geometryState.meshPositions = positions;
     }
@@ -502,9 +502,9 @@ export function buildMesh({
     }
   }
 
-  positions.length = writeIndex;
   return {
-    positions,
+    positions:
+      writeIndex === capacity ? positions : positions.subarray(0, writeIndex),
     color: colorValue,
     alpha,
   };

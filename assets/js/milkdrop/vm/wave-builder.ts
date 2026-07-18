@@ -160,7 +160,7 @@ export function buildCustomWaves({
     const additive = (frameLocals.additive ?? 0) >= 0.5;
     const waveAlpha = clamp(frameLocals.a ?? 0.4, 0.02, 1);
 
-    const visualWave = waves[visualWaveCount] ?? {
+    const visualWave = waveState.customWaveVisualPool[visualWaveCount] ?? {
       positions: new Float32Array(0),
       color: { r: 1, g: 1, b: 1, a: 1 },
       alpha: waveAlpha,
@@ -170,6 +170,7 @@ export function buildCustomWaves({
       pointSize: 1,
       spectrum: false,
     };
+    waveState.customWaveVisualPool[visualWaveCount] = visualWave;
     if (!visualWave.color) {
       visualWave.color = { r: 1, g: 1, b: 1, a: 1 };
     }
@@ -244,7 +245,7 @@ export function buildCustomWaves({
     }
 
     const proceduralWave = useProcedural
-      ? (proceduralWaves[proceduralWaveCount] ?? {
+      ? (waveState.proceduralCustomWavePool[proceduralWaveCount] ?? {
           samples: new Float32Array(0),
           sampleValues2: new Float32Array(0),
           spectrum: false,
@@ -280,6 +281,9 @@ export function buildCustomWaves({
           thickness: 1,
         })
       : null;
+    if (useProcedural && proceduralWave) {
+      waveState.proceduralCustomWavePool[proceduralWaveCount] = proceduralWave;
+    }
     let proceduralSamples = proceduralWave?.samples ?? null;
     let proceduralSampleValues2 = proceduralWave?.sampleValues2 ?? null;
     if (proceduralSamples) {

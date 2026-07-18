@@ -74,6 +74,8 @@ export type WaveBuilderState = {
     MilkdropProceduralCustomWaveVisual[],
     MilkdropProceduralCustomWaveVisual[],
   ];
+  customWaveVisualPool: MilkdropWaveVisual[];
+  proceduralCustomWavePool: MilkdropProceduralCustomWaveVisual[];
   proceduralTrailWaves: MilkdropProceduralWaveVisual[];
   channelSample: CustomWaveChannelSample;
   buffers: WaveFrameBuffers;
@@ -102,7 +104,7 @@ export type GeometryBuilderState = {
     MotionVectorHistoryPoint[],
   ];
   motionVectorHistoryBufferIndex: 0 | 1;
-  meshPositions?: number[];
+  meshPositions?: Float32Array;
 };
 
 export type ShapeBuilderState = {

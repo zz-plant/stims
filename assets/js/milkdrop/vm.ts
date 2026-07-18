@@ -116,6 +116,8 @@ class MilkdropPresetVM implements MilkdropVM {
     customWaveFrameIndex: 0,
     customWaveVisualFrames: [[], []],
     proceduralCustomWaveFrames: [[], []],
+    customWaveVisualPool: [],
+    proceduralCustomWavePool: [],
     proceduralTrailWaves: [],
     channelSample: {
       sample: 0,
@@ -259,6 +261,8 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.customWaveVisualFrames[1].length = 0;
     this.waveState.proceduralCustomWaveFrames[0].length = 0;
     this.waveState.proceduralCustomWaveFrames[1].length = 0;
+    this.waveState.customWaveVisualPool.length = 0;
+    this.waveState.proceduralCustomWavePool.length = 0;
     this.shapeState.customShapeLocals = this.preset.ir.customShapes.map(
       (shape) => this.seedCustomShapeState(shape),
     );
