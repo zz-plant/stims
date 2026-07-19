@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "rovastar-parallel-universe",
   "title": "Rovastar - Parallel Universe",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260719033247",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260719163749",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/rovastar-parallel-universe.png",
@@ -11,7 +11,7 @@
     "metadataSha256": "bbf0ec2b072795d9540a9da04ea4d727e611f3ce70f3abd0794d194a6ee3456b"
   },
   "requiredBackend": "webgpu",
-  "actualBackend": "webgl",
+  "actualBackend": "webgpu",
   "sourceFamily": "bundled",
   "strata": [
     "feedback",
@@ -22,8 +22,16 @@
   "threshold": 32,
   "failThreshold": 0.05,
   "metrics": {
-    "mismatchRatio": null
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 911728,
+    "mismatchRatio": 0.9892881944444445,
+    "maxChannelDelta": 237,
+    "meanAbsoluteError": 0.20795310514251997,
+    "rmse": 0.2692128026579242,
+    "exactMatch": false,
+    "threshold": 32
   },
-  "status": "backend-mismatch",
-  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+  "status": "fail"
 }
