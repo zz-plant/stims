@@ -389,18 +389,17 @@ export function useWorkspaceShellOrchestration({
       }
 
       if (source === 'microphone') {
-        commitRoute(nextRouteState);
         if (!navigator.mediaDevices?.getUserMedia) {
           setStatusMessage(
             'Microphone capture is not available in this browser.',
           );
           return;
         }
+        let permissionStream: MediaStream;
         try {
-          const permissionStream = await navigator.mediaDevices.getUserMedia({
+          permissionStream = await navigator.mediaDevices.getUserMedia({
             audio: true,
           });
-          permissionStream.getTracks().forEach((t) => t.stop());
         } catch (error) {
           throw new Error(
             error instanceof DOMException && error.name === 'NotAllowedError'
@@ -408,7 +407,17 @@ export function useWorkspaceShellOrchestration({
               : 'Unable to access microphone.',
           );
         }
-        await startAudioSource({ source, launchState: nextRouteState });
+        try {
+          await startAudioSource({
+            source,
+            stream: permissionStream,
+            launchState: nextRouteState,
+          });
+        } catch (error) {
+          permissionStream.getTracks().forEach((track) => track.stop());
+          throw error;
+        }
+        commitRoute(nextRouteState);
         return;
       }
 

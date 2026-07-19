@@ -161,7 +161,10 @@ export function BrowseSheetPanel({
   }, [searchQuery, routeState.collectionTag]);
 
   return (
-    <div className="stims-shell__sheet-panel stims-shell__sheet-panel--browse">
+    <div
+      className="stims-shell__sheet-panel stims-shell__sheet-panel--browse"
+      data-filter-active={String(hasFilter)}
+    >
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
         <div className="stims-shell__browse-toolbar">
           <strong>Browse presets</strong>
@@ -187,12 +190,14 @@ export function BrowseSheetPanel({
             className="stims-shell__input"
             type="search"
             placeholder="Search presets"
+            aria-label="Search presets"
             spellCheck={false}
             value={searchQuery}
             onChange={(e) => ui.setSearchQuery(e.target.value)}
           />
           <select
             className="stims-shell__select stims-shell__browse-sort"
+            aria-label="Sort presets"
             value={sortMode}
             onChange={(e) => {
               const next = e.target.value as SortMode;

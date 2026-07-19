@@ -87,7 +87,9 @@ export async function acquireAudioHandle(
     audio = await initAudioImpl({
       ...audioOptions,
       stream: stream ?? audioOptions.stream,
-      stopStreamOnCleanup: !reuseMicrophone,
+      stopStreamOnCleanup: audioOptions.stopStreamOnCleanup ?? !reuseMicrophone,
+      closeContextOnCleanup:
+        audioOptions.closeContextOnCleanup ?? !reuseMicrophone,
     });
   } catch (error) {
     if (pooledEntry) {

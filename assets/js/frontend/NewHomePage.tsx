@@ -43,8 +43,8 @@ export function NewHomePage() {
               <h1 id="stims-launch-title">Stims</h1>
               <p className="stims-shell__eyebrow">Choose a preset</p>
               <p>
-                Browse the catalog, then connect YouTube, your tab, or a
-                microphone.
+                Start with a look, then connect YouTube, your tab, or a
+                microphone when you want the visuals to react.
               </p>
             </div>
 
@@ -62,16 +62,23 @@ export function NewHomePage() {
               <button
                 type="button"
                 className="stims-shell__launch-recommendation"
+                aria-label={`Play ${featuredPreset.title}`}
                 onClick={() => engine.handlePlayPreset(featuredPreset.id)}
               >
                 <PresetArtwork entry={featuredPreset} compact />
                 <div className="stims-shell__launch-recommendation-copy">
-                  <p className="stims-shell__section-label">Recommended</p>
+                  <p className="stims-shell__section-label">Featured preset</p>
                   <strong>{featuredPreset.title}</strong>
                   <span className="stims-shell__meta-copy">
                     {describePresetMood(featuredPreset)}
                   </span>
                 </div>
+                <span
+                  className="stims-shell__launch-recommendation-arrow"
+                  aria-hidden="true"
+                >
+                  &gt;
+                </span>
               </button>
             ) : null}
           </div>

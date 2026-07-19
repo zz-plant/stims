@@ -35,7 +35,7 @@ export type SessionRouteState = {
 
 export type EngineAudioRequest =
   | { source: 'demo' }
-  | { source: 'microphone' }
+  | { source: 'microphone'; stream?: MediaStream }
   | { source: 'file'; stream: MediaStream }
   | {
       source: 'tab' | 'youtube';

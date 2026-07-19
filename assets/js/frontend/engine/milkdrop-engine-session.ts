@@ -290,7 +290,14 @@ export function createMilkdropEngineAdapter() {
             await loadCapturedVideoModule();
           clearMilkdropCapturedVideoStream();
         }
-        await activeRuntime.startAudio('microphone');
+        await activeRuntime.startAudio(
+          request.stream
+            ? {
+                stream: request.stream,
+                stopStreamOnCleanup: true,
+              }
+            : 'microphone',
+        );
         audioActive = true;
         audioSource = 'microphone';
         setAudioActive(true, 'microphone');

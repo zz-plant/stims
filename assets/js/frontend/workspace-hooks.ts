@@ -436,6 +436,7 @@ export function useWorkspaceSessionState({
       if (request.source === 'demo' || request.source === 'microphone') {
         await adapter.setAudioSource({
           source: request.source,
+          ...(request.stream ? { stream: request.stream } : {}),
         });
         return;
       }

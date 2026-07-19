@@ -521,6 +521,43 @@ describe('audio-service pooling', () => {
     next.release();
   });
 
+  test('stops a permission-requested stream when it is passed directly', async () => {
+    trackStop.mockReset();
+    const fakeStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+
+    const initAudioImpl = mock(async ({ stream, stopStreamOnCleanup }) => ({
+      analyser: {} as FrequencyAnalyser,
+      listener: { context: { close: mock() } } as unknown as AudioListener,
+      audio: {} as Audio | PositionalAudio,
+      stream,
+      cleanup: () => {
+        if (stopStreamOnCleanup && stream) {
+          stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+        }
+      },
+      permissionState: 'granted' as PermissionState,
+    }));
+
+    const handle = await acquireAudioHandle({
+      stream: fakeStream,
+      stopStreamOnCleanup: true,
+      initAudioImpl,
+    });
+
+    expect(initAudioImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stream: fakeStream,
+        closeContextOnCleanup: false,
+        stopStreamOnCleanup: true,
+      }),
+    );
+    handle.release();
+
+    expect(trackStop).toHaveBeenCalledTimes(1);
+  });
+
   test('audio handle release is idempotent', async () => {
     const cleanup = mock();
     trackStop.mockReset();
