@@ -10,6 +10,20 @@ function buildHannWindow(length: number): Float32Array {
   return window;
 }
 
+function validateFftSize(value: unknown): number {
+  const fftSize = typeof value === 'number' ? value : 1024;
+  if (
+    !Number.isInteger(fftSize) ||
+    fftSize < 2 ||
+    (fftSize & (fftSize - 1)) !== 0
+  ) {
+    throw new RangeError(
+      `fftSize must be a power of two >= 2 (received ${fftSize})`,
+    );
+  }
+  return fftSize;
+}
+
 function reverseBits(value: number, bits: number): number {
   let reversed = 0;
   for (let i = 0; i < bits; i += 1) {
@@ -91,7 +105,7 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   constructor(options?: AudioWorkletNodeOptions) {
     super();
     const resolvedOptions = options ?? {};
-    this.fftSize = resolvedOptions.processorOptions?.fftSize ?? 1024;
+    this.fftSize = validateFftSize(resolvedOptions.processorOptions?.fftSize);
     this.frequencyBinCount = this.fftSize / 2;
     this.window = buildHannWindow(this.fftSize);
     this.buffer = new Float32Array(this.fftSize);
@@ -199,7 +213,13 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       return true;
     }
 
-    this.hasStereoInput = Boolean(inputR);
+    const nextHasStereoInput = Boolean(inputR);
+    if (nextHasStereoInput !== this.hasStereoInput && this.bufferIndex > 0) {
+      this.buffer.fill(0);
+      this.bufferR.fill(0);
+      this.bufferIndex = 0;
+    }
+    this.hasStereoInput = nextHasStereoInput;
 
     for (let i = 0; i < input.length; i += 1) {
       this.buffer[this.bufferIndex] = input[i];

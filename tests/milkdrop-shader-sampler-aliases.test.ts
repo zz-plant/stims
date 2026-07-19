@@ -289,31 +289,19 @@ comp_shader=ret = tex2d(sampler_perlin, uv).rgb * vec3(bassAtt ^ 2.0, midAtt | 2
       expect(
         compiled.ir.post.shaderControlExpressions.textureLayer.volumeSliceZ,
       ).not.toBeNull();
-      expect(compiled.diagnostics).toEqual([
-        {
-          severity: 'warning',
-          code: 'preset_shader_volume_approximation',
-          message: expect.stringContaining('volume sampler'),
-        },
-      ]);
-      expect(compiled.ir.compatibility.warnings).toEqual([
-        expect.stringContaining('no true browser equivalent'),
-      ]);
-      expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
+      expect(compiled.diagnostics).toEqual([]);
+      expect(compiled.ir.compatibility.warnings).toEqual([]);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
       expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-        'unsupported',
+        'supported',
       );
       for (const backend of ['webgl', 'webgpu'] as const) {
         const support = compiled.ir.compatibility.backends[backend];
         expect(support.requiredFeatures).toContain('volume-textures');
-        expect(support.unsupportedFeatures).toContain('volume-textures');
-        expect(support.evidence).toEqual(
+        expect(support.unsupportedFeatures).not.toContain('volume-textures');
+        expect(support.evidence).not.toEqual(
           expect.arrayContaining([
-            expect.objectContaining({
-              code: 'volume-sampler-gap',
-              feature: 'volume-textures',
-              status: backend === 'webgpu' ? 'unsupported' : 'partial',
-            }),
+            expect.objectContaining({ code: 'volume-sampler-gap' }),
           ]),
         );
       }
@@ -323,15 +311,15 @@ comp_shader=ret = tex2d(sampler_perlin, uv).rgb * vec3(bassAtt ^ 2.0, midAtt | 2
     }
   });
 
-  test('classifies tex3D volume sampler usage as not-equivalent with measured diagnostic coverage', () => {
+  test('classifies bundled tex3D volume sampler usage as semantic-supported', () => {
     expect(classifyTex3dSamplerEquivalence('3d', 'simplex')).toBe(
-      'not-equivalent',
+      'semantic-supported',
     );
     expect(classifyTex3dSamplerEquivalence('2d', 'simplex')).toBe(
       'semantic-supported',
     );
     expect(classifyTex3dSamplerEquivalence('3d', 'noise')).toBe(
-      'not-equivalent',
+      'semantic-supported',
     );
     expect(classifyTex3dSamplerEquivalence('3d', 'main')).toBe(
       'semantic-supported',
@@ -351,17 +339,7 @@ comp_shader=ret = tex3D(sampler_fw_noisevol_lq, float3(uv, time / 10.0)).xyz`,
     expect(compiled.ir.post.shaderControls.textureLayer.sampleDimension).toBe(
       '3d',
     );
-    expect(compiled.diagnostics).toEqual([
-      {
-        severity: 'warning',
-        code: 'preset_shader_volume_approximation',
-        message: expect.stringContaining('volume sampler'),
-      },
-    ]);
-    const volumeDiag = compiled.diagnostics.find(
-      (d) => d.code === 'preset_shader_volume_approximation',
-    );
-    expect(volumeDiag).not.toBeUndefined();
-    expect(volumeDiag?.message).toContain('no true browser equivalent');
+    expect(compiled.diagnostics).toEqual([]);
+    expect(compiled.ir.compatibility.warnings).toEqual([]);
   });
 });

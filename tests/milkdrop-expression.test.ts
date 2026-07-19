@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   evaluateMilkdropExpression,
   parseMilkdropExpression,
+  parseMilkdropStatement,
 } from '../assets/js/milkdrop/expression.ts';
 
 describe('milkdrop expression', () => {
@@ -34,5 +35,16 @@ describe('milkdrop expression', () => {
         gammaadj: 1.25,
       }),
     ).toBeCloseTo(4.25, 6);
+  });
+
+  test('parses megabuf reads and writes as indexed VM statements', () => {
+    const write = parseMilkdropStatement('megabuf(q1) = bass', 1);
+    const read = parseMilkdropExpression('megabuf(q1)', 1);
+
+    expect(write.diagnostics).toEqual([]);
+    expect(write.value?.target).toBe('megabuf');
+    expect(write.value?.targetExpression?.type).toBe('identifier');
+    expect(read.diagnostics).toEqual([]);
+    expect(read.value?.type).toBe('call');
   });
 });

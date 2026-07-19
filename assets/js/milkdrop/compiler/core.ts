@@ -58,6 +58,7 @@ import {
   extractShaderControls,
   mergeShaderControlAnalysis,
 } from './shader-analysis.ts';
+import { usesVolumeTextureControls } from './shader-analysis-helpers.ts';
 
 const FEATURE_ORDER: MilkdropFeatureKey[] = [
   'base-globals',
@@ -157,11 +158,13 @@ export function createIR(
   ast: MilkdropPresetAST,
   diagnostics: import('../types.ts').MilkdropDiagnostic[],
   source: Partial<MilkdropPresetSource> = {},
+  options: import('../common-types.ts').MilkdropCompileOptions = {},
 ) {
   return createMilkdropIr({
     ast,
     diagnostics,
     source,
+    aspect: options.aspect,
     defaultState: DEFAULT_MILKDROP_STATE,
     metadataKeys,
     shaderFieldPattern,
@@ -198,6 +201,7 @@ export function createIR(
       buildShaderProgramPayload,
       normalizeBlockedConstructValue,
       buildUnsupportedVolumeSamplerWarnings,
+      usesVolumeTextureControls,
     },
     compatibilityHelpers: {
       buildBlockingConstructDetails,

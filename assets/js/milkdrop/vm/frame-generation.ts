@@ -262,6 +262,7 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
     deltaMs: 16.67,
     frame: 0,
     fps: 60,
+    aspect: 1,
     bass: 0,
     mid: 0,
     mids: 0,

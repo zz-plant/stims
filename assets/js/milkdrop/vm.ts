@@ -52,6 +52,7 @@ const objectHasOwn = (
 ).hasOwn;
 
 class MilkdropPresetVM implements MilkdropVM {
+  private static readonly MEGABUF_SIZE = 65_536;
   private preset: MilkdropCompiledPreset;
   private state: MutableState = {};
   private registers: MutableState = {};
@@ -97,6 +98,7 @@ class MilkdropPresetVM implements MilkdropVM {
   private lastPreparedSignalFrame = Number.NaN;
   private lastPreparedSignalTime = Number.NaN;
   private randomState = 1;
+  private readonly megabuf = new Float32Array(MilkdropPresetVM.MEGABUF_SIZE);
   private detailScale = 1;
   private renderBackend: 'webgl' | 'webgpu' = 'webgl';
   private webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = {
@@ -450,6 +452,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.signalEnv.time = signals.time;
     this.signalEnv.frame = signals.frame;
     this.signalEnv.fps = signals.fps;
+    this.signalEnv.aspect = signals.aspect ?? 1;
     this.signalEnv.bass = signals.bass;
     this.signalEnv.mid = signals.mid;
     this.signalEnv.med = signals.mid;
@@ -514,7 +517,15 @@ class MilkdropPresetVM implements MilkdropVM {
     target: string,
     value: number,
     locals: MutableState | null = null,
+    targetIndex?: number,
   ) {
+    if (target === 'megabuf') {
+      const normalized = Math.trunc(targetIndex ?? 0);
+      if (normalized >= 0 && normalized < MilkdropPresetVM.MEGABUF_SIZE) {
+        this.megabuf[normalized] = value;
+      }
+      return;
+    }
     const normalizedTarget = target.toLowerCase();
     const registerMatch = normalizedTarget.match(/^([qt])(\d+)$/u);
     if (locals && registerMatch?.[1] !== 'q') {
@@ -538,8 +549,33 @@ class MilkdropPresetVM implements MilkdropVM {
       if (!statement) {
         continue;
       }
-      const value = evaluateJit(statement.expression, env, this.nextRandom);
-      this.setValue(statement.target, value, locals);
+      const value = evaluateJit(
+        statement.expression,
+        env,
+        this.nextRandom,
+        (index) => {
+          const normalized = Math.trunc(index);
+          if (normalized < 0 || normalized >= MilkdropPresetVM.MEGABUF_SIZE) {
+            return 0;
+          }
+          return this.megabuf[normalized] ?? 0;
+        },
+      );
+      const targetIndex = statement.targetExpression
+        ? evaluateJit(
+            statement.targetExpression,
+            env,
+            this.nextRandom,
+            (index) => {
+              const normalized = Math.trunc(index);
+              return normalized >= 0 &&
+                normalized < MilkdropPresetVM.MEGABUF_SIZE
+                ? (this.megabuf[normalized] ?? 0)
+                : 0;
+            },
+          )
+        : undefined;
+      this.setValue(statement.target, value, locals, targetIndex);
       env[statement.target] = value;
     }
   }

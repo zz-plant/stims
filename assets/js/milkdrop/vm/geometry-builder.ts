@@ -338,6 +338,7 @@ export function buildProceduralFieldSignals(
     time: signals.time,
     frame: signals.frame,
     fps: signals.fps,
+    aspect: signals.aspect ?? 1,
     bass: signals.bass,
     mid: signals.mid,
     mids: signals.mids,

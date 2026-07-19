@@ -45,6 +45,7 @@ import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
+import { createMilkdropNoiseTexture } from './milkdrop-native-noise.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
@@ -97,6 +98,7 @@ const sharedMilkdropTexturePlaceholder = (() => {
   texture.needsUpdate = true;
   return configureMilkdropTexture(texture);
 })();
+const sharedMilkdropNativeNoiseTexture = createMilkdropNoiseTexture();
 
 function resolveTextureUrl(fileName: string) {
   const baseUrl =
@@ -135,9 +137,9 @@ function getSharedMilkdropTexturePlaceholder() {
 
 function getSharedAuxTextures(): SharedAuxTextureMap {
   return {
-    noise: getSharedMilkdropTexturePlaceholder(),
-    perlin: getSharedMilkdropTexturePlaceholder(),
-    simplex: getSharedMilkdropTexturePlaceholder(),
+    noise: sharedMilkdropNativeNoiseTexture,
+    perlin: sharedMilkdropNativeNoiseTexture,
+    simplex: sharedMilkdropNativeNoiseTexture,
     voronoi: getSharedMilkdropTexturePlaceholder(),
     aura: getSharedMilkdropTexturePlaceholder(),
     caustics: getSharedMilkdropTexturePlaceholder(),
@@ -290,6 +292,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform float signalBeatPulse;
         uniform float signalEnergy;
         uniform float signalTime;
+        uniform float aspect;
         uniform float decay;
         uniform float hasDirectWarp;
         uniform vec2 texelSize;
@@ -598,6 +601,7 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform float warpTextureVolumeSliceZ;
         uniform float hasDirectWarp;
         uniform float signalTime;
+        uniform float aspect;
         uniform float videoEchoOrientation;
         varying vec2 vUv;
 
@@ -867,6 +871,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         warpTextureVolumeSliceZ: { value: 0 },
         hasDirectWarp: { value: 0 },
         signalTime: { value: 0 },
+        aspect: { value: 1 },
         videoEchoOrientation: { value: 0 },
       },
       vertexShader: `
@@ -960,6 +965,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         signalBeatPulse: { value: 0 },
         signalEnergy: { value: 0 },
         signalTime: { value: 0 },
+        aspect: { value: 1 },
         decay: { value: 0.98 },
         hasDirectWarp: { value: 0 },
         texelSize: {
@@ -1090,13 +1096,19 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
       state.overlayTextureSource,
     );
     const warpTextureName = resolveAuxTextureName(state.warpTextureSource);
-    if (overlayTextureName) {
+    if (
+      overlayTextureName &&
+      !['noise', 'perlin', 'simplex'].includes(overlayTextureName)
+    ) {
       uniforms[`${overlayTextureName}Tex`].value = getSharedMilkdropTexture(
         AUX_TEXTURE_SPECS[overlayTextureName].fileName,
         AUX_TEXTURE_SPECS[overlayTextureName].colorTexture,
       );
     }
-    if (warpTextureName) {
+    if (
+      warpTextureName &&
+      !['noise', 'perlin', 'simplex'].includes(warpTextureName)
+    ) {
       uniforms[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
         AUX_TEXTURE_SPECS[warpTextureName].fileName,
         AUX_TEXTURE_SPECS[warpTextureName].colorTexture,
@@ -1169,6 +1181,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     uniforms.signalBeatPulse.value = state.signalBeatPulse;
     uniforms.signalEnergy.value = state.signalEnergy;
     uniforms.signalTime.value = state.signalTime;
+    uniforms.aspect.value = state.aspect;
 
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
@@ -1199,6 +1212,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
     wu.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
     wu.signalTime.value = state.signalTime;
+    wu.aspect.value = state.aspect;
     wu.videoEchoOrientation.value = state.videoEchoOrientation;
   }
 

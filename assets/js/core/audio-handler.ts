@@ -1,6 +1,7 @@
 import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
+import { getFrequencyBandLevels } from '../utils/audio-reactivity.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
@@ -23,11 +24,6 @@ type SpectralFeatureSnapshot = {
   spectralRolloff: number;
 };
 
-const DEFAULT_FREQUENCY_BAND_RANGES = {
-  bass: { minHz: 24, maxHz: 320 },
-  mid: { minHz: 320, maxHz: 2800 },
-  treble: { minHz: 2800, maxHz: 12000 },
-} as const;
 const DEFAULT_SAMPLE_RATE = 44_100;
 const stylizedFrequencyBuffers = new WeakMap<object, Uint8Array>();
 
@@ -37,97 +33,6 @@ function clamp(value: number, min: number, max: number): number {
 
 function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
-}
-
-function resolveBandIndexes(
-  dataLength: number,
-  sampleRate: number,
-  range: { minHz: number; maxHz: number },
-) {
-  if (dataLength <= 0 || sampleRate <= 0) {
-    return { start: 0, end: 0 };
-  }
-
-  const fftSize = dataLength * 2;
-  const resolutionHz = sampleRate / fftSize;
-  const nyquistHz = sampleRate / 2;
-  const minHz = clamp(range.minHz, 0, nyquistHz);
-  const maxHz = clamp(Math.max(minHz, range.maxHz), 0, nyquistHz);
-  const start = clamp(Math.floor(minHz / resolutionHz), 0, dataLength - 1);
-  const end = clamp(Math.ceil(maxHz / resolutionHz), start + 1, dataLength);
-
-  return { start, end };
-}
-
-function getBandAverageForRange(
-  data: Uint8Array,
-  sampleRate: number,
-  range: { minHz: number; maxHz: number },
-  band: 'bass' | 'mid' | 'treble',
-) {
-  if (data.length === 0) return 0;
-
-  const { start, end } = resolveBandIndexes(data.length, sampleRate, range);
-  if (end <= start) return 0;
-
-  const span = end - start;
-  const denom = Math.max(1, span - 1);
-
-  let sum = 0;
-  let weightTotal = 0;
-
-  if (band === 'bass') {
-    for (let index = start; index < end; index += 1) {
-      const position = span <= 1 ? 0 : (index - start) / denom;
-      const weight = 1.2 - position * 0.3;
-      sum += (data[index] ?? 0) * weight;
-      weightTotal += weight;
-    }
-  } else if (band === 'treble') {
-    for (let index = start; index < end; index += 1) {
-      const position = span <= 1 ? 0 : (index - start) / denom;
-      const weight = 0.9 + position * 0.25;
-      sum += (data[index] ?? 0) * weight;
-      weightTotal += weight;
-    }
-  } else {
-    for (let index = start; index < end; index += 1) {
-      sum += data[index] ?? 0;
-      weightTotal += 1;
-    }
-  }
-
-  return weightTotal > 0 ? sum / weightTotal : 0;
-}
-
-function getFrequencyBandLevels(data: Uint8Array, sampleRate: number) {
-  if (data.length === 0) {
-    return { bass: 0, mid: 0, treble: 0 };
-  }
-
-  return {
-    bass:
-      getBandAverageForRange(
-        data,
-        sampleRate,
-        DEFAULT_FREQUENCY_BAND_RANGES.bass,
-        'bass',
-      ) / 255,
-    mid:
-      getBandAverageForRange(
-        data,
-        sampleRate,
-        DEFAULT_FREQUENCY_BAND_RANGES.mid,
-        'mid',
-      ) / 255,
-    treble:
-      getBandAverageForRange(
-        data,
-        sampleRate,
-        DEFAULT_FREQUENCY_BAND_RANGES.treble,
-        'treble',
-      ) / 255,
-  };
 }
 
 export class FrequencyAnalyser {

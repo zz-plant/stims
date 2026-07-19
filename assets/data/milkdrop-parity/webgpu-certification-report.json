@@ -1,109 +1,109 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-16T23:21:09.086Z",
+  "generatedAt": "2026-07-19T04:43:35.465Z",
   "parityTarget": "webgpu-certification-comparator",
   "tolerance": {
     "threshold": 16,
     "failThreshold": 0.04
   },
   "presetCount": 23,
-  "certifiedBothCount": 0,
-  "certifiedNativeCount": 1,
-  "certifiedWebglCount": 0,
-  "uncertifiedCount": 3,
-  "unmeasuredCount": 19,
+  "certifiedBothCount": 2,
+  "certifiedNativeCount": 0,
+  "certifiedWebglCount": 1,
+  "uncertifiedCount": 6,
+  "unmeasuredCount": 14,
   "presets": [
     {
       "presetId": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
       "corpusGroup": "bundled-shipped",
-      "hasProjectmReference": false,
-      "projectmReferenceImage": null,
-      "failThreshold": 0.04,
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "eos-glowsticks-v2-03-music.png",
+      "failThreshold": 0.05,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260719033237",
+        "capturePath": "screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1784431956160.png",
+        "mismatchRatio": 0.015775824652777777,
+        "status": "pass",
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260518154357",
+        "capturePath": "screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1779119017719.png",
+        "mismatchRatio": 0.5371158854166667,
+        "status": "fail",
         "error": null
       },
-      "webgpuCertificationStatus": "unmeasured"
+      "webgpuCertificationStatus": "certified-webgl"
     },
     {
       "presetId": "eos-phat-cubetrace-v2",
       "title": "Eo.S. + Phat - Cubetrace v2",
       "corpusGroup": "bundled-shipped",
-      "hasProjectmReference": false,
-      "projectmReferenceImage": null,
-      "failThreshold": 0.04,
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "eos-phat-cubetrace-v2.png",
+      "failThreshold": 0.05,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260719033259",
+        "capturePath": "screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1784431978324.png",
+        "mismatchRatio": 0.23069769965277778,
+        "status": "fail",
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260518154459",
+        "capturePath": "screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1779119077657.png",
+        "mismatchRatio": 0.4711273871527778,
+        "status": "fail",
         "error": null
       },
-      "webgpuCertificationStatus": "unmeasured"
+      "webgpuCertificationStatus": "uncertified"
     },
     {
       "presetId": "krash-rovastar-cerebral-demons-stars",
       "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
       "corpusGroup": "bundled-shipped",
-      "hasProjectmReference": false,
-      "projectmReferenceImage": null,
-      "failThreshold": 0.04,
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "krash-rovastar-cerebral-demons-stars.png",
+      "failThreshold": 0.05,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260719033310",
+        "capturePath": "screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784431989553.png",
+        "mismatchRatio": 0.19868815104166668,
+        "status": "fail",
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260529232430",
+        "capturePath": "screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1780097048319.png",
+        "mismatchRatio": 0.590087890625,
+        "status": "fail",
         "error": null
       },
-      "webgpuCertificationStatus": "unmeasured"
+      "webgpuCertificationStatus": "uncertified"
     },
     {
       "presetId": "rovastar-parallel-universe",
       "title": "Rovastar - Parallel Universe",
       "corpusGroup": "bundled-shipped",
-      "hasProjectmReference": false,
-      "projectmReferenceImage": null,
-      "failThreshold": 0.04,
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "rovastar-parallel-universe.png",
+      "failThreshold": 0.05,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260719033247",
+        "capturePath": "screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1784431967123.png",
+        "mismatchRatio": 0.9822645399305555,
+        "status": "fail",
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260529232208",
+        "capturePath": "screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1780096920635.png",
+        "mismatchRatio": 0.8647840711805556,
+        "status": "fail",
         "error": null
       },
-      "webgpuCertificationStatus": "unmeasured"
+      "webgpuCertificationStatus": "uncertified"
     },
     {
       "presetId": "shape-legacy-max-slot-orbit",
@@ -419,9 +419,9 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260716231554",
-        "capturePath": "screenshots/parity/milkdrop--preset-100-square-1784243754091.png",
-        "mismatchRatio": 0.15840711805555555,
+        "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260716234209",
+        "capturePath": "screenshots/parity/milkdrop--preset-100-square-1784245329618.png",
+        "mismatchRatio": 0.4777365451388889,
         "status": "fail",
         "error": null
       },
@@ -454,45 +454,45 @@
       "presetId": "250-wavecode",
       "title": "250 Wavecode",
       "corpusGroup": "projectm-upstream",
-      "hasProjectmReference": false,
-      "projectmReferenceImage": null,
-      "failThreshold": 0.04,
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "250-wavecode.png",
+      "failThreshold": 0.02,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "error",
-        "error": "Untrusted projectM reference: Reference \"250-wavecode\" is missing native projectM metadata."
+        "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260719033640",
+        "capturePath": "screenshots/parity/milkdrop--preset-250-wavecode-1784432200752.png",
+        "mismatchRatio": 0.008809678819444444,
+        "status": "pass",
+        "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "error",
-        "error": "Untrusted projectM reference: Reference \"250-wavecode\" is missing native projectM metadata."
+        "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260719033800",
+        "capturePath": "screenshots/parity/milkdrop--preset-250-wavecode-1784432278669.png",
+        "mismatchRatio": 0.002297092013888889,
+        "status": "pass",
+        "error": null
       },
-      "webgpuCertificationStatus": "uncertified"
+      "webgpuCertificationStatus": "certified-both"
     },
     {
       "presetId": "260-compshader-noise_lq",
       "title": "260 Compshader Noise LQ",
       "corpusGroup": "projectm-upstream",
-      "hasProjectmReference": false,
-      "projectmReferenceImage": null,
-      "failThreshold": 0.04,
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "260-compshader-noise_lq.png",
+      "failThreshold": 0.02,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "error",
-        "error": "Untrusted projectM reference: Reference \"260-compshader-noise_lq\" is missing native projectM metadata."
+        "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719042218",
+        "capturePath": "screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784434938184.png",
+        "mismatchRatio": 0.9058984375,
+        "status": "fail",
+        "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "error",
-        "error": "Untrusted projectM reference: Reference \"260-compshader-noise_lq\" is missing native projectM metadata."
+        "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719043348",
+        "capturePath": "screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784435628007.png",
+        "mismatchRatio": 0.9060763888888889,
+        "status": "fail",
+        "error": null
       },
       "webgpuCertificationStatus": "uncertified"
     },
@@ -500,24 +500,24 @@
       "presetId": "261-compshader-noisevol_lq",
       "title": "261 Compshader Noisevol LQ",
       "corpusGroup": "projectm-upstream",
-      "hasProjectmReference": false,
-      "projectmReferenceImage": null,
-      "failThreshold": 0.04,
+      "hasProjectmReference": true,
+      "projectmReferenceImage": "261-compshader-noisevol_lq.png",
+      "failThreshold": 0.02,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719034835",
+        "capturePath": "screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784432915380.png",
+        "mismatchRatio": 0.9345746527777777,
+        "status": "fail",
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "unmeasured",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719043558",
+        "capturePath": "screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784435758580.png",
+        "mismatchRatio": 0.9478342013888889,
+        "status": "fail",
         "error": null
       },
-      "webgpuCertificationStatus": "unmeasured"
+      "webgpuCertificationStatus": "uncertified"
     },
     {
       "presetId": "300-beatdetect-bassmidtreb",
@@ -527,20 +527,20 @@
       "projectmReferenceImage": "300-beatdetect-bassmidtreb.png",
       "failThreshold": 0.02,
       "webglDiff": {
-        "stimsArtifactId": null,
-        "capturePath": null,
-        "mismatchRatio": null,
-        "status": "missing-capture",
-        "error": "No WEBGL capture exists. Run: bun run scripts/capture-visual-reference-suite.ts --preset \"300-beatdetect-bassmidtreb\" --force-webgl"
+        "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260719033711",
+        "capturePath": "screenshots/parity/milkdrop--preset-300-beatdetect-bassmidtreb-1784432231202.png",
+        "mismatchRatio": 0.0022005208333333334,
+        "status": "pass",
+        "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260716232100",
-        "capturePath": "screenshots/parity/milkdrop--preset-300-beatdetect-bassmidtreb-1784244059904.png",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260719033805",
+        "capturePath": "screenshots/parity/milkdrop--preset-300-beatdetect-bassmidtreb-1784432283880.png",
         "mismatchRatio": 0,
         "status": "pass",
         "error": null
       },
-      "webgpuCertificationStatus": "certified-native"
+      "webgpuCertificationStatus": "certified-both"
     }
   ]
 }

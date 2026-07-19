@@ -23,6 +23,10 @@ import {
   AUX_TEXTURE_ATLAS_GRID_SIZE,
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
+import {
+  createMilkdropNoiseTexture,
+  createMilkdropNoiseVolumeAtlasTexture,
+} from './milkdrop-native-noise.ts';
 import type { MilkdropFeedbackCompositeState } from './types';
 
 const {
@@ -99,6 +103,13 @@ const sharedMilkdropTexturePlaceholder = (() => {
   textureValue.needsUpdate = true;
   return configureMilkdropTexture(textureValue);
 })();
+
+const sharedMilkdropNativeNoiseTexture = configureMilkdropTexture(
+  createMilkdropNoiseTexture(),
+);
+const sharedMilkdropNativeNoiseVolumeAtlasTexture = configureMilkdropTexture(
+  createMilkdropNoiseVolumeAtlasTexture(),
+);
 
 export function resolveTextureUrl(fileName: string) {
   const baseUrl =
@@ -280,25 +291,24 @@ export async function getShared3dTexture(
 }
 
 export async function getSharedSimplex3dTexture(): Promise<Data3DTexture> {
-  return getShared3dTexture(MILKDROP_TEXTURE_FILES.simplex, true, false);
+  return getShared3dTexture(MILKDROP_TEXTURE_FILES.simplex, false, false);
 }
 
 export function getShared3dAuxTexture(
   name: AuxTextureName,
 ): Promise<Data3DTexture> {
+  if (name === 'simplex') {
+    return getSharedSimplex3dTexture();
+  }
   const spec = AUX_TEXTURE_SPECS[name];
-  return getShared3dTexture(
-    spec.fileName,
-    name === 'simplex',
-    spec.colorTexture,
-  );
+  return getShared3dTexture(spec.fileName, false, spec.colorTexture);
 }
 
 export function getSharedMilkdropAuxTextures() {
   return {
-    noise: getSharedMilkdropTexturePlaceholder(),
-    perlin: getSharedMilkdropTexturePlaceholder(),
-    simplex: getSharedMilkdropTexture(MILKDROP_TEXTURE_FILES.simplex, false),
+    noise: sharedMilkdropNativeNoiseTexture,
+    perlin: sharedMilkdropNativeNoiseTexture,
+    simplex: sharedMilkdropNativeNoiseVolumeAtlasTexture,
     voronoi: getSharedMilkdropTexturePlaceholder(),
     aura: getSharedMilkdropTexturePlaceholder(),
     caustics: getSharedMilkdropTexturePlaceholder(),
@@ -467,6 +477,7 @@ export function createCompositeUniforms(
     signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),
     signalTime: uniform(0),
+    aspect: uniform(1),
     decay: uniform(0.98),
     texelSize: uniform(new Vector2(1, 1)),
     texsize: uniform(new Vector4(1, 1, 1, 1)),
@@ -654,11 +665,12 @@ export function createSampleAuxTextureNode(
         ),
       );
       const isVideo = source.greaterThanEqual(7.5).and(source.lessThan(8.5));
+      const isSimplex = source.greaterThanEqual(1.5).and(source.lessThan(2.5));
       return select(
         sampleDimension.lessThan(0.5),
         sampleAuxTexture2dNode(source, wrappedUv),
         select(
-          isVideo,
+          isVideo.or(isSimplex),
           atlasTrilinearSample(source, wrappedUv, sliceZ),
           native3dSample,
         ),

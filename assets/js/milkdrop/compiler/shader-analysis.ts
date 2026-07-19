@@ -115,7 +115,6 @@ function extractNativeShaderBody(shaderText: string) {
       'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
     )
     .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
-    .replace(/\baspect\b/giu, 'vec4(1.0, 1.0, 1.0, 1.0)')
     .replace(/\btime\b/giu, 'signalTime')
     .replace(/\bbass_att\b|\bbass\b/giu, 'signalBass')
     .replace(/\bmid_att\b|\bmid\b/giu, 'signalMid')
@@ -382,6 +381,7 @@ function applyShaderAstStatement({
 
   if (key === 'texture_offset' || key === 'texture_scroll') {
     const offset = vec2Result();
+    const scalar = offset ? null : scalarResult();
     if (offset) {
       const nextX = applyShaderControlValue(
         operator,
@@ -403,10 +403,32 @@ function applyShaderAstStatement({
       expressions.textureLayer.offsetY = nextY.expression;
       return true;
     }
+    if (scalar) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.textureLayer.offsetX,
+        expressions.textureLayer.offsetX,
+        scalar.value,
+        scalar.expression,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.textureLayer.offsetY,
+        expressions.textureLayer.offsetY,
+        scalar.value,
+        scalar.expression,
+      );
+      controls.textureLayer.offsetX = nextX.value;
+      controls.textureLayer.offsetY = nextY.value;
+      expressions.textureLayer.offsetX = nextX.expression;
+      expressions.textureLayer.offsetY = nextY.expression;
+      return true;
+    }
   }
 
   if (key === 'texture_scale') {
     const scale = vec2Result();
+    const scalar = scale ? null : scalarResult();
     if (scale) {
       const nextX = applyShaderControlValue(
         operator,
@@ -428,10 +450,32 @@ function applyShaderAstStatement({
       expressions.textureLayer.scaleY = nextY.expression;
       return true;
     }
+    if (scalar) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.textureLayer.scaleX,
+        expressions.textureLayer.scaleX,
+        scalar.value,
+        scalar.expression,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.textureLayer.scaleY,
+        expressions.textureLayer.scaleY,
+        scalar.value,
+        scalar.expression,
+      );
+      controls.textureLayer.scaleX = nextX.value;
+      controls.textureLayer.scaleY = nextY.value;
+      expressions.textureLayer.scaleX = nextX.expression;
+      expressions.textureLayer.scaleY = nextY.expression;
+      return true;
+    }
   }
 
   if (key === 'warp_texture_offset' || key === 'warp_texture_scroll') {
     const offset = vec2Result();
+    const scalar = offset ? null : scalarResult();
     if (offset) {
       const nextX = applyShaderControlValue(
         operator,
@@ -453,10 +497,32 @@ function applyShaderAstStatement({
       expressions.warpTexture.offsetY = nextY.expression;
       return true;
     }
+    if (scalar) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.warpTexture.offsetX,
+        expressions.warpTexture.offsetX,
+        scalar.value,
+        scalar.expression,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.warpTexture.offsetY,
+        expressions.warpTexture.offsetY,
+        scalar.value,
+        scalar.expression,
+      );
+      controls.warpTexture.offsetX = nextX.value;
+      controls.warpTexture.offsetY = nextY.value;
+      expressions.warpTexture.offsetX = nextX.expression;
+      expressions.warpTexture.offsetY = nextY.expression;
+      return true;
+    }
   }
 
   if (key === 'warp_texture_scale') {
     const scale = vec2Result();
+    const scalar = scale ? null : scalarResult();
     if (scale) {
       const nextX = applyShaderControlValue(
         operator,
@@ -471,6 +537,27 @@ function applyShaderAstStatement({
         expressions.warpTexture.scaleY,
         scale.values[1],
         scale.expressions[1] ?? null,
+      );
+      controls.warpTexture.scaleX = nextX.value;
+      controls.warpTexture.scaleY = nextY.value;
+      expressions.warpTexture.scaleX = nextX.expression;
+      expressions.warpTexture.scaleY = nextY.expression;
+      return true;
+    }
+    if (scalar) {
+      const nextX = applyShaderControlValue(
+        operator,
+        controls.warpTexture.scaleX,
+        expressions.warpTexture.scaleX,
+        scalar.value,
+        scalar.expression,
+      );
+      const nextY = applyShaderControlValue(
+        operator,
+        controls.warpTexture.scaleY,
+        expressions.warpTexture.scaleY,
+        scalar.value,
+        scalar.expression,
       );
       controls.warpTexture.scaleX = nextX.value;
       controls.warpTexture.scaleY = nextY.value;
@@ -638,6 +725,63 @@ function applyShaderAstStatement({
             expressions.textureLayer.amount = amount.expression;
             applyTextureLayerSample(controls, expressions, auxSample);
             return true;
+          }
+          if (
+            targetNode.type === 'binary' &&
+            targetNode.operator === '*' &&
+            (isShaderSampleRgbExpression(targetNode.left) ||
+              isShaderSampleRgbExpression(targetNode.right))
+          ) {
+            const scaleNode = isShaderSampleRgbExpression(targetNode.left)
+              ? targetNode.right
+              : targetNode.left;
+            const scale = evaluateShaderScalarResult(
+              scaleNode,
+              shaderValueEnv,
+              shaderEnv,
+              shaderExpressionEnv,
+            );
+            if (scale) {
+              const factorExpression = buildTintBlendExpression(
+                scale.expression ?? createLiteralExpression(scale.value),
+                amount.expression,
+              );
+              const nextR = applyShaderControlValue(
+                operator,
+                controls.colorScale.r,
+                expressions.colorScale.r,
+                1 + (scale.value - 1) * amount.value,
+                factorExpression,
+              );
+              const nextG = applyShaderControlValue(
+                operator,
+                controls.colorScale.g,
+                expressions.colorScale.g,
+                1 + (scale.value - 1) * amount.value,
+                factorExpression,
+              );
+              const nextB = applyShaderControlValue(
+                operator,
+                controls.colorScale.b,
+                expressions.colorScale.b,
+                1 + (scale.value - 1) * amount.value,
+                factorExpression,
+              );
+              controls.colorScale = {
+                r: nextR.value,
+                g: nextG.value,
+                b: nextB.value,
+              };
+              expressions.colorScale = {
+                r: nextR.expression,
+                g: nextG.expression,
+                b: nextB.expression,
+              };
+              shaderEnv.r = nextR.value;
+              shaderEnv.g = nextG.value;
+              shaderEnv.b = nextB.value;
+              return true;
+            }
           }
           const invertedSample =
             extractShaderInvertedSampleExpression(targetNode);

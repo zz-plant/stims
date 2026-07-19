@@ -439,6 +439,7 @@ function getShaderEnvValue(
 
   const uniformMap: Record<string, () => ShaderNodeValue> = {
     time: () => shaderFloat(env.uniforms.signalTime),
+    aspect: () => shaderFloat(env.uniforms.aspect),
     bass: () => shaderFloat(env.uniforms.signalBass),
     bass_att: () => shaderFloat(env.uniforms.signalBass),
     mid: () => shaderFloat(env.uniforms.signalMid),
@@ -989,7 +990,7 @@ function createCompositeOutputNode(
     uniforms.auraTex,
     uniforms.causticsTex,
     uniforms.patternTex,
-    uniforms.fractTex,
+    uniforms.fractalTex,
     uniforms.videoTex,
     {
       noise: uniforms.noiseTex3D,
@@ -1469,7 +1470,10 @@ class WebGPUMilkdropFeedbackManager {
     const warpTextureName = resolveAuxTextureName(state.warpTextureSource);
     if (overlayTextureName !== this.currentOverlayTextureName) {
       this.currentOverlayTextureName = overlayTextureName;
-      if (overlayTextureName) {
+      if (
+        overlayTextureName &&
+        !['noise', 'perlin', 'simplex'].includes(overlayTextureName)
+      ) {
         this.compositeMaterial.uniforms[`${overlayTextureName}Tex`].value =
           getSharedMilkdropTexture(
             MILKDROP_TEXTURE_FILES[overlayTextureName],
@@ -1479,7 +1483,10 @@ class WebGPUMilkdropFeedbackManager {
     }
     if (warpTextureName !== this.currentWarpTextureName) {
       this.currentWarpTextureName = warpTextureName;
-      if (warpTextureName) {
+      if (
+        warpTextureName &&
+        !['noise', 'perlin', 'simplex'].includes(warpTextureName)
+      ) {
         this.compositeMaterial.uniforms[`${warpTextureName}Tex`].value =
           getSharedMilkdropTexture(
             MILKDROP_TEXTURE_FILES[warpTextureName],
@@ -1573,6 +1580,7 @@ class WebGPUMilkdropFeedbackManager {
       state.signalBeatPulse;
     this.compositeMaterial.uniforms.signalEnergy.value = state.signalEnergy;
     this.compositeMaterial.uniforms.signalTime.value = state.signalTime;
+    this.compositeMaterial.uniforms.aspect.value = state.aspect;
   }
 
   setAdaptiveQuality({

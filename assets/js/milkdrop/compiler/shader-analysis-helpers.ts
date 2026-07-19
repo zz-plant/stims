@@ -665,9 +665,16 @@ export function buildUnsupportedVolumeSamplerWarnings(
       return;
     }
 
+    if (source === 'video') {
+      warnings.push(
+        `${label} uses tex3D/texture3D with video sampler "${source}"; the browser path samples the current video frame through the bounded atlas fallback rather than a native video volume.`,
+      );
+      return;
+    }
+
     if (!isMilkdropVolumeShaderSamplerName(source)) {
       warnings.push(
-        `${label} uses tex3D/texture3D with aux sampler "${source}", but only "simplex" is backed by the runtime volume atlas; this lookup will be approximated from a 2D texture.`,
+        `${label} uses tex3D/texture3D with aux sampler "${source}"; the browser path has no bundled volume asset for this sampler and will use the neutral fallback.`,
       );
     }
   };
@@ -684,6 +691,17 @@ export function buildUnsupportedVolumeSamplerWarnings(
   );
 
   return warnings;
+}
+
+export function usesVolumeTextureControls(
+  controls: Pick<MilkdropShaderControls, 'textureLayer' | 'warpTexture'>,
+) {
+  return (
+    (controls.textureLayer.sampleDimension === '3d' &&
+      controls.textureLayer.source !== 'none') ||
+    (controls.warpTexture.sampleDimension === '3d' &&
+      controls.warpTexture.source !== 'none')
+  );
 }
 
 export function isKnownShaderScalarKey(key: string) {

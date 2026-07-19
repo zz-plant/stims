@@ -81,6 +81,7 @@ export const MILKDROP_INTRINSIC_FUNCTIONS = new Set([
   'below',
   'equal',
   'rand',
+  'megabuf',
 ]);
 
 function toMilkdropInt(value: number) {
@@ -462,6 +463,7 @@ class ExpressionParser {
 
 type EvalHelpers = {
   nextRandom?: () => number;
+  megabuf?: (index: number) => number;
 };
 
 export function evaluateMilkdropExpression(
@@ -630,6 +632,8 @@ export function evaluateMilkdropExpression(
           return (args[0] ?? 0) === (args[1] ?? 0) ? 1 : 0;
         case 'rand':
           return (helpers.nextRandom?.() ?? 0.5) * (args[0] ?? 1);
+        case 'megabuf':
+          return helpers.megabuf?.(args[0] ?? 0) ?? 0;
         default:
           return 0;
       }
@@ -715,8 +719,9 @@ export function parseMilkdropStatement(
 
   const target = source.slice(0, index).trim();
   const expressionSource = source.slice(index + 1).trim();
+  const megabufTarget = target.match(/^megabuf\((.+)\)$/iu);
 
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(target)) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(target) && !megabufTarget) {
     return {
       value: null,
       diagnostics: [
@@ -737,14 +742,30 @@ export function parseMilkdropStatement(
     };
   }
 
+  const targetExpression = megabufTarget
+    ? parseMilkdropExpression(megabufTarget[1] ?? '0', line)
+    : null;
+  if (megabufTarget && targetExpression && !targetExpression.value) {
+    return {
+      value: null,
+      diagnostics: targetExpression.diagnostics,
+    };
+  }
+
   return {
     value: {
-      target,
+      target: megabufTarget ? 'megabuf' : target,
+      ...(targetExpression?.value
+        ? { targetExpression: targetExpression.value }
+        : {}),
       expression: expressionResult.value,
       line,
       source,
     },
-    diagnostics: expressionResult.diagnostics,
+    diagnostics: [
+      ...expressionResult.diagnostics,
+      ...(targetExpression?.diagnostics ?? []),
+    ],
   };
 }
 

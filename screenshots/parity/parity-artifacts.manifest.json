@@ -3850,6 +3850,820 @@
         "audioMode": "none",
         "vibeMode": false
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260719033237",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-glowsticks-v2-03-music",
+      "title": null,
+      "createdAt": "2026-07-19T03:32:37.358Z",
+      "files": {
+        "image": "milkdrop--preset-eos-glowsticks-v2-03-music-1784431956160.png",
+        "debugSnapshot": "milkdrop--preset-eos-glowsticks-v2-03-music-1784431956160.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=eos-glowsticks-v2-03-music&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260719033247",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-07-19T03:32:47.611Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1784431967123.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1784431967123.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260719033259",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "eos-phat-cubetrace-v2",
+      "title": null,
+      "createdAt": "2026-07-19T03:32:59.379Z",
+      "files": {
+        "image": "milkdrop--preset-eos-phat-cubetrace-v2-1784431978324.png",
+        "debugSnapshot": "milkdrop--preset-eos-phat-cubetrace-v2-1784431978324.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=eos-phat-cubetrace-v2&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260719033310",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "krash-rovastar-cerebral-demons-stars",
+      "title": null,
+      "createdAt": "2026-07-19T03:33:10.098Z",
+      "files": {
+        "image": "milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784431989553.png",
+        "debugSnapshot": "milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784431989553.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=krash-rovastar-cerebral-demons-stars&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260719033352",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-07-19T03:33:52.602Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1784432030460.png",
+        "debugSnapshot": "milkdrop--preset-250-wavecode-1784432030460.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=250-wavecode&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719033402",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T03:34:02.744Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784432042311.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784432042311.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260719033440",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-07-19T03:34:40.956Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1784432080674.png",
+        "debugSnapshot": "milkdrop--preset-250-wavecode-1784432080674.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=250-wavecode&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260719033447",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": null,
+      "createdAt": "2026-07-19T03:34:47.247Z",
+      "files": {
+        "image": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432086983.png",
+        "debugSnapshot": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432086983.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=300-beatdetect-bassmidtreb&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719033500",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T03:35:00.038Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784432099778.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784432099778.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260719033611",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-07-19T03:36:11.698Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1784432171417.png",
+        "debugSnapshot": "milkdrop--preset-250-wavecode-1784432171417.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=250-wavecode&renderer=webgl&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719033618",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T03:36:18.068Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784432177443.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784432177443.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260719033619",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": null,
+      "createdAt": "2026-07-19T03:36:19.379Z",
+      "files": {
+        "image": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432179052.png",
+        "debugSnapshot": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432179052.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=300-beatdetect-bassmidtreb&renderer=webgl&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260719033640",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-07-19T03:36:40.928Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1784432200752.png",
+        "debugSnapshot": "milkdrop--preset-250-wavecode-1784432200752.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=250-wavecode&renderer=webgl&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260719033711",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": null,
+      "createdAt": "2026-07-19T03:37:11.368Z",
+      "files": {
+        "image": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432231202.png",
+        "debugSnapshot": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432231202.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=300-beatdetect-bassmidtreb&renderer=webgl&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719033730",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T03:37:30.646Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784432250411.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784432250411.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--250-wavecode--20260719033800",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "250-wavecode",
+      "title": null,
+      "createdAt": "2026-07-19T03:38:00.635Z",
+      "files": {
+        "image": "milkdrop--preset-250-wavecode-1784432278669.png",
+        "debugSnapshot": "milkdrop--preset-250-wavecode-1784432278669.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=250-wavecode&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--300-beatdetect-bassmidtreb--20260719033805",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "300-beatdetect-bassmidtreb",
+      "title": null,
+      "createdAt": "2026-07-19T03:38:05.821Z",
+      "files": {
+        "image": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432283880.png",
+        "debugSnapshot": "milkdrop--preset-300-beatdetect-bassmidtreb-1784432283880.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=300-beatdetect-bassmidtreb&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719034835",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T03:48:35.804Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784432915380.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784432915380.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&audio=demo&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719040014",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:00:14.474Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784433614348.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784433614348.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719040207",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:02:07.899Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784433727765.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784433727765.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719040316",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:03:16.623Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784433796489.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784433796489.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719040533",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:05:33.547Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784433933244.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784433933244.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719040554",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:05:54.050Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784433953932.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784433953932.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5182/?agent=true&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719041326",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:13:26.739Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784434406611.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784434406611.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719041338",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:13:38.667Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784434418493.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784434418493.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719041556",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:15:56.334Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784434556029.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784434556029.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719041609",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:16:09.501Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784434569268.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784434569268.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719041838",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:18:38.718Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784434718408.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784434718408.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719041851",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:18:51.024Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784434730824.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784434730824.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719042108",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:21:08.041Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784434867732.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784434867732.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719042130",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:21:30.095Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784434889957.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784434889957.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719042218",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:22:18.513Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784434938184.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784434938184.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgl",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgl&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719042652",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:26:52.352Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784435212020.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784435212020.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719042921",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:29:21.500Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784435361360.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784435361360.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719043156",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:31:56.869Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784435516707.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784435516707.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719043348",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "260-compshader-noise_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:33:48.293Z",
+      "files": {
+        "image": "milkdrop--preset-260-compshader-noise_lq-1784435628007.png",
+        "debugSnapshot": "milkdrop--preset-260-compshader-noise_lq-1784435628007.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=260-compshader-noise_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719043558",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "261-compshader-noisevol_lq",
+      "title": null,
+      "createdAt": "2026-07-19T04:35:58.712Z",
+      "files": {
+        "image": "milkdrop--preset-261-compshader-noisevol_lq-1784435758580.png",
+        "debugSnapshot": "milkdrop--preset-261-compshader-noisevol_lq-1784435758580.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&preset=261-compshader-noisevol_lq&renderer=webgpu&corpus=certification",
+        "durationMs": 5000,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "none",
+        "vibeMode": false
+      }
     }
   ]
 }

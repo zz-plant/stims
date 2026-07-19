@@ -84,6 +84,7 @@ export type MilkdropExpressionNode =
 
 export type MilkdropCompiledStatement = {
   target: string;
+  targetExpression?: MilkdropExpressionNode;
   expression: MilkdropExpressionNode;
   line: number;
   source: string;
@@ -239,7 +240,9 @@ export type MilkdropParityReport = {
   visualCertification: MilkdropVisualCertification;
 };
 
-export type MilkdropCompileOptions = Record<string, never>;
+export type MilkdropCompileOptions = {
+  aspect?: number;
+};
 
 export type MilkdropBackendSupport = {
   status: MilkdropSupportStatus;

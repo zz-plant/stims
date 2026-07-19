@@ -12,6 +12,7 @@ import {
 } from './webgpu-optimization-flags.ts';
 import {
   resolveMilkdropWebGpuFeatureRouting,
+  shouldEnableNativeMilkdropWebGpuFeedback,
   shouldUseSafeMilkdropWebGpuPath,
 } from './webgpu-query-override.ts';
 
@@ -68,17 +69,23 @@ export function createMilkdropWebGPURendererAdapter(
     config.renderer.depth = false;
   }
   const useSafeWebGpuPath = shouldUseSafeMilkdropWebGpuPath();
+  const enableNativeWebGpuFeedback =
+    usesNativeWebGpuRenderer && shouldEnableNativeMilkdropWebGpuFeedback();
   const webgpuOptimizationFlags = usesNativeWebGpuRenderer
-    ? applyNativeWebGpuMaterialCompatibilityFlags({
-        ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-        ...config.webgpuOptimizationFlags,
-      })
+    ? {
+        ...applyNativeWebGpuMaterialCompatibilityFlags({
+          ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+          ...config.webgpuOptimizationFlags,
+        }),
+        directFeedbackShaders: enableNativeWebGpuFeedback,
+      }
     : useSafeWebGpuPath
       ? buildSafeWebGpuOptimizationFlags(config.webgpuOptimizationFlags)
       : config.webgpuOptimizationFlags;
   const executionPlan = resolveMilkdropRendererExecutionPlan({
     backend: 'webgpu',
     safeWebGpuPath: useSafeWebGpuPath,
+    nativeWebGpuFeedbackEnabled: enableNativeWebGpuFeedback,
     flags: {
       ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
       ...webgpuOptimizationFlags,

@@ -15,6 +15,7 @@ import { resolveMilkdropWebGpuOptimizationFlags } from './webgpu-optimization-fl
 const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
 const URL_PARAM_RENDERER = 'renderer';
+const URL_PARAM_CORPUS = 'corpus';
 
 /** Valid modes for the force-mode override. */
 export type WebGpuForceMode = 'auto' | 'safe' | 'full';
@@ -169,6 +170,26 @@ export function shouldUseFullMilkdropWebGpuPath(
   return !shouldUseSafeMilkdropWebGpuPath(location);
 }
 
+/**
+ * Native TSL feedback is opt-in for the explicit certification lane. Live
+ * WebGPU sessions keep the conservative path until their output is measured.
+ */
+export function shouldEnableNativeMilkdropWebGpuFeedback(
+  location:
+    | Pick<Location, 'search'>
+    | null
+    | undefined = typeof globalThis.location !== 'undefined'
+    ? globalThis.location
+    : null,
+): boolean {
+  if (shouldUseSafeMilkdropWebGpuPath(location)) return false;
+  const params = new URLSearchParams(location?.search ?? '');
+  return (
+    params.get(URL_PARAM_RENDERER)?.trim().toLowerCase() === 'webgpu' &&
+    params.get(URL_PARAM_CORPUS)?.trim().toLowerCase() === 'certification'
+  );
+}
+
 export function resolveMilkdropWebGpuFeatureRouting(
   location?: Pick<Location, 'search'> | null,
 ): MilkdropWebGpuFeatureRouting {
@@ -178,9 +199,13 @@ export function resolveMilkdropWebGpuFeatureRouting(
   const safeReason = safeMode
     ? `disabled by ${description.source} WebGPU safe path`
     : null;
+  const nativeFeedbackEnabled =
+    shouldEnableNativeMilkdropWebGpuFeedback(location);
   const feedbackReason =
     safeReason ??
-    'native WebGPU feedback remains disabled until ShaderMaterial and TSL composite parity is stable';
+    (nativeFeedbackEnabled
+      ? null
+      : 'native WebGPU feedback remains disabled until ShaderMaterial and TSL composite parity is stable');
 
   return {
     proceduralMainWave: { enabled: !safeMode, reason: safeReason },
@@ -188,7 +213,10 @@ export function resolveMilkdropWebGpuFeatureRouting(
     proceduralCustomWaves: { enabled: !safeMode, reason: safeReason },
     proceduralMesh: { enabled: !safeMode, reason: safeReason },
     proceduralMotionVectors: { enabled: !safeMode, reason: safeReason },
-    directFeedbackShaders: { enabled: false, reason: feedbackReason },
+    directFeedbackShaders: {
+      enabled: nativeFeedbackEnabled,
+      reason: feedbackReason,
+    },
     gpuComputeVM: { enabled: !safeMode, reason: safeReason },
     renderBundles: {
       enabled: !safeMode && rolloutFlags.renderBundles,

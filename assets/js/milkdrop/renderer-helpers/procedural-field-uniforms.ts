@@ -24,6 +24,7 @@ export type ProceduralFieldUniformState = {
   signalTime: { value: number };
   signalFrame: { value: number };
   signalFps: { value: number };
+  signalAspect: { value: number };
   signalBass: { value: number };
   signalMid: { value: number };
   signalMids: { value: number };
@@ -73,6 +74,7 @@ export function createProceduralFieldUniformState() {
     signalTime: { value: 0 },
     signalFrame: { value: 0 },
     signalFps: { value: 60 },
+    signalAspect: { value: 1 },
     signalBass: { value: 0 },
     signalMid: { value: 0 },
     signalMids: { value: 0 },
@@ -144,6 +146,7 @@ export function syncProceduralFieldUniforms(
   material.uniforms.signalTime.value = signals.time;
   material.uniforms.signalFrame.value = signals.frame;
   material.uniforms.signalFps.value = signals.fps;
+  material.uniforms.signalAspect.value = signals.aspect ?? 1;
   material.uniforms.signalBass.value = signals.bass;
   material.uniforms.signalMid.value = signals.mid;
   material.uniforms.signalMids.value = signals.mids;
@@ -189,6 +192,7 @@ export function syncPreviousProceduralFieldUniforms(
   material.uniforms.previousSignalTime.value = field.signals.time;
   material.uniforms.previousSignalFrame.value = field.signals.frame;
   material.uniforms.previousSignalFps.value = field.signals.fps;
+  material.uniforms.previousSignalAspect.value = field.signals.aspect ?? 1;
   material.uniforms.previousSignalBass.value = field.signals.bass;
   material.uniforms.previousSignalMid.value = field.signals.mid;
   material.uniforms.previousSignalMids.value = field.signals.mids;

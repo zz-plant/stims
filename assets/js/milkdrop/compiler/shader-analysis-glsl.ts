@@ -1,3 +1,4 @@
+import { isMilkdropVolumeShaderSamplerName } from '../shader-samplers';
 import type {
   MilkdropShaderExpressionNode,
   MilkdropShaderStatement,
@@ -97,6 +98,7 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         // frame uses signalTime as a proxy; fps is a literal 60.0 approximation.
         frame: 'signalTime',
         fps: '60.0',
+        aspect: 'aspect',
         vol: 'signalEnergy',
         rms: 'signalEnergy',
         music: 'signalEnergy',
@@ -465,7 +467,7 @@ function emitTextureSample(
 
   if (isAuxShaderSamplerName(normalizedName)) {
     const sourceId = getAuxTextureSourceId(normalizedName);
-    const isVolume = normalizedName === 'simplex';
+    const isVolume = isMilkdropVolumeShaderSamplerName(normalizedName);
     const sampleDim = dimension === '3d' && isVolume ? '1.0' : '0.0';
     return `sampleAuxTexture(vec4(${sourceId}, 0, 0, 0).x, ${sampleDim}, sampleUv(${coordArg}, textureWrap), ${dimension === '3d' && isVolume ? zSlice : '0.0'}).rgb`;
   }

@@ -35,6 +35,7 @@ const PROCEDURAL_FIELD_PROGRAM_SIGNAL_PARAMETERS = `
   float signalTimeValue,
   float signalFrameValue,
   float signalFpsValue,
+  float signalAspectValue,
   float signalBassValue,
   float signalMidValue,
   float signalMidsValue,
@@ -158,6 +159,8 @@ function gpuFieldIdentifierToShaderSource(name: string) {
       return 'signalFrameValue';
     case 'fps':
       return 'signalFpsValue';
+    case 'aspect':
+      return 'signalAspectValue';
     case 'bass':
       return 'signalBassValue';
     case 'mid':
@@ -514,6 +517,7 @@ export function createProceduralMeshMaterial(
       uniform float signalTime;
       uniform float signalFrame;
       uniform float signalFps;
+      uniform float signalAspect;
       uniform float signalBass;
       uniform float signalMid;
       uniform float signalMids;
@@ -549,6 +553,7 @@ export function createProceduralMeshMaterial(
             signalTime,
             signalFrame,
             signalFps,
+            signalAspect,
             signalBass,
             signalMid,
             signalMids,
@@ -612,6 +617,7 @@ export function createProceduralMotionVectorMaterial(
     previousSignalTime: { value: 0 },
     previousSignalFrame: { value: 0 },
     previousSignalFps: { value: 60 },
+    previousSignalAspect: { value: 1 },
     previousSignalBass: { value: 0 },
     previousSignalMid: { value: 0 },
     previousSignalMids: { value: 0 },
@@ -677,6 +683,7 @@ export function createProceduralMotionVectorMaterial(
       uniform float signalTime;
       uniform float signalFrame;
       uniform float signalFps;
+      uniform float signalAspect;
       uniform float signalBass;
       uniform float signalMid;
       uniform float signalMids;
@@ -694,6 +701,7 @@ export function createProceduralMotionVectorMaterial(
       uniform float previousSignalTime;
       uniform float previousSignalFrame;
       uniform float previousSignalFps;
+      uniform float previousSignalAspect;
       uniform float previousSignalBass;
       uniform float previousSignalMid;
       uniform float previousSignalMids;
@@ -738,6 +746,7 @@ export function createProceduralMotionVectorMaterial(
           signalTime,
           signalFrame,
           signalFps,
+          signalAspect,
           signalBass,
           signalMid,
           signalMids,
@@ -769,6 +778,7 @@ export function createProceduralMotionVectorMaterial(
           previousSignalTime,
           previousSignalFrame,
           previousSignalFps,
+          previousSignalAspect,
           previousSignalBass,
           previousSignalMid,
           previousSignalMids,
@@ -1038,6 +1048,7 @@ export function createProceduralCustomWaveMaterial(
       signalTime: { value: 0 },
       signalFrame: { value: 0 },
       signalFps: { value: 60 },
+      signalAspect: { value: 1 },
       signalBass: { value: 0 },
       signalMid: { value: 0 },
       signalMids: { value: 0 },
@@ -1063,6 +1074,7 @@ export function createProceduralCustomWaveMaterial(
       previousSignalTime: { value: 0 },
       previousSignalFrame: { value: 0 },
       previousSignalFps: { value: 60 },
+      previousSignalAspect: { value: 1 },
       previousSignalBass: { value: 0 },
       previousSignalMid: { value: 0 },
       previousSignalMids: { value: 0 },
@@ -1099,6 +1111,7 @@ export function createProceduralCustomWaveMaterial(
       uniform float signalTime;
       uniform float signalFrame;
       uniform float signalFps;
+      uniform float signalAspect;
       uniform float signalBass;
       uniform float signalMid;
       uniform float signalMids;
@@ -1122,6 +1135,7 @@ export function createProceduralCustomWaveMaterial(
       uniform float previousSignalTime;
       uniform float previousSignalFrame;
       uniform float previousSignalFps;
+      uniform float previousSignalAspect;
       uniform float previousSignalBass;
       uniform float previousSignalMid;
       uniform float previousSignalMids;
@@ -1189,6 +1203,7 @@ export function createProceduralCustomWaveMaterial(
           blendedSignalTime,
           mix(previousSignalFrame, signalFrame, blendMix),
           mix(previousSignalFps, signalFps, blendMix),
+          mix(previousSignalAspect, signalAspect, blendMix),
           mix(previousSignalBass, signalBass, blendMix),
           mix(previousSignalMid, signalMid, blendMix),
           mix(previousSignalMids, signalMids, blendMix),

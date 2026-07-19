@@ -28,6 +28,7 @@ const GPU_FIELD_SIGNAL_ALIAS_MAP = new Map<string, string>([
   ['time', 'time'],
   ['frame', 'frame'],
   ['fps', 'fps'],
+  ['aspect', 'aspect'],
   ['bass', 'bass'],
   ['mid', 'mid'],
   ['mids', 'mids'],

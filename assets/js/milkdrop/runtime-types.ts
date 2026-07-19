@@ -9,6 +9,7 @@ export type MilkdropRuntimeSignals = {
   deltaMs: number;
   frame: number;
   fps: number;
+  aspect?: number;
   bass: number;
   mid: number;
   mids: number;

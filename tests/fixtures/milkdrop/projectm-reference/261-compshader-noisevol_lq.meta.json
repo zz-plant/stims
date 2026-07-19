@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-projectm-reference",
+  "preset": {
+    "id": "261-compshader-noisevol_lq",
+    "path": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-upstream/261-compshader-noisevol_lq.milk",
+    "sha256": "628d622e463cf14db3be48f9c2635b812438dd348a50250db93039ac6e00fe47"
+  },
+  "renderer": {
+    "name": "projectM",
+    "native": true,
+    "harnessSha256": "54377edd3781cb5b0d4875cf54bc44e2717ca3c25596e54f6236ff4c8ad16ce1"
+  },
+  "externalRuntime": {
+    "provenanceScope": "capture-host-only",
+    "projectM": {
+      "version": "3.1.12",
+      "prefix": "/opt/homebrew/opt/projectm",
+      "libraryPath": "/opt/homebrew/opt/projectm/lib/libprojectM.dylib",
+      "librarySha256": "763b0e3961cb01bc4353ebb1c1485ad5b85bcf962f8827665b4a939dc07eef05"
+    },
+    "sdl": {
+      "version": "2.32.70",
+      "prefix": "/opt/homebrew/opt/sdl2",
+      "libraryPath": "/opt/homebrew/opt/sdl2/lib/libSDL2.dylib",
+      "librarySha256": "ce26c5b25ddb03f07327cecf8fff04a57b7ff1187feb4ac9458a9559e17f1d98"
+    },
+    "macOSVersion": "27.0",
+    "openGL": {
+      "vendor": "Apple",
+      "renderer": "Apple M1 Max",
+      "version": "4.1 Metal - 91.7"
+    }
+  },
+  "capture": {
+    "width": 1280,
+    "height": 720,
+    "fps": 60,
+    "frameCount": 300,
+    "nominalDurationMs": 5000,
+    "timingPolicy": "projectM-renderFrame-no-external-throttle",
+    "audio": "silence",
+    "framebuffer": "GL_BACK",
+    "imageSha256": "51b0a8ee993a601e6cf6a9350755541ed0230a110c2b4af5b000f541ddfc5cd2"
+  },
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "createdAt": "2026-07-19T03:47:50.037Z"
+}

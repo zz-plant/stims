@@ -98,6 +98,7 @@ export function buildCompositeUniformDefaults(): Record<string, unknown> {
     signalBeatPulse: 0,
     signalEnergy: 0,
     signalTime: 0,
+    aspect: 1,
     texelSize: { x: 1, y: 1 },
   };
 }
@@ -176,6 +177,7 @@ export const MILKDROP_COMPOSITE_IR: FeedbackCompositeIR = {
     { kind: 'float', name: 'signalBeatPulse' },
     { kind: 'float', name: 'signalEnergy' },
     { kind: 'float', name: 'signalTime' },
+    { kind: 'float', name: 'aspect' },
     { kind: 'vec2', name: 'texelSize' },
   ],
   defaultUniformValues: buildCompositeUniformDefaults(),
@@ -243,6 +245,7 @@ export function applyCompositeStateToDefaults(
   defaults.signalBeatPulse = state.signalBeatPulse;
   defaults.signalEnergy = state.signalEnergy;
   defaults.signalTime = state.signalTime;
+  defaults.aspect = state.aspect;
   return defaults;
 }
 

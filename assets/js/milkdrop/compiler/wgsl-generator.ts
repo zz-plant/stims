@@ -3,6 +3,10 @@ import type {
   MilkdropExpressionNode,
   MilkdropProgramBlock,
 } from '../types';
+import {
+  MILKDROP_WGSL_SIGNAL_ALIAS_MAP,
+  MILKDROP_WGSL_SIGNAL_FIELDS,
+} from '../wgsl-signal-layout.ts';
 
 const WGSL_IDENTIFIER_MAP = new Map<string, string>([
   ['pi', '3.141592653589793'],
@@ -15,7 +19,11 @@ function isRegisterIdentifier(name: string) {
 
 function toWgslIdentifier(name: string) {
   const key = name.toLowerCase();
-  return WGSL_IDENTIFIER_MAP.get(key) ?? name.toLowerCase();
+  return (
+    MILKDROP_WGSL_SIGNAL_ALIAS_MAP.get(key) ??
+    WGSL_IDENTIFIER_MAP.get(key) ??
+    name.toLowerCase()
+  );
 }
 
 function buildWgslExpression(expression: MilkdropExpressionNode): string {
@@ -33,6 +41,10 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
       }
       if (name === 'rand') {
         return 'rand()';
+      }
+      const signalField = MILKDROP_WGSL_SIGNAL_ALIAS_MAP.get(name);
+      if (signalField !== undefined) {
+        return `signals.${signalField}`;
       }
       return `state.${toWgslIdentifier(expression.name)}`;
     }
@@ -185,31 +197,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
 
 const WGSL_SIGNAL_STRUCT = /* wgsl */ `
 struct VmSignals {
-  time: f32,
-  frame: f32,
-  fps: f32,
-  bass: f32,
-  mid: f32,
-  mids: f32,
-  treb: f32,
-  treble: f32,
-  bass_att: f32,
-  mid_att: f32,
-  mids_att: f32,
-  treb_att: f32,
-  treble_att: f32,
-  bassAtt: f32,
-  midAtt: f32,
-  midsAtt: f32,
-  trebleAtt: f32,
-  beat: f32,
-  beat_pulse: f32,
-  beatPulse: f32,
-  rms: f32,
-  vol: f32,
-  music: f32,
-  weighted_energy: f32,
-  progress: f32,
+${MILKDROP_WGSL_SIGNAL_FIELDS.map((field) => `  ${field}: f32,`).join('\n')}
 }
 `;
 

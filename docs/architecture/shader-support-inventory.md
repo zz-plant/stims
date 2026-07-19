@@ -1,6 +1,6 @@
 # Shader Support Inventory — MilkDrop Compiler
 
-Analysis date: 2026-05-16. Based on full audit of `assets/js/milkdrop/compiler/**`, `assets/js/milkdrop/shader-ast.ts`, `assets/js/milkdrop/shader-samplers.ts`, and the test suite (`tests/milkdrop-compiler*.test.ts`).
+Analysis date: 2026-07-18. Based on the current audit of `assets/js/milkdrop/compiler/**`, `assets/js/milkdrop/shader-ast.ts`, `assets/js/milkdrop/shader-samplers.ts`, and the test suite (`tests/milkdrop-compiler*.test.ts`).
 
 ## Scope
 
@@ -46,8 +46,10 @@ Expressions are evaluated at runtime via `evaluateMilkdropShaderControlExpressio
 | `uv = (uv-0.5)/scale + 0.5 + vec2(ox, oy)` (affine transform) | `shader-analysis.ts:820-871` (heuristic) |
 | `tint = r, g, b` / `tint += r, g, b` | `shader-analysis.ts:256-295` |
 | `texture_offset = vec2(x, y)` / `texture_scroll = ...` | `shader-analysis.ts:297-319` and `shader-control-application.ts:685-711` |
-| `texture_scale = vec2(x, y)` | `shader-analysis.ts:322-345` and `shader-control-application.ts:713-739` |
+| `texture_offset = scalar` / `texture_scroll = scalar` | Scalar is splatted to both axes in the AST and heuristic paths. |
+| `texture_scale = vec2(x, y)` / `texture_scale = scalar` | `shader-analysis.ts:322-345` and `shader-control-application.ts:713-739`; scalar is splatted to both axes. |
 | `warp_texture_offset = vec2(...)` / `warp_texture_scale = vec2(...)` | `shader-analysis.ts:347-395` and `shader-control-application.ts:741-795` |
+| `warp_texture_offset = scalar` / `warp_texture_scale = scalar` | Scalar is splatted to both axes in the AST and heuristic paths. |
 
 ### Sampler Source / Mode Selection
 
@@ -65,10 +67,11 @@ Recognized texture sources: `noise`, `perlin`, `simplex`, `voronoi`, `aura`, `ca
 |---|---|
 | `ret = tex2d(sampler_main, uv).rgb` (identity) | `shader-analysis.ts:398-401` |
 | `ret = tex2d(sampler_main, uv).rgb * scalar` (uniform color scale) | `shader-analysis.ts:418-492` |
+| `ret = mix(main, main * scalar, amount)` | Lowers to a blended color-scale factor while retaining the direct program for exact execution. |
 | `ret = tex2d(sampler_main, uv).rgb * vec3(r,g,b)` (per-channel scale) | `shader-analysis.ts:418-492` |
 | `ret = tex2d(sampler_<aux>, uv).rgb` (replace with aux sample) | `shader-analysis.ts:403-416` |
 | `ret = tex3d(sampler_<aux>, vec3(uv, z)).xyz` (3D aux sample) | `shader-analysis.ts:403-416` |
-| `ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_<aux>, uv).rgb, amount)` | `shader-analysis.ts:495-528` |
+| `ret = mix(main, aux, amount)` and swapped argument order | `shader-analysis.ts:495-528`; swapped order is normalized to `1 - amount`. |
 | `ret = mix(main, 1.0 - tex2d(sampler_<aux>, uv).rgb, amount)` (inverted aux) | `shader-analysis.ts:530-556` |
 | `ret = mix(main, abs(tex2d(sampler_main, uv).rgb - 0.5) * 1.5, amount)` (solarize) | `shader-analysis.ts:557-569` |
 | `ret = mix(main, vec3(r,g,b), amount)` (tint blend) | `shader-analysis.ts:570-622` |
@@ -143,52 +146,51 @@ All sample calls normalized:
 
 Below are constructs that parse successfully (produce a `MilkdropShaderStatement`) but do NOT generate correct GPU output, cause incorrect control extraction, or are silently downgraded.
 
-### 2.1 `^` operator — XOR in GLSL, pow in WGSL
+### 2.1 `^` operator — fixed in GLSL emission
 
 **What it should do**: MilkDrop uses `^` for exponentiation (pow). WGSL generator emits `pow(left, right)` at `wgsl-generator.ts:68` (correct).  
-**What actually happens**: The GLSL emitter only handles `&&` and `||` specially; `^` passes through as bitwise XOR (`shader-analysis-glsl.ts:137`). In GLSL, bitwise XOR on floats produces a compile error or undefined behavior.  
+**Current behavior**: The GLSL emitter lowers `^` to `pow(left, right)` and the WGSL generator does the same. Focused emitter tests cover scalar and nested operands.
 **Corpus presets affected**: None in certification corpus, but common in user-authored presets that use `^` for power.  
-**Estimated fix effort**: Low — add `^` → `pow()` mapping in the GLSL `emitBinary` and `emitCall` dispatches.
+**Status**: Fixed; retain this row as a regression contract.
 
-### 2.2 `|` and `&` operators — bitwise OR/AND in GLSL
+### 2.2 `|` and `&` operators — fixed float/int lowering
 
 **What it should do**: MilkDrop uses `|` and `&` as float-safe bitwise operations (truncate to int, apply bitwise, cast back). WGSL generator emits `f32(i32(left) | i32(right))` at `wgsl-generator.ts:69-72` (correct).  
-**What actually happens**: The GLSL emitter passes `|` and `&` through directly (`shader-analysis-glsl.ts:137`). GLSL does not allow bitwise operations on floats — this produces a compile error in the composite shader.  
+**Current behavior**: The GLSL emitter casts both float operands to `int`, applies the bitwise operation, and casts the result back to `float`; WGSL uses the corresponding integer cast path.
 **Corpus presets affected**: None known.  
-**Estimated fix effort**: Medium — requires GLSL workaround (conversion to int via `int()`, bitwise op, conversion back).
+**Status**: Fixed; focused GLSL emitter tests cover both operators.
 
 ### 2.3 `ret =` / `shader_body =` with `-` (subtraction) between main and aux samples
 
 **What it should do**: `ret = tex2d(sampler_main, uv).rgb - tex2d(sampler_noise, uv).rgb * amount` — subtract an aux layer from the main sample.  
-**What actually happens**: The AST handler at `shader-analysis.ts:626-646` only handles `+` (add mode). There is no handler for `-` (subtract mode), `-` with scaled aux sample, or `/` (divide mode). The line falls through to scalar/vector evaluation and may extract partial or no controls. Current compiler output preserves the raw GLSL but marks raw-only direct programs as requiring control fallback instead of advertising a backend-native direct shader path.
+**Current behavior**: The AST handler extracts `main - aux * amount` into the explicit `subtract` texture-layer mode. The direct program is retained when needed, and the runtime composite path emits subtractive color blending.
 **Corpus presets affected**: None in certification corpus. Would affect presets using `main - aux * factor`.  
-**Estimated fix effort**: Low — add a `case '-'` handler mirroring the `+` handler at line 626.
+**Status**: Fixed for the supported main-minus-scaled-aux subset; divide and arbitrary multi-term expressions remain direct-program-only.
 
 ### 2.4 `ret = mix(tex2d(sampler_<aux>, uv).rgb, tex2d(sampler_main, uv).rgb, amount)` — aux first, main second
 
 **What it should do**: Mix from an aux sample toward the main sample.  
-**What actually happens**: The mix handler at `shader-analysis.ts:495-528` requires the FIRST argument to be `isShaderSampleRgbExpression` with `baseSample.source === 'main'`. If an aux sample comes first, the function returns false and no texture layer control is extracted.  
+**Current behavior**: The mix handler recognizes either ordering and normalizes the swapped form to an equivalent `1 - amount` blend toward the main sample.
 **Corpus presets affected**: None known.  
-**Estimated fix effort**: Low — extend the handler to detect either ordering.
+**Status**: Fixed; covered by compiler analysis tests.
 
 ### 2.5 `texture_source = sampler_main`
 
 **What it should do**: Reset the overlay source to main (disable overlay).  
-**What actually happens**: `applyTextureSourceAssignment` at `shader-control-application.ts:96-98` requires `isAuxShaderSamplerName(source)`, which rejects `main`. Returns false, causing the line to either go unsupported or get caught as an unknown key.  
-**Estimated fix effort**: Low — special-case `main` to reset `textureLayer.source` to `'none'`.
+**Current behavior**: The AST and heuristic control paths treat `sampler_main` as an explicit reset to `textureLayer.source = 'none'` and `mode = 'none'`.
+**Status**: Fixed; covered by control-application tests.
 
 ### 2.6 `ret = mix(main, tex2d(sampler_main, uv).rgb * 2.0, 0.5)` — non-trivial second argument
 
 **What it should do**: Mix main sample with a scaled version of itself.  
-**What actually happens**: The mix handler at `shader-analysis.ts:513-529` dispatches through `getShaderSampleInfo(targetNode)` then `extractShaderInvertedSampleExpression`. Since the target is not an aux sample, not an inverted sample, not a solarize pattern, and not a vec3 tint, all branches return false. No controls are extracted. Current compiler output preserves the raw GLSL and marks raw-only direct programs as requiring control fallback rather than treating the unlowered shader body as backend-supported.
+**Current behavior**: A scaled main sample is lowered to `1 + (scalar - 1) * amount` per color channel. The raw direct program remains available because the control lowering is an approximation for fallback execution.
 **Corpus presets affected**: None.  
-**Estimated fix effort**: Medium — would require expanding the AST analysis to recognize `main * scalar` as a brightness adjustment in mix context.
+**Status**: Fixed for scalar-scaled main samples; arbitrary vector/function expressions remain direct-program-only.
 
-### 2.7 No warning for tex3D on non-volume sampler in GLSL path
+### 2.7 Volume texture classification and browser approximation
 
-**What it should do**: Warn when `tex3D(sampler_noise, ...)` is used but the GLSL backend lacks a volume atlas for `noise`.  
-**What actually happens**: `buildUnsupportedVolumeSamplerWarnings` at `shader-analysis-helpers.ts:641-671` only warns when a sampler is NOT in `MILKDROP_VOLUME_SHADER_TEXTURE_SAMPLERS`. Currently ALL aux samplers are in the volume set (`shader-samplers.ts:19-30`), so no warning fires. But the GLSL `emitTextureSample` at `shader-analysis-glsl.ts:393-399` treats `sampleDim` as `'1.0'` for 3D samples, regardless of sampler type, which sends all 3D aux samples through the same `sampleAuxTexture` path. If the runtime only provides a 2D texture for `noise`, the 3D lookup may read garbage.  
-**Estimated fix effort**: Low — add a comment noting the assumption, or expand the warning system when backends cannot honor the dimension.
+Bundled aux samplers are recognized as volume sources and routed to native WebGPU 3D textures or the WebGL atlas fallback. The atlas preserves bounded sampling semantics but is not a native projectM volume texture. The certification and catalog layers therefore keep this path measurable but do not promote it to exact without visual evidence.
+**Status**: Semantic support is fixed; pixel equivalence remains an evidence gap by design.
 
 ### 2.8 `uv = uv * vec2(sx, sy)` — non-uniform scale not extracted as control
 
@@ -197,17 +199,17 @@ Below are constructs that parse successfully (produce a `MilkdropShaderStatement
 **Corpus presets affected**: Any preset using non-uniform UV scale in direct shader programs.  
 **Estimated fix effort**: Medium — requires adding `scaleX`/`scaleY` to `MilkdropShaderControls` or accepting that these are direct-program-only.
 
-### 2.9 `texture_offset = scalar` (non-vec2) silently fails
+### 2.9 `texture_offset = scalar` (non-vec2) — fixed scalar splat
 
 **What it should do**: Allow a single scalar offset applied uniformly to both axes.  
-**What actually happens**: The handler at `shader-analysis.ts:297-319` only accepts `vec2Result`. A scalar expression yields `null` from `evaluateShaderVectorResult`, causing the handler to return false and the line to go unsupported.  
-**Estimated fix effort**: Low — add scalar splat fallback.
+**Current behavior**: Scalar offsets and scales are applied uniformly to X and Y in both AST and heuristic control paths. Focused tests cover the scalar vector transform contract.
+**Status**: Fixed.
 
-### 2.10 `bassAtt` / `midAtt` / `trebleAtt` in GLSL emitter — missing signal mappings
+### 2.10 `bassAtt` / `midAtt` / `trebleAtt` in GLSL emitter — fixed aliases
 
 **What it should do**: These camelCase aliases (from MilkDrop2) should map to the same signal uniforms as `bass_att`, `mid_att`, `treb_att`.  
-**What actually happens**: In the GLSL emitter at `shader-analysis-glsl.ts:70-125`, `bassAtt`, `midAtt`, `trebleAtt` are NOT in the `uniformMap`. They would pass through as bare identifiers, which would fail to compile in the composite shader. The WGSL generator includes them in `VmSignals` at `wgsl-generator.ts:201-204` (correct).  
-**Estimated fix effort**: Low — add the three mappings to `uniformMap`.
+**Current behavior**: The normalized GLSL identifier map routes `bassAtt`, `midAtt`, and `trebleAtt` to the corresponding signal uniforms. Focused shader-emitter tests cover these aliases with exponent and bitwise expressions.
+**Status**: Fixed.
 
 ---
 
@@ -232,11 +234,9 @@ Every location where semantic analysis reports `supported: true` or `shaderTextE
 **File**: `shader-analysis.ts:714-1082`  
 **What happens**: `applyShaderProgramHeuristicLine` is only called when `parseMilkdropShaderStatement` fails (line 1209 fallback). But `return <value>` IS parsed by `parseMilkdropShaderStatement` (`shader-ast.ts:414-432`). If `return <value>` enters the AST path at `applyShaderAstStatement` and the target is `return`, the `shouldEmitDirectProgramStatement('return')` returns `true` at `shader-analysis-direct-program.ts:230`. The direct program is emitted. But if the return value is a complex expression that can't be extracted, no controls are captured. The fallback controls-mode execution shows identity.
 
-### 3.4 `^` operator silently wrong in GLSL
+### 3.4 Direct programs remain backend-gated
 
-**File**: `shader-analysis-glsl.ts:136-143`  
-**What happens**: As described in §2.1. The direct program GLSL will contain `(a ^ b)`, which in GLSL is bitwise XOR on integers, not power. If `a` and `b` are floats, this is undefined behavior. The shader may fail to compile (producing a black screen) or produce wrong colors. No warning is emitted.  
-**Backend divergence**: WebGPU correct (pow), WebGL wrong (XOR).
+**What happens**: Direct shader programs are only passed to a backend when their execution classification says that backend can run them. Unsupported or unmeasured patterns retain the raw source and an explicit controls-fallback requirement instead of being silently advertised as exact. Native WebGPU feedback remains disabled until composite parity is measured.
 
 ### 3.5 Poly-filled `||` and `&&` produce different precision than MilkDrop VM
 
@@ -244,10 +244,10 @@ Every location where semantic analysis reports `supported: true` or `shaderTextE
 **What happens**: MilkDrop's VM uses `*` for AND and `+` for OR with no clipping, but the runtime clamps values at 0 and 1. The GLSL emitter uses `a + b - a * b` for saturating OR and `*` for AND. The WGSL generator uses `select(0.0f, 1.0f, a > eps && b > eps)`. These produce results that differ at the margin (e.g., `0.7 || 0.7` → MilkDrop: `0.7 + 0.7 = 1.4` clamped, GLSL: `0.7 + 0.7 - 0.49 = 0.91`).  
 **Impact**: Minor visual difference in presets using heavy boolean logic.
 
-### 3.6 GLSL emitter drops `^`, `|`, `&` with no warning
+### 3.6 GLSL emitter regression contract
 
-**File**: `shader-analysis-glsl.ts:137`  
-**What happens**: These operators pass through the `emitBinary` fallback `(${left} ${glslOp} ${right})` unchanged. If the composite shader has these in a direct-program block, the GPU shader compiler may reject them or produce wrong results. No compile-time warning is emitted by the Stims compiler.
+**File**: `shader-analysis-glsl.ts:136-155`
+**What happens**: `^`, `|`, and `&` have explicit GLSL lowering and focused tests. Keep this section as a regression contract because these operators are common sources of backend divergence when new expression forms are added.
 
 ---
 
@@ -255,33 +255,12 @@ Every location where semantic analysis reports `supported: true` or `shaderTextE
 
 Ranked by impact: how many certification-corpus and real-world presets would move from "semantic-only supported" or "controls-fallback" to "fully measured exact".
 
-### Priority 1: `^` operator GLSL → pow mapping
-- **Impact**: Fixes every preset using `a ^ b` for exponentiation in direct shader programs. This is the most common MilkDrop operator divergence.
-- **Estimated effort**: Low
-- **Files touched**: `shader-analysis-glsl.ts:136-143` (add `'^': 'pow'` handling in `emitBinary`)
-- **Corpus preset that would benefit**: None currently in certification corpus, but observed in real-world user presets. Any preset using `^` in `ret=` or `shader_body=` expressions.
+### Current priority order
 
-### Priority 2: UV transform extraction into controls
-- **Impact**: Many presets use `uv * vec2(sx, sy)` or `uv * factor` in warp shaders. Without extracting these to zoom/scale controls, the controls-fallback path loses the transform. Fixing this makes more presets truly "controls-portable" rather than "direct-program-only".
-- **Estimated effort**: Medium
-- **Files touched**: `shader-control-application.ts` (add per-axis scale fields), `shader-analysis-helpers.ts:949-1113` (extend `analyzeShaderUvTransform`)
-- **Corpus presets that would benefit**: Any warp shader with `uv *= scale` or `uv = uv * vec2(sx, sy)`. Especially real-world presets with non-uniform zoom.
-
-### Priority 3: `bassAtt` / `midAtt` / `trebleAtt` GLSL signal mappings
-- **Impact**: Prevents GLSL compile failure for presets using MilkDrop2 camelCase signal aliases. These presets currently break silently on WebGL while working on WebGPU.
-- **Estimated effort**: Low
-- **Files touched**: `shader-analysis-glsl.ts:70-125` (add three entries to `uniformMap`)
-- **Corpus preset that would benefit**: Any preset ported from MilkDrop2 that uses these aliases. No current corpus preset uses them, but they're in the WGSL signal struct so they ARE parsed and reachable.
-
-### Remaining items, in order
-
-4. **`ret = main - aux * amount` operator** — Low effort, extends subtract mode.
-5. **`texture_source = sampler_main`** — Low effort, resets overlay.
-6. **`|` and `&` operator GLSL compatibility** — Medium effort, lower priority (rarely used).
-7. **`texture_offset = scalar`** — Low effort, adds splat.
-8. **Non-main-first mix detection** — Low effort, ordering flexibility.
-9. **GLSL precision divergence for `||`** — Low effort (document), the saturating formula works well enough.
-10. **Add `scaleX`/`scaleY` to controls** — Medium effort, enables UV scale extraction.
+1. Native WebGPU capture availability and direct feedback certification.
+2. Feedback/video-echo pass ordering and rasterization drift against checked-in projectM references.
+3. Volume-texture visual measurement, with the WebGL atlas path explicitly treated as approximate.
+4. Broader shader-heavy and shape-heavy corpus coverage.
 
 ---
 
@@ -290,10 +269,10 @@ Ranked by impact: how many certification-corpus and real-world presets would mov
 | Category | Count |
 |---|---|
 | Fully supported patterns | ~50 (covering all control keys, all math functions, all sampler call variants, AST and heuristic paths) |
-| Unsupported/partial patterns | 10 |
-| Silent fallback locations | 6 |
+| Unsupported/partial patterns | 3 |
+| Silent fallback locations | 5 |
 
 **Top 3 by impact**:
-1. `^` operator GLSL divergence — fixes exponentiation
-2. UV transform extraction — fixes controls-fallback fidelity
-3. `bassAtt`/`midAtt`/`trebleAtt` GLSL mappings — prevents silent GLSL compile failure
+1. Native WebGPU feedback and capture certification
+2. Feedback/rasterization visual drift
+3. Volume-texture equivalence and measured sampler coverage

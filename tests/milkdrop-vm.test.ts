@@ -16,11 +16,13 @@ function makeSignals({
   beatPulse = 0.1,
   frequencyValue = 160,
   time = frame / 60,
+  aspect = 1,
 }: {
   frame?: number;
   beatPulse?: number;
   frequencyValue?: number;
   time?: number;
+  aspect?: number;
 } = {}): MilkdropRuntimeSignals {
   const frequencyData = new Uint8Array(64);
   frequencyData.fill(frequencyValue);
@@ -39,6 +41,7 @@ function makeSignals({
     deltaMs: 16.67,
     frame,
     fps: 60,
+    aspect,
     bass: 0.7,
     mid: 0.5,
     mids: 0.5,
@@ -199,6 +202,35 @@ per_frame_1=q1=q1+1;
 
     expect(frameState.variables.q1).toBeCloseTo(1, 6);
     expect(snapshotCalls).toBe(1);
+  });
+
+  test('supports typed-array megabuf reads and writes across frames', () => {
+    const preset = compileMilkdropPresetSource(`
+[preset00]
+title=megabuf
+per_frame_1=megabuf(4)=megabuf(4)+bass
+per_frame_2=q1=megabuf(4)
+`);
+    const vm = createMilkdropVM(preset);
+    const first = vm.step(makeSignals({ frame: 1 }));
+
+    expect(first.variables.q1).toBeGreaterThan(0);
+    expect(
+      vm.step(makeSignals({ frame: 2 })).variables.q1,
+    ).toBeGreaterThanOrEqual(first.variables.q1);
+  });
+
+  test('exposes the live viewport aspect to VM equations', () => {
+    const preset = compileMilkdropPresetSource(`
+[preset00]
+title=aspect
+per_frame_1=q1=aspect
+`);
+    const vm = createMilkdropVM(preset);
+
+    expect(
+      vm.step(makeSignals({ frame: 1, aspect: 16 / 9 })).variables.q1,
+    ).toBeCloseTo(16 / 9, 6);
   });
 
   test('generates parity-oriented frame state with custom waves, shapes, borders, and post state', () => {

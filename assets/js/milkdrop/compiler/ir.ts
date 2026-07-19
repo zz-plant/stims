@@ -149,7 +149,10 @@ type FieldAssemblyHelpers = {
 };
 
 type ShaderAssemblyHelpers = {
-  extractShaderControls: (shaderText: string | null) => ShaderControlAnalysis;
+  extractShaderControls: (
+    shaderText: string | null,
+    env?: Record<string, number>,
+  ) => ShaderControlAnalysis;
   mergeShaderControlAnalysis: (
     warpAnalysis: ShaderControlAnalysis,
     compAnalysis: ShaderControlAnalysis,
@@ -169,6 +172,7 @@ type ShaderAssemblyHelpers = {
   buildUnsupportedVolumeSamplerWarnings: (
     controls: MilkdropShaderControls,
   ) => string[];
+  usesVolumeTextureControls: (controls: MilkdropShaderControls) => boolean;
 };
 
 type CompatibilityAssemblyHelpers = {
@@ -226,6 +230,7 @@ export function createMilkdropIr({
   ast,
   diagnostics,
   source = {},
+  aspect,
   defaultState,
   metadataKeys,
   shaderFieldPattern,
@@ -246,6 +251,7 @@ export function createMilkdropIr({
   ast: MilkdropPresetAST;
   diagnostics: MilkdropDiagnostic[];
   source?: Partial<MilkdropPresetSource>;
+  aspect?: number;
   defaultState: Record<string, number>;
   metadataKeys: Set<string>;
   shaderFieldPattern: RegExp;
@@ -545,10 +551,17 @@ export function createMilkdropIr({
   const customShapes = [...customShapeMap.values()].sort(
     (left, right) => left.index - right.index,
   );
-  const shaderWarpAnalysis =
-    shaderHelpers.extractShaderControls(warpShaderText);
-  const shaderCompAnalysis =
-    shaderHelpers.extractShaderControls(compShaderText);
+  const shaderEnv = Number.isFinite(aspect)
+    ? { aspect: aspect as number }
+    : undefined;
+  const shaderWarpAnalysis = shaderHelpers.extractShaderControls(
+    warpShaderText,
+    shaderEnv,
+  );
+  const shaderCompAnalysis = shaderHelpers.extractShaderControls(
+    compShaderText,
+    shaderEnv,
+  );
   const mergedShaderControls = shaderHelpers.mergeShaderControlAnalysis(
     shaderWarpAnalysis,
     shaderCompAnalysis,
@@ -701,7 +714,9 @@ export function createMilkdropIr({
     customWaves,
     customShapes,
     numericFields: runtimeGlobals,
-    volumeTexturesUsed: unsupportedVolumeSamplerWarnings.length > 0,
+    volumeTexturesUsed: shaderHelpers.usesVolumeTextureControls(
+      mergedShaderControls.controls,
+    ),
     unsupportedShaderText,
     supportedShaderText,
     shaderTextExecution,

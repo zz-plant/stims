@@ -4,8 +4,12 @@ import {
   compileProgramToWgsl,
   type WgslProgramCompilation,
 } from './compiler/wgsl-generator';
-import type { MilkdropProgramBlock, MilkdropRuntimeSignals } from './types';
+import type { MilkdropProgramBlock } from './types';
 import { createVmBufferManager } from './vm/buffer-manager';
+import {
+  MILKDROP_WGSL_SIGNAL_FIELDS,
+  type MilkdropGpuVmSignals,
+} from './wgsl-signal-layout.ts';
 
 export type GpuVmResult = {
   state: Record<string, number>;
@@ -75,85 +79,51 @@ function getOrCreatePipeline(
   return pipeline;
 }
 
-const SIGNAL_FIELD_LIST = [
-  'time',
-  'frame',
-  'fps',
-  'bass',
-  'mid',
-  'mids',
-  'treb',
-  'treble',
-  'bass_att',
-  'mid_att',
-  'mids_att',
-  'treb_att',
-  'treble_att',
-  'bassAtt',
-  'midAtt',
-  'midsAtt',
-  'trebleAtt',
-  'beat',
-  'beat_pulse',
-  'beatPulse',
-  'beat_bass',
-  'beat_mid',
-  'beat_treb',
-  'beatBass',
-  'beatMid',
-  'beatTreble',
-  'bandFlux',
-  'rms',
-  'vol',
-  'music',
-  'weighted_energy',
-  'progress',
-] as const;
-
-const SIGNAL_BUFFER_SIZE_BYTES = SIGNAL_FIELD_LIST.length * 4;
+const SIGNAL_BUFFER_SIZE_BYTES = MILKDROP_WGSL_SIGNAL_FIELDS.length * 4;
 
 function buildSignalBuffer(
   device: GPUDevice,
-  signals: Pick<MilkdropRuntimeSignals, 'time' | 'frame' | 'fps'> &
-    Partial<Omit<MilkdropRuntimeSignals, 'time' | 'frame' | 'fps'>>,
+  signals: MilkdropGpuVmSignals,
 ): GPUBuffer {
-  const data = new Float32Array(SIGNAL_FIELD_LIST.length);
-  const signalMap = new Map<string, number>();
-  signalMap.set('time', signals.time);
-  signalMap.set('frame', signals.frame);
-  signalMap.set('fps', signals.fps);
-  signalMap.set('bass', signals.bass ?? 0);
-  signalMap.set('mid', signals.mid ?? 0);
-  signalMap.set('mids', signals.mids ?? 0);
-  signalMap.set('treb', signals.treb ?? 0);
-  signalMap.set('treble', signals.treble ?? 0);
-  signalMap.set('bass_att', signals.bass_att ?? 0);
-  signalMap.set('mid_att', signals.mid_att ?? 0);
-  signalMap.set('mids_att', signals.mids_att ?? 0);
-  signalMap.set('treb_att', signals.treb_att ?? 0);
-  signalMap.set('treble_att', signals.treble_att ?? 0);
-  signalMap.set('bassAtt', signals.bassAtt ?? 0);
-  signalMap.set('midAtt', signals.midAtt ?? 0);
-  signalMap.set('midsAtt', signals.midsAtt ?? 0);
-  signalMap.set('trebleAtt', signals.trebleAtt ?? 0);
-  signalMap.set('beat', signals.beat ?? 0);
-  signalMap.set('beat_pulse', signals.beat_pulse ?? 0);
-  signalMap.set('beatPulse', signals.beatPulse ?? 0);
-  signalMap.set('beat_bass', signals.beatBass ?? 0);
-  signalMap.set('beat_mid', signals.beatMid ?? 0);
-  signalMap.set('beat_treb', signals.beatTreble ?? 0);
-  signalMap.set('beatBass', signals.beatBass ?? 0);
-  signalMap.set('beatMid', signals.beatMid ?? 0);
-  signalMap.set('beatTreble', signals.beatTreble ?? 0);
-  signalMap.set('bandFlux', signals.bandFlux ?? 0);
-  signalMap.set('rms', signals.rms ?? 0);
-  signalMap.set('vol', signals.vol ?? 0);
-  signalMap.set('music', signals.music ?? 0);
-  signalMap.set('weighted_energy', signals.weightedEnergy ?? 0);
-  signalMap.set('progress', signals.frame);
+  const data = new Float32Array(MILKDROP_WGSL_SIGNAL_FIELDS.length);
+  const signalMap: Record<string, number> = {
+    time: signals.time,
+    frame: signals.frame,
+    fps: signals.fps,
+    aspect: signals.aspect ?? 1,
+    bass: signals.bass ?? 0,
+    mid: signals.mid ?? 0,
+    mids: signals.mids ?? 0,
+    treb: signals.treb ?? 0,
+    treble: signals.treble ?? 0,
+    bass_att: signals.bass_att ?? 0,
+    mid_att: signals.mid_att ?? 0,
+    mids_att: signals.mids_att ?? 0,
+    treb_att: signals.treb_att ?? 0,
+    treble_att: signals.treble_att ?? 0,
+    bassAtt: signals.bassAtt ?? 0,
+    midAtt: signals.midAtt ?? 0,
+    midsAtt: signals.midsAtt ?? 0,
+    trebleAtt: signals.trebleAtt ?? 0,
+    beat: signals.beat ?? 0,
+    beat_pulse: signals.beat_pulse ?? 0,
+    beatPulse: signals.beatPulse ?? 0,
+    beat_bass: signals.beat_bass ?? 0,
+    beat_mid: signals.beat_mid ?? 0,
+    beat_treb: signals.beat_treb ?? 0,
+    beatBass: signals.beatBass ?? 0,
+    beatMid: signals.beatMid ?? 0,
+    beatTreble: signals.beatTreble ?? 0,
+    bandFlux: signals.bandFlux ?? 0,
+    rms: signals.rms ?? 0,
+    vol: signals.vol ?? 0,
+    music: signals.music ?? 0,
+    weighted_energy: signals.weightedEnergy ?? 0,
+    progress: signals.frame,
+  };
 
-  for (let i = 0; i < SIGNAL_FIELD_LIST.length; i++) {
-    data[i] = signalMap.get(SIGNAL_FIELD_LIST[i]) ?? 0;
+  for (let i = 0; i < MILKDROP_WGSL_SIGNAL_FIELDS.length; i++) {
+    data[i] = signalMap[MILKDROP_WGSL_SIGNAL_FIELDS[i]] ?? 0;
   }
 
   const buffer = device.createBuffer({
@@ -225,10 +195,7 @@ export function createGpuVmRunner() {
     });
   }
 
-  async function dispatch(
-    signals: Pick<MilkdropRuntimeSignals, 'time' | 'frame' | 'fps'> &
-      Partial<Omit<MilkdropRuntimeSignals, 'time' | 'frame' | 'fps'>>,
-  ): Promise<GpuVmResult> {
+  async function dispatch(signals: MilkdropGpuVmSignals): Promise<GpuVmResult> {
     if (
       !device ||
       !pipeline ||

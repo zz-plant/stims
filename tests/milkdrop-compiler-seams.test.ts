@@ -379,5 +379,21 @@ describe('milkdrop compiler seams', () => {
         },
       },
     ]);
+
+    const aspectProgram = lowerGpuFieldProgram({
+      statements: [
+        {
+          target: 'zoom',
+          expression: { type: 'identifier', name: 'aspect' },
+          line: 1,
+          source: 'zoom = aspect',
+        },
+      ],
+      sourceLines: ['zoom = aspect'],
+    });
+    expect(aspectProgram?.statements[0]?.expression).toEqual({
+      type: 'identifier',
+      name: 'aspect',
+    });
   });
 });

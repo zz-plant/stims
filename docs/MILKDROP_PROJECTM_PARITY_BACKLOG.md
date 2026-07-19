@@ -20,7 +20,7 @@ to:
 ## Current status snapshot
 
 Completed foundation:
-- Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, measured-result promotion, and honest fidelity labeling are all wired.
+- Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, native projectM reference promotion, measured-result promotion, backend-aware diffing, and honest fidelity labeling are all wired.
 
 Bundled shipped preset lane:
 - The four shipped bundled IDs in `public/milkdrop-presets/catalog.json` are the first corpus to push through reference import and measured-result promotion:
@@ -28,14 +28,14 @@ Bundled shipped preset lane:
   - `rovastar-parallel-universe`
   - `eos-phat-cubetrace-v2`
   - `krash-rovastar-cerebral-demons-stars`
-- Each of those presets should move through the same sequence:
+  - Each of those presets has now moved through the reference-import and native-promotion sequence:
   - capture a Stims artifact,
   - import the matching `projectM` reference,
   - promote the reference into `tests/fixtures/milkdrop/projectm-reference/`,
   - run `bun run parity:suite`,
   - promote the suite result into `assets/data/milkdrop-parity/measured-results.json`,
   - sync `public/milkdrop-presets/catalog.json`.
-- Do not treat any of the four as measured or certified in prose until both the checked-in reference and the measured suite report exist for that preset id.
+  - The current report intentionally classifies one as WebGL-only and three as uncertified because the latest captures do not pass the required native WebGPU lane. They must not be described as WebGPU-certified.
 
 Completed parity slices:
 - Milestone 4 has partial completion: feedback blur/boost alignment, explicit separation of video-echo state from generic comp-shader mixing, and removal of stale blanket WebGPU fallback cases are in place.
@@ -52,7 +52,7 @@ Primary remaining roadmap:
 ## Milestone 0: tooling baseline
 
 Status:
-- In progress
+- Completed
 
 Goal:
 - Make parity artifacts deterministic, importable, and diffable.
@@ -73,7 +73,14 @@ Exit criteria:
 - A contributor can capture, import, and diff a preset with documented commands only.
 - The output directory always contains a machine-readable manifest.
 
+Evidence:
+- Full corpus manifest and checked-in reference validation pass in `bun run check:all`.
+- Native projectM 3.1.12 references are provenance-checked in `tests/fixtures/milkdrop/projectm-reference/`.
+
 ## Milestone 1: certified visual corpus
+
+Status:
+- Completed for the current bounded corpus; visual coverage remains intentionally incomplete.
 
 Goal:
 - Replace ad hoc visual inspection with a small, versioned, certified preset/reference corpus.
@@ -111,6 +118,9 @@ Acceptance criteria:
 
 ## Milestone 2: visual diff gate
 
+Status:
+- Completed
+
 Goal:
 - Make visual parity an automated test target instead of a manual audit.
 
@@ -136,6 +146,9 @@ Acceptance criteria:
 - CI can fail on visual regressions for certified presets.
 
 ## Milestone 3: honest fidelity classification
+
+Status:
+- Completed
 
 Goal:
 - Stop inferring fidelity from compiler optimism and make measured visual results authoritative.
@@ -280,7 +293,13 @@ Acceptance criteria:
 ## Milestone 8: WebGPU re-certification
 
 Status:
-- Not started
+- In progress
+
+Current evidence:
+- The comparator requires native WebGPU captures and records backend mismatches instead of accepting fallback WebGL captures.
+- Current report: 2 presets certified on both backends, 1 WebGL-only, 6 uncertified, 14 unmeasured, and 0 missing native WebGPU captures. The volume fixtures are now captured natively but fail visual tolerance.
+- Native WebGPU direct feedback remains disabled for live sessions and is enabled only in the explicit `renderer=webgpu&corpus=certification` lane, pending measured ShaderMaterial/TSL composite equivalence for broader use.
+- Built-in `noise_lq` and `noisevol_lq` now use deterministic RGBA noise sources for browser parity; strict pixel comparison remains intentionally non-certifying because native projectM seeds these textures independently per process.
 
 Goal:
 - Prevent WebGPU from claiming parity before it has earned it.

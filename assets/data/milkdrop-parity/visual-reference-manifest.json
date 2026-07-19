@@ -3,7 +3,7 @@
   "parityTarget": "projectm-visual-reference",
   "fixtureRoot": "tests/fixtures/milkdrop/projectm-reference",
   "minimumPresetCount": 4,
-  "presetCount": 47,
+  "presetCount": 48,
   "defaults": {
     "renderer": "projectm",
     "requiredBackend": "webgpu",
@@ -46,9 +46,9 @@
       "id": "250-wavecode",
       "title": "250 Wavecode",
       "image": "250-wavecode.png",
-      "metadata": null,
+      "metadata": "250-wavecode.meta.json",
       "sourceFamily": "projectm-fixture",
-      "strata": ["projectm-upstream", "wavecode", "regression"],
+      "strata": ["wavecode", "geometry"],
       "tolerance": {
         "profile": "default",
         "threshold": 16,
@@ -57,14 +57,14 @@
       "capture": {
         "renderer": "projectm",
         "requiredBackend": "webgpu",
-        "width": 2550,
-        "height": 1794,
+        "width": 1280,
+        "height": 720,
         "warmupMs": 5000,
         "captureOffsetMs": 0
       },
       "provenance": {
-        "label": "checked-in output/playwright projectM capture",
-        "importedAt": "2026-03-30T22:20:51.323Z",
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:33:40.755Z",
         "sourceArtifactId": null
       }
     },
@@ -72,9 +72,9 @@
       "id": "260-compshader-noise_lq",
       "title": "260 Compshader Noise LQ",
       "image": "260-compshader-noise_lq.png",
-      "metadata": null,
+      "metadata": "260-compshader-noise_lq.meta.json",
       "sourceFamily": "projectm-fixture",
-      "strata": ["projectm-upstream", "comp-shader", "noise-texture"],
+      "strata": ["shader-supported", "texture"],
       "tolerance": {
         "profile": "default",
         "threshold": 16,
@@ -83,14 +83,40 @@
       "capture": {
         "renderer": "projectm",
         "requiredBackend": "webgpu",
-        "width": 2550,
-        "height": 1794,
+        "width": 1280,
+        "height": 720,
         "warmupMs": 5000,
         "captureOffsetMs": 0
       },
       "provenance": {
-        "label": "checked-in output/playwright projectM capture",
-        "importedAt": "2026-03-30T22:20:51.349Z",
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:33:40.909Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "261-compshader-noisevol_lq",
+      "title": "261 Compshader Noisevol LQ",
+      "image": "261-compshader-noisevol_lq.png",
+      "metadata": "261-compshader-noisevol_lq.meta.json",
+      "sourceFamily": "projectm-fixture",
+      "strata": ["shader-supported", "volume-textures"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:47:58.911Z",
         "sourceArtifactId": null
       }
     },
@@ -332,25 +358,25 @@
       "id": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
       "image": "eos-glowsticks-v2-03-music.png",
-      "metadata": null,
+      "metadata": "eos-glowsticks-v2-03-music.meta.json",
       "sourceFamily": "bundled",
-      "strata": ["bundled", "cream-of-the-crop"],
+      "strata": ["waveform", "glowsticks", "feedback"],
       "tolerance": {
         "profile": "loose",
         "threshold": 32,
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
         "captureOffsetMs": 0
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:48.773Z",
         "sourceArtifactId": null
       }
     },
@@ -436,25 +462,25 @@
       "id": "eos-phat-cubetrace-v2",
       "title": "Eo.S. + Phat - Cubetrace v2",
       "image": "eos-phat-cubetrace-v2.png",
-      "metadata": null,
+      "metadata": "eos-phat-cubetrace-v2.meta.json",
       "sourceFamily": "bundled",
-      "strata": ["bundled", "cream-of-the-crop"],
+      "strata": ["geometry", "shape", "feedback"],
       "tolerance": {
         "profile": "loose",
         "threshold": 32,
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
         "captureOffsetMs": 0
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:58.712Z",
         "sourceArtifactId": null
       }
     },
@@ -748,25 +774,25 @@
       "id": "krash-rovastar-cerebral-demons-stars",
       "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
       "image": "krash-rovastar-cerebral-demons-stars.png",
-      "metadata": null,
+      "metadata": "krash-rovastar-cerebral-demons-stars.meta.json",
       "sourceFamily": "bundled",
-      "strata": ["bundled", "cream-of-the-crop"],
+      "strata": ["feedback", "comet", "motion"],
       "tolerance": {
         "profile": "loose",
         "threshold": 32,
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
         "captureOffsetMs": 0
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:58.857Z",
         "sourceArtifactId": null
       }
     },
@@ -1086,25 +1112,25 @@
       "id": "rovastar-parallel-universe",
       "title": "Rovastar - Parallel Universe",
       "image": "rovastar-parallel-universe.png",
-      "metadata": null,
+      "metadata": "rovastar-parallel-universe.meta.json",
       "sourceFamily": "bundled",
-      "strata": ["bundled", "cream-of-the-crop"],
+      "strata": ["feedback", "laser", "shader-supported"],
       "tolerance": {
         "profile": "loose",
         "threshold": 32,
         "failThreshold": 0.05
       },
       "capture": {
-        "renderer": "stims",
-        "requiredBackend": "webgl",
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
         "width": 1280,
         "height": 720,
         "warmupMs": 3000,
         "captureOffsetMs": 0
       },
       "provenance": {
-        "label": "checked-in Stims reference capture",
-        "importedAt": "unknown",
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:58.560Z",
         "sourceArtifactId": null
       }
     },

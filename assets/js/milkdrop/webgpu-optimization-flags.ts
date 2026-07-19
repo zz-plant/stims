@@ -146,6 +146,26 @@ export function resolveMilkdropWebGpuOptimizationFlags({
         : (searchValue ?? storageValue ?? resolved[flagName]);
   }
 
+  const params = new URLSearchParams(location?.search ?? '');
+  const isCertificationWebGpuSession =
+    params.get('renderer')?.trim().toLowerCase() === 'webgpu' &&
+    params.get('corpus')?.trim().toLowerCase() === 'certification';
+  const hasExplicitFallbackOverride =
+    getSearchFlag(
+      location,
+      MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS.descriptorFallbackToWebgl,
+    ) !== null ||
+    getStorageFlag(
+      storage,
+      MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS.descriptorFallbackToWebgl,
+    ) !== null ||
+    typeof overrides.descriptorFallbackToWebgl === 'boolean';
+  if (isCertificationWebGpuSession && !hasExplicitFallbackOverride) {
+    // Certification captures must exercise the requested native backend. The
+    // normal live-session fallback remains the default everywhere else.
+    resolved.descriptorFallbackToWebgl = false;
+  }
+
   return resolved;
 }
 

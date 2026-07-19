@@ -397,6 +397,7 @@ export function syncProceduralCustomWaveObject(
     wave.sampleCount ?? wave.samples.length;
   material.uniforms.signalFrame.value = wave.signals?.frame ?? 0;
   material.uniforms.signalFps.value = wave.signals?.fps ?? 60;
+  material.uniforms.signalAspect.value = wave.signals?.aspect ?? 1;
   material.uniforms.signalBass.value = wave.signals?.bass ?? 0;
   material.uniforms.signalMid.value = wave.signals?.mid ?? 0;
   material.uniforms.signalMids.value = wave.signals?.mids ?? 0;
@@ -414,6 +415,7 @@ export function syncProceduralCustomWaveObject(
     wave.signals?.weightedEnergy ?? 0;
   material.uniforms.previousSignalFrame.value = wave.signals?.frame ?? 0;
   material.uniforms.previousSignalFps.value = wave.signals?.fps ?? 60;
+  material.uniforms.previousSignalAspect.value = wave.signals?.aspect ?? 1;
   material.uniforms.previousSignalBass.value = wave.signals?.bass ?? 0;
   material.uniforms.previousSignalMid.value = wave.signals?.mid ?? 0;
   material.uniforms.previousSignalMids.value = wave.signals?.mids ?? 0;

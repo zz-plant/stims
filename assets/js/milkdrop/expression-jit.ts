@@ -1,7 +1,11 @@
 import type { MilkdropExpressionNode } from './common-types.ts';
 import { aliasMap } from './field-normalization.ts';
 
-type JitFn = (env: Record<string, number>, r: () => number) => number;
+type JitFn = (
+  env: Record<string, number>,
+  r: () => number,
+  megabuf: (index: number) => number,
+) => number;
 type CachedExpressionNode = MilkdropExpressionNode & { compiledFn?: JitFn };
 
 function compileNode(node: MilkdropExpressionNode): string {
@@ -144,6 +148,8 @@ function compileNode(node: MilkdropExpressionNode): string {
           return `((${args[0] ?? '0'}) === (${args[1] ?? '0'}) ? 1 : 0)`;
         case 'rand':
           return `(r() * (${args[0] ?? '1'}))`;
+        case 'megabuf':
+          return `megabuf(${args[0] ?? '0'})`;
       }
       return '(0)';
     }
@@ -156,6 +162,7 @@ export function evaluateJit(
   node: MilkdropExpressionNode,
   env: Record<string, number>,
   nextRandom?: () => number,
+  megabuf: (index: number) => number = () => 0,
 ): number {
   const cacheableNode = node as CachedExpressionNode;
   let fn = cacheableNode.compiledFn;
@@ -167,6 +174,7 @@ export function evaluateJit(
       fn = new Function(
         'e',
         'r',
+        'megabuf',
         `"use strict";return (${body});`,
       ) as unknown as JitFn;
       rawCache.set(key, fn);
@@ -177,7 +185,7 @@ export function evaluateJit(
       // Safe fallback if node is frozen
     }
   }
-  return fn(env, nextRandom ?? (() => Math.random()));
+  return fn(env, nextRandom ?? (() => Math.random()), megabuf);
 }
 
 export function clearExpressionCache() {

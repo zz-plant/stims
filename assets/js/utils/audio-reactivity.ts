@@ -44,18 +44,28 @@ function resolveBandIndexes(
   dataLength: number,
   sampleRate: number,
   range: FrequencyBandRange,
+  fftSize: number,
 ) {
   if (dataLength <= 0 || sampleRate <= 0) {
     return { start: 0, end: 0 };
   }
 
-  const fftSize = dataLength * 2;
   const resolutionHz = sampleRate / fftSize;
   const nyquistHz = sampleRate / 2;
   const minHz = clamp(range.minHz, 0, nyquistHz);
   const maxHz = clamp(Math.max(minHz, range.maxHz), 0, nyquistHz);
-  const start = clamp(Math.floor(minHz / resolutionHz), 0, dataLength - 1);
-  const end = clamp(Math.ceil(maxHz / resolutionHz), start + 1, dataLength);
+  const startCandidate = Math.ceil(minHz / resolutionHz);
+  const endCandidate = Math.ceil(maxHz / resolutionHz);
+  if (endCandidate <= startCandidate) {
+    const representative = clamp(
+      Math.floor(((minHz + maxHz) * 0.5) / resolutionHz),
+      0,
+      dataLength - 1,
+    );
+    return { start: representative, end: representative + 1 };
+  }
+  const start = clamp(startCandidate, 0, dataLength - 1);
+  const end = clamp(endCandidate, start + 1, dataLength);
 
   return { start, end };
 }
@@ -65,10 +75,16 @@ function getBandAverageForRange(
   sampleRate: number,
   range: FrequencyBandRange,
   band: keyof FrequencyBandRanges,
+  fftSize: number,
 ): number {
   if (data.length === 0) return 0;
 
-  const { start, end } = resolveBandIndexes(data.length, sampleRate, range);
+  const { start, end } = resolveBandIndexes(
+    data.length,
+    sampleRate,
+    range,
+    fftSize,
+  );
   if (end <= start) return 0;
 
   let sum = 0;
@@ -94,17 +110,39 @@ export function getFrequencyBandLevels(
   data: Uint8Array,
   sampleRate = 44100,
   bandRanges: FrequencyBandRanges = DEFAULT_FREQUENCY_BAND_RANGES,
+  fftSize = data.length * 2,
 ): BandLevels {
   if (data.length === 0) {
     return { bass: 0, mid: 0, treble: 0 };
   }
 
+  const resolvedFftSize =
+    Number.isFinite(fftSize) && fftSize > 0 ? fftSize : data.length * 2;
+
   const bass =
-    getBandAverageForRange(data, sampleRate, bandRanges.bass, 'bass') / 255;
+    getBandAverageForRange(
+      data,
+      sampleRate,
+      bandRanges.bass,
+      'bass',
+      resolvedFftSize,
+    ) / 255;
   const mid =
-    getBandAverageForRange(data, sampleRate, bandRanges.mid, 'mid') / 255;
+    getBandAverageForRange(
+      data,
+      sampleRate,
+      bandRanges.mid,
+      'mid',
+      resolvedFftSize,
+    ) / 255;
   const treble =
-    getBandAverageForRange(data, sampleRate, bandRanges.treble, 'treble') / 255;
+    getBandAverageForRange(
+      data,
+      sampleRate,
+      bandRanges.treble,
+      'treble',
+      resolvedFftSize,
+    ) / 255;
 
   return { bass, mid, treble };
 }

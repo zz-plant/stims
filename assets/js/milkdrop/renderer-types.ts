@@ -108,6 +108,7 @@ export type MilkdropGpuFieldSignalInputs = {
   time: number;
   frame: number;
   fps: number;
+  aspect?: number;
   bass: number;
   mid: number;
   mids: number;
@@ -371,6 +372,7 @@ export type MilkdropFeedbackCompositeState = {
   signalBeatPulse: number;
   signalEnergy: number;
   signalTime: number;
+  aspect: number;
   decay: number;
 };
 

@@ -1,7 +1,26 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-16T23:21:30.244Z",
+  "updatedAt": "2026-07-19T03:38:23.733Z",
   "presets": [
+    {
+      "id": "250-wavecode",
+      "title": "250 Wavecode",
+      "fidelityClass": "near-exact",
+      "visualEvidenceTier": "visual",
+      "suiteStatus": "pass",
+      "certificationStatus": "certified",
+      "certificationReason": null,
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "sourceFamily": "projectm-fixture",
+      "strata": ["wavecode", "geometry"],
+      "toleranceProfile": "default",
+      "mismatchRatio": 0.002297092013888889,
+      "threshold": 16,
+      "failThreshold": 0.02,
+      "updatedAt": "2026-07-19T03:38:23.614Z",
+      "sourceReport": "screenshots/parity/suite/250-wavecode.json"
+    },
     {
       "id": "300-beatdetect-bassmidtreb",
       "title": "300 Beatdetect Bassmidtreb",
@@ -18,7 +37,7 @@
       "mismatchRatio": 0,
       "threshold": 16,
       "failThreshold": 0.02,
-      "updatedAt": "2026-07-16T23:21:30.244Z",
+      "updatedAt": "2026-07-19T03:38:23.733Z",
       "sourceReport": "screenshots/parity/suite/300-beatdetect-bassmidtreb.json"
     }
   ]

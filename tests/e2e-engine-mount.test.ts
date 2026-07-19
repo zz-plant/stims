@@ -10,12 +10,11 @@ const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: ChildProcess | null = null;
 
-async function waitForLiveStage(page: import('playwright').Page) {
+async function waitForMountedStage(page: import('playwright').Page) {
   await page.waitForFunction(
     () =>
-      document.querySelector('#stims-main[data-mode="live"]') !== null &&
-      document.querySelector('.stims-shell__stage-frame[data-mode="live"]') !==
-        null,
+      document.querySelector('#stims-main[data-active-preset-id]') !== null &&
+      document.querySelector('.stims-shell__stage-frame canvas') !== null,
     { timeout: 30000 },
   );
 }
@@ -31,28 +30,6 @@ async function waitForActivePreset(
       timeout: 30000,
     },
   );
-}
-
-async function startDemoIfNeeded(page: import('playwright').Page) {
-  const isLive = async () =>
-    (await page
-      .locator('.stims-shell__stage-frame[data-mode="live"]')
-      .count()) > 0;
-
-  if (await isLive()) return;
-
-  const demoBtn = page
-    .locator('button', { hasText: /Play with demo|demo audio/ })
-    .first();
-  await demoBtn.waitFor({ state: 'visible', timeout: 15000 });
-  if (await isLive()) return;
-
-  try {
-    await demoBtn.click({ timeout: 3000 });
-  } catch (error) {
-    if (await isLive()) return;
-    throw error;
-  }
 }
 
 async function startServer() {
@@ -83,7 +60,7 @@ beforeAll(() => startServer(), { timeout: 60000 });
 afterAll(() => stopServer());
 
 test(
-  'mounts engine, loads preset, canvas renders non-blank content',
+  'mounts engine, loads preset, and renders a silent preview frame',
   async () => {
     const browser = await chromium.launch({ headless: false });
     const ctx = await browser.newContext({
@@ -97,7 +74,7 @@ test(
 
     try {
       await page.goto(
-        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=demo`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none`,
         { waitUntil: 'domcontentloaded' },
       );
 
@@ -106,10 +83,8 @@ test(
       const shell = await page.$('#stims-main');
       expect(shell).not.toBeNull();
 
-      await startDemoIfNeeded(page);
-
-      // Wait for engine to enter live mode
-      await waitForLiveStage(page);
+      // A preset route mounts the runtime preview without inventing an audio source.
+      await waitForMountedStage(page);
       await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
 
       // Canvas must appear once engine finishes mounting
@@ -159,12 +134,11 @@ test(
     try {
       // Load first preset
       await page.goto(
-        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=demo`,
+        `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none`,
         { waitUntil: 'domcontentloaded' },
       );
       await page.waitForSelector('#stims-main', { timeout: 15000 });
-      await startDemoIfNeeded(page);
-      await waitForLiveStage(page);
+      await waitForMountedStage(page);
       await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
       await page.waitForSelector('canvas', { timeout: 15000 });
       await page.waitForTimeout(500);
@@ -173,14 +147,17 @@ test(
         () => document.querySelector('canvas')?.toDataURL('image/png').length,
       );
 
-      // Load a different preset via URL change (page.goto with new preset)
-      await page.goto(`${SERVER_URL}/?preset=geiss-casino&audio=demo`, {
-        waitUntil: 'domcontentloaded',
+      // Switch through the app's shareable route transition without tearing
+      // down the browser page while the previous runtime is still disposing.
+      await page.evaluate(() => {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set('preset', 'eos-phat-cubetrace-v2');
+        nextUrl.searchParams.delete('audio');
+        window.history.pushState(null, '', nextUrl);
+        window.dispatchEvent(new PopStateEvent('popstate'));
       });
-      await page.waitForSelector('#stims-main', { timeout: 15000 });
-      await startDemoIfNeeded(page);
-      await waitForLiveStage(page);
-      await waitForActivePreset(page, 'geiss-casino');
+      await waitForMountedStage(page);
+      await waitForActivePreset(page, 'eos-phat-cubetrace-v2');
       await page.waitForSelector('canvas', { timeout: 15000 });
       await page.waitForTimeout(500);
 
@@ -193,7 +170,7 @@ test(
         .locator('.stims-shell__stage-frame')
         .first()
         .getAttribute('data-active-preset-id');
-      expect(activePresetId).toBe('geiss-casino');
+      expect(activePresetId).toBe('eos-phat-cubetrace-v2');
 
       // Both must have content
       expect(hash1).toBeGreaterThan(1000);

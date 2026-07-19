@@ -710,6 +710,25 @@ export function applyShaderAstControlStatement({
   }
 
   if (key === 'texture_offset' || key === 'texture_scroll') {
+    if (numeric) {
+      const nextX = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.textureLayer.offsetX,
+        currentExpression: context.expressions.textureLayer.offsetX,
+      });
+      const nextY = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.textureLayer.offsetY,
+        currentExpression: context.expressions.textureLayer.offsetY,
+      });
+      context.controls.textureLayer.offsetX = nextX.value;
+      context.controls.textureLayer.offsetY = nextY.value;
+      context.expressions.textureLayer.offsetX = nextX.expression;
+      context.expressions.textureLayer.offsetY = nextY.expression;
+      return true;
+    }
     if (vec2Result) {
       const nextX = applyNumericControlValue({
         operator,
@@ -738,6 +757,25 @@ export function applyShaderAstControlStatement({
   }
 
   if (key === 'texture_scale') {
+    if (numeric) {
+      const nextX = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.textureLayer.scaleX,
+        currentExpression: context.expressions.textureLayer.scaleX,
+      });
+      const nextY = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.textureLayer.scaleY,
+        currentExpression: context.expressions.textureLayer.scaleY,
+      });
+      context.controls.textureLayer.scaleX = nextX.value;
+      context.controls.textureLayer.scaleY = nextY.value;
+      context.expressions.textureLayer.scaleX = nextX.expression;
+      context.expressions.textureLayer.scaleY = nextY.expression;
+      return true;
+    }
     if (vec2Result) {
       const nextX = applyNumericControlValue({
         operator,
@@ -766,6 +804,25 @@ export function applyShaderAstControlStatement({
   }
 
   if (key === 'warp_texture_offset' || key === 'warp_texture_scroll') {
+    if (numeric) {
+      const nextX = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.warpTexture.offsetX,
+        currentExpression: context.expressions.warpTexture.offsetX,
+      });
+      const nextY = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.warpTexture.offsetY,
+        currentExpression: context.expressions.warpTexture.offsetY,
+      });
+      context.controls.warpTexture.offsetX = nextX.value;
+      context.controls.warpTexture.offsetY = nextY.value;
+      context.expressions.warpTexture.offsetX = nextX.expression;
+      context.expressions.warpTexture.offsetY = nextY.expression;
+      return true;
+    }
     if (vec2Result) {
       const nextX = applyNumericControlValue({
         operator,
@@ -794,6 +851,25 @@ export function applyShaderAstControlStatement({
   }
 
   if (key === 'warp_texture_scale') {
+    if (numeric) {
+      const nextX = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.warpTexture.scaleX,
+        currentExpression: context.expressions.warpTexture.scaleX,
+      });
+      const nextY = applyNumericControlValue({
+        operator,
+        numeric,
+        currentValue: context.controls.warpTexture.scaleY,
+        currentExpression: context.expressions.warpTexture.scaleY,
+      });
+      context.controls.warpTexture.scaleX = nextX.value;
+      context.controls.warpTexture.scaleY = nextY.value;
+      context.expressions.warpTexture.scaleX = nextX.expression;
+      context.expressions.warpTexture.scaleY = nextY.expression;
+      return true;
+    }
     if (vec2Result) {
       const nextX = applyNumericControlValue({
         operator,

@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import {
   NATIVE_PROJECTM_HARNESS_PATH,
   PROJECTM_UPSTREAM_FIXTURE_ROOT,
-  resolveNativeProjectMFixture,
+  resolveProjectMReferenceFixture,
   validateNativeProjectMReferenceMetadata,
 } from './native-projectm-reference.ts';
 import {
@@ -28,6 +28,7 @@ type PromoteProjectMReferenceOptions = {
   strata: string[];
   title?: string;
   label?: string;
+  fixtureRoot?: string;
 };
 
 function usage() {
@@ -49,6 +50,9 @@ function usage() {
   );
   console.error('  --title <title>     Optional explicit title override');
   console.error('  --label <label>     Optional provenance label override');
+  console.error(
+    '  --fixture-root <dir>  Preset root used to validate provenance (default: tests/fixtures/milkdrop/projectm-upstream)',
+  );
 }
 
 function parseArgs(argv: string[]): PromoteProjectMReferenceOptions | null {
@@ -80,6 +84,9 @@ function parseArgs(argv: string[]): PromoteProjectMReferenceOptions | null {
       .filter(Boolean),
     title: getArg('--title'),
     label: getArg('--label'),
+    fixtureRoot:
+      getArg('--fixture-root', PROJECTM_UPSTREAM_FIXTURE_ROOT) ??
+      PROJECTM_UPSTREAM_FIXTURE_ROOT,
   };
 }
 
@@ -182,11 +189,13 @@ async function validateNativeSource({
   imagePath,
   metadataPath,
   repoRoot,
+  fixtureRoot,
 }: {
   presetId: string;
   imagePath: string;
   metadataPath: string | null;
   repoRoot: string;
+  fixtureRoot: string;
 }) {
   if (!metadataPath || !fs.existsSync(metadataPath)) {
     throw new Error(
@@ -204,9 +213,9 @@ async function validateNativeSource({
     );
   }
   const size = await readImageSize(imagePath);
-  const presetPath = resolveNativeProjectMFixture({
+  const presetPath = resolveProjectMReferenceFixture({
     repoRoot,
-    fixtureRoot: PROJECTM_UPSTREAM_FIXTURE_ROOT,
+    fixtureRoot,
     presetId,
   });
   const harnessPath = path.join(repoRoot, NATIVE_PROJECTM_HARNESS_PATH);
@@ -286,6 +295,7 @@ export async function promoteProjectMReference(
     imagePath: sourceImagePath,
     metadataPath: sourceMetadataPath,
     repoRoot: options.repoRoot,
+    fixtureRoot: options.fixtureRoot ?? PROJECTM_UPSTREAM_FIXTURE_ROOT,
   });
 
   const fixturePaths = buildFixturePaths({

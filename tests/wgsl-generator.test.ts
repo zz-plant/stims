@@ -8,6 +8,7 @@ import type {
   MilkdropExpressionNode,
   MilkdropProgramBlock,
 } from '../assets/js/milkdrop/types.ts';
+import { MILKDROP_WGSL_SIGNAL_FIELDS } from '../assets/js/milkdrop/wgsl-signal-layout.ts';
 
 function literal(value: number): MilkdropExpressionNode {
   return { type: 'literal', value };
@@ -72,9 +73,14 @@ describe('wgsl expression generation', () => {
   });
 
   test('identifier resolution', () => {
-    expect(buildWgslExpressionString(ident('bass'))).toBe('state.bass');
-    expect(buildWgslExpressionString(ident('time'))).toBe('state.time');
-    expect(buildWgslExpressionString(ident('BASS'))).toBe('state.bass');
+    expect(buildWgslExpressionString(ident('bass'))).toBe('signals.bass');
+    expect(buildWgslExpressionString(ident('time'))).toBe('signals.time');
+    expect(buildWgslExpressionString(ident('BASS'))).toBe('signals.bass');
+    expect(buildWgslExpressionString(ident('aspect'))).toBe('signals.aspect');
+    expect(buildWgslExpressionString(ident('weightedEnergy'))).toBe(
+      'signals.weighted_energy',
+    );
+    expect(buildWgslExpressionString(ident('enabled'))).toBe('state.enabled');
     expect(buildWgslExpressionString(ident('pi'))).toBe('3.141592653589793');
     expect(buildWgslExpressionString(ident('e'))).toBe('2.718281828459045');
     expect(buildWgslExpressionString(ident('rand'))).toBe('rand()');
@@ -97,10 +103,10 @@ describe('wgsl expression generation', () => {
     );
     expect(
       buildWgslExpressionString(binary('*', ident('bass'), literal(2))),
-    ).toBe('(state.bass * 2)');
+    ).toBe('(signals.bass * 2)');
     expect(
       buildWgslExpressionString(binary('/', ident('vol'), literal(0))),
-    ).toBe('select(0.0f, (state.vol) / (0), abs(0) > 0.000001f)');
+    ).toBe('select(0.0f, (signals.vol) / (0), abs(0) > 0.000001f)');
     expect(buildWgslExpressionString(binary('^', literal(2), literal(3)))).toBe(
       'pow(2, 3)',
     );
@@ -121,10 +127,10 @@ describe('wgsl expression generation', () => {
   test('binary comparisons', () => {
     expect(
       buildWgslExpressionString(binary('<', ident('bass'), literal(0.5))),
-    ).toBe('select(0.0f, 1.0f, state.bass < 0.5)');
+    ).toBe('select(0.0f, 1.0f, signals.bass < 0.5)');
     expect(
       buildWgslExpressionString(binary('>=', ident('vol'), literal(0))),
-    ).toBe('select(0.0f, 1.0f, state.vol >= 0)');
+    ).toBe('select(0.0f, 1.0f, signals.vol >= 0)');
     expect(
       buildWgslExpressionString(binary('==', ident('enabled'), literal(1))),
     ).toBe('select(0.0f, 1.0f, state.enabled == 1)');
@@ -137,12 +143,12 @@ describe('wgsl expression generation', () => {
     expect(
       buildWgslExpressionString(binary('&&', ident('beat'), ident('enabled'))),
     ).toBe(
-      'select(0.0f, 1.0f, abs(state.beat) > 0.000001f && abs(state.enabled) > 0.000001f)',
+      'select(0.0f, 1.0f, abs(signals.beat) > 0.000001f && abs(state.enabled) > 0.000001f)',
     );
     expect(
       buildWgslExpressionString(binary('||', ident('bass'), ident('treb'))),
     ).toBe(
-      'select(0.0f, 1.0f, abs(state.bass) > 0.000001f || abs(state.treb) > 0.000001f)',
+      'select(0.0f, 1.0f, abs(signals.bass) > 0.000001f || abs(signals.treb) > 0.000001f)',
     );
   });
 
@@ -275,7 +281,7 @@ describe('wgsl expression generation', () => {
   });
 
   test('case insensitivity', () => {
-    expect(buildWgslExpressionString(ident('BASS'))).toBe('state.bass');
+    expect(buildWgslExpressionString(ident('BASS'))).toBe('signals.bass');
     expect(buildWgslExpressionString(ident('PI'))).toBe('3.141592653589793');
     expect(buildWgslExpressionString(ident('E'))).toBe('2.718281828459045');
   });
@@ -287,7 +293,7 @@ describe('wgsl expression generation', () => {
       call('sin', [ident('time')]),
     );
     expect(buildWgslExpressionString(expr)).toBe(
-      '((state.bass + state.mid) * sin(state.time))',
+      '((signals.bass + signals.mid) * sin(signals.time))',
     );
   });
 });
@@ -303,7 +309,7 @@ describe('wgsl program compilation', () => {
     expect(result.usesRandom).toBe(false);
     expect(result.fieldKeys).toContain('bass');
     expect(result.fieldKeys).toContain('myvar');
-    expect(result.wgslCode).toContain('state.myvar = (state.bass + 1)');
+    expect(result.wgslCode).toContain('state.myvar = (signals.bass + 1)');
     expect(result.wgslCode).toContain('struct VmState');
     expect(result.wgslCode).toContain('struct VmSignals');
     expect(result.wgslCode).toContain('fn main()');
@@ -329,8 +335,8 @@ describe('wgsl program compilation', () => {
     );
     expect(result.registerKeys).toContain('q1');
     expect(result.registerKeys).toContain('t5');
-    expect(result.wgslCode).toContain('reg_q1 = (state.bass + 1)');
-    expect(result.wgslCode).toContain('reg_t5 = (state.mid * 2)');
+    expect(result.wgslCode).toContain('reg_q1 = (signals.bass + 1)');
+    expect(result.wgslCode).toContain('reg_t5 = (signals.mid * 2)');
     expect(result.wgslCode).toContain('reg_q1:');
     expect(result.wgslCode).toContain('reg_t5:');
   });
@@ -367,8 +373,20 @@ describe('wgsl program compilation', () => {
   test('signal struct included', () => {
     const result = compileProgramToWgsl(block([statement('x', literal(1))]));
     expect(result.wgslCode).toContain('struct VmSignals');
+    expect(result.wgslCode).toContain('aspect: f32,');
     expect(result.wgslCode).toContain('beat: f32,');
     expect(result.wgslCode).toContain('weighted_energy: f32,');
+  });
+
+  test('signal struct follows the shared upload layout', () => {
+    const result = compileProgramToWgsl(block([]));
+    const start = result.wgslCode.indexOf('struct VmSignals {');
+    const end = result.wgslCode.indexOf('}', start);
+    const fields = result.wgslCode
+      .slice(start, end)
+      .match(/\n {2}([A-Za-z_]+): f32,/gu)
+      ?.map((field) => field.trim().replace(/: f32,$/u, ''));
+    expect(fields).toEqual([...MILKDROP_WGSL_SIGNAL_FIELDS]);
   });
 
   test('caching - same program same signature', () => {
@@ -414,7 +432,7 @@ describe('wgsl program compilation', () => {
       block([statement('bg_r', binary('+', ident('bass'), literal(0.02)))]),
     );
     expect(result.usesRandom).toBe(false);
-    expect(result.wgslCode).toContain('state.bg_r = (state.bass + 0.02)');
+    expect(result.wgslCode).toContain('state.bg_r = (signals.bass + 0.02)');
     expect(result.wgslCode).not.toContain('fn rand()');
     expect(result.wgslCode).not.toContain('rand_state');
   });
@@ -448,7 +466,7 @@ describe('wgsl edge cases', () => {
     );
     const result = buildWgslExpressionString(expr);
     expect(result).toContain('rand()');
-    expect(result).toContain('state.bass');
+    expect(result).toContain('signals.bass');
   });
 
   test('standalone rand triggers usesRandom', () => {

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "presetId": "krash-rovastar-cerebral-demons-stars",
+  "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260719033310",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.png",
+    "imageSha256": "e216f070dc2d4bddb175e32ad32fe8e1f8ba8fddd85ca09ad960e198ae66ebbe",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/krash-rovastar-cerebral-demons-stars.meta.json",
+    "metadataSha256": "e73a643f00d8b7d928ec67bf3c6e292d9b4939e0c0a23c37f5ac4c07b227c058"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgl",
+  "sourceFamily": "bundled",
+  "strata": [
+    "feedback",
+    "comet",
+    "motion"
+  ],
+  "toleranceProfile": "loose",
+  "threshold": 32,
+  "failThreshold": 0.05,
+  "metrics": {
+    "mismatchRatio": null
+  },
+  "status": "backend-mismatch",
+  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+}

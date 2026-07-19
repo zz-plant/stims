@@ -21,11 +21,11 @@ export {
 export function compileMilkdropPresetSource(
   raw: string,
   source: Partial<MilkdropPresetSource> = {},
-  _options: MilkdropCompileOptions = {},
+  options: MilkdropCompileOptions = {},
 ): MilkdropCompiledPreset {
   const parsed = parseMilkdropPreset(raw);
   const diagnostics = [...parsed.diagnostics];
-  const ir = createIR(parsed.ast, diagnostics, source);
+  const ir = createIR(parsed.ast, diagnostics, source, options);
   const presetSource = createPresetSource(source, raw, ir.title, ir.author);
 
   const compiled: MilkdropCompiledPreset = {
