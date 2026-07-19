@@ -4,7 +4,7 @@
  */
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import { type ChildProcess, spawn } from 'node:child_process';
-import { chromium } from 'playwright';
+import { chromium, devices } from 'playwright';
 
 const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
@@ -175,6 +175,80 @@ test(
       // Both must have content
       expect(hash1).toBeGreaterThan(1000);
       expect(hash2).toBeGreaterThan(1000);
+    } finally {
+      await ctx.close();
+      await browser.close();
+    }
+  },
+  { timeout: 120000 },
+);
+
+test(
+  'starts microphone audio on a mobile browser with one permission request',
+  async () => {
+    const browser = await chromium.launch({
+      headless: false,
+      args: [
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
+      ],
+    });
+    const ctx = await browser.newContext({
+      ...devices['iPhone 13'],
+      permissions: ['microphone'],
+    });
+    await ctx.addInitScript(() => {
+      const mediaDevices = navigator.mediaDevices;
+      if (!mediaDevices?.getUserMedia) return;
+      const getUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
+      let calls = 0;
+      Object.defineProperty(mediaDevices, 'getUserMedia', {
+        configurable: true,
+        value: async (constraints: MediaStreamConstraints) => {
+          calls += 1;
+          (
+            window as typeof window & {
+              __stimsMicCalls?: number;
+              __stimsMicConstraints?: MediaStreamConstraints;
+            }
+          ).__stimsMicCalls = calls;
+          (
+            window as typeof window & {
+              __stimsMicCalls?: number;
+              __stimsMicConstraints?: MediaStreamConstraints;
+            }
+          ).__stimsMicConstraints = constraints;
+          return getUserMedia(constraints);
+        },
+      });
+    });
+    const page = await ctx.newPage();
+
+    try {
+      await page.goto(`${SERVER_URL}/?audio=none`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.locator('#start-audio-btn').click();
+      await page.waitForFunction(
+        () => document.body.dataset.audioActive === 'true',
+        { timeout: 30000 },
+      );
+
+      const info = await page.evaluate(() => {
+        const state = window as typeof window & {
+          __stimsMicCalls?: number;
+          __stimsMicConstraints?: MediaStreamConstraints;
+        };
+        return {
+          calls: state.__stimsMicCalls ?? 0,
+          constraints: state.__stimsMicConstraints,
+          route: window.location.search,
+        };
+      });
+
+      expect(info.calls).toBe(1);
+      expect(info.constraints).toEqual({ audio: true });
+      expect(info.route).toContain('audio=microphone');
     } finally {
       await ctx.close();
       await browser.close();
