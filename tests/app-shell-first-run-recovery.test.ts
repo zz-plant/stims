@@ -66,7 +66,7 @@ describe('Workspace shell first-run and recovery regression', () => {
 
     expect(appSource).toContain('<NewHomePage />');
     expect(homeSource).toContain('Browse presets');
-    expect(homeSource).toContain('Recommended');
+    expect(homeSource).toContain('Featured preset');
     expect(uiSource).toContain('Link no longer works');
     expect(uiSource).toContain('invalidExperienceSlug');
     expect(shellHookSource).toMatch(
