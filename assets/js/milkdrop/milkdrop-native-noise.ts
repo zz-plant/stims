@@ -28,7 +28,7 @@ export function buildMilkdropNoise2dData(size = MILKDROP_NOISE_2D_SIZE) {
   let offset = 0;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const value = toNoiseByte(x + y * 57);
+      const value = toNoiseByte(y + x * 57);
       data[offset++] = value;
       data[offset++] = value;
       data[offset++] = value;
@@ -49,7 +49,7 @@ export function buildMilkdropNoiseVolumeAtlasData(
     const tileY = Math.floor(z / gridSize);
     for (let y = 0; y < sliceSize; y++) {
       for (let x = 0; x < sliceSize; x++) {
-        const value = toNoiseByte(x + y * 57 + z * 141);
+        const value = toNoiseByte(z + y * 57 + x * 141);
         const offset =
           ((tileY * sliceSize + y) * size + tileX * sliceSize + x) * 4;
         data[offset] = value;
