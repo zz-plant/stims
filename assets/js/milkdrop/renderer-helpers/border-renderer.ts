@@ -153,6 +153,7 @@ function createBorderGroupObjectRaw(
       transparent: true,
       opacity: border.alpha * alphaMultiplier,
       side: DoubleSide,
+      toneMapped: false,
     }),
   );
   fill.userData.borderGeometryKey = getBorderGeometryKey(
@@ -179,6 +180,7 @@ function createBorderGroupObjectRaw(
       opacity: border.alpha * alphaMultiplier * 0.6,
       color: 0xffffff,
       linewidth: 1,
+      toneMapped: false,
     });
     accentMat.color.setRGB(
       border.color.r * 1.3,
@@ -214,6 +216,7 @@ function createBorderGroupObject(
         transparent: true,
         opacity: border.alpha * alphaMultiplier,
         side: DoubleSide,
+        toneMapped: false,
       }),
     ),
   );

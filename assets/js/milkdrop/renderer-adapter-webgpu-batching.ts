@@ -1118,6 +1118,7 @@ class InstancedBorderBatch {
         transparent: true,
         depthWrite: false,
         side: DoubleSide,
+        toneMapped: false,
         vertexShader: `
           attribute vec2 unitCorner;
           attribute float innerWeight;

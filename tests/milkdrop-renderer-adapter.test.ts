@@ -552,6 +552,19 @@ shapecode_0_thickoutline=1
           child.scale?.y === 1,
       );
       expect(aspectScaledBorderGroups.length).toBeGreaterThan(0);
+      if (backend === 'webgl') {
+        const borderMaterial = flattenRenderTree(
+          scene.children[0] as RenderTreeNode,
+        )
+          .map((child) => child.material)
+          .find(
+            (material) =>
+              material instanceof MeshBasicMaterial &&
+              material.color.r > 0.9 &&
+              material.color.g < 0.1,
+          );
+        expect(borderMaterial?.toneMapped).toBe(false);
+      }
       adapter.dispose();
     }
   });
