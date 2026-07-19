@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-19T16:35:25.237Z",
+  "outputDir": "./screenshots/parity",
+  "suiteDir": "screenshots/parity/suite",
+  "certifiedPresetCount": 1,
+  "measuredPresetCount": 2,
+  "measuredValidationIssueCount": 0,
+  "measuredSourceReportMissingCount": 0,
+  "measuredSourceReportMismatchCount": 0,
+  "backendMismatchCount": 0,
+  "passCount": 0,
+  "failCount": 1,
+  "missingCount": 0,
+  "errorCount": 0,
+  "results": [
+    {
+      "presetId": "100-square",
+      "title": "100 Square",
+      "status": "fail",
+      "mismatchRatio": 0.1571310763888889,
+      "reportPath": "screenshots/parity/suite/100-square.json",
+      "diffImagePath": "screenshots/parity/suite/100-square.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260719163519",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/100-square.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+[ 3817947ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=ae772608:14337
+[ 3818636ms] [INFO] Falling back to WebGL renderer: WebGPU is not enabled automatically for this browser or session. Using WebGL mode. @ http://127.0.0.1:5173/assets/js/core/renderer-setup.ts:77
+[ 3818650ms] [INFO] Falling back to WebGL renderer: WebGPU is not enabled automatically for this browser or session. Using WebGL mode. @ http://127.0.0.1:5173/assets/js/core/renderer-setup.ts:77
+[ 3972038ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5173/@vite/client:968
+[ 4011290ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=ae772608:14337
+[ 4012046ms] [INFO] Falling back to WebGL renderer: WebGPU is not enabled automatically for this browser or session. Using WebGL mode. @ http://127.0.0.1:5173/assets/js/core/renderer-setup.ts:77
+[ 4012062ms] [INFO] Falling back to WebGL renderer: WebGPU is not enabled automatically for this browser or session. Using WebGL mode. @ http://127.0.0.1:5173/assets/js/core/renderer-setup.ts:77
+[ 4268000ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5173/@vite/client:968
+[ 4273619ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=ae772608:14337
+[ 4274277ms] [INFO] Falling back to WebGL renderer: WebGPU is not enabled automatically for this browser or session. Using WebGL mode. @ http://127.0.0.1:5173/assets/js/core/renderer-setup.ts:77
+[ 4274291ms] [INFO] Falling back to WebGL renderer: WebGPU is not enabled automatically for this browser or session. Using WebGL mode. @ http://127.0.0.1:5173/assets/js/core/renderer-setup.ts:77

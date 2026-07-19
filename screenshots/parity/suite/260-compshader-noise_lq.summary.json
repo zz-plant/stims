@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-19T16:34:32.760Z",
+  "outputDir": "./screenshots/parity",
+  "suiteDir": "screenshots/parity/suite",
+  "certifiedPresetCount": 1,
+  "measuredPresetCount": 2,
+  "measuredValidationIssueCount": 0,
+  "measuredSourceReportMissingCount": 0,
+  "measuredSourceReportMismatchCount": 0,
+  "backendMismatchCount": 0,
+  "passCount": 0,
+  "failCount": 1,
+  "missingCount": 0,
+  "errorCount": 0,
+  "results": [
+    {
+      "presetId": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "status": "fail",
+      "mismatchRatio": 0.9442078993055556,
+      "reportPath": "screenshots/parity/suite/260-compshader-noise_lq.json",
+      "diffImagePath": "screenshots/parity/suite/260-compshader-noise_lq.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719163425",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
+    }
+  ]
+}

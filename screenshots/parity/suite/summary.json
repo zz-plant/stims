@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-19T03:48:44.047Z",
+  "generatedAt": "2026-07-19T16:24:19.006Z",
   "outputDir": "./screenshots/parity",
   "suiteDir": "screenshots/parity/suite",
   "certifiedPresetCount": 9,
@@ -8,38 +8,12 @@
   "measuredValidationIssueCount": 0,
   "measuredSourceReportMissingCount": 0,
   "measuredSourceReportMismatchCount": 0,
-  "backendMismatchCount": 6,
+  "backendMismatchCount": 4,
   "passCount": 2,
-  "failCount": 1,
+  "failCount": 3,
   "missingCount": 0,
   "errorCount": 0,
   "results": [
-    {
-      "presetId": "260-compshader-noise_lq",
-      "title": "260 Compshader Noise LQ",
-      "status": "backend-mismatch",
-      "mismatchRatio": null,
-      "reportPath": "screenshots/parity/suite/260-compshader-noise_lq.json",
-      "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719033730",
-      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
-      "requiredBackend": "webgpu",
-      "actualBackend": "webgl",
-      "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
-    },
-    {
-      "presetId": "261-compshader-noisevol_lq",
-      "title": "261 Compshader Noisevol LQ",
-      "status": "backend-mismatch",
-      "mismatchRatio": null,
-      "reportPath": "screenshots/parity/suite/261-compshader-noisevol_lq.json",
-      "diffImagePath": null,
-      "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719034835",
-      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
-      "requiredBackend": "webgpu",
-      "actualBackend": "webgl",
-      "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
-    },
     {
       "presetId": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
@@ -91,6 +65,30 @@
       "requiredBackend": "webgpu",
       "actualBackend": "webgl",
       "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+    },
+    {
+      "presetId": "261-compshader-noisevol_lq",
+      "title": "261 Compshader Noisevol LQ",
+      "status": "fail",
+      "mismatchRatio": 0.9478342013888889,
+      "reportPath": "screenshots/parity/suite/261-compshader-noisevol_lq.json",
+      "diffImagePath": "screenshots/parity/suite/261-compshader-noisevol_lq.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719043558",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
+    },
+    {
+      "presetId": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "status": "fail",
+      "mismatchRatio": 0.9060763888888889,
+      "reportPath": "screenshots/parity/suite/260-compshader-noise_lq.json",
+      "diffImagePath": "screenshots/parity/suite/260-compshader-noise_lq.png",
+      "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719043348",
+      "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu"
     },
     {
       "presetId": "100-square",

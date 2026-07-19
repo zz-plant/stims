@@ -2,7 +2,7 @@
   "version": 1,
   "presetId": "260-compshader-noise_lq",
   "title": "260 Compshader Noise LQ",
-  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719033730",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719163425",
   "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
   "projectmReference": {
     "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/260-compshader-noise_lq.png",
@@ -11,7 +11,7 @@
     "metadataSha256": "666dacd731505b56769ad83a24b80415e39dce78e4e310a5fcaa93d07a128ff5"
   },
   "requiredBackend": "webgpu",
-  "actualBackend": "webgl",
+  "actualBackend": "webgpu",
   "sourceFamily": "projectm-fixture",
   "strata": [
     "shader-supported",
@@ -21,8 +21,16 @@
   "threshold": 16,
   "failThreshold": 0.02,
   "metrics": {
-    "mismatchRatio": null
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 870182,
+    "mismatchRatio": 0.9442078993055556,
+    "maxChannelDelta": 170,
+    "meanAbsoluteError": 0.30599236054375456,
+    "rmse": 0.3360508449268744,
+    "exactMatch": false,
+    "threshold": 16
   },
-  "status": "backend-mismatch",
-  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+  "status": "fail"
 }
