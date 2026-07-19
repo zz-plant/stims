@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "presetId": "250-wavecode",
+  "title": "250 Wavecode",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--250-wavecode--20260719033800",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.png",
+    "imageSha256": "5d21aa15c6bc362c304e6c91d1ba3e424a34f4ad1010de3d2fceb38f91ba4af8",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/250-wavecode.meta.json",
+    "metadataSha256": "559631f28e2a2e23388270d7dd41481f193c56080b19e2e167e3bb018e799658"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgpu",
+  "sourceFamily": "projectm-fixture",
+  "strata": [
+    "wavecode",
+    "geometry"
+  ],
+  "toleranceProfile": "default",
+  "threshold": 16,
+  "failThreshold": 0.02,
+  "metrics": {
+    "width": 1280,
+    "height": 720,
+    "totalPixels": 921600,
+    "mismatchedPixels": 2117,
+    "mismatchRatio": 0.002297092013888889,
+    "maxChannelDelta": 253,
+    "meanAbsoluteError": 0.0011284424360021787,
+    "rmse": 0.027004541202396395,
+    "exactMatch": false,
+    "threshold": 16
+  },
+  "status": "pass"
+}

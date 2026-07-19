@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { resolveMilkdropWebGpuOptimizationFlags } from '../assets/js/milkdrop/webgpu-optimization-flags.ts';
 import {
   resolveMilkdropWebGpuFeatureRouting,
   setWebGpuForceMode,
+  shouldEnableNativeMilkdropWebGpuFeedback,
 } from '../assets/js/milkdrop/webgpu-query-override.ts';
 
 describe('MilkDrop WebGPU feature routing', () => {
@@ -26,8 +28,8 @@ describe('MilkDrop WebGPU feature routing', () => {
 
     expect(routing.proceduralMesh.enabled).toBe(true);
     expect(routing.directFeedbackShaders).toMatchObject({
-      enabled: false,
-      reason: expect.stringContaining('native WebGPU feedback'),
+      enabled: true,
+      reason: null,
     });
     expect(routing.renderBundles).toMatchObject({
       enabled: false,
@@ -56,5 +58,31 @@ describe('MilkDrop WebGPU feature routing', () => {
       reason:
         'native WebGPU feedback remains disabled until ShaderMaterial and TSL composite parity is stable',
     });
+  });
+
+  test('enables native feedback only for the explicit certification WebGPU lane', () => {
+    expect(
+      shouldEnableNativeMilkdropWebGpuFeedback({
+        search: '?renderer=webgpu&corpus=certification',
+      }),
+    ).toBe(true);
+    expect(
+      shouldEnableNativeMilkdropWebGpuFeedback({ search: '?renderer=webgpu' }),
+    ).toBe(false);
+  });
+
+  test('keeps certification captures from being preemptively routed to WebGL', () => {
+    expect(
+      resolveMilkdropWebGpuOptimizationFlags({
+        location: { search: '?renderer=webgpu&corpus=certification' },
+        storage: { getItem: () => null },
+      }).descriptorFallbackToWebgl,
+    ).toBe(false);
+    expect(
+      resolveMilkdropWebGpuOptimizationFlags({
+        location: { search: '?renderer=webgpu' },
+        storage: { getItem: () => null },
+      }).descriptorFallbackToWebgl,
+    ).toBe(true);
   });
 });

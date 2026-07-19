@@ -9,6 +9,7 @@ import {
 import {
   bindCustomMilkdropSamplerTexture,
   configureMilkdropTexture,
+  createCompositeUniforms,
   getSharedMilkdropAuxTextures,
   resolveAuxTextureName,
 } from '../assets/js/milkdrop/feedback-manager-webgpu-composite.ts';
@@ -24,6 +25,23 @@ afterEach(() => {
 });
 
 describe('milkdrop webgpu feedback manager helpers', () => {
+  test('binds the fractal texture uniform into the native composite graph', () => {
+    const uniforms = createCompositeUniforms(new Texture(), new Texture(), {
+      noise: new Texture(),
+      perlin: new Texture(),
+      simplex: new Texture(),
+      voronoi: new Texture(),
+      aura: new Texture(),
+      caustics: new Texture(),
+      pattern: new Texture(),
+      fractal: new Texture(),
+      video: new Texture(),
+    });
+
+    expect(uniforms.fractalTex).toBeDefined();
+    expect('fractTex' in uniforms).toBe(false);
+  });
+
   test('normalizes direct shader sampler aliases onto canonical runtime bindings', () => {
     expect(
       resolveDirectShaderSamplerBinding('sampler_fw_noise_lq', '2d'),

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "presetId": "eos-phat-cubetrace-v2",
+  "title": "Eo.S. + Phat - Cubetrace v2",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260719033259",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.png",
+    "imageSha256": "065eaee9815153f97e9d4f23d0a94d378aee402b0647057fdea80afa2b6d02fc",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/eos-phat-cubetrace-v2.meta.json",
+    "metadataSha256": "4da4cccad8f6649a746c3d88e8793de882a8c934764e96bfc464b490ff9a8926"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgl",
+  "sourceFamily": "bundled",
+  "strata": [
+    "geometry",
+    "shape",
+    "feedback"
+  ],
+  "toleranceProfile": "loose",
+  "threshold": 32,
+  "failThreshold": 0.05,
+  "metrics": {
+    "mismatchRatio": null
+  },
+  "status": "backend-mismatch",
+  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+}

@@ -1,140 +1,56 @@
-# Release Evidence Ledger — May 2026
+# Release Evidence Ledger — Current parity snapshot
 
-Sprint 10 finalization. Compiled 2026-05-16 from Sprint 1–10 deliverable docs and live evidence data.
+Updated 2026-07-18 from the checked-in certification artifacts. The historical filename is retained because it is linked from the existing release documentation.
 
-## Certified Presets (4)
+## Certification summary
 
-All four are `near-exact` fidelity, `visual` evidence tier, `suiteStatus: pass`. Backend: WebGPU.
+The current corpus contains 23 targets. The comparator requires the requested backend and does not count a WebGL fallback as a WebGPU capture.
 
-| # | ID | Title | Source | Strata |
-|---|-----|-------|--------|--------|
-| 1 | `eos-glowsticks-v2-03-music` | Eo.S. - Glowsticks v2 03 Music | stims-bundled | feedback, classic-milkdrop, glowsticks |
-| 2 | `rovastar-parallel-universe` | Rovastar - Parallel Universe | stims-bundled | lasers, classic-milkdrop, cream-of-the-crop |
-| 3 | `eos-phat-cubetrace-v2` | Eo.S. + Phat - Cubetrace v2 | stims-bundled | geometry, classic-milkdrop, cream-of-the-crop |
-| 4 | `krash-rovastar-cerebral-demons-stars` | Krash & Rovastar - Cerebral Demons (Stars Remix) | stims-bundled | comets, classic-milkdrop, cream-of-the-crop |
+| Result | Count |
+|---|---:|
+| Certified on WebGL and WebGPU | 2 |
+| Certified on WebGPU only | 0 |
+| Certified on WebGL only | 1 |
+| Uncertified with reference/capture activity | 6 |
+| Unmeasured | 14 |
+| Missing native WebGPU captures | 0 |
 
-Evidence: Stims WebGPU reference captures in `stims-reference-manifest.json` (4 frames). Measurement against projectM references via `measured-results.json` (v2, `toleranceProfile: default`, `threshold: 16`, `failThreshold: 0.04`).
+The two both-certified projectM fixtures are `250-wavecode` (WebGPU mismatch ratio `0.002297`) and `300-beatdetect-bassmidtreb` (WebGPU mismatch ratio `0`). `eos-glowsticks-v2-03-music` passes the compatibility WebGL comparison at `0.015776` but its required WebGPU capture currently fails, so it is WebGL-only. The volume fixtures now have native WebGPU captures and use generated RGBA noise/atlas sources, but still fail the strict pixel tolerance because native projectM noise is randomized: `260-compshader-noise_lq` at `0.906076` and `261-compshader-noisevol_lq` at `0.947834`.
 
-## Baseline-Measured Presets (5)
+## Bundled shipped lane
 
-Have per-frame structural checksums in `visual-baselines.json` (wave counts, vertex checksums, post-processing state for frames 1,2,3,10). NOT yet measured against projectM reference images.
+All four shipped anchors now have provenance-checked native projectM 3.1.12 references and browser capture artifacts:
 
-| # | ID | Title | Strata |
-|---|-----|-------|--------|
-| 1 | `parity-per-pixel-03` | Parity Per Pixel 03 | per-pixel, per-frame |
-| 2 | `parity-wave-02` | Parity Wave 02 | custom-wave, registers |
-| 3 | `parity-shape-07` | Parity Shape 07 | custom-shape, borders |
-| 4 | `parity-motion-04` | Parity Motion 04 | motion-vectors, per-frame |
-| 5 | `parity-registers-05` | Parity Registers 05 | registers, per-frame |
+| ID | WebGL comparison | WebGPU comparison | Current status |
+|---|---|---|---|
+| `eos-glowsticks-v2-03-music` | pass, `0.015776` | fail, `0.537115` | WebGL-only |
+| `rovastar-parallel-universe` | fail, `0.982264` | fail, `0.864784` | Uncertified |
+| `eos-phat-cubetrace-v2` | fail, `0.230698` | fail, `0.471127` | Uncertified |
+| `krash-rovastar-cerebral-demons-stars` | fail, `0.198688` | fail, `0.590088` | Uncertified |
 
-## Semantic-Only Presets (4)
+These numbers are evidence of remaining renderer and feedback drift, not reasons to weaken certification thresholds.
 
-In certification corpus. Compiler parses successfully (no parse errors), but zero visual evidence artifacts exist — no checksum baselines, no reference images, no measurements.
+## Shader-text status
 
-| # | ID | Title | Strata |
-|---|-----|-------|--------|
-| 1 | `parity-shader-08` | Parity Shader 08 | shader-supported, feedback |
-| 2 | `parity-hybrid-09` | Parity Hybrid 09 | hybrid, custom-wave, custom-shape, video-echo |
-| 3 | `parity-legacy-wave-01` | Parity Legacy Wave 01 | custom-wave, legacy-slot |
-| 4 | `parity-legacy-shape-01` | Parity Legacy Shape 01 | custom-shape, legacy-slot |
+The compiler contracts previously listed as open are now covered by focused tests:
 
-## Unmeasured Presets (10)
+- GLSL `^` lowers to `pow`; `|` and `&` use float-to-int bitwise lowering.
+- `bassAtt`, `midAtt`, and `trebleAtt` map to the shared signal uniforms.
+- Add, multiply, subtract, swapped-argument mix, `sampler_main` reset, scalar vector splats, and scaled-main mixes are extracted or lowered in the supported subset.
+- Complex UV expressions remain direct-program payloads and keep an explicit controls-fallback boundary.
 
-In certification corpus. Zero evidence of any kind — no compiler validation, no checksums, no visual references.
+Volume samplers are semantically routed on both backends. WebGPU uses native 3D textures; WebGL uses a bounded atlas approximation. Exact visual claims remain gated by measured native captures.
 
-| # | ID | Title | Corpus Group |
-|---|-----|-------|-------------|
-| 1 | `shape-legacy-max-slot-orbit` | Shape Legacy Max Slot Orbit | local-custom-shape |
-| 2 | `shape-projectm-dual-lattice` | Shape projectM Dual Lattice | local-custom-shape |
-| 3 | `parity-feedback-orientation-01` | Parity Feedback Orientation 01 | parity-corpus |
-| 4 | `001-line` | 001 Line | projectm-upstream |
-| 5 | `110-per_pixel` | 110 Per Pixel | projectm-upstream |
-| 6 | `100-square` | 100 Square | projectm-upstream |
-| 7 | `250-wavecode` | 250 Wavecode | projectm-upstream |
-| 8 | `260-compshader-noise_lq` | 260 Compshader Noise LQ | projectm-upstream |
-| 9 | `261-compshader-noisevol_lq` | 261 Compshader Noisevol LQ | projectm-upstream |
-| 10 | `300-beatdetect-bassmidtreb` | 300 Beatdetect Bassmidtreb | projectm-upstream |
+## Remaining release blockers
 
-Note: 4 of these 10 (100-square, 250-wavecode, 260-compshader-noise_lq, 300-beatdetect-bassmidtreb) have projectM reference images in `visual-reference-manifest.json` but no Stims capture or comparison. They remain unmeasured by the Stims toolchain.
+- Distribution-aware certification for randomized volume-shader fixtures; their native sampler semantics are implemented, but strict pixel comparison is not a valid exactness test across independent noise seeds.
+- Feedback/video-echo pass ordering and rasterization drift for the shipped anchors.
+- Native WebGPU direct feedback remains disabled for live sessions and is enabled only in the explicit `renderer=webgpu&corpus=certification` lane, where ShaderMaterial/TSL composite parity is measured.
+- Broader shader-heavy, sampler-heavy, wave, and shape corpus coverage.
 
-## Known Fidelity Gaps by Subsystem
+Source artifacts:
 
-### Shader Text (Compiler)
-
-| Gap | Source Doc | Status |
-|-----|-----------|--------|
-| `^` operator emitted as XOR in GLSL (should be `pow`) | `shader-support-inventory.md` §2.1 | FIXED |
-| `bassAtt` / `midAtt` / `trebleAtt` camelCase aliases missing from GLSL uniform map | `shader-support-inventory.md` §2.10 | FIXED |
-| `tex3D` / `texture3D` without volume sampler classification | `shader-support-inventory.md` §2.7 | FIXED |
-| `\|` and `&` bitwise operators not supported in GLSL | `shader-support-inventory.md` §2.2 | Open |
-| `ret = main - aux * amount` subtract mode not handled | `shader-support-inventory.md` §2.3 | Open |
-| `texture_source = sampler_main` rejected (only aux accepted) | `shader-support-inventory.md` §2.5 | Open |
-| Non-uniform UV scale (`uv * vec2(sx, sy)`) not extracted to controls | `shader-support-inventory.md` §2.8 | Open |
-| `ret = mix(aux, main, amount)` ordering restriction (main must be first) | `shader-support-inventory.md` §2.4 | Open |
-| `texture_offset = scalar` (non-vec2) silently fails | `shader-support-inventory.md` §2.9 | Open |
-| `\|\|` / `&&` polyfill precision differs from MilkDrop VM | `shader-support-inventory.md` §3.5 | Documented divergence |
-
-### Sampler / Texture
-
-| Gap | Source Doc | Status |
-|-----|-----------|--------|
-| tex3D on non-volume sampler in GLSL path — no warning, possible garbage reads | `shader-support-inventory.md` §2.7 | Open |
-| Identity sample passthrough hides UV transforms from controls fallback | `shader-support-inventory.md` §3.1 | Silent fallback |
-| Feed-forward noise samplers (`fw_noise_lq`/`hq`) produce animated GLSL noise — deliberate divergence | `shader-support-inventory.md` §1, Feed-Forward Noise | By design |
-
-### Rasterization
-
-| Gap | Source Doc | Status |
-|-----|-----------|--------|
-| Line thickness: WebGL renders all lines at 1px; WebGPU uses shader-based segment quads (2–10× difference) | `rasterization-fidelity-audit.md` D1 | Open |
-| Shape thick outline: WebGPU ring geometry produces 3–5× wider outlines than WebGL at small radii | `rasterization-fidelity-audit.md` D2 | Open |
-| Textured shape fallback on WebGPU: flat `MeshBasicMaterial` when no shape texture available, loses gradient fill | `rasterization-fidelity-audit.md` D5 | Open |
-| Missing blend modes: subtractive and multiplicative as draw-call modes not implemented | `rasterization-fidelity-audit.md` §3, Missing blend modes | Open |
-| z-depth values differ between WebGL and WebGPU backends for waves, borders | `rasterization-fidelity-audit.md` D6 | Documented |
-| WebGPU lines use manually-closed Line; WebGL uses GPU-native LineLoop — 1px seam difference | `rasterization-fidelity-audit.md` D3 | Documented |
-| WebGPU borders have fill+outline pair; WebGL has single flat-colored band | `rasterization-fidelity-audit.md` D4 | Documented |
-| WebGPU feedback targets use `HalfFloatType` vs WebGL full float — precision tradeoff | `rasterization-fidelity-audit.md` D7 | By design |
-
-### Runtime
-
-| Gap | Source Doc | Status |
-|-----|-----------|--------|
-| Fallback state machine: implicit ordering of 12 files, 6 undocumented preconditions, fire-and-forget timeout cleanup | `fallback-state-machine.md` §3 | FIXED |
-| renderScale propagation: 4-layer multi-hop chain without memoization or invalidation typing | `fallback-state-machine.md` §3.2 | Open |
-| Audio worklet silently falls back to AnalyserNode with no telemetry and no session recovery | `fallback-state-machine.md` §3.4 | Open |
-| WebGPU recovery has no retry limit or backoff | `fallback-state-machine.md` §3.3 | Open |
-
-### UI
-
-| Gap | Source Doc | Status |
-|-----|-----------|--------|
-| Fidelity tier labeling: only 4 of 23 presets have measured labels; remaining 19 at inferred fidelity | `public-claim-audit.md` Finding #13 | FIXED |
-| 4 critical overclaims in `index.html` (title, OG/Twitter metadata, LD+JSON, loading text) | `public-claim-audit.md` Findings #1–4 | FIXED |
-| 2 high overclaims in `LINEAGE_AND_CREDITS.md` and `DEVELOPMENT.md` | `public-claim-audit.md` Findings #5, #7–8 | FIXED |
-
-## Public Claims Status
-
-From the public-claim-audit.md (14 findings across 3 severity tiers):
-
-| Severity | Count | Status |
-|----------|-------|--------|
-| Critical | 4 | **Fixed** — All 4 `index.html` overclaims corrected. Page title, social metadata, LD+JSON, and loading text now use "MilkDrop-Inspired" qualifier or omit unqualified "MilkDrop" naming. |
-| High | 4 | **2 fixed** — `LINEAGE_AND_CREDITS.md` compatibility language updated with evidence ratio; `DEVELOPMENT.md` certification-corpus prose qualified. Remaining 2: `certification-corpus.json` field naming and `DEVELOPMENT.md` "certified preset" references pending. |
-| Medium | 6 | **Pending** — Doc titles and headings not yet updated. |
-
-All current public claims match evidence: the product is positioned as "MilkDrop-inspired," certification coverage is disclosed (4/23), and fidelity labeling reflects actual measured data.
-
-## Summary
-
-| Metric | Count |
-|--------|-------|
-| Certified presets | 4 |
-| Baseline-measured presets | 5 |
-| Semantic-only presets | 4 |
-| Unmeasured presets | 10 |
-| Total certification corpus | 23 |
-| Known fidelity gaps (fixed) | 6 |
-| Known fidelity gaps (open) | 14 |
-| Known fidelity gaps (documented/by design) | 6 |
-| Public overclaims (fixed) | 6 |
-| Public overclaims (pending) | 8 |
+- `assets/data/milkdrop-parity/webgpu-certification-report.json`
+- `assets/data/milkdrop-parity/visual-reference-manifest.json`
+- `assets/data/milkdrop-parity/measured-results.json`
+- `tests/fixtures/milkdrop/projectm-reference/`

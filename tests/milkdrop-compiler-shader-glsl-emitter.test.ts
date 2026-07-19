@@ -171,11 +171,11 @@ describe('milkdrop compiler shader GLSL emitter — sampler calls', () => {
     expect(glsl).toContain('sampleAuxTexture(vec4(2.0, 0, 0, 0).x, 1.0,');
   });
 
-  test('tex3d(sampler_noise, vec3(uv, z)).rgb degrades to 2D lookup (sampleDim = 0.0)', () => {
+  test('tex3d(sampler_noise, vec3(uv, z)).rgb uses the bundled volume lookup', () => {
     const glsl = emitShaderExpression(
       'ret = tex3d(sampler_noise, vec3(uv, 0.5)).rgb',
     );
-    expect(glsl).toContain('sampleAuxTexture(vec4(1.0, 0, 0, 0).x, 0.0,');
+    expect(glsl).toContain('sampleAuxTexture(vec4(1.0, 0, 0, 0).x, 1.0,');
   });
 
   test('texture2d alias normalizes to tex2d', () => {

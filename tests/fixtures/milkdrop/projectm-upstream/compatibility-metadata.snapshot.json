@@ -2684,13 +2684,7 @@
   },
   {
     "file": "261-compshader-noisevol_lq.milk",
-    "diagnostics": [
-      {
-        "severity": "warning",
-        "code": "preset_shader_volume_approximation",
-        "field": null
-      }
-    ],
+    "diagnostics": [],
     "normalizedPrograms": {
       "init": [],
       "perFrame": [],
@@ -2700,52 +2694,55 @@
     },
     "compatibility": {
       "unsupportedKeys": [],
-      "warnings": [
-        "Texture layer shader control uses tex3D/texture3D with volume sampler \"simplex\" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering."
-      ],
+      "warnings": [],
       "featuresUsed": ["base-globals", "post-effects", "volume-textures"],
       "gpuDescriptorPlan": {
         "routing": "fallback-webgl",
-        "proceduralWaves": [],
-        "proceduralMesh": null,
-        "proceduralMotionVectors": null,
-        "feedback": null,
-        "unsupported": [
+        "proceduralWaves": [
           {
-            "kind": "unsupported-feature",
-            "feature": "volume-textures",
-            "reason": "Texture layer shader control uses tex3D/texture3D with volume sampler \"simplex\" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.",
-            "recommendedFallback": "webgl"
+            "kind": "procedural-wave",
+            "target": "main-wave",
+            "slotIndex": null,
+            "sampleSource": "waveform",
+            "fieldProgram": null
+          },
+          {
+            "kind": "procedural-wave",
+            "target": "trail-waves",
+            "slotIndex": null,
+            "sampleSource": "waveform",
+            "fieldProgram": null
           }
-        ]
+        ],
+        "proceduralMesh": {
+          "kind": "procedural-mesh",
+          "requiresPerPixelProgram": false,
+          "fieldProgram": null
+        },
+        "proceduralMotionVectors": null,
+        "feedback": {
+          "kind": "feedback-post-effect",
+          "shaderExecution": "direct",
+          "usesFeedbackTexture": false,
+          "usesVideoEcho": false,
+          "usesPostEffects": false,
+          "fallbackToLegacyFeedback": true
+        },
+        "unsupported": []
       },
       "backends": {
         "webgl": {
-          "status": "partial",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "partial",
-              "code": "volume-sampler-gap",
-              "feature": "volume-textures"
-            }
-          ]
+          "status": "supported",
+          "evidence": []
         },
         "webgpu": {
-          "status": "unsupported",
-          "evidence": [
-            {
-              "scope": "backend",
-              "status": "unsupported",
-              "code": "volume-sampler-gap",
-              "feature": "volume-textures"
-            }
-          ]
+          "status": "supported",
+          "evidence": []
         }
       },
       "parity": {
-        "fidelityClass": "fallback",
-        "backendDivergence": ["status:webgl=partial,webgpu=unsupported"],
+        "fidelityClass": "exact",
+        "backendDivergence": [],
         "ignoredFields": [],
         "blockedConstructs": [],
         "approximatedShaderLines": [],

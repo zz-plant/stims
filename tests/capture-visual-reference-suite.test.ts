@@ -222,6 +222,18 @@ test('parseVisualReferenceCaptureArgs keeps parity captures out of vibe mode by 
   );
 });
 
+test('parseVisualReferenceCaptureArgs honors explicit backend capture overrides', () => {
+  expect(
+    parseVisualReferenceCaptureArgs(['--force-webgl']).rendererProfile,
+  ).toBe('compatibility');
+  expect(
+    parseVisualReferenceCaptureArgs(['--force-webgpu']).rendererProfile,
+  ).toBe('webgpu');
+  expect(() =>
+    parseVisualReferenceCaptureArgs(['--force-webgl', '--force-webgpu']),
+  ).toThrow('cannot be combined');
+});
+
 test('capture suite fails closed when play-toy reports an unsuccessful capture', () => {
   expect(() =>
     assertVisualReferenceCaptureSucceeded({

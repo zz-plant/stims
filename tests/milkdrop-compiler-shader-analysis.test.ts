@@ -71,6 +71,33 @@ warp_texture_scale = vec2(1.1, 1.2)
     });
   });
 
+  test('splats scalar texture transforms across both axes', () => {
+    const analysis = extractShaderControls(
+      `
+texture_offset = 0.25
+texture_scale = 1.1
+warp_texture_offset += -0.1
+warp_texture_scale = bass_att * 0.5
+      `.trim(),
+      { bass_att: 0.4 },
+    );
+
+    expect(analysis.supported).toBe(true);
+    expect(analysis.unsupportedLines).toEqual([]);
+    expect(analysis.controls.textureLayer).toMatchObject({
+      offsetX: 0.25,
+      offsetY: 0.25,
+      scaleX: 1.1,
+      scaleY: 1.1,
+    });
+    expect(analysis.controls.warpTexture).toMatchObject({
+      offsetX: -0.1,
+      offsetY: -0.1,
+      scaleX: 0.2,
+      scaleY: 0.2,
+    });
+  });
+
   test('extracts supported shader controls from the legacy feedback fixture', () => {
     const compiled = compileMilkdropPresetSource(
       legacySupportedFeedbackFixture,
@@ -170,15 +197,19 @@ warp_texture_scale = vec2(1.1, 1.2)
     const threeArgStatement = parseMilkdropShaderStatement(
       'ret = tex3D(sampler_noisevol_lq, vec3(uv.x, uv.y, time / 5.0)).xyz',
     );
+    const noiseStatement = parseMilkdropShaderStatement(
+      'ret = tex3D(sampler_noise_lq, vec3(uv, time / 20.0)).xyz',
+    );
 
     expect(twoArgStatement).not.toBeNull();
     expect(threeArgStatement).not.toBeNull();
-    if (!twoArgStatement || !threeArgStatement) {
+    expect(noiseStatement).not.toBeNull();
+    if (!twoArgStatement || !threeArgStatement || !noiseStatement) {
       throw new Error('Expected tex3D statements to parse');
     }
 
     const glsl = generateGlslFromShaderStatements(
-      [twoArgStatement, threeArgStatement],
+      [twoArgStatement, threeArgStatement, noiseStatement],
       'comp',
     );
 
@@ -187,9 +218,27 @@ warp_texture_scale = vec2(1.1, 1.2)
     expect(glsl).toContain(
       'sampleUv(vec2(vUv.x, vUv.y), textureWrap), (signalTime / 5.0)',
     );
+    expect(glsl).toContain('sampleUv(vUv, textureWrap), (signalTime / 20.0)');
+    expect(glsl).toContain('sampleAuxTexture(vec4(1.0, 0, 0, 0).x, 1.0');
   });
 
-  test('keeps the volume shader payload direct while routing WebGPU through WebGL fallback', () => {
+  test('lowers a mix of the main sample with a scaled main sample', () => {
+    const analysis = extractShaderControls(
+      'ret = mix(tex2d(sampler_main, uv).rgb, tex2d(sampler_main, uv).rgb * bass_att, 0.5)',
+      { bass_att: 0.4 },
+    );
+
+    expect(analysis.supported).toBe(false);
+    expect(analysis.unsupportedLines).toEqual([]);
+    expect(analysis.controls.colorScale).toMatchObject({
+      r: 0.7,
+      g: 0.7,
+      b: 0.7,
+    });
+    expect(analysis.directProgramRequired).toBe(true);
+  });
+
+  test('keeps the volume shader payload direct across native and fallback backends', () => {
     const compiled = compileMilkdropPresetSource(projectmNoiseVolumeFixture, {
       id: '261-compshader-noisevol_lq',
     });
@@ -208,16 +257,26 @@ warp_texture_scale = vec2(1.1, 1.2)
       webgl: 'direct',
       webgpu: 'direct',
     });
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('partial');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
-      'unsupported',
-    );
+    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
     expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
       'volume-textures',
     );
     expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu.routing).toBe(
       'fallback-webgl',
     );
-    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('fallback');
+    expect(compiled.ir.compatibility.parity.fidelityClass).toBe('exact');
   });
+});
+
+test('keeps native shader-body aspect as a runtime uniform', () => {
+  const compiled = compileMilkdropPresetSource(
+    `[preset00]\nwarp_shader=float x = aspect; shader_body { ret = tex2D(sampler_main, uv); }`,
+    {},
+    { aspect: 16 / 9 },
+  );
+
+  expect(
+    compiled.ir.shaderText.warpProgram?.normalizedLines.join(' '),
+  ).toContain('float x = aspect');
 });

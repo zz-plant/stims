@@ -9,6 +9,7 @@ export type CaptureVisualReferenceSuiteOptions = {
   headless: boolean;
   vibeMode: boolean;
   presetIds?: string[];
+  rendererProfile?: 'compatibility' | 'webgpu';
 };
 
 type VisualReferenceCaptureRequest = Required<
@@ -39,6 +40,7 @@ export function buildVisualReferenceCaptureRequests({
   headless,
   vibeMode,
   presetIds,
+  rendererProfile,
 }: CaptureVisualReferenceSuiteOptions): VisualReferenceCaptureRequest[] {
   const manifest = loadVisualReferenceManifest(repoRoot);
   const presetFilter = presetIds ? new Set(presetIds) : null;
@@ -59,9 +61,10 @@ export function buildVisualReferenceCaptureRequests({
       headless,
       vibeMode,
       rendererProfile:
-        preset.capture.requiredBackend === 'webgpu'
+        rendererProfile ??
+        (preset.capture.requiredBackend === 'webgpu'
           ? 'webgpu'
-          : 'compatibility',
+          : 'compatibility'),
       catalogMode: 'certification',
       screenshotSurface: 'canvas',
     }));
@@ -184,7 +187,7 @@ export async function captureVisualReferenceSuite(
 
 function usage() {
   console.error(
-    'Usage: bun scripts/capture-visual-reference-suite.ts [--output <dir>] [--port <number>] [--preset <id>]...',
+    'Usage: bun scripts/capture-visual-reference-suite.ts [--output <dir>] [--port <number>] [--preset <id>]... [--force-webgl|--force-webgpu]',
   );
 }
 
@@ -203,6 +206,9 @@ export function parseVisualReferenceCaptureArgs(
   const presetIds = argv.flatMap((arg, index) =>
     arg === '--preset' && argv[index + 1] ? [argv[index + 1] ?? ''] : [],
   );
+  if (argv.includes('--force-webgl') && argv.includes('--force-webgpu')) {
+    throw new Error('--force-webgl and --force-webgpu cannot be combined.');
+  }
 
   return {
     repoRoot: process.cwd(),
@@ -211,6 +217,11 @@ export function parseVisualReferenceCaptureArgs(
     headless: !argv.includes('--no-headless'),
     vibeMode: false,
     presetIds: presetIds.length > 0 ? presetIds : undefined,
+    rendererProfile: argv.includes('--force-webgl')
+      ? 'compatibility'
+      : argv.includes('--force-webgpu')
+        ? 'webgpu'
+        : undefined,
   };
 }
 

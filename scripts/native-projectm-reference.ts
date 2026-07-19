@@ -74,6 +74,7 @@ const SAFE_PRESET_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
 
 export const PROJECTM_UPSTREAM_FIXTURE_ROOT =
   'tests/fixtures/milkdrop/projectm-upstream';
+export const BUNDLED_PRESET_FIXTURE_ROOT = 'public/milkdrop-presets';
 export const NATIVE_PROJECTM_HARNESS_PATH =
   'scripts/native-projectm-capture.cpp';
 
@@ -166,6 +167,36 @@ export function resolveNativeProjectMFixture({
     throw new Error('Native projectM preset path escaped the fixture root.');
   }
   return containedPresetPath;
+}
+
+export function resolveProjectMReferenceFixture({
+  repoRoot,
+  presetId,
+  fixtureRoot = PROJECTM_UPSTREAM_FIXTURE_ROOT,
+}: {
+  repoRoot: string;
+  presetId: string;
+  fixtureRoot?: string;
+}) {
+  const requestedPath = resolveNativeProjectMFixture({
+    repoRoot,
+    fixtureRoot,
+    presetId,
+  });
+  if (fs.existsSync(requestedPath)) {
+    return requestedPath;
+  }
+
+  // Shipped presets are valid projectM inputs but are not duplicated into the
+  // smaller upstream compatibility fixture corpus.
+  if (fixtureRoot === PROJECTM_UPSTREAM_FIXTURE_ROOT) {
+    return resolveNativeProjectMFixture({
+      repoRoot,
+      fixtureRoot: BUNDLED_PRESET_FIXTURE_ROOT,
+      presetId,
+    });
+  }
+  return requestedPath;
 }
 
 export async function withTemporaryDirectory<T>(
@@ -439,7 +470,7 @@ export function loadValidatedNativeProjectMReference({
     );
   }
   const imageSha256 = hashFileSha256(imagePath);
-  const presetPath = resolveNativeProjectMFixture({
+  const presetPath = resolveProjectMReferenceFixture({
     repoRoot,
     fixtureRoot: PROJECTM_UPSTREAM_FIXTURE_ROOT,
     presetId: entry.id,

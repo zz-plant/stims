@@ -118,17 +118,7 @@ const PROJECTM_FIXTURE_EXPECTATIONS = {
   '251-wavecode-spectrum.milk': FULL_SUPPORT_EXPECTATION,
   '252-wavecode-spectrum2.milk': FULL_SUPPORT_EXPECTATION,
   '260-compshader-noise_lq.milk': FULL_SUPPORT_EXPECTATION,
-  '261-compshader-noisevol_lq.milk': {
-    diagnostics: ['preset_shader_volume_approximation'],
-    webgl: 'partial',
-    webgpu: 'unsupported',
-    divergence: ['status:webgl=partial,webgpu=unsupported'],
-    warnings: [
-      'Texture layer shader control uses tex3D/texture3D with volume sampler "simplex" which has no true browser equivalent; the output will differ from native MilkDrop volume-texture rendering.',
-    ],
-    blockedConstructs: [],
-    unsupportedKeys: [],
-  },
+  '261-compshader-noisevol_lq.milk': FULL_SUPPORT_EXPECTATION,
   '300-beatdetect-bassmidtreb.milk': FULL_SUPPORT_EXPECTATION,
 } as const satisfies Record<
   (typeof PROJECTM_PRESET_FILES)[number],

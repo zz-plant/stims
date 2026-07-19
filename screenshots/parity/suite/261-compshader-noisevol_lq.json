@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "presetId": "261-compshader-noisevol_lq",
+  "title": "261 Compshader Noisevol LQ",
+  "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719034835",
+  "projectmImagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
+  "projectmReference": {
+    "imagePath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.png",
+    "imageSha256": "51b0a8ee993a601e6cf6a9350755541ed0230a110c2b4af5b000f541ddfc5cd2",
+    "metadataPath": "/Users/kanav/Dev/stims/tests/fixtures/milkdrop/projectm-reference/261-compshader-noisevol_lq.meta.json",
+    "metadataSha256": "5175113f353d9f68e890f7ce3e9d6261573fb480fca2a8509280554ebe10f8fe"
+  },
+  "requiredBackend": "webgpu",
+  "actualBackend": "webgl",
+  "sourceFamily": "projectm-fixture",
+  "strata": [
+    "shader-supported",
+    "volume-textures"
+  ],
+  "toleranceProfile": "default",
+  "threshold": 16,
+  "failThreshold": 0.02,
+  "metrics": {
+    "mismatchRatio": null
+  },
+  "status": "backend-mismatch",
+  "error": "Certified preset requires WEBGPU. Latest Stims capture used WEBGL."
+}
