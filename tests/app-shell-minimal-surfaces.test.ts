@@ -95,4 +95,22 @@ describe('minimal workspace surfaces', () => {
       /\.stims-shell__sheet-panel--browse\s+\.stims-shell__preset-card\s+\.stims-shell__preset-art\s*\{[\s\S]*?min-height:\s*150px;/u,
     );
   });
+
+  test('keeps light theme shell text and surfaces contrast-safe', () => {
+    const tokens = cssSource('tokens.css');
+    const css = cssSource('app-shell.css');
+    const sidePanel = cssSource('SidePanel.module.css');
+    const sidePanelSource = frontendSource('SidePanel.tsx');
+
+    expect(tokens).toContain('--stims-muted: #42525c;');
+    expect(tokens).toContain('--stims-cool: #0d6381;');
+    expect(tokens).toContain('--stims-accent: #a44723;');
+    expect(css).toContain(
+      'html.light .stims-shell__stage-frame[data-mode="home"]',
+    );
+    expect(css).toContain('html.light [data-shell-dialog="true"]');
+    expect(css).toContain('@media (forced-colors: active)');
+    expect(sidePanelSource).toContain('data-shell-dialog="true"');
+    expect(sidePanel).toContain('background: rgba(10, 14, 22, 0.97);');
+  });
 });

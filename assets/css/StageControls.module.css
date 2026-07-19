@@ -239,6 +239,12 @@
   transform: rotate(180deg);
 }
 
+:global(html.light) .handle {
+  background: rgba(8, 14, 22, 0.92);
+  color: #f7f4eb;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
 @media (min-width: 768px) {
   .wrap {
     bottom: auto;

@@ -128,6 +128,7 @@ export function SidePanel({
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        data-shell-dialog="true"
         tabIndex={-1}
       >
         <div className={styles.header}>

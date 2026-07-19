@@ -359,12 +359,22 @@ html.light {
     0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
   --stims-ink: var(--text-color);
   --stims-ink-strong: #0f172a;
-  --stims-muted: rgba(35, 48, 56, 0.72);
-  --stims-line: rgba(43, 56, 77, 0.14);
-  --stims-line-strong: rgba(43, 56, 77, 0.22);
-  --stims-line-soft: rgba(43, 56, 77, 0.08);
+  --stims-muted: #42525c;
+  --stims-line: #9eabb2;
+  --stims-line-strong: #667983;
+  --stims-line-soft: #c2cbd0;
+  --stims-cool: #0d6381;
+  --stims-accent: #a44723;
+  --stims-accent-soft: rgba(164, 71, 35, 0.14);
+  --stims-accent-glow: rgba(164, 71, 35, 0.16);
+  --stims-good: #176b49;
+  --stims-warn: #765000;
+  --stims-bad: #b42318;
   --stims-panel: rgba(255, 250, 240, 0.8);
   --stims-panel-strong: rgba(255, 250, 240, 0.94);
+  --stims-control-fill: linear-gradient(180deg, #fffdf8, #f0ece3);
+  --stims-control-fill-hover: linear-gradient(180deg, #ffffff, #e8f0ef);
+  --stims-rail-fill: linear-gradient(180deg, #fffaf0, #eee8dd);
   color-scheme: light;
   scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);
