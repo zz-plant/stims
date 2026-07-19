@@ -7,6 +7,8 @@ import {
   useState,
 } from 'react';
 import '../../css/app-shell.css';
+import '../../css/shell-theme.css';
+import '../../css/shell-launch.css';
 import { setMotionPreference } from '../core/motion-preferences.ts';
 import {
   buildAudioProfile,

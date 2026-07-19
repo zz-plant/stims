@@ -98,7 +98,7 @@ describe('minimal workspace surfaces', () => {
 
   test('keeps light theme shell text and surfaces contrast-safe', () => {
     const tokens = cssSource('tokens.css');
-    const css = cssSource('app-shell.css');
+    const css = cssSource('shell-theme.css');
     const sidePanel = cssSource('SidePanel.module.css');
     const sidePanelSource = frontendSource('SidePanel.tsx');
 
@@ -112,5 +112,17 @@ describe('minimal workspace surfaces', () => {
     expect(css).toContain('@media (forced-colors: active)');
     expect(sidePanelSource).toContain('data-shell-dialog="true"');
     expect(sidePanel).toContain('background: rgba(10, 14, 22, 0.97);');
+  });
+
+  test('loads late theme and launch layers after core shell styles', () => {
+    const app = frontendSource('App.tsx');
+    const core = app.indexOf("import '../../css/app-shell.css';");
+    const theme = app.indexOf("import '../../css/shell-theme.css';");
+    const launch = app.indexOf("import '../../css/shell-launch.css';");
+
+    expect(core).toBeGreaterThanOrEqual(0);
+    expect(theme).toBeGreaterThan(core);
+    expect(launch).toBeGreaterThan(theme);
+    expect(cssSource('shell-launch.css')).toContain('@scope (.stims-shell)');
   });
 });

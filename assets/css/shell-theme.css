@@ -1,0 +1,290 @@
+/*
+ * Workspace theme and accessibility overrides.
+ * Loaded after app-shell.css from App.tsx so theme and contrast variants stay
+ * deliberately late in the cascade.
+ */
+
+/* Theme contrast pass: the visual stage may stay dark while the shell and
+   dialogs follow the selected page theme. */
+html.light body[data-page="workspace"] {
+  color: var(--stims-ink);
+  background: linear-gradient(180deg, #f4efe4 0%, #e5ded0 100%);
+}
+
+html.light .stims-shell__workspace[data-mode="home"],
+html.light .stims-shell__stage-frame[data-mode="home"] {
+  color: var(--stims-ink);
+  background: linear-gradient(145deg, #f7f2e9, #e8e1d5);
+  border-color: #a9b5ba;
+  box-shadow:
+    0 18px 42px rgba(35, 48, 56, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+html.light
+  .stims-shell__stage-frame[data-mode="home"]
+  .stims-shell__launch-panel {
+  background: transparent;
+  color: var(--stims-ink);
+}
+
+html.light .stims-shell__launch-copy h1,
+html.light .stims-shell__launch-recommendation strong,
+html.light .stims-shell__source-card strong,
+html.light .stims-shell__section-label,
+html.light .stims-shell__field-label,
+html.light .stims-shell__browse-toolbar strong,
+html.light .stims-shell__section-heading,
+html.light .stims-shell__sheet-heading h2 {
+  color: var(--stims-ink-strong);
+}
+
+html.light .stims-shell__eyebrow,
+html.light .stims-shell__launch-copy p,
+html.light .stims-shell__meta-copy,
+html.light .stims-shell__source-card span,
+html.light .stims-shell__youtube-feedback,
+html.light .stims-shell__preset-meta,
+html.light .stims-shell__preset-tech {
+  color: var(--stims-muted);
+}
+
+html.light .stims-shell__eyebrow,
+html.light .stims-shell__section-label,
+html.light .stims-shell__source-card-kicker,
+html.light .stims-shell__preset-vibe {
+  color: var(--stims-cool);
+}
+
+html.light .stims-shell__launch-recommendation,
+html.light .stims-shell__launch-source-dock,
+html.light .stims-shell__source-card,
+html.light .stims-shell__youtube-primary,
+html.light .stims-shell__sheet-surface,
+html.light .stims-shell__sheet-callout,
+html.light .stims-shell__settings-advanced,
+html.light .stims-shell__starter-card,
+html.light .stims-shell__preset-card {
+  border-color: var(--stims-line);
+  background: #fffaf0;
+  color: var(--stims-ink);
+  box-shadow: 0 8px 18px rgba(35, 48, 56, 0.08);
+}
+
+html.light .stims-shell__launch-source-dock .stims-shell__youtube-primary,
+html.light .stims-shell__launch-source-dock .stims-shell__source-grid {
+  background: transparent;
+  box-shadow: none;
+}
+
+html.light .stims-shell__launch-source-dock .stims-shell__source-card {
+  background: transparent;
+  box-shadow: none;
+}
+
+html.light .stims-shell__source-card:hover:not(:disabled),
+html.light .stims-shell__preset-card:hover,
+html.light .stims-shell__starter-card:hover,
+html.light .stims-shell__launch-recommendation:hover {
+  border-color: var(--stims-line-strong);
+  background: #f1f7f5;
+  box-shadow: 0 10px 22px rgba(35, 48, 56, 0.12);
+}
+
+html.light .stims-shell__input,
+html.light .stims-shell__select,
+html.light .stims-shell__refine-textarea {
+  border-color: var(--stims-line-strong);
+  background: #fffdf8;
+  color: var(--stims-ink-strong);
+  box-shadow: inset 0 1px 2px rgba(35, 48, 56, 0.08);
+}
+
+html.light .stims-shell__input::placeholder,
+html.light .stims-shell__refine-textarea::placeholder {
+  color: #52606b;
+  opacity: 1;
+}
+
+html.light .stims-shell__input:focus,
+html.light .stims-shell__select:focus,
+html.light .stims-shell__refine-textarea:focus {
+  border-color: var(--stims-cool);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(13, 99, 129, 0.2);
+}
+
+html.light .stims-shell__text-button,
+html.light .stims-shell__icon-button,
+html.light .stims-shell__collection-pill,
+html.light .stims-shell__sheet-tab {
+  border-color: var(--stims-line-strong);
+  background: var(--stims-control-fill);
+  color: var(--stims-ink-strong);
+  box-shadow: 0 4px 10px rgba(35, 48, 56, 0.08);
+}
+
+html.light .stims-shell__text-button:hover,
+html.light .stims-shell__icon-button:hover,
+html.light .stims-shell__collection-pill:hover,
+html.light .stims-shell__sheet-tab:hover {
+  border-color: var(--stims-cool);
+  background: var(--stims-control-fill-hover);
+  color: #102b39;
+  box-shadow: 0 6px 14px rgba(35, 48, 56, 0.12);
+}
+
+html.light .stims-shell__collection-pill[data-active="true"],
+html.light .stims-shell__sheet-tab[data-active="true"],
+html.light .stims-shell__stage-tool[data-active="true"] {
+  border-color: #7e3218;
+  background: #a44723;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(126, 50, 24, 0.2);
+}
+
+html.light .stims-shell__preset-card[data-active="true"] {
+  border-color: #a44723;
+  background: #fff0e8;
+}
+
+html.light .stims-shell__preset-fav {
+  border-color: #71828c;
+  background: rgba(255, 250, 240, 0.94);
+  color: #42525c;
+}
+
+html.light .stims-shell__preset-fav:hover {
+  color: #a21caf;
+  background: #ffffff;
+}
+
+html.light .stims-shell .cta-button {
+  border-color: var(--stims-line-strong);
+  background: #fffaf0;
+  color: var(--stims-ink-strong);
+  box-shadow: 0 4px 10px rgba(35, 48, 56, 0.08);
+}
+
+html.light .stims-shell .cta-button.primary {
+  border-color: #12543b;
+  background: #176b49;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(23, 107, 73, 0.22);
+}
+
+html.light .stims-shell .cta-button.primary:hover:not(:disabled) {
+  background: #12543b;
+}
+
+html.light .stims-shell .cta-button:disabled,
+html.light .stims-shell .cta-button.primary:disabled {
+  border-color: #aeb8bc;
+  background: #e2e7e6;
+  color: #66747b;
+  opacity: 1;
+}
+
+html.light .stims-shell__sheet,
+html.light [data-shell-dialog="true"] {
+  border-color: #9eabb2;
+  background: #fffaf0;
+  color: var(--stims-ink);
+  box-shadow: 0 22px 48px rgba(35, 48, 56, 0.18);
+}
+
+html.light [data-shell-dialog="true"] [class*="header"] {
+  border-color: var(--stims-line-soft);
+}
+
+html.light [data-shell-dialog="true"] [class*="closeBtn"] {
+  color: var(--stims-ink-strong);
+}
+
+html.light [data-shell-dialog="true"] [class*="closeBtn"]:hover {
+  border-color: var(--stims-line-strong);
+  background: #e8f0ef;
+}
+
+html.light .stims-shell__toast {
+  border-color: var(--stims-line-strong);
+  background: #fffaf0;
+  color: var(--stims-ink-strong);
+  box-shadow: 0 16px 30px rgba(35, 48, 56, 0.16);
+}
+
+html.light .stims-shell__toast[data-tone="warn"] {
+  border-color: #8a5c00;
+  color: #704900;
+}
+
+html.light .stims-shell__toast[data-tone="error"] {
+  border-color: #b42318;
+  color: #8d1b14;
+}
+
+html.light .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool,
+html.light
+  .stims-shell__stage-frame[data-mode="live"]
+  .stims-shell__frame-header {
+  color: #f7f4eb;
+}
+
+html.light
+  .stims-shell__stage-frame[data-mode="live"]
+  .stims-shell__stage-tool {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(5, 8, 14, 0.72);
+}
+
+@media (prefers-contrast: more) {
+  .stims-shell {
+    --stims-muted: #dce7ed;
+    --stims-line: #91a6b3;
+    --stims-line-strong: #c4d4dd;
+    --stims-line-soft: #6f8491;
+    --stims-cool: #b8edff;
+    --stims-accent: #ffb39e;
+  }
+
+  html.light .stims-shell {
+    --stims-muted: #263d48;
+    --stims-line: #71838b;
+    --stims-line-strong: #3d5964;
+    --stims-line-soft: #9aabb2;
+    --stims-cool: #075574;
+    --stims-accent: #7e2c12;
+  }
+
+  .stims-shell button,
+  .stims-shell input,
+  .stims-shell select,
+  .stims-shell textarea,
+  html.light [data-shell-dialog] button,
+  html.light [data-shell-dialog] input,
+  html.light [data-shell-dialog] select,
+  html.light [data-shell-dialog] textarea {
+    border-width: 2px;
+  }
+
+  .stims-shell :focus-visible,
+  html.light [data-shell-dialog] :focus-visible {
+    outline: 3px solid var(--stims-cool);
+    outline-offset: 3px;
+    box-shadow: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .stims-shell,
+  .stims-shell [data-shell-dialog="true"] {
+    forced-color-adjust: auto;
+  }
+
+  .stims-shell :focus-visible,
+  [data-shell-dialog="true"] :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 3px;
+    box-shadow: none;
+  }
+}

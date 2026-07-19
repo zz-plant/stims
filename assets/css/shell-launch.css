@@ -1,0 +1,314 @@
+/*
+ * Launch and catalog layout overrides.
+ * Loaded after shell-theme.css from App.tsx so this layer owns the final
+ * responsive home and browse geometry.
+ */
+
+/* Shell focus pass: put the preset decision before source setup and keep the
+   catalog scannable at the widths where the shell is most often used. */
+@scope (.stims-shell) {
+  .stims-shell__stage-frame[data-mode="home"] {
+    background: #080b12;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
+    padding: clamp(70px, 9vh, 104px) clamp(20px, 6vw, 72px) 42px;
+  }
+
+  .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
+    width: min(1040px, 100%);
+    padding: 24px 0 20px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .stims-shell__launch-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.06fr) minmax(320px, 0.94fr);
+    gap: clamp(28px, 5vw, 72px);
+    align-items: start;
+  }
+
+  .stims-shell__launch-rail {
+    display: grid;
+    gap: 18px;
+  }
+
+  .stims-shell__launch-copy {
+    gap: 10px;
+  }
+
+  .stims-shell__launch-copy h1 {
+    font-size: clamp(2.8rem, 5vw, 4.8rem);
+    line-height: 0.94;
+  }
+
+  .stims-shell__launch-copy p {
+    max-width: 38ch;
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+
+  .stims-shell__launch-recommendation {
+    position: relative;
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    max-width: 38rem;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+    box-shadow: none;
+  }
+
+  .stims-shell__launch-recommendation .stims-shell__preset-art {
+    width: 112px;
+    min-width: 112px;
+    min-height: 72px;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+  }
+
+  .stims-shell__launch-recommendation-copy {
+    min-width: 0;
+    gap: 5px;
+  }
+
+  .stims-shell__launch-recommendation strong,
+  .stims-shell__launch-recommendation .stims-shell__meta-copy {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stims-shell__launch-recommendation strong {
+    font-size: 1.08rem;
+  }
+
+  .stims-shell__launch-recommendation-arrow {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    color: var(--stims-ink-strong);
+    font-size: 1.2rem;
+    transition: transform 160ms ease;
+  }
+
+  .stims-shell__launch-recommendation:hover
+    .stims-shell__launch-recommendation-arrow {
+    transform: translateX(3px);
+  }
+
+  .stims-shell__launch-layout > .stims-shell__launch-source-dock {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    padding: 16px;
+    border: 1px solid var(--stims-line-soft);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+    box-shadow: none;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-panel {
+    gap: 12px;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__youtube-primary {
+    padding: 0 0 12px;
+    border: 0;
+    border-bottom: 1px solid var(--stims-line-soft);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-grid {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-card {
+    min-height: 52px;
+    padding: 8px 10px;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-card strong {
+    font-size: 0.9rem;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
+    font-size: 0.62rem;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__sheet-surface {
+    border-radius: 8px;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__preset-list {
+    grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+    gap: 8px;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__preset-card {
+    grid-template-columns: 104px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .stims-shell__sheet-panel--browse
+    .stims-shell__preset-card
+    .stims-shell__preset-art {
+    width: 104px;
+    min-width: 104px;
+    min-height: 68px;
+    height: 68px;
+    border-radius: 6px;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__preset-card-copy {
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__preset-title,
+  .stims-shell__sheet-panel--browse .stims-shell__preset-vibe {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__collections {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .stims-shell__sheet-panel--browse
+    .stims-shell__collections::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__collection-pill {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 7px 11px;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  .stims-shell__sheet-panel--browse .stims-shell__section-heading {
+    align-items: baseline;
+  }
+
+  @media (max-width: 767px) {
+    .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
+      padding: 76px 14px 34px;
+    }
+
+    .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
+      padding: 8px 0 0;
+    }
+
+    .stims-shell__launch-layout {
+      display: block;
+    }
+
+    .stims-shell__launch-rail {
+      display: grid;
+      gap: 16px;
+    }
+
+    .stims-shell__launch-copy h1 {
+      font-size: clamp(2.55rem, 15vw, 3.6rem);
+      line-height: 0.94;
+    }
+
+    .stims-shell__launch-copy p {
+      max-width: 34ch;
+      font-size: 0.92rem;
+    }
+
+    .stims-shell__launch-recommendation {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) auto;
+      max-width: none;
+      padding: 10px;
+    }
+
+    .stims-shell__launch-recommendation .stims-shell__preset-art {
+      width: 96px;
+      min-width: 96px;
+      min-height: 62px;
+    }
+
+    .stims-shell__launch-actions {
+      display: flex;
+      width: 100%;
+    }
+
+    .stims-shell__launch-actions > * {
+      min-height: 42px;
+    }
+
+    .stims-shell__launch-source-dock {
+      display: block;
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .stims-shell__launch-source-dock .stims-shell__youtube-row {
+      grid-template-columns: minmax(0, 1fr) 76px;
+    }
+
+    .stims-shell__launch-source-dock .stims-shell__source-card {
+      min-height: 52px;
+    }
+
+    .stims-shell__sheet-panel--browse .stims-shell__sheet-surface {
+      padding: 10px;
+    }
+
+    .stims-shell__sheet-panel--browse .stims-shell__preset-list {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .stims-shell__sheet-panel--browse .stims-shell__preset-card {
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 10px;
+      padding: 7px;
+    }
+
+    .stims-shell__sheet-panel--browse
+      .stims-shell__preset-card
+      .stims-shell__preset-art {
+      width: 84px;
+      min-width: 84px;
+      min-height: 56px;
+      height: 56px;
+    }
+
+    .stims-shell__sheet-panel--browse .stims-shell__browse-search-row {
+      grid-template-columns: minmax(0, 1fr) 112px;
+    }
+
+    .stims-shell__sheet-panel--browse .stims-shell__sheet-surface--sticky {
+      gap: 8px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stims-shell__launch-recommendation-arrow {
+      transition: none;
+    }
+  }
+}
