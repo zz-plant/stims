@@ -556,7 +556,9 @@ function StimsWorkspaceAppShell() {
         </div>
       ) : null}
 
-      <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
+      {ui.routeState.panel ? null : (
+        <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
+      )}
 
       <AudioMatchToast
         match={audioMatch}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-v4-flash",
+  "small_model": "deepseek/deepseek-v4-flash",
+  "skills": {
+    "caveman-commit": true,
+    "systematic-debugging": true,
+    "test-driven-development": true,
+    "review-work": true,
+    "ai-slop-remover": true
+  }
+}
