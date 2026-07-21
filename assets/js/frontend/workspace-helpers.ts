@@ -88,7 +88,17 @@ export function getToolDescription(tool: Exclude<PanelState, null>) {
   }
 }
 
+const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
+  'collection:cream-of-the-crop': 'Cream of the Crop',
+  'collection:classic-milkdrop': 'Classic MilkDrop',
+  'collection:rovastar-and-collaborators': 'Rovastar & Collaborators',
+  'collection:touch-friendly': 'Touch Friendly',
+};
+
 export function prettifyCollectionTag(collectionTag: string) {
+  if (COLLECTION_TAG_LABEL_MAP[collectionTag]) {
+    return COLLECTION_TAG_LABEL_MAP[collectionTag];
+  }
   return collectionTag
     .replace(/^collection:/u, '')
     .split(/[-_]/u)
@@ -97,12 +107,30 @@ export function prettifyCollectionTag(collectionTag: string) {
     .join(' ');
 }
 
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, ' ')
+    .trim();
+}
+
 export function matchesPreset(entry: PresetCatalogEntry, query: string) {
-  if (!query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) {
     return true;
   }
 
-  return getPresetSearchIndex(entry).includes(query.toLowerCase());
+  const searchIndex = getPresetSearchIndex(entry);
+  if (searchIndex.includes(normalizedQuery)) {
+    return true;
+  }
+
+  const queryTokens = normalizedQuery.split(/\s+/u).filter(Boolean);
+  if (queryTokens.length === 0) {
+    return true;
+  }
+
+  return queryTokens.every((token) => searchIndex.includes(token));
 }
 
 export function getCollectionTags(entries: PresetCatalogEntry[]) {
@@ -119,7 +147,10 @@ export function getCollectionTags(entries: PresetCatalogEntry[]) {
 
 export function getFeaturedCollectionTags(collectionTags: string[]) {
   const featuredHints = [
+    'collection:cream-of-the-crop',
     'collection:classic-milkdrop',
+    'collection:rovastar-and-collaborators',
+    'collection:touch-friendly',
     'collection:bright',
     'collection:space',
   ];
@@ -127,7 +158,7 @@ export function getFeaturedCollectionTags(collectionTags: string[]) {
   if (featured.length > 0) {
     return featured;
   }
-  return collectionTags.slice(0, 3);
+  return collectionTags.slice(0, 4);
 }
 
 export function buildAppliedFilterSummary({
@@ -152,10 +183,19 @@ export function buildAppliedFilterSummary({
 }
 
 export function buildPresetSearchIndex(entry: PresetCatalogEntry) {
-  return [entry.id, entry.title, entry.author, ...(entry.tags ?? [])]
+  const collectionLabels = (entry.tags ?? [])
+    .filter((tag) => tag.startsWith('collection:'))
+    .map((tag) => prettifyCollectionTag(tag));
+  const rawTerms = [
+    entry.id,
+    entry.title,
+    entry.author,
+    ...(entry.tags ?? []),
+    ...collectionLabels,
+  ]
     .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+    .join(' ');
+  return normalizeSearchText(rawTerms);
 }
 
 const presetSearchIndexCache = new WeakMap<PresetCatalogEntry, string>();

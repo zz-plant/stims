@@ -3,7 +3,10 @@ import { describe, expect, test } from 'bun:test';
 import type { PresetCatalogEntry } from '../assets/js/frontend/contracts.ts';
 import {
   describePresetMood,
+  getFeaturedCollectionTags,
   getPresetCardSupportLabel,
+  matchesPreset,
+  prettifyCollectionTag,
 } from '../assets/js/frontend/workspace-helpers.ts';
 
 function makePreset(
@@ -89,5 +92,39 @@ describe('getPresetCardSupportLabel', () => {
       fidelityTier: 'semantic-only',
     });
     expect(getPresetCardSupportLabel(entry)).toBe('Parsed (not measured)');
+  });
+});
+
+describe('matchesPreset and collection tags', () => {
+  const creamPreset = makePreset({
+    id: 'eos-ether',
+    title: 'Eo.S. - Ether',
+    author: 'Eo.S.',
+    tags: ['collection:cream-of-the-crop', 'liquid', 'reaction'],
+  });
+
+  test('matches cream of the crop search query with spaces or hyphens', () => {
+    expect(matchesPreset(creamPreset, 'cream of the crop')).toBe(true);
+    expect(matchesPreset(creamPreset, 'cream-of-the-crop')).toBe(true);
+    expect(matchesPreset(creamPreset, 'cream')).toBe(true);
+    expect(matchesPreset(creamPreset, 'ether')).toBe(true);
+    expect(matchesPreset(creamPreset, 'eos')).toBe(true);
+  });
+
+  test('prettifies cream-of-the-crop collection tag properly', () => {
+    expect(prettifyCollectionTag('collection:cream-of-the-crop')).toBe(
+      'Cream of the Crop',
+    );
+  });
+
+  test('includes collection:cream-of-the-crop in featured collection tags', () => {
+    const tags = [
+      'collection:classic-milkdrop',
+      'collection:cream-of-the-crop',
+      'collection:rovastar-and-collaborators',
+    ];
+    expect(getFeaturedCollectionTags(tags)).toContain(
+      'collection:cream-of-the-crop',
+    );
   });
 });

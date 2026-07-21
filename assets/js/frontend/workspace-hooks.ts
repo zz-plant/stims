@@ -286,11 +286,11 @@ export function useWorkspaceSessionState({
 
   useEffect(() => {
     const engine = engineRef.current;
-    if (!engine?.isMounted() || !routeState.collectionTag) {
+    if (!engine?.isMounted()) {
       return;
     }
 
-    engine.setCollectionTag(routeState.collectionTag);
+    engine.setCollectionTag(routeState.collectionTag ?? null);
   }, [routeState.collectionTag]);
 
   useEffect(() => {
