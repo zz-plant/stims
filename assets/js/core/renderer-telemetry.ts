@@ -1,7 +1,10 @@
+import { createLogger } from './logger.ts';
 import {
   type RendererOptimizationTelemetryDetail,
   setRendererTelemetryHandler,
 } from './renderer-capabilities.ts';
+
+const logger = createLogger('RendererTelemetry');
 
 const STORAGE_KEY = 'stims:renderer-support-stats';
 
@@ -51,8 +54,8 @@ function installRendererSupportTelemetry() {
             : {},
         lastUpdatedAt: new Date().toISOString(),
       });
-    } catch (_error) {
-      // Ignore telemetry persistence failures.
+    } catch (error) {
+      logger.log('Failed to write support telemetry:', error);
     }
   });
 }
@@ -92,8 +95,8 @@ function installOptimizationTelemetry() {
           lastOptimizationCounterAmount: Number(detail.amount ?? 1),
           lastUpdatedAt: new Date().toISOString(),
         });
-      } catch (_error) {
-        // Ignore telemetry persistence failures.
+      } catch (error) {
+        logger.log('Failed to write optimization telemetry:', error);
       }
     },
   );

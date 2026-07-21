@@ -402,7 +402,7 @@ export function SettingsSheetPanel({
         <h3 className="stims-shell__settings-section-heading">
           Graphics backend
         </h3>
-        <p className="stims-shell__meta-copy" style={{ marginBottom: 12 }}>
+        <p className="stims-shell__meta-copy stims-shell__margin-bottom-12">
           {engineSnapshot?.backend
             ? `Currently running on ${engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
             : engine.engineReady
@@ -414,9 +414,8 @@ export function SettingsSheetPanel({
         </p>
 
         <label
-          className="stims-shell__field-label"
+          className="stims-shell__field-label stims-shell__margin-top-8"
           htmlFor="backend-select"
-          style={{ marginTop: 8 }}
         >
           Graphics override
         </label>
@@ -451,7 +450,7 @@ export function SettingsSheetPanel({
           <option value="webgpu">Force WebGPU</option>
           <option value="webgl">Force WebGL (Stability mode)</option>
         </select>
-        <p className="stims-shell__meta-copy" style={{ marginTop: 8 }}>
+        <p className="stims-shell__meta-copy stims-shell__margin-top-8">
           Auto follows browser stability rules. WebGL is the safer fallback.
         </p>
       </section>

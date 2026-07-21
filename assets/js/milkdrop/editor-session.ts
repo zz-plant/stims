@@ -1,4 +1,5 @@
 import { type Remote, releaseProxy, wrap } from 'comlink';
+import { createLogger } from '../core/logger';
 import { compileMilkdropPresetSource } from './compiler';
 import { upsertMilkdropField } from './formatter';
 import type {
@@ -9,6 +10,8 @@ import type {
   MilkdropPresetSource,
 } from './types';
 
+const logger = createLogger('EditorSession');
+
 const IS_DEV =
   typeof window !== 'undefined'
     ? window.location.search.includes('agent=true') ||
@@ -17,12 +20,12 @@ const IS_DEV =
 
 function editorLog(sourceId: string, msg: string, ...args: unknown[]) {
   if (!IS_DEV) return;
-  console.log(`[EditorSession:${sourceId}] ${msg}`, ...args);
+  logger.info(`[${sourceId}] ${msg}`, ...args);
 }
 
 function editorWarn(sourceId: string, msg: string, ...args: unknown[]) {
   if (!IS_DEV) return;
-  console.warn(`[EditorSession:${sourceId}] ⚠ ${msg}`, ...args);
+  logger.warn(`[${sourceId}] ⚠ ${msg}`, ...args);
 }
 
 function hasErrors(compiled: MilkdropCompiledPreset) {

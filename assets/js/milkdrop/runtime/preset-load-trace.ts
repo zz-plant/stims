@@ -32,7 +32,7 @@ export function createPresetLoadTrace(presetId: string) {
     if (currentStep !== 'start') {
       steps.push({ name: currentStep, duration });
     }
-    console.log(`  → ${name} (${duration.toFixed(1)}ms)`);
+    console.info(`  → ${name} (${duration.toFixed(1)}ms)`);
     currentStep = name;
     lastStepTime = now;
   };
@@ -57,7 +57,7 @@ export function createPresetLoadTrace(presetId: string) {
     const total = now - startTime;
     const msg = result ?? (success ? 'loaded' : 'failed');
     if (success) {
-      console.log(`✓ ${msg} (${total.toFixed(1)}ms)`);
+      console.info(`✓ ${msg} (${total.toFixed(1)}ms)`);
     } else {
       console.error(`✗ ${msg} (${total.toFixed(1)}ms)`);
     }

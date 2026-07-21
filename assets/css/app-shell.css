@@ -4630,3 +4630,123 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ── Error Boundary & Skeleton Utilities ────────────────────────────── */
+.stims-shell__error-boundary {
+  display: grid;
+  place-items: center;
+  height: 100dvh;
+  background:
+    radial-gradient(circle at 30% 20%, var(--glow-color), transparent 50%),
+    radial-gradient(circle at 70% 80%, var(--highlight-glow), transparent 50%),
+    var(--bg-color);
+  color: var(--text-color);
+  font-family: system-ui, -apple-system, sans-serif;
+  text-align: center;
+  padding: 24px;
+}
+
+.stims-shell__error-card {
+  background: var(--stims-white-03);
+  border: 1px solid var(--stims-white-08);
+  border-radius: 20px;
+  padding: 32px 40px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 24px 60px var(--stims-shadow-34);
+  backdrop-filter: blur(16px);
+}
+
+.stims-shell__error-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 123, 114, 0.1);
+  border: 1px solid rgba(255, 123, 114, 0.2);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  color: var(--stims-bad);
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.stims-shell__error-heading {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--stims-bad);
+}
+
+.stims-shell__error-copy {
+  opacity: 0.8;
+  font-size: 0.95rem;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.stims-shell__error-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.stims-shell__error-btn {
+  margin: 4px;
+  padding: 12px 24px;
+  background: var(--stims-white-06);
+  color: var(--text-color);
+  border: 1px solid var(--stims-line);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: all 150ms ease;
+}
+
+.stims-shell__error-btn:hover {
+  transform: scale(1.02);
+  opacity: 0.95;
+}
+
+.stims-shell__error-btn:active {
+  transform: scale(0.97);
+}
+
+.stims-shell__error-btn--primary {
+  background: var(--accent-color);
+  color: var(--bg-color);
+  border: none;
+}
+
+.stims-shell__error-btn--primary:hover {
+  box-shadow: 0 0 16px var(--glow-color);
+}
+
+.stims-shell__skeleton--preset-art {
+  min-height: 164px;
+}
+
+.stims-shell__skeleton--title {
+  height: 18px;
+}
+
+.stims-shell__skeleton--sub-40 {
+  height: 14px;
+  width: 40%;
+}
+
+.stims-shell__skeleton--sub-70 {
+  height: 14px;
+  width: 70%;
+}
+
+.stims-shell__margin-bottom-12 {
+  margin-bottom: 12px;
+}
+
+.stims-shell__margin-top-8 {
+  margin-top: 8px;
+}

@@ -2,7 +2,10 @@ import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import { getFrequencyBandLevels } from '../utils/audio-reactivity.ts';
+import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
+
+const logger = createLogger('AudioHandler');
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 
@@ -561,7 +564,12 @@ export function stopAllAudioForBfcache() {
   for (const stream of activeStreams) {
     try {
       stream.getTracks().forEach((track) => track.stop());
-    } catch (_) {}
+    } catch (err) {
+      logger.log(
+        'Failed to stop active stream track during bfcache teardown:',
+        err,
+      );
+    }
   }
   activeStreams.clear();
 
@@ -570,14 +578,24 @@ export function stopAllAudioForBfcache() {
       if (context.state !== 'closed') {
         context.close();
       }
-    } catch (_) {}
+    } catch (err) {
+      logger.log(
+        'Failed to close active AudioContext during bfcache teardown:',
+        err,
+      );
+    }
   }
   activeContexts.clear();
 
   if (cachedDemoAudio) {
     try {
       cachedDemoAudio.teardown();
-    } catch (_) {}
+    } catch (err) {
+      logger.log(
+        'Failed to teardown cached demo audio during bfcache teardown:',
+        err,
+      );
+    }
     cachedDemoAudio = null;
     cachedDemoUsers = 0;
   }
@@ -772,7 +790,9 @@ function createProceduralDemoAudio() {
     try {
       voice.stop();
       sub.stop();
-    } catch (_) {}
+    } catch (err) {
+      logger.log('Failed to stop demo audio oscillators:', err);
+    }
   };
 
   const disconnect = async () => {
@@ -786,7 +806,9 @@ function createProceduralDemoAudio() {
     unregisterAudioContext(context);
     try {
       await context.close();
-    } catch (_) {}
+    } catch (err) {
+      logger.log('Failed to close demo audio context during disconnect:', err);
+    }
   };
 
   return { stream: destination.stream, teardown: disconnect, resume };
@@ -967,7 +989,9 @@ export async function initAudio(options: AudioInitOptions = {}) {
       if (mockCleanup) {
         try {
           await mockCleanup();
-        } catch (_) {}
+        } catch (err) {
+          logger.log('Failed to execute mockCleanup:', err);
+        }
       }
 
       if (camera && 'remove' in camera && listener) {
@@ -1015,7 +1039,12 @@ export async function initAudio(options: AudioInitOptions = {}) {
     if (mockCleanup) {
       try {
         await mockCleanup();
-      } catch (_) {}
+      } catch (err) {
+        logger.log(
+          'Failed to execute mockCleanup during setup error handling:',
+          err,
+        );
+      }
     }
 
     if (resolvedStream) {

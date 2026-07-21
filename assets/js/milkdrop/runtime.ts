@@ -916,12 +916,12 @@ export function createMilkdropExperience({
     clearDeferredCatalogSync,
     disposePostprocessingPipeline,
     statsOverlay,
-    // biome-ignore lint/suspicious/noExplicitAny: builder pattern
+    // biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
   } as any);
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: builder pattern needs dynamic deps
-function buildExperienceController(deps: any) {
+// biome-ignore lint/suspicious/noExplicitAny: builder pattern bundles runtime delegates
+function buildExperienceController(deps: Record<string, any>) {
   return {
     subscribe(listener: unknown) {
       return deps.subscribe(listener);

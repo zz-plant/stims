@@ -213,7 +213,7 @@ function resolveShaderSwizzle(
 } | null {
   if (kind === 'scalar') return null;
   if (kind !== 'vec4') {
-    return resolveDirectShaderSwizzle(kind, property) as any;
+    return resolveDirectShaderSwizzle(kind, property);
   }
   const normalized = property.toLowerCase();
   const componentMap: Record<string, DirectShaderSwizzleComponent> = {
