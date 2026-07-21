@@ -72,7 +72,29 @@ export function checkPreCommitGuards(): boolean {
       failed = true;
     }
 
-    // 2. Guard against console.log
+    // 2. Guard against silent empty catch blocks
+    if (/catch\s*(?:\([^)]*\))?\s*\{\s*\}/.test(content)) {
+      logError(
+        `File "${relPath}" contains a silent empty catch block "catch {}" or "catch (_) {}". Use logger.debug/warn or proper error handling.`,
+      );
+      failed = true;
+    }
+
+    // 3. Guard against hardcoded HEX colors in frontend JSX components
+    if (
+      relPath.startsWith('assets/js/frontend/') &&
+      /\.(?:tsx|jsx)$/.test(relPath)
+    ) {
+      const hexMatch = content.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/g);
+      if (hexMatch) {
+        logError(
+          `File "${relPath}" contains hardcoded HEX color literal(s): ${hexMatch.join(', ')}. Use unified CSS tokens from tokens.css.`,
+        );
+        failed = true;
+      }
+    }
+
+    // 4. Guard against console.log
     for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i]?.trim() ?? '';
 
