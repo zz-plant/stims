@@ -563,7 +563,9 @@ shapecode_0_thickoutline=1
               material.color.r > 0.9 &&
               material.color.g < 0.1,
           );
-        expect(borderMaterial?.toneMapped).toBe(false);
+        expect(
+          (borderMaterial as MeshBasicMaterial | undefined)?.toneMapped,
+        ).toBe(false);
       }
       adapter.dispose();
     }
