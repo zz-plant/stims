@@ -219,17 +219,23 @@ export function describePresetMood(entry: PresetCatalogEntry) {
   const index = buildPresetSearchIndex(entry);
   let mood: string;
 
-  if (/(glow|sun|flare|star|light|bloom)/u.test(index)) {
+  // Anchor keywords to a word boundary so a descriptive term is only matched
+  // as its own word — not as a substring buried inside an author name. Without
+  // this, "star" inside the prolific author "Rovastar" (and "light" inside
+  // "skylight", etc.) forced ~170 presets into "Bright pulse", making the browse
+  // list read as one repeated label. Compound titles that begin with a keyword
+  // ("Glowsticks", "Cubetrace") still match because the keyword starts the word.
+  if (/\b(?:glow|sun|flare|star|light|bloom)/u.test(index)) {
     mood = 'Bright pulse';
-  } else if (/(cube|matrix|square|line|grid|trace)/u.test(index)) {
+  } else if (/\b(?:cube|matrix|square|line|grid|trace)/u.test(index)) {
     mood = 'Sharp geometry';
   } else if (
-    /(quasar|ether|parallel|space|mars|radiation|vacuum)/u.test(index)
+    /\b(?:quasar|ether|parallel|space|mars|radiation|vacuum)/u.test(index)
   ) {
     mood = 'Space drift';
-  } else if (/(dark|ritual|apocalypse|demon|moon)/u.test(index)) {
+  } else if (/\b(?:dark|ritual|apocalypse|demon|moon)/u.test(index)) {
     mood = 'Moody sweep';
-  } else if (/(trippy|psychaos|rotation|spectro|glassworms)/u.test(index)) {
+  } else if (/\b(?:trippy|psychaos|rotation|spectro|glassworms)/u.test(index)) {
     mood = 'Psychedelic spin';
   } else if (entry.tags?.includes('collection:classic-milkdrop')) {
     mood = 'Classic rush';
