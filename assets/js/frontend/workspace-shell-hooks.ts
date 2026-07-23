@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-handler.ts';
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { shareOrCopyLink } from '../utils/share-link.ts';
@@ -409,9 +410,14 @@ export function useWorkspaceShellOrchestration({
         }
         let permissionStream: MediaStream;
         try {
-          permissionStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
+          // This stream is handed straight to the engine, so it must carry the
+          // shared constraints. A bare `{ audio: true }` opts into the browser's
+          // voice-call pipeline — on Android that means aggressive AGC, noise
+          // suppression and echo cancellation, which flatten music into a
+          // pumping, gated signal the visualizer can barely react to.
+          permissionStream = await navigator.mediaDevices.getUserMedia(
+            DEFAULT_MICROPHONE_CONSTRAINTS,
+          );
         } catch (error) {
           throw new Error(
             error instanceof DOMException && error.name === 'NotAllowedError'
@@ -443,11 +449,12 @@ export function useWorkspaceShellOrchestration({
         '../ui/audio-advanced-sources.ts'
       );
       const stream = await captureDisplayAudioStream({
-        unavailableMessage: 'Display capture is unavailable in this browser.',
+        unavailableMessage:
+          'Tab and YouTube capture need a desktop browser. Use the microphone instead.',
         missingAudioMessage:
           source === 'youtube'
-            ? 'No YouTube audio track was captured. Choose This tab and enable Share audio.'
-            : 'No tab audio track was captured. Choose This tab and enable Share audio.',
+            ? 'No YouTube audio track was captured. Re-share and enable Share audio.'
+            : 'No tab audio track was captured. Re-share and enable Share audio.',
       });
       commitRoute(nextRouteState);
       await startAudioSource({

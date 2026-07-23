@@ -32,10 +32,11 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const youtubeReady = ui.youtubeReady;
   const youtubeUrl = ui.youtubeUrl;
 
-  // Tab-audio capture relies on getDisplayMedia, which mobile browsers don't
-  // implement (and even where the API exists on tablets, audio sharing is
-  // unavailable). Hide the card rather than offer an action that always fails.
-  const canCaptureTabAudio =
+  // Both the tab card and YouTube capture route through getDisplayMedia, which
+  // mobile browsers don't implement (and where the API exists on tablets, audio
+  // sharing is unavailable). Gate both rather than offer actions that always
+  // fail — YouTube in particular is the most prominent control in this panel.
+  const canCaptureDisplayAudio =
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices?.getDisplayMedia &&
     !isMobileDevice();
@@ -56,7 +57,7 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
     >
       <div className="stims-shell__source-heading">
         <h2 id={sourceHeadingId} className="stims-shell__section-label">
-          YouTube playback
+          {canCaptureDisplayAudio ? 'YouTube playback' : 'Audio source'}
         </h2>
       </div>
       {!engineReady ? (
@@ -68,7 +69,10 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           Audio engine is starting. Sources will unlock in a moment.
         </p>
       ) : null}
-      <div className="stims-shell__youtube stims-shell__youtube-primary">
+      <div
+        className="stims-shell__youtube stims-shell__youtube-primary"
+        hidden={!canCaptureDisplayAudio}
+      >
         <label className="stims-shell__field-label" htmlFor={youtubeInputId}>
           YouTube link
         </label>
@@ -164,6 +168,12 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           <div id="workspace-youtube-player"></div>
         </div>
       </div>
+      {!canCaptureDisplayAudio ? (
+        <p className="stims-shell__meta-copy">
+          Tab and YouTube capture need a desktop browser. Use the microphone to
+          react to whatever is playing nearby.
+        </p>
+      ) : null}
       <div className="stims-shell__source-grid">
         <button
           id="start-audio-btn"
@@ -177,7 +187,7 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           <strong>Microphone</strong>
           <span>Live mic input</span>
         </button>
-        {canCaptureTabAudio ? (
+        {canCaptureDisplayAudio ? (
           <button
             type="button"
             id="use-tab-audio"
