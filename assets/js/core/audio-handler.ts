@@ -556,8 +556,34 @@ export const DEFAULT_MICROPHONE_CONSTRAINTS: MediaStreamConstraints = {
 const activeContexts = new Set<AudioContext>();
 const activeStreams = new Set<MediaStream>();
 
+let resumeOnVisibleInstalled = false;
+
+/**
+ * Android Chrome suspends AudioContexts when the tab is backgrounded (app
+ * switch, screen lock, incoming call). Nothing un-suspends them on return, so
+ * the mic track stays live while the visualiser sits frozen. Resume every
+ * registered context once the page is visible again.
+ */
+function installResumeOnVisible() {
+  if (resumeOnVisibleInstalled) return;
+  if (typeof document === 'undefined' || !document.addEventListener) return;
+  resumeOnVisibleInstalled = true;
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+
+    for (const context of activeContexts) {
+      if (context.state !== 'suspended') continue;
+      context.resume().catch((err) => {
+        logger.log('Failed to resume AudioContext on visibility change:', err);
+      });
+    }
+  });
+}
+
 export function registerAudioContext(context: AudioContext) {
   activeContexts.add(context);
+  installResumeOnVisible();
 }
 
 export function unregisterAudioContext(context: AudioContext) {
