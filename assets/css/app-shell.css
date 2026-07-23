@@ -1321,6 +1321,72 @@ body[data-page="workspace"][data-live="true"] {
     min-width: 80px;
   }
 
+  /*
+   * The compact overlay's transport buttons, autoplay checkbox, and blend
+   * slider only ever received their fill/border styling on the standalone
+   * /milkdrop page (now a redirect to the workspace). Inside the shell they
+   * fell back to native UA controls (grey `outset` buttons, default checkbox
+   * and slider). Give them shell-consistent styling so the legacy controls
+   * match the rest of the live chrome.
+   */
+  .stims-shell__stage-frame[data-mode="live"] .milkdrop-overlay--compact
+    .milkdrop-overlay__toolbar
+    button {
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid
+      var(--milkdrop-overlay-button-border, rgba(119, 201, 255, 0.4));
+    background: var(--milkdrop-overlay-button, rgba(108, 176, 255, 0.22));
+    color: rgba(231, 242, 255, 0.92);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .milkdrop-overlay--compact
+    .milkdrop-overlay__toolbar
+    button:hover {
+    background: rgba(119, 201, 255, 0.32);
+    border-color: rgba(119, 201, 255, 0.6);
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .milkdrop-overlay--compact
+    .milkdrop-overlay__toolbar
+    button:focus-visible {
+    outline: 2px solid rgba(119, 201, 255, 0.7);
+    outline-offset: 2px;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .milkdrop-overlay--compact
+    .milkdrop-overlay__toolbar-group
+    > label {
+    color: rgba(231, 242, 255, 0.86);
+    font-size: 0.85rem;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .milkdrop-overlay--compact
+    input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: rgba(119, 201, 255, 0.9);
+    cursor: pointer;
+  }
+
+  .stims-shell__stage-frame[data-mode="live"]
+    .milkdrop-overlay--compact
+    input[type="range"] {
+    accent-color: rgba(119, 201, 255, 0.9);
+    cursor: pointer;
+  }
+
   .stims-shell__stage-dock-wrap[data-visible="false"] {
     opacity: 0;
     visibility: hidden;
