@@ -56,6 +56,30 @@ describe('describePresetMood', () => {
       describePresetMood(makePreset({ id: '5', title: 'Generic Preset' })),
     ).toBe('Instant pick');
   });
+
+  test('does not match keywords buried inside an author name', () => {
+    // "star" lives inside the prolific author "Rovastar"; the mood should come
+    // from the descriptive title ("Parallel" -> Space drift), not the author.
+    expect(
+      describePresetMood(
+        makePreset({
+          id: 'rovastar-parallel-universe',
+          title: 'Rovastar - Parallel Universe',
+          author: 'Rovastar',
+        }),
+      ),
+    ).toBe('Space drift');
+    // A real standalone "Star" word still classifies as Bright pulse.
+    expect(
+      describePresetMood(
+        makePreset({
+          id: 'rovastar-star-of-destiny',
+          title: 'Rovastar - Star Of Destiny',
+          author: 'Rovastar',
+        }),
+      ),
+    ).toBe('Bright pulse');
+  });
 });
 
 describe('getPresetCardSupportLabel', () => {
