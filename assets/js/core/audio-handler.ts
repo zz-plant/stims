@@ -252,6 +252,18 @@ export class FrequencyAnalyser {
     audioNode.connect(silentGain);
     silentGain.connect(context.destination);
 
+    // iOS Safari re-suspends the AudioContext across the awaits above (stream
+    // acquisition, worklet addModule). Resume once more now that the graph is
+    // fully wired, while we may still be inside the originating user gesture —
+    // otherwise the mic is granted but no samples ever flow.
+    if (context.state === 'suspended') {
+      try {
+        await context.resume();
+      } catch (error) {
+        console.warn('Failed to resume AudioContext after graph setup', error);
+      }
+    }
+
     return new FrequencyAnalyser({
       sourceNode,
       workletNode,

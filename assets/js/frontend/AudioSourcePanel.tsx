@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { isMobileDevice } from '../utils/device-detect.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -30,6 +31,14 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const youtubePreviewRef = ui.youtubePreviewRef;
   const youtubeReady = ui.youtubeReady;
   const youtubeUrl = ui.youtubeUrl;
+
+  // Tab-audio capture relies on getDisplayMedia, which mobile browsers don't
+  // implement (and even where the API exists on tablets, audio sharing is
+  // unavailable). Hide the card rather than offer an action that always fails.
+  const canCaptureTabAudio =
+    typeof navigator !== 'undefined' &&
+    !!navigator.mediaDevices?.getDisplayMedia &&
+    !isMobileDevice();
 
   const handlePlayYouTube = () => {
     if (youtubeReady) {
@@ -168,18 +177,22 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           <strong>Microphone</strong>
           <span>Live mic input</span>
         </button>
-        <button
-          type="button"
-          id="use-tab-audio"
-          className="stims-shell__source-card"
-          disabled={!engineReady}
-          aria-describedby={!engineReady ? disabledDescription : undefined}
-          onClick={() => onAudioStart('tab')}
-        >
-          <span className="stims-shell__source-card-kicker">Browser audio</span>
-          <strong>This tab</strong>
-          <span>Audio from this browser tab</span>
-        </button>
+        {canCaptureTabAudio ? (
+          <button
+            type="button"
+            id="use-tab-audio"
+            className="stims-shell__source-card"
+            disabled={!engineReady}
+            aria-describedby={!engineReady ? disabledDescription : undefined}
+            onClick={() => onAudioStart('tab')}
+          >
+            <span className="stims-shell__source-card-kicker">
+              Browser audio
+            </span>
+            <strong>This tab</strong>
+            <span>Audio from this browser tab</span>
+          </button>
+        ) : null}
       </div>
       {showHelp ? (
         <details className="stims-shell__settings-advanced">

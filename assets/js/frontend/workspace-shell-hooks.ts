@@ -390,8 +390,20 @@ export function useWorkspaceShellOrchestration({
 
       if (source === 'microphone') {
         if (!navigator.mediaDevices?.getUserMedia) {
+          // On mobile, `mediaDevices` is undefined on insecure origins (e.g.
+          // reaching a dev server over a plain-HTTP LAN IP). Distinguish that
+          // from genuinely unsupported browsers so the message is actionable.
+          const insecure =
+            typeof window !== 'undefined' &&
+            window.isSecureContext === false &&
+            window.location?.protocol === 'http:' &&
+            !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(
+              window.location.hostname,
+            );
           setStatusMessage(
-            'Microphone capture is not available in this browser.',
+            insecure
+              ? 'Microphone needs a secure connection. Open this site over HTTPS and try again.'
+              : 'Microphone capture is not available in this browser.',
           );
           return;
         }
