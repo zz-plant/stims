@@ -1,0 +1,4290 @@
+import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import type { Vector2 } from 'three';
+import {
+  AdditiveBlending,
+  CustomBlending,
+  DstColorFactor,
+  Group,
+  HalfFloatType,
+  LinearFilter,
+  LineBasicMaterial,
+  LineSegments,
+  type Mesh,
+  MeshBasicMaterial,
+  OneFactor,
+  OrthographicCamera,
+  ReverseSubtractEquation,
+  Scene,
+  ShaderMaterial,
+  Texture,
+  WebGLRenderer,
+  ZeroFactor,
+} from 'three';
+import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
+import {
+  __milkdropRendererAdapterTestUtils,
+  createMilkdropRendererAdapterCore,
+} from '../../assets/js/milkdrop/renderer-adapter.ts';
+import { createMilkdropRendererAdapter } from '../../assets/js/milkdrop/renderer-adapter-factory.ts';
+import { createWebGPUBatchingLayer } from '../../assets/js/milkdrop/renderer-adapter-webgpu-batching.ts';
+import { createMilkdropSegmentBatchingLayer } from '../../assets/js/milkdrop/renderer-segment-batching.ts';
+import type {
+  MilkdropFeedbackCompositeState,
+  MilkdropFeedbackManager,
+  MilkdropRuntimeSignals,
+} from '../../assets/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../assets/js/milkdrop/vm.ts';
+import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
+import { setWebGpuForceMode } from '../../assets/js/milkdrop/webgpu-query-override.ts';
+import { replaceProperty } from '../test-helpers.ts';
+
+type RenderTreeNode = {
+  children?: RenderTreeNode[];
+  geometry?: {
+    getAttribute?: (name: string) => unknown;
+  };
+  visible?: boolean;
+  material?: unknown;
+  type?: string;
+  instanceCount?: number;
+  renderOrder?: number;
+  scale?: { x: number; y: number };
+};
+
+function flattenRenderTree(node: RenderTreeNode): RenderTreeNode[] {
+  const children = Array.isArray(node.children) ? node.children : [];
+  return [node, ...children.flatMap((child) => flattenRenderTree(child))];
+}
+
+function getGeometryInstanceCount(node: RenderTreeNode | undefined) {
+  return (
+    node?.geometry as
+      | {
+          instanceCount?: number;
+        }
+      | undefined
+  )?.instanceCount;
+}
+
+function getRenderedBatchNode(
+  root: RenderTreeNode,
+  renderOrder: number | number[],
+) {
+  const allowedRenderOrders = Array.isArray(renderOrder)
+    ? renderOrder
+    : [renderOrder];
+  return flattenRenderTree(root).find(
+    (child) =>
+      child.material instanceof ShaderMaterial &&
+      allowedRenderOrders.includes(child.renderOrder ?? -1) &&
+      (getGeometryInstanceCount(child) ?? 0) > 0,
+  );
+}
+
+function isWebGPUSegmentBatchNode(node: RenderTreeNode) {
+  return node.geometry?.getAttribute?.('instanceLine') !== undefined;
+}
+
+function getFloat32AttributeArray(
+  node: RenderTreeNode | undefined,
+  name: string,
+): Float32Array | null {
+  const attribute = node?.geometry?.getAttribute?.(name) as
+    | {
+        array?: ArrayLike<number>;
+      }
+    | undefined;
+  if (!attribute?.array) {
+    return null;
+  }
+  return Float32Array.from(attribute.array);
+}
+
+function getRootChildByRenderOrder(
+  root: RenderTreeNode,
+  renderOrder: number,
+): RenderTreeNode | undefined {
+  return (root.children ?? []).find(
+    (child) => child.renderOrder === renderOrder,
+  );
+}
+
+test('can route legacy custom waves through the canonical line path', () => {
+  const batcher = createMilkdropSegmentBatchingLayer({
+    fallbackCustomWaves: true,
+  });
+  const group = new Group();
+  const rendered = batcher.renderWaveGroup?.(
+    'custom-wave',
+    group,
+    [
+      {
+        positions: [-0.5, 0, 0, 0.5, 0, 0],
+        color: { r: 0, g: 1, b: 1, a: 1 },
+        alpha: 1,
+        additive: true,
+        closed: false,
+        drawMode: 'line',
+        pointSize: 1,
+        thickness: 1,
+      },
+    ],
+    1,
+  );
+
+  expect(rendered).toBe(false);
+  batcher.dispose();
+});
+
+function makeSignals(
+  overrides: Partial<MilkdropRuntimeSignals> = {},
+): MilkdropRuntimeSignals {
+  const frequencyData = new Uint8Array(64);
+  frequencyData.fill(160);
+  const waveformData = new Uint8Array(64);
+  for (let index = 0; index < waveformData.length; index += 1) {
+    const ratio = index / Math.max(1, waveformData.length - 1);
+    waveformData[index] = Math.round(
+      128 + Math.sin(ratio * Math.PI * 4 + Math.PI / 6) * 56,
+    );
+  }
+
+  return {
+    time: 1 / 60,
+    deltaMs: 16.67,
+    frame: 1,
+    fps: 60,
+    bass: 0.7,
+    mid: 0.5,
+    mids: 0.5,
+    treb: 0.4,
+    treble: 0.4,
+    bassAtt: 0.6,
+    midAtt: 0.45,
+    bass_att: 0.6,
+    mid_att: 0.45,
+    midsAtt: 0.45,
+    mids_att: 0.45,
+    treb_att: 0.35,
+    trebleAtt: 0.35,
+    treble_att: 0.35,
+    rms: 0.5,
+    vol: 0.5,
+    music: 0.58,
+    beat: 1,
+    beatPulse: 0.2,
+    beat_pulse: 0.2,
+    transient: 0,
+    spectralFlux: 0,
+    bandFlux: 0,
+    beatBass: 0,
+    beatMid: 0,
+    beatTreble: 0,
+    beat_bass: 0,
+    beat_mid: 0,
+    beat_treb: 0,
+    weightedEnergy: 0.58,
+    inputX: 0,
+    inputY: 0,
+    input_x: 0,
+    input_y: 0,
+    inputDx: 0,
+    inputDy: 0,
+    input_dx: 0,
+    input_dy: 0,
+    inputSpeed: 0,
+    input_speed: 0,
+    inputPressed: 0,
+    input_pressed: 0,
+    inputJustPressed: 0,
+    input_just_pressed: 0,
+    inputJustReleased: 0,
+    input_just_released: 0,
+    inputCount: 0,
+    input_count: 0,
+    gestureScale: 1,
+    gesture_scale: 1,
+    gestureRotation: 0,
+    gesture_rotation: 0,
+    gestureTranslateX: 0,
+    gestureTranslateY: 0,
+    gesture_translate_x: 0,
+    gesture_translate_y: 0,
+    hoverActive: 0,
+    hover_active: 0,
+    hoverX: 0,
+    hoverY: 0,
+    hover_x: 0,
+    hover_y: 0,
+    wheelDelta: 0,
+    wheel_delta: 0,
+    wheelAccum: 0,
+    wheel_accum: 0,
+    dragIntensity: 0,
+    drag_intensity: 0,
+    dragAngle: 0,
+    drag_angle: 0,
+    accentPulse: 0,
+    accent_pulse: 0,
+    actionAccent: 0,
+    action_accent: 0,
+    actionModeNext: 0,
+    action_mode_next: 0,
+    actionModePrevious: 0,
+    action_mode_previous: 0,
+    actionPresetNext: 0,
+    action_preset_next: 0,
+    actionPresetPrevious: 0,
+    action_preset_previous: 0,
+    actionQuickLook1: 0,
+    action_quick_look_1: 0,
+    actionQuickLook2: 0,
+    action_quick_look_2: 0,
+    actionQuickLook3: 0,
+    action_quick_look_3: 0,
+    actionRemix: 0,
+    action_remix: 0,
+    inputSourcePointer: 0,
+    input_source_pointer: 0,
+    inputSourceKeyboard: 0,
+    input_source_keyboard: 0,
+    inputSourceGamepad: 0,
+    input_source_gamepad: 0,
+    inputSourceMouse: 0,
+    input_source_mouse: 0,
+    inputSourceTouch: 0,
+    input_source_touch: 0,
+    inputSourcePen: 0,
+    input_source_pen: 0,
+    motionX: 0,
+    motionY: 0,
+    motionZ: 0,
+    motion_x: 0,
+    motion_y: 0,
+    motion_z: 0,
+    motionEnabled: 0,
+    motion_enabled: 0,
+    motionStrength: 0,
+    motion_strength: 0,
+    frequencyData,
+    waveformData,
+    ...overrides,
+  };
+}
+
+describe('milkdrop renderer adapter', () => {
+  test('uses WebGPU-safe shape fills and thick outlines', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shape Fidelity
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_a=0.7
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+shapecode_0_a2=0.3
+shapecode_0_r2=0.1
+shapecode_0_g2=0.2
+shapecode_0_b2=1
+shapecode_0_border_a=0.9
+shapecode_0_thickoutline=1
+      `.trim(),
+      { id: 'shape-fidelity' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    expect(frameState.shapes).toHaveLength(1);
+    expect(frameState.shapes[0]?.secondaryColor).not.toBeNull();
+    expect(frameState.shapes[0]?.thickOutline).toBe(true);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+    const fillMesh = batchedShapes.find(
+      (child) =>
+        child.geometry?.getAttribute?.('instancePrimaryColorAlpha') !==
+        undefined,
+    );
+    const fillControl = fillMesh?.geometry?.getAttribute?.(
+      'instanceFillControl',
+    ) as { array: Float32Array } | undefined;
+    const fillPrimary = fillMesh?.geometry?.getAttribute?.(
+      'instancePrimaryColorAlpha',
+    ) as { array: Float32Array } | undefined;
+    const fillSecondary = fillMesh?.geometry?.getAttribute?.(
+      'instanceSecondaryColorAlpha',
+    ) as { array: Float32Array } | undefined;
+
+    expect(batchedShapes).toHaveLength(2);
+    batchedShapes.forEach((mesh) => {
+      expect(mesh.material).toBeInstanceOf(ShaderMaterial);
+      expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
+    });
+    expect(fillMesh).toBeDefined();
+    expect(fillControl?.array[0]).toBe(1);
+    expect(fillPrimary?.array).toEqual(new Float32Array([1, 0.2, 0.1, 0.7]));
+    expect(fillSecondary?.array).toEqual(new Float32Array([0.1, 0.2, 1, 0.3]));
+  });
+
+  test('uses non-shader render materials for query-forced webgpu sessions', async () => {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL('http://localhost/?renderer=webgpu'),
+    );
+
+    try {
+      const preset = compileMilkdropPresetSource(
+        `
+title=Safe WebGPU Route
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_a=0.7
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+shapecode_0_a2=0.3
+shapecode_0_r2=0.1
+shapecode_0_g2=0.2
+shapecode_0_b2=1
+shapecode_0_border_a=0.9
+shapecode_0_thickoutline=1
+        `.trim(),
+        { id: 'safe-webgpu-route' },
+      );
+
+      const frameState = createMilkdropVM(preset).step(makeSignals());
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        backend: 'webgpu',
+        preset,
+      });
+
+      adapter.attach();
+      adapter.render({
+        frameState,
+        blendState: null,
+      });
+
+      const root = scene.children[0] as RenderTreeNode;
+      const tree = flattenRenderTree(root);
+      const basicShapeFills = tree.filter(
+        (child) =>
+          child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
+      );
+
+      expect(basicShapeFills.length).toBeGreaterThan(0);
+    } finally {
+      restoreLocation();
+    }
+  });
+
+  test('drops empty trail line objects on query-forced webgpu sessions', async () => {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL('http://localhost/?renderer=webgpu'),
+    );
+
+    try {
+      const preset = compileMilkdropPresetSource(
+        readFileSync(
+          './tests/fixtures/milkdrop/projectm-upstream/100-square.milk',
+          'utf8',
+        ),
+        { id: '100-square' },
+      );
+      const vm = createMilkdropVM(preset);
+      vm.setRenderBackend('webgpu');
+      const frameState = vm.step(makeSignals());
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        backend: 'webgpu',
+        preset,
+      });
+
+      adapter.attach();
+      adapter.render({
+        frameState,
+        blendState: null,
+      });
+
+      const root = scene.children[0] as { children?: RenderTreeNode[] };
+      const trailGroup = root.children?.[4] as RenderTreeNode | undefined;
+      const emptyVisibleLines = flattenRenderTree(trailGroup ?? {}).filter(
+        (child) =>
+          child.type === 'Line' &&
+          child.geometry?.getAttribute?.('position') !== undefined &&
+          (child.geometry?.getAttribute?.('position') as { count?: number })
+            ?.count === 0 &&
+          child.visible !== false,
+      );
+
+      expect(emptyVisibleLines).toHaveLength(0);
+    } finally {
+      restoreLocation();
+    }
+  });
+
+  test('keeps the native WebGPU 100-square render tree free of GLSL shader materials', async () => {
+    const restoreLocation = replaceProperty(
+      globalThis,
+      'location',
+      new URL('http://localhost/?renderer=webgpu&corpus=certification'),
+    );
+
+    try {
+      const preset = compileMilkdropPresetSource(
+        readFileSync(
+          './tests/fixtures/milkdrop/projectm-upstream/100-square.milk',
+          'utf8',
+        ),
+        { id: '100-square' },
+      );
+      const vm = createMilkdropVM(preset);
+      vm.setRenderBackend('webgpu');
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const nativeWebGpuRenderer = {
+        isWebGPURenderer: true,
+        depth: true,
+        render() {},
+      };
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        renderer: nativeWebGpuRenderer,
+        backend: 'webgpu',
+        preset,
+      });
+
+      adapter.attach();
+      adapter.render({
+        frameState: vm.step(makeSignals()),
+        blendState: null,
+      });
+
+      const root = scene.children[0] as RenderTreeNode;
+      const visibleGlslMaterials = flattenRenderTree(root).filter(
+        (child) =>
+          child.visible !== false && child.material instanceof ShaderMaterial,
+      );
+      expect(visibleGlslMaterials).toHaveLength(0);
+      expect(nativeWebGpuRenderer.depth).toBe(false);
+    } finally {
+      restoreLocation();
+    }
+  });
+
+  test('maps 100-square border insets to viewport percentages on both backends', async () => {
+    const preset = compileMilkdropPresetSource(
+      readFileSync(
+        './tests/fixtures/milkdrop/projectm-upstream/100-square.milk',
+        'utf8',
+      ),
+      { id: '100-square-aspect' },
+    );
+    const screenAspect = 16 / 9;
+
+    for (const backend of ['webgl', 'webgpu'] as const) {
+      const scene = new Scene();
+      const camera = new OrthographicCamera(
+        -screenAspect,
+        screenAspect,
+        1,
+        -1,
+        0,
+        10,
+      );
+      const adapter =
+        backend === 'webgpu'
+          ? await createMilkdropRendererAdapter({
+              scene,
+              camera,
+              backend,
+              preset,
+            })
+          : createMilkdropRendererAdapter({
+              scene,
+              camera,
+              backend,
+              preset,
+            });
+
+      adapter.attach();
+      adapter.render({
+        frameState: createMilkdropVM(preset).step(makeSignals()),
+        blendState: null,
+      });
+
+      const aspectScaledBorderGroups = flattenRenderTree(
+        scene.children[0] as RenderTreeNode,
+      ).filter(
+        (child) =>
+          Math.abs((child.scale?.x ?? 1) - screenAspect) < 0.000001 &&
+          child.scale?.y === 1,
+      );
+      expect(aspectScaledBorderGroups.length).toBeGreaterThan(0);
+      if (backend === 'webgl') {
+        const borderMaterial = flattenRenderTree(
+          scene.children[0] as RenderTreeNode,
+        )
+          .map((child) => child.material)
+          .find(
+            (material) =>
+              material instanceof MeshBasicMaterial &&
+              material.color.r > 0.9 &&
+              material.color.g < 0.1,
+          );
+        expect(
+          (borderMaterial as MeshBasicMaterial | undefined)?.toneMapped,
+        ).toBe(false);
+      }
+      adapter.dispose();
+    }
+  });
+
+  test('batches textured custom shapes without sampling when shape texture is unavailable on WebGPU', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Textured Shape Fallback
+shapecode_0_enabled=1
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.8
+shapecode_0_tex_ang=0.35
+      `.trim(),
+      { id: 'textured-shape-fallback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children?: RenderTreeNode[];
+    };
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+    const fillControls = batchedShapes
+      .map((child) => getFloat32AttributeArray(child, 'instanceFillControl'))
+      .filter(
+        (value): value is Float32Array<ArrayBufferLike> => value !== undefined,
+      );
+
+    expect(batchedShapes.length).toBeGreaterThan(0);
+    expect(fillControls.some((control) => control[1] === 0)).toBe(true);
+  });
+
+  test('batches textured custom shapes on WebGPU when a shape texture is available', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Textured Shape Batched
+shapecode_0_enabled=1
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.8
+shapecode_0_tex_ang=0.35
+      `.trim(),
+      { id: 'textured-shape-batched' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const feedbackTexture = new Texture({ width: 200, height: 100 });
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = (await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    })) as unknown as {
+      attach: () => void;
+      render: (payload: {
+        frameState: typeof frameState;
+        blendState: null;
+      }) => void;
+      feedback: { getShapeTexture: () => Texture | null } | null;
+    };
+
+    adapter.attach();
+    adapter.feedback = {
+      getShapeTexture() {
+        return feedbackTexture;
+      },
+    };
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const shapeChildren = getRootChildByRenderOrder(root, 50) ?? {};
+    const batchedFill = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceFillControl') !== undefined,
+    ) as
+      | {
+          material?: ShaderMaterial & {
+            uniforms?: {
+              shapeTexture?: { value: Texture | null };
+              textureAspectY?: { value: number };
+            };
+          };
+        }
+      | undefined;
+    const meshFills = flattenRenderTree(shapeChildren).filter(
+      (child) =>
+        child.type === 'Mesh' && child.material instanceof MeshBasicMaterial,
+    );
+
+    expect(batchedFill?.material).toBeInstanceOf(ShaderMaterial);
+    expect(batchedFill?.material?.uniforms?.shapeTexture?.value).toBe(
+      feedbackTexture,
+    );
+    expect(batchedFill?.material?.uniforms?.textureAspectY?.value).toBeCloseTo(
+      0.5,
+      6,
+    );
+    expect(batchedFill?.material?.fragmentShader).toContain(
+      'textureAspectY / max(vTextureZoom, 0.0001)',
+    );
+    expect(
+      getFloat32AttributeArray(batchedFill, 'instanceFillControl'),
+    ).toEqual(Float32Array.from([0, 1, 0.8, 0.35]));
+    expect(meshFills).toHaveLength(0);
+  });
+
+  test('samples the previous feedback frame when textured shapes have a shape texture available', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Textured Shape Shader
+shapecode_0_enabled=1
+shapecode_0_textured=1
+shapecode_0_tex_zoom=0.75
+shapecode_0_tex_ang=0.2
+      `.trim(),
+      { id: 'textured-shape-shader' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const feedbackTexture = new Texture();
+    const feedback = {
+      applyCompositeState() {},
+      getShapeTexture() {
+        return feedbackTexture;
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgl',
+      preset,
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
+    const shapeGroup = shapesGroup?.children?.[0] as
+      | { children?: unknown[] }
+      | undefined;
+    const fill = shapeGroup?.children?.[0] as Mesh | undefined;
+    const material = fill?.material as ShaderMaterial | undefined;
+
+    expect(material).toBeInstanceOf(ShaderMaterial);
+    expect(material?.uniforms.shapeTexture.value).toBe(feedbackTexture);
+    expect(material?.uniforms.textured.value).toBe(1);
+    expect(material?.uniforms.textureZoom.value).toBeCloseTo(0.75, 6);
+    expect(material?.uniforms.textureAngle.value).toBeCloseTo(0.2, 6);
+    expect(material?.fragmentShader).toContain('fract(sampleUv)');
+  });
+
+  test('reuses cached polygon geometries for same-sided shapes', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shared Shape Geometry
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_1_enabled=1
+shapecode_1_sides=6
+      `.trim(),
+      { id: 'shared-shape-geometry' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    expect(frameState.shapes).toHaveLength(2);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShapes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+    const fillMeshes = batchedShapes.filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceScales') === undefined,
+    );
+    const outlineMeshes = batchedShapes.filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        child.geometry?.getAttribute?.('instanceScales') !== undefined,
+    );
+    const populatedFillMeshes = fillMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
+    );
+    const populatedOutlineMeshes = outlineMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
+    );
+
+    expect(populatedFillMeshes.length).toBeGreaterThan(0);
+    expect(populatedOutlineMeshes.length).toBeGreaterThan(0);
+  });
+
+  test('uses a single thicker WebGPU shape ring across different radii', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Stable Outline Thickness
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.2
+shapecode_0_border_a=1
+shapecode_0_thickoutline=1
+shapecode_1_enabled=1
+shapecode_1_sides=6
+shapecode_1_rad=0.4
+shapecode_1_border_a=1
+shapecode_1_thickoutline=1
+      `.trim(),
+      { id: 'stable-outline-thickness' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const ringMeshes = flattenRenderTree(root).filter(
+      (child) => child.geometry?.getAttribute?.('instanceScales') !== undefined,
+    );
+    const outlineScales = ringMeshes
+      .map((mesh) => getFloat32AttributeArray(mesh, 'instanceScales'))
+      .filter((scales): scales is Float32Array => scales !== null)
+      .flatMap((scales) => {
+        const values = Array.from(scales).map((value) => Number(value));
+        const pairs: number[][] = [];
+        for (let index = 0; index < values.length; index += 2) {
+          const pair = values.slice(index, index + 2);
+          if (pair.length === 2) {
+            pairs.push(pair);
+          }
+        }
+        return pairs;
+      })
+      .sort((left, right) => (left[0] ?? 0) - (right[0] ?? 0));
+
+    expect(frameState.shapes).toHaveLength(2);
+    expect(outlineScales).toHaveLength(2);
+    expect(outlineScales).toEqual([
+      [1.0023934841156006, 1],
+      [1.0047870874404907, 1],
+    ]);
+  });
+
+  test('renders a single WebGPU thick-outline ring layer', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shape Accent Layering
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.3
+shapecode_0_border_a=1
+shapecode_0_thickoutline=1
+      `.trim(),
+      { id: 'shape-accent-layering' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const ringMeshes = flattenRenderTree(root).filter(
+      (child) => child.geometry?.getAttribute?.('instanceScales') !== undefined,
+    ) as Array<{
+      geometry?: {
+        getAttribute?: (name: string) => { array?: Float32Array } | undefined;
+      };
+      material?: ShaderMaterial & {
+        uniforms?: { layerZ?: { value: number } };
+      };
+    }>;
+    expect(ringMeshes).toHaveLength(1);
+    expect(ringMeshes[0]?.material).toBeInstanceOf(ShaderMaterial);
+    expect(ringMeshes[0]?.material?.uniforms?.layerZ?.value).toBeCloseTo(
+      0.16,
+      6,
+    );
+  });
+
+  test('keeps WebGPU batched layer ordering stable when targets are created later', async () => {
+    const initialPreset = compileMilkdropPresetSource(
+      `
+title=Shape First
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.24
+      `.trim(),
+      { id: 'shape-first' },
+    );
+    const layeredPreset = compileMilkdropPresetSource(
+      `
+title=Wave Shape Border Later
+wave_mode=0
+wave_usedots=0
+wave_a=0.8
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.24
+shapecode_0_additive=0
+ob_size=0.03
+      `.trim(),
+      { id: 'wave-shape-border-later' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(initialPreset).step(makeSignals()),
+      blendState: null,
+    });
+    adapter.render({
+      frameState: createMilkdropVM(layeredPreset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveBatch = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceLine') !== undefined,
+    );
+    const shapeBatch = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceFillControl') !== undefined,
+    );
+    const borderBatch = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
+
+    expect(waveBatch?.renderOrder).toBe(20);
+    expect(shapeBatch?.renderOrder).toBe(50);
+    expect(borderBatch?.renderOrder).toBe(60);
+    expect(waveBatch?.renderOrder ?? Infinity).toBeLessThan(
+      shapeBatch?.renderOrder ?? -Infinity,
+    );
+    expect(shapeBatch?.renderOrder ?? Infinity).toBeLessThan(
+      borderBatch?.renderOrder ?? -Infinity,
+    );
+  });
+
+  test('keeps fallback layer ordering explicit on the adapter root', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Fallback Layer Ordering
+wave_mode=0
+wave_usedots=0
+wave_a=0.8
+shapecode_0_enabled=1
+shapecode_0_sides=6
+ob_size=0.03
+mv_a=0.4
+mv_x=8
+mv_y=6
+      `.trim(),
+      { id: 'fallback-layer-ordering' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        renderOrder?: number;
+      }>;
+    };
+    expect(
+      root.children.map((child) => child.renderOrder).slice(0, 15),
+    ).toEqual([0, 10, 20, 30, 40, 45, 50, 60, 70, 80, 90, 95, 100, 110, 120]);
+  });
+
+  test('keeps additive custom waves above normal waves across render backends', async () => {
+    const scenarios = [
+      {
+        backend: 'webgl' as const,
+        id: 'fallback-additive-custom-waves',
+        title: 'Fallback Additive Custom Waves',
+        assert(root: RenderTreeNode) {
+          const waveOrders = flattenRenderTree(root)
+            .filter(
+              (child) =>
+                child.material instanceof ShaderMaterial &&
+                (child.renderOrder === 30 || child.renderOrder === 31) &&
+                (getGeometryInstanceCount(child) ?? 0) > 0,
+            )
+            .map((child) => child.renderOrder)
+            .sort((left, right) => (left ?? 0) - (right ?? 0));
+
+          expect(waveOrders).toEqual([30, 31]);
+        },
+      },
+      {
+        backend: 'webgpu' as const,
+        id: 'webgpu-additive-custom-waves',
+        title: 'WebGPU Additive Custom Waves',
+        assert(root: RenderTreeNode) {
+          const customWaveBatches = flattenRenderTree(root).filter(
+            (child) =>
+              isWebGPUSegmentBatchNode(child) &&
+              child.material instanceof ShaderMaterial &&
+              (child.renderOrder ?? 0) >= 30 &&
+              (child.renderOrder ?? 0) < 40,
+          ) as Array<{
+            material: ShaderMaterial;
+            renderOrder?: number;
+          }>;
+          const normalBatch = customWaveBatches.find(
+            (child) => child.material.blending !== AdditiveBlending,
+          );
+          const additiveBatch = customWaveBatches.find(
+            (child) => child.material.blending === AdditiveBlending,
+          );
+
+          expect(normalBatch?.renderOrder).toBe(30);
+          expect(additiveBatch?.renderOrder).toBe(31);
+          expect(additiveBatch?.renderOrder ?? Infinity).toBeGreaterThan(
+            normalBatch?.renderOrder ?? -Infinity,
+          );
+        },
+      },
+    ] as const;
+
+    for (const scenario of scenarios) {
+      const preset = compileMilkdropPresetSource(
+        `
+title=${scenario.title}
+wavecode_0_enabled=1
+wavecode_0_samples=24
+wavecode_0_usedots=0
+wavecode_0_additive=1
+wavecode_1_enabled=1
+wavecode_1_samples=24
+wavecode_1_usedots=0
+wavecode_1_additive=0
+        `.trim(),
+        { id: scenario.id },
+      );
+
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const adapter =
+        scenario.backend === 'webgpu'
+          ? await createMilkdropRendererAdapter({
+              scene,
+              camera,
+              backend: 'webgpu',
+              preset,
+            })
+          : createMilkdropRendererAdapter({
+              scene,
+              camera,
+              backend: 'webgl',
+              preset,
+            });
+
+      adapter.attach();
+      adapter.render({
+        frameState: createMilkdropVM(preset).step(makeSignals()),
+        blendState: null,
+      });
+
+      scenario.assert(scene.children[0] as RenderTreeNode);
+    }
+  });
+
+  test('reuses wave and border objects across renders', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Stable Objects
+ob_size=0.03
+      `.trim(),
+      { id: 'stable-objects' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    const firstFrame = createMilkdropVM(preset).step(makeSignals());
+    const secondFrame = createMilkdropVM(preset).step(makeSignals());
+
+    adapter.attach();
+    adapter.render({
+      frameState: firstFrame,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const firstWaveObject = flattenRenderTree(root).find(
+      isWebGPUSegmentBatchNode,
+    );
+    const firstBorderObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
+
+    adapter.render({
+      frameState: secondFrame,
+      blendState: null,
+    });
+
+    const secondWaveObject = flattenRenderTree(root).find(
+      isWebGPUSegmentBatchNode,
+    );
+    const secondBorderObject = flattenRenderTree(root).find(
+      (child) => child.geometry?.getAttribute?.('instanceInsets') !== undefined,
+    );
+
+    expect(secondWaveObject).toBe(firstWaveObject);
+    expect(secondBorderObject).toBe(firstBorderObject);
+  });
+
+  test('does not synthesize a styled border accent on initial WebGL render', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Styled Border Accent
+ob_size=0.03
+ob_a=0.8
+ob_r=1
+ob_g=0.9
+ob_b=0.7
+ob_border=1
+      `.trim(),
+      { id: 'styled-border-accent' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        children?: Array<{
+          children?: Array<{
+            material?: MeshBasicMaterial;
+          }>;
+        }>;
+      }>;
+    };
+    const borderGroup = root.children[7];
+    const outerBorder = borderGroup?.children?.[0];
+    const fill = outerBorder?.children?.[0] as
+      | { material?: MeshBasicMaterial }
+      | undefined;
+
+    expect(fill?.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(fill?.material?.opacity).toBeCloseTo(0.8, 6);
+    expect(outerBorder?.children).toHaveLength(2);
+  });
+
+  test('keeps zero-alpha border fills invisible on webgpu batches', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Invisible Outer Border
+ob_size=0.2
+ob_a=0
+ib_size=0.1
+ib_a=1
+      `.trim(),
+      { id: 'invisible-outer-border' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const borderBatchNodes = flattenRenderTree(root).filter(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceColorAlpha') !== undefined,
+    );
+    const borderAlphaArrays = borderBatchNodes
+      .map((node) => getFloat32AttributeArray(node, 'instanceColorAlpha'))
+      .filter((entry): entry is Float32Array => entry !== null);
+
+    expect(borderAlphaArrays.length).toBeGreaterThan(0);
+    expect(
+      borderAlphaArrays.some((array) => Math.abs(array[3] ?? 1) < 0.0001),
+    ).toBe(true);
+  });
+
+  test('reuses shape groups and wave position attributes across renders', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Stable Shapes
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_thickoutline=1
+      `.trim(),
+      { id: 'stable-shapes' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    const firstFrame = createMilkdropVM(preset).step(makeSignals());
+    const secondFrame = createMilkdropVM(preset).step(makeSignals());
+
+    adapter.attach();
+    adapter.render({
+      frameState: firstFrame,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const firstWaveMesh = flattenRenderTree(root).find(
+      isWebGPUSegmentBatchNode,
+    );
+    const firstWaveAttribute =
+      firstWaveMesh?.geometry?.getAttribute?.('instanceLine');
+    const firstShapeMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+
+    adapter.render({
+      frameState: secondFrame,
+      blendState: null,
+    });
+
+    const secondWaveMesh = flattenRenderTree(root).find(
+      isWebGPUSegmentBatchNode,
+    );
+    const secondWaveAttribute =
+      secondWaveMesh?.geometry?.getAttribute?.('instanceLine');
+    const secondShapeMesh = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined,
+    );
+
+    expect(secondShapeMesh).toBe(firstShapeMesh);
+    expect(secondWaveAttribute).toBe(firstWaveAttribute);
+  });
+
+  test('keeps the main shape border synced when thick-outline is disabled across renders', async () => {
+    const accentedPreset = compileMilkdropPresetSource(
+      `
+title=Accented Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.18
+shapecode_0_x=-0.12
+shapecode_0_y=0.08
+shapecode_0_border_a=0.9
+shapecode_0_thickoutline=1
+      `.trim(),
+      { id: 'accented-shape' },
+    );
+    const plainPreset = compileMilkdropPresetSource(
+      `
+title=Plain Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.31
+shapecode_0_x=0.23
+shapecode_0_y=-0.17
+shapecode_0_rot=0.4
+shapecode_0_border_a=0.25
+shapecode_0_thickoutline=0
+      `.trim(),
+      { id: 'plain-shape' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(accentedPreset).step(makeSignals()),
+      blendState: null,
+    });
+    adapter.render({
+      frameState: createMilkdropVM(plainPreset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children?: Array<{
+        children?: Array<{
+          children?: Array<{
+            material?: LineBasicMaterial | ShaderMaterial;
+            position?: { x: number; y: number; z: number };
+            scale?: { x: number; y: number; z: number };
+            rotation?: { z: number };
+          }>;
+        }>;
+      }>;
+    };
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
+    const shapeGroup = shapesGroup?.children?.[0];
+    const fill = shapeGroup?.children?.[0] as Mesh | undefined;
+    const borderGroup = shapeGroup?.children?.[1] as
+      | {
+          children?: Array<{
+            material?: LineBasicMaterial;
+            position?: { x: number; y: number; z: number };
+            scale?: { x: number; y: number; z: number };
+            rotation?: { z: number };
+          }>;
+        }
+      | undefined;
+    const border = borderGroup?.children?.[0];
+
+    expect(shapeGroup?.children).toHaveLength(2);
+    expect(fill?.type).toBe('Mesh');
+    expect(borderGroup?.children).toHaveLength(1);
+    expect(border?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(border?.material?.opacity).toBeCloseTo(0.25, 6);
+    expect(border?.position?.x).toBeCloseTo(fill?.position.x ?? NaN, 6);
+    expect(border?.position?.y).toBeCloseTo(fill?.position.y ?? NaN, 6);
+    expect(border?.position?.z).toBeCloseTo(0.16, 6);
+    expect(border?.scale?.x).toBeCloseTo(fill?.scale.x ?? NaN, 6);
+    expect(border?.scale?.y).toBeCloseTo(fill?.scale.y ?? NaN, 6);
+    expect(border?.rotation?.z).toBeCloseTo(fill?.rotation.z ?? NaN, 6);
+  });
+
+  test('forwards gamma-adjusted post state into feedback uniforms', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Gamma Feedback
+fGammaAdj=1.85
+video_echo=1
+      `.trim(),
+      { id: 'gamma-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          compositeMaterial: ShaderMaterial;
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.compositeMaterial.uniforms.gammaAdj.value).toBeCloseTo(
+      1.85,
+      6,
+    );
+  });
+
+  test('renders motion vector overlays as line objects', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Motion Vectors
+motion_vectors=1
+motion_vectors_x=5
+motion_vectors_y=3
+mv_a=0.25
+per_pixel_1=zoom=1.08; rot=0.15; warp=0.3;
+      `.trim(),
+      { id: 'motion-vectors' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    expect(frameState.motionVectors.length).toBeGreaterThan(0);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const matchingMotionVectorMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) === frameState.motionVectors.length,
+    );
+
+    expect(matchingMotionVectorMesh).toBeDefined();
+  });
+
+  test('renders mesh geometry directly on webgpu when per-pixel VM work is absent', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Mesh
+mesh_density=14
+zoom=1.12
+rot=0.18
+warp=0.22
+warpanimspeed=1.4
+      `.trim(),
+      { id: 'procedural-mesh' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ material?: unknown; geometry?: unknown }>;
+    };
+    const meshLines = root.children[1] as {
+      material?: unknown;
+      geometry?: unknown;
+    };
+
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.geometry).toBeDefined();
+  });
+
+  test('renders lowered per-pixel mesh programs directly on webgpu', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Mesh Per Pixel
+mesh_density=10
+per_pixel_1=q1=sin(time+x*2.5);
+per_pixel_2=x=x+q1*0.04;
+per_pixel_3=zoom=zoom+abs(y)*0.08;
+      `.trim(),
+      { id: 'procedural-mesh-per-pixel' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ time: 0.75 }));
+
+    expect(frameState.mesh.positions).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField?.program).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const meshLines = root.children[1] as {
+      material?: ShaderMaterial;
+    };
+
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material?.userData.fieldProgramSignature).toBe(
+      frameState.gpuGeometry.meshField?.program?.signature,
+    );
+  });
+
+  test('normalizes lowered field shader centers after per-pixel programs run', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Mesh Center
+mesh_density=10
+per_pixel_1=cx=x;
+per_pixel_2=cy=y;
+per_pixel_3=sx=2;
+      `.trim(),
+      { id: 'procedural-mesh-center' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals({ time: 0.75 }));
+
+    expect(frameState.gpuGeometry.meshField?.centerX).toBeCloseTo(0, 6);
+    expect(frameState.gpuGeometry.meshField?.centerY).toBeCloseTo(0, 6);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const meshLines = root.children[1] as {
+      material?: ShaderMaterial;
+    };
+
+    expect(meshLines.material).toBeInstanceOf(ShaderMaterial);
+    expect(meshLines.material?.vertexShader).toContain(
+      'float fieldCenterX = milkdropDenormalizeTransformCenterX(paramCenterX);',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'float fieldCenterY = milkdropDenormalizeTransformCenterY(paramCenterY);',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'float normalizedCenterX = milkdropNormalizeTransformCenterX(fieldCenterX);',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'float normalizedCenterY = milkdropNormalizeTransformCenterY(fieldCenterY);',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'return value >= 0.0 && value <= 1.0 ? (value - 0.5) * 2.0 : value;',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      'return value >= 0.0 && value <= 1.0 ? (0.5 - value) * 2.0 : value;',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      '(field_x - normalizedCenterX) * fieldScaleX',
+    );
+    expect(meshLines.material?.vertexShader).toContain(
+      '(field_y - normalizedCenterY) * fieldScaleY',
+    );
+  });
+
+  test('renders motion vectors directly on webgpu when per-pixel VM work is absent', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Motion Vectors
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_a=0.3
+zoom=1.05
+rot=0.12
+warp=0.26
+warpanimspeed=1.25
+      `.trim(),
+      { id: 'procedural-motion-vectors' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.motionVectorField).not.toBeNull();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        children?: Array<{ type?: string; material?: unknown }>;
+      }>;
+    };
+    const motionVectorGroup = root.children?.[8] as {
+      children: Array<{
+        type?: string;
+        visible?: boolean;
+        material?: unknown;
+        children?: Array<{ type?: string }>;
+      }>;
+    };
+    const cpuMotionVectors = motionVectorGroup.children[0];
+    const proceduralMotionVectors = motionVectorGroup.children[1] as {
+      visible?: boolean;
+    };
+
+    expect(cpuMotionVectors?.children).toHaveLength(0);
+    expect(proceduralMotionVectors).toBeInstanceOf(LineSegments);
+    expect(motionVectorGroup.children[1]?.material).toBeDefined();
+  });
+
+  test('renders legacy motion-vector overlays directly on webgpu', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Legacy Motion Vector Overlay
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+mv_l=0.2
+zoom=1.05
+rot=0.12
+warp=0.26
+warpanimspeed=1.25
+      `.trim(),
+      { id: 'legacy-motion-vector-overlay' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    expect(frameState.motionVectors).toHaveLength(0);
+    expect(frameState.gpuGeometry.motionVectorField?.legacyControls).toBe(true);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const motionVectorGroup = root.children?.[8] as {
+      children: Array<{
+        type?: string;
+        visible?: boolean;
+      }>;
+    };
+
+    const cpuMotionVectors = motionVectorGroup.children[0] as {
+      children?: Array<unknown>;
+    };
+    const proceduralMotionVectors = motionVectorGroup.children[1] as {
+      visible?: boolean;
+      material?: unknown;
+    };
+
+    expect(cpuMotionVectors.children).toHaveLength(0);
+    expect(proceduralMotionVectors.material).toBeDefined();
+  });
+
+  test('passes semantic feedback state to the feedback manager', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Contract
+video_echo=1
+      `.trim(),
+      { id: 'feedback-contract' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    let renderCalls = 0;
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        renderCalls += 1;
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const renderer = {
+      getSize: (target: Vector2) => target.set(320, 180),
+      render() {},
+      setRenderTarget() {},
+    };
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      renderer,
+      backend: 'webgl',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+    expect(renderCalls).toBe(1);
+    expect(compositeStates[0]?.mixAlpha).toBe(0);
+    expect(compositeStates[0]?.videoEchoAlpha).toBe(0);
+    expect(compositeStates[0]?.videoEchoOrientation).toBe(0);
+    expect(compositeStates[0]?.signalTime).toBeCloseTo(
+      frameState.signals.time,
+      6,
+    );
+  });
+
+  test.each([
+    'webgl',
+    'webgpu',
+  ] as const)('routes video echo orientation through the feedback composite state on %s', (backend) => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Orientation Routing
+video_echo=1
+video_echo_alpha=0.42
+video_echo_zoom=1.11
+warp_shader=warp=0.6
+comp_shader=mix=0.25
+video_echo_orientation=3
+        `.trim(),
+      { id: `feedback-orientation-routing-${backend}` },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend,
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]).toMatchObject({
+      mixAlpha: 0.25,
+      videoEchoAlpha: 0.42,
+      videoEchoOrientation: 3,
+      zoom: frameState.post.videoEchoZoom,
+      warpScale: frameState.post.shaderControls.warpScale,
+    });
+  });
+
+  test('routes red-blue stereo flag through the feedback composite state', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Stereo Routing
+bRedBlueStereo=1
+      `.trim(),
+      { id: 'feedback-red-blue-stereo-routing' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgl',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.redBlueStereo).toBe(1);
+  });
+
+  test('keeps beat and beat pulse distinct in the feedback composite state', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Beat Routing
+video_echo=1
+comp_shader=mix=0.25 + beat_pulse * 0.2
+      `.trim(),
+      { id: 'feedback-beat-routing' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({
+        beat: 0,
+        beatPulse: 0.37,
+        beat_pulse: 0.37,
+        transient: 0,
+        spectralFlux: 0,
+      }),
+    );
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]).toMatchObject({
+      signalBeat: 0,
+      signalBeatPulse: 0.37,
+    });
+  });
+
+  test('forwards overlay and warp volume sampling metadata into feedback state', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Volume Metadata
+video_echo=1
+      `.trim(),
+      { id: 'feedback-volume-metadata' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    frameState.post.shaderControls.textureLayer.source = 'simplex';
+    frameState.post.shaderControls.textureLayer.mode = 'mix';
+    frameState.post.shaderControls.textureLayer.sampleDimension = '3d';
+    frameState.post.shaderControls.textureLayer.inverted = true;
+    frameState.post.shaderControls.textureLayer.volumeSliceZ = 0.25;
+    frameState.post.shaderControls.warpTexture.source = 'aura';
+    frameState.post.shaderControls.warpTexture.sampleDimension = '3d';
+    frameState.post.shaderControls.warpTexture.amount = 0.4;
+    frameState.post.shaderControls.warpTexture.volumeSliceZ = 0.75;
+
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+
+    const renderer = {
+      getSize: (target: Vector2) => target.set(320, 180),
+      render() {},
+      setRenderTarget() {},
+    };
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      renderer,
+      backend: 'webgl',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]).toMatchObject({
+      overlayTextureSampleDimension: 1,
+      overlayTextureInvert: 1,
+      overlayTextureVolumeSliceZ: 0.25,
+      warpTextureSampleDimension: 1,
+      warpTextureVolumeSliceZ: 0.75,
+    });
+  });
+
+  test('keeps translated shader-only feedback state on controls when no direct program payload exists', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Direct Shader Program Feedback
+video_echo=1
+warp_shader=shader_body=tex2d(sampler_main,uv).rgb;
+comp_shader=ret = tex2d(sampler_main, uv).rgb * 1.2;
+      `.trim(),
+      { id: 'direct-shader-program-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      render() {
+        return true;
+      },
+      swap() {},
+      resize() {},
+      dispose() {},
+    } as MilkdropFeedbackManager;
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.shaderExecution).toBe('controls');
+    expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
+  });
+
+  test('keeps direct shader programs off the webgpu feedback composite state without proven fallback parity', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Direct Shader Program Feedback
+fShader=1
+video_echo=1
+comp_shader=mix = 0.35; ret = tex2d(sampler_main, uv).rgb + vec3(mix, 0.0, 0.0)
+      `.trim(),
+      { id: 'direct-shader-program-feedback' },
+    );
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      swap() {},
+      resize() {},
+      render() {
+        return true;
+      },
+      getTexture() {
+        return new Texture();
+      },
+      dispose() {},
+    } as MilkdropFeedbackManager;
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.shaderExecution).toBe('controls');
+    expect(compositeStates[0]?.shaderPrograms.comp).toBeNull();
+  });
+
+  test('keeps direct warp shader_body programs off the webgpu feedback composite state without proven fallback parity', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Direct Warp Shader Body Feedback
+fShader=1
+video_echo=1
+warp_shader=shader_body=uv + vec2(time * 0.02, 0.0)
+      `.trim(),
+      { id: 'direct-warp-shader-body-feedback' },
+    );
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const compositeStates: MilkdropFeedbackCompositeState[] = [];
+    const feedback = {
+      applyCompositeState(state: MilkdropFeedbackCompositeState) {
+        compositeStates.push(state);
+      },
+      swap() {},
+      resize() {},
+      render() {
+        return true;
+      },
+      getTexture() {
+        return new Texture();
+      },
+      dispose() {},
+    } as MilkdropFeedbackManager;
+    const adapter = createMilkdropRendererAdapterCore({
+      scene: new Scene(),
+      camera: new OrthographicCamera(-1, 1, 1, -1, 0, 10),
+      renderer: {
+        getSize: (target: Vector2) => target.set(320, 180),
+        render() {},
+        setRenderTarget() {},
+      },
+      backend: 'webgpu',
+      createFeedbackManager: () => feedback,
+    });
+
+    adapter.attach();
+    expect(
+      adapter.render({
+        frameState,
+        blendState: null,
+      }),
+    ).toBe(true);
+
+    expect(compositeStates[0]?.shaderExecution).toBe('controls');
+    expect(compositeStates[0]?.shaderPrograms.warp).toBeNull();
+  });
+
+  test('marks feedback-heavy WebGPU descriptor plans for WebGL compatibility fallback', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Feedback Heavy WebGPU Fallback
+fShader=1
+video_echo=1
+feedback_texture=1
+comp_shader=ret = tex2d(sampler_main, uv).rgb * 1.1
+      `.trim(),
+      { id: 'feedback-heavy-webgpu-fallback' },
+    );
+
+    expect(preset.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
+      expect.objectContaining({
+        routing: 'fallback-webgl',
+        feedback: expect.objectContaining({
+          kind: 'feedback-post-effect',
+          shaderExecution: 'direct',
+          usesFeedbackTexture: true,
+          usesVideoEcho: true,
+          fallbackToLegacyFeedback: true,
+        }),
+      }),
+    );
+  });
+
+  test('renders waveform-driven main wave and trails on webgpu line-wave presets', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Wave Renderer
+wave_mode=5
+wave_usedots=0
+wave_scale=1.2
+wave_mystery=0.35
+wave_x=0.58
+wave_y=0.42
+mesh_density=16
+      `.trim(),
+      { id: 'procedural-wave-renderer' },
+    );
+
+    const webgpuCpuFallbackFlags = {
+      ...DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+      proceduralMainWave: false,
+      proceduralTrailWaves: false,
+    };
+    const vm = createMilkdropVM(preset, webgpuCpuFallbackFlags);
+    vm.setRenderBackend('webgpu');
+    const firstFrame = vm.step(makeSignals());
+    const secondSignals = makeSignals();
+    secondSignals.frame = 2;
+    secondSignals.time = 0.3;
+    const secondFrame = vm.step(secondSignals);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      webgpuOptimizationFlags: webgpuCpuFallbackFlags,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: firstFrame,
+      blendState: null,
+    });
+    adapter.render({
+      frameState: secondFrame,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedSegmentMeshes = flattenRenderTree(root).filter(
+      isWebGPUSegmentBatchNode,
+    );
+
+    expect(firstFrame.gpuGeometry.mainWave).toBeNull();
+    expect(secondFrame.gpuGeometry.trailWaves).toHaveLength(0);
+    const populatedSegmentMeshes = batchedSegmentMeshes.filter(
+      (mesh) => (getGeometryInstanceCount(mesh) ?? 0) > 0,
+    );
+
+    expect(populatedSegmentMeshes.length).toBeGreaterThan(0);
+    populatedSegmentMeshes.forEach((mesh) => {
+      expect(mesh.material).toBeInstanceOf(ShaderMaterial);
+      expect(getGeometryInstanceCount(mesh) ?? 0).toBeGreaterThan(0);
+    });
+  });
+
+  test('closes manually closed batched main waves on webgpu', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Closed Batched Wave
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.9
+bModWaveAlphaByVolume=1
+modwavealphastart=0.2
+modwavealphaend=0.6
+      `.trim(),
+      { id: 'closed-batched-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const expectedSegmentCount = frameState.mainWave.positions.length / 3;
+    const root = scene.children[0] as RenderTreeNode;
+    const segmentCounts = flattenRenderTree(root)
+      .filter(isWebGPUSegmentBatchNode)
+      .map((child) => getGeometryInstanceCount(child) ?? 0);
+
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(segmentCounts).toContain(expectedSegmentCount);
+  });
+
+  test('uploads compact line and control attributes for batched webgpu waves', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Compact Batched Wave Upload
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.7
+      `.trim(),
+      { id: 'compact-batched-wave-upload' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) ===
+          frameState.mainWave.positions.length / 3,
+    );
+    const lineArray = getFloat32AttributeArray(waveMesh, 'instanceLine');
+    const controlArray = getFloat32AttributeArray(waveMesh, 'instanceControl');
+    const colorArray = getFloat32AttributeArray(waveMesh, 'instanceColorAlpha');
+    const positions = frameState.mainWave.positions;
+
+    expect(lineArray?.slice(0, 4)).toEqual(
+      Float32Array.from([
+        positions[0] ?? 0,
+        positions[1] ?? 0,
+        (positions[3] ?? 0) - (positions[0] ?? 0),
+        (positions[4] ?? 0) - (positions[1] ?? 0),
+      ]),
+    );
+    expect(controlArray?.slice(0, 3)).toEqual(
+      Float32Array.from([
+        positions[2] ?? 0.24,
+        positions[5] ?? 0.24,
+        0.0025 * Math.max(1, frameState.mainWave.thickness) * 0.5,
+      ]),
+    );
+    expect(colorArray?.slice(0, 4)).toEqual(
+      Float32Array.from([
+        frameState.mainWave.color.r,
+        frameState.mainWave.color.g,
+        frameState.mainWave.color.b,
+        frameState.mainWave.alpha,
+      ]),
+    );
+  });
+
+  test('preserves per-point depth across compact WebGPU wave uploads', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Compact Wave Depth
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.7
+      `.trim(),
+      { id: 'compact-wave-depth' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const positions = frameState.mainWave.positions;
+    const segmentIndex = Array.from(
+      { length: Math.max(0, positions.length / 3 - 1) },
+      (_, index) => index,
+    ).find((index) => {
+      const startZ = positions[index * 3 + 2] ?? 0;
+      const endZ = positions[index * 3 + 5] ?? 0;
+      return Math.abs(endZ - startZ) > 1e-6;
+    });
+
+    expect(segmentIndex).toBeDefined();
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) ===
+          frameState.mainWave.positions.length / 3,
+    );
+    const controlArray = getFloat32AttributeArray(waveMesh, 'instanceControl');
+    const controlOffset = (segmentIndex ?? 0) * 3;
+
+    expect(controlArray?.slice(controlOffset, controlOffset + 3)).toEqual(
+      Float32Array.from([
+        positions[(segmentIndex ?? 0) * 3 + 2] ?? 0.24,
+        positions[(segmentIndex ?? 0) * 3 + 5] ?? 0.24,
+        0.0025 * Math.max(1, frameState.mainWave.thickness) * 0.5,
+      ]),
+    );
+  });
+
+  test('uploads adjacency-aware join metadata for closed WebGPU waves', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Closed Join Metadata
+wave_mode=1
+wave_usedots=0
+wave_additive=0
+wave_a=0.7
+      `.trim(),
+      { id: 'closed-join-metadata' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        getGeometryInstanceCount(child) ===
+          frameState.mainWave.positions.length / 3,
+    );
+    const joinArray = Array.from(
+      getFloat32AttributeArray(waveMesh, 'instanceJoin') ?? [],
+    );
+
+    expect(frameState.mainWave.closed).toBe(true);
+    expect(
+      joinArray.some((value, index) => index % 4 < 2 && value > 1.01),
+    ).toBe(true);
+    expect(
+      joinArray.every((value, index) =>
+        index % 4 < 2 ? value >= 1 : value === 0,
+      ),
+    ).toBe(true);
+  });
+
+  test('keeps additive wave materials transparent when alpha exceeds 1', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Additive Wave Alpha
+wave_mode=0
+wave_usedots=0
+wave_additive=1
+wave_a=1.4
+bModWaveAlphaByVolume=1
+modwavealphastart=0.1
+modwavealphaend=0.4
+      `.trim(),
+      { id: 'additive-wave-alpha' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const additiveWaveMesh = flattenRenderTree(root).find(
+      (child) =>
+        isWebGPUSegmentBatchNode(child) &&
+        child.material instanceof ShaderMaterial &&
+        child.material.blending === AdditiveBlending,
+    );
+
+    expect(additiveWaveMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      (additiveWaveMesh?.material as ShaderMaterial | undefined)?.transparent,
+    ).toBe(true);
+    expect(frameState.mainWave.alpha).toBeGreaterThan(1);
+  });
+
+  test('renders custom waves directly on webgpu-safe custom waves', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Procedural Custom Wave Renderer
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_scaling=1.15
+wavecode_0_mystery=0.25
+wavecode_0_usedots=0
+wavecode_0_x=0.55
+wavecode_0_y=0.45
+wavecode_0_r=0.8
+wavecode_0_g=0.4
+wavecode_0_b=1
+wavecode_0_a=0.35
+wavecode_0_thick=5
+wave_0_per_point1=x = x + value1 * 0.1;
+wave_0_per_point2=y = y + sin(sample * pi) * 0.05;
+      `.trim(),
+      { id: 'procedural-custom-wave-renderer' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgpu');
+    const frameState = vm.step(makeSignals());
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
+    };
+    const renderedWaveChildren = root.children.flatMap(
+      (group) => group.children ?? [],
+    );
+
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+    expect(renderedWaveChildren.length).toBeGreaterThan(0);
+    expect(frameState.gpuGeometry.customWaves[0]?.thickness).toBe(5);
+    expect(frameState.gpuGeometry.customWaves[0]?.fieldProgram).not.toBeNull();
+  });
+
+  test('falls back from the WebGPU custom-wave batcher when a field program is present', () => {
+    const batcher = createWebGPUBatchingLayer();
+    const root = new Group();
+    const targetGroup = new Group();
+    batcher.attach(root);
+
+    const rendered = batcher.renderProceduralCustomWaveGroup?.(targetGroup, [
+      {
+        samples: [0.2, 0.4, 0.6],
+        sampleValues2: [0.1, 0.3, 0.5],
+        spectrum: false,
+        centerX: 0,
+        centerY: 0,
+        scaling: 1,
+        mystery: 0,
+        time: 0,
+        fieldProgram: {
+          kind: 'gpu-field-program',
+          statements: [
+            { target: 'x', expression: { type: 'literal', value: 0 } },
+          ],
+          temporaries: [],
+          signature: 'field-program',
+        },
+        color: { r: 1, g: 1, b: 1, a: 1 },
+        alpha: 1,
+        additive: false,
+        thickness: 1,
+      },
+    ]);
+
+    expect(rendered).toBe(false);
+    batcher.dispose();
+  });
+
+  test('keeps procedural blend interaction alpha separate from blend alpha on webgpu', async () => {
+    const currentWave = {
+      samples: [0.2, -0.1, 0.3, -0.25, 0.15],
+      velocities: [0.04, -0.02, 0.01, -0.03, 0.02],
+      mode: 0,
+      centerX: 0,
+      centerY: 0,
+      scale: 1,
+      mystery: 0,
+      time: 0.3,
+      beatPulse: 0.2,
+      trebleAtt: 0.35,
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      alpha: 0.4,
+      additive: false,
+      thickness: 1,
+      closed: false,
+    };
+    const previousWave = {
+      ...currentWave,
+      time: 0.1,
+    };
+
+    const line =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralWaveObject(
+        undefined,
+        previousWave,
+        currentWave,
+        0.75,
+        0.25,
+        {
+          offsetX: 0,
+          offsetY: 0,
+          rotation: 0,
+          scale: 1,
+          alphaMultiplier: 0.675,
+        },
+      );
+    const material = line.material as ShaderMaterial;
+
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.1, 6);
+    expect(material.uniforms.interactionAlpha.value).toBeCloseTo(0.675, 6);
+    expect(material.uniforms.blendMix.value).toBeCloseTo(0.75, 6);
+  });
+
+  test('resamples previous procedural wave buffers to the current vertex count during webgpu blends', async () => {
+    const interpolatedMainWave =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralWaveObject(
+        undefined,
+        {
+          samples: [0.5, -0.4, 0.3],
+          velocities: [0.08, -0.06, 0.05],
+          mode: 0,
+          centerX: 0,
+          centerY: 0,
+          scale: 1,
+          mystery: 0,
+          time: 0.1,
+          beatPulse: 0.2,
+          trebleAtt: 0.35,
+          color: { r: 1, g: 1, b: 1, a: 1 },
+          alpha: 0.5,
+          additive: false,
+          thickness: 1,
+          closed: false,
+        },
+        {
+          samples: [0.2, -0.1, 0.3, -0.25, 0.15],
+          velocities: [0.04, -0.02, 0.01, -0.03, 0.02],
+          mode: 0,
+          centerX: 0,
+          centerY: 0,
+          scale: 1,
+          mystery: 0,
+          time: 0.3,
+          beatPulse: 0.2,
+          trebleAtt: 0.35,
+          color: { r: 1, g: 1, b: 1, a: 1 },
+          alpha: 0.5,
+          additive: false,
+          thickness: 1,
+          closed: false,
+        },
+        0.6,
+        0.4,
+        null,
+      );
+    const interpolatedCustomWave =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralCustomWaveObject(
+        undefined,
+        {
+          samples: [0.25, -0.15, 0.05],
+          spectrum: false,
+          centerX: 0,
+          centerY: 0,
+          scaling: 1,
+          mystery: 0,
+          time: 0.1,
+          color: { r: 1, g: 0.8, b: 0.6, a: 1 },
+          alpha: 0.35,
+          additive: false,
+          thickness: 1,
+        },
+        {
+          samples: Array.from({ length: 40 }, (_, index) =>
+            Math.sin(index / 8),
+          ),
+          spectrum: false,
+          centerX: 0,
+          centerY: 0,
+          scaling: 1,
+          mystery: 0,
+          time: 0.3,
+          color: { r: 0.8, g: 0.4, b: 1, a: 1 },
+          alpha: 0.35,
+          additive: false,
+          thickness: 1,
+        },
+        0.6,
+        0.4,
+        null,
+      );
+
+    const mainPreviousSampleValues = interpolatedMainWave.geometry.getAttribute(
+      'previousSampleValue',
+    );
+    const mainPreviousSampleVelocities =
+      interpolatedMainWave.geometry.getAttribute('previousSampleVelocity');
+    const mainSampleT = interpolatedMainWave.geometry.getAttribute('sampleT');
+    const customPreviousSampleValues =
+      interpolatedCustomWave.geometry.getAttribute('previousSampleValue');
+    const customSampleT =
+      interpolatedCustomWave.geometry.getAttribute('sampleT');
+
+    expect(mainPreviousSampleValues.array.length).toBe(
+      mainSampleT.array.length,
+    );
+    expect(mainPreviousSampleVelocities.array.length).toBe(
+      mainSampleT.array.length,
+    );
+    expect(customPreviousSampleValues.array.length).toBe(
+      customSampleT.array.length,
+    );
+  });
+
+  test('keeps procedural main-wave blend alpha anchored to the previous frame on webgpu', async () => {
+    const previousWave = {
+      samples: [0.2, -0.1, 0.3, -0.25, 0.15],
+      velocities: [0.04, -0.02, 0.01, -0.03, 0.02],
+      mode: 0,
+      centerX: 0,
+      centerY: 0,
+      scale: 1,
+      mystery: 0,
+      time: 0.1,
+      beatPulse: 0.2,
+      trebleAtt: 0.35,
+      color: { r: 1, g: 1, b: 1, a: 1 },
+      alpha: 0.2,
+      additive: false,
+      thickness: 1,
+      closed: false,
+    };
+    const currentWave = {
+      ...previousWave,
+      time: 0.3,
+      alpha: 0.8,
+    };
+
+    const line =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralWaveObject(
+        undefined,
+        previousWave,
+        currentWave,
+        0.65,
+        0.35,
+        null,
+      );
+    const material = line.material as ShaderMaterial;
+
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.07, 6);
+  });
+
+  test('keeps procedural custom-wave blend alpha anchored to the previous frame on webgpu', async () => {
+    const previousWave = {
+      samples: Array.from({ length: 40 }, (_, index) => Math.sin(index / 8)),
+      spectrum: true,
+      centerX: 0,
+      centerY: 0,
+      scaling: 1.15,
+      mystery: 0.25,
+      time: 0.1,
+      color: { r: 1, g: 0.8, b: 0.6, a: 1 },
+      alpha: 0.2,
+      additive: false,
+      thickness: 5,
+    };
+    const currentWave = {
+      ...previousWave,
+      time: 0.3,
+      color: { r: 0.8, g: 0.4, b: 1, a: 1 },
+      alpha: 0.8,
+    };
+
+    const line =
+      __milkdropRendererAdapterTestUtils.syncInterpolatedProceduralCustomWaveObject(
+        undefined,
+        previousWave,
+        currentWave,
+        0.65,
+        0.35,
+        null,
+      );
+    const material = line.material as ShaderMaterial;
+
+    expect(material.uniforms.alpha.value).toBeCloseTo(0.07, 6);
+  });
+
+  test('keeps interpolated shape blend alpha anchored to the previous frame on webgl', async () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Previous Shape Blend Alpha
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.22
+shapecode_0_thickoutline=0
+shapecode_0_a=0.2
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+shapecode_0_a2=0.6
+shapecode_0_r2=0.1
+shapecode_0_g2=0.3
+shapecode_0_b2=1
+shapecode_0_border_a=0.75
+      `.trim(),
+      { id: 'previous-shape-blend-alpha' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Current Shape Blend Alpha
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.3
+shapecode_0_thickoutline=0
+shapecode_0_x=0.2
+shapecode_0_y=-0.15
+shapecode_0_a=0.9
+shapecode_0_r=0.2
+shapecode_0_g=1
+shapecode_0_b=0.3
+shapecode_0_a2=0.1
+shapecode_0_r2=1
+shapecode_0_g2=0.4
+shapecode_0_b2=0.2
+shapecode_0_border_a=0.25
+      `.trim(),
+      { id: 'current-shape-blend-alpha' },
+    );
+
+    const previousFrame = createMilkdropVM(previousPreset).step(
+      makeSignals({ time: 0.1 }),
+    );
+    const frameState = createMilkdropVM(currentPreset).step(
+      makeSignals({ time: 0.3 }),
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        children?: Array<{
+          children?: Array<{
+            material?: ShaderMaterial | LineBasicMaterial;
+          }>;
+        }>;
+      }>;
+    };
+    const blendShapeGroup = root.children[12];
+    const blendedShape = blendShapeGroup?.children?.[0];
+    const fill = blendedShape?.children?.[0] as
+      | { material?: ShaderMaterial }
+      | undefined;
+    const borderGroup = blendedShape?.children?.[1] as
+      | {
+          children?: Array<{
+            material?: LineBasicMaterial;
+          }>;
+        }
+      | undefined;
+    const border = borderGroup?.children?.[0] as
+      | { material?: LineBasicMaterial }
+      | undefined;
+
+    expect(fill?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      (fill?.material as ShaderMaterial | undefined)?.uniforms.primaryAlpha
+        .value,
+    ).toBeCloseTo(0.07, 6);
+    expect(
+      (fill?.material as ShaderMaterial | undefined)?.uniforms.secondaryAlpha
+        .value,
+    ).toBeCloseTo(0.21, 6);
+    expect(borderGroup?.children).toHaveLength(1);
+    expect(border?.material).toBeInstanceOf(LineBasicMaterial);
+    expect(border?.material?.opacity).toBeCloseTo(0.2625, 6);
+  });
+
+  test('keeps previous-only blend shapes visible when the current frame has fewer shape slots', async () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Previous Extra Shape
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.22
+shapecode_0_thickoutline=0
+shapecode_0_a=0.2
+shapecode_1_enabled=1
+shapecode_1_sides=6
+shapecode_1_rad=0.18
+shapecode_1_x=-0.35
+shapecode_1_y=0.2
+shapecode_1_thickoutline=0
+shapecode_1_a=0.5
+      `.trim(),
+      { id: 'previous-extra-shape' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Current Fewer Shapes
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shapecode_0_rad=0.3
+shapecode_0_thickoutline=0
+shapecode_0_a=0.9
+      `.trim(),
+      { id: 'current-fewer-shapes' },
+    );
+
+    const previousFrame = createMilkdropVM(previousPreset).step(
+      makeSignals({ time: 0.1 }),
+    );
+    const frameState = createMilkdropVM(currentPreset).step(
+      makeSignals({ time: 0.3 }),
+    );
+
+    expect(previousFrame.shapes).toHaveLength(2);
+    expect(frameState.shapes).toHaveLength(1);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const blendShapeGroup = (
+      adapter as unknown as {
+        blendShapeGroup: {
+          children: Array<{
+            children?: Array<{
+              material?: MeshBasicMaterial | ShaderMaterial | LineBasicMaterial;
+            }>;
+          }>;
+        };
+      }
+    ).blendShapeGroup;
+    const extraBlendedShape = blendShapeGroup.children[1];
+    const extraFill = extraBlendedShape?.children?.[0] as
+      | { material?: MeshBasicMaterial | ShaderMaterial }
+      | undefined;
+
+    expect(blendShapeGroup.children).toHaveLength(2);
+    expect(extraFill?.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(
+      (extraFill?.material as MeshBasicMaterial | undefined)?.opacity,
+    ).toBeCloseTo(0.175, 6);
+  });
+
+  test('keeps previous-only procedural custom waves visible when the current frame has fewer slots', async () => {
+    const previousPreset = compileMilkdropPresetSource(
+      `
+title=Previous Extra Procedural Custom Wave
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_scaling=1.15
+wavecode_0_mystery=0.25
+wavecode_0_usedots=0
+wavecode_0_x=0.55
+wavecode_0_y=0.45
+wavecode_0_r=0.8
+wavecode_0_g=0.4
+wavecode_0_b=1
+wavecode_0_thick=5
+wavecode_0_a=0.2
+wavecode_1_enabled=1
+wavecode_1_samples=40
+wavecode_1_spectrum=1
+wavecode_1_scaling=1.05
+wavecode_1_mystery=0.1
+wavecode_1_usedots=0
+wavecode_1_x=0.35
+wavecode_1_y=0.55
+wavecode_1_r=1
+wavecode_1_g=0.6
+wavecode_1_b=0.2
+wavecode_1_thick=4
+wavecode_1_a=0.4
+      `.trim(),
+      { id: 'previous-extra-procedural-custom-wave' },
+    );
+    const currentPreset = compileMilkdropPresetSource(
+      `
+title=Current Fewer Procedural Custom Waves
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_scaling=1.15
+wavecode_0_mystery=0.25
+wavecode_0_usedots=0
+wavecode_0_x=0.55
+wavecode_0_y=0.45
+wavecode_0_r=0.8
+wavecode_0_g=0.4
+wavecode_0_b=1
+wavecode_0_thick=5
+wavecode_0_a=0.8
+      `.trim(),
+      { id: 'current-fewer-procedural-custom-waves' },
+    );
+
+    const previousVm = createMilkdropVM(previousPreset);
+    previousVm.setRenderBackend('webgpu');
+    const currentVm = createMilkdropVM(currentPreset);
+    currentVm.setRenderBackend('webgpu');
+    const previousFrame = previousVm.step(makeSignals({ time: 0.1 }));
+    const frameState = currentVm.step(makeSignals({ time: 0.3 }));
+
+    expect(previousFrame.gpuGeometry.customWaves).toHaveLength(2);
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgpu',
+      batcher: null,
+      preset: currentPreset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.35,
+      },
+    });
+
+    const blendCustomWaveGroup = (
+      adapter as unknown as {
+        blendCustomWaveGroup: {
+          children: Array<{ material?: ShaderMaterial }>;
+        };
+      }
+    ).blendCustomWaveGroup;
+    const extraBlendedWave = blendCustomWaveGroup.children[1];
+
+    expect(blendCustomWaveGroup.children).toHaveLength(2);
+    expect(extraBlendedWave?.material).toBeInstanceOf(ShaderMaterial);
+    expect(
+      (extraBlendedWave?.material as ShaderMaterial | undefined)?.uniforms.alpha
+        .value,
+    ).toBeCloseTo(0.14, 6);
+  });
+
+  test('keeps additive procedural wave blends above normal blend order on webgpu', async () => {
+    const scenarios = [
+      {
+        label: 'main wave',
+        previousSource: `
+title=Additive Procedural Main Wave Previous
+wave_mode=0
+wave_usedots=0
+wave_additive=1
+wave_a=0.8
+        `.trim(),
+        currentSource: `
+title=Normal Procedural Main Wave Current
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+        `.trim(),
+        previousId: 'additive-procedural-main-wave-previous',
+        currentId: 'normal-procedural-main-wave-current',
+        expectedRenderOrder: 81,
+        assertGeometry(
+          previousFrame: ReturnType<
+            ReturnType<typeof createMilkdropVM>['step']
+          >,
+          frameState: ReturnType<ReturnType<typeof createMilkdropVM>['step']>,
+        ) {
+          expect(previousFrame.gpuGeometry.mainWave).not.toBeNull();
+          expect(frameState.gpuGeometry.mainWave).not.toBeNull();
+        },
+      },
+      {
+        label: 'custom wave',
+        previousSource: `
+title=Additive Procedural Custom Wave Previous
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_usedots=0
+wavecode_0_additive=1
+wavecode_0_a=0.35
+        `.trim(),
+        currentSource: `
+title=Normal Procedural Custom Wave Current
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_usedots=0
+wavecode_0_additive=0
+wavecode_0_a=0.35
+        `.trim(),
+        previousId: 'additive-procedural-custom-wave-previous',
+        currentId: 'normal-procedural-custom-wave-current',
+        expectedRenderOrder: 91,
+        assertGeometry(
+          previousFrame: ReturnType<
+            ReturnType<typeof createMilkdropVM>['step']
+          >,
+          frameState: ReturnType<ReturnType<typeof createMilkdropVM>['step']>,
+        ) {
+          expect(previousFrame.gpuGeometry.customWaves).toHaveLength(1);
+          expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+        },
+      },
+    ] as const;
+
+    for (const scenario of scenarios) {
+      const previousPreset = compileMilkdropPresetSource(
+        scenario.previousSource,
+        {
+          id: scenario.previousId,
+        },
+      );
+      const currentPreset = compileMilkdropPresetSource(
+        scenario.currentSource,
+        {
+          id: scenario.currentId,
+        },
+      );
+
+      const previousVm = createMilkdropVM(previousPreset);
+      previousVm.setRenderBackend('webgpu');
+      const currentVm = createMilkdropVM(currentPreset);
+      currentVm.setRenderBackend('webgpu');
+      const previousFrame = previousVm.step(makeSignals({ time: 0.1 }));
+      const frameState = currentVm.step(makeSignals({ time: 0.3 }));
+
+      scenario.assertGeometry(previousFrame, frameState);
+
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        backend: 'webgpu',
+      });
+
+      adapter.attach();
+      adapter.render({
+        frameState,
+        blendState: {
+          mode: 'gpu',
+          previousFrame,
+          alpha: 0.35,
+        },
+      });
+
+      const root = scene.children[0] as RenderTreeNode;
+      const blendedWave = flattenRenderTree(root).find(
+        (child) =>
+          child.material instanceof ShaderMaterial &&
+          child.material.blending === AdditiveBlending &&
+          child.renderOrder === scenario.expectedRenderOrder,
+      ) as { material?: ShaderMaterial; renderOrder?: number } | undefined;
+
+      expect(blendedWave?.material).toBeInstanceOf(ShaderMaterial);
+      expect(blendedWave?.material?.blending).toBe(AdditiveBlending);
+      expect(blendedWave?.renderOrder).toBe(scenario.expectedRenderOrder);
+    }
+  });
+
+  test('renders GPU blend snapshots on webgl without requiring CPU-cloned wave state', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL GPU Blend
+wave_mode=0
+wave_a=1
+      `.trim(),
+      { id: 'webgl-gpu-blend' },
+    );
+    const vm = createMilkdropVM(preset);
+    const previousFrame = vm.step(makeSignals({ time: 0.1 }));
+    const frameState = vm.step(makeSignals({ time: 0.3 }));
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: {
+        mode: 'gpu',
+        previousFrame,
+        alpha: 0.5,
+      },
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const blendedWave = getRenderedBatchNode(root, [80, 81]);
+
+    expect(blendedWave?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(blendedWave)).toBeGreaterThan(0);
+    expect(
+      getFloat32AttributeArray(blendedWave, 'instanceColorAlpha')?.[3],
+    ).toBeCloseTo(0.5, 6);
+  });
+
+  test('keeps WebGL fallback on explicit strip geometry for descriptors that WebGPU synthesizes procedurally', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Fallback Renderer
+mesh_density=14
+motion_vectors=1
+motion_vectors_x=6
+motion_vectors_y=4
+wave_mode=5
+wave_usedots=0
+wave_thick=5
+wavecode_0_enabled=1
+wavecode_0_samples=40
+wavecode_0_spectrum=1
+wavecode_0_usedots=0
+wavecode_0_thick=4
+      `.trim(),
+      { id: 'webgl-fallback-renderer' },
+    );
+
+    const vm = createMilkdropVM(preset);
+    vm.setRenderBackend('webgl');
+    const signals = makeSignals();
+    signals.frame = 2;
+    signals.time = 0.2;
+    const frameState = vm.step(signals);
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as {
+      children: Array<{
+        material?: unknown;
+        children?: Array<{ material?: unknown }>;
+      }>;
+    };
+    const meshLines = root.children[1] as { material?: unknown };
+    const mainWaveGroup = root.children[2] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const customWaveGroup = root.children[3] as {
+      children: Array<{ material?: unknown }>;
+    };
+    const motionVectorGroup = root.children[8] as {
+      children: Array<{ children?: Array<{ material?: unknown }> }>;
+    };
+
+    expect(frameState.gpuGeometry.mainWave).toBeNull();
+    expect(frameState.gpuGeometry.customWaves).toHaveLength(0);
+    expect(frameState.gpuGeometry.meshField).toBeNull();
+    expect(frameState.gpuGeometry.motionVectorField).toBeNull();
+    expect(meshLines.material).toBeInstanceOf(LineBasicMaterial);
+    expect(mainWaveGroup.children).toHaveLength(0);
+    expect(customWaveGroup.children).toHaveLength(0);
+    expect(motionVectorGroup.children[0]?.children ?? []).toHaveLength(0);
+
+    const tree = scene.children[0] as RenderTreeNode;
+    const mainWaveMesh = getRenderedBatchNode(tree, [20, 21]);
+    const customWaveMesh = getRenderedBatchNode(tree, [30, 31]);
+    const motionVectorMesh = getRenderedBatchNode(tree, [70, 71]);
+
+    expect(mainWaveMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(mainWaveMesh)).toBeGreaterThan(0);
+    expect(
+      getFloat32AttributeArray(mainWaveMesh, 'instanceControl')?.[2],
+    ).toBeCloseTo(0.00625, 6);
+    expect(customWaveMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(customWaveMesh)).toBeGreaterThan(0);
+    expect(
+      getFloat32AttributeArray(customWaveMesh, 'instanceControl')?.[2],
+    ).toBeCloseTo(0.005, 6);
+    expect(motionVectorMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(getGeometryInstanceCount(motionVectorMesh)).toBeGreaterThan(0);
+  });
+
+  test('marks endpoint caps in WebGL batched line metadata', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Line Join Metadata
+motion_vectors=1
+motion_vectors_x=2
+motion_vectors_y=1
+mv_a=0.7
+      `.trim(),
+      { id: 'webgl-line-join-metadata' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const motionVectorMesh = getRenderedBatchNode(root, [70, 71]);
+    const joinArray = getFloat32AttributeArray(
+      motionVectorMesh,
+      'instanceJoin',
+    );
+
+    expect(motionVectorMesh?.material).toBeInstanceOf(ShaderMaterial);
+    expect(joinArray?.[2]).toBe(1);
+    expect(joinArray?.[3]).toBe(1);
+  });
+
+  test('skips feedback composite rendering when no composite features are active', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Composite Off
+fShader=0
+      `.trim(),
+      { id: 'composite-off' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer & {
+      setRenderTargetCalls: number;
+    };
+    fakeRenderer.setRenderTargetCalls = 0;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => {
+      fakeRenderer.setRenderTargetCalls += 1;
+      return fakeRenderer;
+    };
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    const result = adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    expect(result).toBe(false);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+  });
+
+  test('full webgpu path keeps feedback frames on compatibility fallback while native feedback is disabled', async () => {
+    setWebGpuForceMode('full');
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGPU Feedback
+video_echo=1
+warp_shader=warp=0.6; hue=0.2
+comp_shader=mix=0.25; tint=1,0.5,0.5
+texture_wrap=1
+feedback_texture=1
+ob_size=0.02
+ob_border=1
+      `.trim(),
+      { id: 'webgpu-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      setRenderTargetCalls: 0,
+      renderCalls: 0,
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {
+        fakeRenderer.setRenderTargetCalls += 1;
+      },
+      render: () => {
+        fakeRenderer.renderCalls += 1;
+      },
+    };
+
+    try {
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        renderer: fakeRenderer,
+        backend: 'webgpu',
+      });
+
+      adapter.attach();
+      const result = adapter.render({
+        frameState,
+        blendState: null,
+      });
+
+      const feedback = (
+        adapter as unknown as {
+          feedback: {
+            sceneTarget: {
+              width: number;
+              height: number;
+              samples: number;
+              texture: { type: number; minFilter: number; magFilter: number };
+            };
+            compositeMaterial: {
+              uniforms: {
+                feedbackSoftness: { value: number };
+                currentFrameBoost: { value: number };
+              };
+            };
+          } | null;
+        }
+      ).feedback;
+
+      expect(result).toBe(false);
+      expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+      expect(fakeRenderer.renderCalls).toBe(0);
+      expect(feedback).toBeNull();
+    } finally {
+      setWebGpuForceMode('auto');
+    }
+  });
+
+  test('safe webgpu path avoids allocating a feedback manager and leaves feedback frames for compatibility fallback', async () => {
+    setWebGpuForceMode('safe');
+    const preset = compileMilkdropPresetSource(
+      `
+title=Safe WebGPU Feedback
+video_echo=1
+warp_shader=warp=0.6; hue=0.2
+comp_shader=mix=0.25; tint=1,0.5,0.5
+texture_wrap=1
+feedback_texture=1
+ob_size=0.02
+ob_border=1
+      `.trim(),
+      { id: 'safe-webgpu-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    try {
+      const adapter = await createMilkdropRendererAdapter({
+        scene,
+        camera,
+        renderer: fakeRenderer,
+        backend: 'webgpu',
+      });
+
+      adapter.attach();
+      const result = adapter.render({
+        frameState,
+        blendState: null,
+      });
+
+      const feedback = (
+        adapter as unknown as {
+          feedback: {
+            sceneTarget: {
+              width: number;
+              height: number;
+              samples: number;
+              texture: { type: number; minFilter: number; magFilter: number };
+            };
+            compositeMaterial: {
+              uniforms: {
+                feedbackSoftness: { value: number };
+                currentFrameBoost: { value: number };
+              };
+            };
+          } | null;
+        }
+      ).feedback;
+
+      expect(result).toBe(false);
+      expect(feedback).toBeNull();
+    } finally {
+      setWebGpuForceMode('auto');
+    }
+  });
+
+  test('routes webgpu audio-only feedback presets to compatibility fallback while native feedback is disabled', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Signal Field WebGPU
+video_echo=1
+      `.trim(),
+      { id: 'signal-field-webgpu' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      setRenderTargetCalls: 0,
+      renderCalls: 0,
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {
+        fakeRenderer.setRenderTargetCalls += 1;
+      },
+      render: () => {
+        fakeRenderer.renderCalls += 1;
+      },
+    };
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    const result = adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: {
+              type: number;
+              minFilter: number;
+              magFilter: number;
+            };
+          };
+          targets: Array<{ width: number; height: number }>;
+        } | null;
+      }
+    ).feedback;
+
+    expect(result).toBe(false);
+    expect(fakeRenderer.setRenderTargetCalls).toBe(0);
+    expect(fakeRenderer.renderCalls).toBe(0);
+    expect(feedback).toBeNull();
+  });
+
+  test('does not allocate mixed-resolution webgpu feedback targets while native feedback is disabled', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGPU Feedback Quality
+video_echo=1
+      `.trim(),
+      { id: 'webgpu-feedback-quality' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgpu',
+    });
+
+    adapter.attach();
+    const result = adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: {
+              type: number;
+              minFilter: number;
+              magFilter: number;
+            };
+          };
+          targets: Array<{ width: number; height: number }>;
+        } | null;
+      }
+    ).feedback;
+
+    expect(result).toBe(false);
+    expect(feedback).toBeNull();
+  });
+
+  test('uses tuned feedback targets on webgl backends', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Feedback Quality
+video_echo=1
+      `.trim(),
+      { id: 'webgl-feedback-quality' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          sceneTarget: {
+            width: number;
+            height: number;
+            samples: number;
+            texture: { type: number; minFilter: number; magFilter: number };
+          };
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
+    expect(feedback?.sceneTarget.samples).toBe(0);
+    expect(feedback?.sceneTarget.texture.type).not.toBe(HalfFloatType);
+    expect(feedback?.sceneTarget.texture.minFilter).toBe(LinearFilter);
+    expect(feedback?.sceneTarget.texture.magFilter).toBe(LinearFilter);
+  });
+
+  test('scales shared WebGL feedback targets under adaptive quality pressure', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=WebGL Adaptive Feedback
+video_echo=1
+      `.trim(),
+      { id: 'webgl-adaptive-feedback' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = {
+      getSize: (target: Vector2) => target.set(640, 360),
+      setRenderTarget: () => {},
+      render: () => {},
+    };
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+    adapter.setAdaptiveQuality?.({
+      feedbackResolutionMultiplier: 0.5,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: {
+          sceneTarget: { width: number; height: number };
+          targets: Array<{ width: number; height: number }>;
+        } | null;
+      }
+    ).feedback;
+
+    expect(feedback).not.toBeNull();
+    expect(feedback?.sceneTarget.width).toBe(640);
+    expect(feedback?.sceneTarget.height).toBe(360);
+    expect(feedback?.targets[0]?.width).toBe(320);
+    expect(feedback?.targets[0]?.height).toBe(180);
+  });
+
+  test('forwards shader transform controls into composite uniforms', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Transform Render
+warp_shader=dx=0.05; dy=-0.02; rot=0.18; zoom=1.12
+      `.trim(),
+      { id: 'shader-transform-render' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+
+    expect(feedback?.compositeMaterial.uniforms.offsetX.value).toBeCloseTo(
+      0.05,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.offsetY.value).toBeCloseTo(
+      -0.02,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.rotation.value).toBeCloseTo(
+      0.18,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.zoomMul.value).toBeCloseTo(
+      1.12,
+      6,
+    );
+  });
+
+  test('forwards shader color controls into composite uniforms', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Color Render
+comp_shader=saturation=1.4; contrast=1.2; r=1.1; g=0.85; b=0.65
+      `.trim(),
+      { id: 'shader-color-render' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+
+    expect(feedback?.compositeMaterial.uniforms.saturation.value).toBeCloseTo(
+      1.4,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.contrast.value).toBeCloseTo(
+      1.2,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.colorScale.value.r).toBeCloseTo(
+      1.1,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.colorScale.value.g).toBeCloseTo(
+      0.85,
+      6,
+    );
+    expect(feedback?.compositeMaterial.uniforms.colorScale.value.b).toBeCloseTo(
+      0.65,
+      6,
+    );
+  });
+
+  test('forwards texture sampler controls into composite uniforms', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Shader Texture Uniforms
+comp_shader=ret = tex2d(sampler_pattern, uv * 1.4 + vec2(0.2, -0.15)).rgb
+warp_shader=warp_texture_source = sampler_noise; warp_texture_amount = 0.08; warp_texture_scale = vec2(2.2, 1.7); warp_texture_offset = vec2(0.05, 0.1)
+      `.trim(),
+      { id: 'shader-texture-uniforms' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const fakeRenderer = Object.create(
+      WebGLRenderer.prototype,
+    ) as WebGLRenderer;
+    fakeRenderer.getSize = (target: Vector2) => target.set(640, 360);
+    fakeRenderer.setRenderTarget = () => fakeRenderer;
+    fakeRenderer.render = () => fakeRenderer;
+
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      renderer: fakeRenderer,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const feedback = (
+      adapter as unknown as {
+        feedback: { compositeMaterial: ShaderMaterial } | null;
+      }
+    ).feedback;
+
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureSource.value,
+    ).toBe(6);
+    expect(feedback?.compositeMaterial.uniforms.overlayTextureMode.value).toBe(
+      1,
+    );
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureAmount.value,
+    ).toBeCloseTo(1, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureScale.value.x,
+    ).toBeCloseTo(1.4, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureScale.value.y,
+    ).toBeCloseTo(1.4, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureOffset.value.x,
+    ).toBeCloseTo(0.2, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.overlayTextureOffset.value.y,
+    ).toBeCloseTo(-0.15, 6);
+    expect(feedback?.compositeMaterial.uniforms.warpTextureSource.value).toBe(
+      1,
+    );
+    expect(
+      feedback?.compositeMaterial.uniforms.warpTextureAmount.value,
+    ).toBeCloseTo(0.08, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.warpTextureScale.value.x,
+    ).toBeCloseTo(2.2, 6);
+    expect(
+      feedback?.compositeMaterial.uniforms.warpTextureScale.value.y,
+    ).toBeCloseTo(1.7, 6);
+  });
+
+  test('applies subtractive blend mode on waves via CustomBlending', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Subtractive Wave
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+      `.trim(),
+      { id: 'subtractive-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    frameState.mainWave.blendMode = 'subtractive';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgl',
+      batcher: null,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveGroup = getRootChildByRenderOrder(root, 20);
+    expect(waveGroup).toBeDefined();
+    const waveLine = waveGroup?.children?.[0] as RenderTreeNode;
+    const lineChild = waveLine.children?.[0] as {
+      material?: LineBasicMaterial;
+    };
+    const lineMaterial = lineChild?.material;
+
+    expect(lineMaterial).toBeDefined();
+    expect(lineMaterial?.blending).toBe(CustomBlending);
+    expect(lineMaterial?.blendSrc).toBe(OneFactor);
+    expect(lineMaterial?.blendDst).toBe(OneFactor);
+    expect(lineMaterial?.blendEquation).toBe(ReverseSubtractEquation);
+  });
+
+  test('handles custom blend modes in WebGPU wave batching natively', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Subtractive WebGPU Wave
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+      `.trim(),
+      { id: 'subtractive-webgpu-wave' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    frameState.mainWave.blendMode = 'subtractive';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedWave = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceLine') !== undefined &&
+        child.renderOrder === 20,
+    );
+
+    expect(batchedWave).toBeDefined();
+  });
+
+  test('applies multiplicative blend mode on shapes via CustomBlending', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Multiplicative Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_additive=0
+shapecode_0_a=0.7
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+      `.trim(),
+      { id: 'multiplicative-shape' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    expect(frameState.shapes[0]).toBeDefined();
+    const shape = frameState.shapes[0];
+    if (!shape) {
+      throw new Error('expected shape');
+    }
+    shape.blendMode = 'multiplicative';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgl',
+      batcher: null,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
+    const shapeObject = shapesGroup?.children?.[0] as RenderTreeNode;
+    const fillMesh = shapeObject?.children?.[0] as
+      | { material?: MeshBasicMaterial }
+      | undefined;
+    const fillMaterial = fillMesh?.material;
+
+    expect(fillMaterial).toBeDefined();
+    expect(fillMaterial?.blending).toBe(CustomBlending);
+    expect(fillMaterial?.blendSrc).toBe(DstColorFactor);
+    expect(fillMaterial?.blendDst).toBe(ZeroFactor);
+  });
+
+  test('handles custom blend modes in WebGPU shape batching natively', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Multiplicative WebGPU Shape
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_additive=0
+shapecode_0_a=0.7
+shapecode_0_r=1
+shapecode_0_g=0.2
+shapecode_0_b=0.1
+      `.trim(),
+      { id: 'multiplicative-webgpu-shape' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    const shape = frameState.shapes[0];
+    if (!shape) {
+      throw new Error('expected shape');
+    }
+    shape.blendMode = 'multiplicative';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgpu',
+      preset,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const batchedShape = flattenRenderTree(root).find(
+      (child) =>
+        child.geometry?.getAttribute?.('instanceTransform') !== undefined &&
+        (child.renderOrder ?? 0) >= 50 &&
+        (child.renderOrder ?? 0) < 54,
+    );
+
+    expect(batchedShape).toBeDefined();
+  });
+
+  test('ensures wave blend state precedes shape blend state in render order', async () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Blend Order Check
+wave_mode=0
+wave_usedots=0
+wave_additive=0
+wave_a=0.8
+shapecode_0_enabled=1
+shapecode_0_sides=6
+shapecode_0_rad=0.22
+shapecode_0_additive=0
+shapecode_0_a=0.7
+      `.trim(),
+      { id: 'blend-order-check' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals());
+    frameState.mainWave.blendMode = 'subtractive';
+    expect(frameState.shapes[0]).toBeDefined();
+    const shape = frameState.shapes[0];
+    if (!shape) {
+      throw new Error('expected shape');
+    }
+    shape.blendMode = 'multiplicative';
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = createMilkdropRendererAdapterCore({
+      scene,
+      camera,
+      backend: 'webgl',
+      batcher: null,
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState,
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const waveGroup = getRootChildByRenderOrder(root, 20);
+    const shapesGroup = getRootChildByRenderOrder(root, 50);
+
+    expect(waveGroup).toBeDefined();
+    expect(shapesGroup).toBeDefined();
+    expect(waveGroup?.renderOrder).toBe(20);
+    expect(shapesGroup?.renderOrder).toBe(50);
+    expect(waveGroup?.renderOrder ?? Infinity).toBeLessThan(
+      shapesGroup?.renderOrder ?? -Infinity,
+    );
+
+    const waveLine = waveGroup?.children?.[0] as RenderTreeNode;
+    const waveLineChild = waveLine.children?.[0] as {
+      material?: LineBasicMaterial;
+    };
+    const waveMaterial = waveLineChild?.material;
+    const shapeObject = shapesGroup?.children?.[0] as RenderTreeNode;
+    const fillMesh = shapeObject?.children?.[0] as
+      | { material?: MeshBasicMaterial }
+      | undefined;
+    const shapeMaterial = fillMesh?.material;
+
+    expect(waveMaterial).toBeDefined();
+    expect(shapeMaterial).toBeDefined();
+    expect(waveMaterial?.blending).toBe(CustomBlending);
+    expect(waveMaterial?.blendSrc).toBe(OneFactor);
+    expect(waveMaterial?.blendDst).toBe(OneFactor);
+    expect(waveMaterial?.blendEquation).toBe(ReverseSubtractEquation);
+    expect(shapeMaterial?.blending).toBe(CustomBlending);
+    expect(shapeMaterial?.blendSrc).toBe(DstColorFactor);
+    expect(shapeMaterial?.blendDst).toBe(ZeroFactor);
+  });
+});

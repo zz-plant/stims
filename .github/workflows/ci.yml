@@ -46,7 +46,7 @@ jobs:
           retention-days: 7
 
   integration:
-    name: Integration tests
+    name: Browser end-to-end tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -63,8 +63,12 @@ jobs:
       - name: Install Playwright Chromium
         run: bunx playwright install --with-deps chromium
 
-      - name: Run integration tests
-        run: bun run test:integration
+      # Runs the full e2e profile (agent-integration + engine-mount). The
+      # engine-mount suite launches a headed browser for real canvas rendering,
+      # so it needs a virtual display; xvfb ships with Playwright's --with-deps
+      # and Chromium falls back to SwiftShader for WebGL under it.
+      - name: Run browser end-to-end tests
+        run: xvfb-run -a bun run test:e2e
 
   deploy_preview:
     name: Deploy Pages preview

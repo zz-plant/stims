@@ -1,0 +1,237 @@
+import { describe, expect, test } from 'bun:test';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import {
+  buildDocPointers,
+  defaultQualityGateTimeoutMs,
+  getDocSectionContent,
+  getReadmeDevCommands,
+  markdownSources,
+  normalizeToys,
+  resolveQualityGateCommand,
+  runCommand,
+  searchMarkdownSources,
+} from '../../scripts/mcp-server.ts';
+
+describe('normalizeToys', () => {
+  test('preserves optional metadata fields when provided', () => {
+    const [toy] = normalizeToys([
+      {
+        slug: 'example',
+        description: 'example toy',
+        requiresWebGPU: true,
+        module: 'assets/example.ts',
+        type: 'module',
+        allowWebGLFallback: true,
+        controls: ['alpha', 'beta', 1],
+      },
+    ]);
+
+    expect(toy).toBeDefined();
+    expect(toy?.module).toBe('assets/example.ts');
+    expect(toy?.type).toBe('module');
+    expect(toy?.allowWebGLFallback).toBe(true);
+    expect(toy?.controls).toEqual(['alpha', 'beta']);
+  });
+
+  test('defaults optional metadata when fields are missing', () => {
+    const [toy] = normalizeToys([{ slug: 'fallback' }]);
+
+    expect(toy).toBeDefined();
+    expect(toy?.title).toBe('fallback');
+    expect(toy?.description).toBe('');
+    expect(toy?.requiresWebGPU).toBe(false);
+    expect(toy?.controls).toEqual([]);
+    expect(toy?.module).toBeNull();
+    expect(toy?.type).toBeNull();
+    expect(toy?.allowWebGLFallback).toBe(false);
+    expect(toy?.url).toContain('experience=fallback');
+  });
+});
+
+describe('getDocSectionContent', () => {
+  test('returns a specific heading section when present', async () => {
+    const result = await getDocSectionContent(
+      'docs/MCP_SERVER.md',
+      'Tool Categories',
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.content).toContain('Tool Categories');
+      expect(result.content).toContain('list_docs');
+    }
+  });
+
+  test('returns a friendly error when a heading is missing', async () => {
+    const result = await getDocSectionContent(
+      'docs/MCP_SERVER.md',
+      'This heading does not exist',
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toContain('was not found');
+    }
+  });
+});
+
+describe('searchMarkdownSources', () => {
+  test('finds matches across markdown files', async () => {
+    const results = await searchMarkdownSources('Tool Categories', {
+      file: 'docs/MCP_SERVER.md',
+      limit: 5,
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]?.file).toBe('docs/MCP_SERVER.md');
+    expect(results[0]?.heading).toContain('Tool Categories');
+  });
+
+  test('returns empty results when no matches exist', async () => {
+    const results = await searchMarkdownSources('this should not match');
+
+    expect(results).toHaveLength(0);
+  });
+});
+
+describe('README-derived MCP guidance', () => {
+  test('builds doc pointers from the current README headings', async () => {
+    const pointers = await buildDocPointers();
+
+    expect(pointers).toContain('Quickstart');
+    expect(pointers).toContain('Common commands');
+    expect(pointers).toContain('Repository layout');
+  });
+
+  test('surfaces the current session-oriented dev workflow', async () => {
+    const commands = await getReadmeDevCommands('dev');
+
+    expect(commands).toContain('bun run dev');
+    expect(commands).toContain('bun run build');
+  });
+
+  test('returns an explicit lint fallback when README omits lint-only commands', async () => {
+    const commands = await getReadmeDevCommands('lint');
+
+    expect(commands).toContain('does not currently list lint-only commands');
+  });
+});
+
+describe('agent capability markdown availability', () => {
+  test('exposes skill and workflow markdown files for MCP reads', () => {
+    expect(
+      markdownSources['docs/agents/agent-handoffs.md'].length,
+    ).toBeGreaterThan(0);
+    expect(
+      markdownSources['.agent/skills/play-visualizer/SKILL.md'].length,
+    ).toBeGreaterThan(0);
+    expect(
+      markdownSources['.agent/workflows/play-visualizer.md'].length,
+    ).toBeGreaterThan(0);
+    expect(
+      markdownSources['.agent/skills/modify-visualizer-runtime/SKILL.md']
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      markdownSources['.agent/workflows/modify-visualizer-runtime.md'].length,
+    ).toBeGreaterThan(0);
+  });
+
+  test('searches agent docs content through shared markdown index', async () => {
+    const results = await searchMarkdownSources('progressive-disclosure', {
+      file: 'docs/agents/README.md',
+      limit: 3,
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]?.file).toBe('docs/agents/README.md');
+  });
+
+  test('searches bootstrap and handoff guidance through shared markdown index', async () => {
+    const results = await searchMarkdownSources('Return contract', {
+      file: 'docs/agents/agent-handoffs.md',
+      limit: 3,
+    });
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0]?.file).toBe('docs/agents/agent-handoffs.md');
+  });
+});
+
+describe('resolveQualityGateCommand', () => {
+  test('defaults to the full quality gate command', () => {
+    const command = resolveQualityGateCommand();
+
+    expect(command.scope).toBe('full');
+    expect(command.command).toBe('bun');
+    expect(command.args).toEqual(['run', 'check']);
+    expect(command.printableCommand).toBe('bun run check');
+  });
+
+  test('resolves quick scope command', () => {
+    const command = resolveQualityGateCommand('quick');
+
+    expect(command.scope).toBe('quick');
+    expect(command.args).toEqual(['run', 'check:quick']);
+    expect(command.printableCommand).toBe('bun run check:quick');
+  });
+});
+
+describe('runCommand', () => {
+  test('returns stderr when command is missing', async () => {
+    const result = await runCommand('this-command-does-not-exist-stim', []);
+
+    expect(result.exitCode).toBeNull();
+    expect(result.timedOut).toBe(false);
+    expect(result.stderr.length).toBeGreaterThan(0);
+  });
+
+  test('times out long-running commands', async () => {
+    const result = await runCommand(
+      process.execPath,
+      ['-e', 'setInterval(() => {}, 1000)'],
+      100,
+      50,
+    );
+
+    expect(result.exitCode).toBeNull();
+    expect(result.timedOut).toBe(true);
+    expect(result.stderr).toContain('timed out');
+  });
+
+  test('escalates to SIGKILL when SIGTERM does not close the child', async () => {
+    const signals: string[] = [];
+
+    class FakeChildProcess extends EventEmitter {
+      stdout = new PassThrough();
+      stderr = new PassThrough();
+
+      kill(signal: string) {
+        signals.push(signal);
+        if (signal === 'SIGKILL') {
+          this.emit('close', null);
+        }
+        return true;
+      }
+    }
+
+    const fakeSpawn = () => new FakeChildProcess();
+
+    const result = await runCommand(
+      'bun',
+      ['run', 'check'],
+      50,
+      25,
+      fakeSpawn as unknown as typeof import('node:child_process').spawn,
+    );
+
+    expect(result.timedOut).toBe(true);
+    expect(result.stderr).toContain('Escalated to SIGKILL');
+    expect(signals).toEqual(['SIGTERM', 'SIGKILL']);
+  });
+
+  test('exposes the default timeout constant', () => {
+    expect(defaultQualityGateTimeoutMs).toBe(600000);
+  });
+});
