@@ -4,10 +4,10 @@ import { join } from 'node:path';
 import {
   buildShaderProgramPayload,
   extractShaderControls,
-} from '../../assets/js/milkdrop/compiler/shader-analysis.ts';
-import { generateGlslFromShaderStatements } from '../../assets/js/milkdrop/compiler/shader-analysis-glsl.ts';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import { parseMilkdropShaderStatement } from '../../assets/js/milkdrop/shader-ast.ts';
+} from '../../src/js/milkdrop/compiler/shader-analysis.ts';
+import { generateGlslFromShaderStatements } from '../../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { parseMilkdropShaderStatement } from '../../src/js/milkdrop/shader-ast.ts';
 
 const legacySupportedFeedbackFixture = readFileSync(
   join(

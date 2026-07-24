@@ -4,10 +4,10 @@ import type {
   MilkdropParitySourceFamily,
   MilkdropParityToleranceProfile,
   MilkdropRenderBackend,
-} from '../assets/js/milkdrop/common-types.ts';
+} from '../src/js/milkdrop/common-types.ts';
 
 export const VISUAL_REFERENCE_MANIFEST_PATH =
-  'assets/data/milkdrop-parity/visual-reference-manifest.json';
+  'src/data/milkdrop-parity/visual-reference-manifest.json';
 export const VISUAL_REFERENCE_FIXTURE_ROOT =
   'tests/fixtures/milkdrop/projectm-reference';
 

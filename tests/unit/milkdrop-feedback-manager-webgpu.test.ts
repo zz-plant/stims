@@ -5,20 +5,20 @@ import {
   resolveDirectShaderConstructorPattern,
   resolveDirectShaderSamplerBinding,
   resolveDirectShaderSwizzle,
-} from '../../assets/js/milkdrop/feedback-manager-webgpu.ts';
+} from '../../src/js/milkdrop/feedback-manager-webgpu.ts';
 import {
   bindCustomMilkdropSamplerTexture,
   configureMilkdropTexture,
   createCompositeUniforms,
   getSharedMilkdropAuxTextures,
   resolveAuxTextureName,
-} from '../../assets/js/milkdrop/feedback-manager-webgpu-composite.ts';
-import { buildFeedbackCompositeState } from '../../assets/js/milkdrop/renderer-helpers/feedback-composite.ts';
+} from '../../src/js/milkdrop/feedback-manager-webgpu-composite.ts';
+import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropRenderPayload,
   MilkdropShaderProgramPayload,
-} from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/types.ts';
 
 afterEach(() => {
   mock.restore();

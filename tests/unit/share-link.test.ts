@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
   type ShareLinkResult,
   shareOrCopyLink,
-} from '../../assets/js/utils/share-link.ts';
+} from '../../src/js/utils/share-link.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 const restores: Array<() => void> = [];

@@ -4,10 +4,10 @@ import type {
   MilkdropParitySourceFamily,
   MilkdropParityToleranceProfile,
   MilkdropRenderBackend,
-} from '../assets/js/milkdrop/common-types.ts';
+} from '../src/js/milkdrop/common-types.ts';
 
 export const CERTIFICATION_CORPUS_MANIFEST_PATH =
-  'assets/data/milkdrop-parity/certification-corpus.json';
+  'src/data/milkdrop-parity/certification-corpus.json';
 
 export type CertificationCorpusGroup =
   | 'bundled-shipped'

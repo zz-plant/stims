@@ -3,7 +3,7 @@ import {
   createMotionToyCapabilities,
   createToyCapabilities,
   withToyCapabilities,
-} from '../../assets/js/utils/toy-capabilities.ts';
+} from '../../src/js/utils/toy-capabilities.ts';
 
 describe('toy capability helpers', () => {
   test('builds default audio capabilities', () => {

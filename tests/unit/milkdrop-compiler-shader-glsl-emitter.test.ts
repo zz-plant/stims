@@ -3,9 +3,9 @@ import {
   generateGlslFromShaderStatements,
   generateShaderVariantTag,
   injectDirectShaderGlsl,
-} from '../../assets/js/milkdrop/compiler/shader-analysis-glsl.ts';
-import { parseMilkdropShaderStatement } from '../../assets/js/milkdrop/shader-ast.ts';
-import type { MilkdropShaderStatement } from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
+import { parseMilkdropShaderStatement } from '../../src/js/milkdrop/shader-ast.ts';
+import type { MilkdropShaderStatement } from '../../src/js/milkdrop/types.ts';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 

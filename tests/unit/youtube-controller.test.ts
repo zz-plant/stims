@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { YouTubeController } from '../../assets/js/ui/youtube-controller.ts';
+import { YouTubeController } from '../../src/js/ui/youtube-controller.ts';
 
 describe('YouTubeController', () => {
   const originalYT = window.YT;

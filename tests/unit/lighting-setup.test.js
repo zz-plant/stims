@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { initLighting } from '../../assets/js/lighting/lighting-setup.ts';
+import { initLighting } from '../../src/js/lighting/lighting-setup.ts';
 
 class Vector3 {
   constructor(x = 0, y = 0, z = 0) {

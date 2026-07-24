@@ -47,16 +47,16 @@ export function checkPreCommitGuards(): boolean {
     const absPath = path.join(REPO_ROOT, relPath);
     if (!fs.existsSync(absPath)) continue;
 
-    // Only scan TS/JS source files under assets/js/
+    // Only scan TS/JS source files under src/js/
     if (
-      !relPath.startsWith('assets/js/') ||
+      !relPath.startsWith('src/js/') ||
       !/\.(?:ts|tsx|js|jsx)$/.test(relPath)
     ) {
       continue;
     }
 
     // Ignore UI harness
-    if (relPath === 'assets/js/frontend/ui-harness.tsx') {
+    if (relPath === 'src/js/frontend/ui-harness.tsx') {
       continue;
     }
 
@@ -82,7 +82,7 @@ export function checkPreCommitGuards(): boolean {
 
     // 3. Guard against hardcoded HEX colors in frontend JSX components
     if (
-      relPath.startsWith('assets/js/frontend/') &&
+      relPath.startsWith('src/js/frontend/') &&
       /\.(?:tsx|jsx)$/.test(relPath)
     ) {
       const hexMatch = content.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/g);

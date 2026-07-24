@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { createMilkdropCatalogCoordinator } from '../../assets/js/milkdrop/runtime/catalog-coordinator.ts';
-import type { MilkdropCatalogEntry } from '../../assets/js/milkdrop/types.ts';
+import { createMilkdropCatalogCoordinator } from '../../src/js/milkdrop/runtime/catalog-coordinator.ts';
+import type { MilkdropCatalogEntry } from '../../src/js/milkdrop/types.ts';
 
 function createCatalogEntry(id: string): MilkdropCatalogEntry {
   return {

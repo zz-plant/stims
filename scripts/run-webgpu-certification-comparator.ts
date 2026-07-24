@@ -24,7 +24,7 @@ import {
 } from './visual-reference-manifest.ts';
 
 export const WEBGPU_CERTIFICATION_REPORT_PATH =
-  'assets/data/milkdrop-parity/webgpu-certification-report.json';
+  'src/data/milkdrop-parity/webgpu-certification-report.json';
 
 export type ComparatorDiffStatus =
   | 'unmeasured'
@@ -828,8 +828,8 @@ if (import.meta.main) {
     usage();
     console.error(
       `WebGPU certification comparator failed: ${rawMessage}\n` +
-        `Verify that assets/data/milkdrop-parity/certification-corpus.json ` +
-        `and assets/data/milkdrop-parity/visual-reference-manifest.json are present.`,
+        `Verify that src/data/milkdrop-parity/certification-corpus.json ` +
+        `and src/data/milkdrop-parity/visual-reference-manifest.json are present.`,
     );
     process.exit(1);
   }

@@ -1,5 +1,5 @@
 import { afterEach, expect, mock, test } from 'bun:test';
-import { createBundledCatalogLoader } from '../../assets/js/milkdrop/catalog-store-bundled-loader.ts';
+import { createBundledCatalogLoader } from '../../src/js/milkdrop/catalog-store-bundled-loader.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 const originalFetch = globalThis.fetch;

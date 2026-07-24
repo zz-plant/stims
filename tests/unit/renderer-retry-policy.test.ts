@@ -5,7 +5,7 @@ import {
   recordRendererRetryFailure,
   recordRendererRetrySuccess,
   resetRendererRetryPolicy,
-} from '../../assets/js/core/renderer-retry-policy.ts';
+} from '../../src/js/core/renderer-retry-policy.ts';
 
 describe('renderer retry policy', () => {
   test('backs off retryable WebGPU failures and resets after success', () => {

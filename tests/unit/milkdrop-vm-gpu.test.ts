@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { MilkdropProgramBlock } from '../../assets/js/milkdrop/types.ts';
-import { createGpuVmRunner } from '../../assets/js/milkdrop/vm-gpu.ts';
+import type { MilkdropProgramBlock } from '../../src/js/milkdrop/types.ts';
+import { createGpuVmRunner } from '../../src/js/milkdrop/vm-gpu.ts';
 
 describe('GPU VM Runner', () => {
   test('initializes and dispatches without recreating signal buffer per frame', async () => {

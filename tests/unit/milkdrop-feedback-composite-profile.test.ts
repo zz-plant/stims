@@ -6,9 +6,9 @@ import {
   MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
   MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
-} from '../../assets/js/milkdrop/feedback-composite-profile.ts';
-import { createSharedMilkdropFeedbackManager } from '../../assets/js/milkdrop/feedback-manager-shared.ts';
-import { WEBGL_MILKDROP_BACKEND_BEHAVIOR } from '../../assets/js/milkdrop/renderer-adapter.ts';
+} from '../../src/js/milkdrop/feedback-composite-profile.ts';
+import { createSharedMilkdropFeedbackManager } from '../../src/js/milkdrop/feedback-manager-shared.ts';
+import { WEBGL_MILKDROP_BACKEND_BEHAVIOR } from '../../src/js/milkdrop/renderer-adapter.ts';
 
 test('uses the shared milkdrop feedback blur profile across backends', () => {
   expect(getMilkdropFeedbackBlurSampleOffsetMultiplier(0)).toBeCloseTo(

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { ToyManifest } from '../../assets/js/data/toy-schema.ts';
-import { getStimBuilderRecommendations } from '../../assets/js/utils/stim-builder.ts';
+import type { ToyManifest } from '../../src/js/data/toy-schema.ts';
+import { getStimBuilderRecommendations } from '../../src/js/utils/stim-builder.ts';
 
 const toys: ToyManifest = [
   {

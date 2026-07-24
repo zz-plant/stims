@@ -20,7 +20,7 @@ describe('normalizeToys', () => {
         slug: 'example',
         description: 'example toy',
         requiresWebGPU: true,
-        module: 'assets/example.ts',
+        module: 'src/example.ts',
         type: 'module',
         allowWebGLFallback: true,
         controls: ['alpha', 'beta', 1],
@@ -28,7 +28,7 @@ describe('normalizeToys', () => {
     ]);
 
     expect(toy).toBeDefined();
-    expect(toy?.module).toBe('assets/example.ts');
+    expect(toy?.module).toBe('src/example.ts');
     expect(toy?.type).toBe('module');
     expect(toy?.allowWebGLFallback).toBe(true);
     expect(toy?.controls).toEqual(['alpha', 'beta']);

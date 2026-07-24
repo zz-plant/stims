@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { YouTubeController } from '../../assets/js/ui/youtube-controller.ts';
+import { YouTubeController } from '../../src/js/ui/youtube-controller.ts';
 import { flushTasks, importFresh } from '../test-helpers.ts';
 
 const flush = () => flushTasks();
 
-let initAudioControls: typeof import('../../assets/js/ui/audio-controls.ts').initAudioControls;
-let buildTryThisFirstRecommendation: typeof import('../../assets/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
-let resolveTouchGestureHints: typeof import('../../assets/js/ui/audio-controls.ts').resolveTouchGestureHints;
+let initAudioControls: typeof import('../../src/js/ui/audio-controls.ts').initAudioControls;
+let buildTryThisFirstRecommendation: typeof import('../../src/js/ui/audio-controls.ts').buildTryThisFirstRecommendation;
+let resolveTouchGestureHints: typeof import('../../src/js/ui/audio-controls.ts').resolveTouchGestureHints;
 
 const baselineNavigator = globalThis.navigator;
 const baselineNavigatorPermissions = baselineNavigator.permissions;
@@ -62,8 +62,8 @@ describe('audio controls primary emphasis', () => {
         dispatchEvent: () => false,
       }) as MediaQueryList) as typeof window.matchMedia;
     const audioControlsModule = await importFresh<
-      typeof import('../../assets/js/ui/audio-controls.ts')
-    >('../../assets/js/ui/audio-controls.ts');
+      typeof import('../../src/js/ui/audio-controls.ts')
+    >('../../src/js/ui/audio-controls.ts');
     initAudioControls = audioControlsModule.initAudioControls;
     buildTryThisFirstRecommendation =
       audioControlsModule.buildTryThisFirstRecommendation;

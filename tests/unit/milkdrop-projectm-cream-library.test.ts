@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path, { basename, join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 
 type LibraryManifest = {
   libraryId: string;

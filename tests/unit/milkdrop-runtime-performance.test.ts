@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test';
-import { buildAgentMilkdropDebugSnapshot } from '../../assets/js/milkdrop/runtime/debug-snapshot.ts';
-import { buildBlendStateForRender } from '../../assets/js/milkdrop/runtime/lifecycle.ts';
-import { createMilkdropRuntimePerformanceTracker } from '../../assets/js/milkdrop/runtime/performance-tracker.ts';
-import { createMilkdropPresentationController } from '../../assets/js/milkdrop/runtime/presentation-controller.ts';
+import { buildAgentMilkdropDebugSnapshot } from '../../src/js/milkdrop/runtime/debug-snapshot.ts';
+import { buildBlendStateForRender } from '../../src/js/milkdrop/runtime/lifecycle.ts';
+import { createMilkdropRuntimePerformanceTracker } from '../../src/js/milkdrop/runtime/performance-tracker.ts';
+import { createMilkdropPresentationController } from '../../src/js/milkdrop/runtime/presentation-controller.ts';
 
 test('tracks rolling performance metrics and exposes p95 frame time', () => {
   const tracker = createMilkdropRuntimePerformanceTracker(5);

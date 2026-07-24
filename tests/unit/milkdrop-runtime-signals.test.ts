@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { FrequencyAnalyser } from '../../assets/js/core/audio-handler.ts';
-import { createMilkdropSignalTracker } from '../../assets/js/milkdrop/runtime-signals.ts';
+import type { FrequencyAnalyser } from '../../src/js/core/audio-handler.ts';
+import { createMilkdropSignalTracker } from '../../src/js/milkdrop/runtime-signals.ts';
 
 function filledData(value: number, length = 128) {
   const data = new Uint8Array(length);

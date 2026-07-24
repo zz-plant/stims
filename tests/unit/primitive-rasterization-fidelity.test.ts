@@ -3,7 +3,7 @@ import {
   getMilkdropSegmentWidth,
   getMilkdropThickWaveSpread,
   MILKDROP_THICK_SHAPE_PASS_OFFSET,
-} from '../../assets/js/milkdrop/renderer-helpers/primitive-rasterization-metrics.ts';
+} from '../../src/js/milkdrop/renderer-helpers/primitive-rasterization-metrics.ts';
 
 type PixelBuffer = Uint8Array;
 

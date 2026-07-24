@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { resolvePresetPerformanceOverride } from '../../assets/js/milkdrop/runtime/preset-performance-overrides.ts';
+import { resolvePresetPerformanceOverride } from '../../src/js/milkdrop/runtime/preset-performance-overrides.ts';
 
 test('does not shortcut parity certification fixtures through performance overrides', () => {
   expect(resolvePresetPerformanceOverride('parity-legacy-wave-01')).toBeNull();

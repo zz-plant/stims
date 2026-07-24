@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { MilkdropWebGpuDescriptorPlan } from '../../assets/js/milkdrop/types.ts';
+import type { MilkdropWebGpuDescriptorPlan } from '../../src/js/milkdrop/types.ts';
 import {
   applyMilkdropWebGpuOptimizationFlags,
   applyNativeWebGpuMaterialCompatibilityFlags,
@@ -8,7 +8,7 @@ import {
   MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS,
   resolveMilkdropWebGpuOptimizationFlags,
   resolveMilkdropWebGpuOptimizationFlagsForBackend,
-} from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 
 const basePlan: MilkdropWebGpuDescriptorPlan = {
   routing: 'descriptor-plan',

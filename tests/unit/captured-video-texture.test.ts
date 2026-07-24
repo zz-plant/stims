@@ -3,7 +3,7 @@ import {
   __milkdropCapturedVideoTextureTestUtils,
   clearMilkdropCapturedVideoStream,
   setMilkdropCapturedVideoCropTarget,
-} from '../../assets/js/core/services/captured-video-texture.ts';
+} from '../../src/js/core/services/captured-video-texture.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 let restoreInnerWidth = () => {};

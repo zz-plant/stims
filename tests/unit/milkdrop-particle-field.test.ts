@@ -1,16 +1,16 @@
 import { describe, expect, test } from 'bun:test';
 import { Group } from 'three';
-import { trimGroupChildren } from '../../assets/js/milkdrop/renderer-adapter-shared.ts';
+import { trimGroupChildren } from '../../src/js/milkdrop/renderer-adapter-shared.ts';
 import {
   createParticleFieldObject,
   renderParticleFieldGroup,
-} from '../../assets/js/milkdrop/renderer-helpers/particle-field-renderer.ts';
-import type { MilkdropRuntimeSignals } from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/renderer-helpers/particle-field-renderer.ts';
+import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
 import {
   buildParticleFieldVisual,
   shouldEnableParticleField,
-} from '../../assets/js/milkdrop/vm/geometry-builder.ts';
-import type { MeshField } from '../../assets/js/milkdrop/vm/shared.ts';
+} from '../../src/js/milkdrop/vm/geometry-builder.ts';
+import type { MeshField } from '../../src/js/milkdrop/vm/shared.ts';
 
 function makeSignals(
   overrides: Partial<MilkdropRuntimeSignals> = {},

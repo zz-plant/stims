@@ -3,8 +3,8 @@ import type {
   MilkdropPostVisual,
   MilkdropRuntimeSignals,
   MilkdropShaderControls,
-} from '../../assets/js/milkdrop/types.ts';
-import { deriveMilkdropPostprocessingProfile } from '../../assets/js/milkdrop/vm/post-effects-builder.ts';
+} from '../../src/js/milkdrop/types.ts';
+import { deriveMilkdropPostprocessingProfile } from '../../src/js/milkdrop/vm/post-effects-builder.ts';
 
 function createShaderControls(
   overrides: Partial<MilkdropShaderControls> = {},

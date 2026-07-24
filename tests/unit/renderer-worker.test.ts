@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { RENDERER_WORKER_MESSAGE_TYPES } from '../../assets/js/core/renderer-worker-protocol.ts';
+import { RENDERER_WORKER_MESSAGE_TYPES } from '../../src/js/core/renderer-worker-protocol.ts';
 
 const freshImport = async () =>
   import(

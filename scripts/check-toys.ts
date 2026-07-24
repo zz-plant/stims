@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   type ToyManifest,
   toyManifestSchema,
-} from '../assets/js/data/toy-schema.ts';
+} from '../src/js/data/toy-schema.ts';
 import {
   buildManifestModule,
   buildManifestSource,
@@ -99,7 +99,7 @@ async function validateRegisteredToyEntrypoints(
     }
 
     issues.push(
-      `Registered toy entrypoint is missing an exported start() function for ${entry.slug}: ${entry.module}\nExport start() or fix assets/data/toys.json, then run: ${REGENERATE_COMMAND}`,
+      `Registered toy entrypoint is missing an exported start() function for ${entry.slug}: ${entry.module}\nExport start() or fix src/data/toys.json, then run: ${REGENERATE_COMMAND}`,
     );
   }
 }
@@ -113,10 +113,10 @@ async function validateEntries(
   for (const entry of entries) {
     if (
       entry.type === 'module' &&
-      !entry.module.startsWith('assets/js/toys/')
+      !entry.module.startsWith('src/js/toys/')
     ) {
       issues.push(
-        `Module path for ${entry.slug} should live under assets/js/toys/.`,
+        `Module path for ${entry.slug} should live under src/js/toys/.`,
       );
     }
 
@@ -128,7 +128,7 @@ async function validateEntries(
     const exists = await fileExists(targetPath);
     if (!exists) {
       issues.push(
-        `Missing file for ${entry.slug}: ${path.relative(root, targetPath).replace(/\\/g, '/')}\nCreate the file or update assets/data/toys.json, then regenerate with: ${REGENERATE_COMMAND}`,
+        `Missing file for ${entry.slug}: ${path.relative(root, targetPath).replace(/\\/g, '/')}\nCreate the file or update src/data/toys.json, then regenerate with: ${REGENERATE_COMMAND}`,
       );
     }
   }
@@ -146,14 +146,14 @@ function validateSlugEntrypointConsistency(
 
     if (slugs.has(entry.slug)) {
       issues.push(
-        `Duplicate slug found in assets/data/toys.json: ${entry.slug}.`,
+        `Duplicate slug found in src/data/toys.json: ${entry.slug}.`,
       );
     }
     slugs.add(entry.slug);
 
     if (modules.has(normalizedModule)) {
       issues.push(
-        `Duplicate module entrypoint found in assets/data/toys.json: ${normalizedModule}.`,
+        `Duplicate module entrypoint found in src/data/toys.json: ${normalizedModule}.`,
       );
     }
     modules.add(normalizedModule);
@@ -171,7 +171,7 @@ async function validateGeneratedArtifactParity(
   issues: string[],
   root = repoRoot,
 ) {
-  const manifest = buildManifestSource(entries, 'assets/data/toys.json');
+  const manifest = buildManifestSource(entries, 'src/data/toys.json');
   const expectedManifestModule = buildManifestModule(manifest);
   const expectedPublicToys = buildPublicToysJson(manifest);
   const expectedToyScriptIndex = buildToyScriptIndex(manifest);
@@ -235,13 +235,13 @@ async function detectUnregisteredToyFiles(
   const registeredModules = new Set(
     entries.map((entry) => entry.module.replace(/\\/g, '/')),
   );
-  const toyDir = path.join(root, 'assets/js/toys');
+  const toyDir = path.join(root, 'src/js/toys');
   const files = await fs.readdir(toyDir);
 
   for (const file of files) {
     if (!file.endsWith('.ts')) continue;
 
-    const modulePath = path.join('assets/js/toys', file).replace(/\\/g, '/');
+    const modulePath = path.join('src/js/toys', file).replace(/\\/g, '/');
     if (registeredModules.has(modulePath)) continue;
 
     const fileContents = await fs.readFile(path.join(toyDir, file), 'utf8');
@@ -249,7 +249,7 @@ async function detectUnregisteredToyFiles(
     if (!looksLikeToyEntrypoint) continue;
 
     issues.push(
-      `Unregistered toy module detected: ${modulePath}\nEither register it in assets/data/toys.json or remove the file, then run: ${REGENERATE_COMMAND}`,
+      `Unregistered toy module detected: ${modulePath}\nEither register it in src/data/toys.json or remove the file, then run: ${REGENERATE_COMMAND}`,
     );
   }
 }
@@ -275,7 +275,7 @@ async function validateCapabilityClaims(
   for (const claim of staleClaims) {
     if (!readme.includes(claim)) continue;
     issues.push(
-      `README contains stale WebGPU-only wording ("${claim}") but assets/data/toys.json currently exposes fallback for all toys. Update README copy or metadata to match.`,
+      `README contains stale WebGPU-only wording ("${claim}") but src/data/toys.json currently exposes fallback for all toys. Update README copy or metadata to match.`,
     );
   }
 }

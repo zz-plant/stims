@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 
-import type { PresetCatalogEntry } from '../../assets/js/frontend/contracts.ts';
+import type { PresetCatalogEntry } from '../../src/js/frontend/contracts.ts';
 import {
   describePresetMood,
   getFeaturedCollectionTags,
   getPresetCardSupportLabel,
   matchesPreset,
   prettifyCollectionTag,
-} from '../../assets/js/frontend/workspace-helpers.ts';
+} from '../../src/js/frontend/workspace-helpers.ts';
 
 function makePreset(
   overrides: Partial<PresetCatalogEntry> = {},

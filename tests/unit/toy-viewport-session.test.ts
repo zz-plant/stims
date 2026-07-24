@@ -1,5 +1,5 @@
 import { afterEach, expect, mock, test } from 'bun:test';
-import { createToyViewportSession } from '../../assets/js/core/toy-viewport-session.ts';
+import { createToyViewportSession } from '../../src/js/core/toy-viewport-session.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 let restoreMatchMedia = () => {};

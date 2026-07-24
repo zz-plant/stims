@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import {
   applyMilkdropInteractionResponse,
   getMilkdropDetailScale,
-} from '../../assets/js/milkdrop/runtime/interaction-response.ts';
-import { __milkdropRuntimeTestUtils } from '../../assets/js/milkdrop/runtime/test-utils.ts';
-import type { MilkdropFrameState } from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/runtime/interaction-response.ts';
+import { __milkdropRuntimeTestUtils } from '../../src/js/milkdrop/runtime/test-utils.ts';
+import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 
 describe('milkdrop runtime detail scale', () => {
   test('boosts detail scale on webgpu for the same quality budget', () => {

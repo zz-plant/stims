@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { MilkdropOverlay } from '../../assets/js/milkdrop/overlay.ts';
+import { MilkdropOverlay } from '../../src/js/milkdrop/overlay.ts';
 
 function createOverlay() {
   return new MilkdropOverlay({

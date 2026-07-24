@@ -5,8 +5,8 @@ import {
   getMilkdropScenePickResult,
   type MilkdropScenePickResult,
   resolveMilkdropScenePointerPoint,
-} from '../../assets/js/milkdrop/runtime/scene-selection.ts';
-import type { MilkdropFrameState } from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/runtime/scene-selection.ts';
+import type { MilkdropFrameState } from '../../src/js/milkdrop/types.ts';
 
 function makeFrameState(
   overrides: Partial<MilkdropFrameState> = {},

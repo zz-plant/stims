@@ -5,7 +5,7 @@ import type {
   MilkdropParitySourceFamily,
   MilkdropParityToleranceProfile,
   MilkdropRenderBackend,
-} from '../assets/js/milkdrop/common-types.ts';
+} from '../src/js/milkdrop/common-types.ts';
 import {
   type MeasuredVisualPresetResult,
   upsertMeasuredVisualPresetResult,

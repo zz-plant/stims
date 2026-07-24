@@ -5,17 +5,17 @@ import type {
   PositionalAudio,
   WebGLRenderer,
 } from 'three';
-import type { FrequencyAnalyser } from '../../assets/js/core/audio-handler.ts';
-import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../../assets/js/core/audio-handler.ts';
-import { resetRenderPreferencesState } from '../../assets/js/core/render-preferences.ts';
+import type { FrequencyAnalyser } from '../../src/js/core/audio-handler.ts';
+import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../../src/js/core/audio-handler.ts';
+import { resetRenderPreferencesState } from '../../src/js/core/render-preferences.ts';
 import type {
   RendererInitConfig,
   RendererInitResult,
-} from '../../assets/js/core/renderer-setup.ts';
+} from '../../src/js/core/renderer-setup.ts';
 import {
   acquireAudioHandle,
   resetAudioPool,
-} from '../../assets/js/core/services/audio-service.ts';
+} from '../../src/js/core/services/audio-service.ts';
 
 import type {
   getRendererRuntimeControls as getControlsType,
@@ -23,8 +23,8 @@ import type {
   resetRendererPool as resetPoolType,
   setRendererRuntimeControls as setControlsType,
   subscribeToRendererRuntimeControls as subscribeType,
-} from '../../assets/js/core/services/render-service.ts';
-import { resetSettingsPanelState } from '../../assets/js/core/settings-panel.ts';
+} from '../../src/js/core/services/render-service.ts';
+import { resetSettingsPanelState } from '../../src/js/core/settings-panel.ts';
 import { flushTasks, importFresh } from '../test-helpers.ts';
 
 let getRendererRuntimeControls: typeof getControlsType;
@@ -50,8 +50,8 @@ describe('render-service pooling', () => {
     });
 
     const renderService = await importFresh<
-      typeof import('../../assets/js/core/services/render-service.ts')
-    >('../../assets/js/core/services/render-service.ts');
+      typeof import('../../src/js/core/services/render-service.ts')
+    >('../../src/js/core/services/render-service.ts');
     getRendererRuntimeControls = renderService.getRendererRuntimeControls;
     requestRenderer = renderService.requestRenderer;
     resetRendererPool = renderService.resetRendererPool;

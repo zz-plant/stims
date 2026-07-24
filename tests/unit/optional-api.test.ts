@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { searchByAudioProfile } from '../../assets/js/core/services/audio-matcher.ts';
-import { resolveOptionalApiUrl } from '../../assets/js/core/services/optional-api.ts';
+import { searchByAudioProfile } from '../../src/js/core/services/audio-matcher.ts';
+import { resolveOptionalApiUrl } from '../../src/js/core/services/optional-api.ts';
 
 describe('optional API endpoint resolution', () => {
   test('does not call same-origin Cloudflare Functions from plain Vite dev', async () => {

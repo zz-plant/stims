@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { classifyMilkdropShaderProgramExecution } from '../../assets/js/milkdrop/compiler/shader-execution-classification.ts';
-import type { MilkdropShaderProgramPayload } from '../../assets/js/milkdrop/types.ts';
+import { classifyMilkdropShaderProgramExecution } from '../../src/js/milkdrop/compiler/shader-execution-classification.ts';
+import type { MilkdropShaderProgramPayload } from '../../src/js/milkdrop/types.ts';
 
 function createProgram(
   overrides: Partial<MilkdropShaderProgramPayload> = {},

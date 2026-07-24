@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test';
-import { extractFrameStats } from '../../assets/js/core/services/visual-embedding.ts';
+import { extractFrameStats } from '../../src/js/core/services/visual-embedding.ts';
 
 const originalCreateElement = document.createElement.bind(document);
 

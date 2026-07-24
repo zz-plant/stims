@@ -3,7 +3,7 @@ import {
   getActivePerformanceSettings,
   PERFORMANCE_SETTINGS_STORAGE_KEY,
   resetPerformanceSettingsStore,
-} from '../../assets/js/core/state/performance-settings-store.ts';
+} from '../../src/js/core/state/performance-settings-store.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 let restoreLocation = () => {};

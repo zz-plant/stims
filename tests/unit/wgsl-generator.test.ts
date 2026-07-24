@@ -2,13 +2,13 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildWgslExpressionString,
   compileProgramToWgsl,
-} from '../../assets/js/milkdrop/compiler/wgsl-generator.ts';
+} from '../../src/js/milkdrop/compiler/wgsl-generator.ts';
 import type {
   MilkdropCompiledStatement,
   MilkdropExpressionNode,
   MilkdropProgramBlock,
-} from '../../assets/js/milkdrop/types.ts';
-import { MILKDROP_WGSL_SIGNAL_FIELDS } from '../../assets/js/milkdrop/wgsl-signal-layout.ts';
+} from '../../src/js/milkdrop/types.ts';
+import { MILKDROP_WGSL_SIGNAL_FIELDS } from '../../src/js/milkdrop/wgsl-signal-layout.ts';
 
 function literal(value: number): MilkdropExpressionNode {
   return { type: 'literal', value };

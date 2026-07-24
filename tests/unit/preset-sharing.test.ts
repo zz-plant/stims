@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildPresetLink,
   formatPresetShareCopy,
-} from '../../assets/js/utils/share-link.ts';
+} from '../../src/js/utils/share-link.ts';
 import { onRequest as middlewareRequest } from '../../functions/_middleware.ts';
 import {
   buildPresetOgSvg,

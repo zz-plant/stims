@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import type { MilkdropRuntimeSignals } from '../../assets/js/milkdrop/types.ts';
-import { createMilkdropVM } from '../../assets/js/milkdrop/vm.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 import { loadCertificationCorpusManifest } from '../../scripts/certification-corpus.ts';
 
 function makeSignals({

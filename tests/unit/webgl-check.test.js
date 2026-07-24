@@ -25,7 +25,7 @@ describe('ensureWebGL overlay', () => {
 
   test('shows capability overlay when neither WebGL nor WebGPU are available', async () => {
     const { ensureWebGL, setRenderingSupportResolverForTests } =
-      await importFresh('../../assets/js/core/webgl-check.ts');
+      await importFresh('../../src/js/core/webgl-check.ts');
     try {
       setRenderingSupportResolverForTests(() => ({
         hasWebGPU: false,
@@ -53,7 +53,7 @@ describe('ensureWebGL overlay', () => {
     trigger.focus();
 
     const { ensureWebGL, setRenderingSupportResolverForTests } =
-      await importFresh('../../assets/js/core/webgl-check.ts');
+      await importFresh('../../src/js/core/webgl-check.ts');
 
     try {
       setRenderingSupportResolverForTests(() => ({

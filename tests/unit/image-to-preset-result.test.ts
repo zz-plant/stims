@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { resolveImageToPresetAction } from '../../assets/js/frontend/BrowseSheetPanel.tsx';
+import { resolveImageToPresetAction } from '../../src/js/frontend/BrowseSheetPanel.tsx';
 
 describe('image-to-preset result handling', () => {
   test('opens generated milk source in the editor when the API returns source text', () => {

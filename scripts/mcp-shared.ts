@@ -25,7 +25,7 @@ import agentPlayVisualizerWorkflow from '../.agent/workflows/play-visualizer.md'
 import agentShipVisualizerChangeWorkflow from '../.agent/workflows/ship-visualizer-change.md';
 import agentTestVisualizerWorkflow from '../.agent/workflows/test-visualizer.md';
 import docsClaudeReadme from '../.claude/CLAUDE.md';
-import toyManifest from '../assets/js/data/toy-manifest.ts';
+import toyManifest from '../src/js/data/toy-manifest.ts';
 import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
 import docsDevelopment from '../docs/DEVELOPMENT.md';
@@ -353,7 +353,7 @@ function registerTools(server: McpServer) {
     'get_toys',
     {
       description:
-        'Return structured toy metadata (including controls and module info) from assets/data/toys.json with optional slug or WebGPU filters.',
+        'Return structured toy metadata (including controls and module info) from src/data/toys.json with optional slug or WebGPU filters.',
       inputSchema: z.object({
         slug: z
           .string()
@@ -474,7 +474,7 @@ function registerTools(server: McpServer) {
     'describe_loader',
     {
       description:
-        'Summarize how toy loading and error handling works based on assets/js/loader.ts.',
+        'Summarize how toy loading and error handling works based on src/js/loader.ts.',
       inputSchema: z.object({}),
     },
     async () => {

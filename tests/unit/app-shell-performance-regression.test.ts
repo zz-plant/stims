@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { cloneBlendState } from '../../assets/js/milkdrop/runtime/session.ts';
+import { cloneBlendState } from '../../src/js/milkdrop/runtime/session.ts';
 
 describe('Workspace performance regressions', () => {
   test('keeps the root shell on the fallback catalog until the runtime is mounted', () => {

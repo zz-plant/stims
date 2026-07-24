@@ -4,11 +4,11 @@ import {
   resetRenderPreferencesState,
   setCompatibilityMode,
   setRenderPreferences,
-} from '../../assets/js/core/render-preferences';
+} from '../../src/js/core/render-preferences';
 import {
   hasWebGPUCompatibilityGapOverride,
   setWebGPUCompatibilityGapOverride,
-} from '../../assets/js/core/renderer-query-override.ts';
+} from '../../src/js/core/renderer-query-override.ts';
 
 describe('render preferences', () => {
   beforeEach(() => {

@@ -34,7 +34,7 @@ describe('launch shell skip-to-visualizer flow', () => {
   test('keeps launch hero dismissal tied to live data-mode transitions', () => {
     const workspaceSource = frontendSource('workspace-ui.tsx');
     const stageSource = frontendSource('StimsStageFrame.tsx');
-    const shellCss = cssSource('assets/css/app-shell.css');
+    const shellCss = cssSource('src/css/app-shell.css');
 
     expect(workspaceSource).toContain("data-mode={liveMode ? 'live' : 'home'}");
     expect(stageSource).toContain("data-mode={liveMode ? 'live' : 'home'}");

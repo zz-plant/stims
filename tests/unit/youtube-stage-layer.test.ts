@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import {
   hideYouTubeStageLayer,
   mountYouTubeStageLayer,
-} from '../../assets/js/ui/youtube-stage-layer.ts';
+} from '../../src/js/ui/youtube-stage-layer.ts';
 
 describe('YouTube stage layer', () => {
   afterEach(() => {

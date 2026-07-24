@@ -3,11 +3,11 @@ import {
   describeWorkspaceYouTubeInputState,
   readStoredWorkspaceYouTubeUrl,
   writeStoredWorkspaceYouTubeUrl,
-} from '../../assets/js/frontend/workspace-youtube-preview.ts';
+} from '../../src/js/frontend/workspace-youtube-preview.ts';
 import {
   parseYouTubeVideoReference,
   readStoredRecentYouTubeVideos,
-} from '../../assets/js/ui/youtube-controller.ts';
+} from '../../src/js/ui/youtube-controller.ts';
 
 describe('workspace YouTube preview helpers', () => {
   beforeEach(() => {

@@ -462,14 +462,17 @@ export class InspectorPanel {
     value: string | number,
     options: { min?: number; max?: number; step?: number } = {},
   ) {
+    const fieldId = `inspector-field-${key}`;
     const wrap = document.createElement('label');
     wrap.className = 'milkdrop-overlay__field';
+    wrap.setAttribute('for', fieldId);
     const title = document.createElement('span');
     title.textContent = label;
     wrap.appendChild(title);
 
     if (typeof value === 'number') {
       const input = document.createElement('input');
+      input.id = fieldId;
       input.type = 'range';
       input.min = String(options.min ?? 0);
       input.max = String(options.max ?? 2);
@@ -487,6 +490,7 @@ export class InspectorPanel {
     }
 
     const textInput = document.createElement('input');
+    textInput.id = fieldId;
     textInput.type = 'text';
     textInput.value = value;
     textInput.addEventListener('change', () => {

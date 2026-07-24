@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import type { MilkdropVideoEchoOrientation } from '../../assets/js/milkdrop/types.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import type { MilkdropVideoEchoOrientation } from '../../src/js/milkdrop/types.ts';
 
 describe('milkdrop compiler', () => {
   test('compiles preset metadata, scalars, and program statements', () => {

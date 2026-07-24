@@ -6,7 +6,7 @@ import {
   parsePlainSearch,
   readSessionRouteState,
   stringifyPlainSearch,
-} from '../../assets/js/frontend/url-state.ts';
+} from '../../src/js/frontend/url-state.ts';
 
 describe('frontend url state', () => {
   test('reads legacy query params into canonical session state', () => {

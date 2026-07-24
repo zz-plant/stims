@@ -319,7 +319,8 @@ function createEditorTheme() {
       borderLeftColor: '#67e8f9',
     },
     '&.cm-focused': {
-      outline: 'none',
+      outline: '2px solid rgba(34, 211, 238, 0.4)',
+      outlineOffset: '-2px',
     },
     '&.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(34, 211, 238, 0.22)',
@@ -522,6 +523,7 @@ export class EditorPanel {
     const revertButton = document.createElement('button');
     revertButton.type = 'button';
     revertButton.textContent = 'Reset draft';
+    revertButton.setAttribute('aria-label', 'Reset draft to active preset source');
     revertButton.addEventListener('click', () =>
       this.callbacks.onRevertToActive(),
     );
@@ -530,6 +532,7 @@ export class EditorPanel {
     const duplicateButton = document.createElement('button');
     duplicateButton.type = 'button';
     duplicateButton.textContent = 'Duplicate';
+    duplicateButton.setAttribute('aria-label', 'Duplicate current preset');
     duplicateButton.addEventListener('click', () =>
       this.callbacks.onDuplicatePreset(),
     );
@@ -538,6 +541,7 @@ export class EditorPanel {
     const importButton = document.createElement('button');
     importButton.type = 'button';
     importButton.textContent = 'Import';
+    importButton.setAttribute('aria-label', 'Import a preset');
     importButton.addEventListener('click', () =>
       this.callbacks.onRequestImport(),
     );
@@ -546,6 +550,7 @@ export class EditorPanel {
     const exportButton = document.createElement('button');
     exportButton.type = 'button';
     exportButton.textContent = 'Export';
+    exportButton.setAttribute('aria-label', 'Export current preset');
     exportButton.addEventListener('click', () => this.callbacks.onExport());
     editorActions.appendChild(exportButton);
 
@@ -553,6 +558,7 @@ export class EditorPanel {
     importButton2.type = 'button';
     importButton2.textContent = 'Batch';
     importButton2.title = 'Generate variations (Shift+Enter)';
+    importButton2.setAttribute('aria-label', 'Generate preset variations');
     importButton2.addEventListener('click', () => this.handleBatchGenerate());
     editorActions.appendChild(importButton2);
 
@@ -560,6 +566,7 @@ export class EditorPanel {
     blendButton.type = 'button';
     blendButton.textContent = 'Blend';
     blendButton.title = 'Blend with another preset';
+    blendButton.setAttribute('aria-label', 'Blend with another preset');
     blendButton.addEventListener('click', () => this.handleBlend());
     editorActions.appendChild(blendButton);
 

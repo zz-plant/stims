@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import type { MilkdropRuntimeSignals } from '../../assets/js/milkdrop/types.ts';
-import { buildMainWaveFrame } from '../../assets/js/milkdrop/vm/frame-generation.ts';
-import type { WaveFrameBuffers } from '../../assets/js/milkdrop/vm/shared.ts';
-import { createMilkdropVM } from '../../assets/js/milkdrop/vm.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import type { MilkdropRuntimeSignals } from '../../src/js/milkdrop/types.ts';
+import { buildMainWaveFrame } from '../../src/js/milkdrop/vm/frame-generation.ts';
+import type { WaveFrameBuffers } from '../../src/js/milkdrop/vm/shared.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 import {
   applyNativeWebGpuMaterialCompatibilityFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-} from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 
 function makeSignals({
   frame = 1,

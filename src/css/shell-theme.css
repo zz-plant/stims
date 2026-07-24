@@ -223,6 +223,51 @@ html.light .stims-shell__toast[data-tone="error"] {
   color: #8d1b14;
 }
 
+/* ── CodeMirror editor light mode ─────────────────────────────────────── */
+html.light .milkdrop-overlay__editor .cm-editor {
+  color: #1e293b;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.92));
+}
+
+html.light .milkdrop-overlay__editor .cm-gutters {
+  background-color: rgba(226, 232, 240, 0.5);
+  color: rgba(71, 85, 105, 0.8);
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+html.light .milkdrop-overlay__editor .cm-activeLine {
+  background-color: rgba(59, 130, 246, 0.06);
+}
+
+html.light .milkdrop-overlay__editor .cm-activeLineGutter {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+html.light .milkdrop-overlay__editor .cm-content {
+  caretColor: #2563eb;
+}
+
+html.light .milkdrop-overlay__editor .cm-focused .cm-cursor {
+  borderLeftColor: #2563eb;
+}
+
+html.light .milkdrop-overlay__editor .cm-focused .cm-selectionBackground,
+html.light .milkdrop-overlay__editor ::selection {
+  background-color: rgba(59, 130, 246, 0.18);
+}
+
+html.light .milkdrop-overlay__editor .cm-line.milkdrop-editor-line--info {
+  background-color: rgba(14, 116, 144, 0.08);
+}
+
+html.light .milkdrop-overlay__editor .cm-line.milkdrop-editor-line--warning {
+  background-color: rgba(180, 83, 9, 0.1);
+}
+
+html.light .milkdrop-overlay__editor .cm-line.milkdrop-editor-line--error {
+  background-color: rgba(153, 27, 27, 0.1);
+}
+
 html.light .stims-shell__stage-frame[data-mode="live"] .stims-shell__stage-tool,
 html.light
   .stims-shell__stage-frame[data-mode="live"]

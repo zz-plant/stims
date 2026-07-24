@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { importFresh, replaceProperty } from '../test-helpers.ts';
 
-const capabilitiesModule = '../../assets/js/core/renderer-capabilities.ts';
+const capabilitiesModule = '../../src/js/core/renderer-capabilities.ts';
 
 let getRendererCapabilities;
 let getRendererOptimizationSupport;
@@ -17,7 +17,7 @@ let restoreNavigator = () => {};
 
 async function resetRenderPreferencesState() {
   const { resetRenderPreferencesState: resetPreferences } = await import(
-    '../../assets/js/core/render-preferences.ts'
+    '../../src/js/core/render-preferences.ts'
   );
   resetPreferences();
 }

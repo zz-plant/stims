@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { resolveCapturedVideoOverlayLayout } from '../../assets/js/milkdrop/runtime/captured-video-overlay.ts';
-import { createMilkdropCapturedVideoReactivityTracker } from '../../assets/js/milkdrop/runtime/captured-video-reactivity.ts';
+import { resolveCapturedVideoOverlayLayout } from '../../src/js/milkdrop/runtime/captured-video-overlay.ts';
+import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
 
 describe('milkdrop captured video overlay layout', () => {
   test('keeps the overlay in the upper-right camera frustum with sane opacity bounds', () => {

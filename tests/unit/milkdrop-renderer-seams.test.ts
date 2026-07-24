@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import { BufferGeometry, Group, LineLoop } from 'three';
-import { WEBGL_MILKDROP_BACKEND_BEHAVIOR } from '../../assets/js/milkdrop/backend-behavior.ts';
+import { WEBGL_MILKDROP_BACKEND_BEHAVIOR } from '../../src/js/milkdrop/backend-behavior.ts';
 import {
   MAX_MILKDROP_POLYGON_SIDES,
   normalizeMilkdropPolygonSides,
-} from '../../assets/js/milkdrop/renderer-adapter-shared.ts';
+} from '../../src/js/milkdrop/renderer-adapter-shared.ts';
 import {
   createShapeObject,
   renderShapeGroup,
-} from '../../assets/js/milkdrop/renderer-helpers/shape-renderer';
-import type { MilkdropShapeVisual } from '../../assets/js/milkdrop/renderer-types';
+} from '../../src/js/milkdrop/renderer-helpers/shape-renderer';
+import type { MilkdropShapeVisual } from '../../src/js/milkdrop/renderer-types';
 
 function makeShape(
   overrides: Partial<MilkdropShapeVisual> = {},

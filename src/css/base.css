@@ -5013,7 +5013,7 @@ body {
   .milkdrop-overlay__browse-count {
     min-width: 22px;
     min-height: 16px;
-    font-size: 0.62rem;
+    font-size: 0.72rem;
   }
 
   .milkdrop-overlay__preset-actions {
@@ -5128,7 +5128,6 @@ body {
   filter: saturate(1.14) contrast(1.08) brightness(1.03);
   transform: translateZ(0) scale(1.04);
   transform-origin: center center;
-  will-change: transform;
 }
 
 .youtube-stage-layer {
@@ -5502,7 +5501,7 @@ body {
 
 .milkdrop-overlay__title {
   font-size: 1.18rem;
-  line-height: 1.05;
+  line-height: 1.2;
 }
 
 .milkdrop-overlay__status {
@@ -5592,7 +5591,6 @@ body {
   text-align: center;
   font-size: 0.85rem;
   opacity: 0.6;
-  pointer-events: none;
 }
 
 .milkdrop-overlay__preset {

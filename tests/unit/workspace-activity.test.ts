@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { PresetCatalogEntry } from '../../assets/js/frontend/contracts.ts';
+import type { PresetCatalogEntry } from '../../src/js/frontend/contracts.ts';
 import {
   formatPresetSupportLabel,
   formatPresetSupportNote,
@@ -7,8 +7,8 @@ import {
   mergeCatalogActivity,
   pickFavoritePresets,
   pickRecentPresets,
-} from '../../assets/js/frontend/workspace-helpers.ts';
-import type { MilkdropCatalogEntry } from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/frontend/workspace-helpers.ts';
+import type { MilkdropCatalogEntry } from '../../src/js/milkdrop/types.ts';
 
 function createEntry(
   id: string,

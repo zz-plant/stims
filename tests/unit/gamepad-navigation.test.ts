@@ -3,7 +3,7 @@ import {
   shouldDispatchEscapeFallback,
   shouldHandleBackKey,
   shouldHandleEnterLikeKey,
-} from '../../assets/js/utils/gamepad-navigation.ts';
+} from '../../src/js/utils/gamepad-navigation.ts';
 
 describe('gamepad navigation back fallback guard', () => {
   test('does not redispatch when origin key is Escape', () => {
