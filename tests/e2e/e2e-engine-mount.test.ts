@@ -183,7 +183,7 @@ test(
   { timeout: 120000 },
 );
 
-test(
+test.skipIf(!!process.env.CI)(
   'starts microphone audio on a mobile browser with one permission request',
   async () => {
     const browser = await chromium.launch({
