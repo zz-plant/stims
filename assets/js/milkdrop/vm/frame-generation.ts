@@ -87,33 +87,14 @@ function catmullRomInterpolateTo(
 
   let p0x = source[0],
     p0y = source[1];
-  let p1x = p0x,
-    p1y = p0y;
+  let p1x = source[0],
+    p1y = source[1];
   let p2x = source[3],
     p2y = source[4];
   let p3x = source[Math.min(lastIdx, 2) * 3];
   let p3y = source[Math.min(lastIdx, 2) * 3 + 1];
 
   for (let i = 0; i < lastIdx; i++) {
-    if (i > 0) {
-      p0x = p1x;
-      p0y = p1y;
-      p1x = p2x;
-      p1y = p2y;
-      if (i + 2 <= lastIdx) {
-        const nextI = (i + 1) * 3;
-        p2x = source[nextI];
-        p2y = source[nextI + 1];
-        p3x = source[Math.min(lastIdx, i + 2) * 3];
-        p3y = source[Math.min(lastIdx, i + 2) * 3 + 1];
-      } else {
-        p2x = source[lastIdx * 3];
-        p2y = source[lastIdx * 3 + 1];
-        p3x = p2x;
-        p3y = p2y;
-      }
-    }
-
     // Insert midpoint using ProjectM's fixed weights at t=0.5:
     // [-0.15, 1.15, 1.15, -0.15] / 2.0
     target[writeIdx++] =
@@ -121,6 +102,33 @@ function catmullRomInterpolateTo(
     target[writeIdx++] =
       (-0.15 * p0y + 1.15 * p1y + 1.15 * p2y - 0.15 * p3y) * 0.5;
     target[writeIdx++] = source[i * 3 + 2];
+
+    // Write next original point (skip for last segment — the trailing
+    // point is written after the loop).
+    if (i < lastIdx - 1) {
+      const nextPt = (i + 1) * 3;
+      target[writeIdx++] = source[nextPt];
+      target[writeIdx++] = source[nextPt + 1];
+      target[writeIdx++] = source[nextPt + 2];
+    }
+
+    // Advance control points for next segment
+    p0x = p1x;
+    p0y = p1y;
+    p1x = p2x;
+    p1y = p2y;
+    if (i + 2 <= lastIdx) {
+      const nextI = (i + 1) * 3;
+      p2x = source[nextI];
+      p2y = source[nextI + 1];
+      p3x = source[Math.min(lastIdx, i + 2) * 3];
+      p3y = source[Math.min(lastIdx, i + 2) * 3 + 1];
+    } else {
+      p2x = source[lastIdx * 3];
+      p2y = source[lastIdx * 3 + 1];
+      p3x = p2x;
+      p3y = p2y;
+    }
   }
 
   // Write last point

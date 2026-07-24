@@ -4294,11 +4294,7 @@ section.intro,
 .home-hero__focus,
 .home-hero__aside {
   background:
-    linear-gradient(
-      180deg,
-      var(--stims-white-12),
-      var(--stims-white-02) 18%
-    ),
+    linear-gradient(180deg, var(--stims-white-12), var(--stims-white-02) 18%),
     var(--surface-texture), var(--panel-gradient);
   border: 1px solid var(--surface-border-strong);
   box-shadow: var(--shadow-panel);
@@ -4328,7 +4324,12 @@ section.intro,
   top: 10px;
   height: 3px;
   border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, var(--stims-good), var(--stims-warn) 50%, var(--stims-accent-blue));
+  background: linear-gradient(
+    90deg,
+    var(--stims-good),
+    var(--stims-warn) 50%,
+    var(--stims-accent-blue)
+  );
   opacity: 0.82;
   pointer-events: none;
 }
@@ -4507,17 +4508,14 @@ section.intro,
 
 .active-toy-container {
   background:
-    radial-gradient(
-      circle at 18% 10%,
-      var(--stims-audio-glow),
-      transparent 24%
-    ),
-    radial-gradient(
-      circle at 82% 16%,
-      var(--highlight-glow),
-      transparent 22%
-    ),
-    linear-gradient(180deg, var(--bg-color), color-mix(in srgb, var(--bg-color) 92%, #000) 54%, color-mix(in srgb, var(--bg-color) 85%, #000));
+    radial-gradient(circle at 18% 10%, var(--stims-audio-glow), transparent 24%),
+    radial-gradient(circle at 82% 16%, var(--highlight-glow), transparent 22%),
+    linear-gradient(
+      180deg,
+      var(--bg-color),
+      color-mix(in srgb, var(--bg-color) 92%, #000) 54%,
+      color-mix(in srgb, var(--bg-color) 85%, #000)
+    );
 }
 
 @media (max-width: 1080px) {
