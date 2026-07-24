@@ -112,6 +112,7 @@ const wranglerArgs = [
   directory,
   '--project-name',
   projectName,
+  '--skip-caching',
 ];
 
 if (preview) {

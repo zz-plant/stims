@@ -3,7 +3,7 @@
 // Hashed assets (/assets/*) are immutable with 1-year Cache-Control
 // and are served from browser HTTP cache — no SW intervention needed.
 
-const CACHE_NAME = 'stims-shell-v5';
+const CACHE_NAME = 'stims-shell-v6';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -46,24 +46,30 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle navigation requests and static assets
-  // Let dynamic module imports and API calls pass through to network
+  // Only handle GET requests for http(s)
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
   if (request.method !== 'GET') return;
-
-  // Skip browser extension requests
   if (!url.protocol.startsWith('http')) return;
+
+  // Bypass service worker for immutable hashed assets (/assets/*)
+  // Browser HTTP cache handles immutable assets; bypassing SW prevents SPA 404 HTML fallback pollution.
+  if (url.pathname.startsWith('/assets/')) return;
+
+  // Bypass service worker for API calls
+  if (url.pathname.startsWith('/api/')) return;
 
   event.respondWith(
     (async () => {
       // Try network first for the freshest content
       try {
         const networkResponse = await fetch(request);
-        // Cache successful responses for future offline party mode use.
-        if (networkResponse.ok && !url.pathname.startsWith('/api/')) {
+        const contentType = networkResponse.headers.get('content-type') || '';
+        const isHtml = contentType.includes('text/html');
+
+        // Only cache non-HTML or navigation responses when successful
+        if (networkResponse.ok && (request.mode === 'navigate' || !isHtml)) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(request, networkResponse.clone());
         }
@@ -89,3 +95,4 @@ self.addEventListener('fetch', (event) => {
     })(),
   );
 });
+
