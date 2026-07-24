@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { ToyManifest } from '../assets/js/data/toy-schema.ts';
+import type { ToyManifest } from '../src/js/data/toy-schema.ts';
 
-const TOY_DATA_RELATIVE_PATH = 'assets/data/toys.json';
+const TOY_DATA_RELATIVE_PATH = 'src/data/toys.json';
 
 export type LoadedToyRegistry = {
   entries: unknown;

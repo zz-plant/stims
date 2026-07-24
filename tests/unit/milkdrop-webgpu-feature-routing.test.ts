@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { resolveMilkdropWebGpuOptimizationFlags } from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
+import { resolveMilkdropWebGpuOptimizationFlags } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 import {
   resolveMilkdropWebGpuFeatureRouting,
   setWebGpuForceMode,
   shouldEnableNativeMilkdropWebGpuFeedback,
-} from '../../assets/js/milkdrop/webgpu-query-override.ts';
+} from '../../src/js/milkdrop/webgpu-query-override.ts';
 
 describe('MilkDrop WebGPU feature routing', () => {
   afterEach(() => {

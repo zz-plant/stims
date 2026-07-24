@@ -12,50 +12,50 @@ describe('architecture boundary rules', () => {
     path.join(process.cwd(), ...segments);
 
   test('classifies the documented runtime layers', () => {
-    expect(classifyArchitectureLayer(workspacePath('assets/js/app.ts'))).toBe(
+    expect(classifyArchitectureLayer(workspacePath('src/js/app.ts'))).toBe(
       'app',
     );
     expect(
-      classifyArchitectureLayer(workspacePath('assets/js/frontend/App.tsx')),
+      classifyArchitectureLayer(workspacePath('src/js/frontend/App.tsx')),
     ).toBe('frontend');
     expect(
       classifyArchitectureLayer(
-        workspacePath('assets/js/data/toy-manifest.ts'),
+        workspacePath('src/js/data/toy-manifest.ts'),
       ),
     ).toBe('data');
     expect(
       classifyArchitectureLayer(
-        workspacePath('assets/js/bootstrap/home-page.ts'),
+        workspacePath('src/js/bootstrap/home-page.ts'),
       ),
     ).toBeNull();
     expect(
-      classifyArchitectureLayer(workspacePath('assets/js/core/web-toy.ts')),
+      classifyArchitectureLayer(workspacePath('src/js/core/web-toy.ts')),
     ).toBe('core');
     expect(
-      classifyArchitectureLayer(workspacePath('assets/js/ui/icon-library.ts')),
+      classifyArchitectureLayer(workspacePath('src/js/ui/icon-library.ts')),
     ).toBe('ui');
     expect(
       classifyArchitectureLayer(
-        workspacePath('assets/js/utils/device-detect.ts'),
+        workspacePath('src/js/utils/device-detect.ts'),
       ),
     ).toBe('utils');
     expect(
       classifyArchitectureLayer(
-        workspacePath('assets/js/toys/milkdrop-toy.ts'),
+        workspacePath('src/js/toys/milkdrop-toy.ts'),
       ),
     ).toBe('toy');
     expect(
       classifyArchitectureLayer(
-        workspacePath('assets/js/milkdrop/public/launch-intents.ts'),
+        workspacePath('src/js/milkdrop/public/launch-intents.ts'),
       ),
     ).toBe('milkdrop-public');
     expect(
       classifyArchitectureLayer(
-        workspacePath('assets/js/milkdrop/preset-selection.ts'),
+        workspacePath('src/js/milkdrop/preset-selection.ts'),
       ),
     ).toBe('milkdrop');
     expect(
-      classifyArchitectureLayer(workspacePath('assets/js/milkdrop/runtime.ts')),
+      classifyArchitectureLayer(workspacePath('src/js/milkdrop/runtime.ts')),
     ).toBe('milkdrop');
   });
 
@@ -64,16 +64,16 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'core',
         targetLayer: 'utils',
-        sourcePath: workspacePath('assets/js/core/web-toy.ts'),
-        targetPath: workspacePath('assets/js/utils/device-detect.ts'),
+        sourcePath: workspacePath('src/js/core/web-toy.ts'),
+        targetPath: workspacePath('src/js/utils/device-detect.ts'),
       }),
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'core',
         targetLayer: 'utils',
-        sourcePath: workspacePath('assets/js/core/web-toy.ts'),
-        targetPath: workspacePath('assets/js/utils/manifest-client.ts'),
+        sourcePath: workspacePath('src/js/core/web-toy.ts'),
+        targetPath: workspacePath('src/js/utils/manifest-client.ts'),
       }),
     ).toBe(false);
   });
@@ -83,16 +83,16 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'toy',
         targetLayer: 'data',
-        sourcePath: workspacePath('assets/js/toys/milkdrop-toy.ts'),
-        targetPath: workspacePath('assets/js/data/toy-manifest.ts'),
+        sourcePath: workspacePath('src/js/toys/milkdrop-toy.ts'),
+        targetPath: workspacePath('src/js/data/toy-manifest.ts'),
       }),
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'data',
         targetLayer: 'core',
-        sourcePath: workspacePath('assets/js/data/toy-manifest.ts'),
-        targetPath: workspacePath('assets/js/core/render-preferences.ts'),
+        sourcePath: workspacePath('src/js/data/toy-manifest.ts'),
+        targetPath: workspacePath('src/js/core/render-preferences.ts'),
       }),
     ).toBe(false);
   });
@@ -102,9 +102,9 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'frontend',
         targetLayer: 'milkdrop-public',
-        sourcePath: workspacePath('assets/js/frontend/App.tsx'),
+        sourcePath: workspacePath('src/js/frontend/App.tsx'),
         targetPath: workspacePath(
-          'assets/js/milkdrop/public/launch-intents.ts',
+          'src/js/milkdrop/public/launch-intents.ts',
         ),
       }),
     ).toBe(true);
@@ -113,17 +113,17 @@ describe('architecture boundary rules', () => {
         sourceLayer: 'milkdrop-public',
         targetLayer: 'milkdrop',
         sourcePath: workspacePath(
-          'assets/js/milkdrop/public/launch-intents.ts',
+          'src/js/milkdrop/public/launch-intents.ts',
         ),
-        targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
+        targetPath: workspacePath('src/js/milkdrop/preset-selection.ts'),
       }),
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'frontend',
         targetLayer: 'utils',
-        sourcePath: workspacePath('assets/js/frontend/App.tsx'),
-        targetPath: workspacePath('assets/js/utils/device-detect.ts'),
+        sourcePath: workspacePath('src/js/frontend/App.tsx'),
+        targetPath: workspacePath('src/js/utils/device-detect.ts'),
       }),
     ).toBe(true);
   });
@@ -133,8 +133,8 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'frontend',
         targetLayer: 'milkdrop',
-        sourcePath: workspacePath('assets/js/frontend/BrowseSheetPanel.tsx'),
-        targetPath: workspacePath('assets/js/milkdrop/runtime.ts'),
+        sourcePath: workspacePath('src/js/frontend/BrowseSheetPanel.tsx'),
+        targetPath: workspacePath('src/js/milkdrop/runtime.ts'),
       }),
     ).toBe(false);
     expect(
@@ -142,17 +142,17 @@ describe('architecture boundary rules', () => {
         sourceLayer: 'frontend',
         targetLayer: 'milkdrop',
         sourcePath: workspacePath(
-          'assets/js/frontend/engine/milkdrop-engine-adapter.ts',
+          'src/js/frontend/engine/milkdrop-engine-adapter.ts',
         ),
-        targetPath: workspacePath('assets/js/milkdrop/runtime.ts'),
+        targetPath: workspacePath('src/js/milkdrop/runtime.ts'),
       }),
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'frontend',
         targetLayer: 'milkdrop',
-        sourcePath: workspacePath('assets/js/frontend/BrowseSheetPanel.tsx'),
-        targetPath: workspacePath('assets/js/milkdrop/preset-id-resolution.ts'),
+        sourcePath: workspacePath('src/js/frontend/BrowseSheetPanel.tsx'),
+        targetPath: workspacePath('src/js/milkdrop/preset-id-resolution.ts'),
       }),
     ).toBe(true);
   });
@@ -162,16 +162,16 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'app',
         targetLayer: 'frontend',
-        sourcePath: workspacePath('assets/js/app.ts'),
-        targetPath: workspacePath('assets/js/frontend/App.tsx'),
+        sourcePath: workspacePath('src/js/app.ts'),
+        targetPath: workspacePath('src/js/frontend/App.tsx'),
       }),
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'app',
         targetLayer: 'milkdrop',
-        sourcePath: workspacePath('assets/js/app.ts'),
-        targetPath: workspacePath('assets/js/milkdrop/preset-selection.ts'),
+        sourcePath: workspacePath('src/js/app.ts'),
+        targetPath: workspacePath('src/js/milkdrop/preset-selection.ts'),
       }),
     ).toBe(false);
   });
@@ -181,23 +181,23 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
         targetLayer: 'core',
-        sourcePath: workspacePath('assets/js/utils/device-detect.ts'),
-        targetPath: workspacePath('assets/js/core/render-preferences.ts'),
+        sourcePath: workspacePath('src/js/utils/device-detect.ts'),
+        targetPath: workspacePath('src/js/core/render-preferences.ts'),
       }),
     ).toBe(false);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
         targetLayer: 'toy',
-        sourcePath: workspacePath('assets/js/utils/device-detect.ts'),
-        targetPath: workspacePath('assets/js/toys/milkdrop-toy.ts'),
+        sourcePath: workspacePath('src/js/utils/device-detect.ts'),
+        targetPath: workspacePath('src/js/toys/milkdrop-toy.ts'),
       }),
     ).toBe(false);
   });
 
   test('scans tsx files when collecting architecture violations', async () => {
     const fixturePath = workspacePath(
-      'assets/js/utils/__tmp-architecture-violation-fixture.tsx',
+      'src/js/utils/__tmp-architecture-violation-fixture.tsx',
     );
 
     await fs.writeFile(

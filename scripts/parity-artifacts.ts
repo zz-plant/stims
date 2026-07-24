@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MilkdropRenderBackend } from '../assets/js/milkdrop/common-types.ts';
+import type { MilkdropRenderBackend } from '../src/js/milkdrop/common-types.ts';
 
 export const PARITY_ARTIFACT_MANIFEST_FILE = 'parity-artifacts.manifest.json';
 

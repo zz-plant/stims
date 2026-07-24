@@ -4,7 +4,7 @@ import {
   DEFAULT_RENDERER_RUNTIME_CONTROLS,
   getRendererBackendMaxPixelRatioCap,
   resolveRendererRuntimeControls,
-} from '../../assets/js/core/renderer-settings';
+} from '../../src/js/core/renderer-settings';
 
 describe('applyRendererSettings', () => {
   test('allows a higher initial pixel-ratio ceiling on desktop webgpu backends', () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { initGamepadNavigation } from '../../assets/js/utils/gamepad-navigation.ts';
+import { initGamepadNavigation } from '../../src/js/utils/gamepad-navigation.ts';
 
 describe('gamepad navigation focus initialization and restoration', () => {
   beforeEach(() => {

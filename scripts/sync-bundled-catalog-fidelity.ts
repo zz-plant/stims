@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MilkdropBundledCatalogEntry } from '../assets/js/milkdrop/catalog-types.ts';
-import type { MilkdropFidelityClass } from '../assets/js/milkdrop/common-types.ts';
+import type { MilkdropBundledCatalogEntry } from '../src/js/milkdrop/catalog-types.ts';
+import type { MilkdropFidelityClass } from '../src/js/milkdrop/common-types.ts';
 import {
   loadMeasuredVisualResultsManifest,
   type MeasuredVisualPresetResult,

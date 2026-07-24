@@ -3,7 +3,7 @@
     "slug": "milkdrop",
     "title": "MilkDrop Visualizer",
     "description": "MilkDrop-inspired browser visualizer with demo audio, hand-picked favorites, live editing, and preset import/export.",
-    "module": "assets/js/toys/milkdrop-toy.ts",
+    "module": "src/js/toys/milkdrop-toy.ts",
     "type": "module",
     "requiresWebGPU": true,
     "allowWebGLFallback": true,

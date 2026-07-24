@@ -38,7 +38,7 @@
   },
   "overrides": [
     {
-      "includes": ["assets/js/lib/**"],
+      "includes": ["src/js/lib/**"],
       "linter": {
         "enabled": false
       },
@@ -47,7 +47,7 @@
       }
     },
     {
-      "includes": ["assets/js/data/toy-manifest.ts"],
+      "includes": ["src/js/data/toy-manifest.ts"],
       "formatter": {
         "enabled": false
       }

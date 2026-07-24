@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import type { PresetCatalogEntry } from '../../assets/js/frontend/contracts.ts';
-import { PresetArtwork } from '../../assets/js/frontend/PresetArtwork.tsx';
-import type { MilkdropPresetRenderPreview } from '../../assets/js/milkdrop/preset-preview.ts';
+import type { PresetCatalogEntry } from '../../src/js/frontend/contracts.ts';
+import { PresetArtwork } from '../../src/js/frontend/PresetArtwork.tsx';
+import type { MilkdropPresetRenderPreview } from '../../src/js/milkdrop/preset-preview.ts';
 import { createToyContainer } from '../toy-test-helpers.ts';
 
 const entry: PresetCatalogEntry = {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createDomainStore } from '../../assets/js/core/state/domain-store.ts';
+import { createDomainStore } from '../../src/js/core/state/domain-store.ts';
 
 describe('createDomainStore', () => {
   test('get returns initial value before any set', () => {

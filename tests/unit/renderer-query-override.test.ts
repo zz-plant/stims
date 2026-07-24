@@ -3,11 +3,11 @@ import {
   clearWebGPUCompatibilityGapOverride,
   setWebGPUCompatibilityGapOverride,
   shouldPreferWebGLForKnownCompatibilityGaps,
-} from '../../assets/js/core/renderer-query-override.ts';
+} from '../../src/js/core/renderer-query-override.ts';
 import {
   setWebGpuForceMode,
   shouldUseSafeMilkdropWebGpuPath,
-} from '../../assets/js/milkdrop/webgpu-query-override.ts';
+} from '../../src/js/milkdrop/webgpu-query-override.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 let restoreLocation = () => {};

@@ -46,10 +46,10 @@ describe('renderer setup WebGPU fallback safety', () => {
       'userAgent',
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36',
     );
-    mock.module('../../assets/js/core/webgl-check', () => ({
+    mock.module('../../src/js/core/webgl-check', () => ({
       ensureWebGL: () => true,
     }));
-    mock.module('../../assets/js/core/webgl-renderer', () => ({
+    mock.module('../../src/js/core/webgl-renderer', () => ({
       createWebGLRenderer,
     }));
     const getRendererCapabilities = mock(
@@ -62,18 +62,18 @@ describe('renderer setup WebGPU fallback safety', () => {
       },
     );
 
-    mock.module('../../assets/js/core/renderer-capabilities.ts', () => ({
+    mock.module('../../src/js/core/renderer-capabilities.ts', () => ({
       getRendererCapabilities,
       rememberRendererFallback,
     }));
-    mock.module('../../assets/js/core/renderer-plan.ts', () => ({
+    mock.module('../../src/js/core/renderer-plan.ts', () => ({
       deriveRendererPlan: () => ({
         backend: 'webgpu',
         reasonMessage: null,
         canRetryWebGPU: true,
       }),
     }));
-    mock.module('../../assets/js/core/webgpu-renderer.ts', () => ({
+    mock.module('../../src/js/core/webgpu-renderer.ts', () => ({
       WebGPURenderer: class MockWebGPURenderer {
         init() {
           return new Promise(() => {});
@@ -90,8 +90,8 @@ describe('renderer setup WebGPU fallback safety', () => {
     console.debug = consoleDebug;
 
     const { initRenderer } = await importFresh<
-      typeof import('../../assets/js/core/renderer-setup.ts')
-    >('../../assets/js/core/renderer-setup.ts');
+      typeof import('../../src/js/core/renderer-setup.ts')
+    >('../../src/js/core/renderer-setup.ts');
     const result = await initRenderer(document.createElement('canvas'), {
       webgpuInitTimeoutMs: 5,
     });

@@ -6,9 +6,9 @@ import {
   expect,
   test,
 } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import { createMilkdropEditorSession } from '../../assets/js/milkdrop/editor-session.ts';
-import type { MilkdropPresetSource } from '../../assets/js/milkdrop/types.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { createMilkdropEditorSession } from '../../src/js/milkdrop/editor-session.ts';
+import type { MilkdropPresetSource } from '../../src/js/milkdrop/types.ts';
 
 describe('milkdrop editor session', () => {
   let OriginalWorker: typeof Worker;

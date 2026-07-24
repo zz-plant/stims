@@ -2,26 +2,26 @@ import { afterEach, describe, expect, mock, test } from 'bun:test';
 import {
   matchesBrowseFilters,
   sortBrowsePresets,
-} from '../../assets/js/milkdrop/overlay/browse-panel.ts';
-import { EditorPanel } from '../../assets/js/milkdrop/overlay/editor-panel.ts';
+} from '../../src/js/milkdrop/overlay/browse-panel.ts';
+import { EditorPanel } from '../../src/js/milkdrop/overlay/editor-panel.ts';
 import {
   formatCompatibilitySummary,
   formatInspectorMetrics,
   InspectorPanel,
-} from '../../assets/js/milkdrop/overlay/inspector-panel.ts';
+} from '../../src/js/milkdrop/overlay/inspector-panel.ts';
 import {
   fidelityTierBadgeClass,
   fidelityTierLabel,
   formatMeasuredMismatchPercent,
   getPresetCertificationBadgeStatus,
   getPresetMetaQualifier,
-} from '../../assets/js/milkdrop/overlay/preset-row.ts';
+} from '../../src/js/milkdrop/overlay/preset-row.ts';
 import type {
   MilkdropCatalogEntry,
   MilkdropCompiledPreset,
   MilkdropEditorSessionState,
   MilkdropFrameState,
-} from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/types.ts';
 
 function createCatalogEntry(id: string, title: string): MilkdropCatalogEntry {
   return {

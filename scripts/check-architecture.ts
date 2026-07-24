@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const SOURCE_ROOT = path.resolve('assets/js');
+const SOURCE_ROOT = path.resolve('src/js');
 const JS_SOURCE_PATTERN = /\.(?:ts|tsx|js)$/;
 const IGNORED_SEGMENTS = new Set(['lib']);
 const CORE_TO_UTILS_ALLOWLIST = new Set([
-  'assets/js/utils/device-detect.ts',
-  'assets/js/utils/device-detect.js',
+  'src/js/utils/device-detect.ts',
+  'src/js/utils/device-detect.js',
 ]);
 
 type ArchitectureLayer =
@@ -38,19 +38,19 @@ export function classifyArchitectureLayer(
 ): ArchitectureLayer | null {
   const relative = normalizeRelative(filePath);
 
-  if (relative === 'assets/js/app.ts') return 'app';
-  if (relative.startsWith('assets/js/frontend/')) return 'frontend';
-  if (relative.startsWith('assets/js/core/')) return 'core';
-  if (relative.startsWith('assets/js/ui/')) {
+  if (relative === 'src/js/app.ts') return 'app';
+  if (relative.startsWith('src/js/frontend/')) return 'frontend';
+  if (relative.startsWith('src/js/core/')) return 'core';
+  if (relative.startsWith('src/js/ui/')) {
     return 'ui';
   }
-  if (relative.startsWith('assets/js/data/')) return 'data';
-  if (relative.startsWith('assets/js/toys/')) return 'toy';
-  if (relative.startsWith('assets/js/milkdrop/public/')) {
+  if (relative.startsWith('src/js/data/')) return 'data';
+  if (relative.startsWith('src/js/toys/')) return 'toy';
+  if (relative.startsWith('src/js/milkdrop/public/')) {
     return 'milkdrop-public';
   }
-  if (relative.startsWith('assets/js/milkdrop/')) return 'milkdrop';
-  if (relative.startsWith('assets/js/utils/')) return 'utils';
+  if (relative.startsWith('src/js/milkdrop/')) return 'milkdrop';
+  if (relative.startsWith('src/js/utils/')) return 'utils';
 
   return null;
 }
@@ -103,12 +103,12 @@ export function isArchitectureDependencyAllowed({
   if (sourceLayer === 'frontend') {
     if (targetLayer === 'milkdrop') {
       const isEngineAdapter = relativeSource.startsWith(
-        'assets/js/frontend/engine/',
+        'src/js/frontend/engine/',
       );
       const isCriticalEngineInternal =
-        relativeTarget === 'assets/js/milkdrop/runtime.ts' ||
-        relativeTarget === 'assets/js/milkdrop/vm.ts' ||
-        relativeTarget.startsWith('assets/js/milkdrop/compiler/');
+        relativeTarget === 'src/js/milkdrop/runtime.ts' ||
+        relativeTarget === 'src/js/milkdrop/vm.ts' ||
+        relativeTarget.startsWith('src/js/milkdrop/compiler/');
 
       if (isCriticalEngineInternal && !isEngineAdapter) {
         return false;

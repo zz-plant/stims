@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { mapFrequencyToItems } from '../../assets/js/utils/audio-mapper';
+import { mapFrequencyToItems } from '../../src/js/utils/audio-mapper';
 
 describe('mapFrequencyToItems', () => {
   test('maps bins to items with single-sample mode by default', () => {

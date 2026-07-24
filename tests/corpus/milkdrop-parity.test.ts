@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import { loadMilkdropParityAllowlist } from '../../assets/js/milkdrop/parity-allowlist.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { loadMilkdropParityAllowlist } from '../../src/js/milkdrop/parity-allowlist.ts';
 import type {
   MilkdropFrameState,
   MilkdropRuntimeSignals,
-} from '../../assets/js/milkdrop/types.ts';
-import { createMilkdropVM } from '../../assets/js/milkdrop/vm.ts';
+} from '../../src/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 type ParityManifestPreset = {
   id: string;

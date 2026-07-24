@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   resolvePresetCatalogEntry,
   resolvePresetId,
-} from '../../assets/js/milkdrop/preset-id-resolution.ts';
+} from '../../src/js/milkdrop/preset-id-resolution.ts';
 
 const catalog = [
   {

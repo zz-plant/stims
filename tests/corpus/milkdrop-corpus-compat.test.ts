@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import type { MilkdropFidelityClass } from '../../assets/js/milkdrop/types.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import type { MilkdropFidelityClass } from '../../src/js/milkdrop/types.ts';
 
 type CompatibilityStatus = 'supported' | 'partial' | 'unsupported';
 

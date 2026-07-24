@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import toyManifest from '../../assets/js/data/toy-manifest.ts';
+import toyManifest from '../../src/js/data/toy-manifest.ts';
 
 describe('registered toy modules', () => {
   test('every module entry imports cleanly and exposes start()', async () => {

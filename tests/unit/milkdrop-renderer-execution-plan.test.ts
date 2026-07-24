@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import { resolveMilkdropRendererExecutionPlan } from '../../assets/js/milkdrop/renderer-execution-plan.ts';
-import type { MilkdropWebGpuDescriptorPlan } from '../../assets/js/milkdrop/types.ts';
+import { resolveMilkdropRendererExecutionPlan } from '../../src/js/milkdrop/renderer-execution-plan.ts';
+import type { MilkdropWebGpuDescriptorPlan } from '../../src/js/milkdrop/types.ts';
 import {
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   type MilkdropWebGpuOptimizationFlags,
-} from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 
 function createDescriptorPlan(
   overrides: Partial<MilkdropWebGpuDescriptorPlan> = {},

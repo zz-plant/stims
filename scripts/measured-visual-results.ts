@@ -6,13 +6,13 @@ import type {
   MilkdropParityToleranceProfile,
   MilkdropRenderBackend,
   MilkdropVisualEvidenceTier,
-} from '../assets/js/milkdrop/common-types.ts';
+} from '../src/js/milkdrop/common-types.ts';
 import { loadValidatedNativeProjectMReference } from './native-projectm-reference.ts';
 import type { SuiteReferenceIdentity } from './run-parity-diff-suite.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
 export const MEASURED_VISUAL_RESULTS_PATH =
-  'assets/data/milkdrop-parity/measured-results.json';
+  'src/data/milkdrop-parity/measured-results.json';
 
 export type MeasuredVisualPresetResult = {
   id: string;

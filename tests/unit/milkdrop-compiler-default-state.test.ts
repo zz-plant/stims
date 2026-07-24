@@ -5,7 +5,7 @@ import {
   DEFAULT_MILKDROP_STATE,
   MAX_CUSTOM_SHAPES,
   MAX_CUSTOM_WAVES,
-} from '../../assets/js/milkdrop/compiler/default-state.ts';
+} from '../../src/js/milkdrop/compiler/default-state.ts';
 
 describe('milkdrop compiler default state', () => {
   test('seeds the first custom shape slot with projectM-neutral defaults', () => {

@@ -5,7 +5,7 @@ import {
   shouldEnableMilkdropPostprocessingProfile,
   shouldRenderMilkdropPostprocessing,
   supportsWebGLPostprocessing,
-} from '../../assets/js/core/postprocessing';
+} from '../../src/js/core/postprocessing';
 
 describe('postprocessing renderer selection', () => {
   test('supports postprocessing for webgl backend only', () => {

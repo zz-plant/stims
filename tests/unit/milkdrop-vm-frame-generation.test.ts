@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildMainWaveFrame,
   defaultSignalEnv,
-} from '../../assets/js/milkdrop/vm/frame-generation.ts';
-import { buildMesh } from '../../assets/js/milkdrop/vm/geometry-builder.ts';
+} from '../../src/js/milkdrop/vm/frame-generation.ts';
+import { buildMesh } from '../../src/js/milkdrop/vm/geometry-builder.ts';
 
 describe('milkdrop vm frame generation', () => {
   test('keeps an explicitly disabled mesh fully transparent', () => {

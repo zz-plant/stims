@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import type { RendererCapabilities } from '../../assets/js/core/renderer-capabilities.ts';
-import { RENDERER_WORKER_MESSAGE_TYPES } from '../../assets/js/core/renderer-worker-protocol.ts';
+import type { RendererCapabilities } from '../../src/js/core/renderer-capabilities.ts';
+import { RENDERER_WORKER_MESSAGE_TYPES } from '../../src/js/core/renderer-worker-protocol.ts';
 import {
   canUseExperimentalWorkerRenderer,
   createExperimentalWorkerRendererTrack,
   isRendererWorkerExperimentEnabled,
   RENDERER_WORKER_EXPERIMENT_SEARCH_PARAM,
   RENDERER_WORKER_EXPERIMENT_STORAGE_KEY,
-} from '../../assets/js/core/worker-renderer-track.ts';
+} from '../../src/js/core/worker-renderer-track.ts';
 
 const webgpuCapabilities: RendererCapabilities = {
   preferredBackend: 'webgpu',

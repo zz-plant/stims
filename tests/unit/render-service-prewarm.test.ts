@@ -5,8 +5,8 @@ describe('render-service prewarm', () => {
   afterEach(async () => {
     mock.restore();
     const renderService = await importFresh<
-      typeof import('../../assets/js/core/services/render-service.ts')
-    >('../../assets/js/core/services/render-service.ts');
+      typeof import('../../src/js/core/services/render-service.ts')
+    >('../../src/js/core/services/render-service.ts');
     renderService.resetRendererPool({ dispose: true });
   });
 
@@ -22,7 +22,7 @@ describe('render-service prewarm', () => {
       webgpu: null,
     }));
 
-    mock.module('../../assets/js/core/renderer-capabilities.ts', () => ({
+    mock.module('../../src/js/core/renderer-capabilities.ts', () => ({
       getRendererCapabilities,
       getRenderingSupport: () => ({
         hasWebGPU: true,
@@ -32,8 +32,8 @@ describe('render-service prewarm', () => {
     }));
 
     const renderService = await importFresh<
-      typeof import('../../assets/js/core/services/render-service.ts')
-    >('../../assets/js/core/services/render-service.ts');
+      typeof import('../../src/js/core/services/render-service.ts')
+    >('../../src/js/core/services/render-service.ts');
 
     await renderService.prewarmRendererCapabilities();
     await renderService.prewarmRendererCapabilities();

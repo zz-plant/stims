@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { getSettingsPanel } from '../../assets/js/core/settings-panel.ts';
+import { getSettingsPanel } from '../../src/js/core/settings-panel.ts';
 
 const freshImport = async () =>
   import(
@@ -18,7 +18,7 @@ describe('toy runtime starter', () => {
     panel = getSettingsPanel();
     configure = mock(panel.configure.bind(panel));
     panel.configure = configure;
-    mock.module('../../assets/js/core/toy-runtime', () => ({
+    mock.module('../../src/js/core/toy-runtime', () => ({
       createToyRuntime,
     }));
   });

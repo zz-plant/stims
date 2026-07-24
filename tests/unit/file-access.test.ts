@@ -3,8 +3,8 @@ import { afterEach, beforeAll, describe, expect, mock, test } from 'bun:test';
 const fileOpenMock = mock();
 const fileSaveMock = mock();
 
-let openMilkdropPresetFiles: typeof import('../../assets/js/milkdrop/file-access.ts').openMilkdropPresetFiles;
-let saveMilkdropPresetFile: typeof import('../../assets/js/milkdrop/file-access.ts').saveMilkdropPresetFile;
+let openMilkdropPresetFiles: typeof import('../../src/js/milkdrop/file-access.ts').openMilkdropPresetFiles;
+let saveMilkdropPresetFile: typeof import('../../src/js/milkdrop/file-access.ts').saveMilkdropPresetFile;
 
 beforeAll(async () => {
   mock.module('browser-fs-access', () => ({
@@ -13,7 +13,7 @@ beforeAll(async () => {
   }));
 
   ({ openMilkdropPresetFiles, saveMilkdropPresetFile } = await import(
-    '../../assets/js/milkdrop/file-access.ts'
+    '../../src/js/milkdrop/file-access.ts'
   ));
 });
 

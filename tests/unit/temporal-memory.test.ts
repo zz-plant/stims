@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test';
 import {
   getSavedCheckpoints,
   saveCheckpoint,
-} from '../../assets/js/core/services/temporal-memory.ts';
+} from '../../src/js/core/services/temporal-memory.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 let restoreLocalStorage = () => {};

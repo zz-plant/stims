@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createMilkdropCapturedVideoReactivityTracker } from '../../assets/js/milkdrop/runtime/captured-video-reactivity.ts';
+import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
 
 describe('milkdrop captured video reactivity', () => {
   test('holds energy on release longer than it rises on attack', () => {

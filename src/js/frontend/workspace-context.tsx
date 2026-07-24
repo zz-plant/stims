@@ -1,0 +1,327 @@
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
+import type { MotionPreference } from '../core/motion-preferences.ts';
+import type { QualityPreset } from '../core/settings-panel.ts';
+import type { RenderPreferences } from '../core/state/render-preference-store.ts';
+import type {
+  PanelState,
+  PresetCatalogEntry,
+  SessionRouteState,
+} from './contracts.ts';
+import { setAudioEnergy } from './engine-audio-energy-store.ts';
+import {
+  type EngineContextValue,
+  EngineCtx,
+  EngineProvider,
+  type EngineSnapshotValue,
+} from './engine-context.tsx';
+import { usePersistentPresetQueue } from './preset-queue.ts';
+import {
+  useWorkspaceRouteState,
+  useWorkspaceSessionState,
+} from './workspace-hooks.ts';
+import { useWorkspaceShellOrchestration } from './workspace-shell-hooks.ts';
+
+export interface WorkspaceContextValue {
+  routeState: SessionRouteState;
+  commitRoute: (nextState: SessionRouteState) => void;
+  setRouteState: React.Dispatch<React.SetStateAction<SessionRouteState>>;
+
+  deferredSearch: string;
+  motionPreference: MotionPreference;
+  pendingPresetIdRef: { current: string | null };
+  qualityPreset: QualityPreset;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  setStatusMessage: (message: string | null) => void;
+  showExtendedSources: boolean;
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  toast: {
+    message: string;
+    tone: 'info' | 'warn' | 'error';
+  } | null;
+  dismissToast: () => void;
+  toggleExtendedSources: () => void;
+  setYoutubeUrl: (url: string) => void;
+  youtubeCanLoad: boolean;
+  youtubeFeedback: string;
+  youtubeInputInvalid: boolean;
+  youtubeLoading: boolean;
+  youtubePreviewRef: React.RefObject<HTMLDivElement | null>;
+  youtubeReady: boolean;
+  youtubeUrl: string;
+  recentYouTubeVideos: Array<{ id: string; title: string }>;
+  renderPreferences: RenderPreferences;
+  fallbackCatalog: PresetCatalogEntry[];
+  fallbackCatalogError: string | null;
+  fallbackCatalogReady: boolean;
+  activityCatalog: PresetCatalogEntry[];
+  presetQueue: {
+    presetIds: string[];
+    entries: PresetCatalogEntry[];
+    add: (presetId: string) => void;
+    remove: (presetId: string) => void;
+    clear: () => void;
+    move: (presetId: string, direction: -1 | 1) => void;
+    popNext: () => string | null;
+  };
+
+  handleBrowseRecovery: () => void;
+  handleFeaturedPresetSelection: () => void;
+  handleImport: (files: FileList | null) => Promise<void>;
+  handleShowCurrentLink: () => Promise<void>;
+  updatePanel: (panel: PanelState) => void;
+}
+
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+
+export function useUI(): WorkspaceContextValue {
+  const ctx = useContext(WorkspaceContext);
+  if (!ctx) {
+    throw new Error('useUI must be used within a WorkspaceProvider');
+  }
+  return ctx;
+}
+
+export { useEngine, useEngineSnapshot } from './engine-context.tsx';
+
+export function useWorkspace(): {
+  ui: WorkspaceContextValue;
+  engine: EngineContextValue;
+} {
+  const ui = useUI();
+  const engine = useContext(EngineCtx);
+  if (!engine) {
+    throw new Error('useWorkspace must be used within a WorkspaceProvider');
+  }
+  return { ui, engine };
+}
+
+export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const { commitRoute, routeState, setRouteState } = useWorkspaceRouteState();
+
+  const sessionState = useWorkspaceSessionState({ routeState, setRouteState });
+
+  const shellOrchestration = useWorkspaceShellOrchestration({
+    commitRoute,
+    deferredSearch: sessionState.deferredSearch,
+    engineSnapshot: sessionState.engineSnapshot,
+    fallbackCatalog: sessionState.fallbackCatalog,
+    fallbackCatalogError: sessionState.fallbackCatalogError,
+    fallbackCatalogReady: sessionState.fallbackCatalogReady,
+    activityCatalog: sessionState.activityCatalog,
+    importPresetFiles: sessionState.importPresetFiles,
+    pendingPresetIdRef: sessionState.pendingPresetIdRef,
+    routeState,
+    setStatusMessage: sessionState.setStatusMessage,
+    startAudioSource: sessionState.startAudioSource,
+    youtubePreviewRef: sessionState.youtubePreviewRef,
+    updateEditorSource: sessionState.updateEditorSource,
+    stageRef: sessionState.stageRef,
+  });
+
+  const coarseRef = useRef<EngineSnapshotValue['engineSnapshot']>(null);
+  const presetQueue = usePersistentPresetQueue(shellOrchestration.catalog);
+
+  useEffect(() => {
+    const snap = sessionState.engineSnapshot;
+    if (snap) {
+      setAudioEnergy(snap.audioEnergy);
+    }
+  }, [sessionState.engineSnapshot]);
+
+  const engineSnapshotValue: EngineSnapshotValue = useMemo(() => {
+    const snap = sessionState.engineSnapshot;
+    const prev = coarseRef.current;
+    if (
+      prev &&
+      snap &&
+      prev.activePresetId === snap.activePresetId &&
+      prev.backend === snap.backend &&
+      prev.status === snap.status &&
+      prev.runtimeReady === snap.runtimeReady &&
+      prev.audioActive === snap.audioActive &&
+      prev.audioSource === snap.audioSource &&
+      prev.adaptiveQuality === snap.adaptiveQuality &&
+      prev.catalogEntries === snap.catalogEntries &&
+      prev.sessionState === snap.sessionState
+    ) {
+      return { engineSnapshot: prev };
+    }
+    coarseRef.current = snap;
+    return { engineSnapshot: snap };
+  }, [sessionState.engineSnapshot]);
+
+  const engineDataValue: EngineContextValue = useMemo(
+    () => ({
+      presetPreviews: sessionState.presetPreviews,
+      catalog: shellOrchestration.catalog,
+      catalogError: shellOrchestration.catalogError,
+      catalogReady: shellOrchestration.catalogReady,
+      collectionTags: shellOrchestration.collectionTags,
+      engineReady: shellOrchestration.engineReady,
+      favoritePresets: shellOrchestration.favoritePresets,
+      featuredPreset: shellOrchestration.featuredPreset,
+      filteredCatalog: shellOrchestration.filteredCatalog,
+      audioActive: shellOrchestration.audioActive,
+      loadingRequestedPreset: shellOrchestration.loadingRequestedPreset,
+      missingRequestedPreset: shellOrchestration.missingRequestedPreset,
+      recentPresets: shellOrchestration.recentPresets,
+      selectedPreset: shellOrchestration.selectedPreset,
+      starterPresets: shellOrchestration.starterPresets,
+      handleAudioStart: shellOrchestration.handleAudioStart,
+      handleAudioStop: shellOrchestration.handleAudioStop,
+      handlePresetSelection: shellOrchestration.handlePresetSelection,
+      handlePreviousPreset: shellOrchestration.handlePreviousPreset,
+      handlePlayPreset: shellOrchestration.handlePlayPreset,
+      handleShufflePreset: shellOrchestration.handleShufflePreset,
+      exportPreset: sessionState.exportPreset,
+      importPresetFiles: sessionState.importPresetFiles,
+      requestPresetPreviews: sessionState.requestPresetPreviews,
+      refreshPresetPreviews: sessionState.refreshPresetPreviews,
+      pausePreview: sessionState.pausePreview,
+      resumePreview: sessionState.resumePreview,
+      startAudioSource: sessionState.startAudioSource,
+      toggleFavoritePreset: sessionState.toggleFavoritePreset,
+      loadRecentYouTubeVideo: sessionState.loadRecentYouTubeVideo,
+      loadYouTubePreview: sessionState.loadYouTubePreview,
+      clearRecentYouTubeVideos: sessionState.clearRecentYouTubeVideos,
+      handleYoutubeUrlKeyDown: sessionState.handleYoutubeUrlKeyDown,
+      setQualityPreset: sessionState.setQualityPreset,
+      updateEditorSource: sessionState.updateEditorSource,
+      updateInspectorField: sessionState.updateInspectorField,
+      handleVisualSearch: shellOrchestration.handleVisualSearch,
+    }),
+    [
+      sessionState.presetPreviews,
+      shellOrchestration.catalog,
+      shellOrchestration.catalogError,
+      shellOrchestration.catalogReady,
+      shellOrchestration.collectionTags,
+      shellOrchestration.engineReady,
+      shellOrchestration.favoritePresets,
+      shellOrchestration.featuredPreset,
+      shellOrchestration.filteredCatalog,
+      shellOrchestration.loadingRequestedPreset,
+      shellOrchestration.missingRequestedPreset,
+      shellOrchestration.recentPresets,
+      shellOrchestration.selectedPreset,
+      shellOrchestration.starterPresets,
+      shellOrchestration.audioActive,
+      shellOrchestration.handleAudioStart,
+      shellOrchestration.handleAudioStop,
+      shellOrchestration.handlePresetSelection,
+      shellOrchestration.handlePreviousPreset,
+      shellOrchestration.handlePlayPreset,
+      shellOrchestration.handleShufflePreset,
+      sessionState.exportPreset,
+      sessionState.importPresetFiles,
+      sessionState.requestPresetPreviews,
+      sessionState.refreshPresetPreviews,
+      sessionState.pausePreview,
+      sessionState.resumePreview,
+      sessionState.startAudioSource,
+      sessionState.toggleFavoritePreset,
+      sessionState.loadRecentYouTubeVideo,
+      sessionState.loadYouTubePreview,
+      sessionState.clearRecentYouTubeVideos,
+      sessionState.handleYoutubeUrlKeyDown,
+      sessionState.setQualityPreset,
+      sessionState.updateEditorSource,
+      sessionState.updateInspectorField,
+      shellOrchestration.handleVisualSearch,
+    ],
+  );
+
+  const uiValue: WorkspaceContextValue = useMemo(
+    () => ({
+      routeState,
+      commitRoute,
+      setRouteState,
+      deferredSearch: sessionState.deferredSearch,
+      motionPreference: sessionState.motionPreference,
+      pendingPresetIdRef: sessionState.pendingPresetIdRef,
+      qualityPreset: sessionState.qualityPreset,
+      searchQuery: sessionState.searchQuery,
+      setSearchQuery: sessionState.setSearchQuery,
+      setStatusMessage: sessionState.setStatusMessage,
+      showExtendedSources: sessionState.showExtendedSources,
+      stageRef: sessionState.stageRef,
+      toast: sessionState.toast,
+      dismissToast: sessionState.dismissToast,
+      toggleExtendedSources: sessionState.toggleExtendedSources,
+      setYoutubeUrl: sessionState.setYoutubeUrl,
+      youtubeCanLoad: sessionState.youtubeCanLoad,
+      youtubeFeedback: sessionState.youtubeFeedback,
+      youtubeInputInvalid: sessionState.youtubeInputInvalid,
+      youtubeLoading: sessionState.youtubeLoading,
+      youtubePreviewRef: sessionState.youtubePreviewRef,
+      youtubeReady: sessionState.youtubeReady,
+      youtubeUrl: sessionState.youtubeUrl,
+      recentYouTubeVideos: sessionState.recentYouTubeVideos,
+      renderPreferences: sessionState.renderPreferences,
+      fallbackCatalog: sessionState.fallbackCatalog,
+      fallbackCatalogError: sessionState.fallbackCatalogError,
+      fallbackCatalogReady: sessionState.fallbackCatalogReady,
+      activityCatalog: sessionState.activityCatalog,
+      presetQueue,
+      handleBrowseRecovery: shellOrchestration.handleBrowseRecovery,
+      handleFeaturedPresetSelection:
+        shellOrchestration.handleFeaturedPresetSelection,
+      handleImport: shellOrchestration.handleImport,
+      handleShowCurrentLink: shellOrchestration.handleShowCurrentLink,
+      updatePanel: shellOrchestration.updatePanel,
+    }),
+    [
+      routeState,
+      commitRoute,
+      setRouteState,
+      sessionState.deferredSearch,
+      sessionState.motionPreference,
+      sessionState.pendingPresetIdRef,
+      sessionState.qualityPreset,
+      sessionState.searchQuery,
+      sessionState.setSearchQuery,
+      sessionState.setStatusMessage,
+      sessionState.showExtendedSources,
+      sessionState.stageRef,
+      sessionState.toast,
+      sessionState.dismissToast,
+      sessionState.toggleExtendedSources,
+      sessionState.setYoutubeUrl,
+      sessionState.youtubeCanLoad,
+      sessionState.youtubeFeedback,
+      sessionState.youtubeInputInvalid,
+      sessionState.youtubeLoading,
+      sessionState.youtubePreviewRef,
+      sessionState.youtubeReady,
+      sessionState.youtubeUrl,
+      sessionState.recentYouTubeVideos,
+      sessionState.renderPreferences,
+      sessionState.fallbackCatalog,
+      sessionState.fallbackCatalogError,
+      sessionState.fallbackCatalogReady,
+      sessionState.activityCatalog,
+      presetQueue,
+      shellOrchestration.handleBrowseRecovery,
+      shellOrchestration.handleFeaturedPresetSelection,
+      shellOrchestration.handleImport,
+      shellOrchestration.handleShowCurrentLink,
+      shellOrchestration.updatePanel,
+    ],
+  );
+
+  return (
+    <WorkspaceContext.Provider value={uiValue}>
+      <EngineProvider snapshot={engineSnapshotValue} data={engineDataValue}>
+        {children}
+      </EngineProvider>
+    </WorkspaceContext.Provider>
+  );
+}

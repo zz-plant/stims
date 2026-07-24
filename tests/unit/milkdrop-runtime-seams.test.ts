@@ -1,26 +1,26 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   createMilkdropBackendFailover,
   shouldPresetFallbackToWebgl,
-} from '../../assets/js/milkdrop/runtime/backend-fallback.ts';
-import { applyMilkdropCapturedVideoFrameState } from '../../assets/js/milkdrop/runtime/captured-video-frame.ts';
-import { createMilkdropCapturedVideoReactivityTracker } from '../../assets/js/milkdrop/runtime/captured-video-reactivity.ts';
+} from '../../src/js/milkdrop/runtime/backend-fallback.ts';
+import { applyMilkdropCapturedVideoFrameState } from '../../src/js/milkdrop/runtime/captured-video-frame.ts';
+import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
 import {
   buildBlendStateForRender,
   buildRenderFrameState,
   shouldAutoAdvancePreset,
-} from '../../assets/js/milkdrop/runtime/lifecycle.ts';
-import { createMilkdropRuntimeLifetime } from '../../assets/js/milkdrop/runtime/lifetime.ts';
+} from '../../src/js/milkdrop/runtime/lifecycle.ts';
+import { createMilkdropRuntimeLifetime } from '../../src/js/milkdrop/runtime/lifetime.ts';
 import {
   resolveStartupPresetId,
   shouldDeferStartupPresetFallback,
-} from '../../assets/js/milkdrop/runtime/startup.ts';
+} from '../../src/js/milkdrop/runtime/startup.ts';
 import type {
   MilkdropBlendState,
   MilkdropFrameState,
-} from '../../assets/js/milkdrop/types.ts';
-import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
+} from '../../src/js/milkdrop/types.ts';
+import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 
 const gpuBlendState: MilkdropBlendState = {
   mode: 'gpu',

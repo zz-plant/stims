@@ -1,0 +1,1379 @@
+import {
+  type Camera,
+  Color,
+  DataTexture,
+  Mesh,
+  MeshBasicMaterial,
+  OrthographicCamera,
+  PlaneGeometry,
+  type RenderTarget,
+  RepeatWrapping,
+  RGBAFormat,
+  Scene,
+  ShaderMaterial,
+  SRGBColorSpace,
+  type Texture,
+  TextureLoader,
+  UnsignedByteType,
+  Vector2,
+  type WebGLRenderTarget,
+} from 'three';
+import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
+import { disposeMaterial } from '../utils/three-dispose';
+import type {
+  FeedbackBackendProfile,
+  MilkdropBackendBehavior,
+} from './backend-behavior';
+import {
+  extractCustomSamplerDeclarations,
+  type MilkdropCustomSamplerDeclaration,
+} from './compiler/custom-samplers.ts';
+import {
+  generateGlslFromShaderStatements,
+  injectDirectShaderGlsl,
+} from './compiler/shader-analysis-glsl.ts';
+import { isMilkdropShaderProgramBackendExecutable } from './compiler/shader-execution-classification.ts';
+import {
+  MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
+  MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
+  MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
+  MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
+} from './feedback-composite-profile.ts';
+import { createWebGLFeedbackRenderTarget } from './feedback-render-targets.ts';
+import {
+  AUX_TEXTURE_ATLAS_GRID_SIZE,
+  AUX_TEXTURE_ATLAS_SLICE_COUNT,
+} from './feedback-volume-sampling.ts';
+import { createMilkdropNoiseTexture } from './milkdrop-native-noise.ts';
+import type {
+  MilkdropFeedbackCompositeState,
+  MilkdropFeedbackManager,
+  MilkdropShaderProgramPayload,
+} from './types';
+
+export type MilkdropCompositeShaderConfig = {
+  enhancedFeedbackBlur?: boolean;
+};
+
+const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
+const MILKDROP_TEXTURE_FILES = {
+  noise: 'seamless_perlin_noise.png',
+  perlin: 'seamless_perlin_noise.png',
+  simplex: 'simplex_noise_3d.png',
+  voronoi: 'voronoi_cellular.png',
+  aura: 'colorful_aura_gradient.png',
+  caustics: 'water_caustics.png',
+  pattern: 'circuit_board_pattern.png',
+  fractal: 'crystal_fractal.png',
+} as const;
+const AUX_TEXTURE_SPECS = {
+  noise: { fileName: MILKDROP_TEXTURE_FILES.noise, colorTexture: false },
+  perlin: { fileName: MILKDROP_TEXTURE_FILES.perlin, colorTexture: false },
+  simplex: { fileName: MILKDROP_TEXTURE_FILES.simplex, colorTexture: false },
+  voronoi: { fileName: MILKDROP_TEXTURE_FILES.voronoi, colorTexture: false },
+  aura: { fileName: MILKDROP_TEXTURE_FILES.aura, colorTexture: true },
+  caustics: { fileName: MILKDROP_TEXTURE_FILES.caustics, colorTexture: false },
+  pattern: { fileName: MILKDROP_TEXTURE_FILES.pattern, colorTexture: false },
+  fractal: { fileName: MILKDROP_TEXTURE_FILES.fractal, colorTexture: false },
+} as const satisfies Record<
+  keyof typeof MILKDROP_TEXTURE_FILES,
+  { fileName: string; colorTexture: boolean }
+>;
+
+type AuxTextureName = keyof typeof AUX_TEXTURE_SPECS;
+
+type SharedAuxTextureMap = Record<AuxTextureName | 'video', Texture>;
+
+const milkdropTextureLoader = new TextureLoader();
+const sharedMilkdropTextureCache = new Map<string, Texture>();
+const sharedMilkdropTexturePlaceholder = (() => {
+  const texture = new DataTexture(
+    new Uint8Array([128, 128, 128, 255]),
+    1,
+    1,
+    RGBAFormat,
+    UnsignedByteType,
+  );
+  texture.needsUpdate = true;
+  return configureMilkdropTexture(texture);
+})();
+const sharedMilkdropNativeNoiseTexture = createMilkdropNoiseTexture();
+
+function resolveTextureUrl(fileName: string) {
+  const baseUrl =
+    typeof import.meta.env.BASE_URL === 'string'
+      ? import.meta.env.BASE_URL
+      : '/';
+  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  return `${normalizedBaseUrl}textures/${fileName}`;
+}
+
+function configureMilkdropTexture(texture: Texture, colorTexture = false) {
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
+  if (colorTexture) {
+    texture.colorSpace = SRGBColorSpace;
+  }
+  return texture;
+}
+
+function getSharedMilkdropTexture(fileName: string, colorTexture = false) {
+  const cacheKey = `${fileName}:${colorTexture ? 'srgb' : 'linear'}`;
+  let texture = sharedMilkdropTextureCache.get(cacheKey);
+  if (!texture) {
+    texture = configureMilkdropTexture(
+      milkdropTextureLoader.load(resolveTextureUrl(fileName)),
+      colorTexture,
+    );
+    sharedMilkdropTextureCache.set(cacheKey, texture);
+  }
+  return texture;
+}
+
+function getSharedMilkdropTexturePlaceholder() {
+  return sharedMilkdropTexturePlaceholder;
+}
+
+function getSharedAuxTextures(): SharedAuxTextureMap {
+  return {
+    noise: sharedMilkdropNativeNoiseTexture,
+    perlin: sharedMilkdropNativeNoiseTexture,
+    simplex: sharedMilkdropNativeNoiseTexture,
+    voronoi: getSharedMilkdropTexturePlaceholder(),
+    aura: getSharedMilkdropTexturePlaceholder(),
+    caustics: getSharedMilkdropTexturePlaceholder(),
+    pattern: getSharedMilkdropTexturePlaceholder(),
+    fractal: getSharedMilkdropTexturePlaceholder(),
+    video: getSharedMilkdropCapturedVideoTexture(),
+  };
+}
+
+function resolveAuxTextureName(source: number) {
+  if (source < 0.5) {
+    return null;
+  }
+  if (source < 1.5) {
+    return 'noise';
+  }
+  if (source < 2.5) {
+    return 'simplex';
+  }
+  if (source < 3.5) {
+    return 'voronoi';
+  }
+  if (source < 4.5) {
+    return 'aura';
+  }
+  if (source < 5.5) {
+    return 'caustics';
+  }
+  if (source < 6.5) {
+    return 'pattern';
+  }
+  if (source < 7.5) {
+    return 'fractal';
+  }
+  if (source < 8.5) {
+    return null;
+  }
+  if (source < 9.5) {
+    return 'perlin';
+  }
+  return null;
+}
+
+export function createCompositeFragmentShaderVariant(
+  source: string,
+  { enhancedFeedbackBlur = false }: MilkdropCompositeShaderConfig = {},
+) {
+  const blurBlock = enhancedFeedbackBlur
+    ? `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 sampleOffset = texelSize * (0.65 + feedbackSoftness * 0.6);
+            vec3 softened = (
+              previous.rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + sampleOffset, textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - sampleOffset, textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, -sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(-sampleOffset.x, sampleOffset.y), textureWrap)).rgb
+            ) / 9.0;
+            previousColor = mix(
+              previousColor,
+              softened,
+              clamp(feedbackSoftness * 0.6, 0.0, 0.65)
+            );
+          }`
+    : `if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 sampleOffset = texelSize * (${MILKDROP_FEEDBACK_BLUR_OFFSET_BASE.toFixed(2)} + feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE.toFixed(1)});
+            vec3 softened = (
+              previous.rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(sampleOffset.x, 0.0), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(0.0, sampleOffset.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(0.0, sampleOffset.y), textureWrap)).rgb
+            ) / 5.0;
+            previousColor = mix(
+              previousColor,
+              softened,
+              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
+            );
+          }`;
+
+  return source.replace(
+    /if \(feedbackSoftness > 0\.01\) \{[\s\S]*?clamp\(feedbackSoftness \* 0\.45, 0\.0, 0\.5\)\s*\);\s*\}/,
+    blurBlock,
+  );
+}
+
+const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
+        uniform sampler2D currentTex;
+        uniform sampler2D previousTex;
+        uniform sampler2D noiseTex;
+        uniform sampler2D simplexTex;
+        uniform sampler2D voronoiTex;
+        uniform sampler2D auraTex;
+        uniform sampler2D causticsTex;
+        uniform sampler2D patternTex;
+        uniform sampler2D fractalTex;
+        uniform sampler2D videoTex;
+        uniform sampler2D perlinTex;
+        uniform sampler2D warpTex;
+        uniform sampler2D blur1Tex;
+        uniform sampler2D blur2Tex;
+        uniform sampler2D blur3Tex;
+        uniform float videoEchoAlpha;
+        uniform float brighten;
+        uniform float darken;
+        uniform float darkenCenter;
+        uniform float solarize;
+        uniform float invert;
+        uniform float redBlueStereo;
+        uniform float gammaAdj;
+        uniform float textureWrap;
+        uniform float warpScale;
+        uniform float offsetX;
+        uniform float offsetY;
+        uniform float rotation;
+        uniform float zoomMul;
+        uniform float saturation;
+        uniform float contrast;
+        uniform vec3 colorScale;
+        uniform float hueShift;
+        uniform float brightenBoost;
+        uniform float invertBoost;
+        uniform float solarizeBoost;
+        uniform float vignette;
+        uniform float chromaticAberration;
+        uniform vec3 tint;
+        uniform float feedbackSoftness;
+        uniform float currentFrameBoost;
+        uniform float overlayTextureSource;
+        uniform float overlayTextureMode;
+        uniform float overlayTextureSampleDimension;
+        uniform float overlayTextureInvert;
+        uniform float overlayTextureAmount;
+        uniform vec2 overlayTextureScale;
+        uniform vec2 overlayTextureOffset;
+        uniform float overlayTextureVolumeSliceZ;
+        uniform float warpTextureSource;
+        uniform float warpTextureSampleDimension;
+        uniform float warpTextureAmount;
+        uniform vec2 warpTextureScale;
+        uniform vec2 warpTextureOffset;
+        uniform float warpTextureVolumeSliceZ;
+        uniform float signalBass;
+        uniform float signalMid;
+        uniform float signalTreb;
+        uniform float signalBeat;
+        uniform float signalBeatPulse;
+        uniform float signalEnergy;
+        uniform float signalTime;
+        uniform float aspect;
+        uniform float decay;
+        uniform float hasDirectWarp;
+        uniform vec2 texelSize;
+        varying vec2 vUv;
+
+        vec3 hueRotate(vec3 color, float angle) {
+          float s = sin(angle);
+          float c = cos(angle);
+          mat3 mat = mat3(
+            0.213 + c * 0.787 - s * 0.213,
+            0.715 - c * 0.715 - s * 0.715,
+            0.072 - c * 0.072 + s * 0.928,
+            0.213 - c * 0.213 + s * 0.143,
+            0.715 + c * 0.285 + s * 0.140,
+            0.072 - c * 0.072 - s * 0.283,
+            0.213 - c * 0.213 - s * 0.787,
+            0.715 - c * 0.715 + s * 0.715,
+            0.072 + c * 0.928 + s * 0.072
+          );
+          return clamp(mat * color, 0.0, 1.0);
+        }
+
+        vec3 applySaturation(vec3 color, float amount) {
+          float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+          return mix(vec3(luminance), color, amount);
+        }
+
+        vec3 applyContrast(vec3 color, float amount) {
+          return clamp((color - 0.5) * amount + 0.5, 0.0, 1.0);
+        }
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+
+        float fbm(vec2 p, int octaves) {
+          float value = 0.0;
+          float amplitude = 0.5;
+          float frequency = 1.0;
+          for (int i = 0; i < 8; i++) {
+            if (i >= octaves) break;
+            value += amplitude * noise(p * frequency);
+            amplitude *= 0.5;
+            frequency *= 2.0;
+          }
+          return value;
+        }
+
+        vec2 sampleUv(vec2 uv, float wrapMode) {
+          return wrapMode > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+
+        vec4 sampleAuxTexture2d(float source, vec2 uv) {
+          if (source < 0.5) {
+            return vec4(0.5, 0.5, 0.5, 1.0);
+          }
+          if (source < 1.5) {
+            return texture2D(noiseTex, uv);
+          }
+          if (source < 2.5) {
+            return texture2D(simplexTex, uv);
+          }
+          if (source < 3.5) {
+            return texture2D(voronoiTex, uv);
+          }
+          if (source < 4.5) {
+            return texture2D(auraTex, uv);
+          }
+          if (source < 5.5) {
+            return texture2D(causticsTex, uv);
+          }
+          if (source < 6.5) {
+            return texture2D(patternTex, uv);
+          }
+          if (source < 7.5) {
+            return texture2D(fractalTex, uv);
+          }
+          if (source < 8.5) {
+            return texture2D(videoTex, uv);
+          }
+          if (source < 9.5) {
+            return texture2D(perlinTex, uv);
+          }
+          return vec4(0.5, 0.5, 0.5, 1.0);
+        }
+
+        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
+          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
+          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
+          vec2 tileSize = vec2(1.0 / gridSize);
+          float column = mod(sliceIndex, gridSize);
+          float row = floor(sliceIndex / gridSize);
+          return (vec2(column, row) + localUv) * tileSize;
+        }
+
+        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
+          vec2 wrappedUv = fract(uv);
+          if (sampleDimension < 0.5) {
+            return sampleAuxTexture2d(source, wrappedUv);
+          }
+          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
+          float wrappedSliceZ = fract(sliceZ);
+          float scaledSlice = wrappedSliceZ * sliceCount;
+          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
+          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
+          float sliceBlend = fract(scaledSlice);
+          float edgeMargin = 0.02;
+          if (sliceBlend < edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          }
+          if (sliceBlend > 1.0 - edgeMargin) {
+            return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          }
+          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          return mix(sliceA, sliceB, sliceBlend);
+        }
+
+        vec2 applyFeedbackWarp(vec2 uv, float amount, float rotationAmount) {
+          vec2 centered = uv - 0.5;
+          float radius = length(centered);
+          float angle = atan(centered.y, centered.x);
+          float spiral = sin(radius * 18.0 - angle * 4.0) * amount * 0.08;
+          angle += spiral + rotationAmount * 0.22;
+          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * amount * 0.05;
+          return vec2(cos(angle), sin(angle)) * radius + 0.5;
+        }
+
+        // --- DIRECT_WARP_START ---
+        // --- DIRECT_WARP_END ---
+
+        // --- DIRECT_COMP_START ---
+        // --- DIRECT_COMP_END ---
+
+        void main() {
+          vec2 centeredUv = vUv - 0.5;
+          float rotSin = sin(rotation);
+          float rotCos = cos(rotation);
+          vec2 rotatedUv = vec2(
+            centeredUv.x * rotCos - centeredUv.y * rotSin,
+            centeredUv.x * rotSin + centeredUv.y * rotCos
+          );
+          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+
+          // --- DIRECT_WARP_START ---
+          // --- DIRECT_WARP_END ---
+
+          vec2 currentUv = hasDirectWarp > 0.5
+            ? transformedUv + 0.5
+            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
+            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
+            vec2 warpVector =
+              sampleAuxTexture(
+                warpTextureSource,
+                warpTextureSampleDimension,
+                warpUv,
+                warpTextureVolumeSliceZ
+              ).rg - 0.5;
+            currentUv += warpVector * warpTextureAmount * 0.12;
+          }
+          vec4 current = texture2D(currentTex, sampleUv(currentUv, textureWrap));
+          vec4 previous = texture2D(warpTex, sampleUv(vUv, textureWrap));
+          vec3 previousColor = previous.rgb;
+          if (feedbackSoftness > ${MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD.toFixed(2)}) {
+            vec2 off = texelSize * (0.75 + feedbackSoftness * 0.5);
+            vec3 softened = (
+              previous.rgb * 4.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, 0.0), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv - vec2(0.0, off.y), textureWrap)).rgb * 2.0 +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv + vec2(off.x, -off.y), textureWrap)).rgb +
+              texture2D(warpTex, sampleUv(vUv - vec2(off.x, -off.y), textureWrap)).rgb
+            ) / 16.0;
+            previousColor = mix(
+              previousColor,
+              softened,
+              clamp(feedbackSoftness * ${MILKDROP_FEEDBACK_BLUR_BLEND_SCALE.toFixed(2)}, 0.0, ${MILKDROP_FEEDBACK_BLUR_BLEND_CAP.toFixed(1)})
+            );
+          }
+          previousColor *= decay;
+          vec3 color = mix(
+            current.rgb,
+            previousColor,
+            clamp(videoEchoAlpha, 0.0, 1.0)
+          );
+          color = hueRotate(color, hueShift);
+          color = applySaturation(color, saturation);
+          color = applyContrast(color, contrast);
+          color *= colorScale;
+          color *= tint;
+
+          vec2 uv = vUv;
+          vec3 ret = color;
+
+          // --- DIRECT_COMP_START ---
+          // --- DIRECT_COMP_END ---
+
+          color = ret;
+          bool overlayReplace = overlayTextureMode > 0.5 && overlayTextureMode < 1.5;
+          bool overlayBlend = overlayTextureMode >= 1.5 && overlayTextureAmount > 0.0001;
+          if (overlayTextureSource > 0.5 && (overlayReplace || overlayBlend)) {
+            vec2 overlayUv = vUv * overlayTextureScale + overlayTextureOffset;
+            vec3 overlayColor = sampleAuxTexture(
+              overlayTextureSource,
+              overlayTextureSampleDimension,
+              overlayUv,
+              overlayTextureVolumeSliceZ
+            ).rgb;
+            if (overlayTextureInvert > 0.5) {
+              overlayColor = 1.0 - overlayColor;
+            }
+            float amount = clamp(overlayTextureAmount, 0.0, 1.5);
+            if (overlayTextureMode < 1.5) {
+              color = overlayColor;
+            } else if (overlayTextureMode < 2.5) {
+              color = mix(color, overlayColor, clamp(amount, 0.0, 1.0));
+            } else if (overlayTextureMode < 3.5) {
+              color = min(vec3(1.0), color + overlayColor * amount);
+            } else if (overlayTextureMode < 4.5) {
+              color *= mix(vec3(1.0), overlayColor, clamp(amount, 0.0, 1.0));
+            } else {
+              color = max(vec3(0.0), color - overlayColor * amount);
+            }
+          }
+          color = pow(max(color, vec3(0.0)), vec3(1.0 / max(gammaAdj, 0.0001)));
+          if (brighten > 0.01 || brightenBoost > 0.01) {
+            color = min(vec3(1.0), mix(color, color * (1.0 + 0.18 + brightenBoost * 0.35), clamp(max(brighten, brightenBoost), 0.0, 1.0)));
+          }
+          if (darken > 0.5) {
+            color = mix(color, color * 0.82, 1.0);
+          }
+          if (darkenCenter > 0.5) {
+            float centerDist = length(vUv - vec2(0.5));
+            float centerMask = clamp(1.0 - centerDist * 1.4, 0.0, 1.0);
+            color = mix(color, color * 0.97, smoothstep(0.0, 0.35, centerMask));
+          }
+          if (vignette > 0.01) {
+            float dist = length(vUv - vec2(0.5));
+            float vig = clamp(1.0 - dist * (1.0 + vignette * 0.8), 0.0, 1.0);
+            color *= mix(vec3(1.0), vec3(vig), clamp(vignette, 0.0, 1.0));
+          }
+          if (chromaticAberration > 0.01) {
+            float amount = clamp(chromaticAberration, 0.0, 1.0);
+            vec2 dir = (vUv - vec2(0.5)) * amount * 0.02;
+            float r = texture2D(currentTex, sampleUv(vUv + dir, textureWrap)).r;
+            float b = texture2D(currentTex, sampleUv(vUv - dir, textureWrap)).b;
+            color = vec3(r, color.g, b);
+          }
+          if (solarize > 0.01 || solarizeBoost > 0.01) {
+            float amount = clamp(max(solarize, solarizeBoost), 0.0, 1.0);
+            color = mix(color, abs(color - 0.5) * 2.0, amount);
+          }
+          if (invert > 0.01 || invertBoost > 0.01) {
+            float amount = clamp(max(invert, invertBoost), 0.0, 1.0);
+            color = mix(color, 1.0 - color, amount);
+          }
+          if (redBlueStereo > 0.5) {
+            float stereoOffset = 0.003 + signalEnergy * 0.003;
+            vec2 stereoShift = vec2(stereoOffset, 0.0);
+            vec3 leftColor = texture2D(warpTex, sampleUv(vUv - stereoShift, textureWrap)).rgb;
+            vec3 rightColor = texture2D(warpTex, sampleUv(vUv + stereoShift, textureWrap)).rgb;
+            color = mix(color, vec3(leftColor.r, rightColor.g, rightColor.b), 0.85);
+          }
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `;
+
+const MILKDROP_WARP_FRAGMENT_SHADER = `
+        uniform sampler2D previousTex;
+        uniform sampler2D noiseTex;
+        uniform sampler2D simplexTex;
+        uniform sampler2D voronoiTex;
+        uniform sampler2D auraTex;
+        uniform sampler2D causticsTex;
+        uniform sampler2D patternTex;
+        uniform sampler2D fractalTex;
+        uniform sampler2D videoTex;
+        uniform sampler2D perlinTex;
+        uniform float warpScale;
+        uniform float zoom;
+        uniform float zoomMul;
+        uniform float rotation;
+        uniform float offsetX;
+        uniform float offsetY;
+        uniform float textureWrap;
+        uniform float warpTextureSource;
+        uniform float warpTextureSampleDimension;
+        uniform float warpTextureAmount;
+        uniform vec2 warpTextureScale;
+        uniform vec2 warpTextureOffset;
+        uniform float warpTextureVolumeSliceZ;
+        uniform float hasDirectWarp;
+        uniform float signalTime;
+        uniform float aspect;
+        uniform float videoEchoOrientation;
+        varying vec2 vUv;
+
+        float sq(float x) { return x * x; }
+        float cube(float x) { return x * x * x; }
+        float sigmoid(float x, float sharpness) { return 1.0 / (1.0 + exp(-x * sharpness)); }
+        float between(float val, float low, float high) { return step(low, val) * step(val, high); }
+        float above(float val, float threshold) { return step(threshold, val); }
+        float below(float val, float threshold) { return 1.0 - step(threshold, val); }
+        float equalF(float a, float b) { return 1.0 - step(0.0001, abs(a - b)); }
+        float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453); }
+        float noise(vec2 uv) { vec2 i = floor(uv); vec2 f = fract(uv); f = f*f*(3.0-2.0*f); return mix(mix(rand(i+vec2(0.0,0.0)), rand(i+vec2(1.0,0.0)), f.x), mix(rand(i+vec2(0.0,1.0)), rand(i+vec2(1.0,1.0)), f.x), f.y); }
+
+        vec2 sampleUv(vec2 uv, float wrap) {
+          return wrap > 0.5 ? fract(uv) : clamp(uv, 0.0, 1.0);
+        }
+
+        vec4 sampleAuxTexture2d(float source, vec2 uv) {
+          if (source < 0.5) { return vec4(0.5, 0.5, 0.5, 1.0); }
+          if (source < 1.5) { return texture2D(noiseTex, uv); }
+          if (source < 2.5) { return texture2D(simplexTex, uv); }
+          if (source < 3.5) { return texture2D(voronoiTex, uv); }
+          if (source < 4.5) { return texture2D(auraTex, uv); }
+          if (source < 5.5) { return texture2D(causticsTex, uv); }
+          if (source < 6.5) { return texture2D(patternTex, uv); }
+          if (source < 7.5) { return texture2D(fractalTex, uv); }
+          if (source < 8.5) { return texture2D(videoTex, uv); }
+          if (source < 9.5) { return texture2D(perlinTex, uv); }
+          return vec4(0.5, 0.5, 0.5, 1.0);
+        }
+
+        vec2 atlasSliceUv(vec2 uv, float sliceIndex) {
+          vec2 localUv = mix(vec2(0.01), vec2(0.99), fract(uv));
+          float gridSize = ${AUX_TEXTURE_ATLAS_GRID_SIZE.toFixed(1)};
+          vec2 tileSize = vec2(1.0 / gridSize);
+          float column = mod(sliceIndex, gridSize);
+          float row = floor(sliceIndex / gridSize);
+          return (vec2(column, row) + localUv) * tileSize;
+        }
+
+        vec4 sampleAuxTexture(float source, float sampleDimension, vec2 uv, float sliceZ) {
+          vec2 wrappedUv = fract(uv);
+          if (sampleDimension < 0.5) { return sampleAuxTexture2d(source, wrappedUv); }
+          float sliceCount = ${AUX_TEXTURE_ATLAS_SLICE_COUNT.toFixed(1)};
+          float wrappedSliceZ = fract(sliceZ);
+          float scaledSlice = wrappedSliceZ * sliceCount;
+          float sliceIndexA = mod(floor(scaledSlice), sliceCount);
+          float sliceIndexB = mod(sliceIndexA + 1.0, sliceCount);
+          float sliceBlend = fract(scaledSlice);
+          float edgeMargin = 0.02;
+          if (sliceBlend < edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA)); }
+          if (sliceBlend > 1.0 - edgeMargin) { return sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB)); }
+          vec4 sliceA = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexA));
+          vec4 sliceB = sampleAuxTexture2d(source, atlasSliceUv(wrappedUv, sliceIndexB));
+          return mix(sliceA, sliceB, sliceBlend);
+        }
+
+        vec2 applyFeedbackWarp(vec2 uv, float scale, float rot) {
+          vec2 centered = uv - 0.5;
+          float cosR = cos(rot);
+          float sinR = sin(rot);
+          vec2 rotated = vec2(centered.x * cosR - centered.y * sinR, centered.x * sinR + centered.y * cosR);
+          float angle = atan(rotated.y, rotated.x);
+          float radius = length(rotated);
+          float power = 0.5 + sin(angle * 3.0) * 0.15;
+          radius = pow(radius, power - scale * 0.25);
+          float spiral = sin(radius * 18.0 - angle * 4.0) * scale * 0.08;
+          angle += spiral + rot * 0.22;
+          radius *= 1.0 + cos(angle * 3.0 + radius * 10.0) * scale * 0.05;
+          return vec2(cos(angle), sin(angle)) * radius + 0.5;
+        }
+
+        vec2 applyVideoEchoOrientationTransform(vec2 uv, float orientation) {
+          float flipU = step(0.5, mod(orientation, 2.0));
+          float flipV = step(1.5, mod(orientation, 4.0));
+          return vec2(
+            mix(uv.x, 1.0 - uv.x, flipU),
+            mix(uv.y, 1.0 - uv.y, flipV)
+          );
+        }
+
+        // --- DIRECT_WARP_START ---
+        // --- DIRECT_WARP_END ---
+
+        void main() {
+          vec2 centeredUv = vUv - 0.5;
+          float rotSin = sin(rotation);
+          float rotCos = cos(rotation);
+          vec2 rotatedUv = vec2(centeredUv.x * rotCos - centeredUv.y * rotSin, centeredUv.x * rotSin + centeredUv.y * rotCos);
+          vec2 transformedUv = rotatedUv / max(zoomMul, 0.0001) + vec2(offsetX, offsetY);
+
+          // --- DIRECT_WARP_START ---
+          // --- DIRECT_WARP_END ---
+
+          vec2 currentUv = hasDirectWarp > 0.5
+            ? transformedUv + 0.5
+            : applyFeedbackWarp(transformedUv + 0.5, warpScale, rotation);
+          vec2 prevUv = hasDirectWarp > 0.5
+            ? (currentUv - 0.5) / max(zoom, 0.0001) + 0.5
+            : applyFeedbackWarp(
+                (currentUv - 0.5) / max(zoom, 0.0001) + 0.5,
+                warpScale * 0.8,
+                rotation * 0.6
+              );
+          if (warpTextureSource > 0.5 && warpTextureAmount > 0.0001) {
+            vec2 warpUv = currentUv * warpTextureScale + warpTextureOffset;
+            vec2 warpVector =
+              sampleAuxTexture(
+                warpTextureSource,
+                warpTextureSampleDimension,
+                warpUv,
+                warpTextureVolumeSliceZ
+              ).rg - 0.5;
+            prevUv += warpVector * warpTextureAmount * 0.08;
+          }
+          prevUv = applyVideoEchoOrientationTransform(prevUv, videoEchoOrientation);
+          gl_FragColor = texture2D(previousTex, sampleUv(prevUv, textureWrap));
+        }
+      `;
+
+class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
+  readonly compositeScene = new Scene();
+  readonly presentScene = new Scene();
+  readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+  readonly compositeMaterial: ShaderMaterial;
+  readonly presentMaterial: MeshBasicMaterial;
+  readonly sceneTarget: WebGLRenderTarget;
+  readonly warpTarget: WebGLRenderTarget;
+  readonly targets: [WebGLRenderTarget, WebGLRenderTarget];
+  readonly blurTargets: [
+    WebGLRenderTarget,
+    WebGLRenderTarget,
+    WebGLRenderTarget,
+  ];
+  readonly blurMaterial: ShaderMaterial;
+  readonly blurQuad: Mesh;
+  readonly blurScene: Scene;
+  readonly sceneResolutionScale: number;
+  readonly feedbackResolutionScale: number;
+  readonly profile: FeedbackBackendProfile;
+  readonly auxTextures: SharedAuxTextureMap;
+  adaptiveFeedbackResolutionMultiplier = 1;
+  currentFeedbackResolutionScale: number;
+  viewportWidth: number;
+  viewportHeight: number;
+  private adaptiveResizeFrameId: number | null = null;
+  private lastWarpGlsl: string | null = null;
+  private lastCompGlsl: string | null = null;
+  private customSamplers: MilkdropCustomSamplerDeclaration[] = [];
+  private index = 0;
+  readonly warpMaterial: ShaderMaterial;
+  readonly warpScene: Scene;
+
+  constructor(
+    width: number,
+    height: number,
+    behavior: MilkdropBackendBehavior,
+  ) {
+    this.camera.position.z = 1;
+    this.viewportWidth = width;
+    this.viewportHeight = height;
+    this.profile = behavior.feedbackProfile;
+    this.sceneResolutionScale = this.profile.sceneResolutionScale;
+    this.feedbackResolutionScale = this.profile.feedbackResolutionScale;
+    this.currentFeedbackResolutionScale = this.feedbackResolutionScale;
+    this.auxTextures = getSharedAuxTextures();
+    this.sceneTarget = createWebGLFeedbackRenderTarget(width, height, {
+      resolutionScale: this.sceneResolutionScale,
+      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: this.profile.samples,
+    });
+    this.warpTarget = createWebGLFeedbackRenderTarget(width, height, {
+      resolutionScale: this.currentFeedbackResolutionScale,
+      useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+      samples: 1,
+    });
+    this.targets = [
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: this.profile.samples,
+      }),
+    ];
+    this.blurTargets = [
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: 1,
+      }),
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale * 0.5,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: 1,
+      }),
+      createWebGLFeedbackRenderTarget(width, height, {
+        resolutionScale: this.currentFeedbackResolutionScale * 0.25,
+        useHalfFloatFeedback: behavior.useHalfFloatFeedback,
+        samples: 1,
+      }),
+    ];
+    this.blurMaterial = new ShaderMaterial({
+      uniforms: {
+        sourceTex: { value: null },
+        texelSize: { value: [0, 0] },
+        radius: { value: 2 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D sourceTex;
+        uniform vec2 texelSize;
+        uniform float radius;
+        varying vec2 vUv;
+        void main() {
+          vec4 result = vec4(0.0);
+          float totalWeight = 0.0;
+          float r = radius;
+          for (float y = -r; y <= r; y += 1.0) {
+            for (float x = -r; x <= r; x += 1.0) {
+              vec4 sourceSample = texture2D(sourceTex, vUv + vec2(x, y) * texelSize);
+              float weight = 1.0;
+              result += sourceSample * weight;
+              totalWeight += weight;
+            }
+          }
+          gl_FragColor = result / totalWeight;
+        }
+      `,
+    });
+    this.blurScene = new Scene();
+    this.blurQuad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.blurMaterial);
+    this.blurScene.add(this.blurQuad);
+    this.warpMaterial = new ShaderMaterial({
+      uniforms: {
+        previousTex: { value: this.targets[0].texture },
+        noiseTex: { value: this.auxTextures.noise },
+        simplexTex: { value: this.auxTextures.simplex },
+        voronoiTex: { value: this.auxTextures.voronoi },
+        auraTex: { value: this.auxTextures.aura },
+        causticsTex: { value: this.auxTextures.caustics },
+        patternTex: { value: this.auxTextures.pattern },
+        fractalTex: { value: this.auxTextures.fractal },
+        videoTex: { value: this.auxTextures.video },
+        perlinTex: { value: this.auxTextures.perlin },
+        warpScale: { value: 1 },
+        zoom: { value: 1.02 },
+        zoomMul: { value: 1 },
+        rotation: { value: 0 },
+        offsetX: { value: 0 },
+        offsetY: { value: 0 },
+        textureWrap: { value: 0 },
+        warpTextureSource: { value: 0 },
+        warpTextureSampleDimension: { value: 0 },
+        warpTextureAmount: { value: 0 },
+        warpTextureScale: { value: new Vector2(1, 1) },
+        warpTextureOffset: { value: new Vector2(0, 0) },
+        warpTextureVolumeSliceZ: { value: 0 },
+        hasDirectWarp: { value: 0 },
+        signalTime: { value: 0 },
+        aspect: { value: 1 },
+        videoEchoOrientation: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: MILKDROP_WARP_FRAGMENT_SHADER,
+    });
+    this.warpScene = new Scene();
+    this.warpScene.add(new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.warpMaterial));
+    this.compositeMaterial = this.createCompositeMaterial(
+      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+    );
+    this.presentMaterial = new MeshBasicMaterial({
+      map: this.targets[0].texture,
+    });
+    const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
+    const presentQuad = new Mesh(
+      FULLSCREEN_QUAD_GEOMETRY,
+      this.presentMaterial,
+    );
+    this.compositeScene.add(quad);
+    this.presentScene.add(presentQuad);
+  }
+
+  private createCompositeMaterial(fragmentShader: string): ShaderMaterial {
+    const material = new ShaderMaterial({
+      uniforms: {
+        currentTex: { value: this.sceneTarget.texture },
+        previousTex: { value: this.targets[0].texture },
+        noiseTex: { value: this.auxTextures.noise },
+        simplexTex: { value: this.auxTextures.simplex },
+        voronoiTex: { value: this.auxTextures.voronoi },
+        auraTex: { value: this.auxTextures.aura },
+        causticsTex: { value: this.auxTextures.caustics },
+        patternTex: { value: this.auxTextures.pattern },
+        fractalTex: { value: this.auxTextures.fractal },
+        videoTex: { value: this.auxTextures.video },
+        perlinTex: { value: this.auxTextures.perlin },
+        warpTex: { value: this.warpTarget.texture },
+        blur1Tex: { value: this.blurTargets[0].texture },
+        blur2Tex: { value: this.blurTargets[1].texture },
+        blur3Tex: { value: this.blurTargets[2].texture },
+        videoEchoAlpha: { value: 0 },
+        brighten: { value: 0 },
+        darken: { value: 0 },
+        darkenCenter: { value: 0 },
+        solarize: { value: 0 },
+        invert: { value: 0 },
+        redBlueStereo: { value: 0 },
+        gammaAdj: { value: 1 },
+        textureWrap: { value: 0 },
+        warpScale: { value: 0 },
+        offsetX: { value: 0 },
+        offsetY: { value: 0 },
+        rotation: { value: 0 },
+        zoomMul: { value: 1 },
+        saturation: { value: 1 },
+        contrast: { value: 1 },
+        colorScale: { value: new Color(1, 1, 1) },
+        hueShift: { value: 0 },
+        brightenBoost: { value: 0 },
+        invertBoost: { value: 0 },
+        solarizeBoost: { value: 0 },
+        vignette: { value: 0 },
+        chromaticAberration: { value: 0 },
+        tint: { value: new Color(1, 1, 1) },
+        feedbackSoftness: { value: this.profile.feedbackSoftness },
+        currentFrameBoost: { value: this.profile.currentFrameBoost },
+        overlayTextureSource: { value: 0 },
+        overlayTextureMode: { value: 0 },
+        overlayTextureSampleDimension: { value: 0 },
+        overlayTextureInvert: { value: 0 },
+        overlayTextureAmount: { value: 0 },
+        overlayTextureScale: { value: new Vector2(1, 1) },
+        overlayTextureOffset: { value: new Vector2(0, 0) },
+        overlayTextureVolumeSliceZ: { value: 0 },
+        warpTextureSource: { value: 0 },
+        warpTextureSampleDimension: { value: 0 },
+        warpTextureAmount: { value: 0 },
+        warpTextureScale: { value: new Vector2(1, 1) },
+        warpTextureOffset: { value: new Vector2(0, 0) },
+        warpTextureVolumeSliceZ: { value: 0 },
+        signalBass: { value: 0 },
+        signalMid: { value: 0 },
+        signalTreb: { value: 0 },
+        signalBeat: { value: 0 },
+        signalBeatPulse: { value: 0 },
+        signalEnergy: { value: 0 },
+        signalTime: { value: 0 },
+        aspect: { value: 1 },
+        decay: { value: 0.98 },
+        hasDirectWarp: { value: 0 },
+        texelSize: {
+          value: new Vector2(
+            1 / Math.max(1, this.sceneTarget.width),
+            1 / Math.max(1, this.sceneTarget.height),
+          ),
+        },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader,
+    });
+    for (const sampler of this.customSamplers) {
+      if (sampler.textureFile) {
+        material.uniforms[sampler.name] = {
+          value: getSharedMilkdropTexture(sampler.textureFile, true),
+        };
+      }
+    }
+    return material;
+  }
+
+  get readTarget() {
+    return this.targets[this.index];
+  }
+
+  get writeTarget() {
+    return this.targets[(this.index + 1) % 2];
+  }
+
+  getShapeTexture() {
+    return this.readTarget.texture;
+  }
+
+  swap() {
+    this.index = (this.index + 1) % 2;
+    this.presentMaterial.map = this.readTarget.texture;
+    this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
+    this.warpMaterial.uniforms.previousTex.value = this.readTarget.texture;
+  }
+
+  setDirectShaderPrograms(
+    warp: MilkdropShaderProgramPayload | null,
+    comp: MilkdropShaderProgramPayload | null,
+  ) {
+    const executableWarp = isMilkdropShaderProgramBackendExecutable(warp)
+      ? warp
+      : null;
+    const executableComp = isMilkdropShaderProgramBackendExecutable(comp)
+      ? comp
+      : null;
+    const warpGlsl = executableWarp
+      ? (executableWarp.rawGlsl ??
+        generateGlslFromShaderStatements(executableWarp.statements, 'warp'))
+      : null;
+    const compGlsl = executableComp
+      ? (executableComp.rawGlsl ??
+        generateGlslFromShaderStatements(executableComp.statements, 'comp'))
+      : null;
+
+    // Skip rebuild if nothing changed
+    if (this.lastWarpGlsl === warpGlsl && this.lastCompGlsl === compGlsl) {
+      return;
+    }
+
+    this.lastWarpGlsl = warpGlsl;
+    this.lastCompGlsl = compGlsl;
+
+    this.customSamplers = compGlsl
+      ? extractCustomSamplerDeclarations(compGlsl)
+      : [];
+
+    const hasDirectWarp = warpGlsl !== null ? 1.0 : 0.0;
+
+    // Rebuild warp shader with warp GLSL injected (or pass-through when null)
+    const injectedWarp = injectDirectShaderGlsl(
+      MILKDROP_WARP_FRAGMENT_SHADER,
+      warpGlsl,
+      null,
+    );
+    this.warpMaterial.fragmentShader = injectedWarp;
+    this.warpMaterial.needsUpdate = true;
+    this.warpMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
+
+    // Build composite shader: warp section kept empty since warp runs separate
+    const injectedShader = injectDirectShaderGlsl(
+      MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER,
+      null,
+      compGlsl,
+    );
+
+    // Preserve current uniform values before disposing old material
+    const oldUniforms = this.compositeMaterial.uniforms;
+    disposeMaterial(this.compositeMaterial);
+
+    // Find and replace the composite mesh material
+    const oldQuad = this.compositeScene.children[0] as Mesh | undefined;
+    if (oldQuad) {
+      this.compositeScene.remove(oldQuad);
+    }
+
+    const newMaterial = this.createCompositeMaterial(injectedShader);
+    // Restore uniform values from old material
+    Object.assign(newMaterial.uniforms, oldUniforms);
+    newMaterial.uniforms.hasDirectWarp.value = hasDirectWarp;
+
+    (this as { compositeMaterial: ShaderMaterial }).compositeMaterial =
+      newMaterial;
+    const quad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.compositeMaterial);
+    this.compositeScene.add(quad);
+  }
+
+  applyCompositeState(state: MilkdropFeedbackCompositeState) {
+    // Apply direct shader programs if they changed
+    this.setDirectShaderPrograms(
+      state.shaderPrograms.warp,
+      state.shaderPrograms.comp,
+    );
+
+    const uniforms = this.compositeMaterial.uniforms;
+    const overlayTextureName = resolveAuxTextureName(
+      state.overlayTextureSource,
+    );
+    const warpTextureName = resolveAuxTextureName(state.warpTextureSource);
+    if (
+      overlayTextureName &&
+      !['noise', 'perlin', 'simplex'].includes(overlayTextureName)
+    ) {
+      uniforms[`${overlayTextureName}Tex`].value = getSharedMilkdropTexture(
+        AUX_TEXTURE_SPECS[overlayTextureName].fileName,
+        AUX_TEXTURE_SPECS[overlayTextureName].colorTexture,
+      );
+    }
+    if (
+      warpTextureName &&
+      !['noise', 'perlin', 'simplex'].includes(warpTextureName)
+    ) {
+      uniforms[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
+        AUX_TEXTURE_SPECS[warpTextureName].fileName,
+        AUX_TEXTURE_SPECS[warpTextureName].colorTexture,
+      );
+    }
+    uniforms.currentTex.value = this.sceneTarget.texture;
+    uniforms.previousTex.value = this.readTarget.texture;
+    uniforms.videoEchoAlpha.value = state.videoEchoAlpha;
+    uniforms.brighten.value = state.brighten;
+    uniforms.darken.value = state.darken;
+    uniforms.darkenCenter.value = state.darkenCenter;
+    uniforms.solarize.value = state.solarize;
+    uniforms.invert.value = state.invert;
+    uniforms.redBlueStereo.value = state.redBlueStereo ?? 0;
+    uniforms.gammaAdj.value = state.gammaAdj;
+    uniforms.textureWrap.value = state.textureWrap;
+    uniforms.decay.value = state.decay;
+    uniforms.warpScale.value = state.warpScale;
+    uniforms.offsetX.value = state.offsetX;
+    uniforms.offsetY.value = state.offsetY;
+    uniforms.rotation.value = state.rotation;
+    uniforms.zoomMul.value = state.zoomMul;
+    uniforms.saturation.value = state.saturation;
+    uniforms.contrast.value = state.contrast;
+    uniforms.colorScale.value.setRGB(
+      state.colorScale.r,
+      state.colorScale.g,
+      state.colorScale.b,
+    );
+    uniforms.hueShift.value = state.hueShift;
+    uniforms.brightenBoost.value = state.brightenBoost;
+    uniforms.invertBoost.value = state.invertBoost;
+    uniforms.solarizeBoost.value = state.solarizeBoost;
+    uniforms.vignette.value = state.vignette ?? 0;
+    uniforms.chromaticAberration.value = state.chromaticAberration ?? 0;
+    uniforms.tint.value.setRGB(state.tint.r, state.tint.g, state.tint.b);
+    uniforms.overlayTextureSource.value = state.overlayTextureSource;
+    uniforms.overlayTextureMode.value = state.overlayTextureMode;
+    uniforms.overlayTextureSampleDimension.value =
+      state.overlayTextureSampleDimension;
+    uniforms.overlayTextureInvert.value = state.overlayTextureInvert;
+    uniforms.overlayTextureAmount.value = state.overlayTextureAmount;
+    uniforms.overlayTextureScale.value.set(
+      state.overlayTextureScale.x,
+      state.overlayTextureScale.y,
+    );
+    uniforms.overlayTextureOffset.value.set(
+      state.overlayTextureOffset.x,
+      state.overlayTextureOffset.y,
+    );
+    uniforms.overlayTextureVolumeSliceZ.value =
+      state.overlayTextureVolumeSliceZ;
+    uniforms.warpTextureSource.value = state.warpTextureSource;
+    uniforms.warpTextureSampleDimension.value =
+      state.warpTextureSampleDimension;
+    uniforms.warpTextureAmount.value = state.warpTextureAmount;
+    uniforms.warpTextureScale.value.set(
+      state.warpTextureScale.x,
+      state.warpTextureScale.y,
+    );
+    uniforms.warpTextureOffset.value.set(
+      state.warpTextureOffset.x,
+      state.warpTextureOffset.y,
+    );
+    uniforms.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
+    uniforms.signalBass.value = state.signalBass;
+    uniforms.signalMid.value = state.signalMid;
+    uniforms.signalTreb.value = state.signalTreb;
+    uniforms.signalBeat.value = state.signalBeat;
+    uniforms.signalBeatPulse.value = state.signalBeatPulse;
+    uniforms.signalEnergy.value = state.signalEnergy;
+    uniforms.signalTime.value = state.signalTime;
+    uniforms.aspect.value = state.aspect;
+
+    // Sync warp shader uniforms (subset of composite state)
+    const wu = this.warpMaterial.uniforms;
+    wu.previousTex.value = this.readTarget.texture;
+    if (warpTextureName) {
+      wu[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
+        AUX_TEXTURE_SPECS[warpTextureName].fileName,
+        AUX_TEXTURE_SPECS[warpTextureName].colorTexture,
+      );
+    }
+    wu.warpScale.value = state.warpScale;
+    wu.zoom.value = state.zoom;
+    wu.zoomMul.value = state.zoomMul;
+    wu.rotation.value = state.rotation;
+    wu.offsetX.value = state.offsetX;
+    wu.offsetY.value = state.offsetY;
+    wu.textureWrap.value = state.textureWrap;
+    wu.warpTextureSource.value = state.warpTextureSource;
+    wu.warpTextureSampleDimension.value = state.warpTextureSampleDimension;
+    wu.warpTextureAmount.value = state.warpTextureAmount;
+    wu.warpTextureScale.value.set(
+      state.warpTextureScale.x,
+      state.warpTextureScale.y,
+    );
+    wu.warpTextureOffset.value.set(
+      state.warpTextureOffset.x,
+      state.warpTextureOffset.y,
+    );
+    wu.warpTextureVolumeSliceZ.value = state.warpTextureVolumeSliceZ;
+    wu.signalTime.value = state.signalTime;
+    wu.aspect.value = state.aspect;
+    wu.videoEchoOrientation.value = state.videoEchoOrientation;
+  }
+
+  render(
+    renderer: {
+      render(scene: Scene, camera: Camera): void;
+      setRenderTarget?: (target: RenderTarget | null) => void;
+    },
+    sourceScene: Scene,
+    sourceCamera: Camera,
+  ) {
+    if (!renderer.setRenderTarget) {
+      return false;
+    }
+
+    renderer.setRenderTarget(this.sceneTarget);
+    renderer.render(sourceScene, sourceCamera);
+
+    renderer.setRenderTarget(this.warpTarget);
+    renderer.render(this.warpScene, this.camera);
+
+    renderer.setRenderTarget(this.writeTarget);
+    renderer.render(this.compositeScene, this.camera);
+
+    if (this.profile.feedbackSoftness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD) {
+      this.renderBlurPasses(renderer);
+    }
+
+    renderer.setRenderTarget(null);
+    renderer.render(this.presentScene, this.camera);
+    this.swap();
+    return true;
+  }
+
+  private renderBlurPasses(renderer: {
+    render(scene: Scene, camera: Camera): void;
+    setRenderTarget?: (target: RenderTarget | null) => void;
+  }) {
+    const srcTex = this.writeTarget.texture;
+    const srcW = this.writeTarget.width;
+    const srcH = this.writeTarget.height;
+
+    for (let i = 0; i < 3; i++) {
+      const target = this.blurTargets[i];
+      const radius = [2, 4, 8][i];
+
+      this.blurMaterial.uniforms.sourceTex.value = srcTex;
+      this.blurMaterial.uniforms.texelSize.value = [1 / srcW, 1 / srcH];
+      this.blurMaterial.uniforms.radius.value = radius;
+
+      renderer.setRenderTarget?.(target);
+      renderer.render(this.blurScene, this.camera);
+    }
+  }
+
+  setAdaptiveQuality({
+    feedbackResolutionMultiplier,
+  }: Partial<{
+    feedbackResolutionMultiplier: number;
+  }>) {
+    const nextMultiplier = Math.min(
+      1,
+      Math.max(0.45, feedbackResolutionMultiplier ?? 1),
+    );
+    if (
+      Math.abs(nextMultiplier - this.adaptiveFeedbackResolutionMultiplier) <
+      0.0001
+    ) {
+      return;
+    }
+    const previousFeedbackResolutionScale = this.currentFeedbackResolutionScale;
+    this.adaptiveFeedbackResolutionMultiplier = nextMultiplier;
+    this.currentFeedbackResolutionScale =
+      this.feedbackResolutionScale * this.adaptiveFeedbackResolutionMultiplier;
+    if (this.currentFeedbackResolutionScale < previousFeedbackResolutionScale) {
+      this.resize(this.viewportWidth, this.viewportHeight);
+      return;
+    }
+    this.scheduleAdaptiveResize();
+  }
+
+  private scheduleAdaptiveResize() {
+    if (this.adaptiveResizeFrameId !== null) {
+      return;
+    }
+    if (typeof requestAnimationFrame !== 'function') {
+      this.resize(this.viewportWidth, this.viewportHeight);
+      return;
+    }
+    this.adaptiveResizeFrameId = requestAnimationFrame(() => {
+      this.adaptiveResizeFrameId = null;
+      this.resize(this.viewportWidth, this.viewportHeight);
+    });
+  }
+
+  resize(width: number, height: number) {
+    this.viewportWidth = width;
+    this.viewportHeight = height;
+    const sceneWidth = Math.max(
+      1,
+      Math.round(width * this.sceneResolutionScale),
+    );
+    const sceneHeight = Math.max(
+      1,
+      Math.round(height * this.sceneResolutionScale),
+    );
+    const feedbackWidth = Math.max(
+      1,
+      Math.round(width * this.currentFeedbackResolutionScale),
+    );
+    const feedbackHeight = Math.max(
+      1,
+      Math.round(height * this.currentFeedbackResolutionScale),
+    );
+    this.sceneTarget.setSize(sceneWidth, sceneHeight);
+    this.warpTarget.setSize(feedbackWidth, feedbackHeight);
+    this.targets.forEach((target) =>
+      target.setSize(feedbackWidth, feedbackHeight),
+    );
+    this.blurTargets[0].setSize(feedbackWidth, feedbackHeight);
+    this.blurTargets[1].setSize(
+      Math.max(1, Math.round(feedbackWidth * 0.5)),
+      Math.max(1, Math.round(feedbackHeight * 0.5)),
+    );
+    this.blurTargets[2].setSize(
+      Math.max(1, Math.round(feedbackWidth * 0.25)),
+      Math.max(1, Math.round(feedbackHeight * 0.25)),
+    );
+    this.compositeMaterial.uniforms.texelSize.value.set(
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
+    );
+  }
+
+  dispose() {
+    if (
+      this.adaptiveResizeFrameId !== null &&
+      typeof cancelAnimationFrame === 'function'
+    ) {
+      cancelAnimationFrame(this.adaptiveResizeFrameId);
+      this.adaptiveResizeFrameId = null;
+    }
+    this.sceneTarget.dispose();
+    this.warpTarget.dispose();
+    this.targets.forEach((target) => target.dispose());
+    this.blurTargets.forEach((target) => target.dispose());
+    disposeMaterial(this.compositeMaterial);
+    disposeMaterial(this.presentMaterial);
+    disposeMaterial(this.blurMaterial);
+    disposeMaterial(this.warpMaterial);
+    this.compositeScene.clear();
+    this.presentScene.clear();
+    this.blurScene.clear();
+    this.warpScene.clear();
+  }
+}
+
+export function createSharedMilkdropFeedbackManager(
+  width: number,
+  height: number,
+  behavior: MilkdropBackendBehavior,
+) {
+  return new SharedMilkdropFeedbackManager(width, height, behavior);
+}

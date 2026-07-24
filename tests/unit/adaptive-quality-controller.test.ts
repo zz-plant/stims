@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createAdaptiveQualityController } from '../../assets/js/core/services/adaptive-quality-controller.ts';
+import { createAdaptiveQualityController } from '../../src/js/core/services/adaptive-quality-controller.ts';
 
 describe('createAdaptiveQualityController', () => {
   test('starts from capability heuristics for baseline webgpu devices', () => {

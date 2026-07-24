@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { MilkdropCatalogCoordinator } from '../../assets/js/milkdrop/runtime/catalog-coordinator.ts';
-import { createMilkdropPresetNavigationController } from '../../assets/js/milkdrop/runtime/preset-navigation-controller.ts';
+import type { MilkdropCatalogCoordinator } from '../../src/js/milkdrop/runtime/catalog-coordinator.ts';
+import { createMilkdropPresetNavigationController } from '../../src/js/milkdrop/runtime/preset-navigation-controller.ts';
 import type {
   MilkdropBlendState,
   MilkdropCatalogEntry,
@@ -11,7 +11,7 @@ import type {
   MilkdropPresetSource,
   MilkdropRenderBackend,
   MilkdropSupportStatus,
-} from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/types.ts';
 
 function createCatalogEntry(
   id: string,

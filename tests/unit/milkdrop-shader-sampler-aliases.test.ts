@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   evaluateMilkdropShaderExpression,
   parseMilkdropShaderStatement,
-} from '../../assets/js/milkdrop/shader-ast.ts';
+} from '../../src/js/milkdrop/shader-ast.ts';
 import {
   classifyTex3dSamplerEquivalence,
   isMilkdropVolumeShaderSamplerName as isVolumeSamplerName,
   normalizeMilkdropShaderSamplerName,
-} from '../../assets/js/milkdrop/shader-samplers.ts';
+} from '../../src/js/milkdrop/shader-samplers.ts';
 
 const SAMPLER_ALIAS_CASES = [
   {

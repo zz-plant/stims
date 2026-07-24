@@ -122,7 +122,7 @@ beforeAll(async () => {
     initAudio,
     getFrequencyData,
     stylizeFrequencyData,
-  } = await import('../../assets/js/core/audio-handler.ts'));
+  } = await import('../../src/js/core/audio-handler.ts'));
 });
 
 describe('audio-handler utilities', () => {

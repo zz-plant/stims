@@ -246,7 +246,7 @@ const formatDate = (value: number | Date) =>
 
 async function loadToys(rootDir = repoRoot) {
   const toysRaw = await readFile(
-    path.join(rootDir, 'assets/data/toys.json'),
+    path.join(rootDir, 'src/data/toys.json'),
     'utf8',
   );
   return JSON.parse(toysRaw) as ToyEntry[];
@@ -338,8 +338,8 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
       priority: '1.0',
       sourcePaths: [
         'index.html',
-        'assets/data/toys.json',
-        'assets/js/toys/milkdrop-toy.ts',
+        'src/data/toys.json',
+        'src/js/toys/milkdrop-toy.ts',
       ],
       includeInSitemap: true,
     },

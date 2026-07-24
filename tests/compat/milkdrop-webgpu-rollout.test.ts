@@ -3,12 +3,12 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import { shouldFallbackMilkdropPresetToWebgl } from '../../assets/js/milkdrop/renderer-execution-plan.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { shouldFallbackMilkdropPresetToWebgl } from '../../src/js/milkdrop/renderer-execution-plan.ts';
 import {
   applyMilkdropWebGpuOptimizationFlags,
   DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-} from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 import type { ParityArtifactEntry } from '../../scripts/parity-artifacts.ts';
 import {
   assertCertificationSemantics,

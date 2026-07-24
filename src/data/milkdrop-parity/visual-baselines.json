@@ -1,0 +1,2868 @@
+{
+  "version": 1,
+  "frames": [1, 2, 3, 10],
+  "tolerance": 0.000001,
+  "generatedAt": "2026-04-15",
+  "presets": [
+    {
+      "id": "parity-feedback-01",
+      "title": "Parity Feedback 01",
+      "file": "parity-feedback-01.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 337.16835
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.11,
+            "videoEchoZoom": 1.004,
+            "shaderMixAlpha": 0,
+            "checksum": 11.232
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 334.797111
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.11,
+            "videoEchoZoom": 1.004,
+            "shaderMixAlpha": 0,
+            "checksum": 11.232
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 335.715948
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.11,
+            "videoEchoZoom": 1.004,
+            "shaderMixAlpha": 0,
+            "checksum": 11.232
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 48.854
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 315.42561
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.11,
+            "videoEchoZoom": 1.004,
+            "shaderMixAlpha": 0,
+            "checksum": 11.232
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-feedback-06",
+      "title": "Parity Feedback 06",
+      "file": "parity-feedback-06.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 336.476672
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.16,
+            "videoEchoZoom": 1.024,
+            "shaderMixAlpha": 0,
+            "checksum": 11.392
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 335.217512
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.16,
+            "videoEchoZoom": 1.024,
+            "shaderMixAlpha": 0,
+            "checksum": 11.392
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 332.837466
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.16,
+            "videoEchoZoom": 1.024,
+            "shaderMixAlpha": 0,
+            "checksum": 11.392
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 2,
+            "checksum": 53.05
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 319.269485
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.16,
+            "videoEchoZoom": 1.024,
+            "shaderMixAlpha": 0,
+            "checksum": 11.392
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-per-pixel-03",
+      "title": "Parity Per Pixel 03",
+      "file": "parity-per-pixel-03.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.229126
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.229126
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 362.258403
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 245.921026
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 245.921026
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 361.564404
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 245.625164
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 245.625164
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 361.187546
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 243.505312
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 243.505312
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 357.805232
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-per-pixel-08",
+      "title": "Parity Per Pixel 08",
+      "file": "parity-per-pixel-08.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.040627
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.040627
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 360.709619
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 245.544035
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 245.544035
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 360.171595
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 245.059695
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 245.059695
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 359.870085
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 241.621488
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 241.621488
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 356.563263
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-wave-02",
+      "title": "Parity Wave 02",
+      "file": "parity-wave-02.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.565331
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.563152
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.56103
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 167.547799
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-wave-09",
+      "title": "Parity Wave 09",
+      "file": "parity-wave-09.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.121758
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.123937
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.126113
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 293.141265
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-shape-01",
+      "title": "Parity Shape 01",
+      "file": "parity-shape-01.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22149
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22881
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22149
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 25.22881
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-shape-07",
+      "title": "Parity Shape 07",
+      "file": "parity-shape-07.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.70419
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.71511
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.70419
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.71511
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 12.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-motion-04",
+      "title": "Parity Motion 04",
+      "file": "parity-motion-04.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 108,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 108,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 108,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 104,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-motion-10",
+      "title": "Parity Motion 10",
+      "file": "parity-motion-10.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 162,
+            "checksum": 647.537309
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 158,
+            "checksum": 647.529904
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 158,
+            "checksum": 591.311094
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 162,
+            "checksum": 601.040884
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-registers-05",
+      "title": "Parity Registers 05",
+      "file": "parity-registers-05.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-registers-10",
+      "title": "Parity Registers 10",
+      "file": "parity-registers-10.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-shader-02",
+      "title": "Parity Shader 02",
+      "file": "parity-shader-02.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.07,
+            "checksum": 12.522
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.07,
+            "checksum": 12.522
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.07,
+            "checksum": 12.522
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.07,
+            "checksum": 12.522
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-shader-09",
+      "title": "Parity Shader 09",
+      "file": "parity-shader-09.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.14,
+            "checksum": 13.999
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.14,
+            "checksum": 13.999
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.14,
+            "checksum": 13.999
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.14,
+            "checksum": 13.999
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-hybrid-03",
+      "title": "Parity Hybrid 03",
+      "file": "parity-hybrid-03.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.108682
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 41.39585
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.15,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.03,
+            "checksum": 12.450167
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.145694
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 41.42849
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.15,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.06999999999999999,
+            "checksum": 12.614333
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.182597
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 41.39585
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.15,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.03,
+            "checksum": 12.4585
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 155.437021
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 41.42849
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.15,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.06999999999999999,
+            "checksum": 12.647667
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-hybrid-08",
+      "title": "Parity Hybrid 08",
+      "file": "parity-hybrid-08.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.946944
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.51765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.2,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.03,
+            "checksum": 12.550167
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.943976
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.55269
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.2,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.06999999999999999,
+            "checksum": 12.714333
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.940955
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.51765
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.2,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.03,
+            "checksum": 12.5585
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 184.918386
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 29.55269
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0.2,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0.06999999999999999,
+            "checksum": 12.747667
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-legacy-wave-04",
+      "title": "Parity Legacy Wave 04",
+      "file": "parity-legacy-wave-04.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 209.186633
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-legacy-wave-10",
+      "title": "Parity Legacy Wave 10",
+      "file": "parity-legacy-wave-10.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 1,
+            "checksum": 223.079884
+          },
+          "shapes": {
+            "count": 0,
+            "checksum": 0
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-legacy-shape-05",
+      "title": "Parity Legacy Shape 05",
+      "file": "parity-legacy-shape-05.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.30066
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.30954
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.30066
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.30954
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    },
+    {
+      "id": "parity-legacy-shape-10",
+      "title": "Parity Legacy Shape 10",
+      "file": "parity-legacy-shape-10.milk",
+      "frames": [
+        {
+          "frame": 1,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.530725
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.70291
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.097353
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 2,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.524223
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.71479
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 376.013623
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 3,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.529954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.70291
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 344.860367
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        },
+        {
+          "frame": 10,
+          "mainWave": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "waveform": {
+            "count": 753,
+            "checksum": 246.520954
+          },
+          "customWaves": {
+            "count": 0,
+            "checksum": 0
+          },
+          "shapes": {
+            "count": 1,
+            "checksum": 21.71479
+          },
+          "borders": {
+            "count": 0,
+            "checksum": 9.09
+          },
+          "motionVectors": {
+            "count": 0,
+            "checksum": 338.584906
+          },
+          "post": {
+            "gammaAdj": 2,
+            "videoEchoAlpha": 0,
+            "videoEchoZoom": 1,
+            "shaderMixAlpha": 0,
+            "checksum": 11.9
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+/**
+ * WebGPU safe-path query override module.
+ *
+ * Controls whether the MilkDrop WebGPU renderer should use the "safe" path
+ * (reduced feature set) vs the full-capability path. Stable desktop Chromium
+ * and explicit WebGPU URL sessions use the full path; safe mode remains
+ * available through localStorage and force-mode overrides.
+ */
+
+import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
+import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts';
+import { isMobileDevice } from '../utils/device-detect.ts';
+import { resolveMilkdropWebGpuOptimizationFlags } from './webgpu-optimization-flags.ts';
+
+const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
+const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
+const URL_PARAM_RENDERER = 'renderer';
+const URL_PARAM_CORPUS = 'corpus';
+
+/** Valid modes for the force-mode override. */
+export type WebGpuForceMode = 'auto' | 'safe' | 'full';
+
+export type MilkdropWebGpuFeatureName =
+  | 'proceduralMainWave'
+  | 'proceduralTrailWaves'
+  | 'proceduralCustomWaves'
+  | 'proceduralMesh'
+  | 'proceduralMotionVectors'
+  | 'directFeedbackShaders'
+  | 'gpuComputeVM'
+  | 'renderBundles';
+
+export type MilkdropWebGpuFeatureDecision = {
+  enabled: boolean;
+  reason: string | null;
+};
+
+export type MilkdropWebGpuFeatureRouting = Record<
+  MilkdropWebGpuFeatureName,
+  MilkdropWebGpuFeatureDecision
+>;
+
+/**
+ * Persist a manual safe-path override to localStorage.
+ * Use `null` to clear the override and return to auto-detection.
+ */
+export function setWebGpuSafePathOverride(value: boolean | null): void {
+  if (value === null) {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // localStorage unavailable
+    }
+    return;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, value ? '1' : '0');
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+/**
+ * Get the current safe-path override from localStorage.
+ * Returns `null` if no override is stored.
+ */
+export function getWebGpuSafePathOverride(): boolean | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === '1') return true;
+    if (raw === '0') return false;
+  } catch {
+    // localStorage unavailable
+  }
+  return null;
+}
+
+/**
+ * Persist a force-mode preference to localStorage.
+ * - 'auto': use default detection logic
+ * - 'safe': always use safe path
+ * - 'full': always use full path
+ */
+export function setWebGpuForceMode(mode: WebGpuForceMode): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_FORCE_MODE, mode);
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+/**
+ * Get the current force-mode preference from localStorage.
+ * Returns 'auto' if nothing is stored.
+ */
+export function getWebGpuForceMode(): WebGpuForceMode {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_FORCE_MODE);
+    if (raw === 'safe') return 'safe';
+    if (raw === 'full') return 'full';
+  } catch {
+    // localStorage unavailable
+  }
+  return 'auto';
+}
+
+/**
+ * Check whether the current browser and environment qualify for the
+ * default (full-procedural) WebGPU path without an explicit override.
+ *
+ * Qualifying criteria:
+ * - WebGPU API is available
+ * - Not a mobile device
+ * - Compatibility mode not active
+ */
+function qualifiesForDefaultWebGPUPath(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  if (isCompatibilityModeEnabled()) return false;
+  if (isMobileDevice()) return false;
+
+  return isWebGPUStableInThisBrowser();
+}
+
+/**
+ * Determine whether the safe (reduced-feature) WebGPU path should be used
+ * for the MilkDrop visualizer engine.
+ *
+ * Priority order:
+ * 1. Force-mode localStorage override ('safe' → true, 'full' → false)
+ * 2. Safe-path localStorage override (boolean)
+ * 3. URL query parameters:
+ *    - `?renderer=webgpu` → full path
+ * 4. Default: use full path on Chrome/Edge 130+ desktop; safe path otherwise
+ */
+export function shouldUseSafeMilkdropWebGpuPath(
+  location: Pick<Location, 'search'> | null | undefined = globalThis.location,
+): boolean {
+  // 1. Force-mode localStorage override
+  const forceMode = getWebGpuForceMode();
+  if (forceMode === 'full') return false;
+  if (forceMode === 'safe') return true;
+
+  // 2. Safe-path localStorage override
+  const storageOverride = getWebGpuSafePathOverride();
+  if (storageOverride !== null) {
+    return storageOverride;
+  }
+
+  // 3. URL query parameter detection
+  if (location?.search) {
+    const searchParams = new URLSearchParams(location.search);
+    const renderer = searchParams.get(URL_PARAM_RENDERER)?.trim().toLowerCase();
+
+    if (renderer === 'webgpu') {
+      // Explicit WebGPU requests use the full WebGPU path.
+      return false;
+    }
+  }
+
+  // 4. Default: full path unless the device doesn't qualify
+  return !qualifiesForDefaultWebGPUPath();
+}
+
+/**
+ * Convenience: check if the full (non-safe) WebGPU path is active.
+ */
+export function shouldUseFullMilkdropWebGpuPath(
+  location?: Pick<Location, 'search'> | null,
+): boolean {
+  return !shouldUseSafeMilkdropWebGpuPath(location);
+}
+
+/**
+ * Native TSL feedback is opt-in for the explicit certification lane. Live
+ * WebGPU sessions keep the conservative path until their output is measured.
+ */
+export function shouldEnableNativeMilkdropWebGpuFeedback(
+  location:
+    | Pick<Location, 'search'>
+    | null
+    | undefined = typeof globalThis.location !== 'undefined'
+    ? globalThis.location
+    : null,
+): boolean {
+  if (shouldUseSafeMilkdropWebGpuPath(location)) return false;
+  const params = new URLSearchParams(location?.search ?? '');
+  return (
+    params.get(URL_PARAM_RENDERER)?.trim().toLowerCase() === 'webgpu' &&
+    params.get(URL_PARAM_CORPUS)?.trim().toLowerCase() === 'certification'
+  );
+}
+
+export function resolveMilkdropWebGpuFeatureRouting(
+  location?: Pick<Location, 'search'> | null,
+): MilkdropWebGpuFeatureRouting {
+  const description = getWebGpuPathDescription(location);
+  const safeMode = description.mode === 'safe';
+  const rolloutFlags = resolveMilkdropWebGpuOptimizationFlags({ location });
+  const safeReason = safeMode
+    ? `disabled by ${description.source} WebGPU safe path`
+    : null;
+  const nativeFeedbackEnabled =
+    shouldEnableNativeMilkdropWebGpuFeedback(location);
+  const feedbackReason =
+    safeReason ??
+    (nativeFeedbackEnabled
+      ? null
+      : 'native WebGPU feedback remains disabled until ShaderMaterial and TSL composite parity is stable');
+
+  return {
+    proceduralMainWave: { enabled: !safeMode, reason: safeReason },
+    proceduralTrailWaves: { enabled: !safeMode, reason: safeReason },
+    proceduralCustomWaves: { enabled: !safeMode, reason: safeReason },
+    proceduralMesh: { enabled: !safeMode, reason: safeReason },
+    proceduralMotionVectors: { enabled: !safeMode, reason: safeReason },
+    directFeedbackShaders: {
+      enabled: nativeFeedbackEnabled,
+      reason: feedbackReason,
+    },
+    gpuComputeVM: { enabled: !safeMode, reason: safeReason },
+    renderBundles: {
+      enabled: !safeMode && rolloutFlags.renderBundles,
+      reason:
+        safeReason ??
+        (!rolloutFlags.renderBundles
+          ? 'render bundles remain opt-in until parity telemetry is stable'
+          : null),
+    },
+  };
+}
+
+/**
+ * Get a human-readable description of the current WebGPU path mode
+ * for diagnostic/UI display.
+ */
+export function getWebGpuPathDescription(
+  location?: Pick<Location, 'search'> | null,
+): {
+  mode: 'safe' | 'full';
+  source: 'force-mode' | 'storage' | 'url' | 'default';
+} {
+  const forceMode = getWebGpuForceMode();
+  if (forceMode === 'full') return { mode: 'full', source: 'force-mode' };
+  if (forceMode === 'safe') return { mode: 'safe', source: 'force-mode' };
+
+  const storageOverride = getWebGpuSafePathOverride();
+  if (storageOverride !== null) {
+    return {
+      mode: storageOverride ? 'safe' : 'full',
+      source: 'storage',
+    };
+  }
+
+  if (location?.search) {
+    const searchParams = new URLSearchParams(location.search);
+    const renderer = searchParams.get(URL_PARAM_RENDERER)?.trim().toLowerCase();
+    if (renderer === 'webgpu') {
+      return {
+        mode: 'full',
+        source: 'url',
+      };
+    }
+  }
+
+  return {
+    mode: qualifiesForDefaultWebGPUPath() ? 'full' : 'safe',
+    source: 'default',
+  };
+}

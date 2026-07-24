@@ -6,12 +6,12 @@ import {
   getInvalidTransitionMessage,
   isValidTransition,
   transition,
-} from '../../assets/js/core/fallback-state.ts';
-import type { RenderScale } from '../../assets/js/core/renderer-types.ts';
+} from '../../src/js/core/fallback-state.ts';
+import type { RenderScale } from '../../src/js/core/renderer-types.ts';
 import {
   createRenderScale,
   isRenderScale,
-} from '../../assets/js/core/renderer-types.ts';
+} from '../../src/js/core/renderer-types.ts';
 
 describe('fallback state machine - valid transitions', () => {
   const validTransitions: Array<[FallbackState, FallbackState]> = [

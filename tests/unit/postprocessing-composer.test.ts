@@ -151,8 +151,8 @@ describe('milkdrop postprocessing composer', () => {
     }));
 
     const { createMilkdropPostprocessingComposer } = await importFresh<
-      typeof import('../../assets/js/core/postprocessing.ts')
-    >('../../assets/js/core/postprocessing.ts');
+      typeof import('../../src/js/core/postprocessing.ts')
+    >('../../src/js/core/postprocessing.ts');
 
     const renderer: {
       getSize: (target: Vector2) => Vector2;
@@ -276,8 +276,8 @@ describe('milkdrop postprocessing composer', () => {
     }));
 
     const { createBloomComposer } = await importFresh<
-      typeof import('../../assets/js/core/postprocessing.ts')
-    >('../../assets/js/core/postprocessing.ts');
+      typeof import('../../src/js/core/postprocessing.ts')
+    >('../../src/js/core/postprocessing.ts');
 
     const renderer: {
       getSize: (target: Vector2) => Vector2;

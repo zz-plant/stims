@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { HalfFloatType, LinearFilter, UnsignedByteType } from 'three';
-import { createWebGLFeedbackRenderTarget } from '../../assets/js/milkdrop/feedback-render-targets.ts';
+import { createWebGLFeedbackRenderTarget } from '../../src/js/milkdrop/feedback-render-targets.ts';
 
 describe('milkdrop feedback render targets', () => {
   test('scales webgl feedback targets and applies texture precision settings', () => {

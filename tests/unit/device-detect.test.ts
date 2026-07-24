@@ -4,7 +4,7 @@ import {
   getSmartTvModeOverride,
   isMobileDevice,
   isSmartTvDevice,
-} from '../../assets/js/utils/device-detect';
+} from '../../src/js/utils/device-detect';
 
 type NavigatorWithUserAgentData = Navigator & {
   userAgentData?: unknown;

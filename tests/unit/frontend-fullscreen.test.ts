@@ -3,7 +3,7 @@ import {
   getFullscreenElement,
   subscribeToFullscreenChange,
   toggleElementFullscreen,
-} from '../../assets/js/frontend/fullscreen.ts';
+} from '../../src/js/frontend/fullscreen.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 const restores: Array<() => void> = [];

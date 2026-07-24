@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
   getWrappedAtlasSliceSample,
-} from '../../assets/js/milkdrop/feedback-volume-sampling.ts';
+} from '../../src/js/milkdrop/feedback-volume-sampling.ts';
 
 describe('milkdrop feedback volume atlas sampling', () => {
   test('keeps modulo-equivalent tex3D phases on the same atlas position', () => {

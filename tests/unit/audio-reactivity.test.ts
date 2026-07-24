@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { getFrequencyBandLevels } from '../../assets/js/utils/audio-reactivity.ts';
+import { getFrequencyBandLevels } from '../../src/js/utils/audio-reactivity.ts';
 
 function makeSpectrumPulse({
   activeBin,

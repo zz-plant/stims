@@ -2,13 +2,13 @@ import { expect, test } from 'bun:test';
 import {
   deriveFidelityTier,
   getValidatedCatalogOverrides,
-} from '../../assets/js/milkdrop/catalog-store-analysis.ts';
-import { toCatalogEntry } from '../../assets/js/milkdrop/catalog-store-projection.ts';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
+} from '../../src/js/milkdrop/catalog-store-analysis.ts';
+import { toCatalogEntry } from '../../src/js/milkdrop/catalog-store-projection.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   fidelityTierLabel,
   supportLabel,
-} from '../../assets/js/milkdrop/overlay/preset-row.ts';
+} from '../../src/js/milkdrop/overlay/preset-row.ts';
 
 test('measured visual results override inferred fidelity and evidence tier', () => {
   const compiled = compileMilkdropPresetSource(

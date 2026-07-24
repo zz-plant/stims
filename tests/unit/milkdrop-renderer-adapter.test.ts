@@ -21,22 +21,22 @@ import {
   WebGLRenderer,
   ZeroFactor,
 } from 'three';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import {
   __milkdropRendererAdapterTestUtils,
   createMilkdropRendererAdapterCore,
-} from '../../assets/js/milkdrop/renderer-adapter.ts';
-import { createMilkdropRendererAdapter } from '../../assets/js/milkdrop/renderer-adapter-factory.ts';
-import { createWebGPUBatchingLayer } from '../../assets/js/milkdrop/renderer-adapter-webgpu-batching.ts';
-import { createMilkdropSegmentBatchingLayer } from '../../assets/js/milkdrop/renderer-segment-batching.ts';
+} from '../../src/js/milkdrop/renderer-adapter.ts';
+import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
+import { createWebGPUBatchingLayer } from '../../src/js/milkdrop/renderer-adapter-webgpu-batching.ts';
+import { createMilkdropSegmentBatchingLayer } from '../../src/js/milkdrop/renderer-segment-batching.ts';
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
   MilkdropRuntimeSignals,
-} from '../../assets/js/milkdrop/types.ts';
-import { createMilkdropVM } from '../../assets/js/milkdrop/vm.ts';
-import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../assets/js/milkdrop/webgpu-optimization-flags.ts';
-import { setWebGpuForceMode } from '../../assets/js/milkdrop/webgpu-query-override.ts';
+} from '../../src/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
+import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
+import { setWebGpuForceMode } from '../../src/js/milkdrop/webgpu-query-override.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 type RenderTreeNode = {

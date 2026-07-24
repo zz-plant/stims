@@ -17,7 +17,7 @@ async function loadAppShell() {
     loadFromQuery: mockLoadFromQuery,
   };
 
-  await importFresh('../../assets/js/app.ts');
+  await importFresh('../../src/js/app.ts');
   await globalThis.__stimsAppReady;
   await flushTasks();
 }

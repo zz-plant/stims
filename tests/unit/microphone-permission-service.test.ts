@@ -2,7 +2,7 @@ import { afterEach, describe, expect, mock, test } from 'bun:test';
 import {
   getMicrophoneCapabilityFromState,
   queryMicrophonePermissionState,
-} from '../../assets/js/core/services/microphone-permission-service.ts';
+} from '../../src/js/core/services/microphone-permission-service.ts';
 
 const originalNavigator = globalThis.navigator;
 

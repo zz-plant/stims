@@ -3,13 +3,13 @@ import {
   getActiveMotionPreference,
   resetMotionPreferenceState,
   setMotionPreference,
-} from '../../assets/js/core/motion-preferences';
-import { applyPartyMode } from '../../assets/js/core/party-mode';
+} from '../../src/js/core/motion-preferences';
+import { applyPartyMode } from '../../src/js/core/party-mode';
 import {
   getActiveRenderPreferences,
   resetRenderPreferencesState,
   setRenderPreferences,
-} from '../../assets/js/core/render-preferences';
+} from '../../src/js/core/render-preferences';
 
 describe('applyPartyMode', () => {
   beforeEach(() => {

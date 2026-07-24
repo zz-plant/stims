@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createManifestClient } from '../../assets/js/utils/manifest-client.ts';
+import { createManifestClient } from '../../src/js/utils/manifest-client.ts';
 
 describe('manifest client', () => {
-  const moduleEntry = 'assets/js/toys/example.ts';
+  const moduleEntry = 'src/js/toys/example.ts';
 
   beforeEach(() => {
     window.location.href = 'http://example.com/';
@@ -16,7 +16,7 @@ describe('manifest client', () => {
 
   test('uses manifest entry with provided base URL', async () => {
     const manifest = {
-      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+      [moduleEntry]: { file: 'src/js/toys/example.123.js' },
     };
 
     const fetchImpl = mock(() =>
@@ -64,7 +64,7 @@ describe('manifest client', () => {
 
   test('caches manifest retrieval across resolutions', async () => {
     const manifest = {
-      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+      [moduleEntry]: { file: 'src/js/toys/example.123.js' },
     };
 
     const fetchImpl = mock(() =>
@@ -83,7 +83,7 @@ describe('manifest client', () => {
     window.location.href = 'http://localhost/';
 
     const manifest = {
-      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+      [moduleEntry]: { file: 'src/js/toys/example.123.js' },
     };
 
     const fetchImpl = mock(() =>
@@ -126,7 +126,7 @@ describe('manifest client', () => {
     window.location.href = 'http://example.com/app/';
 
     const manifest = {
-      [moduleEntry]: { file: 'assets/js/toys/example.123.js' },
+      [moduleEntry]: { file: 'src/js/toys/example.123.js' },
     };
 
     const responses = [

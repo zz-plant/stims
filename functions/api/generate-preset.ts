@@ -1,4 +1,4 @@
-import { buildGeneratePrompt } from '../../assets/js/milkdrop/preset-prompt.ts';
+import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
 
 interface D1Database {
   prepare(sql: string): D1PreparedStatement;

@@ -30,13 +30,13 @@ describe('milkdrop toy runtime boundary', () => {
 
   beforeEach(() => {
     mock.restore();
-    mock.module('../../assets/js/core/toy-quality', () => ({
+    mock.module('../../src/js/core/toy-quality', () => ({
       createRendererQualityManager,
     }));
-    mock.module('../../assets/js/milkdrop/runtime', () => ({
+    mock.module('../../src/js/milkdrop/runtime', () => ({
       createMilkdropExperience,
     }));
-    mock.module('../../assets/js/core/toy-runtime-starter', () => ({
+    mock.module('../../src/js/core/toy-runtime-starter', () => ({
       createToyRuntimeStarter,
     }));
   });

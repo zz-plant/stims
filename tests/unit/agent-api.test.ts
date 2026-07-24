@@ -5,7 +5,7 @@ import {
   setAudioActive,
   setCurrentToy,
   setDebugSnapshot,
-} from '../../assets/js/core/agent-api.ts';
+} from '../../src/js/core/agent-api.ts';
 
 test('activateVibeMode toggles state and root dataset', async () => {
   const api = initAgentAPI();

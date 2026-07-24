@@ -6,12 +6,12 @@ import {
   Mesh,
   MeshBasicMaterial,
 } from 'three';
-import type { MilkdropBackendBehavior } from '../../assets/js/milkdrop/renderer-adapter';
+import type { MilkdropBackendBehavior } from '../../src/js/milkdrop/renderer-adapter';
 import {
   createBorderObject,
   renderBorderGroup,
-} from '../../assets/js/milkdrop/renderer-helpers/border-renderer';
-import type { MilkdropBorderVisual } from '../../assets/js/milkdrop/types';
+} from '../../src/js/milkdrop/renderer-helpers/border-renderer';
+import type { MilkdropBorderVisual } from '../../src/js/milkdrop/types';
 
 function makeBorder(
   key: 'outer' | 'inner',

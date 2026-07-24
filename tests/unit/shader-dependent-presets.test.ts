@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
-import type { MilkdropBundledCatalogEntry } from '../../assets/js/milkdrop/types.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import type { MilkdropBundledCatalogEntry } from '../../src/js/milkdrop/types.ts';
 import catalogJson from '../../public/milkdrop-presets/catalog.json' with {
   type: 'json',
 };

@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import {
   applyAudioRotation,
   applyAudioScale,
-} from '../../assets/js/utils/animation-utils.ts';
+} from '../../src/js/utils/animation-utils.ts';
 
 function expectedBandAverage(audioData, startRatio, endRatio) {
   const startIndex = Math.max(0, Math.floor(audioData.length * startRatio));

@@ -6,7 +6,7 @@ import {
   QUALITY_STORAGE_KEY,
   resetSettingsPanelState,
   subscribeToQualityPreset,
-} from '../../assets/js/core/settings-panel.ts';
+} from '../../src/js/core/settings-panel.ts';
 
 describe('quality preset subscriptions', () => {
   let originalConcurrency: number | undefined;

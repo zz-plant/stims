@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import PatternRecognizer from '../../assets/js/utils/patternRecognition.ts';
+import PatternRecognizer from '../../src/js/utils/patternRecognition.ts';
 
 describe('PatternRecognizer', () => {
   const createAnalyser = (responses) => {

@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "referenceTarget": "stims-native",
+  "fixtureRoot": "tests/fixtures/milkdrop/stims-reference",
+  "minimumPresetCount": 4,
+  "presetCount": 4,
+  "defaults": {
+    "renderer": "stims-webgpu",
+    "requiredBackend": "webgpu",
+    "width": 1280,
+    "height": 720,
+    "warmupMs": 5000,
+    "captureOffsetMs": 0,
+    "toleranceProfile": "default",
+    "threshold": 16,
+    "failThreshold": 0.04
+  },
+  "presets": [
+    {
+      "id": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "image": "eos-glowsticks-v2-03-music.png",
+      "sourceFamily": "stims-bundled",
+      "strata": ["feedback", "classic-milkdrop", "glowsticks"],
+      "capture": {
+        "renderer": "stims-webgpu",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.04
+      },
+      "provenance": {
+        "label": "Stims WebGPU capture for bundled preset certification",
+        "capturedAt": "2026-05-01T19:44:00.000Z"
+      }
+    },
+    {
+      "id": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "image": "rovastar-parallel-universe.png",
+      "sourceFamily": "stims-bundled",
+      "strata": ["lasers", "classic-milkdrop", "cream-of-the-crop"],
+      "capture": {
+        "renderer": "stims-webgpu",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.04
+      },
+      "provenance": {
+        "label": "Stims WebGPU capture for bundled preset certification",
+        "capturedAt": "2026-05-01T19:45:00.000Z"
+      }
+    },
+    {
+      "id": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "image": "eos-phat-cubetrace-v2.png",
+      "sourceFamily": "stims-bundled",
+      "strata": ["geometry", "classic-milkdrop", "cream-of-the-crop"],
+      "capture": {
+        "renderer": "stims-webgpu",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.04
+      },
+      "provenance": {
+        "label": "Stims WebGPU capture for bundled preset certification",
+        "capturedAt": "2026-05-01T19:45:00.000Z"
+      }
+    },
+    {
+      "id": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "image": "krash-rovastar-cerebral-demons-stars.png",
+      "sourceFamily": "stims-bundled",
+      "strata": ["comets", "classic-milkdrop", "cream-of-the-crop"],
+      "capture": {
+        "renderer": "stims-webgpu",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.04
+      },
+      "provenance": {
+        "label": "Stims WebGPU capture for bundled preset certification",
+        "capturedAt": "2026-05-01T19:46:00.000Z"
+      }
+    }
+  ]
+}

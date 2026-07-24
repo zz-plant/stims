@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { InspectorPanel } from '../../assets/js/milkdrop/overlay/inspector-panel.ts';
+import { InspectorPanel } from '../../src/js/milkdrop/overlay/inspector-panel.ts';
 
 describe('milkdrop inspector panel selection summary', () => {
   test('shows the current scene selection and editing hints', () => {

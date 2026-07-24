@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { DEFAULT_MILKDROP_STATE } from '../../assets/js/milkdrop/compiler/default-state.ts';
-import { compileMilkdropPresetSource } from '../../assets/js/milkdrop/compiler.ts';
+import { DEFAULT_MILKDROP_STATE } from '../../src/js/milkdrop/compiler/default-state.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
   MilkdropRuntimeSignals,
-} from '../../assets/js/milkdrop/types.ts';
-import { createMilkdropVM } from '../../assets/js/milkdrop/vm.ts';
+} from '../../src/js/milkdrop/types.ts';
+import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
 
 const PROJECTM_CORPUS_DIR = join(
   process.cwd(),

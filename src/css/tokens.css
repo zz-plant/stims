@@ -1,0 +1,409 @@
+/* ═════════════════════════════════════════════════════════════════════
+   Stims Unified Design Tokens
+   Single source of truth — all CSS custom properties for the entire app.
+   Replaces duplicate :root blocks in base.css, app-shell.css, index.css.
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ── Responsive Breakpoints (mobile-first) ──────────────────────── */
+/* Usage: @media (width >= var(--bp-sm)) { ... } — not directly in media queries
+   Documented here as the canonical scale. Actual media queries use raw values.
+   Scale: sm=640px (phone landscape), md=1024px (tablet), lg=1440px (desktop) */
+
+:root {
+  /* ── Opacity Primitives ──────────────────────────────────────── */
+  --stims-white-02: rgba(255, 255, 255, 0.02);
+  --stims-white-03: rgba(255, 255, 255, 0.03);
+  --stims-white-04: rgba(255, 255, 255, 0.04);
+  --stims-white-05: rgba(255, 255, 255, 0.05);
+  --stims-white-06: rgba(255, 255, 255, 0.06);
+  --stims-white-08: rgba(255, 255, 255, 0.08);
+  --stims-white-12: rgba(255, 255, 255, 0.12);
+  --stims-white-64: rgba(255, 255, 255, 0.64);
+  --stims-border-08: rgba(255, 255, 255, 0.08);
+  --stims-shadow-22: rgba(0, 0, 0, 0.22);
+  --stims-shadow-34: rgba(0, 0, 0, 0.34);
+  --stims-muted-35: color-mix(in srgb, var(--stims-muted) 35%, transparent);
+  --stims-focus-95: rgba(244, 122, 84, 0.95);
+  --stims-focus-ring-35: rgba(244, 122, 84, 0.35);
+  --stims-accent-blue: rgba(119, 201, 255, 0.8);
+  --stims-audio-glow: rgba(119, 201, 255, 0.16);
+  --stims-border: rgba(255, 255, 255, 0.14);
+  --stims-ink-dim: rgba(255, 248, 239, 0.4);
+  --stims-ink-muted: rgba(247, 244, 235, 0.65);
+  --stims-energy: 0;
+
+  /* ── App-shell Chrome Layout ────────────────────────────────── */
+  --stims-chrome-top: 22px;
+  --stims-chrome-height: 40px;
+  --stims-header-gap: 20px;
+  --stims-header-top: calc(
+    var(--stims-chrome-top) +
+    var(--stims-chrome-height) +
+    var(--stims-header-gap)
+  );
+
+  /* ── Viewport ──────────────────────────────────────────────── */
+  --app-height: 100dvh;
+  --app-width: 100dvw;
+
+  /* ── Semantic Color Palette (dark mode default) ───────────────── */
+  --bg-color: #0e1518;
+  --bg-color-secondary: #162126;
+  --card-bg: #182328;
+  --text-color: #f7f4eb;
+  --text-muted: rgba(247, 244, 235, 0.76);
+  --accent-contrast: #fdfdfd;
+  --link-color: #9fd4cb;
+  --link-hover: #e9d49b;
+  --accent-color: #5fc0b5;
+  --accent-purple: #87a9a2;
+  --accent-magenta: #d38954;
+  --glow-color: rgba(95, 192, 181, 0.16);
+  --accent-soft: rgba(95, 192, 181, 0.1);
+  --hover-bg: rgba(95, 192, 181, 0.12);
+  --highlight-glow: rgba(211, 137, 84, 0.18);
+
+  /* ── App-shell semantic colors ──────────────────────────────── */
+
+  /* ── Surface Gradients & Effects ──────────────────────────────── */
+  --surface-gradient: linear-gradient(
+    180deg,
+    rgba(255, 248, 234, 0.05),
+    transparent
+  );
+  --surface-border: rgba(255, 244, 222, 0.14);
+  --surface-sheen: none;
+  --surface-texture: none;
+  --surface-highlight: none;
+  --surface-emboss: none;
+  --accent-gradient: linear-gradient(
+    120deg,
+    rgba(95, 192, 181, 0.95),
+    rgba(233, 212, 155, 0.72),
+    rgba(211, 137, 84, 0.72)
+  );
+  --panel-gradient: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card-bg) 95%, transparent),
+    color-mix(in srgb, #10181d 82%, var(--card-bg))
+  );
+  --panel-glass: color-mix(in srgb, var(--card-bg) 84%, transparent);
+  --panel-highlight: rgba(255, 248, 234, 0.08);
+  --aurora-soft: radial-gradient(
+    circle at 20% 10%,
+    color-mix(in srgb, var(--accent-color) 34%, transparent),
+    transparent 48%
+  );
+  --interactive-border: color-mix(
+    in srgb,
+    var(--accent-color) 28%,
+    var(--surface-border)
+  );
+  --interactive-bg: color-mix(in srgb, var(--card-bg) 85%, transparent);
+  --interactive-bg-hover: color-mix(
+    in srgb,
+    var(--accent-color) 14%,
+    var(--card-bg)
+  );
+  --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+
+  /* ── App-shell panel fills ────────────────────────────────── */
+  --stims-surface: rgba(10, 13, 20, 0.85);
+  --stims-panel: rgba(10, 13, 20, 0.74);
+  --stims-panel-strong: rgba(12, 16, 26, 0.92);
+  --stims-panel-fill-strong: linear-gradient(
+    180deg,
+    rgba(14, 19, 30, 0.98),
+    rgba(6, 9, 16, 0.96)
+  );
+  --stims-control-fill: linear-gradient(
+    180deg,
+    var(--stims-white-08),
+    var(--stims-white-02)
+  );
+  --stims-control-fill-hover: linear-gradient(
+    180deg,
+    var(--stims-white-12),
+    var(--stims-white-04)
+  );
+  /* ── Shadows ───────────────────────────────────────────────── */
+  --shadow-strong:
+    0 24px 60px rgba(0, 0, 0, 0.34), 0 4px 18px rgba(95, 192, 181, 0.12);
+  --shadow-soft:
+    0 10px 26px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(95, 192, 181, 0.1);
+  --shadow-surface:
+    0 18px 42px rgba(0, 0, 0, 0.28), 0 2px 12px rgba(95, 192, 181, 0.12);
+  --stims-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+  --stims-shadow-soft: 0 14px 34px var(--stims-shadow-22);
+  --stims-shadow-control:
+    0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 var(--stims-white-06);
+
+  /* ── Page-Level Panel Tokens ───────────────────────────────── */
+  --panel-solid: color-mix(in srgb, var(--card-bg) 95%, #091015);
+  --panel-subtle: color-mix(in srgb, var(--card-bg) 91%, transparent);
+  --surface-border-strong: color-mix(
+    in srgb,
+    var(--accent-color) 22%,
+    var(--surface-border)
+  );
+  --shadow-panel:
+    0 18px 38px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.12);
+  --shadow-panel-hover:
+    0 24px 46px rgba(0, 0, 0, 0.26), 0 6px 16px rgba(0, 0, 0, 0.14);
+
+  /* ── Radii ─────────────────────────────────────────────────── */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-pill: 9999px;
+  --stims-radius: 12px;
+  --stims-radius-panel: 18px;
+  --stims-radius-card: 14px;
+  --stims-radius-control: 10px;
+  --stims-radius-stage: 18px;
+
+  /* ── Typography ────────────────────────────────────────────── */
+  --font-family-base:
+    "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-family-mono: "Space Mono", monospace;
+  --stims-display: "Cormorant Garamond", "Iowan Old Style", serif;
+  /* Type scale shared across all pages */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ── Spacing (8px base) ────────────────────────────────────── */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 2.5rem;
+  --space-3xl: 3rem;
+  --space-4xl: 4rem;
+
+  /* ── Transitions & Motion ──────────────────────────────────── */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --spring-enter: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-exit: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --spring-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ── Layout ────────────────────────────────────────────────── */
+  --content-width: 1220px;
+  --section-gap: clamp(1.9rem, 2.8vw, 3rem);
+  --touch-target-min: 44px;
+  --focus-ring: 0 0 0 3px rgba(119, 201, 255, 0.42);
+  --focus-ring-offset: 0 0 0 2px rgba(5, 8, 14, 0.8);
+
+  /* ── Z-Index Scale ─────────────────────────────────────────-- */
+  --z-ambient: 0;
+  --z-stage-root: 1;
+  --z-stage-hero: 2;
+  --z-frame-chrome: 3;
+  --z-search-sticky: 6;
+  --z-nav: 10;
+  --z-panel: 15;
+  --z-overlay: 18;
+  --z-dropdown: 20;
+  --z-dock: 25;
+  --z-filter-bar: 28;
+  --z-toast: 30;
+  --z-alert: 35;
+  --z-modal-backdrop: 40;
+  --z-modal: 45;
+  --z-shortcut-overlay: 100;
+  --z-home-link: 1000;
+  --z-control-panel: 1100;
+  --z-sheet: 1125;
+  --z-sheet-active: 1151;
+  --z-shell-panel: 1190;
+  --z-active-nav: 1200;
+  --z-settings-panel: 1250;
+  --z-fullscreen-panel: 1260;
+  --z-error-overlay: 2000;
+  --z-audio-match: 2100;
+  --z-loading: 9999;
+
+  /* ── TV Mode Scaling ────────────────────────────────────────-- */
+  --tv-scale-multiplier: 1;
+  --tv-focus-outline-width: 2px;
+  --tv-focus-outline-offset: 3px;
+  --tv-content-padding: clamp(1.5rem, 2vw + 1rem, 3rem);
+  --tv-safe-padding: 0px;
+
+  /* ── MilkDrop Overlay Theme ─────────────────────────────────--- */
+  --milkdrop-overlay-bg-primary: rgba(11, 18, 30, 0.96);
+  --milkdrop-overlay-bg-secondary: rgba(8, 12, 22, 0.94);
+  --milkdrop-overlay-bg-tertiary: rgba(8, 12, 22, 0.96);
+  --milkdrop-overlay-overlay: rgba(12, 18, 32, 0.9);
+  --milkdrop-overlay-overlay-2: rgba(12, 18, 22, 0.92);
+  --milkdrop-overlay-border: rgba(164, 194, 255, 0.18);
+  --milkdrop-overlay-blur: 18px;
+  --milkdrop-overlay-blur-lg: 22px;
+  --milkdrop-overlay-shadow: rgba(0, 0, 0, 0.42);
+  --milkdrop-overlay-shadow-lg: rgba(0, 0, 0, 0.48);
+  --milkdrop-overlay-button: rgba(108, 176, 255, 0.22);
+  --milkdrop-overlay-button-border: rgba(108, 176, 255, 0.4);
+  --milkdrop-active-indicator: rgba(108, 176, 255, 0.22);
+  --milkdrop-active-indicator-border: rgba(108, 176, 255, 0.4);
+  --agent-vibe-intensity: 1;
+  --toy-shell-metal: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.02) 38%,
+    rgba(0, 0, 0, 0.12) 66%,
+    rgba(0, 0, 0, 0.18)
+  );
+  --toy-shell-highlight: rgba(255, 255, 255, 0.16);
+  --toy-shell-shadow: rgba(2, 5, 12, 0.48);
+
+  /* ── Scrollbar (dark default) ───────────────────────────────── */
+  scrollbar-color: color-mix(in srgb, var(--accent-color) 55%, transparent)
+    color-mix(in srgb, var(--card-bg) 80%, transparent);
+}
+
+/* ── Page-Level Panel Light Overrides ─────────────────────────────── */
+html.light {
+  --panel-solid: color-mix(in srgb, var(--card-bg) 97%, #ffffff);
+  --panel-subtle: color-mix(in srgb, var(--card-bg) 94%, #ffffff);
+  --shadow-panel:
+    0 16px 32px rgba(15, 23, 42, 0.08), 0 3px 10px rgba(15, 23, 42, 0.06);
+  --shadow-panel-hover:
+    0 22px 44px rgba(15, 23, 42, 0.11), 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+/* ── TV Mode Scaling Override ─────────────────────────────────────── */
+body.tv-mode {
+  --tv-scale-multiplier: 1.16;
+  --tv-focus-outline-width: 4px;
+  --tv-focus-outline-offset: 5px;
+  --tv-content-padding: clamp(2.2rem, 2.4vw + 1.6rem, 4.4rem);
+  --tv-safe-padding: 28px;
+}
+
+/* ── Light Theme Override ─────────────────────────────────────────── */
+html.light {
+  --bg-color: #f4efe4;
+  --bg-color-secondary: #e5ded0;
+  --text-color: #233038;
+  --text-muted: #52606b;
+  --accent-contrast: #ffffff;
+  --link-color: #2f6f6a;
+  --link-hover: #7e4c2d;
+  --accent-color: #2f8b83;
+  --accent-purple: #6c8f89;
+  --accent-magenta: #b86f3d;
+  --glow-color: rgba(47, 139, 131, 0.1);
+  --accent-soft: rgba(47, 139, 131, 0.08);
+  --card-bg: #fffaf0;
+  --hover-bg: rgba(47, 139, 131, 0.12);
+  --highlight-glow: rgba(184, 111, 61, 0.14);
+  --surface-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0.02), transparent);
+  --surface-border: rgba(35, 48, 56, 0.14);
+  --accent-gradient: linear-gradient(
+    120deg,
+    rgba(47, 139, 131, 0.78),
+    rgba(232, 198, 127, 0.85),
+    rgba(184, 111, 61, 0.7)
+  );
+  --panel-glass: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.45);
+  --aurora-soft: radial-gradient(
+    circle at 20% 10%,
+    color-mix(in srgb, var(--accent-color) 18%, transparent),
+    transparent 52%
+  );
+  --interactive-shadow: 0 2px 7px rgba(15, 23, 42, 0.1);
+  --shadow-strong:
+    0 12px 24px rgba(15, 23, 42, 0.11), 0 2px 8px rgba(91, 110, 130, 0.11);
+  --shadow-soft:
+    0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(91, 110, 130, 0.09);
+  --shadow-surface:
+    0 8px 18px rgba(15, 23, 42, 0.09), 0 1px 5px rgba(91, 110, 130, 0.1);
+  --stims-ink: var(--text-color);
+  --stims-ink-strong: #0f172a;
+  --stims-muted: #42525c;
+  --stims-line: #9eabb2;
+  --stims-line-strong: #667983;
+  --stims-line-soft: #c2cbd0;
+  --stims-cool: #0d6381;
+  --stims-accent: #a44723;
+  --stims-accent-soft: rgba(164, 71, 35, 0.14);
+  --stims-accent-glow: rgba(164, 71, 35, 0.16);
+  --stims-good: #176b49;
+  --stims-warn: #765000;
+  --stims-bad: #b42318;
+  --stims-panel: rgba(255, 250, 240, 0.8);
+  --stims-panel-strong: rgba(255, 250, 240, 0.94);
+  --stims-control-fill: linear-gradient(180deg, #fffdf8, #f0ece3);
+  --stims-control-fill-hover: linear-gradient(180deg, #ffffff, #e8f0ef);
+  color-scheme: light;
+  scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
+    color-mix(in srgb, var(--card-bg) 80%, transparent);
+  --focus-ring: 0 0 0 3px rgba(13, 99, 129, 0.35);
+  --focus-ring-offset: 0 0 0 2px rgba(255, 250, 240, 0.8);
+}
+
+/* ── Performance Tier: Low-End Devices ────────────────────────────── */
+[data-device-tier="low"] {
+  --stims-white-02: rgba(255, 255, 255, 0.01);
+  --stims-white-04: rgba(255, 255, 255, 0.02);
+  --stims-white-05: rgba(255, 255, 255, 0.03);
+}
+
+[data-device-tier="low"] .stims-shell__backdrop-filter,
+[data-device-tier="low"] .stims-shell__stage-frame::before,
+[data-device-tier="low"] .stims-shell__stage-frame::after,
+[data-device-tier="low"] .stims-shell::before,
+[data-device-tier="low"] .stims-shell::after {
+  display: none;
+}
+
+/* ── Performance Tier: Low + Mid — disable backdrop-filter ────────── */
+[data-device-tier="low"] *,
+[data-device-tier="mid"] * {
+  /* biome-ignore lint/complexity/noImportantStyles: must override all child backdrop-filter for GPU perf */
+  backdrop-filter: none !important;
+  /* biome-ignore lint/complexity/noImportantStyles: must override all child for GPU perf */
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-device-tier="low"] .shell-header,
+[data-device-tier="mid"] .shell-header,
+[data-device-tier="low"] .top-nav,
+[data-device-tier="mid"] .top-nav,
+[data-device-tier="low"] .library-search,
+[data-device-tier="mid"] .library-search {
+  background: var(--bg-color);
+}
+
+[data-device-tier="low"] .stims-shell__sheet,
+[data-device-tier="mid"] .stims-shell__sheet,
+[data-device-tier="low"] .stims-shell__modal-panel,
+[data-device-tier="mid"] .stims-shell__modal-panel {
+  background: var(--bg-color);
+}
+
+/* ── Reduced Motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0.01ms;
+    --transition-base: 0.01ms;
+    --transition-slow: 0.01ms;
+    --spring-enter: 0.01ms linear;
+    --spring-exit: 0.01ms linear;
+    --spring-bounce: 0.01ms linear;
+  }
+}

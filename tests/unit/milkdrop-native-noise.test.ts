@@ -4,7 +4,7 @@ import {
   buildMilkdropNoiseVolumeAtlasData,
   MILKDROP_NOISE_2D_SIZE,
   MILKDROP_NOISE_VOLUME_ATLAS_SIZE,
-} from '../../assets/js/milkdrop/milkdrop-native-noise.ts';
+} from '../../src/js/milkdrop/milkdrop-native-noise.ts';
 
 describe('MilkDrop native noise textures', () => {
   test('builds the native 2D RGBA noise contract', () => {

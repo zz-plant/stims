@@ -5,11 +5,11 @@ import {
   buildDegradationReasons,
   buildVisualFallbacks,
   classifyFidelity,
-} from '../../assets/js/milkdrop/compiler/compatibility.ts';
+} from '../../src/js/milkdrop/compiler/compatibility.ts';
 import type {
   MilkdropBackendSupport,
   MilkdropBlockingConstruct,
-} from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/types.ts';
 
 const supportedWebgl: MilkdropBackendSupport = {
   status: 'supported',

@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
-const toysDataPath = path.resolve(rootDir, 'assets/data/toys.json');
+const toysDataPath = path.resolve(rootDir, 'src/data/toys.json');
 const toysData = fs.existsSync(toysDataPath)
   ? JSON.parse(fs.readFileSync(toysDataPath, 'utf8'))
   : [];
@@ -64,13 +64,15 @@ export default defineConfig({
         assetFileNames: `assets/[name]-${buildId}-[hash].[ext]`,
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('three/webgpu')) return 'vendor-three-webgpu';
+            if (id.includes('three/webgpu') || id.includes('three.webgpu'))
+              return 'vendor-three-webgpu';
             if (id.includes('three')) return 'vendor-three';
             if (id.includes('@codemirror/')) return 'vendor-codemirror';
             if (id.includes('react') || id.includes('react-dom'))
               return 'vendor-react';
             return 'vendor-other';
           }
+          return null;
         },
       },
     },

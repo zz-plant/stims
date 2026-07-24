@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'bun:test';
-import { buildWebGpuDescriptorPlan } from '../../assets/js/milkdrop/compiler/gpu-descriptor-plan.ts';
-import { lowerGpuFieldProgram } from '../../assets/js/milkdrop/compiler/gpu-field-planner.ts';
+import { buildWebGpuDescriptorPlan } from '../../src/js/milkdrop/compiler/gpu-descriptor-plan.ts';
+import { lowerGpuFieldProgram } from '../../src/js/milkdrop/compiler/gpu-field-planner.ts';
 import {
   buildBackendSupport,
   buildFeatureAnalysis,
-} from '../../assets/js/milkdrop/compiler/parity.ts';
-import { normalizeFieldKey } from '../../assets/js/milkdrop/compiler/preset-normalization.ts';
+} from '../../src/js/milkdrop/compiler/parity.ts';
+import { normalizeFieldKey } from '../../src/js/milkdrop/compiler/preset-normalization.ts';
 import type {
   MilkdropBackendSupportEvidence,
   MilkdropFeatureAnalysis,
   MilkdropProgramBlock,
   MilkdropShaderControls,
-} from '../../assets/js/milkdrop/types.ts';
+} from '../../src/js/milkdrop/types.ts';
 
 const emptyBlock = (): MilkdropProgramBlock => ({
   statements: [],

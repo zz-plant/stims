@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { shouldEnableStatsOverlay } from '../../assets/js/core/stats-overlay.ts';
+import { shouldEnableStatsOverlay } from '../../src/js/core/stats-overlay.ts';
 
 describe('stats overlay gating', () => {
   test('enables the overlay when the stats query param is present', () => {

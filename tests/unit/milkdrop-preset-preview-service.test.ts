@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { createMilkdropPresetPreviewService } from '../../assets/js/milkdrop/runtime/preset-preview-service.ts';
+import { createMilkdropPresetPreviewService } from '../../src/js/milkdrop/runtime/preset-preview-service.ts';
 
 describe('milkdrop preset preview service', () => {
   test('queues captures once and prioritizes the latest visible preset order', async () => {

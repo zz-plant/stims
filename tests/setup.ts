@@ -1,11 +1,11 @@
 import { afterEach, beforeEach } from 'bun:test';
 import './environment/install.ts';
 
-import { resetMotionPreferenceState } from '../assets/js/core/motion-preferences.ts';
-import { resetPerformancePanelState } from '../assets/js/core/performance-panel.ts';
-import { resetRenderPreferencesState } from '../assets/js/core/render-preferences.ts';
-import { resetSettingsPanelState } from '../assets/js/core/settings-panel.ts';
-import { resetThemePreferenceState } from '../assets/js/core/theme-preferences.ts';
+import { resetMotionPreferenceState } from '../src/js/core/motion-preferences.ts';
+import { resetPerformancePanelState } from '../src/js/core/performance-panel.ts';
+import { resetRenderPreferencesState } from '../src/js/core/render-preferences.ts';
+import { resetSettingsPanelState } from '../src/js/core/settings-panel.ts';
+import { resetThemePreferenceState } from '../src/js/core/theme-preferences.ts';
 
 beforeEach(() => {
   resetRenderPreferencesState();

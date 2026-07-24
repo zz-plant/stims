@@ -1,0 +1,1268 @@
+{
+  "version": 1,
+  "parityTarget": "projectm-visual-reference",
+  "fixtureRoot": "tests/fixtures/milkdrop/projectm-reference",
+  "minimumPresetCount": 4,
+  "presetCount": 48,
+  "defaults": {
+    "renderer": "projectm",
+    "requiredBackend": "webgpu",
+    "width": 1280,
+    "height": 720,
+    "warmupMs": 5000,
+    "captureOffsetMs": 0,
+    "toleranceProfile": "default",
+    "threshold": 16,
+    "failThreshold": 0.02
+  },
+  "presets": [
+    {
+      "id": "100-square",
+      "title": "100 Square",
+      "image": "100-square.png",
+      "metadata": "100-square.meta.json",
+      "sourceFamily": "projectm-fixture",
+      "strata": ["projectm-upstream", "geometry", "regression"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "native projectM 3.1.12 deterministic capture",
+        "importedAt": "2026-07-16T23:20:05.162Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "250-wavecode",
+      "title": "250 Wavecode",
+      "image": "250-wavecode.png",
+      "metadata": "250-wavecode.meta.json",
+      "sourceFamily": "projectm-fixture",
+      "strata": ["wavecode", "geometry"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:33:40.755Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "260-compshader-noise_lq",
+      "title": "260 Compshader Noise LQ",
+      "image": "260-compshader-noise_lq.png",
+      "metadata": "260-compshader-noise_lq.meta.json",
+      "sourceFamily": "projectm-fixture",
+      "strata": ["shader-supported", "texture"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:33:40.909Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "261-compshader-noisevol_lq",
+      "title": "261 Compshader Noisevol LQ",
+      "image": "261-compshader-noisevol_lq.png",
+      "metadata": "261-compshader-noisevol_lq.meta.json",
+      "sourceFamily": "projectm-fixture",
+      "strata": ["shader-supported", "volume-textures"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:47:58.911Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "300-beatdetect-bassmidtreb",
+      "title": "300 Beatdetect Bassmidtreb",
+      "image": "300-beatdetect-bassmidtreb.png",
+      "metadata": "300-beatdetect-bassmidtreb.meta.json",
+      "sourceFamily": "projectm-fixture",
+      "strata": ["projectm-upstream", "beat-detect", "regression"],
+      "tolerance": {
+        "profile": "default",
+        "threshold": 16,
+        "failThreshold": 0.02
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 5000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "native projectM 3.1.12 deterministic capture",
+        "importedAt": "2026-07-16T23:19:37.309Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "aderrasi-potion-of-spirits",
+      "title": "Aderrasi - Potion of Spirits",
+      "image": "aderrasi-potion-of-spirits.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "dbleja-hovering-over-mars",
+      "title": "Dbleja - Hovering - Over - Mars",
+      "image": "dbleja-hovering-over-mars.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "dbleja-hovering-over-pluto",
+      "title": "Dbleja - Hovering - Over - Pluto",
+      "image": "dbleja-hovering-over-pluto.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "dbleja-inside-the-tree-blue-mix",
+      "title": "Dbleja - Inside - The - Tree - Blue - Mix",
+      "image": "dbleja-inside-the-tree-blue-mix.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-apocalypse",
+      "title": "Eo.S. - Apocalypse",
+      "image": "eos-apocalypse.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-dark-side-of-the-moon-clean-mix",
+      "title": "Eos - Dark - Side - Of - The - Moon - Clean - Mix",
+      "image": "eos-dark-side-of-the-moon-clean-mix.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-ether",
+      "title": "Eos - Ether",
+      "image": "eos-ether.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-ether-posession-phat-edit-v3",
+      "title": "Eos - Ether - Posession - Phat - Edit - V3",
+      "image": "eos-ether-posession-phat-edit-v3.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "image": "eos-glowsticks-v2-03-music.png",
+      "metadata": "eos-glowsticks-v2-03-music.meta.json",
+      "sourceFamily": "bundled",
+      "strata": ["waveform", "glowsticks", "feedback"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:48.773Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-heater-core-c",
+      "title": "Eo.S. - Heater Core C",
+      "image": "eos-heater-core-c.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-matrix-cube-c",
+      "title": "Eos - Matrix - Cube - C",
+      "image": "eos-matrix-cube-c.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-phat-cat-scan-nirvana",
+      "title": "Eos - Phat - Cat - Scan - Nirvana",
+      "image": "eos-phat-cat-scan-nirvana.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-phat-cubetrace-v2",
+      "title": "Eo.S. + Phat - Cubetrace v2",
+      "image": "eos-phat-cubetrace-v2.png",
+      "metadata": "eos-phat-cubetrace-v2.meta.json",
+      "sourceFamily": "bundled",
+      "strata": ["geometry", "shape", "feedback"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:58.712Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-phat-dark-heart",
+      "title": "Eos - Phat - Dark - Heart",
+      "image": "eos-phat-dark-heart.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-phat-linear-clouds-v2",
+      "title": "Eos - Phat - Linear - Clouds - V2",
+      "image": "eos-phat-linear-clouds-v2.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-phat-magnetosphere-13-pulsar",
+      "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
+      "image": "eos-phat-magnetosphere-13-pulsar.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-phat-vacuum-deification",
+      "title": "Eos - Phat - Vacuum - Deification",
+      "image": "eos-phat-vacuum-deification.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-quasar",
+      "title": "Eos - Quasar",
+      "image": "eos-quasar.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "eos-starburst-05-phasing",
+      "title": "Eos - Starburst - 05 - Phasing",
+      "image": "eos-starburst-05-phasing.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "evet-proteus-core-element-5",
+      "title": "Evet - Proteus - Core - Element - 5",
+      "image": "evet-proteus-core-element-5.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "evet-responsive-acid-iris",
+      "title": "Evet - Responsive - Acid - Iris",
+      "image": "evet-responsive-acid-iris.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "geiss-bipolar-x",
+      "title": "Geiss - Bipolar - X",
+      "image": "geiss-bipolar-x.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "geiss-casino",
+      "title": "Geiss - Casino",
+      "image": "geiss-casino.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "geiss-happy-drops",
+      "title": "Geiss - Happy - Drops",
+      "image": "geiss-happy-drops.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "krash-rovastar-cerebral-demons-stars",
+      "title": "Krash & Rovastar - Cerebral Demons (Stars Remix)",
+      "image": "krash-rovastar-cerebral-demons-stars.png",
+      "metadata": "krash-rovastar-cerebral-demons-stars.meta.json",
+      "sourceFamily": "bundled",
+      "strata": ["feedback", "comet", "motion"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:58.857Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "orb-acid-in-my-eyes",
+      "title": "Orb - Acid - In - My - Eyes",
+      "image": "orb-acid-in-my-eyes.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "orb-cloud-scope",
+      "title": "Orb - Cloud - Scope",
+      "image": "orb-cloud-scope.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "orb-radiation",
+      "title": "Orb - Radiation",
+      "image": "orb-radiation.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "orbasonic",
+      "title": "Orbasonic",
+      "image": "orbasonic.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "phat-rovastar-eos-square-faces-v2",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "image": "phat-rovastar-eos-square-faces-v2.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "phat-zylot-eos-trippy-rotation",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "image": "phat-zylot-eos-trippy-rotation.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "pieturp-sunflare",
+      "title": "Pieturp - Sunflare",
+      "image": "pieturp-sunflare.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "rovastar-and-idiot24-7-abstract-psychaos",
+      "title": "Rovastar - And - Idiot24 - 7 - Abstract - Psychaos",
+      "image": "rovastar-and-idiot24-7-abstract-psychaos.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "rovastar-dark-ritual-star-of-destiny-denied-mix",
+      "title": "Rovastar - Dark - Ritual - Star - Of - Destiny - Denied - Mix",
+      "image": "rovastar-dark-ritual-star-of-destiny-denied-mix.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "rovastar-harlequins-liquid-dragon",
+      "title": "Rovastar - Harlequin's Liquid Dragon",
+      "image": "rovastar-harlequins-liquid-dragon.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "rovastar-mosaics-of-ages",
+      "title": "Rovastar - Mosaics - Of - Ages",
+      "image": "rovastar-mosaics-of-ages.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "rovastar-oozing-resistance",
+      "title": "Rovastar - Oozing - Resistance",
+      "image": "rovastar-oozing-resistance.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "rovastar-parallel-universe",
+      "title": "Rovastar - Parallel Universe",
+      "image": "rovastar-parallel-universe.png",
+      "metadata": "rovastar-parallel-universe.meta.json",
+      "sourceFamily": "bundled",
+      "strata": ["feedback", "laser", "shader-supported"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "projectm",
+        "requiredBackend": "webgpu",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "existing repo artifact",
+        "importedAt": "2026-07-19T03:31:58.560Z",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "shifter-curlique",
+      "title": "Shifter - Curlique",
+      "image": "shifter-curlique.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "shifter-glassworms-flare",
+      "title": "Shifter - Glassworms - Flare",
+      "image": "shifter-glassworms-flare.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "shifter-snakeskin",
+      "title": "Shifter - Snakeskin",
+      "image": "shifter-snakeskin.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "shifter-spectro",
+      "title": "Shifter - Spectro",
+      "image": "shifter-spectro.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    },
+    {
+      "id": "shifter-swarm",
+      "title": "Shifter - Swarm",
+      "image": "shifter-swarm.png",
+      "metadata": null,
+      "sourceFamily": "bundled",
+      "strata": ["bundled", "cream-of-the-crop"],
+      "tolerance": {
+        "profile": "loose",
+        "threshold": 32,
+        "failThreshold": 0.05
+      },
+      "capture": {
+        "renderer": "stims",
+        "requiredBackend": "webgl",
+        "width": 1280,
+        "height": 720,
+        "warmupMs": 3000,
+        "captureOffsetMs": 0
+      },
+      "provenance": {
+        "label": "checked-in Stims reference capture",
+        "importedAt": "unknown",
+        "sourceArtifactId": null
+      }
+    }
+  ]
+}

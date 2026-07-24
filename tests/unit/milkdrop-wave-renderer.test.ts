@@ -6,12 +6,12 @@ import {
   Points,
   type PointsMaterial,
 } from 'three';
-import type { MilkdropBackendBehavior } from '../../assets/js/milkdrop/renderer-adapter';
+import type { MilkdropBackendBehavior } from '../../src/js/milkdrop/renderer-adapter';
 import {
   createWaveObject,
   syncWaveObject,
-} from '../../assets/js/milkdrop/renderer-helpers/wave-renderer';
-import type { MilkdropWaveVisual } from '../../assets/js/milkdrop/types';
+} from '../../src/js/milkdrop/renderer-helpers/wave-renderer';
+import type { MilkdropWaveVisual } from '../../src/js/milkdrop/types';
 
 // Matches THICK_WAVE_BASE_OFFSET = 1/512 in wave-renderer.ts with formula:
 // spread = THICK_WAVE_BASE_OFFSET * Math.max(1, thickness * 1.5)

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
-import { createMilkdropCatalogStore } from '../../assets/js/milkdrop/catalog-store.ts';
+import { createMilkdropCatalogStore } from '../../src/js/milkdrop/catalog-store.ts';
 
 describe('milkdrop catalog store', () => {
   const originalFetch = globalThis.fetch;

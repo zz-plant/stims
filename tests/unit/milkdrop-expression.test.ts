@@ -3,7 +3,7 @@ import {
   evaluateMilkdropExpression,
   parseMilkdropExpression,
   parseMilkdropStatement,
-} from '../../assets/js/milkdrop/expression.ts';
+} from '../../src/js/milkdrop/expression.ts';
 
 describe('milkdrop expression', () => {
   test('supports AVS-style integer math and bitwise helpers', () => {

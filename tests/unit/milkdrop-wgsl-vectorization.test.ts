@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   emitWgslVectorAssignment,
   fuseAdjacentWgslScalars,
-} from '../../assets/js/milkdrop/wgsl-vectorization.ts';
+} from '../../src/js/milkdrop/wgsl-vectorization.ts';
 
 describe('WGSL vectorization helpers', () => {
   test('emits vector constructors for related scalar components', () => {

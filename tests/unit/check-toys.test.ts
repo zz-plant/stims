@@ -13,9 +13,9 @@ import {
 
 async function createTempRepo() {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'toy-checks-'));
-  await fs.mkdir(path.join(root, 'assets/js/toys'), { recursive: true });
-  await fs.mkdir(path.join(root, 'assets/js/data'), { recursive: true });
-  await fs.mkdir(path.join(root, 'assets/data'), { recursive: true });
+  await fs.mkdir(path.join(root, 'src/js/toys'), { recursive: true });
+  await fs.mkdir(path.join(root, 'src/js/data'), { recursive: true });
+  await fs.mkdir(path.join(root, 'src/data'), { recursive: true });
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
   await fs.mkdir(path.join(root, 'public'), { recursive: true });
 
@@ -26,9 +26,9 @@ async function createTempRepo() {
     '# Toy Manifest Reference\n',
   );
 
-  await fs.writeFile(path.join(root, 'assets/data/toys.json'), '[]\n');
+  await fs.writeFile(path.join(root, 'src/data/toys.json'), '[]\n');
   await fs.writeFile(
-    path.join(root, 'assets/js/data/toy-manifest.ts'),
+    path.join(root, 'src/js/data/toy-manifest.ts'),
     'export const toyManifest = [];\n',
   );
   await fs.writeFile(path.join(root, 'public/toys.json'), '[]\n');
@@ -37,14 +37,14 @@ async function createTempRepo() {
 }
 
 async function writeToyModule(root: string, slug: string) {
-  const modulePath = path.join(root, 'assets/js/toys', `${slug}.ts`);
+  const modulePath = path.join(root, 'src/js/toys', `${slug}.ts`);
   await fs.writeFile(modulePath, `export const start = () => {};\n`);
 }
 
 async function writeGeneratedArtifacts(root: string, entries: unknown) {
-  const manifest = buildManifestSource(entries, 'assets/data/toys.json');
+  const manifest = buildManifestSource(entries, 'src/data/toys.json');
   await fs.writeFile(
-    path.join(root, 'assets/js/data/toy-manifest.ts'),
+    path.join(root, 'src/js/data/toy-manifest.ts'),
     buildManifestModule(manifest),
   );
   await fs.writeFile(
@@ -66,7 +66,7 @@ describe('check-toys script', () => {
         slug: 'aligned',
         title: 'Aligned',
         description: 'ok',
-        module: 'assets/js/toys/aligned.ts',
+        module: 'src/js/toys/aligned.ts',
         type: 'module',
         requiresWebGPU: false,
         capabilities: {
@@ -79,7 +79,7 @@ describe('check-toys script', () => {
         slug: 'steady-bloom',
         title: 'Steady Bloom',
         description: 'ok',
-        module: 'assets/js/toys/steady-bloom.ts',
+        module: 'src/js/toys/steady-bloom.ts',
         type: 'module',
         requiresWebGPU: false,
         capabilities: {
@@ -93,7 +93,7 @@ describe('check-toys script', () => {
     await Promise.all(entries.map((entry) => writeToyModule(root, entry.slug)));
 
     await fs.writeFile(
-      path.join(root, 'assets/data/toys.json'),
+      path.join(root, 'src/data/toys.json'),
       `${JSON.stringify(entries, null, 2)}\n`,
     );
     await writeGeneratedArtifacts(root, entries);
@@ -122,7 +122,7 @@ describe('check-toys script', () => {
     ];
 
     await fs.writeFile(
-      path.join(root, 'assets/data/toys.json'),
+      path.join(root, 'src/data/toys.json'),
       `${JSON.stringify(entries, null, 2)}\n`,
     );
     await writeGeneratedArtifacts(root, entries);
@@ -170,11 +170,11 @@ describe('check-toys script', () => {
     ];
 
     await fs.writeFile(
-      path.join(root, 'assets/data/toys.json'),
+      path.join(root, 'src/data/toys.json'),
       `${JSON.stringify(entries, null, 2)}\n`,
     );
     await fs.writeFile(
-      path.join(root, 'assets/js/data/toy-manifest.ts'),
+      path.join(root, 'src/js/data/toy-manifest.ts'),
       'export const toyManifest = [] as const;\n',
     );
     await fs.writeFile(path.join(root, 'public/toys.json'), '[]\n');
@@ -233,19 +233,19 @@ describe('check-toys script', () => {
     ];
 
     await fs.writeFile(
-      path.join(root, 'assets/data/toys.json'),
+      path.join(root, 'src/data/toys.json'),
       `${JSON.stringify(entries, null, 2)}\n`,
     );
     await fs.writeFile(
-      path.join(root, 'assets/js/data/toy-manifest.ts'),
+      path.join(root, 'src/js/data/toy-manifest.ts'),
       buildManifestModule(
-        buildManifestSource(entries, 'assets/data/toys.json'),
+        buildManifestSource(entries, 'src/data/toys.json'),
       ),
     );
     await fs.writeFile(
       path.join(root, 'public/toys.json'),
       buildPublicToysJson(
-        buildManifestSource(entries, 'assets/data/toys.json'),
+        buildManifestSource(entries, 'src/data/toys.json'),
       ),
     );
     await fs.rm(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'));
@@ -269,7 +269,7 @@ describe('check-toys script', () => {
     const slug = 'missing-start';
 
     await fs.writeFile(
-      path.join(root, 'assets/js/toys', `${slug}.ts`),
+      path.join(root, 'src/js/toys', `${slug}.ts`),
       'export const notStart = () => {};\n',
     );
 
@@ -290,7 +290,7 @@ describe('check-toys script', () => {
     ];
 
     await fs.writeFile(
-      path.join(root, 'assets/data/toys.json'),
+      path.join(root, 'src/data/toys.json'),
       `${JSON.stringify(entries, null, 2)}\n`,
     );
     await writeGeneratedArtifacts(root, entries);
