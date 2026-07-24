@@ -75,7 +75,9 @@ const appReady = new Promise<void>((resolve) => {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js');
+    navigator.serviceWorker.register('/service-worker.js').then((reg) => {
+      void reg.update();
+    });
   });
 }
 

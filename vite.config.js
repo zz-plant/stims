@@ -30,6 +30,8 @@ if (!rollupInputs.index) {
   rollupInputs.index = path.resolve(rootDir, 'index.html');
 }
 
+const buildId = `v3-${Date.now().toString(36)}`;
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -57,20 +59,9 @@ export default defineConfig({
       preserveEntrySignatures: 'strict',
       input: rollupInputs,
       output: {
-        manualChunks(id) {
-          if (
-            id.includes('node_modules/react') ||
-            id.includes('node_modules/react-dom')
-          ) {
-            return 'vendor-react';
-          }
-          if (id.includes('node_modules/three')) {
-            return 'vendor-three';
-          }
-          if (id.includes('node_modules/@codemirror')) {
-            return 'vendor-codemirror';
-          }
-        },
+        entryFileNames: `assets/[name]-${buildId}-[hash].js`,
+        chunkFileNames: `assets/[name]-${buildId}-[hash].js`,
+        assetFileNames: `assets/[name]-${buildId}-[hash].[ext]`,
       },
     },
   },

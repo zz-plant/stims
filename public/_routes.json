@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/assets/*",
+    "/vendor/*",
+    "/icons/*",
+    "/screenshots/*",
+    "/textures/*",
+    "/milkdrop-presets/*",
+    "/robots.txt",
+    "/sitemap*.xml",
+    "/manifest.json",
+    "/favicon.ico"
+  ]
+}

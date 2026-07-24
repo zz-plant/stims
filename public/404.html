@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>404 Not Found</title>
+  </head>
+  <body>
+    <h1>404 Not Found</h1>
+    <p>The requested resource could not be found.</p>
+    <script>
+      if (window.location.pathname.startsWith('/assets/')) {
+        console.error('Asset not found:', window.location.pathname);
+      } else {
+        window.location.replace('/');
+      }
+    </script>
+  </body>
+</html>

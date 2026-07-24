@@ -8,12 +8,6 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-/assets/*.js
-  Content-Type: application/javascript
-
-/assets/*.css
-  Content-Type: text/css
-
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 

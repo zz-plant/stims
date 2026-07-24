@@ -32,6 +32,17 @@ export async function onRequest(context: EventContext): Promise<Response> {
   const { request, next } = context;
   const url = new URL(request.url);
 
+  // Immediately skip middleware for static assets or API routes
+  if (
+    url.pathname.startsWith('/assets/') ||
+    url.pathname.startsWith('/vendor/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/milkdrop-presets/') ||
+    url.pathname.startsWith('/api/')
+  ) {
+    return next();
+  }
+
   // Extract preset ID from query param ?preset=<id> or path /preset/<id>
   let presetId = url.searchParams.get('preset');
   if (!presetId && url.pathname.startsWith('/preset/')) {
