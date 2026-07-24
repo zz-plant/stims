@@ -271,7 +271,6 @@ html.light
   html.light [data-shell-dialog] :focus-visible {
     outline: 3px solid var(--stims-cool);
     outline-offset: 3px;
-    box-shadow: none;
   }
 }
 

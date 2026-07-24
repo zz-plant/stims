@@ -796,7 +796,6 @@ button.text-link {
 .cta-button:focus-visible {
   outline: var(--tv-focus-outline-width) solid var(--accent-color);
   outline-offset: var(--tv-focus-outline-offset);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
 }
 
 .cta-button::after {

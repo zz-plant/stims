@@ -388,7 +388,7 @@ body {
   align-items: center;
   gap: 8px;
   background: rgba(18, 24, 34, 0.88);
-  color: #e8edf2;
+  color: var(--stims-ink);
   text-decoration: none;
   font-size: 0.95rem;
   letter-spacing: 0.02em;
@@ -421,9 +421,8 @@ body {
 }
 
 .home-link:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.85);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 3px;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
 }
 
 .toy-shell-escape {
@@ -463,7 +462,7 @@ body {
 }
 
 .toy-shell-escape__link:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
 }
 
@@ -751,9 +750,8 @@ body {
 .toy-nav__next:focus-visible,
 .toy-nav__flow:focus-visible,
 .toy-nav__challenge:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.9);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 3px;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
 }
 
 .toy-nav__share:active,
@@ -817,7 +815,7 @@ body {
 }
 
 .toy-nav__mobile-toggle:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.6);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
 }
 
@@ -848,7 +846,7 @@ body {
 }
 
 .toy-nav__back-quick:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.6);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
 }
 
@@ -970,7 +968,7 @@ body {
 }
 
 .renderer-pill__retry:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.9);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 3px;
 }
 
@@ -1013,9 +1011,8 @@ body {
 }
 
 .toy-nav__back:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.9);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 3px;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35);
 }
 
 .toy-nav__back:active {
@@ -1231,7 +1228,7 @@ body {
 }
 
 .rendering-overlay__button:focus-visible {
-  outline: 2px solid rgba(124, 232, 255, 0.72);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 3px;
 }
 
@@ -1539,7 +1536,7 @@ body {
 }
 
 .control-panel__dismiss:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
 }
 
@@ -1653,9 +1650,8 @@ body {
 }
 
 .control-panel__mode:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
 .control-panel__mode.is-active {
@@ -1752,9 +1748,8 @@ body {
 }
 
 .control-panel__advanced-toggle:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.85);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
 .control-panel__status {
@@ -1874,7 +1869,7 @@ body {
 }
 
 .control-panel__info:focus-visible {
-  outline: 2px solid rgba(148, 165, 180, 0.85);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -1947,7 +1942,7 @@ body {
   border-radius: var(--radius-pill);
   background: var(--stims-white-04);
   border: 1px solid rgba(148, 165, 180, 0.24);
-  color: #9bf3ff;
+  color: var(--stims-cool);
   font-size: 0.85rem;
   font-family: inherit;
   text-align: left;
@@ -1957,6 +1952,11 @@ body {
     border-color 0.2s ease,
     transform 0.2s ease;
   touch-action: manipulation;
+}
+
+.control-panel__chip:focus-visible {
+  outline: 2px solid var(--stims-cool);
+  outline-offset: 2px;
 }
 
 .control-panel__chip-title,
@@ -3115,7 +3115,7 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__toggle:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
 }
 
@@ -3172,7 +3172,7 @@ body.tv-mode .control-panel input {
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 10px;
   background: rgba(15, 23, 42, 0.5);
-  color: #e2e8f0;
+  color: var(--stims-ink);
   font-size: 0.85rem;
   outline: none;
   transition:
@@ -3214,7 +3214,7 @@ body.tv-mode .control-panel input {
 }
 
 .milkdrop-overlay__preset-launch:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.95);
+  outline: 2px solid var(--stims-cool);
   outline-offset: 2px;
   border-radius: 6px;
 }

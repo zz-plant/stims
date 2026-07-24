@@ -46,7 +46,7 @@ import {
 } from './workspace-ui.tsx';
 
 const AudioMatchPanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.AudioMatchPanel })),
+  import('./LazyPanels.tsx').then((m) => ({ default: m.AudioMatchPanel })),
 );
 const BrowseSheetPanel = lazy(() =>
   import('./BrowseSheetPanel.tsx').then((m) => ({
@@ -57,7 +57,7 @@ const EditorPanel = lazy(() =>
   import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
 );
 const RefinePanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.RefinePanel })),
+  import('./LazyPanels.tsx').then((m) => ({ default: m.RefinePanel })),
 );
 const SettingsSheetPanel = lazy(() =>
   import('./SettingsSheetPanel.tsx').then((m) => ({
@@ -65,7 +65,7 @@ const SettingsSheetPanel = lazy(() =>
   })),
 );
 const VisualSearchPanel = lazy(() =>
-  import('./SidePanel.tsx').then((m) => ({ default: m.VisualSearchPanel })),
+  import('./LazyPanels.tsx').then((m) => ({ default: m.VisualSearchPanel })),
 );
 
 function StimsWorkspaceAppShell() {

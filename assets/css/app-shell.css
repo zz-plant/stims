@@ -245,10 +245,8 @@ body[data-page="workspace"][data-live="true"] {
   .stims-shell__starter-card:focus-visible,
   .stims-shell__icon-button:focus-visible,
   .cta-button:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 3px rgba(119, 201, 255, 0.4),
-      0 0 10px rgba(119, 201, 255, 0.25);
+    outline: 2px solid var(--stims-cool);
+    outline-offset: 2px;
   }
 
   .stims-shell__content {
@@ -836,20 +834,22 @@ body[data-page="workspace"][data-live="true"] {
   }
 
   .stims-shell__input:focus {
-    outline: none;
     border-color: rgba(119, 201, 255, 0.55);
     background: linear-gradient(
       180deg,
       rgba(119, 201, 255, 0.06),
       rgba(255, 255, 255, 0.02)
     );
+  }
+
+  .stims-shell__input:focus:not(:focus-visible) {
     box-shadow:
       0 0 12px rgba(119, 201, 255, 0.25),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .stims-shell__input:focus-visible {
-    outline: 2px solid rgba(119, 201, 255, 0.5);
+    outline: 2px solid var(--stims-cool);
     outline-offset: 2px;
   }
 
@@ -886,7 +886,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__preset-list .stims-shell__preset-card-wrap {
     content-visibility: auto;
-    contain-intrinsic-size: 220px;
+    contain-intrinsic-size: auto 180px;
     min-width: 0;
     width: 100%;
   }
@@ -2457,7 +2457,7 @@ body[data-page="workspace"][data-live="true"] {
 
   .stims-shell__preset-list > li {
     content-visibility: auto;
-    contain-intrinsic-size: 220px;
+    contain-intrinsic-size: auto 180px;
     scroll-snap-align: start;
   }
 
@@ -4873,7 +4873,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   width: 6px;
   height: 6px;
   background: var(--stims-accent);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   box-shadow: 0 0 8px var(--stims-accent-glow);
 }
 
@@ -4881,7 +4881,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   position: absolute;
   inset: 0;
   border: 1px solid var(--stims-accent-soft);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   animation: stims-pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
@@ -4981,7 +4981,7 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   justify-content: center;
   background: var(--stims-white-04);
   border: 1px solid var(--stims-line-soft);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   color: var(--stims-ink);
   cursor: pointer;
   transition:

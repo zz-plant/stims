@@ -18,13 +18,20 @@
   --stims-white-06: rgba(255, 255, 255, 0.06);
   --stims-white-08: rgba(255, 255, 255, 0.08);
   --stims-white-12: rgba(255, 255, 255, 0.12);
+  --stims-white-64: rgba(255, 255, 255, 0.64);
   --stims-border-08: rgba(255, 255, 255, 0.08);
   --stims-shadow-22: rgba(0, 0, 0, 0.22);
   --stims-shadow-34: rgba(0, 0, 0, 0.34);
-  --stims-muted-35: rgba(246, 239, 228, 0.35);
+  --stims-muted-35: color-mix(in srgb, var(--stims-muted) 35%, transparent);
   --stims-focus-95: rgba(244, 122, 84, 0.95);
   --stims-focus-ring-35: rgba(244, 122, 84, 0.35);
+  --stims-accent-blue: rgba(119, 201, 255, 0.8);
   --stims-accent-blue-08: rgba(119, 201, 255, 0.08);
+  --stims-audio-glow: rgba(119, 201, 255, 0.16);
+  --stims-border: rgba(255, 255, 255, 0.14);
+  --stims-ink-dim: rgba(255, 248, 239, 0.4);
+  --stims-ink-muted: rgba(247, 244, 235, 0.65);
+  --stims-energy: 0;
 
   /* ── Viewport ──────────────────────────────────────────────── */
   --app-height: 100dvh;
@@ -48,19 +55,6 @@
   --highlight-glow: rgba(211, 137, 84, 0.18);
 
   /* ── App-shell semantic colors ──────────────────────────────── */
-  --stims-ink: var(--text-color);
-  --stims-ink-strong: #fff8ef;
-  --stims-muted: rgba(246, 239, 228, 0.74);
-  --stims-line: var(--stims-white-12);
-  --stims-line-strong: rgba(255, 255, 255, 0.2);
-  --stims-line-soft: var(--stims-white-08);
-  --stims-cool: #77c9ff;
-  --stims-accent: #f47a54;
-  --stims-accent-soft: rgba(244, 122, 84, 0.2);
-  --stims-accent-glow: rgba(244, 122, 84, 0.18);
-  --stims-good: #7de0a2;
-  --stims-warn: #ffd166;
-  --stims-bad: #ff7b72;
 
   /* ── Surface Gradients & Effects ──────────────────────────────── */
   --surface-gradient: linear-gradient(
@@ -177,10 +171,7 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
-  --radius-full: 9999px;
-  --radius-lg-index: 26px;
-  --radius-md-index: 18px;
-  --radius-pill: 999px;
+  --radius-pill: 9999px;
   --stims-radius-panel: 18px;
   --stims-radius-card: 14px;
   --stims-radius-control: 10px;
@@ -229,7 +220,7 @@
   --content-width: 1220px;
   --section-gap: clamp(1.9rem, 2.8vw, 3rem);
   --touch-target-min: 44px;
-  --focus-ring: 0 0 0 3px rgba(244, 122, 84, 0.42);
+  --focus-ring: 0 0 0 3px rgba(119, 201, 255, 0.42);
   --focus-ring-offset: 0 0 0 2px rgba(5, 8, 14, 0.8);
 
   /* ── Z-Index Scale ─────────────────────────────────────────-- */
@@ -378,6 +369,8 @@ html.light {
   color-scheme: light;
   scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);
+  --focus-ring: 0 0 0 3px rgba(13, 99, 129, 0.35);
+  --focus-ring-offset: 0 0 0 2px rgba(255, 250, 240, 0.8);
 }
 
 /* ── Performance Tier: Low-End Devices ────────────────────────────── */
