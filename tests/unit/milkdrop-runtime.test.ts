@@ -3,7 +3,7 @@ import {
   applyMilkdropInteractionResponse,
   getMilkdropDetailScale,
 } from '../../assets/js/milkdrop/runtime/interaction-response.ts';
-import { __milkdropRuntimeTestUtils } from '../../assets/js/milkdrop/runtime.ts';
+import { __milkdropRuntimeTestUtils } from '../../assets/js/milkdrop/runtime/test-utils.ts';
 import type { MilkdropFrameState } from '../../assets/js/milkdrop/types.ts';
 
 describe('milkdrop runtime detail scale', () => {

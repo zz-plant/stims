@@ -1046,6 +1046,4 @@ function buildExperienceController(deps: Record<string, any>) {
   };
 }
 
-export const __milkdropRuntimeTestUtils = {
-  cloneBlendState,
-};
+export { __milkdropRuntimeTestUtils } from './runtime/test-utils.ts';
