@@ -64,6 +64,7 @@ export default defineConfig({
         assetFileNames: `assets/[name]-${buildId}-[hash].[ext]`,
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
+            if (id.includes('three/webgpu')) return 'vendor-three-webgpu';
             if (id.includes('three')) return 'vendor-three';
             if (id.includes('@codemirror/')) return 'vendor-codemirror';
             if (id.includes('react') || id.includes('react-dom'))
