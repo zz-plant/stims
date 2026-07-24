@@ -29,6 +29,7 @@
     "test:fast": "bun run scripts/run-tests.ts --profile fast",
     "test:unit": "bun run scripts/run-tests.ts --profile unit",
     "test:integration": "bun run scripts/run-tests.ts --profile integration",
+    "test:e2e": "bun run scripts/run-tests.ts --profile e2e",
     "test:compat": "bun run scripts/run-tests.ts --profile compat",
     "check:accessibility": "bun run scripts/accessibility-audit.ts",
     "test:watch": "bun run scripts/run-tests.ts --watch",
