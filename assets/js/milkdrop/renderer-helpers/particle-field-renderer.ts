@@ -233,7 +233,7 @@ function hashNumber(value: string) {
     hash ^= value.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
-  return (hash >>> 0) / 0xffffffff;
+  return (hash >>> 0) / 0x100000000;
 }
 
 function fract(value: number) {

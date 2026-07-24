@@ -350,7 +350,7 @@ class MilkdropPresetVM implements MilkdropVM {
 
   private nextRandom = () => {
     this.randomState = (1664525 * this.randomState + 1013904223) >>> 0;
-    return this.randomState / 0xffffffff;
+    return this.randomState / 0x100000000;
   };
 
   private seedCustomWaveState(wave: MilkdropWaveDefinition) {

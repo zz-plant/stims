@@ -32,7 +32,6 @@ import { reportLoadStatus } from './load-status.ts';
 import { NewHomePage } from './NewHomePage.tsx';
 import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
-import { SidePanel } from './SidePanel.tsx';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   useEngineSnapshot,
@@ -46,7 +45,7 @@ import {
 } from './workspace-ui.tsx';
 
 const AudioMatchPanel = lazy(() =>
-  import('./LazyPanels.tsx').then((m) => ({ default: m.AudioMatchPanel })),
+  import('./SidePanel.tsx').then((m) => ({ default: m.AudioMatchPanel })),
 );
 const BrowseSheetPanel = lazy(() =>
   import('./BrowseSheetPanel.tsx').then((m) => ({
@@ -57,15 +56,18 @@ const EditorPanel = lazy(() =>
   import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
 );
 const RefinePanel = lazy(() =>
-  import('./LazyPanels.tsx').then((m) => ({ default: m.RefinePanel })),
+  import('./SidePanel.tsx').then((m) => ({ default: m.RefinePanel })),
 );
 const SettingsSheetPanel = lazy(() =>
   import('./SettingsSheetPanel.tsx').then((m) => ({
     default: m.SettingsSheetPanel,
   })),
 );
+const SidePanel = lazy(() =>
+  import('./SidePanel.tsx').then((m) => ({ default: m.SidePanel })),
+);
 const VisualSearchPanel = lazy(() =>
-  import('./LazyPanels.tsx').then((m) => ({ default: m.VisualSearchPanel })),
+  import('./SidePanel.tsx').then((m) => ({ default: m.VisualSearchPanel })),
 );
 
 function StimsWorkspaceAppShell() {

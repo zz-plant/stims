@@ -590,7 +590,7 @@ export function buildMainWaveFrame({
         const sampleR = sampleValue;
         const sampleL = sampleWaveformDataOffset(signals, t, 32 / 512);
         const radius = 0.53 + 0.43 * sampleR + mystery;
-        const angle = sampleL * 1.57 + signals.time * 2.3;
+        const angle = sampleL * 1.5708 + signals.time * 2.3;
         x = centerX + Math.cos(angle) * radius;
         y = centerY + Math.sin(angle) * radius;
         break;

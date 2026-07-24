@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-handler.ts';
+import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { formatPresetShareCopy, shareOrCopyLink } from '../utils/share-link.ts';
 import type {

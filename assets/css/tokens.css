@@ -26,12 +26,21 @@
   --stims-focus-95: rgba(244, 122, 84, 0.95);
   --stims-focus-ring-35: rgba(244, 122, 84, 0.35);
   --stims-accent-blue: rgba(119, 201, 255, 0.8);
-  --stims-accent-blue-08: rgba(119, 201, 255, 0.08);
   --stims-audio-glow: rgba(119, 201, 255, 0.16);
   --stims-border: rgba(255, 255, 255, 0.14);
   --stims-ink-dim: rgba(255, 248, 239, 0.4);
   --stims-ink-muted: rgba(247, 244, 235, 0.65);
   --stims-energy: 0;
+
+  /* ── App-shell Chrome Layout ────────────────────────────────── */
+  --stims-chrome-top: 22px;
+  --stims-chrome-height: 40px;
+  --stims-header-gap: 20px;
+  --stims-header-top: calc(
+    var(--stims-chrome-top) +
+    var(--stims-chrome-height) +
+    var(--stims-header-gap)
+  );
 
   /* ── Viewport ──────────────────────────────────────────────── */
   --app-height: 100dvh;
@@ -99,13 +108,9 @@
   --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 
   /* ── App-shell panel fills ────────────────────────────────── */
+  --stims-surface: rgba(10, 13, 20, 0.85);
   --stims-panel: rgba(10, 13, 20, 0.74);
   --stims-panel-strong: rgba(12, 16, 26, 0.92);
-  --stims-panel-fill: linear-gradient(
-    180deg,
-    rgba(14, 19, 30, 0.96),
-    rgba(7, 11, 20, 0.9)
-  );
   --stims-panel-fill-strong: linear-gradient(
     180deg,
     rgba(14, 19, 30, 0.98),
@@ -121,27 +126,6 @@
     var(--stims-white-12),
     var(--stims-white-04)
   );
-  --stims-rail-fill: linear-gradient(
-    180deg,
-    rgba(9, 13, 21, 0.9),
-    rgba(5, 8, 15, 0.76)
-  );
-  --stims-glow-blue: radial-gradient(
-    circle at top right,
-    rgba(119, 201, 255, 0.12),
-    transparent 32%
-  );
-  --stims-glow-orange: radial-gradient(
-    circle at 24% 8%,
-    rgba(244, 122, 84, 0.14),
-    transparent 26%
-  );
-  --stims-glow-green: radial-gradient(
-    circle at 86% 88%,
-    rgba(125, 224, 162, 0.12),
-    transparent 32%
-  );
-
   /* ── Shadows ───────────────────────────────────────────────── */
   --shadow-strong:
     0 24px 60px rgba(0, 0, 0, 0.34), 0 4px 18px rgba(95, 192, 181, 0.12);
@@ -172,11 +156,11 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-pill: 9999px;
+  --stims-radius: 12px;
   --stims-radius-panel: 18px;
   --stims-radius-card: 14px;
   --stims-radius-control: 10px;
   --stims-radius-stage: 18px;
-  --stims-radius-mobile-panel: 16px;
 
   /* ── Typography ────────────────────────────────────────────── */
   --font-family-base:
@@ -365,7 +349,6 @@ html.light {
   --stims-panel-strong: rgba(255, 250, 240, 0.94);
   --stims-control-fill: linear-gradient(180deg, #fffdf8, #f0ece3);
   --stims-control-fill-hover: linear-gradient(180deg, #ffffff, #e8f0ef);
-  --stims-rail-fill: linear-gradient(180deg, #fffaf0, #eee8dd);
   color-scheme: light;
   scrollbar-color: color-mix(in srgb, var(--accent-color) 40%, transparent)
     color-mix(in srgb, var(--card-bg) 80%, transparent);

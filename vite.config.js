@@ -62,6 +62,15 @@ export default defineConfig({
         entryFileNames: `assets/[name]-${buildId}-[hash].js`,
         chunkFileNames: `assets/[name]-${buildId}-[hash].js`,
         assetFileNames: `assets/[name]-${buildId}-[hash].[ext]`,
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('three')) return 'vendor-three';
+            if (id.includes('@codemirror/')) return 'vendor-codemirror';
+            if (id.includes('react') || id.includes('react-dom'))
+              return 'vendor-react';
+            return 'vendor-other';
+          }
+        },
       },
     },
   },
