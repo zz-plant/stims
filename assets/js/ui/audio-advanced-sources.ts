@@ -95,7 +95,7 @@ export function renderAdvancedAudioSources(
               id="youtube-url"
               class="control-panel__input"
               type="url"
-              placeholder="https://youtube.com/watch?v=..."
+              placeholder="https://youtube.com/watch?v=…"
               autocomplete="off"
               inputmode="url"
             />

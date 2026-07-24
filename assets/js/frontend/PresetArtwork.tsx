@@ -66,6 +66,8 @@ export function PresetArtwork({
           src={imageUrl}
           alt=""
           loading="lazy"
+          width={220}
+          height={180}
           onError={(e) => {
             e.currentTarget.style.display = 'none';
           }}

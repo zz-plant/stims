@@ -700,7 +700,7 @@ export class EditorPanel {
       const instruction = refineInput.value.trim();
       if (!instruction || refining) return;
       refining = true;
-      refineBtn.textContent = '...';
+      refineBtn.textContent = '…';
       refineBtn.disabled = true;
       try {
         const currentSource = this.editor.state.doc.toString();
@@ -775,7 +775,7 @@ export class EditorPanel {
     explainBtn.addEventListener('click', async () => {
       if (explaining) return;
       explaining = true;
-      explainBtn.textContent = '...';
+      explainBtn.textContent = '…';
       explainBtn.disabled = true;
       try {
         const currentSource = this.editor.state.doc.toString();

@@ -393,7 +393,7 @@ export class InspectorPanel {
 
     if (!frameState || !compiled) {
       if (this.shouldRenderMetrics(isOpen)) {
-        this.metricsElement.textContent = 'Waiting for preview frames...';
+        this.metricsElement.textContent = 'Waiting for preview frames…';
       }
       this.syncSceneSelectionSummary();
       return;

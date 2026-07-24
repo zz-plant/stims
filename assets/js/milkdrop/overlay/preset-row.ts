@@ -385,6 +385,8 @@ function buildPresetRow({
     previewImage.className = 'milkdrop-overlay__preset-preview-image';
     previewImage.alt = `${preset.title} runtime preview`;
     previewImage.src = preview.imageUrl;
+    previewImage.width = 200;
+    previewImage.height = 150;
     previewFrame.appendChild(previewImage);
   } else {
     const previewFallback = document.createElement('div');

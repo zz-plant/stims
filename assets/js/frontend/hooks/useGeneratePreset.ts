@@ -22,7 +22,7 @@ export function useGeneratePreset() {
       abortRef.current = controller;
 
       setState('generating');
-      setStatusMessage(`Generating: "${query}"...`);
+      setStatusMessage(`Generating: "${query}"…`);
 
       try {
         const response = await fetch('/api/generate-preset', {

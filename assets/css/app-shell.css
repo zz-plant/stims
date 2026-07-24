@@ -848,6 +848,11 @@ body[data-page="workspace"][data-live="true"] {
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
+  .stims-shell__input:focus-visible {
+    outline: 2px solid rgba(119, 201, 255, 0.5);
+    outline-offset: 2px;
+  }
+
   .stims-shell__input::placeholder {
     color: rgba(246, 239, 228, 0.44);
   }
@@ -4769,7 +4774,9 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   font-size: 0.9rem;
   font-weight: 500;
   letter-spacing: 0.01em;
-  transition: all 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 
 .stims-shell__error-btn:hover {
@@ -4840,7 +4847,11 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
     var(--shadow-soft),
     0 0 20px rgba(0, 242, 254, 0.06);
   max-width: calc(100vw - 32px);
-  transition: all var(--transition-base);
+  transition:
+    opacity var(--transition-base),
+    transform var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 .stims-hud-bar__brand {
@@ -4973,7 +4984,10 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
   border-radius: var(--radius-full);
   color: var(--stims-ink);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .stims-hud-bar__quick-btn:hover {
