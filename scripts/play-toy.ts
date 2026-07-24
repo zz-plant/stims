@@ -131,7 +131,9 @@ const VULKAN_WEBGPU_RENDERER_ARGS = [
 ];
 const INITIAL_SHELL_TIMEOUT_MS = 60000;
 const TOY_LOAD_TIMEOUT_MS = 30000;
-const AUDIO_ACTIVATION_TIMEOUT_MS = 5000;
+// Route-driven demo audio activates a few seconds after the runtime is ready;
+// 5s used to race that and fail intermittently. Wait with real margin.
+const AUDIO_ACTIVATION_TIMEOUT_MS = 15000;
 
 type PlayToyPerformanceSample = {
   frameMs: number;
@@ -1379,8 +1381,12 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       console.log(`Preset ${normalizedOptions.presetId} ready.`);
     }
 
-    // Wait for audio activation and retry via the agent API if the initial UI click
-    // won the race against the shell but not the runtime audio starter.
+    // When demo audio is requested through the route, the shell starts it
+    // itself once the runtime is ready — there is no button to click, and the
+    // agent-API fallback below can't manufacture one. Route-driven activation
+    // lands a few seconds after the toy loads, so wait long enough to cover it
+    // rather than racing a short timeout and then failing on a retry that has
+    // nothing to click.
     let audioActivated = await waitForAudioActive(
       page,
       AUDIO_ACTIVATION_TIMEOUT_MS,
@@ -1392,12 +1398,14 @@ export async function playToy(options: PlayToyOptions): Promise<PlayToyResult> {
       })
     ) {
       console.warn('Audio activation timed out. Retrying demo audio...');
-      if (await requestDemoAudio(page)) {
-        audioActivated = await waitForAudioActive(
-          page,
-          AUDIO_ACTIVATION_TIMEOUT_MS,
-        );
-      }
+      // requestDemoAudio may find nothing to click (the shell exposes no demo
+      // button), but the route still drives activation, so wait again
+      // regardless of whether the retry located an affordance.
+      await requestDemoAudio(page);
+      audioActivated = await waitForAudioActive(
+        page,
+        AUDIO_ACTIVATION_TIMEOUT_MS,
+      );
     }
 
     const audioActivationError = getPlayToyAudioActivationError({
