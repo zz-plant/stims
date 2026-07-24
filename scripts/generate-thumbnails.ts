@@ -18,7 +18,7 @@ import { chromium } from 'playwright';
 import sharp from 'sharp';
 
 const DEV_SERVER = 'http://localhost:5173';
-const OUTPUT_DIR = 'thumbnails';
+const OUTPUT_DIR = 'public/thumbnails';
 const THUMB_W = 480;
 const THUMB_H = 270;
 const INIT_TIMEOUT = 30000;
@@ -29,12 +29,24 @@ interface PresetEntry {
   preview?: unknown;
 }
 
-function parseArgs(): { count?: number; ids?: string[]; all?: boolean } {
-  const args: { count?: number; ids?: string[]; all?: boolean } = {};
+function parseArgs(): {
+  count?: number;
+  ids?: string[];
+  all?: boolean;
+  headless?: boolean;
+} {
+  const args: {
+    count?: number;
+    ids?: string[];
+    all?: boolean;
+    headless?: boolean;
+  } = { headless: true };
   for (const arg of process.argv.slice(2)) {
     if (arg.startsWith('--count=')) args.count = parseInt(arg.slice(8), 10);
     if (arg.startsWith('--ids=')) args.ids = arg.slice(6).split(',');
     if (arg === '--all') args.all = true;
+    if (arg === '--headless=false' || arg === '--no-headless')
+      args.headless = false;
   }
   return args;
 }
@@ -91,7 +103,7 @@ async function main() {
     process.exit(1);
   }
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: args.headless });
   const startTime = Date.now();
   let success = 0;
   let fail = 0;

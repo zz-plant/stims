@@ -118,6 +118,38 @@ export const buildOgSvg = ({
   <text x="88" y="${chip ? '372' : '318'}" font-size="30" fill="#dbe4ff" font-family="Space Grotesk, Arial, sans-serif">${escapeHtml(subtitle)}</text>
 </svg>`;
 
+export const buildPresetOgSvg = ({
+  title,
+  author,
+  chip = 'STIMS • AUDIO VISUALIZER',
+}: {
+  title: string;
+  author?: string;
+  chip?: string;
+}) => `<svg xmlns="http://www.w3.org/2000/svg" width="${ogWidth}" height="${ogHeight}" viewBox="0 0 ${ogWidth} ${ogHeight}" role="img" aria-label="${escapeHtml(title)}">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050b14"/>
+      <stop offset="45%" stop-color="#0a192f"/>
+      <stop offset="85%" stop-color="#0d2b45"/>
+      <stop offset="100%" stop-color="#093845"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="80%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="rgba(123, 231, 255, 0.35)"/>
+      <stop offset="100%" stop-color="rgba(123, 231, 255, 0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#bg)"/>
+  <rect width="${ogWidth}" height="${ogHeight}" fill="url(#glow)"/>
+  <path d="M 60 480 Q 200 320, 360 440 T 660 380 T 960 480 T 1140 420" fill="none" stroke="rgba(123, 231, 255, 0.4)" stroke-width="4"/>
+  <rect x="48" y="48" width="1104" height="534" rx="24" fill="rgba(10, 25, 47, 0.45)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="2"/>
+  <rect x="88" y="88" width="310" height="44" rx="22" fill="rgba(123, 231, 255, 0.15)" stroke="rgba(123, 231, 255, 0.3)" stroke-width="1"/>
+  <text x="112" y="116" font-size="16" font-weight="700" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif" letter-spacing="1.5">${escapeHtml(chip)}</text>
+  <text x="88" y="240" font-size="54" font-weight="800" fill="#ffffff" font-family="Space Grotesk, system-ui, sans-serif">${escapeHtml(title)}</text>
+  ${author ? `<text x="88" y="300" font-size="28" font-weight="500" fill="#94a3b8" font-family="Space Grotesk, system-ui, sans-serif">by <tspan fill="#e2e8f0" font-weight="700">${escapeHtml(author)}</tspan></text>` : ''}
+  <text x="88" y="525" font-size="22" font-weight="700" fill="#7be7ff" font-family="Space Grotesk, system-ui, sans-serif">toil.fyi</text>
+</svg>`;
+
 export const buildAppIconSvg =
   () => `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Stims app icon">
   <defs>

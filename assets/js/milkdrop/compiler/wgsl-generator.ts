@@ -75,7 +75,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case '/':
           return `select(0.0f, (${left}) / (${right}), abs(${right}) > 0.000001f)`;
         case '%':
-          return `select(0.0f, f32(i32(${left}) % i32(${right})), abs(${right}) > 0.000001f)`;
+          return `select(0.0f, (${left}) - (${right}) * floor((${left}) / (${right})), abs(${right}) > 0.000001f)`;
         case '^':
           return `pow(${left}, ${right})`;
         case '|':
@@ -126,8 +126,11 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
         case 'pow':
           return `pow(${args[0] ?? '0.0f'}, ${args[1] ?? '1.0f'})`;
         case 'mod':
-        case 'fmod':
-          return `select(0.0f, (${args[0] ?? '0.0f'}) % (${args[1] ?? '1.0f'}), abs(${args[1] ?? '1.0f'}) > 0.000001f)`;
+        case 'fmod': {
+          const a = args[0] ?? '0.0f';
+          const b = args[1] ?? '1.0f';
+          return `select(0.0f, (${a}) - (${b}) * floor((${a}) / (${b})), abs(${b}) > 0.000001f)`;
+        }
         case 'min':
           return args.length > 0 ? `min(${args.join(', ')})` : '0.0f';
         case 'max':

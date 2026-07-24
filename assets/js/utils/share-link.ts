@@ -46,8 +46,36 @@ function tryLegacyCopy(url: string, doc: Document) {
   return copied;
 }
 
+export type PresetShareMetadata = {
+  id: string;
+  title: string;
+  author?: string;
+  description?: string;
+  tags?: string[];
+};
+
 export function buildPresetLink(presetName: string): string {
   return `https://toil.fyi/?preset=${encodeURIComponent(presetName)}`;
+}
+
+export function formatPresetShareCopy(preset: PresetShareMetadata): {
+  title: string;
+  text: string;
+  url: string;
+} {
+  const authorCredit =
+    preset.author && preset.author.trim().length > 0
+      ? `by ${preset.author.trim()}`
+      : null;
+  const displayTitle = authorCredit
+    ? `${preset.title} ${authorCredit}`
+    : preset.title;
+
+  return {
+    title: `${displayTitle} | Stims`,
+    text: `Experience "${preset.title}"${authorCredit ? ` by ${preset.author}` : ''} live on Stims audio visualizer.`,
+    url: buildPresetLink(preset.id),
+  };
 }
 
 export async function shareOrCopyLink(

@@ -151,9 +151,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -181,9 +179,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -210,9 +206,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -239,9 +233,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -268,9 +260,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -298,9 +288,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -328,9 +316,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -357,9 +343,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       },
       "supports": {
         "webgl": true,
@@ -372,11 +356,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-apocalypse.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "geometry",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "geometry", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -386,9 +366,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -397,10 +375,7 @@
       "author": "Dbleja",
       "file": "/milkdrop-presets/dbleja-hovering-over-mars.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -410,9 +385,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -421,10 +394,7 @@
       "author": "Dbleja",
       "file": "/milkdrop-presets/dbleja-hovering-over-pluto.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -434,9 +404,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -445,10 +413,7 @@
       "author": "Dbleja",
       "file": "/milkdrop-presets/dbleja-inside-the-tree-blue-mix.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -458,9 +423,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -469,10 +432,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-dark-side-of-the-moon-clean-mix.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -482,9 +442,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -493,11 +451,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-ether-posession-phat-edit-v3.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset",
-        "ambient"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset", "ambient"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -507,9 +461,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -518,11 +470,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-ether.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset",
-        "ambient"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset", "ambient"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -532,9 +480,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -543,11 +489,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-matrix-cube-c.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset",
-        "geometry"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset", "geometry"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -557,9 +499,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -568,10 +508,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-phat-cat-scan-nirvana.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -581,9 +518,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -592,10 +527,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-phat-dark-heart.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -605,9 +537,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -616,10 +546,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-phat-linear-clouds-v2.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -629,9 +556,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     },
     {
@@ -640,10 +565,7 @@
       "author": "Eo.S.",
       "file": "/milkdrop-presets/eos-phat-magnetosphere-13-pulsar.milk",
       "preview": true,
-      "tags": [
-        "collection:cream-of-the-crop",
-        "preset"
-      ],
+      "tags": ["collection:cream-of-the-crop", "preset"],
       "expectedFidelityClass": "partial",
       "visualCertification": {
         "status": "uncertified",
@@ -653,9 +575,7 @@
         "visualEvidenceTier": "runtime",
         "requiredBackend": "webgpu",
         "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "reasons": ["No measured WebGPU reference capture is recorded yet."]
       }
     }
   ]

@@ -41,10 +41,9 @@ export function NewHomePage() {
           <div className="stims-shell__launch-rail">
             <div className="stims-shell__launch-copy">
               <h1 id="stims-launch-title">Stims</h1>
-              <p className="stims-shell__eyebrow">Choose a preset</p>
-              <p>
-                Start with a look, then connect YouTube, your tab, or a
-                microphone when you want the visuals to react.
+              <p className="stims-shell__launch-subhead">
+                Audio-reactive visualizer. Select a preset or connect an audio
+                source to begin.
               </p>
             </div>
 
@@ -67,7 +66,9 @@ export function NewHomePage() {
               >
                 <PresetArtwork entry={featuredPreset} compact />
                 <div className="stims-shell__launch-recommendation-copy">
-                  <p className="stims-shell__section-label">Featured preset</p>
+                  <span className="stims-shell__recommendation-badge">
+                    Featured
+                  </span>
                   <strong>{featuredPreset.title}</strong>
                   <span className="stims-shell__meta-copy">
                     {describePresetMood(featuredPreset)}
@@ -77,7 +78,7 @@ export function NewHomePage() {
                   className="stims-shell__launch-recommendation-arrow"
                   aria-hidden="true"
                 >
-                  &gt;
+                  →
                 </span>
               </button>
             ) : null}

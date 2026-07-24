@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-handler.ts';
-import { searchByFrame } from '../core/services/visual-embedding.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
-import { shareOrCopyLink } from '../utils/share-link.ts';
+import { formatPresetShareCopy, shareOrCopyLink } from '../utils/share-link.ts';
 import type {
   PanelState,
   PresetCatalogEntry,
@@ -57,7 +56,7 @@ export function useWorkspaceShellOrchestration({
   setStatusMessage,
   startAudioSource,
   updateEditorSource,
-  stageRef,
+  stageRef: _stageRef,
   youtubePreviewRef,
 }: WorkspaceShellOrchestrationArgs) {
   const audioStartInProgressRef = useRef(false);
@@ -82,19 +81,6 @@ export function useWorkspaceShellOrchestration({
   );
 
   const catalogError = null;
-
-  const handleVisualSearch = useCallback(async () => {
-    if (!stageRef.current) return;
-    const canvas = stageRef.current.querySelector(
-      'canvas',
-    ) as HTMLCanvasElement | null;
-    if (!canvas) return;
-    try {
-      await searchByFrame(canvas);
-    } catch (error) {
-      console.error('Visual search failed:', error);
-    }
-  }, [stageRef]);
 
   const filteredCatalog = useMemo(
     () =>
@@ -212,9 +198,16 @@ export function useWorkspaceShellOrchestration({
     ],
   );
 
-  const updatePanel = (panel: PanelState) => {
-    commitRoute({ ...routeState, panel });
-  };
+  const updatePanel = useCallback(
+    (panel: PanelState) => {
+      commitRoute({ ...routeState, panel });
+    },
+    [commitRoute, routeState],
+  );
+
+  const handleVisualSearch = useCallback(async () => {
+    updatePanel(routeState.panel === 'visualsearch' ? null : 'visualsearch');
+  }, [updatePanel, routeState.panel]);
 
   const handlePresetSelection = (presetId: string) => {
     if (routeState.presetId && routeState.presetId !== presetId) {
@@ -488,9 +481,23 @@ export function useWorkspaceShellOrchestration({
       window.location,
     );
     const href = currentUrl.toString();
+
+    let shareTitle = 'Stims visualizer';
+    let shareText = 'Open this Stims visualizer view.';
+
+    if (selectedPreset) {
+      const shareCopy = formatPresetShareCopy({
+        id: selectedPreset.id,
+        title: selectedPreset.title,
+        author: selectedPreset.author,
+      });
+      shareTitle = shareCopy.title;
+      shareText = shareCopy.text;
+    }
+
     const result = await shareOrCopyLink(href, {
-      title: 'Stims visualizer',
-      text: 'Open this Stims visualizer view.',
+      title: shareTitle,
+      text: shareText,
     });
 
     if (result === 'shared') {

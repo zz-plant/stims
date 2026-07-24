@@ -81,11 +81,10 @@ function getOrCreatePipeline(
 
 const SIGNAL_BUFFER_SIZE_BYTES = MILKDROP_WGSL_SIGNAL_FIELDS.length * 4;
 
-function buildSignalBuffer(
-  device: GPUDevice,
+function populateSignalData(
+  target: Float32Array,
   signals: MilkdropGpuVmSignals,
-): GPUBuffer {
-  const data = new Float32Array(MILKDROP_WGSL_SIGNAL_FIELDS.length);
+): void {
   const signalMap: Record<string, number> = {
     time: signals.time,
     frame: signals.frame,
@@ -123,16 +122,8 @@ function buildSignalBuffer(
   };
 
   for (let i = 0; i < MILKDROP_WGSL_SIGNAL_FIELDS.length; i++) {
-    data[i] = signalMap[MILKDROP_WGSL_SIGNAL_FIELDS[i]] ?? 0;
+    target[i] = signalMap[MILKDROP_WGSL_SIGNAL_FIELDS[i]] ?? 0;
   }
-
-  const buffer = device.createBuffer({
-    label: 'milkdrop-vm-signals',
-    size: SIGNAL_BUFFER_SIZE_BYTES,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(buffer, 0, data);
-  return buffer;
 }
 
 export function createGpuVmRunner() {
@@ -144,6 +135,7 @@ export function createGpuVmRunner() {
   let activeCompilation: WgslProgramCompilation | null = null;
 
   let currentSignalBuffer: GPUBuffer | null = null;
+  const signalData = new Float32Array(MILKDROP_WGSL_SIGNAL_FIELDS.length);
 
   function init(
     gpuDevice: GPUDevice,
@@ -172,13 +164,23 @@ export function createGpuVmRunner() {
       throw new Error('GPU VM state buffer not allocated');
     }
 
-    const bindGroupLayout = pipeline.getBindGroupLayout(0);
-    const initialSignalBuffer = buildSignalBuffer(gpuDevice, {
+    if (currentSignalBuffer) {
+      currentSignalBuffer.destroy();
+    }
+    currentSignalBuffer = gpuDevice.createBuffer({
+      label: 'milkdrop-vm-signals',
+      size: SIGNAL_BUFFER_SIZE_BYTES,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+
+    populateSignalData(signalData, {
       time: 0,
       frame: 0,
       fps: 60,
     });
-    currentSignalBuffer = initialSignalBuffer;
+    gpuDevice.queue.writeBuffer(currentSignalBuffer, 0, signalData);
+
+    const bindGroupLayout = pipeline.getBindGroupLayout(0);
     bindGroup = gpuDevice.createBindGroup({
       label: 'milkdrop-vm-bind-group',
       layout: bindGroupLayout,
@@ -189,7 +191,7 @@ export function createGpuVmRunner() {
         },
         {
           binding: 1,
-          resource: { buffer: initialSignalBuffer },
+          resource: { buffer: currentSignalBuffer },
         },
       ],
     });
@@ -201,25 +203,14 @@ export function createGpuVmRunner() {
       !pipeline ||
       !bindGroup ||
       !stateBuffer ||
+      !currentSignalBuffer ||
       !activeCompilation
     ) {
       throw new Error('GPU VM not initialized');
     }
 
-    if (currentSignalBuffer) {
-      currentSignalBuffer.destroy();
-    }
-    const signalBuffer = buildSignalBuffer(device, signals);
-    currentSignalBuffer = signalBuffer;
-    const bindGroupLayout = pipeline.getBindGroupLayout(0);
-    bindGroup = device.createBindGroup({
-      label: 'milkdrop-vm-bind-group',
-      layout: bindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: stateBuffer } },
-        { binding: 1, resource: { buffer: signalBuffer } },
-      ],
-    });
+    populateSignalData(signalData, signals);
+    device.queue.writeBuffer(currentSignalBuffer, 0, signalData);
 
     const commandEncoder = device.createCommandEncoder({
       label: 'milkdrop-vm-encoder',
@@ -233,8 +224,6 @@ export function createGpuVmRunner() {
     device.queue.submit([commandEncoder.finish()]);
 
     await device.queue.onSubmittedWorkDone();
-
-    signalBuffer.destroy();
 
     const state = await bufferManager.readState();
     const randOffset = bufferManager.getLayout()?.fieldOffsets?.rand_state;
@@ -271,6 +260,10 @@ export function createGpuVmRunner() {
   }
 
   function dispose() {
+    if (currentSignalBuffer) {
+      currentSignalBuffer.destroy();
+      currentSignalBuffer = null;
+    }
     pipeline = null;
     bindGroup = null;
     stateBuffer = null;

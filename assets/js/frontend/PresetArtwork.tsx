@@ -42,16 +42,35 @@ export function PresetArtwork({
   preview?: MilkdropPresetRenderPreview | null;
 }) {
   const mood = describePresetMood(entry);
+  const staticThumbUrl = entry.preview
+    ? `/thumbnails/${entry.id}.thumb.png`
+    : null;
+  const imageUrl = preview?.imageUrl ?? staticThumbUrl;
+  const previewStatus = preview?.imageUrl
+    ? 'ready'
+    : staticThumbUrl
+      ? 'static'
+      : (preview?.status ?? 'queued');
 
   return (
     <div
       className="stims-shell__preset-art"
       data-tone={getPresetArtworkTone(entry)}
       data-compact={String(compact)}
-      data-preview-status={preview?.status ?? 'queued'}
+      data-preview-status={previewStatus}
       aria-hidden="true"
     >
-      {preview === null ? (
+      {imageUrl ? (
+        <img
+          className="stims-shell__preset-preview-image"
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      ) : preview === null ? (
         <div className="preset-artwork-ghost" role="status">
           <div className="preset-artwork-ghost__shimmer" />
           <div className="preset-artwork-ghost__meta">
@@ -59,13 +78,6 @@ export function PresetArtwork({
             <div className="preset-artwork-ghost__author" />
           </div>
         </div>
-      ) : preview?.imageUrl ? (
-        <img
-          className="stims-shell__preset-preview-image"
-          src={preview.imageUrl}
-          alt=""
-          loading="lazy"
-        />
       ) : preview?.status === 'failed' ? (
         <span className="stims-shell__preset-art-fallback">{mood}</span>
       ) : null}

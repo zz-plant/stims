@@ -8,16 +8,16 @@
    catalog scannable at the widths where the shell is most often used. */
 @scope (.stims-shell) {
   .stims-shell__stage-frame[data-mode="home"] {
-    background: #080b12;
+    background: #05070c;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__stage-hero {
-    padding: clamp(70px, 9vh, 104px) clamp(20px, 6vw, 72px) 42px;
+    padding: clamp(64px, 8vh, 96px) clamp(20px, 6vw, 72px) 42px;
   }
 
   .stims-shell__stage-frame[data-mode="home"] .stims-shell__launch-panel {
     width: min(1040px, 100%);
-    padding: 24px 0 20px;
+    padding: 20px 0 16px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -33,48 +33,76 @@
 
   .stims-shell__launch-rail {
     display: grid;
-    gap: 18px;
+    gap: 16px;
   }
 
   .stims-shell__launch-copy {
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .stims-shell__launch-copy h1 {
     font-size: clamp(2.8rem, 5vw, 4.8rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
     line-height: 0.94;
   }
 
-  .stims-shell__launch-copy p {
-    max-width: 38ch;
-    font-size: 0.98rem;
+  .stims-shell__launch-subhead {
+    max-width: 40ch;
+    font-size: 0.95rem;
     line-height: 1.5;
+    color: var(--stims-ink-muted, rgba(255, 255, 255, 0.65));
+    letter-spacing: -0.01em;
+  }
+
+  .stims-shell__recommendation-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--stims-accent, #6366f1);
+    opacity: 0.9;
   }
 
   .stims-shell__launch-recommendation {
     position: relative;
     display: grid;
-    grid-template-columns: 112px minmax(0, 1fr) auto;
+    grid-template-columns: 104px minmax(0, 1fr) auto;
     gap: 14px;
     align-items: center;
     max-width: 38rem;
-    padding: 12px;
+    padding: 10px 12px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(12px);
     box-shadow: none;
+    transition:
+      border-color 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .stims-shell__launch-recommendation:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.045);
   }
 
   .stims-shell__launch-recommendation .stims-shell__preset-art {
-    width: 112px;
-    min-width: 112px;
-    min-height: 72px;
+    width: 104px;
+    min-width: 104px;
+    min-height: 66px;
     aspect-ratio: 16 / 9;
     border-radius: 6px;
   }
 
   .stims-shell__launch-recommendation-copy {
     min-width: 0;
-    gap: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
 
   .stims-shell__launch-recommendation strong,
@@ -85,7 +113,8 @@
   }
 
   .stims-shell__launch-recommendation strong {
-    font-size: 1.08rem;
+    font-size: 1.02rem;
+    font-weight: 600;
   }
 
   .stims-shell__launch-recommendation-arrow {
@@ -94,24 +123,28 @@
     width: 32px;
     height: 32px;
     color: var(--stims-ink-strong);
-    font-size: 1.2rem;
-    transition: transform 160ms ease;
+    font-size: 1.1rem;
+    transition:
+      transform 160ms ease,
+      color 160ms ease;
   }
 
   .stims-shell__launch-recommendation:hover
     .stims-shell__launch-recommendation-arrow {
     transform: translateX(3px);
+    color: #ffffff;
   }
 
   .stims-shell__launch-layout > .stims-shell__launch-source-dock {
     grid-column: 2;
     grid-row: 1;
     align-self: start;
-    padding: 16px;
-    border: 1px solid var(--stims-line-soft);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.025);
-    box-shadow: none;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   }
 
   .stims-shell__launch-source-dock .stims-shell__source-panel {
@@ -121,7 +154,7 @@
   .stims-shell__launch-source-dock .stims-shell__youtube-primary {
     padding: 0 0 12px;
     border: 0;
-    border-bottom: 1px solid var(--stims-line-soft);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 0;
     background: transparent;
   }
@@ -134,15 +167,29 @@
 
   .stims-shell__launch-source-dock .stims-shell__source-card {
     min-height: 52px;
-    padding: 8px 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .stims-shell__launch-source-dock .stims-shell__source-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .stims-shell__launch-source-dock .stims-shell__source-card strong {
     font-size: 0.9rem;
+    font-weight: 600;
   }
 
   .stims-shell__launch-source-dock .stims-shell__source-card-kicker {
     font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
   }
 
   .stims-shell__sheet-panel--browse .stims-shell__sheet-surface {

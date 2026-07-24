@@ -105,7 +105,7 @@ export function StageControls({
           break;
         case 'b':
           event.preventDefault();
-          ui.updatePanel(panel === 'blend' ? null : 'blend');
+          ui.updatePanel(panel === 'browse' ? null : 'browse');
           break;
         case 'i':
           event.preventDefault();
@@ -229,6 +229,8 @@ export function StageControls({
           <button
             type="button"
             className={styles.btn}
+            data-active={String(panel === 'visualsearch')}
+            aria-expanded={panel === 'visualsearch'}
             aria-label="More like this"
             title="More like this"
             onClick={handleVisualSearch}

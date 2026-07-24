@@ -138,6 +138,7 @@ export function ShortcutsDialog({
                 <button
                   type="button"
                   className="stims-shell__text-button"
+                  aria-label={`Edit shortcut for ${shortcut.label}`}
                   onClick={() => setEditing(shortcut.id)}
                 >
                   Edit

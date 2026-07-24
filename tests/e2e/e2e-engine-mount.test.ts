@@ -151,13 +151,13 @@ test(
       // down the browser page while the previous runtime is still disposing.
       await page.evaluate(() => {
         const nextUrl = new URL(window.location.href);
-        nextUrl.searchParams.set('preset', 'eos-phat-cubetrace-v2');
+        nextUrl.searchParams.set('preset', 'rovastar-parallel-universe');
         nextUrl.searchParams.delete('audio');
         window.history.pushState(null, '', nextUrl);
         window.dispatchEvent(new PopStateEvent('popstate'));
       });
       await waitForMountedStage(page);
-      await waitForActivePreset(page, 'eos-phat-cubetrace-v2');
+      await waitForActivePreset(page, 'rovastar-parallel-universe');
       await page.waitForSelector('canvas', { timeout: 15000 });
       await page.waitForTimeout(500);
 
@@ -170,7 +170,7 @@ test(
         .locator('.stims-shell__stage-frame')
         .first()
         .getAttribute('data-active-preset-id');
-      expect(activePresetId).toBe('eos-phat-cubetrace-v2');
+      expect(activePresetId).toBe('rovastar-parallel-universe');
 
       // Both must have content
       expect(hash1).toBeGreaterThan(1000);
@@ -232,6 +232,10 @@ test(
       await page.waitForFunction(
         () => document.body.dataset.audioActive === 'true',
         { timeout: 30000 },
+      );
+      await page.waitForFunction(
+        () => window.location.search.includes('audio=microphone'),
+        { timeout: 15000 },
       );
 
       const info = await page.evaluate(() => {
