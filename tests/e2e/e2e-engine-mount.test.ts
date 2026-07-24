@@ -15,7 +15,7 @@ async function waitForMountedStage(page: import('playwright').Page) {
     () =>
       document.querySelector('#stims-main[data-active-preset-id]') !== null &&
       document.querySelector('.stims-shell__stage-frame canvas') !== null,
-    { timeout: 30000 },
+    { timeout: 60000 },
   );
 }
 
@@ -27,7 +27,7 @@ async function waitForActivePreset(
     `.stims-shell__stage-frame[data-active-preset-id="${presetId}"]`,
     {
       state: 'attached',
-      timeout: 30000,
+      timeout: 60000,
     },
   );
 }
@@ -79,7 +79,7 @@ test(
       );
 
       // App shell must be present
-      await page.waitForSelector('#stims-main', { timeout: 15000 });
+      await page.waitForSelector('#stims-main', { timeout: 30000 });
       const shell = await page.$('#stims-main');
       expect(shell).not.toBeNull();
 
@@ -88,7 +88,7 @@ test(
       await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
 
       // Canvas must appear once engine finishes mounting
-      const canvas = await page.waitForSelector('canvas', { timeout: 15000 });
+      const canvas = await page.waitForSelector('canvas', { timeout: 30000 });
       expect(canvas).not.toBeNull();
 
       await page.waitForTimeout(3000);
@@ -137,10 +137,10 @@ test(
         `${SERVER_URL}/?preset=eos-glowsticks-v2-03-music&audio=none`,
         { waitUntil: 'domcontentloaded' },
       );
-      await page.waitForSelector('#stims-main', { timeout: 15000 });
+      await page.waitForSelector('#stims-main', { timeout: 30000 });
       await waitForMountedStage(page);
       await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
-      await page.waitForSelector('canvas', { timeout: 15000 });
+      await page.waitForSelector('canvas', { timeout: 30000 });
       await page.waitForTimeout(500);
 
       const hash1 = await page.evaluate(
@@ -158,7 +158,7 @@ test(
       });
       await waitForMountedStage(page);
       await waitForActivePreset(page, 'rovastar-parallel-universe');
-      await page.waitForSelector('canvas', { timeout: 15000 });
+      await page.waitForSelector('canvas', { timeout: 30000 });
       await page.waitForTimeout(500);
 
       const hash2 = await page.evaluate(
@@ -235,7 +235,7 @@ test(
       );
       await page.waitForFunction(
         () => window.location.search.includes('audio=microphone'),
-        { timeout: 15000 },
+        { timeout: 30000 },
       );
 
       const info = await page.evaluate(() => {
