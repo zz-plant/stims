@@ -104,7 +104,9 @@ export async function onRequest(context: {
             downloads: number;
             created_at: string;
           }>(),
-        env.DB.prepare(countQuery).bind(...params).all<{ count: number }>(),
+        env.DB.prepare(countQuery)
+          .bind(...params)
+          .all<{ count: number }>(),
       ]);
 
       return json({
@@ -182,7 +184,7 @@ export async function onRequest(context: {
           .bind(id, sessionId)
           .run();
         await env.DB.prepare(
-          'UPDATE presets SET rating = MAX(rating - 1, 0), updated_at = datetime(\'now\') WHERE id = ?',
+          "UPDATE presets SET rating = MAX(rating - 1, 0), updated_at = datetime('now') WHERE id = ?",
         )
           .bind(id)
           .run();
@@ -195,7 +197,7 @@ export async function onRequest(context: {
         .bind(id, sessionId)
         .run();
       await env.DB.prepare(
-        'UPDATE presets SET rating = rating + 1, updated_at = datetime(\'now\') WHERE id = ?',
+        "UPDATE presets SET rating = rating + 1, updated_at = datetime('now') WHERE id = ?",
       )
         .bind(id)
         .run();

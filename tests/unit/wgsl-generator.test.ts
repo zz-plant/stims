@@ -111,7 +111,7 @@ describe('wgsl expression generation', () => {
       'pow(2, 3)',
     );
     expect(buildWgslExpressionString(binary('%', literal(7), literal(3)))).toBe(
-      'select(0.0f, f32(i32(7) % i32(3)), abs(3) > 0.000001f)',
+      'select(0.0f, (7) - (3) * floor((7) / (3)), abs(3) > 0.000001f)',
     );
   });
 
@@ -181,7 +181,7 @@ describe('wgsl expression generation', () => {
     ).toBe('pow(2, 3)');
     expect(
       buildWgslExpressionString(call('mod', [literal(7), literal(3)])),
-    ).toBe('select(0.0f, (7) % (3), abs(3) > 0.000001f)');
+    ).toBe('select(0.0f, (7) - (3) * floor((7) / (3)), abs(3) > 0.000001f)');
     expect(buildWgslExpressionString(call('floor', [literal(3.7)]))).toBe(
       'floor(3.7)',
     );
