@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  __milkdropRuntimeTestUtils,
   applyMilkdropInteractionResponse,
   getMilkdropDetailScale,
-} from '../../assets/js/milkdrop/runtime.ts';
+} from '../../assets/js/milkdrop/runtime/interaction-response.ts';
+import { __milkdropRuntimeTestUtils } from '../../assets/js/milkdrop/runtime.ts';
 import type { MilkdropFrameState } from '../../assets/js/milkdrop/types.ts';
 
 describe('milkdrop runtime detail scale', () => {
