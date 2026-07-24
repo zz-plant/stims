@@ -71,17 +71,28 @@
     />
     <meta name="twitter:image" content="https://toil.fyi/og/milkdrop.png" />
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
-    <link rel="stylesheet" href="/vendor/normalize.min.css" media="print" onload="this.media='all'" />
+    <!-- Local CSS loads render-blocking: tokens/base/index are the design system
+         and above-the-fold layout, so deferring them only buys a flash of
+         unstyled content. Web fonts stay deferred (with display=swap) because
+         text should paint immediately in a fallback face, not block on the
+         network. -->
+    <link rel="stylesheet" href="/vendor/normalize.min.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
     />
-    <link rel="stylesheet" href="assets/css/tokens.css" media="print" onload="this.media='all'" />
-    <link rel="stylesheet" href="assets/css/motion.css" media="print" onload="this.media='all'" />
-    <link rel="stylesheet" href="assets/css/base.css" media="print" onload="this.media='all'" />
-    <link rel="stylesheet" href="assets/css/index.css" media="print" onload="this.media='all'" />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+      />
+    </noscript>
+    <link rel="stylesheet" href="assets/css/tokens.css" />
+    <link rel="stylesheet" href="assets/css/motion.css" />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/index.css" />
     <script>
       (() => {
         try {
