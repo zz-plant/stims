@@ -18,11 +18,32 @@ export {
   evaluateMilkdropShaderControlProgram,
 };
 
+const MAX_COMPILED_PRESET_CACHE = 50;
+const compiledPresetCache = new Map<string, MilkdropCompiledPreset>();
+
+export function clearCompiledPresetCache() {
+  compiledPresetCache.clear();
+}
+
 export function compileMilkdropPresetSource(
   raw: string,
   source: Partial<MilkdropPresetSource> = {},
   options: MilkdropCompileOptions = {},
 ): MilkdropCompiledPreset {
+  // If options or custom source overrides are specified, skip simple string cache
+  const isSimpleCall =
+    Object.keys(options).length === 0 &&
+    (source.id === undefined || Object.keys(source).length <= 1);
+
+  if (isSimpleCall) {
+    const cached = compiledPresetCache.get(raw);
+    if (cached) {
+      compiledPresetCache.delete(raw);
+      compiledPresetCache.set(raw, cached);
+      return cached;
+    }
+  }
+
   const parsed = parseMilkdropPreset(raw);
   const diagnostics = [...parsed.diagnostics];
   const ir = createIR(parsed.ast, diagnostics, source, options);
@@ -39,5 +60,16 @@ export function compileMilkdropPresetSource(
   };
 
   compiled.formattedSource = formatMilkdropPreset(compiled);
+
+  if (isSimpleCall) {
+    if (compiledPresetCache.size >= MAX_COMPILED_PRESET_CACHE) {
+      const oldestKey = compiledPresetCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        compiledPresetCache.delete(oldestKey);
+      }
+    }
+    compiledPresetCache.set(raw, compiled);
+  }
+
   return compiled;
 }

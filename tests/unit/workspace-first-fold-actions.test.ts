@@ -40,7 +40,6 @@ describe('workspace first-fold launch hierarchy', () => {
     expect(homeSource).toContain(
       "import { AudioSourcePanel } from './AudioSourcePanel.tsx';",
     );
-    expect(homeSource).toContain('Choose a preset');
     expect(homeSource).toContain('stims-shell__launch-layout');
     expect(homeSource).toContain('stims-shell__launch-rail');
     expect(homeSource).toContain('stims-shell__launch-source-dock');

@@ -4816,3 +4816,181 @@ main.stims-shell[data-sheet-open="true"] [class*="toast"] {
 .stims-shell__margin-top-8 {
   margin-top: 8px;
 }
+
+/* ═════════════════════════════════════════════════════════════════════
+   Stims 2.0 HUD & Floating Command Dock System
+   ═════════════════════════════════════════════════════════════════════ */
+
+.stims-hud-bar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-dock);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 18px;
+  background: var(--stims-panel);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--stims-line);
+  border-radius: var(--radius-pill);
+  box-shadow:
+    var(--shadow-soft),
+    0 0 20px rgba(0, 242, 254, 0.06);
+  max-width: calc(100vw - 32px);
+  transition: all var(--transition-base);
+}
+
+.stims-hud-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stims-hud-bar__logo-mark {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stims-hud-bar__logo-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--stims-accent);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px var(--stims-accent-glow);
+}
+
+.stims-hud-bar__logo-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--stims-accent-soft);
+  border-radius: var(--radius-full);
+  animation: stims-pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes stims-pulse-ring {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.2;
+  }
+}
+
+.stims-hud-bar__title {
+  font-family: var(--font-family-base);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: var(--stims-ink-strong);
+}
+
+.stims-hud-bar__version {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  background: var(--stims-accent-soft);
+  color: var(--stims-accent);
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+}
+
+.stims-hud-bar__preset-info {
+  display: flex;
+  flex-direction: column;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 1px solid var(--stims-line-soft);
+  padding-left: 14px;
+}
+
+.stims-hud-bar__preset-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--stims-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stims-hud-bar__preset-author {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stims-hud-bar__spectrum {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 16px;
+  padding: 0 8px;
+  border-left: 1px solid var(--stims-line-soft);
+}
+
+.stims-hud-bar__spectrum-bar {
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    var(--stims-cool) 0%,
+    var(--stims-accent) 100%
+  );
+  border-radius: 2px;
+  transform-origin: bottom;
+  transition:
+    transform 80ms ease,
+    opacity 80ms ease;
+}
+
+.stims-hud-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-left: 1px solid var(--stims-line-soft);
+  padding-left: 12px;
+}
+
+.stims-hud-bar__quick-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--stims-white-04);
+  border: 1px solid var(--stims-line-soft);
+  border-radius: var(--radius-full);
+  color: var(--stims-ink);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.stims-hud-bar__quick-btn:hover {
+  background: var(--stims-white-12);
+  border-color: var(--stims-line-strong);
+  transform: translateY(-1px);
+}
+
+.stims-hud-bar__quick-btn.is-active {
+  background: var(--stims-accent-soft);
+  border-color: var(--stims-accent);
+  color: var(--stims-accent);
+}
+
+@media (max-width: 640px) {
+  .stims-hud-bar__preset-info,
+  .stims-hud-bar__spectrum {
+    display: none;
+  }
+}

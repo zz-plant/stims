@@ -156,6 +156,7 @@ function compileNode(node: MilkdropExpressionNode): string {
   }
 }
 
+const MAX_EXPRESSION_CACHE_SIZE = 2000;
 const rawCache = new Map<string, JitFn>();
 
 export function evaluateJit(
@@ -177,6 +178,16 @@ export function evaluateJit(
         'megabuf',
         `"use strict";return (${body});`,
       ) as unknown as JitFn;
+      if (rawCache.size >= MAX_EXPRESSION_CACHE_SIZE) {
+        const oldestKey = rawCache.keys().next().value;
+        if (oldestKey !== undefined) {
+          rawCache.delete(oldestKey);
+        }
+      }
+      rawCache.set(key, fn);
+    } else {
+      // Move to end (most recently used)
+      rawCache.delete(key);
       rawCache.set(key, fn);
     }
     try {

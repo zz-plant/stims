@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AudioSpectrumHud } from './AudioSpectrumHud.tsx';
 import { StageControls } from './StageControls.tsx';
 import { StimsStageFrame } from './StimsStageFrame.tsx';
 import { WorkspaceToast } from './WorkspaceToast.tsx';
@@ -44,6 +45,7 @@ export function WorkspaceStagePanel({
         stageRef={ui.stageRef}
         liveMode={liveMode}
       >
+        <AudioSpectrumHud />
         {liveMode && !missingRequestedPreset ? (
           <StageControls
             isFullscreen={isFullscreen}

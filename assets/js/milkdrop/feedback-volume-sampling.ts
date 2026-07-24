@@ -3,7 +3,7 @@ export const AUX_TEXTURE_ATLAS_SLICE_COUNT =
   AUX_TEXTURE_ATLAS_GRID_SIZE * AUX_TEXTURE_ATLAS_GRID_SIZE;
 
 export function wrapTex3DSlicePhase(sliceZ: number) {
-  return ((sliceZ % 1) + 1) % 1;
+  return sliceZ - Math.floor(sliceZ);
 }
 
 export function getWrappedAtlasSliceSample(

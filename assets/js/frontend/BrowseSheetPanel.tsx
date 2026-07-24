@@ -137,11 +137,26 @@ export function BrowseSheetPanel({
   const [sortMode, setSortMode] = useState<SortMode>(readSortMode);
   const [randomSeed, setRandomSeed] = useState(() => Date.now());
   const [limit, setLimit] = useState(BATCH_SIZE);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
   const resultsRef = useRef<HTMLElement | null>(null);
+
+  // Synchronize local search state when global searchQuery is modified externally (e.g. clear filters)
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  // Debounce sync from localSearch to global searchQuery
+  useEffect(() => {
+    if (localSearch === searchQuery) return;
+    const timer = setTimeout(() => {
+      ui.setSearchQuery(localSearch);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [localSearch, searchQuery, ui]);
 
   const featuredTags = getFeaturedCollectionTags(collectionTags);
   const hasFilter =
-    searchQuery.trim().length > 0 || routeState.collectionTag !== null;
+    localSearch.trim().length > 0 || routeState.collectionTag !== null;
 
   const browseEntries =
     routeState.collectionTag === 'collection:community'
@@ -192,8 +207,8 @@ export function BrowseSheetPanel({
             placeholder="Search presets"
             aria-label="Search presets"
             spellCheck={false}
-            value={searchQuery}
-            onChange={(e) => ui.setSearchQuery(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
           />
           <select
             className="stims-shell__select stims-shell__browse-sort"
@@ -225,13 +240,14 @@ export function BrowseSheetPanel({
             aria-atomic="true"
           >
             {buildAppliedFilterSummary({
-              searchQuery,
+              searchQuery: localSearch,
               collectionTag: routeState.collectionTag,
             })}
             <button
               type="button"
               className="stims-shell__clear-filters"
               onClick={() => {
+                setLocalSearch('');
                 ui.setSearchQuery('');
                 onCollectionTagChange(null);
               }}
