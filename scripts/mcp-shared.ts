@@ -25,7 +25,6 @@ import agentPlayVisualizerWorkflow from '../.agent/workflows/play-visualizer.md'
 import agentShipVisualizerChangeWorkflow from '../.agent/workflows/ship-visualizer-change.md';
 import agentTestVisualizerWorkflow from '../.agent/workflows/test-visualizer.md';
 import docsClaudeReadme from '../.claude/CLAUDE.md';
-import toyManifest from '../src/js/data/toy-manifest.ts';
 import docsAgentsAgentHandoffs from '../docs/agents/agent-handoffs.md';
 import docsAgentsReadme from '../docs/agents/README.md';
 import docsDevelopment from '../docs/DEVELOPMENT.md';
@@ -38,6 +37,7 @@ import docsToyDevelopment from '../docs/TOY_DEVELOPMENT.md';
 import docsToyScriptIndex from '../docs/TOY_SCRIPT_INDEX.md';
 import docsToys from '../docs/toys.md';
 import readme from '../README.md';
+import toyManifest from '../src/js/data/toy-manifest.ts';
 
 const defaultInstructions = [
   'Stims is a browser-native MilkDrop visualizer with 43+ bundled presets. The MCP server provides tools organized into these categories:',

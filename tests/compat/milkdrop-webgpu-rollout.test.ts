@@ -3,12 +3,6 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
-import { shouldFallbackMilkdropPresetToWebgl } from '../../src/js/milkdrop/renderer-execution-plan.ts';
-import {
-  applyMilkdropWebGpuOptimizationFlags,
-  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
-} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 import type { ParityArtifactEntry } from '../../scripts/parity-artifacts.ts';
 import {
   assertCertificationSemantics,
@@ -21,6 +15,12 @@ import {
   type WebGpuCertificationReport,
 } from '../../scripts/run-webgpu-certification-comparator.ts';
 import type { VisualReferenceManifest } from '../../scripts/visual-reference-manifest.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
+import { shouldFallbackMilkdropPresetToWebgl } from '../../src/js/milkdrop/renderer-execution-plan.ts';
+import {
+  applyMilkdropWebGpuOptimizationFlags,
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 
 const FIXTURE_DIR = join(
   process.cwd(),

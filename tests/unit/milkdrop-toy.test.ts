@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const freshImport = async () =>
-  import(
-    `../../src/js/toys/milkdrop-toy.ts?ts=${Date.now()}-${Math.random()}`
-  );
+  import(`../../src/js/toys/milkdrop-toy.ts?ts=${Date.now()}-${Math.random()}`);
 
 describe('milkdrop toy runtime boundary', () => {
   const createRendererQualityManager = mock(() => ({

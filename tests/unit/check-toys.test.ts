@@ -238,15 +238,11 @@ describe('check-toys script', () => {
     );
     await fs.writeFile(
       path.join(root, 'src/js/data/toy-manifest.ts'),
-      buildManifestModule(
-        buildManifestSource(entries, 'src/data/toys.json'),
-      ),
+      buildManifestModule(buildManifestSource(entries, 'src/data/toys.json')),
     );
     await fs.writeFile(
       path.join(root, 'public/toys.json'),
-      buildPublicToysJson(
-        buildManifestSource(entries, 'src/data/toys.json'),
-      ),
+      buildPublicToysJson(buildManifestSource(entries, 'src/data/toys.json')),
     );
     await fs.rm(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'));
     await fs.rm(path.join(root, 'docs/toys.md'));

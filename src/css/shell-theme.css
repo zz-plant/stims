@@ -226,7 +226,11 @@ html.light .stims-shell__toast[data-tone="error"] {
 /* ── CodeMirror editor light mode ─────────────────────────────────────── */
 html.light .milkdrop-overlay__editor .cm-editor {
   color: #1e293b;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.92));
+  background: linear-gradient(
+    180deg,
+    rgba(248, 250, 252, 0.95),
+    rgba(241, 245, 249, 0.92)
+  );
 }
 
 html.light .milkdrop-overlay__editor .cm-gutters {
@@ -244,11 +248,11 @@ html.light .milkdrop-overlay__editor .cm-activeLineGutter {
 }
 
 html.light .milkdrop-overlay__editor .cm-content {
-  caretColor: #2563eb;
+  caret-color: #2563eb;
 }
 
 html.light .milkdrop-overlay__editor .cm-focused .cm-cursor {
-  borderLeftColor: #2563eb;
+  border-left-color: #2563eb;
 }
 
 html.light .milkdrop-overlay__editor .cm-focused .cm-selectionBackground,

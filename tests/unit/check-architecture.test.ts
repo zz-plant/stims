@@ -19,14 +19,10 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(workspacePath('src/js/frontend/App.tsx')),
     ).toBe('frontend');
     expect(
-      classifyArchitectureLayer(
-        workspacePath('src/js/data/toy-manifest.ts'),
-      ),
+      classifyArchitectureLayer(workspacePath('src/js/data/toy-manifest.ts')),
     ).toBe('data');
     expect(
-      classifyArchitectureLayer(
-        workspacePath('src/js/bootstrap/home-page.ts'),
-      ),
+      classifyArchitectureLayer(workspacePath('src/js/bootstrap/home-page.ts')),
     ).toBeNull();
     expect(
       classifyArchitectureLayer(workspacePath('src/js/core/web-toy.ts')),
@@ -35,14 +31,10 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(workspacePath('src/js/ui/icon-library.ts')),
     ).toBe('ui');
     expect(
-      classifyArchitectureLayer(
-        workspacePath('src/js/utils/device-detect.ts'),
-      ),
+      classifyArchitectureLayer(workspacePath('src/js/utils/device-detect.ts')),
     ).toBe('utils');
     expect(
-      classifyArchitectureLayer(
-        workspacePath('src/js/toys/milkdrop-toy.ts'),
-      ),
+      classifyArchitectureLayer(workspacePath('src/js/toys/milkdrop-toy.ts')),
     ).toBe('toy');
     expect(
       classifyArchitectureLayer(
@@ -103,18 +95,14 @@ describe('architecture boundary rules', () => {
         sourceLayer: 'frontend',
         targetLayer: 'milkdrop-public',
         sourcePath: workspacePath('src/js/frontend/App.tsx'),
-        targetPath: workspacePath(
-          'src/js/milkdrop/public/launch-intents.ts',
-        ),
+        targetPath: workspacePath('src/js/milkdrop/public/launch-intents.ts'),
       }),
     ).toBe(true);
     expect(
       isArchitectureDependencyAllowed({
         sourceLayer: 'milkdrop-public',
         targetLayer: 'milkdrop',
-        sourcePath: workspacePath(
-          'src/js/milkdrop/public/launch-intents.ts',
-        ),
+        sourcePath: workspacePath('src/js/milkdrop/public/launch-intents.ts'),
         targetPath: workspacePath('src/js/milkdrop/preset-selection.ts'),
       }),
     ).toBe(true);
