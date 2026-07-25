@@ -66,6 +66,7 @@
       "includes": [
         "public/toys.json",
         "public/milkdrop-presets/catalog.json",
+        "public/vendor/**",
         "screenshots/parity/**",
         "tests/accessibility/**"
       ],

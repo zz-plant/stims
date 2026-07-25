@@ -523,7 +523,10 @@ export class EditorPanel {
     const revertButton = document.createElement('button');
     revertButton.type = 'button';
     revertButton.textContent = 'Reset draft';
-    revertButton.setAttribute('aria-label', 'Reset draft to active preset source');
+    revertButton.setAttribute(
+      'aria-label',
+      'Reset draft to active preset source',
+    );
     revertButton.addEventListener('click', () =>
       this.callbacks.onRevertToActive(),
     );

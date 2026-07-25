@@ -111,10 +111,7 @@ async function validateEntries(
   root = repoRoot,
 ) {
   for (const entry of entries) {
-    if (
-      entry.type === 'module' &&
-      !entry.module.startsWith('src/js/toys/')
-    ) {
+    if (entry.type === 'module' && !entry.module.startsWith('src/js/toys/')) {
       issues.push(
         `Module path for ${entry.slug} should live under src/js/toys/.`,
       );
@@ -145,9 +142,7 @@ function validateSlugEntrypointConsistency(
     const normalizedModule = entry.module.replace(/\\/g, '/');
 
     if (slugs.has(entry.slug)) {
-      issues.push(
-        `Duplicate slug found in src/data/toys.json: ${entry.slug}.`,
-      );
+      issues.push(`Duplicate slug found in src/data/toys.json: ${entry.slug}.`);
     }
     slugs.add(entry.slug);
 

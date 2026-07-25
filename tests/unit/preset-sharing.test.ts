@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  buildPresetLink,
-  formatPresetShareCopy,
-} from '../../src/js/utils/share-link.ts';
 import { onRequest as middlewareRequest } from '../../functions/_middleware.ts';
 import {
   buildPresetOgSvg,
   onRequest as ogPresetRequest,
 } from '../../functions/api/og-preset.ts';
+import {
+  buildPresetLink,
+  formatPresetShareCopy,
+} from '../../src/js/utils/share-link.ts';
 
 describe('preset social sharing', () => {
   describe('share link copy formatting', () => {

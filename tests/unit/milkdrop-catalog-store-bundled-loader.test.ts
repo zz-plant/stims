@@ -59,9 +59,7 @@ test('bundled catalog loader appends certification-only presets when the certifi
       );
     }
 
-    if (
-      url.endsWith('/src/data/milkdrop-parity/certification-corpus.json')
-    ) {
+    if (url.endsWith('/src/data/milkdrop-parity/certification-corpus.json')) {
       return Promise.resolve(
         new Response(
           JSON.stringify({
