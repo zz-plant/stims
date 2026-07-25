@@ -47,11 +47,10 @@ function resolveDocumentAssetBaseUrl() {
         src,
         typeof window !== 'undefined' ? window.location.href : undefined,
       );
-      const assetMarker = '/assets/';
-      const markerIndex = resolvedScriptUrl.pathname.indexOf(assetMarker);
-      if (markerIndex === -1) continue;
+      const match = resolvedScriptUrl.pathname.match(/\/(assets|src)\//);
+      if (!match || match.index === undefined) continue;
 
-      const basePath = resolvedScriptUrl.pathname.slice(0, markerIndex + 1);
+      const basePath = resolvedScriptUrl.pathname.slice(0, match.index + 1);
       return new URL(basePath, resolvedScriptUrl.origin);
     } catch (error) {
       console.warn('Unable to resolve document asset base URL', error);

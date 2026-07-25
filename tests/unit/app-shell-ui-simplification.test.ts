@@ -5,7 +5,7 @@ import { join } from 'node:path';
 describe('Workspace shell UI simplification regression', () => {
   test('keeps the shell copy lean around launch, presets, and tuning', () => {
     const appSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'frontend', 'App.tsx'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', 'App.tsx'),
       'utf8',
     );
     const uiSource = readFileSync(
@@ -13,7 +13,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-ui.tsx',
@@ -25,7 +25,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-helpers.ts',
@@ -37,7 +37,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-toast.ts',
@@ -49,7 +49,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'StimsStageFrame.tsx',
@@ -61,7 +61,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'StageControls.tsx',
@@ -73,7 +73,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'AudioSourcePanel.tsx',
@@ -85,7 +85,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'BrowseSheetPanel.tsx',
@@ -97,7 +97,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'NewHomePage.tsx',
@@ -129,7 +129,7 @@ describe('Workspace shell UI simplification regression', () => {
 
   test('renders SidePanel when routeState.panel is not null', () => {
     const appSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'frontend', 'App.tsx'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', 'App.tsx'),
       'utf8',
     );
     expect(appSource).toContain('<SidePanel');
@@ -142,7 +142,7 @@ describe('Workspace shell UI simplification regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'css',
         'StageControls.module.css',
       ),
@@ -156,18 +156,11 @@ describe('Workspace shell UI simplification regression', () => {
 
   test('keeps live mode low chrome around the visualizer', () => {
     const shellCss = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'css', 'app-shell.css'),
+      join(import.meta.dir, '..', '..', 'src', 'css', 'app-shell.css'),
       'utf8',
     );
     const sidePanelCss = readFileSync(
-      join(
-        import.meta.dir,
-        '..',
-        '..',
-        'assets',
-        'css',
-        'SidePanel.module.css',
-      ),
+      join(import.meta.dir, '..', '..', 'src', 'css', 'SidePanel.module.css'),
       'utf8',
     );
 

@@ -11,7 +11,7 @@ command="$1"
 shift
 
 targets=(
-  "assets"
+  "src"
   "scripts"
   "tests"
   "package.json"

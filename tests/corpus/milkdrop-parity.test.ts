@@ -64,14 +64,14 @@ const PARITY_CORPUS_DIR = join(
 );
 const PARITY_MANIFEST_PATH = join(
   process.cwd(),
-  'assets',
+  'src',
   'data',
   'milkdrop-parity',
   'corpus-manifest.json',
 );
 const VISUAL_BASELINES_PATH = join(
   process.cwd(),
-  'assets',
+  'src',
   'data',
   'milkdrop-parity',
   'visual-baselines.json',

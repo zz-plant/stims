@@ -11,13 +11,13 @@ test('buildCertificationCorpusCaptureRequests derives requests from the certific
   const repoRoot = fs.mkdtempSync(
     path.join(os.tmpdir(), 'stims-certification-capture-'),
   );
-  fs.mkdirSync(path.join(repoRoot, 'assets', 'data', 'milkdrop-parity'), {
+  fs.mkdirSync(path.join(repoRoot, 'src', 'data', 'milkdrop-parity'), {
     recursive: true,
   });
   fs.writeFileSync(
     path.join(
       repoRoot,
-      'assets',
+      'src',
       'data',
       'milkdrop-parity',
       'certification-corpus.json',
@@ -134,13 +134,13 @@ test('buildCertificationCorpusCaptureRequests can filter by corpus group and pre
   const repoRoot = fs.mkdtempSync(
     path.join(os.tmpdir(), 'stims-certification-capture-filter-'),
   );
-  fs.mkdirSync(path.join(repoRoot, 'assets', 'data', 'milkdrop-parity'), {
+  fs.mkdirSync(path.join(repoRoot, 'src', 'data', 'milkdrop-parity'), {
     recursive: true,
   });
   fs.writeFileSync(
     path.join(
       repoRoot,
-      'assets',
+      'src',
       'data',
       'milkdrop-parity',
       'certification-corpus.json',

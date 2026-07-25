@@ -27,11 +27,11 @@ describe('MilkDrop overlay stacking', () => {
   test('keeps the preset overlay above the toy nav and floating control panels', () => {
     const css = [
       readFileSync(
-        join(import.meta.dir, '..', '..', 'assets', 'css', 'tokens.css'),
+        join(import.meta.dir, '..', '..', 'src', 'css', 'tokens.css'),
         'utf8',
       ),
       readFileSync(
-        join(import.meta.dir, '..', '..', 'assets', 'css', 'base.css'),
+        join(import.meta.dir, '..', '..', 'src', 'css', 'base.css'),
         'utf8',
       ),
     ].join('\n');

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-matches=$(rg --line-number --no-heading '@ts-nocheck' assets scripts tests --glob '*.{js,ts}' || true)
+matches=$(rg --line-number --no-heading '@ts-nocheck' src scripts tests --glob '*.{js,ts}' || true)
 
 if [[ -n "$matches" ]]; then
   echo "Found forbidden @ts-nocheck directives:"
@@ -11,4 +11,4 @@ if [[ -n "$matches" ]]; then
   exit 1
 fi
 
-echo "No @ts-nocheck directives found in assets/, scripts/, or tests/."
+echo "No @ts-nocheck directives found in src/, scripts/, or tests/."

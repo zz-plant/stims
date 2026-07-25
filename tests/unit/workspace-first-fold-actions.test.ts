@@ -9,7 +9,7 @@ describe('workspace first-fold launch hierarchy', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'NewHomePage.tsx',
@@ -22,7 +22,7 @@ describe('workspace first-fold launch hierarchy', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'AudioSourcePanel.tsx',
@@ -30,7 +30,7 @@ describe('workspace first-fold launch hierarchy', () => {
       'utf8',
     );
     const appShellCss = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'css', 'app-shell.css'),
+      join(import.meta.dir, '..', '..', 'src', 'css', 'app-shell.css'),
       'utf8',
     );
 

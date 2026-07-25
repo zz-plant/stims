@@ -5,7 +5,7 @@ import { join } from 'node:path';
 describe('Workspace shell first-run and recovery regression', () => {
   test('surfaces a recoverable fallback when a preset link is missing from the build', () => {
     const appSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'frontend', 'App.tsx'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', 'App.tsx'),
       'utf8',
     );
     const uiSource = readFileSync(
@@ -13,7 +13,7 @@ describe('Workspace shell first-run and recovery regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-ui.tsx',
@@ -25,7 +25,7 @@ describe('Workspace shell first-run and recovery regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'NewHomePage.tsx',
@@ -37,7 +37,7 @@ describe('Workspace shell first-run and recovery regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-shell-hooks.ts',
@@ -49,7 +49,7 @@ describe('Workspace shell first-run and recovery regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-hooks.ts',
@@ -61,7 +61,7 @@ describe('Workspace shell first-run and recovery regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-toast.ts',

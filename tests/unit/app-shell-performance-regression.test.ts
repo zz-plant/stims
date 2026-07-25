@@ -10,7 +10,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-shell-hooks.ts',
@@ -29,7 +29,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'engine',
@@ -42,7 +42,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-hooks.ts',
@@ -62,7 +62,7 @@ describe('Workspace performance regressions', () => {
 
   test('keeps heavy startup data and audio capture behind staged lazy loading', () => {
     const appSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'app.ts'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'app.ts'),
       'utf8',
     );
     const catalogHookSource = readFileSync(
@@ -70,7 +70,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'hooks',
@@ -83,7 +83,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-shell-hooks.ts',
@@ -111,7 +111,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'milkdrop',
         'overlay',
@@ -124,7 +124,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'core',
         'services',
@@ -234,7 +234,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'milkdrop',
         'vm',
@@ -247,7 +247,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'milkdrop',
         'vm',
@@ -276,7 +276,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'BrowseSheetPanel.tsx',
@@ -288,7 +288,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'SidePanel.tsx',
@@ -313,7 +313,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-helpers.ts',
@@ -334,7 +334,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'milkdrop',
         'overlay',
@@ -352,7 +352,7 @@ describe('Workspace performance regressions', () => {
 
   test('updates GPU VM state in place after dispatch instead of spreading every frame', () => {
     const vmSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'milkdrop', 'vm.ts'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'milkdrop', 'vm.ts'),
       'utf8',
     );
 
@@ -364,7 +364,7 @@ describe('Workspace performance regressions', () => {
 
   test('reuses the MilkDrop frame variables proxy across frames', () => {
     const vmSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'milkdrop', 'vm.ts'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'milkdrop', 'vm.ts'),
       'utf8',
     );
 
@@ -381,7 +381,7 @@ describe('Workspace performance regressions', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'milkdrop',
         'feedback-manager-webgpu-tsl.ts',

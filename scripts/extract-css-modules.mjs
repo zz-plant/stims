@@ -34,11 +34,11 @@ const BOUNDARIES = {
 };
 
 try {
-  const content = fs.readFileSync('assets/css/app-shell.css', 'utf-8');
+  const content = fs.readFileSync('src/css/app-shell.css', 'utf-8');
   const lines = content.split('\n');
 
-  if (!fs.existsSync('assets/css/shell')) {
-    fs.mkdirSync('assets/css/shell', { recursive: true });
+  if (!fs.existsSync('src/css/shell')) {
+    fs.mkdirSync('src/css/shell', { recursive: true });
   }
 
   let success = 0,
@@ -47,7 +47,7 @@ try {
   Object.entries(BOUNDARIES).forEach(([name, [start, end]]) => {
     try {
       const module = lines.slice(start - 1, end).join('\n');
-      fs.writeFileSync(`assets/css/shell/${name}`, module);
+      fs.writeFileSync(`src/css/shell/${name}`, module);
       success++;
     } catch (e) {
       console.log(`⚠️  ${name} failed: ${e.message}`);
@@ -56,8 +56,8 @@ try {
   });
 
   console.log(`Done: ${success} files extracted, ${options} issues\n`);
-  console.log('Modules now in: assets/css/shell/');
-  console.log('Original file: assets/css/app-shell.css (still active)');
+  console.log('Modules now in: src/css/shell/');
+  console.log('Original file: src/css/app-shell.css (still active)');
 } catch (e) {
   console.error(`Failed: ${e.message}`);
   process.exit(1);

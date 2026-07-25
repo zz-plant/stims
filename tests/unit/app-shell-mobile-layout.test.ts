@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 function readAppShellCss() {
   return readFileSync(
-    join(import.meta.dir, '..', '..', 'assets', 'css', 'app-shell.css'),
+    join(import.meta.dir, '..', '..', 'src', 'css', 'app-shell.css'),
     'utf8',
   );
 }
