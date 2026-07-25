@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 function readSource(...segments: string[]) {
   return readFileSync(
-    join(import.meta.dir, '..', '..', 'assets', 'js', ...segments),
+    join(import.meta.dir, '..', '..', 'src', 'js', ...segments),
     'utf8',
   );
 }

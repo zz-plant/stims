@@ -4,14 +4,14 @@ import { join } from 'node:path';
 
 function frontendSource(file: string) {
   return readFileSync(
-    join(import.meta.dir, '..', '..', 'assets', 'js', 'frontend', file),
+    join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', file),
     'utf8',
   );
 }
 
 function cssSource(file: string) {
   return readFileSync(
-    join(import.meta.dir, '..', '..', 'assets', 'css', file),
+    join(import.meta.dir, '..', '..', 'src', 'css', file),
     'utf8',
   );
 }

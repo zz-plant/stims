@@ -19,7 +19,7 @@ async function loadAppShell() {
 
   await importFresh('../../src/js/app.ts');
   await globalThis.__stimsAppReady;
-  await flushTasks();
+  await flushTasks(10);
 }
 
 describe('home shell user journeys', () => {

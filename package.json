@@ -57,7 +57,7 @@
     "check:catalog-integrity": "bun run scripts/check-catalog-integrity.ts",
     "check:pre-commit": "bun run scripts/check-pre-commit-guards.ts",
     "check:quick": "bun run scripts/run-quality-gate.ts --quick",
-    "check:architecture": "node --max-old-space-size=4096 ./node_modules/dependency-cruiser/bin/dependency-cruise.mjs --config .dependency-cruiser.mjs assets/js scripts tests",
+    "check:architecture": "node --max-old-space-size=4096 ./node_modules/dependency-cruiser/bin/dependency-cruise.mjs --config .dependency-cruiser.mjs src/js scripts tests",
     "check:toys": "bun run scripts/check-toys.ts",
     "check:seo": "bun run scripts/check-seo.ts",
     "build": "bun scripts/build.mjs || node scripts/build.mjs",

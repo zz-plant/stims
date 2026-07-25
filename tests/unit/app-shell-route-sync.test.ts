@@ -9,7 +9,7 @@ describe('Workspace shell route sync regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-hooks.ts',
@@ -27,11 +27,11 @@ describe('Workspace shell route sync regression', () => {
 
   test('marks the shell when a toast is visible so mobile layouts can reserve space', () => {
     const appSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'frontend', 'App.tsx'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', 'App.tsx'),
       'utf8',
     );
     const cssSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'css', 'app-shell.css'),
+      join(import.meta.dir, '..', '..', 'src', 'css', 'app-shell.css'),
       'utf8',
     );
 

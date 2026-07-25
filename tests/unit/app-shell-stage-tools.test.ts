@@ -5,7 +5,7 @@ import { join } from 'node:path';
 describe('Workspace shell stage tool interaction regression', () => {
   test('stage-anchored editor has no backdrop overlay', () => {
     const appSource = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'js', 'frontend', 'App.tsx'),
+      join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', 'App.tsx'),
       'utf8',
     );
     const uiSource = readFileSync(
@@ -13,7 +13,7 @@ describe('Workspace shell stage tool interaction regression', () => {
         import.meta.dir,
         '..',
         '..',
-        'assets',
+        'src',
         'js',
         'frontend',
         'workspace-ui.tsx',

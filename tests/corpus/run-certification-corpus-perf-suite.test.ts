@@ -9,13 +9,13 @@ import {
 } from '../../scripts/run-certification-corpus-perf-suite.ts';
 
 function writeCorpus(repoRoot: string, presets: unknown[]) {
-  fs.mkdirSync(path.join(repoRoot, 'assets', 'data', 'milkdrop-parity'), {
+  fs.mkdirSync(path.join(repoRoot, 'src', 'data', 'milkdrop-parity'), {
     recursive: true,
   });
   fs.writeFileSync(
     path.join(
       repoRoot,
-      'assets',
+      'src',
       'data',
       'milkdrop-parity',
       'certification-corpus.json',

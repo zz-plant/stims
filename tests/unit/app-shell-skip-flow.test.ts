@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const frontendSource = (fileName: string) =>
   readFileSync(
-    join(import.meta.dir, '..', '..', 'assets', 'js', 'frontend', fileName),
+    join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', fileName),
     'utf8',
   );
 

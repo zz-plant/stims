@@ -5,7 +5,7 @@ import { join } from 'node:path';
 describe('Preflight mobile visibility regression', () => {
   test('does not hide the preflight dialog when preflight-open rules hide floating chrome', () => {
     const css = readFileSync(
-      join(import.meta.dir, '..', '..', 'assets', 'css', 'base.css'),
+      join(import.meta.dir, '..', '..', 'src', 'css', 'base.css'),
       'utf8',
     );
 
