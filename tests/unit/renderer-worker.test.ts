@@ -3,7 +3,7 @@ import { RENDERER_WORKER_MESSAGE_TYPES } from '../../src/js/core/renderer-worker
 
 const freshImport = async () =>
   import(
-    `../../assets/js/core/renderer-worker.ts?t=${Date.now()}-${Math.random()}`
+    `../../src/js/core/renderer-worker.ts?t=${Date.now()}-${Math.random()}`
   );
 
 describe('renderer worker WebGPU safety', () => {

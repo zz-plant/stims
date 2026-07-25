@@ -16,11 +16,11 @@ const config = {
       name: 'no-circular',
       severity: 'error',
       from: {
-        path: '^(assets|scripts|tests)/',
+        path: '^(src|scripts|tests)/',
       },
       to: {
         circular: true,
-        path: '^(assets|scripts|tests)/',
+        path: '^(src|scripts|tests)/',
       },
     },
     {
@@ -28,7 +28,7 @@ const config = {
       severity: 'error',
       comment: 'Production code should not depend on test-only helpers.',
       from: {
-        path: '^(assets|scripts)/',
+        path: '^(src|scripts)/',
       },
       to: {
         path: '^tests/',
@@ -40,10 +40,10 @@ const config = {
       comment:
         'UI modules should communicate through the app/loader surface instead of importing loader internals.',
       from: {
-        path: '^assets/js/ui/',
+        path: '^src/js/ui/',
       },
       to: {
-        path: '^assets/js/loader/',
+        path: '^src/js/loader/',
       },
     },
     {
@@ -52,10 +52,10 @@ const config = {
       comment:
         'Bootstrap modules should stay on public app/runtime surfaces rather than MilkDrop internals.',
       from: {
-        path: '^assets/js/bootstrap/',
+        path: '^src/js/bootstrap/',
       },
       to: {
-        path: '^assets/js/milkdrop/',
+        path: '^src/js/milkdrop/',
       },
     },
   ],

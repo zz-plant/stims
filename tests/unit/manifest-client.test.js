@@ -30,7 +30,7 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(fetchImpl).toHaveBeenCalledWith('/app/.vite/manifest.json');
-    expect(modulePath).toBe('/app/assets/js/toys/example.123.js');
+    expect(modulePath).toBe('/app/src/js/toys/example.123.js');
   });
 
   test('falls back when manifest is missing', async () => {
@@ -42,7 +42,7 @@ describe('manifest client', () => {
     });
     const modulePath = await client.resolveModulePath(moduleEntry);
 
-    expect(modulePath).toBe('/assets/js/toys/example.ts');
+    expect(modulePath).toBe('/src/js/toys/example.ts');
   });
 
   test('falls back to the app root on nested routes when the entry script is rooted at /assets', async () => {
@@ -50,7 +50,7 @@ describe('manifest client', () => {
     document.head.innerHTML = '';
     const entryScript = document.createElement('script');
     entryScript.type = 'module';
-    entryScript.src = '/assets/js/app.ts';
+    entryScript.src = '/src/js/app.ts';
     document.head.appendChild(entryScript);
 
     const fetchImpl = mock(() => Promise.resolve({ ok: false }));
@@ -59,7 +59,7 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(fetchImpl).toHaveBeenCalledWith('/.vite/manifest.json');
-    expect(modulePath).toBe('/assets/js/toys/example.ts');
+    expect(modulePath).toBe('/src/js/toys/example.ts');
   });
 
   test('caches manifest retrieval across resolutions', async () => {
@@ -101,7 +101,7 @@ describe('manifest client', () => {
       'https://cdn.example.com/app/.vite/manifest.json',
     );
     expect(modulePath).toBe(
-      'https://cdn.example.com/app/assets/js/toys/example.123.js',
+      'https://cdn.example.com/app/src/js/toys/example.123.js',
     );
   });
 
@@ -118,7 +118,7 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(modulePath).toBe(
-      'https://cdn.example.com/app/assets/js/toys/example.ts',
+      'https://cdn.example.com/app/src/js/toys/example.ts',
     );
   });
 
@@ -147,6 +147,6 @@ describe('manifest client', () => {
     const modulePath = await client.resolveModulePath(moduleEntry);
 
     expect(fetchImpl).toHaveBeenCalledWith('/.vite/manifest.json');
-    expect(modulePath).toBe('/assets/js/toys/example.123.js');
+    expect(modulePath).toBe('/src/js/toys/example.123.js');
   });
 });

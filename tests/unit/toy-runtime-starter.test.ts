@@ -3,7 +3,7 @@ import { getSettingsPanel } from '../../src/js/core/settings-panel.ts';
 
 const freshImport = async () =>
   import(
-    `../../assets/js/core/toy-runtime-starter.ts?ts=${Date.now()}-${Math.random()}`
+    `../../src/js/core/toy-runtime-starter.ts?ts=${Date.now()}-${Math.random()}`
   );
 
 describe('toy runtime starter', () => {

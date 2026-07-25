@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 const freshImport = async () =>
   import(
-    `../../assets/js/toys/milkdrop-toy.ts?ts=${Date.now()}-${Math.random()}`
+    `../../src/js/toys/milkdrop-toy.ts?ts=${Date.now()}-${Math.random()}`
   );
 
 describe('milkdrop toy runtime boundary', () => {

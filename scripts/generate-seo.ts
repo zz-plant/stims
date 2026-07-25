@@ -351,7 +351,7 @@ export function getSitemapRouteSpecs(milkdrop: ToyEntry): SitemapRouteSpec[] {
         'Guide to browser support, lighter visual modes, and what to expect on older devices.',
       changefreq: 'monthly',
       priority: '0.7',
-      sourcePaths: ['performance/index.html', 'assets/css/performance.css'],
+      sourcePaths: ['performance/index.html', 'src/css/performance.css'],
       includeInSitemap: true,
     },
     {
