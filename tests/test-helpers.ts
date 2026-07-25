@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
  * The specifier is resolved from the repo root rather than from the caller,
  * because a bare `import()` here would resolve relative to *this* file — which
  * silently couples every call site to how deep it sits under `tests/`. Leading
- * `../` segments are stripped so both `assets/js/x.ts` and `../../assets/js/x.ts`
+ * `../` segments are stripped so both `src/js/x.ts` and `../../src/js/x.ts`
  * land on the same module regardless of which category folder the test lives in.
  */
 export async function importFresh<T>(path: string): Promise<T> {

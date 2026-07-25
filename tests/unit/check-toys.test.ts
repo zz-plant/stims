@@ -110,7 +110,7 @@ describe('check-toys script', () => {
         slug,
         title: 'Missing Entry',
         description: 'oops',
-        module: `assets/js/toys/${slug}.ts`,
+        module: `src/js/toys/${slug}.ts`,
         type: 'module',
         requiresWebGPU: false,
         capabilities: {
@@ -158,7 +158,7 @@ describe('check-toys script', () => {
         slug,
         title: 'Drift Check',
         description: 'ok',
-        module: `assets/js/toys/${slug}.ts`,
+        module: `src/js/toys/${slug}.ts`,
         type: 'module',
         requiresWebGPU: false,
         capabilities: {
@@ -188,7 +188,7 @@ describe('check-toys script', () => {
     expect(
       result.issues.some((issue) =>
         issue.includes(
-          'Generated artifact out of date: assets/js/data/toy-manifest.ts',
+          'Generated artifact out of date: src/js/data/toy-manifest.ts',
         ),
       ),
     ).toBe(true);
@@ -221,7 +221,7 @@ describe('check-toys script', () => {
         slug,
         title: 'Missing Docs',
         description: 'ok',
-        module: `assets/js/toys/${slug}.ts`,
+        module: `src/js/toys/${slug}.ts`,
         type: 'module',
         requiresWebGPU: false,
         capabilities: {
@@ -278,7 +278,7 @@ describe('check-toys script', () => {
         slug,
         title: 'Missing Start',
         description: 'oops',
-        module: `assets/js/toys/${slug}.ts`,
+        module: `src/js/toys/${slug}.ts`,
         type: 'module',
         requiresWebGPU: false,
         capabilities: {
