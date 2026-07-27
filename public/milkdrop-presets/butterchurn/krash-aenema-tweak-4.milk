@@ -24,15 +24,36 @@ fInnerBorderR=0.600000
 fInnerBorderG=0.000000
 fInnerBorderB=0.000000
 fInnerBorderA=0.200000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=du = 0;
+per_frame_init_2=dv = 0;
+per_frame_init_3=dist = 0;
+per_frame_init_4=ang2 = 0;
+per_frame_init_5=mult = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = abs(wave_r + 0.1 * (sin(0.346 * time) + sin(1.334 * time)));
+per_frame_3=wave_g = wave_g + 0.15 * (sin(0.763 * time) + sin(1.231 * time));
+per_frame_4=wave_b = wave_b + 0.2 * (sin(0.695 * time) + sin(0.367 * time));
+per_frame_5=ob_r = wave_r;
+per_frame_6=ob_g = wave_b - 0.1;
+per_frame_7=ob_b = wave_g - 0.1;
+per_frame_8=ib_a = 0.7 - bass;
+per_pixel_1=du = 2 * x - 1 - 0.7;
+per_pixel_2=dv = 2 * y - 1 + 0.5;
+per_pixel_3=dist = tan(du * du + dv * dv);
+per_pixel_4=ang2 = atan2(du, dv);
+per_pixel_5=mult = 0.008 / (dist + 0.4);
+per_pixel_6=dx = mult * sin(ang2 - bass);
+per_pixel_7=dy = mult * cos(ang2 - bass);
+per_pixel_8=du = 2 * x - 1 - 0.7;
+per_pixel_9=dv = 2 * y - 1 - 0.5;
+per_pixel_10=dist = tan(du * du + dv * dv);
+per_pixel_11=ang2 = atan2(du, dv);
+per_pixel_12=mult = 0.008 / (dist + 0.4);
+per_pixel_13=dx = dx + mult * sin(ang2 + bass);
+per_pixel_14=dy = dy + mult * cos(ang2 + bass);
+per_pixel_15=dy = dy - if(0.00001 < abs(below(y, 0.65)), if(0.00001 < abs(above(y, 0.35)), 0.1 * (y - 0.5) + 0.01 * sin(30 * x + 4 * time), 0), 0);
+per_pixel_16=dx = dx - if(0.00001 < abs(above(dx, -0.01)), if(0.00001 < abs(below(dx, 0)), 0.006, 0), 0);

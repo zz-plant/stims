@@ -33,37 +33,112 @@ fMotionVectorsR=0.500000
 fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bThickOutline=1.000000
-fRad=0.866440
-fR=0.500000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_additive=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_rad=0.866440
+shapecode_0_r=0.500000
+shapecode_0_g2=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=d = 0;
+per_frame_init_2=xx = 0;
+per_frame_init_3=w = 0;
+per_frame_init_4=ww = 0;
+per_frame_init_5=vt = 0;
+per_frame_init_6=xh = 0;
+per_frame_init_7=q6 = 0;
+per_frame_init_8=q1 = 0;
+per_frame_init_9=q5 = 0;
+per_frame_init_10=vb = 0;
+per_frame_init_11=q9 = 0;
+per_frame_init_12=v = 0;
+per_frame_init_13=ax = 0;
+per_frame_init_14=mm = 0;
+per_frame_init_15=tt = 0;
+per_frame_init_16=yh = 0;
+per_frame_init_17=wv = 0;
+per_frame_init_18=vx = 0;
+per_frame_init_19=pi = 0;
+per_frame_init_20=vy = 0;
+per_frame_init_21=ry = 0;
+per_frame_init_22=q4 = 0;
+per_frame_init_23=ddy = 0;
+per_frame_init_24=rx = 0;
+per_frame_init_25=ay = 0;
+per_frame_init_26=t = 0;
+per_frame_init_27=wh = 0;
+per_frame_init_28=bb = 0;
+per_frame_init_29=ddx = 0;
+per_frame_init_30=q2 = 0;
+per_frame_init_31=q3 = 0;
+per_frame_init_32=m = 0;
+per_frame_init_33=vvm = 0;
+per_frame_init_34=yy = 0;
+per_frame_init_35=vvb = 0;
+per_frame_init_36=q7 = 0;
+per_frame_init_37=vm = 0;
+per_frame_init_38=vvt = 0;
+per_frame_init_39=q8 = 0;
+per_frame_init_40=x1 = 0;
+per_frame_init_41=y1 = 0;
+per_frame_1=vb = 0.95 * vb + (1 - vb) * pow(bass, 2) * 0.02;
+per_frame_2=vvb = 0.95 * vvb + (1 - vvb) * vb * 0.01;
+per_frame_3=vm = 0.95 * vm + (1 - vm) * pow(mid, 2) * 0.02;
+per_frame_4=vvm = 0.95 * vvm + (1 - vvm) * vm * 0.01;
+per_frame_5=vt = 0.95 * vt + (1 - vt) * pow(treb, 2) * 0.02;
+per_frame_6=vvt = 0.95 * vvt + (1 - vvt) * vt * 0.01;
+per_frame_7=vvb = min(1, max(0, vvb));
+per_frame_8=vvm = min(1, max(0, vvm));
+per_frame_9=vvt = min(1, max(0, vvt));
+per_frame_10=q1 = 2 * vvb;
+per_frame_11=q2 = 2 * vvm;
+per_frame_12=q3 = 2 * vvt;
+per_frame_13=v = 2;
+per_frame_14=bb = bb - vvb * v;
+per_frame_15=mm = mm - vvm * v;
+per_frame_16=tt = tt - vvt * v;
+per_frame_17=q4 = bb;
+per_frame_18=q5 = mm;
+per_frame_19=q6 = tt;
+per_frame_20=q7 = 1.81;
+per_frame_21=q8 = 0.448 + 0.3 * (vm - vt);
+per_frame_22=q9 = 0.701 + 0.3 * (vb - vm);
+per_pixel_1=pi = asin(1);
+per_pixel_2=x = x - 0.5;
+per_pixel_3=y = y - 0.5;
+per_pixel_4=d = 0.4 * (q4 - q6) + (rad - 0.3) * (q1 - q3) * 2 + pi;
+per_pixel_5=xx = sin(d) * x - cos(d) * y;
+per_pixel_6=yy = cos(d) * x + sin(d) * y;
+per_pixel_7=x = xx;
+per_pixel_8=y = yy;
+per_pixel_9=t = 0 * time;
+per_pixel_10=xh = x;
+per_pixel_11=yh = y;
+per_pixel_12=w = 0.8 * (q4 - q6);
+per_pixel_13=m = -1 + 2 * q2;
+per_pixel_14=wv = pi - sin(w) * m;
+per_pixel_15=wh = pi - cos(w) * m;
+per_pixel_16=d = 6 * sqrt(q2);
+per_pixel_17=ww = 1.1;
+per_pixel_18=ddx = sin(2 * pi - wv - x * ww);
+per_pixel_19=ddy = sin(2 * pi - wh - y * ww);
+per_pixel_20=rx = if(0.00001 < abs(above(ddx * ddy, 0)), sin(wv) / ddx, 0);
+per_pixel_21=ry = if(0.00001 < abs(above(ddy * ddy, 0)), sin(wh) / ddy, 0);
+per_pixel_22=v = 0.04 * -q2 * (d / ww) * 1728 / (meshx * meshy);
+per_pixel_23=ax = ax + sin(w) * v;
+per_pixel_24=ay = ay + cos(w) * v;
+per_pixel_25=vx = if(0.00001 < abs(equal(rx * ry, 0)), 0, ax);
+per_pixel_26=vy = if(0.00001 < abs(equal(rx * ry, 0)), 0, ay);
+per_pixel_27=dx = -xh * rx * ry * d + 0.001 * vx;
+per_pixel_28=dy = -yh * rx * ry * d + 0.001 * vy;
 
 [warp_shader]
 shader_body { 

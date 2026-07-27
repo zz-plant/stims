@@ -25,33 +25,200 @@ fOuterBorderSize=0.500000
 fOuterBorderR=0.010000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_thick=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_spectrum=1.000000
+wavecode_1_thick=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_spectrum=1.000000
+wavecode_2_thick=1.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=vol = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=tic = 0;
+per_frame_init_4=tin = 0;
+per_frame_init_5=tm = 0;
+per_frame_init_6=q2 = 0;
+per_frame_1=wave_a = 0;
+per_frame_2=vol = 0.1 * (9 * vol + 0.333333 * (bass_att + mid_att + treb_att));
+per_frame_3=q1 = 0.7 * vol;
+per_frame_4=q1 = min(q1, 2);
+per_frame_5=tic = time - tin;
+per_frame_6=tin = time;
+per_frame_7=tm = tm + tic * (bass_att + mid_att + treb_att) * 0.333333;
+per_frame_8=q2 = tm;
+wave_0_init1=xang = 0;
+wave_0_init2=fov = 0;
+wave_0_init3=aa = 0;
+wave_0_init4=yang = 0;
+wave_0_init5=ss = 0;
+wave_0_init6=it = 0;
+wave_0_init7=q1 = 0;
+wave_0_init8=my = 0;
+wave_0_init9=oz = 0;
+wave_0_init10=ayang = 0;
+wave_0_init11=mz = 0;
+wave_0_init12=oy = 0;
+wave_0_init13=sz = 0;
+wave_0_init14=azang = 0;
+wave_0_init15=mx = 0;
+wave_0_init16=sp = 0;
+wave_0_init17=q2 = 0;
+wave_0_init18=zang = 0;
+wave_0_init19=axang = 0;
+wave_0_init20=ox = 0;
+wave_0_per_point1=sp = 1607.68 * sample;
+wave_0_per_point2=it = it + 1;
+wave_0_per_point3=it = it * above(sample, 0);
+wave_0_per_point4=sz = q1;
+wave_0_per_point5=ss = 2 * sample;
+wave_0_per_point6=ox = 0.5 * sz * pow(-1, it) * below(ss, 1) + 0.5 * pow(-1, it) * above(ss, 1) * sz;
+wave_0_per_point7=oy = (ss - 0.5) * sz * below(ss, 1) + 0.5 * sz * above(ss, 1);
+wave_0_per_point8=oz = 0.5 * -sz * below(ss, 1) + (ss - 1 - 0.5) * sz * above(ss, 1);
+wave_0_per_point9=xang = 0.132 * q2;
+wave_0_per_point10=axang = 0;
+wave_0_per_point11=yang = 0.153 * q2;
+wave_0_per_point12=ayang = 0;
+wave_0_per_point13=zang = 2.1 * q2;
+wave_0_per_point14=azang = 0;
+wave_0_per_point15=fov = 0.6 + 0.2 * sin(time);
+wave_0_per_point16=fov = 0.3;
+wave_0_per_point17=mx = ox * cos(zang) - oy * sin(zang);
+wave_0_per_point18=my = ox * sin(zang) + oy * cos(zang);
+wave_0_per_point19=ox = mx;
+wave_0_per_point20=oy = my;
+wave_0_per_point21=mx = ox * cos(yang) + oz * sin(yang);
+wave_0_per_point22=mz = -ox * sin(yang) + oz * cos(yang);
+wave_0_per_point23=ox = mx;
+wave_0_per_point24=oz = mz;
+wave_0_per_point25=my = oy * cos(xang) - oz * sin(xang);
+wave_0_per_point26=mz = oy * sin(xang) + oz * cos(xang);
+wave_0_per_point27=oy = my;
+wave_0_per_point28=oz = mz;
+wave_0_per_point29=aa = 0.5 * (oz - 1);
+wave_0_per_point30=a = 0.05;
+wave_0_per_point31=oz = oz - 2;
+wave_0_per_point32=x = ox * fov / oz + 0.5;
+wave_0_per_point33=x = 0.75 * (x - 0.5) + 0.5;
+wave_0_per_point34=y = oy * fov / oz + 0.5;
+wave_0_per_point35=g = 1 + sin(sp);
+wave_0_per_point36=b = 0.5 + 0.5 * sin(1.57 * sample);
+wave_0_per_point37=r = 0.5 + 0.5 * cos(1.57 * sample);
+wave_1_init1=xang = 0;
+wave_1_init2=fov = 0;
+wave_1_init3=yang = 0;
+wave_1_init4=ss = 0;
+wave_1_init5=it = 0;
+wave_1_init6=q1 = 0;
+wave_1_init7=my = 0;
+wave_1_init8=oz = 0;
+wave_1_init9=ayang = 0;
+wave_1_init10=mz = 0;
+wave_1_init11=oy = 0;
+wave_1_init12=sz = 0;
+wave_1_init13=azang = 0;
+wave_1_init14=mx = 0;
+wave_1_init15=sp = 0;
+wave_1_init16=q2 = 0;
+wave_1_init17=zang = 0;
+wave_1_init18=axang = 0;
+wave_1_init19=ox = 0;
+wave_1_per_point1=sp = 1607.68 * sample;
+wave_1_per_point2=it = it + 1;
+wave_1_per_point3=it = it * above(sample, 0);
+wave_1_per_point4=sz = q1;
+wave_1_per_point5=ss = 2 * sample;
+wave_1_per_point6=oy = 0.5 * sz * pow(-1, it) * below(ss, 1) + 0.5 * pow(-1, it) * above(ss, 1) * sz;
+wave_1_per_point7=oz = (ss - 0.5) * sz * below(ss, 1) + 0.5 * sz * above(ss, 1);
+wave_1_per_point8=ox = 0.5 * -sz * below(ss, 1) + (ss - 1 - 0.5) * sz * above(ss, 1);
+wave_1_per_point9=xang = 0.132 * q2;
+wave_1_per_point10=axang = 0;
+wave_1_per_point11=yang = 0.153 * q2;
+wave_1_per_point12=ayang = 0;
+wave_1_per_point13=zang = 2.1 * q2;
+wave_1_per_point14=azang = 0;
+wave_1_per_point15=fov = 0.6 + 0.2 * sin(time);
+wave_1_per_point16=fov = 0.3;
+wave_1_per_point17=mx = ox * cos(zang) - oy * sin(zang);
+wave_1_per_point18=my = ox * sin(zang) + oy * cos(zang);
+wave_1_per_point19=ox = mx;
+wave_1_per_point20=oy = my;
+wave_1_per_point21=mx = ox * cos(yang) + oz * sin(yang);
+wave_1_per_point22=mz = -ox * sin(yang) + oz * cos(yang);
+wave_1_per_point23=ox = mx;
+wave_1_per_point24=oz = mz;
+wave_1_per_point25=my = oy * cos(xang) - oz * sin(xang);
+wave_1_per_point26=mz = oy * sin(xang) + oz * cos(xang);
+wave_1_per_point27=oy = my;
+wave_1_per_point28=oz = mz;
+wave_1_per_point29=oz = oz - 2;
+wave_1_per_point30=x = ox * fov / oz + 0.5;
+wave_1_per_point31=x = 0.75 * (x - 0.5) + 0.5;
+wave_1_per_point32=y = oy * fov / oz + 0.5;
+wave_1_per_point33=a = 0.5 + 0.5 * (oz + 2);
+wave_1_per_point34=a = 0.05;
+wave_1_per_point35=g = 1 + sin(sp);
+wave_1_per_point36=b = 0.5 + 0.5 * sin(1.57 * sample);
+wave_1_per_point37=r = 0.5 + 0.5 * cos(1.57 * sample);
+wave_2_init1=xang = 0;
+wave_2_init2=fov = 0;
+wave_2_init3=yang = 0;
+wave_2_init4=ss = 0;
+wave_2_init5=it = 0;
+wave_2_init6=q1 = 0;
+wave_2_init7=my = 0;
+wave_2_init8=oz = 0;
+wave_2_init9=ayang = 0;
+wave_2_init10=mz = 0;
+wave_2_init11=oy = 0;
+wave_2_init12=sz = 0;
+wave_2_init13=azang = 0;
+wave_2_init14=mx = 0;
+wave_2_init15=sp = 0;
+wave_2_init16=q2 = 0;
+wave_2_init17=zang = 0;
+wave_2_init18=axang = 0;
+wave_2_init19=ox = 0;
+wave_2_per_point1=sp = 1607.68 * sample;
+wave_2_per_point2=it = it + 1;
+wave_2_per_point3=it = it * above(sample, 0);
+wave_2_per_point4=sz = q1;
+wave_2_per_point5=ss = 2 * sample;
+wave_2_per_point6=oz = 0.5 * sz * pow(-1, it) * below(ss, 1) + 0.5 * pow(-1, it) * above(ss, 1) * sz;
+wave_2_per_point7=ox = (ss - 0.5) * sz * below(ss, 1) + 0.5 * sz * above(ss, 1);
+wave_2_per_point8=oy = 0.5 * -sz * below(ss, 1) + (ss - 1 - 0.5) * sz * above(ss, 1);
+wave_2_per_point9=xang = 0.132 * q2;
+wave_2_per_point10=axang = 0;
+wave_2_per_point11=yang = 0.153 * q2;
+wave_2_per_point12=ayang = 0;
+wave_2_per_point13=zang = 2.1 * q2;
+wave_2_per_point14=azang = 0;
+wave_2_per_point15=fov = 0.6 + 0.2 * sin(time);
+wave_2_per_point16=fov = 0.3;
+wave_2_per_point17=mx = ox * cos(zang) - oy * sin(zang);
+wave_2_per_point18=my = ox * sin(zang) + oy * cos(zang);
+wave_2_per_point19=ox = mx;
+wave_2_per_point20=oy = my;
+wave_2_per_point21=mx = ox * cos(yang) + oz * sin(yang);
+wave_2_per_point22=mz = -ox * sin(yang) + oz * cos(yang);
+wave_2_per_point23=ox = mx;
+wave_2_per_point24=oz = mz;
+wave_2_per_point25=my = oy * cos(xang) - oz * sin(xang);
+wave_2_per_point26=mz = oy * sin(xang) + oz * cos(xang);
+wave_2_per_point27=oy = my;
+wave_2_per_point28=oz = mz;
+wave_2_per_point29=oz = oz - 2;
+wave_2_per_point30=x = ox * fov / oz + 0.5;
+wave_2_per_point31=x = 0.75 * (x - 0.5) + 0.5;
+wave_2_per_point32=y = oy * fov / oz + 0.5;
+wave_2_per_point33=a = 0.5 + 0.1 * (oz + 2);
+wave_2_per_point34=a = 0.05;
+wave_2_per_point35=g = 1 + sin(sp);
+wave_2_per_point36=b = 0.5 + 0.5 * sin(1.57 * sample);
+wave_2_per_point37=r = 0.5 + 0.5 * cos(1.57 * sample);

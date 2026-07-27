@@ -22,15 +22,27 @@ fInnerBorderR=0.000000
 fInnerBorderG=0.000000
 fInnerBorderB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=treb_effect = 0;
+per_frame_init_2=net_effect = 0;
+per_frame_init_3=rot_residual = 0;
+per_frame_init_4=bass_thresh = 0;
+per_frame_init_5=shift = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_x = 0.01 * randint(100);
+per_frame_3=wave_r = 1 + sin(3.1415 * -wave_x);
+per_frame_4=wave_g = abs(sin(6.283 * wave_x));
+per_frame_5=wave_b = sin(3.1415 * wave_x);
+per_frame_6=treb_effect = if(0.00001 < abs(above(treb_att, 1.4)), pow(0.99, treb_att), 1);
+per_frame_7=net_effect = if(0.00001 < abs(above(bass_att, 0.8 * treb_att)), 1, treb_effect);
+per_frame_8=zoom = net_effect;
+per_frame_9=rot = rot + rot_residual;
+per_frame_10=bass_thresh = 2 * above(bass_att, bass_thresh) + (1 - above(bass_att, bass_thresh)) * (0.96 * (bass_thresh - 1.3) + 1.3);
+per_frame_11=shift = tan(7 * time) - 0.05;
+per_frame_12=shift = if(0.00001 < abs(above(shift, 0)), 0, if(0.00001 < abs(below(shift, -0.1)), -0.1, shift));
+per_frame_13=rot_residual = if(0.00001 < abs(equal(bass_thresh, 2)), shift, rot_residual);
+per_pixel_1=rot = rot + if(0.00001 < abs(equal(sin(ang), 0)), -rot, 0.05 * sin(4 * rad * sin(0.8 * time)));
+per_pixel_2=zoom = zoom + rot * sin(2 * time);

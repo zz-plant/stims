@@ -29,31 +29,109 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_additive=1.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=basstime = 0;
+per_frame_init_2=var = 0;
+per_frame_init_3=q5 = 0;
+per_frame_init_4=qy = 0;
+per_frame_init_5=midtime = 0;
+per_frame_init_6=q4 = 0;
+per_frame_init_7=zm = 0;
+per_frame_init_8=rd = 0;
+per_frame_init_9=qx = 0;
+per_frame_1=decay = 0.99;
+per_frame_2=zoom = 1;
+per_frame_3=basstime = basstime + bass_att * bass_att * 0.02;
+per_frame_4=midtime = midtime + mid_att * mid_att * 0.01;
+per_frame_5=qx = 0.2 * sin(0.2 * basstime);
+per_frame_6=cx = 0.5 + qx;
+per_frame_7=q4 = qx;
+per_frame_8=qy = 0.2 * sin(0.2 * midtime);
+per_frame_9=cy = 0.5 - qy;
+per_frame_10=q5 = qy;
+per_frame_11=monitor = q4;
+per_pixel_1=rd = sqrt(sqr(2 * (x - 0.5 - q4)) + sqr(1.5 * (y - 0.5 + q5)));
+per_pixel_2=var = tan(rd * (1 + bass));
+per_pixel_3=var = var * var;
+per_pixel_4=zm = 1 + 0.001 * var * rd;
+per_pixel_5=zm = zm * 1.003;
+per_pixel_6=sx = zm;
+per_pixel_7=sy = zm;
+per_pixel_8=sx = 1.005;
+wave_0_init1=typ1 = 0;
+wave_0_init2=q5 = 0;
+wave_0_init3=txp2 = 0;
+wave_0_init4=v = 0;
+wave_0_init5=tri_point = 0;
+wave_0_init6=zero = 0;
+wave_0_init7=q4 = 0;
+wave_0_init8=t_y = 0;
+wave_0_init9=txp1 = 0;
+wave_0_init10=t_x = 0;
+wave_0_init11=typ2 = 0;
+wave_0_per_point1=zero = zero + 1;
+wave_0_per_point2=zero = if(0.00001 < abs(above(zero, 1)), 0, zero);
+wave_0_per_point3=tri_point = randint(3);
+wave_0_per_point4=txp1 = 0;
+wave_0_per_point5=txp2 = 1;
+wave_0_per_point6=typ1 = 0.2;
+wave_0_per_point7=typ2 = 0.2;
+wave_0_per_point8=t_x = t_x + 0.5 * equal(tri_point, 0) * (0.5 - t_x);
+wave_0_per_point9=t_y = t_y + 0.5 * equal(tri_point, 0) * (0.8 - t_y);
+wave_0_per_point10=t_x = t_x + 0.5 * equal(tri_point, 1) * (txp1 - t_x);
+wave_0_per_point11=t_y = t_y + 0.5 * equal(tri_point, 1) * (typ1 - t_y);
+wave_0_per_point12=t_x = t_x + 0.5 * equal(tri_point, 2) * (txp2 - t_x);
+wave_0_per_point13=t_y = t_y + 0.5 * equal(tri_point, 2) * (typ2 - t_y);
+wave_0_per_point14=x = 0.55 * (t_x - 0.5) + 0.5 + q4;
+wave_0_per_point15=y = t_y + q5 + 0.1;
+wave_0_per_point16=x = if(0.00001 < abs(zero), 0.5, x);
+wave_0_per_point17=y = if(0.00001 < abs(zero), 0.5, y);
+wave_0_per_point18=v = min(bass * bass * 0.78, 1);
+wave_0_per_point19=r = v;
+wave_0_per_point20=g = v;
+wave_0_per_point21=b = v;
+wave_0_per_point22=a = 0.01;
+wave_1_init1=typ1 = 0;
+wave_1_init2=q5 = 0;
+wave_1_init3=txp2 = 0;
+wave_1_init4=v = 0;
+wave_1_init5=tri_point = 0;
+wave_1_init6=zero = 0;
+wave_1_init7=q4 = 0;
+wave_1_init8=t_y = 0;
+wave_1_init9=txp1 = 0;
+wave_1_init10=t_x = 0;
+wave_1_init11=typ2 = 0;
+wave_1_per_point1=zero = zero + 1;
+wave_1_per_point2=zero = if(0.00001 < abs(above(zero, 1)), 0, zero);
+wave_1_per_point3=tri_point = randint(3);
+wave_1_per_point4=txp1 = 0;
+wave_1_per_point5=txp2 = 1;
+wave_1_per_point6=typ1 = 0.2;
+wave_1_per_point7=typ2 = 0.2;
+wave_1_per_point8=t_x = t_x + 0.5 * equal(tri_point, 0) * (0.5 - t_x);
+wave_1_per_point9=t_y = t_y + 0.5 * equal(tri_point, 0) * (0.8 - t_y);
+wave_1_per_point10=t_x = t_x + 0.5 * equal(tri_point, 1) * (txp1 - t_x);
+wave_1_per_point11=t_y = t_y + 0.5 * equal(tri_point, 1) * (typ1 - t_y);
+wave_1_per_point12=t_x = t_x + 0.5 * equal(tri_point, 2) * (txp2 - t_x);
+wave_1_per_point13=t_y = t_y + 0.5 * equal(tri_point, 2) * (typ2 - t_y);
+wave_1_per_point14=x = 0.55 * (t_x - 0.5) + 0.5 - q4;
+wave_1_per_point15=y = t_y - q5 + 0.1;
+wave_1_per_point16=x = if(0.00001 < abs(zero), 0.5, x);
+wave_1_per_point17=y = if(0.00001 < abs(zero), 0.5, y);
+wave_1_per_point18=v = min(bass * bass * 0.78, 1);
+wave_1_per_point19=r = v;
+wave_1_per_point20=g = 0.55 * v;
+wave_1_per_point21=b = 0.01 * v;
+wave_1_per_point22=a = 0.01;

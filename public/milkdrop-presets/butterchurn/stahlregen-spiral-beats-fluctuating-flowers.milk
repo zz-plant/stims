@@ -35,41 +35,59 @@ fMotionVectorsR=0.000000
 fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.100000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=5.000000
-bTextured=1.000000
-fRad=1.215250
-fTexZoom=0.693270
-fG=1.000000
-fB=1.000000
-fA=0.900000
-fR2=1.000000
-fB2=1.000000
-fA2=0.900000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=5.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=1.215250
+shapecode_0_tex_zoom=0.693270
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.900000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_a2=0.900000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=z = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=dec_med = 0;
+per_frame_init_4=x = 0;
+per_frame_init_5=is_beat = 0;
+per_frame_init_6=dec_slow = 0;
+per_frame_init_7=avg = 0;
+per_frame_init_8=y = 0;
+per_frame_init_9=beat = 0;
+per_frame_init_10=peak = 0;
+per_frame_init_11=q2 = 0;
+per_frame_init_12=q3 = 0;
+per_frame_init_13=t0 = 0;
+per_frame_1=wave_r = 0.45 + 0.45 * sin(1.133 * (time + bass));
+per_frame_2=wave_g = 0.45 + 0.45 * sin(1.333 * (time + bass));
+per_frame_3=wave_b = 0.45 + 0.45 * sin(1.533 * (time + bass));
+per_frame_4=dec_med = pow(0.9, 30 / fps);
+per_frame_5=dec_slow = pow(0.99, 30 / fps);
+per_frame_6=beat = max(max(bass, mid), treb);
+per_frame_7=avg = avg * dec_slow + beat * (1 - dec_slow);
+per_frame_8=is_beat = above(beat, 0.5 + avg + peak) * above(time, t0 + 0.2);
+per_frame_9=t0 = is_beat * time + (1 - is_beat) * t0;
+per_frame_10=peak = is_beat * beat + (1 - is_beat) * peak * dec_med;
+per_frame_11=x = if(0.00001 < abs(is_beat), 0.01 * randint(60) + 0.2, x);
+per_frame_12=y = if(0.00001 < abs(is_beat), 0.01 * randint(60) + 0.2, y);
+per_frame_13=z = if(0.00001 < abs(is_beat), randint(2) - 1, z);
+per_frame_14=wave_mystery = if(0.00001 < abs(above(x, y)), 0, -1);
+per_frame_15=q1 = x;
+per_frame_16=q2 = y;
+per_frame_17=q3 = z;
+shape_0_init1=q1 = 0;
+shape_0_init2=q2 = 0;
+shape_0_init3=q3 = 0;
+shape_0_per_frame1=ang = 3.14 * q1 + 3.14 * q2 * if(0.00001 < abs(equal(q3, 1)), -1, 1);
 
 [comp_shader]
 shader_body { 

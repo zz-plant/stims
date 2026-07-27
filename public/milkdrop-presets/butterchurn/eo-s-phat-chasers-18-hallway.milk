@@ -31,44 +31,216 @@ nMotionVectorsLoop=1.000000
 fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=5.000000
-bTextured=1.000000
-fRad=0.761306
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fR=0.100000
-fG=0.500000
-fB=0.800000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=1.000000
-bAdditive=1.000000
-fR=0.600000
-fG=0.700000
+wavecode_0_enabled=1.000000
+wavecode_0_usedots=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_r=0.100000
+wavecode_0_g=0.500000
+wavecode_0_b=0.800000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=1.000000
+wavecode_3_additive=1.000000
+wavecode_3_r=0.600000
+wavecode_3_g=0.700000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=5.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=0.761306
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=zm = 0;
+per_frame_init_2=vol = 0;
+per_frame_init_3=vol2 = 0;
+per_frame_init_4=q2 = 0;
+per_frame_init_5=mtime = 0;
+per_frame_init_6=q1 = 0;
+per_frame_init_7=gamma = 0;
+per_frame_init_8=mv_x = 64;
+per_frame_init_9=mv_y = 48;
+per_frame_init_10=nut = 0;
+per_frame_init_11=stp = 0;
+per_frame_init_12=stq = 0;
+per_frame_init_13=rtp = 0;
+per_frame_init_14=rtq = 0;
+per_frame_init_15=wvr = 0;
+per_frame_init_16=decay = 0;
+per_frame_init_17=dcsp = 0;
+per_frame_1=decay = 0.98;
+per_frame_2=vol = 0.25 * (bass + mid + treb);
+per_frame_3=vol = vol * vol;
+per_frame_4=vol2 = 0.25 * (bass_att + mid_att + treb_att);
+per_frame_5=vol2 = vol2 * vol2;
+per_frame_6=q2 = vol2;
+per_frame_7=mtime = mtime + 0.03 * (0.5 * sin(time) + 0.5) * (75 / fps);
+per_frame_8=q1 = 1 * mtime;
+per_frame_9=gamma = 1 + 0.7 * min(0.8 * vol, 1);
+per_pixel_1=zm = 1.002;
+per_pixel_2=sx = -zm;
+per_pixel_3=sy = zm;
+wave_0_init1=n = 0;
+wave_0_init2=yq = 0;
+wave_0_init3=xp = 0;
+wave_0_init4=yr = 0;
+wave_0_init5=xs = 0;
+wave_0_init6=yp = 0;
+wave_0_init7=xr = 0;
+wave_0_init8=q1 = 0;
+wave_0_init9=xq = 0;
+wave_0_init10=flip = 0;
+wave_0_init11=ca = 0;
+wave_0_init12=ys = 0;
+wave_0_init13=sa = 0;
+wave_0_init14=zq = 0;
+wave_0_init15=phs = 0;
+wave_0_init16=ang = 0;
+wave_0_init17=tm = 0;
+wave_0_init18=zp = 0;
+wave_0_init19=q2 = 0;
+wave_0_init20=zr = 0;
+wave_0_per_point1=n = 6.283 * sample;
+wave_0_per_point2=phs = 0.2 * -sample;
+wave_0_per_point3=tm = q1 + 0.1 * (4 * phs / q2);
+wave_0_per_point4=flip = flip + 1;
+wave_0_per_point5=flip = flip * below(flip, 2);
+wave_0_per_point6=xp = 0;
+wave_0_per_point7=yp = (0.1 * flip - 0.05) * sample;
+wave_0_per_point8=zp = 0;
+wave_0_per_point9=ang = 20 * tm + 0.4 * sin(76 * tm + 4 * time);
+wave_0_per_point10=sa = sin(ang);
+wave_0_per_point11=ca = cos(ang);
+wave_0_per_point12=xr = xp * sa + yp * ca;
+wave_0_per_point13=yr = xp * ca - yp * sa;
+wave_0_per_point14=zr = zp;
+wave_0_per_point15=xp = xr;
+wave_0_per_point16=yp = yr + 0.05 + 0.2 * (0.5 * sin(tm) + 0.5) + 0.05;
+wave_0_per_point17=zp = zr;
+wave_0_per_point18=ang = sin(2 * tm);
+wave_0_per_point19=xq = xp;
+wave_0_per_point20=sa = sin(ang);
+wave_0_per_point21=ca = cos(ang);
+wave_0_per_point22=yq = yp * sa + zp * ca;
+wave_0_per_point23=zq = yp * ca - zp * sa;
+wave_0_per_point24=ang = 8 * tm;
+wave_0_per_point25=sa = sin(ang);
+wave_0_per_point26=ca = cos(ang);
+wave_0_per_point27=xp = xq * sa + yq * ca;
+wave_0_per_point28=yp = xq * ca - yq * sa;
+wave_0_per_point29=zp = zq;
+wave_0_per_point30=zp = zp - 0.3;
+wave_0_per_point31=ang = 3.14 + 2.5 * sin(2 * tm - 0.5);
+wave_0_per_point32=xq = xp;
+wave_0_per_point33=sa = sin(ang);
+wave_0_per_point34=ca = cos(ang);
+wave_0_per_point35=yq = yp * sa + zp * ca;
+wave_0_per_point36=zq = yp * ca - zp * sa;
+wave_0_per_point37=ang = -1 + cos(3 * tm + 0.5);
+wave_0_per_point38=xp = xq * sa + yq * ca;
+wave_0_per_point39=yp = xq * ca - yq * sa;
+wave_0_per_point40=zp = zq;
+wave_0_per_point41=zp = zp - 0.35;
+wave_0_per_point42=ang = 1.75 * cos(1 * tm) - 1.05;
+wave_0_per_point43=sa = sin(ang);
+wave_0_per_point44=ca = cos(ang);
+wave_0_per_point45=xq = xp * sa + zp * ca;
+wave_0_per_point46=yq = yp;
+wave_0_per_point47=zq = xp * ca - zp * sa;
+wave_0_per_point48=ang = cos(tm);
+wave_0_per_point49=xp = xq;
+wave_0_per_point50=sa = sin(ang);
+wave_0_per_point51=ca = cos(ang);
+wave_0_per_point52=yp = yq * ca - zq * sa;
+wave_0_per_point53=zp = yq * sa + zq * ca;
+wave_0_per_point54=yp = 0.1 * yp - 0.2;
+wave_0_per_point55=zp = zp + 1.5;
+wave_0_per_point56=xs = xp / zp;
+wave_0_per_point57=ys = yp / zp;
+wave_0_per_point58=x = xs + 0.5;
+wave_0_per_point59=y = 1.3 * ys + 0.5;
+wave_0_per_point60=a = 0.3 * (1 - sample);
+wave_3_init1=n = 0;
+wave_3_init2=yq = 0;
+wave_3_init3=xp = 0;
+wave_3_init4=yr = 0;
+wave_3_init5=xs = 0;
+wave_3_init6=yp = 0;
+wave_3_init7=xr = 0;
+wave_3_init8=q1 = 0;
+wave_3_init9=xq = 0;
+wave_3_init10=flip = 0;
+wave_3_init11=ca = 0;
+wave_3_init12=ys = 0;
+wave_3_init13=sa = 0;
+wave_3_init14=zq = 0;
+wave_3_init15=phs = 0;
+wave_3_init16=ang = 0;
+wave_3_init17=tm = 0;
+wave_3_init18=zp = 0;
+wave_3_init19=q2 = 0;
+wave_3_init20=zr = 0;
+wave_3_per_point1=n = 6.283 * sample;
+wave_3_per_point2=phs = 0.4 * -sample;
+wave_3_per_point3=tm = q1 + 0.1 * (2 * phs / q2) - 1.03;
+wave_3_per_point4=flip = flip + 1;
+wave_3_per_point5=flip = flip * below(flip, 2);
+wave_3_per_point6=xp = 0;
+wave_3_per_point7=yp = (0.15 * flip - 0.075) * sample;
+wave_3_per_point8=zp = 0;
+wave_3_per_point9=ang = 14 * -tm + 0.2 * sin(76 * tm + 4 * time);
+wave_3_per_point10=sa = sin(ang);
+wave_3_per_point11=ca = cos(ang);
+wave_3_per_point12=xr = xp * sa + yp * ca;
+wave_3_per_point13=yr = xp * ca - yp * sa;
+wave_3_per_point14=zr = zp;
+wave_3_per_point15=xp = xr;
+wave_3_per_point16=yp = yr + 0.05 + 0.2 * (0.5 * sin(tm) + 0.5) + 0.05;
+wave_3_per_point17=zp = zr;
+wave_3_per_point18=ang = sin(2 * tm);
+wave_3_per_point19=xq = xp;
+wave_3_per_point20=sa = sin(ang);
+wave_3_per_point21=ca = cos(ang);
+wave_3_per_point22=yq = yp * sa + zp * ca;
+wave_3_per_point23=zq = yp * ca - zp * sa;
+wave_3_per_point24=ang = 8 * tm;
+wave_3_per_point25=sa = sin(ang);
+wave_3_per_point26=ca = cos(ang);
+wave_3_per_point27=xp = xq * sa + yq * ca;
+wave_3_per_point28=yp = xq * ca - yq * sa;
+wave_3_per_point29=zp = zq;
+wave_3_per_point30=zp = zp - 0.3;
+wave_3_per_point31=ang = 3.14 + 2.5 * sin(2 * tm - 0.5);
+wave_3_per_point32=xq = xp;
+wave_3_per_point33=sa = sin(ang);
+wave_3_per_point34=ca = cos(ang);
+wave_3_per_point35=yq = yp * sa + zp * ca;
+wave_3_per_point36=zq = yp * ca - zp * sa;
+wave_3_per_point37=ang = -1 + cos(3 * tm + 0.5);
+wave_3_per_point38=xp = xq * sa + yq * ca;
+wave_3_per_point39=yp = xq * ca - yq * sa;
+wave_3_per_point40=zp = zq;
+wave_3_per_point41=zp = zp - 0.35;
+wave_3_per_point42=ang = 1.75 * cos(1 * tm) - 1.05;
+wave_3_per_point43=sa = sin(ang);
+wave_3_per_point44=ca = cos(ang);
+wave_3_per_point45=xq = xp * sa + zp * ca;
+wave_3_per_point46=yq = yp;
+wave_3_per_point47=zq = xp * ca - zp * sa;
+wave_3_per_point48=ang = cos(tm) - 3.5;
+wave_3_per_point49=xp = xq;
+wave_3_per_point50=sa = sin(ang);
+wave_3_per_point51=ca = cos(ang);
+wave_3_per_point52=yp = yq * ca - zq * sa;
+wave_3_per_point53=zp = yq * sa + zq * ca;
+wave_3_per_point54=zp = zp + 1.5;
+wave_3_per_point55=xs = xp / zp;
+wave_3_per_point56=ys = yp / zp;
+wave_3_per_point57=x = xs + 0.5;
+wave_3_per_point58=y = 1.3 * ys + 0.5;
+wave_3_per_point59=a = 0.4 * (1 - sample);

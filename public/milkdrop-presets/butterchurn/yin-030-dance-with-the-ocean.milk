@@ -24,15 +24,33 @@ fInnerBorderSize=0.000000
 fMotionVectorsR=0.000000
 fMotionVectorsG=0.530000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q3 = 0;
+per_frame_init_2=q2 = 0;
+per_frame_init_3=s = 0;
+per_frame_init_4=z = 0;
+per_frame_init_5=arctan = 0;
+per_frame_init_6=t = 0;
+per_frame_init_7=q4 = 0;
+per_frame_1=wave_y = sqrt(abs(sin(4 * time)));
+per_frame_2=wave_b = 0.5 + bass / 3;
+per_frame_3=wave_g = treb / 5;
+per_frame_4=wave_r = 0;
+per_frame_5=q2 = (bass_att + mid_att + treb_att) / 3;
+per_frame_6=q3 = 8 * time;
+per_frame_7=q4 = time / 10;
+per_pixel_1=dy = dy + 0.004 * sin(x / 0.02 + y / 0.07 + q3 / 4);
+per_pixel_2=dx = dx + 0.004 * cos(x / 0.07 + y / 0.07 + q3 / 2);
+per_pixel_3=zoom = 1 + 2 * (dy + dx);
+per_pixel_4=dx = dx + 0.05 * (1 - rad) * (sin(q3 + q2) * (x - 0.5) + cos(q3 + q2) * (y - 0.5));
+per_pixel_5=dy = dy + 0.05 * (1 - rad) * (cos(q3 + q2) * (x - 0.5) - sin(q3 + q2) * (y - 0.5));
+per_pixel_6=zoom = zoom + 4 * (dy + dx);
+per_pixel_7=s = 0.02 * (mid_att / 1.7) * cos(q3 / 32);
+per_pixel_8=z = 0.4;
+per_pixel_9=arctan = atan2(x - 0.5, y - 0.5);
+per_pixel_10=t = s / (rad + z);
+per_pixel_11=dx = dx + t * sin(arctan - 1.5);
+per_pixel_12=dy = dy + t * cos(arctan - 1.5);

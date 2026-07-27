@@ -25,47 +25,40 @@ fInnerBorderB=0.300000
 fInnerBorderA=0.100000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bTextured=1.000000
-fRad=0.784300
-fAng=0.251330
-fTexZoom=0.999900
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.179870
-fR=0.000000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.784300
+shapecode_0_ang=0.251330
+shapecode_0_tex_zoom=0.999900
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_b=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=100.000000
+shapecode_1_rad=0.179870
+shapecode_1_r=0.000000
+shapecode_1_g2=0.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = 0.5 + 0.5 * sin(1.12 * time);
+per_frame_2=wave_g = 0.5 + 0.5 * sin(1.22 * time);
+per_frame_3=wave_b = 0.25 * sin(1.32 * time);
+per_frame_4=ib_r = wave_b;
+per_frame_5=ib_g = wave_r;
+per_frame_6=ib_b = wave_g;
+per_frame_7=rot = 0.1 * sin(treb) * sin(treb);
+shape_0_per_frame1=ang = 3.14 + 1.57 * sin(time) * sin(time);
+shape_0_per_frame2=rad = 0.5 + 0.15 * bass_att;
 
 [comp_shader]
 shader_body { 

@@ -20,33 +20,57 @@ fInnerBorderR=0.000000
 fInnerBorderG=0.000000
 fInnerBorderB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-fSmoothing=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_smoothing=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=vol = 0;
+per_frame_init_2=mtime = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=mv_x = 64;
+per_frame_init_5=mv_y = 48;
+per_frame_init_6=nut = 0;
+per_frame_init_7=stp = 0;
+per_frame_init_8=stq = 0;
+per_frame_init_9=rtp = 0;
+per_frame_init_10=rtq = 0;
+per_frame_init_11=wvr = 0;
+per_frame_init_12=decay = 0;
+per_frame_init_13=dcsp = 0;
+per_frame_1=decay = 1;
+per_frame_2=zoom = 0.98 + 0.1 * max(treb_att, bass_att);
+per_frame_3=warp = 0;
+per_frame_4=vol = 0.25 * (bass_att + mid_att + treb_att);
+per_frame_5=vol = vol * vol;
+per_frame_6=mtime = mtime + 0.1 * vol;
+per_frame_7=q1 = 0.4 * mtime;
+wave_0_init1=q1 = 0;
+wave_0_init2=speed = 0;
+wave_0_init3=q2 = 0;
+wave_0_init4=v = 0;
+wave_0_init5=xs = 0;
+wave_0_init6=ys = 0;
+wave_0_per_point1=q1 = 0;
+wave_0_per_point2=speed = cos(q2) + 0.1 * bass;
+wave_0_per_point3=v = 1000 * sample + bass * value1;
+wave_0_per_point4=xs = xs + sin(0.1 * v + time) * speed;
+wave_0_per_point5=ys = ys + cos(1.2 * v + q2) * speed;
+wave_0_per_point6=x = 0.5 + 0.5 * cos(0.04 * xs + 0.2 * time) * sin(2 * time + xs);
+wave_0_per_point7=y = 0.5 + 0.5 * cos(0.04 * ys + 0.4 * time) * cos(q2 + xs);
+wave_0_per_point8=r = r + 0.5 * sin(4.22 * time);
+wave_0_per_point9=g = g + 0.5 * sin(4.307 * time + (-0.5 - x) * (0.5 - y));
+wave_0_per_point10=b = g + 0.5 * sin(4.959 * time);
+wave_0_per_point11=x = 0.75 * x + 0.125;
+wave_0_per_point12=y = 0.75 * y + 0.125;
+wave_0_per_point13=xs = if(0.00001 < abs(above(xs, 1000)), 0, xs);
+wave_0_per_point14=ys = if(0.00001 < abs(above(ys, 800)), 0, ys);
 
 [warp_shader]
 shader_body { 

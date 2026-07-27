@@ -36,38 +36,97 @@ fMotionVectorsG=0.499900
 fMotionVectorsB=0.499900
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-nSamples=282.000000
-fSeparation=20.000000
-bAdditive=1.000000
-fScaling=7.858000
-fSmoothing=0.100000
-fR=0.200000
-fG=0.300000
-fA=0.250000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_samples=282.000000
+wavecode_0_sep=20.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=7.858000
+wavecode_0_smoothing=0.100000
+wavecode_0_r=0.200000
+wavecode_0_g=0.300000
+wavecode_0_a=0.250000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=dec_xlow = 0;
+per_frame_init_2=index2 = 0;
+per_frame_init_3=index = 0;
+per_frame_init_4=q18 = 0;
+per_frame_init_5=q22 = 0;
+per_frame_init_6=q21 = 0;
+per_frame_init_7=q6 = 0;
+per_frame_init_8=q1 = 0;
+per_frame_init_9=dec_med = 0;
+per_frame_init_10=q5 = 0;
+per_frame_init_11=trel = 0;
+per_frame_init_12=rott = 0;
+per_frame_init_13=is_beat = 0;
+per_frame_init_14=q23 = 0;
+per_frame_init_15=k1 = 0;
+per_frame_init_16=q24 = 0;
+per_frame_init_17=dec_slow = 0;
+per_frame_init_18=q4 = 0;
+per_frame_init_19=q26 = 0;
+per_frame_init_20=p2 = 0;
+per_frame_init_21=avg = 0;
+per_frame_init_22=puls = 0;
+per_frame_init_23=q19 = 0;
+per_frame_init_24=beat = 0;
+per_frame_init_25=q17 = 0;
+per_frame_init_26=p1 = 0;
+per_frame_init_27=peak = 0;
+per_frame_init_28=q2 = 0;
+per_frame_init_29=q27 = 0;
+per_frame_init_30=q3 = 0;
+per_frame_init_31=t0 = 0;
+per_frame_init_32=q7 = 0;
+per_frame_init_33=q20 = 0;
+per_frame_init_34=q8 = 0;
+per_frame_init_35=xk = 0;
+per_frame_1=dec_med = pow(0.8, 30 / fps);
+per_frame_2=dec_slow = pow(0.95, 30 / fps);
+per_frame_3=dec_xlow = pow(0.995, 30 / fps);
+per_frame_4=beat = max(max(bass, mid), treb);
+per_frame_5=avg = avg * dec_slow + beat * (1 - dec_slow);
+per_frame_6=is_beat = above(beat, 0.2 + avg + peak) * above(time, t0 + 0.2);
+per_frame_7=t0 = is_beat * time + (1 - is_beat) * t0;
+per_frame_8=peak = is_beat * beat + (1 - is_beat) * peak * dec_med;
+per_frame_9=index = mod(index + is_beat, 16);
+per_frame_10=index2 = mod(index2 + is_beat * bnot(index), 2);
+per_frame_11=q21 = beat;
+per_frame_12=q22 = peak;
+per_frame_13=q23 = index;
+per_frame_14=q24 = is_beat;
+per_frame_15=q26 = bass_att + mid_att + treb_att;
+per_frame_16=q27 = index + 1;
+per_frame_17=k1 = is_beat * equal(mod(index, 3), 0);
+per_frame_18=p1 = k1 * (p1 + 1) + (1 - k1) * p1;
+per_frame_19=p2 = dec_med * p2 + (1 - dec_med) * p1;
+per_frame_20=rott = 3.1416 * p2 / 4;
+per_frame_21=q1 = cos(rott);
+per_frame_22=q2 = sin(rott);
+per_frame_23=q3 = -q2;
+per_frame_24=q4 = q1;
+per_frame_25=trel = time / 3;
+per_frame_26=q5 = cos(trel);
+per_frame_27=q6 = sin(trel);
+per_frame_28=q7 = -q6;
+per_frame_29=q8 = q5;
+per_frame_30=puls = puls * dec_slow + q22 * (1 - dec_slow);
+per_frame_31=q17 = 31 * min(8, puls + 4);
+per_frame_32=q18 = 0.006 + 0.04 * (sin(time / 14) + 1) / 2;
+per_frame_33=q19 = 0.05 * sin(1 * time);
+per_frame_34=q20 = 0.05 * cos(1.6 * time);
+per_frame_35=monitor = q18;
+wave_0_per_point1=x = 0.2 + sample / 2;
+wave_0_per_point2=y = 0.5;
+wave_0_per_point3=r = 0.5 + 0.2 * sin(time / 17);
+wave_0_per_point4=g = 0.5 + 0.2 * sin(time / 23);
+wave_0_per_point5=b = 0.5 + 0.2 * sin(time / 11);
 
 [warp_shader]
 vec2 xlat_mutablec;

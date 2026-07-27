@@ -32,39 +32,28 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bThickOutline=1.000000
-fRad=0.020150
-fTexAng=0.125660
-fTexZoom=1.518780
-fR=0.000000
-fA=0.100000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_rad=0.020150
+shapecode_0_tex_ang=0.125660
+shapecode_0_tex_zoom=1.518780
+shapecode_0_r=0.000000
+shapecode_0_a=0.100000
+shapecode_0_g2=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_pixel_1=warp = 0;
+per_pixel_2=zoom = 1;
+per_pixel_3=dx = -q12 / q16 * (1 + 0 * pow(x - 0.5, 2));
+per_pixel_4=dy = q13 / q16 * (1 + 0 * pow(y - 0.5, 2));
+per_pixel_5=rot = q11;
 
 [warp_shader]
 float sustain;

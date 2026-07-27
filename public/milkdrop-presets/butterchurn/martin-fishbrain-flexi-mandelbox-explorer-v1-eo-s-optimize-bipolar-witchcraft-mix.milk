@@ -37,43 +37,100 @@ nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-fR=0.000000
-fG=0.000000
-fB=0.000000
-
-[wave00_2]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=2.023100
-fSmoothing=0.000000
-fR=0.720000
-fG=0.000000
-fB=0.250000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_r=0.000000
+wavecode_1_g=0.000000
+wavecode_1_b=0.000000
+wavecode_2_enabled=1.000000
+wavecode_2_thick=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_thick=1.000000
+wavecode_3_additive=1.000000
+wavecode_3_scaling=2.023100
+wavecode_3_smoothing=0.000000
+wavecode_3_r=0.720000
+wavecode_3_g=0.000000
+wavecode_3_b=0.250000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_pixel_1=warp = 0;
+per_pixel_2=dx = 0;
+per_pixel_3=zoom = 1;
+per_pixel_4=dy = 0;
+wave_0_init1=ma = 0;
+wave_0_init2=mx = 0;
+wave_0_init3=my = 0;
+wave_0_per_point1=ma = ma + 3.1415 * above(bass, 1) * 0.01 * bass;
+wave_0_per_point2=ma = ma - 3.1415 * above(treb, 1) * 0.01 * treb;
+wave_0_per_point3=mx = mx + 0.0002 * cos(ma);
+wave_0_per_point4=my = my + 0.0002 * sin(ma);
+wave_0_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_0_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_0_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_0_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_0_per_point9=x = 1.25 * mx - 0.1;
+wave_0_per_point10=y = my;
+wave_0_per_point11=a = above(bass + mid + treb, 0.8);
+wave_1_init1=ma = 0;
+wave_1_init2=mx = 0;
+wave_1_init3=my = 0;
+wave_1_per_point1=ma = ma + 3.1415 * above(bass, 1) * 0.05 * bass;
+wave_1_per_point2=ma = ma - 3.1415 * above(mid, 1) * 0.05 * mid;
+wave_1_per_point3=mx = mx + 0.0001 * cos(ma);
+wave_1_per_point4=my = my + 0.0001 * sin(ma);
+wave_1_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_1_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_1_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_1_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_1_per_point9=x = 1.25 * mx - 0.125;
+wave_1_per_point10=y = my;
+wave_1_per_point11=a = above(bass + mid + treb, 0.1);
+wave_2_init1=ma = 0;
+wave_2_init2=mx = 0;
+wave_2_init3=my = 0;
+wave_2_per_point1=ma = ma + 3.1415 * above(mid, 1) * 0.01 * mid;
+wave_2_per_point2=ma = ma - 3.1415 * above(treb, 1) * 0.01 * treb;
+wave_2_per_point3=mx = mx + 0.0004 * cos(ma);
+wave_2_per_point4=my = my + 0.0004 * sin(ma);
+wave_2_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_2_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_2_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_2_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_2_per_point9=x = 1.25 * mx - 0.125;
+wave_2_per_point10=y = my;
+wave_2_per_point11=a = above(bass + mid + treb, 0.3);
+wave_3_init1=d = 0;
+wave_3_init2=tt2 = 0;
+wave_3_init3=res = 0;
+wave_3_init4=tt1 = 0;
+wave_3_init5=diff = 0;
+wave_3_init6=tt3 = 0;
+wave_3_init7=beat = 0;
+wave_3_init8=vol = 0;
+wave_3_init9=m = 0;
+wave_3_init10=monitor = 0;
+wave_3_init11=t2 = 0;
+wave_3_init12=t3 = 0;
+wave_3_init13=t4 = 0;
+wave_3_init14=cl = 0;
+wave_3_per_frame1=vol = 8 * bass + 5 * mid + 3 * treb;
+wave_3_per_frame2=m = 0.97 * m + 0.08 * vol;
+wave_3_per_frame3=monitor = vol;
+wave_3_per_frame4=beat = above(vol, res) * above(vol, m) * above(vol, 16);
+wave_3_per_frame5=diff = (1 - beat) * diff + beat * (vol - res);
+wave_3_per_frame6=res = beat * (vol + 0.04 * m) + (1 - beat) * (res - 60 * (0.1 + 0.02 * diff) / fps);
+wave_3_per_frame7=res = max(0, res);
+wave_3_per_point1=tt3 = 0.6 * tt3 + 1 * value1;
+wave_3_per_point2=tt2 = 0.7 * tt2 + 0.2 * tt3;
+wave_3_per_point3=tt1 = 0.8 * tt1 + 0.1 * tt2;
+wave_3_per_point4=d = 0.9 * d + 0.2 * tt1;
+wave_3_per_point5=y = 0.5 + d * sample * (1 - sample) * 2;
+wave_3_per_point6=x = -0.05 + 1.1 * sample;
 
 [warp_shader]
 float sustain;

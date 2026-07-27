@@ -38,15 +38,10 @@ fInnerBorderR=0.100000
 fInnerBorderG=0.000000
 fInnerBorderB=0.300000
 fInnerBorderA=1.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.4 * sin(3.14 * time) + 0.2 * mid;
+per_frame_2=wave_b = wave_b + 0.2 * sin(1.5 * time);
+per_frame_3=wave_g = wave_g + 0.2 * mid;

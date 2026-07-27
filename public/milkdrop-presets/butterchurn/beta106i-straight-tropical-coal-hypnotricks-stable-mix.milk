@@ -30,57 +30,155 @@ nMotionVectorsX=0.000000
 nMotionVectorsY=0.000000
 nMotionVectorsLoop=1.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bThickOutline=1.000000
-fRad=0.122019
-fA=0.000000
-fBorderA=1.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=100.000000
-bTextured=1.000000
-fRad=0.491381
-fTexZoom=1.890459
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.364567
-fAng=2.324779
-fTexAng=0.251326
-fTexZoom=2.448622
-fG=1.000000
-fB=1.000000
-fA=0.000000
-fR2=1.000000
-fB2=1.000000
-fA2=0.100000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_rad=0.122019
+shapecode_0_a=0.000000
+shapecode_0_border_a=1.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=100.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=0.491381
+shapecode_1_tex_zoom=1.890459
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_a2=1.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=100.000000
+shapecode_2_rad=0.364567
+shapecode_2_ang=2.324779
+shapecode_2_tex_ang=0.251326
+shapecode_2_tex_zoom=2.448622
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_a=0.000000
+shapecode_2_r2=1.000000
+shapecode_2_b2=1.000000
+shapecode_2_a2=0.100000
+shapecode_2_border_r=0.000000
+shapecode_2_border_g=0.000000
+shapecode_2_border_b=0.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=tg3 = 0;
+per_frame_init_2=rg2 = 0;
+per_frame_init_3=pfdx_r = 0;
+per_frame_init_4=pfthresh = 0;
+per_frame_init_5=ocog = 0;
+per_frame_init_6=thresh = 0;
+per_frame_init_7=q1 = 0;
+per_frame_init_8=cog = 0;
+per_frame_init_9=dy_r = 0;
+per_frame_init_10=tg2 = 0;
+per_frame_init_11=tg1 = 0;
+per_frame_init_12=rg3 = 0;
+per_frame_init_13=pfdy_r = 0;
+per_frame_init_14=rg1 = 0;
+per_frame_init_15=q4 = 0;
+per_frame_init_16=dx_r = 0;
+per_frame_init_17=q2 = 0;
+per_frame_init_18=q3 = 0;
+per_frame_1=wave_r = 0.5 + 0.5 * sin(1.6 * time);
+per_frame_2=wave_g = 0.5 + 0.5 * sin(4.1 * time);
+per_frame_3=wave_b = -1 + (1 - wave_r + 1 - wave_g);
+per_frame_4=warp = 0;
+per_frame_5=pfthresh = 2 * above(bass_att, pfthresh) + (1 - above(bass_att, pfthresh)) * (0.96 * (pfthresh - 1.3) + 1.3);
+per_frame_6=pfdx_r = 0.015 * equal(pfthresh, 2) * sin(5 * time) + (1 - equal(pfthresh, 2)) * pfdx_r;
+per_frame_7=pfdy_r = 0.015 * equal(pfthresh, 2) * sin(6 * time) + (1 - equal(pfthresh, 2)) * pfdy_r;
+per_frame_8=rg1 = abs(sin(time));
+per_frame_9=rg2 = 0 * above(rg1, 0.25) + 1 * below(rg1, 0.25);
+per_frame_10=rg3 = if(0.00001 < abs(equal(pfthresh, 2)), rg2, rg3);
+per_frame_11=q1 = wave_r;
+per_frame_12=q2 = wave_g;
+per_frame_13=q3 = wave_b;
+per_frame_14=invert = 0;
+per_frame_15=echo_alpha = min(1, max(0.5, 12 * pfdy_r));
+per_frame_16=echo_zoom = min(2, max(1, 1 + abs(24 * pfdx_r)));
+per_frame_17=monitor = invert;
+per_frame_18=cog = ocog + 0.005 * (bass + bass_att + bass * bass_att - 2);
+per_frame_19=ocog = below(cog, 30000) * cog;
+per_frame_20=q4 = cog;
+per_frame_21=warp = 0.2;
+per_frame_22=zoom = zoom + 0.08;
+per_pixel_1=thresh = 2 * above(bass_att, thresh) + (1 - above(bass_att, thresh)) * (0.96 * (thresh - 1.3) + 1.3);
+per_pixel_2=dx_r = 0.015 * equal(thresh, 2) * sin(5 * time) + (1 - equal(thresh, 2)) * dx_r;
+per_pixel_3=dy_r = 0.015 * equal(thresh, 2) * sin(6 * time) + (1 - equal(thresh, 2)) * dy_r;
+per_pixel_4=tg1 = abs(sin(time));
+per_pixel_5=tg2 = 12 * dx_r * above(tg1, 0.5) + 12 * dy_r * below(tg1, 0.5);
+per_pixel_6=tg3 = if(0.00001 < abs(equal(thresh, 2)), tg2, tg3);
+shape_0_init1=q1 = 0;
+shape_0_init2=q3 = 0;
+shape_0_init3=q2 = 0;
+shape_0_init4=q4 = 0;
+shape_0_per_frame1=x = x - 0.1 * tan(3 * bass) * 0.2 * sin(time);
+shape_0_per_frame2=y = y + 0.2 * cos(time);
+shape_0_per_frame3=border_r = q1;
+shape_0_per_frame4=border_g = 1 - abs(q3);
+shape_0_per_frame5=border_b = q2;
+shape_0_per_frame6=sides = 14 * cos(q4);
+shape_1_init1=q4 = 0;
+shape_1_init2=q2 = 0;
+shape_1_init3=q1 = 0;
+shape_1_init4=q3 = 0;
+shape_1_per_frame1=ang = 3 * q4;
+shape_1_per_frame2=border_r = q2;
+shape_1_per_frame3=border_g = q1;
+shape_1_per_frame4=border_b = q3;
+shape_2_init1=thresh = 0;
+shape_2_init2=thresh = 0;
+shape_2_init3=thresh = 0;
+shape_2_init4=thresh = 0;
+shape_2_init5=dx_r = 0;
+shape_2_init6=thresh = 0;
+shape_2_init7=thresh = 0;
+shape_2_init8=dx_r = 0;
+shape_2_init9=dy_r = 0;
+shape_2_init10=thresh = 0;
+shape_2_init11=thresh = 0;
+shape_2_init12=dy_r = 0;
+shape_2_init13=tg1 = 0;
+shape_2_init14=tg2 = 0;
+shape_2_init15=tg1 = 0;
+shape_2_init16=tg1 = 0;
+shape_2_init17=tg1 = 0;
+shape_2_init18=tg1 = 0;
+shape_2_init19=tg1 = 0;
+shape_2_init20=tg1 = 0;
+shape_2_init21=tg1 = 0;
+shape_2_init22=tg1 = 0;
+shape_2_init23=tg3 = 0;
+shape_2_init24=thresh = 0;
+shape_2_init25=tg2 = 0;
+shape_2_init26=tg3 = 0;
+shape_2_init27=dy_r = 0;
+shape_2_init28=tg3 = 0;
+shape_2_init29=dx_r = 0;
+shape_2_init30=tg3 = 0;
+shape_2_init31=q2 = 0;
+shape_2_init32=q1 = 0;
+shape_2_init33=q3 = 0;
+shape_2_init34=q2 = 0;
+shape_2_init35=q3 = 0;
+shape_2_init36=q1 = 0;
+shape_2_per_frame1=thresh = 2 * above(bass_att, thresh) + (1 - above(bass_att, thresh)) * (0.96 * (thresh - 1.3) + 1.3);
+shape_2_per_frame2=dx_r = 0.015 * equal(thresh, 2) * sin(5 * time) + (1 - equal(thresh, 2)) * dx_r;
+shape_2_per_frame3=dy_r = 0.015 * equal(thresh, 2) * sin(6 * time) + (1 - equal(thresh, 2)) * dy_r;
+shape_2_per_frame4=tg1 = abs(sin(time));
+shape_2_per_frame5=tg2 = 0.25 * above(tg1, 0.8) - 0.25 * below(tg1, 0.2) + 0.33 * above(tg1, 0.2) * below(tg1, 0.4) - 0.33 * above(tg1, 0.4) * below(tg1, 0.6) + 0 * below(tg1, 0.8) * above(tg1, 0.6);
+shape_2_per_frame6=tg3 = if(0.00001 < abs(equal(thresh, 2)), tg2, tg3);
+shape_2_per_frame7=x = x + 42 * dy_r * tg3;
+shape_2_per_frame8=y = y + 42 * dx_r * tg3;
+shape_2_per_frame9=r = q2;
+shape_2_per_frame10=g = q1;
+shape_2_per_frame11=b = q3;
+shape_2_per_frame12=r2 = q2;
+shape_2_per_frame13=b2 = q3;
+shape_2_per_frame14=g2 = q1;

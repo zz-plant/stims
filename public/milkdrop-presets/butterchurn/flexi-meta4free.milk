@@ -36,35 +36,59 @@ fMotionVectorsG=0.500000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=2.023100
-fSmoothing=0.000000
-fR=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=2.023100
+wavecode_0_smoothing=0.000000
+wavecode_0_r=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=x1 = 0.9;
+per_frame_init_2=y1 = 0.5;
+per_frame_init_3=x2 = 0.5;
+per_frame_init_4=y2 = 0.5;
+per_frame_init_5=x3 = 0.5;
+per_frame_init_6=y3 = 0.5;
+per_frame_init_7=x4 = 0.5;
+per_frame_init_8=y4 = 0.5;
+per_frame_1=wave_a = 0;
+per_frame_2=zoom = 0.996;
+per_frame_3=warp = 0.18 - 0.15 * (bass - treb);
+wave_0_init1=d = 0;
+wave_0_init2=tt2 = 0;
+wave_0_init3=res = 0;
+wave_0_init4=tt1 = 0;
+wave_0_init5=diff = 0;
+wave_0_init6=tt3 = 0;
+wave_0_init7=beat = 0;
+wave_0_init8=vol = 0;
+wave_0_init9=m = 0;
+wave_0_init10=monitor = 0;
+wave_0_init11=t2 = 0;
+wave_0_init12=t3 = 0;
+wave_0_init13=t4 = 0;
+wave_0_init14=cl = 0;
+wave_0_per_frame1=vol = 8 * bass + 5 * mid + 3 * treb;
+wave_0_per_frame2=m = 0.97 * m + 0.08 * vol;
+wave_0_per_frame3=monitor = vol;
+wave_0_per_frame4=beat = above(vol, res) * above(vol, m) * above(vol, 16);
+wave_0_per_frame5=diff = (1 - beat) * diff + beat * (vol - res);
+wave_0_per_frame6=res = beat * (vol + 0.04 * m) + (1 - beat) * (res - 60 * (0.1 + 0.02 * diff) / fps);
+wave_0_per_frame7=res = max(0, res);
+wave_0_per_frame8=b = beat;
+wave_0_per_frame9=g = 1 - beat;
+wave_0_per_point1=tt3 = 0.6 * tt3 + 1 * value1;
+wave_0_per_point2=tt2 = 0.7 * tt2 + 0.2 * tt3;
+wave_0_per_point3=tt1 = 0.8 * tt1 + 0.1 * tt2;
+wave_0_per_point4=d = 0.9 * d + 0.2 * tt1;
+wave_0_per_point5=y = 0.5 + d * sample * (1 - sample) * 4;
+wave_0_per_point6=x = -0.05 + 1.1 * sample;
 
 [warp_shader]
 shader_body { 

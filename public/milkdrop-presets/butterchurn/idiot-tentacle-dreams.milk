@@ -33,15 +33,66 @@ nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.500000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=new_mid = 0;
+per_frame_init_2=yq3 = 0;
+per_frame_init_3=treb_effect = 0;
+per_frame_init_4=q6 = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=q5 = 0;
+per_frame_init_7=bass_thresh = 0;
+per_frame_init_8=treb_thresh = 0;
+per_frame_init_9=vol_att = 0;
+per_frame_init_10=mid_thresh = 0;
+per_frame_init_11=bass_effect = 0;
+per_frame_init_12=new_treb = 0;
+per_frame_init_13=q4 = 0;
+per_frame_init_14=vol_thresh = 0;
+per_frame_init_15=vol_effect = 0;
+per_frame_init_16=mid_mid_att = 0;
+per_frame_init_17=vol = 0;
+per_frame_init_18=new_bass = 0;
+per_frame_init_19=q2 = 0;
+per_frame_init_20=new_vol = 0;
+per_frame_init_21=react = 0;
+per_frame_init_22=q3 = 0;
+per_frame_init_23=q7 = 0;
+per_frame_init_24=mid_effect = 0;
+per_frame_init_25=change = 0;
+per_frame_init_26=q8 = 0;
+per_frame_1=vol_att = bass_att + treb_att + mid_att;
+per_frame_2=bass_thresh = 2 * above(bass_att, bass_thresh) + (1 - above(bass_att, bass_thresh)) * (0.96 * (bass_thresh - 1.3) + 1.3);
+per_frame_3=treb_thresh = 2 * above(treb_att, treb_thresh) + (1 - above(treb_att, treb_thresh)) * (0.96 * (treb_thresh - 1.3) + 1.3);
+per_frame_4=mid_thresh = 2 * above(mid_att, mid_thresh) + (1 - above(mid_mid_att, mid_thresh)) * (0.96 * (mid_thresh - 1.3) + 1.3);
+per_frame_5=vol_thresh = bass_thresh + treb_thresh + mid_thresh;
+per_frame_6=treb_effect = max(max(treb, treb_att), treb_thresh);
+per_frame_7=bass_effect = max(max(bass, bass_att), bass_thresh);
+per_frame_8=mid_effect = max(max(mid, mid_att), mid_thresh);
+per_frame_9=vol_effect = bass_effect + treb_effect + mid_effect;
+per_frame_10=react = vol;
+per_frame_11=new_bass = if(0.00001 < abs(above(react, bass_effect)), band(bass, bass_att), bass_effect + bass_thresh);
+per_frame_12=new_treb = if(0.00001 < abs(above(react, treb_effect)), band(treb, treb_att), treb_effect + treb_thresh);
+per_frame_13=new_mid = if(0.00001 < abs(above(react, mid_effect)), band(mid, mid_att), mid_effect + mid_thresh);
+per_frame_14=new_vol = new_bass + new_treb + new_mid + 0.04;
+per_frame_15=change = bnot(1);
+per_frame_16=q1 = new_bass;
+per_frame_17=q2 = new_treb;
+per_frame_18=q3 = new_mid;
+per_frame_19=q4 = new_vol;
+per_frame_20=q5 = bass_thresh;
+per_frame_21=q6 = treb_thresh;
+per_frame_22=q7 = mid_thresh;
+per_frame_23=q8 = vol_thresh;
+per_frame_24=wave_r = 0.4 + 0.3 * sin(time + q1);
+per_frame_25=wave_b = 0.3 + 0.6 * sin(time + q2);
+per_frame_26=wave_g = 0.5 + 0.5 * sin(time - q1);
+per_frame_27=wave_mystery = wave_mystery + 0.2 * sin(0.53 * time - q3);
+per_pixel_1=rot = 0.3 * sin(rad - ang * x + yq3) * rad * sin(if(0.00001 < abs(above(q1, q2)), q5, -q5)) * rad - 0.2 * sin(q3);
+per_pixel_2=cx = if(0.00001 < abs(above(q2, q3)), cx + 0.5 * sin(x - 0.3 * rad * cos(q1 - 0.3) - 0.2 - rad * sin(q6)), 0.5);
+per_pixel_3=cy = if(0.00001 < abs(above(q2, q3)), cy + 0.5 * sin(y - 0.3 * rad * cos(q2 - 0.3) - 0.2 - rad * sin(q5)), 0.5);
+per_pixel_4=zoom = zoom - 0.1 * rad * sin(q1) * rad - 0.02 * sin(q6 - x + y * sin(q2));
+per_pixel_5=dx = dx - dx * sin(q3 - rad * sin(q2)) * sin(q5) * x;
+per_pixel_6=dy = dy - dy * sin(q2 + rad * sin(q1)) * sin(q6) * y;

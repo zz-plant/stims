@@ -32,36 +32,119 @@ fMotionVectorsR=0.500000
 fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bThickOutline=1.000000
-fRad=0.866440
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_additive=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_rad=0.866440
+shapecode_0_g2=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=c_inv_i = 0;
+per_frame_init_2=d = 0;
+per_frame_init_3=xx = 0;
+per_frame_init_4=translation_x = 0;
+per_frame_init_5=z = 0;
+per_frame_init_6=w = 0;
+per_frame_init_7=a_i = 0;
+per_frame_init_8=c_r = 0;
+per_frame_init_9=a_r = 0;
+per_frame_init_10=iangle = 0;
+per_frame_init_11=scale = 0;
+per_frame_init_12=cz = 0;
+per_frame_init_13=q6 = 0;
+per_frame_init_14=ac_i = 0;
+per_frame_init_15=itranslation_u = 0;
+per_frame_init_16=q1 = 0;
+per_frame_init_17=itranslation_v = 0;
+per_frame_init_18=q5 = 0;
+per_frame_init_19=c_inv_r = 0;
+per_frame_init_20=my = 0;
+per_frame_init_21=d_i = 0;
+per_frame_init_22=angle = 0;
+per_frame_init_23=vx = 0;
+per_frame_init_24=mu_i = 0;
+per_frame_init_25=bcad_r = 0;
+per_frame_init_26=vy = 0;
+per_frame_init_27=vz = 0;
+per_frame_init_28=iscale = 0;
+per_frame_init_29=q4 = 0;
+per_frame_init_30=b_r = 0;
+per_frame_init_31=mu_r = 0;
+per_frame_init_32=bcad_i = 0;
+per_frame_init_33=c_i = 0;
+per_frame_init_34=mx = 0;
+per_frame_init_35=q2 = 0;
+per_frame_init_36=ac_r = 0;
+per_frame_init_37=translation_y = 0;
+per_frame_init_38=q3 = 0;
+per_frame_init_39=yy = 0;
+per_frame_init_40=b_i = 0;
+per_frame_init_41=q7 = 0;
+per_frame_init_42=d_r = 0;
+per_frame_init_43=q8 = 0;
+per_frame_1=scale = 1;
+per_frame_2=angle = 0.2 * time;
+per_frame_3=translation_x = 0;
+per_frame_4=translation_y = 0.12;
+per_frame_5=iscale = 1;
+per_frame_6=iangle = 0.3 * sin(0.1337 * time);
+per_frame_7=itranslation_u = 0;
+per_frame_8=itranslation_v = 0.2;
+per_frame_9=a_r = cos(angle) * scale;
+per_frame_10=a_i = sin(angle) * scale;
+per_frame_11=b_r = translation_x;
+per_frame_12=b_i = translation_y;
+per_frame_13=c_r = -cos(iangle) * iscale;
+per_frame_14=c_i = -sin(iangle) * iscale;
+per_frame_15=d_r = itranslation_u;
+per_frame_16=d_i = itranslation_v;
+per_frame_17=c_inv_r = c_r / (c_r * c_r + c_i * c_i);
+per_frame_18=c_inv_i = c_i / (c_r * c_r + c_i * c_i);
+per_frame_19=ac_r = a_r * c_inv_r - a_i * c_inv_i;
+per_frame_20=ac_i = a_r * c_inv_i - a_i * c_inv_r;
+per_frame_21=bcad_r = b_r * c_r - b_i * c_i - (a_r * d_r - a_i * d_i);
+per_frame_22=bcad_i = b_r * c_i - b_i * c_r - (a_r * d_i - a_i * d_r);
+per_frame_23=mu_r = bcad_r * c_inv_r - bcad_i * c_inv_i;
+per_frame_24=mu_i = bcad_r * c_inv_i - bcad_i * c_inv_r;
+per_frame_25=q1 = ac_r;
+per_frame_26=q2 = ac_i;
+per_frame_27=q3 = mu_r;
+per_frame_28=q4 = mu_i;
+per_frame_29=q5 = c_r;
+per_frame_30=q6 = c_i;
+per_frame_31=q7 = d_r;
+per_frame_32=q8 = d_i;
+per_pixel_1=vx = 0.5 + 0.5 * cos(0.1 * time);
+per_pixel_2=vy = 0.5 + 0.5 * sin(0.1 * time);
+per_pixel_3=vz = 0;
+per_pixel_4=z = 0 - vz;
+per_pixel_5=x = x - vx;
+per_pixel_6=y = y - vy;
+per_pixel_7=d = 0.1 * time - treb * treb * treb * 0;
+per_pixel_8=xx = sin(d) * x + cos(d) * y;
+per_pixel_9=yy = cos(d) * x - sin(d) * y;
+per_pixel_10=x = xx;
+per_pixel_11=y = yy;
+per_pixel_12=x = x + mx;
+per_pixel_13=y = y + my;
+per_pixel_14=z = z + vz;
+per_pixel_15=cx = 0;
+per_pixel_16=cy = 0;
+per_pixel_17=cz = 0.5 + 0 * treb;
+per_pixel_18=vx = 0;
+per_pixel_19=vy = 0;
+per_pixel_20=vz = 0;
+per_pixel_21=zoom = 0.33;
+per_pixel_22=w = 1 / zoom * (1 + sqrt(sqr(z - cz) + sqr(x - cx) + sqr(y - cy)));
+per_pixel_23=dx = -(x - mx) * w;
+per_pixel_24=dy = -(y - my) * w;
 
 [warp_shader]
 shader_body { 

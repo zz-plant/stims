@@ -38,55 +38,78 @@ fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b1x=0.700000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=64.000000
-bThickOutline=1.000000
-nInstances=24.000000
-fRad=0.029880
-fTexZoom=1.350280
-fR=0.000000
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fG2=0.000000
-fB2=1.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=3.000000
-nInstances=251.000000
-fX=0.600000
-fRad=0.022170
-fTexZoom=60.803830
-fG=1.000000
-fB=1.000000
-fA=0.900000
-fG2=0.000000
-fBorderG=0.590000
-fBorderB=0.000000
-fBorderA=1.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=64.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_num_inst=24.000000
+shapecode_0_rad=0.029880
+shapecode_0_tex_zoom=1.350280
+shapecode_0_r=0.000000
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=1.000000
+shapecode_0_g2=0.000000
+shapecode_0_b2=1.000000
+shapecode_0_border_b=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=3.000000
+shapecode_1_num_inst=251.000000
+shapecode_1_x=0.600000
+shapecode_1_rad=0.022170
+shapecode_1_tex_zoom=60.803830
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_a=0.900000
+shapecode_1_g2=0.000000
+shapecode_1_border_g=0.590000
+shapecode_1_border_b=0.000000
+shapecode_1_border_a=1.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=vol = 0;
+per_frame_init_2=p1 = 0;
+per_frame_init_3=vx = 0.2;
+per_frame_init_4=vy = -0.1;
+per_frame_init_5=kx = 0;
+per_frame_init_6=ky = 0;
+shape_0_init1=t1 = 0;
+shape_0_init2=t1 = randint(6);
+shape_0_per_frame1=x = 0.5 + 0.1 * sin(17 * instance + t1);
+shape_0_per_frame2=y = 0.55 + 0.06 * sin(12 * instance);
+shape_1_init1=fov = 0;
+shape_1_init2=arg = 0;
+shape_1_init3=t1 = 0;
+shape_1_init4=posx = 0;
+shape_1_init5=trel = 0;
+shape_1_init6=k1 = 0;
+shape_1_init7=posy = 0;
+shape_1_init8=t2 = 0;
+shape_1_init9=dist = 0;
+shape_1_init10=speed = 0;
+shape_1_init11=radi = 0;
+shape_1_init12=t1 = randint(6);
+shape_1_init13=t2 = 11 + randint(100) / 3;
+shape_1_per_frame1=speed = 0.02;
+shape_1_per_frame2=trel = floor(time * speed) - time * speed + 1;
+shape_1_per_frame3=k1 = instance / num_inst;
+shape_1_per_frame4=k1 = k1 - floor(k1);
+shape_1_per_frame5=dist = 1.2 - k1;
+shape_1_per_frame6=fov = 0.1;
+shape_1_per_frame7=arg = dist - 0.02 * time;
+shape_1_per_frame8=posx = fov / dist * (sin(13 * arg) + 0.1 * sin(332 * dist));
+shape_1_per_frame9=posy = fov / dist * (cos(arg * t2 + t1) + 0.1 * sin(332 * dist));
+shape_1_per_frame10=x = 0.5 + posx;
+shape_1_per_frame11=y = 0.5 + posy;
+shape_1_per_frame12=ang = time * sin(44 * k1) * 12;
+shape_1_per_frame13=a = 1;
+shape_1_per_frame14=border_a = 0 * min(4 * radi, 1);
+shape_1_per_frame15=a2 = 1;
+shape_1_per_frame16=rad = 0.01 / dist;
 
 [warp_shader]
 shader_body { 

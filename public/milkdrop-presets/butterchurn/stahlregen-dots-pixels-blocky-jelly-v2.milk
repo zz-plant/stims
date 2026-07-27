@@ -15,47 +15,53 @@ fZoom=1.040600
 fWarp=0.010000
 fOuterBorderSize=0.005000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-bThickOutline=1.000000
-nInstances=13.000000
-fR=0.000000
-fB=1.000000
-fA=0.600000
-fG2=0.000000
-fB2=0.500000
-fA2=0.500000
-fBorderA=0.600000
-
-[shape00_1]
-bEnabled=1.000000
-bThickOutline=1.000000
-nInstances=14.000000
-fRad=0.099900
-fR=0.000000
-fA=0.600000
-fG2=0.000000
-fA2=0.500000
-fBorderA=0.600000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_num_inst=13.000000
+shapecode_0_r=0.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.600000
+shapecode_0_g2=0.000000
+shapecode_0_b2=0.500000
+shapecode_0_a2=0.500000
+shapecode_0_border_a=0.600000
+shapecode_1_enabled=1.000000
+shapecode_1_thickoutline=1.000000
+shapecode_1_num_inst=14.000000
+shapecode_1_rad=0.099900
+shapecode_1_r=0.000000
+shapecode_1_a=0.600000
+shapecode_1_g2=0.000000
+shapecode_1_a2=0.500000
+shapecode_1_border_a=0.600000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=q2 = 0;
+per_frame_1=q1 = 0.001 * randint(1000);
+per_frame_2=q2 = 0.001 * randint(1000);
+shape_0_init1=q1 = 0;
+shape_0_init2=q2 = 0;
+shape_0_per_frame1=x = q1 + randint(15) * bass_att * 0.02;
+shape_0_per_frame2=y = q2 + randint(15) * mid_att * 0.02;
+shape_0_per_frame3=rad = 0.076 + 0.004 * randint(11);
+shape_0_per_frame4=b = 0.35 + 0.2 * sin(0.73 * time) + 0.001 * randint(100);
+shape_0_per_frame5=b2 = 0.35 + 0.2 * sin(0.73 * time) + 0.001 * randint(100);
+shape_0_per_frame6=g = 0.55 + 0.125 * sin(0.43 * time) + 0.001 * randint(100);
+shape_0_per_frame7=g2 = 0.55 + 0.125 * sin(0.43 * time) + 0.001 * randint(100);
+shape_1_init1=q2 = 0;
+shape_1_init2=q1 = 0;
+shape_1_per_frame1=x = q2 + randint(15) * mid_att * 0.02;
+shape_1_per_frame2=y = 1 - q1 + randint(15) * treb_att * 0.02;
+shape_1_per_frame3=rad = 0.076 + 0.004 * randint(11);
+shape_1_per_frame4=r = 0.4 + 0.2 * sin(0.53 * time) + 0.001 * randint(100);
+shape_1_per_frame5=r2 = 0.4 + 0.2 * sin(0.53 * time) + 0.001 * randint(100);
+shape_1_per_frame6=b = 0.55 + 0.12 * sin(0.63 * time) + 0.001 * randint(100);
+shape_1_per_frame7=b2 = 0.55 + 0.12 * sin(0.63 * time) + 0.001 * randint(100);
 
 [comp_shader]
 shader_body { 

@@ -34,35 +34,140 @@ fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=0.891520
-fSmoothing=0.820000
-fA=0.900000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=0.891520
+wavecode_0_smoothing=0.820000
+wavecode_0_a=0.900000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=index2 = 0;
+per_frame_init_2=index = 0;
+per_frame_init_3=q22 = 0;
+per_frame_init_4=q21 = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=dec_med = 0;
+per_frame_init_7=rott = 0;
+per_frame_init_8=is_beat = 0;
+per_frame_init_9=q31 = 0;
+per_frame_init_10=q23 = 0;
+per_frame_init_11=k1 = 0;
+per_frame_init_12=q24 = 0;
+per_frame_init_13=dec_slow = 0;
+per_frame_init_14=q4 = 0;
+per_frame_init_15=q26 = 0;
+per_frame_init_16=p2 = 0;
+per_frame_init_17=avg = 0;
+per_frame_init_18=beat = 0;
+per_frame_init_19=p1 = 0;
+per_frame_init_20=peak = 0;
+per_frame_init_21=q2 = 0;
+per_frame_init_22=q27 = 0;
+per_frame_init_23=p3 = 0;
+per_frame_init_24=q3 = 0;
+per_frame_init_25=t0 = 0;
+per_frame_init_26=q28 = 0;
+per_frame_init_27=q30 = 0;
+per_frame_init_28=q20 = 0;
+per_frame_init_29=p4 = 0;
+per_frame_1=dec_med = pow(0.7, 30 / fps);
+per_frame_2=dec_slow = pow(0.99, 30 / fps);
+per_frame_3=beat = max(max(bass, mid), treb);
+per_frame_4=avg = avg * dec_slow + beat * (1 - dec_slow);
+per_frame_5=is_beat = above(beat, 0.2 + avg + peak) * above(time, t0 + 0.2);
+per_frame_6=t0 = is_beat * time + (1 - is_beat) * t0;
+per_frame_7=peak = is_beat * beat + (1 - is_beat) * peak * dec_med;
+per_frame_8=index = mod(index + is_beat, 16);
+per_frame_9=index2 = mod(index2 + is_beat * bnot(index), 4);
+per_frame_10=q20 = avg;
+per_frame_11=q21 = beat;
+per_frame_12=q22 = peak;
+per_frame_13=q23 = index;
+per_frame_14=q24 = is_beat;
+per_frame_15=q26 = (bass_att + mid_att + treb_att) / 2;
+per_frame_16=q27 = index + 1;
+per_frame_17=q28 = index2;
+per_frame_18=k1 = is_beat * equal(mod(index, 2), 0);
+per_frame_19=p1 = k1 * (p1 + 1) + (1 - k1) * p1;
+per_frame_20=p2 = dec_med * p2 + (1 - dec_med) * p1;
+per_frame_21=rott = 3.1416 * p2 / 4;
+per_frame_22=q1 = cos(rott);
+per_frame_23=q2 = sin(rott);
+per_frame_24=q3 = -q2;
+per_frame_25=q4 = q1;
+per_frame_26=p3 = p3 * dec_med + (1 - dec_med) * (100 * index + 0 * q26);
+per_frame_27=q30 = p3;
+per_frame_28=p4 = dec_med * p4 + (1 - dec_med) * q27;
+per_frame_29=q31 = p4;
+per_frame_30=zoom = 1 + q28 / 4;
+per_frame_31=warp = 0;
+per_frame_32=dx = 0.2 * q2;
+wave_0_init1=xang = 0;
+wave_0_init2=ampl = 0;
+wave_0_init3=fov = 0;
+wave_0_init4=t1 = 0;
+wave_0_init5=yang = 0;
+wave_0_init6=my = 0;
+wave_0_init7=oz = 0;
+wave_0_init8=k1 = 0;
+wave_0_init9=t_rel = 0;
+wave_0_init10=k2 = 0;
+wave_0_init11=mz = 0;
+wave_0_init12=oy = 0;
+wave_0_init13=mx = 0;
+wave_0_init14=t2 = 0;
+wave_0_init15=zang = 0;
+wave_0_init16=monitor = 0;
+wave_0_init17=t_abs = 0;
+wave_0_init18=ox = 0;
+wave_0_init19=t1 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_init20=t2 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_init21=t3 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_init22=t4 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_init23=t5 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_init24=t6 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_init25=t7 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_init26=t8 = 1 + 0.3 * (0.01 * randint(101) - 0.01 * randint(101));
+wave_0_per_frame1=t2 = t2 + bass_att;
+wave_0_per_point1=k1 = cos(time / 3);
+wave_0_per_point2=k2 = sin(time / 2);
+wave_0_per_point3=t_abs = sample;
+wave_0_per_point4=t_rel = sample - time / 2.12;
+wave_0_per_point5=ampl = 5 * cos(t_rel);
+wave_0_per_point6=ox = sin(8 * t_rel) + ampl * sin(12 * t_rel);
+wave_0_per_point7=oy = cos(13 * t_rel) + ampl * cos(11 * t_rel);
+wave_0_per_point8=oz = ampl / 3;
+wave_0_per_point9=r = 1;
+wave_0_per_point10=g = 0.5;
+wave_0_per_point11=b = 0;
+wave_0_per_point12=a = 0.25 * cos(3.14 * t_abs / 2) + 0.2 * below(abs(1 - t_abs - t1), 0);
+wave_0_per_point13=a = 0.25 * cos(1.5 * t_abs) + 0.7 * below(abs(t_abs), 0);
+wave_0_per_point14=xang = 3 * k1;
+wave_0_per_point15=yang = 1;
+wave_0_per_point16=zang = 3 * k1;
+wave_0_per_point17=fov = 0.22;
+wave_0_per_point18=monitor = t2;
+wave_0_per_point19=mx = ox * cos(zang) - oy * sin(zang);
+wave_0_per_point20=my = ox * sin(zang) + oy * cos(zang);
+wave_0_per_point21=ox = mx;
+wave_0_per_point22=oy = my;
+wave_0_per_point23=mx = ox * cos(yang) + oz * sin(yang);
+wave_0_per_point24=mz = -ox * sin(yang) + oz * cos(yang);
+wave_0_per_point25=ox = mx;
+wave_0_per_point26=oz = mz;
+wave_0_per_point27=my = oy * cos(xang) - oz * sin(xang);
+wave_0_per_point28=mz = oy * sin(xang) + oz * cos(xang);
+wave_0_per_point29=oy = my;
+wave_0_per_point30=oz = mz;
+wave_0_per_point31=oz = oz - 6;
+wave_0_per_point32=x = ox * fov / oz + 0.5;
+wave_0_per_point33=y = oy * fov / oz + 0.5;
 
 [warp_shader]
 vec3 xlat_mutablemus;

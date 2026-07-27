@@ -16,15 +16,10 @@ fWaveR=0.500000
 fWaveG=0.300000
 fWaveB=0.000000
 fWaveX=0.080000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=decay = 0.999999970089;
+per_frame_2=wave_g = sin(time);
+per_pixel_1=dx = dx + 0.001 * (x + 1) * -randint(40);

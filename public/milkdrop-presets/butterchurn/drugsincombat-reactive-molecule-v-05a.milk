@@ -29,52 +29,107 @@ fMotionVectorsR=0.000000
 fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.400310
-fR=0.500000
-fG=0.500000
-fR2=0.500000
-fG2=0.000000
-fBorderB=0.500000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.134650
-fR2=1.000000
-fA2=0.300000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.200470
-fG=1.000000
-fB=1.000000
-fR2=0.500000
-fG2=0.500000
-fB2=1.000000
-fBorderB=0.500000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_rad=0.400310
+shapecode_0_r=0.500000
+shapecode_0_g=0.500000
+shapecode_0_r2=0.500000
+shapecode_0_g2=0.000000
+shapecode_0_border_b=0.500000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=100.000000
+shapecode_1_rad=0.134650
+shapecode_1_r2=1.000000
+shapecode_1_a2=0.300000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=100.000000
+shapecode_2_rad=0.200470
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_r2=0.500000
+shapecode_2_g2=0.500000
+shapecode_2_b2=1.000000
+shapecode_2_border_b=0.500000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=tic = 0;
+per_frame_init_2=slide = 0;
+per_frame_init_3=toc = 0;
+per_frame_init_4=vt = 0;
+per_frame_init_5=q6 = 0;
+per_frame_init_6=bt = 0;
+per_frame_init_7=q1 = 0;
+per_frame_init_8=q5 = 0;
+per_frame_init_9=mid_avg = 0;
+per_frame_init_10=tt = 0;
+per_frame_init_11=tin = 0;
+per_frame_init_12=bass_avg = 0;
+per_frame_init_13=vav = 0;
+per_frame_init_14=q4 = 0;
+per_frame_init_15=mt = 0;
+per_frame_init_16=ra = 0;
+per_frame_init_17=treb_avg = 0;
+per_frame_init_18=vol = 0;
+per_frame_init_19=sp = 0;
+per_frame_init_20=q2 = 0;
+per_frame_init_21=q3 = 0;
+per_frame_1=wave_a = 0;
+per_frame_2=vol = 0.333333 * (bass_att + treb_att + mid_att);
+per_frame_3=tic = min(time - tin, 0.1);
+per_frame_4=tin = time;
+per_frame_5=ra = 10;
+per_frame_6=treb_avg = tic * (treb_avg * (1 / tic - ra) + ra * treb);
+per_frame_7=mid_avg = tic * (mid_avg * (1 / tic - ra) + ra * mid);
+per_frame_8=bass_avg = tic * (bass_avg * (1 / tic - ra) + ra * bass);
+per_frame_9=vav = tic * (vav * (1 / tic - ra) + ra * (bass + treb + mid) * 0.33333);
+per_frame_10=tt = tt + tic * treb_avg;
+per_frame_11=mt = mt + tic * mid_avg;
+per_frame_12=bt = bt + tic * bass_avg;
+per_frame_13=sp = 0.1 * abs(vav - slide);
+per_frame_14=slide = if(0.00001 < abs(above(slide, vav)), slide - tic * sp, slide + tic * sp) + (1 - toc) * vav;
+per_frame_15=toc = 1;
+per_frame_16=vt = vt + tic * slide;
+per_frame_17=q1 = bt;
+per_frame_18=q2 = mt;
+per_frame_19=q3 = tt;
+per_frame_20=q4 = 1 * slide;
+per_frame_21=q5 = 0.05 * vt + 150;
+per_frame_22=q6 = 0.01;
+shape_0_init1=sounds = 0;
+shape_0_init2=sounds = 0;
+shape_0_per_frame1=sounds = (bass + treb + mid) / 3;
+shape_0_per_frame2=rad = rad * sounds * 0.6;
+shape_0_per_frame3=r = r + sin(bass) * g;
+shape_0_per_frame4=g = g + sin(mid) * g;
+shape_0_per_frame5=x = x + 0.207 * cos(time * bass * 0.1);
+shape_0_per_frame6=y = y + 0.207 * sin(time * bass * 0.1);
+shape_1_init1=sounds = 0;
+shape_1_per_frame1=g2 = g2 + 0.09 * sin(1.23 * (treb + mid));
+shape_1_per_frame2=g = g + 0.09 * cos(1.37 * (bass + mid));
+shape_1_per_frame3=sounds = (bass + mid + treb) / 3;
+shape_1_per_frame4=rad = rad * (treb + mid) / 3;
+shape_1_per_frame5=x = x + 0.3 * sin(time * bass);
+shape_1_per_frame6=y = y + 0.317 * cos(time * bass);
+shape_2_init1=sounds = 0;
+shape_2_init2=att = 0;
+shape_2_init3=att = 0;
+shape_2_init4=sounds = 0;
+shape_2_init5=sounds = 0;
+shape_2_per_frame1=sounds = (bass + treb + mid) / 3;
+shape_2_per_frame2=att = (bass_att + treb_att + mid_att) / 3;
+shape_2_per_frame3=att = (bass_att + treb_att + mid_att) / 3;
+shape_2_per_frame4=r2 = r2 + 0.25 * sin(6.28 * time) - bass;
+shape_2_per_frame5=g2 = g2 + 0.25 * sin(6.28 * time) - bass;
+shape_2_per_frame6=rad = rad;
+shape_2_per_frame7=x = x + 0.217 * cos(2.3 * time) + 0.1 * sounds;
+shape_2_per_frame8=y = y + 0.217 * sin(3.5 * time + 0.3 * sounds);
 
 [warp_shader]
 shader_body { 

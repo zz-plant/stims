@@ -34,30 +34,38 @@ fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=scale = 0;
+per_frame_init_2=q6 = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=q5 = 0;
+per_frame_init_5=angle = 0;
+per_frame_init_6=q11 = 0;
+per_frame_init_7=q4 = 0;
+per_frame_init_8=q2 = 0;
+per_frame_init_9=q3 = 0;
+per_frame_init_10=q7 = 0;
+per_frame_init_11=q8 = 0;
+per_frame_1=scale = 8;
+per_frame_2=angle = 0.2 * -time;
+per_frame_3=q1 = scale * cos(angle);
+per_frame_4=q2 = scale * sin(angle);
+per_frame_5=q3 = 0;
+per_frame_6=q4 = 0.3;
+per_frame_7=scale = 0.8;
+per_frame_8=angle = 0.2 * time;
+per_frame_9=q5 = scale * cos(angle);
+per_frame_10=q6 = scale * sin(angle);
+per_frame_11=q7 = -0.25;
+per_frame_12=q8 = 0.2;
+per_frame_13=q11 = 1 / asin(1);
 
 [warp_shader]
 shader_body { 

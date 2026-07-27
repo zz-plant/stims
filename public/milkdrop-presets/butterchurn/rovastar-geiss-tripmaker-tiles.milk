@@ -25,72 +25,135 @@ nMotionVectorsY=48.000000
 nMotionVectorsLoop=5.000000
 fMotionVectorsR=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bTextured=1.000000
-fRad=1.791418
-fTexAng=0.062832
-fG=1.000000
-fB=1.000000
-fA=0.080000
-fR2=1.000000
-fB2=1.000000
-fA2=0.080000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bTextured=1.000000
-fRad=1.791418
-fTexAng=0.062832
-fB=1.000000
-fA=0.080000
-fR2=1.000000
-fA2=0.080000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=100.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=0.919739
-fTexAng=0.628319
-fTexZoom=1.030299
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.138869
-fA=0.050000
-fA2=0.050000
-fBorderA=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_additive=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=1.791418
+shapecode_0_tex_ang=0.062832
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.080000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_a2=0.080000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=100.000000
+shapecode_1_additive=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=1.791418
+shapecode_1_tex_ang=0.062832
+shapecode_1_b=1.000000
+shapecode_1_a=0.080000
+shapecode_1_r2=1.000000
+shapecode_1_a2=0.080000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=100.000000
+shapecode_2_thickoutline=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_rad=0.919739
+shapecode_2_tex_ang=0.628319
+shapecode_2_tex_zoom=1.030299
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_r2=1.000000
+shapecode_2_b2=1.000000
+shapecode_2_a2=1.000000
+shapecode_2_border_r=0.000000
+shapecode_2_border_g=0.000000
+shapecode_2_border_b=0.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=1.000000
+shapecode_3_sides=100.000000
+shapecode_3_rad=0.138869
+shapecode_3_a=0.050000
+shapecode_3_a2=0.050000
+shapecode_3_border_a=0.000000
+per_frame_init_1=beateven = 0;
+per_frame_init_2=meanbass_att = 0;
+per_frame_init_3=oldq2 = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=lastbeat = 0;
+per_frame_init_6=mycounter = 0;
+per_frame_init_7=beatrate = 0;
+per_frame_init_8=peakbass_att = 0;
+per_frame_init_9=beatcounter = 0;
+per_frame_init_10=volume = 0;
+per_frame_init_11=beat = 0;
+per_frame_init_12=q2 = 0;
+per_frame_init_13=beatcounter = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = wave_r + 0.15 * sin(0.222 * time);
+per_frame_3=wave_g = wave_g + 0.15 * sin(0.333 * time);
+per_frame_4=wave_b = wave_b + 0.15 * sin(0.444 * time);
+per_frame_5=zoom = zoom + 0.01 - 0.01 * bass_att;
+per_frame_6=volume = 0.3 * (bass + mid);
+per_frame_7=beatrate = if(0.00001 < abs(equal(beatrate, 0)), 1, if(0.00001 < abs(below(volume, 0.01)), 1, beatrate));
+per_frame_8=lastbeat = if(0.00001 < abs(equal(lastbeat, 0)), time, lastbeat);
+per_frame_9=meanbass_att = 0.1 * (9 * meanbass_att + bass_att);
+per_frame_10=peakbass_att = if(0.00001 < abs(above(bass_att, peakbass_att)), bass_att, peakbass_att);
+per_frame_11=beat = if(0.00001 < abs(above(volume, 0.8)), if(0.00001 < abs(below(peakbass_att - bass_att, 0.05 * peakbass_att)), if(0.00001 < abs(above(time - lastbeat, 0.1 + 0.5 * (beatrate - 0.1))), 1, 0), 0), 0);
+per_frame_12=beatrate = max(if(0.00001 < abs(beat), if(0.00001 < abs(below(time - lastbeat, 2 * beatrate)), 0.1 * (9 * beatrate + time - lastbeat), beatrate), beatrate), 0.1);
+per_frame_13=peakbass_att = if(0.00001 < abs(equal(beat, 0)), if(0.00001 < abs(above(time - lastbeat, 2 * beatrate)), 0.95 * peakbass_att, 0.995 * peakbass_att), bass_att);
+per_frame_14=lastbeat = if(0.00001 < abs(beat), time, lastbeat);
+per_frame_15=peakbass_att = max(if(0.00001 < abs(beat), bass_att, peakbass_att), 1.1 * meanbass_att);
+per_frame_16=beatcounter = if(0.00001 < abs(above(beat, 0)), beatcounter + 1, beatcounter);
+per_frame_17=beatcounter = if(0.00001 < abs(above(beatcounter, 5)), 0, beatcounter);
+per_frame_18=beateven = mod(beatcounter, 2);
+per_frame_19=mycounter = if(0.00001 < abs(beateven), if(0.00001 < abs(beat), if(0.00001 < abs(above(mycounter, 4)), 0, mycounter + 1), mycounter), mycounter);
+per_frame_20=q2 = if(0.00001 < abs(beat), if(0.00001 < abs(beateven), 2, mycounter + 3), oldq2);
+per_frame_21=oldq2 = q2;
+per_frame_22=ib_r = ib_r + 0.25 * sin(0.965 * time);
+per_frame_23=ib_g = ib_g + 0.25 * sin(1.123 * time);
+per_frame_24=ib_b = ib_b + 0.25 * sin(1.046 * time);
+per_frame_25=ob_r = ob_r + 0.15 * sin(0.865 * time);
+per_frame_26=ob_g = ob_g + 0.15 * sin(1.103 * time);
+per_frame_27=ob_b = ob_b + 0.15 * sin(1.086 * time);
+per_frame_28=wave_a = 0;
+per_frame_29=ob_size = 0.05 * beat;
+per_frame_30=q1 = beat;
+per_frame_31=monitor = q2;
+per_frame_32=mv_a = 0.02 * q1;
+per_pixel_1=rot = 0.3 * tan(0.1 * sin(20 * pow(rad, 4) + time) + 0.1 * sin(0.222 * time));
+per_pixel_2=zoom = zoom + 0.1 * sin(ang * q2 - time);
+per_pixel_3=zoomexp = 100 * (sqrt(2) - rad);
+shape_0_init1=q1 = 0;
+shape_0_init2=q1 = 0;
+shape_0_init3=q1 = 0;
+shape_0_init4=q1 = 0;
+shape_0_per_frame1=additive = q1;
+shape_0_per_frame2=a = if(0.00001 < abs(q1), 1, a);
+shape_0_per_frame3=a2 = a;
+shape_0_per_frame4=r = q1;
+shape_0_per_frame5=r2 = q1;
+shape_0_per_frame6=tex_zoom = 3 - 3 * bass;
+shape_1_init1=q1 = 0;
+shape_1_init2=q1 = 0;
+shape_1_init3=q1 = 0;
+shape_1_init4=q1 = 0;
+shape_1_per_frame1=additive = q1;
+shape_1_per_frame2=a = if(0.00001 < abs(q1), 1, a);
+shape_1_per_frame3=a2 = a;
+shape_1_per_frame4=r = q1;
+shape_1_per_frame5=r2 = q1;
+shape_1_per_frame6=tex_zoom = 3 - 2 * bass;
+shape_2_init1=q1 = 0;
+shape_2_init2=q1 = 0;
+shape_2_per_frame1=tex_zoom = q1 + tex_zoom;
+shape_2_per_frame2=a2 = 1;
+shape_2_per_frame3=border_a = q1;
+shape_3_per_frame1=r = 0.5 + 0.49 * sin(0.2754 * time);
+shape_3_per_frame2=b = 0.5 + 0.49 * sin(0.6254 * time);
+shape_3_per_frame3=g = 0.5 + 0.49 * sin(0.514 * time);
+shape_3_per_frame4=r2 = 0.5 + 0.49 * sin(0.475 * time);
+shape_3_per_frame5=b2 = 0.5 + 0.49 * sin(0.2107 * time);
+shape_3_per_frame6=g2 = 0.5 + 0.49 * sin(0.7714 * time);
 
 [comp_shader]
 shader_body { 

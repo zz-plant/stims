@@ -33,35 +33,97 @@ fMotionVectorsR=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-nSamples=92.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fSmoothing=1.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_samples=92.000000
+wavecode_0_usedots=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_smoothing=1.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=bass_residual = 0;
+per_frame_init_2=old_treb_flop = 0;
+per_frame_init_3=redsine = 0;
+per_frame_init_4=bass_flop = 0;
+per_frame_init_5=bluesine = 0;
+per_frame_init_6=q6 = 0;
+per_frame_init_7=greenif = 0;
+per_frame_init_8=q1 = 0;
+per_frame_init_9=q5 = 0;
+per_frame_init_10=treb_flop = 0;
+per_frame_init_11=bass_thresh = 0;
+per_frame_init_12=old_bass_flop = 0;
+per_frame_init_13=treb_thresh = 0;
+per_frame_init_14=pulse = 0;
+per_frame_init_15=bass_changed = 0;
+per_frame_init_16=mid_thresh = 0;
+per_frame_init_17=q4 = 0;
+per_frame_init_18=mid_changed = 0;
+per_frame_init_19=entropy = 0;
+per_frame_init_20=redif = 0;
+per_frame_init_21=blueif = 0;
+per_frame_init_22=old_mid_flop = 0;
+per_frame_init_23=mid_residual = 0;
+per_frame_init_24=treb_residual = 0;
+per_frame_init_25=chaos = 0;
+per_frame_init_26=greensine = 0;
+per_frame_init_27=mid_flop = 0;
+per_frame_init_28=q2 = 0;
+per_frame_init_29=treb_changed = 0;
+per_frame_init_30=q3 = 0;
+per_frame_init_31=q7 = 0;
+per_frame_init_32=q8 = 0;
+per_frame_1=old_bass_flop = bass_flop;
+per_frame_2=old_treb_flop = treb_flop;
+per_frame_3=old_mid_flop = mid_flop;
+per_frame_4=chaos = 0.9 + 0.1 * sin(pulse);
+per_frame_5=entropy = if(0.00001 < abs(equal(pulse, -20)), 1 + bass_flop + treb_flop + mid_flop + randint(2), entropy);
+per_frame_6=bass_thresh = 2 * above(bass_att, bass_thresh) + (1 - above(bass_att, bass_thresh)) * ((bass_thresh - 1.3) * chaos + 1.3);
+per_frame_7=bass_flop = abs(bass_flop - equal(bass_thresh, 2));
+per_frame_8=treb_thresh = 2 * above(treb_att, treb_thresh) + (1 - above(treb_att, treb_thresh)) * ((treb_thresh - 1.3) * chaos + 1.3);
+per_frame_9=treb_flop = abs(treb_flop - equal(treb_thresh, 2));
+per_frame_10=mid_thresh = 2 * above(mid_att, mid_thresh) + (1 - above(mid_att, mid_thresh)) * ((mid_thresh - 1.3) * chaos + 1.3);
+per_frame_11=mid_flop = abs(mid_flop - equal(mid_thresh, 2));
+per_frame_12=bass_changed = bnot(equal(old_bass_flop, bass_flop));
+per_frame_13=mid_changed = bnot(equal(old_mid_flop, mid_flop));
+per_frame_14=treb_changed = bnot(equal(old_treb_flop, treb_flop));
+per_frame_15=bass_residual = bass_changed * sin(0.1 * pulse * entropy) + bnot(bass_changed) * bass_residual;
+per_frame_16=treb_residual = treb_changed * sin(0.1 * pulse * entropy) + bnot(treb_changed) * treb_residual;
+per_frame_17=mid_residual = mid_changed * sin(0.1 * pulse * entropy) + bnot(mid_changed) * mid_residual;
+per_frame_18=pulse = if(0.00001 < abs(above(abs(pulse), 20)), -20, pulse + 0.032 * (bass_thresh + mid_thresh + treb_thresh));
+per_frame_19=rot = 0.02 * cos(0.05 * pulse + 0.05 * time + entropy * chaos);
+per_frame_20=q1 = mid_residual;
+per_frame_21=q2 = bass_residual;
+per_frame_22=q3 = treb_residual;
+per_frame_23=q4 = sin(pulse);
+per_frame_24=q5 = cos(pulse / 2 + q1);
+per_frame_25=q6 = sin(q3 * q1 + q7 * q2);
+per_frame_26=q7 = above(q1, 0) + above(q2, 0) + above(q3, 0) + above(q3, 0) * treb_flop + above(q2, 0) * bass_flop + above(q1, 0) * mid_flop;
+per_frame_27=q8 = entropy;
+per_frame_28=redsine = 0.5 + 0.15 * bass * sin(3 * time);
+per_frame_29=greensine = 0.5 + 0.15 * mid * sin(2 * time);
+per_frame_30=bluesine = 0.5 + 0.15 * treb * sin(time);
+per_frame_31=redif = if(0.00001 < abs(above(bass, 1.2)), redsine, if(0.00001 < abs(above(redif, 0.95)), 0, 0.95 * redif));
+per_frame_32=greenif = if(0.00001 < abs(above(mid, 1.2)), greensine, if(0.00001 < abs(above(greenif, 0.95)), 0, 0.95 * greenif));
+per_frame_33=blueif = if(0.00001 < abs(above(treb, 1.2)), bluesine, if(0.00001 < abs(above(blueif, 0.95)), 0, 0.95 * blueif));
+per_frame_34=wave_r = redif;
+per_frame_35=wave_g = greenif;
+per_frame_36=wave_b = blueif;
+per_pixel_1=zoom = 1 + 0.05 * above(rad, 0.15) + abs(0.2 * q4 * rad + rad * sin(q1));
+wave_0_init1=vol = 0;
+wave_0_init2=t1 = 1;
+wave_0_per_point1=x = 0.0001 * randint(10000);
+wave_0_per_point2=y = 0.0001 * randint(10000);
+wave_0_per_point3=vol = (bass + mid + treb) / 3;
+wave_0_per_point4=a = vol;
+wave_0_per_point5=r = 0.62 * bass;
+wave_0_per_point6=g = 0.58 * mid;
+wave_0_per_point7=b = 0.6 * treb;
 
 [warp_shader]
 shader_body { 

@@ -5,38 +5,47 @@ fWaveR=0.000000
 fWaveG=0.000000
 fWaveB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=0.649260
-fTexZoom=0.869960
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.649260
+shapecode_0_tex_zoom=0.869960
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=oldshift = 0;
+per_frame_init_2=shift = 0;
+per_frame_init_3=normalframez = 0;
+per_frame_init_4=crash = 0;
+per_frame_init_5=nex = 0;
+per_frame_init_6=rshift = 0;
+per_frame_init_7=q1 = 0;
+per_frame_init_8=zoom1 = 0;
+per_frame_1=dx = 0;
+per_frame_2=oldshift = shift;
+per_frame_3=normalframez = normalframez + 1;
+per_frame_4=shift = above(bass_att, 1) * above(treb_att, 0.9);
+per_frame_5=crash = abs(oldshift - shift);
+per_frame_6=nex = 1 * equal(rshift, 0) + 2 * equal(rshift, 1);
+per_frame_7=rshift = if(0.00001 < abs(crash), nex, rshift);
+per_frame_8=monitor = rshift;
+per_frame_9=wave_r = randint(200) / 200;
+per_frame_10=wave_g = randint(200) / 200;
+per_frame_11=wave_b = randint(200) / 200;
+per_frame_12=warp = 0;
+per_frame_13=q1 = above(bass_att, 1.3);
+per_frame_14=zoom1 = zoom + 0.15 - 0.3 * mod(normalframez, 2);
+per_frame_15=zoom = if(0.00001 < abs(shift), zoom1, 1);
+per_frame_16=rot = rot - 0.1 + 0.1 * rshift;
+per_pixel_1=dy = 0.007 * -below(y, 0.4) + 0.007 * above(y, 0.6);
 
 [warp_shader]
 shader_body { 

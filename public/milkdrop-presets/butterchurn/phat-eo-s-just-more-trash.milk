@@ -31,30 +31,106 @@ fMotionVectorsR=0.440000
 fMotionVectorsG=0.650000
 fMotionVectorsB=0.810000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_2_enabled=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_usedots=1.000000
+wavecode_3_thick=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=xpos = 0;
+per_frame_init_2=star = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=q5 = 0;
+per_frame_init_5=musictime = 0;
+per_frame_init_6=q4 = 0;
+per_frame_init_7=ypos = 0;
+per_frame_init_8=zm = 0;
+per_frame_init_9=rd = 0;
+per_frame_init_10=ag = 0;
+per_frame_init_11=q2 = 0;
+per_frame_init_12=q3 = 0;
+per_frame_1=wave_a = 0;
+per_frame_2=ib_r = tan(1 * time);
+per_frame_3=ib_r = min(ib_r, 1);
+per_frame_4=ib_r = max(ib_r, 0);
+per_frame_5=ib_g = tan(1 * time + 2.1);
+per_frame_6=ib_g = min(ib_g, 1);
+per_frame_7=ib_g = max(ib_g, 0);
+per_frame_8=ib_b = tan(1 * time + 4.2);
+per_frame_9=ib_b = min(ib_b, 1);
+per_frame_10=ib_b = max(ib_b, 0);
+per_frame_11=ob_r = ib_r - 0.5;
+per_frame_12=ob_g = ib_g - 0.5;
+per_frame_13=ob_b = ib_b - 0.5;
+per_frame_14=q1 = ib_r;
+per_frame_15=q2 = ib_g;
+per_frame_16=q3 = ib_b;
+per_frame_17=decay = 0.999;
+per_frame_18=musictime = musictime + 0.02 * ((mid + bass) / 2);
+per_frame_19=xpos = 0.3 * sin(0.4 * musictime);
+per_frame_20=ypos = 0.3 * sin(0.4 * musictime);
+per_frame_21=q4 = xpos;
+per_frame_22=q5 = ypos;
+per_pixel_1=sx = -0.95 + 0.5 * bass * rd;
+per_pixel_2=sy = -0.95 - 0.5 * treb * ag;
+per_pixel_3=cx = 0.5 + q4;
+per_pixel_4=cy = 0.5 - q5;
+per_pixel_5=rd = sqrt(sqr(2 * (x - 0.5 - q4)) + sqr(1.5 * (y - 0.5 + q5)));
+per_pixel_6=zm = 0.95;
+per_pixel_7=ag = atan((y - 0.5 + q5) / (x - 0.5 - q4));
+per_pixel_8=star = atan(6 * ag) * (4 - rd - ag) / 5;
+per_pixel_9=zm = zm + star * ag / 20 * ag;
+per_pixel_10=sx = zm;
+per_pixel_11=sy = zm;
+per_pixel_12=dx = 0.01 * sin(140 * y) * bass;
+per_pixel_13=dy = 0.01 * cos(140 * x) * bass;
+wave_1_init1=xs = 0;
+wave_1_init2=ys = 0;
+wave_1_per_point1=xs = sin(6.28 * sample);
+wave_1_per_point2=ys = cos(6.28 * sample);
+wave_1_per_point3=xs = 0.7 * xs + 0.5;
+wave_1_per_point4=ys = 0.7 * ys + 0.5;
+wave_1_per_point5=xs = min(xs, 0.962);
+wave_1_per_point6=xs = max(xs, 0.038);
+wave_1_per_point7=ys = min(ys, 0.992);
+wave_1_per_point8=ys = max(ys, 0.008);
+wave_1_per_point9=x = xs;
+wave_1_per_point10=y = ys;
+wave_1_per_point11=r = 0.5 * sin(6.28 * sample + time) + 0.5;
+wave_1_per_point12=g = 0.5 * sin(6.28 * sample + 2.1 + time) + 0.5;
+wave_1_per_point13=b = 0.5 * sin(6.28 * sample + 4.2 + time) + 0.5;
+wave_2_init1=xs = 0;
+wave_2_init2=ys = 0;
+wave_2_per_point1=xs = sin(6.28 * sample);
+wave_2_per_point2=ys = cos(6.28 * sample);
+wave_2_per_point3=xs = 0.7 * xs + 0.5;
+wave_2_per_point4=ys = 0.7 * ys + 0.5;
+wave_2_per_point5=xs = min(xs, 0.958);
+wave_2_per_point6=xs = max(xs, 0.042);
+wave_2_per_point7=ys = min(ys, 0.988);
+wave_2_per_point8=ys = max(ys, 0.012);
+wave_2_per_point9=x = xs;
+wave_2_per_point10=y = ys;
+wave_2_per_point11=r = 0.5 * sin(6.28 * sample + time) + 0.5;
+wave_2_per_point12=g = 0.5 * sin(6.28 * sample + 2.1 + time) + 0.5;
+wave_2_per_point13=b = 0.5 * sin(6.28 * sample + 4.2 + time) + 0.5;
+wave_3_init1=xs = 0;
+wave_3_init2=ys = 0;
+wave_3_per_point1=xs = sin(6.28 * sample);
+wave_3_per_point2=ys = cos(6.28 * sample);
+wave_3_per_point3=xs = 0.7 * xs + 0.5;
+wave_3_per_point4=ys = 0.7 * ys + 0.5;
+wave_3_per_point5=xs = min(xs, 0.96);
+wave_3_per_point6=xs = max(xs, 0.04);
+wave_3_per_point7=ys = min(ys, 0.99);
+wave_3_per_point8=ys = max(ys, 0.01);
+wave_3_per_point9=x = xs;
+wave_3_per_point10=y = ys;
+wave_3_per_point11=r = 0.5 * sin(6.28 * sample + time) + 0.5;
+wave_3_per_point12=g = 0.5 * sin(6.28 * sample + 2.1 + time) + 0.5;
+wave_3_per_point13=b = 0.5 * sin(6.28 * sample + 4.2 + time) + 0.5;

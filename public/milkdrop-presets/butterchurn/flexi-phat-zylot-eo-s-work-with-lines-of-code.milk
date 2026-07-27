@@ -31,40 +31,71 @@ fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=12.000000
-bAdditive=1.000000
-nInstances=2.000000
-fX=0.490000
-fRad=0.099020
-fTexZoom=4.360770
-fR=0.000000
-fB=1.000000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=12.000000
+shapecode_0_additive=1.000000
+shapecode_0_num_inst=2.000000
+shapecode_0_x=0.490000
+shapecode_0_rad=0.099020
+shapecode_0_tex_zoom=4.360770
+shapecode_0_r=0.000000
+shapecode_0_b=1.000000
+shapecode_0_g2=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=xpos = 0;
+per_frame_init_2=star = 0;
+per_frame_init_3=cdelay1 = 0;
+per_frame_init_4=cdelay2 = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=q5 = 0;
+per_frame_init_7=counter2 = 0;
+per_frame_init_8=musictime = 0;
+per_frame_init_9=q4 = 0;
+per_frame_init_10=ypos = 0;
+per_frame_init_11=colorcounter = 0;
+per_frame_init_12=zm = 0;
+per_frame_init_13=rd = 0;
+per_frame_init_14=ag = 0;
+per_frame_init_15=q2 = 0;
+per_frame_init_16=counter1 = 0;
+per_frame_init_17=q3 = 0;
+per_frame_1=wave_a = 0;
+per_frame_2=counter1 = if(0.00001 < abs(equal(counter2, 1)), if(0.00001 < abs(equal(counter1, 1)), 0, counter1 + 0.2), 1);
+per_frame_3=counter2 = if(0.00001 < abs(equal(counter1, 1)), if(0.00001 < abs(equal(counter2, 1)), 0, counter2 + 0.2), 1);
+per_frame_4=cdelay1 = if(0.00001 < abs(equal(cdelay2, 1)), 1, if(0.00001 < abs(equal(mod(colorcounter, 2), 1)), if(0.00001 < abs(equal(counter1, 1)), 2, 0), if(0.00001 < abs(equal(counter2, 1)), 2, 0)));
+per_frame_5=cdelay2 = if(0.00001 < abs(equal(cdelay1, 2)), 1, 0);
+per_frame_6=colorcounter = if(0.00001 < abs(above(colorcounter, 7)), 0, if(0.00001 < abs(equal(cdelay1, 1)), colorcounter + 1, colorcounter));
+per_frame_7=ib_r = 0.5 * if(0.00001 < abs(equal(colorcounter, 1)), 1, if(0.00001 < abs(equal(colorcounter, 2)), 1, if(0.00001 < abs(equal(colorcounter, 3)), 1, if(0.00001 < abs(equal(colorcounter, 4)), sin(counter2 + 2.1), if(0.00001 < abs(equal(colorcounter, 5)), 0, if(0.00001 < abs(equal(colorcounter, 6)), 0, sin(counter1)))))));
+per_frame_8=q1 = ib_r;
+per_frame_9=q2 = ib_g;
+per_frame_10=q3 = ib_b;
+per_frame_11=decay = 1;
+per_frame_12=musictime = musictime + mid * mid * mid * 0.02 * (75 / fps);
+per_frame_13=xpos = 0.6 * cos(0.6 * musictime);
+per_frame_14=ypos = 0.6 * sin(0.4 * musictime);
+per_frame_15=q4 = xpos;
+per_frame_16=q5 = ypos;
+per_pixel_1=sx = -1 + 0.2 * bass;
+per_pixel_2=sy = -1 - 0.2 * treb;
+per_pixel_3=cx = 0.5 + q4;
+per_pixel_4=cy = 0.5 - q5;
+per_pixel_5=rd = sqrt(sqr(2 * (x - 0.5 - q4)) + sqr(1.5 * (y - 0.5 + q5)));
+per_pixel_6=zm = 1;
+per_pixel_7=ag = atan((y - 0.5 + q5) / (x - 0.5 - q4));
+per_pixel_8=star = sin(6 * ag + time) * (2 - rd - ag) / 5;
+per_pixel_9=zm = zm + star / 20;
+per_pixel_10=sx = zm * rd;
+per_pixel_11=sy = zm * rd;
+shape_0_per_frame1=x = randint(1000) / 1000;
+shape_0_per_frame2=y = randint(1000) / 1000;
+shape_0_per_frame3=ang = randint(150) / 100;
 
 [warp_shader]
 shader_body { 

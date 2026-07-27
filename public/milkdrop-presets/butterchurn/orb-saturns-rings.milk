@@ -14,33 +14,146 @@ fOuterBorderR=1.000000
 fOuterBorderG=1.000000
 fOuterBorderB=1.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fA=0.100000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_usedots=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_additive=1.000000
+wavecode_1_a=0.100000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=basstime = 0;
+per_frame_init_2=stickybit = 0;
+per_frame_init_3=volavg2 = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=sample1 = 0;
+per_frame_init_6=difftime = 0;
+per_frame_init_7=diff = 0;
+per_frame_init_8=edge = 0;
+per_frame_init_9=basstime2 = 0;
+per_frame_init_10=volavg = 0;
+per_frame_init_11=bit2 = 0;
+per_frame_init_12=vol = 0;
+per_frame_init_13=q2 = 0;
+per_frame_init_14=rarr = 0;
+per_frame_init_15=q3 = 0;
+per_frame_init_16=basssum = 0;
+per_frame_init_17=sample2 = 0;
+per_frame_init_18=q8 = 0;
+per_frame_1=basstime = basstime + 0.03 * bass;
+per_frame_2=basstime2 = basstime + 0.03 * bass;
+per_frame_3=q1 = basstime2;
+per_frame_4=basstime = if(0.00001 < abs(below(basstime, 1000)), 1000, basstime);
+per_frame_5=basstime = basstime + 0.03 * bass_att;
+per_frame_6=vol = pow(bass + mid + treb, 2);
+per_frame_7=basssum = vol;
+per_frame_8=stickybit = mod(time, 2);
+per_frame_9=volavg = volavg + vol * equal(stickybit, 1);
+per_frame_10=sample1 = sample1 + equal(stickybit, 1);
+per_frame_11=volavg2 = volavg2 + vol * equal(stickybit, 0);
+per_frame_12=sample2 = sample2 + equal(stickybit, 0);
+per_frame_13=edge = bnot(equal(bit2, stickybit));
+per_frame_14=volavg = volavg - volavg * edge * stickybit;
+per_frame_15=volavg2 = volavg2 - volavg2 * edge * equal(stickybit, 0);
+per_frame_16=sample1 = sample1 - sample1 * edge * stickybit;
+per_frame_17=sample2 = sample2 - sample2 * edge * equal(stickybit, 0);
+per_frame_18=diff = if(0.00001 < abs(equal(stickybit, 1)), basssum / (volavg2 / sample2), 0);
+per_frame_19=diff = if(0.00001 < abs(equal(stickybit, 0)), basssum / (volavg / sample1), diff);
+per_frame_20=q3 = diff;
+per_frame_21=bit2 = mod(time, 2);
+per_frame_22=difftime = difftime + 0.03 * diff;
+per_frame_23=q2 = difftime;
+per_frame_24=difftime = if(0.00001 < abs(above(difftime, 2000)), 0, difftime);
+per_frame_25=monitor = q1;
+per_frame_26=rarr = 0.01 * randint(100);
+per_frame_27=decay = 0.7 + 0.2 * abs(cos(1.56 * difftime + rarr));
+per_frame_28=q8 = 0.0001 * (diff + 1);
+per_pixel_1=zoom = 1;
+wave_0_init1=ring1y = 0;
+wave_0_init2=ring4y = 0;
+wave_0_init3=q1 = 0;
+wave_0_init4=zs = 0;
+wave_0_init5=ring3y = 0;
+wave_0_init6=ring5x = 0;
+wave_0_init7=ring5y = 0;
+wave_0_init8=ring3x = 0;
+wave_0_init9=ring2x = 0;
+wave_0_init10=ring1x = 0;
+wave_0_init11=ring2y = 0;
+wave_0_init12=ring4x = 0;
+wave_0_per_point1=zs = if(0.00001 < abs(below(zs, 100)), 100, zs);
+wave_0_per_point2=zs = if(0.00001 < abs(above(zs, 10100)), 100, zs);
+wave_0_per_point3=zs = if(0.00001 < abs(above(zs, 1100)), 1, zs);
+wave_0_per_point4=zs = 0.1 * sample;
+wave_0_per_point5=ring1x = 0.1 * cos(q1 * zs);
+wave_0_per_point6=ring1y = 0.1 * sin(q1 * zs);
+wave_0_per_point7=ring2x = 0.1 * cos(q1 * zs * 1.1);
+wave_0_per_point8=ring2y = 0.1 * sin(q1 * zs * 1.1);
+wave_0_per_point9=ring3x = 0.1 * cos(q1 * zs * 1.2);
+wave_0_per_point10=ring3y = 0.1 * sin(q1 * zs * 1.2);
+wave_0_per_point11=ring4x = 0.1 * cos(q1 * zs * 1.3);
+wave_0_per_point12=ring4y = 0.1 * sin(q1 * zs * 1.3);
+wave_0_per_point13=ring5x = 0.1 * cos(q1 * zs * 1.4);
+wave_0_per_point14=ring5y = 0.1 * sin(q1 * zs * 1.4);
+wave_0_per_point15=ring1x = ring1x * cos(0.1 * q1) - ring1y * sin(0.1 * q1);
+wave_0_per_point16=ring1y = ring1x * sin(0.1 * q1) + ring1y * cos(0.1 * q1);
+wave_0_per_point17=ring2x = ring2x * cos(0.2 * q1) - ring2y * sin(0.2 * q1);
+wave_0_per_point18=ring2y = ring2x * sin(0.2 * q1) + ring2y * cos(0.2 * q1);
+wave_0_per_point19=ring3x = ring3x * cos(0.3 * q1) - ring3y * sin(0.3 * q1);
+wave_0_per_point20=ring3y = ring3x * sin(0.3 * q1) + ring3y * cos(0.3 * q1);
+wave_0_per_point21=ring4x = ring4x * cos(0.4 * q1) - ring4y * sin(0.4 * q1);
+wave_0_per_point22=ring4y = ring4x * sin(0.4 * q1) + ring4y * cos(0.4 * q1);
+wave_0_per_point23=ring5x = ring5x * cos(0.5 * q1) - ring5y * sin(0.5 * q1);
+wave_0_per_point24=ring5y = ring5x * sin(0.5 * q1) + ring5y * cos(0.5 * q1);
+wave_0_per_point25=x = ring1x + ring2x + ring3x + ring4x + ring5x + 0.5;
+wave_0_per_point26=y = ring1y + ring2y + ring3y + ring4y + ring5y + 0.5;
+wave_0_per_point27=r = 1;
+wave_0_per_point28=g = 1;
+wave_0_per_point29=b = 1;
+wave_1_init1=ring1y = 0;
+wave_1_init2=ring4y = 0;
+wave_1_init3=q1 = 0;
+wave_1_init4=zs = 0;
+wave_1_init5=ring3y = 0;
+wave_1_init6=ring5x = 0;
+wave_1_init7=ring5y = 0;
+wave_1_init8=ring3x = 0;
+wave_1_init9=ring2x = 0;
+wave_1_init10=ring1x = 0;
+wave_1_init11=ring2y = 0;
+wave_1_init12=ring4x = 0;
+wave_1_per_point1=zs = if(0.00001 < abs(below(zs, 100)), 100, zs);
+wave_1_per_point2=zs = if(0.00001 < abs(above(zs, 10100)), 100, zs);
+wave_1_per_point3=zs = if(0.00001 < abs(above(zs, 1100)), 1, zs);
+wave_1_per_point4=zs = 0.1 * sample;
+wave_1_per_point5=ring1x = 0.1 * cos(q1 * zs);
+wave_1_per_point6=ring1y = 0.1 * sin(q1 * zs);
+wave_1_per_point7=ring2x = 0.1 * cos(q1 * zs * 1.1);
+wave_1_per_point8=ring2y = 0.1 * sin(q1 * zs * 1.1);
+wave_1_per_point9=ring3x = 0.1 * cos(q1 * zs * 1.2);
+wave_1_per_point10=ring3y = 0.1 * sin(q1 * zs * 1.2);
+wave_1_per_point11=ring4x = 0.1 * cos(q1 * zs * 1.3);
+wave_1_per_point12=ring4y = 0.1 * sin(q1 * zs * 1.3);
+wave_1_per_point13=ring5x = 0.1 * cos(q1 * zs * 1.4);
+wave_1_per_point14=ring5y = 0.1 * sin(q1 * zs * 1.4);
+wave_1_per_point15=ring1x = ring1x * cos(0.1 * q1) - ring1y * sin(0.1 * q1);
+wave_1_per_point16=ring1y = ring1x * sin(0.1 * q1) + ring1y * cos(0.1 * q1);
+wave_1_per_point17=ring2x = ring2x * cos(0.2 * q1) - ring2y * sin(0.2 * q1);
+wave_1_per_point18=ring2y = ring2x * sin(0.2 * q1) + ring2y * cos(0.2 * q1);
+wave_1_per_point19=ring3x = ring3x * cos(0.3 * q1) - ring3y * sin(0.3 * q1);
+wave_1_per_point20=ring3y = ring3x * sin(0.3 * q1) + ring3y * cos(0.3 * q1);
+wave_1_per_point21=ring4x = ring4x * cos(0.4 * q1) - ring4y * sin(0.4 * q1);
+wave_1_per_point22=ring4y = ring4x * sin(0.4 * q1) + ring4y * cos(0.4 * q1);
+wave_1_per_point23=ring5x = ring5x * cos(0.5 * q1) - ring5y * sin(0.5 * q1);
+wave_1_per_point24=ring5y = ring5x * sin(0.5 * q1) + ring5y * cos(0.5 * q1);
+wave_1_per_point25=x = ring1x + ring2x + ring3x + ring4x + ring5x + 0.5;
+wave_1_per_point26=y = ring1y + ring2y + ring3y + ring4y + ring5y + 0.5;
+wave_1_per_point27=r = 0.5 + 0.5 * sin(1.2 * q1 + x + x);
+wave_1_per_point28=g = 0.5 + 0.5 * sin(1.5 * q1 + x + y);
+wave_1_per_point29=b = 0.5 + 0.5 * sin(1.36 * q1 + y + y);

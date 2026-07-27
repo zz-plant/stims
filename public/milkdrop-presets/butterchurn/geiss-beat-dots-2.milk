@@ -17,38 +17,95 @@ fWaveB=0.290000
 fWaveY=0.450000
 fMotionVectorsA=0.000000
 b1n=0.400000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=16.000000
-nInstances=5.000000
-fG=1.000000
-fB=1.000000
-fR2=0.500000
-fG2=0.700000
-fB2=0.900000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=16.000000
+shapecode_0_num_inst=5.000000
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=0.500000
+shapecode_0_g2=0.700000
+shapecode_0_b2=0.900000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=rg2 = 0;
+per_frame_init_2=decay_rate = 0;
+per_frame_init_3=q12 = 0;
+per_frame_init_4=q13 = 0;
+per_frame_init_5=q15 = 0;
+per_frame_init_6=q1 = 0;
+per_frame_init_7=rg = 0;
+per_frame_init_8=q9 = 0;
+per_frame_init_9=prev_beat = 0;
+per_frame_init_10=is_beat = 0;
+per_frame_init_11=q11 = 0;
+per_frame_init_12=q16 = 0;
+per_frame_init_13=min_att = 0;
+per_frame_init_14=beat = 0;
+per_frame_init_15=decay_to = 0;
+per_frame_init_16=q2 = 0;
+per_frame_init_17=q14 = 0;
+per_frame_init_18=beat_level = 0;
+per_frame_1=wave_r = wave_r + 0.2 * (0.6 * sin(1.517 * time) + 0.4 * sin(1.58 * time));
+per_frame_2=wave_g = wave_g + 0.2 * (0.6 * sin(1.088 * time) + 0.4 * sin(1.076 * time));
+per_frame_3=wave_b = wave_b + 0.2 * (0.6 * sin(1.037 * time) + 0.4 * sin(0.922 * time));
+per_frame_4=rot = rot + 0.01 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_5=cx = cx + 0.11 * (0.6 * sin(0.374 * time) + 0.4 * sin(0.294 * time));
+per_frame_6=cy = cy + 0.11 * (0.6 * sin(0.393 * time) + 0.4 * sin(0.223 * time));
+per_frame_7=q1 = cos(1.41 * time);
+per_frame_8=q2 = time + 0.3 * sin(1.47 * time);
+per_frame_9=rg = max(0.77 * rg, 0.02 + 0.5 * min(2, 1.3 * max(0, mid_att - 1)));
+per_frame_10=q9 = rg * above(rg, 2 * rg2);
+per_frame_11=rg2 = max(rg, 0.8 * rg2);
+per_frame_12=monitor = q9;
+per_frame_13=q11 = aspectx;
+per_frame_14=q12 = aspecty;
+per_frame_15=q13 = wave_r;
+per_frame_16=q14 = wave_g;
+per_frame_17=q15 = wave_b;
+per_frame_18=q16 = 0.01 * randint(100);
+per_frame_19=decay_rate = pow(0.993, fps);
+per_frame_20=min_att = 2.5;
+per_frame_21=decay_to = 1;
+per_frame_22=beat = bass / max(min_att, bass_att);
+per_frame_23=beat = max(beat, mid / max(min_att, mid_att));
+per_frame_24=beat = max(beat, treb / max(min_att, treb_att));
+per_frame_25=beat = max(beat, (prev_beat - decay_to) * decay_rate + decay_to);
+per_frame_26=beat_level = 24 * (beat - prev_beat);
+per_frame_27=is_beat = above(beat_level, 0.5);
+per_frame_28=prev_beat = beat;
+per_frame_29=q1 = is_beat;
+shape_0_init1=ang2 = 0;
+shape_0_init2=q16 = 0;
+shape_0_init3=rad2 = 0;
+shape_0_init4=rad2 = 0;
+shape_0_init5=ang2 = 0;
+shape_0_init6=q11 = 0;
+shape_0_init7=rad2 = 0;
+shape_0_init8=ang2 = 0;
+shape_0_init9=q12 = 0;
+shape_0_init10=q1 = 0;
+shape_0_init11=q1 = 0;
+shape_0_init12=q9 = 0;
+shape_0_init13=q1 = 0;
+shape_0_init14=q15 = 0;
+shape_0_init15=q14 = 0;
+shape_0_init16=q13 = 0;
+shape_0_per_frame1=ang2 = 6.28 * (instance / num_inst) + time + 6.28 * q16;
+shape_0_per_frame2=rad2 = 0.1;
+shape_0_per_frame3=x = 0.5 + rad2 * cos(ang2) * q11;
+shape_0_per_frame4=y = 0.5 + rad2 * sin(ang2) * q12;
+shape_0_per_frame5=a = a * q1;
+shape_0_per_frame6=a2 = a2 * q1;
+shape_0_per_frame7=rad = min(0.8, 0.04 + 0.04 * q9) * q1;
+shape_0_per_frame8=r = q15;
+shape_0_per_frame9=g = q14;
+shape_0_per_frame10=b = q13;
 
 [warp_shader]
 shader_body { 

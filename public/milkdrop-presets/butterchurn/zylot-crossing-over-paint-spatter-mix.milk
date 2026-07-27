@@ -7,38 +7,33 @@ fWaveR=0.500000
 fWaveG=0.500000
 fWaveB=0.500000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.164400
-fG=1.000000
-fB=1.000000
-fA=0.000000
-fR2=1.000000
-fB2=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_rad=0.164400
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=warp = 0;
+per_frame_2=wave_r = wave_r + 0.4 * sin(0.333 * time) + 0.2 * bass_att;
+per_frame_3=wave_g = wave_g + 0.4 * sin(0.555 * time) + 0.2 * treb_att;
+per_frame_4=wave_b = wave_b + 0.4 * sin(0.444 * time) + 0.2 * mid_att;
+per_frame_5=dx = 0.0002 * sin(time);
+per_frame_6=dy = 0.0002 * sin(0.999 * time);
+per_pixel_1=zoom = 1 + rad * (0.15 + 0.05 * bass);
+shape_0_per_frame1=a = if(0.00001 < abs(above(bass, 1.2)), 1, 0);
+shape_0_per_frame2=x = 0.01 * randint(100);
+shape_0_per_frame3=y = 0.01 * randint(100);
+shape_0_per_frame4=rad = 0.1 + 0.01 * randint(50);
 
 [warp_shader]
 shader_body { 

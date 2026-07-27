@@ -9,34 +9,67 @@ fWaveR=0.500000
 fWaveG=0.500000
 fWaveB=0.500000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bThick=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_thick=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_thick=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=frbassc = 0;
+per_frame_init_2=frtrebc = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=q2 = 0;
+per_frame_init_5=frbassc = 0;
+per_frame_init_6=frtrebc = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = wave_r + 0.4 * sin(0.333 * time) + 0.2 * bass_att;
+per_frame_3=wave_g = wave_g + 0.4 * sin(0.555 * time) + 0.2 * treb_att;
+per_frame_4=wave_b = wave_b + 0.4 * sin(0.444 * time) + 0.2 * mid_att;
+per_frame_5=frbassc = frbassc + 0.5 * bass;
+per_frame_6=frtrebc = frtrebc + 0.5 * treb;
+per_frame_7=q1 = sin(0.01 * frbassc);
+per_frame_8=q2 = sin(0.01 * frtrebc);
+per_pixel_1=zoom = 1 + 0.1 * abs(rad - (0.8 - 0.2 * bass));
+wave_0_per_frame1=r = 0.8 + 0.2 * sin(1.444 * time);
+wave_0_per_frame2=g = 0.8 + 0.2 * sin(1.2233 * time);
+wave_0_per_frame3=b = 0.8 + 0.2 * sin(1.332211 * time);
+wave_0_per_point1=x = 0.5 + 3 * sin(20 * sample) * value1;
+wave_0_per_point2=y = 0.5 + 3 * cos(20 * sample) * value2;
+wave_1_init1=tme = 0;
+wave_1_init2=tme = 0;
+wave_1_per_point1=tme = tme + 0.5 * bass;
+wave_1_per_point2=x = 0.5 + 0.24 * sin(6.2831852 * sample);
+wave_1_per_point3=y = 0.5 + 0.24 * cos(6.2831852 * sample);
+wave_1_per_point4=r = sin(20 * sample + 0.0002 * tme);
+wave_1_per_point5=g = 0;
+wave_1_per_point6=b = 0;
+wave_1_per_point7=a = 0.5 + sin(20 * sample + 0.0002 * tme);
+wave_1_per_point8=a = if(0.00001 < abs(below(a, 0)), 0, a);
+wave_2_init1=tme = 0;
+wave_2_init2=tme = 0;
+wave_2_per_point1=tme = tme + 0.5 * treb;
+wave_2_per_point2=x = 0.5 + 0.241 * sin(6.2831852 * sample);
+wave_2_per_point3=y = 0.5 + 0.241 * cos(6.2831852 * sample);
+wave_2_per_point4=r = 0;
+wave_2_per_point5=g = sin(20 * sample + 0.0002 * tme);
+wave_2_per_point6=b = 0;
+wave_2_per_point7=a = 0.5 + sin(20 * sample + 0.0002 * tme);
+wave_2_per_point8=a = if(0.00001 < abs(below(a, 0)), 0, a);
+wave_3_init1=tme = 0;
+wave_3_per_point1=tme = tme + 0.5 * mid;
+wave_3_per_point2=x = 0.5 + 0.242 * sin(6.2831852 * sample);
+wave_3_per_point3=y = 0.5 + 0.242 * cos(6.2831852 * sample);
+wave_3_per_point4=r = 0;
+wave_3_per_point5=g = 0;
+wave_3_per_point6=b = sin(20 * sample + 0.0002 * tme);
+wave_3_per_point7=a = 0.5 + sin(20 * sample + 0.0002 * tme);
+wave_3_per_point8=a = if(0.00001 < abs(below(a, 0)), 0, a);
 
 [warp_shader]
 shader_body { 

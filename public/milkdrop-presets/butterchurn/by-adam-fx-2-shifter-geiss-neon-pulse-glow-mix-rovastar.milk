@@ -23,43 +23,152 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=32.000000
-fRad=0.200000
-fB=0.400000
-fA=0.500000
-fA2=0.200000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=32.000000
-fRad=0.200000
-fA=0.500000
-fA2=0.200000
-
-[shape00_2]
-bEnabled=1.000000
-fRad=0.200000
-fA=0.500000
-fA2=0.200000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=32.000000
+shapecode_0_rad=0.200000
+shapecode_0_b=0.400000
+shapecode_0_a=0.500000
+shapecode_0_a2=0.200000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=32.000000
+shapecode_1_rad=0.200000
+shapecode_1_a=0.500000
+shapecode_1_a2=0.200000
+shapecode_2_enabled=1.000000
+shapecode_2_rad=0.200000
+shapecode_2_a=0.500000
+shapecode_2_a2=0.200000
+shapecode_3_enabled=0.000000
+per_frame_init_1=tic = 0;
+per_frame_init_2=slide = 0;
+per_frame_init_3=toc = 0;
+per_frame_init_4=vt = 0;
+per_frame_init_5=nu = 0;
+per_frame_init_6=bt = 0;
+per_frame_init_7=q1 = 0;
+per_frame_init_8=q5 = 0;
+per_frame_init_9=ocoy = 0;
+per_frame_init_10=mid_avg = 0;
+per_frame_init_11=pox = 0;
+per_frame_init_12=dis = 0;
+per_frame_init_13=tt = 0;
+per_frame_init_14=tin = 0;
+per_frame_init_15=modx = 0;
+per_frame_init_16=bass_avg = 0;
+per_frame_init_17=vav = 0;
+per_frame_init_18=cox = 0;
+per_frame_init_19=q4 = 0;
+per_frame_init_20=mox = 0;
+per_frame_init_21=zm = 0;
+per_frame_init_22=oy = 0;
+per_frame_init_23=mt = 0;
+per_frame_init_24=mod = 0;
+per_frame_init_25=ra = 0;
+per_frame_init_26=treb_avg = 0;
+per_frame_init_27=vol = 0;
+per_frame_init_28=sp = 0;
+per_frame_init_29=q2 = 0;
+per_frame_init_30=moy = 0;
+per_frame_init_31=q3 = 0;
+per_frame_init_32=mody = 0;
+per_frame_init_33=poy = 0;
+per_frame_init_34=coy = 0;
+per_frame_1=warp = 0;
+per_frame_2=tic = min(time - tin, 0.1);
+per_frame_3=tin = time;
+per_frame_4=vol = 0.333333 * (bass_att + treb_att + mid_att);
+per_frame_5=ra = 0.1 * (1 / tic);
+per_frame_6=treb_avg = tic * (treb_avg * (1 / tic - ra) + ra * treb);
+per_frame_7=mid_avg = tic * (mid_avg * (1 / tic - ra) + ra * mid);
+per_frame_8=bass_avg = tic * (bass_avg * (1 / tic - ra) + ra * bass);
+per_frame_9=vav = tic * (vav * (1 / tic - ra) + ra * (bass + treb + mid) * 0.33333);
+per_frame_10=tt = tt + tic * treb;
+per_frame_11=mt = mt + tic * mid;
+per_frame_12=bt = bt + tic * bass;
+per_frame_13=vt = vt + tic * vav;
+per_frame_14=sp = 0.1 * abs(vav - slide);
+per_frame_15=slide = if(0.00001 < abs(above(slide, vav)), slide - tic * sp, slide + tic * sp) + (1 - toc) * vav * 0.2;
+per_frame_16=toc = 1;
+per_frame_17=q1 = 0;
+per_frame_18=q2 = 0.5 * bt + 5;
+per_frame_19=q3 = 0.5 * mt + 3;
+per_frame_20=q4 = 0.5 * tt;
+per_frame_21=q5 = 0.1 + 0.2 * (treb_avg + mid_avg);
+per_frame_22=zoom = 1 - 0.2 * bass_avg;
+per_frame_23=monitor = q5;
+per_pixel_1=coy = (coy + below(y, oy)) * above(q1, 0);
+per_pixel_2=cox = (cox + 1) * above(q1, 0) * equal(coy, ocoy);
+per_pixel_3=moy = max(coy, moy);
+per_pixel_4=mox = max(cox, mox);
+per_pixel_5=nu = 4;
+per_pixel_6=pox = (cox / nu - floor(cox / nu)) * nu;
+per_pixel_7=poy = (coy / nu - floor(coy / nu)) * nu;
+per_pixel_8=mod = (1 - 2 * above(x, 0.5)) * (1 - 2 * above(y, 0.5));
+per_pixel_9=dx = 0.001 * if(0.00001 < abs(equal(mod(coy, 2), 0)), -equal(pox, 1) + equal(pox, 2), equal(pox, 0) - equal(pox, 3));
+per_pixel_10=dy = 0.001 * if(0.00001 < abs(equal(mod(coy, 2), 0)), -equal(pox, 1) + equal(pox, 2), equal(pox, 0) - equal(pox, 3)) * mod;
+per_pixel_11=dis = x + (1 - y);
+per_pixel_12=mod = if(0.00001 < abs(above(dis, 1)), dis - 1, 1 - dis);
+per_pixel_13=mod = below(mod, 0.2) + (1 - min(1, 4 * (mod - 0.2))) * above(mod, 0.2);
+per_pixel_14=zm = q5;
+per_pixel_15=modx = if(0.00001 < abs(above(dis, 1)), zm, -zm);
+per_pixel_16=mody = if(0.00001 < abs(above(dis, 1)), -zm, zm);
+per_pixel_17=dx = dx * mod + (1 - mod) * modx;
+per_pixel_18=dy = dy * mod + (1 - mod) * mody;
+per_pixel_19=rot = 0.3 * mod;
+per_pixel_20=oy = y;
+per_pixel_21=ocoy = coy;
+per_pixel_22=q1 = q1 + 1;
+shape_0_init1=q8 = 0;
+shape_0_init2=q8 = 0;
+shape_0_init3=q8 = 0;
+shape_0_init4=q8 = 0;
+shape_0_init5=q8 = 0;
+shape_0_init6=q8 = 0;
+shape_0_per_frame1=ang = 0.4 * time;
+shape_0_per_frame2=x = 0.5 + 0.3 * cos(1.23 * time) + 0.03 * cos(0.7 * time);
+shape_0_per_frame3=y = 0.5 + 0.3 * sin(1.43 * time) + 0.03 * sin(0.7 * time);
+shape_0_per_frame4=r = 0.5 + 0.5 * sin(0.613 * q8 + 1);
+shape_0_per_frame5=g = 0.5 + 0.5 * sin(0.763 * q8 + 2);
+shape_0_per_frame6=b = 0.5 + 0.5 * sin(0.771 * q8 + 5);
+shape_0_per_frame7=r2 = 0.5 + 0.5 * sin(0.635 * q8 + 4);
+shape_0_per_frame8=g2 = 0.5 + 0.5 * sin(0.616 * q8 + 1);
+shape_0_per_frame9=b2 = 0.5 + 0.5 * sin(0.538 * q8 + 3);
+shape_1_init1=q8 = 0;
+shape_1_init2=q8 = 0;
+shape_1_init3=q8 = 0;
+shape_1_init4=q8 = 0;
+shape_1_init5=q8 = 0;
+shape_1_init6=q8 = 0;
+shape_1_per_frame1=ang = 0.4 * time;
+shape_1_per_frame2=x = 0.5 + 0.3 * cos(1.104 * time) + 0.03 * cos(0.7 * time);
+shape_1_per_frame3=y = 0.5 + 0.3 * sin(1.27 * time) + 0.03 * sin(0.7 * time);
+shape_1_per_frame4=r = 0.5 + 0.5 * sin(0.613 * q8 + 1);
+shape_1_per_frame5=g = 0.5 + 0.5 * sin(0.763 * q8 + 2);
+shape_1_per_frame6=b = 0.5 + 0.5 * sin(0.771 * q8 + 5);
+shape_1_per_frame7=r2 = 0.5 + 0.5 * sin(0.635 * q8 + 4);
+shape_1_per_frame8=g2 = 0.5 + 0.5 * sin(0.616 * q8 + 1);
+shape_1_per_frame9=b2 = 0.5 + 0.5 * sin(0.538 * q8 + 3);
+shape_2_init1=q8 = 0;
+shape_2_init2=q8 = 0;
+shape_2_init3=q8 = 0;
+shape_2_init4=q8 = 0;
+shape_2_init5=q8 = 0;
+shape_2_init6=q8 = 0;
+shape_2_per_frame1=ang = 0.4 * time;
+shape_2_per_frame2=x = 0.5 + 0.3 * cos(1.23 * time) + 0.03 * cos(0.9 * time);
+shape_2_per_frame3=y = 0.5 + 0.3 * sin(1.18 * time) + 0.03 * sin(0.9 * time);
+shape_2_per_frame4=r = 0.5 + 0.5 * sin(0.413 * q8 + 1);
+shape_2_per_frame5=g = 0.5 + 0.5 * sin(0.363 * q8 + 2);
+shape_2_per_frame6=b = 0.5 + 0.5 * sin(0.871 * q8 + 5);
+shape_2_per_frame7=r2 = 0.5 + 0.5 * sin(0.835 * q8 + 4);
+shape_2_per_frame8=g2 = 0.5 + 0.5 * sin(0.686 * q8 + 1);
+shape_2_per_frame9=b2 = 0.5 + 0.5 * sin(0.938 * q8 + 3);
+shape_2_per_frame10=sides = 360;
 
 [comp_shader]
 shader_body { 

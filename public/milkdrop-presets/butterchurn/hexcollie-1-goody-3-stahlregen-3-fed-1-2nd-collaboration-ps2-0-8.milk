@@ -29,35 +29,74 @@ fMotionVectorsR=0.700000
 fMotionVectorsG=0.700000
 fMotionVectorsB=0.700000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-bAdditive=1.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=0.364570
-fBorderA=1.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_additive=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.364570
+shapecode_0_border_a=1.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=dvy = 0;
+per_frame_init_3=vx = 0;
+per_frame_init_4=vy = 0;
+per_frame_init_5=vang = 0;
+per_frame_init_6=xv = 0;
+per_frame_init_7=dvx = 0;
+per_frame_init_8=bb = 0;
+per_frame_init_9=q2 = 0;
+per_frame_init_10=q3 = 0;
+per_frame_init_11=yv = 0;
+per_frame_1=q1 = 0.5 + 0.4 * sin(0.43 * time + 0.12 * bass_att);
+per_frame_2=q2 = 0.5 + 0.4 * sin(0.63 * time + 0.14 * bass_att);
+per_frame_3=q3 = 0.5 + 0.4 * sin(0.83 * time + 0.16 * bass_att);
+per_frame_4=ob_b = 0.01 * mod(frame, 40);
+per_frame_5=bb = 0.016 * bass_att + 0.98 * bb;
+per_frame_6=mv_x = 30 * bb;
+per_frame_7=mv_dx = mv_dx + 0.1 * sin(time) + 0.01 * mv_x - 0.3;
+per_frame_8=monitor = mv_x;
+per_frame_9=wave_mystery = 0.01 * floor(randint(150)) - 0.01 * floor(randint(150));
+per_pixel_1=xv = sin(0.333 * time) * x * cos(0.667 * time) * x;
+per_pixel_2=yv = cos(0.333 * time) * y * sin(0.667 * time) * y;
+per_pixel_3=x = xv;
+per_pixel_4=y = yv;
+per_pixel_5=vang = 0.0628318 * sin(0.2 * time) - 1.68;
+per_pixel_6=vx = (x - 0.5) * cos(vang) - (y - 0.5) * sin(vang) + 0.5;
+per_pixel_7=vy = (x - 0.5) * sin(vang) + (y - 0.5) * cos(vang) + 0.5;
+per_pixel_8=dvx = 0.01 + 0.01 * floor(randint(2));
+per_pixel_9=dvy = -0.01;
+per_pixel_10=dx = dvx * cos(vang) - dvy * sin(vang);
+per_pixel_11=dy = -dvx * sin(vang) - dvy * cos(vang);
+per_pixel_12=dy = below(y, 0.2) * dy + 0.01 * above(y, 0.1);
+per_pixel_13=dx = below(x, 0.2) * dx + 0.01 * above(x, 0.1);
+per_pixel_14=sx = sx + 0.075 * sin(3 * x);
+per_pixel_15=sy = sy + 0.075 * sin(3.1 * y);
+per_pixel_16=cx = 0.5 + 0.15 * sin(time);
+per_pixel_17=cy = 0.5 + 0.15 * cos(time);
+per_pixel_18=rot = rot + 0.05 * sin(10 * rad - 5 * time) * treb_att - 0.005 * cos(time * rad);
+shape_0_init1=q1 = 0;
+shape_0_init2=q2 = 0;
+shape_0_init3=q3 = 0;
+shape_0_init4=q1 = 0;
+shape_0_init5=q2 = 0;
+shape_0_init6=q3 = 0;
+shape_0_per_frame1=r = q1;
+shape_0_per_frame2=b = q2;
+shape_0_per_frame3=g = q3;
+shape_0_per_frame4=r2 = 1 - abs(q1);
+shape_0_per_frame5=b2 = q2;
+shape_0_per_frame6=g2 = q3;
+shape_0_per_frame7=ang = ang + 12 * tan(time);
+shape_0_per_frame8=x = x + 0.15 * sin(time);
+shape_0_per_frame9=y = y + 0.15 * cos(time);
+shape_0_per_frame10=a = 0.5 + 0.5 * sin(bass_att);
+shape_0_per_frame11=a2 = 0.5 + 0.5 * cos(bass_att);
 
 [warp_shader]
 uniform sampler2D sampler_fw_clouds;

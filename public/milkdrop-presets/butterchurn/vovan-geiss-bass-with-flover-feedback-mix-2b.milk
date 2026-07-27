@@ -26,42 +26,41 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=44.000000
-bTextured=1.000000
-fRad=0.808140
-fAng=0.753980
-fTexAng=1.382300
-fTexZoom=1.104620
-fG=0.900000
-fB=0.700000
-fR2=1.000000
-fB2=0.800000
-fA2=1.000000
-fBorderA=0.400000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=44.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.808140
+shapecode_0_ang=0.753980
+shapecode_0_tex_ang=1.382300
+shapecode_0_tex_zoom=1.104620
+shapecode_0_g=0.900000
+shapecode_0_b=0.700000
+shapecode_0_r2=1.000000
+shapecode_0_b2=0.800000
+shapecode_0_a2=1.000000
+shapecode_0_border_a=0.400000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=x = 0;
+per_frame_init_2=q = 0;
+per_frame_1=wave_r = wave_r * x * bass * 1000000 + 0.4 * (0.6 * sin(0.933 * time) + 0.4 * sin(1.045 * time));
+per_frame_2=wave_g = 200000 * wave_g * treb / x + 0.4 * (0.6 * sin(0.9 * time) + 0.4 * sin(0.956 * time));
+per_frame_3=wave_b = wave_b + 0.4 * (0.6 * sin(0.91 * time) + 0.4 * sin(0.92 * time));
+per_frame_4=zoom = zoom + 0.023 * (0.6 * sin(0.339 * time) + 0.4 * sin(0.276 * time));
+per_frame_5=q = rot / 5 + 0.03 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_6=cx = cx + 0.07 * (0.6 * sin(0.374 * time) + 0.4 * sin(0.294 * time));
+per_frame_7=cy = cy + 0.07 * (0.6 * sin(0.393 * time) + 0.4 * sin(0.223 * time));
+per_frame_8=zoom = zoom + 0.013 * (0.6 * sin(0.33 * time) + 0.4 * sin(276 * time));
+per_frame_9=x = x + 100;
+per_pixel_1=zoom = zoom - max(0.001, bass - 1.2) * sin(1.4 * time + 6 * rad);
+per_pixel_2=zoom = zoom + 0.07 * sin(25 * rad + 2.5 * time);
+shape_0_per_frame1=x = 0.5 + 0.03 * cos(0.69 * time + 2);
+shape_0_per_frame2=y = 0.5 + 0.02 * cos(0.73 * time + 1);
 
 [warp_shader]
 shader_body { 

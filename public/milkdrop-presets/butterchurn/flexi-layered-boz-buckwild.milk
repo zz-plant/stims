@@ -35,37 +35,29 @@ fMotionVectorsR=0.500000
 fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bThickOutline=1.000000
-fRad=0.866440
-fR=0.500000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_additive=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_rad=0.866440
+shapecode_0_r=0.500000
+shapecode_0_g2=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=rot = rot + 0.1 * sin(time / 20);
+per_frame_2=ob_r = ob_r + time * sin(2 * bass);
+per_frame_3=ob_b = ob_b + time * sin(treb + 1);
+per_frame_4=ob_g = ob_g + time * sin(mid / 1.5);
+per_frame_5=cx = 2 * sin(0.25 * time);
+per_frame_6=ib_r = sin(time + ib_r * bass);
+per_frame_7=ib_b = sin(time + ib_r * treb);
+per_frame_8=ib_g = sin(time + ib_g * mid_att);
 
 [warp_shader]
 shader_body { 

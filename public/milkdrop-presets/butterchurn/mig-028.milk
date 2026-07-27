@@ -21,35 +21,43 @@ fInnerBorderG=0.000000
 fInnerBorderB=0.000000
 fInnerBorderA=1.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fSmoothing=0.800000
-fR=0.500000
-fG=0.000000
-fB=0.000000
-fA=0.500000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_smoothing=0.800000
+wavecode_0_r=0.500000
+wavecode_0_g=0.000000
+wavecode_0_b=0.000000
+wavecode_0_a=0.500000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=near = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=q2 = 0;
+per_frame_init_4=notnear = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_b = if(0.00001 < abs(below(treb, 1.8)), 1 - 0.025 * randint(10), 0);
+per_frame_3=wave_g = wave_g * sqr(0.01 * randint(100));
+per_frame_4=decay = 1 + 0 * if(0.00001 < abs(equal(mod(frame, 10), 0)), 0.95, 1);
+per_frame_5=monitor = wave_g;
+per_frame_6=cx = 0.5 + 0.3 * cos(0.21 * time);
+per_frame_7=cy = 0.5 + 0.3 * sin(0.1 * time);
+per_frame_8=cx = cx + 0.1 * (bass - 1.2);
+per_frame_9=cy = cy + 0.1 * (treb_att - 1);
+per_frame_10=mv_r = 0.4 * bass_att;
+per_frame_11=wave_x = cx;
+per_frame_12=wave_y = 1 - cy;
+per_frame_13=q1 = cx;
+per_frame_14=q2 = cy;
+per_pixel_1=near = below(sqr(q1 - x) + sqr(q2 - y), 0.04);
+per_pixel_2=notnear = 1 - near;
+per_pixel_3=sy = max(0.3, pow(bass_att, 0.2)) * near + notnear;
+per_pixel_4=sx = 1 / sy * near + notnear;
+per_pixel_5=rot = 0.02 * sin(5 * x + time) * notnear - 0.03;
+per_pixel_6=zoom = 1 + 0.001 * notnear * (0.5 + sin(5 * ang + time));
 
 [warp_shader]
 shader_body { 

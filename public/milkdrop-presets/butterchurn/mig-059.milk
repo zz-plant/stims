@@ -29,30 +29,38 @@ nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=zm = 0;
+per_frame_init_2=vol = 0;
+per_frame_init_3=mtime = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=gamma = 0;
+per_frame_init_6=mv_x = 64;
+per_frame_init_7=mv_y = 48;
+per_frame_init_8=nut = 0;
+per_frame_init_9=stp = 0;
+per_frame_init_10=stq = 0;
+per_frame_init_11=rtp = 0;
+per_frame_init_12=rtq = 0;
+per_frame_init_13=wvr = 0;
+per_frame_init_14=decay = 0;
+per_frame_init_15=dcsp = 0;
+per_frame_1=decay = 0.975;
+per_frame_2=vol = 0.25 * (bass + mid + treb);
+per_frame_3=vol = vol * vol;
+per_frame_4=mtime = mtime + 0.01 * vol;
+per_frame_5=q1 = 0.5 * time;
+per_frame_6=gamma = 1 + 0.7 * min(0.8 * vol, 1);
+per_pixel_1=zm = 1;
+per_pixel_2=sx = zm;
+per_pixel_3=sy = zm;
 
 [warp_shader]
 shader_body { 

@@ -39,42 +39,47 @@ fMotionVectorsR=0.350000
 fMotionVectorsG=0.350000
 fMotionVectorsB=0.350000
 fMotionVectorsA=0.200000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=20.000000
-bAdditive=1.000000
-bTextured=1.000000
-fRad=1.998670
-fTexZoom=0.494860
-fG=1.000000
-fB=1.000000
-fA=0.750000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=20.000000
+shapecode_0_additive=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=1.998670
+shapecode_0_tex_zoom=0.494860
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.750000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=ang2 = 0;
+per_frame_init_2=redsine = 0;
+per_frame_init_3=greensine = 0;
+per_frame_init_4=bluesine = 0;
+per_frame_init_5=redif = 0;
+per_frame_init_6=greenif = 0;
+per_frame_init_7=blueif = 0;
+per_frame_init_8=decay = 0.1;
+per_frame_1=sx = 1;
+per_frame_2=sy = 1;
+per_frame_3=redsine = 0.5 + 0.15 * bass * sin(3 * time);
+per_frame_4=greensine = 0.5 + 0.15 * mid * sin(2 * time);
+per_frame_5=bluesine = 0.5 + 0.15 * treb * sin(time);
+per_frame_6=redif = 0.9 * if(0.00001 < abs(above(bass, 1.2)), redsine, if(0.00001 < abs(above(redif, 0.95)), 0, 0.98 * redif));
+per_frame_7=greenif = 0.8 * if(0.00001 < abs(above(mid, 1.2)), greensine, if(0.00001 < abs(above(greenif, 0.95)), 0, 0.8 * greenif));
+per_frame_8=blueif = 0.8 * if(0.00001 < abs(above(treb, 1.2)), bluesine, if(0.00001 < abs(above(blueif, 0.95)), 0, 0.8 * blueif));
+per_frame_9=ib_r = redif;
+per_frame_10=ib_g = greenif;
+per_frame_11=ib_b = blueif;
+per_pixel_1=ang2 = sin(3 * ang + time + 0.05 * sin(time * above(mid_att, 1.2)));
+per_pixel_2=rot = 1.2 * ang2;
 
 [warp_shader]
 shader_body { 

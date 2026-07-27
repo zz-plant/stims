@@ -29,30 +29,53 @@ nMotionVectorsX=25.600000
 nMotionVectorsY=9.600000
 nMotionVectorsLoop=5.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=midif = 0;
+per_frame_init_2=trebif = 0;
+per_frame_init_3=trebfix = 0;
+per_frame_init_4=q25 = 0;
+per_frame_init_5=q12 = 0;
+per_frame_init_6=q22 = 0;
+per_frame_init_7=q21 = 0;
+per_frame_init_8=q13 = 0;
+per_frame_init_9=q15 = 0;
+per_frame_init_10=bassfix = 0;
+per_frame_init_11=q23 = 0;
+per_frame_init_12=q24 = 0;
+per_frame_init_13=q16 = 0;
+per_frame_init_14=q26 = 0;
+per_frame_init_15=midfix = 0;
+per_frame_init_16=q17 = 0;
+per_frame_init_17=q27 = 0;
+per_frame_init_18=q14 = 0;
+per_frame_init_19=bassif = 0;
+per_frame_init_20=q21 = 1 / asin(1);
+per_frame_1=q21 = 0.5;
+per_frame_2=q22 = -sin(0.5 * time);
+per_frame_3=q23 = 0;
+per_frame_4=q24 = 1;
+per_frame_5=q25 = 0.5 / asin(1);
+per_frame_6=q26 = 0.3 * time;
+per_frame_7=q27 = 0.6 * -time;
+per_frame_8=bassfix = 0.05 + 0.01 * bass;
+per_frame_9=midfix = 0.05 + 0.01 * mid;
+per_frame_10=trebfix = 0.05 + 0.01 * treb;
+per_frame_11=bassif = if(0.00001 < abs(above(bass_att, 1)), bassif + bassfix, if(0.00001 < abs(above(bassif, 85)), 0, 0.96 * bassif));
+per_frame_12=midif = if(0.00001 < abs(above(mid_att, 1)), midif + midfix, if(0.00001 < abs(above(midif, 0.85)), 0, 0.96 * midif));
+per_frame_13=trebif = if(0.00001 < abs(above(treb_att, 1)), trebif + trebfix, if(0.00001 < abs(above(trebif, 0.85)), 0, 0.96 * trebif));
+per_frame_14=q12 = bassif;
+per_frame_15=q13 = midif;
+per_frame_16=q14 = trebif;
+per_frame_17=q15 = abs(cos(bassif - time));
+per_frame_18=q16 = abs(cos(midif - time));
+per_frame_19=q17 = abs(cos(trebif - time));
 
 [warp_shader]
 shader_body { 

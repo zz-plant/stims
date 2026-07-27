@@ -13,30 +13,31 @@ fWaveR=0.000000
 fWaveG=0.000000
 fWaveB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=dx_residual = 0;
+per_frame_init_2=dy_residual = 0;
+per_frame_init_3=bass_thresh = 0;
+per_frame_1=wave_b = 0;
+per_frame_2=wave_r = 1;
+per_frame_3=wave_g = 1;
+per_frame_4=zoom = zoom + 0.013 * (0.6 * sin(0.339 * time) + 0.4 * sin(0.276 * time));
+per_frame_5=rot = rot + 0.04 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_6=cx = cx + 0.005 * (0.6 * sin(0.471 * time) + 0.4 * sin(0.297 * time));
+per_frame_7=cy = cy + 0.005 * (0.6 * sin(0.379 * time) + 0.4 * sin(0.351 * time));
+per_frame_8=dx = dx + 0.009 * (0.6 * sin(0.234 * time) + 0.4 * sin(0.277 * time));
+per_frame_9=dx = dx + dx_residual;
+per_frame_10=dy = dy + dy_residual;
+per_frame_11=bass_thresh = 2.5 * above(bass_att, bass_thresh) + (1 - above(bass_att, bass_thresh)) * (0.98 * (bass_thresh - 1.4) + 1.4);
+per_frame_12=dx_residual = 0.016 * equal(bass_thresh, 2.5) * sin(7 * time) + (1 - equal(bass_thresh, 2.5)) * dx_residual;
+per_frame_13=dy_residual = 0.012 * equal(bass_thresh, 2.5) * sin(9 * time) + (1 - equal(bass_thresh, 2.5)) * dy_residual;
+per_pixel_1=zoom = zoom + 0.1 * rad;
 
 [comp_shader]
 shader_body { 

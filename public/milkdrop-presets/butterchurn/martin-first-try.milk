@@ -31,36 +31,77 @@ nMotionVectorsDy=0.160000
 nMotionVectorsLoop=1.500000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-nSamples=352.000000
-bUseDots=1.000000
-bAdditive=1.000000
-fScaling=0.038558
-fSmoothing=0.200000
-fG=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_samples=352.000000
+wavecode_0_usedots=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=0.038558
+wavecode_0_smoothing=0.200000
+wavecode_0_g=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=index = 0;
+per_frame_init_2=q22 = 0;
+per_frame_init_3=q21 = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=dec_med = 0;
+per_frame_init_6=is_beat = 0;
+per_frame_init_7=q23 = 0;
+per_frame_init_8=dec_slow = 0;
+per_frame_init_9=myvol_s = 0;
+per_frame_init_10=dir = 0;
+per_frame_init_11=avg = 0;
+per_frame_init_12=myvol = 0;
+per_frame_init_13=beat = 0;
+per_frame_init_14=peak = 0;
+per_frame_init_15=q2 = 0;
+per_frame_init_16=t0 = 0;
+per_frame_init_17=q20 = 0;
+per_frame_init_18=shift = 0;
+per_frame_1=dec_med = pow(0.9, 30 / fps);
+per_frame_2=dec_slow = pow(0.995, 30 / fps);
+per_frame_3=beat = max(max(bass, mid), treb);
+per_frame_4=avg = avg * dec_slow + beat * (1 - dec_slow);
+per_frame_5=is_beat = above(beat, 0.5 + avg + peak) * above(time, t0 + 0.2);
+per_frame_6=t0 = is_beat * time + (1 - is_beat) * t0;
+per_frame_7=peak = is_beat * beat + (1 - is_beat) * peak * dec_med;
+per_frame_8=index = (index + is_beat) * below(index, 4);
+per_frame_9=q20 = avg;
+per_frame_10=q21 = beat;
+per_frame_11=q22 = peak;
+per_frame_12=q23 = index;
+per_frame_13=myvol = bass_att + treb_att + mid_att;
+per_frame_14=myvol_s = myvol_s + above(myvol, myvol_s);
+per_frame_15=myvol_s = 0.995 * myvol_s + 0.005 * myvol;
+per_frame_16=myvol_s = min(myvol_s, 15);
+per_frame_17=q1 = 30 * ((myvol_s + 2 * (bass + treb)) / 1000) / fps;
+per_frame_18=dir = 0.99 * dir + 0.01 * (index - 1);
+per_frame_19=dir = 0.5 * (index - 2);
+per_frame_20=q2 = myvol_s / 3 + 1;
+per_frame_21=rot = 0.3 * sin(time / 4);
+wave_0_init1=t02 = 0;
+wave_0_init2=q1 = 0;
+wave_0_init3=ratio = 0;
+wave_0_init4=ampl = 0;
+wave_0_init5=x1 = 0;
+wave_0_init6=y1 = 0;
+wave_0_per_frame1=q1 = bass_att;
+wave_0_per_point1=r = abs(sin(frame / 38));
+wave_0_per_point2=g = 0.5 * abs(cos(frame / 45));
+wave_0_per_point3=b = 0.5 * abs(sin(frame / 133));
+wave_0_per_point4=a = 0.3;
+wave_0_per_point5=t02 = t02 + q1 / 10;
+wave_0_per_point6=ratio = sin(frame / 49);
+wave_0_per_point7=ampl = 0.01 + 0.4 * sqr(sin(frame / 18) * cos(frame / 123));
+wave_0_per_point8=x1 = (r - 0.5) / 15 + 0.5 + ampl * sin(6.28 * sample);
+wave_0_per_point9=y1 = (b - 0.5) / 15 + 0.5 + ampl * cos(6.28 * sample);
+wave_0_per_point10=x = x1 + 0.2 * (ampl + ratio) * sin(6.28 * sample * ratio * 7.3);
+wave_0_per_point11=y = y1 + 0.2 * (ampl + ratio) * cos(37.68 * sample);
 
 [warp_shader]
 shader_body { 

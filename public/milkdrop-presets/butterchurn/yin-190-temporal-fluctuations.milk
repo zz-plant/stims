@@ -39,15 +39,69 @@ nMotionVectorsDx=-0.260000
 nMotionVectorsDy=0.440000
 nMotionVectorsLoop=5.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=maxdbass = 0;
+per_frame_init_2=f = 0;
+per_frame_init_3=ttan1 = 0;
+per_frame_init_4=dbass = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=amt = 0;
+per_frame_init_7=cheat = 0;
+per_frame_init_8=totx = 0;
+per_frame_init_9=lastbeat = 0;
+per_frame_init_10=ttan2 = 0;
+per_frame_init_11=prevrot = 0;
+per_frame_init_12=interval = 0;
+per_frame_init_13=pbass = 0;
+per_frame_init_14=toty = 0;
+per_frame_init_15=beat = 0;
+per_frame_init_16=vol = 0;
+per_frame_init_17=q2 = 0;
+per_frame_init_18=dist = 0;
+per_frame_init_19=prevvol = 0;
+per_frame_init_20=isleftytonosy = 0;
+per_frame_init_21=sure = 0;
+per_frame_1=warp = 0;
+per_frame_2=decay = 1;
+per_frame_3=wave_mystery = 0;
+per_frame_4=vol = ((bass_att + mid_att + treb_att) / 3 + prevvol) / 2;
+per_frame_5=sure = if(0.00001 < abs(equal(sure, 0)), 0.6, sure);
+per_frame_6=interval = if(0.00001 < abs(equal(interval, 0)), 40, interval);
+per_frame_7=lastbeat = if(0.00001 < abs(equal(lastbeat, 0)), frame - fps, lastbeat);
+per_frame_8=dbass = (bass - pbass) / fps;
+per_frame_9=beat = above(dbass, 0.6 * maxdbass) * above(frame - lastbeat, fps / 3);
+per_frame_10=sure = if(0.00001 < abs(beat * below(abs(frame - (interval + lastbeat)), fps / 5)), min(0.095 + sure, 1), beat * (sure - 0.095) + (1 - beat) * sure * 0.9996);
+per_frame_11=sure = max(0.5, sure);
+per_frame_12=cheat = if(0.00001 < abs(above(frame, lastbeat + interval + floor(fps / 10)) * above(sure, 0.91)), 1, cheat);
+per_frame_13=beat = if(0.00001 < abs(cheat), 1, beat);
+per_frame_14=sure = if(0.00001 < abs(cheat), 0.95 * sure, sure);
+per_frame_15=maxdbass = max(0.999 * maxdbass, dbass);
+per_frame_16=maxdbass = max(0.012, maxdbass);
+per_frame_17=maxdbass = min(0.02, maxdbass);
+per_frame_18=interval = if(0.00001 < abs(beat), frame - lastbeat, interval);
+per_frame_19=lastbeat = if(0.00001 < abs(beat), frame - cheat * floor(fps / 10), lastbeat);
+per_frame_20=cheat = 0;
+per_frame_21=pbass = bass;
+per_frame_22=ob_size = 0.08 * below(frame - lastbeat, fps / 8) * (frame - lastbeat) / fps;
+per_frame_23=f = abs(cos(time / 8 + 0.54 + sin(time / 3 + 1.075)));
+per_frame_24=ob_r = 1 * f + (1 - f);
+per_frame_25=ob_g = 0.3 * f + (1 - f);
+per_frame_26=ob_b = 0.3 * f + 0.3 * (1 - f);
+per_frame_27=q1 = 3.1416 * (wave_mystery + 1) / 2;
+per_frame_28=q2 = 0.25 * cos(time + abs(2 * sin(2 * time + 2.311) * (vol - amt)) * sin(7.45 * time + 0.876));
+per_frame_29=amt = amt + 0.05 * (vol - amt);
+per_frame_30=prevvol = vol;
+per_pixel_1=x = x - 0.5;
+per_pixel_2=y = -(y - 0.5);
+per_pixel_3=ttan1 = tan(q1 + 1.5708) * x - y + q2;
+per_pixel_4=ttan2 = tan(q1 + 1.5708);
+per_pixel_5=isleftytonosy = above(ttan1 * sign(3.1416 - q1), 0);
+per_pixel_6=dist = abs(ttan1) / sqrt(ttan2 * ttan2 + 1);
+per_pixel_7=totx = 0.5 * cos(q1) * sign(isleftytonosy - 0.5) * sqr(dist) / (0.5 - q2);
+per_pixel_8=toty = -0.5 * sin(q1) * sign(isleftytonosy - 0.5) * sqr(dist) / (0.5 - q2);
+per_pixel_9=dx = dx + totx;
+per_pixel_10=dy = dy + toty;
+per_pixel_11=prevrot = q1;

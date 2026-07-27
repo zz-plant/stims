@@ -20,30 +20,24 @@ fWaveR=0.490000
 fWaveG=0.490000
 fWaveB=0.490000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=t = 0;
+per_frame_1=t = 12.3 * time;
+per_frame_2=wave_x = wave_x + 0.35 * (0.7 * sin(11.105 * time) + 0.3 * sin(1.821 * time * 15));
+per_frame_3=wave_y = wave_y + 0.35 * (0.3 * sin(1.942 * time * 5) + 0.7 * sin(37.83 * time));
+per_frame_4=wave_r = wave_r + 0.79 * (0.6 * sin(0.823 * t) + 0.4 * sin(0.916 * t));
+per_frame_5=wave_g = wave_g + 0.79 * (0.6 * sin(0.9 * t) + 0.4 * sin(1.023 * t));
+per_frame_6=wave_b = wave_b + 0.79 * (0.6 * sin(0.808 * t) + 0.4 * sin(0.949 * t));
+per_frame_7=rot = rot + 0.01 * (0.6 * sin(0.038 * time) + 0.4 * sin(0.054 * time));
+per_frame_8=dx = dx + 0.002 * (0.6 * sin(0.434 * time) + 0.4 * sin(0.277 * time));
+per_frame_9=dy = dy + 0.002 * (0.6 * sin(0.384 * time) + 0.4 * sin(0.477 * time));
 
 [warp_shader]
 shader_body { 

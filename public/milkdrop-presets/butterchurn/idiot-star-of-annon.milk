@@ -32,15 +32,54 @@ fMotionVectorsR=0.000000
 fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=new_mid = 0;
+per_frame_init_2=q6 = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=q5 = 0;
+per_frame_init_5=treb_c = 0;
+per_frame_init_6=vol_att = 0;
+per_frame_init_7=zoome = 0;
+per_frame_init_8=mid_c = 0;
+per_frame_init_9=new_treb = 0;
+per_frame_init_10=q4 = 0;
+per_frame_init_11=rad_cycle = 0;
+per_frame_init_12=vol_c = 0;
+per_frame_init_13=bass_c = 0;
+per_frame_init_14=rote = 0;
+per_frame_init_15=vol = 0;
+per_frame_init_16=new_bass = 0;
+per_frame_init_17=q2 = 0;
+per_frame_init_18=q3 = 0;
+per_frame_init_19=q7 = 0;
+per_frame_init_20=q8 = 0;
+per_frame_1=vol_att = 0.25 * treb_att + 0.25 * mid_att + (0.25 * bass_att + 0.5 * sin(vol)) / vol;
+per_frame_2=vol = bass + treb + mid;
+per_frame_3=new_bass = 0.25 * bass + 0.5 * sin(0.25 * bass_att);
+per_frame_4=new_treb = 0.25 * treb + 0.5 * sin(0.25 * treb_att);
+per_frame_5=new_mid = 0.25 * mid + 0.4 * sin(0.25 * mid_att);
+per_frame_6=bass_c = q1 - sin(band(bass_att, 0.54 * time));
+per_frame_7=treb_c = q2 - sin(band(treb_att, 0.44 * time));
+per_frame_8=mid_c = q3 - sin(band(mid_att, 0.24 * time));
+per_frame_9=vol_c = q4 - sin(band(vol_att, 0.64 * time));
+per_frame_10=q1 = sin(band(bass - new_bass, 0.63 * time));
+per_frame_11=q2 = sin(band(treb - new_treb, 0.43 * time));
+per_frame_12=q3 = sin(band(mid - new_mid, 0.23 * time));
+per_frame_13=q4 = sin(band(vol, 0.65 * time));
+per_frame_14=q5 = bass_c;
+per_frame_15=q6 = treb_c;
+per_frame_16=q7 = mid_c;
+per_frame_17=q8 = vol_c;
+per_frame_18=wave_mystery = bass_att - 1;
+per_frame_19=wave_r = wave_r + 0.2 * sin(0.43 * time);
+per_frame_20=wave_b = wave_b - 0.2 * sin(0.54 * time);
+per_frame_21=wave_g = wave_g - 0.4 * sin(0.34 * time);
+per_frame_22=ob_a = 0;
+per_pixel_1=rad_cycle = rad * rad * x * 60 * rad * sin(q6);
+per_pixel_2=rote = rot + 0.1 * sin(rad_cycle * sin(3.14 * rad)) + 0.01 * sin(q1) * tan(rad);
+per_pixel_3=zoome = zoom + 0.1 * sin(3.14 * rad * sin(3.14 * ang) * sin(q2) - rote);
+per_pixel_4=zoom = zoome + 0.05 * sin(3.14 * rad * q2) * sin(q4);
+per_pixel_5=rot = rote * rad + ang / 2 * sin(q3) * sin(3.14 * ang * sin(q3) * sin(q4)) / 2 + 0.1 * sin(3.14 * ang) * sin(q1);

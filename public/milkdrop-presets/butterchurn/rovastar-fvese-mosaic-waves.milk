@@ -27,27 +27,26 @@ nMotionVectorsLoop=5.000000
 fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=dx_residual = 0;
+per_frame_init_2=dy_residual = 0;
+per_frame_1=wave_r = wave_r + 0.35 * (0.6 * sin(0.825 * time) + 0.4 * sin(0.915 * time));
+per_frame_2=wave_g = wave_g + 0.35 * (0.6 * sin(0.9 * time) + 0.4 * sin(1.025 * time));
+per_frame_3=wave_b = wave_b + 0.35 * (0.6 * sin(0.81 * time) + 0.4 * sin(0.95 * time));
+per_frame_4=wave_x = 0.5 - cos(time + dx_residual) / 3.5;
+per_frame_5=wave_y = 0.5 - cos(time + dy_residual) / 2.5;
+per_frame_6=cx = cx + 0.225 * (0.6 * sin(0.35 * time) + 0.4 * sin(0.35 * time));
+per_frame_7=cy = cy + 0.225 * (0.6 * sin(0.35 * time) + 0.4 * sin(0.35 * time));
+per_frame_8=dx = 0.005 + 0.002 * (0.6 * sin(0.234 * time) + 0.4 * sin(0.277 * time));
+per_frame_9=dy = 0.005 + 0.002 * (0.6 * sin(0.234 * time) + 0.4 * sin(0.277 * time));
+per_frame_10=dx_residual = max(bass, bass_att) - 1;
+per_frame_11=dy_residual = min(bass, bass_att) - 1;
+per_frame_12=dx = if(0.00001 < abs(above(bass_att + bass, 2.8)), 5 * dx, dx);
+per_pixel_1=rot = 0.03 * sin(0.84 * time) - 0.013 * cos(0.784 * time) + 0.02 * sin(1 - rad);

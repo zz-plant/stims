@@ -24,44 +24,362 @@ fOuterBorderSize=0.005000
 fOuterBorderA=1.000000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=3.998663
-fTexZoom=0.250046
-fR=0.900000
-fG=0.940000
-fB=0.890000
-fR2=0.840000
-fG2=0.930000
-fB2=1.000000
-fA2=1.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bThick=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_thick=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_thick=1.000000
+shapecode_0_enabled=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=3.998663
+shapecode_0_tex_zoom=0.250046
+shapecode_0_r=0.900000
+shapecode_0_g=0.940000
+shapecode_0_b=0.890000
+shapecode_0_r2=0.840000
+shapecode_0_g2=0.930000
+shapecode_0_b2=1.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_b=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=zoom = 0.95 + bass;
+wave_0_init1=vl = 0;
+wave_0_init2=sw = 0;
+wave_0_init3=vo = 0;
+wave_0_init4=vt = 0;
+wave_0_init5=vc = 0;
+wave_0_init6=vj = 0;
+wave_0_init7=vk = 0;
+wave_0_init8=it = 0;
+wave_0_init9=vb = 0;
+wave_0_init10=vg = 0;
+wave_0_init11=vi = 0;
+wave_0_init12=vn = 0;
+wave_0_init13=lr = 0;
+wave_0_init14=my = 0;
+wave_0_init15=vd = 0;
+wave_0_init16=vq = 0;
+wave_0_init17=vx = 0;
+wave_0_init18=let = 0;
+wave_0_init19=vy = 0;
+wave_0_init20=cvc = 0;
+wave_0_init21=vr = 0;
+wave_0_init22=sz = 0;
+wave_0_init23=xv = 0;
+wave_0_init24=vp = 0;
+wave_0_init25=mx = 0;
+wave_0_init26=cv = 0;
+wave_0_init27=vf = 0;
+wave_0_init28=cvb = 0;
+wave_0_init29=vs = 0;
+wave_0_init30=cva = 0;
+wave_0_init31=ve = 0;
+wave_0_init32=ita = 0;
+wave_0_init33=vh = 0;
+wave_0_init34=va = 0;
+wave_0_init35=vm = 0;
+wave_0_per_point1=it = (it + 1) * above(sample, 0) * below(it, 53);
+wave_0_per_point2=ita = (ita + equal(it, 0)) * above(sample, 0);
+wave_0_per_point3=sw = if(0.00001 < abs(equal(it, 0)), randint(4), 1);
+wave_0_per_point4=xv = if(0.00001 < abs(sw), xv, 0.0008 * randint(1001));
+wave_0_per_point5=mx = xv + 0.025 * ita;
+wave_0_per_point6=my = if(0.00001 < abs(sw), my, 0.000975 * randint(1001));
+wave_0_per_point7=sz = 0.01;
+wave_0_per_point8=vx = above(it, 1) * below(it, 39) + above(it, 12) * below(it, 28) - equal(it, 20) + equal(it, 46) + equal(it, 51) + equal(it, 41) - equal(it, 15) - equal(it, 25) + equal(it, 10) + equal(it, 30) - equal(it, 4) - equal(it, 36);
+wave_0_per_point9=vy = above(it, 17) * below(it, 49) + above(it, 22) * below(it, 44) - equal(it, 33) + equal(it, 7) + equal(it, 51) + equal(it, 15) - equal(it, 41) - equal(it, 25) + equal(it, 4) + equal(it, 10) - equal(it, 36) - equal(it, 30);
+wave_0_per_point10=cvc = if(0.00001 < abs(equal(it, 0)), cvb, cvc);
+wave_0_per_point11=cvb = if(0.00001 < abs(equal(it, 0)), cva, cvb);
+wave_0_per_point12=cva = if(0.00001 < abs(equal(it, 0)), cv, cva);
+wave_0_per_point13=cv = if(0.00001 < abs(equal(it, 0)), if(0.00001 < abs(equal(cva, cvb)), 1 - cva, if(0.00001 < abs(cva), above(0.001 * randint(1001), 0.69), above(0.001 * randint(1001), 0.14))), cv);
+wave_0_per_point14=lr = if(0.00001 < abs(equal(it, 0)), if(0.00001 < abs(cv), 0.031602 * randint(10001), 0.019366 * randint(10001)), lr);
+wave_0_per_point15=let = (1 - cv) * (1 + 4 * above(lr, 43.31) + 4 * above(lr, 100.19) + 6 * above(lr, 138.64) + 6 * above(lr, 175.51)) + cv * (2 + above(lr, 10.56) + above(lr, 33.69) + 2 * above(lr, 50.94) + above(lr, 60.18) + above(lr, 72.77) + 2 * above(lr, 88.08) + above(lr, 89.08) + above(lr, 94.69) + above(lr, 122.67) + above(lr, 138.03) + 2 * above(lr, 171.95) + above(lr, 188.09) + above(lr, 189.09) + above(lr, 227.73) + above(lr, 256.96) + 2 * above(lr, 292.39) + above(lr, 297.52) + above(lr, 304.09) + above(lr, 305.57) + above(lr, 314.63));
+wave_0_per_point16=va = equal(let, 23) + equal(let, 24) + equal(let, 26);
+wave_0_per_point17=vb = below(let, 9) + above(let, 10) * below(let, 19) + equal(let, 21) + equal(let, 23);
+wave_0_per_point18=vc = equal(let, 1) + equal(let, 2) + equal(let, 5) + equal(let, 6) + equal(let, 8) + equal(let, 11) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_0_per_point19=vd = above(let, 1) * below(let, 9) + above(let, 10) * below(let, 24) - equal(let, 20);
+wave_0_per_point20=ve = equal(let, 13) + equal(let, 14) + equal(let, 24) + equal(let, 25);
+wave_0_per_point21=vf = above(let, 1) * below(let, 8) + equal(let, 9) + above(let, 14) * below(let, 21) + equal(let, 26);
+wave_0_per_point22=vg = equal(let, 1);
+wave_0_per_point23=vh = equal(let, 9) + equal(let, 20);
+wave_0_per_point24=vi = below(let, 5) - equal(let, 3) + equal(let, 18);
+wave_0_per_point25=vj = above(let, 2) * below(let, 8) - equal(let, 4) + equal(let, 9) + above(let, 14) * below(let, 21) - equal(let, 18) + equal(let, 26);
+wave_0_per_point26=vk = equal(let, 11) + equal(let, 13) + above(let, 23) * below(let, 27);
+wave_0_per_point27=vl = equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 18) + above(let, 20) * below(let, 24);
+wave_0_per_point28=vm = equal(let, 1) + equal(let, 2) + equal(let, 8) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_0_per_point29=vn = equal(let, 1) + equal(let, 7) + equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 24) - equal(let, 16) - equal(let, 18) - equal(let, 20) - equal(let, 22);
+wave_0_per_point30=vo = equal(let, 11) + equal(let, 14) + equal(let, 17) + equal(let, 18) + equal(let, 23) + equal(let, 24);
+wave_0_per_point31=vp = equal(let, 3) + equal(let, 5) + equal(let, 7) + equal(let, 9) + equal(let, 10) + equal(let, 12) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_0_per_point32=vq = equal(let, 2) + equal(let, 4) + equal(let, 22);
+wave_0_per_point33=vr = equal(let, 9) + equal(let, 20) + equal(let, 25);
+wave_0_per_point34=vs = equal(let, 22);
+wave_0_per_point35=vt = above(let, 1) * below(let, 13) - equal(let, 6) - equal(let, 8) - equal(let, 11) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_0_per_point36=a = if(0.00001 < abs(above(it, 51)), 0, if(0.00001 < abs(above(it, 49)), va, if(0.00001 < abs(above(it, 47)), vb, if(0.00001 < abs(above(it, 44)), vc, if(0.00001 < abs(above(it, 42)), vd, if(0.00001 < abs(above(it, 39)), ve, if(0.00001 < abs(above(it, 37)), vf, if(0.00001 < abs(above(it, 34)), vg, if(0.00001 < abs(above(it, 31)), vh, if(0.00001 < abs(above(it, 28)), vi, if(0.00001 < abs(above(it, 26)), vj, if(0.00001 < abs(above(it, 23)), vk, if(0.00001 < abs(above(it, 21)), vl, if(0.00001 < abs(above(it, 18)), vm, if(0.00001 < abs(above(it, 16)), vn, if(0.00001 < abs(above(it, 13)), vo, if(0.00001 < abs(above(it, 11)), vp, if(0.00001 < abs(above(it, 8)), vq, if(0.00001 < abs(above(it, 5)), vr, if(0.00001 < abs(above(it, 2)), vs, if(0.00001 < abs(it), vt, 0)))))))))))))))))))));
+wave_0_per_point37=a = a * below(ita, 8);
+wave_0_per_point38=x = mx + vx * sz * 0.75;
+wave_0_per_point39=y = my + vy * sz * 1.5;
+wave_1_init1=vl = 0;
+wave_1_init2=sw = 0;
+wave_1_init3=vo = 0;
+wave_1_init4=vt = 0;
+wave_1_init5=vc = 0;
+wave_1_init6=vj = 0;
+wave_1_init7=vk = 0;
+wave_1_init8=it = 0;
+wave_1_init9=vb = 0;
+wave_1_init10=vg = 0;
+wave_1_init11=vi = 0;
+wave_1_init12=vn = 0;
+wave_1_init13=lr = 0;
+wave_1_init14=my = 0;
+wave_1_init15=vd = 0;
+wave_1_init16=vq = 0;
+wave_1_init17=vx = 0;
+wave_1_init18=let = 0;
+wave_1_init19=vy = 0;
+wave_1_init20=cvc = 0;
+wave_1_init21=vr = 0;
+wave_1_init22=sz = 0;
+wave_1_init23=xv = 0;
+wave_1_init24=vp = 0;
+wave_1_init25=mx = 0;
+wave_1_init26=cv = 0;
+wave_1_init27=vf = 0;
+wave_1_init28=cvb = 0;
+wave_1_init29=vs = 0;
+wave_1_init30=cva = 0;
+wave_1_init31=ve = 0;
+wave_1_init32=ita = 0;
+wave_1_init33=vh = 0;
+wave_1_init34=va = 0;
+wave_1_init35=vm = 0;
+wave_1_per_point1=it = (it + 1) * above(sample, 0) * below(it, 53);
+wave_1_per_point2=ita = (ita + equal(it, 0)) * above(sample, 0);
+wave_1_per_point3=sw = if(0.00001 < abs(equal(it, 0)), randint(4), 1);
+wave_1_per_point4=xv = if(0.00001 < abs(sw), xv, 0.0008 * randint(1001));
+wave_1_per_point5=mx = xv + 0.025 * ita;
+wave_1_per_point6=my = if(0.00001 < abs(sw), my, 0.000975 * randint(1001));
+wave_1_per_point7=sz = 0.01;
+wave_1_per_point8=vx = above(it, 1) * below(it, 39) + above(it, 12) * below(it, 28) - equal(it, 20) + equal(it, 46) + equal(it, 51) + equal(it, 41) - equal(it, 15) - equal(it, 25) + equal(it, 10) + equal(it, 30) - equal(it, 4) - equal(it, 36);
+wave_1_per_point9=vy = above(it, 17) * below(it, 49) + above(it, 22) * below(it, 44) - equal(it, 33) + equal(it, 7) + equal(it, 51) + equal(it, 15) - equal(it, 41) - equal(it, 25) + equal(it, 4) + equal(it, 10) - equal(it, 36) - equal(it, 30);
+wave_1_per_point10=cvc = if(0.00001 < abs(equal(it, 0)), cvb, cvc);
+wave_1_per_point11=cvb = if(0.00001 < abs(equal(it, 0)), cva, cvb);
+wave_1_per_point12=cva = if(0.00001 < abs(equal(it, 0)), cv, cva);
+wave_1_per_point13=cv = if(0.00001 < abs(equal(it, 0)), if(0.00001 < abs(equal(cva, cvb)), 1 - cva, if(0.00001 < abs(cva), above(0.001 * randint(1001), 0.69), above(0.001 * randint(1001), 0.14))), cv);
+wave_1_per_point14=lr = if(0.00001 < abs(equal(it, 0)), if(0.00001 < abs(cv), 0.031602 * randint(10001), 0.019366 * randint(10001)), lr);
+wave_1_per_point15=let = (1 - cv) * (1 + 4 * above(lr, 43.31) + 4 * above(lr, 100.19) + 6 * above(lr, 138.64) + 6 * above(lr, 175.51)) + cv * (2 + above(lr, 10.56) + above(lr, 33.69) + 2 * above(lr, 50.94) + above(lr, 60.18) + above(lr, 72.77) + 2 * above(lr, 88.08) + above(lr, 89.08) + above(lr, 94.69) + above(lr, 122.67) + above(lr, 138.03) + 2 * above(lr, 171.95) + above(lr, 188.09) + above(lr, 189.09) + above(lr, 227.73) + above(lr, 256.96) + 2 * above(lr, 292.39) + above(lr, 297.52) + above(lr, 304.09) + above(lr, 305.57) + above(lr, 314.63));
+wave_1_per_point16=va = equal(let, 23) + equal(let, 24) + equal(let, 26);
+wave_1_per_point17=vb = below(let, 9) + above(let, 10) * below(let, 19) + equal(let, 21) + equal(let, 23);
+wave_1_per_point18=vc = equal(let, 1) + equal(let, 2) + equal(let, 5) + equal(let, 6) + equal(let, 8) + equal(let, 11) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_1_per_point19=vd = above(let, 1) * below(let, 9) + above(let, 10) * below(let, 24) - equal(let, 20);
+wave_1_per_point20=ve = equal(let, 13) + equal(let, 14) + equal(let, 24) + equal(let, 25);
+wave_1_per_point21=vf = above(let, 1) * below(let, 8) + equal(let, 9) + above(let, 14) * below(let, 21) + equal(let, 26);
+wave_1_per_point22=vg = equal(let, 1);
+wave_1_per_point23=vh = equal(let, 9) + equal(let, 20);
+wave_1_per_point24=vi = below(let, 5) - equal(let, 3) + equal(let, 18);
+wave_1_per_point25=vj = above(let, 2) * below(let, 8) - equal(let, 4) + equal(let, 9) + above(let, 14) * below(let, 21) - equal(let, 18) + equal(let, 26);
+wave_1_per_point26=vk = equal(let, 11) + equal(let, 13) + above(let, 23) * below(let, 27);
+wave_1_per_point27=vl = equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 18) + above(let, 20) * below(let, 24);
+wave_1_per_point28=vm = equal(let, 1) + equal(let, 2) + equal(let, 8) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_1_per_point29=vn = equal(let, 1) + equal(let, 7) + equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 24) - equal(let, 16) - equal(let, 18) - equal(let, 20) - equal(let, 22);
+wave_1_per_point30=vo = equal(let, 11) + equal(let, 14) + equal(let, 17) + equal(let, 18) + equal(let, 23) + equal(let, 24);
+wave_1_per_point31=vp = equal(let, 3) + equal(let, 5) + equal(let, 7) + equal(let, 9) + equal(let, 10) + equal(let, 12) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_1_per_point32=vq = equal(let, 2) + equal(let, 4) + equal(let, 22);
+wave_1_per_point33=vr = equal(let, 9) + equal(let, 20) + equal(let, 25);
+wave_1_per_point34=vs = equal(let, 22);
+wave_1_per_point35=vt = above(let, 1) * below(let, 13) - equal(let, 6) - equal(let, 8) - equal(let, 11) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_1_per_point36=a = if(0.00001 < abs(above(it, 51)), 0, if(0.00001 < abs(above(it, 49)), va, if(0.00001 < abs(above(it, 47)), vb, if(0.00001 < abs(above(it, 44)), vc, if(0.00001 < abs(above(it, 42)), vd, if(0.00001 < abs(above(it, 39)), ve, if(0.00001 < abs(above(it, 37)), vf, if(0.00001 < abs(above(it, 34)), vg, if(0.00001 < abs(above(it, 31)), vh, if(0.00001 < abs(above(it, 28)), vi, if(0.00001 < abs(above(it, 26)), vj, if(0.00001 < abs(above(it, 23)), vk, if(0.00001 < abs(above(it, 21)), vl, if(0.00001 < abs(above(it, 18)), vm, if(0.00001 < abs(above(it, 16)), vn, if(0.00001 < abs(above(it, 13)), vo, if(0.00001 < abs(above(it, 11)), vp, if(0.00001 < abs(above(it, 8)), vq, if(0.00001 < abs(above(it, 5)), vr, if(0.00001 < abs(above(it, 2)), vs, if(0.00001 < abs(it), vt, 0)))))))))))))))))))));
+wave_1_per_point37=a = a * below(ita, 8);
+wave_1_per_point38=x = mx + vx * sz * 0.75;
+wave_1_per_point39=y = my + vy * sz * 1.5;
+wave_2_init1=vl = 0;
+wave_2_init2=sw = 0;
+wave_2_init3=vo = 0;
+wave_2_init4=vt = 0;
+wave_2_init5=vc = 0;
+wave_2_init6=vj = 0;
+wave_2_init7=vk = 0;
+wave_2_init8=it = 0;
+wave_2_init9=vb = 0;
+wave_2_init10=vg = 0;
+wave_2_init11=vi = 0;
+wave_2_init12=vn = 0;
+wave_2_init13=lr = 0;
+wave_2_init14=my = 0;
+wave_2_init15=vd = 0;
+wave_2_init16=vq = 0;
+wave_2_init17=vx = 0;
+wave_2_init18=let = 0;
+wave_2_init19=vy = 0;
+wave_2_init20=cvc = 0;
+wave_2_init21=vr = 0;
+wave_2_init22=sz = 0;
+wave_2_init23=xv = 0;
+wave_2_init24=vp = 0;
+wave_2_init25=mx = 0;
+wave_2_init26=cv = 0;
+wave_2_init27=vf = 0;
+wave_2_init28=cvb = 0;
+wave_2_init29=vs = 0;
+wave_2_init30=cva = 0;
+wave_2_init31=ve = 0;
+wave_2_init32=ita = 0;
+wave_2_init33=vh = 0;
+wave_2_init34=va = 0;
+wave_2_init35=vm = 0;
+wave_2_per_point1=it = (it + 1) * above(sample, 0) * below(it, 53);
+wave_2_per_point2=ita = (ita + equal(it, 0)) * above(sample, 0);
+wave_2_per_point3=sw = if(0.00001 < abs(equal(it, 0)), randint(4), 1);
+wave_2_per_point4=xv = if(0.00001 < abs(sw), xv, 0.0008 * randint(1001));
+wave_2_per_point5=mx = xv + 0.025 * ita;
+wave_2_per_point6=my = if(0.00001 < abs(sw), my, 0.000975 * randint(1001));
+wave_2_per_point7=sz = 0.01;
+wave_2_per_point8=vx = above(it, 1) * below(it, 39) + above(it, 12) * below(it, 28) - equal(it, 20) + equal(it, 46) + equal(it, 51) + equal(it, 41) - equal(it, 15) - equal(it, 25) + equal(it, 10) + equal(it, 30) - equal(it, 4) - equal(it, 36);
+wave_2_per_point9=vy = above(it, 17) * below(it, 49) + above(it, 22) * below(it, 44) - equal(it, 33) + equal(it, 7) + equal(it, 51) + equal(it, 15) - equal(it, 41) - equal(it, 25) + equal(it, 4) + equal(it, 10) - equal(it, 36) - equal(it, 30);
+wave_2_per_point10=cvc = if(0.00001 < abs(equal(it, 0)), cvb, cvc);
+wave_2_per_point11=cvb = if(0.00001 < abs(equal(it, 0)), cva, cvb);
+wave_2_per_point12=cva = if(0.00001 < abs(equal(it, 0)), cv, cva);
+wave_2_per_point13=cv = if(0.00001 < abs(equal(it, 0)), if(0.00001 < abs(equal(cva, cvb)), 1 - cva, if(0.00001 < abs(cva), above(0.001 * randint(1001), 0.69), above(0.001 * randint(1001), 0.14))), cv);
+wave_2_per_point14=lr = if(0.00001 < abs(equal(it, 0)), if(0.00001 < abs(cv), 0.031602 * randint(10001), 0.019366 * randint(10001)), lr);
+wave_2_per_point15=let = (1 - cv) * (1 + 4 * above(lr, 43.31) + 4 * above(lr, 100.19) + 6 * above(lr, 138.64) + 6 * above(lr, 175.51)) + cv * (2 + above(lr, 10.56) + above(lr, 33.69) + 2 * above(lr, 50.94) + above(lr, 60.18) + above(lr, 72.77) + 2 * above(lr, 88.08) + above(lr, 89.08) + above(lr, 94.69) + above(lr, 122.67) + above(lr, 138.03) + 2 * above(lr, 171.95) + above(lr, 188.09) + above(lr, 189.09) + above(lr, 227.73) + above(lr, 256.96) + 2 * above(lr, 292.39) + above(lr, 297.52) + above(lr, 304.09) + above(lr, 305.57) + above(lr, 314.63));
+wave_2_per_point16=va = equal(let, 23) + equal(let, 24) + equal(let, 26);
+wave_2_per_point17=vb = below(let, 9) + above(let, 10) * below(let, 19) + equal(let, 21) + equal(let, 23);
+wave_2_per_point18=vc = equal(let, 1) + equal(let, 2) + equal(let, 5) + equal(let, 6) + equal(let, 8) + equal(let, 11) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_2_per_point19=vd = above(let, 1) * below(let, 9) + above(let, 10) * below(let, 24) - equal(let, 20);
+wave_2_per_point20=ve = equal(let, 13) + equal(let, 14) + equal(let, 24) + equal(let, 25);
+wave_2_per_point21=vf = above(let, 1) * below(let, 8) + equal(let, 9) + above(let, 14) * below(let, 21) + equal(let, 26);
+wave_2_per_point22=vg = equal(let, 1);
+wave_2_per_point23=vh = equal(let, 9) + equal(let, 20);
+wave_2_per_point24=vi = below(let, 5) - equal(let, 3) + equal(let, 18);
+wave_2_per_point25=vj = above(let, 2) * below(let, 8) - equal(let, 4) + equal(let, 9) + above(let, 14) * below(let, 21) - equal(let, 18) + equal(let, 26);
+wave_2_per_point26=vk = equal(let, 11) + equal(let, 13) + above(let, 23) * below(let, 27);
+wave_2_per_point27=vl = equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 18) + above(let, 20) * below(let, 24);
+wave_2_per_point28=vm = equal(let, 1) + equal(let, 2) + equal(let, 8) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_2_per_point29=vn = equal(let, 1) + equal(let, 7) + equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 24) - equal(let, 16) - equal(let, 18) - equal(let, 20) - equal(let, 22);
+wave_2_per_point30=vo = equal(let, 11) + equal(let, 14) + equal(let, 17) + equal(let, 18) + equal(let, 23) + equal(let, 24);
+wave_2_per_point31=vp = equal(let, 3) + equal(let, 5) + equal(let, 7) + equal(let, 9) + equal(let, 10) + equal(let, 12) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_2_per_point32=vq = equal(let, 2) + equal(let, 4) + equal(let, 22);
+wave_2_per_point33=vr = equal(let, 9) + equal(let, 20) + equal(let, 25);
+wave_2_per_point34=vs = equal(let, 22);
+wave_2_per_point35=vt = above(let, 1) * below(let, 13) - equal(let, 6) - equal(let, 8) - equal(let, 11) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_2_per_point36=a = if(0.00001 < abs(above(it, 51)), 0, if(0.00001 < abs(above(it, 49)), va, if(0.00001 < abs(above(it, 47)), vb, if(0.00001 < abs(above(it, 44)), vc, if(0.00001 < abs(above(it, 42)), vd, if(0.00001 < abs(above(it, 39)), ve, if(0.00001 < abs(above(it, 37)), vf, if(0.00001 < abs(above(it, 34)), vg, if(0.00001 < abs(above(it, 31)), vh, if(0.00001 < abs(above(it, 28)), vi, if(0.00001 < abs(above(it, 26)), vj, if(0.00001 < abs(above(it, 23)), vk, if(0.00001 < abs(above(it, 21)), vl, if(0.00001 < abs(above(it, 18)), vm, if(0.00001 < abs(above(it, 16)), vn, if(0.00001 < abs(above(it, 13)), vo, if(0.00001 < abs(above(it, 11)), vp, if(0.00001 < abs(above(it, 8)), vq, if(0.00001 < abs(above(it, 5)), vr, if(0.00001 < abs(above(it, 2)), vs, if(0.00001 < abs(it), vt, 0)))))))))))))))))))));
+wave_2_per_point37=a = a * below(ita, 8);
+wave_2_per_point38=x = mx + vx * sz * 0.75;
+wave_2_per_point39=y = my + vy * sz * 1.5;
+wave_3_init1=vl = 0;
+wave_3_init2=sw = 0;
+wave_3_init3=vo = 0;
+wave_3_init4=vt = 0;
+wave_3_init5=swi = 0;
+wave_3_init6=vc = 0;
+wave_3_init7=vj = 0;
+wave_3_init8=vk = 0;
+wave_3_init9=it = 0;
+wave_3_init10=vb = 0;
+wave_3_init11=vg = 0;
+wave_3_init12=vi = 0;
+wave_3_init13=vn = 0;
+wave_3_init14=lr = 0;
+wave_3_init15=sc = 0;
+wave_3_init16=my = 0;
+wave_3_init17=vd = 0;
+wave_3_init18=si = 0;
+wave_3_init19=vq = 0;
+wave_3_init20=vx = 0;
+wave_3_init21=sa = 0;
+wave_3_init22=let = 0;
+wave_3_init23=sb = 0;
+wave_3_init24=sg = 0;
+wave_3_init25=vy = 0;
+wave_3_init26=sf = 0;
+wave_3_init27=sj = 0;
+wave_3_init28=vr = 0;
+wave_3_init29=se = 0;
+wave_3_init30=sz = 0;
+wave_3_init31=xv = 0;
+wave_3_init32=vp = 0;
+wave_3_init33=mx = 0;
+wave_3_init34=vf = 0;
+wave_3_init35=sh = 0;
+wave_3_init36=sd = 0;
+wave_3_init37=vs = 0;
+wave_3_init38=ve = 0;
+wave_3_init39=ita = 0;
+wave_3_init40=vh = 0;
+wave_3_init41=va = 0;
+wave_3_init42=vm = 0;
+wave_3_per_point1=it = (it + 1) * above(sample, 0) * below(it, 53);
+wave_3_per_point2=ita = (ita + equal(it, 0)) * above(sample, 0);
+wave_3_per_point3=sw = 1 - equal(it, 0) * equal(ita, 0);
+wave_3_per_point4=swi = (equal(lr, 9) + equal(lr, 5)) * equal(it, 0) * equal(ita, 4);
+wave_3_per_point5=xv = if(0.00001 < abs(sw - swi), xv, 0.0008 * randint(1001));
+wave_3_per_point6=mx = xv + 0.025 * ita;
+wave_3_per_point7=my = if(0.00001 < abs(sw - swi), my, 0.000975 * randint(1001));
+wave_3_per_point8=sz = 0.01;
+wave_3_per_point9=vx = above(it, 1) * below(it, 39) + above(it, 12) * below(it, 28) - equal(it, 20) + equal(it, 46) + equal(it, 51) + equal(it, 41) - equal(it, 15) - equal(it, 25) + equal(it, 10) + equal(it, 30) - equal(it, 4) - equal(it, 36);
+wave_3_per_point10=vy = above(it, 17) * below(it, 49) + above(it, 22) * below(it, 44) - equal(it, 33) + equal(it, 7) + equal(it, 51) + equal(it, 15) - equal(it, 41) - equal(it, 25) + equal(it, 4) + equal(it, 10) - equal(it, 36) - equal(it, 30);
+wave_3_per_point11=sa = 13 * equal(ita, 0) + 9 * equal(ita, 1) + 12 * equal(ita, 2) + 11 * equal(ita, 3) + 4 * equal(ita, 4) + 18 * equal(ita, 5) + 15 * equal(ita, 6) + 16 * equal(ita, 7);
+wave_3_per_point12=sb = 11 * equal(ita, 0) + 9 * equal(ita, 1) + 12 * equal(ita, 2) + 12 * equal(ita, 3);
+wave_3_per_point13=sc = 4 * equal(ita, 0) + 15 * equal(ita, 1) + 4 * equal(ita, 3) + 18 * equal(ita, 4) + 21 * equal(ita, 5) + 7 * equal(ita, 6) + 19 * equal(ita, 7);
+wave_3_per_point14=sd = 12 * equal(ita, 0) + 15 * equal(ita, 1) + 22 * equal(ita, 2) + 5 * equal(ita, 3);
+wave_3_per_point15=se = 8 * equal(ita, 0) + 1 * equal(ita, 1) + 20 * equal(ita, 2) + 5 * equal(ita, 3);
+wave_3_per_point16=sf = 6 * equal(ita, 0) + 5 * equal(ita, 1) + 1 * equal(ita, 2) + 18 * equal(ita, 3) + 10 * equal(ita, 5) + 15 * equal(ita, 6) + 25 * equal(ita, 7);
+wave_3_per_point17=sg = 1 * equal(ita, 0) + 14 * equal(ita, 1) + 7 * equal(ita, 2) + 5 * equal(ita, 3) + 18 * equal(ita, 4);
+wave_3_per_point18=sh = 19 * equal(ita, 0) + 21 * equal(ita, 1) + 18 * equal(ita, 2) + 16 * equal(ita, 3) + 18 * equal(ita, 4) + 9 * equal(ita, 5) + 19 * equal(ita, 6) + 5 * equal(ita, 7);
+wave_3_per_point19=si = 8 * equal(ita, 0) + 1 * equal(ita, 1) + 16 * equal(ita, 2) + 16 * equal(ita, 3) + 25 * equal(ita, 4);
+wave_3_per_point20=sj = 25 * equal(ita, 0) + 5 * equal(ita, 1) + 19 * equal(ita, 2) + 14 * equal(ita, 6) + 15 * equal(ita, 7);
+wave_3_per_point21=lr = if(0.00001 < abs(sw), lr, randint(10));
+wave_3_per_point22=let = equal(lr, 0) * sa + equal(lr, 1) * sb + equal(lr, 2) * sc + equal(lr, 3) * sd + equal(lr, 4) * se + equal(lr, 5) * sf + equal(lr, 6) * sg + equal(lr, 7) * sh + equal(lr, 8) * si + equal(lr, 9) * sj;
+wave_3_per_point23=va = equal(let, 23) + equal(let, 24) + equal(let, 26);
+wave_3_per_point24=vb = above(let, 0) * below(let, 9) + above(let, 10) * below(let, 19) + equal(let, 21) + equal(let, 23);
+wave_3_per_point25=vc = equal(let, 1) + equal(let, 2) + equal(let, 5) + equal(let, 6) + equal(let, 8) + equal(let, 11) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_3_per_point26=vd = above(let, 1) * below(let, 9) + above(let, 10) * below(let, 24) - equal(let, 20);
+wave_3_per_point27=ve = equal(let, 13) + equal(let, 14) + equal(let, 24) + equal(let, 25);
+wave_3_per_point28=vf = above(let, 1) * below(let, 8) + equal(let, 9) + above(let, 14) * below(let, 21) + equal(let, 26);
+wave_3_per_point29=vg = equal(let, 1);
+wave_3_per_point30=vh = equal(let, 9) + equal(let, 20);
+wave_3_per_point31=vi = above(let, 0) * below(let, 5) - equal(let, 3) + equal(let, 18);
+wave_3_per_point32=vj = above(let, 2) * below(let, 8) - equal(let, 4) + equal(let, 9) + above(let, 14) * below(let, 21) - equal(let, 18) + equal(let, 26);
+wave_3_per_point33=vk = equal(let, 11) + equal(let, 13) + above(let, 23) * below(let, 27);
+wave_3_per_point34=vl = equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 18) + above(let, 20) * below(let, 24);
+wave_3_per_point35=vm = equal(let, 1) + equal(let, 2) + equal(let, 8) + equal(let, 16) + equal(let, 18) + equal(let, 19);
+wave_3_per_point36=vn = equal(let, 1) + equal(let, 7) + equal(let, 8) + equal(let, 10) + above(let, 12) * below(let, 24) - equal(let, 16) - equal(let, 18) - equal(let, 20) - equal(let, 22);
+wave_3_per_point37=vo = equal(let, 11) + equal(let, 14) + equal(let, 17) + equal(let, 18) + equal(let, 23) + equal(let, 24);
+wave_3_per_point38=vp = equal(let, 3) + equal(let, 5) + equal(let, 7) + equal(let, 9) + equal(let, 10) + equal(let, 12) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_3_per_point39=vq = equal(let, 2) + equal(let, 4) + equal(let, 22);
+wave_3_per_point40=vr = equal(let, 9) + equal(let, 20) + equal(let, 25);
+wave_3_per_point41=vs = equal(let, 22);
+wave_3_per_point42=vt = above(let, 1) * below(let, 13) - equal(let, 6) - equal(let, 8) - equal(let, 11) + equal(let, 15) + equal(let, 17) + equal(let, 19) + equal(let, 21) + equal(let, 26);
+wave_3_per_point43=a = if(0.00001 < abs(above(it, 51)), 0, if(0.00001 < abs(above(it, 49)), va, if(0.00001 < abs(above(it, 47)), vb, if(0.00001 < abs(above(it, 44)), vc, if(0.00001 < abs(above(it, 42)), vd, if(0.00001 < abs(above(it, 39)), ve, if(0.00001 < abs(above(it, 37)), vf, if(0.00001 < abs(above(it, 34)), vg, if(0.00001 < abs(above(it, 31)), vh, if(0.00001 < abs(above(it, 28)), vi, if(0.00001 < abs(above(it, 26)), vj, if(0.00001 < abs(above(it, 23)), vk, if(0.00001 < abs(above(it, 21)), vl, if(0.00001 < abs(above(it, 18)), vm, if(0.00001 < abs(above(it, 16)), vn, if(0.00001 < abs(above(it, 13)), vo, if(0.00001 < abs(above(it, 11)), vp, if(0.00001 < abs(above(it, 8)), vq, if(0.00001 < abs(above(it, 5)), vr, if(0.00001 < abs(above(it, 2)), vs, if(0.00001 < abs(it), vt, 0)))))))))))))))))))));
+wave_3_per_point44=a = a * below(ita, 8);
+wave_3_per_point45=x = mx + vx * sz * 0.75;
+wave_3_per_point46=y = my + vy * sz * 1.5;
+shape_0_init1=tm = 0;
+shape_0_init2=tm = 0;
+shape_0_init3=tm = 0;
+shape_0_init4=tm = 0;
+shape_0_init5=q1 = 0;
+shape_0_init6=q1 = 0;
+shape_0_init7=t1 = 0.01 * randint(100);
+shape_0_init8=t2 = 0.01 * randint(100);
+shape_0_init9=te = 1;
+shape_0_init10=poly = 5;
+shape_0_per_frame1=tm = 0.05 * time;
+shape_0_per_frame2=r = 0.95 + 0.05 * sin(1.654 * tm);
+shape_0_per_frame3=g = 0.95 + 0.05 * sin(1.564 * tm);
+shape_0_per_frame4=b = 0.95 + 0.05 * sin(1.465 * tm);
+shape_0_per_frame5=r2 = 1.9 - r;
+shape_0_per_frame6=g2 = 1.9 - g;
+shape_0_per_frame7=b2 = 1.9 - b;
+shape_0_per_frame8=x = 0.4996;
+shape_0_per_frame9=y = 0.5003;
+shape_0_per_frame10=ang = (0.001 * randint(1001) - 0.001 * randint(1001)) * q1 * 0.5;
+shape_0_per_frame11=rad = rad - 1.5 * (0.001 * randint(1001) + 0.001 * randint(1001)) * q1;
+shape_0_per_frame12=a = above(treb, 0.8);
+shape_0_per_frame13=a2 = above(treb, 0.8);

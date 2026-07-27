@@ -25,58 +25,54 @@ nMotionVectorsY=1.248000
 nMotionVectorsLoop=5.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=54.000000
-bAdditive=1.000000
-bTextured=1.000000
-nInstances=2.000000
-fRad=2.185670
-fTexZoom=0.741510
-fR=0.300000
-fG=1.000000
-fB=0.700000
-fA=0.080000
-fR2=0.300000
-fB2=0.700000
-fA2=0.100000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=54.000000
-bAdditive=1.000000
-bTextured=1.000000
-fX=0.300000
-fRad=2.414490
-fTexZoom=0.305800
-fR=0.300000
-fG=1.000000
-fB=0.300000
-fA=0.040000
-fR2=0.300000
-fB2=0.300000
-fA2=0.100000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=54.000000
+shapecode_1_additive=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_num_inst=2.000000
+shapecode_1_rad=2.185670
+shapecode_1_tex_zoom=0.741510
+shapecode_1_r=0.300000
+shapecode_1_g=1.000000
+shapecode_1_b=0.700000
+shapecode_1_a=0.080000
+shapecode_1_r2=0.300000
+shapecode_1_b2=0.700000
+shapecode_1_a2=0.100000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=54.000000
+shapecode_2_additive=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_x=0.300000
+shapecode_2_rad=2.414490
+shapecode_2_tex_zoom=0.305800
+shapecode_2_r=0.300000
+shapecode_2_g=1.000000
+shapecode_2_b=0.300000
+shapecode_2_a=0.040000
+shapecode_2_r2=0.300000
+shapecode_2_b2=0.300000
+shapecode_2_a2=0.100000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=scroll = 0;
+per_frame_init_2=q10 = 0;
+per_frame_init_3=vol = 0;
+per_frame_init_4=q1 = 0;
+per_frame_1=scroll = scroll + 0.01;
+per_frame_2=q10 = scroll;
+per_frame_3=monitor = pixelsy;
+per_frame_4=warp = 0;
+per_frame_5=zoom = 1;
+per_frame_6=dy = 0.005;
+per_frame_7=vol = 0.33 * (bass_att + treb_att + mid_att);
+per_frame_8=q1 = vol;
 
 [warp_shader]
 uniform sampler2D sampler_pw_mcode1;

@@ -23,37 +23,51 @@ nMotionVectorsLoop=1.000000
 fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-fRad=0.491382
-fR=0.000000
-fG=1.000000
-fB=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_additive=1.000000
+shapecode_0_rad=0.491382
+shapecode_0_r=0.000000
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=dx_residual = 0;
+per_frame_init_2=dy_residual = 0;
+per_frame_init_3=bass_thresh = 0;
+per_frame_1=wave_r = 0.85 + 0.25 * sin(0.437 * time + 1);
+per_frame_2=wave_g = 0.85 + 0.25 * sin(0.544 * time + 2);
+per_frame_3=wave_b = 0.85 + 0.25 * sin(0.751 * time + 3);
+per_frame_4=rot = rot + 0.01 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_5=cx = cx + 0.21 * (0.6 * sin(0.374 * time) + 0.4 * sin(0.294 * time));
+per_frame_6=cy = cy + 0.21 * (0.6 * sin(0.393 * time) + 0.4 * sin(0.223 * time));
+per_frame_7=dx = dx + 0.003 * (0.6 * sin(0.234 * time) + 0.4 * sin(0.277 * time));
+per_frame_8=dy = dy + 0.003 * (0.6 * sin(0.284 * time) + 0.4 * sin(0.247 * time));
+per_frame_9=decay = decay - 0.01 * equal(mod(frame, 6), 0);
+per_frame_10=dx = dx + dx_residual;
+per_frame_11=dy = dy + dy_residual;
+per_frame_12=bass_thresh = 2 * above(bass_att, bass_thresh) + (1 - above(bass_att, bass_thresh)) * (0.96 * (bass_thresh - 1.3) + 1.3);
+per_frame_13=dx_residual = 0.016 * equal(bass_thresh, 2.13) * sin(7 * time) + (1 - equal(bass_thresh, 2.13)) * dx_residual;
+per_frame_14=dy_residual = 0.012 * equal(bass_thresh, 2.13) * sin(9 * time) + (1 - equal(bass_thresh, 2.13)) * dy_residual;
+per_frame_15=wave_x = wave_x - 7 * dx_residual;
+per_frame_16=wave_y = wave_y - 7 * dy_residual;
+per_frame_17=wave_mystery = 0.03 * time;
+per_frame_18=zoom = zoom + 0.005 * (0.6 * sin(0.1934 * time + 3) + 0.4 * sin(0.307 * time + 9));
+per_frame_19=zoom = zoom + 0.2 * max(0, bass_att - 1.1);
+per_frame_20=warp = warp + 0.5 * max(0, treb - 1.1);
+shape_0_init1=q4 = 0;
+shape_0_init2=q5 = 0;
+shape_0_per_frame1=x = 0.5 + q4;
+shape_0_per_frame2=y = 0.5 + q5;
+shape_0_per_frame3=a = bass_att + mid_att + treb_att;
+shape_0_per_frame4=a = a * 0.25;
+shape_0_per_frame5=a = a * a * 1.5;
 
 [warp_shader]
 shader_body { 

@@ -44,15 +44,14 @@ fMotionVectorsR=0.390000
 fMotionVectorsG=0.350000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.200000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.138 * (0.19 * sin(0.633 * time) + 0.4 * sin(0.245 * time));
+per_frame_2=wave_g = wave_g + 0.355 * (0.57 * sin(0.37 * time) + 0.4 * sin(0.156 * time));
+per_frame_3=wave_b = wave_b + 0.322 * (0.601 * sin(0.74 * time) + 0.4 * sin(0.12 * time));
+per_frame_4=dx = dx + 0.03 * sin(bass);
+per_frame_5=dy = dy + 0.01 * sin(bass_att);
+per_pixel_1=rot = rot + 0.06 * rad;
+per_pixel_2=cx = cx + rad / 12;

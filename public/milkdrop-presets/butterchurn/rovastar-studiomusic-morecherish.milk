@@ -32,15 +32,16 @@ fInnerBorderB=0.500000
 fInnerBorderA=0.950000
 nMotionVectorsX=9.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=warp = 0;
+per_frame_2=wave_r = 0.5 * bass;
+per_frame_3=wave_g = 0.5 * treb;
+per_frame_4=wave_b = 0.5 * mid;
+per_frame_5=decay = 0.99;
+per_frame_6=rot = rot + 0.04 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_7=zoom = max(0.98, min(0.15 + 0.8 * bass_att, 1.75));
+per_pixel_1=zoom = zoom + 0.1 * rad + 0.05;
+per_pixel_2=zoomexp = 1 - sin(rad * time * 100);

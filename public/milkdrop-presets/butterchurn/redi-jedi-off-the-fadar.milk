@@ -24,33 +24,111 @@ fOuterBorderSize=0.005000
 fOuterBorderA=0.500000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fSeparation=256.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=1.000000
-fSeparation=256.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_sep=256.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=1.000000
+wavecode_2_sep=256.000000
+wavecode_2_thick=1.000000
+wavecode_2_additive=1.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=lbbtime = 0;
+per_frame_init_2=bbtime = 0;
+per_frame_init_3=beatb = 0;
+per_frame_init_4=avgbeatrate = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=q5 = 0;
+per_frame_init_7=avgvol = 0;
+per_frame_init_8=beatrate = 0;
+per_frame_init_9=q4 = 0;
+per_frame_init_10=lbass = 0;
+per_frame_init_11=rawbeatb = 0;
+per_frame_init_12=db = 0;
+per_frame_init_13=vol = 0;
+per_frame_init_14=bc = 0;
+per_frame_init_15=q2 = 0;
+per_frame_init_16=q3 = 0;
+per_frame_init_17=mtime = 0;
+per_frame_init_18=avgdb = 0;
+per_frame_init_19=beatrate = 5;
+per_frame_init_20=avgbeatrate = 1;
+per_frame_init_21=bbtime = 1;
+per_frame_init_22=lbbtime = 0.5;
+per_frame_init_23=avgdb = 0.5;
+per_frame_init_24=vol = 1;
+per_frame_init_25=avgvol = 0.2;
+per_frame_1=db = (bass - lbass) * fps;
+per_frame_2=lbass = bass;
+per_frame_3=avgdb = 0.99 * avgdb + 0.01 * abs(db);
+per_frame_4=rawbeatb = above(db, 2 * avgdb);
+per_frame_5=beatb = rawbeatb * above(time - lbbtime, 0.75 * avgbeatrate) * above(bass_att, 0.3);
+per_frame_6=bbtime = time * beatb;
+per_frame_7=beatrate = beatb * (bbtime - lbbtime) + (1 - beatb) * beatrate;
+per_frame_8=avgbeatrate = beatb * (0.999 * avgbeatrate + 0.001 * beatrate) + (1 - beatb) * avgbeatrate;
+per_frame_9=lbbtime = time * beatb + (1 - beatb) * lbbtime;
+per_frame_10=bc = bc + beatb;
+per_frame_11=vol = rawbeatb * (db - avgdb) * 0.01;
+per_frame_12=avgvol = 0.99 * avgvol + 0.05 * vol;
+per_frame_13=mtime = mtime + min(0.5 * avgvol, 0.25);
+per_frame_14=q2 = mtime;
+per_frame_15=q1 = beatb;
+per_frame_16=q3 = db;
+per_frame_17=q4 = 60 / avgbeatrate;
+per_frame_18=q5 = equal(mod(bc, 4), 0) * beatb;
+per_frame_19=zoom = 1;
+per_frame_20=decay = 0.99;
+per_frame_21=warp = 0;
+per_frame_22=wrap = 1;
+per_frame_23=ob_r = 0.5 * sin(0.01 * q2 + 0.01 * bass) + 0.5;
+per_frame_24=ob_g = 0.5 * cos(0.001 * q2 * q4 + 0.01 * treb) + 0.5;
+per_frame_25=ob_b = 0.5 * sin(0.001 * time * q4) + 0.5;
+per_pixel_1=zoom = 1 + 0.1 * sin(q2 + 6 * treb_att * rad);
+per_pixel_2=rot = 0.1 * sin(0.05 * q2 * q4 + 3 * bass_att * rad);
+wave_0_init1=ii = 0;
+wave_0_init2=t1 = 0;
+wave_0_init3=q1 = 0;
+wave_0_init4=t3 = 0;
+wave_0_init5=q4 = 0;
+wave_0_init6=c2 = 0;
+wave_0_init7=i = 0;
+wave_0_init8=c3 = 0;
+wave_0_init9=t2 = 0;
+wave_0_init10=c4 = 0;
+wave_0_init11=q2 = 0;
+wave_0_init12=c1 = 0;
+wave_0_per_frame1=c1 = abs(c1 - q1);
+wave_0_per_frame2=t1 = c1;
+wave_0_per_frame3=t2 = sin(0.0001 * q2 * q4);
+wave_0_per_frame4=t3 = 0.3 * sin(0.001 * q2 * treb_att + 10 * q4 * bass) + 0.4;
+wave_0_per_point1=i = cos(0.1 * q2);
+wave_0_per_point2=ii = sin(0.1 * q2);
+wave_0_per_point3=y = sample * i + 0.5;
+wave_0_per_point4=x = sample * ii + 0.5;
+wave_0_per_point5=c4 = 0.1 * sin(q2 * q4 * 0.01) + 0.11;
+wave_0_per_point6=c2 = 0.1 + 1.5 * c4;
+wave_0_per_point7=c3 = 0.2 + 1.5 * c4;
+wave_0_per_point8=c1 = 1 - above(sample, c2) * below(sample, c3);
+wave_0_per_point9=r = t1 * (1 - c1);
+wave_0_per_point10=g = t2 * (1 - c1);
+wave_0_per_point11=b = t3 * (1 - c1);
+wave_2_init1=i = 0;
+wave_2_init2=q2 = 0;
+wave_2_init3=q4 = 0;
+wave_2_init4=ii = 0;
+wave_2_init5=ul = 0;
+wave_2_init6=ll = 0;
+wave_2_per_point1=i = cos(0.01 * q2 * q4);
+wave_2_per_point2=ii = sin(0.01 * q2 * q4);
+wave_2_per_point3=y = sample * i + 0.5;
+wave_2_per_point4=x = sample * ii + 0.5;
+wave_2_per_point5=ul = 0.003 * bass_att * q4;
+wave_2_per_point6=ll = 0.002 * treb_att * q4;
+wave_2_per_point7=r = (0.052 * treb_att + value1) * above(sample, ll) * below(sample, ul);
+wave_2_per_point8=g = (0.02 * mid_att + value2) * above(sample, ll) * below(sample, ul);
+wave_2_per_point9=b = (0.057 * bass_att + value2) * above(sample, ll) * below(sample, ul);

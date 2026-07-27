@@ -36,30 +36,38 @@ b1x=0.840000
 b2x=0.910000
 b3x=0.520000
 b1ed=0.900000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=scale = 0;
+per_frame_init_2=q6 = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=q5 = 0;
+per_frame_init_5=angle = 0;
+per_frame_init_6=q4 = 0;
+per_frame_init_7=q2 = 0;
+per_frame_init_8=q3 = 0;
+per_frame_init_9=q7 = 0;
+per_frame_init_10=q8 = 0;
+per_frame_1=zoom = 1;
+per_frame_2=warp = 0;
+per_frame_3=scale = 6;
+per_frame_4=angle = 0.2 * -time;
+per_frame_5=q1 = scale * cos(angle);
+per_frame_6=q2 = scale * sin(angle);
+per_frame_7=q3 = 0;
+per_frame_8=q4 = 0.3;
+per_frame_9=scale = 1.4;
+per_frame_10=angle = 0.2 * time;
+per_frame_11=q5 = scale * cos(angle);
+per_frame_12=q6 = scale * sin(angle);
+per_frame_13=q7 = -0.25;
+per_frame_14=q8 = 0.2;
 
 [warp_shader]
 vec2 xlat_mutabledenominator;

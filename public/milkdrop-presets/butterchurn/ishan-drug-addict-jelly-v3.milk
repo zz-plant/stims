@@ -24,30 +24,21 @@ fOuterBorderG=0.400000
 fInnerBorderSize=0.260000
 nMotionVectorsLoop=0.200000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=midd_att = 0;
+per_frame_1=wave_r = 1;
+per_frame_2=wave_g = 1;
+per_frame_3=wave_b = 0;
+per_frame_4=decay = decay - 0.01 * equal(mod(frame, 6), 0);
+per_frame_5=dx = 0.6 * dx + 0.04 * max(midd_att - 1, bass_att - 1);
+per_pixel_1=zoom = zoom + 2 * sin(sqr(rad));
 
 [warp_shader]
 shader_body { 

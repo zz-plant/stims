@@ -20,37 +20,86 @@ fWaveG=0.000000
 fWaveB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.800000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-fR=0.000000
-fG=0.200000
-fB=0.800000
-
-[wave00_2]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bThick=1.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_r=0.000000
+wavecode_1_g=0.200000
+wavecode_1_b=0.800000
+wavecode_2_enabled=1.000000
+wavecode_2_thick=1.000000
+wavecode_2_additive=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_thick=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=speedinv = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=q5 = 0;
+per_frame_init_4=t3 = 0;
+per_frame_init_5=flux = 0;
+per_frame_init_6=q4 = 0;
+per_frame_init_7=t = 0;
+per_frame_init_8=t2 = 0;
+per_frame_init_9=q2 = 0;
+per_frame_init_10=qb = 0;
+per_frame_init_11=speed = 0;
+per_frame_init_12=qc = 0;
+per_frame_init_13=q3 = 0;
+per_frame_init_14=qa = 0;
+per_frame_init_15=mv_x = 64;
+per_frame_init_16=mv_y = 48;
+per_frame_init_17=nut = 0;
+per_frame_init_18=stp = 0;
+per_frame_init_19=stq = 0;
+per_frame_init_20=rtp = 0;
+per_frame_init_21=rtq = 0;
+per_frame_init_22=wvr = 0;
+per_frame_init_23=decay = 0;
+per_frame_init_24=dcsp = 0;
+per_frame_init_25=q1 = 0;
+per_frame_init_26=q2 = 0;
+per_frame_init_27=q3 = 0;
+per_frame_1=t = 2.3 * time;
+per_frame_2=t2 = 2.89 * sin(treb_att + mid_att);
+per_frame_3=t3 = 2.23 * sin(mid_att + treb_att);
+per_frame_4=wave_x = wave_x + 0.35 * (0.7 * sin(2.221 + bass_att) + 0.3 * sin(1.821 * time));
+per_frame_5=wave_y = wave_y + 0.35 * (0.3 * sin(1.942 * time) + 0.7 * sin(2.522 + bass_att));
+per_frame_6=wave_r = wave_r + 0.79 * (0.6 * sin(0.823 * t3) + 0.4 * sin(0.916 * t2));
+per_frame_7=wave_g = wave_g + 0.79 * (0.6 * sin(0.9 * t2) + 0.4 * sin(1.023 * t2));
+per_frame_8=wave_b = wave_b + 0.79 * (0.6 * sin(0.808 * t2) + 0.4 * sin(0.949 * t3));
+per_frame_9=rot = rot + 0.01 * (0.6 * sin(0.038 * time) + 0.4 * sin(0.054 * time));
+per_frame_10=dx = dx + 0.002 * (0.6 * sin(0.434 * time) + 0.4 * sin(0.277 * time));
+per_frame_11=dy = dy + 0.002 * (0.6 * sin(0.384 * time) + 0.4 * sin(0.477 * time));
+per_frame_12=warp = sin(time) / 2 - (bass_att - mid_att);
+per_frame_13=decay = 1;
+per_frame_14=speed = 0.8;
+per_frame_15=speedinv = 1 - speed;
+per_frame_16=q1 = qa * speed + bass * speedinv;
+per_frame_17=q2 = qb * speed + mid * speedinv;
+per_frame_18=q3 = qc * speed + treb * speedinv;
+per_frame_19=qa = q1;
+per_frame_20=qb = q2;
+per_frame_21=qc = q3;
+per_frame_22=flux = sin(time / 2);
+per_frame_23=q4 = 0.5 * flux + 0.5;
+per_frame_24=q5 = flux;
+wave_1_init1=t = 0;
+wave_1_per_frame1=a = sin(treb_att) / 2;
+wave_1_per_frame2=t = 1.9 * time;
+wave_1_per_frame3=r = r + 0.79 * (0.6 * sin(0.823 * t) + 0.4 * sin(0.916 * t));
+wave_2_init1=t = 0;
+wave_2_per_frame1=a = treb_att / 0.5;
+wave_2_per_frame2=t = 2.1 * time;
+wave_2_per_frame3=r = b + 0.49 * (0.6 * sin(0.803 * t) + 0.4 * sin(0.946 * t));
+wave_2_per_frame4=b = b + 0.49 * (0.6 * sin(0.828 * t) + 0.4 * sin(0.959 * t));
+wave_3_init1=t = 0;
+wave_3_per_frame1=a = mid_att / 2;
+wave_3_per_frame2=t = 2.3 * time;
+wave_3_per_frame3=r = r + 0.79 * (0.6 * sin(0.823 * t) + 0.4 * sin(0.916 * t));
+wave_3_per_frame4=b = r + 0.79 * (0.6 * sin(0.808 * t) + 0.4 * sin(0.949 * t));
 
 [warp_shader]
 shader_body { 

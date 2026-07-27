@@ -24,36 +24,42 @@ nMotionVectorsLoop=1.000000
 fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=2.023100
-fSmoothing=0.000000
-fR=0.000000
-fB=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_additive=1.000000
+wavecode_1_scaling=2.023100
+wavecode_1_smoothing=0.000000
+wavecode_1_r=0.000000
+wavecode_1_b=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=r = 0;
+per_frame_1=zoom = 1;
+per_frame_2=wave_a = 0;
+per_frame_3=r = 0.96 * r + 0.1 * (bass - treb);
+per_frame_4=rot = 0.1 * r;
+wave_1_init1=t3 = 0;
+wave_1_init2=t2 = 0;
+wave_1_init3=t1 = 0;
+wave_1_init4=d = 0;
+wave_1_init5=t8 = 0;
+wave_1_init6=t2 = 0;
+wave_1_init7=t3 = 0;
+wave_1_init8=t4 = 0;
+wave_1_init9=cl = 0;
+wave_1_per_frame1=t8 = 1;
+wave_1_per_point1=t3 = 0.6 * t3 + 1 * value1;
+wave_1_per_point2=t2 = 0.7 * t2 + 0.2 * t3;
+wave_1_per_point3=t1 = 0.8 * t1 + 0.1 * t2;
+wave_1_per_point4=d = 0.9 * d + 0.2 * t1;
+wave_1_per_point5=y = 0.5 + d * sample * (1 - sample) * 0.6;
+wave_1_per_point6=x = -0.05 + 1.1 * sample;
+wave_1_per_point7=t8 = 0;
 
 [warp_shader]
 shader_body { 

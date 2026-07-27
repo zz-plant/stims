@@ -27,47 +27,125 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=1.000000
-nSides=3.000000
-bAdditive=1.000000
-nInstances=400.000000
-fRad=0.162830
-fTexZoom=0.734580
-fG=1.000000
-fB=1.000000
-fG2=0.000000
-fBorderA=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=1.000000
-nSamples=65.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=0.334080
-fSmoothing=0.000000
-fA=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=1.000000
+wavecode_1_samples=65.000000
+wavecode_1_spectrum=1.000000
+wavecode_1_usedots=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_additive=1.000000
+wavecode_1_scaling=0.334080
+wavecode_1_smoothing=0.000000
+wavecode_1_a=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=1.000000
+shapecode_3_sides=3.000000
+shapecode_3_additive=1.000000
+shapecode_3_num_inst=400.000000
+shapecode_3_rad=0.162830
+shapecode_3_tex_zoom=0.734580
+shapecode_3_g=1.000000
+shapecode_3_b=1.000000
+shapecode_3_g2=0.000000
+shapecode_3_border_a=0.000000
+wave_1_init1=d = 0;
+wave_1_init2=q32 = 0;
+wave_1_init3=t8 = 0;
+wave_1_init4=t1 = 0;
+wave_1_init5=t2 = 0;
+wave_1_init6=t2 = 0;
+wave_1_init7=t3 = 0;
+wave_1_init8=t4 = 0;
+wave_1_init9=cl = 0;
+wave_1_per_frame1=t8 = 1;
+wave_1_per_frame2=t1 = 0.5;
+wave_1_per_frame3=t2 = 0.9;
+wave_1_per_point1=d = 0;
+wave_1_per_point2=y = 0.2 + value1 + value2;
+wave_1_per_point3=x = 0.9 - 0.8 * sample;
+wave_1_per_point4=gmegabuf(floor((64 * sample - 1) * q32 + 14)) = value1 + value2;
+shape_3_init1=i3 = 0;
+shape_3_init2=i3 = 0;
+shape_3_init3=i4 = 0;
+shape_3_init4=i4 = 0;
+shape_3_init5=ppo = 0;
+shape_3_init6=index = 0;
+shape_3_init7=i4 = 0;
+shape_3_init8=q32 = 0;
+shape_3_init9=sample = 0;
+shape_3_init10=i3 = 0;
+shape_3_init11=ppo = 0;
+shape_3_init12=size = 0;
+shape_3_init13=index = 0;
+shape_3_init14=index = 0;
+shape_3_init15=index = 0;
+shape_3_init16=index = 0;
+shape_3_init17=size = 0;
+shape_3_init18=index = 0;
+shape_3_init19=index = 0;
+shape_3_init20=index = 0;
+shape_3_init21=sample = 0;
+shape_3_init22=sample = 0;
+shape_3_init23=ppo = 0;
+shape_3_init24=bending = 0;
+shape_3_init25=index = 0;
+shape_3_init26=index = 0;
+shape_3_init27=dir = 0;
+shape_3_init28=sample = 0;
+shape_3_init29=bending = 0;
+shape_3_init30=dir = 0;
+shape_3_init31=bending = 0;
+shape_3_init32=sample = 0;
+shape_3_init33=dir = 0;
+shape_3_init34=size = 0;
+shape_3_init35=dir = 0;
+shape_3_init36=size = 0;
+shape_3_init37=bending = 0;
+shape_3_init38=sample = 0;
+shape_3_init39=dir = 0;
+shape_3_init40=size = 0;
+shape_3_init41=dir = 0;
+shape_3_init42=size = 0;
+shape_3_init43=bending = 0;
+shape_3_init44=q2 = 0;
+shape_3_init45=sample = 0;
+shape_3_init46=size = 0;
+shape_3_init47=i3 = 0;
+shape_3_init48=i3 = 0;
+shape_3_init49=i4 = 0;
+shape_3_init50=i3 = 0;
+shape_3_init51=ppo = 0;
+shape_3_init52=i4 = 0;
+shape_3_init53=i4 = 0;
+shape_3_init54=i3 = 0;
+shape_3_init55=i4 = 0;
+shape_3_per_frame1=i3 = if(0.00001 < abs(equal(instance, 0)), 0, i3);
+shape_3_per_frame2=i4 = if(0.00001 < abs(equal(instance, 0)), 0, i4);
+shape_3_per_frame3=ppo = 8;
+shape_3_per_frame4=index = i4 * q32;
+shape_3_per_frame5=sample = mod(i3, ppo);
+shape_3_per_frame6=size = 40 * gmegabuf(floor(index + 4));
+shape_3_per_frame7=x = gmegabuf(floor(index));
+shape_3_per_frame8=y = gmegabuf(floor(index + 1));
+shape_3_per_frame9=ang = gmegabuf(floor(index + 9));
+shape_3_per_frame10=rad = 0.05 * size;
+shape_3_per_frame11=r = gmegabuf(floor(index + 5));
+shape_3_per_frame12=g = gmegabuf(floor(index + 6));
+shape_3_per_frame13=b = gmegabuf(floor(index + 7));
+shape_3_per_frame14=sample = sample / ppo;
+shape_3_per_frame15=bending = 5 * gmegabuf(floor(index + 12)) + 5 * gmegabuf(floor(index + 10));
+shape_3_per_frame16=dir = -ang + (sample - 0.4) * bending;
+shape_3_per_frame17=ang = 1.5 * asin(1) - dir + 0.05 * bending;
+shape_3_per_frame18=x = x + (0.06 * (sample - 0.3) * cos(dir) * size + sin(dir) * size * bending * 0.01);
+shape_3_per_frame19=y = y + (0.06 * (sample - 0.3) * sin(dir) * size - cos(dir) * size * bending * 0.01);
+shape_3_per_frame20=x = 0.5 + (x - 0.5) / q2;
+shape_3_per_frame21=rad = 1.5 * rad - 0.05 * sample * size;
+shape_3_per_frame22=i3 = i3 + 1;
+shape_3_per_frame23=i4 = if(0.00001 < abs(equal(mod(i3, ppo), 0)), i4 + 1, i4);
 
 [warp_shader]
 shader_body { 

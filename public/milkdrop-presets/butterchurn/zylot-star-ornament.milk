@@ -31,65 +31,145 @@ fMotionVectorsR=0.499900
 fMotionVectorsG=0.499900
 fMotionVectorsB=0.499900
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=3.000000
-fRad=0.340000
-fAng=0.530000
-fR=0.560000
-fG=0.360000
-fR2=0.900000
-fA2=0.500000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bTextured=1.000000
-fRad=0.108073
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=29.000000
-bAdditive=1.000000
-bTextured=1.000000
-fRad=0.105693
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bTextured=1.000000
-fRad=0.091434
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=3.000000
+shapecode_0_rad=0.340000
+shapecode_0_ang=0.530000
+shapecode_0_r=0.560000
+shapecode_0_g=0.360000
+shapecode_0_r2=0.900000
+shapecode_0_a2=0.500000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=100.000000
+shapecode_1_additive=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=0.108073
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_a2=1.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=29.000000
+shapecode_2_additive=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_rad=0.105693
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_r2=1.000000
+shapecode_2_b2=1.000000
+shapecode_2_a2=1.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=1.000000
+shapecode_3_sides=100.000000
+shapecode_3_additive=1.000000
+shapecode_3_textured=1.000000
+shapecode_3_rad=0.091434
+shapecode_3_g=1.000000
+shapecode_3_b=1.000000
+shapecode_3_r2=1.000000
+shapecode_3_b2=1.000000
+shapecode_3_a2=1.000000
+shapecode_3_border_a=0.000000
+per_frame_init_1=xpos = 0;
+per_frame_init_2=yamptarg = 0;
+per_frame_init_3=ydir = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=yaccel = 0;
+per_frame_init_6=xamptarg = 0;
+per_frame_init_7=xamp = 0;
+per_frame_init_8=xspeed = 0;
+per_frame_init_9=ypos = 0;
+per_frame_init_10=xaccel = 0;
+per_frame_init_11=att = 0;
+per_frame_init_12=vol = 0;
+per_frame_init_13=q2 = 0;
+per_frame_init_14=yamp = 0;
+per_frame_init_15=xdir = 0;
+per_frame_init_16=yspeed = 0;
+per_frame_1=warp = 0;
+per_frame_2=decay = 0.92;
+per_frame_3=vol = (bass + mid + att) / 6;
+per_frame_4=xamptarg = if(0.00001 < abs(equal(mod(frame, 15), 0)), min(0.5 * vol * bass_att, 0.5), xamptarg);
+per_frame_5=xamp = xamp + 0.5 * (xamptarg - xamp);
+per_frame_6=xdir = if(0.00001 < abs(above(abs(xpos), xamp)), -sign(xpos), if(0.00001 < abs(below(abs(xspeed), 0.1)), 2 * above(xpos, 0) - 1, xdir));
+per_frame_7=xaccel = xdir * xamp - xpos - 0.055 * xspeed * below(abs(xpos), xamp);
+per_frame_8=xspeed = xspeed + xdir * xamp - xpos - 0.055 * xspeed * below(abs(xpos), xamp);
+per_frame_9=xpos = xpos + 0.001 * xspeed;
+per_frame_10=yamptarg = if(0.00001 < abs(equal(mod(frame, 15), 0)), min(0.3 * vol * treb_att, 0.5), yamptarg);
+per_frame_11=yamp = yamp + 0.5 * (yamptarg - yamp);
+per_frame_12=ydir = if(0.00001 < abs(above(abs(ypos), yamp)), -sign(ypos), if(0.00001 < abs(below(abs(yspeed), 0.1)), 2 * above(ypos, 0) - 1, ydir));
+per_frame_13=yaccel = ydir * yamp - ypos - 0.055 * yspeed * below(abs(ypos), yamp);
+per_frame_14=yspeed = yspeed + ydir * yamp - ypos - 0.055 * yspeed * below(abs(ypos), yamp);
+per_frame_15=ypos = ypos + 0.001 * yspeed;
+per_frame_16=q1 = ypos;
+per_frame_17=q2 = xpos;
+per_pixel_1=zoom = zoom + q1 * q2 * 2;
+per_pixel_2=rot = 10 + rad * treb * 0.1;
+shape_0_init1=angle = 0;
+shape_0_init2=bassspin = 0;
+shape_0_init3=q1 = 0;
+shape_0_init4=q2 = 0;
+shape_0_init5=bassspin = 0;
+shape_0_init6=angle = 0;
+shape_0_per_frame1=ang = angle;
+shape_0_per_frame2=bassspin = if(0.00001 < abs(above(0.05 * bass, bassspin)), bassspin + 0.001, bassspin - 0.001);
+shape_0_per_frame3=bassspin = bassspin * above(bassspin, 0);
+shape_0_per_frame4=angle = angle + bassspin;
+shape_0_per_frame5=r = 0.3 * bass;
+shape_0_per_frame6=g = 0.3 * treb;
+shape_0_per_frame7=b = 0.3 * mid;
+shape_0_per_frame8=r2 = 0.8 + 0.2 * sin(1.2 * time);
+shape_0_per_frame9=g2 = 0.8 + 0.2 * sin(0.9777 * time);
+shape_0_per_frame10=b2 = 0.8 + 0.2 * sin(0.7005 * time);
+shape_0_per_frame11=border_a = 1 * above(bass + treb + mid, 5);
+shape_0_per_frame12=x = 0.5 + q1;
+shape_0_per_frame13=y = 0.5 + q2;
+shape_1_init1=bassspin = 0;
+shape_1_init2=xpos = 0;
+shape_1_init3=ypos = 0;
+shape_1_init4=q1 = 0;
+shape_1_init5=q2 = 0;
+shape_1_init6=bassspin = 0;
+shape_1_init7=xpos = 0.25;
+shape_1_init8=ypos = 0.25;
+shape_1_per_frame1=bassspin = if(0.00001 < abs(above(0.05 * bass, bassspin)), bassspin + 0.001, bassspin - 0.001);
+shape_1_per_frame2=bassspin = bassspin * above(bassspin, 0);
+shape_1_per_frame3=xpos = xpos + bassspin;
+shape_1_per_frame4=ypos = ypos + bassspin;
+shape_1_per_frame5=x = 0.5 + q1 + 0.13 * sin(xpos);
+shape_1_per_frame6=y = 0.5 + q2 + 0.18 * cos(ypos);
+shape_2_init1=bassspin = 0;
+shape_2_init2=xpos = 0;
+shape_2_init3=ypos = 0;
+shape_2_init4=q1 = 0;
+shape_2_init5=q2 = 0;
+shape_2_init6=bassspin = 0;
+shape_2_init7=xpos = 2.3;
+shape_2_init8=ypos = 2.3;
+shape_2_per_frame1=bassspin = if(0.00001 < abs(above(0.05 * bass, bassspin)), bassspin + 0.001, bassspin - 0.001);
+shape_2_per_frame2=bassspin = bassspin * above(bassspin, 0);
+shape_2_per_frame3=xpos = xpos + bassspin;
+shape_2_per_frame4=ypos = ypos + bassspin;
+shape_2_per_frame5=x = 0.5 + q1 + 0.13 * sin(xpos);
+shape_2_per_frame6=y = 0.5 + q2 + 0.18 * cos(ypos);
+shape_3_init1=bassspin = 0;
+shape_3_init2=xpos = 0;
+shape_3_init3=ypos = 0;
+shape_3_init4=q1 = 0;
+shape_3_init5=q2 = 0;
+shape_3_init6=bassspin = 0;
+shape_3_init7=xpos = 4.5;
+shape_3_init8=ypos = 4.5;
+shape_3_per_frame1=bassspin = if(0.00001 < abs(above(0.05 * bass, bassspin)), bassspin + 0.001, bassspin - 0.001);
+shape_3_per_frame2=bassspin = bassspin * above(bassspin, 0);
+shape_3_per_frame3=xpos = xpos + bassspin;
+shape_3_per_frame4=ypos = ypos + bassspin;
+shape_3_per_frame5=x = 0.5 + q1 + 0.13 * sin(xpos);
+shape_3_per_frame6=y = 0.5 + q2 + 0.18 * cos(ypos);

@@ -32,37 +32,120 @@ fMotionVectorsR=0.000000
 fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=0.550450
-fSmoothing=1.000000
-fR=0.190000
-fG=0.150000
-fB=0.110000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=0.550450
+wavecode_0_smoothing=1.000000
+wavecode_0_r=0.190000
+wavecode_0_g=0.150000
+wavecode_0_b=0.110000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=mainangle = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=kick = 0;
+per_frame_init_4=beat = 0;
+per_frame_init_5=vol = 0;
+per_frame_init_6=bc = 0;
+per_frame_init_7=size = 0;
+per_frame_init_8=q2 = 0;
+per_frame_init_9=trigger = 0;
+per_frame_init_10=q7 = 0;
+per_frame_init_11=mtime = 0;
+per_frame_init_12=q8 = 0;
+per_frame_init_13=mv_x = 64;
+per_frame_init_14=mv_y = 48;
+per_frame_init_15=nut = 0;
+per_frame_init_16=stp = 0;
+per_frame_init_17=stq = 0;
+per_frame_init_18=rtp = 0;
+per_frame_init_19=rtq = 0;
+per_frame_init_20=wvr = 0;
+per_frame_init_21=dcsp = 0;
+per_frame_init_22=size = 6;
+per_frame_init_23=bc = 0;
+per_frame_1=decay = 0.985;
+per_frame_2=vol = 0.25 * (bass + mid + treb);
+per_frame_3=vol = vol * vol;
+per_frame_4=q8 = vol;
+per_frame_5=mtime = mtime + 0.01 * vol * (75 / fps);
+per_frame_6=q7 = mtime;
+per_frame_7=monitor = 512 / 8;
+per_frame_8=warp = 0;
+per_frame_9=q1 = 0.9 * mtime;
+per_frame_10=beat = above(vol, 1.5);
+per_frame_11=bc = max(bc, 0);
+per_frame_12=bc = if(0.00001 < abs(equal(bc, 0)), bc + beat, bc - 1 / fps / 4);
+per_frame_13=trigger = equal(bc, 1);
+per_frame_14=monitor = bc;
+per_frame_15=size = size + trigger;
+per_frame_16=size = if(0.00001 < abs(above(size, 9)), 6, size);
+per_frame_17=mainangle = 0.19125 * q1;
+per_frame_18=kick = if(0.00001 < abs(equal(trigger, 1)), 2, 1);
+per_frame_19=dx = 0.003 * cos(mainangle) * kick;
+per_frame_20=dy = 0.003 * sin(mainangle) * kick;
+per_frame_21=zoom = 1 - 0.005 * vol * abs(cos(mainangle));
+per_frame_22=q2 = floor(size);
+wave_0_init1=cang = 0;
+wave_0_init2=n = 0;
+wave_0_init3=yq = 0;
+wave_0_init4=xp = 0;
+wave_0_init5=fix = 0;
+wave_0_init6=yp = 0;
+wave_0_init7=t1 = 0;
+wave_0_init8=q1 = 0;
+wave_0_init9=cubesize = 0;
+wave_0_init10=xq = 0;
+wave_0_init11=sang = 0;
+wave_0_init12=zq = 0;
+wave_0_init13=ang = 0;
+wave_0_init14=tm = 0;
+wave_0_init15=zp = 0;
+wave_0_init16=q2 = 0;
+wave_0_init17=taille = 0;
+wave_0_per_frame1=t1 = 0.25 * q1;
+wave_0_per_frame2=a = if(0.00001 < abs(above(0.3 * (treb + mid), 1)), 1, 0.5 * treb);
+wave_0_per_point1=n = 6.283 * sample;
+wave_0_per_point2=cubesize = q2;
+wave_0_per_point3=fix = 0.5 * (1 / cubesize);
+wave_0_per_point4=tm = 4 * q1 + 4 * sample;
+wave_0_per_point5=taille = 0.25 * bass + 0.3;
+wave_0_per_point6=xp = sin(tm) * cos(3 * tm) * taille + 0.5;
+wave_0_per_point7=yp = sin(1.1 * tm) * sin(4.1 * tm) * taille + 0.5;
+wave_0_per_point8=zp = sin(2.9 * tm) * cos(1.77 * tm) * taille + 0.5;
+wave_0_per_point9=xp = floor(xp * cubesize) / cubesize - 0.5 + fix;
+wave_0_per_point10=yp = floor(yp * cubesize) / cubesize - 0.5 + fix;
+wave_0_per_point11=zp = floor(zp * cubesize) / cubesize - 0.5 + fix;
+wave_0_per_point12=ang = t1;
+wave_0_per_point13=sang = sin(ang);
+wave_0_per_point14=cang = cos(ang);
+wave_0_per_point15=xq = xp * sang + zp * cang;
+wave_0_per_point16=yq = yp;
+wave_0_per_point17=zq = xp * cang - zp * sang;
+wave_0_per_point18=xp = xq;
+wave_0_per_point19=yp = yq;
+wave_0_per_point20=zp = zq;
+wave_0_per_point21=ang = 0.75 * t1;
+wave_0_per_point22=sang = sin(ang);
+wave_0_per_point23=cang = cos(ang);
+wave_0_per_point24=xq = xp;
+wave_0_per_point25=yq = yp * sang + zp * cang;
+wave_0_per_point26=zq = yp * cang - zp * sang;
+wave_0_per_point27=xp = xq;
+wave_0_per_point28=yp = yq;
+wave_0_per_point29=zp = zq;
+wave_0_per_point30=zp = zp + 2;
+wave_0_per_point31=x = xp / zp + 0.5;
+wave_0_per_point32=y = 1.333 * (yp / zp) + 0.5;
+wave_0_per_point33=r = 0.05 * bass;
+wave_0_per_point34=g = 0.05 * mid;
+wave_0_per_point35=b = 0.05 * treb;
 
 [warp_shader]
 shader_body { 

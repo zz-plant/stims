@@ -25,69 +25,152 @@ fInnerBorderA=1.000000
 nMotionVectorsX=44.799995
 nMotionVectorsY=24.000004
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=2.667100
-fTexZoom=0.274246
-fG=1.000000
-fB=1.000000
-fA=0.100000
-fR2=1.000000
-fG2=0.000000
-fA2=0.400000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=2.667100
-fTexZoom=0.274246
-fG=1.000000
-fB=1.000000
-fA=0.100000
-fR2=1.000000
-fG2=0.000000
-fA2=0.400000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=2.667177
-fTexZoom=0.369642
-fG=1.000000
-fB=1.000000
-fA=0.100000
-fA2=0.400000
-fBorderG=0.000000
-fBorderB=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-fSmoothing=0.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-fSmoothing=0.000000
-
-[wave00_2]
-bEnabled=1.000000
-bThick=1.000000
-fSmoothing=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_smoothing=0.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_smoothing=0.000000
+wavecode_2_enabled=1.000000
+wavecode_2_thick=1.000000
+wavecode_2_smoothing=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=2.667100
+shapecode_0_tex_zoom=0.274246
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.100000
+shapecode_0_r2=1.000000
+shapecode_0_g2=0.000000
+shapecode_0_a2=0.400000
+shapecode_0_border_r=0.000000
+shapecode_0_border_g=0.000000
+shapecode_0_border_b=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=2.667100
+shapecode_1_tex_zoom=0.274246
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_a=0.100000
+shapecode_1_r2=1.000000
+shapecode_1_g2=0.000000
+shapecode_1_a2=0.400000
+shapecode_1_border_r=0.000000
+shapecode_1_border_g=0.000000
+shapecode_1_border_b=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_rad=2.667177
+shapecode_2_tex_zoom=0.369642
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_a=0.100000
+shapecode_2_a2=0.400000
+shapecode_2_border_g=0.000000
+shapecode_2_border_b=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=basstime = 0;
+per_frame_init_2=q5 = 0;
+per_frame_init_3=decay_r = 0;
+per_frame_init_4=decay_g = 0;
+per_frame_init_5=decay_b = 0;
+per_frame_init_6=q1 = 0;
+per_frame_1=dx = 0;
+per_frame_2=basstime = basstime + 0.13 * bass;
+per_frame_3=q5 = basstime;
+per_frame_4=decay_r = 0;
+per_frame_5=decay_g = 0;
+per_frame_6=decay_b = 0;
+per_frame_7=ob_r = 0.5 + 0.5 * sin(0.22 * basstime);
+per_frame_8=ob_g = 0.5 + 0.5 * sin(0.307 * time);
+per_frame_9=ob_b = 0.5 + 0.5 * sin(0.112 * time);
+per_frame_10=monitor = q1;
+per_pixel_1=zoom = 1.05;
+per_pixel_2=rot = 0;
+per_pixel_3=dx = 0;
+per_pixel_4=dy = 0;
+per_pixel_5=warp = 0;
+wave_0_init1=q1 = 0;
+wave_0_init2=speed = 0;
+wave_0_init3=v = 0;
+wave_0_init4=xs = 0;
+wave_0_init5=ys = 0;
+wave_0_per_point1=q1 = 0;
+wave_0_per_point2=speed = 0.2 * bass_att;
+wave_0_per_point3=v = 100000 * sample + value2 * bass * 0.1;
+wave_0_per_point4=xs = xs + sin(0.1 * v + 0.1 * sin(v)) * speed * atan(1.51 * v);
+wave_0_per_point5=ys = ys + sin(0.1 * v + 0.1 * cos(v)) * speed * atan(v);
+wave_0_per_point6=x = 0.5 + 0.5 * sin(0.1 * xs) * cos(2 * time + ys);
+wave_0_per_point7=y = 0.5 + 0.5 * sin(0.1 * ys) * cos(2.1 * time + xs);
+wave_0_per_point8=x = x;
+wave_0_per_point9=y = y;
+wave_0_per_point10=y = y;
+wave_0_per_point11=g = 1;
+wave_0_per_point12=xs = if(0.00001 < abs(above(xs, 1000)), 0, xs);
+wave_0_per_point13=ys = if(0.00001 < abs(above(ys, 1000)), 0, ys);
+wave_1_init1=q1 = 0;
+wave_1_init2=speed = 0;
+wave_1_init3=v = 0;
+wave_1_init4=xs = 0;
+wave_1_init5=ys = 0;
+wave_1_per_point1=q1 = 0;
+wave_1_per_point2=speed = 0.2 * bass_att;
+wave_1_per_point3=v = 100000 * sample + value2 * bass * 0.1;
+wave_1_per_point4=xs = xs + sin(0.1 * v + 0.1 * sin(v)) * speed * atan(1.51 * v);
+wave_1_per_point5=ys = ys + sin(0.1 * v + 0.1 * cos(v)) * speed * atan(v);
+wave_1_per_point6=x = 0.5 + 0.5 * sin(0.1 * xs) * cos(2 * time + ys + 0.7);
+wave_1_per_point7=y = 0.5 + 0.5 * sin(0.1 * ys) * cos(2.1 * time + xs + 0.7);
+wave_1_per_point8=x = x;
+wave_1_per_point9=y = y;
+wave_1_per_point10=y = y;
+wave_1_per_point11=g = 1;
+wave_1_per_point12=xs = if(0.00001 < abs(above(xs, 1000)), 0, xs);
+wave_1_per_point13=ys = if(0.00001 < abs(above(ys, 1000)), 0, ys);
+wave_2_init1=q1 = 0;
+wave_2_init2=speed = 0;
+wave_2_init3=v = 0;
+wave_2_init4=xs = 0;
+wave_2_init5=ys = 0;
+wave_2_per_point1=q1 = 0;
+wave_2_per_point2=speed = 0.2 * bass_att;
+wave_2_per_point3=v = 100000 * sample + value2 * bass * 0.1;
+wave_2_per_point4=xs = xs + sin(0.1 * v + 0.1 * sin(v)) * speed * atan(1.51 * v);
+wave_2_per_point5=ys = ys + sin(0.1 * v + 0.1 * cos(v)) * speed * atan(v);
+wave_2_per_point6=x = 0.5 + 0.5 * sin(0.1 * xs) * cos(2 * time + ys + 1.4);
+wave_2_per_point7=y = 0.5 + 0.5 * sin(0.1 * ys) * cos(2.1 * time + xs + 1.4);
+wave_2_per_point8=x = x;
+wave_2_per_point9=y = y;
+wave_2_per_point10=y = y;
+wave_2_per_point11=g = 1;
+wave_2_per_point12=xs = if(0.00001 < abs(above(xs, 1000)), 0, xs);
+wave_2_per_point13=ys = if(0.00001 < abs(above(ys, 1000)), 0, ys);
+shape_0_init1=tex_capture = 0;
+shape_0_init2=q1 = 0;
+shape_0_init3=saw = 0;
+shape_0_init4=saw = 0;
+shape_0_init5=saw = 0;
+shape_0_init6=saw = 0;
+shape_0_init7=saw = 0;
+shape_0_init8=saw = 0;
+shape_0_per_frame1=tex_capture = q1;
+shape_0_per_frame2=saw = saw - 0.001 * bass;
+shape_0_per_frame3=saw = if(0.00001 < abs(below(saw, 0.2)), 0.6, saw);
+shape_0_per_frame4=tex_zoom = saw;
+shape_1_init1=tex_capture = 0;
+shape_1_init2=q1 = 0;
+shape_1_init3=saw = 0;
+shape_1_init4=saw = 0;
+shape_1_init5=saw = 0;
+shape_1_init6=saw = 0;
+shape_1_init7=saw = 0;
+shape_1_init8=saw = 0;
+shape_1_per_frame1=tex_capture = q1;
+shape_1_per_frame2=saw = saw - 0.001 * bass;
+shape_1_per_frame3=saw = if(0.00001 < abs(below(saw, 0.1)), 0.6, saw);
+shape_1_per_frame4=tex_zoom = saw;
 
 [warp_shader]
 shader_body { 

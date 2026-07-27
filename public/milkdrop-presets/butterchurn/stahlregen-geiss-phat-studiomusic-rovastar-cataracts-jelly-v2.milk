@@ -22,43 +22,40 @@ fWaveG=0.500000
 fWaveB=0.500000
 fOuterBorderSize=0.025000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=3.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=1.374820
-fAng=6.283190
-fTexAng=1.570800
-fTexZoom=0.366050
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fBorderG=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=3.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=1.374820
+shapecode_0_ang=6.283190
+shapecode_0_tex_ang=1.570800
+shapecode_0_tex_zoom=0.366050
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_border_g=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=pre_zoom = 0;
+per_frame_init_2=q1 = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = wave_r + 0.3 * bass;
+per_frame_3=wave_g = wave_g + 0.3 * treb;
+per_frame_4=wave_b = wave_b + 0.3 * mid;
+per_frame_5=rot = rot + 0.04 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_6=zoom = max(0.98, min(0.15 + 0.8 * bass_att, 1.75));
+per_pixel_1=pre_zoom = zoom - 0.07 * acos(2 * y - 1) * sin(1.2 * time * q1) * zoom - 0.07 * acos(2 * x - 1) * sin(1.1 * time * q1);
+per_pixel_2=zoom = if(0.00001 < abs(above(abs(zoom - 1), 0.04)), pre_zoom, 0.99);
+per_pixel_3=rot = if(0.00001 < abs(above(abs(zoom - 1), 0.08)), -0.4 + 0.2 * q1, 0);
+shape_0_init1=q1 = 0;
+shape_0_per_frame1=ang = q1;
 
 [warp_shader]
 shader_body { 

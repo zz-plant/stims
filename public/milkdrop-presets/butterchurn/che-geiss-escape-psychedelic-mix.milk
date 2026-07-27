@@ -29,30 +29,68 @@ nMotionVectorsLoop=0.350000
 fMotionVectorsR=0.900000
 fMotionVectorsG=0.500000
 fMotionVectorsB=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=beatfreq = 0;
+per_frame_init_2=pulsefreq = 0;
+per_frame_init_3=mvrot = 0;
+per_frame_init_4=q6 = 0;
+per_frame_init_5=bt = 0;
+per_frame_init_6=lastbeat = 0;
+per_frame_init_7=pulse = 0;
+per_frame_init_8=le = 0;
+per_frame_init_9=btblock = 0;
+per_frame_init_10=zone = 0;
+per_frame_init_11=minorccl = 0;
+per_frame_init_12=beat = 0;
+per_frame_init_13=hccp = 0;
+per_frame_init_14=ccl = 0;
+per_frame_init_15=lastpulse = 0;
+per_frame_init_16=th = 0;
+per_frame_init_17=q7 = 0;
+per_frame_init_18=q8 = 0;
+per_frame_1=le = 1.4 * bass_att + 0.1 * bass + 0.5 * treb;
+per_frame_2=pulse = above(le, th);
+per_frame_3=pulsefreq = if(0.00001 < abs(equal(pulsefreq, 0)), 2, if(0.00001 < abs(pulse), 0.8 * pulsefreq + 0.2 * (time - lastpulse), pulsefreq));
+per_frame_4=lastpulse = if(0.00001 < abs(pulse), time, lastpulse);
+per_frame_5=bt = (time - lastbeat) / (0.5 * beatfreq + 0.5 * pulsefreq);
+per_frame_6=hccp = 0.03 / (bt + 0.2) + 0.5 * if(0.00001 < abs(band(above(bt, 0.8), below(bt, 1.2))), pow(sin(7.854 * (bt - 1)), 4) - 1, 0);
+per_frame_7=beat = band(above(le, th + hccp), btblock);
+per_frame_8=btblock = 1 - above(le, th + hccp);
+per_frame_9=lastbeat = if(0.00001 < abs(beat), time, lastbeat);
+per_frame_10=beatfreq = if(0.00001 < abs(equal(beatfreq, 0)), 2, if(0.00001 < abs(beat), 0.8 * beatfreq + 0.2 * (time - lastbeat), beatfreq));
+per_frame_11=th = if(0.00001 < abs(above(le, th)), le + 114 / (le + 10) - 7.407, th + 0.07 * th / (th - 12) + 0.1 * below(th, 2.7) * (2.7 - th));
+per_frame_12=th = if(0.00001 < abs(above(th, 6)), 6, th);
+per_frame_13=q8 = 30 / fps;
+per_frame_14=ccl = ccl + beat;
+per_frame_15=minorccl = minorccl + le * q8;
+per_frame_16=q7 = ccl + 0.0002 * minorccl;
+per_frame_17=q6 = 3.7 * ccl + 0.01 * minorccl;
+per_frame_18=ob_size = 0.3 + 0.3 * sin(16 * ccl + 0.007 * minorccl);
+per_frame_19=ib_a = 0.5 + 0.4 * sin(0.01 * minorccl + ccl);
+per_frame_20=wave_r = 0.7 + 0.3 * sin(0.04 * ccl + 0.01 * minorccl);
+per_frame_21=wave_g = 0.7 + 0.3 * sin(0.02 * ccl + 0.012 * minorccl);
+per_frame_22=wave_b = 0.3 + 0.3 * sin(36 * ccl + 0.013 * minorccl);
+per_frame_23=ib_r = 0.25 + 0.25 * sin(72 * ccl + 0.016 * minorccl);
+per_frame_24=ib_g = 0.25 + 0.25 * sin(48 * ccl + 0.021 * minorccl);
+per_frame_25=ib_b = 0.5 + 0.3 * sin(86 * ccl) + 0.2 * 0.028 * minorccl;
+per_frame_26=echo_alpha = 0.5 + 0.5 * cos(68 * ccl + 0.0041 * minorccl);
+per_frame_27=echo_zoom = exp(sin(13.7 * ccl + 0.017 * minorccl));
+per_frame_28=echo_orient = mod(ccl, 4);
+per_frame_29=mvrot = mod(ccl, 6);
+per_frame_30=mv_r = if(0.00001 < abs(above(mvrot, 2)), if(0.00001 < abs(above(mvrot, 4)), 0.039, if(0.00001 < abs(equal(mvrot, 3)), 0.137, 0.835)), if(0.00001 < abs(above(mvrot, 1)), 0.651, if(0.00001 < abs(equal(mvrot, 0)), 1, 0.773)));
+per_frame_31=mv_g = if(0.00001 < abs(above(mvrot, 2)), if(0.00001 < abs(above(mvrot, 4)), 0.267, if(0.00001 < abs(equal(mvrot, 3)), 0.886, 0.176)), if(0.00001 < abs(above(mvrot, 1)), 0.804, if(0.00001 < abs(equal(mvrot, 0)), 1, 0.38)));
+per_frame_32=mv_b = if(0.00001 < abs(above(mvrot, 2)), if(0.00001 < abs(above(mvrot, 4)), 0.694, if(0.00001 < abs(equal(mvrot, 3)), 0.776, 0.851)), if(0.00001 < abs(above(mvrot, 1)), 0.114, if(0.00001 < abs(equal(mvrot, 0)), 1, 0.145)));
+per_pixel_1=zone = below(sin(14 * sin(49 * q7) * x - 14 * sin(36 * q7) * y), -0.2);
+per_pixel_2=zoom = 1 + 0.33 * q8 * if(0.00001 < abs(zone), -0.5 + 0.1 * sin(1.08 * q6), 0.5 + 0.1 * sin(0.96 * q6));
+per_pixel_3=zoomexp = exp(sin(if(0.00001 < abs(zone), q6, -q6)));
+per_pixel_4=rot = 0.03 * q8 * sin(q6 + q7 + q7 * zone);
 
 [comp_shader]
 shader_body { 

@@ -12,34 +12,23 @@ fDY=-0.001000
 fWarp=0.439100
 fWaveY=0.520000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-nSamples=50.000000
-fSmoothing=0.270000
-fB=0.800000
-fA=0.120000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_samples=50.000000
+wavecode_0_smoothing=0.270000
+wavecode_0_b=0.800000
+wavecode_0_a=0.120000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.25 * (0.6 * sin(10.937 * time) + 0.4 * sin(1.47 * time));
+per_frame_2=wave_g = wave_g + 0.15 * (0.6 * sin(11.344 * time) + 0.4 * sin(1.041 * time));
+per_frame_3=wave_b = wave_b + 0.12 * (0.6 * sin(21.251 * time) + 0.4 * sin(1.355 * time));
+per_pixel_1=dx = 0;
+per_pixel_2=dy = 0;
 
 [warp_shader]
 uniform sampler2D sampler_rand00;

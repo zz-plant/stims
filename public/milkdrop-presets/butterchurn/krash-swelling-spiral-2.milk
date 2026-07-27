@@ -21,15 +21,15 @@ fWaveB=0.500000
 nMotionVectorsX=27.000000
 nMotionVectorsY=19.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=angval = 0;
+per_frame_1=wave_r = wave_r + 0.35 * (0.6 * sin(0.823 * time) + 0.4 * sin(0.916 * time));
+per_frame_2=wave_g = wave_g + 0.35 * (0.6 * sin(0.9 * time) + 0.4 * sin(1.023 * time));
+per_frame_3=wave_b = wave_b + 0.35 * (0.6 * sin(0.808 * time) + 0.4 * sin(0.949 * time));
+per_frame_4=warp = 0;
+per_frame_5=wave_mystery = wave_mystery - 0.5 * time;
+per_pixel_1=angval = 0.3 / sqrt(3.14 * tan(ang - 3 * time) + 4);
+per_pixel_2=zoom = if(0.00001 < abs(above(rad, 0.05)), if(0.00001 < abs(above(rad / 7.8, angval)), if(0.00001 < abs(below((rad - 0.05) / 7.8, angval)), 1.2, 1), if(0.00001 < abs(above(rad / 2.8, angval)), if(0.00001 < abs(below((rad - 0.05) / 2.8, angval)), 1.2, 1), if(0.00001 < abs(above(rad / 1, angval)), if(0.00001 < abs(below((rad - 0.05) / 1, angval)), 1.2, 1), 1))), 1);

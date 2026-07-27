@@ -28,27 +28,24 @@ nMotionVectorsX=12.640000
 nMotionVectorsY=12.840000
 nMotionVectorsLoop=1.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=wave_myster = 0;
+per_frame_init_2=decay = 0.5;
+per_frame_1=wave_myster = bass_att - 1;
+per_frame_2=mv_r = sin(1.39 + 1.55 * time) * bass_att;
+per_frame_3=mv_g = sin(1.59 + 1.75 * time) * bass_att;
+per_frame_4=mv_b = sin(1.79 + 1.95 * time) * bass_att;
+per_frame_5=wave_r = mv_g;
+per_frame_6=wave_b = mv_r;
+per_frame_7=wave_g = mv_b;
+per_frame_8=rot = rot + 0.2 * (bass_att - 1);
+per_frame_9=decay = if(0.00001 < abs(mod(time, 20)), 0.99, 0.5);
+per_pixel_1=dx = 0.01 * sin(sqrt(15 * sqr(15 * x)));
+per_pixel_2=dy = 0.01 * sin(sqrt(15 * sqr(15 * y)));

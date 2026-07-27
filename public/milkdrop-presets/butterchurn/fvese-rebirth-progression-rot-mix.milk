@@ -37,15 +37,43 @@ fMotionVectorsR=0.759900
 fMotionVectorsG=0.480000
 fMotionVectorsB=0.390000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=rad = 0;
+per_frame_init_2=xpos = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=mytime = 0;
+per_frame_init_5=x = 0;
+per_frame_init_6=dy_r = 0;
+per_frame_init_7=dx_r = 0;
+per_frame_init_8=ypos = 0;
+per_frame_init_9=y = 0;
+per_frame_init_10=vol = 0;
+per_frame_init_11=q2 = 0;
+per_frame_init_12=q3 = 0;
+per_frame_1=wave_r = wave_r + 0.45 * (0.5 * sin(0.701 * time) + 0.3 * cos(0.438 * time));
+per_frame_2=wave_b = wave_b - 0.4 * (0.5 * sin(4.782 * time) + 0.5 * cos(0.722 * time));
+per_frame_3=wave_g = wave_g + 0.4 * sin(1.931 * time);
+per_frame_4=vol = 0.15 * (bass_att + bass + mid + mid_att);
+per_frame_5=dx = if(0.00001 < abs(below(q1, 0)), dx - dx_r * q3 * 0.3, dx);
+per_frame_6=dy = if(0.00001 < abs(below(q1, 0)), dy - dx_r * q3 * 0.3, dy);
+per_frame_7=dx_r = if(0.00001 < abs(equal(q3, 0)), if(0.00001 < abs(above(x, xpos)), dx - q1 - xpos, dx + q2 - xpos), dx);
+per_frame_8=dy_r = if(0.00001 < abs(equal(q3, 0)), if(0.00001 < abs(above(y, ypos)), dy - q1 - ypos, dy + q2 - ypos), dy);
+per_frame_9=rot = rot + 0.03 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.479 * time));
+per_frame_10=mytime = 0.7;
+per_frame_11=q1 = sin(time * mytime * 4);
+per_frame_12=q2 = sin(time * mytime * 2);
+per_frame_13=q3 = abs(rad - 0.5) * q2 * q1;
+per_frame_14=xpos = 0.5 / vol;
+per_frame_15=ypos = 0.5 / vol;
+per_frame_16=wave_x = 0.5;
+per_frame_17=wave_y = 0.5;
+per_frame_18=monitor = q3;
+per_frame_19=ib_r = q3;
+per_frame_20=ib_b = q2;
+per_frame_21=ib_g = q1;
+per_pixel_1=zoom = zoom + 0.05 * q3 + 0.05 * q1 - vol;
+per_pixel_2=rot = rot + 0.16 * (zoom - 1);
+per_pixel_3=zoom = zoom + (ypos * q2 - q1) * (0.06 + 0.12 * sin(0.351 * time)) + (xpos * q2 - q1) * (0.06 + 0.12 * cos(0.351 * time));

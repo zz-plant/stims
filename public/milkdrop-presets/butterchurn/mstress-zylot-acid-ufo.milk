@@ -31,15 +31,46 @@ nMotionVectorsDx=0.320000
 nMotionVectorsDy=0.420000
 nMotionVectorsLoop=3.199998
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=ymovn = 0;
+per_frame_init_2=cdelay1 = 0;
+per_frame_init_3=cdelay2 = 0;
+per_frame_init_4=meanbass_att = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=xmov = 0;
+per_frame_init_7=counter2 = 0;
+per_frame_init_8=my = 0;
+per_frame_init_9=lastbeat = 0;
+per_frame_init_10=beatrate = 0;
+per_frame_init_11=peakbass_att = 0;
+per_frame_init_12=ymov = 0;
+per_frame_init_13=colorcounter = 0;
+per_frame_init_14=mrad = 0;
+per_frame_init_15=runmeanbass = 0;
+per_frame_init_16=mx = 0;
+per_frame_init_17=volume = 0;
+per_frame_init_18=beat = 0;
+per_frame_init_19=oldy = 0;
+per_frame_init_20=out_x = 0;
+per_frame_init_21=treble = 0;
+per_frame_init_22=mbass = 0;
+per_frame_init_23=q2 = 0;
+per_frame_init_24=counter1 = 0;
+per_frame_init_25=q3 = 0;
+per_frame_init_26=out_y = 0;
+per_frame_init_27=oldx = 0;
+per_frame_init_28=xmovn = 0;
+per_frame_init_29=oldx = 0.5;
+per_frame_init_30=oldy = 0.5;
+per_pixel_1=mx = x - q1;
+per_pixel_2=my = y - (1 - q2);
+per_pixel_3=mrad = pow(pow(mx, 2) + pow(my, 2), 0.5) * pow(2, 0.5);
+per_pixel_4=cx = q1;
+per_pixel_5=cy = 1 - q2;
+per_pixel_6=rot = rot + 0.5 * below(mrad - 0.18, 0) * sin(40 * mrad) * (mrad - 0.1) * 40 - 0.3 * above(mrad - 0.18, 0) * sin(2 * mrad) * (mrad - 0.1) * sin((cx - 0.5) * (cy - 0.5) * 6.28) * q3;
+per_pixel_7=zoom = zoom - 0.05 * above(mrad - 0.18, 0) * mrad * q3;
+per_pixel_8=dx = dx + 0.015 * below(mrad - 0.18, 0) * (mx / mrad);
+per_pixel_9=dy = dy + 0.015 * below(mrad - 0.18, 0) * (my / mrad);

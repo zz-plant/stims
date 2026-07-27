@@ -30,39 +30,33 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bThickOutline=1.000000
-fRad=0.010000
-fTexAng=0.125660
-fTexZoom=1.518780
-fR=0.050000
-fA=0.100000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_rad=0.010000
+shapecode_0_tex_ang=0.125660
+shapecode_0_tex_zoom=1.518780
+shapecode_0_r=0.050000
+shapecode_0_a=0.100000
+shapecode_0_g2=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=x1 = 0.9;
+per_frame_init_2=y1 = 0.5;
+per_frame_init_3=x2 = 0.5;
+per_frame_init_4=y2 = 0.5;
+per_frame_init_5=x3 = 0.5;
+per_frame_init_6=y3 = 0.5;
+per_frame_init_7=x4 = 0.5;
+per_frame_init_8=y4 = 0.5;
+per_frame_1=zoom = 1;
+per_frame_2=warp = 0;
 
 [warp_shader]
 shader_body { 

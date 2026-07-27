@@ -31,15 +31,22 @@ fInnerBorderSize=0.260000
 fInnerBorderG=0.050000
 fInnerBorderB=0.000000
 fInnerBorderA=0.300000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=tt = 0;
+per_frame_init_2=treble = 0;
+per_frame_init_3=treble_att = 0;
+per_frame_1=tt = time / 100;
+per_frame_2=ob_size = abs(cos(time)) / 5 - 0.3 + bass / 8;
+per_frame_3=ib_size = abs(sin(time)) / 5 - 0.3 + treble / 7;
+per_frame_4=ob_r = sin(3 * tt) / 4 + 0.75;
+per_frame_5=ib_b = sin(tt) / 2 + 0.5;
+per_frame_6=ob_a = 2 * bass_att - 0.5;
+per_frame_7=ib_a = 2 * treble_att - 0.5;
+per_frame_8=wave_r = sin(4 * tt) / 3 + 0.3;
+per_frame_9=wave_b = atan(3 * tt) / 2 + 1;
+per_frame_10=wave_g = cos(tt) / 2 + 1;
+per_pixel_1=rot = if(0.00001 < abs(above(bass_att, 1.1)), -sin(rad) / 2, sin(rad) / 2);
+per_pixel_2=cx = abs(sin(rad));

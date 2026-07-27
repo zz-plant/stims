@@ -30,46 +30,40 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=5.000000
 fMotionVectorsA=0.500000
-
-[shape00_0]
-bEnabled=1.000000
-bAdditive=1.000000
-bThickOutline=1.000000
-fR=0.000000
-fG2=0.000000
-fB2=0.300000
-fBorderA=0.300000
-
-[shape00_1]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=0.330037
-fBorderA=0.400000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-fA=0.200000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=2.216703
-fSmoothing=1.000000
-fG=0.000000
-fA=0.130000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=2.216703
+wavecode_0_smoothing=1.000000
+wavecode_0_g=0.000000
+wavecode_0_a=0.130000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_additive=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_r=0.000000
+shapecode_0_g2=0.000000
+shapecode_0_b2=0.300000
+shapecode_0_border_a=0.300000
+shapecode_1_enabled=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=0.330037
+shapecode_1_border_a=0.400000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=100.000000
+shapecode_2_additive=1.000000
+shapecode_2_a=0.200000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = 0.01 * randint(100);
+per_frame_2=wave_g = 0.5 * bass;
+per_pixel_1=rot = rot + 0.001 * (randint(10) - 5);
+per_pixel_2=rot = rot + 0.01 * rad;
+shape_0_per_frame1=rad = rad + 0.3 * bass;
+shape_0_per_frame2=y = 0.5 * treb;
+shape_1_per_frame1=rad = rad + 0.5 * treb;
+shape_2_per_frame1=rad = rad + 0.5 * mid;
+shape_2_per_frame2=x = x + 0.2 * sin(0.3 * time);
+shape_2_per_frame3=y = y + 0.2 * sin(time + 0.33);

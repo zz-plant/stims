@@ -33,30 +33,29 @@ nMotionVectorsLoop=0.500000
 fMotionVectorsR=0.835033
 fMotionVectorsG=0.249397
 fMotionVectorsB=0.055806
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=ray = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = wave_r + 0.5 * sin(33 * treb_att) + 0.3 * bass_att;
+per_frame_3=wave_b = wave_b + 0.5 * sin(33 * treb_att) + 0.3 * mid_att;
+per_frame_4=rot = 0.4 * sin(time) * sin(0.1 * treb_att);
+per_frame_5=warp = 0.9 * sin(0.9 * treb_att);
+per_frame_6=mv_l = sin(treb_att);
+per_frame_7=mv_b = treb_att / 2.5;
+per_frame_8=mv_r = mid_att / 2.5;
+per_frame_9=decay = sin(bass_att);
+per_pixel_1=ray = pow(rad, 1.8) + 0.05;
+per_pixel_2=zoom = 1.4 * (ray / rad) + 0.3 * sin(5 * ang * bass) + 0.2 * bass;
+per_pixel_3=mv_r = treb_att / 2.5;
+per_pixel_4=mv_g = mid_att / 2.5;
+per_pixel_5=mv_a = bass_att;
 
 [comp_shader]
 shader_body { 

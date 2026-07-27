@@ -33,52 +33,88 @@ fMotionVectorsR=0.350000
 fMotionVectorsG=0.350000
 fMotionVectorsB=0.350000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fSeparation=128.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bThick=1.000000
-fScaling=4.447970
-fSmoothing=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-fSeparation=128.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bThick=1.000000
-fScaling=4.447960
-fSmoothing=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bThick=1.000000
-fScaling=4.448410
-fSmoothing=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bThick=1.000000
-fScaling=4.448410
-fSmoothing=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_sep=128.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_usedots=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_scaling=4.447970
+wavecode_0_smoothing=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_sep=128.000000
+wavecode_1_spectrum=1.000000
+wavecode_1_usedots=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_scaling=4.447960
+wavecode_1_smoothing=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_spectrum=1.000000
+wavecode_2_usedots=1.000000
+wavecode_2_thick=1.000000
+wavecode_2_scaling=4.448410
+wavecode_2_smoothing=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_spectrum=1.000000
+wavecode_3_usedots=1.000000
+wavecode_3_thick=1.000000
+wavecode_3_scaling=4.448410
+wavecode_3_smoothing=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q4 = 0;
+per_frame_init_2=q5 = 0;
+per_frame_init_3=decay = 0.1;
+per_frame_1=sx = 1;
+per_frame_2=sy = 1;
+per_frame_3=q4 = 0.5 + 0.05 * cos(0.52 * time) * cos(0.39 * time);
+per_frame_4=q5 = 0.5 + 0.05 * sin(0.44 * time) * cos(0.71 * time);
+per_pixel_1=zoom = zoom + 0.01 + 0.75 * rad * treb_att;
+wave_0_init1=stx = 0;
+wave_0_init2=sty = 0;
+wave_0_init3=mvx = 0;
+wave_0_init4=mvy = 0;
+wave_0_init5=t1 = 1;
+wave_0_per_point1=stx = 0.5 + 0.05 * sin(0.22 * time + 0.05 * treb_att);
+wave_0_per_point2=sty = 0.5 + 0.05 * cos(0.15 * time + 0.05 * treb_att);
+wave_0_per_point3=mvx = stx + 0.05 * cos(time) + 0.05 * sin(bass);
+wave_0_per_point4=mvy = sty + 0.05 * sin(time) + 0.05 * cos(treb);
+wave_0_per_point5=x = mvx + 0.1 * abs(sin(y * bass) * x + pow(cos(x * y * treb), bass_att)) * sin(y + time);
+wave_0_per_point6=y = mvy + 0.1 * abs(cos(x * treb) * y + pow(cos(y * x * bass), treb_att)) * cos(x + time);
+wave_1_init1=stx = 0;
+wave_1_init2=sty = 0;
+wave_1_init3=mvx = 0;
+wave_1_init4=mvy = 0;
+wave_1_init5=t1 = 1;
+wave_1_per_point1=stx = 0.5 + 0.05 * sin(0.12 * time + treb_att);
+wave_1_per_point2=sty = 0.5 - 0.05 * cos(0.25 * time + treb_att);
+wave_1_per_point3=mvx = stx - 0.05 * sin(time) + 0.05 * cos(bass);
+wave_1_per_point4=mvy = sty + 0.05 * cos(time) + 0.05 * sin(treb);
+wave_1_per_point5=x = mvx + 0.1 * abs(sin(y * bass) * x + pow(cos(x * y * treb), bass_att)) * sin(y + time);
+wave_1_per_point6=y = mvy + 0.1 * abs(cos(x * treb) * y + pow(cos(y * x * bass), treb_att)) * cos(x + time);
+wave_2_init1=stx = 0;
+wave_2_init2=sty = 0;
+wave_2_init3=mvx = 0;
+wave_2_init4=mvy = 0;
+wave_2_init5=t1 = 1;
+wave_2_per_point1=stx = 0.5 - 0.01 * cos(0.32 * time + mid_att);
+wave_2_per_point2=sty = 0.5 - 0.01 * sin(0.45 * time + mid_att);
+wave_2_per_point3=mvx = stx - 0.01 * cos(1.33 * time) + 0.001 * sin(bass);
+wave_2_per_point4=mvy = sty + 0.01 * sin(0.87 * time) + 0.001 * sin(treb);
+wave_2_per_point5=x = mvx + 0.05 * abs(sin(y * bass) * x + pow(cos(x * y * treb), bass_att)) * sin(y + 1.43 * time);
+wave_2_per_point6=y = mvy + 0.05 * abs(cos(x * treb) * y + pow(cos(y * x * bass), treb_att)) * cos(x + 1.54 * time);
+wave_3_init1=stx = 0;
+wave_3_init2=sty = 0;
+wave_3_init3=mvx = 0;
+wave_3_init4=mvy = 0;
+wave_3_init5=t1 = 1;
+wave_3_per_point1=stx = 0.5 + 0.01 * sin(0.022 * time + mid_att);
+wave_3_per_point2=sty = 0.5 + 0.01 * cos(0.615 * time + mid_att);
+wave_3_per_point3=mvx = stx + 0.01 * cos(0.94 * time) + 0.05 * sin(bass);
+wave_3_per_point4=mvy = sty + 0.01 * sin(1.4 * time) + 0.05 * cos(treb);
+wave_3_per_point5=x = mvx + 0.1 * abs(sin(y * bass) * x + pow(cos(x * y * treb), bass_att)) * sin(y + 0.72 * time);
+wave_3_per_point6=y = mvy + 0.1 * abs(cos(x * treb) * y + pow(cos(y * x * bass), treb_att)) * cos(x + 0.47 * time);
 
 [warp_shader]
 shader_body { 

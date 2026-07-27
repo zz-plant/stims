@@ -38,36 +38,66 @@ fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=1.000000
-
-[shape00_0]
-bEnabled=1.000000
-bTextured=1.000000
-fY=1.800000
-
-[shape00_1]
-bEnabled=1.000000
-bTextured=1.000000
-fY=1.800000
-
-[shape00_2]
-bEnabled=1.000000
-bTextured=1.000000
-fY=1.800000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_y=1.800000
+shapecode_1_enabled=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_y=1.800000
+shapecode_2_enabled=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_y=1.800000
+shapecode_3_enabled=0.000000
+per_frame_init_1=c_inv_i = 0;
+per_frame_init_2=translation_x = 0;
+per_frame_init_3=q12 = 0;
+per_frame_init_4=a_i = 0;
+per_frame_init_5=a_r = 0;
+per_frame_init_6=q18 = 0;
+per_frame_init_7=q13 = 0;
+per_frame_init_8=scale = 0;
+per_frame_init_9=q15 = 0;
+per_frame_init_10=c_inv_r = 0;
+per_frame_init_11=angle = 0;
+per_frame_init_12=q11 = 0;
+per_frame_init_13=bcad_r = 0;
+per_frame_init_14=b_r = 0;
+per_frame_init_15=q16 = 0;
+per_frame_init_16=bcad_i = 0;
+per_frame_init_17=q17 = 0;
+per_frame_init_18=q14 = 0;
+per_frame_init_19=translation_y = 0;
+per_frame_init_20=translation_v = 0;
+per_frame_init_21=b_i = 0;
+per_frame_init_22=translation_u = 0;
+per_frame_1=scale = 1;
+per_frame_2=angle = 0.2 * time;
+per_frame_3=translation_x = 0;
+per_frame_4=translation_y = 0.12;
+per_frame_5=a_r = cos(angle) * scale;
+per_frame_6=a_i = sin(angle) * scale;
+per_frame_7=b_r = translation_x;
+per_frame_8=b_i = translation_y;
+per_frame_9=scale = 1;
+per_frame_10=angle = 0.3 * sin(0.1337 * time);
+per_frame_11=translation_u = 0;
+per_frame_12=translation_v = -0.2;
+per_frame_13=q15 = cos(angle) * scale;
+per_frame_14=q16 = sin(angle) * scale;
+per_frame_15=q17 = translation_u;
+per_frame_16=q18 = translation_v;
+per_frame_17=c_inv_r = q15 / (q15 * q15 + q16 * q16);
+per_frame_18=c_inv_i = q16 / (q15 * q15 + q16 * q16);
+per_frame_19=q11 = a_r * c_inv_r - a_i * c_inv_i;
+per_frame_20=q12 = a_r * c_inv_i - a_i * c_inv_r;
+per_frame_21=bcad_r = b_r * q15 - b_i * q16 - (a_r * q17 - a_i * q18);
+per_frame_22=bcad_i = b_r * q16 - b_i * q15 - (a_r * q18 - a_i * q17);
+per_frame_23=q13 = bcad_r * c_inv_r - bcad_i * c_inv_i;
+per_frame_24=q14 = bcad_r * c_inv_i - bcad_i * c_inv_r;
 
 [warp_shader]
 uniform sampler2D sampler_sunrise;

@@ -15,15 +15,13 @@ fWaveG=0.500000
 fWaveB=0.500000
 fWaveX=0.499900
 fWaveY=0.499900
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.3 * sin(0.222 * time);
+per_frame_2=wave_g = wave_g + 0.3 * sin(0.123 * time);
+per_frame_3=wave_b = wave_b + 0.3 * sin(0.444 * time);
+per_frame_4=decay = 0.9 + 0.1 * sin(0.01 * time);
+per_pixel_1=dx = dx - 0.08 * tan(time + 47 * x);
+per_pixel_2=dy = 0.01 * sin(0.22 * -time + (y + 0.5));
