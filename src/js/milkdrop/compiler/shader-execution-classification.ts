@@ -34,10 +34,16 @@ export function classifyMilkdropShaderProgramExecution(
     };
   }
 
+  if (preservesRawGlsl) {
+    return {
+      kind: 'backend-executable',
+      backends: ['webgl'],
+      preservesRawGlsl,
+      requiresControlFallback,
+    };
+  }
   return {
-    kind: preservesRawGlsl
-      ? 'raw-preserved-fallback-required'
-      : 'control-fallback-required',
+    kind: 'control-fallback-required',
     backends,
     preservesRawGlsl,
     requiresControlFallback,

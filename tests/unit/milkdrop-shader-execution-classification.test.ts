@@ -54,7 +54,7 @@ describe('milkdrop shader execution classification', () => {
     });
   });
 
-  test('identifies raw-preserved programs that must stay on control fallback', () => {
+  test('identifies raw-preserved programs as backend-executable on webgl', () => {
     expect(
       classifyMilkdropShaderProgramExecution(
         createProgram({
@@ -70,8 +70,8 @@ describe('milkdrop shader execution classification', () => {
         }),
       ),
     ).toEqual({
-      kind: 'raw-preserved-fallback-required',
-      backends: [],
+      kind: 'backend-executable',
+      backends: ['webgl'],
       preservesRawGlsl: true,
       requiresControlFallback: true,
     });
