@@ -18,7 +18,9 @@ describe('butterchurn equation transpiler', () => {
   });
 
   test('expands compound assignment', () => {
-    expect(statements('a.zoom+=.1*a.rad;')).toEqual(['zoom = zoom + 0.1 * rad;']);
+    expect(statements('a.zoom+=.1*a.rad;')).toEqual([
+      'zoom = zoom + 0.1 * rad;',
+    ]);
   });
 
   test('keeps parentheses only where precedence requires them', () => {
@@ -56,7 +58,9 @@ describe('butterchurn equation transpiler', () => {
   });
 
   test('reads quoted scope properties that collide with JS keywords', () => {
-    expect(statements('a["const"]=a["const"]+1;')).toEqual(['const = const + 1;']);
+    expect(statements('a["const"]=a["const"]+1;')).toEqual([
+      'const = const + 1;',
+    ]);
   });
 
   test('translates megabuf reads and writes', () => {

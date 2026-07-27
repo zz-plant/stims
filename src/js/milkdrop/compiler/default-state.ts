@@ -5,6 +5,7 @@ function createDefaultShapeSlot(index: number): Record<string, number> {
   return {
     [`shape_${index}_enabled`]: 0,
     [`shape_${index}_sides`]: 4,
+    [`shape_${index}_num_inst`]: 1,
     [`shape_${index}_x`]: 0.5,
     [`shape_${index}_y`]: 0.5,
     [`shape_${index}_rad`]: 0.1,

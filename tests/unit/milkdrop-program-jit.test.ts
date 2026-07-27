@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import type { MilkdropProgramBlock } from '../../src/js/milkdrop/common-types.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 import { evaluateMilkdropExpression } from '../../src/js/milkdrop/expression.ts';
 import {
   compileMilkdropProgram,
@@ -56,7 +56,11 @@ function runInterpreted(
   };
 
   for (const statement of block.statements) {
-    const value = evaluateMilkdropExpression(statement.expression, env, helpers);
+    const value = evaluateMilkdropExpression(
+      statement.expression,
+      env,
+      helpers,
+    );
     const targetIndex = statement.targetExpression
       ? evaluateMilkdropExpression(statement.targetExpression, env, helpers)
       : undefined;
@@ -102,7 +106,11 @@ function makeScopes(withLocals: boolean): RunResult {
     q1: 0,
     q2: 0,
   };
-  const env: Scope = Object.assign(Object.create(null) as Scope, signals, state);
+  const env: Scope = Object.assign(
+    Object.create(null) as Scope,
+    signals,
+    state,
+  );
   return {
     env,
     state,

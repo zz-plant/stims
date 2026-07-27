@@ -549,7 +549,9 @@ function emitExpression(node: Node, minPrecedence = 0): string {
       return formatNumber(node.value);
     case 'variable': {
       if (!IDENTIFIER_PATTERN.test(node.name)) {
-        throw new TranspileError(`Unsupported identifier "${node.name.trim()}"`);
+        throw new TranspileError(
+          `Unsupported identifier "${node.name.trim()}"`,
+        );
       }
       return node.name;
     }
@@ -583,7 +585,9 @@ function emitExpression(node: Node, minPrecedence = 0): string {
         const divide = BINARY_PRECEDENCE['/'] as number;
         const left = emitExpression(node.args[0] as Node, divide);
         const right = emitExpression(node.args[1] as Node, divide + 1);
-        return divide < minPrecedence ? `(${left} / ${right})` : `${left} / ${right}`;
+        return divide < minPrecedence
+          ? `(${left} / ${right})`
+          : `${left} / ${right}`;
       }
       const mapped = CALL_MAP[node.name];
       if (!mapped) {

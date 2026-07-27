@@ -19,6 +19,11 @@ to:
 
 ## Current status snapshot
 
+Corpus integrity (resolved):
+- The bundled butterchurn import used to drop every equation block. 1739 of the 1791 catalogued presets shipped with base values and shader text only, so no per-frame, per-pixel, per-point, or per-shape code ran for them. Wave and shape base values were also written into `[wave00_N]` / `[shape00_N]` sections that the compiler does not read.
+- `scripts/butterchurn-eel-transpiler.ts` now converts the upstream JavaScript equation strings back to EEL, and `scripts/import-butterchurn-presets.ts --rewrite` emits canonical single-section `.milk` files. 157,950 statements were recovered and the whole bundled corpus compiles without error diagnostics.
+- 109 presets still have at least one untranslated block, all of them using EEL `loop`/`while` constructs that this runtime's flat statement model cannot represent yet. Those blocks are reported by the importer rather than silently dropped.
+
 Completed foundation:
 - Milestones 0 through 3 are implemented in the repo: deterministic parity artifacts, checked-in certification manifests, native projectM reference promotion, measured-result promotion, backend-aware diffing, and honest fidelity labeling are all wired.
 
@@ -281,7 +286,12 @@ Implementation tasks:
 2. Expand visual certification for custom waves and custom shapes.
 3. Revisit legacy aliases only when visual evidence shows mismatch.
 
+Completed slices:
+- Custom shape instancing (`shapecode_N_num_inst`) now matches MilkDrop: the per-frame shape program runs once per instance with `instance` and `num_inst` in scope, capped at MilkDrop's own 1024 ceiling. 304 bundled presets declare multi-instance shapes and 232 vary geometry by `instance`.
+- The shape radius floor was lowered to 0.002 so instanced dot fields keep MilkDrop's typical 0.005-0.02 radii.
+
 Current remaining focus:
+- Audit the non-MilkDrop flourishes still applied in `shapeVisualFromLocals`: the `time * 0.08` rotation term, the `beatPulse` radius multiplier, and whether shape radius needs the same 0..1 to -1..1 rescaling that shape `x`/`y` receive. These predate measured certification and are currently pinned by tests.
 - Compare WebGPU and compatibility WebGL output for custom-wave, custom-shape, and border-heavy presets before changing more backend flags.
 - Tighten shape-outline, border-ring, and waveform thickness behavior based on measured reference output rather than object-count parity.
 - Treat remaining visible draw-order or smoothing drift as certification blockers even when the VM output is already semantically correct.
