@@ -59,9 +59,7 @@ function compileBufferRead(
   size: number,
 ) {
   const index = nextTemporary(context);
-  const argument = node.args[0]
-    ? compileNode(node.args[0], context)
-    : '0';
+  const argument = node.args[0] ? compileNode(node.args[0], context) : '0';
   return `(${index} = Math.trunc(${argument}), (${index} >= 0 && ${index} < ${size} ? ${buffer}[${index}] : 0))`;
 }
 

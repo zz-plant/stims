@@ -434,6 +434,7 @@ class MilkdropPresetVM implements MilkdropVM {
       rad: shape.fields.rad ?? this.state[`${prefix}_rad`] ?? 0.15,
       ang: shape.fields.ang ?? this.state[`${prefix}_ang`] ?? 0,
       instance: 0,
+      num_inst: shape.fields.num_inst ?? this.state[`${prefix}_num_inst`] ?? 1,
       textured: shape.fields.textured ?? this.state[`${prefix}_textured`] ?? 0,
       tex_zoom: shape.fields.tex_zoom ?? this.state[`${prefix}_tex_zoom`] ?? 1,
       tex_ang: shape.fields.tex_ang ?? this.state[`${prefix}_tex_ang`] ?? 0,

@@ -13,6 +13,9 @@ import {
   type ShapeBuilderState,
 } from './shared';
 
+/** MilkDrop's own ceiling for `shapecode_N_num_inst`. */
+const MAX_SHAPE_INSTANCES = 1024;
+
 export function shapeVisualFromLocals(
   key: string,
   locals: MutableState,
@@ -23,9 +26,12 @@ export function shapeVisualFromLocals(
     key,
     x: ((locals.x ?? 0.5) - 0.5) * 2,
     y: (0.5 - (locals.y ?? 0.5)) * 2,
+    // The lower bound only guards against degenerate geometry. It has to stay
+    // well below MilkDrop's typical instanced-dot radii (0.005-0.02), which an
+    // aggressive floor would inflate into overlapping blobs.
     radius: clamp(
       (locals.rad ?? 0.15) * (1 + signals.beatPulse * 0.1),
-      0.04,
+      0.002,
       0.9,
     ),
     sides: Math.max(3, Math.round(locals.sides ?? 6)),
@@ -124,16 +130,35 @@ export function buildShapes({
     customShapeIndices.add(shape.index);
     const locals =
       shapeState.customShapeLocals[index] ?? seedCustomShapeState(shape);
-    runProgram(
-      shape.programs.perFrame,
-      createEnv(signals, locals, { reuseExtraAsEnv: true }),
-      locals,
-    );
     shapeState.customShapeLocals[index] = locals;
-    if ((locals.enabled ?? 0) < 0.5) {
-      continue;
+
+    // MilkDrop runs the per-frame shape code once per instance, exposing the
+    // instance number so a single shape definition can lay out a whole field of
+    // primitives.
+    const instanceCount = clamp(
+      Math.round(shape.fields.num_inst ?? locals.num_inst ?? 1),
+      1,
+      MAX_SHAPE_INSTANCES,
+    );
+    const env = createEnv(signals, locals, { reuseExtraAsEnv: true });
+
+    for (let instance = 0; instance < instanceCount; instance += 1) {
+      locals.instance = instance;
+      locals.num_inst = instanceCount;
+      runProgram(shape.programs.perFrame, env, locals);
+      if ((locals.enabled ?? 0) < 0.5) {
+        continue;
+      }
+      built.push(
+        shapeVisualFromLocals(
+          instanceCount > 1
+            ? `shape_${shape.index}_${instance}`
+            : `shape_${shape.index}`,
+          locals,
+          signals,
+        ),
+      );
     }
-    built.push(shapeVisualFromLocals(`shape_${shape.index}`, locals, signals));
   }
 
   for (let index = 1; index <= MAX_CUSTOM_SHAPE_SLOTS; index += 1) {

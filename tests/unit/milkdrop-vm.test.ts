@@ -525,6 +525,58 @@ shape_0_init1=ang=tex_ang+instance*0.1;
     );
   });
 
+  test('runs custom shape per-frame code once per instance', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Instanced Shapes
+shapecode_0_enabled=1
+shapecode_0_num_inst=8
+shapecode_0_sides=4
+shapecode_0_rad=0.01
+shape_0_per_frame1=x = instance / num_inst;
+shape_0_per_frame2=y = 0.5;
+      `.trim(),
+      { id: 'instanced-shapes' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.shapes).toHaveLength(8);
+    expect(frameState.shapes.map((shape) => shape.key)).toEqual([
+      'shape_1_0',
+      'shape_1_1',
+      'shape_1_2',
+      'shape_1_3',
+      'shape_1_4',
+      'shape_1_5',
+      'shape_1_6',
+      'shape_1_7',
+    ]);
+    // `x` is remapped from 0..1 preset space into -1..1 device space.
+    expect(
+      frameState.shapes.map((shape) => Number(shape.x.toFixed(3))),
+    ).toEqual([-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]);
+    // Small radii must survive instead of being clamped up into blobs.
+    expect(frameState.shapes[0]?.radius).toBeLessThan(0.02);
+  });
+
+  test('keeps a single draw for shapes that do not request instances', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Single Shape
+shapecode_0_enabled=1
+shapecode_0_sides=5
+shape_0_per_frame1=rad = 0.2;
+      `.trim(),
+      { id: 'single-shape' },
+    );
+
+    const frameState = createMilkdropVM(preset).step(makeSignals({ frame: 1 }));
+
+    expect(frameState.shapes).toHaveLength(1);
+    expect(frameState.shapes[0]?.key).toBe('shape_1');
+  });
+
   test('supports bundled preset legacy audio aliases at compile time and runtime', () => {
     const signals = makeSignals({ frame: 1 });
     const preset = compileMilkdropPresetSource(
