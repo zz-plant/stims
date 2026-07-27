@@ -81,7 +81,6 @@ Direct shader payloads keep a separate execution classification in `assets/js/mi
 
 - `backend-executable`
 - `backend-executable-with-control-fallback`
-- `raw-preserved-fallback-required`
 - `control-fallback-required`
 
 ## Testing expectations

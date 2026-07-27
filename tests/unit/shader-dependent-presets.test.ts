@@ -112,6 +112,6 @@ test('elusive impressions fixture exercises MilkDrop volume-noise shader text wi
     visualEvidenceTier: 'runtime',
   });
   expect(preset?.visualCertification?.reasons).toContain(
-    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the volume-noise shader; retained at partial/runtime because volume sampler parity remains approximate and unmeasured.',
+    'Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because volume sampler parity remains approximate and unmeasured.',
   );
 });

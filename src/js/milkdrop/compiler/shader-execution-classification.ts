@@ -6,7 +6,6 @@ import type {
 export type MilkdropShaderProgramExecutionKind =
   | 'backend-executable'
   | 'backend-executable-with-control-fallback'
-  | 'raw-preserved-fallback-required'
   | 'control-fallback-required';
 
 export type MilkdropShaderProgramExecutionClassification = {

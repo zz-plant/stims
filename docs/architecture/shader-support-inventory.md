@@ -11,7 +11,7 @@ This inventory covers every `shader_body`, `ret`, or `warp_shader`/`comp_shader`
 
 The critical routing logic is at `shader-analysis.ts:1128-1207`: AST hit → heuristic fallback → `isUnsupportedParsedShaderStatement` → direct-program context retention.
 
-Direct shader program execution should be interpreted through `compiler/shader-execution-classification.ts`, not by ad hoc checks of `rawGlsl`, `supportedBackends`, or `requiresControlFallback`. This keeps raw-preserved fallback-required shader text distinct from backend-executable direct shader payloads.
+Direct shader program execution should be interpreted through `compiler/shader-execution-classification.ts`, not by ad hoc checks of `rawGlsl`, `supportedBackends`, or `requiresControlFallback`. The classifier maps raw-preserved programs to `backend-executable` on WebGL.
 
 ---
 
