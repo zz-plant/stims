@@ -32,41 +32,108 @@ nMotionVectorsLoop=0.474000
 fMotionVectorsG=0.179000
 fMotionVectorsB=0.483000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bAdditive=1.000000
-fA=0.060000
-
-[wave00_1]
-bEnabled=1.000000
-bUseDots=1.000000
-bAdditive=1.000000
-fA=0.200000
-
-[wave00_2]
-bEnabled=1.000000
-bUseDots=1.000000
-bAdditive=1.000000
-fA=0.200000
-
-[wave00_3]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_a=0.060000
+wavecode_1_enabled=1.000000
+wavecode_1_usedots=1.000000
+wavecode_1_additive=1.000000
+wavecode_1_a=0.200000
+wavecode_2_enabled=1.000000
+wavecode_2_usedots=1.000000
+wavecode_2_additive=1.000000
+wavecode_2_a=0.200000
+wavecode_3_enabled=1.000000
+wavecode_3_usedots=1.000000
+wavecode_3_thick=1.000000
+wavecode_3_additive=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=zoom = 1;
+wave_0_init1=px = 0;
+wave_0_init2=xoffset2 = 0;
+wave_0_init3=py = 0;
+wave_0_init4=xoffset1 = 0;
+wave_0_init5=pheight = 0;
+wave_0_init6=pphase = 0;
+wave_0_init7=yspout = 0;
+wave_0_init8=pphase2 = 0;
+wave_0_init9=xspout = 0;
+wave_0_init10=lrorient = 0;
+wave_0_init11=yheight = 0;
+wave_0_per_point1=xspout = 0.5;
+wave_0_per_point2=yspout = -0.01;
+wave_0_per_point3=pphase = 9999 * sample * sample * 0.0001;
+wave_0_per_point4=pphase2 = 0.1 + 0.01 * mod(3349 * sample * sample, 100);
+wave_0_per_point5=pheight = 0.002 * mod(9893 * sample, 100);
+wave_0_per_point6=yheight = 0.01 * mod(1231 * sample * sample, 100);
+wave_0_per_point7=r = 0.01 * mod(5454 * sample, 100) * abs(sin(0.25 * time));
+wave_0_per_point8=g = 0.01 * mod(9954 * sample, 100);
+wave_0_per_point9=xoffset1 = cos(time * pphase2 + pphase) * pheight;
+wave_0_per_point10=xoffset2 = -1 * cos(time * pphase2 + pphase) * pheight;
+wave_0_per_point11=lrorient = if(0.00001 < abs(below(cos(time * pphase2 + pphase), cos((time - 0.1) * pphase2 + pphase))), 0, 1);
+wave_0_per_point12=px = if(0.00001 < abs(equal(lrorient, 0)), xspout - pheight + xoffset1, xspout + pheight - xoffset2);
+wave_0_per_point13=py = yspout + abs(sin(time * pphase2 + pphase)) * yheight;
+wave_0_per_point14=x = px;
+wave_0_per_point15=y = py;
+wave_1_init1=pphase = 0;
+wave_1_init2=pheight = 0;
+wave_1_init3=xspout = 0;
+wave_1_init4=yspout = 0;
+wave_1_init5=px = 0;
+wave_1_init6=py = 0;
+wave_1_per_point1=pphase = 5671 * sample * cos(0.0001 * time);
+wave_1_per_point2=pheight = 0.005 * mod(7654 * sample, 100) * sin(0.2 * time);
+wave_1_per_point3=xspout = if(0.00001 < abs(below(abs(sin(0.2 * time)), 0.005)), 0.3 + 0.01 * randint(40), xspout);
+wave_1_per_point4=yspout = if(0.00001 < abs(below(abs(sin(0.2 * time)), 0.005)), 0.3 + 0.01 * randint(40), yspout);
+wave_1_per_point5=px = xspout + cos(time + pphase) * pheight;
+wave_1_per_point6=py = yspout + sin(time + pphase) * pheight;
+wave_1_per_point7=x = px;
+wave_1_per_point8=y = py;
+wave_1_per_point9=a = abs(0.3 * sin(0.2 * time) + 0.1 * treb_att);
+wave_2_init1=pphase = 0;
+wave_2_init2=pheight = 0;
+wave_2_init3=xspout = 0;
+wave_2_init4=yspout = 0;
+wave_2_init5=px = 0;
+wave_2_init6=py = 0;
+wave_2_per_point1=pphase = 5566 * sample * sin(0.001 * time);
+wave_2_per_point2=pheight = 0.005 * mod(3443 * sample, 100) * sin(0.45 * time);
+wave_2_per_point3=xspout = if(0.00001 < abs(below(abs(sin(0.45 * time)), 0.005)), 0.3 + 0.01 * randint(40), xspout);
+wave_2_per_point4=yspout = if(0.00001 < abs(below(abs(sin(0.45 * time)), 0.005)), 0.3 + 0.01 * randint(40), yspout);
+wave_2_per_point5=px = xspout + cos(time + pphase) * pheight;
+wave_2_per_point6=py = yspout + sin(time + pphase) * pheight;
+wave_2_per_point7=x = px;
+wave_2_per_point8=y = py;
+wave_2_per_point9=a = abs(0.3 * sin(0.45 * time) + 0.1 * bass_att);
+wave_3_init1=px = 0;
+wave_3_init2=xoffset2 = 0;
+wave_3_init3=py = 0;
+wave_3_init4=xoffset1 = 0;
+wave_3_init5=pheight = 0;
+wave_3_init6=pphase = 0;
+wave_3_init7=yspout = 0;
+wave_3_init8=pphase2 = 0;
+wave_3_init9=xspout = 0;
+wave_3_init10=lrorient = 0;
+wave_3_init11=yheight = 0;
+wave_3_per_point1=xspout = 0.5;
+wave_3_per_point2=yspout = -0.01;
+wave_3_per_point3=pphase = 1234 * sample * sample * 0.0001;
+wave_3_per_point4=pphase2 = 0.1 + 0.01 * mod(6666 * sample * sample, 100);
+wave_3_per_point5=pheight = 0.001 * mod(5555 * sample, 100);
+wave_3_per_point6=yheight = 0.01 * mod(5511 * sample * sample, 100);
+wave_3_per_point7=r = 0.01 * mod(2222 * sample, 100) * abs(sin(0.25 * time));
+wave_3_per_point8=g = 0.01 * mod(642 * sample, 100);
+wave_3_per_point9=xoffset1 = cos(time * pphase2 + pphase) * pheight;
+wave_3_per_point10=xoffset2 = -1 * cos(time * pphase2 + pphase) * pheight;
+wave_3_per_point11=lrorient = if(0.00001 < abs(below(cos(time * pphase2 + pphase), cos((time - 0.1) * pphase2 + pphase))), 0, 1);
+wave_3_per_point12=px = if(0.00001 < abs(equal(lrorient, 0)), xspout - pheight + xoffset1, xspout + pheight - xoffset2);
+wave_3_per_point13=py = yspout + abs(sin(time * pphase2 + pphase)) * yheight;
+wave_3_per_point14=x = px;
+wave_3_per_point15=y = py;
 
 [comp_shader]
 shader_body { 

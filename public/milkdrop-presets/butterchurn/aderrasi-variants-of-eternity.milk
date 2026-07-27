@@ -30,15 +30,25 @@ nMotionVectorsY=9.599999
 nMotionVectorsDx=0.400000
 nMotionVectorsDy=-0.200000
 nMotionVectorsLoop=5.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=thresh = 0;
+per_frame_init_2=dx_r = 0;
+per_frame_init_3=dy_r = 0;
+per_frame_1=wave_r = wave_r + 0.25 * sin(1.4 * time) + 0.25 * sin(2.25 * time);
+per_frame_2=wave_g = wave_g + 0.25 * sin(1.7 * time) + 0.25 * sin(2.11 * time);
+per_frame_3=wave_b = wave_b + 0.25 * sin(1.84 * time) + 0.25 * sin(2.3 * time);
+per_frame_4=warp = 0;
+per_frame_5=mv_r = wave_r;
+per_frame_6=mv_b = wave_b;
+per_frame_7=mv_g = wave_g;
+per_pixel_1=thresh = 2 * above(bass_att, thresh) + (1 - above(bass_att, thresh)) * (0.96 * (thresh - 1.3) + 1.3);
+per_pixel_2=dx_r = 0.015 * equal(thresh, 2) * sin(5 * time) + (1 - equal(thresh, 2)) * dx_r;
+per_pixel_3=dy_r = 0.015 * equal(thresh, 2) * sin(6 * time) + (1 - equal(thresh, 2)) * dy_r;
+per_pixel_4=zoom = zoom - 0.03 + 0.06 * sin(time);
+per_pixel_5=rot = rot + 0.15;
+per_pixel_6=cy = cy + 0.25 + 0.025 * cos(time);
+per_pixel_7=cx = cx + 0.25 + 0.025 * sin(time);
+per_pixel_8=rot = rot - 0.02 * sin((1 - rad) * time * bass_att * 2);

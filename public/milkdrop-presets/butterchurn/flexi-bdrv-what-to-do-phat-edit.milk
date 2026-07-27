@@ -35,36 +35,63 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsR=0.000000
 fMotionVectorsG=0.700000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.244860
-fR=0.000000
-fG=1.000000
-fB=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_rad=0.244860
+shapecode_0_r=0.000000
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=q5 = 0;
+per_frame_init_3=block = 0;
+per_frame_init_4=musictime = 0;
+per_frame_init_5=q4 = 0;
+per_frame_init_6=a = 0;
+per_frame_init_7=rd = 0;
+per_frame_init_8=vol = 0;
+per_frame_init_9=ak = 0;
+per_frame_init_10=zoom = 1;
+per_frame_init_11=xpos = 0;
+per_frame_init_12=ypos = 0;
+per_frame_1=decay = 1;
+per_frame_2=vol = 0.55 * (bass + mid + treb);
+per_frame_3=vol = vol;
+per_frame_4=mv_r = 0.5 + 0.4 * sin(1.324 * time);
+per_frame_5=mv_g = 0.5 + 0.4 * cos(1.371 * time);
+per_frame_6=musictime = musictime + vol;
+per_frame_7=q4 = 0;
+per_frame_8=q5 = 0;
+per_frame_9=dx = 0.07 * sin(0.1 * musictime);
+per_frame_10=dy = 0.07 * cos(0.069 * musictime);
+per_frame_11=monitor = rot;
+per_pixel_1=zoom = zoom + 0.04 * sin(ang * floor(q1) + 2.6 * time);
+per_pixel_2=sy = sy * rad;
+per_pixel_3=dy = a * x;
+per_pixel_4=dy = if(0.00001 < abs(below(dy, -1)), -1, dy);
+per_pixel_5=dy = if(0.00001 < abs(above(dy, 1)), 1, dy);
+per_pixel_6=sy = if(0.00001 < abs(below(sy, 0.01)), 0.01, sy);
+per_pixel_7=sy = if(0.00001 < abs(above(sy, 100)), 100, sy);
+per_pixel_8=ak = -sin(6 * x + mod(3 * mod(q1, 5), 5) * y + q1) * (1 - x + 0.2 * sin(0.54 * q1)) * above(x, 0);
+per_pixel_9=block = if(0.00001 < abs(below(ak, -0.15)), ak, 0);
+per_pixel_10=zoom = if(0.00001 < abs(block), 1, 0.97);
+per_pixel_11=rd = sqrt(sqr(0) + sqr(0.2 * sin(3 * y + time / 8) + 0.6));
+per_pixel_12=zoom = rd * rd * 2;
+per_pixel_13=rd = sqrt(sqr(1.7 * (x - 0.5 - q4)) + sqr(1.2 * (y - 0.5 + q5))) + 0.001;
+per_pixel_14=cy = 0.5 - q5;
+per_pixel_15=zoom = -3.5 * pow(rd, sin(time) + 3.5) + 0.5;
+per_pixel_16=zoom = 0.5 * zoom + 1;
+shape_0_init1=q4 = 0;
+shape_0_init2=q5 = 0;
+shape_0_per_frame1=x = 0.5 + q4;
+shape_0_per_frame2=y = 0.5 + q5;
 
 [warp_shader]
 shader_body { 

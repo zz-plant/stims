@@ -26,15 +26,32 @@ nMotionVectorsDx=0.006000
 nMotionVectorsLoop=1.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.400000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=wang = 0;
+per_frame_init_2=q3 = 0;
+per_frame_init_3=in = 0;
+per_frame_init_4=q2 = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=beat = 0;
+per_frame_init_7=amp = 0;
+per_frame_init_8=trebcap = 0;
+per_frame_1=mv_g = 1 - 0.4 * bass_att;
+per_frame_2=beat = if(0.00001 < abs(above(bass * bass_att, 4.5)), 1 - beat, beat);
+per_frame_3=q1 = 2 * beat - 1;
+per_frame_4=amp = 0.8 * amp + 0.06 * (bass_att + mid_att + treb_att);
+per_frame_5=q2 = min(amp, 1);
+per_frame_6=trebcap = 0.7 * trebcap + 0.16 * treb;
+per_frame_7=q3 = 2 * trebcap;
+per_frame_8=monitor = q3;
+per_pixel_1=wang = (3 + q3) * x + 1.7 * time + 0.1 * bass;
+per_pixel_2=in = 0;
+per_pixel_3=in = in + below(abs(x - 0.25), 0.05) * below(abs(y - 0.5), 0.25);
+per_pixel_4=in = below(abs(y - (0.5 + 0.5 * sin(wang) * q2)), 0.1);
+per_pixel_5=in = bnot(bnot(in));
+per_pixel_6=dx = 0.02 * in;
+per_pixel_7=dy = 0.08 * cos(wang) * q2 * in;
+per_pixel_8=dx = dx + 0.005 * bnot(in) * q1;
+per_pixel_9=dy = dy + bnot(in) * cos(wang) * -0.01 * q1;

@@ -25,38 +25,57 @@ nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bThickOutline=1.000000
-fRad=0.866440
-fG=1.000000
-fB=1.000000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_additive=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_rad=0.866440
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_g2=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=d = 0;
+per_frame_init_2=xx = 0;
+per_frame_init_3=z = 0;
+per_frame_init_4=w = 0;
+per_frame_init_5=cz = 0;
+per_frame_init_6=my = 0;
+per_frame_init_7=vx = 0;
+per_frame_init_8=vy = 0;
+per_frame_init_9=vz = 0;
+per_frame_init_10=mx = 0;
+per_frame_init_11=yy = 0;
+per_pixel_1=vx = 0.5 + cos(0.2 * time);
+per_pixel_2=vy = 0.5 + sin(0.2 * time);
+per_pixel_3=vz = 0;
+per_pixel_4=z = 0 - vz;
+per_pixel_5=x = x - vx;
+per_pixel_6=y = y - vy;
+per_pixel_7=d = 0.1 * time - treb * treb * treb * 0;
+per_pixel_8=xx = sin(d) * x + cos(d) * y;
+per_pixel_9=yy = cos(d) * x - sin(d) * y;
+per_pixel_10=x = xx;
+per_pixel_11=y = yy;
+per_pixel_12=x = x + mx;
+per_pixel_13=y = y + my;
+per_pixel_14=z = z + vz;
+per_pixel_15=cx = 0;
+per_pixel_16=cy = 0;
+per_pixel_17=cz = 0.5 + 0 * treb;
+per_pixel_18=vx = 0;
+per_pixel_19=vy = 0;
+per_pixel_20=vz = 0;
+per_pixel_21=zoom = 0.33;
+per_pixel_22=w = 1 / zoom * (1 + sqrt(sqr(z - cz) + sqr(x - cx) + sqr(y - cy)));
+per_pixel_23=dx = -(x - mx) * w;
+per_pixel_24=dy = -(y - my) * w;
 
 [warp_shader]
 shader_body { 

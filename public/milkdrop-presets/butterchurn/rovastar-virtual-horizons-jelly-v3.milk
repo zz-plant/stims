@@ -16,30 +16,21 @@ fWaveB=0.500000
 fWaveX=0.550000
 fWaveY=0.380000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=progress = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = 1;
+per_frame_3=wave_g = 1;
+per_frame_4=wave_b = 0;
+per_frame_5=sy = sy + 0.05 * progress;
+per_pixel_1=zoom = 1 + pow(4 * rad + 5 * y, 2) / 200;
 
 [warp_shader]
 shader_body { 

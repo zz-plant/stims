@@ -29,41 +29,76 @@ nMotionVectorsY=2.280000
 nMotionVectorsLoop=2.500000
 fMotionVectorsB=0.800000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=5.000000
-bTextured=1.000000
-fRad=1.089250
-fTexZoom=0.932720
-fG=1.000000
-fB=1.000000
-fA=0.800000
-fR2=1.000000
-fB2=0.850000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bUseDots=1.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_usedots=1.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=5.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=1.089250
+shapecode_0_tex_zoom=0.932720
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.800000
+shapecode_0_r2=1.000000
+shapecode_0_b2=0.850000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=ring = 0;
+per_frame_init_2=mv_x = 64;
+per_frame_init_3=mv_y = 48;
+per_frame_init_4=nut = 0;
+per_frame_init_5=stp = 0;
+per_frame_init_6=stq = 0;
+per_frame_init_7=rtp = 0;
+per_frame_init_8=rtq = 0;
+per_frame_init_9=wvr = 0;
+per_frame_init_10=decay = 0;
+per_frame_init_11=dcsp = 0;
+per_frame_1=decay = 0.98;
+per_frame_2=zoom = 1.001;
+per_frame_3=warp = 0.03;
+per_pixel_1=ring = 2 * sin(3.14 * rad + 0.3) - 1;
+per_pixel_2=ring = max(ring, 0);
+per_pixel_3=ring = ring * ring;
+per_pixel_4=zoom = 1 + 0.04 * rad;
+per_pixel_5=sx = 1 + 0.3 * ring;
+per_pixel_6=sy = 1 - 0.3 * ring;
+wave_0_init1=n = 0;
+wave_0_init2=ym = 0;
+wave_0_init3=t1 = 0;
+wave_0_init4=scalar = 0;
+wave_0_init5=t3 = 0;
+wave_0_init6=timea = 0;
+wave_0_init7=xm = 0;
+wave_0_init8=t2 = 0;
+wave_0_init9=timeb = 0;
+wave_0_per_frame1=t1 = 0.5;
+wave_0_per_frame2=t2 = 0.5;
+wave_0_per_frame3=scalar = 5 * sin(0.3 * time);
+wave_0_per_frame4=t3 = scalar;
+wave_0_per_point1=x = t1;
+wave_0_per_point2=y = t2;
+wave_0_per_point3=n = 6.283 * sample;
+wave_0_per_point4=timea = 0.3 * time + t3;
+wave_0_per_point5=timeb = 0.1 * time + t3;
+wave_0_per_point6=xm = sin(3 * n) * sin(5.7 * n + timeb) * sin(11.5 * n + timea) * sin(31 * n);
+wave_0_per_point7=ym = sin(3.5 * n) * sin(1.1 * n) * sin(23 * n + timea) * sin(13.3 * n + timeb);
+wave_0_per_point8=x = x + 0.1 * xm;
+wave_0_per_point9=y = y + 0.1 * ym;
+wave_0_per_point10=t1 = x;
+wave_0_per_point11=t2 = y;
+wave_0_per_point12=r = 0.5 * tan(n) + 0.5;
+wave_0_per_point13=r = min(r, 1) * above(r, 0);
+wave_0_per_point14=g = 0.5 * tan(n + 2.1) + 0.5;
+wave_0_per_point15=g = min(g, 1) * above(g, 0);
+wave_0_per_point16=b = 0.5 * tan(n + 4.2) + 0.5;
+wave_0_per_point17=b = min(b, 1) * above(b, 0);
+shape_0_per_frame1=ang = 0.01 * sin(0.3 * time);
 
 [warp_shader]
 shader_body { 

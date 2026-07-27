@@ -33,59 +33,143 @@ fMotionVectorsR=0.480000
 fMotionVectorsG=0.400000
 fMotionVectorsB=0.470000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=23.000000
-bAdditive=1.000000
-bTextured=1.000000
-fY=0.700000
-fRad=0.154930
-fTexZoom=0.010000
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-bTextured=1.000000
-fX=0.900000
-fTexZoom=0.010000
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-
-[shape00_3]
-bEnabled=1.000000
-nSides=100.000000
-bTextured=1.000000
-fRad=0.033000
-fTexZoom=0.010000
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fBorderA=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=23.000000
+shapecode_0_additive=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_y=0.700000
+shapecode_0_rad=0.154930
+shapecode_0_tex_zoom=0.010000
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=100.000000
+shapecode_2_additive=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_x=0.900000
+shapecode_2_tex_zoom=0.010000
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_r2=1.000000
+shapecode_2_b2=1.000000
+shapecode_3_enabled=1.000000
+shapecode_3_sides=100.000000
+shapecode_3_textured=1.000000
+shapecode_3_rad=0.033000
+shapecode_3_tex_zoom=0.010000
+shapecode_3_g=1.000000
+shapecode_3_b=1.000000
+shapecode_3_r2=1.000000
+shapecode_3_b2=1.000000
+shapecode_3_border_a=0.000000
+per_frame_init_1=old_treb_flop = 0;
+per_frame_init_2=bass_flop = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=treb_flop = 0;
+per_frame_init_5=bass_thresh = 0;
+per_frame_init_6=old_bass_flop = 0;
+per_frame_init_7=treb_thresh = 0;
+per_frame_init_8=pulse = 0;
+per_frame_init_9=bass_changed = 0;
+per_frame_init_10=mid_thresh = 0;
+per_frame_init_11=q4 = 0;
+per_frame_init_12=mid_changed = 0;
+per_frame_init_13=old_mid_flop = 0;
+per_frame_init_14=mid_flop = 0;
+per_frame_init_15=q2 = 0;
+per_frame_init_16=treb_changed = 0;
+per_frame_1=warp = 0;
+per_frame_2=old_bass_flop = bass_flop;
+per_frame_3=old_treb_flop = treb_flop;
+per_frame_4=old_mid_flop = mid_flop;
+per_frame_5=bass_thresh = 2 * above(bass_att, bass_thresh) + (1 - above(bass_att, bass_thresh)) * (0.96 * (bass_thresh - 1.3) + 1.3);
+per_frame_6=bass_flop = abs(bass_flop - equal(bass_thresh, 2));
+per_frame_7=treb_thresh = 2 * above(treb_att, treb_thresh) + (1 - above(treb_att, treb_thresh)) * (0.96 * (treb_thresh - 1.3) + 1.3);
+per_frame_8=treb_flop = abs(treb_flop - equal(treb_thresh, 2));
+per_frame_9=mid_thresh = 2 * above(mid_att, mid_thresh) + (1 - above(mid_att, mid_thresh)) * (0.96 * (mid_thresh - 1.3) + 1.3);
+per_frame_10=mid_flop = abs(mid_flop - equal(mid_thresh, 2));
+per_frame_11=bass_changed = bnot(equal(old_bass_flop, bass_flop));
+per_frame_12=mid_changed = bnot(equal(old_mid_flop, mid_flop));
+per_frame_13=treb_changed = bnot(equal(old_treb_flop, treb_flop));
+per_frame_14=pulse = if(0.00001 < abs(above(abs(pulse), 5000)), -5000, pulse + 0.1 * mid_att * bor(bor(bass_changed * bnot(treb_changed), treb_changed * bnot(bass_changed)) * bnot(mid_changed), mid_changed));
+per_frame_15=wave_b = if(0.00001 < abs(treb_changed), 1, if(0.00001 < abs(mid_changed), 0.45, -0.45)) * q4;
+per_frame_16=wave_g = if(0.00001 < abs(bass_changed), 0.1, bass_flop);
+per_frame_17=wave_r = if(0.00001 < abs(mid_flop), 1, 0.5 * q2 * treb_flop);
+per_frame_18=ib_b = ib_b + 0.5 * sin(pulse);
+per_frame_19=ib_g = ib_g + 5 * sin(0.8 * pulse);
+per_frame_20=ib_r = ib_r + 5 * sin(0.8 * pulse);
+per_frame_21=ob_b = wave_r;
+per_frame_22=ob_g = wave_b;
+per_frame_23=ob_r = wave_g;
+per_frame_24=wave_mystery = sin(pulse);
+per_frame_25=q1 = pulse;
+per_pixel_1=zoom = zoom - 0.1 * cos(10 * x * sin(time + 0.9 * q1) - 10 * sin(time + q1)) - 0.1 * sin(10 * rad * sin(time + 0.5 * q1));
+per_pixel_2=rot = rot + abs(1 - zoom) * sin(time + q1) * 2;
+wave_0_init1=yq = 0;
+wave_0_init2=xp = 0;
+wave_0_init3=basstime = 0;
+wave_0_init4=xs = 0;
+wave_0_init5=yp = 0;
+wave_0_init6=t1 = 0;
+wave_0_init7=smp = 0;
+wave_0_init8=q1 = 0;
+wave_0_init9=xq = 0;
+wave_0_init10=axs1 = 0;
+wave_0_init11=ys = 0;
+wave_0_init12=axs2 = 0;
+wave_0_init13=zq = 0;
+wave_0_init14=zp = 0;
+wave_0_init15=q2 = 0;
+wave_0_init16=q3 = 0;
+wave_0_init17=angy = 0;
+wave_0_per_frame1=basstime = basstime + bass * bass;
+wave_0_per_frame2=t1 = 0.003 * basstime;
+wave_0_per_point1=smp = 6.283 * sample;
+wave_0_per_point2=xp = 0.2 * sin(smp);
+wave_0_per_point3=yp = 0.2 * cos(smp);
+wave_0_per_point4=zp = 0;
+wave_0_per_point5=angy = 6.28 * sin(25.12 * sample + t1);
+wave_0_per_point6=xq = xp * cos(angy) - zp * sin(angy);
+wave_0_per_point7=zq = xp * sin(angy) + zp * cos(angy);
+wave_0_per_point8=xp = xq;
+wave_0_per_point9=zp = zq;
+wave_0_per_point10=angy = 0.1 * t1;
+wave_0_per_point11=xq = xp * cos(angy) - zp * sin(angy);
+wave_0_per_point12=zq = xp * sin(angy) + zp * cos(angy);
+wave_0_per_point13=xp = xq;
+wave_0_per_point14=zp = zq;
+wave_0_per_point15=axs1 = sin(0.15 * t1) + 1.6;
+wave_0_per_point16=yq = yp * cos(axs1) - zp * sin(axs1);
+wave_0_per_point17=zq = yp * sin(axs1) + zp * cos(axs1);
+wave_0_per_point18=yp = yq;
+wave_0_per_point19=zp = zq;
+wave_0_per_point20=axs2 = 3.3 * sin(0.1 * t1);
+wave_0_per_point21=xq = xp * cos(axs2) - zp * sin(axs2);
+wave_0_per_point22=zq = xp * sin(axs2) + zp * cos(axs2);
+wave_0_per_point23=xp = xq;
+wave_0_per_point24=zp = zq;
+wave_0_per_point25=yp = yp * 1.2;
+wave_0_per_point26=zp = zp + 2.1;
+wave_0_per_point27=xs = xp / zp;
+wave_0_per_point28=ys = yp / zp;
+wave_0_per_point29=x = xs + 0.5;
+wave_0_per_point30=y = ys + 0.5;
+wave_0_per_point31=r = 1 - q1;
+wave_0_per_point32=g = 1 - q2;
+wave_0_per_point33=b = 1 - q3;
+shape_0_per_frame1=y = 0.5 * bass_att + 0.2;
+shape_0_per_frame2=x = 0.5 * cos(2 * time) + 0.5;
+shape_2_per_frame1=x = 0.4 * sin(5 * time) + 0.5;
+shape_2_per_frame2=y = 0.5 * treb_att;
+shape_3_per_frame1=x = 0.5 + 0.07 * bass;
 
 [comp_shader]
 shader_body { 

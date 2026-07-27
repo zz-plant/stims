@@ -33,64 +33,124 @@ fMotionVectorsA=0.000000
 b2x=0.300000
 b3x=0.500000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=25.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=0.570300
-fG=1.000000
-fB=1.000000
-fA=0.000000
-fR2=1.000000
-fB2=1.000000
-fA2=0.500000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=25.000000
-bThickOutline=1.000000
-nInstances=3.000000
-fG=1.000000
-fB=1.000000
-fG2=0.000000
-fA2=0.500000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=1.000000
-nSides=5.000000
-nInstances=25.000000
-fRad=0.081950
-fTexZoom=0.905290
-fG=1.000000
-fB=1.000000
-fA=0.200000
-fR2=0.300000
-fG2=0.300000
-fB2=0.300000
-fA2=0.200000
-fBorderA=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=25.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.570300
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_a2=0.500000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=25.000000
+shapecode_1_thickoutline=1.000000
+shapecode_1_num_inst=3.000000
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_g2=0.000000
+shapecode_1_a2=0.500000
+shapecode_1_border_r=0.000000
+shapecode_1_border_g=0.000000
+shapecode_1_border_b=0.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=1.000000
+shapecode_3_sides=5.000000
+shapecode_3_num_inst=25.000000
+shapecode_3_rad=0.081950
+shapecode_3_tex_zoom=0.905290
+shapecode_3_g=1.000000
+shapecode_3_b=1.000000
+shapecode_3_a=0.200000
+shapecode_3_r2=0.300000
+shapecode_3_g2=0.300000
+shapecode_3_b2=0.300000
+shapecode_3_a2=0.200000
+shapecode_3_border_a=0.000000
+shape_0_init1=q1 = 0;
+shape_0_init2=q3 = 0;
+shape_0_init3=q4 = 0;
+shape_0_init4=q24 = 0;
+shape_0_init5=q2 = 0;
+shape_0_init6=q3 = 0;
+shape_0_init7=q4 = 0;
+shape_0_init8=q4 = 0;
+shape_0_init9=bob = 1.5;
+shape_0_init10=ro = 0;
+shape_0_init11=red = randint(20);
+shape_0_per_frame1=rad = 0.57 + 0.1 * sin(1.24 * q1);
+shape_0_per_frame2=tex_zoom = 1.2 + 0.4 * sin(q3);
+shape_0_per_frame3=tex_ang = sin(3.29 * q4);
+shape_0_per_frame4=border_a = q24 / 4;
+shape_0_per_frame5=x = 0.5 + 0.1 * sin(0.62 * q2);
+shape_0_per_frame6=y = 0.5 + 0.1 * sin(0.73 * q3);
+shape_0_per_frame7=a = 0.5 + 0.5 * sin(0.452 * q4);
+shape_0_per_frame8=a2 = min(0.8, 1 + sin(1.6 * q4));
+shape_0_per_frame9=a = 1 - a2;
+shape_1_init1=arg = 0;
+shape_1_init2=q10 = 0;
+shape_1_init3=rad1 = 0;
+shape_1_init4=ccx = 0;
+shape_1_init5=q4 = 0;
+shape_1_init6=ccy = 0;
+shape_1_init7=q1 = 0;
+shape_1_init8=ccx = 0;
+shape_1_init9=rad1 = 0;
+shape_1_init10=arg = 0;
+shape_1_init11=q11 = 0;
+shape_1_init12=q1 = 0;
+shape_1_init13=q11 = 0;
+shape_1_init14=ccy = 0;
+shape_1_init15=rad1 = 0;
+shape_1_init16=arg = 0;
+shape_1_init17=q32 = 0;
+shape_1_init18=fac = 0;
+shape_1_init19=fac = 0;
+shape_1_init20=fac = 0;
+shape_1_init21=fac = 0;
+shape_1_init22=q11 = 0;
+shape_1_init23=q27 = 0;
+shape_1_per_frame1=arg = 6.283 * (q10 / num_inst + instance / num_inst);
+shape_1_per_frame2=rad1 = 0.25;
+shape_1_per_frame3=ccx = 0.5 + 0.1 * sin(2.7 * q4);
+shape_1_per_frame4=ccy = 0.5 + 0.1 * sin(4.8 * q1);
+shape_1_per_frame5=x = ccx + rad1 * cos(arg * q11 - 0.31 * q1) / q11;
+shape_1_per_frame6=y = ccy + rad1 * sin(arg) * q32;
+shape_1_per_frame7=rad = min(0.35, 0.09 * mid_att);
+shape_1_per_frame8=r = 0.5 + 0.4 * sin(frame / 4);
+shape_1_per_frame9=b = 0.5 + 0.4 * sin(frame / 4 + 2.1);
+shape_1_per_frame10=g = 0.5 + 0.4 * sin(frame / 4 + 4.2);
+shape_1_per_frame11=fac = 0.5;
+shape_1_per_frame12=r2 = r * fac;
+shape_1_per_frame13=b2 = b * fac;
+shape_1_per_frame14=g2 = g * fac;
+shape_1_per_frame15=a = 1;
+shape_1_per_frame16=a2 = q11 / 2;
+shape_1_per_frame17=border_a = if(3 > q27, 1, 0);
+shape_3_init1=k1 = 0;
+shape_3_init2=k1 = 0;
+shape_3_init3=k2 = 0;
+shape_3_init4=k1 = 0;
+shape_3_init5=q10 = 0;
+shape_3_init6=ccx = 0;
+shape_3_init7=q4 = 0;
+shape_3_init8=ccy = 0;
+shape_3_init9=q3 = 0;
+shape_3_init10=ccx = 0;
+shape_3_init11=k2 = 0;
+shape_3_init12=q2 = 0;
+shape_3_init13=ccy = 0;
+shape_3_init14=k2 = 0;
+shape_3_init15=q32 = 0;
+shape_3_init16=k2 = 0;
 
 [warp_shader]
 shader_body { 

@@ -23,75 +23,181 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.100000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=30.000000
-bTextured=1.000000
-fX=0.240000
-fRad=0.472090
-fTexAng=0.628320
-fTexZoom=0.819520
-fR2=0.600000
-fG2=0.600000
-fB2=0.900000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-bAdditive=1.000000
-bTextured=1.000000
-fRad=1.791420
-fTexAng=1.570800
-fR2=0.300000
-fG2=0.200000
-fB2=0.800000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=0.808140
-fR=0.400000
-fG=0.400000
-fB=0.800000
-fR2=0.700000
-fG2=0.600000
-fB2=0.500000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=1.000000
-nSides=100.000000
-bTextured=1.000000
-fRad=0.364570
-fTexZoom=0.498310
-fA=0.000000
-fA2=0.800000
-
-[wave00_0]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_usedots=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_usedots=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_additive=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_usedots=1.000000
+wavecode_2_thick=1.000000
+wavecode_2_additive=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_usedots=1.000000
+wavecode_3_thick=1.000000
+wavecode_3_additive=1.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=30.000000
+shapecode_0_textured=1.000000
+shapecode_0_x=0.240000
+shapecode_0_rad=0.472090
+shapecode_0_tex_ang=0.628320
+shapecode_0_tex_zoom=0.819520
+shapecode_0_r2=0.600000
+shapecode_0_g2=0.600000
+shapecode_0_b2=0.900000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_additive=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=1.791420
+shapecode_1_tex_ang=1.570800
+shapecode_1_r2=0.300000
+shapecode_1_g2=0.200000
+shapecode_1_b2=0.800000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_rad=0.808140
+shapecode_2_r=0.400000
+shapecode_2_g=0.400000
+shapecode_2_b=0.800000
+shapecode_2_r2=0.700000
+shapecode_2_g2=0.600000
+shapecode_2_b2=0.500000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=1.000000
+shapecode_3_sides=100.000000
+shapecode_3_textured=1.000000
+shapecode_3_rad=0.364570
+shapecode_3_tex_zoom=0.498310
+shapecode_3_a=0.000000
+shapecode_3_a2=0.800000
+per_frame_init_1=t = 0;
+per_frame_1=t = 12.3 * time;
+per_frame_2=rot = rot + 0.03 * (0.6 * sin(0.38 * time) + 0.4 * sin(0.54 * time));
+per_frame_3=dx = dx + 0.002 * (0.6 * sin(0.434 * time) + 0.4 * sin(0.277 * time));
+per_frame_4=dy = dy + 0.002 * (0.6 * sin(0.384 * time) + 0.4 * sin(0.477 * time));
+wave_0_init1=tscale = 0;
+wave_0_init2=tp1x = 0;
+wave_0_init3=tp3y = 0;
+wave_0_init4=tri_point = 0;
+wave_0_init5=tp1y = 0;
+wave_0_init6=trot = 0;
+wave_0_init7=t_y = 0;
+wave_0_init8=tp2x = 0;
+wave_0_init9=tp2y = 0;
+wave_0_init10=t_x = 0;
+wave_0_init11=tp3x = 0;
+wave_0_per_point1=tscale = 0.45 + 0.02 * bass;
+wave_0_per_point2=trot = 3;
+wave_0_per_point3=a = above(sample, 0);
+wave_0_per_point4=tp1x = 0.5 + cos(time * trot) * tscale * 0.75;
+wave_0_per_point5=tp1y = 0.5 + sin(time * trot) * tscale;
+wave_0_per_point6=tp2x = 0.5 + cos(2.09443805 + time * trot) * tscale * 0.75;
+wave_0_per_point7=tp2y = 0.5 + sin(2.09443805 + time * trot) * tscale * sin(time);
+wave_0_per_point8=tp3x = 0.5 + cos(4.18856195 + time * trot) * tscale * 0.75;
+wave_0_per_point9=tp3y = 0.5 + sin(4.18856195 + time * trot) * tscale * sin(time);
+wave_0_per_point10=tri_point = randint(3);
+wave_0_per_point11=t_x = t_x + equal(tri_point, 0) * (tp1x - t_x) * 0.5;
+wave_0_per_point12=t_y = t_y + equal(tri_point, 0) * (tp1y - t_y) * 0.5;
+wave_0_per_point13=t_x = t_x + equal(tri_point, 1) * (tp2x - t_x) * 0.5;
+wave_0_per_point14=t_y = t_y + equal(tri_point, 1) * (tp2y - t_y) * 0.5;
+wave_0_per_point15=t_x = t_x + equal(tri_point, 2) * (tp3x - t_x) * 0.5;
+wave_0_per_point16=t_y = t_y + equal(tri_point, 2) * (tp3y - t_y) * 0.5;
+wave_0_per_point17=x = t_x;
+wave_0_per_point18=y = t_y;
+wave_1_init1=tscale = 0;
+wave_1_init2=tp1x = 0;
+wave_1_init3=tp3y = 0;
+wave_1_init4=tri_point = 0;
+wave_1_init5=tp1y = 0;
+wave_1_init6=trot = 0;
+wave_1_init7=t_y = 0;
+wave_1_init8=tp2x = 0;
+wave_1_init9=tp2y = 0;
+wave_1_init10=t_x = 0;
+wave_1_init11=tp3x = 0;
+wave_1_per_point1=tscale = 0.45 + 0.02 * bass;
+wave_1_per_point2=trot = 3;
+wave_1_per_point3=a = above(sample, 0);
+wave_1_per_point4=tp1x = 0.5 + cos(time * trot) * tscale * 0.75;
+wave_1_per_point5=tp1y = 0.5 + sin(time * trot) * tscale;
+wave_1_per_point6=tp2x = 0.5 + cos(2.09443805 + time * trot) * tscale * 0.75;
+wave_1_per_point7=tp2y = 0.5 + sin(2.09443805 + time * trot) * tscale * sin(time);
+wave_1_per_point8=tp3x = 0.5 + cos(4.18856195 + time * trot) * tscale * 0.75;
+wave_1_per_point9=tp3y = 0.5 + sin(4.18856195 + time * trot) * tscale * sin(time);
+wave_1_per_point10=tri_point = randint(3);
+wave_1_per_point11=t_x = t_x + equal(tri_point, 0) * (tp1x - t_x) * 0.5;
+wave_1_per_point12=t_y = t_y + equal(tri_point, 0) * (tp1y - t_y) * 0.5;
+wave_1_per_point13=t_x = t_x + equal(tri_point, 1) * (tp2x - t_x) * 0.5;
+wave_1_per_point14=t_y = t_y + equal(tri_point, 1) * (tp2y - t_y) * 0.5;
+wave_1_per_point15=t_x = t_x + equal(tri_point, 2) * (tp3x - t_x) * 0.5;
+wave_1_per_point16=t_y = t_y + equal(tri_point, 2) * (tp3y - t_y) * 0.5;
+wave_1_per_point17=x = t_x;
+wave_1_per_point18=y = t_y;
+wave_2_init1=tscale = 0;
+wave_2_init2=tp1x = 0;
+wave_2_init3=tp3y = 0;
+wave_2_init4=tri_point = 0;
+wave_2_init5=tp1y = 0;
+wave_2_init6=trot = 0;
+wave_2_init7=t_y = 0;
+wave_2_init8=tp2x = 0;
+wave_2_init9=tp2y = 0;
+wave_2_init10=t_x = 0;
+wave_2_init11=tp3x = 0;
+wave_2_per_point1=tscale = 0.45 + 0.02 * bass;
+wave_2_per_point2=trot = 3;
+wave_2_per_point3=a = above(sample, 0);
+wave_2_per_point4=tp1x = 0.5 + cos(time * trot) * tscale * 0.75;
+wave_2_per_point5=tp1y = 0.5 + sin(time * trot) * tscale;
+wave_2_per_point6=tp2x = 0.5 + cos(2.09443805 + time * trot) * tscale * 0.75;
+wave_2_per_point7=tp2y = 0.5 + sin(2.09443805 + time * trot) * tscale * sin(time);
+wave_2_per_point8=tp3x = 0.5 + cos(4.18856195 + time * trot) * tscale * 0.75;
+wave_2_per_point9=tp3y = 0.5 + sin(4.18856195 + time * trot) * tscale * sin(time);
+wave_2_per_point10=tri_point = randint(3);
+wave_2_per_point11=t_x = t_x + equal(tri_point, 0) * (tp1x - t_x) * 0.5;
+wave_2_per_point12=t_y = t_y + equal(tri_point, 0) * (tp1y - t_y) * 0.5;
+wave_2_per_point13=t_x = t_x + equal(tri_point, 1) * (tp2x - t_x) * 0.5;
+wave_2_per_point14=t_y = t_y + equal(tri_point, 1) * (tp2y - t_y) * 0.5;
+wave_2_per_point15=t_x = t_x + equal(tri_point, 2) * (tp3x - t_x) * 0.5;
+wave_2_per_point16=t_y = t_y + equal(tri_point, 2) * (tp3y - t_y) * 0.5;
+wave_2_per_point17=x = t_x;
+wave_2_per_point18=y = t_y;
+wave_3_init1=tscale = 0;
+wave_3_init2=tp1x = 0;
+wave_3_init3=tp3y = 0;
+wave_3_init4=tri_point = 0;
+wave_3_init5=tp1y = 0;
+wave_3_init6=trot = 0;
+wave_3_init7=t_y = 0;
+wave_3_init8=tp2x = 0;
+wave_3_init9=tp2y = 0;
+wave_3_init10=t_x = 0;
+wave_3_init11=tp3x = 0;
+wave_3_per_point1=tscale = 0.45 + 0.02 * bass;
+wave_3_per_point2=trot = 3;
+wave_3_per_point3=a = above(sample, 0);
+wave_3_per_point4=tp1x = 0.5 + cos(time * trot) * tscale * 0.75;
+wave_3_per_point5=tp1y = 0.5 + sin(time * trot) * tscale;
+wave_3_per_point6=tp2x = 0.5 + cos(2.09443805 + time * trot) * tscale * 0.75;
+wave_3_per_point7=tp2y = 0.5 + sin(2.09443805 + time * trot) * tscale * sin(time);
+wave_3_per_point8=tp3x = 0.5 + cos(4.18856195 + time * trot) * tscale * 0.75;
+wave_3_per_point9=tp3y = 0.5 + sin(4.18856195 + time * trot) * tscale * sin(time);
+wave_3_per_point10=tri_point = randint(3);
+wave_3_per_point11=t_x = t_x + equal(tri_point, 0) * (tp1x - t_x) * 0.5;
+wave_3_per_point12=t_y = t_y + equal(tri_point, 0) * (tp1y - t_y) * 0.5;
+wave_3_per_point13=t_x = t_x + equal(tri_point, 1) * (tp2x - t_x) * 0.5;
+wave_3_per_point14=t_y = t_y + equal(tri_point, 1) * (tp2y - t_y) * 0.5;
+wave_3_per_point15=t_x = t_x + equal(tri_point, 2) * (tp3x - t_x) * 0.5;
+wave_3_per_point16=t_y = t_y + equal(tri_point, 2) * (tp3y - t_y) * 0.5;
+wave_3_per_point17=x = t_x;
+wave_3_per_point18=y = t_y;
+shape_0_per_frame1=x = 0.5 * sin(0.5 * time) + 0.5;
 
 [warp_shader]
 uniform sampler2D sampler_smalltiled_ensign_meat;

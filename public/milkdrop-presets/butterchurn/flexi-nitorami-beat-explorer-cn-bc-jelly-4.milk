@@ -25,40 +25,55 @@ fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=24.000000
-bAdditive=1.000000
-nInstances=5.000000
-fX=0.480000
-fRad=0.026100
-fTexZoom=4.360770
-fR2=1.000000
-fG2=0.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=24.000000
+shapecode_0_additive=1.000000
+shapecode_0_num_inst=5.000000
+shapecode_0_x=0.480000
+shapecode_0_rad=0.026100
+shapecode_0_tex_zoom=4.360770
+shapecode_0_r2=1.000000
+shapecode_0_g2=0.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=z = 0;
+per_frame_init_2=d_x = 0;
+per_frame_init_3=index = 0;
+per_frame_init_4=dec_med = 0;
+per_frame_init_5=is_beat = 0;
+per_frame_init_6=dec_slow = 0;
+per_frame_init_7=avg = 0;
+per_frame_init_8=r = 0;
+per_frame_init_9=beat = 0;
+per_frame_init_10=d_y = 0;
+per_frame_init_11=peak = 0;
+per_frame_init_12=t0 = 0;
+per_frame_1=dec_med = pow(0.9, 30 / fps);
+per_frame_2=dec_slow = pow(0.99, 30 / fps);
+per_frame_3=beat = max(max(bass, mid), treb);
+per_frame_4=avg = avg * dec_slow + beat * (1 - dec_slow);
+per_frame_5=is_beat = above(beat, 0.5 + avg + peak) * above(time, t0 + 0.2);
+per_frame_6=t0 = is_beat * time + (1 - is_beat) * t0;
+per_frame_7=peak = is_beat * beat + (1 - is_beat) * peak * dec_med;
+per_frame_8=index = mod(index + is_beat, 2);
+per_frame_9=d_x = if(0.00001 < abs(is_beat), 0.001 * (randint(2000) - 1000), d_x);
+per_frame_10=d_y = if(0.00001 < abs(is_beat), 0.001 * (randint(2000) - 1000), d_y);
+per_frame_11=r = if(0.00001 < abs(is_beat), 0.001 * (randint(2000) - 1000), r);
+per_frame_12=z = if(0.00001 < abs(is_beat), 0.001 * randint(1000), z);
+per_frame_13=zoom = 1.03 + 0.03 * z;
+per_frame_14=rot = 0.04 * r;
+per_frame_15=dx = 0.01 * d_x;
+per_frame_16=dy = 0.01 * d_y;
+shape_0_per_frame1=x = randint(1000) / 1000;
+shape_0_per_frame2=y = randint(1000) / 1000;
+shape_0_per_frame3=ang = randint(150) / 100;
 
 [warp_shader]
 shader_body { 

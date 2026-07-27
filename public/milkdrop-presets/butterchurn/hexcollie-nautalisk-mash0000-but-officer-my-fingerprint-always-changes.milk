@@ -38,40 +38,56 @@ fMotionVectorsR=0.500000
 fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=0.986080
-fTexAng=3.141590
-fTexZoom=0.756680
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=0.986080
+shapecode_1_tex_ang=3.141590
+shapecode_1_tex_zoom=0.756680
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_a2=1.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=it = 0;
+per_frame_init_2=radm = 0;
+per_frame_init_3=var = 0;
+per_frame_init_4=mod = 0;
+per_frame_init_5=ms = 0;
+per_frame_init_6=mss = 0;
+per_frame_init_7=q1 = 0;
+per_frame_init_8=mv_x = 64;
+per_frame_init_9=mv_y = 48;
+per_frame_init_10=nut = 0;
+per_frame_init_11=stp = 0;
+per_frame_init_12=stq = 0;
+per_frame_init_13=rtp = 0;
+per_frame_init_14=rtq = 0;
+per_frame_init_15=wvr = 0;
+per_frame_init_16=decay = 0;
+per_frame_init_17=dcsp = 0;
+per_frame_1=decay = 1;
+per_frame_2=zoom = -1;
+per_frame_3=ms = 0.15 * sin(0.6 * time);
+per_frame_4=mss = mss + 0.001 * ms;
+per_frame_5=q1 = ms;
+per_frame_6=dx = 0;
+per_frame_7=dy = 0;
+per_pixel_1=it = 0.3 * bass_att;
+per_pixel_2=radm = 500 * rad;
+per_pixel_3=rot = -0.02 * tan(30 * (radm + it)) / (500 * (rad + 0.1) * bass_att);
+per_pixel_4=var = 2 - atan(4 * bass_att);
+per_pixel_5=mod = atan(ang * var) + 2 * bass_att;
+per_pixel_6=mod = mod * cos(rad) - cos(ang);
+per_pixel_7=zoom = 0.89 + abs(0.02 * mod) + 0.01 * bass_att;
+shape_1_per_frame1=ang = ang + 0.2 * bass + 0.4 * time;
 
 [warp_shader]
 shader_body { 

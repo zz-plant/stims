@@ -26,30 +26,54 @@ fMotionVectorsR=0.350000
 fMotionVectorsG=0.350000
 fMotionVectorsB=0.350000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=decay_rate = 0;
+per_frame_init_2=q6 = 0;
+per_frame_init_3=rot_sum = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=q5 = 0;
+per_frame_init_6=prev_beat = 0;
+per_frame_init_7=is_beat = 0;
+per_frame_init_8=min_att = 0;
+per_frame_init_9=beat = 0;
+per_frame_init_10=decay_to = 0;
+per_frame_init_11=rot_sim = 0;
+per_frame_init_12=q2 = 0;
+per_frame_init_13=q3 = 0;
+per_frame_init_14=beat_level = 0;
+per_frame_init_15=rot_sum = 0;
+per_frame_init_16=q2 = 0.07 + 0.00004 * randint(1000) + 0.00003 * randint(1000);
+per_frame_init_17=q3 = 1.035 + 0.06 * (randint(1000) + randint(1000) + randint(1000)) * 0.000333;
+per_frame_1=wave_r = wave_r + 0.5 * (0.6 * sin(1.98 * time) + 0.4 * sin(3.047 * time));
+per_frame_2=wave_g = wave_g + 0.5 * (0.6 * sin(2.835 * time) + 0.4 * sin(2.081 * time));
+per_frame_3=wave_b = wave_b + 0.5 * (0.6 * sin(3.814 * time) + 0.4 * sin(1.011 * time));
+per_frame_4=cx = 0.5;
+per_frame_5=cy = 0.5;
+per_frame_6=rot = q2;
+per_frame_7=zoom = zoom - 1 + q3;
+per_frame_8=rot_sum = rot_sum + rot;
+per_frame_9=q1 = -rot_sum;
+per_frame_10=q5 = cos(rot_sum);
+per_frame_11=q6 = sin(rot_sim);
+per_frame_12=monitor = q2;
+per_frame_13=min_att = 2.5;
+per_frame_14=decay_to = 0.8;
+per_frame_15=decay_rate = pow(0.999, fps);
+per_frame_16=beat = bass / max(min_att, bass_att);
+per_frame_17=beat = max(beat, mid / max(min_att, mid_att));
+per_frame_18=beat = max(beat, treb / max(min_att, treb_att));
+per_frame_19=beat = max(beat, (prev_beat - decay_to) * decay_rate + decay_to);
+per_frame_20=beat_level = 24 * (beat - prev_beat - 0.02);
+per_frame_21=is_beat = above(beat_level, 0.5);
+per_frame_22=prev_beat = beat;
+per_frame_23=wave_a = beat_level;
 
 [warp_shader]
 shader_body { 

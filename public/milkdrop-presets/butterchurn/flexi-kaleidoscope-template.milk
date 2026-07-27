@@ -35,30 +35,44 @@ fMotionVectorsG=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=w = 0;
+per_frame_init_2=q12 = 0;
+per_frame_init_3=q18 = 0;
+per_frame_init_4=q13 = 0;
+per_frame_init_5=q15 = 0;
+per_frame_init_6=dt = 0;
+per_frame_init_7=dm = 0;
+per_frame_init_8=mm = 0;
+per_frame_init_9=tt = 0;
+per_frame_init_10=q11 = 0;
+per_frame_init_11=q16 = 0;
+per_frame_init_12=db = 0;
+per_frame_init_13=q17 = 0;
+per_frame_init_14=bb = 0;
+per_frame_init_15=q14 = 0;
+per_frame_1=db = 0.98 * db + 0.2 * bass;
+per_frame_2=bb = bb + 0.1 * db;
+per_frame_3=dt = 0.98 * dt + 0.2 * treb;
+per_frame_4=tt = tt + 0.1 * dt;
+per_frame_5=dm = 0.98 * dm + 0.2 * mid;
+per_frame_6=mm = mm + 0.1 * dm;
+per_frame_7=q13 = 0.5 + 0.25 * sin(0.1 * (bb - mm));
+per_frame_8=q14 = 0.5 + 0.25 * sin(0.1 * (tt - mm));
+per_frame_9=w = 0.1 * (bb - tt);
+per_frame_10=q16 = 0.25 - 0.025 * (db - dt);
+per_frame_11=q11 = sin(w);
+per_frame_12=q12 = cos(w);
+per_frame_13=q17 = sin(-w);
+per_frame_14=q18 = cos(-w);
+per_frame_15=q15 = 1 / q16;
 
 [warp_shader]
 vec2 xlat_mutablejulia;

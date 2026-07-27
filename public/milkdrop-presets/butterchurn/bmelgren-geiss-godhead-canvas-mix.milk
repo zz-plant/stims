@@ -23,30 +23,19 @@ fWaveR=0.650000
 fWaveG=0.650000
 fWaveB=0.650000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = bass - 1;
+per_frame_2=wave_g = mid - 1.2;
+per_frame_3=wave_b = treb - 0.5;
+per_pixel_1=rot = 0.1 * pow(ang, 3);
+per_pixel_2=zoom = sin(pow(rad, mid)) + 0.8;
 
 [comp_shader]
 shader_body { 

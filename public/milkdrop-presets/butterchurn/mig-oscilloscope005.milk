@@ -23,30 +23,61 @@ fInnerBorderR=0.000000
 fInnerBorderG=0.000000
 fInnerBorderB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=meanbass_att = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=flip = 0;
+per_frame_init_4=lastbeat = 0;
+per_frame_init_5=beatrate = 0;
+per_frame_init_6=mode = 0;
+per_frame_init_7=peakbass_att = 0;
+per_frame_init_8=beatcounter = 0;
+per_frame_init_9=att = 0;
+per_frame_init_10=volume = 0;
+per_frame_init_11=beat = 0;
+per_frame_init_12=vol = 0;
+per_frame_init_13=mtime = 0;
+per_frame_init_14=q8 = 0;
+per_frame_init_15=mv_x = 64;
+per_frame_init_16=mv_y = 48;
+per_frame_init_17=nut = 0;
+per_frame_init_18=stp = 0;
+per_frame_init_19=stq = 0;
+per_frame_init_20=rtp = 0;
+per_frame_init_21=rtq = 0;
+per_frame_init_22=wvr = 0;
+per_frame_init_23=decay = 0;
+per_frame_init_24=dcsp = 0;
+per_frame_init_25=warp = 0;
+per_frame_1=volume = 0.3 * (bass + mid + att);
+per_frame_2=beatrate = equal(beatrate, 0) + (1 - equal(beatrate, 0)) * (below(volume, 0.01) + (1 - below(volume, 0.01)) * beatrate);
+per_frame_3=lastbeat = lastbeat + equal(lastbeat, 0) * time;
+per_frame_4=meanbass_att = 0.1 * (9 * meanbass_att + bass_att);
+per_frame_5=peakbass_att = max(bass_att, peakbass_att);
+per_frame_6=beatrate = max(if(0.00001 < abs(beat), if(0.00001 < abs(below(time - lastbeat, 2 * beatrate)), 0.1 * (9 * beatrate + time - lastbeat), beatrate), beatrate), 0.1);
+per_frame_7=peakbass_att = beat * bass_att + (1 - beat) * peakbass_att * (0.95 * above(time - lastbeat, 2 * beatrate) + 0.995 * (1 - above(time - lastbeat, 2 * beatrate)));
+per_frame_8=lastbeat = beat * time + (1 - beat) * lastbeat;
+per_frame_9=peakbass_att = max(peakbass_att, 1.1 * meanbass_att);
+per_frame_10=beat = above(volume, 0.8) * below(peakbass_att - bass_att, 0.05 * peakbass_att) * above(time - lastbeat, 0.1 + 0.5 * (beatrate - 0.1));
+per_frame_11=beatcounter = beatcounter + beat;
+per_frame_12=mode = if(0.00001 < abs(beat * equal(mod(beatcounter, 2), 0)), 1 - mode, mode);
+per_frame_13=flip = 2 * mode - 1;
+per_frame_14=monitor = flip;
+per_frame_15=q8 = flip;
+per_frame_16=decay = 0.98;
+per_frame_17=zoom = 1.002;
+per_frame_18=vol = 0.25 * (bass_att + mid_att + treb_att);
+per_frame_19=vol = vol * vol;
+per_frame_20=mtime = mtime + 0.1 * vol * flip;
+per_frame_21=q1 = 0.4 * mtime;
+per_frame_22=warp = 0;
 
 [warp_shader]
 shader_body { 

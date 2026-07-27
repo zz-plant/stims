@@ -29,27 +29,47 @@ nMotionVectorsY=47.952000
 nMotionVectorsLoop=5.000000
 fMotionVectorsR=0.200000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=xpos = 0;
+per_frame_init_2=star = 0;
+per_frame_init_3=cdelay1 = 0;
+per_frame_init_4=cdelay2 = 0;
+per_frame_init_5=meanbass_att = 0;
+per_frame_init_6=q1 = 0;
+per_frame_init_7=q5 = 0;
+per_frame_init_8=mybeat = 0;
+per_frame_init_9=counter2 = 0;
+per_frame_init_10=lastbeat = 0;
+per_frame_init_11=musictime = 0;
+per_frame_init_12=beatrate = 0;
+per_frame_init_13=peakbass_att = 0;
+per_frame_init_14=q4 = 0;
+per_frame_init_15=ypos = 0;
+per_frame_init_16=colorcounter = 0;
+per_frame_init_17=zm = 0;
+per_frame_init_18=rd = 0;
+per_frame_init_19=att = 0;
+per_frame_init_20=ag = 0;
+per_frame_init_21=volume = 0;
+per_frame_init_22=beat = 0;
+per_frame_init_23=q2 = 0;
+per_frame_init_24=counter1 = 0;
+per_frame_init_25=q3 = 0;
+per_pixel_1=sx = -1 + 0.2 * bass;
+per_pixel_2=sy = -1 - 0.2 * treb;
+per_pixel_3=cx = 0.5 + q4;
+per_pixel_4=cy = 0.5 - q5;
+per_pixel_5=rd = sqrt(sqr(2 * (x - 0.5 - q4)) + sqr(1.5 * (y - 0.5 + q5)));
+per_pixel_6=zm = 0.994;
+per_pixel_7=ag = atan((y - 0.5 + q5) / (x - 0.5 - q4));
+per_pixel_8=star = sin(6 * ag + time) * (2 - rd - ag) / 5;
+per_pixel_9=zm = zm + star / 20;
+per_pixel_10=sx = zm;
+per_pixel_11=sy = zm;

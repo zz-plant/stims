@@ -21,15 +21,17 @@ nMotionVectorsDx=-0.060000
 nMotionVectorsDy=-0.026000
 nMotionVectorsLoop=5.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = 0.3 * bass_att;
+per_frame_3=wave_g = 0.3 * treb_att;
+per_frame_4=wave_b = 0.3 * mid_att;
+per_frame_5=ob_r = 0.5 + 0.5 * sin(5.12 * time);
+per_frame_6=ob_b = 0.5 + 0.5 * sin(6.112 * time);
+per_frame_7=ob_g = 0.5 + 0.5 * sin(7.212 * time);
+per_frame_8=q1 = zoom + 0.005 * pow(bass + bass_att, 3) - 0.02;
+per_pixel_1=zoom = q1 + rad * sin(25 * ang) * 0.05;

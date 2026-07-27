@@ -13,15 +13,19 @@ fModWaveAlphaEnd=0.750000
 fWaveR=0.500000
 fWaveG=0.500000
 fWaveB=0.500000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=wave_mystey = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = wave_r + 0.4 * sin(0.333 * time);
+per_frame_3=wave_g = wave_g + 0.4 * sin(0.444 * time);
+per_frame_4=wave_b = wave_b + 0.4 * sin(1.522 * time);
+per_frame_5=zoom = 0.994 - sin(time) / 300;
+per_frame_6=dx = -0.0001;
+per_frame_7=dy = -0.0001;
+per_frame_8=wave_mystey = -time / 9;
+per_pixel_1=zoom = 0.01 + if(0.00001 < abs(below(rad, sin(1.456 * time) / 25 + 0.18)), 1.2 + sin(1.44 * time) / 5, zoom + (0.07 + 0.03 * sin(0.55 * time)) * sin(10 * ang + 8 * time));
+per_pixel_2=zoomexp = zoom / 2;
+per_pixel_3=rot = 0.1 * sin(5 * if(0.00001 < abs(above(sin(time / 11), 0)), -rad, rad) + 0.05 * time);

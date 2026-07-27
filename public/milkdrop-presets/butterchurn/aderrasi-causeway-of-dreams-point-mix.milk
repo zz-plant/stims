@@ -29,15 +29,37 @@ nMotionVectorsX=0.000000
 nMotionVectorsY=0.000000
 nMotionVectorsLoop=1.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=basstrip = 0;
+per_frame_init_2=basswack = 0;
+per_frame_init_3=trebtrip = 0;
+per_frame_init_4=trebwack = 0;
+per_frame_init_5=midtrip = 0;
+per_frame_init_6=midwack = 0;
+per_frame_init_7=volt = 0;
+per_frame_init_8=rad = 0;
+per_frame_1=basstrip = 2 * above(bass_att, basstrip) + (1 - above(bass_att, basstrip)) * (0.96 * (basstrip - 1.3) + 1.3);
+per_frame_2=basswack = 0.97 * equal(basstrip, 2) * sin(2 * time) + (1 - equal(basstrip, 2)) * basswack;
+per_frame_3=trebtrip = 2 * above(treb_att, trebtrip) + (1 - above(treb_att, trebtrip)) * (0.96 * (trebtrip - 1.3) + 1.3);
+per_frame_4=trebwack = 0.97 * equal(trebtrip, 2) * sin(2.5 * time) + (1 - equal(trebtrip, 2)) * trebwack;
+per_frame_5=midtrip = 2 * above(mid_att, midtrip) + (1 - above(mid_att, midtrip)) * (0.96 * (midtrip - 1.3) + 1.3);
+per_frame_6=midwack = 0.97 * equal(midtrip, 2) * sin(2.75 * time) + (1 - equal(midtrip, 2)) * midwack;
+per_frame_7=wave_r = wave_r + 0.75 * basswack;
+per_frame_8=wave_g = wave_g + 0.75 * trebwack;
+per_frame_9=wave_b = wave_b + 0.75 * midwack;
+per_frame_10=ob_r = 1 - wave_r;
+per_frame_11=ob_g = 1 - wave_g;
+per_frame_12=ob_b = 1 - wave_b;
+per_frame_13=ib_r = 0.9 * ob_r;
+per_frame_14=ib_g = 0.9 * ob_g;
+per_frame_15=ib_b = 0.9 * ob_b;
+per_frame_16=volt = (bass_att + treb_att + mid_att) / 3;
+per_frame_17=zoom = zoom - 0.005;
+per_frame_18=zoom = zoom + if(0.00001 < abs(above(volt, 0.75)), -0.005 * (1 - rad), 0);
+per_frame_19=sy = sy + if(0.00001 < abs(below(volt, 0.83)), -0.01 * (0.5 - rad), 0);
+per_pixel_1=rot = rot + 0.04 * sin(time * rad);
+per_pixel_2=zoom = zoom + 0.025 * cos(time * (0.5 - rad));
+per_pixel_3=rot = rot - 0.2 * (1 - rad) * (0.2 + abs(sin(3 * bass_att)));

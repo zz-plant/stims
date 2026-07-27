@@ -40,36 +40,65 @@ fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b3x=0.700000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=1.074080
-fSmoothing=0.000000
-fR=0.000000
-fG=0.500000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=1.074080
+wavecode_0_smoothing=0.000000
+wavecode_0_r=0.000000
+wavecode_0_g=0.500000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_pixel_1=rot = 0;
+per_pixel_2=warp = 0;
+per_pixel_3=dy = -0;
+per_pixel_4=dx = 0;
+per_pixel_5=zoom = 1.03;
+wave_0_init1=t1 = 0;
+wave_0_init2=q13 = 0;
+wave_0_init3=y0 = 0;
+wave_0_init4=q1 = 0;
+wave_0_init5=ky = 0;
+wave_0_init6=x0 = 0;
+wave_0_init7=rx2 = 0;
+wave_0_init8=t3 = 0;
+wave_0_init9=ang1 = 0;
+wave_0_init10=num_inst = 0;
+wave_0_init11=kx = 0;
+wave_0_init12=instance = 0;
+wave_0_init13=t2 = 0;
+wave_0_init14=cx = 0;
+wave_0_init15=q3 = 0;
+wave_0_init16=ry2 = 0;
+wave_0_init17=rx1 = 0;
+wave_0_init18=ry1 = 0;
+wave_0_per_frame1=t1 = 0;
+wave_0_per_frame2=t2 = 0;
+wave_0_per_frame3=t3 = 0;
+wave_0_per_point1=num_inst = reg00;
+wave_0_per_point2=instance = t1;
+wave_0_per_point3=rx1 = gmegabuf(floor(8 * instance + 5));
+wave_0_per_point4=rx2 = gmegabuf(floor(8 * (num_inst - instance - 1) + 5));
+wave_0_per_point5=ry1 = gmegabuf(floor(8 * instance + 6));
+wave_0_per_point6=ry2 = gmegabuf(floor(8 * (num_inst - instance - 1) + 6));
+wave_0_per_point7=kx = 0.1 * q1;
+wave_0_per_point8=ky = 0.15 * q1;
+wave_0_per_point9=x0 = (rx1 - rx2) * kx * 2 * abs(sample - 0.5);
+wave_0_per_point10=cx = 0.75;
+wave_0_per_point11=x = x0 + (1 - cx) / 2 + cx * sample + q13 * q3 * abs(sample - 0.5);
+wave_0_per_point12=y0 = (ry1 + ry2) * ky + 0 * q13 * (abs(sample - 0.5) - 0.3);
+wave_0_per_point13=y = y0 + 0.55;
+wave_0_per_point14=ang1 = atan2(x0, y0);
+wave_0_per_point15=a = 0.5 + sin(ang1) / 3;
+wave_0_per_point16=r = 0.5 + 0.3 * sin(12 * rx1 + 12 * sample + 2);
+wave_0_per_point17=g = 0.5 + 0.3 * sin(12 * rx2 + 12 * sample + 1);
+wave_0_per_point18=b = 0.5 + 0.3 * sin(12 * ry1 + 12 * sample);
+wave_0_per_point19=t1 = t1 + 1;
 
 [warp_shader]
 shader_body { 

@@ -28,40 +28,37 @@ fMotionVectorsR=0.499900
 fMotionVectorsG=0.499900
 fMotionVectorsB=0.499900
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=8.000000
-bTextured=1.000000
-fRad=1.003939
-fTexAng=3.141593
-fTexZoom=4.360755
-fG=1.000000
-fB=1.000000
-fA=0.000000
-fR2=1.000000
-fB2=1.000000
-fA2=0.400000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fScaling=2.987785
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_scaling=2.987785
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=8.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=1.003939
+shapecode_1_tex_ang=3.141593
+shapecode_1_tex_zoom=4.360755
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_a=0.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_a2=0.400000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=warp = 0;
+per_frame_2=decay = 0.92;
+per_pixel_1=zoom = zoom + 0.01 * rad;
+wave_0_init1=n2 = 0;
+wave_0_init2=t = 0;
+wave_0_per_point1=x = 0.5 + 0.5 * sample * sin(100 * sample + 10 * time);
+wave_0_per_point2=y = 0.5 + 0.5 * sample * cos(100 * sample + 10 * time);
+wave_0_per_point3=n2 = abs(6.283 * sample - 3.1415);
+wave_0_per_point4=t = 5 * time;
+wave_0_per_point5=r = 0.5 * sin(n2 + t) + 0.5;
+wave_0_per_point6=g = 0.5 * sin(n2 + 2.1 + t) + 0.5;
+wave_0_per_point7=b = 0.5 * sin(n2 + 4.2 + t) + 0.5;
+shape_1_per_frame1=ang = 6.28 * sin(time / 10);

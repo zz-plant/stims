@@ -33,30 +33,52 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=n = 0;
+per_frame_init_2=y1 = 0;
+per_frame_init_3=x1 = 0;
+per_frame_init_4=dy1 = 0;
+per_frame_init_5=v = 0;
+per_frame_init_6=mm = 0;
+per_frame_init_7=tt = 0;
+per_frame_init_8=angle = 0;
+per_frame_init_9=t = 0;
+per_frame_init_10=mx = 0;
+per_frame_init_11=mn = 0;
+per_frame_init_12=dx1 = 0;
+per_frame_init_13=bb = 0;
+per_frame_1=wave_a = 0;
+per_frame_2=warp = 0;
+per_frame_3=zoom = 1;
+per_frame_4=bb = 0.99 * bb + 0.02 * bass;
+per_frame_5=mm = 0.99 * mm + 0.02 * mid;
+per_frame_6=tt = 0.99 * tt + 0.02 * treb;
+per_frame_7=mx = max(max(bb, mm), tt);
+per_frame_8=mn = min(min(bb, mm), tt);
+per_frame_9=ib_r = (bb - mn) / (mx - mn);
+per_frame_10=ib_b = (mm - mn) / (mx - mn);
+per_frame_11=ib_g = (tt - mn) / (mx - mn);
+per_pixel_1=angle = asin(1) * (0.5 + sin(0.05 * time));
+per_pixel_2=x1 = (x - 0.5) * aspectx;
+per_pixel_3=y1 = (y - 0.5) * aspecty;
+per_pixel_4=x = cos(-angle) * x1 - sin(-angle) * y1;
+per_pixel_5=y = sin(-angle) * x1 + cos(-angle) * y1;
+per_pixel_6=t = 0.25 * time;
+per_pixel_7=v = 0.0005;
+per_pixel_8=n = 11;
+per_pixel_9=dx = v * sin(y * n + t);
+per_pixel_10=dy = v * sin(x * n + t);
+per_pixel_11=dx1 = cos(angle) * dx - sin(angle) * dy;
+per_pixel_12=dy1 = sin(angle) * dx + cos(angle) * dy;
+per_pixel_13=dx = dx1 * aspectx;
+per_pixel_14=dy = dy1 * aspecty;
 
 [warp_shader]
 shader_body { 

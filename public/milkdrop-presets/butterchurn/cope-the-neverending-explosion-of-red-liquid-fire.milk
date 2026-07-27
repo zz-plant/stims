@@ -35,30 +35,56 @@ nMotionVectorsLoop=1.000000
 fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q12 = 0;
+per_frame_init_2=q18 = 0;
+per_frame_init_3=q6 = 0;
+per_frame_init_4=q5 = 0;
+per_frame_init_5=bass_thresh = 0;
+per_frame_init_6=wg = 0;
+per_frame_init_7=q11 = 0;
+per_frame_init_8=q10 = 0;
+per_frame_init_9=wb = 0;
+per_frame_init_10=q17 = 0;
+per_frame_init_11=vol = 0;
+per_frame_init_12=q2 = 0;
+per_frame_init_13=q3 = 0;
+per_frame_init_14=wr = 0;
+per_frame_init_15=q7 = 0;
+per_frame_init_16=mtime = 0;
+per_frame_init_17=q8 = 0;
+per_frame_1=bass_thresh = 2 * above(bass_att, bass_thresh) + (1 - above(bass_att, bass_thresh)) * (0.91 * (bass_thresh - 1.3) + 1.3);
+per_frame_2=wave_r = 0.5 + 0.5 * (0.6 * sin(1.3 * time) + 0.4 * sin(0.98 * time));
+per_frame_3=wave_b = 0.5 + 0.5 * (0.6 * sin(1.1 * time) + 0.4 * sin(0.78 * time));
+per_frame_4=wave_g = 0.5 + 0.5 * (0.6 * sin(1.2 * time) + 0.4 * sin(0.6 * time));
+per_frame_5=q8 = wave_r;
+per_frame_6=q7 = wave_b;
+per_frame_7=q6 = wave_g;
+per_frame_8=wr = 0.5 + 0.4 * (0.6 * sin(0.2 * time) + 0.4 * sin(0.8 * time));
+per_frame_9=wb = 0.5 + 0.4 * (0.6 * sin(0.377 * time) + 0.4 * sin(0.5 * time));
+per_frame_10=wg = 0.5 + 0.4 * (0.6 * sin(0.7 * time) + 0.4 * sin(0.4 * time));
+per_frame_11=q10 = wr;
+per_frame_12=q11 = wb;
+per_frame_13=q12 = wg;
+per_frame_14=q10 = 0.8;
+per_frame_15=q11 = 0.2;
+per_frame_16=q12 = 0.1;
+per_frame_17=q18 = 0.01 * sin(0.1 * mtime);
+per_frame_18=q17 = -0.01 * sin(0.254 * mtime);
+per_frame_19=q2 = bass_thresh;
+per_frame_20=vol = 0.25 * (bass + mid + treb);
+per_frame_21=vol = vol * vol;
+per_frame_22=q3 = vol;
+per_frame_23=q5 = 0.5 * vol;
+per_frame_24=mtime = mtime + 0.01 * vol;
+per_frame_25=q2 = 0.25 * mtime;
 
 [warp_shader]
 shader_body { 

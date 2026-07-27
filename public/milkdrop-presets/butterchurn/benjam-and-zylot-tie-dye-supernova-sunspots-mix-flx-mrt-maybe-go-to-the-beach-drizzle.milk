@@ -31,36 +31,85 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsR=0.830000
 fMotionVectorsG=0.590000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bTextured=1.000000
-fRad=0.033330
-fR=0.000000
-fG2=0.000000
-fBorderA=1.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.033330
+shapecode_0_r=0.000000
+shapecode_0_g2=0.000000
+shapecode_0_border_a=1.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=xpos = 0;
+per_frame_init_2=basstime = 0;
+per_frame_init_3=gamma = 0;
+per_frame_init_4=star = 0;
+per_frame_init_5=cdelay1 = 0;
+per_frame_init_6=cdelay2 = 0;
+per_frame_init_7=q6 = 0;
+per_frame_init_8=rainbow_speed = 0;
+per_frame_init_9=q1 = 0;
+per_frame_init_10=q5 = 0;
+per_frame_init_11=counter2 = 0;
+per_frame_init_12=block = 0;
+per_frame_init_13=musictime = 0;
+per_frame_init_14=shapechange = 0;
+per_frame_init_15=q4 = 0;
+per_frame_init_16=ib_bass = 0;
+per_frame_init_17=ypos = 0;
+per_frame_init_18=colorcounter = 0;
+per_frame_init_19=zm = 0;
+per_frame_init_20=rd = 0;
+per_frame_init_21=ag = 0;
+per_frame_init_22=ny = 0;
+per_frame_init_23=q2 = 0;
+per_frame_init_24=ak = 0;
+per_frame_init_25=counter1 = 0;
+per_frame_init_26=q3 = 0;
+per_frame_init_27=nx = 0;
+per_frame_init_28=q8 = 0;
+per_pixel_1=zoom = 1;
+per_pixel_2=cx = 0.5 + q4;
+per_pixel_3=cy = 0.5 - q5;
+per_pixel_4=dx = dx + 0.003 * sin(64 * (2 * y - 1)) + 0.001 * sin(96 * (2 * y - 1));
+per_pixel_5=dy = dy + 0.004 * cos(64 * (2 * x - 1)) + 0.002 * cos(96 * (2 * x - 1));
+per_pixel_6=ak = -sin(6 * rad + mod(3 * mod(q1, 5), 5) * ang + q1) * (1 - rad + 0.2 * sin(0.54 * q1)) * above(rad, 0);
+per_pixel_7=block = if(0.00001 < abs(below(ak, -0.15)), ak, 0);
+per_pixel_8=dx = dx + 0.005 * sin(48 * (2 * y - 1)) + 0.001 * tan(64 * (2 * y - 1)) + 0 * tan(8 * (ang - 3.1415));
+per_pixel_9=dy = dy + 0.005 * sin(48 * (2 * x - 1)) + 0.001 * tan(64 * (2 * x - 1)) + 0 * tan(6 * (ang - 3.1415));
+per_pixel_10=dx = if(0.00001 < abs(block), dx, 0.008 * sin(48 * (x - 0.5)) + 0.008 * sin(64 * (x - 0.5)));
+per_pixel_11=dy = if(0.00001 < abs(block), dy, 0.008 * cos(64 * (y - 0.5)));
+per_pixel_12=zoom = if(0.00001 < abs(block), 1, 0.97);
+per_pixel_13=dx = sin((1000 + sin(q8)) / x) / 200;
+per_pixel_14=dy = cos((1000 + sin(q8)) / y) / 200;
+per_pixel_15=rd = sqrt(sqr(1.7 * (x - 0.5 - q4)) + sqr(1.2 * (y - 0.5 + q5)));
+per_pixel_16=cx = 0.5 + q4;
+per_pixel_17=cy = 0.5 - q5;
+per_pixel_18=zoom = rd * rd * 2;
+per_pixel_19=nx = 2 * (x - 0.5 - q4);
+per_pixel_20=ny = 1.5 * (y - 0.5 + q5);
+per_pixel_21=rd = sqrt(sqr(nx) + sqr(ny));
+per_pixel_22=ag = atan(ny / nx);
+per_pixel_23=zm = 1.1 - rd / 4;
+per_pixel_24=shapechange = 2 * tan(0.2 * q6) + 2;
+per_pixel_25=star = sin(ag * (2 + shapechange) + q6) * (1 - rd) * 0.5 + 0.5 + 0.001 * pow(0.5 * tan(200.96 * rd) + 0.5, 2);
+per_pixel_26=star = min(star, 8);
+per_pixel_27=star = max(star, -8);
+per_pixel_28=star = star * star * 3 - 0.4;
+per_pixel_29=zm = zm + 0.1 * star;
+per_pixel_30=sx = zm;
+per_pixel_31=sy = zm;
+per_pixel_32=rot = above(rd, 0.7) * (rd - 0.7) * sin(0.3 * time) * 0.6 * -sin(6 * ag);
+shape_0_per_frame1=x = 0.01 * floor(randint(100));
+shape_0_per_frame2=y = 0.01 * floor(randint(100));
+shape_0_per_frame3=a = if(0.00001 < abs(above(mod(frame, 7), 0)), 0, 1);
+shape_0_per_frame4=a2 = if(0.00001 < abs(above(mod(frame, 7), 0)), 0, 1);
+shape_0_per_frame5=border_a = 0;
 
 [warp_shader]
 shader_body { 

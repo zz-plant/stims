@@ -30,30 +30,26 @@ nMotionVectorsY=48.000000
 fMotionVectorsR=0.500000
 fMotionVectorsG=0.600000
 fMotionVectorsB=0.600000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=bass_effect = 0;
+per_frame_1=warp = 0;
+per_frame_2=bass_effect = max(max(bass, bass_effect) - 1.3, 0);
+per_frame_3=mv_a = 10 * bass_effect;
+per_frame_4=mv_r = if(0.00001 < abs(above(mid, treb)), 0, 1);
+per_frame_5=mv_x = 4 * sin(3 * time) + 60;
+per_frame_6=mv_y = 5 * sin(5 * time) + 43;
+per_frame_7=wave_r = 0.5 * sin(5 * time) + 0.5;
+per_frame_8=wave_b = 0.5 * cos(12 * time) + 0.5;
+per_frame_9=wave_g = 0.5 * cos(14 * time) + 0.5;
+per_pixel_1=sx = sx + 0.01 * rad;
+per_pixel_2=sy = sy + if(0.00001 < abs(above(3.14 - ang, 0)), 0.1, -0.1);
 
 [comp_shader]
 shader_body { 

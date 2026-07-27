@@ -28,15 +28,23 @@ fInnerBorderG=0.000000
 fInnerBorderB=0.000000
 fInnerBorderA=0.006000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=warp = 0;
+per_frame_init_2=zoom = 1;
+per_frame_init_3=rot = 0.01;
+per_frame_1=wave_b = if(0.00001 < abs(below(treb, 2)), 1, 0);
+per_frame_2=decay = if(0.00001 < abs(equal(mod(frame, 20), 0)), 0.99, 1);
+per_frame_3=dx = if(0.00001 < abs(equal(mod(frame, 100), 0)), 0.001, 0);
+per_frame_4=rot = 0.05 * cos(0.4 * time);
+per_frame_5=wave_x = (wave_x - 0.45) * sin(0.4 * time) + wave_x;
+per_frame_6=wave_y = (wave_y - 0.45) * sin(0.4 * time) + wave_y;
+per_frame_7=zoom = 1 - 0.05 * cos(0.4 * time);
+per_frame_8=wave_x = 0.5 + (wave_x - 0.5) * cos(5 * time);
+per_frame_9=wave_y = 0.5 + (wave_y - 0.5) * sin(5 * time);
+per_frame_10=ib_a = -0.5 * cos(0.4 * time) + 0.5;
+per_frame_11=ob_a = ib_a;
+per_frame_12=ob_r = 0.5 * cos(time) + 0.5;
+per_frame_13=ob_b = 0.5;

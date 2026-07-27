@@ -28,15 +28,12 @@ nMotionVectorsX=3.615999
 nMotionVectorsY=3.720001
 nMotionVectorsLoop=0.350000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = sin(2.345 * time);
+per_frame_2=wave_g = sin(1.456 * time);
+per_frame_3=wave_b = sin(1.789 * time);
+per_pixel_1=zoom = zoom + if(0.00001 < abs(above(rad, 0.666)), 0.01 * rad, 0.1 * rad) + 0.2 * sin(ang + 0.534 * time);
+per_pixel_2=rot = 0.2 * sin(9 * (rad + 0.666 * time + 0.2 * bass_att));

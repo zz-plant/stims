@@ -33,15 +33,48 @@ nMotionVectorsDy=-0.100000
 nMotionVectorsLoop=5.000000
 fMotionVectorsR=0.200000
 fMotionVectorsA=0.500000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=xpos = 0;
+per_frame_init_2=thresh = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=newrad = 0;
+per_frame_init_5=dy_r = 0;
+per_frame_init_6=dx_r = 0;
+per_frame_init_7=ypos = 0;
+per_frame_init_8=newx = 0;
+per_frame_init_9=newzoom = 0;
+per_frame_init_10=q2 = 0;
+per_frame_init_11=test = 0;
+per_frame_init_12=newy = 0;
+per_frame_1=warp = 0;
+per_frame_2=wave_r = 0.5 + 0.3 * sin(0.894 * time);
+per_frame_3=wave_g = 0.53 + 0.33 * sin(1.14 * time);
+per_frame_4=wave_b = 0.4 + 0.1 * (1 - bass);
+per_frame_5=thresh = 2 * above(bass_att, thresh) + (1 - above(bass_att, thresh)) * (0.96 * (thresh - 1.3) + 1.3);
+per_frame_6=test = equal(thresh, 2);
+per_frame_7=dx_r = 0.002 * test * sin(5 * time) + (1 - test) * dx_r;
+per_frame_8=dy_r = 0.002 * test * sin(6 * time) + (1 - test) * dy_r;
+per_frame_9=zoom = zoom - 0.01 * thresh;
+per_frame_10=dx = 1.1 * dx_r;
+per_frame_11=dy = 1.1 * dy_r;
+per_frame_12=dx = dx + if(0.00001 < abs(above(bass, 1.3)), 21 * dx_r, 0);
+per_frame_13=mv_x = if(0.00001 < abs(test), 2, 64);
+per_frame_14=mv_y = if(0.00001 < abs(test), 64, 2);
+per_frame_15=mv_dx = if(0.00001 < abs(test), -0.1, 0);
+per_frame_16=mv_dy = if(0.00001 < abs(test), 0, -0.1);
+per_frame_17=mv_a = if(0.00001 < abs(test), 1, 0.5);
+per_frame_18=xpos = xpos + 0.05 * (80 * dx_r - xpos);
+per_frame_19=ypos = ypos + 0.05 * (80 * dy_r - ypos);
+per_frame_20=wave_x = 0.5 - xpos + 0.1 * sin(2 * time);
+per_frame_21=wave_y = 0.5 - ypos + 0.1 * cos(2 * time);
+per_frame_22=q1 = wave_x;
+per_frame_23=q2 = 1 - wave_y;
+per_pixel_1=newx = x - q1;
+per_pixel_2=newy = y - q2;
+per_pixel_3=newrad = 2 * sqrt(newx * newx + 0.5625 * newy * newy);
+per_pixel_4=newzoom = pow(1.03, pow(0.01 + sin(newrad * newrad), 2 * newrad - 1));
+per_pixel_5=dx = min(5 * newrad, 1) * dx + max(5 * -newrad + 1, 0) * (newx * newzoom - newx);
+per_pixel_6=dy = min(5 * newrad, 1) * dy + max(5 * -newrad + 1, 0) * (newy * newzoom - newy);

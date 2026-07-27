@@ -19,30 +19,22 @@ fMotionVectorsR=0.350000
 fMotionVectorsG=0.350000
 fMotionVectorsB=0.350000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.35 * (0.6 * sin(0.98 * time) + 0.4 * sin(1.047 * time));
+per_frame_2=wave_g = wave_g + 0.35 * (0.6 * sin(0.835 * time) + 0.4 * sin(1.081 * time));
+per_frame_3=wave_b = wave_b + 0.35 * (0.6 * sin(0.814 * time) + 0.4 * sin(1.011 * time));
+per_frame_4=cx = cx + 0.11 * (0.6 * sin(0.374 * time) + 0.4 * sin(0.294 * time));
+per_frame_5=cy = cy + 0.11 * (0.6 * sin(0.393 * time) + 0.4 * sin(0.223 * time));
+per_frame_6=decay = decay - 0.01 * equal(mod(frame, 20), 0);
+per_frame_7=zoom = zoom + 0.5 * (0.01 * cos(0.317 * time + 1) + 0.01 * cos(0.1132 * time + 4));
+per_frame_8=rot = rot + 0.5 * (0.01 * cos(0.214 * time + 3) + 0.01 * cos(0.2732 * time + 2));
 
 [warp_shader]
 shader_body { 

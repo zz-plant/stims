@@ -30,30 +30,39 @@ fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=abv = 0;
+per_frame_init_2=t = 0;
+per_frame_init_3=r = 0;
+per_frame_init_4=l = 0;
+per_frame_init_5=vol = 0;
+per_frame_init_6=q2 = 0;
+per_frame_init_7=h = 0;
+per_frame_init_8=old_h = 0;
+per_frame_init_9=m = 0;
+per_frame_init_10=rr = 0;
+per_frame_1=wave_a = 0;
+per_frame_2=warp = 0;
+per_frame_3=r = 0.98 * r + 0.5 * (bass - treb);
+per_frame_4=rr = 0.94 * rr + 0.01 * r;
+per_frame_5=q2 = 0.05 * rr;
+per_frame_6=vol = 0.65 * max(bass, max(mid, treb));
+per_frame_7=abv = above(vol, t);
+per_frame_8=old_h = if(0.00001 < abs(abv), h, 0.99 * old_h);
+per_frame_9=h = if(0.00001 < abs(abv), vol, 0.99 * h);
+per_frame_10=l = min(0.999, max(0.9, l * (1 + 0.1 * (old_h - h))));
+per_frame_11=m = 0.98 * m + 0.1 * abv;
+per_frame_12=t = if(0.00001 < abs(abv), 1.5, t * l);
+per_frame_13=ob_r = 2 - m;
+per_frame_14=ob_g = ob_r;
+per_frame_15=ob_b = 0;
 
 [warp_shader]
 shader_body { 

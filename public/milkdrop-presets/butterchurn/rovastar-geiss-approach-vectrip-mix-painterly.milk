@@ -16,30 +16,69 @@ fWaveB=0.300000
 fMotionVectorsR=0.600000
 fMotionVectorsG=0.500000
 fMotionVectorsB=0.450000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=xpos = 0;
+per_frame_init_2=yamptarg = 0;
+per_frame_init_3=ydir = 0;
+per_frame_init_4=mv_x_range = 0;
+per_frame_init_5=mv_x_speed = 0;
+per_frame_init_6=yaccel = 0;
+per_frame_init_7=xamptarg = 0;
+per_frame_init_8=xamp = 0;
+per_frame_init_9=xspeed = 0;
+per_frame_init_10=ypos = 0;
+per_frame_init_11=xaccel = 0;
+per_frame_init_12=att = 0;
+per_frame_init_13=mv_y_range = 0;
+per_frame_init_14=mv_y_amount = 0;
+per_frame_init_15=vol = 0;
+per_frame_init_16=mv_y_speed = 0;
+per_frame_init_17=yamp = 0;
+per_frame_init_18=xdir = 0;
+per_frame_init_19=mv_x_amount = 0;
+per_frame_init_20=yspeed = 0;
+per_frame_1=wave_x = wave_x + 0.15 * (0.6 * sin(2.121 * time) + 0.4 * sin(1.621 * time));
+per_frame_2=wave_y = wave_y + 0.15 * (0.6 * sin(1.742 * time) + 0.4 * sin(2.322 * time));
+per_frame_3=wave_r = wave_r + 0.2 * (0.6 * sin(0.823 * time) + 0.4 * sin(0.916 * time));
+per_frame_4=wave_g = wave_g + 0.5 * (0.6 * sin(0.9 * time) + 0.4 * sin(1.023 * time));
+per_frame_5=wave_b = wave_b + 0.5 * (0.6 * sin(0.808 * time) + 0.4 * sin(0.949 * time));
+per_frame_6=rot = rot + 0.002 * sin(time + 0.073);
+per_frame_7=decay = decay - 0.03 * equal(mod(frame, 30), 0);
+per_frame_8=vol = (bass + mid + att) / 6;
+per_frame_9=xamptarg = if(0.00001 < abs(equal(mod(frame, 15), 0)), min(0.5 * vol * bass_att, 0.5), xamptarg);
+per_frame_10=xamp = xamp + 0.5 * (xamptarg - xamp);
+per_frame_11=xdir = if(0.00001 < abs(above(abs(xpos), xamp)), -sign(xpos), if(0.00001 < abs(below(abs(xspeed), 0.1)), 2 * above(xpos, 0) - 1, xdir));
+per_frame_12=xaccel = xdir * xamp - xpos - 0.055 * xspeed * below(abs(xpos), xamp);
+per_frame_13=xspeed = xspeed + xdir * xamp - xpos - 0.055 * xspeed * below(abs(xpos), xamp);
+per_frame_14=xpos = xpos + 0.001 * xspeed;
+per_frame_15=yamptarg = if(0.00001 < abs(equal(mod(frame, 15), 0)), min(0.3 * vol * treb_att, 0.5), yamptarg);
+per_frame_16=yamp = yamp + 0.5 * (yamptarg - yamp);
+per_frame_17=ydir = if(0.00001 < abs(above(abs(ypos), yamp)), -sign(ypos), if(0.00001 < abs(below(abs(yspeed), 0.1)), 2 * above(ypos, 0) - 1, ydir));
+per_frame_18=yaccel = ydir * yamp - ypos - 0.055 * yspeed * below(abs(ypos), yamp);
+per_frame_19=yspeed = yspeed + ydir * yamp - ypos - 0.055 * yspeed * below(abs(ypos), yamp);
+per_frame_20=ypos = ypos + 0.001 * yspeed;
+per_frame_21=mv_x_speed = 16;
+per_frame_22=mv_y_speed = 12;
+per_frame_23=mv_x_range = 0.499;
+per_frame_24=mv_y_range = 0.499;
+per_frame_25=mv_x_amount = 2;
+per_frame_26=mv_y_amount = 3 + 1.5 * sin(sin(0.245 * time) + cos(0.45 * time));
+per_frame_27=mv_x = mv_x_amount + mv_x_range + mv_x_range * sin(mv_x_speed * ypos + (sin(0.964 * time) - 0.5 * cos(0.256 * time)));
+per_frame_28=mv_y = mv_y_amount + mv_y_range + mv_y_range * sin(mv_y_speed * xpos - (cos(1.345 * time) - 0.5 * cos(0.331 * time)));
+per_frame_29=mv_b = mv_b - 0.3 * sin(5.211 * time);
+per_frame_30=mv_r = mv_r + 0.25 * cos(1.91 * time);
+per_frame_31=mv_g = mv_g + 0.25 * cos(1.861 * time);
+per_frame_32=mv_l = 30 * sin(10 * ypos) + 40 * cos(10 * xpos);
+per_frame_33=wave_r = wave_r + 0.5 * sin(3.758);
+per_frame_34=wave_b = wave_b + 0.4 * cos(2.023 * time);
+per_frame_35=wave_g = wave_g + 0.4 * sin(2.01 * time);
 
 [warp_shader]
 shader_body { 

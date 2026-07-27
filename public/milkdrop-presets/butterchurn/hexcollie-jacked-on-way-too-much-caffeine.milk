@@ -28,59 +28,151 @@ fInnerBorderR=0.000000
 fInnerBorderG=1.000000
 fInnerBorderB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=40.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=0.599570
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=40.000000
-bAdditive=1.000000
-fG=1.000000
-fB=1.000000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=40.000000
-bAdditive=1.000000
-fG=1.000000
-fB=1.000000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=1.000000
-nSides=40.000000
-bAdditive=1.000000
-fG=1.000000
-fB=1.000000
-fG2=0.000000
-fBorderA=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=40.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.599570
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_b=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=40.000000
+shapecode_1_additive=1.000000
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_g2=0.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=40.000000
+shapecode_2_additive=1.000000
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_g2=0.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=1.000000
+shapecode_3_sides=40.000000
+shapecode_3_additive=1.000000
+shapecode_3_g=1.000000
+shapecode_3_b=1.000000
+shapecode_3_g2=0.000000
+shapecode_3_border_a=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=q5 = 0;
+per_frame_init_3=musictime = 0;
+per_frame_init_4=q4 = 0;
+per_frame_init_5=zm = 0;
+per_frame_init_6=rd = 0;
+per_frame_init_7=vol = 0;
+per_frame_init_8=q2 = 0;
+per_frame_init_9=q8time = 0;
+per_frame_init_10=q8 = 0;
+per_frame_init_11=zoom = 1;
+per_frame_init_12=xpos = 0;
+per_frame_init_13=ypos = 0;
+per_frame_1=decay = 1;
+per_frame_2=vol = 0.25 * (bass + mid + treb);
+per_frame_3=vol = vol * vol;
+per_frame_4=mv_r = 0.5 + 0.4 * sin(1.324 * time);
+per_frame_5=mv_g = 0.5 + 0.4 * cos(1.371 * time);
+per_frame_6=musictime = musictime + vol;
+per_frame_7=q4 = 0;
+per_frame_8=q5 = 0;
+per_frame_9=dx = 0.07 * sin(0.1 * musictime);
+per_frame_10=dy = 0.07 * cos(0.069 * musictime);
+per_frame_11=q1 = 0.4 * sin(0.001 * musictime) + 0.5;
+per_frame_12=q2 = 0.5 * cos(0.001 * musictime) + 0.5;
+per_frame_13=q8 = musictime;
+per_frame_14=monitor = rot;
+per_pixel_1=rd = sqrt(sqr(1.7 * (x - 0.5 - q4)) + sqr(1.2 * (y - 0.5 + q5))) + 0.001;
+per_pixel_2=cx = 0.5 + q4;
+per_pixel_3=cy = 0.5 - q5;
+per_pixel_4=cx = 0.07 * sin(113.04 * (ang - 0.5) * q1 + q8time) + 0.5;
+per_pixel_5=cy = 0.07 * cos(113.04 * (rad - 0.5) * q2 + q8time) + 0.5;
+per_pixel_6=zoom = 1;
+per_pixel_7=zm = pow(rd, sin(q8) + 3.5) / 10.5 + 0.5;
+per_pixel_8=zm = zm * 5;
+per_pixel_9=sx = zm;
+per_pixel_10=sy = zm;
+shape_0_init1=vol = 0;
+shape_0_init2=bob = 0;
+shape_0_init3=bob = 0;
+shape_0_init4=bob = 0;
+shape_0_init5=bob = 0;
+shape_0_init6=bob = 0;
+shape_0_init7=bob = 0;
+shape_0_init8=bob = 0;
+shape_0_init9=vol = 0;
+shape_0_init10=bob = 0;
+shape_0_init11=border_1 = 0;
+shape_0_init12=ro = 0;
+shape_0_init13=ro = 0;
+shape_0_init14=ro = 0;
+shape_0_init15=sp = 0;
+shape_0_init16=red = 0;
+shape_0_init17=spi = 0;
+shape_0_init18=sp = 0;
+shape_0_init19=tm = 0;
+shape_0_init20=sp = 0;
+shape_0_init21=tm = 0;
+shape_0_init22=spi = 0;
+shape_0_init23=tm = 0;
+shape_0_init24=sp = 0;
+shape_0_init25=tm = 0;
+shape_0_init26=spi = 0;
+shape_0_init27=tm = 0;
+shape_0_init28=sp = 0;
+shape_0_init29=tm = 0;
+shape_0_init30=spi = 0;
+shape_0_init31=tm = 0;
+shape_0_init32=bob = 1.5;
+shape_0_init33=ro = 0;
+shape_0_init34=red = floor(randint(20));
+shape_0_per_frame1=vol = 1 + 0.2 * ((bass_att + treb_att + mid_att) / 3);
+shape_0_per_frame2=bob = bob * above(bob, 0.01) - 0.01 + (1 - above(bob, 0.01));
+shape_0_per_frame3=bob = 0.4 + 0.4 * sin(0.8 * time);
+shape_0_per_frame4=bob = bob * vol;
+shape_0_per_frame5=rad = bob;
+shape_0_per_frame6=border_1 = 0.4;
+shape_0_per_frame7=sides = 30;
+shape_0_per_frame8=ro = ro + 0.02;
+shape_0_per_frame9=ang = ro;
+shape_0_per_frame10=rad = 0.6;
+shape_0_per_frame11=sp = 0.025 * red;
+shape_0_per_frame12=spi = 0.5 - sp;
+shape_0_per_frame13=tm = 0.1 * time;
+shape_0_per_frame14=border_r = 0.5 + sp * sin(0.6 * tm) + spi * cos(1.46 * tm);
+shape_0_per_frame15=border_g = 0.5 + sp * sin(1.294 * tm) + spi * cos(0.87 * tm);
+shape_0_per_frame16=border_b = 0.5 + sp * sin(1.418 * tm) + spi * cos(0.76 * tm);
+shape_1_per_frame1=x = 0.5 + 0.5 * (0.3 * sin(1.1 * time) + 0.7 * sin(0.5 * time));
+shape_1_per_frame2=x = 0.5 + 0.225 * sin(time);
+shape_1_per_frame3=y = 0.5 + 0.3 * cos(time);
+shape_1_per_frame4=rad = rad * mid_att;
+shape_1_per_frame5=r = 0.5 + 0.5 * sin(0.5 * frame);
+shape_1_per_frame6=b = 0.5 + 0.5 * sin(0.5 * frame + 2.094);
+shape_1_per_frame7=g = 0.5 + 0.5 * sin(0.5 * frame + 4.188);
+shape_2_per_frame1=x = 0.5 + 0.5 * (0.3 * sin(1.1 * time) + 0.7 * sin(0.5 * time));
+shape_2_per_frame2=x = 0.5 + 0.225 * sin(time + 2.09);
+shape_2_per_frame3=y = 0.5 + 0.3 * cos(time + 2.09);
+shape_2_per_frame4=rad = rad * bass_att;
+shape_2_per_frame5=r = 0.5 + 0.5 * sin(0.5 * frame);
+shape_2_per_frame6=b = 0.5 + 0.5 * sin(0.5 * frame + 2.094);
+shape_2_per_frame7=g = 0.5 + 0.5 * sin(0.5 * frame + 4.188);
+shape_3_per_frame1=x = 0.5 + 0.5 * (0.3 * sin(1.1 * time) + 0.7 * sin(0.5 * time));
+shape_3_per_frame2=x = 0.5 + 0.225 * sin(time + 4.19);
+shape_3_per_frame3=y = 0.5 + 0.3 * cos(time + 4.19);
+shape_3_per_frame4=rad = rad * treb_att;
+shape_3_per_frame5=r = 0.5 + 0.5 * sin(0.5 * frame);
+shape_3_per_frame6=b = 0.5 + 0.5 * sin(0.5 * frame + 2.094);
+shape_3_per_frame7=g = 0.5 + 0.5 * sin(0.5 * frame + 4.188);
 
 [warp_shader]
 shader_body { 

@@ -23,39 +23,34 @@ fOuterBorderSize=0.500000
 fOuterBorderR=0.010000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=0.999990
-fSmoothing=0.000000
-
-[wave00_1]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fSmoothing=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=0.999990
+wavecode_0_smoothing=0.000000
+wavecode_1_enabled=1.000000
+wavecode_1_spectrum=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_additive=1.000000
+wavecode_1_smoothing=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_pixel_1=dy = if(0.00001 < abs(above(0.5, y)), -0.01, 0.01);
+wave_0_per_point1=r = 1 - sample;
+wave_0_per_point2=g = mid;
+wave_0_per_point3=b = sample;
+wave_0_per_point4=x = 10.4 * pow(value1, 1.81) / pow(value1, 1.8) - 9.7;
+wave_0_per_point5=y = 13.5 * pow(sample, 0.01) - 12.645;
+wave_1_per_point1=r = 1 - sample;
+wave_1_per_point2=g = mid;
+wave_1_per_point3=b = sample;
+wave_1_per_point4=x = -10.4 * pow(value2, 1.81) / pow(value2, 1.8) + 10.7;
+wave_1_per_point5=y = 13.5 * pow(sample, 0.01) - 12.645;
 
 [warp_shader]
 shader_body { 

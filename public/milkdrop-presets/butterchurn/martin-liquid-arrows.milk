@@ -37,37 +37,107 @@ fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b1x=0.699900
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=5.000000
-bAdditive=1.000000
-fX=0.900000
-fRad=0.226130
-fG=0.600000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=5.000000
+shapecode_2_additive=1.000000
+shapecode_2_x=0.900000
+shapecode_2_rad=0.226130
+shapecode_2_g=0.600000
+shapecode_2_g2=0.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=ready = 0;
+per_frame_init_2=index2 = 0;
+per_frame_init_3=index4 = 0;
+per_frame_init_4=index = 0;
+per_frame_init_5=q22 = 0;
+per_frame_init_6=q21 = 0;
+per_frame_init_7=sp0 = 0;
+per_frame_init_8=q29 = 0;
+per_frame_init_9=q1 = 0;
+per_frame_init_10=dec_med = 0;
+per_frame_init_11=q5 = 0;
+per_frame_init_12=index3 = 0;
+per_frame_init_13=rott = 0;
+per_frame_init_14=is_beat = 0;
+per_frame_init_15=q31 = 0;
+per_frame_init_16=q23 = 0;
+per_frame_init_17=k1 = 0;
+per_frame_init_18=q24 = 0;
+per_frame_init_19=dec_slow = 0;
+per_frame_init_20=go = 0;
+per_frame_init_21=q4 = 0;
+per_frame_init_22=is_beat2 = 0;
+per_frame_init_23=q26 = 0;
+per_frame_init_24=p2 = 0;
+per_frame_init_25=avg = 0;
+per_frame_init_26=movez = 0;
+per_frame_init_27=q19 = 0;
+per_frame_init_28=beat = 0;
+per_frame_init_29=p1 = 0;
+per_frame_init_30=peak = 0;
+per_frame_init_31=q2 = 0;
+per_frame_init_32=q27 = 0;
+per_frame_init_33=q3 = 0;
+per_frame_init_34=t0 = 0;
+per_frame_init_35=q32 = 0;
+per_frame_init_36=q28 = 0;
+per_frame_init_37=q30 = 0;
+per_frame_init_38=q20 = 0;
+per_frame_init_39=index4 = randint(2);
+per_frame_init_40=index3 = randint(4);
+per_frame_1=dec_med = pow(0.9, 30 / fps);
+per_frame_2=dec_slow = pow(0.99, 30 / fps);
+per_frame_3=beat = max(max(bass, mid), treb);
+per_frame_4=avg = avg * dec_slow + beat * (1 - dec_slow);
+per_frame_5=is_beat = above(beat, 0.5 + avg + peak) * above(time, t0 + 0.2);
+per_frame_6=t0 = is_beat * time + (1 - is_beat) * t0;
+per_frame_7=peak = is_beat * beat + (1 - is_beat) * peak * dec_med;
+per_frame_8=index = mod(index + is_beat, 4);
+per_frame_9=index2 = mod(index2 + is_beat * bnot(index), 4);
+per_frame_10=index3 = mod(index3 + is_beat * bnot(index) * bnot(index2), 4);
+per_frame_11=index4 = mod(index4 + is_beat * bnot(index) * bnot(index2) * bnot(index3), 2);
+per_frame_12=q20 = avg;
+per_frame_13=q21 = beat;
+per_frame_14=q22 = peak;
+per_frame_15=q23 = index;
+per_frame_16=q24 = is_beat;
+per_frame_17=q26 = bass + mid + treb;
+per_frame_18=ready = is_beat * bnot(ready) + bnot(is_beat2) * ready;
+per_frame_19=is_beat2 = ready * above(time, t0 + 0.2);
+per_frame_20=q19 = is_beat2;
+per_frame_21=k1 = is_beat * equal(index, 0);
+per_frame_22=p1 = k1 * (p1 + 1) + (1 - k1) * p1;
+per_frame_23=p2 = dec_med * p2 + (1 - dec_med) * p1;
+per_frame_24=rott = 3.14159265359 * p2 / 2;
+per_frame_25=q27 = index + 1;
+per_frame_26=q28 = index2 + 1;
+per_frame_27=q29 = 4 * index3 + 1;
+per_frame_28=q30 = index4;
+per_frame_29=q1 = cos(rott);
+per_frame_30=q2 = sin(rott);
+per_frame_31=q3 = -q2;
+per_frame_32=q4 = q1;
+per_frame_33=sp0 = dec_slow * sp0 + (q24 + 0.05) * (1 - dec_slow);
+per_frame_34=go = go * dec_med + (1 - dec_med) * (1 - bnot(index2 + index3));
+per_frame_35=movez = movez + 0.015 * 30 / fps * go;
+per_frame_36=q31 = movez;
+per_frame_37=q32 = 0.5 + 0.02 * sin(time / 5);
+per_frame_38=q5 = mod(index4, 2);
+per_frame_39=zoom = 1;
+per_frame_40=rot = 0;
+per_frame_41=dx = 0.05 * max(sin(time / 9.7) - 0.95, 0);
+per_frame_42=dy = 0.002 * (1 - go);
+per_frame_43=rot = 50 * (dx - dy);
+shape_2_per_frame1=x = 0.05 + randint(900) / 1000;
+shape_2_per_frame2=y = 0.05 + randint(900) / 1000;
+shape_2_per_frame3=ang = randint(320) / 100;
 
 [warp_shader]
 shader_body { 

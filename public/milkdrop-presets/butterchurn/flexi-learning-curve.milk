@@ -30,30 +30,35 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsB=0.000000
 b1x=0.500000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=initializing = 0;
+per_frame_init_2=framecount = 0;
+per_frame_init_3=initframes = 0;
+per_frame_init_4=stage = 0;
+per_frame_init_5=stages = 0;
+per_frame_init_6=q1 = 0;
+per_frame_init_7=initialized = 0;
+per_frame_init_8=framecount = 0;
+per_frame_init_9=stage = 1;
+per_frame_init_10=initframes = 128;
+per_frame_init_11=stages = 16;
+per_frame_1=initializing = below(framecount, initframes);
+per_frame_2=ib_a = 1 - framecount;
+per_frame_3=ob_a = ib_a;
+per_frame_4=mv_a = 1;
+per_frame_5=wave_a = 0;
+per_frame_6=zoom = 1;
+per_frame_7=framecount = framecount + 1;
+per_frame_8=stage = stage + equal(mod(framecount * stages, initframes), 0);
+per_frame_9=stage = if(0.00001 < abs(initializing), stage, 1);
+per_frame_10=q1 = stage;
 
 [warp_shader]
 shader_body { 

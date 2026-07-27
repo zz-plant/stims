@@ -34,40 +34,66 @@ nMotionVectorsY=43.199997
 nMotionVectorsLoop=1.000000
 fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.491382
-fR=0.000000
-fB=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-bTextured=1.000000
-fRad=0.444842
-fTexZoom=0.819541
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_rad=0.491382
+shapecode_0_r=0.000000
+shapecode_0_b=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=0.444842
+shapecode_1_tex_zoom=0.819541
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q5 = 0;
+per_frame_init_2=musictime = 0;
+per_frame_init_3=q4 = 0;
+per_frame_init_4=zm = 0;
+per_frame_init_5=rd = 0;
+per_frame_init_6=ag = 0;
+per_frame_init_7=vol = 0;
+per_frame_init_8=ny = 0;
+per_frame_init_9=nx = 0;
+per_frame_init_10=zoom = 1;
+per_frame_init_11=xpos = 0;
+per_frame_init_12=ypos = 0;
+per_frame_1=decay = 1;
+per_frame_2=vol = 0.55 * (bass + mid + treb);
+per_frame_3=vol = vol;
+per_frame_4=mv_r = 0.5 + 0.4 * sin(1.324 * time);
+per_frame_5=mv_g = 0.5 + 0.4 * cos(1.371 * time);
+per_frame_6=zoom = 0.9;
+per_frame_7=musictime = musictime + vol;
+per_frame_8=q4 = 0.3 * sin(0.02 * musictime);
+per_frame_9=q5 = 0.3 * sin(0.01 * musictime);
+per_frame_10=dx = 0.01 * sin(0.1 * musictime);
+per_frame_11=dy = 0.01 * cos(0.069 * musictime);
+per_frame_12=monitor = rot;
+per_pixel_1=rd = sqrt(sqr(1.7 * (x - 0.5 - q4)) + sqr(1.2 * (y - 0.5 + q5)));
+per_pixel_2=cx = 0.5 + q4;
+per_pixel_3=cy = 0.5 - q5;
+per_pixel_4=zm = -5.5 * log(sqrt(2) - rd) - 0.24;
+per_pixel_5=zm = max(abs(zm), 0.99) * sign(zm);
+per_pixel_6=nx = 2 * (x - 0.5 - q4);
+per_pixel_7=ny = 1.5 * (y - 0.5 + q5);
+per_pixel_8=rd = sqrt(sqr(nx) + sqr(ny));
+per_pixel_9=ag = atan(ny / nx);
+shape_0_init1=q4 = 0;
+shape_0_init2=q5 = 0;
+shape_0_per_frame1=x = 0.5 + q4;
+shape_0_per_frame2=y = 0.5 + q5;
+shape_1_init1=q4 = 0;
+shape_1_init2=q5 = 0;
+shape_1_per_frame1=tex_ang = 0.01;
+shape_1_per_frame2=x = 0.5 + q4;
+shape_1_per_frame3=y = 0.5 + q5;

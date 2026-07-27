@@ -35,65 +35,269 @@ fMotionVectorsA=0.000000
 b1x=0.500000
 b2x=0.500000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=3.000000
-bAdditive=1.000000
-nInstances=48.000000
-fX=0.260000
-fY=0.200000
-fRad=0.393170
-fTexZoom=0.935500
-fG=1.000000
-fB=0.600000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=8.000000
-bAdditive=1.000000
-nInstances=192.000000
-fX=0.650000
-fY=0.380000
-fRad=0.768930
-fTexZoom=0.736780
-fA=0.700000
-fG2=0.000000
-fBorderR=0.500000
-fBorderG=0.500000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-nSamples=128.000000
-fSeparation=201.000000
-bSpectrum=1.000000
-bAdditive=1.000000
-fScaling=2.155420
-fSmoothing=0.000000
-fR=0.000000
-fA=0.700000
-
-[wave00_1]
-bEnabled=1.000000
-fScaling=0.891520
-fSmoothing=0.000000
-fA=0.900000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_samples=128.000000
+wavecode_0_sep=201.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=2.155420
+wavecode_0_smoothing=0.000000
+wavecode_0_r=0.000000
+wavecode_0_a=0.700000
+wavecode_1_enabled=1.000000
+wavecode_1_scaling=0.891520
+wavecode_1_smoothing=0.000000
+wavecode_1_a=0.900000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=3.000000
+shapecode_1_additive=1.000000
+shapecode_1_num_inst=48.000000
+shapecode_1_x=0.260000
+shapecode_1_y=0.200000
+shapecode_1_rad=0.393170
+shapecode_1_tex_zoom=0.935500
+shapecode_1_g=1.000000
+shapecode_1_b=0.600000
+shapecode_1_g2=0.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=8.000000
+shapecode_2_additive=1.000000
+shapecode_2_num_inst=192.000000
+shapecode_2_x=0.650000
+shapecode_2_y=0.380000
+shapecode_2_rad=0.768930
+shapecode_2_tex_zoom=0.736780
+shapecode_2_a=0.700000
+shapecode_2_g2=0.000000
+shapecode_2_border_r=0.500000
+shapecode_2_border_g=0.500000
+shapecode_2_border_b=0.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_pixel_1=rot = 0;
+per_pixel_2=zoom = 0.99;
+per_pixel_3=warp = 0;
+per_pixel_4=dx = 0;
+per_pixel_5=dy = 0;
+wave_0_init1=n = 0;
+wave_0_init2=vol = 0;
+wave_0_init3=dec = 0;
+wave_0_per_point1=x = sample;
+wave_0_per_point2=n = floor(128 * sample);
+wave_0_per_point3=vol = value1 + value2;
+wave_0_per_point4=dec = if(0.00001 < abs(if(vol > gmegabuf(floor(n)), 1, 0)), 0.2, 0.5);
+wave_0_per_point5=gmegabuf(floor(n)) = gmegabuf(floor(n)) * dec + (1 - dec) * vol * (1 + 0.01 * (randint(100) - 50));
+wave_0_per_point6=y = 0.15 * gmegabuf(floor(n)) + 0.2;
+wave_0_per_point7=a = 0;
+wave_1_init1=sw = 0;
+wave_1_init2=y0 = 0;
+wave_1_init3=x0 = 0;
+wave_1_init4=base = 0;
+wave_1_init5=ind = 0;
+wave_1_init6=z0 = 0;
+wave_1_init7=q10 = 0;
+wave_1_init8=p2 = 0;
+wave_1_init9=p1 = 0;
+wave_1_init10=dist = 0;
+wave_1_init11=m = 0;
+wave_1_per_point1=m = floor(512 * sample);
+wave_1_per_point2=sw = mod(m, 2);
+wave_1_per_point3=p1 = mod(m + 1, 16);
+wave_1_per_point4=p2 = floor(m / 32);
+wave_1_per_point5=base = 1000;
+wave_1_per_point6=x0 = if(0.00001 < abs(sw), gmegabuf(floor(8 * p1 + base)), gmegabuf(floor(8 * p2 + base)));
+wave_1_per_point7=y0 = if(0.00001 < abs(sw), gmegabuf(floor(8 * p1 + base + 1)), gmegabuf(floor(8 * p2 + base + 1)));
+wave_1_per_point8=z0 = if(0.00001 < abs(sw), gmegabuf(floor(8 * p1 + base + 2)), gmegabuf(floor(8 * p2 + base + 2)));
+wave_1_per_point9=x = x0 + 0.5;
+wave_1_per_point10=y = y0 + 0.5;
+wave_1_per_point11=ind = 5000 + 16 * p2 + p1;
+wave_1_per_point12=dist = z0;
+wave_1_per_point13=a = min(0.008 / dist, 1) * if(0.001 <= dist, 1, 0) * q10;
+shape_1_init1=q12 = 0;
+shape_1_init2=copies = 0;
+shape_1_init3=n = 0;
+shape_1_init4=copies = 0;
+shape_1_init5=frac = 0;
+shape_1_init6=copies = 0;
+shape_1_init7=copies = 0;
+shape_1_init8=k1 = 0;
+shape_1_init9=x0 = 0;
+shape_1_init10=n = 0;
+shape_1_init11=frac = 0;
+shape_1_init12=n = 0;
+shape_1_init13=frac = 0;
+shape_1_init14=k1 = 0;
+shape_1_init15=y0 = 0;
+shape_1_init16=n = 0;
+shape_1_init17=frac = 0;
+shape_1_init18=n = 0;
+shape_1_init19=frac = 0;
+shape_1_init20=k1 = 0;
+shape_1_init21=z0 = 0;
+shape_1_init22=n = 0;
+shape_1_init23=frac = 0;
+shape_1_init24=n = 0;
+shape_1_init25=frac = 0;
+shape_1_init26=frac = 0;
+shape_1_init27=x0 = 0;
+shape_1_init28=y0 = 0;
+shape_1_init29=n = 0;
+shape_1_init30=x0 = 0;
+shape_1_init31=n = 0;
+shape_1_init32=y0 = 0;
+shape_1_init33=n = 0;
+shape_1_init34=z0 = 0;
+shape_1_init35=x0 = 0;
+shape_1_init36=y0 = 0;
+shape_1_init37=q32 = 0;
+shape_1_init38=z = 0;
+shape_1_init39=z0 = 0;
+shape_1_init40=z = 0;
+shape_1_init41=z = 0;
+shape_1_init42=z = 0;
+shape_1_init43=q2 = 0;
+shape_1_per_frame1=sides = q12;
+shape_1_per_frame2=copies = floor(num_inst / 16);
+shape_1_per_frame3=n = 8 * floor(instance / copies) + 1000;
+shape_1_per_frame4=frac = mod(instance, copies) / copies;
+shape_1_per_frame5=k1 = 1;
+shape_1_per_frame6=x0 = gmegabuf(floor(n)) * frac + megabuf(floor(n)) * (1 - frac) * k1;
+shape_1_per_frame7=y0 = gmegabuf(floor(n + 1)) * frac + megabuf(floor(n + 1)) * (1 - frac) * k1;
+shape_1_per_frame8=z0 = gmegabuf(floor(n + 2)) * frac + megabuf(floor(n + 2)) * (1 - frac);
+shape_1_per_frame9=ang = 3.14 * frac + atan2(x0, y0);
+shape_1_per_frame10=megabuf(floor(n)) = x0;
+shape_1_per_frame11=megabuf(floor(n + 1)) = y0;
+shape_1_per_frame12=megabuf(floor(n + 2)) = z0;
+shape_1_per_frame13=x = x0 + 0.5;
+shape_1_per_frame14=y = y0 * q32 + 0.5;
+shape_1_per_frame15=z = z0;
+shape_1_per_frame16=a = min(0.4 / z, 1) * if(0 <= z, 1, 0);
+shape_1_per_frame17=a2 = 0;
+shape_1_per_frame18=rad = (0.02 - 0.0006 * sides) / z;
+shape_1_per_frame19=r = instance / num_inst;
+shape_1_per_frame20=b = 1 - r;
+shape_1_per_frame21=g = 4 * pow(r - 0.5 * q2, 2);
+shape_1_per_frame22=r2 = 0;
+shape_1_per_frame23=b2 = 0;
+shape_1_per_frame24=g2 = 0;
+shape_1_per_frame25=border_a = 0.04 * if(6 <= sides, 1, 0);
+shape_2_init1=copies = 0;
+shape_2_init2=n = 0;
+shape_2_init3=copies = 0;
+shape_2_init4=frac = 0;
+shape_2_init5=copies = 0;
+shape_2_init6=copies = 0;
+shape_2_init7=k1 = 0;
+shape_2_init8=x0 = 0;
+shape_2_init9=n = 0;
+shape_2_init10=frac = 0;
+shape_2_init11=n = 0;
+shape_2_init12=frac = 0;
+shape_2_init13=k1 = 0;
+shape_2_init14=y0 = 0;
+shape_2_init15=n = 0;
+shape_2_init16=frac = 0;
+shape_2_init17=n = 0;
+shape_2_init18=frac = 0;
+shape_2_init19=k1 = 0;
+shape_2_init20=z0 = 0;
+shape_2_init21=n = 0;
+shape_2_init22=frac = 0;
+shape_2_init23=n = 0;
+shape_2_init24=frac = 0;
+shape_2_init25=frac = 0;
+shape_2_init26=x0 = 0;
+shape_2_init27=y0 = 0;
+shape_2_init28=pulse = 0;
+shape_2_init29=q22 = 0;
+shape_2_init30=tht = 0;
+shape_2_init31=phi = 0;
+shape_2_init32=kt = 0;
+shape_2_init33=copies = 0;
+shape_2_init34=v0 = 0;
+shape_2_init35=pulse = 0;
+shape_2_init36=z0 = 0;
+shape_2_init37=kt = 0;
+shape_2_init38=kt = 0;
+shape_2_init39=ox = 0;
+shape_2_init40=x0 = 0;
+shape_2_init41=v0 = 0;
+shape_2_init42=tht = 0;
+shape_2_init43=phi = 0;
+shape_2_init44=oy = 0;
+shape_2_init45=y0 = 0;
+shape_2_init46=v0 = 0;
+shape_2_init47=tht = 0;
+shape_2_init48=oz = 0;
+shape_2_init49=z0 = 0;
+shape_2_init50=v0 = 0;
+shape_2_init51=tht = 0;
+shape_2_init52=phi = 0;
+shape_2_init53=ox = 0;
+shape_2_init54=oy = 0;
+shape_2_init55=q32 = 0;
+shape_2_init56=z = 0;
+shape_2_init57=oz = 0;
+shape_2_init58=oz = 0;
+shape_2_init59=oz = 0;
+shape_2_init60=q11 = 0;
+shape_2_init61=z = 0;
+shape_2_init62=frac = 0;
+shape_2_init63=pulse = 0;
+shape_2_init64=dec = 0;
+shape_2_init65=q31 = 0;
+shape_2_init66=n = 0;
+shape_2_init67=n = 0;
+shape_2_init68=dec = 0;
+shape_2_init69=dec = 0;
+shape_2_init70=n = 0;
+shape_2_init71=n = 0;
+shape_2_init72=n = 0;
+shape_2_init73=dec = 0;
+shape_2_init74=dec = 0;
+shape_2_init75=n = 0;
+shape_2_init76=n = 0;
+shape_2_init77=n = 0;
+shape_2_init78=dec = 0;
+shape_2_init79=dec = 0;
+shape_2_init80=n = 0;
+shape_2_per_frame1=copies = floor(num_inst / 16);
+shape_2_per_frame2=n = 8 * floor(instance / copies) + 1000;
+shape_2_per_frame3=frac = mod(instance, copies) / copies;
+shape_2_per_frame4=k1 = 1.1;
+shape_2_per_frame5=x0 = gmegabuf(floor(n)) * frac + megabuf(floor(n)) * (1 - frac) * k1;
+shape_2_per_frame6=y0 = gmegabuf(floor(n + 1)) * frac + megabuf(floor(n + 1)) * (1 - frac) * k1;
+shape_2_per_frame7=z0 = gmegabuf(floor(n + 2)) * frac + megabuf(floor(n + 2)) * (1 - frac);
+shape_2_per_frame8=ang = 3.14 * frac + atan2(x0, y0);
+shape_2_per_frame9=pulse = min(q22 + 0.2, 1);
+shape_2_per_frame10=tht = 14.782 * instance;
+shape_2_per_frame11=phi = 32.523 * instance;
+shape_2_per_frame12=kt = 6 * time + instance / num_inst * copies;
+shape_2_per_frame13=v0 = 0.015 * pulse / z0 * (kt - floor(kt));
+shape_2_per_frame14=ox = x0 + v0 * sin(tht) * cos(phi);
+shape_2_per_frame15=oy = y0 + v0 * cos(tht);
+shape_2_per_frame16=oz = z0 + v0 * sin(tht) * sin(phi);
+shape_2_per_frame17=x = ox + 0.5;
+shape_2_per_frame18=y = oy * q32 + 0.5;
+shape_2_per_frame19=z = oz;
+shape_2_per_frame20=a = min(0.4 / oz, 1) * if(0 <= oz, 1, 0) * q11;
+shape_2_per_frame21=a2 = 0;
+shape_2_per_frame22=rad = 0.004 / z * (1 - frac) * pulse;
+shape_2_per_frame23=border_a = 0;
+shape_2_per_frame24=r = 1;
+shape_2_per_frame25=b = 1;
+shape_2_per_frame26=g = 1;
+shape_2_per_frame27=r2 = 1;
+shape_2_per_frame28=b2 = 1;
+shape_2_per_frame29=g2 = 1;
+shape_2_per_frame30=dec = q31;
+shape_2_per_frame31=megabuf(floor(n)) = megabuf(floor(n)) * dec + (1 - dec) * gmegabuf(floor(n));
+shape_2_per_frame32=megabuf(floor(n + 1)) = megabuf(floor(n + 1)) * dec + (1 - dec) * gmegabuf(floor(n + 1));
+shape_2_per_frame33=megabuf(floor(n + 2)) = megabuf(floor(n + 2)) * dec + (1 - dec) * gmegabuf(floor(n + 2));
 
 [warp_shader]
 float xlat_mutableq25;

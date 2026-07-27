@@ -24,36 +24,138 @@ fOuterBorderR=0.010000
 fOuterBorderA=0.500000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fSeparation=256.000000
-bUseDots=1.000000
-bThick=1.000000
-fA=0.500000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_sep=256.000000
+wavecode_0_usedots=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_a=0.500000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_a2=1.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=lbbtime = 0;
+per_frame_init_2=sw6 = 0;
+per_frame_init_3=sw2 = 0;
+per_frame_init_4=zmx = 0;
+per_frame_init_5=beatb = 0;
+per_frame_init_6=sw3 = 0;
+per_frame_init_7=sw5 = 0;
+per_frame_init_8=q6 = 0;
+per_frame_init_9=avgbeatrate = 0;
+per_frame_init_10=q5 = 0;
+per_frame_init_11=avgvol = 0;
+per_frame_init_12=zmy = 0;
+per_frame_init_13=ax = 0;
+per_frame_init_14=t3 = 0;
+per_frame_init_15=beatrate = 0;
+per_frame_init_16=mrot = 0;
+per_frame_init_17=pi = 0;
+per_frame_init_18=hue = 0;
+per_frame_init_19=bool = 0;
+per_frame_init_20=ph = 0;
+per_frame_init_21=const = 0;
+per_frame_init_22=beathard = 0;
+per_frame_init_23=q4 = 0;
+per_frame_init_24=lbass = 0;
+per_frame_init_25=ay = 0;
+per_frame_init_26=rawbeatb = 0;
+per_frame_init_27=db = 0;
+per_frame_init_28=vol = 0;
+per_frame_init_29=bc = 0;
+per_frame_init_30=h = 0;
+per_frame_init_31=sw1 = 0;
+per_frame_init_32=phase = 0;
+per_frame_init_33=q3 = 0;
+per_frame_init_34=t4 = 0;
+per_frame_init_35=q7 = 0;
+per_frame_init_36=sw4 = 0;
+per_frame_init_37=mtime = 0;
+per_frame_init_38=q8 = 0;
+per_frame_init_39=avgdb = 0;
+per_frame_init_40=db = 0.01;
+per_frame_init_41=beatrate = 1;
+per_frame_init_42=avgbeatrate = 2;
+per_frame_init_43=lbbtime = time;
+per_frame_init_44=avgdb = 0.01;
+per_frame_init_45=vol = 1;
+per_frame_init_46=avgvol = 0.2;
+per_frame_init_47=phase = 0;
+per_frame_init_48=bool = 0;
+per_frame_init_49=const = 0.02;
+per_frame_init_50=mtime = 150 + 1000 * bass_att;
+per_frame_init_51=t3 = 200 + 1000 * treb_att;
+per_frame_init_52=t4 = 100 + 1000 * mid_att;
+per_frame_1=db = (bass - lbass) * fps;
+per_frame_2=lbass = bass;
+per_frame_3=avgdb = 0.99 * avgdb + 0.01 * abs(db);
+per_frame_4=avgvol = 0.99 * avgvol + 0.0033 * (bass + mid + treb);
+per_frame_5=rawbeatb = above(abs(db), avgdb * avgvol * 4);
+per_frame_6=beatb = rawbeatb * above(time - lbbtime, 0.5 * avgbeatrate);
+per_frame_7=beathard = beatb * (abs(db) - 4 * avgdb);
+per_frame_8=beatrate = beatb * (time - lbbtime) + (1 - beatb) * beatrate;
+per_frame_9=avgbeatrate = beatb * (0.9 * avgbeatrate + 0.1 * beatrate) + (1 - beatb) * avgbeatrate;
+per_frame_10=lbbtime = time * beatb + (1 - beatb) * lbbtime;
+per_frame_11=ph = (time - lbbtime) * (60 / avgbeatrate) * const;
+per_frame_12=phase = max(min(ph, 1), 0);
+per_frame_13=const = const * (1 - beatb) + beatb * (const + 0.01 * bool);
+per_frame_14=bool = below(phase, 0.98) * (0.99 - ph) - 0.5 * above(phase, 0.98) * ph;
+per_frame_15=monitor = const;
+per_frame_16=bc = bc + beatb;
+per_frame_17=vol = rawbeatb * (db - avgdb) * 0.01;
+per_frame_18=avgvol = 0.999 * avgvol + 0.01 * vol;
+per_frame_19=mtime = mtime + min(0.5 * avgvol, 0.25) * (60 / fps);
+per_frame_20=decay = 0.9999;
+per_frame_21=warp = 0;
+per_frame_22=wrap = 1;
+per_frame_23=hue = 0.01 * mtime + 0.5 * phase;
+per_frame_24=h = 6 * (hue - floor(hue));
+per_frame_25=sw1 = below(h, 1);
+per_frame_26=sw2 = (1 - sw1) * below(h, 2);
+per_frame_27=sw3 = (1 - sw1) * (1 - sw2) * below(h, 3);
+per_frame_28=sw4 = (1 - sw1) * (1 - sw2) * (1 - sw3) * below(h, 4);
+per_frame_29=sw6 = above(h, 5);
+per_frame_30=sw5 = (1 - sw1) * (1 - sw2) * (1 - sw3) * (1 - sw4) * (1 - sw6);
+per_frame_31=ob_r = sw1 + sw2 * (2 - h) + sw5 * (h - 4) + sw6;
+per_frame_32=ob_g = sw1 * h + sw2 + sw3 + sw4 * (4 - h);
+per_frame_33=ob_b = sw3 * (h - 2) + sw4 + sw5 + sw6 * (6 - h);
+per_frame_34=ob_a = 0.3 + 0.6 * phase;
+per_frame_35=q8 = phase;
+per_frame_36=t3 = t3 + min(0.0005 * avgvol * treb * (60 / avgbeatrate), 0.3) * (60 / fps);
+per_frame_37=t4 = t4 + min(0.0005 * avgvol * bass * (60 / avgbeatrate), 0.3) * (60 / fps);
+per_frame_38=q3 = t3;
+per_frame_39=q4 = t4;
+per_frame_40=cx = 0.4 * sin(0.01 * (t3 + t4)) + 0.5;
+per_frame_41=cy = 0.4 * sin(0.01 * (mtime + t3)) + 0.5;
+per_frame_42=q6 = cx;
+per_frame_43=q7 = cy;
+per_frame_44=q5 = mtime;
+per_pixel_1=pi = 3.1415;
+per_pixel_2=zmx = 1 + 0.05 * sin(q3 + mtime);
+per_pixel_3=zmy = 1 + 0.05 * sin(q4 - mtime);
+per_pixel_4=sx = zmx;
+per_pixel_5=sy = zmy;
+per_pixel_6=ax = ang;
+per_pixel_7=ay = ang;
+per_pixel_8=mrot = 0.5 * sin(0.01 * q5);
+per_pixel_9=dx = sin(ax) * mrot * zmx * 0.1;
+per_pixel_10=dy = cos(ay) * mrot * zmy * 0.1;
+wave_0_init1=q6 = 0;
+wave_0_init2=q7 = 0;
+wave_0_init3=q2 = 0;
+wave_0_per_point1=x = q6 + 0.2 * value1;
+wave_0_per_point2=y = q7 + 0.2 * value2;
+wave_0_per_point3=r = 0.4 * sin(q2 + 3.14 * sample * treb) + 0.5;
+wave_0_per_point4=g = 0.3 * cos(q2 + 3.14 * sample * bass) + 0.4;
+wave_0_per_point5=b = 0.3 * sin(q2 + 3.14 * sample * mid) + 0.6;
+shape_1_init1=q2 = 0;
+shape_1_per_frame1=rad = 0.3 * q2;
+shape_1_per_frame2=x = 0.2;
+shape_1_per_frame3=y = 0.2;

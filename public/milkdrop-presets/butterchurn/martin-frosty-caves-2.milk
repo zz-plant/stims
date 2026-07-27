@@ -39,30 +39,22 @@ nMotionVectorsLoop=5.000000
 fMotionVectorsG=0.500000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_pixel_1=warp = 0;
+per_pixel_2=zoom = 1;
+per_pixel_3=tx = tan(0.9 * (2 * x - 1));
+per_pixel_4=ty = tan(0.9 * (2 * y - 1));
+per_pixel_5=dx = reg52 / q16 * (1 + 0.5 * abs(tx));
+per_pixel_6=dy = reg53 / q16 * (1 + 0.5 * abs(ty));
+per_pixel_7=dx = dx + reg53 * ty * (x - 0.5);
+per_pixel_8=dy = dy + reg52 * tx * (y - 0.5);
 
 [warp_shader]
 float sustain;

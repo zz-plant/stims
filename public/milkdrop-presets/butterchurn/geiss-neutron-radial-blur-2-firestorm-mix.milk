@@ -20,34 +20,32 @@ fMotionVectorsR=0.340000
 fMotionVectorsG=0.182000
 fMotionVectorsB=0.355000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fSeparation=16.000000
-bAdditive=1.000000
-fScaling=0.255840
-fA=0.150000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_sep=16.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=0.255840
+wavecode_0_a=0.150000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.35 * (0.6 * sin(1.98 * time) + 0.4 * sin(1.447 * time));
+per_frame_2=wave_g = wave_g + 0.2 * (0.6 * sin(1.835 * time) + 0.4 * sin(1.181 * time));
+per_frame_3=wave_b = wave_b + 0.1 * (0.6 * sin(1.814 * time) + 0.4 * sin(1.311 * time));
+per_frame_4=cx = cx + 0.11 * (0.6 * sin(0.374 * time) + 0.4 * sin(0.294 * time));
+per_frame_5=cy = cy + 0.11 * (0.6 * sin(0.393 * time) + 0.4 * sin(0.223 * time));
+per_frame_6=decay = decay - 0.01 * equal(mod(frame, 20), 0);
+per_frame_7=rot = rot + 0.002 * cos(0.2313 * time + 2) + 0.002 * cos(0.584 * time + 5);
+per_pixel_1=dx = 0.02 * (x - 0.5);
+per_pixel_2=dy = 0.02 * (y - 0.5);
+wave_0_per_frame1=r = 0.51 + 0.4 * cos(23.31324 * time) + 0.4 * cos(14.542543 * time + 5);
+wave_0_per_frame2=g = 0.51 + 0.4 * cos(27.43324 * time + 1) + 0.4 * cos(12.746563 * time + 4);
+wave_0_per_frame3=b = 0.51 + 0.4 * cos(19.62324 * time + 2) + 0.4 * cos(15.382064 * time + 3);
+wave_0_per_point1=x = sample + 0.3 * value1;
+wave_0_per_point2=y = -0.4 * (sample - 0.5) + 0.4 * value1 + 0.5;
 
 [warp_shader]
 shader_body { 

@@ -27,47 +27,71 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-bAdditive=1.000000
-nInstances=50.000000
-fRad=0.010000
-fAng=3.204420
-fTexZoom=6.238730
-fG=1.000000
-fB=1.000000
-fA=0.000000
-fR2=1.000000
-fB2=1.000000
-fBorderA=0.820000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=1.000000
-nSamples=442.000000
-bAdditive=1.000000
-fScaling=5.925560
-fSmoothing=0.000000
-fA=0.160000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=1.000000
+wavecode_2_samples=442.000000
+wavecode_2_additive=1.000000
+wavecode_2_scaling=5.925560
+wavecode_2_smoothing=0.000000
+wavecode_2_a=0.160000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_additive=1.000000
+shapecode_0_num_inst=50.000000
+shapecode_0_rad=0.010000
+shapecode_0_ang=3.204420
+shapecode_0_tex_zoom=6.238730
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_a=0.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_border_a=0.820000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+wave_2_init1=d = 0;
+wave_2_init2=xx = 0;
+wave_2_init3=w = 0;
+wave_2_init4=index2 = 0;
+wave_2_init5=ppo = 0;
+wave_2_init6=index = 0;
+wave_2_init7=smaller = 0;
+wave_2_init8=t1 = 0;
+wave_2_init9=j = 0;
+wave_2_init10=q31 = 0;
+wave_2_init11=smallestfind = 0;
+wave_2_init12=distance = 0;
+wave_2_init13=i = 0;
+wave_2_init14=t2 = 0;
+wave_2_init15=q2 = 0;
+wave_2_init16=q32 = 0;
+wave_2_init17=yy = 0;
+wave_2_init18=findindex = 0;
+wave_2_per_frame1=t1 = 0;
+wave_2_per_frame2=t2 = 0;
+shape_0_init1=index = 0;
+shape_0_init2=q32 = 0;
+shape_0_init3=index = 0;
+shape_0_init4=index = 0;
+shape_0_init5=index = 0;
+shape_0_init6=index = 0;
+shape_0_init7=index = 0;
+shape_0_init8=index = 0;
+shape_0_init9=q2 = 0;
+shape_0_per_frame1=index = instance * q32;
+shape_0_per_frame2=x = gmegabuf(floor(index));
+shape_0_per_frame3=y = gmegabuf(floor(index + 1));
+shape_0_per_frame4=rad = 2 * gmegabuf(floor(index + 4));
+shape_0_per_frame5=r = gmegabuf(floor(index + 5));
+shape_0_per_frame6=g = gmegabuf(floor(index + 6));
+shape_0_per_frame7=b = gmegabuf(floor(index + 7));
+shape_0_per_frame8=r2 = r;
+shape_0_per_frame9=g2 = g;
+shape_0_per_frame10=b2 = b;
+shape_0_per_frame11=x = 0.5 + (x - 0.5) / q2;
 
 [warp_shader]
 shader_body { 

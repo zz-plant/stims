@@ -26,51 +26,60 @@ fInnerBorderB=0.300000
 fInnerBorderA=0.030000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=6.000000
-bTextured=1.000000
-fRad=0.010000
-fAng=3.958410
-fTexAng=2.387510
-fTexZoom=0.741850
-fR=0.950000
-fG=0.980000
-fB=0.980000
-fA=0.980000
-fR2=0.980000
-fG2=0.980000
-fB2=0.980000
-fA2=0.980000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.128240
-fR=0.000000
-fA=0.300000
-fG2=0.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=6.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.010000
+shapecode_0_ang=3.958410
+shapecode_0_tex_ang=2.387510
+shapecode_0_tex_zoom=0.741850
+shapecode_0_r=0.950000
+shapecode_0_g=0.980000
+shapecode_0_b=0.980000
+shapecode_0_a=0.980000
+shapecode_0_r2=0.980000
+shapecode_0_g2=0.980000
+shapecode_0_b2=0.980000
+shapecode_0_a2=0.980000
+shapecode_0_border_r=0.000000
+shapecode_0_border_g=0.000000
+shapecode_0_border_b=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=100.000000
+shapecode_1_rad=0.128240
+shapecode_1_r=0.000000
+shapecode_1_a=0.300000
+shapecode_1_g2=0.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=vol = 0;
+per_frame_init_2=beat = 0;
+per_frame_init_3=res = 0;
+per_frame_init_4=diff = 0;
+per_frame_init_5=x = 0;
+per_frame_init_6=y = 0;
+per_frame_1=wave_r = 0.5 + 0.5 * sin(1.12 * time);
+per_frame_2=wave_g = 0.5 + 0.5 * sin(1.22 * time);
+per_frame_3=wave_b = 0.25 * sin(1.32 * time);
+per_frame_4=ib_r = wave_b;
+per_frame_5=ib_g = wave_r;
+per_frame_6=ib_b = wave_g;
+per_frame_7=vol = 8 * bass + 4 * mid + 2 * treb;
+per_frame_8=vol = vol * above(vol, 17);
+per_frame_9=monitor = vol;
+per_frame_10=beat = above(vol, res);
+per_frame_11=diff = (1 - beat) * diff + beat * (vol - res);
+per_frame_12=res = beat * (vol + 2 * diff) + (1 - beat) * (res - 60 * (0.04 * diff + 0.12) / fps);
+per_frame_13=res = max(0, res);
+per_frame_14=monitor = res;
+per_frame_15=x = if(0.00001 < abs(beat), 0.01 * floor(randint(60)) + 0.2, x);
+per_frame_16=y = if(0.00001 < abs(beat), 0.01 * floor(randint(60)) + 0.2, y);
+per_frame_17=wave_mystery = if(0.00001 < abs(above(x, y)), 0, -1);
+shape_0_per_frame1=ang = ang + 0.5 * time;
+shape_0_per_frame2=rad = 0.8 + 0.1 * bass_att;

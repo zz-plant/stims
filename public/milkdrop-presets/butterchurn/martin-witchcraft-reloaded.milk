@@ -33,48 +33,61 @@ fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b2x=0.700000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=12.000000
-nInstances=1024.000000
-fRad=0.036320
-fTexAng=1.005310
-fTexZoom=1.531170
-fB=1.000000
-fA=0.000000
-fG2=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fScaling=2.155420
-fSmoothing=0.200000
-fR=0.000000
-fA=0.700000
-
-[wave00_1]
-bEnabled=1.000000
-fScaling=0.891520
-fSmoothing=0.820000
-fR=0.000000
-fA=0.100000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_scaling=2.155420
+wavecode_0_smoothing=0.200000
+wavecode_0_r=0.000000
+wavecode_0_a=0.700000
+wavecode_1_enabled=1.000000
+wavecode_1_scaling=0.891520
+wavecode_1_smoothing=0.820000
+wavecode_1_r=0.000000
+wavecode_1_a=0.100000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=12.000000
+shapecode_0_num_inst=1024.000000
+shapecode_0_rad=0.036320
+shapecode_0_tex_ang=1.005310
+shapecode_0_tex_zoom=1.531170
+shapecode_0_b=1.000000
+shapecode_0_a=0.000000
+shapecode_0_g2=0.000000
+shapecode_0_border_b=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_pixel_1=rot = 0;
+per_pixel_2=zoom = 1;
+per_pixel_3=warp = 0;
+per_pixel_4=dy = 0;
+per_pixel_5=dx = -0;
+wave_0_init1=fov = 0;
+wave_0_init2=n = 0;
+wave_0_init3=t1 = 0;
+wave_0_init4=x0 = 0;
+wave_0_init5=y0 = 0;
+wave_0_init6=z0 = 0;
+wave_0_init7=k1 = 0;
+wave_0_init8=t2 = 0;
+wave_0_per_frame1=t1 = 1023;
+wave_0_per_frame2=t2 = 0;
+wave_1_init1=fov = 0;
+wave_1_init2=n = 0;
+wave_1_init3=t1 = 0;
+wave_1_init4=x0 = 0;
+wave_1_init5=y0 = 0;
+wave_1_init6=z0 = 0;
+wave_1_per_frame1=t1 = 512;
+shape_0_init1=fov = 0;
+shape_0_init2=n = 0;
+shape_0_init3=x0 = 0;
+shape_0_init4=y0 = 0;
+shape_0_init5=z0 = 0;
+shape_0_init6=q32 = 0;
+shape_0_init7=t1 = 0;
 
 [warp_shader]
 shader_body { 

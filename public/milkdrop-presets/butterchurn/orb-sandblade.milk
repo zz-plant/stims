@@ -25,36 +25,92 @@ fMotionVectorsR=0.500000
 fMotionVectorsG=0.400000
 fMotionVectorsB=0.300000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fR=0.000000
-fG=0.000000
-fB=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_r=0.000000
+wavecode_0_g=0.000000
+wavecode_0_b=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=basstime = 0;
+per_frame_init_2=stickybit = 0;
+per_frame_init_3=volavg2 = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=q9 = 0;
+per_frame_init_6=sample1 = 0;
+per_frame_init_7=difftime = 0;
+per_frame_init_8=diff = 0;
+per_frame_init_9=edge = 0;
+per_frame_init_10=volavg = 0;
+per_frame_init_11=bit2 = 0;
+per_frame_init_12=vol = 0;
+per_frame_init_13=q2 = 0;
+per_frame_init_14=q3 = 0;
+per_frame_init_15=basssum = 0;
+per_frame_init_16=sample2 = 0;
+per_frame_init_17=state = 0;
+per_frame_1=basstime = basstime + 0.06 * bass;
+per_frame_2=q1 = basstime;
+per_frame_3=q9 = 0.000005 * basstime;
+per_frame_4=basstime = if(0.00001 < abs(below(basstime, 1000)), 1000, basstime);
+per_frame_5=vol = pow(bass + mid + treb, 2);
+per_frame_6=basssum = vol;
+per_frame_7=stickybit = mod(time, 2);
+per_frame_8=volavg = volavg + vol * equal(stickybit, 1);
+per_frame_9=sample1 = sample1 + equal(stickybit, 1);
+per_frame_10=volavg2 = volavg2 + vol * equal(stickybit, 0);
+per_frame_11=sample2 = sample2 + equal(stickybit, 0);
+per_frame_12=edge = bnot(equal(bit2, stickybit));
+per_frame_13=volavg = volavg - volavg * edge * stickybit;
+per_frame_14=volavg2 = volavg2 - volavg2 * edge * equal(stickybit, 0);
+per_frame_15=sample1 = sample1 - sample1 * edge * stickybit;
+per_frame_16=sample2 = sample2 - sample2 * edge * equal(stickybit, 0);
+per_frame_17=diff = if(0.00001 < abs(equal(stickybit, 1)), basssum / (volavg2 / sample2), 0);
+per_frame_18=diff = if(0.00001 < abs(equal(stickybit, 0)), basssum / (volavg / sample1), diff);
+per_frame_19=q3 = diff;
+per_frame_20=bit2 = mod(time, 2);
+per_frame_21=difftime = difftime + 0.03 * diff;
+per_frame_22=q2 = difftime;
+per_frame_23=difftime = if(0.00001 < abs(above(difftime, 2000)), 0, difftime);
+per_frame_24=monitor = q1;
+per_pixel_1=zoom = 0.98;
+per_pixel_2=rot = 0;
+wave_0_init1=z = 0;
+wave_0_init2=basstime = 0;
+wave_0_init3=xs = 0;
+wave_0_init4=x_int = 0;
+wave_0_init5=v = 0;
+wave_0_init6=zs = 0;
+wave_0_init7=ys = 0;
+wave_0_init8=y_int = 0;
+wave_0_init9=speed = 0;
+wave_0_per_point1=speed = sqrt(0.005 * bass_att);
+wave_0_per_point2=v = 10000 * sample + value2 * bass * 0.1;
+wave_0_per_point3=xs = xs + sin(1 * v) * speed * atan(1.51 * v);
+wave_0_per_point4=ys = ys + sin(1 * v) * speed;
+wave_0_per_point5=zs = zs + cos(1.1 * v) * speed;
+wave_0_per_point6=x = 0.5 + 0.5 * sin(0.1 * xs) * cos(2 * time + xs) * atan(basstime + 0.1 * zs);
+wave_0_per_point7=y = 0.5 + 0.5 * sin(0.1 * ys) * cos(2.1 * time + xs) * sin(0.4 * basstime + 0.12 * zs);
+wave_0_per_point8=z = 0.5 + 0.5 * sin(0.1 * zs) * cos(2.1 * time + zs);
+wave_0_per_point9=x = x + 0.5 * sample * sin(basstime) * bass;
+wave_0_per_point10=y = y + 0.5 * sample * sin(1.2 * basstime) * bass;
+wave_0_per_point11=z = cos(z * sample) * value1 * sample * 10 + 2;
+wave_0_per_point12=x_int = 0.6 * x + 0.2;
+wave_0_per_point13=y_int = y;
+wave_0_per_point14=x = x_int * z * 0.5;
+wave_0_per_point15=y = y_int * z * 0.5;
+wave_0_per_point16=r = 0.5 * sin(6.22 * time) * x_int + 0.6;
+wave_0_per_point17=g = 0.4 + 0.4 * sin(5.307 * time) * x_int;
+wave_0_per_point18=b = 0.4 + 0.4 * sin(4.959 * time) * y_int;
+wave_0_per_point19=xs = if(0.00001 < abs(above(xs, 1000)), 0, xs);
+wave_0_per_point20=ys = if(0.00001 < abs(above(ys, 1000)), 0, ys);
 
 [warp_shader]
 shader_body { 

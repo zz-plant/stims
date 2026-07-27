@@ -29,34 +29,74 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bThick=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_thick=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_thick=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+wave_0_init1=ma = 0;
+wave_0_init2=mx = 0;
+wave_0_init3=my = 0;
+wave_0_per_point1=ma = ma + 3.1415 * above(bass, 1) * 0.01 * bass;
+wave_0_per_point2=ma = ma - 3.1415 * above(treb, 1) * 0.01 * treb;
+wave_0_per_point3=mx = mx + 0.0002 * cos(ma);
+wave_0_per_point4=my = my + 0.0002 * sin(ma);
+wave_0_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_0_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_0_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_0_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_0_per_point9=x = mx;
+wave_0_per_point10=y = my;
+wave_0_per_point11=a = above(bass + mid + treb, 0.8);
+wave_1_init1=ma = 0;
+wave_1_init2=mx = 0;
+wave_1_init3=my = 0;
+wave_1_per_point1=ma = ma + 3.1415 * above(bass, 1) * 0.05 * bass;
+wave_1_per_point2=ma = ma - 3.1415 * above(mid, 1) * 0.05 * mid;
+wave_1_per_point3=mx = mx + 0.0001 * cos(ma);
+wave_1_per_point4=my = my + 0.0001 * sin(ma);
+wave_1_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_1_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_1_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_1_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_1_per_point9=x = mx;
+wave_1_per_point10=y = my;
+wave_1_per_point11=a = above(bass + mid + treb, 0.1);
+wave_2_init1=ma = 0;
+wave_2_init2=mx = 0;
+wave_2_init3=my = 0;
+wave_2_per_point1=ma = ma + 3.1415 * above(mid, 1) * 0.01 * mid;
+wave_2_per_point2=ma = ma - 3.1415 * above(treb, 1) * 0.01 * treb;
+wave_2_per_point3=mx = mx + 0.0004 * cos(ma);
+wave_2_per_point4=my = my + 0.0004 * sin(ma);
+wave_2_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_2_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_2_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_2_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_2_per_point9=x = mx;
+wave_2_per_point10=y = my;
+wave_2_per_point11=a = above(bass + mid + treb, 0.3);
+wave_3_init1=ma = 0;
+wave_3_init2=mx = 0;
+wave_3_init3=my = 0;
+wave_3_per_point1=ma = ma + 3.1415 * above(bass, 0.5) * 0.02 * bass;
+wave_3_per_point2=ma = ma - 3.1415 * above(treb, 0.5) * 0.02 * treb;
+wave_3_per_point3=mx = mx + 0.0008 * cos(ma);
+wave_3_per_point4=my = my + 0.0008 * sin(ma);
+wave_3_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_3_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_3_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_3_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_3_per_point9=x = mx;
+wave_3_per_point10=y = my;
+wave_3_per_point11=a = above(bass + mid + treb, 0.2);
 
 [comp_shader]
 shader_body { 

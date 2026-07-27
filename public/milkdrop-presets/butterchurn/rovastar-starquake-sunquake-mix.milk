@@ -22,15 +22,18 @@ fInnerBorderG=0.650000
 nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=q2 = 0;
+per_frame_1=warp = 0;
+per_frame_2=mv_r = 0.7 + 0.3 * sin(0.5683 * time);
+per_frame_3=mv_b = 0.8 + 0.2 * sin(0.7832 * time);
+per_frame_4=mv_g = 0.82 + 0.15 * sin(1.103 * time);
+per_frame_5=q1 = max(max(bass, bass_att) - 1.15, 0);
+per_frame_6=q2 = max(max(treb, treb_att) - 1.15, 0);
+per_frame_7=rot = abs(0.05 * sin(time)) - 1.3 * q1;
+per_pixel_1=zoom = 0.4 + atan(1.5 * atan(rad) * rad) + 2.5 * q1;
+per_pixel_2=zoomexp = max(10 * (1 + q1 - q2), 0.2);

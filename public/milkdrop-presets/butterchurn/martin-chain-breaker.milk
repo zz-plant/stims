@@ -34,49 +34,108 @@ fMotionVectorsA=0.000000
 b2x=0.600000
 b3x=0.400000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=5.000000
-bAdditive=1.000000
-nInstances=256.000000
-fX=0.260000
-fY=0.200000
-fRad=0.393170
-fTexZoom=0.935500
-fG2=0.000000
-fA2=0.200000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-fSeparation=120.000000
-bSpectrum=1.000000
-bAdditive=1.000000
-fScaling=7.523860
-fSmoothing=0.000000
-fR=0.000000
-fA=0.700000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_sep=120.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_additive=1.000000
+wavecode_0_scaling=7.523860
+wavecode_0_smoothing=0.000000
+wavecode_0_r=0.000000
+wavecode_0_a=0.700000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=5.000000
+shapecode_1_additive=1.000000
+shapecode_1_num_inst=256.000000
+shapecode_1_x=0.260000
+shapecode_1_y=0.200000
+shapecode_1_rad=0.393170
+shapecode_1_tex_zoom=0.935500
+shapecode_1_g2=0.000000
+shapecode_1_a2=0.200000
+shapecode_1_border_g=0.000000
+shapecode_1_border_b=0.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+wave_0_init1=flen = 0;
+wave_0_init2=n = 0;
+wave_0_init3=vol = 0;
+wave_0_init4=chg = 0;
+wave_0_init5=dec = 0;
+wave_0_init6=q1 = 0;
+wave_0_init7=q2 = 0;
+wave_0_per_point1=flen = reg00;
+wave_0_per_point2=n = floor(sample * flen);
+wave_0_per_point3=vol = (value1 + value2) * (1 + 0.1 / (sample + 0.03));
+wave_0_per_point4=chg = min(max(vol - gmegabuf(floor(n)), -1), 1);
+wave_0_per_point5=dec = if(0.00001 < abs(if(0 < chg, 1, 0)), 1 - 0.3 * chg, 1 + 0.2 * chg);
+wave_0_per_point6=chg = q1 - q2;
+wave_0_per_point7=dec = 0.94 - abs(chg) * if(0.00001 < abs(if(0 < chg, 1, 0)), 0.2, 0.1);
+wave_0_per_point8=dec = min(max(dec, 0), 1);
+wave_0_per_point9=gmegabuf(floor(n)) = gmegabuf(floor(n)) * dec + vol * (1 - dec);
+wave_0_per_point10=dec = q2 / 4;
+wave_0_per_point11=dec = max(min(dec, 1), 0.1);
+wave_0_per_point12=gmegabuf(floor(n)) = gmegabuf(floor(n)) * dec + gmegabuf(floor(n + if(0.8 > q2, 1, 0))) * (1 - dec);
+wave_0_per_point13=gmegabuf(floor(n + 10000)) = 0.2 * gmegabuf(floor(n + 10000)) + 0.8 * vol / 3;
+wave_0_per_point14=a = 0;
+wave_0_per_point15=x = sample;
+wave_0_per_point16=y = 0.2 + 0.23 * gmegabuf(floor(n + 0));
+shape_1_init1=n = 0;
+shape_1_init2=w = 0;
+shape_1_init3=high = 0;
+shape_1_init4=q12 = 0;
+shape_1_init5=arg = 0;
+shape_1_init6=q13 = 0;
+shape_1_init7=y0 = 0;
+shape_1_init8=flen = 0;
+shape_1_init9=x0 = 0;
+shape_1_init10=k1 = 0;
+shape_1_init11=q11 = 0;
+shape_1_init12=z0 = 0;
+shape_1_init13=exc = 0;
+shape_1_init14=p2 = 0;
+shape_1_init15=p1 = 0;
+shape_1_init16=a0 = 0;
+shape_1_init17=q2 = 0;
+shape_1_init18=slen = 0;
+shape_1_init19=q14 = 0;
+shape_1_init20=q3 = 0;
+shape_1_init21=q32 = 0;
+shape_1_init22=rad0 = 0;
+shape_1_per_frame1=n = instance;
+shape_1_per_frame2=flen = reg00;
+shape_1_per_frame3=slen = reg00 / 2;
+shape_1_per_frame4=z0 = 10;
+shape_1_per_frame5=y0 = gmegabuf(floor(2000 + n + flen)) / z0;
+shape_1_per_frame6=x0 = gmegabuf(floor(2000 + n)) / z0;
+shape_1_per_frame7=a0 = gmegabuf(floor(n + 10000));
+shape_1_per_frame8=k1 = instance / num_inst - 0.5;
+shape_1_per_frame9=x = 0.5 + x0 + sin(8 * k1 * sin(0.07 * q12)) * sin(0.13 * q11) * q3 * 0.7;
+shape_1_per_frame10=y = 0.5 + q32 * (y0 + sin(8 * k1 * sin(0.1 * q14)) * sin(0.2 * q13) * q3 * 0.7);
+shape_1_per_frame11=arg = q2 / 8;
+shape_1_per_frame12=high = exp(-500 * pow(arg + 0.5 - instance / num_inst, 2));
+shape_1_per_frame13=high = high + exp(-500 * pow(-arg + 0.5 - instance / num_inst, 2));
+shape_1_per_frame14=exc = sqrt(pow(x - 0.5, 2) + pow(y - 0.5, 2));
+shape_1_per_frame15=rad0 = above(z0, 0) * min(0.1, a0 / 60) + 0.005;
+shape_1_per_frame16=rad0 = rad0 * (1 + 2 * exc) * (1 + high);
+shape_1_per_frame17=p1 = 0.5 + sin(q12) / 2;
+shape_1_per_frame18=p2 = 0.5 + sin(1.4 * q13) / 2;
+shape_1_per_frame19=exc = pow(x - p1, 2) + pow(y - p2, 2);
+shape_1_per_frame20=rad = min(rad0 * (1 + 0.004 * q3 / abs(exc)), 1);
+shape_1_per_frame21=a = min(8 * a0 + 0.4, 1);
+shape_1_per_frame22=k1 = 5 * (instance / num_inst) + high;
+shape_1_per_frame23=w = 1 - exp(-treb_att / 2 - 0.5);
+shape_1_per_frame24=g = w + (1 - w) * sin(k1);
+shape_1_per_frame25=r = w + (1 - w) * sin(k1 - 6.28 / 3);
+shape_1_per_frame26=b = w + (1 - w) * sin(k1 - 12.56 / 3);
+shape_1_per_frame27=a2 = a / 4;
+shape_1_per_frame28=g2 = 0 * g;
+shape_1_per_frame29=b2 = 0 * b;
+shape_1_per_frame30=r2 = 0 * r;
 
 [warp_shader]
 shader_body { 

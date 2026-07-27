@@ -25,34 +25,43 @@ fOuterBorderR=0.010000
 fOuterBorderA=1.000000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bSpectrum=1.000000
-bThick=1.000000
-fScaling=0.999900
-fSmoothing=0.010000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_thick=1.000000
+wavecode_0_scaling=0.999900
+wavecode_0_smoothing=0.010000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=dx = 1;
+per_frame_1=warp = 0;
+per_frame_2=decay = 1;
+per_frame_3=zoom = 1;
+per_frame_4=brighten = 1;
+per_frame_5=solarize = 0;
+per_frame_6=invert = 0;
+wave_0_init1=q1 = 0;
+wave_0_init2=q2 = 0;
+wave_0_init3=q3 = 0;
+wave_0_init4=q4 = 0;
+wave_0_init5=q5 = 0;
+wave_0_per_point1=q1 = (value1 + value2) / 2;
+wave_0_per_point2=q1 = if(0.00001 < abs(above(q1, 1)), 1, q1);
+wave_0_per_point3=q2 = log10(9 * q1 + 1);
+wave_0_per_point4=q3 = 0.5;
+wave_0_per_point5=q4 = if(0.00001 < abs(above(q2, q3)), (q2 - q3) / (1 - q3), 0);
+wave_0_per_point6=q5 = log10(9 * q4 + 1);
+wave_0_per_point7=q5 = if(0.00001 < abs(above(q5, 1)), 1, q5);
+wave_0_per_point8=a = q2;
+wave_0_per_point9=r = q5;
+wave_0_per_point10=b = 1;
+wave_0_per_point11=g = 0;
+wave_0_per_point12=x = 0.99;
+wave_0_per_point13=y = 1.6 * sample;
 
 [warp_shader]
 shader_body { 

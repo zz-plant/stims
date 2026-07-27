@@ -25,30 +25,75 @@ fOuterBorderSize=0.500000
 fOuterBorderR=0.010000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=beatb = 0;
+per_frame_init_2=q6 = 0;
+per_frame_init_3=beatt = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=beatthard = 0;
+per_frame_init_6=q5 = 0;
+per_frame_init_7=beatbhard = 0;
+per_frame_init_8=vol_att = 0;
+per_frame_init_9=q4 = 0;
+per_frame_init_10=beatmhard = 0;
+per_frame_init_11=vol = 0;
+per_frame_init_12=beatm = 0;
+per_frame_init_13=q2 = 0;
+per_frame_init_14=q3 = 0;
+per_frame_1=beatb = above(bass, bass_att);
+per_frame_2=beatbhard = if(0.00001 < abs(beatb), bass - 0.9 * bass_att, beatbhard);
+per_frame_3=beatm = above(mid, mid_att);
+per_frame_4=beatmhard = if(0.00001 < abs(beatm), mid - 0.9 * mid_att, beatmhard);
+per_frame_5=beatt = above(treb, treb_att);
+per_frame_6=beatthard = if(0.00001 < abs(beatt), treb - 0.9 * treb_att, beatthard);
+per_frame_7=vol = bass + mid + treb;
+per_frame_8=vol_att = bass_att + mid_att + treb_att;
+per_frame_9=q1 = beatb;
+per_frame_10=q2 = beatbhard;
+per_frame_11=q3 = beatm;
+per_frame_12=q4 = beatmhard;
+per_frame_13=q5 = beatt;
+per_frame_14=q6 = beatthard;
+per_frame_15=decay = 0.999;
+per_frame_16=wrap = 1;
+per_pixel_1=zoom = 1 + 0.01 * sin(6.28 * ang + time * q6);
+per_pixel_2=rot = (q2 - q6) * (rad * q3 - ang * q1) * 0.1;
+wave_0_init1=y1 = 0;
+wave_0_init2=xx = 0;
+wave_0_init3=t1 = 0;
+wave_0_init4=x1 = 0;
+wave_0_init5=tr = 0;
+wave_0_init6=q6 = 0;
+wave_0_init7=bt = 0;
+wave_0_init8=q5 = 0;
+wave_0_init9=mi = 0;
+wave_0_init10=ry = 0;
+wave_0_init11=q4 = 0;
+wave_0_init12=rx = 0;
+wave_0_init13=ba = 0;
+wave_0_init14=x2 = 0;
+wave_0_init15=t2 = 0;
+wave_0_init16=y2 = 0;
+wave_0_init17=q2 = 0;
+wave_0_init18=yy = 0;
+wave_0_per_frame1=ba = bass - 0.9;
+wave_0_per_frame2=tr = treb - 0.9;
+wave_0_per_frame3=mi = mid - 0.9;
+wave_0_per_frame4=xx = xx + 0.01 * ba - 0.001 * tr;
+wave_0_per_frame5=yy = yy + 0.01 * tr - 0.001 * ba;
+wave_0_per_frame6=xx = xx + 0.05 * cos(6.28 * frame + bass - 1) * q2;
+wave_0_per_frame7=yy = yy + 0.05 * sin(3.14 * time * q6) * q4;
+wave_0_per_frame8=xx = if(0.00001 < abs(above(1, xx)), if(0.00001 < abs(below(0, xx)), xx, 1), 0);
+wave_0_per_frame9=yy = if(0.00001 < abs(above(1, yy)), if(0.00001 < abs(below(0, yy)), yy, 1), 0);
+wave_0_per_frame10=t1 = xx;
+wave_0_per_frame11=t2 = yy;
 
 [warp_shader]
 shader_body { 

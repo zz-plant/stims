@@ -34,62 +34,116 @@ fMotionVectorsR=0.013716
 fMotionVectorsG=0.872347
 fMotionVectorsB=0.522466
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=0.746302
-fTexZoom=0.942039
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=0.746302
-fTexZoom=0.942039
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-bThickOutline=1.000000
-fRad=0.364564
-fR=0.000000
-fG2=0.000000
-fA2=1.000000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_thickoutline=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_rad=0.746302
+shapecode_0_tex_zoom=0.942039
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_r2=1.000000
+shapecode_0_b2=1.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_r=0.000000
+shapecode_0_border_g=0.000000
+shapecode_0_border_b=0.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_thickoutline=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=0.746302
+shapecode_1_tex_zoom=0.942039
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_r2=1.000000
+shapecode_1_b2=1.000000
+shapecode_1_a2=1.000000
+shapecode_1_border_r=0.000000
+shapecode_1_border_g=0.000000
+shapecode_1_border_b=0.000000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_thickoutline=1.000000
+shapecode_2_rad=0.364564
+shapecode_2_r=0.000000
+shapecode_2_g2=0.000000
+shapecode_2_a2=1.000000
+shapecode_2_border_r=0.000000
+shapecode_2_border_g=0.000000
+shapecode_2_border_b=0.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=maat = 0;
+per_frame_init_3=val = 0;
+per_frame_init_4=zoomin = 0;
+per_frame_init_5=zval = 0;
+per_frame_init_6=zuse = 0;
+per_frame_init_7=r = 0;
+per_frame_init_8=t = 0;
+per_frame_init_9=decay = 1;
+per_frame_init_10=beatvol = 1.04;
+per_frame_1=zoom = 1;
+per_frame_2=decay = 1;
+per_frame_3=maat = maat + above(bass_att, 1.5);
+per_frame_4=maat = maat * below(maat, 16);
+per_frame_5=val = if(0.00001 < abs(above(maat, 8)), 1, val);
+per_frame_6=val = if(0.00001 < abs(above(val, 0.6)), 0.99 * val, 0.3);
+per_frame_7=echo_zoom = val + 0.7;
+per_frame_8=zoom = 1;
+per_frame_9=ob_size = 0;
+per_frame_10=ob_g = 0;
+per_frame_11=ob_r = 0;
+per_frame_12=ob_b = 0;
+per_frame_13=ob_a = 1;
+per_frame_14=zoomin = mod(0.5 * sin(time) + 0.5, 2);
+per_frame_15=zval = cos(0.3 * time) * zoomin;
+per_frame_16=zuse = 0.05 * zval + 1;
+per_frame_17=monitor = zuse;
+per_frame_18=zoom = zuse;
+per_frame_19=r = above(bass, 1.3) + 0.95 * r;
+per_frame_20=t = below(r, 5);
+per_frame_21=q1 = t * val * 0.5;
+per_pixel_1=dx = (dx - 0.05 * sin(32 * x)) * cos(8 * time) * q1;
+per_pixel_2=dy = (dy - 0.05 * sin(18 * y)) * sin(8 * time) * q1;
+shape_0_init1=val = 0;
+shape_0_per_frame1=ang = 0.5 * sin(time) + 0.5;
+shape_0_per_frame2=val = 3;
+shape_0_per_frame3=a2 = 0.33 * val;
+shape_0_per_frame4=a = 0.33 * val;
+shape_0_per_frame5=rad = 0.4 * cos(0.3 * time) + 0.65;
+shape_0_per_frame6=x = 0.25 * sin(0.25 * time) + 0.5;
+shape_0_per_frame7=y = 0.25 * cos(0.45 * time) + 0.5;
+shape_1_init1=val = 0;
+shape_1_per_frame1=ang = 0.5 * cos(0.3 * time) + 0.5;
+shape_1_per_frame2=val = 3;
+shape_1_per_frame3=a2 = 0.33 * val;
+shape_1_per_frame4=a = 0.33 * val;
+shape_1_per_frame5=rad = 0.4 * sin(0.3 * time) + 0.65;
+shape_1_per_frame6=x = 0.25 * cos(0.25 * time) + 0.5;
+shape_1_per_frame7=y = 0.25 * sin(0.45 * time) + 0.5;
+shape_2_init1=h2 = 0;
+shape_2_init2=vr = 0;
+shape_2_init3=vg = 0;
+shape_2_init4=vb = 0;
+shape_2_init5=dist = 0;
+shape_2_init6=maat = 0;
+shape_2_per_frame1=h2 = h2 + 0.8 * above(treb, 1.32) * 0.9;
+shape_2_per_frame2=vr = 0.5 * sin(0.8 * h2) + 0.5;
+shape_2_per_frame3=vg = 0.5 * sin(0.5 * h2) + 0.5;
+shape_2_per_frame4=vb = 0.5 * sin(0.1 * h2) + 0.5;
+shape_2_per_frame5=g = vg;
+shape_2_per_frame6=r = vr;
+shape_2_per_frame7=b = vb;
+shape_2_per_frame8=g2 = g;
+shape_2_per_frame9=r2 = r;
+shape_2_per_frame10=b2 = b;
+shape_2_per_frame11=dist = 0.01 * mod(frame, 100);
+shape_2_per_frame12=maat = maat + above(bass_att, 1.5);
+shape_2_per_frame13=maat = maat * below(maat, 16);
+shape_2_per_frame14=x = if(0.00001 < abs(below(maat, 8)), if(0.00001 < abs(below(maat, 4)), dist, 1 - dist), x);
+shape_2_per_frame15=y = if(0.00001 < abs(above(maat, 8)), if(0.00001 < abs(above(maat, 4)), dist, 1 - dist), y);

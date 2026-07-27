@@ -1,5 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  type ButterchurnPresetEquations,
+  transpileButterchurnPreset,
+} from './butterchurn-eel-transpiler.ts';
 
 const BUTTERCHURN_PACKAGE = 'butterchurn-presets';
 const PRESETS_DIR = path.join(
@@ -99,49 +103,6 @@ const MILKDROP_FIELD_MAP: Record<string, string> = {
   texture_wrap: 'bTexWrap',
 };
 
-const WAVE_FIELD_MAP: Record<string, string> = {
-  enabled: 'bEnabled',
-  samples: 'nSamples',
-  sep: 'fSeparation',
-  scaling: 'fScaling',
-  smoothing: 'fSmoothing',
-  r: 'fR',
-  g: 'fG',
-  b: 'fB',
-  a: 'fA',
-  spectrum: 'bSpectrum',
-  usedots: 'bUseDots',
-  thick: 'bThick',
-  additive: 'bAdditive',
-};
-
-const SHAPE_FIELD_MAP: Record<string, string> = {
-  enabled: 'bEnabled',
-  sides: 'nSides',
-  additive: 'bAdditive',
-  thickoutline: 'bThickOutline',
-  textured: 'bTextured',
-  num_inst: 'nInstances',
-  tex_zoom: 'fTexZoom',
-  tex_ang: 'fTexAng',
-  x: 'fX',
-  y: 'fY',
-  rad: 'fRad',
-  ang: 'fAng',
-  r: 'fR',
-  g: 'fG',
-  b: 'fB',
-  a: 'fA',
-  r2: 'fR2',
-  g2: 'fG2',
-  b2: 'fB2',
-  a2: 'fA2',
-  border_r: 'fBorderR',
-  border_g: 'fBorderG',
-  border_b: 'fBorderB',
-  border_a: 'fBorderA',
-};
-
 function slugify(name: string): string {
   return (
     name
@@ -186,15 +147,15 @@ function getPresetVersion(baseVals: Record<string, number>): number {
 
 type PresetShape = {
   baseVals: Record<string, number>;
-  init_eqs_eel?: string;
-  frame_eqs_eel?: string;
+  init_eqs_str?: string;
+  frame_eqs_str?: string;
 };
 
 type PresetWave = {
   baseVals: Record<string, number>;
-  init_eqs_eel?: string;
-  frame_eqs_eel?: string;
-  point_eqs_eel?: string;
+  init_eqs_str?: string;
+  frame_eqs_str?: string;
+  point_eqs_str?: string;
 };
 
 type ButterchurnPreset = {
@@ -202,69 +163,81 @@ type ButterchurnPreset = {
   baseVals: Record<string, number>;
   shapes: PresetShape[];
   waves: PresetWave[];
-  init_eqs_eel?: string;
-  frame_eqs_eel?: string;
-  pixel_eqs_eel?: string;
+  init_eqs_str?: string;
+  frame_eqs_str?: string;
+  pixel_eqs_str?: string;
   warp?: string;
   comp?: string;
 };
 
-function presetToMilkContent(preset: ButterchurnPreset): string {
+/**
+ * `wavecode_N_*` and `shapecode_N_*` entries keep MilkDrop's unprefixed field
+ * names (`enabled`, `sides`, `num_inst`), unlike the Hungarian-notation keys
+ * used by the top-level preset section.
+ */
+function serializePrefixedBaseVals(
+  baseVals: Record<string, number>,
+  prefix: string,
+): string[] {
+  const lines: string[] = [];
+  for (const [key, val] of Object.entries(baseVals)) {
+    lines.push(`${prefix}${key}=${formatNumber(val)}`);
+  }
+  return lines;
+}
+
+function serializeEquations(prefix: string, statements: string[]): string[] {
+  return statements.map(
+    (statement, index) => `${prefix}${index + 1}=${statement}`,
+  );
+}
+
+function presetToMilkContent(preset: ButterchurnPreset): {
+  content: string;
+  equations: ButterchurnPresetEquations;
+} {
+  const equations = transpileButterchurnPreset(preset);
   const parts: string[] = [];
 
-  // Main preset section
+  // MilkDrop stores everything in one `[preset00]` section: base values,
+  // per-wave and per-shape code blocks, then the equation programs.
   parts.push('[preset00]');
   parts.push(serializeBaseVals(preset.baseVals, MILKDROP_FIELD_MAP));
-  parts.push('');
 
-  // Shape sections
-  for (let i = 0; i < preset.shapes.length; i++) {
-    const shape = preset.shapes[i];
-    const hasContent =
-      Object.keys(shape.baseVals).length > 0 ||
-      (shape.init_eqs_eel?.length ?? 0) > 0 ||
-      (shape.frame_eqs_eel?.length ?? 0) > 0;
-
-    if (!hasContent) continue;
-
-    parts.push(`[shape00_${i}]`);
-    parts.push(serializeBaseVals(shape.baseVals, SHAPE_FIELD_MAP));
-    parts.push('');
-  }
-
-  // Wave sections
   for (let i = 0; i < preset.waves.length; i++) {
     const wave = preset.waves[i];
-    const hasContent =
-      Object.keys(wave.baseVals).length > 0 ||
-      (wave.init_eqs_eel?.length ?? 0) > 0 ||
-      (wave.frame_eqs_eel?.length ?? 0) > 0;
-
-    if (!hasContent) continue;
-
-    parts.push(`[wave00_${i}]`);
-    parts.push(serializeBaseVals(wave.baseVals, WAVE_FIELD_MAP));
-    parts.push('');
+    if (!wave) continue;
+    parts.push(...serializePrefixedBaseVals(wave.baseVals, `wavecode_${i}_`));
   }
 
-  // EEL equations
-  if (preset.init_eqs_eel?.trim()) {
-    parts.push('[init_eqs]');
-    parts.push(preset.init_eqs_eel.trim());
-    parts.push('');
+  for (let i = 0; i < preset.shapes.length; i++) {
+    const shape = preset.shapes[i];
+    if (!shape) continue;
+    parts.push(...serializePrefixedBaseVals(shape.baseVals, `shapecode_${i}_`));
   }
 
-  if (preset.frame_eqs_eel?.trim()) {
-    parts.push('[frame_eqs]');
-    parts.push(preset.frame_eqs_eel.trim());
-    parts.push('');
+  parts.push(...serializeEquations('per_frame_init_', equations.init));
+  parts.push(...serializeEquations('per_frame_', equations.perFrame));
+  parts.push(...serializeEquations('per_pixel_', equations.perPixel));
+
+  for (const wave of equations.waves) {
+    parts.push(...serializeEquations(`wave_${wave.index}_init`, wave.init));
+    parts.push(
+      ...serializeEquations(`wave_${wave.index}_per_frame`, wave.perFrame),
+    );
+    parts.push(
+      ...serializeEquations(`wave_${wave.index}_per_point`, wave.perPoint),
+    );
   }
 
-  if (preset.pixel_eqs_eel?.trim()) {
-    parts.push('[pixel_eqs]');
-    parts.push(preset.pixel_eqs_eel.trim());
-    parts.push('');
+  for (const shape of equations.shapes) {
+    parts.push(...serializeEquations(`shape_${shape.index}_init`, shape.init));
+    parts.push(
+      ...serializeEquations(`shape_${shape.index}_per_frame`, shape.perFrame),
+    );
   }
+
+  parts.push('');
 
   // Shader code
   if (preset.warp?.trim()) {
@@ -279,7 +252,7 @@ function presetToMilkContent(preset: ButterchurnPreset): string {
     parts.push('');
   }
 
-  return `${parts.join('\n').trim()}\n`;
+  return { content: `${parts.join('\n').trim()}\n`, equations };
 }
 
 function loadExistingCatalog(): {
@@ -357,8 +330,17 @@ async function main() {
     };
   }> = [];
 
+  // `--rewrite` regenerates `.milk` files for presets already in the catalog.
+  // Needed whenever the emitted format changes, since the default import path
+  // skips ids it has already seen.
+  const rewriteExisting = process.argv.includes('--rewrite');
+
   let importedCount = 0;
   let skippedCount = 0;
+  let rewrittenCount = 0;
+  let equationStatements = 0;
+  const unsupportedBlocks: { preset: string; scope: string; reason: string }[] =
+    [];
 
   // Determine next order number
   const existingIds = new Set(Object.keys(existingCatalog.presets));
@@ -383,8 +365,9 @@ async function main() {
 
     const title = file.replace(/\.json$/, '');
     const id = slugify(title);
+    const alreadyImported = existingIds.has(id);
 
-    if (existingIds.has(id)) {
+    if (alreadyImported && !rewriteExisting) {
       skippedCount++;
       continue;
     }
@@ -396,7 +379,7 @@ async function main() {
 
     const author = extractAuthor(title);
 
-    const milkContent = presetToMilkContent(preset);
+    const { content: milkContent, equations } = presetToMilkContent(preset);
     const milkFilename = `${id}.milk`;
     const milkPath = path.join(OUTPUT_DIR, milkFilename);
     const filePathRelative = `/milkdrop-presets/butterchurn/${milkFilename}`;
@@ -405,6 +388,31 @@ async function main() {
     const fidelityClass = version >= 2 ? 'near-exact' : 'partial';
 
     fs.writeFileSync(milkPath, milkContent, 'utf-8');
+
+    equationStatements +=
+      equations.init.length +
+      equations.perFrame.length +
+      equations.perPixel.length +
+      equations.waves.reduce(
+        (total, wave) =>
+          total +
+          wave.init.length +
+          wave.perFrame.length +
+          wave.perPoint.length,
+        0,
+      ) +
+      equations.shapes.reduce(
+        (total, shape) => total + shape.init.length + shape.perFrame.length,
+        0,
+      );
+    for (const entry of equations.unsupported) {
+      unsupportedBlocks.push({ preset: id, ...entry });
+    }
+
+    if (alreadyImported) {
+      rewrittenCount++;
+      continue;
+    }
 
     const entry = {
       id,
@@ -458,8 +466,26 @@ async function main() {
   }
 
   console.log(
-    `\nImported ${importedCount} presets (${skippedCount} skipped, ${newEntries.length} new to catalog)`,
+    `\nImported ${importedCount} presets (${rewrittenCount} rewritten, ${skippedCount} skipped, ${newEntries.length} new to catalog)`,
   );
+  console.log(`  equations   → ${equationStatements} EEL statements emitted`);
+  if (unsupportedBlocks.length > 0) {
+    const presetsAffected = new Set(
+      unsupportedBlocks.map((entry) => entry.preset),
+    );
+    console.log(
+      `  untranslated→ ${unsupportedBlocks.length} equation blocks across ${presetsAffected.size} presets`,
+    );
+    const reasons = new Map<string, number>();
+    for (const entry of unsupportedBlocks) {
+      reasons.set(entry.reason, (reasons.get(entry.reason) ?? 0) + 1);
+    }
+    for (const [reason, count] of [...reasons.entries()].sort(
+      (a, b) => b[1] - a[1],
+    )) {
+      console.log(`      ${count}x ${reason}`);
+    }
+  }
   console.log(`  .milk files → ${OUTPUT_DIR}`);
   console.log(`  catalog     → ${CATALOG_PATH}`);
 }

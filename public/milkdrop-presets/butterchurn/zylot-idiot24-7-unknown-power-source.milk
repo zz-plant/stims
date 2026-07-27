@@ -29,15 +29,12 @@ nMotionVectorsLoop=0.550000
 fMotionVectorsR=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=ob_r = randint(10) * sin(above(bass, bass_att));
+per_frame_2=ob_g = randint(10) * sin(above(mid, mid_att));
+per_frame_3=ob_b = randint(10) * sin(above(treb, treb_att));
+per_frame_4=zoom = 0.9 + 0.05 * bass;
+per_pixel_1=rot = rot * atan2(-rad, sin(20 * ang - 20 * ang * ang * 10 * atan2(above(bass, bass_att), above(treb, treb_att)))) * sin(rad * ang * above(bass, bass_att)) * rad - ang;

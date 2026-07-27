@@ -34,42 +34,236 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=100.000000
-bThickOutline=1.000000
-fX=0.140000
-fRad=0.123235
-fAng=3.141593
-fTexZoom=3.241264
-fG=1.000000
-fB=1.000000
-fR2=1.000000
-fB2=1.000000
-fA2=1.000000
-fBorderR=0.000000
-fBorderG=0.000000
-fBorderB=0.000000
-fBorderA=1.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=100.000000
+shapecode_2_thickoutline=1.000000
+shapecode_2_x=0.140000
+shapecode_2_rad=0.123235
+shapecode_2_ang=3.141593
+shapecode_2_tex_zoom=3.241264
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_r2=1.000000
+shapecode_2_b2=1.000000
+shapecode_2_a2=1.000000
+shapecode_2_border_r=0.000000
+shapecode_2_border_g=0.000000
+shapecode_2_border_b=0.000000
+shapecode_2_border_a=1.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=v = 0;
+per_frame_init_2=d = 0;
+per_frame_init_3=q3 = 0;
+per_frame_init_4=q2 = 0;
+per_frame_init_5=mm = 0;
+per_frame_init_6=mt = 0;
+per_frame_init_7=q1 = 0;
+per_frame_1=wave_a = 0;
+per_frame_2=decay = 1;
+per_frame_3=warp = 0;
+per_frame_4=dx = 0;
+per_frame_5=dy = 0;
+per_frame_6=sx = 1;
+per_frame_7=sy = 1;
+per_frame_8=mm = 5 / mid;
+per_frame_9=mt = mt + pow(treb, 3);
+per_frame_10=q1 = mm;
+per_frame_11=q2 = 0.0001 * mm;
+per_frame_12=q3 = 0.03 * mt;
+per_pixel_1=v = v + 1;
+per_pixel_2=v = mod(v, 2);
+per_pixel_3=d = equal(v, 0);
+per_pixel_4=rot = 0.05 * sin(q3);
+per_pixel_5=cx = 0.5 * sin(255 * x * q2) + 0.5;
+per_pixel_6=cy = 0.5 * cos(255 * y * q2) + 0.5;
+shape_2_init1=p = 0;
+shape_2_init2=p = 0;
+shape_2_init3=slowp = 0;
+shape_2_init4=slowp = 0;
+shape_2_init5=p = 0;
+shape_2_init6=p = 0;
+shape_2_init7=p = 0;
+shape_2_init8=slowp = 0;
+shape_2_init9=slowp = 0;
+shape_2_init10=slowp = 0;
+shape_2_init11=my = 0;
+shape_2_init12=my = 0;
+shape_2_init13=turn = 0;
+shape_2_init14=my = 0;
+shape_2_init15=turn = 0;
+shape_2_init16=p = 0;
+shape_2_init17=p = 0;
+shape_2_init18=turn = 0;
+shape_2_init19=p = 0;
+shape_2_init20=p = 0;
+shape_2_init21=h = 0;
+shape_2_init22=slowp = 0;
+shape_2_init23=s = 0;
+shape_2_init24=l = 0;
+shape_2_init25=cc = 0;
+shape_2_init26=h = 0;
+shape_2_init27=cc = 0;
+shape_2_init28=cc = 0;
+shape_2_init29=cc = 0;
+shape_2_init30=cc = 0;
+shape_2_init31=cc = 0;
+shape_2_init32=cc = 0;
+shape_2_init33=zf = 0;
+shape_2_init34=h = 0;
+shape_2_init35=cc = 0;
+shape_2_init36=zm = 0;
+shape_2_init37=l = 0;
+shape_2_init38=zp = 0;
+shape_2_init39=l = 0;
+shape_2_init40=s = 0;
+shape_2_init41=zq = 0;
+shape_2_init42=l = 0;
+shape_2_init43=s = 0;
+shape_2_init44=zf = 0;
+shape_2_init45=zt = 0;
+shape_2_init46=l = 0;
+shape_2_init47=s = 0;
+shape_2_init48=zf = 0;
+shape_2_init49=monitor = 0;
+shape_2_init50=zq = 0;
+shape_2_init51=rr = 0;
+shape_2_init52=cc = 0;
+shape_2_init53=zm = 0;
+shape_2_init54=cc = 0;
+shape_2_init55=zq = 0;
+shape_2_init56=cc = 0;
+shape_2_init57=zp = 0;
+shape_2_init58=cc = 0;
+shape_2_init59=zp = 0;
+shape_2_init60=cc = 0;
+shape_2_init61=zt = 0;
+shape_2_init62=zm = 0;
+shape_2_init63=gg = 0;
+shape_2_init64=cc = 0;
+shape_2_init65=zt = 0;
+shape_2_init66=cc = 0;
+shape_2_init67=zm = 0;
+shape_2_init68=cc = 0;
+shape_2_init69=zm = 0;
+shape_2_init70=cc = 0;
+shape_2_init71=zq = 0;
+shape_2_init72=cc = 0;
+shape_2_init73=zp = 0;
+shape_2_init74=zp = 0;
+shape_2_init75=bb = 0;
+shape_2_init76=cc = 0;
+shape_2_init77=zp = 0;
+shape_2_init78=cc = 0;
+shape_2_init79=zp = 0;
+shape_2_init80=cc = 0;
+shape_2_init81=zt = 0;
+shape_2_init82=cc = 0;
+shape_2_init83=zm = 0;
+shape_2_init84=cc = 0;
+shape_2_init85=zm = 0;
+shape_2_init86=zq = 0;
+shape_2_init87=rr = 0;
+shape_2_init88=s = 0;
+shape_2_init89=l = 0;
+shape_2_init90=rr = 0;
+shape_2_init91=gg = 0;
+shape_2_init92=s = 0;
+shape_2_init93=l = 0;
+shape_2_init94=gg = 0;
+shape_2_init95=bb = 0;
+shape_2_init96=s = 0;
+shape_2_init97=l = 0;
+shape_2_init98=bb = 0;
+shape_2_init99=rr = 0;
+shape_2_init100=gg = 0;
+shape_2_init101=bb = 0;
+shape_2_init102=h = 0;
+shape_2_init103=slowp = 0;
+shape_2_init104=l = 0;
+shape_2_init105=s = 0;
+shape_2_init106=cc = 0;
+shape_2_init107=h = 0;
+shape_2_init108=cc = 0;
+shape_2_init109=cc = 0;
+shape_2_init110=cc = 0;
+shape_2_init111=cc = 0;
+shape_2_init112=cc = 0;
+shape_2_init113=cc = 0;
+shape_2_init114=zf = 0;
+shape_2_init115=h = 0;
+shape_2_init116=cc = 0;
+shape_2_init117=zm = 0;
+shape_2_init118=l = 0;
+shape_2_init119=zp = 0;
+shape_2_init120=l = 0;
+shape_2_init121=s = 0;
+shape_2_init122=zq = 0;
+shape_2_init123=l = 0;
+shape_2_init124=s = 0;
+shape_2_init125=zf = 0;
+shape_2_init126=zt = 0;
+shape_2_init127=l = 0;
+shape_2_init128=s = 0;
+shape_2_init129=zf = 0;
+shape_2_init130=monitor = 0;
+shape_2_init131=zq = 0;
+shape_2_init132=rr = 0;
+shape_2_init133=cc = 0;
+shape_2_init134=zm = 0;
+shape_2_init135=cc = 0;
+shape_2_init136=zq = 0;
+shape_2_init137=cc = 0;
+shape_2_init138=zp = 0;
+shape_2_init139=cc = 0;
+shape_2_init140=zp = 0;
+shape_2_init141=cc = 0;
+shape_2_init142=zt = 0;
+shape_2_init143=zm = 0;
+shape_2_init144=gg = 0;
+shape_2_init145=cc = 0;
+shape_2_init146=zt = 0;
+shape_2_init147=cc = 0;
+shape_2_init148=zm = 0;
+shape_2_init149=cc = 0;
+shape_2_init150=zm = 0;
+shape_2_init151=cc = 0;
+shape_2_init152=zq = 0;
+shape_2_init153=cc = 0;
+shape_2_init154=zp = 0;
+shape_2_init155=zp = 0;
+shape_2_init156=bb = 0;
+shape_2_init157=cc = 0;
+shape_2_init158=zp = 0;
+shape_2_init159=cc = 0;
+shape_2_init160=zp = 0;
+shape_2_init161=cc = 0;
+shape_2_init162=zt = 0;
+shape_2_init163=cc = 0;
+shape_2_init164=zm = 0;
+shape_2_init165=cc = 0;
+shape_2_init166=zm = 0;
+shape_2_init167=zq = 0;
+shape_2_init168=rr = 0;
+shape_2_init169=s = 0;
+shape_2_init170=l = 0;
+shape_2_init171=rr = 0;
+shape_2_init172=gg = 0;
+shape_2_init173=s = 0;
+shape_2_init174=l = 0;
+shape_2_init175=gg = 0;
+shape_2_init176=bb = 0;
+shape_2_init177=s = 0;
+shape_2_init178=l = 0;
+shape_2_init179=bb = 0;
+shape_2_init180=rr = 0;
+shape_2_init181=gg = 0;
+shape_2_init182=bb = 0;
+shape_2_init183=rr = 0;
+shape_2_init184=gg = 0;
+shape_2_init185=bb = 0;

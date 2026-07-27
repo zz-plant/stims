@@ -37,30 +37,37 @@ fMotionVectorsR=0.350000
 fMotionVectorsG=0.350000
 fMotionVectorsB=0.350000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=redsine = 0;
+per_frame_init_2=bluesine = 0;
+per_frame_init_3=greenif = 0;
+per_frame_init_4=q5 = 0;
+per_frame_init_5=q4 = 0;
+per_frame_init_6=redif = 0;
+per_frame_init_7=blueif = 0;
+per_frame_init_8=vol = 0;
+per_frame_init_9=greensine = 0;
+per_frame_init_10=decay = 0.1;
+per_frame_1=sx = 1;
+per_frame_2=sy = 1;
+per_frame_3=vol = 0.3333 * (bass + mid + treb_att);
+per_frame_4=redsine = 0.5 + 0.15 * bass * sin(3 * time);
+per_frame_5=greensine = 0.5 + 0.15 * mid * sin(2 * time);
+per_frame_6=bluesine = 0.5 + 0.15 * treb * sin(time);
+per_frame_7=redif = if(0.00001 < abs(above(bass, 1.2)), redsine, if(0.00001 < abs(above(redif, 0.95)), 0, 0.85 * redif));
+per_frame_8=greenif = if(0.00001 < abs(above(mid, 1.2)), greensine, if(0.00001 < abs(above(greenif, 0.95)), 0, 0.85 * greenif));
+per_frame_9=blueif = if(0.00001 < abs(above(treb, 1.2)), bluesine, if(0.00001 < abs(above(blueif, 0.95)), 0, 0.85 * blueif));
+per_frame_10=q4 = 0.5 + 0.05 * sin(0.52 * time) * cos(0.39 * time);
+per_frame_11=q5 = 0.5 + 0.05 * sin(0.44 * time) * cos(0.71 * time);
+per_pixel_1=sy = sy + 0.1 * cos(sin(40 * y + time) - 0.5 * sin(20 * x + time) * treb_att);
+per_pixel_2=sx = sx + 0.1 * sin(cos(40 * x + time) + 0.5 * cos(20 * y + time) * treb_att);
 
 [warp_shader]
 shader_body { 

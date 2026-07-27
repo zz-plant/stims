@@ -24,15 +24,14 @@ fWaveX=0.489000
 fOuterBorderSize=0.500000
 fOuterBorderR=0.010000
 fInnerBorderSize=0.260000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=colour = 0;
+per_frame_1=colour = sin(1.2 * time) / 2 + 0.5;
+per_frame_2=wave_g = 1 - colour;
+per_frame_3=wave_b = 0.9 + sin(time / 3) / 10;
+per_frame_4=wave_r = colour;
+per_pixel_1=sy = if(0.00001 < abs(below(y, 0.47)), if(0.00001 < abs(above(y, 0.03)), pow(log(ang * time), 3) / 4, -4), 1.1);
+per_pixel_2=zoom = 1 + sin(rad) / 10;

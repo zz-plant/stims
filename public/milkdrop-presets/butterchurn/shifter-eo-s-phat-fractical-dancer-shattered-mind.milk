@@ -35,45 +35,115 @@ nMotionVectorsLoop=1.000000
 fMotionVectorsG=0.910000
 fMotionVectorsB=0.710000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=100.000000
-fRad=0.491382
-fR=0.000000
-fG=1.000000
-fB=1.000000
-fG2=0.000000
-fB2=0.100000
-fA2=0.060000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=24.000000
-fRad=0.164463
-fTexZoom=0.136686
-fG=1.000000
-fB=1.000000
-fA=0.600000
-fR2=1.000000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=100.000000
+shapecode_0_rad=0.491382
+shapecode_0_r=0.000000
+shapecode_0_g=1.000000
+shapecode_0_b=1.000000
+shapecode_0_g2=0.000000
+shapecode_0_b2=0.100000
+shapecode_0_a2=0.060000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=24.000000
+shapecode_2_rad=0.164463
+shapecode_2_tex_zoom=0.136686
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_a=0.600000
+shapecode_2_r2=1.000000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=tic = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=mid_avg = 0;
+per_frame_init_4=tin = 0;
+per_frame_init_5=bass_avg = 0;
+per_frame_init_6=vav = 0;
+per_frame_init_7=q4 = 0;
+per_frame_init_8=rd = 0;
+per_frame_init_9=mt = 0;
+per_frame_init_10=ra = 0;
+per_frame_init_11=treb_avg = 0;
+per_frame_init_12=q2 = 0;
+per_frame_init_13=q3 = 0;
+per_frame_init_14=q7 = 0;
+per_frame_init_15=rb = 0;
+per_frame_init_16=q8 = 0;
+per_frame_init_17=zoom = 1;
+per_frame_init_18=xpos = 0;
+per_frame_init_19=ypos = 0;
+per_frame_1=decay = 1;
+per_frame_2=warp = 0;
+per_frame_3=tic = min(time - tin, 0.1);
+per_frame_4=tin = time;
+per_frame_5=ra = 10;
+per_frame_6=treb_avg = tic * (treb_avg * (1 / tic - ra) + ra * treb);
+per_frame_7=mid_avg = tic * (mid_avg * (1 / tic - ra) + ra * mid);
+per_frame_8=bass_avg = tic * (bass_avg * (1 / tic - ra) + ra * bass);
+per_frame_9=rb = 1;
+per_frame_10=vav = tic * (vav * (1 / tic - rb) + rb * (bass + treb + mid) * 0.33333);
+per_frame_11=q1 = treb_avg;
+per_frame_12=q2 = mid_avg;
+per_frame_13=q3 = bass_avg;
+per_frame_14=q4 = vav;
+per_frame_15=mt = (mt + tic * vav * 100) * below(mt, 10000);
+per_frame_16=q7 = 0.1 * sin(0.02 * mt);
+per_frame_17=q8 = 0.1 * sin(0.01 * mt);
+per_frame_18=dx = 0.07 * sin(0.1 * mt);
+per_frame_19=dy = 0.07 * cos(0.069 * mt);
+per_frame_20=monitor = mt;
+per_pixel_1=rd = sqrt(sqr(3 * (x - 0.5 - q7)) + sqr(2 * (y - 0.5 + q8)));
+per_pixel_2=zoom = rd * rd / 2.5;
+wave_0_init1=dc = 0;
+wave_0_init2=tic = 0;
+wave_0_init3=t1 = 0;
+wave_0_init4=tir = 0;
+wave_0_init5=mixc = 0;
+wave_0_init6=it = 0;
+wave_0_init7=q1 = 0;
+wave_0_init8=t3 = 0;
+wave_0_init9=my = 0;
+wave_0_init10=ly = 0;
+wave_0_init11=mixa = 0;
+wave_0_init12=mx = 0;
+wave_0_init13=t2 = 0;
+wave_0_init14=mixb = 0;
+wave_0_init15=lx = 0;
+wave_0_init16=q2 = 0;
+wave_0_init17=q3 = 0;
+wave_0_per_frame1=tic = time - tir;
+wave_0_per_frame2=tir = time;
+wave_0_per_frame3=mixa = (mixa + q1 * tic) * below(mixa, 10000);
+wave_0_per_frame4=t1 = mixa - floor(mixa);
+wave_0_per_frame5=mixb = (mixb + q2 * tic) * below(mixb, 10000);
+wave_0_per_frame6=t2 = mixb - floor(mixb);
+wave_0_per_frame7=mixc = (mixc + q3 * tic) * below(mixc, 10000);
+wave_0_per_frame8=t3 = mixc - floor(mixc);
+wave_0_per_point1=it = (it + 1) * above(sample, 0);
+wave_0_per_point2=dc = (dc + equal(mod(it, 48), 0)) * above(sample, 0);
+wave_0_per_point3=lx = t1 * equal(dc, 0) + (1 - t3) * (equal(dc, 2) + equal(dc, 1)) + t2 * equal(dc, 3);
+wave_0_per_point4=ly = 0.975 * (equal(dc, 1) + equal(dc, 3));
+wave_0_per_point5=mx = -0.1 * equal(mod(it + 6, 6), 0) + -0.1 * equal(mod(it + 1, 6), 0) + 0.1 * equal(mod(it + 4, 6), 0) + 0.1 * equal(mod(it + 3, 6), 0);
+wave_0_per_point6=my = (my + 0.01 * equal(mod(it + 3, 6), 0) + 0.01 * equal(mod(it, 6), 0)) * (above(sample, 0) - equal(mod(0.5 * it, 48), 0));
+wave_0_per_point7=x = if(0.00001 < abs(below(dc, 2)), lx + 0.2 * mx, ly + 0.1 * my);
+wave_0_per_point8=y = if(0.00001 < abs(below(dc, 2)), ly + 0.1 * my, lx + 0.2 * mx);
+wave_0_per_point9=b = 1;
+wave_0_per_point10=r = 0.8 * equal(mx, 0);
+wave_0_per_point11=g = 1 * equal(mx, 0);
+wave_0_per_point12=a = equal(mx, 0) * below(dc, 4);
+shape_0_init1=q7 = 0;
+shape_0_init2=q8 = 0;
+shape_0_per_frame1=x = 0.5 + q7;
+shape_0_per_frame2=y = 0.5 + q8;
+shape_2_init1=q7 = 0;
+shape_2_init2=q8 = 0;
+shape_2_per_frame1=x = 0.5 + q7;
+shape_2_per_frame2=y = 0.5 + q8;

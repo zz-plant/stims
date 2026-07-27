@@ -24,40 +24,55 @@ fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-nSides=24.000000
-bAdditive=1.000000
-nInstances=8.000000
-fX=0.480000
-fRad=0.026100
-fTexZoom=4.360770
-fR2=1.000000
-fG2=0.000000
-fA2=1.000000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_sides=24.000000
+shapecode_0_additive=1.000000
+shapecode_0_num_inst=8.000000
+shapecode_0_x=0.480000
+shapecode_0_rad=0.026100
+shapecode_0_tex_zoom=4.360770
+shapecode_0_r2=1.000000
+shapecode_0_g2=0.000000
+shapecode_0_a2=1.000000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q25 = 0;
+per_frame_init_2=q29 = 0;
+per_frame_init_3=q31 = 0;
+per_frame_init_4=q23 = 0;
+per_frame_init_5=q24 = 0;
+per_frame_init_6=q26 = 0;
+per_frame_init_7=q27 = 0;
+per_frame_init_8=q32 = 0;
+per_frame_init_9=q28 = 0;
+per_frame_init_10=q30 = 0;
+per_frame_1=zoom = 0.935 * zoom + 0.04 * (0.6 * sin(0.339 * bass_att) + 0.1 * sin(0.276 * bass_att));
+per_frame_2=rot = rot + 0.04 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_3=cx = cx + 0.003 * (0.6 * sin(0.471 * treb_att) + 0.4 * sin(0.297 * treb_att));
+per_frame_4=cy = cy + 0.003 * (0.6 * sin(0.379 * mid_att) + 0.4 * sin(0.351 * mid_att));
+per_frame_5=dx = dx + 0.003 * (0.6 * sin(0.234 * time) + 0.4 * sin(0.277 * time));
+per_frame_6=rot = rot + 0.02 * (sin(2.134 * time) + sin(1.7134 * time) + sin(2.834 * time));
+per_frame_7=dx = dx + 0.01 * (sin(1.134 * time) + sin(0.7134 * time) + sin(2.334 * time));
+per_frame_8=dy = dy + 0.01 * (sin(1.8834 * time) + sin(1.0144 * time) + sin(1.334 * time));
+per_frame_9=q23 = randint(1000) / 1000;
+per_frame_10=q24 = randint(1000) / 1000;
+per_frame_11=q25 = 6.28 * (randint(1000) / 1000);
+per_frame_12=q26 = q25 - 3.14;
+per_frame_13=q27 = randint(1000) / 12000 + 0.1;
+per_frame_14=q28 = randint(1000) / 1000;
+per_frame_15=q29 = randint(1000) / 1000;
+per_frame_16=q30 = 6.28 * (randint(1000) / 1000);
+per_frame_17=q31 = q30 - 3.14;
+per_frame_18=q32 = randint(1000) / 14000 + 0.1;
+shape_0_per_frame1=x = randint(1000) / 1000;
+shape_0_per_frame2=y = randint(1000) / 1000;
+shape_0_per_frame3=ang = randint(150) / 100;
 
 [warp_shader]
 shader_body { 

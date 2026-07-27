@@ -28,30 +28,57 @@ fMotionVectorsG=0.078000
 fMotionVectorsB=0.942000
 fMotionVectorsA=0.000000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=d = 0;
+per_frame_init_2=res = 0;
+per_frame_init_3=q6 = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=q5 = 0;
+per_frame_init_6=c_x = 0;
+per_frame_init_7=c_y = 0;
+per_frame_init_8=v = 0;
+per_frame_init_9=diff = 0;
+per_frame_init_10=q4 = 0;
+per_frame_init_11=r = 0;
+per_frame_init_12=beat = 0;
+per_frame_init_13=vol = 0;
+per_frame_init_14=q2 = 0;
+per_frame_init_15=q3 = 0;
+per_frame_init_16=m = 0;
+per_frame_init_17=c_x = 0.5;
+per_frame_init_18=c_y = 0.5;
+per_frame_1=q1 = aspectx;
+per_frame_2=q2 = aspecty;
+per_frame_3=rot = 0;
+per_frame_4=zoom = 1;
+per_frame_5=warp = 0;
+per_frame_6=vol = 8 * bass + 5 * mid + 3 * treb;
+per_frame_7=m = 0.96 * m + 0.06 * vol;
+per_frame_8=monitor = vol - m;
+per_frame_9=beat = above(vol, res) * above(vol, m) * above(vol, 10);
+per_frame_10=diff = (1 - beat) * diff + beat * (vol - res);
+per_frame_11=res = beat * (vol + 0.15 * m) + (1 - beat) * (res - 60 * (0.15 + 0.03 * diff) / fps);
+per_frame_12=res = max(0, res);
+per_frame_13=r = if(0.00001 < abs(beat), 0.0002 * (randint(200) - 100), r);
+per_frame_14=rot = r;
+per_frame_15=c_x = if(0.00001 < abs(beat), 0.5 + 0.005 * (randint(200) - 100), c_x);
+per_frame_16=c_y = if(0.00001 < abs(beat), 0.5 + 0.005 * (randint(200) - 100), c_y);
+per_frame_17=v = if(0.00001 < abs(beat), 0.035 + 0.00025 * (randint(200) - 100), v);
+per_frame_18=q3 = c_x;
+per_frame_19=q4 = c_y;
+per_frame_20=q5 = v;
+per_frame_21=q6 = beat;
+per_pixel_1=d = pow(sqrt(sqr(x - q3) + sqr(y - q4)), 0.5) - 0;
+per_pixel_2=v = q5;
+per_pixel_3=dx = v * (x - q3) * d;
+per_pixel_4=dy = v * (y - q4) * d;
 
 [warp_shader]
 shader_body { 

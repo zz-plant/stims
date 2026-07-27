@@ -25,15 +25,22 @@ fWaveB=0.000000
 fWaveY=0.240000
 fOuterBorderSize=0.000000
 fInnerBorderSize=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=q2 = 0;
+per_frame_init_3=q3 = 0;
+per_frame_init_4=vol = 0;
+per_frame_1=vol = (5 * bass + 3 * mid + 2 * treb) / 20;
+per_frame_2=wave_g = wave_g + vol / 10 + 0.1 * sin(3.21 * time);
+per_frame_3=wave_r = wave_r + vol / 10;
+per_frame_4=wave_b = vol / 10;
+per_frame_5=dy = dy - vol / 30 + 0.0015 * sin(0.56 * time);
+per_frame_6=sx = sx - vol / 50;
+per_frame_7=wave_x = wave_x + vol / 50;
+per_pixel_1=q1 = above(0.5, y);
+per_pixel_2=q2 = bor(above(x, 0.55), above(0.45, x));
+per_pixel_3=q3 = 0.1 * (pow(rad + 0.95, 4) - 1) * (y + 0.1);
+per_pixel_4=rot = if(0.00001 < abs(bor(q1, q2)), q3, rot);

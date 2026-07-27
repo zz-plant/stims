@@ -27,30 +27,46 @@ fOuterBorderSize=0.005000
 fOuterBorderA=0.050000
 nMotionVectorsX=1.000000
 nMotionVectorsY=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=meanbass_att = 0;
+per_frame_init_2=q1 = 0;
+per_frame_init_3=lastbeat = 0;
+per_frame_init_4=beatrate = 0;
+per_frame_init_5=mode = 0;
+per_frame_init_6=peakbass_att = 0;
+per_frame_init_7=att = 0;
+per_frame_init_8=volume = 0;
+per_frame_init_9=beat = 0;
+per_frame_init_10=q2 = 0;
+per_frame_init_11=q3 = 0;
+per_frame_1=volume = 0.3 * (bass + mid + att);
+per_frame_2=beatrate = equal(beatrate, 0) + (1 - equal(beatrate, 0)) * (below(volume, 0.01) + (1 - below(volume, 0.01)) * beatrate);
+per_frame_3=lastbeat = lastbeat + equal(lastbeat, 0) * time;
+per_frame_4=meanbass_att = 0.1 * (9 * meanbass_att + bass_att);
+per_frame_5=peakbass_att = max(bass_att, peakbass_att);
+per_frame_6=beat = above(volume, 0.8) * below(peakbass_att - bass_att, 0.05 * peakbass_att) * above(time - lastbeat, 0.1 + 0.5 * (beatrate - 0.1));
+per_frame_7=beatrate = max(if(0.00001 < abs(beat), if(0.00001 < abs(below(time - lastbeat, 2 * beatrate)), 0.1 * (9 * beatrate + time - lastbeat), beatrate), beatrate), 0.1);
+per_frame_8=peakbass_att = beat * bass_att + (1 - beat) * peakbass_att * (0.95 * above(time - lastbeat, 2 * beatrate) + 0.995 * (1 - above(time - lastbeat, 2 * beatrate)));
+per_frame_9=lastbeat = beat * time + (1 - beat) * lastbeat;
+per_frame_10=peakbass_att = max(peakbass_att, 1.1 * meanbass_att);
+per_frame_11=mode = if(0.00001 < abs(beat), randint(4), mode);
+per_frame_12=q1 = 0.08 * mod(20 * time, 50);
+per_frame_13=q2 = 1 - 2 * below(mode, 2);
+per_frame_14=q3 = 1 - 2 * mod(mode, 2);
+per_frame_15=wave_x = 1 - below(mode, 2);
+per_frame_16=wave_mystery = mod(frame, 2) * (2 * (1 - equal(mod(mode, 3), 0)) - 1);
+per_frame_17=wave_r = if(0.00001 < abs(below(mod(frame, 6), 3)), 0.5 * bass, 0);
+per_frame_18=wave_b = 0.9 + 0.1 * sin(time);
+per_frame_19=wave_g = if(0.00001 < abs(above(mod(frame, 6), 2)), 0.5 * bass, 0);
+per_pixel_1=dx = dx * pow(-1, band(0, 13 + q1 - 5 * q2 * y)) * min(bass, 1.2);
+per_pixel_2=dy = dy * pow(-1, band(0, 13 + q1 - 5 * q3 * x)) * min(bass, 1.2);
 
 [warp_shader]
 shader_body { 

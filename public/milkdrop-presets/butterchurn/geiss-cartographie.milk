@@ -16,15 +16,17 @@ fWarp=0.057228
 fWaveR=0.650000
 fWaveG=0.650000
 fWaveB=0.650000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=wave_r = wave_r + 0.35 * (0.6 * sin(0.742 * time) + 0.4 * sin(1.021 * time));
+per_frame_2=wave_g = wave_g + 0.35 * (0.6 * sin(0.703 * time) + 0.4 * sin(0.969 * time));
+per_frame_3=wave_b = wave_b + 0.35 * (0.6 * sin(1.09 * time) + 0.4 * sin(0.963 * time));
+per_frame_4=rot = rot + 0.01 * (0.6 * sin(0.381 * time) + 0.4 * sin(0.579 * time));
+per_frame_5=cx = cx + 0.11 * (0.6 * sin(0.374 * time) + 0.4 * sin(0.294 * time));
+per_frame_6=cy = cy + 0.11 * (0.6 * sin(0.393 * time) + 0.4 * sin(0.223 * time));
+per_frame_7=decay = decay - 0.025 * pow(0.5 + 0.5 * sin(1.5 * time), 4.8);
+per_pixel_1=dx = 0.05 * sin(80 * x + 94 * y + 97 * rad + 22 * ang + 0.733 * time);
+per_pixel_2=dy = 0.05 * sin(60 * x + 114 * y + 77 * rad + 32 * ang + 0.83 * time);
+per_pixel_3=zoom = zoom + 0.05 * rad;

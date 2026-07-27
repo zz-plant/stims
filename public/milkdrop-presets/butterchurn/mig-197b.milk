@@ -18,30 +18,19 @@ fWaveY=0.600000
 fOuterBorderSize=0.007000
 fInnerBorderSize=0.260000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=movement = 0;
+per_frame_init_2=q1 = 0;
+per_frame_1=movement = movement + 0.01 * (bass + bass_att) + 0.001 * pow(bass + 1, 3);
+per_frame_2=q1 = movement;
+per_frame_3=monitor = q1;
 
 [warp_shader]
 shader_body { 

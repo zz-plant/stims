@@ -30,33 +30,61 @@ fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
 b1x=0.700000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-
-[shape00_1]
-bEnabled=1.000000
-fRad=0.010000
-
-[shape00_2]
-bEnabled=1.000000
-fRad=0.010000
-
-[shape00_3]
-bEnabled=1.000000
-fRad=0.010000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_1_enabled=1.000000
+shapecode_1_rad=0.010000
+shapecode_2_enabled=1.000000
+shapecode_2_rad=0.010000
+shapecode_3_enabled=1.000000
+shapecode_3_rad=0.010000
+per_frame_1=wave_r = 0.5 * bass;
+per_frame_2=wave_b = 0.5 * bass;
+per_frame_3=rot = rot + 0.02 * (floor(randint(10)) - 5) * treb;
+per_pixel_1=zoom = zoom + above(y, 0.5) * sin(time) * 0.1;
+per_pixel_2=zoom = zoom + below(y, 0.5) * cos(time) * 0.1;
+shape_0_init1=sx = 0;
+shape_0_init2=zoom = 0;
+shape_0_per_frame1=sides = 3;
+shape_0_per_frame2=sx = bass - zoom * time / ang;
+shape_0_per_frame3=ang = 3.7 * time;
+shape_0_per_frame4=x = 0.5;
+shape_0_per_frame5=r = 0.6 * time;
+shape_0_per_frame6=b = 0.6 * time;
+shape_0_per_frame7=g = 0.5 * time;
+shape_0_per_frame8=r2 = 0.98 * time;
+shape_0_per_frame9=b2 = 0.5 * time;
+shape_0_per_frame10=g2 = 0.7 * time;
+shape_1_per_frame1=y = 0.4 * sin(2 * time) + 0.5;
+shape_1_per_frame2=x = 0.4 * sin(time) + 0.5;
+shape_1_per_frame3=sides = 20;
+shape_1_per_frame4=r = 3;
+shape_1_per_frame5=r2 = 3;
+shape_1_per_frame6=b = 0;
+shape_1_per_frame7=b2 = 0;
+shape_1_per_frame8=g = 0;
+shape_1_per_frame9=g2 = 0;
+shape_2_per_frame1=x = 0.4 * sin(2 * time) + 0.5;
+shape_2_per_frame2=y = 0.4 * sin(time) + 0.5;
+shape_2_per_frame3=sides = 20;
+shape_2_per_frame4=r = 0;
+shape_2_per_frame5=r2 = 0;
+shape_2_per_frame6=b = 3;
+shape_2_per_frame7=b2 = 3;
+shape_2_per_frame8=g = 3;
+shape_2_per_frame9=g2 = 3;
+shape_3_per_frame1=x = 0.4 * sin(0.05 * bass) + 0.5;
+shape_3_per_frame2=y = 0.4 * sin(bass) + 0.5;
+shape_3_per_frame3=sides = 20;
+shape_3_per_frame4=r = 0;
+shape_3_per_frame5=r2 = 0;
+shape_3_per_frame6=b = 0;
+shape_3_per_frame7=b2 = 0;
+shape_3_per_frame8=g = 4;
+shape_3_per_frame9=g2 = 4;
 
 [warp_shader]
 shader_body { 

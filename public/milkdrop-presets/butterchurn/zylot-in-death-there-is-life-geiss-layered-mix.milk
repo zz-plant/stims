@@ -9,30 +9,20 @@ fWaveR=0.500000
 fWaveG=0.500000
 fWaveB=0.500000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_1=warp = 0;
+per_frame_2=wave_r = wave_r + 0.2 * sin(1.33 * time) + 0.3 * bass;
+per_frame_3=wave_g = wave_g + 0.2 * sin(time) + 0.3 * treb;
+per_frame_4=wave_b = wave_b + 0.2 * sin(0.988 * time) + 0.3 * mid;
+per_frame_5=zoom = 1 + 0.01 * bass;
+per_pixel_1=zoom = zoom + 0.01 * rad * treb;
 
 [warp_shader]
 shader_body { 

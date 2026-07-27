@@ -26,27 +26,70 @@ fMotionVectorsR=0.350000
 fMotionVectorsG=0.350000
 fMotionVectorsB=0.350000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=beateven = 0;
+per_frame_init_2=beatfreq = 0;
+per_frame_init_3=pulsefreq = 0;
+per_frame_init_4=grid = 0;
+per_frame_init_5=bt = 0;
+per_frame_init_6=q1 = 0;
+per_frame_init_7=q5 = 0;
+per_frame_init_8=oldq8 = 0;
+per_frame_init_9=lastbeat = 0;
+per_frame_init_10=pulse = 0;
+per_frame_init_11=beatcounter = 0;
+per_frame_init_12=q4 = 0;
+per_frame_init_13=le = 0;
+per_frame_init_14=btblock = 0;
+per_frame_init_15=state = 0;
+per_frame_init_16=minorccl = 0;
+per_frame_init_17=beat = 0;
+per_frame_init_18=hccp = 0;
+per_frame_init_19=ccl = 0;
+per_frame_init_20=lastpulse = 0;
+per_frame_init_21=q3 = 0;
+per_frame_init_22=th = 0;
+per_frame_init_23=q8 = 0;
+per_frame_1=warp = 0;
+per_frame_2=state = if(0.00001 < abs(above(bass_att, 1.3)), 3, if(0.00001 < abs(above(treb_att, 1.3)), 2, 1));
+per_frame_3=wave_b = if(0.00001 < abs(equal(state, 2)), 0.2 + 0.2 * sin(time), if(0.00001 < abs(equal(state, 3)), 0.9 + 0.1 * sin(time), 0.6 + 0.08 * sin(time)));
+per_frame_4=wave_g = if(0.00001 < abs(equal(state, 2)), 0, if(0.00001 < abs(equal(state, 3)), 0, 0.49));
+per_frame_5=wave_r = if(0.00001 < abs(equal(state, 2)), 0.7 + 0.1 * sin(0.888 * time), 0);
+per_frame_6=q1 = state;
+per_frame_7=wave_mystery = wave_mystery + 10 * (1 - zoom);
+per_frame_8=le = 1.4 * bass_att + 0.1 * bass + 0.5 * treb;
+per_frame_9=pulse = above(le, th);
+per_frame_10=pulsefreq = if(0.00001 < abs(equal(pulsefreq, 0)), 2, if(0.00001 < abs(pulse), 0.8 * pulsefreq + 0.2 * (time - lastpulse), pulsefreq));
+per_frame_11=lastpulse = if(0.00001 < abs(pulse), time, lastpulse);
+per_frame_12=bt = (time - lastbeat) / (0.5 * beatfreq + 0.5 * pulsefreq);
+per_frame_13=hccp = 0.03 / (bt + 0.2) + 0.5 * if(0.00001 < abs(band(above(bt, 0.8), below(bt, 1.2))), pow(sin(7.854 * (bt - 1)), 4) - 1, 0);
+per_frame_14=beat = band(above(le, th + hccp), btblock);
+per_frame_15=btblock = 1 - above(le, th + hccp);
+per_frame_16=lastbeat = if(0.00001 < abs(beat), time, lastbeat);
+per_frame_17=beatfreq = if(0.00001 < abs(equal(beatfreq, 0)), 2, if(0.00001 < abs(beat), 0.8 * beatfreq + 0.2 * (time - lastbeat), beatfreq));
+per_frame_18=th = if(0.00001 < abs(above(le, th)), le + 114 / (le + 10) - 7.407, th + 0.07 * th / (th - 12) + 0.1 * below(th, 2.7) * (2.7 - th));
+per_frame_19=th = if(0.00001 < abs(above(th, 6)), 6, th);
+per_frame_20=q3 = 30 / fps;
+per_frame_21=ccl = ccl + beat;
+per_frame_22=minorccl = minorccl + 0.01 * le;
+per_frame_23=q4 = beat;
+per_frame_24=beatcounter = if(0.00001 < abs(beat), beatcounter + 1, beatcounter);
+per_frame_25=beatcounter = if(0.00001 < abs(above(beatcounter, 7)), 0, beatcounter);
+per_frame_26=beateven = mod(beatcounter, 2);
+per_frame_27=q5 = beateven;
+per_frame_28=q8 = oldq8 + 0.005 * (pow(1.2 * bass + 0.4 * bass_att + 0.1 * treb + 0.1 * treb_att + 0.1 * mid + 0.1 * mid_att, 6) / fps);
+per_frame_29=oldq8 = q8;
+per_pixel_1=grid = mod(abs(18 * x + 3 * q5), 2) + mod(abs(18 * y + 3 * q5), 2);
+per_pixel_2=cx = grid;
+per_pixel_3=cy = grid;
+per_pixel_4=zoom = 1 + 0.5 * if(0.00001 < abs(bnot(grid)), 0.07 * cos(10 * rad * sin(q8)), 0.07 * cos(10 * x * sin(q8)));
+per_pixel_5=rot = 0.01 * (1 - rad);
+per_pixel_6=dx = 0.4 * grid * (0.008 * sin(48 * (2 * y - 1)) + 0.008 * sin(64 * (2 * y - 1)));
+per_pixel_7=dy = 0.4 * grid * (0.008 * cos(64 * (2 * x - 1)) + 0.008 * cos(48 * (2 * x - 1)));

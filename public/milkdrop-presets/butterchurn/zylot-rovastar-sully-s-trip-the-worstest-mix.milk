@@ -37,15 +37,50 @@ nMotionVectorsDy=-0.060000
 nMotionVectorsLoop=5.000000
 fMotionVectorsG=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=mid_counter = 0;
+per_frame_init_2=d = 0;
+per_frame_init_3=treb_counter = 0;
+per_frame_init_4=cdelay1 = 0;
+per_frame_init_5=cdelay2 = 0;
+per_frame_init_6=q6 = 0;
+per_frame_init_7=q1 = 0;
+per_frame_init_8=q5 = 0;
+per_frame_init_9=bass_thresh = 0;
+per_frame_init_10=counter2 = 0;
+per_frame_init_11=residual = 0;
+per_frame_init_12=treb_thresh = 0;
+per_frame_init_13=mid_thresh = 0;
+per_frame_init_14=q4 = 0;
+per_frame_init_15=rad_cycle = 0;
+per_frame_init_16=bass_counter = 0;
+per_frame_init_17=colorcounter = 0;
+per_frame_init_18=vol_cycler = 0;
+per_frame_init_19=bass_cycler = 0;
+per_frame_init_20=vol_thresh = 0;
+per_frame_init_21=r = 0;
+per_frame_init_22=mid_mid_att = 0;
+per_frame_init_23=q2 = 0;
+per_frame_init_24=mid_cycler = 0;
+per_frame_init_25=counter1 = 0;
+per_frame_init_26=q3 = 0;
+per_frame_init_27=treb_cycler = 0;
+per_frame_init_28=q7 = 0;
+per_frame_init_29=vol_counter = 0;
+per_frame_init_30=q8 = 0;
+per_frame_init_31=colorcounter = 1;
+per_frame_init_32=counter1 = 0;
+per_frame_init_33=counter2 = 1;
+per_frame_init_34=cdelay1 = 0;
+per_frame_init_35=cdelay2 = 0;
+per_pixel_1=rad_cycle = rad * rad * x * 60 * rad * sin(q1);
+per_pixel_2=rot = if(0.00001 < abs(above(q2, q8)), 0.06 * sin(rad_cycle - 3 * sin(q3) - x * ang * q3) * equal(rad, x + y) * sin(q6) - 0.3 * sin(q7), 0.02 * sin(q3));
+per_pixel_3=zoom = if(0.00001 < abs(above(q2, q8)), 2 * rot * rad + 1 - 0.01 * q1 * rad - (x - 0.3 * sin(q4)) + 0.25 * x * sin(q2), 1.1);
+per_pixel_4=zoomexp = 1 - 0.1 * rad;
+per_pixel_5=dx = if(0.00001 < abs(above(q2, q8)), equal(x, rad) * sin(q3) / y * sin(q1), 0.009 * sin(q5) * x * rad + d * sin(q2));
+per_pixel_6=dy = if(0.00001 < abs(above(q2, q8)), equal(y, rad) * sin(q2) / x * sin(q5), 0.009 * sin(q3) * y * rad + r * sin(q1));
+per_pixel_7=d = above(y, sin(3 * ang + time));
+per_pixel_8=r = above(y, sin(3 * ang + time));

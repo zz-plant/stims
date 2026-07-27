@@ -23,30 +23,27 @@ fInnerBorderR=1.000000
 fInnerBorderG=1.000000
 fInnerBorderB=1.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_1=q1 = 0.0003 * pow(1.2 + 1 * bass + 0.4 * bass_att + 0.1 * treb + 0.1 * treb_att + 0.1 * mid + 0.1 * mid_att, 6);
+per_frame_2=monitor = q1;
+per_frame_3=wave_r = wave_r + 0.5 * sin(1.13 * time);
+per_frame_4=wave_g = wave_g + 0.5 * sin(1.23 * time);
+per_frame_5=wave_b = wave_b + 0.5 * sin(1.33 * time);
+per_frame_6=ob_r = ob_r + sin(2.26 * time);
+per_frame_7=ob_g = ob_g + sin(2.46 * time);
+per_frame_8=ob_b = ob_b + sin(2.66 * time);
+per_pixel_1=zoom = zoom + 0.125 * sin(q1);
+per_pixel_2=rot = rot + 0.25 * sin(100 * fps) * q1 / 2;
+per_pixel_3=zoom = zoom - 0.05 * sin(rad);
+per_pixel_4=rot = rot + 0.05 * sin(5 * fps);
 
 [warp_shader]
 shader_body { 

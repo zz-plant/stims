@@ -36,51 +36,61 @@ nMotionVectorsY=11.400000
 nMotionVectorsLoop=5.000000
 fMotionVectorsA=0.000000
 b1n=0.400000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=44.000000
-bAdditive=1.000000
-bThickOutline=1.000000
-bTextured=1.000000
-fRad=1.790440
-fTexAng=3.769910
-fTexZoom=0.895760
-fR=0.500000
-fG=0.500000
-fB=0.500000
-fA=0.100000
-fR2=0.500000
-fG2=0.500000
-fB2=0.500000
-fA2=0.500000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=1.000000
-bUseDots=1.000000
-bThick=1.000000
-bAdditive=1.000000
-fScaling=1.220190
-fA=0.100000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=1.000000
+wavecode_1_usedots=1.000000
+wavecode_1_thick=1.000000
+wavecode_1_additive=1.000000
+wavecode_1_scaling=1.220190
+wavecode_1_a=0.100000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=44.000000
+shapecode_2_additive=1.000000
+shapecode_2_thickoutline=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_rad=1.790440
+shapecode_2_tex_ang=3.769910
+shapecode_2_tex_zoom=0.895760
+shapecode_2_r=0.500000
+shapecode_2_g=0.500000
+shapecode_2_b=0.500000
+shapecode_2_a=0.100000
+shapecode_2_r2=0.500000
+shapecode_2_g2=0.500000
+shapecode_2_b2=0.500000
+shapecode_2_a2=0.500000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=vol = 0;
+per_frame_init_2=mtime = 0;
+per_frame_init_3=q3 = 0;
+per_frame_init_4=vola = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=q6 = 0;
+per_frame_init_7=q7 = 0;
+per_frame_init_8=bass_thresh = 0;
+per_frame_1=vol = 0.25 * (bass + mid + treb);
+per_frame_2=vol = vol * vol;
+per_frame_3=mtime = mtime + 0.01 * vol;
+per_frame_4=q3 = 0.25 * mtime;
+per_frame_5=vola = 0.1 * (9 * vola + 0.333333 * (bass_att + mid_att + treb_att));
+per_frame_6=q1 = vola;
+per_frame_7=q6 = 0.5 + 0.3 * sin(2 * -time);
+per_frame_8=q7 = 0.5 + 0.3 * cos(-time);
+per_frame_9=monitor = bass_thresh;
+per_frame_10=zoom = zoom + 0.05 * vol;
+per_frame_11=wave_x = wave_x + 0.5 * sin(2 * mtime);
+per_frame_12=wave_y = wave_y + 0.5 * sin(1.34 * -mtime);
+shape_2_per_frame1=r = r + 0.5 * (0.6 * sin(2.22 * time) + 0.4 * sin(1.888 * time));
+shape_2_per_frame2=g = g + 0.5 * (0.6 * sin(1.9 * time) + 0.4 * sin(2.1 * time));
+shape_2_per_frame3=b = b + 0.5 * (0.6 * sin(2.12 * time) + 0.4 * sin(1.98 * time));
+shape_2_per_frame4=r2 = r;
+shape_2_per_frame5=b2 = b;
+shape_2_per_frame6=g2 = g;
 
 [warp_shader]
 shader_body { 

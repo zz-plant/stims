@@ -30,36 +30,97 @@ nMotionVectorsY=2.280001
 nMotionVectorsLoop=2.500000
 fMotionVectorsB=0.800000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=1.000000
-bTextured=1.000000
-fY=1.800000
-
-[shape00_1]
-bEnabled=1.000000
-bTextured=1.000000
-fY=1.800000
-
-[shape00_2]
-bEnabled=1.000000
-bTextured=1.000000
-fY=1.800000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_y=1.800000
+shapecode_1_enabled=1.000000
+shapecode_1_textured=1.000000
+shapecode_1_y=1.800000
+shapecode_2_enabled=1.000000
+shapecode_2_textured=1.000000
+shapecode_2_y=1.800000
+shapecode_3_enabled=0.000000
+per_frame_init_1=oldq4 = 0;
+per_frame_init_2=ratio = 0;
+per_frame_init_3=meanbass_att = 0;
+per_frame_init_4=q6 = 0;
+per_frame_init_5=oldq2 = 0;
+per_frame_init_6=q5 = 0;
+per_frame_init_7=mybeat2 = 0;
+per_frame_init_8=mybeat = 0;
+per_frame_init_9=oldq8 = 0;
+per_frame_init_10=lastbeat = 0;
+per_frame_init_11=beatrate = 0;
+per_frame_init_12=peakbass_att = 0;
+per_frame_init_13=ry = 0;
+per_frame_init_14=q4 = 0;
+per_frame_init_15=oldflag = 0;
+per_frame_init_16=oldq6 = 0;
+per_frame_init_17=oldq7 = 0;
+per_frame_init_18=rx = 0;
+per_frame_init_19=oldq3 = 0;
+per_frame_init_20=oldq5 = 0;
+per_frame_init_21=volume = 0;
+per_frame_init_22=beat = 0;
+per_frame_init_23=oldratio = 0;
+per_frame_init_24=q2 = 0;
+per_frame_init_25=q3 = 0;
+per_frame_init_26=q7 = 0;
+per_frame_init_27=flag = 0;
+per_frame_init_28=q8 = 0;
+per_frame_init_29=q8 = 0;
+per_frame_1=q8 = oldq8 + 0.001 * (pow(1.2 * bass + 0.4 * bass_att + 0.2 * treb + 0.2 * treb_att + 0.2 * mid + 0.2 * mid_att, 6) / fps) + 0.1 / fps;
+per_frame_2=oldq8 = q8;
+per_frame_3=ob_r = 0.3 - 0.3 * (0.5 * sin(0.3701 * time) + 0.3 * cos(0.438 * q8));
+per_frame_4=ob_g = 0.6 - 0.4 * sin(0.24 * time);
+per_frame_5=ob_b = 0.35 - 0.3 * cos(0.4816 * time);
+per_frame_6=warp = 0;
+per_frame_7=ib_size = 0.02;
+per_frame_8=ib_r = ib_r + 0.5 * sin(0.234 * time);
+per_frame_9=ib_g = ib_g + 0.5 * sin(0.547 * time);
+per_frame_10=ib_b = ib_b - 0.5 * sin(1.431 * time);
+per_frame_11=cx = cx + 0.315 * (0.6 * sin(0.23874 * time) + 0.14 * sin(0.194 * time));
+per_frame_12=cy = cy + 0.476 * (0.6 * sin(0.1274 * time) + 0.1 * sin(0.394 * time));
+per_frame_13=volume = 0.15 * (bass_att + bass + mid + mid_att);
+per_frame_14=beatrate = if(0.00001 < abs(equal(beatrate, 0)), 1, if(0.00001 < abs(below(volume, 0.01)), 1, beatrate));
+per_frame_15=lastbeat = if(0.00001 < abs(equal(lastbeat, 0)), time, lastbeat);
+per_frame_16=meanbass_att = 0.1 * (9 * meanbass_att + bass_att);
+per_frame_17=peakbass_att = if(0.00001 < abs(above(bass_att, peakbass_att)), bass_att, peakbass_att);
+per_frame_18=beat = if(0.00001 < abs(above(volume, 0.8)), if(0.00001 < abs(below(peakbass_att - bass_att, 0.05 * peakbass_att)), if(0.00001 < abs(above(time - lastbeat, 0.1 + 0.5 * (beatrate - 0.1))), 1, 0), 0), 0);
+per_frame_19=beatrate = max(if(0.00001 < abs(beat), if(0.00001 < abs(below(time - lastbeat, 2 * beatrate)), 0.1 * (9 * beatrate + time - lastbeat), beatrate), beatrate), 0.1);
+per_frame_20=peakbass_att = if(0.00001 < abs(equal(beat, 0)), if(0.00001 < abs(above(time - lastbeat, 2 * beatrate)), 0.95 * peakbass_att, 0.995 * peakbass_att), bass_att);
+per_frame_21=lastbeat = if(0.00001 < abs(beat), time, lastbeat);
+per_frame_22=mybeat = if(0.00001 < abs(beat), mybeat + 1, mybeat);
+per_frame_23=mybeat = if(0.00001 < abs(above(mybeat, 7)), 0, mybeat);
+per_frame_24=mybeat2 = if(0.00001 < abs(equal(mybeat, 1)), 1, 0);
+per_frame_25=q7 = if(0.00001 < abs(beat * mybeat2), 0.001 + 0.0001 * randint(40), oldq7);
+per_frame_26=oldq7 = q7;
+per_frame_27=q6 = if(0.00001 < abs(beat * mybeat2), 0.001 + 0.0001 * randint(40), oldq6);
+per_frame_28=oldq6 = q6;
+per_frame_29=q5 = if(0.00001 < abs(beat * mybeat2), 0.001 + 0.0001 * randint(40), oldq5);
+per_frame_30=oldq5 = q5;
+per_frame_31=q4 = if(0.00001 < abs(beat * mybeat2), 0.001 + 0.0001 * randint(40), oldq4);
+per_frame_32=oldq4 = q4;
+per_frame_33=flag = if(0.00001 < abs(beat * mybeat2), if(0.00001 < abs(randint(2) - 1), 1, 0), oldflag);
+per_frame_34=oldflag = flag;
+per_frame_35=ratio = if(0.00001 < abs(beat * mybeat2), 100 + randint(60), oldratio);
+per_frame_36=oldratio = ratio;
+per_frame_37=q3 = if(0.00001 < abs(beat * mybeat2), if(0.00001 < abs(flag), ratio, 0.75 * ratio), oldq3);
+per_frame_38=oldq3 = q3;
+per_frame_39=q2 = if(0.00001 < abs(beat * mybeat2), if(0.00001 < abs(flag), 0.75 * ratio, ratio), oldq2);
+per_frame_40=oldq2 = q2;
+per_pixel_1=rx = x;
+per_pixel_2=ry = y;
+per_pixel_3=dx = sin(floor(1 + 2.864 * ry + sin(time / 17)) * (8446669 + 667777 * sin(time / 71774898 + treb / 55559599))) / 2 + 0.5;
+per_pixel_4=dy = sin(floor(1 + 2.654 * rx + sin(time / 13)) * (4747833 + 754166 * sin(time / 86666825 + mid / 59555599))) / 2 + 0.5;
+per_pixel_5=dx = sin(sqr(y) * y * 88 + 2 * sin(time / 9.3)) / 499;
+per_pixel_6=dy = sin(sqr(x) * x * 888 + 2 * sin(time / 11)) / 496 - 0.004141 * (1 - rad);
+per_pixel_7=dx = dx;
+per_pixel_8=dy = dy;
 
 [warp_shader]
 shader_body { 

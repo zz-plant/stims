@@ -31,47 +31,57 @@ nMotionVectorsLoop=5.000000
 fMotionVectorsR=0.000000
 fMotionVectorsB=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=46.000000
-fG=1.000000
-fB=1.000000
-fA=0.100000
-fBorderA=0.000000
-
-[shape00_2]
-bEnabled=1.000000
-nSides=46.000000
-fRad=0.089630
-fG=1.000000
-fB=1.000000
-fA=0.100000
-fBorderA=0.000000
-
-[shape00_3]
-bEnabled=1.000000
-bTextured=1.000000
-fX=0.060000
-fY=0.080000
-fRad=0.542790
-fA=0.800000
-fBorderA=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=46.000000
+shapecode_1_g=1.000000
+shapecode_1_b=1.000000
+shapecode_1_a=0.100000
+shapecode_1_border_a=0.000000
+shapecode_2_enabled=1.000000
+shapecode_2_sides=46.000000
+shapecode_2_rad=0.089630
+shapecode_2_g=1.000000
+shapecode_2_b=1.000000
+shapecode_2_a=0.100000
+shapecode_2_border_a=0.000000
+shapecode_3_enabled=1.000000
+shapecode_3_textured=1.000000
+shapecode_3_x=0.060000
+shapecode_3_y=0.080000
+shapecode_3_rad=0.542790
+shapecode_3_a=0.800000
+shapecode_3_border_a=0.000000
+per_frame_init_1=q1 = 0;
+per_frame_init_2=oldq1 = 0;
+per_frame_1=ib_r = 0.5 + 5.499 * (0.6 * sin(0.933 * time / 2) + 0.4 * sin(1.045 * time / 2));
+per_frame_2=ib_g = 0.5 + 5 * (0.6 * sin(0.9 * time / 2) + 0.4 * sin(0.956 * time / 2));
+per_frame_3=ib_b = 0.5 + 5.499 * (0.6 * sin(0.91 * time / 2) + 0.4 * sin(0.92 * time / 2));
+per_frame_4=wave_a = 0;
+per_frame_5=decay = 2;
+per_frame_6=zoom = -1;
+per_frame_7=rot = 0;
+per_frame_8=warp = 0;
+per_frame_9=q1 = oldq1 + 0.0055 * (bass + bass_att + bass * bass_att - 1);
+per_frame_10=oldq1 = below(q1, 30000) * q1;
+per_frame_11=monitor = q1;
+per_pixel_1=dx = 0.01 * (bass * bass + bass_att) * sin(5 * sin(sqrt(4) - rad) + 5 * rad * sin(q1)) * y * ang;
+per_pixel_2=dy = 0.01 * (bass * bass + bass_att) * cos(5 * sin(sqrt(4) - rad) + 5 * -rad * sin(q1)) * x * rad * ang;
+per_pixel_3=rot = sin(time / (rad * time)) * x / (atan(time / rad) / (ang / 3) / x / ((0.5 * sin(time / 6) + 0.5) * y));
+per_pixel_4=warp = 3 * (tan(time / 10) * y / (atan(time / 6) / (rad * (0.5 * sin(time / 3) + 0.5)) / y));
+shape_1_per_frame1=x = 0.1 * sin(3.01 * time) + 0.5;
+shape_1_per_frame2=y = 0.1 * sin(2.01 * time) + 0.5;
+shape_2_per_frame1=x = 0.1 * sin(2.013 * time + 1) + 0.5;
+shape_2_per_frame2=y = 0.1 * cos(5.032 * time) + 0.5;
+shape_3_per_frame1=rad = 0.2 * sin(time) + 1.6;
+shape_3_per_frame2=a = 0.7 * sin(time);
+shape_3_per_frame3=a = if(0.00001 < abs(above(bass - bass_att, 0.1)), 1, a);
+shape_3_per_frame4=border_a = if(0.00001 < abs(above(bass - bass_att, 0.1)), 1, border_a);
+shape_3_per_frame5=ang = 0.5 * sin(0.51 * time);
 
 [warp_shader]
 shader_body { 

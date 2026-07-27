@@ -19,52 +19,349 @@ fOuterBorderB=1.000000
 nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=1.000000
-nSides=100.000000
-bTextured=1.000000
-fRad=2.380961
-fTexZoom=0.424973
-fR=0.000000
-fB=1.000000
-fA=0.600000
-fG2=0.000000
-fA2=0.600000
-fBorderA=1.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bAdditive=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bAdditive=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bAdditive=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bSpectrum=1.000000
-bUseDots=1.000000
-bAdditive=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_spectrum=1.000000
+wavecode_0_usedots=1.000000
+wavecode_0_additive=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_spectrum=1.000000
+wavecode_1_usedots=1.000000
+wavecode_1_additive=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_spectrum=1.000000
+wavecode_2_usedots=1.000000
+wavecode_2_additive=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_spectrum=1.000000
+wavecode_3_usedots=1.000000
+wavecode_3_additive=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=1.000000
+shapecode_1_sides=100.000000
+shapecode_1_textured=1.000000
+shapecode_1_rad=2.380961
+shapecode_1_tex_zoom=0.424973
+shapecode_1_r=0.000000
+shapecode_1_b=1.000000
+shapecode_1_a=0.600000
+shapecode_1_g2=0.000000
+shapecode_1_a2=0.600000
+shapecode_1_border_a=1.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=basstime = 0;
+per_frame_init_2=stickybit = 0;
+per_frame_init_3=volavg2 = 0;
+per_frame_init_4=q1 = 0;
+per_frame_init_5=sample1 = 0;
+per_frame_init_6=difftime = 0;
+per_frame_init_7=diff = 0;
+per_frame_init_8=edge = 0;
+per_frame_init_9=volavg = 0;
+per_frame_init_10=bit2 = 0;
+per_frame_init_11=vol = 0;
+per_frame_init_12=q2 = 0;
+per_frame_init_13=q3 = 0;
+per_frame_init_14=basssum = 0;
+per_frame_init_15=sample2 = 0;
+per_frame_init_16=state = 0;
+per_frame_1=basstime = basstime + 0.06 * bass;
+per_frame_2=q1 = basstime;
+per_frame_3=basstime = if(0.00001 < abs(below(basstime, 1000)), 1000, basstime);
+per_frame_4=vol = pow(bass + mid + treb, 2);
+per_frame_5=basssum = vol;
+per_frame_6=stickybit = mod(time, 2);
+per_frame_7=volavg = volavg + vol * equal(stickybit, 1);
+per_frame_8=sample1 = sample1 + equal(stickybit, 1);
+per_frame_9=volavg2 = volavg2 + vol * equal(stickybit, 0);
+per_frame_10=sample2 = sample2 + equal(stickybit, 0);
+per_frame_11=edge = bnot(equal(bit2, stickybit));
+per_frame_12=volavg = volavg - volavg * edge * stickybit;
+per_frame_13=volavg2 = volavg2 - volavg2 * edge * equal(stickybit, 0);
+per_frame_14=sample1 = sample1 - sample1 * edge * stickybit;
+per_frame_15=sample2 = sample2 - sample2 * edge * equal(stickybit, 0);
+per_frame_16=diff = if(0.00001 < abs(equal(stickybit, 1)), basssum / (volavg2 / sample2), 0);
+per_frame_17=diff = if(0.00001 < abs(equal(stickybit, 0)), basssum / (volavg / sample1), diff);
+per_frame_18=q3 = diff;
+per_frame_19=bit2 = mod(time, 2);
+per_frame_20=difftime = difftime + 0.03 * diff;
+per_frame_21=q2 = difftime;
+per_frame_22=difftime = if(0.00001 < abs(above(difftime, 2000)), 0, difftime);
+per_pixel_1=zoom = 1;
+wave_0_init1=xx = 0;
+wave_0_init2=s = 0;
+wave_0_init3=xs = 0;
+wave_0_init4=xdriftinc = 0;
+wave_0_init5=yval = 0;
+wave_0_init6=ss = 0;
+wave_0_init7=q1 = 0;
+wave_0_init8=xd = 0;
+wave_0_init9=zd = 0;
+wave_0_init10=alphax = 0;
+wave_0_init11=yx = 0;
+wave_0_init12=angle2 = 0;
+wave_0_init13=zs = 0;
+wave_0_init14=angle = 0;
+wave_0_init15=ys = 0;
+wave_0_init16=xn = 0;
+wave_0_init17=burstspeed = 0;
+wave_0_init18=yd = 0;
+wave_0_init19=burst = 0;
+wave_0_init20=angle3 = 0;
+wave_0_init21=state = 0;
+wave_0_init22=yn = 0;
+wave_0_init23=ymax = 0;
+wave_0_init24=q3 = 0;
+wave_0_init25=xdrift = 0;
+wave_0_init26=zx = 0;
+wave_0_init27=flag = 0;
+wave_0_per_point1=flag = above(q3, 2);
+wave_0_per_point2=state = state + flag * equal(state, 0);
+wave_0_per_point3=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_0_per_point4=yval = yval + 0.00004 * equal(state, 1);
+wave_0_per_point5=ymax = if(0.00001 < abs(equal(state, 0)), 0.004 * randint(100), ymax);
+wave_0_per_point6=state = if(0.00001 < abs(above(yval, 0.5 + ymax)), 2, state);
+wave_0_per_point7=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_0_per_point8=burst = if(0.00001 < abs(equal(state, 0)), 0.001, burst);
+wave_0_per_point9=alphax = if(0.00001 < abs(equal(state, 0)), 1, alphax);
+wave_0_per_point10=xdriftinc = if(0.00001 < abs(equal(state, 0)), 0, xdriftinc);
+wave_0_per_point11=burstspeed = if(0.00001 < abs(equal(state, 0)), randint(10), burstspeed);
+wave_0_per_point12=xdrift = if(0.00001 < abs(equal(state, 0)), randint(20), xdrift);
+wave_0_per_point13=xdriftinc = xdriftinc + equal(xdrift, 0) * equal(state, 1) * 0.00002 + equal(xdrift, 1) * equal(state, 1) * 0.000018 + equal(xdrift, 2) * equal(state, 1) * 0.000016 + equal(xdrift, 3) * equal(state, 1) * 0.000014 + equal(xdrift, 4) * equal(state, 1) * 0.000012 + equal(xdrift, 5) * equal(state, 1) * 0.00001 + equal(xdrift, 6) * equal(state, 1) * 0.000008 + equal(xdrift, 7) * equal(state, 1) * 0.000006 + equal(xdrift, 8) * equal(state, 1) * 0.000004 + equal(xdrift, 9) * equal(state, 1) * 0.000002 + equal(xdrift, 11) * equal(state, 1) * -0.000002 + equal(xdrift, 12) * equal(state, 1) * -0.000004 + equal(xdrift, 13) * equal(state, 1) * -0.000006 + equal(xdrift, 14) * equal(state, 1) * -0.000008 + equal(xdrift, 15) * equal(state, 1) * -0.00001 + equal(xdrift, 16) * equal(state, 1) * -0.000012 + equal(xdrift, 17) * equal(state, 1) * -0.000014 + equal(xdrift, 18) * equal(state, 1) * -0.000016 + equal(xdrift, 19) * equal(state, 1) * -0.000018;
+wave_0_per_point14=burst = burst + equal(burstspeed, 0) * equal(state, 2) * 0.000024 + equal(burstspeed, 1) * equal(state, 2) * 0.000022 + equal(burstspeed, 2) * equal(state, 2) * 0.00002 + equal(burstspeed, 3) * equal(state, 2) * 0.000018 + equal(burstspeed, 4) * equal(state, 2) * 0.000016 + equal(burstspeed, 5) * equal(state, 2) * 0.000014 + equal(burstspeed, 6) * equal(state, 2) * 0.000012 + equal(burstspeed, 7) * equal(state, 2) * 0.00001 + equal(burstspeed, 8) * equal(state, 2) * 0.000008 + equal(burstspeed, 9) * equal(state, 2) * 0.000008;
+wave_0_per_point15=alphax = alphax - 0.00004 * equal(state, 2);
+wave_0_per_point16=state = if(0.00001 < abs(below(alphax, 0)), 0, state);
+wave_0_per_point17=s = 314 * sample;
+wave_0_per_point18=ss = 6280 * sample;
+wave_0_per_point19=xs = (0.1 * burst + burst * cos(s)) * cos(ss);
+wave_0_per_point20=ys = (0.1 * burst + burst * cos(s)) * sin(ss);
+wave_0_per_point21=zs = burst * sin(s);
+wave_0_per_point22=angle = 6.28 * sin(0.025 * q1);
+wave_0_per_point23=yx = ys * cos(angle) - zs * sin(angle);
+wave_0_per_point24=zx = ys * sin(angle) + zs * cos(angle);
+wave_0_per_point25=xx = xs;
+wave_0_per_point26=angle2 = 6.28 * sin(0.03 * q1);
+wave_0_per_point27=xd = xx * cos(angle2) - zx * sin(angle2);
+wave_0_per_point28=zd = xx * sin(angle2) + zx * cos(angle2);
+wave_0_per_point29=yd = yx;
+wave_0_per_point30=angle3 = 6.28 * sin(0.022 * q1);
+wave_0_per_point31=xn = xd * cos(angle3) - yd * sin(angle3);
+wave_0_per_point32=yn = xd * sin(angle3) + yd * cos(angle3);
+wave_0_per_point33=zd = zd + 2;
+wave_0_per_point34=x = xn * zd * 0.3 + 0.5;
+wave_0_per_point35=y = yn * zd * 0.36;
+wave_0_per_point36=x = x + xdriftinc;
+wave_0_per_point37=y = y + sin(1.5 * yval) - 0.18;
+wave_0_per_point38=r = 0.5 + 0.5 * sin(1.2 * q1 + x + x);
+wave_0_per_point39=g = 0.5 + 0.5 * sin(1.5 * q1 + x + y);
+wave_0_per_point40=b = 0.5 + 0.5 * sin(1.36 * q1 + y + y);
+wave_1_init1=xx = 0;
+wave_1_init2=s = 0;
+wave_1_init3=xs = 0;
+wave_1_init4=xdriftinc = 0;
+wave_1_init5=yval = 0;
+wave_1_init6=ss = 0;
+wave_1_init7=q1 = 0;
+wave_1_init8=xd = 0;
+wave_1_init9=zd = 0;
+wave_1_init10=alphax = 0;
+wave_1_init11=yx = 0;
+wave_1_init12=angle2 = 0;
+wave_1_init13=zs = 0;
+wave_1_init14=angle = 0;
+wave_1_init15=ys = 0;
+wave_1_init16=xn = 0;
+wave_1_init17=burstspeed = 0;
+wave_1_init18=yd = 0;
+wave_1_init19=burst = 0;
+wave_1_init20=angle3 = 0;
+wave_1_init21=state = 0;
+wave_1_init22=yn = 0;
+wave_1_init23=ymax = 0;
+wave_1_init24=q3 = 0;
+wave_1_init25=xdrift = 0;
+wave_1_init26=zx = 0;
+wave_1_init27=flag = 0;
+wave_1_per_point1=flag = above(q3, 2);
+wave_1_per_point2=state = state + flag * equal(state, 0);
+wave_1_per_point3=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_1_per_point4=yval = yval + 0.00004 * equal(state, 1);
+wave_1_per_point5=ymax = if(0.00001 < abs(equal(state, 0)), 0.004 * randint(100), ymax);
+wave_1_per_point6=state = if(0.00001 < abs(above(yval, 0.5 + ymax)), 2, state);
+wave_1_per_point7=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_1_per_point8=burst = if(0.00001 < abs(equal(state, 0)), 0.001, burst);
+wave_1_per_point9=alphax = if(0.00001 < abs(equal(state, 0)), 1, alphax);
+wave_1_per_point10=xdriftinc = if(0.00001 < abs(equal(state, 0)), 0, xdriftinc);
+wave_1_per_point11=burstspeed = if(0.00001 < abs(equal(state, 0)), randint(10), burstspeed);
+wave_1_per_point12=xdrift = if(0.00001 < abs(equal(state, 0)), randint(20), xdrift);
+wave_1_per_point13=xdriftinc = xdriftinc + equal(xdrift, 0) * equal(state, 1) * 0.00002 + equal(xdrift, 1) * equal(state, 1) * 0.000018 + equal(xdrift, 2) * equal(state, 1) * 0.000016 + equal(xdrift, 3) * equal(state, 1) * 0.000014 + equal(xdrift, 4) * equal(state, 1) * 0.000012 + equal(xdrift, 5) * equal(state, 1) * 0.00001 + equal(xdrift, 6) * equal(state, 1) * 0.000008 + equal(xdrift, 7) * equal(state, 1) * 0.000006 + equal(xdrift, 8) * equal(state, 1) * 0.000004 + equal(xdrift, 9) * equal(state, 1) * 0.000002 + equal(xdrift, 11) * equal(state, 1) * -0.000002 + equal(xdrift, 12) * equal(state, 1) * -0.000004 + equal(xdrift, 13) * equal(state, 1) * -0.000006 + equal(xdrift, 14) * equal(state, 1) * -0.000008 + equal(xdrift, 15) * equal(state, 1) * -0.00001 + equal(xdrift, 16) * equal(state, 1) * -0.000012 + equal(xdrift, 17) * equal(state, 1) * -0.000014 + equal(xdrift, 18) * equal(state, 1) * -0.000016 + equal(xdrift, 19) * equal(state, 1) * -0.000018;
+wave_1_per_point14=burst = burst + equal(burstspeed, 0) * equal(state, 2) * 0.000024 + equal(burstspeed, 1) * equal(state, 2) * 0.000022 + equal(burstspeed, 2) * equal(state, 2) * 0.00002 + equal(burstspeed, 3) * equal(state, 2) * 0.000018 + equal(burstspeed, 4) * equal(state, 2) * 0.000016 + equal(burstspeed, 5) * equal(state, 2) * 0.000014 + equal(burstspeed, 6) * equal(state, 2) * 0.000012 + equal(burstspeed, 7) * equal(state, 2) * 0.00001 + equal(burstspeed, 8) * equal(state, 2) * 0.000008 + equal(burstspeed, 9) * equal(state, 2) * 0.000008;
+wave_1_per_point15=alphax = alphax - 0.00004 * equal(state, 2);
+wave_1_per_point16=state = if(0.00001 < abs(below(alphax, 0)), 0, state);
+wave_1_per_point17=s = 314 * sample;
+wave_1_per_point18=ss = 6280 * sample;
+wave_1_per_point19=xs = (burst + 0.0001 * cos(s)) * cos(ss);
+wave_1_per_point20=ys = (burst + 0.0001 * cos(s)) * sin(ss);
+wave_1_per_point21=zs = 0.1 * burst * sin(s);
+wave_1_per_point22=angle = 6.28 * sin(0.035 * -q1);
+wave_1_per_point23=yx = ys * cos(angle) - zs * sin(angle);
+wave_1_per_point24=zx = ys * sin(angle) + zs * cos(angle);
+wave_1_per_point25=xx = xs;
+wave_1_per_point26=angle2 = 6.28 * sin(0.03 * q1);
+wave_1_per_point27=xd = xx * cos(angle2) - zx * sin(angle2);
+wave_1_per_point28=zd = xx * sin(angle2) + zx * cos(angle2);
+wave_1_per_point29=yd = yx;
+wave_1_per_point30=angle3 = 6.28 * sin(0.032 * -q1);
+wave_1_per_point31=xn = xd * cos(angle3) - yd * sin(angle3);
+wave_1_per_point32=yn = xd * sin(angle3) + yd * cos(angle3);
+wave_1_per_point33=zd = zd + 2;
+wave_1_per_point34=x = xn * zd * 0.3 + 0.5;
+wave_1_per_point35=y = yn * zd * 0.36;
+wave_1_per_point36=x = x + xdriftinc;
+wave_1_per_point37=y = y + sin(1.5 * yval) - 0.18;
+wave_1_per_point38=r = 0.5 + 0.5 * sin(1.7 * q1 + x + x);
+wave_1_per_point39=g = 0.5 + 0.5 * sin(1.5 * q1 + x + y);
+wave_1_per_point40=b = 0.5 + 0.5 * sin(1.16 * q1 + y + y);
+wave_2_init1=xx = 0;
+wave_2_init2=s = 0;
+wave_2_init3=xs = 0;
+wave_2_init4=xdriftinc = 0;
+wave_2_init5=yval = 0;
+wave_2_init6=ss = 0;
+wave_2_init7=q1 = 0;
+wave_2_init8=xd = 0;
+wave_2_init9=zd = 0;
+wave_2_init10=alphax = 0;
+wave_2_init11=yx = 0;
+wave_2_init12=angle2 = 0;
+wave_2_init13=zs = 0;
+wave_2_init14=angle = 0;
+wave_2_init15=ys = 0;
+wave_2_init16=xn = 0;
+wave_2_init17=burstspeed = 0;
+wave_2_init18=yd = 0;
+wave_2_init19=burst = 0;
+wave_2_init20=angle3 = 0;
+wave_2_init21=state = 0;
+wave_2_init22=yn = 0;
+wave_2_init23=ymax = 0;
+wave_2_init24=q3 = 0;
+wave_2_init25=xdrift = 0;
+wave_2_init26=zx = 0;
+wave_2_init27=flag = 0;
+wave_2_per_point1=flag = above(q3, 2);
+wave_2_per_point2=state = state + flag * equal(state, 0);
+wave_2_per_point3=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_2_per_point4=yval = yval + 0.00004 * equal(state, 1);
+wave_2_per_point5=ymax = if(0.00001 < abs(equal(state, 0)), 0.004 * randint(100), ymax);
+wave_2_per_point6=state = if(0.00001 < abs(above(yval, 0.5 + ymax)), 2, state);
+wave_2_per_point7=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_2_per_point8=burst = if(0.00001 < abs(equal(state, 0)), 0.001, burst);
+wave_2_per_point9=alphax = if(0.00001 < abs(equal(state, 0)), 1, alphax);
+wave_2_per_point10=xdriftinc = if(0.00001 < abs(equal(state, 0)), 0, xdriftinc);
+wave_2_per_point11=burstspeed = if(0.00001 < abs(equal(state, 0)), randint(10), burstspeed);
+wave_2_per_point12=xdrift = if(0.00001 < abs(equal(state, 0)), randint(20), xdrift);
+wave_2_per_point13=xdriftinc = xdriftinc + equal(xdrift, 0) * equal(state, 1) * 0.00002 + equal(xdrift, 1) * equal(state, 1) * 0.000018 + equal(xdrift, 2) * equal(state, 1) * 0.000016 + equal(xdrift, 3) * equal(state, 1) * 0.000014 + equal(xdrift, 4) * equal(state, 1) * 0.000012 + equal(xdrift, 5) * equal(state, 1) * 0.00001 + equal(xdrift, 6) * equal(state, 1) * 0.000008 + equal(xdrift, 7) * equal(state, 1) * 0.000006 + equal(xdrift, 8) * equal(state, 1) * 0.000004 + equal(xdrift, 9) * equal(state, 1) * 0.000002 + equal(xdrift, 11) * equal(state, 1) * -0.000002 + equal(xdrift, 12) * equal(state, 1) * -0.000004 + equal(xdrift, 13) * equal(state, 1) * -0.000006 + equal(xdrift, 14) * equal(state, 1) * -0.000008 + equal(xdrift, 15) * equal(state, 1) * -0.00001 + equal(xdrift, 16) * equal(state, 1) * -0.000012 + equal(xdrift, 17) * equal(state, 1) * -0.000014 + equal(xdrift, 18) * equal(state, 1) * -0.000016 + equal(xdrift, 19) * equal(state, 1) * -0.000018;
+wave_2_per_point14=burst = burst + equal(burstspeed, 0) * equal(state, 2) * 0.000024 + equal(burstspeed, 1) * equal(state, 2) * 0.000022 + equal(burstspeed, 2) * equal(state, 2) * 0.00002 + equal(burstspeed, 3) * equal(state, 2) * 0.000018 + equal(burstspeed, 4) * equal(state, 2) * 0.000016 + equal(burstspeed, 5) * equal(state, 2) * 0.000014 + equal(burstspeed, 6) * equal(state, 2) * 0.000012 + equal(burstspeed, 7) * equal(state, 2) * 0.00001 + equal(burstspeed, 8) * equal(state, 2) * 0.000008 + equal(burstspeed, 9) * equal(state, 2) * 0.000008;
+wave_2_per_point15=alphax = alphax - 0.00004 * equal(state, 2);
+wave_2_per_point16=state = if(0.00001 < abs(below(alphax, 0)), 0, state);
+wave_2_per_point17=s = 314 * sample;
+wave_2_per_point18=ss = 6280 * sample;
+wave_2_per_point19=xs = (0.8 * burst + 0.4 * burst * cos(s)) * cos(ss);
+wave_2_per_point20=ys = (0.8 * burst + 0.4 * burst * cos(s)) * sin(ss);
+wave_2_per_point21=zs = 0.4 * burst * sin(s);
+wave_2_per_point22=angle = 6.28 * sin(0.015 * -q1);
+wave_2_per_point23=yx = ys * cos(angle) - zs * sin(angle);
+wave_2_per_point24=zx = ys * sin(angle) + zs * cos(angle);
+wave_2_per_point25=xx = xs;
+wave_2_per_point26=angle2 = 6.28 * sin(0.01579 * q1);
+wave_2_per_point27=xd = xx * cos(angle2) - zx * sin(angle2);
+wave_2_per_point28=zd = xx * sin(angle2) + zx * cos(angle2);
+wave_2_per_point29=yd = yx;
+wave_2_per_point30=angle3 = 6.28 * sin(0.022 * q1);
+wave_2_per_point31=xn = xd * cos(angle3) - yd * sin(angle3);
+wave_2_per_point32=yn = xd * sin(angle3) + yd * cos(angle3);
+wave_2_per_point33=zd = zd + 2;
+wave_2_per_point34=x = xn * zd * 0.3 + 0.5;
+wave_2_per_point35=y = yn * zd * 0.36;
+wave_2_per_point36=x = x + xdriftinc;
+wave_2_per_point37=y = y + sin(1.5 * yval) - 0.18;
+wave_2_per_point38=r = 0.5 + 0.5 * sin(1.27 * q1 + x + x);
+wave_2_per_point39=g = 0.5 + 0.5 * sin(1.5 * q1 + x + y);
+wave_2_per_point40=b = 0.5 + 0.5 * sin(1.346 * q1 + y + y);
+wave_3_init1=xx = 0;
+wave_3_init2=s = 0;
+wave_3_init3=xs = 0;
+wave_3_init4=xdriftinc = 0;
+wave_3_init5=yval = 0;
+wave_3_init6=ss = 0;
+wave_3_init7=q1 = 0;
+wave_3_init8=xd = 0;
+wave_3_init9=zd = 0;
+wave_3_init10=alphax = 0;
+wave_3_init11=yx = 0;
+wave_3_init12=angle2 = 0;
+wave_3_init13=zs = 0;
+wave_3_init14=angle = 0;
+wave_3_init15=ys = 0;
+wave_3_init16=xn = 0;
+wave_3_init17=burstspeed = 0;
+wave_3_init18=yd = 0;
+wave_3_init19=burst = 0;
+wave_3_init20=angle3 = 0;
+wave_3_init21=state = 0;
+wave_3_init22=yn = 0;
+wave_3_init23=ymax = 0;
+wave_3_init24=q3 = 0;
+wave_3_init25=xdrift = 0;
+wave_3_init26=zx = 0;
+wave_3_init27=flag = 0;
+wave_3_per_point1=flag = above(q3, 2);
+wave_3_per_point2=state = state + flag * equal(state, 0);
+wave_3_per_point3=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_3_per_point4=yval = yval + 0.00004 * equal(state, 1);
+wave_3_per_point5=ymax = if(0.00001 < abs(equal(state, 0)), 0.004 * randint(100), ymax);
+wave_3_per_point6=state = if(0.00001 < abs(above(yval, 0.5 + ymax)), 2, state);
+wave_3_per_point7=yval = if(0.00001 < abs(equal(state, 0)), 0, yval);
+wave_3_per_point8=burst = if(0.00001 < abs(equal(state, 0)), 0.001, burst);
+wave_3_per_point9=alphax = if(0.00001 < abs(equal(state, 0)), 1, alphax);
+wave_3_per_point10=xdriftinc = if(0.00001 < abs(equal(state, 0)), 0, xdriftinc);
+wave_3_per_point11=burstspeed = if(0.00001 < abs(equal(state, 0)), randint(10), burstspeed);
+wave_3_per_point12=xdrift = if(0.00001 < abs(equal(state, 0)), randint(20), xdrift);
+wave_3_per_point13=xdriftinc = xdriftinc + equal(xdrift, 0) * equal(state, 1) * 0.00002 + equal(xdrift, 1) * equal(state, 1) * 0.000018 + equal(xdrift, 2) * equal(state, 1) * 0.000016 + equal(xdrift, 3) * equal(state, 1) * 0.000014 + equal(xdrift, 4) * equal(state, 1) * 0.000012 + equal(xdrift, 5) * equal(state, 1) * 0.00001 + equal(xdrift, 6) * equal(state, 1) * 0.000008 + equal(xdrift, 7) * equal(state, 1) * 0.000006 + equal(xdrift, 8) * equal(state, 1) * 0.000004 + equal(xdrift, 9) * equal(state, 1) * 0.000002 + equal(xdrift, 11) * equal(state, 1) * -0.000002 + equal(xdrift, 12) * equal(state, 1) * -0.000004 + equal(xdrift, 13) * equal(state, 1) * -0.000006 + equal(xdrift, 14) * equal(state, 1) * -0.000008 + equal(xdrift, 15) * equal(state, 1) * -0.00001 + equal(xdrift, 16) * equal(state, 1) * -0.000012 + equal(xdrift, 17) * equal(state, 1) * -0.000014 + equal(xdrift, 18) * equal(state, 1) * -0.000016 + equal(xdrift, 19) * equal(state, 1) * -0.000018;
+wave_3_per_point14=burst = burst + equal(burstspeed, 0) * equal(state, 2) * 0.000024 + equal(burstspeed, 1) * equal(state, 2) * 0.000022 + equal(burstspeed, 2) * equal(state, 2) * 0.00002 + equal(burstspeed, 3) * equal(state, 2) * 0.000018 + equal(burstspeed, 4) * equal(state, 2) * 0.000016 + equal(burstspeed, 5) * equal(state, 2) * 0.000014 + equal(burstspeed, 6) * equal(state, 2) * 0.000012 + equal(burstspeed, 7) * equal(state, 2) * 0.00001 + equal(burstspeed, 8) * equal(state, 2) * 0.000008 + equal(burstspeed, 9) * equal(state, 2) * 0.000008;
+wave_3_per_point15=alphax = alphax - 0.00004 * equal(state, 2);
+wave_3_per_point16=state = if(0.00001 < abs(below(alphax, 0)), 0, state);
+wave_3_per_point17=s = 314 * sample;
+wave_3_per_point18=ss = 6280 * sample;
+wave_3_per_point19=xs = (burst + 0.0001 * cos(s)) * cos(ss);
+wave_3_per_point20=ys = (burst + 0.0001 * cos(s)) * sin(ss);
+wave_3_per_point21=zs = 0.1 * burst * sin(s);
+wave_3_per_point22=angle = 6.28 * sin(0.035 * -q1);
+wave_3_per_point23=yx = ys * cos(angle) - zs * sin(angle);
+wave_3_per_point24=zx = ys * sin(angle) + zs * cos(angle);
+wave_3_per_point25=xx = xs;
+wave_3_per_point26=angle2 = 6.28 * sin(0.03 * -q1);
+wave_3_per_point27=xd = xx * cos(angle2) - zx * sin(angle2);
+wave_3_per_point28=zd = xx * sin(angle2) + zx * cos(angle2);
+wave_3_per_point29=yd = yx;
+wave_3_per_point30=angle3 = 6.28 * sin(0.022 * -q1);
+wave_3_per_point31=xn = xd * cos(angle3) - yd * sin(angle3);
+wave_3_per_point32=yn = xd * sin(angle3) + yd * cos(angle3);
+wave_3_per_point33=zd = zd + 2;
+wave_3_per_point34=x = xn * zd * 0.3 + 0.5;
+wave_3_per_point35=y = yn * zd * 0.36;
+wave_3_per_point36=x = x + xdriftinc;
+wave_3_per_point37=y = y + sin(1.5 * yval) - 0.18;
+wave_3_per_point38=r = 0.5 + 0.5 * sin(1.3 * q1 + x + x);
+wave_3_per_point39=g = 0.5 + 0.5 * sin(1.1 * q1 + x + y);
+wave_3_per_point40=b = 0.5 + 0.5 * sin(1.66 * q1 + y + y);
+shape_1_init1=q1 = 0;
+shape_1_init2=q1 = 0;
+shape_1_init3=q1 = 0;
+shape_1_per_frame1=r = 0.1 + 0.5 * sin(q1);
+shape_1_per_frame2=g = 0.1 + 0.5 * sin(0.9878 * q1);
+shape_1_per_frame3=b = 0.1 + 0.5 * sin(0.897 * q1);
 
 [warp_shader]
 shader_body { 

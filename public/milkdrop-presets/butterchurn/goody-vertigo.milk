@@ -29,42 +29,33 @@ fMotionVectorsG=0.500000
 fMotionVectorsB=0.500000
 fMotionVectorsA=0.000000
 b1ed=0.200000
-
-[shape00_0]
-bEnabled=1.000000
-bAdditive=1.000000
-bTextured=1.000000
-fX=0.460000
-fRad=1.998630
-fTexZoom=0.483640
-fR=0.900000
-fG=0.300000
-fB=0.600000
-fA=0.070000
-fR2=1.000000
-fB2=0.400000
-fBorderA=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=1.000000
+shapecode_0_additive=1.000000
+shapecode_0_textured=1.000000
+shapecode_0_x=0.460000
+shapecode_0_rad=1.998630
+shapecode_0_tex_zoom=0.483640
+shapecode_0_r=0.900000
+shapecode_0_g=0.300000
+shapecode_0_b=0.600000
+shapecode_0_a=0.070000
+shapecode_0_r2=1.000000
+shapecode_0_b2=0.400000
+shapecode_0_border_a=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=xd = 0;
+per_frame_init_2=yd = 0;
+per_pixel_1=xd = sin(time) * x - cos(time) * y;
+per_pixel_2=yd = cos(time) * x + sin(time) * y;
+per_pixel_3=dx = dx + 0.0015 * sin(20 * xd);
+per_pixel_4=dy = dy + 0.0015 * sin(20 * yd);
+per_pixel_5=rot = rot + 0.015 * sin(0.35 * time + 0.1 * treb_att);
 
 [warp_shader]
 shader_body { 

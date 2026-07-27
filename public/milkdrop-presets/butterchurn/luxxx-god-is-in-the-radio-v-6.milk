@@ -27,30 +27,39 @@ fWaveB=0.800000
 fOuterBorderSize=0.005000
 fOuterBorderA=1.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=ripple_r = 0;
+per_frame_init_2=ripple_x = 0;
+per_frame_init_3=q1 = 0;
+per_frame_init_4=q5 = 0;
+per_frame_init_5=timer_a = 0;
+per_frame_init_6=count = 0;
+per_frame_init_7=q4 = 0;
+per_frame_init_8=ripple = 0;
+per_frame_init_9=ripple_y = 0;
+per_frame_init_10=timer_b = 0;
+per_frame_init_11=q2 = 0;
+per_frame_init_12=q3 = 0;
+per_frame_1=count = if(0.00001 < abs(below(count, 9)), count + 1, 0);
+per_frame_2=q1 = 0.5;
+per_frame_3=q2 = 0.5;
+per_frame_4=q3 = count;
+per_frame_5=q4 = aspectx;
+per_frame_6=q5 = aspecty;
+per_pixel_1=timer_a = 10 * sin(time);
+per_pixel_2=timer_b = 10 * sin(0.5 * time);
+per_pixel_3=ripple_x = cos(x * timer_a - timer_b) * bass_att;
+per_pixel_4=ripple_y = cos(y * timer_a - timer_b) * treb_att;
+per_pixel_5=ripple_r = cos(rad * timer_b - timer_a) * mid_att;
+per_pixel_6=ripple = ripple_x + ripple_y + ripple_r;
+per_pixel_7=zoom = zoom + 0.1 * ripple;
 
 [warp_shader]
 shader_body { 

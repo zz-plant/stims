@@ -28,34 +28,101 @@ nMotionVectorsX=64.000000
 nMotionVectorsY=48.000000
 nMotionVectorsLoop=0.000000
 fMotionVectorsA=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_1]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_2]
-bEnabled=1.000000
-bThick=1.000000
-
-[wave00_3]
-bEnabled=1.000000
-bThick=1.000000
+wavecode_0_enabled=1.000000
+wavecode_0_thick=1.000000
+wavecode_1_enabled=1.000000
+wavecode_1_thick=1.000000
+wavecode_2_enabled=1.000000
+wavecode_2_thick=1.000000
+wavecode_3_enabled=1.000000
+wavecode_3_thick=1.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=decay_rate = 0;
+per_frame_init_2=prev_beat = 0;
+per_frame_init_3=is_beat = 0;
+per_frame_init_4=q16 = 0;
+per_frame_init_5=min_att = 0;
+per_frame_init_6=beat = 0;
+per_frame_init_7=q17 = 0;
+per_frame_init_8=decay_to = 0;
+per_frame_init_9=beat_level = 0;
+per_frame_init_10=q16 = 0.029 * pow(0.01 * randint(100), 1.5);
+per_frame_1=min_att = 2.5;
+per_frame_2=decay_to = 0.8;
+per_frame_3=decay_rate = pow(0.999, fps);
+per_frame_4=beat = bass / max(min_att, bass_att);
+per_frame_5=beat = max(beat, mid / max(min_att, mid_att));
+per_frame_6=beat = max(beat, treb / max(min_att, treb_att));
+per_frame_7=beat = max(beat, (prev_beat - decay_to) * decay_rate + decay_to);
+per_frame_8=beat_level = 24 * (beat - prev_beat - 0.03);
+per_frame_9=is_beat = above(beat_level, 0.5);
+per_frame_10=prev_beat = beat;
+per_frame_11=q17 = 3 * (max(max(bass / bass_att, treb / treb_att), mid / mid_att) - 0.82);
+per_frame_12=q17 = max(0, min(1, q17));
+per_frame_13=zoom = zoom + q16;
+wave_0_init1=ma = 0;
+wave_0_init2=mx = 0;
+wave_0_init3=my = 0;
+wave_0_init4=q17 = 0;
+wave_0_per_frame1=a = q17;
+wave_0_per_point1=ma = ma + 3.1415 * above(bass, 1) * 0.01 * bass;
+wave_0_per_point2=ma = ma - 3.1415 * above(treb, 1) * 0.01 * treb;
+wave_0_per_point3=mx = mx + 0.0002 * cos(ma);
+wave_0_per_point4=my = my + 0.0002 * sin(ma);
+wave_0_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_0_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_0_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_0_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_0_per_point9=x = mx;
+wave_0_per_point10=y = my;
+wave_1_init1=ma = 0;
+wave_1_init2=mx = 0;
+wave_1_init3=my = 0;
+wave_1_init4=q17 = 0;
+wave_1_per_frame1=a = q17;
+wave_1_per_point1=ma = ma + 3.1415 * above(bass, 1) * 0.05 * bass;
+wave_1_per_point2=ma = ma - 3.1415 * above(mid, 1) * 0.05 * mid;
+wave_1_per_point3=mx = mx + 0.0001 * cos(ma);
+wave_1_per_point4=my = my + 0.0001 * sin(ma);
+wave_1_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_1_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_1_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_1_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_1_per_point9=x = mx;
+wave_1_per_point10=y = my;
+wave_2_init1=ma = 0;
+wave_2_init2=mx = 0;
+wave_2_init3=my = 0;
+wave_2_init4=q17 = 0;
+wave_2_per_frame1=a = q17;
+wave_2_per_point1=ma = ma + 3.1415 * above(mid, 1) * 0.01 * mid;
+wave_2_per_point2=ma = ma - 3.1415 * above(treb, 1) * 0.01 * treb;
+wave_2_per_point3=mx = mx + 0.0004 * cos(ma);
+wave_2_per_point4=my = my + 0.0004 * sin(ma);
+wave_2_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_2_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_2_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_2_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_2_per_point9=x = mx;
+wave_2_per_point10=y = my;
+wave_3_init1=ma = 0;
+wave_3_init2=mx = 0;
+wave_3_init3=my = 0;
+wave_3_init4=q17 = 0;
+wave_3_per_frame1=a = q17;
+wave_3_per_point1=ma = ma + 3.1415 * above(bass, 0.5) * 0.02 * bass;
+wave_3_per_point2=ma = ma - 3.1415 * above(treb, 0.5) * 0.02 * treb;
+wave_3_per_point3=mx = mx + 0.0008 * cos(ma);
+wave_3_per_point4=my = my + 0.0008 * sin(ma);
+wave_3_per_point5=mx = if(0.00001 < abs(above(mx, 0.9)), 0.9 - mx, mx);
+wave_3_per_point6=my = if(0.00001 < abs(above(my, 0.9)), 0.9 - my, my);
+wave_3_per_point7=mx = if(0.00001 < abs(below(mx, 0.1)), 0.9 + mx, mx);
+wave_3_per_point8=my = if(0.00001 < abs(below(my, 0.1)), 0.9 + my, my);
+wave_3_per_point9=x = mx;
+wave_3_per_point10=y = my;
 
 [warp_shader]
 shader_body { 

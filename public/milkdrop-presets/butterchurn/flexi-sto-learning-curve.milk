@@ -30,30 +30,65 @@ nMotionVectorsLoop=0.000000
 fMotionVectorsB=0.000000
 b1x=0.500000
 b1ed=0.000000
-
-[shape00_0]
-bEnabled=0.000000
-
-[shape00_1]
-bEnabled=0.000000
-
-[shape00_2]
-bEnabled=0.000000
-
-[shape00_3]
-bEnabled=0.000000
-
-[wave00_0]
-bEnabled=0.000000
-
-[wave00_1]
-bEnabled=0.000000
-
-[wave00_2]
-bEnabled=0.000000
-
-[wave00_3]
-bEnabled=0.000000
+wavecode_0_enabled=0.000000
+wavecode_1_enabled=0.000000
+wavecode_2_enabled=0.000000
+wavecode_3_enabled=0.000000
+shapecode_0_enabled=0.000000
+shapecode_1_enabled=0.000000
+shapecode_2_enabled=0.000000
+shapecode_3_enabled=0.000000
+per_frame_init_1=w = 0;
+per_frame_init_2=q25 = 0;
+per_frame_init_3=q22 = 0;
+per_frame_init_4=q21 = 0;
+per_frame_init_5=q1 = 0;
+per_frame_init_6=dm = 0;
+per_frame_init_7=mm = 0;
+per_frame_init_8=tt = 0;
+per_frame_init_9=q23 = 0;
+per_frame_init_10=q24 = 0;
+per_frame_init_11=initframes = 0;
+per_frame_init_12=q26 = 0;
+per_frame_init_13=initializing = 0;
+per_frame_init_14=framecount = 0;
+per_frame_init_15=stages = 0;
+per_frame_init_16=db = 0;
+per_frame_init_17=ddt = 0;
+per_frame_init_18=bb = 0;
+per_frame_init_19=q27 = 0;
+per_frame_init_20=q28 = 0;
+per_frame_init_21=stage = 0;
+per_frame_init_22=initialized = 0;
+per_frame_init_23=framecount = 0;
+per_frame_init_24=stage = 1;
+per_frame_init_25=initframes = 128;
+per_frame_init_26=stages = 16;
+per_frame_1=initializing = below(framecount, initframes);
+per_frame_2=ib_a = 1 - framecount;
+per_frame_3=ob_a = ib_a;
+per_frame_4=mv_a = 1;
+per_frame_5=wave_a = 0;
+per_frame_6=zoom = 1;
+per_frame_7=framecount = framecount + 1;
+per_frame_8=stage = stage + equal(mod(framecount * stages, initframes), 0);
+per_frame_9=stage = if(0.00001 < abs(initializing), stage, 1);
+per_frame_10=q1 = stage;
+per_frame_11=db = 0.98 * db + 0.2 * bass;
+per_frame_12=bb = bb + 0.1 * db;
+per_frame_13=ddt = 0.98 * ddt + 0.2 * treb;
+per_frame_14=tt = tt + 0.1 * ddt;
+per_frame_15=dm = 0.98 * dm + 0.2 * mid;
+per_frame_16=mm = mm + 0.1 * dm;
+per_frame_17=q23 = 0.5 + 0.25 * sin(0.1 * (bb - mm));
+per_frame_18=q24 = 0.5 + 0.25 * sin(0.1 * (tt - mm));
+per_frame_19=w = 0.1 * (bb - tt);
+per_frame_20=q26 = 0.25 - 0.025 * (db - ddt);
+per_frame_21=q21 = sin(w);
+per_frame_22=q22 = cos(w);
+per_frame_23=q27 = sin(-w);
+per_frame_24=q28 = cos(-w);
+per_frame_25=q25 = 1 / q26;
 
 [warp_shader]
 shader_body { 
