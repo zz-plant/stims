@@ -1,14 +1,74 @@
-import type { MilkdropExpressionNode } from './common-types.ts';
+import type {
+  MilkdropCompiledStatement,
+  MilkdropExpressionNode,
+  MilkdropProgramBlock,
+} from './common-types.ts';
 import { aliasMap } from './field-normalization.ts';
 
-type JitFn = (
-  env: Record<string, number>,
-  r: () => number,
-  megabuf: (index: number) => number,
-) => number;
-type CachedExpressionNode = MilkdropExpressionNode & { compiledFn?: JitFn };
+/**
+ * Per-preset scratch buffer, matching MilkDrop's `megabuf`.
+ */
+export const MILKDROP_MEGABUF_SIZE = 65_536;
 
-function compileNode(node: MilkdropExpressionNode): string {
+/**
+ * Buffer shared across presets, matching MilkDrop's `gmegabuf`.
+ */
+export const MILKDROP_GMEGABUF_SIZE = 1_048_576;
+
+/**
+ * A compiled program block.
+ *
+ * Whole blocks are compiled into one function rather than one function per
+ * statement: per-pixel and per-point programs run for every mesh vertex and
+ * every waveform sample, so per-statement dispatch and the closures it needed
+ * for buffer access dominated the VM's frame cost.
+ *
+ * Stores are resolved at compile time to mirror the VM's routing rules:
+ * `q` registers always land in the register bank, every other target lands in
+ * the caller's locals when a local scope is active, and otherwise in the
+ * register bank (`t` registers) or preset state.
+ */
+export type MilkdropProgramFn = (
+  env: Record<string, number>,
+  state: Record<string, number>,
+  registers: Record<string, number>,
+  locals: Record<string, number> | null,
+  megabuf: Float32Array,
+  gmegabuf: Float32Array,
+  nextRandom: () => number,
+) => void;
+
+const NO_OP: MilkdropProgramFn = () => {};
+
+const REGISTER_PATTERN = /^([qt])(\d+)$/u;
+
+type CompileContext = {
+  temporaries: string[];
+};
+
+function nextTemporary(context: CompileContext) {
+  const name = `_i${context.temporaries.length}`;
+  context.temporaries.push(name);
+  return name;
+}
+
+function compileBufferRead(
+  node: MilkdropExpressionNode & { type: 'call' },
+  context: CompileContext,
+  buffer: 'mb' | 'gb',
+  size: number,
+) {
+  const index = nextTemporary(context);
+  const argument = node.args[0]
+    ? compileNode(node.args[0], context)
+    : '0';
+  return `(${index} = Math.trunc(${argument}), (${index} >= 0 && ${index} < ${size} ? ${buffer}[${index}] : 0))`;
+}
+
+function compileNode(
+  node: MilkdropExpressionNode,
+  context: CompileContext,
+): string {
   switch (node.type) {
     case 'literal':
       return String(node.value);
@@ -24,7 +84,7 @@ function compileNode(node: MilkdropExpressionNode): string {
       return `(e[${JSON.stringify(node.name)}] ?? 0)`;
     }
     case 'unary': {
-      const x = compileNode(node.operand);
+      const x = compileNode(node.operand, context);
       switch (node.operator) {
         case '+':
           return `(+(${x}))`;
@@ -36,8 +96,8 @@ function compileNode(node: MilkdropExpressionNode): string {
       return '(0)';
     }
     case 'binary': {
-      const l = compileNode(node.left);
-      const r = compileNode(node.right);
+      const l = compileNode(node.left, context);
+      const r = compileNode(node.right, context);
       switch (node.operator) {
         case '+':
           return `((${l}) + (${r}))`;
@@ -75,8 +135,14 @@ function compileNode(node: MilkdropExpressionNode): string {
       return '(0)';
     }
     case 'call': {
-      const args = node.args.map(compileNode);
       const name = node.name.toLowerCase();
+      if (name === 'megabuf') {
+        return compileBufferRead(node, context, 'mb', MILKDROP_MEGABUF_SIZE);
+      }
+      if (name === 'gmegabuf') {
+        return compileBufferRead(node, context, 'gb', MILKDROP_GMEGABUF_SIZE);
+      }
+      const args = node.args.map((arg) => compileNode(arg, context));
       switch (name) {
         case 'sin':
           return `Math.sin(${args[0] ?? '0'})`;
@@ -122,6 +188,8 @@ function compileNode(node: MilkdropExpressionNode): string {
           return `((function(e0,e1,v){if(e0===e1)return v<e0?0:1;var t=Math.min(Math.max((v-e0)/(e1-e0),0),1);return t*t*(3-2*t)})(${args[0] ?? '0'},${args[1] ?? '1'},${args[2] ?? '0'}))`;
         case 'log':
           return `Math.log(Math.max(0.000001, ${args[0] ?? '0'}))`;
+        case 'log10':
+          return `Math.log10(Math.max(0.000001, ${args[0] ?? '0'}))`;
         case 'exp':
           return `Math.exp(${args[0] ?? '0'})`;
         case 'sigmoid':
@@ -147,62 +215,91 @@ function compileNode(node: MilkdropExpressionNode): string {
         case 'equal':
           return `((${args[0] ?? '0'}) === (${args[1] ?? '0'}) ? 1 : 0)`;
         case 'rand':
-          return `(r() * (${args[0] ?? '1'}))`;
-        case 'megabuf':
-          return `megabuf(${args[0] ?? '0'})`;
+          return `(rnd() * (${args[0] ?? '1'}))`;
+        case 'randint':
+          return `Math.floor(rnd() * (${args[0] ?? '1'}))`;
       }
       return '(0)';
     }
   }
 }
 
-const MAX_EXPRESSION_CACHE_SIZE = 2000;
-const rawCache = new Map<string, JitFn>();
+function compileStore(
+  statement: MilkdropCompiledStatement,
+  context: CompileContext,
+) {
+  const target = statement.target;
 
-export function evaluateJit(
-  node: MilkdropExpressionNode,
-  env: Record<string, number>,
-  nextRandom?: () => number,
-  megabuf: (index: number) => number = () => 0,
-): number {
-  const cacheableNode = node as CachedExpressionNode;
-  let fn = cacheableNode.compiledFn;
-  if (!fn) {
-    const key = JSON.stringify(node);
-    fn = rawCache.get(key);
-    if (!fn) {
-      const body = compileNode(node);
-      fn = new Function(
-        'e',
-        'r',
-        'megabuf',
-        `"use strict";return (${body});`,
-      ) as unknown as JitFn;
-      if (rawCache.size >= MAX_EXPRESSION_CACHE_SIZE) {
-        const oldestKey = rawCache.keys().next().value;
-        if (oldestKey !== undefined) {
-          rawCache.delete(oldestKey);
-        }
-      }
-      rawCache.set(key, fn);
-    } else {
-      // Move to end (most recently used)
-      rawCache.delete(key);
-      rawCache.set(key, fn);
-    }
-    try {
-      cacheableNode.compiledFn = fn;
-    } catch {
-      // Safe fallback if node is frozen
-    }
+  if (target === 'megabuf' || target === 'gmegabuf') {
+    const buffer = target === 'megabuf' ? 'mb' : 'gb';
+    const size =
+      target === 'megabuf' ? MILKDROP_MEGABUF_SIZE : MILKDROP_GMEGABUF_SIZE;
+    const index = nextTemporary(context);
+    const indexSource = statement.targetExpression
+      ? compileNode(statement.targetExpression, context)
+      : '0';
+    return `${index} = Math.trunc(${indexSource}); if (${index} >= 0 && ${index} < ${size}) { ${buffer}[${index}] = _v; }`;
   }
-  return fn(env, nextRandom ?? (() => Math.random()), megabuf);
+
+  const rawKey = JSON.stringify(target);
+  const normalized = target.toLowerCase();
+  const registerMatch = normalized.match(REGISTER_PATTERN);
+
+  if (registerMatch?.[1] === 'q') {
+    return `r[${JSON.stringify(normalized)}] = _v;`;
+  }
+  if (registerMatch) {
+    return `if (l !== null) { l[${rawKey}] = _v; } else { r[${JSON.stringify(normalized)}] = _v; }`;
+  }
+  return `if (l !== null) { l[${rawKey}] = _v; } else { s[${rawKey}] = _v; }`;
 }
 
-export function clearExpressionCache() {
-  rawCache.clear();
+function compileProgramSource(block: MilkdropProgramBlock) {
+  const context: CompileContext = { temporaries: [] };
+  const body: string[] = [];
+
+  for (const statement of block.statements) {
+    if (!statement) {
+      continue;
+    }
+    // The value is evaluated before the target index, matching the order the
+    // interpreter used.
+    body.push(`_v = ${compileNode(statement.expression, context)};`);
+    body.push(compileStore(statement, context));
+    body.push(`e[${JSON.stringify(statement.target)}] = _v;`);
+  }
+
+  const declarations = ['_v', ...context.temporaries].join(', ');
+  return `"use strict"; var ${declarations}; ${body.join('\n')}`;
 }
 
-export function getExpressionCacheSize() {
-  return rawCache.size;
+const compiledPrograms = new WeakMap<MilkdropProgramBlock, MilkdropProgramFn>();
+
+/**
+ * Compiles a program block into a single callable, memoised per block.
+ */
+export function compileMilkdropProgram(
+  block: MilkdropProgramBlock,
+): MilkdropProgramFn {
+  const cached = compiledPrograms.get(block);
+  if (cached) {
+    return cached;
+  }
+
+  const compiled =
+    block.statements.length === 0
+      ? NO_OP
+      : (new Function(
+          'e',
+          's',
+          'r',
+          'l',
+          'mb',
+          'gb',
+          'rnd',
+          compileProgramSource(block),
+        ) as MilkdropProgramFn);
+
+  compiledPrograms.set(block, compiled);
+  return compiled;
 }

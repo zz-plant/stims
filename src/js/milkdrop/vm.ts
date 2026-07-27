@@ -1,7 +1,11 @@
 /* global GPUDevice */
 
 import { DEFAULT_MILKDROP_STATE } from './compiler';
-import { evaluateJit } from './expression-jit.ts';
+import {
+  compileMilkdropProgram,
+  MILKDROP_GMEGABUF_SIZE,
+  MILKDROP_MEGABUF_SIZE,
+} from './expression-jit.ts';
 import type {
   MilkdropCompiledPreset,
   MilkdropFrameState,
@@ -51,8 +55,22 @@ const objectHasOwn = (
   }
 ).hasOwn;
 
+/**
+ * `gmegabuf` is shared across presets in MilkDrop, so it lives outside the VM
+ * instance. It is allocated on first use because most presets never touch it.
+ */
+let sharedGlobalBuffer: Float32Array | null = null;
+const EMPTY_BUFFER = new Float32Array(0);
+
+function resolveGlobalBuffer(preset: MilkdropCompiledPreset) {
+  if (!preset.source.raw.includes('gmegabuf')) {
+    return sharedGlobalBuffer ?? EMPTY_BUFFER;
+  }
+  sharedGlobalBuffer ??= new Float32Array(MILKDROP_GMEGABUF_SIZE);
+  return sharedGlobalBuffer;
+}
+
 class MilkdropPresetVM implements MilkdropVM {
-  private static readonly MEGABUF_SIZE = 65_536;
   private preset: MilkdropCompiledPreset;
   private state: MutableState = {};
   private registers: MutableState = {};
@@ -98,7 +116,8 @@ class MilkdropPresetVM implements MilkdropVM {
   private lastPreparedSignalFrame = Number.NaN;
   private lastPreparedSignalTime = Number.NaN;
   private randomState = 1;
-  private readonly megabuf = new Float32Array(MilkdropPresetVM.MEGABUF_SIZE);
+  private readonly megabuf = new Float32Array(MILKDROP_MEGABUF_SIZE);
+  private gmegabuf: Float32Array = EMPTY_BUFFER;
   private detailScale = 1;
   private renderBackend: 'webgl' | 'webgpu' = 'webgl';
   private webgpuOptimizationFlags: MilkdropWebGpuOptimizationFlags = {
@@ -241,6 +260,7 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   reset() {
+    this.gmegabuf = resolveGlobalBuffer(this.preset);
     this.state = { ...DEFAULT_MILKDROP_STATE, ...this.preset.ir.numericFields };
     this.registers = Object.create(this.state) as MutableState;
     for (let index = 1; index <= 32; index += 1) {
@@ -513,71 +533,20 @@ class MilkdropPresetVM implements MilkdropVM {
     return env;
   }
 
-  private setValue(
-    target: string,
-    value: number,
-    locals: MutableState | null = null,
-    targetIndex?: number,
-  ) {
-    if (target === 'megabuf') {
-      const normalized = Math.trunc(targetIndex ?? 0);
-      if (normalized >= 0 && normalized < MilkdropPresetVM.MEGABUF_SIZE) {
-        this.megabuf[normalized] = value;
-      }
-      return;
-    }
-    const normalizedTarget = target.toLowerCase();
-    const registerMatch = normalizedTarget.match(/^([qt])(\d+)$/u);
-    if (locals && registerMatch?.[1] !== 'q') {
-      locals[target] = value;
-      return;
-    }
-    if (registerMatch) {
-      this.registers[normalizedTarget] = value;
-      return;
-    }
-    this.state[target] = value;
-  }
-
   private runProgram(
     block: MilkdropCompiledPreset['ir']['programs']['init'],
     env: MutableState,
     locals: MutableState | null = null,
   ) {
-    for (let index = 0; index < block.statements.length; index += 1) {
-      const statement = block.statements[index];
-      if (!statement) {
-        continue;
-      }
-      const value = evaluateJit(
-        statement.expression,
-        env,
-        this.nextRandom,
-        (index) => {
-          const normalized = Math.trunc(index);
-          if (normalized < 0 || normalized >= MilkdropPresetVM.MEGABUF_SIZE) {
-            return 0;
-          }
-          return this.megabuf[normalized] ?? 0;
-        },
-      );
-      const targetIndex = statement.targetExpression
-        ? evaluateJit(
-            statement.targetExpression,
-            env,
-            this.nextRandom,
-            (index) => {
-              const normalized = Math.trunc(index);
-              return normalized >= 0 &&
-                normalized < MilkdropPresetVM.MEGABUF_SIZE
-                ? (this.megabuf[normalized] ?? 0)
-                : 0;
-            },
-          )
-        : undefined;
-      this.setValue(statement.target, value, locals, targetIndex);
-      env[statement.target] = value;
-    }
+    compileMilkdropProgram(block)(
+      env as Record<string, number>,
+      this.state as Record<string, number>,
+      this.registers as Record<string, number>,
+      (locals ?? null) as Record<string, number> | null,
+      this.megabuf,
+      this.gmegabuf,
+      this.nextRandom,
+    );
   }
 
   private supportsProceduralWave(drawMode: 'line' | 'dots') {

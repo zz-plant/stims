@@ -81,7 +81,10 @@ export const MILKDROP_INTRINSIC_FUNCTIONS = new Set([
   'below',
   'equal',
   'rand',
+  'randint',
+  'log10',
   'megabuf',
+  'gmegabuf',
 ]);
 
 function toMilkdropInt(value: number) {
@@ -464,6 +467,7 @@ class ExpressionParser {
 type EvalHelpers = {
   nextRandom?: () => number;
   megabuf?: (index: number) => number;
+  gmegabuf?: (index: number) => number;
 };
 
 export function evaluateMilkdropExpression(
@@ -601,6 +605,8 @@ export function evaluateMilkdropExpression(
         }
         case 'log':
           return Math.log(Math.max(0.000001, args[0] ?? 0));
+        case 'log10':
+          return Math.log10(Math.max(0.000001, args[0] ?? 0));
         case 'exp':
           return Math.exp(args[0] ?? 0);
         case 'sigmoid': {
@@ -632,8 +638,12 @@ export function evaluateMilkdropExpression(
           return (args[0] ?? 0) === (args[1] ?? 0) ? 1 : 0;
         case 'rand':
           return (helpers.nextRandom?.() ?? 0.5) * (args[0] ?? 1);
+        case 'randint':
+          return Math.floor((helpers.nextRandom?.() ?? 0.5) * (args[0] ?? 1));
         case 'megabuf':
           return helpers.megabuf?.(args[0] ?? 0) ?? 0;
+        case 'gmegabuf':
+          return helpers.gmegabuf?.(args[0] ?? 0) ?? 0;
         default:
           return 0;
       }
@@ -719,7 +729,7 @@ export function parseMilkdropStatement(
 
   const target = source.slice(0, index).trim();
   const expressionSource = source.slice(index + 1).trim();
-  const megabufTarget = target.match(/^megabuf\((.+)\)$/iu);
+  const megabufTarget = target.match(/^(g?megabuf)\((.+)\)$/iu);
 
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(target) && !megabufTarget) {
     return {
@@ -743,7 +753,7 @@ export function parseMilkdropStatement(
   }
 
   const targetExpression = megabufTarget
-    ? parseMilkdropExpression(megabufTarget[1] ?? '0', line)
+    ? parseMilkdropExpression(megabufTarget[2] ?? '0', line)
     : null;
   if (megabufTarget && targetExpression && !targetExpression.value) {
     return {
@@ -754,7 +764,9 @@ export function parseMilkdropStatement(
 
   return {
     value: {
-      target: megabufTarget ? 'megabuf' : target,
+      target: megabufTarget
+        ? (megabufTarget[1] as string).toLowerCase()
+        : target,
       ...(targetExpression?.value
         ? { targetExpression: targetExpression.value }
         : {}),
