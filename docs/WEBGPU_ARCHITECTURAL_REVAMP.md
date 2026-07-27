@@ -134,5 +134,5 @@ Each workstream ships behind a feature flag (optimization flag or URL param), al
 
 - `renderer-execution-plan.ts` centralizes WebGPU descriptor fallback and feedback-manager mode decisions for backend fallback, renderer core descriptor planning, and WebGPU adapter creation. It now also returns disabled features, status labels, and structured fallback reasons. Current WebGPU feedback mode is `none`; native WebGPU feedback remains a planned parity-gated follow-up behind `nativeWebGpuFeedbackEnabled`.
 - `feedback-render-targets.ts` owns the WebGL feedback render-target allocation details formerly embedded in `feedback-manager-shared.ts`.
-- `compiler/shader-execution-classification.ts` gives compiler and runtime code one vocabulary for backend-executable, control-fallback, and raw-preserved shader programs.
+- `compiler/shader-execution-classification.ts` gives compiler and runtime code one vocabulary for backend-executable and control-fallback shader programs, with raw-preserved bodies classified as backend-executable on WebGL.
 - Remaining feedback work is to introduce a WebGPU target implementation behind the same factory boundary and reduce the GLSL/TSL composite duplication.

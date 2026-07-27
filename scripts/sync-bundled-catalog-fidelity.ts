@@ -23,15 +23,15 @@ export function inferredCatalogFidelityWithoutMeasuredResult(): MilkdropFidelity
 
 const SHADER_TEXT_CERTIFICATION_REASONS: Record<string, string> = {
   'martin-anandamide-mandelbox-explorer-quantum-timepiece-remix':
-    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the standard 2D sampler path; retained at partial/runtime because q-register uniform binding and custom anandamide sampler parity are not yet measured against projectM.',
+    'Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because q-register uniform binding and custom anandamide sampler parity are not yet measured against projectM.',
   'martin-castle-in-the-air':
-    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate feedback reads and noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
+    'Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
   'martin-city-of-shadows':
-    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the framebuffer sampling path; retained at partial/runtime because the shader-text output still lacks measured projectM reference parity.',
+    'Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because the shader-text output still lacks measured projectM reference parity.',
   'martin-elusive-impressions-mix2-flacc-mess-proph-nz-2':
-    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate the volume-noise shader; retained at partial/runtime because volume sampler parity remains approximate and unmeasured.',
+    'Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because volume sampler parity remains approximate and unmeasured.',
   'martin-tunnel-race':
-    'Native shader_body text is preserved for analysis, but raw-only bodies stay on translated controls until the compiler can structurally translate feedback reads and standard noise samplers; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
+    'Native shader_body GLSL executes on WebGL via the raw-preserved path; retained at partial/runtime because q-register uniform binding and projectM visual reference parity are not yet complete.',
 };
 
 function buildInferredCertificationReasons(presetId: string) {
