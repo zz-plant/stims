@@ -42,7 +42,7 @@ test('known native shader-text presets are no longer cataloged as fallback compi
   }
 });
 
-test('known native shader-text presets do not advertise raw-only shader bodies as direct programs', () => {
+test('known native shader-text presets advertise raw-preserved bodies as direct on webgl', () => {
   for (const presetId of nativeShaderPresetIds) {
     const source = readFileSync(
       join(
@@ -64,7 +64,7 @@ test('known native shader-text presets do not advertise raw-only shader bodies a
     expect(
       compiled.ir.compatibility.featureAnalysis.shaderTextExecution,
       presetId,
-    ).toEqual({ webgl: 'translated', webgpu: 'translated' });
+    ).toEqual({ webgl: 'direct', webgpu: 'translated' });
     expect(compiled.ir.compatibility.backends.webgl.status, presetId).not.toBe(
       'fallback',
     );
