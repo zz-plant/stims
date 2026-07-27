@@ -83,6 +83,7 @@ const aliasMap: Record<string, string | null> = {
   fmotionvectorsb: 'mv_b',
   fmotionvectorsa: 'mv_a',
   nmotionvectorsloop: 'mv_l',
+  tex_capture: 'textured',
 };
 
 export function normalizeFieldSuffix(value: string) {

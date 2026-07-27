@@ -37,6 +37,7 @@ const legacyCustomShapeSuffixMap: Record<string, string | null> = {
   thick_outline: 'thickoutline',
   bthickoutline: 'thickoutline',
   bthick_outline: 'thickoutline',
+  tex_capture: 'textured',
 };
 
 export function normalizeBlockedConstructValue(value: string) {
