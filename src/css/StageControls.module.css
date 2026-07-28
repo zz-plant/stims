@@ -64,22 +64,25 @@
 
 .nowPlayingBar {
   flex-shrink: 0;
-  width: 3px;
+  width: 4px;
   height: 18px;
   border-radius: 2px;
-  background: rgba(125, 224, 162, 0.7);
-  opacity: calc(0.15 + var(--stims-energy, 0) * 0.85);
-  transition: opacity 0.1s ease;
+  background: rgba(125, 224, 162, 0.9);
+  opacity: calc(0.25 + var(--stims-energy, 0) * 0.75);
+  box-shadow: 0 0 10px rgba(125, 224, 162, calc(var(--stims-energy, 0) * 0.85));
+  transition:
+    opacity 0.1s ease,
+    box-shadow 0.1s ease;
 }
 
 /* Main toolbar */
 .toolbar {
   display: inline-flex;
-  gap: 3px;
+  gap: 4px;
   padding: 4px;
   border-radius: 16px;
-  background: rgba(5, 8, 14, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 8, 14, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   pointer-events: auto;
@@ -90,8 +93,8 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: none;
   border-radius: 12px;
@@ -274,13 +277,13 @@
 
 @media (max-width: 420px) {
   .toolbar {
-    gap: 2px;
-    padding: 3px;
+    gap: 3px;
+    padding: 4px;
   }
 
   .btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 48px;
+    min-height: 48px;
   }
 }
 

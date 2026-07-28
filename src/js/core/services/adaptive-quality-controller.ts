@@ -217,10 +217,15 @@ function buildHeuristicProfile(
     );
   }
 
-  if (isMobileDevice() || isInAppBrowser()) {
+  if (isMobileDevice()) {
     initialStep = Math.max(initialStep, 2);
     reasons.push(
-      'Touch-first mobile or webview sessions start from balanced quality for steadier sustained performance.',
+      'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+    );
+  } else if (isInAppBrowser()) {
+    initialStep = Math.max(initialStep, 2);
+    reasons.push(
+      'In-app webview sessions start from balanced quality for steadier sustained performance.',
     );
   }
 

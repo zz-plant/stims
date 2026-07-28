@@ -166,7 +166,8 @@
   --font-family-base:
     "Space Grotesk", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-family-mono: "Space Mono", monospace;
-  --stims-display: "Cormorant Garamond", "Iowan Old Style", serif;
+  --stims-display:
+    "Outfit", "Space Grotesk", "Inter", "Segoe UI", system-ui, sans-serif;
   /* Type scale shared across all pages */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;

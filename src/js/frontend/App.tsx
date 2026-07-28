@@ -30,7 +30,6 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
 import { NewHomePage } from './NewHomePage.tsx';
-import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
 import { connectWakeLock } from './wake-lock.ts';
 import {
@@ -470,8 +469,6 @@ function StimsWorkspaceAppShell() {
         liveMode={liveMode}
         onToggleFullscreen={handleToggleFullscreen}
       />
-
-      <RendererFallbackBadge />
 
       <SidePanel
         open={ui.routeState.panel !== null}
