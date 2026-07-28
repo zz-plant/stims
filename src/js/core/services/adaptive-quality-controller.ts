@@ -1,4 +1,4 @@
-import { isMobileDevice } from '../../utils/device-detect.ts';
+import { isInAppBrowser, isMobileDevice } from '../../utils/device-detect.ts';
 import type {
   RendererBackend,
   WebGPUCapabilitySummary,
@@ -217,10 +217,10 @@ function buildHeuristicProfile(
     );
   }
 
-  if (isMobileDevice()) {
+  if (isMobileDevice() || isInAppBrowser()) {
     initialStep = Math.max(initialStep, 2);
     reasons.push(
-      'Touch-first mobile sessions start from balanced quality for steadier sustained performance.',
+      'Touch-first mobile or webview sessions start from balanced quality for steadier sustained performance.',
     );
   }
 

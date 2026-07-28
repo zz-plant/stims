@@ -100,13 +100,34 @@ export function useKeyboardShortcuts({
 
     let touchStartX = 0;
     let touchStartY = 0;
+    const isInteractiveTarget = (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      Boolean(
+        target.closest('.stims-shell__sheet') ||
+          target.closest('.stims-shell__browse') ||
+          target.closest('.stims-shell__panel') ||
+          target.closest('.stims-shell__dock') ||
+          target.closest('[role="dialog"]') ||
+          target.closest('.cm-editor') ||
+          target.closest('button') ||
+          target.closest('a') ||
+          target.closest('input') ||
+          target.closest('select') ||
+          target.closest('textarea'),
+      );
+
     const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) return;
+      if (event.touches.length !== 1 || isInteractiveTarget(event.target))
+        return;
       touchStartX = event.touches[0].clientX;
       touchStartY = event.touches[0].clientY;
     };
     const handleTouchEnd = (event: TouchEvent) => {
-      if (!touchStartX || !touchStartY) return;
+      if (!touchStartX || !touchStartY || isInteractiveTarget(event.target)) {
+        touchStartX = 0;
+        touchStartY = 0;
+        return;
+      }
       const dx = event.changedTouches[0].clientX - touchStartX;
       const dy = event.changedTouches[0].clientY - touchStartY;
       touchStartX = 0;

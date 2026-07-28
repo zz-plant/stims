@@ -1,5 +1,9 @@
 import { useId } from 'react';
-import { isMobileDevice } from '../utils/device-detect.ts';
+import {
+  isInAppBrowser,
+  isMobileDevice,
+  openExternalBrowserIntent,
+} from '../utils/device-detect.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -32,10 +36,6 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const youtubeReady = ui.youtubeReady;
   const youtubeUrl = ui.youtubeUrl;
 
-  // Both the tab card and YouTube capture route through getDisplayMedia, which
-  // mobile browsers don't implement (and where the API exists on tablets, audio
-  // sharing is unavailable). Gate both rather than offer actions that always
-  // fail — YouTube in particular is the most prominent control in this panel.
   const canCaptureDisplayAudio =
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices?.getDisplayMedia &&
@@ -49,6 +49,8 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
     }
   };
 
+  const isAppBrowser = isInAppBrowser();
+
   return (
     <section
       className="stims-shell__source-panel"
@@ -60,6 +62,24 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           {canCaptureDisplayAudio ? 'YouTube playback' : 'Audio source'}
         </h2>
       </div>
+      {isAppBrowser ? (
+        <div
+          className="stims-shell__sheet-callout"
+          style={{ marginBottom: '12px' }}
+        >
+          <p className="stims-shell__meta-copy" style={{ marginBottom: '8px' }}>
+            In-app browsers (Instagram, TikTok, Twitter) limit live microphone
+            access.
+          </p>
+          <button
+            type="button"
+            className="cta-button primary"
+            onClick={() => openExternalBrowserIntent()}
+          >
+            Open in Safari / Chrome
+          </button>
+        </div>
+      ) : null}
       {!engineReady ? (
         <p
           id={engineStatusId}
@@ -209,13 +229,25 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           <summary className="stims-shell__settings-summary">
             <span>Audio help</span>
             <span className="stims-shell__meta-copy">
-              Permissions and capture
+              Permissions & troubleshooting
             </span>
           </summary>
           <div className="stims-shell__settings-advanced-body">
             <p className="stims-shell__meta-copy">
-              Allow microphone access in site permissions. For tab audio and
-              YouTube, share the browser tab with audio enabled.
+              <strong>Permissions:</strong> Allow microphone access in site
+              permissions. If blocked, check macOS Privacy & Security or Windows
+              Privacy Settings.
+            </p>
+            <p className="stims-shell__meta-copy">
+              <strong>Smartphones & In-App Browsers:</strong> In-app browsers
+              (Instagram, TikTok, Twitter) may block mic capture. Tap
+              &quot;...&quot; and select &quot;Open in Safari / Chrome&quot;.
+            </p>
+            <p className="stims-shell__meta-copy">
+              <strong>Local Testing & Bluetooth:</strong> Mic capture requires
+              HTTPS or localhost. If using Bluetooth earbuds, OS settings may
+              switch sound to call mode; use built-in or wired mics for best
+              music quality.
             </p>
           </div>
         </details>

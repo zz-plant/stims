@@ -3095,9 +3095,15 @@ body[data-page="workspace"][data-live="true"] {
     }
 
     :scope[data-mode="live"] {
-      --mobile-bar-height: 86px;
-      --mobile-bar-height-expanded: 206px;
-      --mobile-bar-height-mood-open: 150px;
+      --mobile-bar-height: calc(86px + env(safe-area-inset-bottom, 0px));
+      --mobile-bar-height-expanded: calc(
+        206px +
+        env(safe-area-inset-bottom, 0px)
+      );
+      --mobile-bar-height-mood-open: calc(
+        150px +
+        env(safe-area-inset-bottom, 0px)
+      );
       --mobile-control-offset: var(--mobile-bar-height);
     }
 

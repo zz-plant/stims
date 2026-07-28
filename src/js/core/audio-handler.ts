@@ -2,6 +2,7 @@ import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
 import { getFrequencyBandLevels } from '../utils/audio-reactivity.ts';
+import { isInAppBrowser } from '../utils/device-detect.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 
@@ -558,11 +559,20 @@ const activeStreams = new Set<MediaStream>();
 
 let resumeOnVisibleInstalled = false;
 
+function tryResumeAllActiveContexts() {
+  for (const context of activeContexts) {
+    if (context.state === 'suspended') {
+      context.resume().catch((err) => {
+        logger.log('Failed to resume AudioContext on user interaction:', err);
+      });
+    }
+  }
+}
+
 /**
- * Android Chrome suspends AudioContexts when the tab is backgrounded (app
- * switch, screen lock, incoming call). Nothing un-suspends them on return, so
- * the mic track stays live while the visualiser sits frozen. Resume every
- * registered context once the page is visible again.
+ * Mobile browsers (iOS Safari, Android Chrome/Samsung Internet) suspend
+ * AudioContexts until an explicit user gesture or when tab visibility changes.
+ * Attempt to resume every registered context on visibility change or user tap.
  */
 function installResumeOnVisible() {
   if (resumeOnVisibleInstalled) return;
@@ -571,13 +581,24 @@ function installResumeOnVisible() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
+    tryResumeAllActiveContexts();
+  });
 
-    for (const context of activeContexts) {
-      if (context.state !== 'suspended') continue;
-      context.resume().catch((err) => {
-        logger.log('Failed to resume AudioContext on visibility change:', err);
-      });
-    }
+  const handleUserGesture = () => {
+    tryResumeAllActiveContexts();
+  };
+
+  document.addEventListener('pointerdown', handleUserGesture, {
+    capture: true,
+    passive: true,
+  });
+  document.addEventListener('touchstart', handleUserGesture, {
+    capture: true,
+    passive: true,
+  });
+  document.addEventListener('keydown', handleUserGesture, {
+    capture: true,
+    passive: true,
   });
 }
 
@@ -592,6 +613,15 @@ export function unregisterAudioContext(context: AudioContext) {
 
 export function registerMediaStream(stream: MediaStream) {
   activeStreams.add(stream);
+
+  if (typeof stream.getAudioTracks === 'function') {
+    for (const track of stream.getAudioTracks()) {
+      track.onunmute = () => {
+        logger.log('Microphone track unmuted; resuming active audio contexts.');
+        tryResumeAllActiveContexts();
+      };
+    }
+  }
 }
 
 export function unregisterMediaStream(stream: MediaStream) {
@@ -911,10 +941,15 @@ export async function initAudio(options: AudioInitOptions = {}) {
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      throw new AudioAccessError(
-        'unsupported',
-        'This browser does not support microphone capture.',
-      );
+      const isHttpInsecure =
+        typeof window !== 'undefined' && window.isSecureContext === false;
+      const isAppBrowser = isInAppBrowser();
+      const reasonMsg = isHttpInsecure
+        ? 'Microphone access requires HTTPS or localhost. Non-secure HTTP addresses (e.g. LAN IPs) block audio capture.'
+        : isAppBrowser
+          ? "In-app browsers (Instagram, TikTok, Twitter) may block microphone capture. Tap '...' and select 'Open in Safari/Chrome'."
+          : 'This browser does not support microphone capture.';
+      throw new AudioAccessError('unsupported', reasonMsg);
     }
   }
 
@@ -1118,7 +1153,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
     ) {
       throw new AudioAccessError(
         'denied',
-        'Microphone access was denied by the user.',
+        'Microphone access was denied. If site permissions are allowed, check OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
       );
     }
 
