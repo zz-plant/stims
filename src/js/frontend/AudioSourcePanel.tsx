@@ -63,11 +63,8 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
         </h2>
       </div>
       {isAppBrowser ? (
-        <div
-          className="stims-shell__sheet-callout"
-          style={{ marginBottom: '12px' }}
-        >
-          <p className="stims-shell__meta-copy" style={{ marginBottom: '8px' }}>
+        <div className="stims-shell__sheet-callout stims-shell__sheet-callout--webview">
+          <p className="stims-shell__meta-copy">
             In-app browsers (Instagram, TikTok, Twitter) limit live microphone
             access.
           </p>

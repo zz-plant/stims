@@ -181,24 +181,6 @@ export function BrowseSheetPanel({
       data-filter-active={String(hasFilter)}
     >
       <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
-        <div className="stims-shell__browse-toolbar">
-          <strong>Browse presets</strong>
-          <button
-            type="button"
-            className="stims-shell__icon-button"
-            onClick={engine.handleShufflePreset}
-            disabled={catalog.length === 0}
-            aria-label="Shuffle presets"
-            title="Shuffle presets"
-          >
-            <UiIcon
-              name="shuffle"
-              className="stims-icon-slot stims-icon-slot--sm"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-
         <div className="stims-shell__browse-search-row">
           <input
             id="preset-search"
@@ -231,6 +213,20 @@ export function BrowseSheetPanel({
             <option value="webgpu-supported">WebGPU</option>
             <option value="random">Random</option>
           </select>
+          <button
+            type="button"
+            className="stims-shell__icon-button"
+            onClick={engine.handleShufflePreset}
+            disabled={catalog.length === 0}
+            aria-label="Shuffle presets"
+            title="Shuffle presets"
+          >
+            <UiIcon
+              name="shuffle"
+              className="stims-icon-slot stims-icon-slot--sm"
+              aria-hidden="true"
+            />
+          </button>
         </div>
 
         {hasFilter ? (
