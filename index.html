@@ -73,10 +73,10 @@
     <meta name="twitter:image:alt" content="MilkDrop browser visualizer preview image" />
     <!-- Local CSS loads render-blocking: tokens/base/index are the design system
          and above-the-fold layout, so deferring them only buys a flash of
-         unstyled content. Web fonts stay deferred (with display=swap) because
-         text should paint immediately in a fallback face, not block on the
-         network. -->
-    <link rel="stylesheet" href="/vendor/normalize.min.css" />
+         unstyled content. The normalize reset is @imported by tokens.css so it
+         bundles instead of costing its own round trip. Web fonts stay deferred
+         (with display=swap) because text should paint immediately in a fallback
+         face, not block on the network. -->
     <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"

@@ -195,11 +195,6 @@ describe('render-service pooling', () => {
   });
 
   test('preserves active renderer overrides when runtime controls reapply', async () => {
-    Object.defineProperty(window, 'devicePixelRatio', {
-      configurable: true,
-      value: 2,
-    });
-
     const initRendererImpl = mock(async () => ({
       renderer: fakeRenderer,
       backend: 'webgl' as const,
@@ -215,7 +210,7 @@ describe('render-service pooling', () => {
 
     const handle = await requestRenderer({
       initRendererImpl,
-      options: { maxPixelRatio: 1.75, renderScale: 1 },
+      options: { maxPixelRatio: 0.75, renderScale: 1 },
     });
 
     setPixelRatioMock.mockClear();
@@ -228,7 +223,7 @@ describe('render-service pooling', () => {
       waveSampleMultiplier: 1,
       motionVectorDensityMultiplier: 1,
     });
-    expect(setPixelRatioMock).toHaveBeenLastCalledWith(1.75);
+    expect(setPixelRatioMock).toHaveBeenLastCalledWith(0.75);
   });
 
   test('keeps the active webgpu renderer stable across animation frames', async () => {

@@ -375,6 +375,102 @@ describe('Workspace performance regressions', () => {
     );
   });
 
+  test('binds MilkDrop VM frame callbacks once per VM instead of once per frame', () => {
+    const vmSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'src', 'js', 'milkdrop', 'vm.ts'),
+      'utf8',
+    );
+    const buildFrameSource = vmSource.slice(
+      vmSource.indexOf('private buildFrame('),
+      vmSource.indexOf('\n  }\n}\n\nexport function createMilkdropVM'),
+    );
+
+    expect(buildFrameSource).not.toContain('.bind(this)');
+    expect(vmSource).toContain(
+      'private readonly frameCallbacks = this.createFrameCallbacks();',
+    );
+  });
+
+  test('updates audio-reactive decoration without rerendering static React shells', () => {
+    const hudSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        '..',
+        'src',
+        'js',
+        'frontend',
+        'AudioSpectrumHud.tsx',
+      ),
+      'utf8',
+    );
+    const stageControlsSource = readFileSync(
+      join(
+        import.meta.dir,
+        '..',
+        '..',
+        'src',
+        'js',
+        'frontend',
+        'StageControls.tsx',
+      ),
+      'utf8',
+    );
+    const appSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'src', 'js', 'frontend', 'App.tsx'),
+      'utf8',
+    );
+
+    expect(hudSource).not.toContain('useAudioEnergy');
+    expect(stageControlsSource).not.toContain('useAudioEnergy');
+    expect(appSource).not.toContain('useAudioEnergy');
+    expect(hudSource).toContain('subscribeAudioEnergy');
+    expect(stageControlsSource).toContain('subscribeAudioEnergy');
+    expect(appSource).toContain('subscribeAudioEnergy');
+  });
+
+  test('keeps deferred payloads out of shell precache and uses content-stable build names', () => {
+    const serviceWorkerSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'public', 'service-worker.js'),
+      'utf8',
+    );
+    const viteSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'vite.config.js'),
+      'utf8',
+    );
+    const indexSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'index.html'),
+      'utf8',
+    );
+    const tokensSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'src', 'css', 'tokens.css'),
+      'utf8',
+    );
+
+    const shellAssetsSource = serviceWorkerSource.slice(
+      serviceWorkerSource.indexOf('const SHELL_ASSETS'),
+      serviceWorkerSource.indexOf("self.addEventListener('install'"),
+    );
+    expect(shellAssetsSource).not.toContain('/milkdrop-presets/catalog.json');
+    expect(serviceWorkerSource).not.toContain('cache.addAll(SHELL_ASSETS)');
+    expect(viteSource).not.toContain('Date.now()');
+    expect(viteSource).not.toContain('buildId');
+    expect(indexSource).not.toContain('/vendor/normalize.min.css');
+    expect(tokensSource).toContain('@import "./normalize.css";');
+  });
+
+  test('does not mark mutable human-named public assets immutable', () => {
+    const headersSource = readFileSync(
+      join(import.meta.dir, '..', '..', 'public', '_headers'),
+      'utf8',
+    );
+
+    expect(headersSource).toContain(
+      'Cache-Control: public, max-age=86400, stale-while-revalidate=604800',
+    );
+    expect(headersSource.match(/\bimmutable\b/gu)).toHaveLength(1);
+  });
+
   test('avoids JSON serialization and repeated texture lookup in WebGPU feedback state updates', () => {
     const feedbackSource = readFileSync(
       join(

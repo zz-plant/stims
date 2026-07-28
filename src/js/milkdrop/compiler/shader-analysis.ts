@@ -1359,6 +1359,68 @@ function applyShaderProgramHeuristicLine({
   return false;
 }
 
+// `extractShaderControls` runs on every frame via the VM's post-effects
+// builder, but the text->AST half of it depends only on the shader source,
+// which is fixed for the lifetime of a preset. These caches hold that half so
+// a preset with pixel-shader sections is tokenised once instead of 60x/sec.
+// Only the expression *evaluation* below stays per-frame, since it reads the
+// live `env`. Cached statement nodes are never mutated by their consumers.
+const MAX_CACHED_SHADER_SOURCES = 64;
+const MAX_CACHED_SHADER_LINES = 4096;
+
+type ShaderSourcePrep = {
+  nativeShaderBody: string | null;
+  normalized: string[];
+};
+
+const shaderSourcePrepCache = new Map<string, ShaderSourcePrep>();
+const shaderStatementCache = new Map<string, MilkdropShaderStatement | null>();
+
+function evictOldest(cache: Map<string, unknown>, limit: number) {
+  while (cache.size > limit) {
+    const oldest = cache.keys().next();
+    if (oldest.done) {
+      return;
+    }
+    cache.delete(oldest.value);
+  }
+}
+
+function prepareShaderSource(shaderText: string): ShaderSourcePrep {
+  const cached = shaderSourcePrepCache.get(shaderText);
+  if (cached) {
+    return cached;
+  }
+  const nativeShaderBody = extractNativeShaderBody(shaderText);
+  const prep: ShaderSourcePrep = {
+    nativeShaderBody,
+    normalized: nativeShaderBody
+      ? []
+      : shaderText
+          .split(/[\r\n;]+/u)
+          .map((line) => line.replace(/\/\/.*$/u, '').trim())
+          .filter(Boolean),
+  };
+  shaderSourcePrepCache.set(shaderText, prep);
+  evictOldest(shaderSourcePrepCache, MAX_CACHED_SHADER_SOURCES);
+  return prep;
+}
+
+function parseShaderStatementCached(line: string) {
+  if (shaderStatementCache.has(line)) {
+    return shaderStatementCache.get(line) ?? null;
+  }
+  const parsed = parseMilkdropShaderStatement(line);
+  shaderStatementCache.set(line, parsed);
+  evictOldest(shaderStatementCache, MAX_CACHED_SHADER_LINES);
+  return parsed;
+}
+
+export function clearShaderAnalysisCaches() {
+  shaderSourcePrepCache.clear();
+  shaderStatementCache.clear();
+}
+
 export function extractShaderControls(
   shaderText: string | null,
   env: Record<string, number> = DEFAULT_MILKDROP_STATE,
@@ -1376,7 +1438,7 @@ export function extractShaderControls(
     };
   }
 
-  const nativeShaderBody = extractNativeShaderBody(shaderText);
+  const { nativeShaderBody, normalized } = prepareShaderSource(shaderText);
   if (nativeShaderBody) {
     return {
       controls: createDefaultShaderControls(),
@@ -1390,10 +1452,6 @@ export function extractShaderControls(
     };
   }
 
-  const normalized = shaderText
-    .split(/[\r\n;]+/u)
-    .map((line) => line.replace(/\/\/.*$/u, '').trim())
-    .filter(Boolean);
   const controls = createDefaultShaderControls();
   const expressions = createDefaultShaderControlExpressions();
   const shaderEnv: Record<string, number> = {
@@ -1418,7 +1476,7 @@ export function extractShaderControls(
 
   let supportedLineCount = 0;
   normalized.forEach((line) => {
-    const parsedStatement = parseMilkdropShaderStatement(line);
+    const parsedStatement = parseShaderStatementCached(line);
     if (parsedStatement) {
       statements.push(parsedStatement);
       const requiresDirectProgram = shouldEmitDirectProgramStatement(

@@ -11,6 +11,19 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Large preset sources, previews, and textures use stable human-readable names.
+# Cache them long enough to avoid repeat transfers during normal use, then
+# revalidate in the background so an in-place asset correction still reaches
+# returning users. Catalog manifests (*.json) intentionally do not match.
+/milkdrop-presets/*.milk
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/milkdrop-presets/previews/*.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/textures/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /.vite/*
   Cache-Control: public, max-age=0, must-revalidate
 

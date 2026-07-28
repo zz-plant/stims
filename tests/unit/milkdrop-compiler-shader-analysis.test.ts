@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   buildShaderProgramPayload,
+  clearShaderAnalysisCaches,
   extractShaderControls,
 } from '../../src/js/milkdrop/compiler/shader-analysis.ts';
 import { generateGlslFromShaderStatements } from '../../src/js/milkdrop/compiler/shader-analysis-glsl.ts';
@@ -34,6 +35,20 @@ const projectmNoiseVolumeFixture = readFileSync(
 );
 
 describe('milkdrop compiler shader analysis', () => {
+  test('reuses parsed statements for immutable shader source', () => {
+    clearShaderAnalysisCaches();
+    const source = 'rot = bass * 0.25; zoom = 1.1';
+
+    const first = extractShaderControls(source, { bass: 0.4 });
+    const second = extractShaderControls(source, { bass: 0.8 });
+
+    expect(first.statements).toHaveLength(2);
+    expect(second.statements).toHaveLength(2);
+    expect(second.statements[0]).toBe(first.statements[0]);
+    expect(second.statements[1]).toBe(first.statements[1]);
+    expect(second.controls.rotation).not.toBe(first.controls.rotation);
+  });
+
   test('keeps shared scalar control aliases aligned across extraction paths', () => {
     const analysis = extractShaderControls(
       `

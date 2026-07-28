@@ -30,8 +30,6 @@ if (!rollupInputs.index) {
   rollupInputs.index = path.resolve(rootDir, 'index.html');
 }
 
-const buildId = `v3-${Date.now().toString(36)}`;
-
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -59,9 +57,12 @@ export default defineConfig({
       preserveEntrySignatures: 'strict',
       input: rollupInputs,
       output: {
-        entryFileNames: `assets/[name]-${buildId}-[hash].js`,
-        chunkFileNames: `assets/[name]-${buildId}-[hash].js`,
-        assetFileNames: `assets/[name]-${buildId}-[hash].[ext]`,
+        // Content hashes alone provide cache busting. Do NOT add a build
+        // timestamp here: it renames every chunk on every deploy, so returning
+        // users re-download ~1.7 MB of byte-identical vendor code.
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             if (id.includes('three/webgpu') || id.includes('three.webgpu'))

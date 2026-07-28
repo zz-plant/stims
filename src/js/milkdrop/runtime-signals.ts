@@ -3,6 +3,8 @@ import { createBeatTracker } from '../utils/audio-beat';
 import { createMilkdropAudioSignalProcessor } from './audio-signal-processor';
 import type { MilkdropRuntimeSignals } from './types';
 
+const SPECTRAL_ANALYSIS_FRAME_INTERVAL = 4;
+
 function smoothLevel(
   current: number,
   next: number,
@@ -28,6 +30,11 @@ export function createMilkdropSignalTracker(options?: {
   });
   let frame = 0;
   let rms = 0;
+  let spectralAnalyser: FrequencyAnalyser | null = null;
+  let cachedSpectralFeatures: ReturnType<
+    FrequencyAnalyser['getSpectralFeatures']
+  > = null;
+  let lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
 
   const signalCache = {
     time: 0,
@@ -161,6 +168,9 @@ export function createMilkdropSignalTracker(options?: {
     reset() {
       frame = 0;
       rms = 0;
+      spectralAnalyser = null;
+      cachedSpectralFeatures = null;
+      lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
       latestWeightedEnergy = 0;
       signalProcessor.reset();
       beatTracker.reset();
@@ -212,8 +222,22 @@ export function createMilkdropSignalTracker(options?: {
       const { bands, attenuatedBands, rawWeightedEnergy, weightedEnergy } =
         processedSignals;
 
-      // Query Meyda spectral features and calculate dynamic boost
-      const spectral = analyser?.getSpectralFeatures?.() ?? null;
+      // Meyda performs a full FFT over the time-domain buffer. Sampling it
+      // every fourth frame keeps the small spectral energy boost responsive
+      // without paying for another main-thread FFT on every rendered frame.
+      if (analyser !== spectralAnalyser) {
+        spectralAnalyser = analyser;
+        cachedSpectralFeatures = null;
+        lastSpectralAnalysisFrame = Number.NEGATIVE_INFINITY;
+      }
+      if (
+        analyser?.getSpectralFeatures &&
+        frame - lastSpectralAnalysisFrame >= SPECTRAL_ANALYSIS_FRAME_INTERVAL
+      ) {
+        cachedSpectralFeatures = analyser.getSpectralFeatures();
+        lastSpectralAnalysisFrame = frame;
+      }
+      const spectral = cachedSpectralFeatures;
       const rate = sampleRate ?? analyser?.getSampleRate?.() ?? 48_000;
       const spectralBrightness = spectral
         ? Math.min(1, spectral.spectralCentroid / Math.max(1, rate / 2))

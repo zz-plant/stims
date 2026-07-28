@@ -14,6 +14,40 @@ import {
 const POST_PASS_EPSILON = 0.0001;
 const DEFAULT_PROJECTM_GAMMA_ADJ = 2;
 
+type ShaderControls = MilkdropPostVisual['shaderControls'];
+
+/**
+ * Result of the shader-control program when a preset carries no warp/comp
+ * shader text. `extractShaderControls` returns fresh defaults without reading
+ * `env` in that case, so the merged output is a constant — but one that the
+ * runtime is allowed to mutate (see `runtime/interaction-response.ts`, which
+ * writes offsetX/offsetY/rotation/zoom/warpScale back into it).
+ *
+ * Seeded from the real code path rather than hand-written so it cannot drift
+ * from `mergeShaderControlAnalysis`, then cloned per frame so each frame still
+ * gets its own mutable object.
+ */
+let neutralShaderControls: ShaderControls | null = null;
+
+function cloneShaderControls(source: ShaderControls): ShaderControls {
+  return {
+    ...source,
+    colorScale: { ...source.colorScale },
+    tint: { ...source.tint },
+    textureLayer: { ...source.textureLayer },
+    warpTexture: { ...source.warpTexture },
+  };
+}
+
+function buildNeutralShaderControls(): ShaderControls {
+  neutralShaderControls ??= evaluateMilkdropShaderControlProgram({
+    warp: null,
+    comp: null,
+    env: {},
+  });
+  return cloneShaderControls(neutralShaderControls);
+}
+
 function hasNonNeutralShaderControls(
   controls: MilkdropPostVisual['shaderControls'],
 ) {
@@ -69,9 +103,17 @@ export function buildShaderControls({
     extra?: Record<string, number>,
   ) => MutableState;
 }) {
+  const { warp, comp } = preset.ir.shaderText;
+  // Runs every frame. Presets without pixel-shader sections (every bundled
+  // MilkDrop 1.x preset) would otherwise rebuild ~15 throwaway objects per
+  // frame to arrive at a fixed answer, and pay for an env snapshot the null
+  // path never reads.
+  if (warp === null && comp === null) {
+    return buildNeutralShaderControls();
+  }
   return evaluateMilkdropShaderControlProgram({
-    warp: preset.ir.shaderText.warp,
-    comp: preset.ir.shaderText.comp,
+    warp,
+    comp,
     env: createEnv(signals),
   });
 }
