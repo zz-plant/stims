@@ -23,7 +23,10 @@ import {
 import { AudioMatchToast } from './AudioMatchToast.tsx';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
-import { useAudioEnergy } from './hooks/useAudioEnergy';
+import {
+  getAudioEnergy,
+  subscribeAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -74,7 +77,6 @@ function StimsWorkspaceAppShell() {
   const { engineSnapshot } = useEngineSnapshot();
   const temporalMemory = useTemporalMemory();
 
-  const audioEnergy = useAudioEnergy();
   const { isFullscreen, handleToggleFullscreen } = useFullscreen(
     ui.stageRef,
     ui.setStatusMessage,
@@ -235,24 +237,28 @@ function StimsWorkspaceAppShell() {
       return;
     }
 
-    if (audioEnergy < 0.04) {
-      if (quietAtRef.current === null) {
-        quietAtRef.current = performance.now();
-      } else if (
-        performance.now() - quietAtRef.current >= 3000 &&
-        !quietDemoSuggestedRef.current
-      ) {
-        quietDemoSuggestedRef.current = true;
-        ui.setStatusMessage(
-          'Not seeing much movement? Check that the captured tab is sharing audio.',
-        );
+    const inspectAudioEnergy = () => {
+      if (getAudioEnergy() < 0.04) {
+        if (quietAtRef.current === null) {
+          quietAtRef.current = performance.now();
+        } else if (
+          performance.now() - quietAtRef.current >= 3000 &&
+          !quietDemoSuggestedRef.current
+        ) {
+          quietDemoSuggestedRef.current = true;
+          ui.setStatusMessage(
+            'Not seeing much movement? Check that the captured tab is sharing audio.',
+          );
+        }
+      } else if (quietAtRef.current !== null || quietDemoSuggestedRef.current) {
+        quietAtRef.current = null;
+        quietDemoSuggestedRef.current = false;
       }
-    } else {
-      quietAtRef.current = null;
-      quietDemoSuggestedRef.current = false;
-    }
+    };
+
+    inspectAudioEnergy();
+    return subscribeAudioEnergy(inspectAudioEnergy);
   }, [
-    audioEnergy,
     currentAudioSource,
     liveMode,
     engineSnapshot?.audioActive,

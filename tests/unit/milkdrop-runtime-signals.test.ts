@@ -43,6 +43,37 @@ function highEnergyData() {
 }
 
 describe('milkdrop runtime signals', () => {
+  test('samples expensive spectral features once every four frames', () => {
+    const tracker = createMilkdropSignalTracker();
+    let spectralFeatureCalls = 0;
+    const analyserStub = {
+      getMultiBandEnergy: () => ({ bass: 0.5, mid: 0.3, treble: 0.2 }),
+      getRmsLevel: () => 0.4,
+      getSampleRate: () => 48_000,
+      getSpectralFeatures: () => {
+        spectralFeatureCalls += 1;
+        return {
+          rms: 0.4,
+          spectralCentroid: 6_000,
+          spectralFlatness: 0.25,
+          spectralRolloff: 12_000,
+        };
+      },
+    } as unknown as FrequencyAnalyser;
+
+    for (let index = 0; index < 8; index += 1) {
+      tracker.update({
+        time: index / 60,
+        deltaMs: 1000 / 60,
+        analyser: analyserStub,
+        frequencyData: filledData(96),
+        waveformData: waveformData(),
+      });
+    }
+
+    expect(spectralFeatureCalls).toBe(2);
+  });
+
   test('increments frame count and emits stable ranges with fallback data', () => {
     const tracker = createMilkdropSignalTracker();
 

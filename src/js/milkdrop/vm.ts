@@ -210,6 +210,7 @@ class MilkdropPresetVM implements MilkdropVM {
       );
     },
   });
+  private readonly frameCallbacks = this.createFrameCallbacks();
 
   constructor(
     preset: MilkdropCompiledPreset,
@@ -587,6 +588,19 @@ class MilkdropPresetVM implements MilkdropVM {
     );
   }
 
+  private createFrameCallbacks() {
+    return {
+      supportsProceduralWave: this.supportsProceduralWave.bind(this),
+      runProgram: this.runProgram.bind(this),
+      createEnv: this.createEnv.bind(this),
+      createFlatEnv: this.createFlatEnv.bind(this),
+      seedCustomWaveState: this.seedCustomWaveState.bind(this),
+      seedCustomShapeState: this.seedCustomShapeState.bind(this),
+      getProceduralCustomWaveDescriptor:
+        this.getProceduralCustomWaveDescriptor.bind(this),
+    };
+  }
+
   async stepAsync(
     signals: MilkdropRuntimeSignals,
   ): Promise<MilkdropFrameState> {
@@ -616,12 +630,21 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   private buildFrame(signals: MilkdropRuntimeSignals): MilkdropFrameState {
+    const {
+      supportsProceduralWave,
+      runProgram,
+      createEnv,
+      createFlatEnv,
+      seedCustomWaveState,
+      seedCustomShapeState,
+      getProceduralCustomWaveDescriptor,
+    } = this.frameCallbacks;
     const { visual: mainWave, procedural: proceduralMainWave } = buildMainWave({
       state: this.state,
       signals,
       detailScale: this.detailScale,
       waveState: this.waveState,
-      supportsProceduralWave: this.supportsProceduralWave.bind(this),
+      supportsProceduralWave,
     });
     commitMainWaveFrame({
       waveState: this.waveState,
@@ -638,8 +661,8 @@ class MilkdropPresetVM implements MilkdropVM {
       signals,
       detailScale: this.detailScale,
       geometryState: this.geometryState,
-      runProgram: this.runProgram.bind(this),
-      createEnv: this.createEnv.bind(this),
+      runProgram,
+      createEnv,
       proceduralMeshPlan,
     });
     const gpuGeometry = buildGpuGeometryHints({
@@ -658,11 +681,10 @@ class MilkdropPresetVM implements MilkdropVM {
       signals,
       detailScale: this.detailScale,
       waveState: this.waveState,
-      runProgram: this.runProgram.bind(this),
-      createEnv: this.createEnv.bind(this),
-      seedCustomWaveState: this.seedCustomWaveState.bind(this),
-      getProceduralCustomWaveDescriptor:
-        this.getProceduralCustomWaveDescriptor.bind(this),
+      runProgram,
+      createEnv,
+      seedCustomWaveState,
+      getProceduralCustomWaveDescriptor,
     });
     const mesh = buildMesh({
       state: this.state,
@@ -675,8 +697,8 @@ class MilkdropPresetVM implements MilkdropVM {
       signals,
       meshField,
       geometryState: this.geometryState,
-      runProgram: this.runProgram.bind(this),
-      createEnv: this.createEnv.bind(this),
+      runProgram,
+      createEnv,
       proceduralMotionVectorPlan,
     });
     const shapes = buildShapes({
@@ -684,16 +706,16 @@ class MilkdropPresetVM implements MilkdropVM {
       state: this.state,
       signals,
       shapeState: this.shapeState,
-      runProgram: this.runProgram.bind(this),
-      createEnv: this.createEnv.bind(this),
-      seedCustomShapeState: this.seedCustomShapeState.bind(this),
+      runProgram,
+      createEnv,
+      seedCustomShapeState,
     });
     const borders = buildBorders(this.state);
     const post = buildPost({
       preset: this.preset,
       state: this.state,
       signals,
-      createEnv: this.createFlatEnv.bind(this),
+      createEnv: createFlatEnv,
     });
 
     this.frameVariablesSnapshot = null;

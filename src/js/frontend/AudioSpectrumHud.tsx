@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
-import { useAudioEnergy } from './hooks/useAudioEnergy.ts';
+import { useEffect, useRef } from 'react';
+import {
+  getAudioEnergy,
+  subscribeAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
 import { UiIcon } from './UiIcon.tsx';
-import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
+import { useWorkspace } from './workspace-context.tsx';
 
 const BARS_CONFIG = [
   { id: 'b1', mult: 1.35 },
@@ -15,27 +18,49 @@ const BARS_CONFIG = [
   { id: 'b8', mult: 1.1 },
 ];
 
+function AudioSpectrumBars() {
+  const barsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateBars = () => {
+      const energy = Math.max(0.08, Math.min(1, getAudioEnergy()));
+      BARS_CONFIG.forEach((barConfig, index) => {
+        const bar = barsRef.current?.children.item(index);
+        if (!(bar instanceof HTMLElement)) {
+          return;
+        }
+        const height = Math.min(1, energy * barConfig.mult);
+        bar.style.transform = `scaleY(${height})`;
+        bar.style.opacity = String(0.35 + height * 0.65);
+      });
+    };
+
+    updateBars();
+    return subscribeAudioEnergy(updateBars);
+  }, []);
+
+  return (
+    <div
+      ref={barsRef}
+      className="stims-hud-bar__spectrum"
+      aria-hidden="true"
+      title="Live Frequency Analyzer"
+    >
+      {BARS_CONFIG.map((bar) => (
+        <span key={bar.id} className="stims-hud-bar__spectrum-bar" />
+      ))}
+    </div>
+  );
+}
+
 export function AudioSpectrumHud() {
   const { ui, engine } = useWorkspace();
-  const { engineSnapshot: _engineSnapshot } = useEngineSnapshot();
-  const audioEnergy = useAudioEnergy();
 
   const selectedPreset = engine.selectedPreset ?? engine.featuredPreset;
   const activeTitle = selectedPreset?.title ?? 'No Preset Loaded';
   const activeAuthor = selectedPreset?.author
     ? `by ${selectedPreset.author}`
     : '';
-
-  const energyNorm = Math.max(0.08, Math.min(1, audioEnergy));
-
-  const bands = useMemo(
-    () =>
-      BARS_CONFIG.map((b) => ({
-        id: b.id,
-        height: Math.min(1, energyNorm * b.mult),
-      })),
-    [energyNorm],
-  );
 
   const activePanel = ui.routeState.panel;
 
@@ -57,22 +82,7 @@ export function AudioSpectrumHud() {
         ) : null}
       </div>
 
-      <div
-        className="stims-hud-bar__spectrum"
-        aria-hidden="true"
-        title="Live Frequency Analyzer"
-      >
-        {bands.map((band) => (
-          <span
-            key={band.id}
-            className="stims-hud-bar__spectrum-bar"
-            style={{
-              transform: `scaleY(${band.height})`,
-              opacity: 0.35 + band.height * 0.65,
-            }}
-          />
-        ))}
-      </div>
+      <AudioSpectrumBars />
 
       <div className="stims-hud-bar__actions">
         <RendererFallbackBadge />

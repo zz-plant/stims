@@ -1,3 +1,7 @@
+/* Bundled rather than linked from /vendor so the reset costs no extra
+   render-blocking round trip. Must stay first: @import precedes all rules. */
+@import "./normalize.css";
+
 /* ═════════════════════════════════════════════════════════════════════
    Stims Unified Design Tokens
    Single source of truth — all CSS custom properties for the entire app.

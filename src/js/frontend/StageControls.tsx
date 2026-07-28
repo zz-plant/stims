@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../css/StageControls.module.css';
-import { useAudioEnergy } from './hooks/useAudioEnergy.ts';
+import {
+  getAudioEnergy,
+  subscribeAudioEnergy,
+} from './engine-audio-energy-store.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
@@ -14,7 +17,6 @@ export function StageControls({
 }) {
   const { ui, engine } = useWorkspace();
   const { engineSnapshot } = useEngineSnapshot();
-  const audioEnergy = useAudioEnergy();
   const panel = ui.routeState.panel;
 
   const presetTitle =
@@ -24,10 +26,21 @@ export function StageControls({
 
   const { visible, signalActivity } = useAutoHideActivity(3000, true);
   const [showOverflow, setShowOverflow] = useState(false);
+  const nowPlayingBarRef = useRef<HTMLSpanElement>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
   const moreBtnRef = useRef<HTMLButtonElement>(null);
 
-  const energyNorm = Math.min(1, Math.max(0, audioEnergy));
+  useEffect(() => {
+    const updateEnergyBar = () => {
+      nowPlayingBarRef.current?.style.setProperty(
+        '--stims-energy',
+        String(Math.min(1, Math.max(0, getAudioEnergy()))),
+      );
+    };
+
+    updateEnergyBar();
+    return subscribeAudioEnergy(updateEnergyBar);
+  }, []);
 
   // Close overflow on outside click
   useEffect(() => {
@@ -195,10 +208,7 @@ export function StageControls({
             {presetAuthor ? (
               <span className={styles.nowPlayingAuthor}>{presetAuthor}</span>
             ) : null}
-            <span
-              className={styles.nowPlayingBar}
-              style={{ '--stims-energy': energyNorm } as React.CSSProperties}
-            />
+            <span ref={nowPlayingBarRef} className={styles.nowPlayingBar} />
           </div>
         ) : null}
         <div className={styles.toolbar} role="toolbar" aria-label="Controls">

@@ -20,7 +20,7 @@ describe('minimal workspace surfaces', () => {
   test('keeps browse copy and controls terse', () => {
     const browse = frontendSource('BrowseSheetPanel.tsx');
 
-    expect(browse).toContain('<strong>Browse presets</strong>');
+    expect(browse).toContain('aria-label="Search presets"');
     expect(browse).not.toContain('Tap any card to load it on the stage.');
     expect(browse).not.toContain('Find similar to current look');
     expect(browse).not.toContain('Long-press cards to build');
