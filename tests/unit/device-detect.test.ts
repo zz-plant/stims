@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   getDeviceEnvironmentProfile,
   getSmartTvModeOverride,
+  isInAppBrowser,
   isMobileDevice,
   isSmartTvDevice,
+  openExternalBrowserIntent,
 } from '../../src/js/utils/device-detect';
 
 type NavigatorWithUserAgentData = Navigator & {
@@ -142,6 +144,23 @@ describe('isMobileDevice', () => {
     expect(isMobileDevice()).toBe(true);
   });
 
+  test('detects mobile devices with stylus/hover emulation (S-Pen, iPad pencil) when touch points are active', () => {
+    setNavigatorField('maxTouchPoints', 10);
+    window.matchMedia = ((query: string) =>
+      ({
+        media: query,
+        matches: query === '(pointer: coarse)' || query === '(hover: hover)',
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia;
+
+    expect(isMobileDevice()).toBe(true);
+  });
+
   test('keeps desktop devices classified as non-mobile', () => {
     expect(isMobileDevice()).toBe(false);
   });
@@ -259,5 +278,34 @@ describe('isSmartTvDevice', () => {
 
   test('keeps desktop user agents out of tv mode by default', () => {
     expect(isSmartTvDevice()).toBe(false);
+  });
+});
+
+describe('isInAppBrowser', () => {
+  beforeEach(() => {
+    setNavigatorField('userAgent', DESKTOP_UA);
+  });
+
+  test('detects Instagram, TikTok, and Twitter in-app webviews', () => {
+    setNavigatorField(
+      'userAgent',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 320.0.0',
+    );
+    expect(isInAppBrowser()).toBe(true);
+
+    setNavigatorField(
+      'userAgent',
+      'Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro Build/AP2A) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/145.0.0.0 Mobile Safari/537.36 TikTok/33.0.0',
+    );
+    expect(isInAppBrowser()).toBe(true);
+  });
+
+  test('returns false for standard desktop and mobile browsers', () => {
+    expect(isInAppBrowser()).toBe(false);
+  });
+
+  test('triggers intent on Android and copies link on iOS/desktop', () => {
+    setNavigatorField('userAgent', 'Mozilla/5.0 (Linux; Android 14)');
+    expect(openExternalBrowserIntent()).toBe(true);
   });
 });

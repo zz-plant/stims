@@ -10,7 +10,6 @@ import type {
 } from './renderer-setup.ts';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
 
-const isMobileUserAgent = isMobileDevice();
 const appliedRendererDimensions = new WeakMap<
   object,
   { pixelRatio: number; width: number; height: number }
@@ -82,7 +81,6 @@ const BASE_RENDERER_SETTINGS: Required<RendererInitConfig> = {
   forceRetryCapabilities: false,
   preserveDrawingBuffer: false,
 };
-const deviceEnvironment = getDeviceEnvironmentProfile();
 
 export const DEFAULT_RENDERER_RUNTIME_CONTROLS: RendererRuntimeControls = {
   renderScale: 1,
@@ -199,11 +197,12 @@ export function applyRendererSettings(
     0.4,
     (merged.renderScale ?? 1) * (merged.adaptiveRenderScaleMultiplier ?? 1),
   );
+  const currentDeviceEnv = getDeviceEnvironmentProfile();
   const backendPixelRatioCap = getRendererBackendMaxPixelRatioCap({
     backend: info.backend,
-    isMobile: isMobileUserAgent,
-    browserFamily: deviceEnvironment.browserFamily,
-    platformFamily: deviceEnvironment.platformFamily,
+    isMobile: isMobileDevice(),
+    browserFamily: currentDeviceEnv.browserFamily,
+    platformFamily: currentDeviceEnv.platformFamily,
   });
   const effectiveMaxPixelRatio = Math.max(
     0.5,

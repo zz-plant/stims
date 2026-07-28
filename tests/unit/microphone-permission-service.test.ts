@@ -67,7 +67,37 @@ describe('microphone permission service', () => {
     expect(getMicrophoneCapabilityFromState('denied')).toEqual({
       supported: true,
       state: 'denied',
-      reason: 'Microphone access is blocked for this site.',
+      reason:
+        'Microphone access is blocked. Please allow microphone access in site settings or OS Privacy Settings.',
+    });
+  });
+
+  test('detects non-secure HTTP origins for unsupported capability reasons', () => {
+    const originalSecureContext = globalThis.isSecureContext;
+    const originalLocation = window.location;
+    Object.defineProperty(globalThis, 'isSecureContext', {
+      configurable: true,
+      value: false,
+    });
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        protocol: 'http:',
+        hostname: '192.168.1.100',
+      },
+    });
+
+    const cap = getMicrophoneCapabilityFromState('unsupported');
+    expect(cap.supported).toBe(false);
+    expect(cap.reason).toContain('HTTPS or localhost');
+
+    Object.defineProperty(globalThis, 'isSecureContext', {
+      configurable: true,
+      value: originalSecureContext,
+    });
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
     });
   });
 });

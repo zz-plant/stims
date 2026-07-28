@@ -108,8 +108,8 @@ function hasCoarsePrimaryPointer() {
   }
 
   return (
-    window.matchMedia('(pointer: coarse)').matches &&
-    !window.matchMedia('(hover: hover)').matches
+    window.matchMedia('(pointer: coarse)').matches ||
+    window.matchMedia('(any-pointer: coarse)').matches
   );
 }
 
@@ -244,4 +244,36 @@ export function isSmartTvDevice() {
   return Boolean(
     likelyLeanbackInput && viewportHint && lowPowerHint && !isMobileDevice(),
   );
+}
+
+const IN_APP_BROWSER_PATTERN =
+  /(instagram|fbav|fban|tiktok|musical_ly|twitter|micromessenger|line\/|slack|snapchat|gsa\/)/i;
+
+export function isInAppBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const nav = navigator as NavigatorWithUserAgentData;
+  const userAgent = nav.userAgent ?? '';
+  return IN_APP_BROWSER_PATTERN.test(userAgent);
+}
+
+export function openExternalBrowserIntent(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const userAgent = navigator.userAgent ?? '';
+  const isAndroid = /android/i.test(userAgent);
+
+  if (isAndroid) {
+    const intentUrl = `intent://${window.location.host}${window.location.pathname}${window.location.search}#Intent;scheme=https;package=com.android.chrome;end`;
+    window.location.href = intentUrl;
+    return true;
+  }
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(window.location.href);
+    }
+  } catch {
+    // ignore clipboard failure
+  }
+  return false;
 }

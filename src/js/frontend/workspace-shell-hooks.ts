@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
+import { isInAppBrowser } from '../utils/device-detect.ts';
 import { formatPresetShareCopy, shareOrCopyLink } from '../utils/share-link.ts';
 import type {
   PanelState,
@@ -383,10 +384,9 @@ export function useWorkspaceShellOrchestration({
       }
 
       if (source === 'microphone') {
+        const inApp = isInAppBrowser();
+
         if (!navigator.mediaDevices?.getUserMedia) {
-          // On mobile, `mediaDevices` is undefined on insecure origins (e.g.
-          // reaching a dev server over a plain-HTTP LAN IP). Distinguish that
-          // from genuinely unsupported browsers so the message is actionable.
           const insecure =
             typeof window !== 'undefined' &&
             window.isSecureContext === false &&
@@ -394,6 +394,23 @@ export function useWorkspaceShellOrchestration({
             !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(
               window.location.hostname,
             );
+
+          if (inApp) {
+            const demoRouteState = {
+              ...nextRouteState,
+              audioSource: 'demo' as const,
+            };
+            commitRoute(demoRouteState);
+            await startAudioSource({
+              source: 'demo',
+              launchState: demoRouteState,
+            });
+            setStatusMessage(
+              "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.",
+            );
+            return;
+          }
+
           setStatusMessage(
             insecure
               ? 'Microphone needs a secure connection. Open this site over HTTPS and try again.'
@@ -401,23 +418,36 @@ export function useWorkspaceShellOrchestration({
           );
           return;
         }
+
         let permissionStream: MediaStream;
         try {
-          // This stream is handed straight to the engine, so it must carry the
-          // shared constraints. A bare `{ audio: true }` opts into the browser's
-          // voice-call pipeline — on Android that means aggressive AGC, noise
-          // suppression and echo cancellation, which flatten music into a
-          // pumping, gated signal the visualizer can barely react to.
           permissionStream = await navigator.mediaDevices.getUserMedia(
             DEFAULT_MICROPHONE_CONSTRAINTS,
           );
         } catch (error) {
+          if (inApp) {
+            const demoRouteState = {
+              ...nextRouteState,
+              audioSource: 'demo' as const,
+            };
+            commitRoute(demoRouteState);
+            await startAudioSource({
+              source: 'demo',
+              launchState: demoRouteState,
+            });
+            setStatusMessage(
+              "In-app browsers (Instagram, TikTok, Twitter) limit live mic access. Started with Demo Audio. Tap '...' to open in Safari/Chrome.",
+            );
+            return;
+          }
+
           throw new Error(
             error instanceof DOMException && error.name === 'NotAllowedError'
               ? 'Microphone access was denied. Check browser settings and try again.'
               : 'Unable to access microphone.',
           );
         }
+
         try {
           await startAudioSource({
             source,
