@@ -7,8 +7,10 @@
  * `.claude/CLAUDE.md` straight into them — and CODEOWNERS globs that match
  * nothing silently disable review requirements.
  *
- * `docs/archive/` is exempt: archived material is a record of what was true
- * at the time, not a live instruction.
+ * Historical records are exempt: `docs/archive/`, plus dated audits, critiques
+ * and assessments. Those describe what a file tree looked like when someone
+ * examined it, so rewriting their paths would misrepresent the record. The
+ * guard covers material that is meant to be acted on today.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -23,6 +25,18 @@ const SKIP_DIRS = new Set([
   'screenshots',
 ]);
 const STALE = /\bassets\/(js|data)\b/;
+
+/**
+ * Point-in-time findings rather than live instruction. These get archived
+ * rather than maintained, so their paths are left as they were recorded.
+ */
+const HISTORICAL_RECORD =
+  /(AUDIT|CRITIQUE|ANTI_PATTERNS|RESEARCH|_REPORT_|assessment)/i;
+
+function isHistoricalRecord(file: string): boolean {
+  const name = file.split('/').pop() ?? '';
+  return file.startsWith('docs/') && HISTORICAL_RECORD.test(name);
+}
 
 function walk(dir: string, out: string[] = []): string[] {
   let entries: string[];
@@ -49,6 +63,7 @@ function walk(dir: string, out: string[] = []): string[] {
 const offenders: Array<{ file: string; line: number; text: string }> = [];
 
 for (const file of [...ROOTS.flatMap((r) => walk(r)), ...EXTRA_FILES]) {
+  if (isHistoricalRecord(file)) continue;
   let text: string;
   try {
     text = readFileSync(file, 'utf8');
