@@ -479,6 +479,16 @@ function disposeRenderer() {
   });
 }
 
+function handleSync(
+  _payload: import('./renderer-worker-protocol.ts').RendererWorkerSyncPayload,
+) {
+  ensureRendererReady();
+  postMessage({
+    type: RENDERER_WORKER_MESSAGE_TYPES.status,
+    payload: { phase: 'synced' },
+  });
+}
+
 scope.addEventListener(
   'message',
   async (event: MessageEvent<RendererWorkerRequestMessage>) => {
@@ -498,6 +508,9 @@ scope.addEventListener(
           break;
         case RENDERER_WORKER_MESSAGE_TYPES.frame:
           handleFrame(event.data.payload);
+          break;
+        case RENDERER_WORKER_MESSAGE_TYPES.sync:
+          handleSync(event.data.payload);
           break;
         case RENDERER_WORKER_MESSAGE_TYPES.dispose:
           disposeRenderer();

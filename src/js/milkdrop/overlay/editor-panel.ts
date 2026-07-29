@@ -20,12 +20,221 @@ import { Compartment, EditorState, RangeSetBuilder } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { KeyBinding } from '@codemirror/view';
 import { Decoration, EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { parseMilkdropExpression, parseMilkdropStatement } from '../expression';
+import { parseMilkdropPreset } from '../preset-parser';
 import type { MilkdropDiagnostic, MilkdropEditorSessionState } from '../types';
 import { createMilkdropLanguage } from './editor-language';
 import {
   compatibilityCategoryLabel,
   getPrimaryDegradationReason,
 } from './preset-row';
+
+export type SliderConfig = {
+  label: string;
+  key: string;
+  min: number;
+  max: number;
+  step: number;
+  defaultValue: number;
+};
+
+export const DEFAULT_EDITOR_SLIDERS: SliderConfig[] = [
+  {
+    label: 'Zoom',
+    key: 'zoom',
+    min: 0.2,
+    max: 3.0,
+    step: 0.01,
+    defaultValue: 1.0,
+  },
+  {
+    label: 'Warp',
+    key: 'warp',
+    min: 0.0,
+    max: 10.0,
+    step: 0.05,
+    defaultValue: 1.0,
+  },
+  {
+    label: 'Rot',
+    key: 'rot',
+    min: -1.0,
+    max: 1.0,
+    step: 0.01,
+    defaultValue: 0.0,
+  },
+  {
+    label: 'Decay',
+    key: 'decay',
+    min: 0.8,
+    max: 1.0,
+    step: 0.005,
+    defaultValue: 0.98,
+  },
+  {
+    label: 'Center X',
+    key: 'cx',
+    min: 0.0,
+    max: 1.0,
+    step: 0.01,
+    defaultValue: 0.5,
+  },
+  {
+    label: 'Center Y',
+    key: 'cy',
+    min: 0.0,
+    max: 1.0,
+    step: 0.01,
+    defaultValue: 0.5,
+  },
+  {
+    label: 'Scale X',
+    key: 'sx',
+    min: 0.1,
+    max: 3.0,
+    step: 0.01,
+    defaultValue: 1.0,
+  },
+  {
+    label: 'Scale Y',
+    key: 'sy',
+    min: 0.1,
+    max: 3.0,
+    step: 0.01,
+    defaultValue: 1.0,
+  },
+  {
+    label: 'Shift X',
+    key: 'dx',
+    min: -0.5,
+    max: 0.5,
+    step: 0.01,
+    defaultValue: 0.0,
+  },
+  {
+    label: 'Shift Y',
+    key: 'dy',
+    min: -0.5,
+    max: 0.5,
+    step: 0.01,
+    defaultValue: 0.0,
+  },
+  {
+    label: 'Wave Alpha',
+    key: 'wave_a',
+    min: 0.0,
+    max: 1.0,
+    step: 0.01,
+    defaultValue: 0.8,
+  },
+  {
+    label: 'Border Size',
+    key: 'ob_size',
+    min: 0.0,
+    max: 0.5,
+    step: 0.01,
+    defaultValue: 0.01,
+  },
+];
+
+export function computeAstDiagnostics(source: string): MilkdropDiagnostic[] {
+  const diagnostics: MilkdropDiagnostic[] = [];
+
+  const presetResult = parseMilkdropPreset(source);
+  diagnostics.push(...presetResult.diagnostics);
+
+  const lines = source.split(/\r?\n/u);
+  lines.forEach((lineText, lineIdx) => {
+    const lineNumber = lineIdx + 1;
+    const trimmed = lineText.trim();
+    if (
+      !trimmed ||
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith(';')
+    ) {
+      return;
+    }
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      return;
+    }
+
+    let parenDepth = 0;
+    for (let i = 0; i < trimmed.length; i += 1) {
+      const char = trimmed[i];
+      if (char === '(') {
+        parenDepth += 1;
+      } else if (char === ')') {
+        parenDepth -= 1;
+        if (parenDepth < 0) {
+          diagnostics.push({
+            severity: 'error',
+            code: 'unmatched_closing_paren',
+            line: lineNumber,
+            message: `Unmatched closing parenthesis ')' at line ${lineNumber}.`,
+          });
+          parenDepth = 0;
+        }
+      }
+    }
+    if (parenDepth > 0) {
+      diagnostics.push({
+        severity: 'error',
+        code: 'unclosed_paren',
+        line: lineNumber,
+        message: `Unclosed parenthesis '(' at line ${lineNumber}.`,
+      });
+    }
+
+    const equalsIdx = trimmed.indexOf('=');
+    if (equalsIdx > 0) {
+      const key = trimmed.slice(0, equalsIdx).trim().toLowerCase();
+      const val = trimmed.slice(equalsIdx + 1).trim();
+
+      const isEquationKey =
+        key.startsWith('per_frame') ||
+        key.startsWith('per_pixel') ||
+        key.startsWith('wave_') ||
+        key.startsWith('shape_') ||
+        key === 'warp' ||
+        key === 'comp';
+
+      if (isEquationKey && val) {
+        const statements = val.split(';');
+        statements.forEach((stmt) => {
+          const s = stmt.trim();
+          if (!s) return;
+          if (s.includes('=')) {
+            const res = parseMilkdropStatement(s, lineNumber);
+            diagnostics.push(...res.diagnostics);
+          } else {
+            const res = parseMilkdropExpression(s, lineNumber);
+            diagnostics.push(...res.diagnostics);
+          }
+        });
+      } else if (val && /^[0-9A-Za-z_+\-*/\s().]+$/u.test(val)) {
+        const res = parseMilkdropExpression(val, lineNumber);
+        diagnostics.push(...res.diagnostics);
+      }
+    }
+  });
+
+  return mergeDiagnostics(diagnostics, []);
+}
+
+export function mergeDiagnostics(
+  primary: MilkdropDiagnostic[],
+  secondary: MilkdropDiagnostic[],
+): MilkdropDiagnostic[] {
+  const map = new Map<string, MilkdropDiagnostic>();
+  [...primary, ...secondary].forEach((diag) => {
+    const key = `${diag.line ?? 0}:${diag.code ?? ''}:${diag.message}`;
+    if (!map.has(key)) {
+      map.set(key, diag);
+    }
+  });
+  return Array.from(map.values());
+}
 
 type EditorSnippet = {
   label: string;
@@ -452,12 +661,17 @@ export class EditorPanel {
   private readonly setEditorDiagnostics: (
     diagnostics: MilkdropDiagnostic[],
   ) => void;
+  private readonly consoleHeaderLabel: HTMLElement;
   private suppressEditorChange = false;
   private hasBufferedEdits = false;
   private lastSessionState: MilkdropEditorSessionState | null = null;
   private quickFixBtn: HTMLButtonElement | null = null;
   private mostRecentDiagnostic: MilkdropDiagnostic | null = null;
   private snapshots: Array<{ source: string; timestamp: number }> = [];
+  private sliderInputs: Map<
+    string,
+    { input: HTMLInputElement; display: HTMLSpanElement; defaultValue: number }
+  > = new Map();
 
   constructor(callbacks: EditorPanelCallbacks) {
     this.callbacks = callbacks;
@@ -594,8 +808,19 @@ export class EditorPanel {
       onDocChange: (source) => this.callbacks.onEditorSourceChange(source),
       onBufferedEdit: () => {
         this.hasBufferedEdits = true;
+        const currentDoc = this.editor.state.doc.toString();
+        const astDiag = computeAstDiagnostics(currentDoc);
+        const combined = mergeDiagnostics(
+          this.lastSessionState?.diagnostics ?? [],
+          astDiag,
+        );
+        this.setEditorDiagnostics(combined);
         if (this.lastSessionState) {
-          this.renderSessionState(this.lastSessionState);
+          this.renderSessionState({
+            ...this.lastSessionState,
+            source: currentDoc,
+            diagnostics: combined,
+          });
         }
       },
       isChangeSuppressed: () => this.suppressEditorChange,
@@ -683,6 +908,7 @@ export class EditorPanel {
     const editorConsoleLabel = document.createElement('span');
     editorConsoleLabel.className = 'milkdrop-overlay__editor-quick-ideas-label';
     editorConsoleLabel.textContent = 'Console';
+    this.consoleHeaderLabel = editorConsoleLabel;
     this.diagnosticsList = document.createElement('div');
     this.diagnosticsList.className = 'milkdrop-overlay__diagnostics';
     const quickFixBtn = this.renderQuickFix();
@@ -864,9 +1090,19 @@ export class EditorPanel {
     const currentDoc = this.editor.state.doc.toString();
     const preserveBufferedDraft =
       this.hasBufferedEdits && nextSource !== currentDoc;
+
+    const astDiag = computeAstDiagnostics(
+      preserveBufferedDraft ? currentDoc : nextSource,
+    );
+    const combinedDiagnostics = mergeDiagnostics(state.diagnostics, astDiag);
+
     if (preserveBufferedDraft) {
       if (this.lastSessionState) {
-        this.renderSessionState(this.lastSessionState);
+        this.renderSessionState({
+          ...this.lastSessionState,
+          source: currentDoc,
+          diagnostics: combinedDiagnostics,
+        });
       }
       return;
     }
@@ -886,13 +1122,23 @@ export class EditorPanel {
     if (nextSource === this.editor.state.doc.toString()) {
       this.hasBufferedEdits = false;
     }
-    this.setEditorDiagnostics(state.diagnostics);
-    this.renderSessionState(state);
+    this.setEditorDiagnostics(combinedDiagnostics);
+    this.renderSessionState({
+      ...state,
+      diagnostics: combinedDiagnostics,
+    });
+  }
+
+  getEditorSource(): string {
+    return this.editor.state.doc.toString();
   }
 
   private renderSessionState(state: MilkdropEditorSessionState) {
     const errors = state.diagnostics.filter(
       (diagnostic) => diagnostic.severity === 'error',
+    );
+    const warnings = state.diagnostics.filter(
+      (diagnostic) => diagnostic.severity === 'warning',
     );
     const hasErrors = errors.length > 0;
     const primaryReason = getPrimaryDegradationReason(state.latestCompiled);
@@ -910,14 +1156,23 @@ export class EditorPanel {
     );
     const shouldShowStatus = hasErrors || state.dirty || this.hasBufferedEdits;
     const baseStatus = hasErrors
-      ? `${errors.length} issue${errors.length === 1 ? '' : 's'} in the draft. The stage is holding the last good frame.`
+      ? `⚠️ ${errors.length} compile/syntax error${errors.length === 1 ? '' : 's'} in draft. The stage is holding the last good frame.`
       : this.hasBufferedEdits
         ? 'Typing… the next patch is queued. Press Cmd/Ctrl+Enter to punch it in immediately.'
         : state.dirty
           ? 'Live patch applied. Keep shaping the draft or reset to return to the active source.'
           : '';
+
     this.editorStatus.textContent = baseStatus;
     this.editorStatus.hidden = !shouldShowStatus;
+    if (hasErrors) {
+      this.editorStatus.classList.add('milkdrop-overlay__editor-status--error');
+    } else {
+      this.editorStatus.classList.remove(
+        'milkdrop-overlay__editor-status--error',
+      );
+    }
+
     this.editorLiveBadge.textContent = hasErrors
       ? 'Last good frame'
       : 'Auto 120ms';
@@ -943,6 +1198,13 @@ export class EditorPanel {
         ? 'warning'
         : 'muted';
 
+    if (this.consoleHeaderLabel) {
+      this.consoleHeaderLabel.textContent =
+        errors.length > 0 || warnings.length > 0
+          ? `Console (${errors.length} error${errors.length === 1 ? '' : 's'}, ${warnings.length} warning${warnings.length === 1 ? '' : 's'})`
+          : 'Console (Clean)';
+    }
+
     this.diagnosticsList.replaceChildren();
     const errorsForQuickFix = state.diagnostics.filter(
       (d) => d.severity === 'error',
@@ -955,7 +1217,9 @@ export class EditorPanel {
     const derivedNotices = [
       primaryReason
         ? {
-            severity: primaryReason.blocking ? 'warning' : 'info',
+            severity: primaryReason.blocking
+              ? ('warning' as const)
+              : ('info' as const),
             message: `${compatibilityCategoryLabel(primaryReason.category)}: ${primaryReason.message}`,
           }
         : null,
@@ -964,7 +1228,7 @@ export class EditorPanel {
       message: string;
     }>;
     const consoleMessages = [
-      ...state.diagnostics.slice(0, 8),
+      ...state.diagnostics.slice(0, 12),
       ...derivedNotices,
     ];
 
@@ -975,29 +1239,58 @@ export class EditorPanel {
       item.textContent =
         'Console is clear. Try bass_att, beat_pulse, or time to push the scene around.';
       this.diagnosticsList.appendChild(item);
-      return;
+    } else {
+      consoleMessages.slice(0, 15).forEach((diagnostic) => {
+        const item = document.createElement('div');
+        item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
+
+        const severityTag = document.createElement('span');
+        severityTag.className = `milkdrop-overlay__diagnostic-tag milkdrop-overlay__diagnostic-tag--${diagnostic.severity}`;
+        severityTag.textContent = diagnostic.severity.toUpperCase();
+        severityTag.style.marginRight = '6px';
+        severityTag.style.fontWeight = 'bold';
+        severityTag.style.fontSize = '0.7rem';
+        severityTag.style.padding = '1px 5px';
+        severityTag.style.borderRadius = '4px';
+        if (diagnostic.severity === 'error') {
+          severityTag.style.background = 'rgba(239, 68, 68, 0.3)';
+          severityTag.style.color = '#fca5a5';
+        } else if (diagnostic.severity === 'warning') {
+          severityTag.style.background = 'rgba(245, 158, 11, 0.3)';
+          severityTag.style.color = '#fde68a';
+        } else {
+          severityTag.style.background = 'rgba(59, 130, 246, 0.3)';
+          severityTag.style.color = '#93c5fd';
+        }
+
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent =
+          'line' in diagnostic && diagnostic.line
+            ? `Line ${diagnostic.line}: ${diagnostic.message}`
+            : diagnostic.message;
+
+        item.append(severityTag, messageSpan);
+
+        if ('line' in diagnostic && diagnostic.line) {
+          const lineNum = diagnostic.line;
+          item.style.cursor = 'pointer';
+          item.title = 'Click to jump to line in editor';
+          item.addEventListener('click', () => {
+            if (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) {
+              const line = this.editor.state.doc.line(lineNum);
+              this.editor.dispatch({
+                selection: { anchor: line.from },
+                scrollIntoView: true,
+              });
+              this.editor.focus();
+            }
+          });
+        }
+        this.diagnosticsList.appendChild(item);
+      });
     }
 
-    consoleMessages.slice(0, 10).forEach((diagnostic) => {
-      const item = document.createElement('div');
-      item.className = `milkdrop-overlay__diagnostic milkdrop-overlay__diagnostic--${diagnostic.severity}`;
-      item.textContent =
-        'line' in diagnostic && diagnostic.line
-          ? `Line ${diagnostic.line}: ${diagnostic.message}`
-          : diagnostic.message;
-      if ('line' in diagnostic && diagnostic.line) {
-        const lineNum = diagnostic.line;
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-          const line = this.editor.state.doc.line(lineNum);
-          this.editor.dispatch({
-            selection: { anchor: line.from },
-            scrollIntoView: true,
-          });
-        });
-      }
-      this.diagnosticsList.appendChild(item);
-    });
+    this.updateSlidersFromDoc();
   }
 
   dispose() {
@@ -1051,29 +1344,29 @@ export class EditorPanel {
     const title = document.createElement('h4');
     title.textContent = 'Tune';
     title.className = 'editor-sliders__title';
+    title.title = 'Double-click any label to reset parameter to default';
     panel.appendChild(title);
 
-    const sliders: Array<{
-      label: string;
-      key: string;
-      min: number;
-      max: number;
-      step: number;
-    }> = [
-      { label: 'Zoom', key: 'zoom', min: 0.2, max: 3, step: 0.05 },
-      { label: 'Warp', key: 'warp', min: 0, max: 1, step: 0.05 },
-      { label: 'Rot', key: 'rot', min: 0, max: 1, step: 0.02 },
-      { label: 'Decay', key: 'decay', min: 0.8, max: 0.995, step: 0.005 },
-      { label: 'Hue', key: 'hue_rot', min: 0, max: 6.28, step: 0.1 },
-    ];
+    this.sliderInputs.clear();
 
-    for (const s of sliders) {
+    for (const s of DEFAULT_EDITOR_SLIDERS) {
       const row = document.createElement('div');
       row.className = 'editor-slider-row';
 
       const label = document.createElement('label');
       label.className = 'editor-slider-row__label';
       label.textContent = s.label;
+      label.title = `Double-click to reset ${s.label} to ${s.defaultValue}`;
+      label.style.cursor = 'pointer';
+
+      label.addEventListener('dblclick', () => {
+        this.writeVariableToEditor(s.key, s.defaultValue);
+        const item = this.sliderInputs.get(s.key);
+        if (item) {
+          item.input.value = String(s.defaultValue);
+          item.display.textContent = s.defaultValue.toFixed(2);
+        }
+      });
 
       const input = document.createElement('input');
       input.type = 'range';
@@ -1083,15 +1376,23 @@ export class EditorPanel {
       input.className = 'editor-slider-row__input';
 
       const val = this.readVariableFromEditor(s.key);
-      input.value = val !== null ? String(val) : String((s.min + s.max) / 2);
+      const initialVal = val !== null ? val : s.defaultValue;
+      input.value = String(initialVal);
 
       const valDisplay = document.createElement('span');
       valDisplay.className = 'editor-slider-row__value';
-      valDisplay.textContent = parseFloat(input.value).toFixed(2);
+      valDisplay.textContent = initialVal.toFixed(2);
 
       input.addEventListener('input', () => {
-        valDisplay.textContent = parseFloat(input.value).toFixed(2);
-        this.writeVariableToEditor(s.key, parseFloat(input.value));
+        const numVal = Number.parseFloat(input.value);
+        valDisplay.textContent = numVal.toFixed(2);
+        this.writeVariableToEditor(s.key, numVal);
+      });
+
+      this.sliderInputs.set(s.key, {
+        input,
+        display: valDisplay,
+        defaultValue: s.defaultValue,
       });
 
       row.appendChild(label);
@@ -1103,28 +1404,54 @@ export class EditorPanel {
     return panel;
   }
 
-  private readVariableFromEditor(variableName: string): number | null {
-    const doc = this.editor.state.doc.toString();
-    const regex = new RegExp(`${variableName}\\s*=\\s*([\\d.]+)`, 'i');
-    const match = doc.match(regex);
-    return match ? parseFloat(match[1]) : null;
+  private updateSlidersFromDoc() {
+    this.sliderInputs.forEach((item, key) => {
+      if (document.activeElement === item.input) {
+        return;
+      }
+      const val = this.readVariableFromEditor(key);
+      const displayVal = val !== null ? val : item.defaultValue;
+      item.input.value = String(displayVal);
+      item.display.textContent = displayVal.toFixed(2);
+    });
   }
 
-  private writeVariableToEditor(variableName: string, value: number): void {
+  public readVariableFromEditor(variableName: string): number | null {
     const doc = this.editor.state.doc.toString();
-    const regex = new RegExp(`(${variableName}\\s*=\\s*)[\\d.]+`, 'gi');
-    const newDoc = doc.replace(regex, `$1${value.toFixed(3)}`);
+    const regex = new RegExp(
+      `(?:^|\\n|;)\\s*${variableName}\\s*=\\s*(-?\\d+(?:\\.\\d+)?)`,
+      'i',
+    );
+    const match = doc.match(regex);
+    return match ? Number.parseFloat(match[1]) : null;
+  }
+
+  public writeVariableToEditor(variableName: string, value: number): void {
+    const doc = this.editor.state.doc.toString();
+    const formattedValue = value.toFixed(3);
+    const regex = new RegExp(
+      `((?:^|\\n|;)\\s*${variableName}\\s*=\\s*)-?\\d+(?:\\.\\d+)?`,
+      'i',
+    );
+    let newDoc: string;
+
+    if (regex.test(doc)) {
+      newDoc = doc.replace(regex, `$1${formattedValue}`);
+    } else {
+      const prefix = doc.length === 0 || doc.endsWith('\n') ? '' : '\n';
+      newDoc = `${doc}${prefix}${variableName}=${formattedValue}\n`;
+    }
 
     if (newDoc !== doc) {
       this.editor.dispatch({
         changes: { from: 0, to: doc.length, insert: newDoc },
         scrollIntoView: false,
       });
-      this.editor.dispatch({
-        effects: EditorView.scrollIntoView(
-          this.editor.state.selection.main.head,
-        ),
-      });
+      this.hasBufferedEdits = true;
+      if (this.lastSessionState) {
+        this.renderSessionState(this.lastSessionState);
+      }
+      this.flushEditorDocChange();
     }
   }
 

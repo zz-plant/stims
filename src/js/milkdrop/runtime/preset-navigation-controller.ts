@@ -160,7 +160,7 @@ export function createMilkdropPresetNavigationController({
         estimateFrameBlendWorkload(currentFrameState) < MAX_BLEND_WORKLOAD;
       trace.adapter(
         'transition',
-        canBlend ? `blend (${getBlendDuration()}ms)` : 'cut',
+        canBlend ? `blend (${getBlendDuration().toFixed(2)}s)` : 'cut',
       );
       preparePresetTransition(
         canBlend ? cloneBlendState(currentFrameState) : null,

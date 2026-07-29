@@ -13,6 +13,8 @@ Our 2026 competitive research across web visualizer tools (*IKANDY*, *WaveScope*
 3. **In-Browser Content Export Pipeline**: Short-form video platforms (TikTok, Spotify Canvas, YouTube Shorts) drive demand for direct 1080p/4K 60FPS WebCodecs/MP4 canvas recording directly inside the browser without requiring external software like OBS.
 4. **WebXR Spatial Audio Visualizers**: Apple Vision Pro and Meta Quest web browsers enable immersive 6DoF spatial 3D audio reactive visual stages.
 5. **AI-Assisted Preset Generation**: Creative coders and VJs benefit from natural language prompt-to-preset synthesis engines that generate valid shader math and parameters on demand.
+6. **Pro VJ Hardware & Networked Projection Integration**: Physical VJ hardware control (WebMIDI, OSC), low-latency NDI/Syphon canvas video streaming, and DMX stage lighting sync.
+7. **Neural Real-Time Audio-to-Visual Generation**: Next-generation web visualizers leveraging WebNN and WebGPU for on-device 3D Gaussian Splatting and audio-driven neural latent synthesis.
 
 ---
 
@@ -26,7 +28,7 @@ Stims aims to be the premier open-web platform for real-time, ultra-high-perform
 
 ```mermaid
 timeline
-    title Stims Engineering Roadmap (2026 - 2027)
+    title Stims Engineering Roadmap (2026 - 2028)
     section Q3 2026
         WebGPU Shared Audio Texture  : Single-pass FFT & waveform GPU texture packing
         In-Browser WebCodecs Export : 4K 60FPS MP4/WebM canvas recorder for creators
@@ -38,6 +40,12 @@ timeline
     section Q1-Q2 2027
         AI Preset Synthesizer        : Natural language prompt to EEL math generator
         Cloud Preset Hub & Sync      : Community catalog, tagging, and sync platform
+    section Q3-Q4 2027
+        Live VJ Stage & Hardware OSC : WebMIDI/OSC controller support & multi-display sync
+        NDI / Syphon Video Streaming : Zero-copy low-latency stream output for live venues
+    section Q1-Q2 2028
+        Neural Audio-to-Latent Engine: Real-time WebGPU 3D Gaussian Splatting & WebNN latent generation
+        Plugin & Shader Package Hub  : Open ecosystem for custom audio reactive modules & shaders
 ```
 
 ---
@@ -68,3 +76,21 @@ timeline
 | :--- | :--- | :--- |
 | **AI Preset Generator** | Generative AI pipeline translating text prompts into valid MilkDrop EEL code and shader uniforms. | Instant custom preset creation from natural language descriptions. |
 | **Cloud Preset Catalog & Sync** | Cloud-backed community catalog with search, tagging, favorites, and playlist creation. | Thriving user-generated content and preset sharing ecosystem. |
+
+### Q3 - Q4 2027 — Pro VJ Performance & Hardware Control
+
+| Initiative | Description | Target Impact |
+| :--- | :--- | :--- |
+| **WebMIDI & OSC Hardware Control** | WebMIDI API and WebSocket OSC bridge mapping physical faders, knobs, and launchpads to preset parameters. | Professional VJ hardware control for live events and concert sets. |
+| **Multi-Display Stage Sync** | WebSockets/WebRTC multi-window frame synchronization across master control and display nodes. | Multi-screen projection mapping and synchronized venue displays. |
+| **NDI / Syphon Stream Output** | High-throughput low-latency canvas stream output into broadcast and video mixing tools. | Direct integration with OBS, Resolume, and venue media servers. |
+| **DMX / Art-Net Lighting Bridge** | WebSockets bridge translating visual energy levels into DMX512 lighting control protocols. | Unified audio-visual-lighting control for live stages. |
+
+### Q1 - Q2 2028 — Neural Generative Visuals & Open Plugin Hub
+
+| Initiative | Description | Target Impact |
+| :--- | :--- | :--- |
+| **Neural Audio-to-Latent Generator** | Real-time WebGPU/WebNN 3D Gaussian Splatting and latent rendering driven by audio features. | Next-gen generative neural visualizers beyond procedural shader math. |
+| **Modular Plugin & Shader Registry** | Package ecosystem for custom audio DSP processors, shader filters, and visualizer modules. | Open developer ecosystem for custom Stims extension packages. |
+| **Desktop App & Native Audio Loopback** | Cross-platform Tauri/Electron desktop wrapper with system audio loopback and hardware acceleration. | Zero-setup system audio capture and desktop performance mode. |
+

@@ -94,24 +94,24 @@ describe('home shell user journeys', () => {
     const originalCancelIdleCallback = globalThis.cancelIdleCallback;
     console.warn = warnMock;
     globalThis.requestIdleCallback = (callback) =>
-      Number(
-        setTimeout(
-          () =>
-            callback({
-              didTimeout: false,
-              timeRemaining: () => 0,
-            }),
-          20,
-        ),
+      setTimeout(
+        () =>
+          callback({
+            didTimeout: false,
+            timeRemaining: () => 0,
+          }),
+        50,
       );
-    globalThis.cancelIdleCallback = (handle) => clearTimeout(handle);
+    globalThis.cancelIdleCallback = (handle) => {
+      if (handle) clearTimeout(handle);
+    };
 
     try {
       await loadAppShell();
 
       expect(typeof globalThis.__stimsAppDispose).toBe('function');
       globalThis.__stimsAppDispose();
-      await new Promise((resolve) => setTimeout(resolve, 40));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(warnMock).not.toHaveBeenCalled();
     } finally {

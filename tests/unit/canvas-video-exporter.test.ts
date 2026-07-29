@@ -164,7 +164,9 @@ describe('Canvas Video Exporter Utility', () => {
       'utf8',
     );
 
-    expect(panelSource).toContain("'hd-landscape', 'spotify-canvas'");
+    expect(panelSource).toContain("'4k-landscape'");
+    expect(panelSource).toContain("'hd-landscape'");
+    expect(panelSource).toContain("'spotify-canvas'");
     expect(panelSource).toContain('<fieldset');
     expect(panelSource).toContain('aria-live="polite"');
     expect(panelSource).toContain('Stop and save video');

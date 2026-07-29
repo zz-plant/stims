@@ -7,6 +7,7 @@ export const RENDERER_WORKER_MESSAGE_TYPES = {
   quality: 'renderer:quality',
   preset: 'renderer:preset',
   frame: 'renderer:frame',
+  sync: 'renderer:sync',
   dispose: 'renderer:dispose',
   ready: 'renderer:ready',
   status: 'renderer:status',
@@ -57,6 +58,13 @@ export type RendererWorkerFramePayload = {
   };
 };
 
+export type RendererWorkerSyncPayload = {
+  time: number;
+  frame: number;
+  signals?: Record<string, number>;
+  sharedBuffer?: ArrayBuffer | SharedArrayBuffer;
+};
+
 export type RendererWorkerInitMessage = {
   type: typeof RENDERER_WORKER_MESSAGE_TYPES.init;
   payload: RendererWorkerInitPayload;
@@ -82,6 +90,11 @@ export type RendererWorkerFrameMessage = {
   payload: RendererWorkerFramePayload;
 };
 
+export type RendererWorkerSyncMessage = {
+  type: typeof RENDERER_WORKER_MESSAGE_TYPES.sync;
+  payload: RendererWorkerSyncPayload;
+};
+
 export type RendererWorkerDisposeMessage = {
   type: typeof RENDERER_WORKER_MESSAGE_TYPES.dispose;
 };
@@ -92,6 +105,7 @@ export type RendererWorkerRequestMessage =
   | RendererWorkerQualityMessage
   | RendererWorkerPresetMessage
   | RendererWorkerFrameMessage
+  | RendererWorkerSyncMessage
   | RendererWorkerDisposeMessage;
 
 export type RendererWorkerReadyMessage = {
@@ -112,6 +126,7 @@ export type RendererWorkerStatusMessage = {
       | 'quality-updated'
       | 'preset-applied'
       | 'frame-submitted'
+      | 'synced'
       | 'disposed';
   };
 };

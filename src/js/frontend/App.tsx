@@ -133,8 +133,8 @@ function StimsWorkspaceAppShell() {
   const quietAtRef = useRef<number | null>(null);
   const quietDemoSuggestedRef = useRef(false);
   const autoPlayedRef = useRef(false);
-  // ShortcutsDialog owns the `e.key === 'Tab'` focus trap and initial
-  // `focusable[0]?.focus()` call while this shell controls when it opens.
+  // ShortcutsDialog owns the focus trap and initial focus placement via
+  // `useFocusTrap` while this shell controls when it opens.
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();

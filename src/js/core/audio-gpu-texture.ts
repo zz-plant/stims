@@ -74,6 +74,7 @@ export function createAudioTextureBuffer(
 
 export class SharedAudioGpuTextureManager {
   private readonly width: number;
+  private readonly height = 2;
   private readonly data: Uint8Array;
   private texture: DataTexture | null = null;
 
@@ -121,8 +122,57 @@ export class SharedAudioGpuTextureManager {
     return this.texture;
   }
 
+  getBuffer(): Uint8Array {
+    return this.data;
+  }
+
+  getWidth(): number {
+    return this.width;
+  }
+
+  getHeight(): number {
+    return this.height;
+  }
+
+  writeToGpuTexture(device: GPUDevice, gpuTexture: GPUTexture): void {
+    updateAudioGpuTexture(
+      device,
+      gpuTexture,
+      this.data,
+      this.width,
+      this.height,
+    );
+  }
+
+  writeToStorageBuffer(device: GPUDevice, buffer: GPUBuffer): void {
+    updateAudioStorageBuffer(device, buffer, this.data);
+  }
+
   dispose(): void {
     this.texture?.dispose();
     this.texture = null;
   }
+}
+
+export function updateAudioStorageBuffer(
+  device: GPUDevice,
+  buffer: GPUBuffer,
+  data: ArrayBufferView,
+): void {
+  device.queue.writeBuffer(buffer, 0, data);
+}
+
+export function updateAudioGpuTexture(
+  device: GPUDevice,
+  texture: GPUTexture,
+  data: Uint8Array,
+  width: number,
+  height = 2,
+): void {
+  device.queue.writeTexture(
+    { texture },
+    data,
+    { bytesPerRow: width * 4, rowsPerImage: height },
+    { width, height, depthOrArrayLayers: 1 },
+  );
 }

@@ -189,6 +189,10 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) < (${args[1] ?? '0.0f'}))`;
         case 'equal':
           return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) == (${args[1] ?? '0.0f'}))`;
+        case 'megabuf':
+          return `megabuf[u32(clamp(${args[0] ?? '0.0f'}, 0.0f, 1048575.0f))]`;
+        case 'gmegabuf':
+          return `gmegabuf[u32(clamp(${args[0] ?? '0.0f'}, 0.0f, 1048575.0f))]`;
         case 'rand':
           return 'rand()';
         default:
@@ -221,6 +225,8 @@ export type WgslProgramCompilation = {
   entryPoint: string;
   signature: string;
   usesRandom: boolean;
+  usesMegabuf: boolean;
+  usesGmegabuf: boolean;
   fieldKeys: string[];
   registerKeys: string[];
 };
@@ -229,10 +235,14 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
   fieldKeys: string[];
   registerKeys: string[];
   usesRandom: boolean;
+  usesMegabuf: boolean;
+  usesGmegabuf: boolean;
 } {
   const fieldKeys = new Set<string>();
   const registerKeys = new Set<string>();
   let usesRandom = false;
+  let usesMegabuf = false;
+  let usesGmegabuf = false;
 
   const collectFromExpression = (expression: MilkdropExpressionNode) => {
     switch (expression.type) {
@@ -260,6 +270,11 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
         collectFromExpression(expression.right);
         return;
       case 'call':
+        if (expression.name.toLowerCase() === 'megabuf') {
+          usesMegabuf = true;
+        } else if (expression.name.toLowerCase() === 'gmegabuf') {
+          usesGmegabuf = true;
+        }
         expression.args.forEach(collectFromExpression);
         return;
       case 'literal':
@@ -270,7 +285,11 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
   for (const statement of statements) {
     collectFromExpression(statement.expression);
     const target = statement.target.toLowerCase();
-    if (isRegisterIdentifier(target)) {
+    if (target.startsWith('megabuf')) {
+      usesMegabuf = true;
+    } else if (target.startsWith('gmegabuf')) {
+      usesGmegabuf = true;
+    } else if (isRegisterIdentifier(target)) {
       registerKeys.add(target);
     } else {
       fieldKeys.add(target);
@@ -281,6 +300,8 @@ function collectStatementFields(statements: MilkdropCompiledStatement[]): {
     fieldKeys: [...fieldKeys].sort(),
     registerKeys: [...registerKeys].sort(),
     usesRandom,
+    usesMegabuf,
+    usesGmegabuf,
   };
 }
 
@@ -399,9 +420,8 @@ function buildWgslProgram(
 export function compileProgramToWgsl(
   block: MilkdropProgramBlock,
 ): WgslProgramCompilation {
-  const { fieldKeys, registerKeys, usesRandom } = collectStatementFields(
-    block.statements,
-  );
+  const { fieldKeys, registerKeys, usesRandom, usesMegabuf, usesGmegabuf } =
+    collectStatementFields(block.statements);
 
   const sortedFields = [
     ...new Set([...fieldKeys, ...DEFAULT_MILKDROP_STATE_FIELDS]),
@@ -425,12 +445,16 @@ export function compileProgramToWgsl(
       fieldKeys: allFieldKeysForStruct,
       registerKeys,
       usesRandom,
+      usesMegabuf,
+      usesGmegabuf,
       statements: block.statements.map((s) => ({
         target: s.target.toLowerCase(),
         source: s.source,
       })),
     }),
     usesRandom,
+    usesMegabuf,
+    usesGmegabuf,
     fieldKeys: fieldKeys,
     registerKeys,
   };

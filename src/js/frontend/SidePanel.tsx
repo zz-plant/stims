@@ -14,6 +14,7 @@ import {
 import { searchByFrame } from '../core/services/visual-embedding.ts';
 import type { PresetCatalogEntry } from './contracts.ts';
 import { useEngineSnapshot } from './engine-context.tsx';
+import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
@@ -34,10 +35,14 @@ export function SidePanel({
   onOpen,
 }: SidePanelProps) {
   const [exiting, setExiting] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<number | null>(null);
-  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
-  const wasOpenRef = useRef(false);
+
+  const isActive = open && !exiting;
+  const panelRef = useFocusTrap<HTMLDivElement>({
+    active: isActive,
+    autoFocus: true,
+    restoreFocusOnUnmount: true,
+  });
 
   const startClose = useCallback(() => {
     if (exiting || closeTimerRef.current) return;
@@ -61,26 +66,9 @@ export function SidePanel({
   useEffect(() => {
     if (open) {
       setExiting(false);
-      const activeElement = document.activeElement;
-      previouslyFocusedRef.current =
-        activeElement instanceof HTMLElement ? activeElement : null;
-      wasOpenRef.current = true;
       if (onOpen) requestAnimationFrame(onOpen);
     }
   }, [open, onOpen]);
-
-  useEffect(() => {
-    if (open || !wasOpenRef.current) return;
-    wasOpenRef.current = false;
-    const el = previouslyFocusedRef.current;
-    previouslyFocusedRef.current = null;
-    if (
-      el?.isConnected &&
-      !document.activeElement?.closest('[role="dialog"]')
-    ) {
-      el.focus();
-    }
-  }, [open]);
 
   useEffect(() => {
     if (!open || exiting) return;
@@ -88,26 +76,9 @@ export function SidePanel({
       if (e.key === 'Escape') {
         e.preventDefault();
         startClose();
-        return;
-      }
-      if (e.key === 'Tab' && panelRef.current) {
-        const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
       }
     };
     document.addEventListener('keydown', handleKey);
-    panelRef.current?.focus();
     return () => document.removeEventListener('keydown', handleKey);
   }, [open, exiting, startClose]);
 

@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { useEffect, useState } from 'react';
+import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import {
   getShortcutKeys,
   readShortcutOverrides,
@@ -22,17 +23,16 @@ export function ShortcutsDialog({
   const [editing, setEditing] = useState<ShortcutActionId | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
+  useFocusTrap({
+    active: open,
+    autoFocus: true,
+    restoreFocusOnUnmount: true,
+    externalContainerRef: shortcutsRef,
+  });
+
   useEffect(() => {
     if (open) setOverrides(readShortcutOverrides());
   }, [open]);
-
-  useEffect(() => {
-    if (!open || !shortcutsRef.current) return;
-    const focusable = shortcutsRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    focusable[0]?.focus();
-  }, [open, shortcutsRef]);
 
   if (!open) return null;
 
@@ -82,22 +82,6 @@ export function ShortcutsDialog({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           e.stopPropagation();
-          if (e.key === 'Tab' && shortcutsRef.current) {
-            const focusable =
-              shortcutsRef.current.querySelectorAll<HTMLElement>(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-              );
-            if (focusable.length === 0) return;
-            const first = focusable[0];
-            const last = focusable[focusable.length - 1];
-            if (e.shiftKey && document.activeElement === first) {
-              e.preventDefault();
-              last.focus();
-            } else if (!e.shiftKey && document.activeElement === last) {
-              e.preventDefault();
-              first.focus();
-            }
-          }
         }}
         role="presentation"
       >

@@ -24,6 +24,25 @@ export function clearGpuVmCaches() {
   PIPELINE_CACHE.clear();
 }
 
+export function preloadGpuProgramPipeline(
+  device: GPUDevice,
+  block: MilkdropProgramBlock,
+): GPUComputePipeline {
+  const compilation = getOrCompileProgram(block);
+  return getOrCreatePipeline(device, compilation);
+}
+
+export async function warmupGpuPipelines(
+  device: GPUDevice,
+  blocks: MilkdropProgramBlock[],
+): Promise<GPUComputePipeline[]> {
+  const pipelines: GPUComputePipeline[] = [];
+  for (const block of blocks) {
+    pipelines.push(preloadGpuProgramPipeline(device, block));
+  }
+  return pipelines;
+}
+
 function getOrCompileProgram(
   block: MilkdropProgramBlock,
 ): WgslProgramCompilation {

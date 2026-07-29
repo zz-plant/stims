@@ -11,6 +11,27 @@ This document is the consolidated source for implementation progress across road
 - [x] Library discovery improvements are in place.
 - [x] Homepage first-view CTAs are reduced to one primary launch path plus browse.
 - [x] Shared runtime helper foundations are in place.
+- [x] **Q3 Roadmap feature: WebGPU Shared Audio GPU Texture** (2026-07-29):
+  - [x] Enhanced `SharedAudioGpuTextureManager` in `src/js/core/audio-gpu-texture.ts` with zero-copy buffer allocations and WebGPU queue writes (`writeToGpuTexture`, `updateAudioGpuTexture`).
+  - [x] Packed FFT frequency data into Row 0 (`y = 0`) and waveform data into Row 1 (`y = 1`) of a single `512x2` RGBA texture allocation.
+  - [x] Extended `MilkdropFeedbackManager` in `src/js/milkdrop/renderer-types.ts` and wired `setAudioTexture` across WebGL (`feedback-manager-shared.ts`) and WebGPU (`feedback-manager-webgpu-tsl.ts`) renderers.
+  - [x] Added unit test coverage in `tests/unit/audio-gpu-texture.test.ts`.
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
+- [x] **Q3 Roadmap feature: Live EEL Preset Studio AST Diagnostics & Sliders** (2026-07-29):
+  - [x] Integrated real-time AST syntax diagnostics (`computeAstDiagnostics`) into `EditorPanel` in `src/js/milkdrop/overlay/editor-panel.ts`.
+  - [x] Added compile error banner indicators, severity-tagged console diagnostics with line navigation, and CodeMirror line gutter error highlights.
+  - [x] Added live parameter tweak sliders (`zoom`, `warp`, `rot`, `decay`, etc.) with double-click reset and document sync.
+  - [x] Added unit tests in `tests/unit/editor-panel.test.ts`.
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
+- [x] **Q3 Roadmap feature: Off-Main-Thread AudioWorklet DSP Analysis** (2026-07-29):
+  - [x] Enhanced `FrequencyAnalyserProcessor` in `src/js/utils/frequency-analyser-processor.ts` to compute multi-band energy levels (`bass`, `mid`, `treble`, `subBass`, `kick`), energy envelope tracking, and 4-band transient metrics off the main thread.
+  - [x] Updated `FrequencyAnalyser` in `src/js/core/audio-handler.ts` to consume worklet energy payloads with fallback to standard `AnalyserNode`.
+  - [x] Added unit test suite in `tests/unit/audio-worklet.test.ts`.
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
+- [x] **Q3 Roadmap feature: In-Browser 4K 60FPS Canvas Video Export** (2026-07-29):
+  - [x] Expanded `CapturePanel.tsx` video format options to include Ultra HD 4K (`4k-landscape`, 3840×2160) alongside Full HD 1080p and Spotify Canvas (9:16 vertical).
+  - [x] Updated unit tests in `tests/unit/canvas-video-exporter.test.ts` for export options coverage.
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Polish phase: Overlay theme CSS variables extraction and styling consistency** (2026-05-17):
   - [x] Added 23 theme variables for overlay component (bg-primary, bg-secondary, bg-tertiary, overlay, overlay-2, border, blur-lg, shadow, button, active-indicator)
   - [x] Centralized overlay styling in CSS variables for maintainability
