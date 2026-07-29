@@ -19,6 +19,11 @@ export type GpuVmResult = {
 const PROGRAM_CACHE = new Map<string, WgslProgramCompilation>();
 const PIPELINE_CACHE = new Map<string, GPUComputePipeline>();
 
+export function clearGpuVmCaches() {
+  PROGRAM_CACHE.clear();
+  PIPELINE_CACHE.clear();
+}
+
 function getOrCompileProgram(
   block: MilkdropProgramBlock,
 ): WgslProgramCompilation {
@@ -85,44 +90,92 @@ function populateSignalData(
   target: Float32Array,
   signals: MilkdropGpuVmSignals,
 ): void {
-  const signalMap: Record<string, number> = {
-    time: signals.time,
-    frame: signals.frame,
-    fps: signals.fps,
-    aspect: signals.aspect ?? 1,
-    bass: signals.bass ?? 0,
-    mid: signals.mid ?? 0,
-    mids: signals.mids ?? 0,
-    treb: signals.treb ?? 0,
-    treble: signals.treble ?? 0,
-    bass_att: signals.bass_att ?? 0,
-    mid_att: signals.mid_att ?? 0,
-    mids_att: signals.mids_att ?? 0,
-    treb_att: signals.treb_att ?? 0,
-    treble_att: signals.treble_att ?? 0,
-    bassAtt: signals.bassAtt ?? 0,
-    midAtt: signals.midAtt ?? 0,
-    midsAtt: signals.midsAtt ?? 0,
-    trebleAtt: signals.trebleAtt ?? 0,
-    beat: signals.beat ?? 0,
-    beat_pulse: signals.beat_pulse ?? 0,
-    beatPulse: signals.beatPulse ?? 0,
-    beat_bass: signals.beat_bass ?? 0,
-    beat_mid: signals.beat_mid ?? 0,
-    beat_treb: signals.beat_treb ?? 0,
-    beatBass: signals.beatBass ?? 0,
-    beatMid: signals.beatMid ?? 0,
-    beatTreble: signals.beatTreble ?? 0,
-    bandFlux: signals.bandFlux ?? 0,
-    rms: signals.rms ?? 0,
-    vol: signals.vol ?? 0,
-    music: signals.music ?? 0,
-    weighted_energy: signals.weightedEnergy ?? 0,
-    progress: signals.frame,
-  };
-
   for (let i = 0; i < MILKDROP_WGSL_SIGNAL_FIELDS.length; i++) {
-    target[i] = signalMap[MILKDROP_WGSL_SIGNAL_FIELDS[i]] ?? 0;
+    const field = MILKDROP_WGSL_SIGNAL_FIELDS[i];
+    switch (field) {
+      case 'time':
+        target[i] = signals.time;
+        break;
+      case 'frame':
+      case 'progress':
+        target[i] = signals.frame;
+        break;
+      case 'fps':
+        target[i] = signals.fps;
+        break;
+      case 'aspect':
+        target[i] = signals.aspect ?? 1;
+        break;
+      case 'bass':
+        target[i] = signals.bass ?? 0;
+        break;
+      case 'mid':
+      case 'mids':
+        target[i] = signals.mid ?? signals.mids ?? 0;
+        break;
+      case 'treb':
+      case 'treble':
+        target[i] = signals.treb ?? signals.treble ?? 0;
+        break;
+      case 'bass_att':
+      case 'bassAtt':
+        target[i] = signals.bass_att ?? signals.bassAtt ?? 0;
+        break;
+      case 'mid_att':
+      case 'mids_att':
+      case 'midAtt':
+      case 'midsAtt':
+        target[i] =
+          signals.mid_att ??
+          signals.mids_att ??
+          signals.midAtt ??
+          signals.midsAtt ??
+          0;
+        break;
+      case 'treb_att':
+      case 'treble_att':
+      case 'trebleAtt':
+        target[i] =
+          signals.treb_att ?? signals.treble_att ?? signals.trebleAtt ?? 0;
+        break;
+      case 'beat':
+        target[i] = signals.beat ?? 0;
+        break;
+      case 'beat_pulse':
+      case 'beatPulse':
+        target[i] = signals.beat_pulse ?? signals.beatPulse ?? 0;
+        break;
+      case 'beat_bass':
+      case 'beatBass':
+        target[i] = signals.beat_bass ?? signals.beatBass ?? 0;
+        break;
+      case 'beat_mid':
+      case 'beatMid':
+        target[i] = signals.beat_mid ?? signals.beatMid ?? 0;
+        break;
+      case 'beat_treb':
+      case 'beatTreble':
+        target[i] = signals.beat_treb ?? signals.beatTreble ?? 0;
+        break;
+      case 'bandFlux':
+        target[i] = signals.bandFlux ?? 0;
+        break;
+      case 'rms':
+        target[i] = signals.rms ?? 0;
+        break;
+      case 'vol':
+        target[i] = signals.vol ?? 0;
+        break;
+      case 'music':
+        target[i] = signals.music ?? 0;
+        break;
+      case 'weighted_energy':
+        target[i] = signals.weightedEnergy ?? 0;
+        break;
+      default:
+        target[i] = 0;
+        break;
+    }
   }
 }
 
@@ -135,6 +188,7 @@ export function createGpuVmRunner() {
   let activeCompilation: WgslProgramCompilation | null = null;
 
   let currentSignalBuffer: GPUBuffer | null = null;
+  let randReadbackBuffer: GPUBuffer | null = null;
   const signalData = new Float32Array(MILKDROP_WGSL_SIGNAL_FIELDS.length);
 
   function init(
@@ -172,6 +226,18 @@ export function createGpuVmRunner() {
       size: SIGNAL_BUFFER_SIZE_BYTES,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
+
+    if (randReadbackBuffer) {
+      randReadbackBuffer.destroy();
+      randReadbackBuffer = null;
+    }
+    if (compilation.usesRandom) {
+      randReadbackBuffer = gpuDevice.createBuffer({
+        label: 'milkdrop-vm-rand-readback',
+        size: 4,
+        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+      });
+    }
 
     populateSignalData(signalData, {
       time: 0,
@@ -229,28 +295,27 @@ export function createGpuVmRunner() {
     const randOffset = bufferManager.getLayout()?.fieldOffsets?.rand_state;
 
     let randomState = 1;
-    if (randOffset !== undefined && activeCompilation.usesRandom) {
-      const readbackBuffer = device.createBuffer({
-        label: 'milkdrop-vm-rand-readback',
-        size: 4,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    if (
+      randOffset !== undefined &&
+      activeCompilation.usesRandom &&
+      randReadbackBuffer
+    ) {
+      const copyEncoder = device.createCommandEncoder({
+        label: 'milkdrop-vm-copy-rand',
       });
-
-      const copyEncoder = device.createCommandEncoder();
       copyEncoder.copyBufferToBuffer(
         stateBuffer,
         randOffset,
-        readbackBuffer,
+        randReadbackBuffer,
         0,
         4,
       );
       device.queue.submit([copyEncoder.finish()]);
 
-      await readbackBuffer.mapAsync(GPUMapMode.READ);
-      const mapped = new Uint32Array(readbackBuffer.getMappedRange());
+      await randReadbackBuffer.mapAsync(GPUMapMode.READ);
+      const mapped = new Uint32Array(randReadbackBuffer.getMappedRange());
       randomState = mapped[0] ?? 2531011;
-      readbackBuffer.unmap();
-      readbackBuffer.destroy();
+      randReadbackBuffer.unmap();
     }
 
     return {
@@ -263,6 +328,10 @@ export function createGpuVmRunner() {
     if (currentSignalBuffer) {
       currentSignalBuffer.destroy();
       currentSignalBuffer = null;
+    }
+    if (randReadbackBuffer) {
+      randReadbackBuffer.destroy();
+      randReadbackBuffer = null;
     }
     pipeline = null;
     bindGroup = null;
