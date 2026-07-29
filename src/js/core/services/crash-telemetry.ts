@@ -128,18 +128,28 @@ export function recordWebGpuDeviceLost(info: unknown) {
     info && typeof info === 'object' && 'message' in info
       ? String((info as { message: unknown }).message)
       : '';
-  recordCrashTelemetryError(`WebGPU device lost: ${reason}`, {
+  pushEntry({
+    type: 'webgpu-device-lost',
+    timestamp: Date.now(),
+    iso: new Date().toISOString(),
+    message: `WebGPU device lost: ${reason}`,
     detail: { reason, message },
   });
+  logger.error(`WebGPU device lost: ${reason}`, { reason, message });
 }
 
 export function recordWebGpuUncapturedError(
   event: { error?: { message?: string } | null } | null | undefined,
 ) {
   const message = event?.error?.message ?? 'unknown';
-  recordCrashTelemetryError(`WebGPU uncaptured error: ${message}`, {
+  pushEntry({
+    type: 'webgpu-uncaptured-error',
+    timestamp: Date.now(),
+    iso: new Date().toISOString(),
+    message: `WebGPU uncaptured error: ${message}`,
     detail: { message },
   });
+  logger.error(`WebGPU uncaptured error: ${message}`, { message });
 }
 
 export function getCrashTelemetryReport(): CrashTelemetryReport {
