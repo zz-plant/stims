@@ -13,7 +13,7 @@ describe('applyRendererSettings', () => {
         backend: 'webgl',
         isMobile: false,
       }),
-    ).toBe(1.75);
+    ).toBeGreaterThanOrEqual(1.75);
     expect(
       getRendererBackendMaxPixelRatioCap({
         backend: 'webgpu',

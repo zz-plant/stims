@@ -1,0 +1,77 @@
+# Stims (toil.fyi) Technical Agent Specification
+
+## Overview
+Stims is a WebGL and WebGPU MilkDrop audio visualizer engine with built-in preset compilation, live inspector tuning, AI preset generation, and MCP automation tooling.
+
+## MCP Integration
+The repository provides two MCP server implementations:
+1. **Stdio Server (`scripts/mcp-server.ts`)**: Run via `bun run mcp`. Full session control using Playwright headless browser session (`start_agent_session`, `session_capture_frame`, `session_tweak`, `session_vibe`, `run_quality_gate`).
+2. **Cloudflare Worker Server (`scripts/mcp-worker.ts`)**: Deployed to `https://toil.fyi/mcp` over HTTP/SSE and WebSockets. Provides documentation, catalog lookups, preset descriptions, and launch URLs.
+
+## Preset Catalog Schema
+The live catalog at `https://toil.fyi/milkdrop-presets/catalog.json` contains entries with the following properties:
+- `id`: Unique identifier slug (e.g. `shifter-snakeskin`).
+- `title`: Display title of preset.
+- `author`: Original author name.
+- `tags`: Array of string tags (e.g. `["ambient", "neon", "tunnel"]`).
+- `fidelity`: Tier rating (`certified-native`, `smooth`, `parsed-only`).
+- `supports`: Object with `webgl`, `webgpu`, `audioReactivity` capabilities.
+
+## URL State & Query Parameters
+- `?agent=true`: Activates agent mode (disables ambient sound prompts, enables window hooks).
+- `?preset=<presetId>`: Loads preset matching ID directly on page mount.
+- `?tweak=<tweak_string>`: Applies initial visual tweak (e.g. `brighter`, `cooler`, `faster`).
+- `?renderer=webgpu|webgl`: Overrides backend selection.
+- `#code=<base64>`: Decodes UTF-8 base64 `.milk` equations and loads immediately in editor.
+
+## API Endpoint Specifications
+
+### `POST /api/validate-preset`
+Validates MilkDrop `.milk` preset code syntax without browser rendering.
+**Request Body**:
+```json
+{
+  "milkSource": "[preset00]\nfRating=5.000\nfGammaAdj=1.000\n..."
+}
+```
+**Response**:
+```json
+{
+  "valid": true,
+  "errors": [],
+  "warnings": []
+}
+```
+
+### `POST /api/generate-preset`
+Generates MilkDrop equations from natural language prompts.
+**Request Body**: `{ "description": "cyan cybernetic tunnel with pulsing bass" }`
+**Response**: `{ "milkSource": "...", "title": "Cyan Cybernetic Tunnel" }`
+
+### `POST /api/refine-preset`
+Iteratively updates an existing `.milk` preset using AI model instructions.
+**Request Body**: `{ "currentSource": "...", "instruction": "make the motion twist clockwise faster" }`
+**Response**: `{ "milkSource": "..." }`
+
+### `POST /api/blend-presets`
+Blends structural motion of Preset A with color styling of Preset B.
+**Request Body**: `{ "sourceA": "...", "sourceB": "..." }`
+**Response**: `{ "milkSource": "..." }`
+
+## Embedded Iframe Protocol (`postMessage`)
+Web applications embedding `toil.fyi` can post JSON messages to the iframe `contentWindow`:
+
+```javascript
+// Example: Send command to iframe
+iframeEl.contentWindow.postMessage({
+  type: 'toil:load_preset',
+  presetId: 'shifter-snakeskin'
+}, '*');
+
+// Example: Listen for telemetry
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'toil:telemetry') {
+    console.log(event.data.fps, event.data.audioEnergy, event.data.backend);
+  }
+});
+```

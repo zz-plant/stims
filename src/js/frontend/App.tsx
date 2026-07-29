@@ -21,6 +21,7 @@ import {
   getActiveThemePreference,
 } from '../core/theme-preferences.ts';
 import { AudioMatchToast } from './AudioMatchToast.tsx';
+import { initAgentBridge, updateAgentTelemetry } from './agent-bridge.ts';
 import { ContextualHelp, useHelpHints } from './ContextualHelp.tsx';
 import { StimsErrorBoundary } from './ErrorBoundary.tsx';
 import {
@@ -34,6 +35,7 @@ import { useStageGesture } from './hooks/useStageGesture';
 import { reportLoadStatus } from './load-status.ts';
 import { NewHomePage } from './NewHomePage.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
+import { decodePresetCodeFromHash } from './url-state.ts';
 import { connectWakeLock } from './wake-lock.ts';
 import {
   useEngineSnapshot,
@@ -181,6 +183,39 @@ function StimsWorkspaceAppShell() {
     setStatusMessage: ui.setStatusMessage,
     hapticsEnabled,
   });
+
+  useEffect(() => {
+    return initAgentBridge({
+      onLoadPreset: (payload) => {
+        if (payload.presetId) {
+          void engine.handlePlayPreset(payload.presetId);
+        }
+      },
+      onApplyTweak: (_tweak) => {
+        if (engineSnapshot?.activePresetId) {
+          void engine.handlePlayPreset(engineSnapshot.activePresetId);
+        }
+      },
+    });
+  }, [engine, engineSnapshot?.activePresetId]);
+
+  useEffect(() => {
+    updateAgentTelemetry({
+      fps: 60,
+      backend: engineSnapshot?.backend ?? 'webgl',
+      audioEnergy: engineSnapshot?.audioEnergy ?? getAudioEnergy(),
+      currentPresetId:
+        engineSnapshot?.activePresetId ?? ui.routeState.presetId ?? null,
+      agentMode: ui.routeState.agentMode,
+    });
+  }, [engineSnapshot, ui.routeState.presetId, ui.routeState.agentMode]);
+
+  useEffect(() => {
+    const decodedCode = decodePresetCodeFromHash();
+    if (decodedCode) {
+      ui.updatePanel('editor');
+    }
+  }, [ui]);
 
   useEffect(() => {
     if (

@@ -19,6 +19,8 @@ const appliedRendererDimensions = new WeakMap<
 export function getRendererBackendMaxPixelRatioCap({
   backend,
   isMobile,
+  browserFamily = 'other',
+  platformFamily = 'other',
 }: {
   backend: 'webgl' | 'webgpu';
   isMobile: boolean;
@@ -32,14 +34,26 @@ export function getRendererBackendMaxPixelRatioCap({
   platformFamily?: 'android' | 'ios' | 'linux' | 'macos' | 'windows' | 'other';
 }) {
   if (isMobile) {
+    if (
+      browserFamily === 'safari' ||
+      browserFamily === 'chrome' ||
+      browserFamily === 'edge' ||
+      browserFamily === 'samsung-internet' ||
+      platformFamily === 'ios' ||
+      platformFamily === 'android'
+    ) {
+      return backend === 'webgpu' ? 1.2 : 1.0;
+    }
+
     const isLowPower = getDevicePerformanceProfile().lowPower;
     if (isLowPower) {
-      return backend === 'webgpu' ? 1.25 : 1.25;
+      return backend === 'webgpu' ? 1.2 : 1.0;
     }
     return 2.0;
   }
 
-  return backend === 'webgpu' ? 4 : 1.75;
+  const isLowPower = getDevicePerformanceProfile().lowPower;
+  return backend === 'webgpu' ? 4 : isLowPower ? 1.75 : 2.5;
 }
 
 export type RendererViewport = {

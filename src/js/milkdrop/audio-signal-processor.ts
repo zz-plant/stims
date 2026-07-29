@@ -72,6 +72,26 @@ function createBandState() {
   return { bass: 0, mid: 0, treble: 0 };
 }
 
+export function createSyntheticBeatFrequencyData(
+  buffer: Uint8Array,
+  timeMs: number = Date.now(),
+): Uint8Array {
+  const bpm = 120;
+  const beatIntervalMs = (60 / bpm) * 1000;
+  const phase = (timeMs % beatIntervalMs) / beatIntervalMs;
+  const beatPulse = Math.max(0, 1 - phase * 3);
+
+  for (let i = 0; i < buffer.length; i += 1) {
+    const freqRatio = i / Math.max(1, buffer.length - 1);
+    const bass = (1 - freqRatio) * beatPulse * 220;
+    const mid = Math.sin(timeMs * 0.005 + i * 0.1) * 80 + 60;
+    const treble = (freqRatio > 0.6 ? 1 : 0) * Math.cos(timeMs * 0.01) * 70;
+    buffer[i] = Math.min(255, Math.max(0, Math.floor(bass + mid + treble)));
+  }
+
+  return buffer;
+}
+
 function resolveSpectrumSource(
   analyser: FrequencyAnalyser | null,
   fallback: Uint8Array,
@@ -81,6 +101,9 @@ function resolveSpectrumSource(
   )?.getFrequencyData?.();
   if (rawData instanceof Uint8Array && rawData.length > 0) {
     return rawData;
+  }
+  if (fallback.length === 0) {
+    return createSyntheticBeatFrequencyData(new Uint8Array(128));
   }
   return fallback;
 }

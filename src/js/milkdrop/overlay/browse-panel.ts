@@ -354,7 +354,7 @@ export class BrowsePanel {
       'aria-label',
       'Search titles, authors, or classic names',
     );
-    this.searchInput.addEventListener('input', () => this.scheduleRender());
+    this.searchInput.addEventListener('input', () => this.scheduleRender(120));
 
     this.browseModeSelect = document.createElement('select');
     this.browseModeSelect.className = 'milkdrop-overlay__rating-select';
@@ -1068,11 +1068,32 @@ export class BrowsePanel {
 
   private syncBrowseSearchIndex(presets: MilkdropCatalogEntry[]) {
     const validIds = new Set(presets.map((preset) => preset.id));
+    if (this.browseSearchIndex.size === 0 && typeof fetch !== 'undefined') {
+      const baseUrl =
+        typeof import.meta.env.BASE_URL === 'string'
+          ? import.meta.env.BASE_URL
+          : '/';
+      const indexUrl = `${baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`}milkdrop-presets/search-index.json`;
+      void fetch(indexUrl)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: Record<string, BrowseSearchIndexEntry> | null) => {
+          if (!data) return;
+          for (const [id, entry] of Object.entries(data)) {
+            if (validIds.has(id) && !this.browseSearchIndex.has(id)) {
+              this.browseSearchIndex.set(id, entry);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     presets.forEach((preset) => {
-      this.browseSearchIndex.set(
-        preset.id,
-        buildBrowseSearchIndexEntry(preset),
-      );
+      if (!this.browseSearchIndex.has(preset.id)) {
+        this.browseSearchIndex.set(
+          preset.id,
+          buildBrowseSearchIndexEntry(preset),
+        );
+      }
     });
     [...this.browseSearchIndex.keys()].forEach((id) => {
       if (!validIds.has(id)) {

@@ -1,0 +1,34 @@
+# Stims — MilkDrop Browser Music Visualizer (toil.fyi)
+
+> Stims is a high-performance, web-native music visualizer supporting WebGL and WebGPU rendering, preset generation, AI preset refinement, audio reactivity, and Model Context Protocol (MCP) integrations.
+
+## Core Links & Resources
+- **Live Visualizer**: https://toil.fyi/
+- **Full Agent Documentation**: https://toil.fyi/llms-full.txt
+- **MCP Endpoint (HTTP/SSE)**: https://toil.fyi/mcp
+- **Preset Catalog**: https://toil.fyi/milkdrop-presets/catalog.json
+- **Source Code**: https://github.com/zz-plant/stims
+
+## Key URL Parameters for AI Agents
+- `?agent=true`: Enables low-overhead, automation-friendly mode.
+- `?preset=<id>`: Loads a specific preset by ID (e.g. `?preset=shifter-snakeskin`).
+- `?tweak=<description>`: Applies natural language visual tweaking on load (e.g. `?tweak=more+blue+and+warp`).
+- `?renderer=webgpu` or `?renderer=webgl`: Forces specific rendering engine backend.
+- `#code=<base64>`: Instant URL deep-link containing base64-encoded `.milk` source code.
+
+## Main API Endpoints
+- `POST /api/validate-preset`: Validate MilkDrop `.milk` code syntax and return diagnostic JSON.
+- `POST /api/generate-preset`: Generate `.milk` equations from text description.
+- `POST /api/blend-presets`: Blend wave patterns and color schemes of two presets.
+- `POST /api/refine-preset`: Iteratively refine `.milk` code based on prompt instructions.
+- `POST /api/visual-search`: Search catalog visually by natural language description.
+- `GET /api/presets`: Query community presets catalog.
+
+## Iframe `postMessage` Protocol
+When `toil.fyi` is embedded in an iframe, send JSON messages to `window`:
+- `{ type: "toil:load_preset", presetId: "shifter-snakeskin" }`
+- `{ type: "toil:apply_tweak", tweak: "faster motion" }`
+- `{ type: "toil:request_telemetry" }`
+
+Listen for response messages:
+- `{ type: "toil:telemetry", fps: 60, backend: "webgpu", audioEnergy: 0.75, currentPreset: "..." }`

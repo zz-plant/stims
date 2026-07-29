@@ -1,0 +1,259 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Stims (toil.fyi) API",
+    "description": "API endpoints for validating, generating, refining, patching, and searching MilkDrop music visualizer presets on toil.fyi.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://toil.fyi/api",
+      "description": "Production edge server"
+    }
+  ],
+  "paths": {
+    "/validate-preset": {
+      "post": {
+        "summary": "Validate MilkDrop preset syntax",
+        "description": "Parse and dry-run validate MilkDrop .milk source code without rendering.",
+        "operationId": "validatePreset",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["milkSource"],
+                "properties": {
+                  "milkSource": {
+                    "type": "string",
+                    "description": "Raw MilkDrop .milk equations source code."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Diagnostic output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": { "type": "boolean" },
+                    "fieldCount": { "type": "integer" },
+                    "sections": { "type": "array", "items": { "type": "string" } },
+                    "errors": { "type": "array", "items": { "type": "object" } },
+                    "warnings": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patch-preset": {
+      "post": {
+        "summary": "Apply deterministic parameter patch",
+        "description": "Applies key-value field overrides directly to MilkDrop source code.",
+        "operationId": "patchPreset",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["milkSource", "patch"],
+                "properties": {
+                  "milkSource": { "type": "string" },
+                  "patch": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "oneOf": [{ "type": "string" }, { "type": "number" }]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Patched source code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "milkSource": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generate-preset": {
+      "post": {
+        "summary": "Generate preset from prompt",
+        "description": "Generates MilkDrop equations from a text description.",
+        "operationId": "generatePreset",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["description"],
+                "properties": {
+                  "description": { "type": "string" },
+                  "complexity": { "type": "string", "enum": ["simple", "moderate", "complex"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Generated preset payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "milkSource": { "type": "string" },
+                    "title": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/refine-preset": {
+      "post": {
+        "summary": "Iteratively refine preset",
+        "description": "Applies prompt instructions to refine existing MilkDrop equations.",
+        "operationId": "refinePreset",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentSource", "instruction"],
+                "properties": {
+                  "currentSource": { "type": "string" },
+                  "instruction": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refined source code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "milkSource": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blend-presets": {
+      "post": {
+        "summary": "Blend two presets",
+        "description": "Combines motion from Preset A with colors from Preset B.",
+        "operationId": "blendPresets",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["sourceA", "sourceB"],
+                "properties": {
+                  "sourceA": { "type": "string" },
+                  "sourceB": { "type": "string" },
+                  "instruction": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Blended source code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "milkSource": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/visual-search": {
+      "post": {
+        "summary": "Search catalog visually",
+        "description": "Finds presets matching visual description.",
+        "operationId": "visualSearch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["description"],
+                "properties": {
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "presetId": { "type": "string" },
+                          "score": { "type": "number" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
