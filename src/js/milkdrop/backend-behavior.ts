@@ -18,8 +18,8 @@ export type MilkdropBackendBehavior = {
 
 export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   feedbackProfile: {
-    currentFrameBoost: 0,
-    feedbackSoftness: 0,
+    currentFrameBoost: 0.1,
+    feedbackSoftness: 0.2,
     sceneResolutionScale: 1,
     feedbackResolutionScale: 1,
     samples: 0,
@@ -34,8 +34,8 @@ export const WEBGL_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
 
 export const WEBGPU_MILKDROP_BACKEND_BEHAVIOR: MilkdropBackendBehavior = {
   feedbackProfile: {
-    currentFrameBoost: 0,
-    feedbackSoftness: 0,
+    currentFrameBoost: 0.15,
+    feedbackSoftness: 0.3,
     sceneResolutionScale: 1,
     feedbackResolutionScale: 1,
     samples: 0,
