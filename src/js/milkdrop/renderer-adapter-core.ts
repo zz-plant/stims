@@ -1263,13 +1263,19 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
         payload.frameState.post.postprocessingProfile,
       );
       const audioTex = this.audioTexture.getTexture();
-      const compositeMat = (
-        this.feedback as {
-          compositeMaterial?: { uniforms?: Record<string, { value: unknown }> };
+      if (this.feedback.setAudioTexture) {
+        this.feedback.setAudioTexture(audioTex);
+      } else {
+        const compositeMat = (
+          this.feedback as {
+            compositeMaterial?: {
+              uniforms?: Record<string, { value: unknown }>;
+            };
+          }
+        ).compositeMaterial;
+        if (audioTex && compositeMat?.uniforms?.audioTex) {
+          compositeMat.uniforms.audioTex.value = audioTex;
         }
-      ).compositeMaterial;
-      if (audioTex && compositeMat?.uniforms?.audioTex) {
-        compositeMat.uniforms.audioTex.value = audioTex;
       }
       return this.feedback.render(this.renderer, this.scene, this.camera);
     } catch (error) {

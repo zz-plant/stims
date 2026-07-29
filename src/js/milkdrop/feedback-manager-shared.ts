@@ -241,6 +241,7 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D audioTex;
         uniform sampler2D warpTex;
         uniform sampler2D blur1Tex;
         uniform sampler2D blur2Tex;
@@ -588,6 +589,7 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform sampler2D fractalTex;
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
+        uniform sampler2D audioTex;
         uniform float warpScale;
         uniform float zoom;
         uniform float zoomMul;
@@ -860,6 +862,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        audioTex: { value: null },
         warpScale: { value: 1 },
         zoom: { value: 1.02 },
         zoomMul: { value: 1 },
@@ -904,6 +907,15 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.presentScene.add(presentQuad);
   }
 
+  setAudioTexture(texture: Texture | null): void {
+    if (this.compositeMaterial.uniforms.audioTex) {
+      this.compositeMaterial.uniforms.audioTex.value = texture;
+    }
+    if (this.warpMaterial.uniforms.audioTex) {
+      this.warpMaterial.uniforms.audioTex.value = texture;
+    }
+  }
+
   private createCompositeMaterial(fragmentShader: string): ShaderMaterial {
     const material = new ShaderMaterial({
       uniforms: {
@@ -918,6 +930,7 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         fractalTex: { value: this.auxTextures.fractal },
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
+        audioTex: { value: null },
         warpTex: { value: this.warpTarget.texture },
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },

@@ -28,10 +28,10 @@ describe('Accessibility regression guards', () => {
 
   test('keyboard shortcuts dialog traps focus and auto-focuses', () => {
     const app = readSource('frontend', 'App.tsx');
+    const shortcuts = readSource('frontend', 'ShortcutsDialog.tsx');
 
     expect(app).toContain('shortcutsRef');
-    expect(app).toContain("e.key === 'Tab'");
-    expect(app).toContain('focusable[0]?.focus()');
+    expect(shortcuts).toContain('useFocusTrap');
   });
 
   test('milkdrop overlay controls have accessible names', () => {

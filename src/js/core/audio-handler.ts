@@ -91,6 +91,12 @@ export class FrequencyAnalyser {
   private dataVersion = 0;
   private energyVersion = -1;
   private cachedEnergy = { bass: 0, mid: 0, treble: 0 };
+  private cachedEnergyAverages: {
+    bass: number;
+    mid: number;
+    treble: number;
+  } | null = null;
+  private cachedTransientMetrics: FourBandTransientMetrics | null = null;
 
   private constructor({
     sourceNode,
@@ -140,6 +146,9 @@ export class FrequencyAnalyser {
           stereoBalance,
           stereoWidth,
           timeDomainData,
+          energy,
+          energyAverages,
+          transientMetrics,
         } = event.data ?? {};
         if (typeof rms === 'number') this.rms = rms;
         if (typeof zeroCrossingRate === 'number')
@@ -161,9 +170,25 @@ export class FrequencyAnalyser {
           }
           this.frequencyData.set(nextFreq);
           this.dataVersion += 1;
-          this.cachedEnergy = this.calculateMultiBandEnergy(this.frequencyData);
-          this.energyVersion = this.dataVersion;
+          if (energy && typeof energy.bass === 'number') {
+            this.cachedEnergy = energy;
+            this.energyVersion = this.dataVersion;
+          } else {
+            this.cachedEnergy = this.calculateMultiBandEnergy(
+              this.frequencyData,
+            );
+            this.energyVersion = this.dataVersion;
+          }
           this.updateEnergyHistory(this.cachedEnergy);
+        }
+        if (energyAverages && typeof energyAverages.bass === 'number') {
+          this.cachedEnergyAverages = energyAverages;
+        }
+        if (
+          transientMetrics &&
+          typeof transientMetrics.subBassEnv === 'number'
+        ) {
+          this.cachedTransientMetrics = transientMetrics;
         }
         if (waveformData) {
           const nextWave =
@@ -239,6 +264,7 @@ export class FrequencyAnalyser {
           outputChannelCount: [1],
           processorOptions: {
             fftSize: effectiveFftSize,
+            sampleRate,
             messageEvery:
               effectiveFftSize >= 1024 ? 4 : effectiveFftSize >= 512 ? 2 : 1,
           },
@@ -338,7 +364,16 @@ export class FrequencyAnalyser {
     return this.frequencyData;
   }
 
-  getTransientMetrics(): FourBandTransientMetrics {
+  getTransientMetrics(
+    data?: Uint8Array,
+    previousData?: Uint8Array,
+  ): FourBandTransientMetrics {
+    if (data) {
+      return getFourBandTransientMetrics(data, previousData, this.sampleRate);
+    }
+    if (this.workletNode && this.cachedTransientMetrics) {
+      return this.cachedTransientMetrics;
+    }
     const current = this.getFrequencyData();
     return getFourBandTransientMetrics(
       current,
@@ -543,6 +578,9 @@ export class FrequencyAnalyser {
   }
 
   getEnergyAverages() {
+    if (this.workletNode && this.cachedEnergyAverages) {
+      return this.cachedEnergyAverages;
+    }
     const avg = (arr: number[]) => {
       if (this.historyCount === 0) return 0;
       let total = 0;

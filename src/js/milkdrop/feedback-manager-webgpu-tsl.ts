@@ -1566,6 +1566,12 @@ class WebGPUMilkdropFeedbackManager {
     return this.readTarget.texture;
   }
 
+  setAudioTexture(audioTexture: Texture | null): void {
+    if (this.compositeMaterial?.uniforms?.audioTex) {
+      this.compositeMaterial.uniforms.audioTex.value = audioTexture;
+    }
+  }
+
   swap() {
     this.presentMaterial.map = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;

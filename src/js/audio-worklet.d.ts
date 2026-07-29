@@ -12,3 +12,5 @@ declare function registerProcessor(
   name: string,
   processorCtor: typeof AudioWorkletProcessor,
 ): void;
+
+declare const sampleRate: number;

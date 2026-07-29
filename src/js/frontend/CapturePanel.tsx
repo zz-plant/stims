@@ -8,7 +8,11 @@ import {
 } from '../utils/canvas-video-exporter.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
-const CAPTURE_FORMATS = ['hd-landscape', 'spotify-canvas'] as const;
+const CAPTURE_FORMATS = [
+  'hd-landscape',
+  '4k-landscape',
+  'spotify-canvas',
+] as const;
 
 function getFilename(preset: ExportPresetTarget, mimeType: string) {
   const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';

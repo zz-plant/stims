@@ -86,8 +86,56 @@ function fft(
   }
 }
 
+function computeBandAverage(
+  data: Uint8Array,
+  sampleRate: number,
+  fftSize: number,
+  minHz: number,
+  maxHz: number,
+  bandType: 'bass' | 'mid' | 'treble',
+): number {
+  if (data.length === 0 || sampleRate <= 0 || fftSize <= 0) return 0;
+  const resolutionHz = sampleRate / fftSize;
+  const nyquistHz = sampleRate / 2;
+  const minClamped = Math.min(nyquistHz, Math.max(0, minHz));
+  const maxClamped = Math.min(nyquistHz, Math.max(minClamped, maxHz));
+  const startCandidate = Math.ceil(minClamped / resolutionHz);
+  const endCandidate = Math.ceil(maxClamped / resolutionHz);
+  let start: number;
+  let end: number;
+
+  if (endCandidate <= startCandidate) {
+    const representative = Math.min(
+      data.length - 1,
+      Math.max(0, Math.floor(((minClamped + maxClamped) * 0.5) / resolutionHz)),
+    );
+    start = representative;
+    end = representative + 1;
+  } else {
+    start = Math.min(data.length - 1, Math.max(0, startCandidate));
+    end = Math.min(data.length, Math.max(start + 1, endCandidate));
+  }
+
+  let sum = 0;
+  let weightTotal = 0;
+  for (let index = start; index < end; index += 1) {
+    const position =
+      end - start <= 1 ? 0 : (index - start) / Math.max(1, end - start - 1);
+    const weight =
+      bandType === 'bass'
+        ? 1.2 - position * 0.3
+        : bandType === 'treble'
+          ? 0.9 + position * 0.25
+          : 1;
+    sum += (data[index] ?? 0) * weight;
+    weightTotal += weight;
+  }
+  return weightTotal > 0 ? sum / weightTotal / 255 : 0;
+}
+
 class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private readonly fftSize: number;
+  private readonly sampleRate: number;
   private readonly frequencyBinCount: number;
   private readonly window: Float32Array;
   private readonly buffer: Float32Array;
@@ -108,10 +156,26 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private analyseCount = 0;
   private hasStereoInput = false;
 
+  private readonly historySize = 64;
+  private readonly energyHistoryBass = new Float32Array(64);
+  private readonly energyHistoryMid = new Float32Array(64);
+  private readonly energyHistoryTreble = new Float32Array(64);
+  private historyIndex = 0;
+  private historyCount = 0;
+  private prevKick = 0;
+  private prevTreble = 0;
+
   constructor(options?: AudioWorkletNodeOptions) {
     super();
     const resolvedOptions = options ?? {};
     this.fftSize = validateFftSize(resolvedOptions.processorOptions?.fftSize);
+    this.sampleRate =
+      typeof resolvedOptions.processorOptions?.sampleRate === 'number' &&
+      resolvedOptions.processorOptions.sampleRate > 0
+        ? resolvedOptions.processorOptions.sampleRate
+        : typeof sampleRate === 'number' && sampleRate > 0
+          ? sampleRate
+          : 44100;
     this.frequencyBinCount = this.fftSize / 2;
     this.window = buildHannWindow(this.fftSize);
     this.buffer = new Float32Array(this.fftSize);
@@ -239,11 +303,85 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
       }
       this.timeDomainBuf.set(this.buffer);
 
+      // Off-main-thread multi-band energy calculation
+      const bass = computeBandAverage(
+        this.freqBuf,
+        this.sampleRate,
+        this.fftSize,
+        24,
+        320,
+        'bass',
+      );
+      const mid = computeBandAverage(
+        this.freqBuf,
+        this.sampleRate,
+        this.fftSize,
+        320,
+        2800,
+        'mid',
+      );
+      const treble = computeBandAverage(
+        this.freqBuf,
+        this.sampleRate,
+        this.fftSize,
+        2800,
+        12000,
+        'treble',
+      );
+      const subBass = computeBandAverage(
+        this.freqBuf,
+        this.sampleRate,
+        this.fftSize,
+        24,
+        60,
+        'bass',
+      );
+      const kick = computeBandAverage(
+        this.freqBuf,
+        this.sampleRate,
+        this.fftSize,
+        60,
+        250,
+        'bass',
+      );
+
+      // Off-thread energy envelope tracking & transient metrics
+      const subBassEnv = Math.min(1, subBass * 1.35);
+      const kickDelta = Math.max(0, kick - this.prevKick);
+      const kickTransient = Math.min(1, kickDelta * 3.8 + kick * 0.4);
+      const vocalMidEnv = Math.min(1, mid * 1.2);
+      const snareDelta = Math.max(0, treble - this.prevTreble);
+      const snareSnap = Math.min(1, snareDelta * 4.2 + treble * 0.3);
+
+      this.prevKick = kick;
+      this.prevTreble = treble;
+
+      // Update off-thread energy history & averages
+      this.energyHistoryBass[this.historyIndex] = bass;
+      this.energyHistoryMid[this.historyIndex] = mid;
+      this.energyHistoryTreble[this.historyIndex] = treble;
+      this.historyIndex = (this.historyIndex + 1) % this.historySize;
+      this.historyCount = Math.min(this.historyCount + 1, this.historySize);
+
+      let bassSum = 0;
+      let midSum = 0;
+      let trebleSum = 0;
+      for (let i = 0; i < this.historyCount; i += 1) {
+        bassSum += this.energyHistoryBass[i];
+        midSum += this.energyHistoryMid[i];
+        trebleSum += this.energyHistoryTreble[i];
+      }
+      const energyAverages = {
+        bass: this.historyCount > 0 ? bassSum / this.historyCount : 0,
+        mid: this.historyCount > 0 ? midSum / this.historyCount : 0,
+        treble: this.historyCount > 0 ? trebleSum / this.historyCount : 0,
+      };
+
       const freqTransfer = this.freqBuf.buffer as ArrayBuffer;
       const waveTransfer = this.waveBuf.buffer as ArrayBuffer;
       const timeDomainTransfer = this.timeDomainBuf.buffer as ArrayBuffer;
 
-      const payload: Record<string, ArrayBuffer | number> = {
+      const payload: Record<string, unknown> = {
         frequencyData: freqTransfer,
         waveformData: waveTransfer,
         timeDomainData: timeDomainTransfer,
@@ -253,6 +391,14 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         spectralCrest,
         stereoBalance,
         stereoWidth,
+        energy: { bass, mid, treble },
+        energyAverages,
+        transientMetrics: {
+          subBassEnv,
+          kickTransient,
+          vocalMidEnv,
+          snareSnap,
+        },
       };
       const transfers = [freqTransfer, waveTransfer, timeDomainTransfer];
       if (this.hasStereoInput) {

@@ -399,6 +399,7 @@ export interface MilkdropFeedbackManager {
     profile: MilkdropPostprocessingProfile | null | undefined,
   ): void;
   getShapeTexture?(): Texture | null;
+  setAudioTexture?(texture: Texture | null): void;
   setAdaptiveQuality?(
     multipliers: Partial<{
       feedbackResolutionMultiplier: number;

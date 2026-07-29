@@ -1,5 +1,5 @@
 const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
 function resolveHistoryPathname(win: Window) {
   if (win.location?.pathname) {
@@ -20,7 +20,15 @@ function resolveHistoryPathname(win: Window) {
 export function getFocusableElements(container: HTMLElement) {
   return Array.from(
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter((element) => !element.hasAttribute('aria-hidden'));
+  ).filter((element) => {
+    if (
+      element.hasAttribute('aria-hidden') ||
+      element.closest('[aria-hidden="true"]')
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export function trapFocusWithin(panel: HTMLElement) {
