@@ -1,3 +1,4 @@
+import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
 import { isMobileDevice } from '../../utils/device-detect.ts';
 import { shouldUseCertificationCorpus } from '../catalog-query-override.ts';
 import type { MilkdropFrameState } from '../types.ts';
@@ -9,13 +10,23 @@ function shouldAllowMilkdropEnhancedEffects({
   shaderQuality: 'low' | 'balanced' | 'high';
   qualityPresetId: string;
 }) {
-  return (
-    shaderQuality !== 'low' &&
-    qualityPresetId !== 'performance' &&
-    qualityPresetId !== 'low-motion' &&
-    !isMobileDevice() &&
-    !shouldUseCertificationCorpus()
-  );
+  if (shouldUseCertificationCorpus()) {
+    return false;
+  }
+
+  if (
+    shaderQuality === 'low' ||
+    qualityPresetId === 'performance' ||
+    qualityPresetId === 'low-motion'
+  ) {
+    return false;
+  }
+
+  if (isMobileDevice()) {
+    return !getDevicePerformanceProfile().lowPower;
+  }
+
+  return true;
 }
 
 export function applyMilkdropEnhancedEffectsPolicy({

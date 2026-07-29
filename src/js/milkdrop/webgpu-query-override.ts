@@ -7,6 +7,7 @@
  * available through localStorage and force-mode overrides.
  */
 
+import { getDevicePerformanceProfile } from '../core/device-profile.ts';
 import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
 import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts';
 import {
@@ -118,7 +119,7 @@ export function getWebGpuForceMode(): WebGpuForceMode {
 function qualifiesForDefaultWebGPUPath(): boolean {
   if (typeof navigator === 'undefined') return false;
   if (isCompatibilityModeEnabled()) return false;
-  if (isMobileDevice()) return false;
+  if (isMobileDevice() && getDevicePerformanceProfile().lowPower) return false;
 
   return isWebGPUStableInThisBrowser();
 }
