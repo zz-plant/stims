@@ -1,18 +1,202 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-19T04:43:35.465Z",
+  "generatedAt": "2026-07-29T17:41:22.997Z",
   "parityTarget": "webgpu-certification-comparator",
   "tolerance": {
     "threshold": 16,
     "failThreshold": 0.04
   },
-  "presetCount": 23,
-  "certifiedBothCount": 2,
+  "presetCount": 71,
+  "certifiedBothCount": 3,
   "certifiedNativeCount": 0,
-  "certifiedWebglCount": 1,
+  "certifiedWebglCount": 0,
   "uncertifiedCount": 6,
-  "unmeasuredCount": 14,
+  "unmeasuredCount": 62,
   "presets": [
+    {
+      "presetId": "aderrasi-potion-of-spirits",
+      "title": "Aderrasi - Potion of Spirits",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "dbleja-hovering-over-mars",
+      "title": "Dbleja - Hovering - Over - Mars",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "dbleja-hovering-over-pluto",
+      "title": "Dbleja - Hovering - Over - Pluto",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "dbleja-inside-the-tree-blue-mix",
+      "title": "Dbleja - Inside - The - Tree - Blue - Mix",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-apocalypse",
+      "title": "Eo.S. - Apocalypse",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-dark-side-of-the-moon-clean-mix",
+      "title": "Eos - Dark - Side - Of - The - Moon - Clean - Mix",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-ether",
+      "title": "Eos - Ether",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-ether-posession-phat-edit-v3",
+      "title": "Eos - Ether - Posession - Phat - Edit - V3",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
     {
       "presetId": "eos-glowsticks-v2-03-music",
       "title": "Eo.S. - Glowsticks v2 03 Music",
@@ -28,13 +212,82 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260518154357",
-        "capturePath": "screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1779119017719.png",
-        "mismatchRatio": 0.5371158854166667,
-        "status": "fail",
+        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-glowsticks-v2-03-music--20260719163736",
+        "capturePath": "screenshots/parity/milkdrop--preset-eos-glowsticks-v2-03-music-1784479055652.png",
+        "mismatchRatio": 0.006697048611111111,
+        "status": "pass",
         "error": null
       },
-      "webgpuCertificationStatus": "certified-webgl"
+      "webgpuCertificationStatus": "certified-both"
+    },
+    {
+      "presetId": "eos-heater-core-c",
+      "title": "Eo.S. - Heater Core C",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-matrix-cube-c",
+      "title": "Eos - Matrix - Cube - C",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-phat-cat-scan-nirvana",
+      "title": "Eos - Phat - Cat - Scan - Nirvana",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "presetId": "eos-phat-cubetrace-v2",
@@ -51,13 +304,266 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260518154459",
-        "capturePath": "screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1779119077657.png",
-        "mismatchRatio": 0.4711273871527778,
+        "stimsArtifactId": "stims-capture--milkdrop--preset--eos-phat-cubetrace-v2--20260719163759",
+        "capturePath": "screenshots/parity/milkdrop--preset-eos-phat-cubetrace-v2-1784479078292.png",
+        "mismatchRatio": 0.10553059895833333,
         "status": "fail",
         "error": null
       },
       "webgpuCertificationStatus": "uncertified"
+    },
+    {
+      "presetId": "eos-phat-dark-heart",
+      "title": "Eos - Phat - Dark - Heart",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-phat-linear-clouds-v2",
+      "title": "Eos - Phat - Linear - Clouds - V2",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-phat-magnetosphere-13-pulsar",
+      "title": "Eos - Phat - Magnetosphere - 13 - Pulsar",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-phat-vacuum-deification",
+      "title": "Eos - Phat - Vacuum - Deification",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-quasar",
+      "title": "Eos - Quasar",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "eos-starburst-05-phasing",
+      "title": "Eos - Starburst - 05 - Phasing",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "evet-proteus-core-element-5",
+      "title": "Evet - Proteus - Core - Element - 5",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "evet-responsive-acid-iris",
+      "title": "Evet - Responsive - Acid - Iris",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "geiss-bipolar-x",
+      "title": "Geiss - Bipolar - X",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "geiss-casino",
+      "title": "Geiss - Casino",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "geiss-happy-drops",
+      "title": "Geiss - Happy - Drops",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "presetId": "krash-rovastar-cerebral-demons-stars",
@@ -74,13 +580,289 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260529232430",
-        "capturePath": "screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1780097048319.png",
-        "mismatchRatio": 0.590087890625,
+        "stimsArtifactId": "stims-capture--milkdrop--preset--krash-rovastar-cerebral-demons-stars--20260719163810",
+        "capturePath": "screenshots/parity/milkdrop--preset-krash-rovastar-cerebral-demons-stars-1784479089963.png",
+        "mismatchRatio": 0.0916015625,
         "status": "fail",
         "error": null
       },
       "webgpuCertificationStatus": "uncertified"
+    },
+    {
+      "presetId": "orb-acid-in-my-eyes",
+      "title": "Orb - Acid - In - My - Eyes",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "orb-cloud-scope",
+      "title": "Orb - Cloud - Scope",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "orb-radiation",
+      "title": "Orb - Radiation",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "orbasonic",
+      "title": "Orbasonic",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "phat-rovastar-eos-square-faces-v2",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "phat-zylot-eos-trippy-rotation",
+      "title": "Phat + Rovastar + Eo.S. - Square Faces v2",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "pieturp-sunflare",
+      "title": "Pieturp - Sunflare",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "rovastar-and-idiot24-7-abstract-psychaos",
+      "title": "Rovastar - And - Idiot24 - 7 - Abstract - Psychaos",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "rovastar-dark-ritual-star-of-destiny-denied-mix",
+      "title": "Rovastar - Dark - Ritual - Star - Of - Destiny - Denied - Mix",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "rovastar-harlequins-liquid-dragon",
+      "title": "Rovastar - Harlequin's Liquid Dragon",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "rovastar-mosaics-of-ages",
+      "title": "Rovastar - Mosaics - Of - Ages",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "rovastar-oozing-resistance",
+      "title": "Rovastar - Oozing - Resistance",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "presetId": "rovastar-parallel-universe",
@@ -97,13 +879,128 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260529232208",
-        "capturePath": "screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1780096920635.png",
-        "mismatchRatio": 0.8647840711805556,
+        "stimsArtifactId": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260719163749",
+        "capturePath": "screenshots/parity/milkdrop--preset-rovastar-parallel-universe-1784479069093.png",
+        "mismatchRatio": 0.9892881944444445,
         "status": "fail",
         "error": null
       },
       "webgpuCertificationStatus": "uncertified"
+    },
+    {
+      "presetId": "shifter-curlique",
+      "title": "Shifter - Curlique",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "shifter-glassworms-flare",
+      "title": "Shifter - Glassworms - Flare",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "shifter-snakeskin",
+      "title": "Shifter - Snakeskin",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "shifter-spectro",
+      "title": "Shifter - Spectro",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "shifter-swarm",
+      "title": "Shifter - Swarm",
+      "corpusGroup": "bundled-shipped",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
     },
     {
       "presetId": "shape-legacy-max-slot-orbit",
@@ -382,6 +1279,29 @@
       "webgpuCertificationStatus": "unmeasured"
     },
     {
+      "presetId": "000-empty",
+      "title": "000 Empty",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
       "presetId": "001-line",
       "title": "001 Line",
       "corpusGroup": "projectm-upstream",
@@ -419,17 +1339,155 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260716234209",
-        "capturePath": "screenshots/parity/milkdrop--preset-100-square-1784245329618.png",
-        "mismatchRatio": 0.4777365451388889,
+        "stimsArtifactId": "stims-capture--milkdrop--preset--100-square--20260719163714",
+        "capturePath": "screenshots/parity/milkdrop--preset-100-square-1784479034053.png",
+        "mismatchRatio": 0.15872829861111112,
         "status": "fail",
         "error": null
       },
       "webgpuCertificationStatus": "uncertified"
     },
     {
+      "presetId": "104-continued-eqn",
+      "title": "104 Continued Eqn",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
       "presetId": "110-per_pixel",
       "title": "110 Per Pixel",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "200-wave",
+      "title": "200 Wave",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "202-wave",
+      "title": "202 Wave",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "205-wave",
+      "title": "205 Wave",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "208-wave",
+      "title": "208 Wave",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "244-wave-smooth-99",
+      "title": "244 Wave Smooth 99",
       "corpusGroup": "projectm-upstream",
       "hasProjectmReference": false,
       "projectmReferenceImage": null,
@@ -474,6 +1532,52 @@
       "webgpuCertificationStatus": "certified-both"
     },
     {
+      "presetId": "251-wavecode-spectrum",
+      "title": "251 Wavecode Spectrum",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
+      "presetId": "252-wavecode-spectrum2",
+      "title": "252 Wavecode Spectrum2",
+      "corpusGroup": "projectm-upstream",
+      "hasProjectmReference": false,
+      "projectmReferenceImage": null,
+      "failThreshold": 0.04,
+      "webglDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuDiff": {
+        "stimsArtifactId": null,
+        "capturePath": null,
+        "mismatchRatio": null,
+        "status": "unmeasured",
+        "error": null
+      },
+      "webgpuCertificationStatus": "unmeasured"
+    },
+    {
       "presetId": "260-compshader-noise_lq",
       "title": "260 Compshader Noise LQ",
       "corpusGroup": "projectm-upstream",
@@ -488,9 +1592,9 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719043348",
-        "capturePath": "screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784435628007.png",
-        "mismatchRatio": 0.9060763888888889,
+        "stimsArtifactId": "stims-capture--milkdrop--preset--260-compshader-noise_lq--20260719163425",
+        "capturePath": "screenshots/parity/milkdrop--preset-260-compshader-noise_lq-1784478865022.png",
+        "mismatchRatio": 0.9442078993055556,
         "status": "fail",
         "error": null
       },
@@ -511,9 +1615,9 @@
         "error": null
       },
       "webgpuDiff": {
-        "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719043558",
-        "capturePath": "screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784435758580.png",
-        "mismatchRatio": 0.9478342013888889,
+        "stimsArtifactId": "stims-capture--milkdrop--preset--261-compshader-noisevol_lq--20260719163353",
+        "capturePath": "screenshots/parity/milkdrop--preset-261-compshader-noisevol_lq-1784478833673.png",
+        "mismatchRatio": 0.9472135416666667,
         "status": "fail",
         "error": null
       },

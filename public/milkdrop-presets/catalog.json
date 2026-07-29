@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-07-27",
+  "generatedAt": "2026-07-29",
   "certification": "bundled",
   "corpusTier": "bundled",
   "presets": [
@@ -19,23 +19,21 @@
         "original-pack",
         "preset"
       ],
-      "expectedFidelityClass": "partial",
-      "visualEvidenceTier": "runtime",
+      "expectedFidelityClass": "near-exact",
+      "visualEvidenceTier": "visual",
       "supports": {
         "webgl": true,
         "webgpu": true
       },
       "visualCertification": {
-        "status": "uncertified",
-        "measured": false,
-        "source": "inferred",
-        "fidelityClass": "partial",
-        "visualEvidenceTier": "runtime",
+        "status": "certified",
+        "measured": true,
+        "source": "reference-suite",
+        "fidelityClass": "near-exact",
+        "visualEvidenceTier": "visual",
         "requiredBackend": "webgpu",
-        "actualBackend": null,
-        "reasons": [
-          "No measured WebGPU reference capture is recorded yet."
-        ]
+        "actualBackend": "webgpu",
+        "reasons": []
       }
     },
     {

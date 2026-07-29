@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-19T03:38:23.733Z",
+  "updatedAt": "2026-07-29T17:42:12.743Z",
   "presets": [
     {
       "id": "250-wavecode",
@@ -39,6 +39,25 @@
       "failThreshold": 0.02,
       "updatedAt": "2026-07-19T03:38:23.733Z",
       "sourceReport": "screenshots/parity/suite/300-beatdetect-bassmidtreb.json"
+    },
+    {
+      "id": "eos-glowsticks-v2-03-music",
+      "title": "Eo.S. - Glowsticks v2 03 Music",
+      "fidelityClass": "near-exact",
+      "visualEvidenceTier": "visual",
+      "suiteStatus": "pass",
+      "certificationStatus": "certified",
+      "certificationReason": null,
+      "requiredBackend": "webgpu",
+      "actualBackend": "webgpu",
+      "sourceFamily": "bundled",
+      "strata": ["waveform", "glowsticks", "feedback"],
+      "toleranceProfile": "loose",
+      "mismatchRatio": 0.006697048611111111,
+      "threshold": 32,
+      "failThreshold": 0.05,
+      "updatedAt": "2026-07-29T17:42:12.743Z",
+      "sourceReport": "screenshots/parity/suite/eos-glowsticks-v2-03-music.json"
     }
   ]
 }
