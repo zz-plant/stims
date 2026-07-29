@@ -19,57 +19,49 @@ type PartyModeRestoreState = {
   compatibilityMode: boolean;
 };
 
+import { getBrowserSessionStorage } from './state/browser-storage.ts';
+
 function writePartyMode(enabled: boolean) {
-  try {
-    window.sessionStorage.setItem(PARTY_MODE_KEY, enabled ? 'true' : 'false');
-  } catch (_error) {
-    // Ignore storage failures.
-  }
+  const storage = getBrowserSessionStorage();
+  if (!storage) return;
+  storage.setItem(PARTY_MODE_KEY, enabled ? 'true' : 'false');
 }
 
 export function isPartyModeEnabled() {
-  try {
-    return window.sessionStorage.getItem(PARTY_MODE_KEY) === 'true';
-  } catch (_error) {
-    return false;
-  }
+  return getBrowserSessionStorage()?.getItem(PARTY_MODE_KEY) === 'true';
 }
 
 function hasRestoreState() {
-  try {
-    return window.sessionStorage.getItem(PARTY_MODE_RESTORE_KEY) !== null;
-  } catch (_error) {
-    return false;
-  }
+  return getBrowserSessionStorage()?.getItem(PARTY_MODE_RESTORE_KEY) !== null;
 }
 
 function writeRestoreState(state: PartyModeRestoreState | null) {
-  try {
-    if (state) {
-      window.sessionStorage.setItem(
-        PARTY_MODE_RESTORE_KEY,
-        JSON.stringify(state),
-      );
-      return;
-    }
-    window.sessionStorage.removeItem(PARTY_MODE_RESTORE_KEY);
-  } catch (_error) {
-    // Ignore storage failures.
+  const storage = getBrowserSessionStorage();
+  if (!storage) return;
+  if (state) {
+    storage.setItem(PARTY_MODE_RESTORE_KEY, JSON.stringify(state));
+    return;
   }
+  storage.removeItem(PARTY_MODE_RESTORE_KEY);
 }
 
 function readRestoreState(): PartyModeRestoreState | null {
+  const raw = getBrowserSessionStorage()?.getItem(PARTY_MODE_RESTORE_KEY);
+  if (!raw) return null;
   try {
-    const raw = window.sessionStorage.getItem(PARTY_MODE_RESTORE_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return {
-      motionEnabled: parsed.motionEnabled !== false,
-      compatibilityMode: parsed.compatibilityMode === true,
-    };
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      typeof parsed.motionEnabled === 'boolean' &&
+      typeof parsed.compatibilityMode === 'boolean'
+    ) {
+      return parsed as PartyModeRestoreState;
+    }
   } catch (_error) {
-    return null;
+    // Return null if JSON is corrupt
   }
+  return null;
 }
 
 export function applyPartyMode({ enabled }: PartyModeOptions) {

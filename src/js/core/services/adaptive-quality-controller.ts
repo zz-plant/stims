@@ -1,5 +1,5 @@
 import { isInAppBrowser, isMobileDevice } from '../../utils/device-detect.ts';
-import { getDevicePerformanceProfile } from '../device-profile.ts';
+import { getDisplayRefreshRate } from '../device-profile.ts';
 import type {
   RendererBackend,
   WebGPUCapabilitySummary,
@@ -124,25 +124,7 @@ function updateEma(previous: number | null, next: number) {
 }
 
 export function getAdaptiveQualityDisplayRefreshRate(): number {
-  if (typeof window === 'undefined') return 60;
-
-  if (isMobileDevice() && getDevicePerformanceProfile().lowPower) return 60;
-
-  if (typeof screen !== 'undefined' && 'refreshRate' in screen) {
-    const rate = (screen as unknown as { refreshRate: number }).refreshRate;
-    if (rate > 0) return rate;
-  }
-
-  if (!window.matchMedia('(update: fast)').matches) return 60;
-
-  // Avoid creating a WebGL context just for GPU detection.
-  // Low concurrency is a reliable proxy for low-end GPUs.
-  try {
-    const concurrency = navigator.hardwareConcurrency ?? 4;
-    if (concurrency <= 3) return 60;
-  } catch {}
-
-  return 120;
+  return getDisplayRefreshRate();
 }
 
 function estimateFrameBudgetMs(): number {
