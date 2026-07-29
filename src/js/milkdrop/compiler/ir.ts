@@ -347,11 +347,11 @@ export function createMilkdropIr({
         normalizedKey.startsWith('warp_')
       ) {
         warpShaderText = warpShaderText
-          ? `${warpShaderText}; ${rawValue}`
+          ? `${warpShaderText} ${rawValue}`
           : rawValue;
       } else {
         compShaderText = compShaderText
-          ? `${compShaderText}; ${rawValue}`
+          ? `${compShaderText} ${rawValue}`
           : rawValue;
       }
       return;

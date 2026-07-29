@@ -115,11 +115,26 @@ function extractNativeShaderBody(shaderText: string) {
       'vec4(256.0, 256.0, 0.00390625, 0.00390625)',
     )
     .replace(/\btexsize\b/giu, 'vec4(1.0 / texelSize, texelSize)')
+    .replace(/\buv_orig\b/giu, 'vUv')
     .replace(/\btime\b/giu, 'signalTime')
     .replace(/\bbass_att\b|\bbass\b/giu, 'signalBass')
     .replace(/\bmid_att\b|\bmid\b/giu, 'signalMid')
     .replace(/\btreb_att\b|\btreb\b/giu, 'signalTreb');
-  return [...declarations, body].join('\n');
+
+  // Collapse whitespace/empty statements introduced when multiple raw
+  // shader chunks are concatenated by the parser.
+  const statements = body
+    .split(';')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const normalizedBody =
+    statements.length > 0 ? `${statements.join(';\n')};` : '';
+
+  if (!normalizedBody) {
+    return declarations.length > 0 ? declarations.join('\n') : null;
+  }
+
+  return [...declarations, normalizedBody].join('\n');
 }
 
 function applyShaderAstStatement({
