@@ -71,6 +71,9 @@ const SettingsSheetPanel = lazy(() =>
     default: m.SettingsSheetPanel,
   })),
 );
+const SynthesizePanel = lazy(() =>
+  import('./SynthesizePanel.tsx').then((m) => ({ default: m.SynthesizePanel })),
+);
 const SidePanel = lazy(() =>
   import('./SidePanel.tsx').then((m) => ({ default: m.SidePanel })),
 );
@@ -588,6 +591,7 @@ function StimsWorkspaceAppShell() {
           {ui.routeState.panel === 'visualsearch' ? (
             <VisualSearchPanel onClose={() => ui.updatePanel(null)} />
           ) : null}
+          {ui.routeState.panel === 'synthesize' ? <SynthesizePanel /> : null}
         </Suspense>
       </SidePanel>
 

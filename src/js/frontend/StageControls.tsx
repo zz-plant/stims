@@ -180,6 +180,12 @@ export function StageControls({
     ui.updatePanel(panel === 'capture' ? null : 'capture');
   }, [ui, panel, signalActivity]);
 
+  const handleSynthesize = useCallback(() => {
+    signalActivity();
+    setShowOverflow(false);
+    ui.updatePanel(panel === 'synthesize' ? null : 'synthesize');
+  }, [ui, panel, signalActivity]);
+
   const handleMore = useCallback(() => {
     signalActivity();
     setShowOverflow((s) => !s);
@@ -390,6 +396,21 @@ export function StageControls({
                 className="stims-icon-slot stims-icon-slot--sm"
               />
               <span className={styles.btnLabel}>Refine</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.btn}
+              data-active={String(panel === 'synthesize')}
+              aria-label="Generate a visualizer from a description"
+              title="Generate"
+              onClick={handleSynthesize}
+            >
+              <UiIcon
+                name="wand"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className={styles.btnLabel}>Generate</span>
             </button>
             <button
               type="button"
