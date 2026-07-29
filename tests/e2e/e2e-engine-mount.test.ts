@@ -3,8 +3,17 @@
  * Uses headed Chromium for real GPU rendering on macOS.
  */
 import { afterAll, beforeAll, expect, test } from 'bun:test';
+import fs from 'node:fs';
 import { chromium, devices } from 'playwright';
 import { type DevServerHandle, startDevServer } from './dev-server.ts';
+
+/**
+ * Not every workflow installs Playwright browsers — upgrade-guardrails runs
+ * `bun run test` without them, where chromium.launch() fails in milliseconds
+ * and reads as a product regression. Skip instead, matching agent-integration.
+ */
+const hasChromium = fs.existsSync(chromium.executablePath());
+const browserTest = hasChromium ? test : test.skip;
 
 const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
@@ -68,6 +77,7 @@ async function waitForActivePreset(
 }
 
 async function startServer() {
+  if (!hasChromium) return;
   devServer = await startDevServer({ port: TEST_PORT });
 }
 
@@ -80,7 +90,7 @@ async function stopServer() {
 beforeAll(() => startServer(), { timeout: 60000 });
 afterAll(() => stopServer());
 
-test(
+browserTest(
   'mounts engine, loads preset, and renders a silent preview frame',
   async () => {
     const browser = await chromium.launch({
@@ -141,7 +151,7 @@ test(
   { timeout: 120000 },
 );
 
-test(
+browserTest(
   'switches preset and canvas content changes',
   async () => {
     const browser = await chromium.launch({
@@ -208,7 +218,7 @@ test(
   { timeout: 120000 },
 );
 
-test.skipIf(!!process.env.CI)(
+(hasChromium ? test.skipIf(!!process.env.CI) : test.skip)(
   'starts microphone audio on a mobile browser with one permission request',
   async () => {
     const browser = await chromium.launch({
