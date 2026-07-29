@@ -57,6 +57,7 @@ async function openPanel(panel: string, theme: 'dark' | 'light' = 'dark') {
   await page.waitForSelector('.ctl-section, .ctl-browse-filters', {
     timeout: 30000,
   });
+  await settle(page, '[class*="_panel_"]');
 
   // Fail loudly if the theme did not take, rather than measuring the wrong one.
   const applied = await page.evaluate(() =>
@@ -68,6 +69,23 @@ async function openPanel(panel: string, theme: 'dark' | 'light' = 'dark') {
     );
   }
   return page;
+}
+
+/**
+ * Wait for entrance animations to settle. The panel slides up over 300ms, so
+ * measuring geometry immediately after it appears reads a partially
+ * transformed box and fails intermittently.
+ */
+async function settle(page: Page, selector: string) {
+  await page.waitForFunction(
+    (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return false;
+      return el.getAnimations().every((a) => a.playState !== 'running');
+    },
+    selector,
+    { timeout: 10000 },
+  );
 }
 
 /** WCAG relative-luminance contrast between two rendered colours. */
@@ -150,6 +168,87 @@ chromeTest(
         expect(scroller.overflowX).toBe('auto');
         expect(scroller.masked).toBe(true);
       }
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
+  'mobile layout scrolls and never overflows sideways',
+  async () => {
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 375, height: 812 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.stims-shell__stage-frame', {
+        timeout: 30000,
+      });
+
+      const layout = await page.evaluate(() => {
+        const doc = document.documentElement;
+        const frame = document.querySelector('.stims-shell__stage-frame');
+        return {
+          // A horizontal scrollbar on a phone is always a layout bug. The 2px
+          // slack absorbs sub-pixel rounding on fractional device ratios.
+          horizontalOverflow: doc.scrollWidth - doc.clientWidth,
+          // The home stage must be reachable by scrolling rather than clipped.
+          verticallyScrollable: doc.scrollHeight > doc.clientHeight,
+          frameWidth: frame ? frame.getBoundingClientRect().width : 0,
+          viewportWidth: doc.clientWidth,
+        };
+      });
+
+      expect(layout.horizontalOverflow).toBeLessThanOrEqual(2);
+      // The stage must actually occupy the viewport, not collapse to a sliver.
+      expect(layout.frameWidth).toBeGreaterThan(layout.viewportWidth * 0.8);
+    } finally {
+      await page.close();
+    }
+  },
+  60000,
+);
+
+chromeTest(
+  'panel becomes a full-width sheet on mobile',
+  async () => {
+    const page = await (browser as Browser).newPage({
+      viewport: { width: 375, height: 812 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    try {
+      await page.goto(`${server?.url}/?agent=true&panel=browse`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForSelector('.ctl-browse-filters', { timeout: 30000 });
+      await settle(page, '[class*="_panel_"]');
+
+      const panel = await page.evaluate(() => {
+        const el = document.querySelector('[class*="_panel_"]');
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          width: Math.round(r.width),
+          viewport: document.documentElement.clientWidth,
+          bottom: Math.round(r.bottom),
+          viewportHeight: window.innerHeight,
+        };
+      });
+
+      expect(panel).not.toBeNull();
+      // Bottom sheet: spans the viewport width and is anchored to the bottom.
+      expect(panel?.width).toBe(panel?.viewport as number);
+      expect(
+        Math.abs((panel?.bottom ?? 0) - (panel?.viewportHeight ?? 0)),
+      ).toBeLessThanOrEqual(2);
     } finally {
       await page.close();
     }
