@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
 import { applyDeviceTierToDocument } from './core/device-profile.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
+import { installCrashTelemetry } from './core/services/crash-telemetry.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
 import { isSmartTvDevice } from './utils/device-detect.ts';
@@ -27,6 +28,7 @@ function ensureRootContainer() {
 
 const startApp = async () => {
   reportLoadStatus('app-module');
+  installCrashTelemetry();
   installRendererTelemetryPersistence();
   initAgentAPI();
   initGamepadNavigation();

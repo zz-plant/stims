@@ -67,6 +67,7 @@ const {
   floor,
   float,
   fract,
+  If,
   length,
   mat3,
   max,
@@ -1348,51 +1349,62 @@ function createCompositeOutputNode(
 function applyPostBloomNode(uniforms: CompositeUniformBag) {
   return Fn(([baseColor]: [any]) => {
     const sampleUv = uv();
-    const radius = max(uniforms.postBloomRadius, 0.0001);
-    const texel = uniforms.texelSize.mul(radius);
-    const threshold = uniforms.postBloomThreshold;
     const strength = uniforms.postBloomStrength;
-    const enabled = step(0.0001, strength).toVar();
+    const enabled = step(0.0001, strength);
+    const outColor = baseColor.toVar();
 
-    const top = uniforms.currentTex.sample(
-      clamp(sampleUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
-    ).rgb;
-    const bottom = uniforms.currentTex.sample(
-      clamp(sampleUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
-    ).rgb;
-    const left = uniforms.currentTex.sample(
-      clamp(sampleUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
-    ).rgb;
-    const right = uniforms.currentTex.sample(
-      clamp(sampleUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
-    ).rgb;
+    If(enabled, () => {
+      const radius = max(uniforms.postBloomRadius, 0.0001);
+      const texel = uniforms.texelSize.mul(radius);
+      const threshold = uniforms.postBloomThreshold;
 
-    const blurred = top.add(bottom).add(left).add(right).div(4);
-    const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
-    const bloomMask = smoothstep(threshold.sub(0.05), threshold.add(0.05), lum);
-    const bloom = blurred.mul(strength).mul(bloomMask).mul(enabled);
-    return baseColor.add(bloom);
+      const top = uniforms.currentTex.sample(
+        clamp(sampleUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
+      ).rgb;
+      const bottom = uniforms.currentTex.sample(
+        clamp(sampleUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
+      ).rgb;
+      const left = uniforms.currentTex.sample(
+        clamp(sampleUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
+      ).rgb;
+      const right = uniforms.currentTex.sample(
+        clamp(sampleUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
+      ).rgb;
+
+      const blurred = top.add(bottom).add(left).add(right).div(4);
+      const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
+      const bloomMask = smoothstep(
+        threshold.sub(0.05),
+        threshold.add(0.05),
+        lum,
+      );
+      const bloom = blurred.mul(strength).mul(bloomMask);
+      outColor.assign(baseColor.add(bloom));
+    });
+
+    return outColor;
   });
 }
 
 function applyPostChromaticAberrationNode(uniforms: CompositeUniformBag) {
   return Fn(([baseColor]: [any]) => {
     const sampleUv = uv();
-    const centered = sampleUv.sub(0.5);
-    const offset = centered
-      .mul(uniforms.postChromaticAberration)
-      .mul(vec2(uniforms.texsize.z, uniforms.texsize.w));
-    const enabled = step(0.0001, uniforms.postChromaticAberration).toVar();
-    const clampedPlus = clamp(sampleUv.add(offset), vec2(0), vec2(1));
-    const clampedMinus = clamp(sampleUv.sub(offset), vec2(0), vec2(1));
-    const red = uniforms.currentTex.sample(clampedPlus).r;
-    const blue = uniforms.currentTex.sample(clampedMinus).b;
-    const shifted = vec3(
-      mix(baseColor.r, red, enabled),
-      baseColor.g,
-      mix(baseColor.b, blue, enabled),
-    );
-    return shifted;
+    const enabled = step(0.0001, uniforms.postChromaticAberration);
+    const outColor = baseColor.toVar();
+
+    If(enabled, () => {
+      const centered = sampleUv.sub(0.5);
+      const offset = centered
+        .mul(uniforms.postChromaticAberration)
+        .mul(vec2(uniforms.texsize.z, uniforms.texsize.w));
+      const clampedPlus = clamp(sampleUv.add(offset), vec2(0), vec2(1));
+      const clampedMinus = clamp(sampleUv.sub(offset), vec2(0), vec2(1));
+      const red = uniforms.currentTex.sample(clampedPlus).r;
+      const blue = uniforms.currentTex.sample(clampedMinus).b;
+      outColor.assign(vec3(red, baseColor.g, blue));
+    });
+
+    return outColor;
   });
 }
 
@@ -1400,15 +1412,21 @@ function applyPostFilmGrainNode(uniforms: CompositeUniformBag) {
   return Fn(([baseColor]: [any]) => {
     const sampleUv = uv();
     const amount = uniforms.postFilmGrainAmount;
-    const enabled = step(0.0001, amount).toVar();
-    const resolutionNoise = sampleUv
-      .mul(vec2(uniforms.texsize.x, uniforms.texsize.y))
-      .add(uniforms.signalTime.mul(1000));
-    const hashed = fract(
-      sin(dot(resolutionNoise, vec2(12.9898, 78.233))).mul(43758.5453),
-    );
-    const grain = hashed.mul(2).sub(1).mul(amount).mul(enabled);
-    return baseColor.add(grain);
+    const enabled = step(0.0001, amount);
+    const outColor = baseColor.toVar();
+
+    If(enabled, () => {
+      const resolutionNoise = sampleUv
+        .mul(vec2(uniforms.texsize.x, uniforms.texsize.y))
+        .add(uniforms.signalTime.mul(1000));
+      const hashed = fract(
+        sin(dot(resolutionNoise, vec2(12.9898, 78.233))).mul(43758.5453),
+      );
+      const grain = hashed.mul(2).sub(1).mul(amount);
+      outColor.assign(baseColor.add(grain));
+    });
+
+    return outColor;
   });
 }
 

@@ -31,6 +31,10 @@ import {
   subscribeToRenderPreferences,
 } from '../state/render-preference-store.ts';
 import type { WebGPURenderer } from '../webgpu-renderer.ts';
+import {
+  recordWebGpuDeviceLost,
+  recordWebGpuUncapturedError,
+} from './crash-telemetry.ts';
 
 type RendererInstance = THREE.WebGLRenderer | WebGPURenderer;
 
@@ -394,6 +398,7 @@ async function createRendererHandle(
         }
         const message = describeWebGpuDeviceLoss(info);
         console.warn(message);
+        recordWebGpuDeviceLost(info);
         void queueWebGpuRecovery(message).catch((error) => {
           console.warn('WebGPU renderer recovery failed.', error);
         });
@@ -407,6 +412,7 @@ async function createRendererHandle(
         return;
       }
       console.warn(describeWebGpuUncapturedError(event), event);
+      recordWebGpuUncapturedError(event);
     };
 
     if (
