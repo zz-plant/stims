@@ -42,8 +42,9 @@ export function getMicrophoneCapabilityFromState(
       typeof window !== 'undefined' &&
       (window.isSecureContext === false ||
         (window.location?.protocol === 'http:' &&
-          window.location?.hostname !== 'localhost' &&
-          window.location?.hostname !== '127.0.0.1'));
+          !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(
+            window.location?.hostname ?? '',
+          )));
     const isAppBrowser = isInAppBrowser();
 
     return {
