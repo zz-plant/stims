@@ -13,6 +13,10 @@ const originalNavigator = globalThis.navigator;
  */
 beforeEach(() => {
   if (typeof globalThis.window === 'undefined') return;
+  // Nothing matches: no coarse pointer, no reduced motion, and no
+  // `(update: fast)`, which pins getDisplayRefreshRate to its 60Hz baseline.
+  // The expected quality steps in this suite are written against 60Hz; a
+  // 120Hz budget starts the controller several steps more aggressive.
   globalThis.window.matchMedia = ((query: string) =>
     ({
       media: query,
@@ -24,6 +28,12 @@ beforeEach(() => {
       removeEventListener: () => {},
       dispatchEvent: () => false,
     }) as MediaQueryList) as typeof window.matchMedia;
+
+  // happy-dom exposes screen.refreshRate on some hosts and not others, and it
+  // short-circuits the refresh-rate probe before matchMedia is consulted.
+  if (typeof screen !== 'undefined' && 'refreshRate' in screen) {
+    delete (screen as unknown as { refreshRate?: number }).refreshRate;
+  }
   Object.defineProperty(navigator, 'maxTouchPoints', {
     configurable: true,
     value: 0,
