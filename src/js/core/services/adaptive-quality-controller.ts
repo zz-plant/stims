@@ -42,6 +42,8 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   averageRenderMs: number | null;
   averageGpuMs: number | null;
   sampleCount: number;
+  rollingAverageFrameMs: number | null;
+  rollingWindowSize: number;
   adaptation: 'steady' | 'degraded' | 'recovering' | 'enhanced';
   reasons: string[];
 };
@@ -112,6 +114,8 @@ const DEGRADE_THRESHOLD_SAMPLES = 6;
 const RECOVER_THRESHOLD_SAMPLES = 30;
 const ENHANCE_THRESHOLD_SAMPLES = 60;
 const RESET_THRESHOLD_SAMPLES = 3;
+const ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES = 3;
+const ROLLING_WINDOW_MS = 5000;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -237,6 +241,8 @@ function buildState({
   averageCadenceMs,
   averageRenderMs,
   averageGpuMs,
+  rollingAverageFrameMs,
+  rollingWindowSize,
   sampleCount,
   adaptation,
   reasons,
@@ -251,6 +257,8 @@ function buildState({
   averageCadenceMs: number | null;
   averageRenderMs: number | null;
   averageGpuMs: number | null;
+  rollingAverageFrameMs: number | null;
+  rollingWindowSize: number;
   sampleCount: number;
   adaptation: AdaptiveQualityState['adaptation'];
   reasons: string[];
@@ -270,6 +278,8 @@ function buildState({
     averageRenderMs,
     averageGpuMs,
     sampleCount,
+    rollingAverageFrameMs,
+    rollingWindowSize,
     adaptation,
     reasons,
     renderScaleMultiplier: step.renderScaleMultiplier,
@@ -296,10 +306,36 @@ export function createAdaptiveQualityController({
   let averageCadenceMs: number | null = null;
   let averageRenderMs: number | null = null;
   let averageGpuMs: number | null = null;
+  let rollingAverageFrameMs: number | null = null;
   let sampleCount = 0;
   let consecutiveOverBudget = 0;
   let consecutiveUnderBudget = 0;
+  let consecutiveRollingOverBudget = 0;
   let adaptation: AdaptiveQualityState['adaptation'] = 'steady';
+  const rollingWindowSize = Math.max(
+    30,
+    Math.ceil(ROLLING_WINDOW_MS / heuristic.frameBudgetMs),
+  );
+  const rollingFrameTimes = new Float64Array(rollingWindowSize);
+  let rollingFrameTimesSum = 0;
+  let rollingFrameTimesIndex = 0;
+  let rollingFrameTimesFilled = false;
+
+  function pushRollingFrameTime(frameMs: number) {
+    if (rollingFrameTimesFilled) {
+      rollingFrameTimesSum -= rollingFrameTimes[rollingFrameTimesIndex] ?? 0;
+    }
+    rollingFrameTimes[rollingFrameTimesIndex] = frameMs;
+    rollingFrameTimesSum += frameMs;
+    rollingFrameTimesIndex = (rollingFrameTimesIndex + 1) % rollingWindowSize;
+    if (rollingFrameTimesIndex === 0) {
+      rollingFrameTimesFilled = true;
+    }
+    const count = rollingFrameTimesFilled
+      ? rollingWindowSize
+      : rollingFrameTimesIndex;
+    rollingAverageFrameMs = count > 0 ? rollingFrameTimesSum / count : null;
+  }
 
   let state = buildState({
     backend,
@@ -313,6 +349,8 @@ export function createAdaptiveQualityController({
     averageRenderMs,
     averageGpuMs,
     sampleCount,
+    rollingAverageFrameMs,
+    rollingWindowSize,
     adaptation,
     reasons: [
       ...heuristic.reasons,
@@ -339,6 +377,8 @@ export function createAdaptiveQualityController({
       averageRenderMs,
       averageGpuMs,
       sampleCount,
+      rollingAverageFrameMs,
+      rollingWindowSize,
       adaptation,
       reasons: state.reasons,
     });
@@ -360,6 +400,7 @@ export function createAdaptiveQualityController({
 
       sampleCount += 1;
       averageFrameMs = updateEma(averageFrameMs, frameMs);
+      pushRollingFrameTime(frameMs);
       if (
         typeof cadenceMs === 'number' &&
         Number.isFinite(cadenceMs) &&
@@ -408,6 +449,14 @@ export function createAdaptiveQualityController({
           averageRenderMs < heuristic.frameBudgetMs * 0.55) &&
         (averageGpuMs === null ||
           averageGpuMs < heuristic.frameBudgetMs * 0.55);
+      const rollingFramePressure =
+        rollingAverageFrameMs !== null &&
+        rollingAverageFrameMs > heuristic.frameBudgetMs;
+      if (rollingFramePressure) {
+        consecutiveRollingOverBudget += 1;
+      } else {
+        consecutiveRollingOverBudget = 0;
+      }
 
       if (renderPressure || gpuPressure || framePressure || cadencePressure) {
         consecutiveOverBudget += 1;
@@ -420,23 +469,30 @@ export function createAdaptiveQualityController({
         consecutiveUnderBudget = Math.max(0, consecutiveUnderBudget - 1);
       }
 
+      const triggeredByRollingWindow =
+        consecutiveRollingOverBudget >=
+        ROLLING_WINDOW_DEGRADE_THRESHOLD_SAMPLES;
       if (
-        consecutiveOverBudget >= DEGRADE_THRESHOLD_SAMPLES &&
+        (consecutiveOverBudget >= DEGRADE_THRESHOLD_SAMPLES ||
+          triggeredByRollingWindow) &&
         qualityStep < QUALITY_STEPS.length - 1
       ) {
         qualityStep += 1;
         adaptation = 'degraded';
         consecutiveOverBudget = 0;
         consecutiveUnderBudget = 0;
+        consecutiveRollingOverBudget = 0;
         state = {
           ...state,
           reasons: [
             ...heuristic.reasons,
-            gpuPressure
-              ? 'GPU timing pushed the controller below the baseline budget.'
-              : cadencePressure
-                ? 'Presentation cadence pushed the controller below the baseline budget.'
-                : 'CPU frame timing pushed the controller below the baseline budget.',
+            triggeredByRollingWindow
+              ? `5-second rolling frame-time average (${rollingAverageFrameMs?.toFixed(1)}ms) exceeded the ${heuristic.frameBudgetMs.toFixed(1)}ms budget.`
+              : gpuPressure
+                ? 'GPU timing pushed the controller below the baseline budget.'
+                : cadencePressure
+                  ? 'Presentation cadence pushed the controller below the baseline budget.'
+                  : 'CPU frame timing pushed the controller below the baseline budget.',
           ],
         };
         return publish();
