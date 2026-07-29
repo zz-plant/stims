@@ -41,9 +41,19 @@ describe('minimal workspace surfaces', () => {
   test('keeps settings labels utilitarian', () => {
     const settings = frontendSource('SettingsSheetPanel.tsx');
 
-    expect(settings).toContain('Quality profile');
-    expect(settings).toContain('<strong>Stability mode</strong>');
-    expect(settings).toContain('<strong>Motion control</strong>');
+    // Every quality preset is offered once, described in its own words rather
+    // than by the render numbers, which sit alongside as a secondary readout.
+    expect(settings).toContain('getSettingsPresetOptions()');
+    expect(settings).not.toContain('.slice(0, 3)');
+    expect(settings).toContain('{preset.description}');
+    expect(settings).toContain('ctl-readout');
+
+    // Booleans are switches; the renderer is one select, not a select plus a
+    // duplicate "stability mode" toggle writing the same state.
+    expect(settings).toContain('label="Motion control"');
+    expect(settings).toContain('ctl-switch');
+    expect(settings).not.toContain('Stability mode');
+
     expect(settings).not.toContain('Choose a specific quality profile');
     expect(settings).not.toContain(
       'Stability mode for older or unstable devices',
@@ -52,6 +62,19 @@ describe('minimal workspace surfaces', () => {
       'Let phone or tablet movement affect visuals',
     );
     expect(settings).not.toContain('Force WebGPU enables WebGPU');
+  });
+
+  test('sizes checkboxes as glyphs, not stretched bars', () => {
+    const css = cssSource('app-shell.css');
+
+    // A blanket min-height on `input` stretches checkboxes to 18x44; the touch
+    // target belongs to the label that wraps them.
+    expect(css).toMatch(
+      /input:not\(\[type="checkbox"\], \[type="radio"\]\),\s*\n\s*select \{\s*\n\s*min-height:/u,
+    );
+    expect(css).not.toMatch(
+      /\n\s{2}button,\n\s{2}a,\n\s{2}input,\n\s{2}select \{/u,
+    );
   });
 
   test('keeps live controls and preset cards low chrome', () => {
@@ -69,8 +92,8 @@ describe('minimal workspace surfaces', () => {
     expect(css).toMatch(
       /\.stims-shell__starter-card\s*\{[\s\S]*?padding:\s*10px;[\s\S]*?box-shadow:\s*none;/u,
     );
-    expect(css).toMatch(
-      /\.stims-shell__preset-card\s*\{[\s\S]*?padding:\s*10px;[\s\S]*?box-shadow:\s*none;/u,
+    expect(cssSource('chrome.css')).toMatch(
+      /\.ctl-preset \{[\s\S]*?border-radius: var\(--ctl-radius\);/u,
     );
     expect(css).toMatch(
       /\.stims-shell__launch-source-dock\s*\{[\s\S]*?padding:\s*0;[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/u,
@@ -91,9 +114,18 @@ describe('minimal workspace surfaces', () => {
     expect(sidePanel).toMatch(
       /@media \(min-width: 768px\)[\s\S]*?\.panel\s*\{[\s\S]*?width:\s*min\(560px, calc\(100vw - 32px\)\);/u,
     );
-    expect(cssSource('app-shell.css')).toMatch(
-      /\.stims-shell__sheet-panel--browse\s+\.stims-shell__preset-card\s+\.stims-shell__preset-art\s*\{[\s\S]*?min-height:\s*150px;/u,
+
+    const chrome = cssSource('chrome.css');
+    // Rows are scannable: fixed-ratio thumbnail, one line of title, one of
+    // meta — so a 560px panel lists presets instead of paging through cards.
+    expect(chrome).toMatch(
+      /\.ctl-preset__art \{[\s\S]*?width: 56px;[\s\S]*?height: 36px;/u,
     );
+    expect(chrome).toMatch(
+      /\.ctl-preset__title \{[\s\S]*?white-space: nowrap;/u,
+    );
+    // Filters stay reachable while the list scrolls.
+    expect(chrome).toMatch(/\.ctl-browse-filters \{[\s\S]*?position: sticky;/u);
   });
 
   test('keeps light theme shell text and surfaces contrast-safe', () => {
@@ -111,7 +143,14 @@ describe('minimal workspace surfaces', () => {
     expect(css).toContain('html.light [data-shell-dialog="true"]');
     expect(css).toContain('@media (forced-colors: active)');
     expect(sidePanelSource).toContain('data-shell-dialog="true"');
-    expect(sidePanel).toContain('background: rgba(10, 14, 22, 0.97);');
+    // The panel follows the theme now, but still resolves to the same opaque
+    // dark fill when the chrome tokens are unavailable.
+    expect(sidePanel).toContain(
+      'background: var(--ctl-panel-bg, rgba(10, 14, 22, 0.97));',
+    );
+    expect(cssSource('chrome.css')).toMatch(
+      /html\.light \.stims-shell \{[\s\S]*?--ctl-panel-bg:/u,
+    );
   });
 
   test('loads late theme and launch layers after core shell styles', () => {

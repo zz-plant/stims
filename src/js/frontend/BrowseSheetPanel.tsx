@@ -180,11 +180,11 @@ export function BrowseSheetPanel({
       className="stims-shell__sheet-panel stims-shell__sheet-panel--browse"
       data-filter-active={String(hasFilter)}
     >
-      <section className="stims-shell__sheet-surface stims-shell__sheet-surface--sticky">
-        <div className="stims-shell__browse-search-row">
+      <section className="ctl-browse-filters">
+        <div className="ctl-browse-searchrow">
           <input
             id="preset-search"
-            className="stims-shell__input"
+            className="ctl-field"
             type="search"
             placeholder="Search presets"
             aria-label="Search presets"
@@ -192,30 +192,9 @@ export function BrowseSheetPanel({
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
           />
-          <select
-            className="stims-shell__select stims-shell__browse-sort"
-            aria-label="Sort presets"
-            value={sortMode}
-            onChange={(e) => {
-              const next = e.target.value as SortMode;
-              setSortMode(next);
-              if (next === 'random') setRandomSeed(Date.now());
-              try {
-                localStorage.setItem('stims:browse-sort', next);
-              } catch {}
-            }}
-          >
-            <option value="relevance">Recommended</option>
-            <option value="title">Title</option>
-            <option value="author">Author</option>
-            <option value="recent">Recent</option>
-            <option value="favorites-first">Saved</option>
-            <option value="webgpu-supported">WebGPU</option>
-            <option value="random">Random</option>
-          </select>
           <button
             type="button"
-            className="stims-shell__icon-button"
+            className="ctl-btn ctl-btn--icon"
             onClick={engine.handleShufflePreset}
             disabled={catalog.length === 0}
             aria-label="Shuffle presets"
@@ -229,37 +208,10 @@ export function BrowseSheetPanel({
           </button>
         </div>
 
-        {hasFilter ? (
-          <p
-            className="stims-shell__active-filters"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {buildAppliedFilterSummary({
-              searchQuery: localSearch,
-              collectionTag: routeState.collectionTag,
-            })}
-            <button
-              type="button"
-              className="stims-shell__clear-filters"
-              onClick={() => {
-                setLocalSearch('');
-                ui.setSearchQuery('');
-                onCollectionTagChange(null);
-              }}
-            >
-              Clear
-            </button>
-          </p>
-        ) : null}
-
-        <nav
-          className="stims-shell__collections"
-          aria-label="Preset collections"
-        >
+        <nav className="ctl-scroller" aria-label="Preset collections">
           <button
             type="button"
-            className="stims-shell__collection-pill"
+            className="ctl-chip"
             data-active={String(routeState.collectionTag === null)}
             onClick={() => onCollectionTagChange(null)}
           >
@@ -269,7 +221,7 @@ export function BrowseSheetPanel({
             <button
               key={tag}
               type="button"
-              className="stims-shell__collection-pill"
+              className="ctl-chip"
               data-active={String(routeState.collectionTag === tag)}
               onClick={() =>
                 onCollectionTagChange(
@@ -282,7 +234,7 @@ export function BrowseSheetPanel({
           ))}
           <button
             type="button"
-            className="stims-shell__collection-pill"
+            className="ctl-chip"
             data-active={String(
               routeState.collectionTag === 'collection:community',
             )}
@@ -298,9 +250,64 @@ export function BrowseSheetPanel({
             Community
           </button>
         </nav>
+
+        {hasFilter ? (
+          <p
+            className="ctl-browse-applied"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <span>
+              {buildAppliedFilterSummary({
+                searchQuery: localSearch,
+                collectionTag: routeState.collectionTag,
+              })}
+            </span>
+            <button
+              type="button"
+              className="ctl-btn ctl-btn--quiet"
+              onClick={() => {
+                setLocalSearch('');
+                ui.setSearchQuery('');
+                onCollectionTagChange(null);
+              }}
+            >
+              Clear
+            </button>
+          </p>
+        ) : null}
       </section>
 
-      <section ref={resultsRef} className="stims-shell__sheet-surface">
+      <section ref={resultsRef} className="ctl-browse-results">
+        <div className="ctl-resultbar">
+          <p className="ctl-readout" aria-live="polite">
+            {catalogReady
+              ? `${sorted.length} preset${sorted.length === 1 ? '' : 's'}`
+              : 'loading…'}
+          </p>
+          <select
+            className="ctl-select ctl-select--auto"
+            aria-label="Sort presets"
+            value={sortMode}
+            onChange={(e) => {
+              const next = e.target.value as SortMode;
+              setSortMode(next);
+              if (next === 'random') setRandomSeed(Date.now());
+              try {
+                localStorage.setItem('stims:browse-sort', next);
+              } catch {}
+            }}
+          >
+            <option value="relevance">Recommended</option>
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+            <option value="recent">Recently opened</option>
+            <option value="favorites-first">Saved first</option>
+            <option value="webgpu-supported">WebGPU first</option>
+            <option value="random">Random</option>
+          </select>
+        </div>
+
         {!catalogReady && !catalogError ? (
           <ul className="stims-shell__preset-list" aria-busy={true}>
             {Array.from({ length: 6 }).map((_, i) => (
@@ -311,29 +318,28 @@ export function BrowseSheetPanel({
             ))}
           </ul>
         ) : null}
+
         {catalogError ? (
-          <p className="stims-shell__meta-copy">{catalogError}</p>
+          <div className="ctl-empty" role="alert">
+            <span className="ctl-empty__title">
+              Preset catalog failed to load
+            </span>
+            <p className="ctl-empty__body">{catalogError}</p>
+          </div>
         ) : null}
 
-        <div className="stims-shell__section-heading">
-          <p className="stims-shell__section-label">
-            {routeState.collectionTag === 'collection:community'
-              ? 'Community'
-              : 'All presets'}
-          </p>
-          <p className="stims-shell__meta-copy">
-            {sorted.length} result{sorted.length === 1 ? '' : 's'}
-          </p>
-        </div>
-
-        {sorted.length === 0 && catalogReady ? (
-          <div className="stims-shell__empty-state">
-            <strong>No presets match</strong>
-            <p>Try another search or clear filters.</p>
+        {catalogReady && sorted.length === 0 ? (
+          <div className="ctl-empty">
+            <span className="ctl-empty__title">Nothing matches that</span>
+            <p className="ctl-empty__body">
+              Widen the search, or clear the filters to see all
+              {catalog.length} presets.
+            </p>
             <button
               type="button"
-              className="cta-button primary"
+              className="ctl-btn"
               onClick={() => {
+                setLocalSearch('');
                 ui.setSearchQuery('');
                 onCollectionTagChange(null);
               }}
@@ -341,69 +347,76 @@ export function BrowseSheetPanel({
               Clear filters
             </button>
           </div>
-        ) : (
-          <ul className="stims-shell__preset-list">
+        ) : null}
+
+        {catalogReady && sorted.length > 0 ? (
+          <ul className="ctl-presets">
             {visible.map((entry) => (
-              <li key={entry.id}>
-                <div className="stims-shell__preset-card-wrap">
-                  <button
-                    type="button"
-                    className="stims-shell__preset-card"
-                    data-active={String(entry.id === currentPresetId)}
-                    onClick={() => engine.handlePresetSelection(entry.id)}
-                  >
+              <li
+                key={entry.id}
+                className="ctl-preset"
+                data-active={String(entry.id === currentPresetId)}
+              >
+                <button
+                  type="button"
+                  className="ctl-preset__open"
+                  aria-current={
+                    entry.id === currentPresetId ? 'true' : undefined
+                  }
+                  onClick={() => engine.handlePresetSelection(entry.id)}
+                >
+                  <span className="ctl-preset__art">
                     <PresetArtwork
                       entry={entry}
                       compact
                       preview={presetPreviews[entry.id] ?? null}
                     />
-                    <span className="stims-shell__preset-card-copy">
-                      <span className="stims-shell__preset-title">
-                        {entry.title}
-                      </span>
-                      <span className="stims-shell__preset-vibe">
-                        {describePresetMood(entry)}
-                      </span>
+                  </span>
+                  <span className="ctl-preset__copy">
+                    <span className="ctl-preset__title">{entry.title}</span>
+                    <span className="ctl-preset__meta">
+                      {entry.author
+                        ? `${describePresetMood(entry)} · ${entry.author}`
+                        : describePresetMood(entry)}
                     </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="stims-shell__preset-fav"
-                    aria-label={
-                      entry.isFavorite ? 'Remove from saved' : 'Save preset'
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void engine.toggleFavoritePreset(
-                        entry.id,
-                        !entry.isFavorite,
-                      );
-                    }}
-                  >
-                    <span
-                      className="stims-shell__preset-fav-icon"
-                      data-active={String(entry.isFavorite)}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="ctl-preset__fav"
+                  data-saved={String(Boolean(entry.isFavorite))}
+                  aria-label={
+                    entry.isFavorite
+                      ? `Remove ${entry.title} from saved`
+                      : `Save ${entry.title}`
+                  }
+                  aria-pressed={Boolean(entry.isFavorite)}
+                  onClick={() => {
+                    void engine.toggleFavoritePreset(
+                      entry.id,
+                      !entry.isFavorite,
+                    );
+                  }}
+                >
+                  <span className="ctl-preset__fav-icon" aria-hidden="true" />
+                </button>
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
 
         {hiddenCount > 0 ? (
-          <div className="stims-shell__preset-list-more">
+          <div className="ctl-browse-more">
             <button
               type="button"
-              className="stims-shell__text-button"
+              className="ctl-btn"
               onClick={() => setLimit((l) => l + BATCH_SIZE)}
             >
-              Show more
+              Show {Math.min(BATCH_SIZE, hiddenCount)} more
             </button>
-            <p className="stims-shell__meta-copy">
-              Showing {visible.length} of {sorted.length}
-            </p>
+            <span className="ctl-readout">
+              {visible.length} of {sorted.length}
+            </span>
           </div>
         ) : null}
       </section>
