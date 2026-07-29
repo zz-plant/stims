@@ -993,7 +993,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
       if (permissionState === 'denied') {
         throw new AudioAccessError(
           'denied',
-          'Microphone access is blocked. Please allow microphone access in your browser settings and try again.',
+          'Microphone access is blocked. Allow microphone access in site settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
         );
       }
 
@@ -1151,6 +1151,31 @@ export async function initAudio(options: AudioInitOptions = {}) {
       throw new AudioAccessError(
         'denied',
         'Microphone access was denied. If site permissions are allowed, check OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).',
+      );
+    }
+
+    if (
+      error &&
+      typeof error === 'object' &&
+      'name' in error &&
+      (error as Error).name === 'NotFoundError'
+    ) {
+      throw new AudioAccessError(
+        'unavailable',
+        'No microphone hardware was found. Please connect a microphone and try again.',
+      );
+    }
+
+    if (
+      error &&
+      typeof error === 'object' &&
+      'name' in error &&
+      ((error as Error).name === 'NotReadableError' ||
+        (error as Error).name === 'TrackStartError')
+    ) {
+      throw new AudioAccessError(
+        'unavailable',
+        'Microphone hardware is currently in use by another application (e.g. Zoom, Teams, Discord). Please close other apps and try again.',
       );
     }
 

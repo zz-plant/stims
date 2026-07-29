@@ -441,11 +441,23 @@ export function useWorkspaceShellOrchestration({
             return;
           }
 
-          throw new Error(
-            error instanceof DOMException && error.name === 'NotAllowedError'
-              ? 'Microphone access was denied. Check browser settings and try again.'
-              : 'Unable to access microphone.',
-          );
+          const errName =
+            error instanceof DOMException ||
+            (error && typeof error === 'object' && 'name' in error)
+              ? (error as Error).name
+              : '';
+          const msg =
+            errName === 'NotAllowedError' || errName === 'PermissionDeniedError'
+              ? 'Microphone access was denied. Check browser settings and OS Privacy Settings (macOS Privacy & Security / Windows Privacy Settings).'
+              : errName === 'NotFoundError'
+                ? 'No microphone hardware found. Please connect a microphone and try again.'
+                : errName === 'NotReadableError' ||
+                    errName === 'TrackStartError'
+                  ? 'Microphone is currently in use by another app (e.g. Zoom, Teams).'
+                  : error instanceof Error && error.message
+                    ? error.message
+                    : 'Unable to access microphone.';
+          throw new Error(msg);
         }
 
         try {
