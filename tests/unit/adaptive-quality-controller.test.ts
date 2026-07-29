@@ -12,7 +12,28 @@ const originalNavigator = globalThis.navigator;
  * CI for exactly that reason. Individual tests still override as needed.
  */
 beforeEach(() => {
+  // Navigator first, and never behind a `window` guard: the starting quality
+  // step is gated on isMobileDevice()/isInAppBrowser(), which read userAgent,
+  // platform and maxTouchPoints. An earlier version of this hook returned
+  // early when window was undefined and silently skipped all of it.
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      ...originalNavigator,
+      // A plain desktop browser: not mobile, not an in-app webview.
+      userAgent:
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      platform: 'Linux x86_64',
+      userAgentData: undefined,
+      maxTouchPoints: 0,
+      // getDevicePerformanceProfile treats <=3 cores or <=3GB as low power.
+      hardwareConcurrency: 8,
+      deviceMemory: 8,
+    },
+  });
+
   if (typeof globalThis.window === 'undefined') return;
+
   // Nothing matches: no coarse pointer, no reduced motion, and no
   // `(update: fast)`, which pins getDisplayRefreshRate to its 60Hz baseline.
   // The expected quality steps in this suite are written against 60Hz; a
@@ -34,23 +55,6 @@ beforeEach(() => {
   if (typeof screen !== 'undefined' && 'refreshRate' in screen) {
     delete (screen as unknown as { refreshRate?: number }).refreshRate;
   }
-  Object.defineProperty(navigator, 'maxTouchPoints', {
-    configurable: true,
-    value: 0,
-  });
-
-  // The controller derives its starting step from the device performance
-  // profile, which treats <=3 cores or <=3GB as low power. CI runners report
-  // very different values from developer machines, so these are pinned to a
-  // comfortably unconstrained desktop rather than left to the host.
-  Object.defineProperty(navigator, 'hardwareConcurrency', {
-    configurable: true,
-    value: 8,
-  });
-  Object.defineProperty(navigator, 'deviceMemory', {
-    configurable: true,
-    value: 8,
-  });
 
   // renderer-capabilities stamps this on window at runtime and most suites
   // never clear it; a leaked "high-end" value promotes every device to ultra.
