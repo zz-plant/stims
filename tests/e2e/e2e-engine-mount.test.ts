@@ -11,6 +11,15 @@ const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: DevServerHandle | null = null;
 
 /**
+ * Headed Chromium is what exercises a real GPU locally, which is the point of
+ * this suite on a developer machine. CI has no GPU: it runs under xvfb, and a
+ * headed browser there dies partway through the first test. Headless plus a
+ * software renderer is stable there and still produces real canvas content,
+ * which is all these assertions read.
+ */
+const HEADLESS = !!process.env.CI;
+
+/**
  * CI runs headed Chromium under xvfb with no real GPU. Without an explicit
  * software renderer the browser crashes mid-test, and the failure surfaces as
  * "Target page, context or browser has been closed" from the cleanup block
@@ -75,7 +84,7 @@ test(
   'mounts engine, loads preset, and renders a silent preview frame',
   async () => {
     const browser = await chromium.launch({
-      headless: false,
+      headless: HEADLESS,
       args: RENDERER_ARGS,
     });
     const ctx = await browser.newContext({
@@ -136,7 +145,7 @@ test(
   'switches preset and canvas content changes',
   async () => {
     const browser = await chromium.launch({
-      headless: false,
+      headless: HEADLESS,
       args: RENDERER_ARGS,
     });
     const ctx = await browser.newContext({
@@ -203,7 +212,7 @@ test.skipIf(!!process.env.CI)(
   'starts microphone audio on a mobile browser with one permission request',
   async () => {
     const browser = await chromium.launch({
-      headless: false,
+      headless: HEADLESS,
       args: [
         ...RENDERER_ARGS,
         '--use-fake-device-for-media-stream',
