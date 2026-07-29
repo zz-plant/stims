@@ -395,6 +395,9 @@ export type MilkdropFeedbackSetRenderTarget = {
 
 export interface MilkdropFeedbackManager {
   applyCompositeState(state: MilkdropFeedbackCompositeState): void;
+  applyPostprocessingProfile?(
+    profile: MilkdropPostprocessingProfile | null | undefined,
+  ): void;
   getShapeTexture?(): Texture | null;
   setAdaptiveQuality?(
     multipliers: Partial<{

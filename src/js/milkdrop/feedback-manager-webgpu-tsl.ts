@@ -51,6 +51,7 @@ import {
 import type {
   MilkdropFeedbackCompositeState,
   MilkdropFeedbackManager,
+  MilkdropPostprocessingProfile,
   MilkdropShaderExpressionNode,
   MilkdropShaderProgramPayload,
   MilkdropShaderStatement,
@@ -1170,7 +1171,8 @@ function createCompositeOutputNode(
     const previous = uniforms.previousTex.sample(
       sampleUvNode(previousUv, uniforms.textureWrap),
     );
-    const previousColor = previous.rgb.mul(uniforms.decay).toVar();
+    const rawPreviousColor = previous.rgb.toVar();
+    const previousColor = rawPreviousColor.mul(uniforms.decay).toVar();
 
     const color = (
       hasDirectCompProgram
@@ -1331,8 +1333,93 @@ function createCompositeOutputNode(
       max(color, vec3(0)),
       vec3(float(1).div(max(uniforms.gammaAdj, 0.0001))),
     );
-    return vec4(gammaAdjusted, 1);
+    color.assign(gammaAdjusted);
+
+    // Post-processing pass (WebGPU full-path equivalents of WebGL passes)
+    color.assign(applyPostBloomNode(uniforms)(color));
+    color.assign(applyPostChromaticAberrationNode(uniforms)(color));
+    color.assign(applyPostFilmGrainNode(uniforms)(color));
+    color.assign(applyPostAfterimageNode(uniforms, rawPreviousColor)(color));
+
+    return vec4(max(color, vec3(0)), 1);
   })();
+}
+
+function applyPostBloomNode(uniforms: CompositeUniformBag) {
+  return Fn(([baseColor]: [any]) => {
+    const sampleUv = uv();
+    const radius = max(uniforms.postBloomRadius, 0.0001);
+    const texel = uniforms.texelSize.mul(radius);
+    const threshold = uniforms.postBloomThreshold;
+    const strength = uniforms.postBloomStrength;
+    const enabled = step(0.0001, strength).toVar();
+
+    const top = uniforms.currentTex.sample(
+      clamp(sampleUv.add(vec2(0, texel.y)), vec2(0), vec2(1)),
+    ).rgb;
+    const bottom = uniforms.currentTex.sample(
+      clamp(sampleUv.sub(vec2(0, texel.y)), vec2(0), vec2(1)),
+    ).rgb;
+    const left = uniforms.currentTex.sample(
+      clamp(sampleUv.sub(vec2(texel.x, 0)), vec2(0), vec2(1)),
+    ).rgb;
+    const right = uniforms.currentTex.sample(
+      clamp(sampleUv.add(vec2(texel.x, 0)), vec2(0), vec2(1)),
+    ).rgb;
+
+    const blurred = top.add(bottom).add(left).add(right).div(4);
+    const lum = dot(blurred, vec3(0.299, 0.587, 0.114));
+    const bloomMask = smoothstep(threshold.sub(0.05), threshold.add(0.05), lum);
+    const bloom = blurred.mul(strength).mul(bloomMask).mul(enabled);
+    return baseColor.add(bloom);
+  });
+}
+
+function applyPostChromaticAberrationNode(uniforms: CompositeUniformBag) {
+  return Fn(([baseColor]: [any]) => {
+    const sampleUv = uv();
+    const centered = sampleUv.sub(0.5);
+    const offset = centered
+      .mul(uniforms.postChromaticAberration)
+      .mul(vec2(uniforms.texsize.z, uniforms.texsize.w));
+    const enabled = step(0.0001, uniforms.postChromaticAberration).toVar();
+    const clampedPlus = clamp(sampleUv.add(offset), vec2(0), vec2(1));
+    const clampedMinus = clamp(sampleUv.sub(offset), vec2(0), vec2(1));
+    const red = uniforms.currentTex.sample(clampedPlus).r;
+    const blue = uniforms.currentTex.sample(clampedMinus).b;
+    const shifted = vec3(
+      mix(baseColor.r, red, enabled),
+      baseColor.g,
+      mix(baseColor.b, blue, enabled),
+    );
+    return shifted;
+  });
+}
+
+function applyPostFilmGrainNode(uniforms: CompositeUniformBag) {
+  return Fn(([baseColor]: [any]) => {
+    const sampleUv = uv();
+    const amount = uniforms.postFilmGrainAmount;
+    const enabled = step(0.0001, amount).toVar();
+    const resolutionNoise = sampleUv
+      .mul(vec2(uniforms.texsize.x, uniforms.texsize.y))
+      .add(uniforms.signalTime.mul(1000));
+    const hashed = fract(
+      sin(dot(resolutionNoise, vec2(12.9898, 78.233))).mul(43758.5453),
+    );
+    const grain = hashed.mul(2).sub(1).mul(amount).mul(enabled);
+    return baseColor.add(grain);
+  });
+}
+
+function applyPostAfterimageNode(
+  uniforms: CompositeUniformBag,
+  rawPreviousColor: any,
+) {
+  return Fn(([baseColor]: [any]) => {
+    const damp = clamp(uniforms.postAfterimageDamp, 0, 1);
+    return mix(baseColor, rawPreviousColor, damp);
+  });
 }
 
 function buildCompositeStateKey(state: MilkdropFeedbackCompositeState) {
@@ -1464,6 +1551,27 @@ class WebGPUMilkdropFeedbackManager {
   swap() {
     this.presentMaterial.map = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
+  }
+
+  applyPostprocessingProfile(
+    profile: MilkdropPostprocessingProfile | null | undefined,
+  ) {
+    const uniforms = this.compositeMaterial.uniforms;
+    const enabled = Boolean(profile?.enabled);
+    uniforms.postBloomStrength.value = enabled
+      ? (profile?.bloomStrength ?? 0)
+      : 0;
+    uniforms.postBloomThreshold.value = profile?.bloomThreshold ?? 0.85;
+    uniforms.postBloomRadius.value = profile?.bloomRadius ?? 0.5;
+    uniforms.postFilmGrainAmount.value = enabled
+      ? (profile?.filmNoise ?? 0)
+      : 0;
+    uniforms.postChromaticAberration.value = enabled
+      ? (profile?.chromaOffset ?? 0)
+      : 0;
+    uniforms.postAfterimageDamp.value = enabled
+      ? (profile?.afterimageDamp ?? 0)
+      : 0;
   }
 
   applyCompositeState(state: MilkdropFeedbackCompositeState) {

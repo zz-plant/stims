@@ -365,11 +365,14 @@ describe('milkdrop webgpu feedback manager helpers', () => {
       const source =
         manager.compositeMaterial.outputNode.node.shaderNode?.jsFunc?.toString() ??
         '';
-      // The composite node now branches on hasDirectCompProgram via TSL select()
-      // rather than explicit if/else blocks
+      // The composite node still computes gamma, then it runs the WebGPU
+      // post-processing pass before returning the final color.
       const gammaIndex = source.indexOf('gammaAdjusted');
       expect(gammaIndex).toBeGreaterThanOrEqual(0);
-      expect(source).toContain('return vec4(gammaAdjusted, 1);');
+      expect(source).toContain('applyPostBloomNode');
+      expect(source).toContain('applyPostFilmGrainNode');
+      expect(source).toContain('applyPostAfterimageNode');
+      expect(source).toContain('applyPostChromaticAberration');
     } finally {
       manager.dispose();
     }
