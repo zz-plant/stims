@@ -1,5 +1,44 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { createAdaptiveQualityController } from '../../src/js/core/services/adaptive-quality-controller.ts';
+
+const originalMatchMedia = globalThis.window?.matchMedia;
+const originalMaxTouchPoints = globalThis.navigator?.maxTouchPoints;
+
+/**
+ * The controller reads pointer/reduced-motion media queries and touch points
+ * when choosing a starting quality step. Other suites replace matchMedia
+ * globally, so without a deterministic baseline these assertions depend on
+ * which test file ran first — they passed on developer machines and failed on
+ * CI for exactly that reason. Individual tests still override as needed.
+ */
+beforeEach(() => {
+  if (typeof globalThis.window === 'undefined') return;
+  globalThis.window.matchMedia = ((query: string) =>
+    ({
+      media: query,
+      matches: false,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList) as typeof window.matchMedia;
+  Object.defineProperty(navigator, 'maxTouchPoints', {
+    configurable: true,
+    value: 0,
+  });
+});
+
+afterEach(() => {
+  if (typeof globalThis.window !== 'undefined' && originalMatchMedia) {
+    globalThis.window.matchMedia = originalMatchMedia;
+  }
+  Object.defineProperty(navigator, 'maxTouchPoints', {
+    configurable: true,
+    value: originalMaxTouchPoints ?? 0,
+  });
+});
 
 describe('createAdaptiveQualityController', () => {
   test('starts from capability heuristics for baseline webgpu devices', () => {
