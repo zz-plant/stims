@@ -2,11 +2,14 @@ import {
   evaluateMilkdropShaderControlExpressions,
   evaluateMilkdropShaderControlProgram,
 } from '../compiler';
+import { walkMilkdropExpression } from '../expression';
 import type {
   MilkdropCompiledPreset,
+  MilkdropExpressionNode,
   MilkdropPostprocessingProfile,
   MilkdropPostVisual,
   MilkdropRuntimeSignals,
+  MilkdropShaderControlExpressions,
 } from '../types';
 import {
   clamp,
@@ -94,6 +97,74 @@ function hasNonNeutralShaderControls(
   );
 }
 
+const ALLOWED_GLOBAL_IDENTIFIERS = new Set(['pi', 'e']);
+
+function hasUnknownIdentifier(
+  expression: MilkdropExpressionNode | null | undefined,
+  env: Record<string, number>,
+): boolean {
+  if (!expression) {
+    return false;
+  }
+  let unknown = false;
+  walkMilkdropExpression(expression, (node) => {
+    if (node.type === 'identifier') {
+      const normalized = node.name.toLowerCase();
+      if (!ALLOWED_GLOBAL_IDENTIFIERS.has(normalized) && !(normalized in env)) {
+        unknown = true;
+      }
+    }
+  });
+  return unknown;
+}
+
+function* iterShaderControlExpressions(
+  expressions: MilkdropShaderControlExpressions,
+): Generator<MilkdropExpressionNode | null> {
+  yield expressions.warpScale;
+  yield expressions.offsetX;
+  yield expressions.offsetY;
+  yield expressions.rotation;
+  yield expressions.zoom;
+  yield expressions.saturation;
+  yield expressions.contrast;
+  yield expressions.colorScale.r;
+  yield expressions.colorScale.g;
+  yield expressions.colorScale.b;
+  yield expressions.hueShift;
+  yield expressions.mixAlpha;
+  yield expressions.brightenBoost;
+  yield expressions.invertBoost;
+  yield expressions.solarizeBoost;
+  yield expressions.tint.r;
+  yield expressions.tint.g;
+  yield expressions.tint.b;
+  yield expressions.textureLayer.amount;
+  yield expressions.textureLayer.scaleX;
+  yield expressions.textureLayer.scaleY;
+  yield expressions.textureLayer.offsetX;
+  yield expressions.textureLayer.offsetY;
+  yield expressions.textureLayer.volumeSliceZ;
+  yield expressions.warpTexture.amount;
+  yield expressions.warpTexture.scaleX;
+  yield expressions.warpTexture.scaleY;
+  yield expressions.warpTexture.offsetX;
+  yield expressions.warpTexture.offsetY;
+  yield expressions.warpTexture.volumeSliceZ;
+}
+
+function controlExpressionsNeedProgramEvaluation(
+  expressions: MilkdropShaderControlExpressions,
+  env: Record<string, number>,
+): boolean {
+  for (const expression of iterShaderControlExpressions(expressions)) {
+    if (hasUnknownIdentifier(expression, env)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function buildShaderControls({
   preset,
   signals,
@@ -114,12 +185,27 @@ export function buildShaderControls({
   if (warp === null && comp === null) {
     return buildNeutralShaderControls();
   }
+
+  const env = createEnv(signals);
+
+  // Cached scalar expressions can't represent shader temp variables (e.g.
+  // `const pulse = beat_pulse * 0.4; mix = pulse`). Fall back to the full
+  // per-frame program evaluator when any expression references an identifier
+  // that isn't known in the runtime environment.
+  if (controlExpressionsNeedProgramEvaluation(controlExpressions, env)) {
+    return evaluateMilkdropShaderControlProgram({
+      warp,
+      comp,
+      env,
+    });
+  }
+
   // Use the cached control expressions instead of re-parsing the shader
   // text every frame. The AST is built at compile time in ir.ts.
   return evaluateMilkdropShaderControlExpressions({
     controls,
     expressions: controlExpressions,
-    env: createEnv(signals),
+    env,
   });
 }
 
