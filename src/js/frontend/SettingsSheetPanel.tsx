@@ -4,7 +4,11 @@ import {
   setWebGPUCompatibilityGapOverride,
 } from '../core/renderer-query-override.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
-import { DEFAULT_PERFORMANCE_SETTINGS } from '../core/state/performance-settings-store.ts';
+import {
+  DEFAULT_PERFORMANCE_SETTINGS,
+  type PerformanceSettings,
+  type ShaderQuality,
+} from '../core/state/performance-settings-store.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -44,11 +48,43 @@ function SwitchRow({
   );
 }
 
+/** Particle budget steps, kept inside MIN/MAX_PARTICLE_BUDGET. */
+const PARTICLE_DENSITY_STEPS: Array<{ value: number; label: string }> = [
+  { value: 0.4, label: 'Lowest' },
+  { value: 0.7, label: 'Low' },
+  { value: 1, label: 'Standard' },
+  { value: 1.3, label: 'High' },
+  { value: 1.6, label: 'Highest' },
+];
+
+/** Pixel ratio caps, kept inside MIN/MAX_PIXEL_RATIO. */
+const RESOLUTION_LIMIT_STEPS: Array<{ value: number; label: string }> = [
+  { value: 1, label: '1x' },
+  { value: 1.5, label: '1.5x' },
+  { value: 1.75, label: '1.75x' },
+  { value: 2, label: '2x' },
+  { value: 2.5, label: '2.5x' },
+];
+
+/** Snap a stored value onto the nearest offered step so the select stays bound. */
+function nearestStep(
+  steps: Array<{ value: number; label: string }>,
+  value: number,
+) {
+  let closest = steps[0].value;
+  for (const step of steps) {
+    if (Math.abs(step.value - value) < Math.abs(closest - value)) {
+      closest = step.value;
+    }
+  }
+  return closest;
+}
+
 function PerformanceSection() {
   const [perf, setPerf] = useState(() => ({
-    shaderDetail: 1,
-    ecoMode: false,
-    renderScale: 1,
+    shaderQuality: DEFAULT_PERFORMANCE_SETTINGS.shaderQuality,
+    particleBudget: DEFAULT_PERFORMANCE_SETTINGS.particleBudget,
+    maxPixelRatio: DEFAULT_PERFORMANCE_SETTINGS.maxPixelRatio,
     loaded: false,
   }));
   const [autoTune, setAutoTune] = useState(() => {
@@ -65,43 +101,33 @@ function PerformanceSection() {
       ({ getActivePerformanceSettings }) => {
         const s = getActivePerformanceSettings();
         setPerf({
-          shaderDetail: s.shaderDetail,
-          ecoMode: s.ecoMode,
-          renderScale: s.renderScale,
+          shaderQuality: s.shaderQuality,
+          particleBudget: s.particleBudget,
+          maxPixelRatio: s.maxPixelRatio,
           loaded: true,
         });
       },
     );
   }, []);
 
-  const setOption = <K extends keyof typeof perf>(
+  const setOption = <
+    K extends 'shaderQuality' | 'particleBudget' | 'maxPixelRatio',
+  >(
     key: K,
-    value: (typeof perf)[K],
+    value: PerformanceSettings[K],
   ) => {
     setPerf((p) => ({ ...p, [key]: value }));
     import('../core/state/performance-settings-store.ts').then(
       ({ setPerformanceOption }) => {
-        setPerformanceOption(
-          key as 'renderScale' | 'shaderDetail' | 'ecoMode',
-          value as never,
-        );
+        setPerformanceOption(key, value);
       },
     );
   };
 
   const resetPerformance = () => {
     import('../core/state/performance-settings-store.ts').then(
-      ({ resetPerformanceSettingsStore, setPerformanceOption }) => {
-        resetPerformanceSettingsStore();
-        setPerformanceOption(
-          'renderScale',
-          DEFAULT_PERFORMANCE_SETTINGS.renderScale,
-        );
-        setPerformanceOption(
-          'shaderDetail',
-          DEFAULT_PERFORMANCE_SETTINGS.shaderDetail,
-        );
-        setPerformanceOption('ecoMode', DEFAULT_PERFORMANCE_SETTINGS.ecoMode);
+      ({ setPerformanceSettings }) => {
+        setPerformanceSettings(DEFAULT_PERFORMANCE_SETTINGS);
         setPerf({ ...DEFAULT_PERFORMANCE_SETTINGS, loaded: true });
       },
     );
@@ -115,20 +141,18 @@ function PerformanceSection() {
       setRecommendation(null);
       return;
     }
-    if (perf.renderScale > 0.75) {
+    if (perf.maxPixelRatio > 1.5) {
       setRecommendation(
-        'If visuals stutter, auto-tune can drop the render resolution to 75%.',
+        'If frames drop, auto-tune can hold the resolution limit at 1.5x.',
       );
-    } else if (!perf.ecoMode) {
-      setRecommendation(
-        'Auto-tune can turn on Eco mode when frames keep dropping.',
-      );
+    } else if (perf.shaderQuality === 'high') {
+      setRecommendation('If frames drop, auto-tune can move detail down.');
     } else {
       setRecommendation(
-        'Auto-tune is watching. These settings already run cool.',
+        'Auto-tune is watching. These settings already run light.',
       );
     }
-  }, [autoTune, perf.ecoMode, perf.renderScale]);
+  }, [autoTune, perf.maxPixelRatio, perf.shaderQuality]);
 
   return (
     <section className="ctl-section">
@@ -147,54 +171,78 @@ function PerformanceSection() {
 
       <div className="ctl-row">
         <span className="ctl-row__text">
-          <label className="ctl-row__label" htmlFor="render-resolution">
-            Render resolution
+          <label className="ctl-row__label" htmlFor="performance-detail">
+            Detail
           </label>
           <span className="ctl-row__hint">
-            Lower renders fewer pixels and frees up the GPU.
+            Higher draws finer shading and asks more of the GPU. Low also skips
+            preset blending.
           </span>
         </span>
         <select
-          id="render-resolution"
+          id="performance-detail"
           className="ctl-select ctl-select--auto"
-          value={perf.renderScale}
-          onChange={(e) => setOption('renderScale', parseFloat(e.target.value))}
+          value={perf.shaderQuality}
+          onChange={(e) =>
+            setOption('shaderQuality', e.target.value as ShaderQuality)
+          }
         >
-          <option value={1}>Full</option>
-          <option value={0.75}>75%</option>
-          <option value={0.5}>50%</option>
+          <option value="low">Low</option>
+          <option value="balanced">Balanced</option>
+          <option value="high">High</option>
         </select>
       </div>
 
       <div className="ctl-row">
         <span className="ctl-row__text">
-          <label className="ctl-row__label" htmlFor="shader-detail">
-            Shader detail
+          <label className="ctl-row__label" htmlFor="performance-particles">
+            Particle density
           </label>
           <span className="ctl-row__hint">
-            How much per-pixel maths each frame runs.
+            How much the visuals draw at once. Lower thins out busy presets.
           </span>
         </span>
         <select
-          id="shader-detail"
+          id="performance-particles"
           className="ctl-select ctl-select--auto"
-          value={perf.shaderDetail}
+          value={nearestStep(PARTICLE_DENSITY_STEPS, perf.particleBudget)}
           onChange={(e) =>
-            setOption('shaderDetail', parseInt(e.target.value, 10))
+            setOption('particleBudget', parseFloat(e.target.value))
           }
         >
-          <option value={0}>Low</option>
-          <option value={1}>Medium</option>
-          <option value={2}>High</option>
+          {PARTICLE_DENSITY_STEPS.map((step) => (
+            <option key={step.value} value={step.value}>
+              {step.label}
+            </option>
+          ))}
         </select>
       </div>
 
-      <SwitchRow
-        label="Eco mode"
-        hint="Caps at 30 fps and trims effects to save battery."
-        checked={perf.ecoMode}
-        onChange={(next) => setOption('ecoMode', next)}
-      />
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="performance-resolution">
+            Resolution limit
+          </label>
+          <span className="ctl-row__hint">
+            Caps how many pixels are drawn on a high-density screen. Lower is
+            softer but steadier.
+          </span>
+        </span>
+        <select
+          id="performance-resolution"
+          className="ctl-select ctl-select--auto"
+          value={nearestStep(RESOLUTION_LIMIT_STEPS, perf.maxPixelRatio)}
+          onChange={(e) =>
+            setOption('maxPixelRatio', parseFloat(e.target.value))
+          }
+        >
+          {RESOLUTION_LIMIT_STEPS.map((step) => (
+            <option key={step.value} value={step.value}>
+              {step.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <SwitchRow
         label="Auto-tune"
@@ -206,21 +254,21 @@ function PerformanceSection() {
       {recommendation ? (
         <div className="ctl-empty" role="status">
           <p className="ctl-empty__body">{recommendation}</p>
-          {perf.renderScale > 0.75 ? (
+          {perf.maxPixelRatio > 1.5 ? (
             <button
               type="button"
               className="ctl-btn"
-              onClick={() => setOption('renderScale', 0.75)}
+              onClick={() => setOption('maxPixelRatio', 1.5)}
             >
-              Drop to 75%
+              Limit to 1.5x
             </button>
-          ) : !perf.ecoMode ? (
+          ) : perf.shaderQuality === 'high' ? (
             <button
               type="button"
               className="ctl-btn"
-              onClick={() => setOption('ecoMode', true)}
+              onClick={() => setOption('shaderQuality', 'balanced')}
             >
-              Turn on Eco mode
+              Use balanced detail
             </button>
           ) : null}
         </div>

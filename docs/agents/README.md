@@ -77,11 +77,11 @@ Use [`../DOCS_MAINTENANCE.md`](../DOCS_MAINTENANCE.md) as the checklist before f
 ## Fast repo map
 
 - `index.html` and `milkdrop/index.html` — canonical app shell and redirect alias.
-- `assets/js/frontend/` — root workspace UI, URL state, and the engine adapter seam.
-- `assets/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
-- `assets/js/bootstrap/`, `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, and `assets/js/library-view.js` — legacy compatibility/test-support shell wiring, not the root product surface.
-- `assets/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
-- `assets/data/toys.json` — loader manifest source for the shipped MilkDrop entry.
+- `src/js/frontend/` — root workspace UI, URL state, and the engine adapter seam.
+- `src/js/core/` — shared runtime, renderer, shell, audio, and capability systems.
+- `src/js/milkdrop/` — preset runtime, editor, compiler, catalog, and VM behavior.
+- `src/css/` — `tokens.css`, `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, `@scope (.stims-shell)`), `index.css`/`base.css`, and `*.module.css` component styles.
+- `src/data/toys.json` — loader manifest source for the shipped MilkDrop entry.
 - `.github/workflows/ci.yml` — CI quality gate plus the default Cloudflare Pages direct-upload deploy jobs.
 - `tests/` — automated test suite.
 - `docs/` — contributor and architecture docs.

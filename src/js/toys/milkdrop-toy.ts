@@ -12,7 +12,6 @@ export function start({ container }: ToyStartOptions = {}) {
 
   const quality = createRendererQualityManager({
     presets: DEFAULT_QUALITY_PRESETS,
-    defaultPresetId: 'balanced',
     storageKey: MILKDROP_QUALITY_STORAGE_KEY,
     getRuntime: () => runtime,
   });

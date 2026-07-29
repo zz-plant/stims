@@ -100,7 +100,7 @@ describe('quality preset subscriptions', () => {
     expect(resolved.id).toBe('low');
   });
 
-  test('quality panels persist their default preset when no preset is stored yet', () => {
+  test('quality panels apply but do not persist their default preset when no preset is stored yet', () => {
     const panel = getSettingsPanel();
 
     panel.setQualityPresets({
@@ -113,7 +113,8 @@ describe('quality preset subscriptions', () => {
     ) as HTMLSelectElement | null;
 
     expect(select?.value).toBe('performance');
-    expect(localStorage.getItem(QUALITY_STORAGE_KEY)).toBe('performance');
+    // A resolved default is not a user choice, so it must stay unwritten.
+    expect(localStorage.getItem(QUALITY_STORAGE_KEY)).toBeNull();
   });
 
   test('quality presets include global scope hint and impact summary', () => {
