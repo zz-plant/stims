@@ -1,3 +1,7 @@
+import {
+  getRequestedCorpus,
+  getRequestedRenderer,
+} from '../core/url-params.ts';
 import type {
   MilkdropGpuDescriptorRouting,
   MilkdropWebGpuDescriptorPlan,
@@ -146,10 +150,10 @@ export function resolveMilkdropWebGpuOptimizationFlags({
         : (searchValue ?? storageValue ?? resolved[flagName]);
   }
 
-  const params = new URLSearchParams(location?.search ?? '');
+  const searchInput = location?.search ?? '';
   const isCertificationWebGpuSession =
-    params.get('renderer')?.trim().toLowerCase() === 'webgpu' &&
-    params.get('corpus')?.trim().toLowerCase() === 'certification';
+    getRequestedRenderer(searchInput) === 'webgpu' &&
+    getRequestedCorpus(searchInput)?.toLowerCase() === 'certification';
   const hasExplicitFallbackOverride =
     getSearchFlag(
       location,

@@ -1,3 +1,4 @@
+import { getPerformanceOverrideParams } from '../url-params.ts';
 import { getBrowserStorage } from './browser-storage.ts';
 
 export type ShaderQuality = 'low' | 'balanced' | 'high';
@@ -47,40 +48,30 @@ function parseUrlSettings(): Partial<PerformanceSettings> {
   if (typeof window === 'undefined') {
     return {};
   }
-  const params = new URLSearchParams(window.location.search);
-
-  const urlMaxPixelRatio = params.get('maxPixelRatio');
-  const urlParticleBudget = params.get('particleBudget');
-  const urlShaderQuality = params.get('shaderQuality');
+  const params = getPerformanceOverrideParams();
   const parsed: Partial<PerformanceSettings> = {};
 
-  if (urlMaxPixelRatio) {
-    const value = Number.parseFloat(urlMaxPixelRatio);
-    if (!Number.isNaN(value)) {
-      parsed.maxPixelRatio = clampPerformanceValue(
-        value,
-        MIN_PIXEL_RATIO,
-        MAX_PIXEL_RATIO,
-      );
-    }
+  if (params.maxPixelRatio !== null) {
+    parsed.maxPixelRatio = clampPerformanceValue(
+      params.maxPixelRatio,
+      MIN_PIXEL_RATIO,
+      MAX_PIXEL_RATIO,
+    );
   }
 
-  if (urlParticleBudget) {
-    const value = Number.parseFloat(urlParticleBudget);
-    if (!Number.isNaN(value)) {
-      parsed.particleBudget = clampPerformanceValue(
-        value,
-        MIN_PARTICLE_BUDGET,
-        MAX_PARTICLE_BUDGET,
-      );
-    }
+  if (params.particleBudget !== null) {
+    parsed.particleBudget = clampPerformanceValue(
+      params.particleBudget,
+      MIN_PARTICLE_BUDGET,
+      MAX_PARTICLE_BUDGET,
+    );
   }
 
-  if (urlShaderQuality) {
-    const quality = parseShaderQuality(urlShaderQuality);
-    if (quality) {
-      parsed.shaderQuality = quality;
-    }
+  if (
+    params.shaderQuality &&
+    ['low', 'balanced', 'high'].includes(params.shaderQuality)
+  ) {
+    parsed.shaderQuality = params.shaderQuality as ShaderQuality;
   }
 
   return parsed;

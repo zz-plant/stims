@@ -1,5 +1,6 @@
 import { type Remote, releaseProxy, wrap } from 'comlink';
 import { createLogger } from '../core/logger';
+import { isAgentMode } from '../core/url-params';
 import { compileMilkdropPresetSource } from './compiler';
 import { upsertMilkdropField } from './formatter';
 import type {
@@ -14,8 +15,7 @@ const logger = createLogger('EditorSession');
 
 const IS_DEV =
   typeof window !== 'undefined'
-    ? window.location.search.includes('agent=true') ||
-      window.location.hostname === 'localhost'
+    ? isAgentMode() || window.location.hostname === 'localhost'
     : false;
 
 function editorLog(sourceId: string, msg: string, ...args: unknown[]) {

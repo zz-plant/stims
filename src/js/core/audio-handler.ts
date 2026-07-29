@@ -5,6 +5,7 @@ import { getFrequencyBandLevels } from '../utils/audio-reactivity.ts';
 import { isInAppBrowser } from '../utils/device-detect.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
+import { getMockAudioParams } from './url-params.ts';
 
 const logger = createLogger('AudioHandler');
 
@@ -920,11 +921,8 @@ export async function initAudio(options: AudioInitOptions = {}) {
     monitorInput = false,
   } = options;
 
-  const urlParams =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search)
-      : null;
-  const mockAudioType = urlParams?.get('mockAudio');
+  const mockParams = getMockAudioParams();
+  const mockAudioType = mockParams.type;
   let mockCleanup: (() => void | Promise<void>) | undefined;
 
   let listener: AudioListener | null = null;
@@ -978,8 +976,7 @@ export async function initAudio(options: AudioInitOptions = {}) {
         )
           ? mockAudioType
           : 'sawtooth';
-        const mockFreqVal = urlParams?.get('mockFrequency');
-        const frequency = mockFreqVal ? parseFloat(mockFreqVal) : 220;
+        const frequency = mockParams.frequency ?? 220;
         const synth = createSyntheticAudioStream({
           frequency,
           type: type as OscillatorType,

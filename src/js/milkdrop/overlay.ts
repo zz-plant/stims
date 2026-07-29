@@ -1,3 +1,5 @@
+import { parseURLParams } from '../core/url-params.ts';
+
 const OSD_HIDE_TIMEOUT_MS = 1800;
 
 export class MilkdropOverlay {
@@ -127,10 +129,10 @@ export class MilkdropOverlay {
 
     // Read URL state on startup
     try {
-      const searchParams = new URLSearchParams(window.location.search);
-      const paramAutoplay = searchParams.get('autoplay');
-      const paramBlend = searchParams.get('blend');
-      const paramTransition = searchParams.get('transition');
+      const overlayParams = parseURLParams().overlay;
+      const paramAutoplay = overlayParams.autoplay;
+      const paramBlend = overlayParams.blend;
+      const paramTransition = overlayParams.transition;
 
       if (paramAutoplay !== null) {
         const isAutoplay = paramAutoplay === 'true';

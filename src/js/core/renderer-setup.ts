@@ -31,6 +31,7 @@ import { deriveRendererPlan } from './renderer-plan.ts';
 import { shouldPreferWebGLForKnownCompatibilityGaps } from './renderer-query-override.ts';
 import { getRendererBackendMaxPixelRatioCap } from './renderer-settings.ts';
 import { createRenderScale, type RenderScale } from './renderer-types.ts';
+import { isAgentMode } from './url-params.ts';
 import { ensureWebGL } from './webgl-check';
 import { createWebGLRenderer } from './webgl-renderer';
 import type { WebGPURenderer } from './webgpu-renderer.ts';
@@ -74,7 +75,7 @@ function shouldPreserveDrawingBufferForValidation() {
   if (typeof window === 'undefined') {
     return false;
   }
-  return new URLSearchParams(window.location.search).get('agent') === 'true';
+  return isAgentMode();
 }
 
 function disposeRenderer(renderer: Partial<WebGLRenderer | WebGPURenderer>) {

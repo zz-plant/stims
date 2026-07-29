@@ -1,7 +1,8 @@
+import { isAgentMode } from '../../core/url-params.ts';
+
 const IS_DEV =
   typeof window !== 'undefined'
-    ? window.location.search.includes('agent=true') ||
-      window.location.hostname === 'localhost'
+    ? isAgentMode() || window.location.hostname === 'localhost'
     : false;
 
 export function createPresetLoadTrace(presetId: string) {

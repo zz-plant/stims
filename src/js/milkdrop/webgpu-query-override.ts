@@ -9,13 +9,15 @@
 
 import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
 import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts';
+import {
+  getRequestedCorpus,
+  getRequestedRenderer,
+} from '../core/url-params.ts';
 import { isMobileDevice } from '../utils/device-detect.ts';
 import { resolveMilkdropWebGpuOptimizationFlags } from './webgpu-optimization-flags.ts';
 
 const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
-const URL_PARAM_RENDERER = 'renderer';
-const URL_PARAM_CORPUS = 'corpus';
 
 /** Valid modes for the force-mode override. */
 export type WebGpuForceMode = 'auto' | 'safe' | 'full';
@@ -148,10 +150,7 @@ export function shouldUseSafeMilkdropWebGpuPath(
 
   // 3. URL query parameter detection
   if (location?.search) {
-    const searchParams = new URLSearchParams(location.search);
-    const renderer = searchParams.get(URL_PARAM_RENDERER)?.trim().toLowerCase();
-
-    if (renderer === 'webgpu') {
+    if (getRequestedRenderer(location.search) === 'webgpu') {
       // Explicit WebGPU requests use the full WebGPU path.
       return false;
     }
@@ -183,10 +182,10 @@ export function shouldEnableNativeMilkdropWebGpuFeedback(
     : null,
 ): boolean {
   if (shouldUseSafeMilkdropWebGpuPath(location)) return false;
-  const params = new URLSearchParams(location?.search ?? '');
+  const searchInput = location?.search ?? '';
   return (
-    params.get(URL_PARAM_RENDERER)?.trim().toLowerCase() === 'webgpu' &&
-    params.get(URL_PARAM_CORPUS)?.trim().toLowerCase() === 'certification'
+    getRequestedRenderer(searchInput) === 'webgpu' &&
+    getRequestedCorpus(searchInput)?.toLowerCase() === 'certification'
   );
 }
 
@@ -252,9 +251,7 @@ export function getWebGpuPathDescription(
   }
 
   if (location?.search) {
-    const searchParams = new URLSearchParams(location.search);
-    const renderer = searchParams.get(URL_PARAM_RENDERER)?.trim().toLowerCase();
-    if (renderer === 'webgpu') {
+    if (getRequestedRenderer(location.search) === 'webgpu') {
       return {
         mode: 'full',
         source: 'url',

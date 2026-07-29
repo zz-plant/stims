@@ -1,4 +1,5 @@
 import Stats from 'stats-gl';
+import { parseURLParams } from './url-params.ts';
 
 const STATS_STORAGE_KEY = 'stims:debug:stats-gl';
 
@@ -9,11 +10,11 @@ export function shouldEnableStatsOverlay({
   search?: string;
   storageValue?: string | null;
 } = {}) {
-  const params = new URLSearchParams(search);
-  if (params.get('stats') === '1') {
+  const stats = parseURLParams(search).stats;
+  if (stats === '1') {
     return true;
   }
-  if (params.get('stats') === '0') {
+  if (stats === '0') {
     return false;
   }
   return storageValue === '1';

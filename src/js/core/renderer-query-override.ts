@@ -1,3 +1,5 @@
+import { getRequestedRenderer } from './url-params.ts';
+
 const WEBGPU_COMPATIBILITY_OVERRIDE_KEY = 'stims:webgpu-compat-override';
 
 /**
@@ -23,19 +25,6 @@ function getSessionStorage() {
   } catch (_error) {
     return null;
   }
-}
-
-function getRequestedRenderer() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  return (
-    new URLSearchParams(window.location.search)
-      .get('renderer')
-      ?.trim()
-      .toLowerCase() ?? null
-  );
 }
 
 function parseChromeMajorVersion(userAgent: string): number | null {
