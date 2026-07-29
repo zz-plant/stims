@@ -31,6 +31,14 @@ function getFallbackBuffer(length: number): Uint8Array {
   return fallbackBuffers.get(length) as Uint8Array;
 }
 
+const SYNTHETIC_PHASE_1 = new Float32Array(FALLBACK_BIN_COUNT);
+const SYNTHETIC_PHASE_2 = new Float32Array(FALLBACK_BIN_COUNT);
+for (let i = 0; i < FALLBACK_BIN_COUNT; i += 1) {
+  const ratio = i / FALLBACK_BIN_COUNT;
+  SYNTHETIC_PHASE_1[i] = ratio * Math.PI * 4;
+  SYNTHETIC_PHASE_2[i] = ratio * Math.PI * 2;
+}
+
 function fillSyntheticFrequencyData(
   buffer: Uint8Array,
   time: number,
@@ -40,12 +48,15 @@ function fillSyntheticFrequencyData(
   const ripple = (Math.sin(time * 0.35) + 1) / 2;
   const base = 18 + pulse * 12;
   const amplitude = 24 + ripple * 28;
+  const timeOffset1 = time * 1.5;
+  const timeOffset2 = time * 0.7;
 
   for (let i = 0; i < len; i += 1) {
-    const ratio = i / len;
+    const phase1 = SYNTHETIC_PHASE_1[i] ?? (i / len) * Math.PI * 4;
+    const phase2 = SYNTHETIC_PHASE_2[i] ?? (i / len) * Math.PI * 2;
     const wave =
-      Math.sin(time * 1.5 + ratio * Math.PI * 4) * 0.6 +
-      Math.sin(time * 0.7 + ratio * Math.PI * 2) * 0.4;
+      Math.sin(timeOffset1 + phase1) * 0.6 +
+      Math.sin(timeOffset2 + phase2) * 0.4;
     const normalized = wave * 0.5 + 0.5;
     const value = base + normalized * amplitude;
     buffer[i] = Math.min(255, Math.max(0, Math.round(value)));

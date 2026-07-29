@@ -86,7 +86,7 @@ function getParticleFieldInstanceCount({
   const rawCount = Math.round(
     Math.sqrt(pointCount) * (4.5 + meshDensity * 0.22) * densityInfluence,
   );
-  return clamp(rawCount, 24, 320);
+  return clamp(rawCount, 24, 1200);
 }
 
 export function buildParticleFieldVisual({

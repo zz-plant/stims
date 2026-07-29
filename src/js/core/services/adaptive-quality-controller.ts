@@ -274,9 +274,11 @@ export function createAdaptiveQualityController({
   capabilities,
 }: AdaptiveQualityControllerOptions): AdaptiveQualityController {
   const subscribers = new Set<(state: AdaptiveQualityState) => void>();
-  const timingMode: AdaptiveQualityTimingMode = 'coarse-frame';
   const supportsGpuTimestamps =
     backend === 'webgpu' && Boolean(capabilities?.features.timestampQuery);
+  const timingMode: AdaptiveQualityTimingMode = supportsGpuTimestamps
+    ? 'gpu-phase-timestamps'
+    : 'coarse-frame';
   const heuristic = buildHeuristicProfile(backend, capabilities);
 
   let qualityStep = heuristic.initialStep;

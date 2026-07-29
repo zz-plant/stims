@@ -73,3 +73,11 @@ export function compileMilkdropPresetSource(
 
   return compiled;
 }
+
+export function warmupCompiledPresetCache(presets: MilkdropCompiledPreset[]) {
+  presets.forEach((compiled) => {
+    if (compiled.source?.raw) {
+      compiledPresetCache.set(compiled.source.raw, compiled);
+    }
+  });
+}
