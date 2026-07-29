@@ -138,9 +138,9 @@ export function getAdaptiveMaxPixelRatio(maxPixelRatio: number) {
  */
 export const DEVICE_TIER_QUALITY_PRESET_IDS: Record<DeviceTier, string> = {
   low: 'performance',
-  mid: 'tv',
-  high: 'balanced',
-  ultra: 'hi-fi',
+  mid: 'balanced',
+  high: 'hi-fi',
+  ultra: 'ultra',
 };
 
 /** Used whenever tier detection is unavailable or maps to an unknown preset. */
