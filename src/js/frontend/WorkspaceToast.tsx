@@ -1,10 +1,8 @@
 import { UiIcon } from './UiIcon.tsx';
 
 export function WorkspaceToast({
-  onDismiss,
   toast,
 }: {
-  onDismiss: () => void;
   toast: {
     message: string;
     tone: 'info' | 'warn' | 'error';
@@ -36,13 +34,6 @@ export function WorkspaceToast({
         />
         {toast.message}
       </span>
-      <button
-        type="button"
-        className="stims-shell__toast-dismiss"
-        onClick={onDismiss}
-      >
-        Dismiss
-      </button>
     </output>
   );
 }

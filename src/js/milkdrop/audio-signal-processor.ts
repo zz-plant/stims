@@ -96,16 +96,16 @@ function resolveSpectrumSource(
   analyser: FrequencyAnalyser | null,
   fallback: Uint8Array,
 ) {
+  if (fallback.length > 0) {
+    return fallback;
+  }
   const rawData = (
     analyser as SpectrumSourceAnalyser | null
   )?.getFrequencyData?.();
   if (rawData instanceof Uint8Array && rawData.length > 0) {
     return rawData;
   }
-  if (fallback.length === 0) {
-    return createSyntheticBeatFrequencyData(new Uint8Array(128));
-  }
-  return fallback;
+  return createSyntheticBeatFrequencyData(new Uint8Array(128));
 }
 
 function spectralCompensationForRatio(ratio: number) {
@@ -123,6 +123,13 @@ export function createMilkdropAudioSignalProcessor() {
   let spectrumNoiseFloor = new Float32Array(0);
   let previousSpectrum = new Float32Array(0);
   let shapedSpectrum = new Uint8Array(0);
+  const updateResult: MilkdropAudioSignalUpdate = {
+    frequencyData: shapedSpectrum,
+    bands: createBandState(),
+    attenuatedBands: bandAttenuation,
+    rawWeightedEnergy: 0,
+    weightedEnergy: 0,
+  };
 
   const ensureSpectrumBuffers = (length: number) => {
     if (smoothedSpectrum.length === length) {
@@ -182,8 +189,6 @@ export function createMilkdropAudioSignalProcessor() {
   };
 
   const updateBandAttenuation = (bands: BandLevels, deltaMs: number) => {
-    const nextAttenuation = createBandState();
-
     for (const key of BAND_KEYS) {
       const current = bands[key];
       bandBaseline[key] = smoothLevel(
@@ -225,10 +230,9 @@ export function createMilkdropAudioSignalProcessor() {
         BAND_ATTACK_MS[key],
         BAND_RELEASE_MS[key],
       );
-      nextAttenuation[key] = bandAttenuation[key];
     }
 
-    return nextAttenuation;
+    return bandAttenuation;
   };
 
   return {
@@ -295,13 +299,12 @@ export function createMilkdropAudioSignalProcessor() {
         1,
       );
 
-      return {
-        frequencyData: buildSpectrumFrame(rawSpectrum, deltaMs),
-        bands,
-        attenuatedBands,
-        rawWeightedEnergy,
-        weightedEnergy,
-      };
+      updateResult.frequencyData = buildSpectrumFrame(rawSpectrum, deltaMs);
+      updateResult.bands = bands;
+      updateResult.attenuatedBands = attenuatedBands;
+      updateResult.rawWeightedEnergy = rawWeightedEnergy;
+      updateResult.weightedEnergy = weightedEnergy;
+      return updateResult;
     },
   };
 }

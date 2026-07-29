@@ -1,4 +1,4 @@
-export type PanelState = 'browse' | 'editor' | 'settings' | null;
+export type PanelState = 'browse' | 'capture' | 'editor' | 'settings' | null;
 export type AudioSource = 'demo' | 'file' | 'microphone' | 'tab' | 'youtube';
 export type RequestedRenderer = 'webgl' | 'webgpu' | 'auto' | null;
 
@@ -65,6 +65,7 @@ export interface ParsedURLParams {
 
 const VALID_PANELS = new Set<Exclude<PanelState, null>>([
   'browse',
+  'capture',
   'editor',
   'settings',
 ]);

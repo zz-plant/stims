@@ -3,7 +3,6 @@ import type { Camera, Scene, Texture } from 'three';
 import {
   Color,
   Data3DTexture,
-  DataTexture,
   HalfFloatType,
   LinearFilter,
   RedFormat,
@@ -24,8 +23,10 @@ import {
   AUX_TEXTURE_ATLAS_SLICE_COUNT,
 } from './feedback-volume-sampling.ts';
 import {
+  buildMilkdropNoiseVolumeAtlasData,
   createMilkdropNoiseTexture,
   createMilkdropNoiseVolumeAtlasTexture,
+  MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE,
 } from './milkdrop-native-noise.ts';
 import type { MilkdropFeedbackCompositeState } from './types';
 
@@ -90,27 +91,6 @@ export type MilkdropCustomSamplerTextureBinding = {
   texture: Texture;
 };
 
-const sharedMilkdropTextureCache = new Map<string, Texture>();
-const milkdropTextureLoader = new TextureLoader();
-const sharedMilkdropTexturePlaceholder = (() => {
-  const textureValue = new DataTexture(
-    new Uint8Array([128, 128, 128, 255]),
-    1,
-    1,
-    RGBAFormat,
-    UnsignedByteType,
-  );
-  textureValue.needsUpdate = true;
-  return configureMilkdropTexture(textureValue);
-})();
-
-const sharedMilkdropNativeNoiseTexture = configureMilkdropTexture(
-  createMilkdropNoiseTexture(),
-);
-const sharedMilkdropNativeNoiseVolumeAtlasTexture = configureMilkdropTexture(
-  createMilkdropNoiseVolumeAtlasTexture(),
-);
-
 export function resolveTextureUrl(fileName: string) {
   const baseUrl =
     typeof import.meta.env.BASE_URL === 'string'
@@ -131,6 +111,16 @@ export function configureMilkdropTexture(
   }
   return textureValue;
 }
+
+const sharedMilkdropTextureCache = new Map<string, Texture>();
+const milkdropTextureLoader = new TextureLoader();
+const sharedMilkdropNativeNoiseTexture = configureMilkdropTexture(
+  createMilkdropNoiseTexture(),
+);
+const sharedMilkdropNativeNoiseVolumeAtlasTexture = configureMilkdropTexture(
+  createMilkdropNoiseVolumeAtlasTexture(),
+);
+const sharedMilkdropTexturePlaceholder = sharedMilkdropNativeNoiseTexture;
 
 export function loadMilkdropTexture(fileName: string, colorTexture = false) {
   const loaded = milkdropTextureLoader.load(resolveTextureUrl(fileName));
@@ -155,17 +145,70 @@ export function getSharedMilkdropTexturePlaceholder() {
 }
 
 const shared3DPlaceholderRed = (() => {
-  const tex = new Data3DTexture(new Uint8Array([128]), 1, 1, 1);
+  const atlasData = buildMilkdropNoiseVolumeAtlasData();
+  const sliceSize = MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE;
+  const sliceCount = AUX_TEXTURE_ATLAS_SLICE_COUNT;
+  const gridSize = AUX_TEXTURE_ATLAS_GRID_SIZE;
+  const atlasSize = gridSize * sliceSize;
+  const volumeData = new Uint8Array(sliceSize * sliceSize * sliceCount);
+
+  for (let z = 0; z < sliceCount; z++) {
+    const tileX = z % gridSize;
+    const tileY = Math.floor(z / gridSize);
+    for (let y = 0; y < sliceSize; y++) {
+      for (let x = 0; x < sliceSize; x++) {
+        const srcIdx =
+          ((tileY * sliceSize + y) * atlasSize + tileX * sliceSize + x) * 4;
+        const dstIdx = z * sliceSize * sliceSize + y * sliceSize + x;
+        volumeData[dstIdx] = atlasData[srcIdx];
+      }
+    }
+  }
+
+  const tex = new Data3DTexture(volumeData, sliceSize, sliceSize, sliceCount);
   tex.format = RedFormat;
   tex.type = UnsignedByteType;
+  tex.wrapS = RepeatWrapping;
+  tex.wrapT = RepeatWrapping;
+  tex.wrapR = RepeatWrapping;
+  tex.minFilter = LinearFilter;
+  tex.magFilter = LinearFilter;
   tex.needsUpdate = true;
   return tex;
 })();
 
 const shared3DPlaceholderRGBA = (() => {
-  const tex = new Data3DTexture(new Uint8Array([128, 128, 128, 255]), 1, 1, 1);
+  const atlasData = buildMilkdropNoiseVolumeAtlasData();
+  const sliceSize = MILKDROP_NOISE_VOLUME_ATLAS_SLICE_SIZE;
+  const sliceCount = AUX_TEXTURE_ATLAS_SLICE_COUNT;
+  const gridSize = AUX_TEXTURE_ATLAS_GRID_SIZE;
+  const atlasSize = gridSize * sliceSize;
+  const volumeData = new Uint8Array(sliceSize * sliceSize * sliceCount * 4);
+
+  for (let z = 0; z < sliceCount; z++) {
+    const tileX = z % gridSize;
+    const tileY = Math.floor(z / gridSize);
+    for (let y = 0; y < sliceSize; y++) {
+      for (let x = 0; x < sliceSize; x++) {
+        const srcIdx =
+          ((tileY * sliceSize + y) * atlasSize + tileX * sliceSize + x) * 4;
+        const dstIdx = (z * sliceSize * sliceSize + y * sliceSize + x) * 4;
+        volumeData[dstIdx] = atlasData[srcIdx];
+        volumeData[dstIdx + 1] = atlasData[srcIdx + 1];
+        volumeData[dstIdx + 2] = atlasData[srcIdx + 2];
+        volumeData[dstIdx + 3] = atlasData[srcIdx + 3];
+      }
+    }
+  }
+
+  const tex = new Data3DTexture(volumeData, sliceSize, sliceSize, sliceCount);
   tex.format = RGBAFormat;
   tex.type = UnsignedByteType;
+  tex.wrapS = RepeatWrapping;
+  tex.wrapT = RepeatWrapping;
+  tex.wrapR = RepeatWrapping;
+  tex.minFilter = LinearFilter;
+  tex.magFilter = LinearFilter;
   tex.needsUpdate = true;
   return tex;
 })();
@@ -471,12 +514,17 @@ export function createCompositeUniforms(
     warpTextureOffset: uniform(new Vector2(0, 0)),
     warpTextureVolumeSliceZ: uniform(0),
     signalBass: uniform(0),
+    signalBassAtt: uniform(0),
     signalMid: uniform(0),
+    signalMidAtt: uniform(0),
     signalTreb: uniform(0),
+    signalTrebAtt: uniform(0),
     signalBeat: uniform(0),
     signalBeatPulse: uniform(0),
     signalEnergy: uniform(0),
     signalTime: uniform(0),
+    perPixelQ: Array.from({ length: 32 }, () => uniform(0)),
+    perPixelT: Array.from({ length: 32 }, () => uniform(0)),
     aspect: uniform(1),
     decay: uniform(0.98),
     texelSize: uniform(new Vector2(1, 1)),

@@ -64,7 +64,7 @@ export function WorkspaceStagePanel({
             </div>
           </div>
         ) : null}
-        <WorkspaceToast toast={ui.toast} onDismiss={ui.dismissToast} />
+        <WorkspaceToast toast={ui.toast} />
       </StimsStageFrame>
     </section>
   );

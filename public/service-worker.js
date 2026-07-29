@@ -3,13 +3,13 @@
 // Hashed assets (/assets/*) are immutable with 1-year Cache-Control
 // and are served from browser HTTP cache — no SW intervention needed.
 
-const CACHE_NAME = 'stims-shell-v7';
+const CACHE_NAME = 'stims-shell-v8';
 // Keep this list to what the shell needs to paint offline. The full preset
 // catalog (~1.5 MB) is deliberately absent: the app loads a 20 KB starter
 // catalog first and defers the full one to a background task, and precaching
 // it here would pull the whole payload during install anyway. The fetch
 // handler still caches it opportunistically once that background load runs.
-const SHELL_ASSETS = [
+const CORE_SHELL_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
@@ -17,6 +17,9 @@ const SHELL_ASSETS = [
   '/icons/favicon-32.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+];
+
+const OPTIONAL_SHELL_ASSETS = [
   '/screenshots/hero-narrow.png',
   '/screenshots/hero-wide.png',
   '/milkdrop-presets/previews/eos-dark-side-of-the-moon-clean-mix.png',
@@ -28,11 +31,12 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
-      // Cache each asset independently. cache.addAll() is atomic, so a single
-      // renamed or missing file would abort install and leave the worker
-      // permanently unactivated — losing offline support for everything else.
+      // Activation must not advertise offline support unless the actual app
+      // shell is complete. Marketing images and preset previews remain
+      // best-effort so a renamed decorative asset cannot strand an update.
+      await cache.addAll(CORE_SHELL_ASSETS);
       await Promise.all(
-        SHELL_ASSETS.map((asset) =>
+        OPTIONAL_SHELL_ASSETS.map((asset) =>
           cache.add(asset).catch(() => {
             // A missing optional asset must not block activation.
           }),
@@ -84,7 +88,14 @@ self.addEventListener('fetch', (event) => {
         // Only cache non-HTML or navigation responses when successful
         if (networkResponse.ok && (request.mode === 'navigate' || !isHtml)) {
           const cache = await caches.open(CACHE_NAME);
-          cache.put(request, networkResponse.clone());
+          // Keep the worker alive until the write completes; otherwise the
+          // browser may terminate it after returning the network response.
+          try {
+            await cache.put(request, networkResponse.clone());
+          } catch (_cacheWriteError) {
+            // Runtime caching is opportunistic. A quota or storage failure
+            // must never turn a successful network response into a 503.
+          }
         }
         return networkResponse;
       } catch (_networkError) {

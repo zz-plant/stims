@@ -37,17 +37,9 @@ Stims now centers on a single browser-native MilkDrop-inspired visualizer. Older
 - [`FRONTEND_PERFORMANCE_BOTTLENECKS.md`](./FRONTEND_PERFORMANCE_BOTTLENECKS.md)
 - [`agents/agent-handoffs.md`](./agents/agent-handoffs.md)
 
-## Historical or transitional docs
+## Archived docs
 
-The following docs still describe the retired multi-toy model. Keep them only as archival context unless they are actively rewritten:
-
-- [`TOY_DEVELOPMENT.md`](./TOY_DEVELOPMENT.md)
-- [`TOY_TESTING_SPEC.md`](./TOY_TESTING_SPEC.md)
-- [`COMPETITOR_BATTLECARD.md`](./COMPETITOR_BATTLECARD.md)
-- [`SEO_AUDIT.md`](./SEO_AUDIT.md)
-- [`USER_JOURNEY_CRITIQUE.md`](./USER_JOURNEY_CRITIQUE.md)
-- [`USABILITY_AUDIT.md`](./USABILITY_AUDIT.md)
-- [`UX_AUDIT_2026-02.md`](./UX_AUDIT_2026-02.md)
+Docs in [`archive/`](./archive/) are historical audits and assessments that predate the MilkDrop-led repositioning. Kept for reference purposes only.
 
 ## README synchronization
 

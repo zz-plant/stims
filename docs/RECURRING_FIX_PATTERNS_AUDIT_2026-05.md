@@ -28,12 +28,12 @@ Across the last 400 commits, **~10% of non-merge commits are fixes or regression
 - `Update parity backlog for sampler and line-width fixes`
 
 **Files most touched:**
-- `assets/js/milkdrop/feedback-manager-shared.ts` (3×)
-- `assets/js/milkdrop/feedback-manager-webgpu.ts` (3×)
-- `assets/js/milkdrop/renderer-adapter.ts` (2×)
-- `assets/js/milkdrop/renderer-adapter-webgpu.ts`
-- `assets/js/milkdrop/backend-behavior.ts`
-- `assets/js/milkdrop/compiler/gpu-descriptor-plan.ts`
+- `src/js/milkdrop/feedback-manager-shared.ts` (3×)
+- `src/js/milkdrop/feedback-manager-webgpu.ts` (3×)
+- `src/js/milkdrop/renderer-adapter.ts` (2×)
+- `src/js/milkdrop/renderer-adapter-webgpu.ts`
+- `src/js/milkdrop/backend-behavior.ts`
+- `src/js/milkdrop/compiler/gpu-descriptor-plan.ts`
 
 **What we keep getting wrong:**
 - **Alpha blending order and feedback color math** are repeatedly tweaked. The interaction between WebGPU TSL shaders and the legacy MilkDrop feedback pipeline is subtle; small changes in resolution scale or target size break parity.
@@ -42,7 +42,7 @@ Across the last 400 commits, **~10% of non-merge commits are fixes or regression
 
 **Cross-reference:**
 - `docs/FRONTEND_PERFORMANCE_BOTTLENECKS.md` flags per-frame VM/renderer data reconstruction and blend-state cloning as hotspots. The fixes above are the *functional* counterpart: the same code paths that are slow are also buggy.
-- `docs/CODE_REVIEW_PATTERNS_2026-03.md` calls out "correctness in edge cases" and "bucket/average math mismatches." The parity fixes are exactly that—edge-case math mismatches between backends.
+- `docs/archive/CODE_REVIEW_PATTERNS_2026-03.md` calls out "correctness in edge cases" and "bucket/average math mismatches." The parity fixes are exactly that—edge-case math mismatches between backends.
 
 ---
 
@@ -58,14 +58,14 @@ Across the last 400 commits, **~10% of non-merge commits are fixes or regression
 - `Fix immersive demo startup in agent integration harness`
 
 **Files most touched:**
-- `assets/js/core/renderer-setup.ts` (3×)
-- `assets/js/core/renderer-capabilities.ts` (2×)
-- `assets/js/core/services/render-service.ts` (2×)
-- `assets/js/core/renderer-init-timeout.ts`
-- `assets/js/core/renderer-plan.ts`
-- `assets/js/core/renderer-query-override.ts`
-- `assets/js/core/audio-handler.ts`
-- `assets/js/milkdrop/runtime/backend-fallback.ts`
+- `src/js/core/renderer-setup.ts` (3×)
+- `src/js/core/renderer-capabilities.ts` (2×)
+- `src/js/core/services/render-service.ts` (2×)
+- `src/js/core/renderer-init-timeout.ts`
+- `src/js/core/renderer-plan.ts`
+- `src/js/core/renderer-query-override.ts`
+- `src/js/core/audio-handler.ts`
+- `src/js/milkdrop/runtime/backend-fallback.ts`
 
 **What we keep getting wrong:**
 - **Fallback chains are deep and brittle.** WebGPU → WebGL → error-state transitions involve timeout logic, capability probing, and render-scale propagation. A change in one layer (e.g., timeout duration) breaks another (e.g., pooled renderer reuse).
@@ -74,7 +74,7 @@ Across the last 400 commits, **~10% of non-merge commits are fixes or regression
 
 **Cross-reference:**
 - `docs/CODE_REVIEW_PATTERNS_2026-03.md` explicitly calls out "audio lifecycle and permission handling" as a recurring review theme. The analyser worklet fix is a direct instance.
-- `docs/FRONTEND_ANTI_PATTERNS_2026-03.md` notes "event-listener lifecycle leak risk." While not identical, the fallback/timeout fixes share the same root cause: stateful lifecycle code with implicit ordering assumptions.
+- `docs/archive/FRONTEND_ANTI_PATTERNS_2026-03.md` notes "event-listener lifecycle leak risk." While not identical, the fallback/timeout fixes share the same root cause: stateful lifecycle code with implicit ordering assumptions.
 
 ---
 
@@ -106,7 +106,7 @@ Across the last 400 commits, **~10% of non-merge commits are fixes or regression
 
 **Cross-reference:**
 - `docs/CODE_REVIEW_PATTERNS_2026-03.md` recommends "narrow regression tests for known weak spots." The regression tests being *added* in fix commits (blend alpha, wave alias) prove the point: we are playing catch-up.
-- `docs/OUTSTANDING_ISSUES_AUDIT_2026-03.md` lists "toy smoke coverage expansion" as open. The test-fix commits show this is still a live issue.
+- `docs/archive/OUTSTANDING_ISSUES_AUDIT_2026-03.md` lists "toy smoke coverage expansion" as open. The test-fix commits show this is still a live issue.
 
 ---
 
@@ -117,10 +117,10 @@ Across the last 400 commits, **~10% of non-merge commits are fixes or regression
 - `Fix Codex session state and MCP dev guidance`
 
 **Files:**
-- `assets/js/frontend/App.tsx`
-- `assets/js/frontend/workspace-hooks.ts`
-- `assets/js/frontend/workspace-shell-hooks.ts`
-- `assets/js/frontend/url-state.ts`
+- `src/js/frontend/App.tsx`
+- `src/js/frontend/workspace-hooks.ts`
+- `src/js/frontend/workspace-shell-hooks.ts`
+- `src/js/frontend/url-state.ts`
 
 **What we keep getting wrong:**
 - **React workspace state and the imperative MilkDrop runtime are not fully decoupled.** Tool toggles and toast notifications interact with session state that is also manipulated by the engine adapter. Race-y or double-fire behavior results.
@@ -160,17 +160,17 @@ This means **a significant fraction of fixes are follow-ups to AI-generated revi
 ### 3.2 The Same Files Keep Breaking
 
 **Top files in *all* commits (not just fixes):**
-- `assets/js/milkdrop/runtime.ts` (31×)
+- `src/js/milkdrop/runtime.ts` (31×)
 - `tests/milkdrop-renderer-adapter.test.ts` (29×)
-- `assets/js/milkdrop/feedback-manager-shared.ts` (18×)
-- `assets/js/milkdrop/feedback-manager-webgpu.ts` (17×)
-- `assets/js/milkdrop/renderer-adapter.ts` (15×)
+- `src/js/milkdrop/feedback-manager-shared.ts` (18×)
+- `src/js/milkdrop/feedback-manager-webgpu.ts` (17×)
+- `src/js/milkdrop/renderer-adapter.ts` (15×)
 
 These are the hottest files in the repo. They are also the ones that keep needing fixes. **High churn + high fix density = instability cluster.**
 
 ### 3.3 Fixes Touch More Test Files Than Source Files
 
-In fix commits, **41 file changes were in `tests/` vs. 31 in `assets/js/milkdrop/` and 12 in `assets/js/core/`**. This suggests:
+In fix commits, **41 file changes were in `tests/` vs. 31 in `src/js/milkdrop/` and 12 in `src/js/core/`**. This suggests:
 - Tests are brittle and require co-fixing.
 - Or: fixes are often *validated* by test changes, which is good, but the ratio implies test maintenance overhead is high.
 
@@ -215,12 +215,12 @@ In fix commits, **41 file changes were in `tests/` vs. 31 in `assets/js/milkdrop
 
 Add a PR checklist for the high-churn areas:
 
-> **If touching `assets/js/milkdrop/feedback-manager-*` or `renderer-adapter*`**:
+> **If touching `src/js/milkdrop/feedback-manager-*` or `renderer-adapter*`**:
 > - [ ] WebGL and WebGPU paths both tested with reference presets?
 > - [ ] No hardcoded resolution scales or target sizes without comment?
 > - [ ] Blend alpha order verified against projectM baseline?
 >
-> **If touching `assets/js/core/renderer-*` or `audio-handler.ts`**:
+> **If touching `src/js/core/renderer-*` or `audio-handler.ts`**:
 > - [ ] Fallback chain tested with WebGPU disabled?
 > - [ ] renderScale propagation verified end-to-end?
 > - [ ] Audio worklet initialization validated on fallback path?
@@ -243,10 +243,10 @@ A lightweight dashboard (even a markdown table updated monthly) keeps the qualit
 
 ## 6. References
 
-- `docs/CODE_REVIEW_PATTERNS_2026-03.md`
-- `docs/FRONTEND_ANTI_PATTERNS_2026-03.md`
+- `docs/archive/CODE_REVIEW_PATTERNS_2026-03.md`
+- `docs/archive/FRONTEND_ANTI_PATTERNS_2026-03.md`
 - `docs/FRONTEND_PERFORMANCE_BOTTLENECKS.md`
-- `docs/OUTSTANDING_ISSUES_AUDIT_2026-03.md`
+- `docs/archive/OUTSTANDING_ISSUES_AUDIT_2026-03.md`
 - `docs/ARCHITECTURE.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 - `docs/MILKDROP_PROJECTM_PARITY_PLAN.md`

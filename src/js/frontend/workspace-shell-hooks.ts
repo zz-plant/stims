@@ -362,6 +362,7 @@ export function useWorkspaceShellOrchestration({
 
   const handleAudioStart = async (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
+    deviceId?: string,
   ) => {
     if (audioStartInProgressRef.current) return;
     audioStartInProgressRef.current = true;
@@ -421,9 +422,16 @@ export function useWorkspaceShellOrchestration({
 
         let permissionStream: MediaStream;
         try {
-          permissionStream = await navigator.mediaDevices.getUserMedia(
-            DEFAULT_MICROPHONE_CONSTRAINTS,
-          );
+          const micConstraints: MediaStreamConstraints = deviceId
+            ? {
+                audio: {
+                  ...(DEFAULT_MICROPHONE_CONSTRAINTS.audio as object),
+                  deviceId: { exact: deviceId },
+                },
+              }
+            : DEFAULT_MICROPHONE_CONSTRAINTS;
+          permissionStream =
+            await navigator.mediaDevices.getUserMedia(micConstraints);
         } catch (error) {
           if (inApp) {
             const demoRouteState = {

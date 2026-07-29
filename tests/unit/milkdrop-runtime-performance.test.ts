@@ -74,6 +74,41 @@ test('buildBlendStateForRender reuses the active blend payload', () => {
   expect(result?.alpha).toBeCloseTo(0.5, 6);
 });
 
+test('buildBlendStateForRender evaluates workload only for eligible blends', () => {
+  const blendState = {
+    mode: 'gpu' as const,
+    previousFrame: { presetId: 'signal-bloom' } as never,
+    alpha: 1,
+  };
+  let workloadReads = 0;
+  const getCurrentFrameWorkload = () => {
+    workloadReads += 1;
+    return 480;
+  };
+  const common = {
+    shaderQuality: 'balanced',
+    blendState,
+    now: 500,
+    blendEndAtMs: 1500,
+    blendDuration: 2,
+    getCurrentFrameWorkload,
+    maxWorkload: 900,
+  } as unknown as Parameters<typeof buildBlendStateForRender>[0];
+
+  const active = buildBlendStateForRender({
+    ...common,
+    transitionMode: 'blend',
+  });
+  const inactive = buildBlendStateForRender({
+    ...common,
+    transitionMode: 'cut',
+  });
+
+  expect(active).toBe(blendState);
+  expect(inactive).toBeNull();
+  expect(workloadReads).toBe(1);
+});
+
 test('presentation controller throttles agent debug snapshot refreshes', () => {
   const setDebugSnapshotCalls: Array<{ tool: string; snapshot: unknown }> = [];
 

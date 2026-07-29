@@ -17,7 +17,15 @@ import {
   type WaveBuilderState,
 } from './shared';
 
-const MAX_CUSTOM_WAVE_SAMPLES = 1024;
+const BALANCED_CUSTOM_WAVE_SAMPLE_LIMIT = 1024;
+const HIGH_DETAIL_CUSTOM_WAVE_SAMPLE_LIMIT = 2048;
+const HIGH_DETAIL_WAVE_THRESHOLD = 1.5;
+
+export function getCustomWaveSampleLimit(detailScale: number) {
+  return detailScale >= HIGH_DETAIL_WAVE_THRESHOLD
+    ? HIGH_DETAIL_CUSTOM_WAVE_SAMPLE_LIMIT
+    : BALANCED_CUSTOM_WAVE_SAMPLE_LIMIT;
+}
 
 const toRendererWaveX = (value: number) => (value - 0.5) * 2;
 const toRendererWaveY = (value: number) => (0.5 - value) * 2;
@@ -151,7 +159,7 @@ export function buildCustomWaves({
     const sampleCount = clamp(
       Math.round((frameLocals.samples ?? 64) * detailScale),
       8,
-      MAX_CUSTOM_WAVE_SAMPLES,
+      getCustomWaveSampleLimit(detailScale),
     );
     const centerX = ((frameLocals.x ?? 0.5) - 0.5) * 2;
     const centerY = (0.5 - (frameLocals.y ?? 0.5)) * 2;

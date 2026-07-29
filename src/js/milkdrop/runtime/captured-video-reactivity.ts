@@ -8,7 +8,7 @@ type EnvelopeConfig = {
   releaseMs: number;
 };
 
-const DEFAULT_CAPTURED_VIDEO_REACTIVE_STATE: MilkdropCapturedVideoReactiveState =
+export const DEFAULT_CAPTURED_VIDEO_REACTIVE_STATE: MilkdropCapturedVideoReactiveState =
   {
     bassPulse: 0,
     midMotion: 0,
@@ -60,6 +60,37 @@ function resolveBandLevel(
   return clamp(Math.max(raw ?? 0, (accent ?? 0) * bias), 0, 1.5);
 }
 
+export type CapturedVideoSignals = Pick<
+  MilkdropRuntimeSignals,
+  | 'time'
+  | 'deltaMs'
+  | 'bass'
+  | 'bassAtt'
+  | 'mid'
+  | 'midsAtt'
+  | 'midAtt'
+  | 'treble'
+  | 'trebleAtt'
+  | 'weightedEnergy'
+  | 'beatPulse'
+>;
+
+export function updateCapturedVideoReactivityIfReady(
+  capturedVideoReady: boolean,
+  tracker: {
+    update: (args: {
+      signals: CapturedVideoSignals;
+    }) => MilkdropCapturedVideoReactiveState;
+  },
+  signals: CapturedVideoSignals,
+  current = DEFAULT_CAPTURED_VIDEO_REACTIVE_STATE,
+) {
+  if (!capturedVideoReady) {
+    return current;
+  }
+  return tracker.update({ signals });
+}
+
 export function createMilkdropCapturedVideoReactivityTracker() {
   let state = { ...DEFAULT_CAPTURED_VIDEO_REACTIVE_STATE };
 
@@ -70,20 +101,7 @@ export function createMilkdropCapturedVideoReactivityTracker() {
     update({
       signals,
     }: {
-      signals: Pick<
-        MilkdropRuntimeSignals,
-        | 'time'
-        | 'deltaMs'
-        | 'bass'
-        | 'bassAtt'
-        | 'mid'
-        | 'midsAtt'
-        | 'midAtt'
-        | 'treble'
-        | 'trebleAtt'
-        | 'weightedEnergy'
-        | 'beatPulse'
-      >;
+      signals: CapturedVideoSignals;
     }): MilkdropCapturedVideoReactiveState {
       const time = signals.time ?? 0;
       const deltaMs = clamp(signals.deltaMs ?? 1000 / 60, 0, 80);

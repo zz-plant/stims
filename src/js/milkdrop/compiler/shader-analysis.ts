@@ -1364,7 +1364,8 @@ function applyShaderProgramHeuristicLine({
 // which is fixed for the lifetime of a preset. These caches hold that half so
 // a preset with pixel-shader sections is tokenised once instead of 60x/sec.
 // Only the expression *evaluation* below stays per-frame, since it reads the
-// live `env`. Cached statement nodes are never mutated by their consumers.
+// live `env`. Cached statement nodes are frozen before exposure so one
+// consumer cannot corrupt every later analysis of the same source.
 const MAX_CACHED_SHADER_SOURCES = 64;
 const MAX_CACHED_SHADER_LINES = 4096;
 
@@ -1375,6 +1376,16 @@ type ShaderSourcePrep = {
 
 const shaderSourcePrepCache = new Map<string, ShaderSourcePrep>();
 const shaderStatementCache = new Map<string, MilkdropShaderStatement | null>();
+
+function freezeCachedValue<T>(value: T): T {
+  if (!value || typeof value !== 'object' || Object.isFrozen(value)) {
+    return value;
+  }
+  for (const nestedValue of Object.values(value)) {
+    freezeCachedValue(nestedValue);
+  }
+  return Object.freeze(value);
+}
 
 function evictOldest(cache: Map<string, unknown>, limit: number) {
   while (cache.size > limit) {
@@ -1410,7 +1421,7 @@ function parseShaderStatementCached(line: string) {
   if (shaderStatementCache.has(line)) {
     return shaderStatementCache.get(line) ?? null;
   }
-  const parsed = parseMilkdropShaderStatement(line);
+  const parsed = freezeCachedValue(parseMilkdropShaderStatement(line));
   shaderStatementCache.set(line, parsed);
   evictOldest(shaderStatementCache, MAX_CACHED_SHADER_LINES);
   return parsed;

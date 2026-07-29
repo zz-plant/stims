@@ -220,6 +220,79 @@ describe('createAdaptiveQualityController', () => {
     expect(['steady', 'recovering']).toContain(recovered.adaptation);
   });
 
+  test('degrades when presentation cadence misses budget despite cheap CPU work', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgl',
+      capabilities: null,
+    });
+
+    for (let index = 0; index < 24; index += 1) {
+      controller.recordFrame({
+        frameMs: 5,
+        cadenceMs: 28,
+        phases: { renderMs: 2 },
+      });
+    }
+
+    const state = controller.getState();
+    expect(state.qualityStep).toBeGreaterThan(2);
+    expect(state.averageFrameMs).toBeCloseTo(5, 6);
+    expect(state.averageCadenceMs).toBeCloseTo(28, 6);
+  });
+
+  test('uses supplied GPU duration to detect render pressure', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: {
+        preferredCanvasFormat: 'bgra8unorm',
+        performanceTier: 'high-end',
+        recommendedQualityPreset: 'hi-fi',
+        workers: {
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+        },
+        optimization: {
+          timestampQuery: true,
+          shaderF16: true,
+          subgroups: true,
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+          workerOffscreenPipeline: true,
+        },
+        features: {
+          bgra8unormStorage: true,
+          float32Blendable: true,
+          float32Filterable: true,
+          shaderF16: true,
+          subgroups: true,
+          timestampQuery: true,
+        },
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1024,
+          maxStorageBufferBindingSize: 4294967292,
+          maxTextureDimension2D: 16384,
+        },
+      },
+    });
+
+    for (let index = 0; index < 24; index += 1) {
+      controller.recordFrame({
+        frameMs: 5,
+        cadenceMs: 16,
+        gpuMs: 15,
+        phases: { renderMs: 2 },
+      });
+    }
+
+    const state = controller.getState();
+    expect(state.qualityStep).toBeGreaterThan(0);
+    expect(state.averageRenderMs).toBeCloseTo(2, 6);
+    expect(state.averageGpuMs).toBeCloseTo(15, 6);
+  });
+
   test('starts one step down when high-end webgpu devices prefer balanced quality', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgpu',

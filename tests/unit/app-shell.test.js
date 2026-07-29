@@ -94,13 +94,15 @@ describe('home shell user journeys', () => {
     const originalCancelIdleCallback = globalThis.cancelIdleCallback;
     console.warn = warnMock;
     globalThis.requestIdleCallback = (callback) =>
-      setTimeout(
-        () =>
-          callback({
-            didTimeout: false,
-            timeRemaining: () => 0,
-          }),
-        20,
+      Number(
+        setTimeout(
+          () =>
+            callback({
+              didTimeout: false,
+              timeRemaining: () => 0,
+            }),
+          20,
+        ),
       );
     globalThis.cancelIdleCallback = (handle) => clearTimeout(handle);
 

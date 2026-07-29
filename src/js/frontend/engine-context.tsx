@@ -58,6 +58,7 @@ export interface EngineContextValue {
   handleShufflePreset: () => void;
   handleAudioStart: (
     source: 'demo' | 'microphone' | 'tab' | 'youtube' | 'file',
+    deviceId?: string,
   ) => Promise<void>;
   handleAudioStop: () => void;
   loadRecentYouTubeVideo: (videoId: string, onLoaded?: () => void) => void;

@@ -49,6 +49,27 @@ describe('milkdrop compiler shader analysis', () => {
     expect(second.controls.rotation).not.toBe(first.controls.rotation);
   });
 
+  test('does not let consumers corrupt a cached shader statement', () => {
+    clearShaderAnalysisCaches();
+    const source = 'rot = bass * 0.25';
+
+    const first = extractShaderControls(source, { bass: 0.4 });
+    const statement = first.statements[0];
+    expect(statement).toBeDefined();
+    if (!statement) {
+      throw new Error('Expected the shader statement to parse.');
+    }
+
+    expect(Reflect.set(statement, 'target', 'corrupted')).toBe(false);
+    expect(Reflect.set(statement.expression, 'type', 'literal')).toBe(false);
+
+    const second = extractShaderControls(source, { bass: 0.8 });
+    expect(second.statements[0]).toBe(statement);
+    expect(second.statements[0]?.target).toBe('rot');
+    expect(second.statements[0]?.expression.type).toBe('binary');
+    expect(second.controls.rotation).toBeCloseTo(0.2, 6);
+  });
+
   test('keeps shared scalar control aliases aligned across extraction paths', () => {
     const analysis = extractShaderControls(
       `

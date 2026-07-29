@@ -1,7 +1,44 @@
 import { describe, expect, test } from 'bun:test';
-import { createMilkdropCapturedVideoReactivityTracker } from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
+import * as capturedVideoReactivity from '../../src/js/milkdrop/runtime/captured-video-reactivity.ts';
+
+const { createMilkdropCapturedVideoReactivityTracker } =
+  capturedVideoReactivity;
 
 describe('milkdrop captured video reactivity', () => {
+  test('skips reactive DSP while no captured video is ready', () => {
+    const resolveReactivity = (
+      capturedVideoReactivity as typeof capturedVideoReactivity & {
+        updateCapturedVideoReactivityIfReady?: (
+          capturedVideoReady: boolean,
+          tracker: {
+            update: (args: { signals: object }) => { bassPulse: number };
+          },
+          signals: object,
+          current: { bassPulse: number },
+        ) => { bassPulse: number };
+      }
+    ).updateCapturedVideoReactivityIfReady;
+    expect(resolveReactivity).toBeFunction();
+    if (!resolveReactivity) return;
+
+    const current = { bassPulse: 0 };
+    let updateCalls = 0;
+    const result = resolveReactivity(
+      false,
+      {
+        update: () => {
+          updateCalls += 1;
+          return { bassPulse: 1 };
+        },
+      },
+      {},
+      current,
+    );
+
+    expect(updateCalls).toBe(0);
+    expect(result).toBe(current);
+  });
+
   test('holds energy on release longer than it rises on attack', () => {
     const tracker = createMilkdropCapturedVideoReactivityTracker();
 

@@ -331,6 +331,7 @@ export function buildPost({
         ? preset.ir.programs.perPixel.statements.map((s) => ({
             target: s.target,
             source: s.source,
+            expression: s.expression,
           }))
         : null,
   };

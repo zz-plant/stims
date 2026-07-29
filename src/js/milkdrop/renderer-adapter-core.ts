@@ -9,6 +9,7 @@ import {
   MeshBasicMaterial,
   Vector2,
 } from 'three';
+import { SharedAudioGpuTextureManager } from '../core/audio-gpu-texture.ts';
 import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
 import {
   type MilkdropBackendBehavior,
@@ -196,6 +197,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
   private readonly scene: Scene;
   private readonly camera: Camera;
   private readonly renderer: RendererLike | null;
+  private readonly audioTexture = new SharedAudioGpuTextureManager();
   private readonly root = new Group();
   private readonly background = withRenderOrder(
     markAlwaysOnscreen(
@@ -1217,6 +1219,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
 
   render(payload: MilkdropRenderPayload) {
     try {
+      this.audioTexture.update(
+        payload.frameState.signals.frequencyData,
+        payload.frameState.signals.waveformData,
+      );
       const backgroundMaterial = this.background.material as MeshBasicMaterial;
       setMaterialColor(backgroundMaterial, payload.frameState.background, 1);
 
@@ -1263,6 +1269,10 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     }
   }
 
+  getAudioTexture(): Texture | null {
+    return this.audioTexture.getTexture();
+  }
+
   dispose() {
     clearGroup(this.mainWaveGroup);
     clearGroup(this.customWaveGroup);
@@ -1287,6 +1297,7 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     disposeMaterial(this.meshLines.material);
     this.batcher?.dispose();
     this.feedback?.dispose();
+    this.audioTexture.dispose();
     this.scene.remove(this.root);
     this.sceneOwner?.dispose();
   }

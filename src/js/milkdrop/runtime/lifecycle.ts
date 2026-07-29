@@ -28,6 +28,8 @@ export function buildBlendStateForRender({
   transitionMode,
   shaderQuality,
   canBlendCurrentFrame,
+  getCurrentFrameWorkload,
+  maxWorkload = Number.POSITIVE_INFINITY,
   blendState,
   now,
   blendEndAtMs,
@@ -35,7 +37,9 @@ export function buildBlendStateForRender({
 }: {
   transitionMode: 'blend' | 'cut';
   shaderQuality: 'low' | 'balanced' | 'high';
-  canBlendCurrentFrame: boolean;
+  canBlendCurrentFrame?: boolean;
+  getCurrentFrameWorkload?: () => number;
+  maxWorkload?: number;
   blendState: MilkdropBlendState | null;
   now: number;
   blendEndAtMs: number;
@@ -44,10 +48,17 @@ export function buildBlendStateForRender({
   if (
     transitionMode !== 'blend' ||
     shaderQuality === 'low' ||
-    !canBlendCurrentFrame ||
     !blendState ||
     now >= blendEndAtMs
   ) {
+    return null;
+  }
+
+  const canBlend =
+    getCurrentFrameWorkload !== undefined
+      ? getCurrentFrameWorkload() < maxWorkload
+      : Boolean(canBlendCurrentFrame);
+  if (!canBlend) {
     return null;
   }
 

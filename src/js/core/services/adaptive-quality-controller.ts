@@ -16,6 +16,8 @@ export type AdaptiveQualityPhaseTimings = Partial<{
 
 export type AdaptiveQualitySample = {
   frameMs: number;
+  cadenceMs?: number;
+  gpuMs?: number;
   phases?: AdaptiveQualityPhaseTimings;
 };
 
@@ -36,7 +38,9 @@ export type AdaptiveQualityState = AdaptiveQualityMultipliers & {
   qualityStep: number;
   qualityStepCount: number;
   averageFrameMs: number | null;
+  averageCadenceMs: number | null;
   averageRenderMs: number | null;
+  averageGpuMs: number | null;
   sampleCount: number;
   adaptation: 'steady' | 'degraded' | 'recovering' | 'enhanced';
   reasons: string[];
@@ -230,7 +234,9 @@ function buildState({
   frameBudgetMs,
   qualityStep,
   averageFrameMs,
+  averageCadenceMs,
   averageRenderMs,
+  averageGpuMs,
   sampleCount,
   adaptation,
   reasons,
@@ -242,7 +248,9 @@ function buildState({
   frameBudgetMs: number;
   qualityStep: number;
   averageFrameMs: number | null;
+  averageCadenceMs: number | null;
   averageRenderMs: number | null;
+  averageGpuMs: number | null;
   sampleCount: number;
   adaptation: AdaptiveQualityState['adaptation'];
   reasons: string[];
@@ -258,7 +266,9 @@ function buildState({
     qualityStep,
     qualityStepCount: QUALITY_STEPS.length,
     averageFrameMs,
+    averageCadenceMs,
     averageRenderMs,
+    averageGpuMs,
     sampleCount,
     adaptation,
     reasons,
@@ -283,7 +293,9 @@ export function createAdaptiveQualityController({
 
   let qualityStep = heuristic.initialStep;
   let averageFrameMs: number | null = null;
+  let averageCadenceMs: number | null = null;
   let averageRenderMs: number | null = null;
+  let averageGpuMs: number | null = null;
   let sampleCount = 0;
   let consecutiveOverBudget = 0;
   let consecutiveUnderBudget = 0;
@@ -297,7 +309,9 @@ export function createAdaptiveQualityController({
     frameBudgetMs: heuristic.frameBudgetMs,
     qualityStep,
     averageFrameMs,
+    averageCadenceMs,
     averageRenderMs,
+    averageGpuMs,
     sampleCount,
     adaptation,
     reasons: [
@@ -305,7 +319,7 @@ export function createAdaptiveQualityController({
       ...(backend === 'webgpu'
         ? [
             supportsGpuTimestamps
-              ? 'timestamp-query is available for future GPU timing upgrades.'
+              ? 'timestamp-query durations are used when the renderer supplies them.'
               : 'Falling back to coarse CPU frame timing for now.',
           ]
         : []),
@@ -321,7 +335,9 @@ export function createAdaptiveQualityController({
       frameBudgetMs: heuristic.frameBudgetMs,
       qualityStep,
       averageFrameMs,
+      averageCadenceMs,
       averageRenderMs,
+      averageGpuMs,
       sampleCount,
       adaptation,
       reasons: state.reasons,
@@ -332,16 +348,36 @@ export function createAdaptiveQualityController({
 
   return {
     getState: () => state,
-    recordFrame: ({ frameMs, phases }: AdaptiveQualitySample) => {
+    recordFrame: ({
+      frameMs,
+      cadenceMs,
+      gpuMs,
+      phases,
+    }: AdaptiveQualitySample) => {
       if (!Number.isFinite(frameMs)) {
         return state;
       }
 
       sampleCount += 1;
       averageFrameMs = updateEma(averageFrameMs, frameMs);
+      if (
+        typeof cadenceMs === 'number' &&
+        Number.isFinite(cadenceMs) &&
+        cadenceMs > 0
+      ) {
+        averageCadenceMs = updateEma(averageCadenceMs, cadenceMs);
+      }
       const renderMs = phases?.renderMs;
       if (typeof renderMs === 'number' && Number.isFinite(renderMs)) {
         averageRenderMs = updateEma(averageRenderMs, renderMs);
+      }
+      if (
+        supportsGpuTimestamps &&
+        typeof gpuMs === 'number' &&
+        Number.isFinite(gpuMs) &&
+        gpuMs >= 0
+      ) {
+        averageGpuMs = updateEma(averageGpuMs, gpuMs);
       }
 
       if (sampleCount < MIN_WARMUP_SAMPLES) {
@@ -355,16 +391,25 @@ export function createAdaptiveQualityController({
       const renderPressure =
         averageRenderMs !== null &&
         averageRenderMs > heuristic.frameBudgetMs * 0.82;
+      const gpuPressure =
+        averageGpuMs !== null && averageGpuMs > heuristic.frameBudgetMs * 0.82;
       const framePressure =
         averageFrameMs !== null &&
         averageFrameMs > heuristic.frameBudgetMs * 1.08;
+      const cadencePressure =
+        averageCadenceMs !== null &&
+        averageCadenceMs > heuristic.frameBudgetMs * 1.08;
       const hasHeadroom =
         averageFrameMs !== null &&
         averageFrameMs < heuristic.frameBudgetMs * 0.72 &&
+        (averageCadenceMs === null ||
+          averageCadenceMs < heuristic.frameBudgetMs * 0.9) &&
         (averageRenderMs === null ||
-          averageRenderMs < heuristic.frameBudgetMs * 0.55);
+          averageRenderMs < heuristic.frameBudgetMs * 0.55) &&
+        (averageGpuMs === null ||
+          averageGpuMs < heuristic.frameBudgetMs * 0.55);
 
-      if (renderPressure || framePressure) {
+      if (renderPressure || gpuPressure || framePressure || cadencePressure) {
         consecutiveOverBudget += 1;
         consecutiveUnderBudget = 0;
       } else if (hasHeadroom) {
@@ -387,7 +432,11 @@ export function createAdaptiveQualityController({
           ...state,
           reasons: [
             ...heuristic.reasons,
-            'Coarse frame timing pushed the controller below the baseline budget.',
+            gpuPressure
+              ? 'GPU timing pushed the controller below the baseline budget.'
+              : cadencePressure
+                ? 'Presentation cadence pushed the controller below the baseline budget.'
+                : 'CPU frame timing pushed the controller below the baseline budget.',
           ],
         };
         return publish();

@@ -1,49 +1,45 @@
 # Competitor battlecard (Stims)
 
-> Updated 2026-03 for the MilkDrop-led repositioning. The external angle bank below is aligned with the current `/milkdrop/` flagship product model. Internal competitor comparisons remain strategy-only context.
+> Updated 2026-07 with modern WebGPU, stem-aware audio analysis, and creator export competitive research.
 
 This doc separates **internal strategy content** from **external-safe messaging** so teams can reuse the same research without leaking direct competitor framing into public copy.
 
 ## Internal use: competitor battlecard table
 
-Use this table for positioning, GTM planning, and sales/support alignment.
+Use this table for positioning, GTM planning, and product alignment.
 
 | Competitor | Segment | Primary buyer/user | Strongest claim | Weakest point vs Stims |
 | --- | --- | --- | --- | --- |
-| ShaderToy | Browser shader playground / creative coding community | Creative coders, shader artists, technical hobbyists | Largest ecosystem for real-time GLSL experimentation and remixing | Not a guided sensory-first toy library; higher technical barrier and less onboarding for audio/touch play |
-| Silk (Weavesilk) | Casual calming visual toy | General consumers seeking quick, soothing interaction | Ultra-low-friction, beautiful immediate interaction | Single-mode drawing experience with limited depth, discovery, and capability-aware pathways |
-| Cables.gl | Node-based real-time visual tooling | Motion designers, VJs, interactive studios | Powerful visual programming for complex interactive WebGL/WebGPU scenes | More of a creator tool than a ready-to-play toy destination for non-technical users |
-| Butterchurn / Winamp-style web visualizers | Music visualizer apps | Music listeners who want reactive visuals during playback | Strong music-reactive visuals with familiar visualizer expectations | Usually focused on playback visualization, not multi-toy discovery, guided capability checks, or touch-first interaction |
-| OpenProcessing (p5.js ecosystem) | Creative coding sketch community | Students, educators, creative coders | Massive catalog of community sketches and remix culture | Quality/UX consistency varies; not optimized as a cohesive sensory-first product experience |
+| **WaveScope / IKANDY** | Modern WebGPU / Butterchurn desktop & web visualizer hybrid apps | Music enthusiasts, VJs, tech-savvy audiophiles | Dual engine running legacy Butterchurn MilkDrop presets alongside native WebGPU shaders | Desktop Electron footprint or heavy web load; lack guided sensory webtoy discovery and instant browser launch |
+| **Neural Frames / Beatsee** | AI & 3D Web visualizer tools | Music artists, video creators, social media managers | AI stem-aware video animation and high-end 3D mesh reactivity | Subscription paywalls, cloud render queues, lack of real-time zero-latency interactive browser play |
+| **ShaderToy** | Browser shader playground / creative coding community | Creative coders, shader artists, graphics engineers | Massive global repository of real-time GLSL fragment shaders | High technical barrier; not an audio-reactive guided visualizer or webtoy library with preset browsing |
+| **Silk (Weavesilk)** | Casual calming visual toy | General consumers seeking quick, soothing interaction | Ultra-low-friction, beautiful immediate touch interaction | Single-mode drawing experience with limited depth, preset library, or audio reactivity |
+| **Cables.gl** | Node-based real-time visual tooling | Motion designers, VJs, interactive studios | Powerful visual node graph programming for WebGL/WebGPU | Authoring tool rather than an instant, zero-setup visualizer destination for general users |
+| **Butterchurn / Winamp web visualizers** | WebGL MilkDrop port | Music listeners wanting classic visualizer visuals | Excellent classic MilkDrop preset fidelity in browser | WebGL 1.0/2.0 architecture; lacks WebGPU compute shader pipeline, mobile optimizations, and multi-toy discovery |
+
+---
+
+## 🎯 2026 Key Stims Differentiators & Strategic Moat
+
+1. **Hybrid WebGPU + EEL Transpilation Engine**: Full zero-copy audio texture sharing between classic MilkDrop EEL presets and modern WGSL compute shaders.
+2. **Instant Zero-Install Browser Play**: Launches immediately with zero-config audio reactivity on desktop and mobile browsers.
+3. **Integrated Creator Toolkit**: In-browser 4K 60FPS video recording for Spotify Canvas, TikTok, and YouTube Shorts.
+4. **Sensory Webtoy Library**: Combines flagship MilkDrop visualizer experience with a rich collection of interactive webtoys (`aurora-painter`, `defrag`, `lights`, etc.).
+
+---
 
 ## External use: homepage copy angle bank
 
 Use these lines in public-facing pages (README/site/docs) without naming competitors directly.
 
-- **MilkDrop-led lineage framing:** "Stims brings an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop to the web."
-- **Careful claim language:** "Preset-driven and inspired by MilkDrop-era workflows, without claiming full legacy parity."
-- **Instant launch:** "Open the MilkDrop Visualizer in one click and land in the dedicated launchpad."
-- **Beyond one-off visuals:** "Explore curated presets with audio, motion, and performance controls."
-- **Consistent UX across sessions:** "One shared experience layer across launch, preset browse, live editing, and playback."
+- **MilkDrop lineage framing:** "Stims brings an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop to the web."
+- **Next-gen performance:** "Powered by WebGPU compute shaders and JIT expression compilation for ultra-fluid 60 FPS visuals."
+- **Instant launch:** "Open the MilkDrop Visualizer in one click with instant audio reactivity."
+- **Creator ready:** "Explore curated presets, live edit EEL expressions, and export high-resolution canvas video."
 
-## How this should change the site
-
-Apply the external angle bank to public surfaces in this order:
-
-1. **Homepage hero (`index.html`)**
-   - Primary headline should position Stims as an independent browser-native visualizer in the MilkDrop lineage.
-   - Primary CTA should launch `/milkdrop/`.
-   - Supporting sentence should reinforce presets, live editing, import/export, and careful lineage language.
-2. **Homepage proof + launchpad sections (`index.html`)**
-   - Add a MilkDrop proof section before secondary browse/discovery content.
-   - Keep launchpad and preset-browse language secondary to the flagship visualizer framing.
-3. **Metadata snippets (`index.html` OG/Twitter/description)**
-   - Keep concise value proposition aligned with MilkDrop-led messaging and Stims branding.
-4. **Public docs IA guidance (`docs/PUBLIC_DOCS_SITE_MAP.md`)**
-   - Keep external-safe messaging rule explicit and successor wording consistent.
+---
 
 ## Placement guidance (internal vs external)
 
 - Keep direct competitor names and comparative weaknesses in this file only.
 - Reuse the external angle bank in user-facing docs and homepage copy.
-- When adding new comparisons, update both sections in the same change so positioning and copy stay aligned.

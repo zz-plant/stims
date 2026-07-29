@@ -54,7 +54,6 @@ function MockWorkspaceToast(overrides: Record<string, unknown>) {
   return (
     <WorkspaceToast
       toast={{ message: 'Using lighter visual mode.', tone: 'warn' }}
-      onDismiss={() => {}}
       {...overrides}
     />
   );
