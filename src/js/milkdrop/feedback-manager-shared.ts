@@ -576,7 +576,9 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
       `;
 
 const MILKDROP_WARP_FRAGMENT_SHADER = `
+        uniform sampler2D currentTex;
         uniform sampler2D previousTex;
+        uniform vec2 texelSize;
         uniform sampler2D noiseTex;
         uniform sampler2D simplexTex;
         uniform sampler2D voronoiTex;
@@ -846,7 +848,9 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.blurScene.add(this.blurQuad);
     this.warpMaterial = new ShaderMaterial({
       uniforms: {
+        currentTex: { value: this.targets[0].texture },
         previousTex: { value: this.targets[0].texture },
+        texelSize: { value: new Vector2(1, 1) },
         noiseTex: { value: this.auxTextures.noise },
         simplexTex: { value: this.auxTextures.simplex },
         voronoiTex: { value: this.auxTextures.voronoi },
@@ -1011,6 +1015,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     this.presentMaterial.map = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
     this.warpMaterial.uniforms.previousTex.value = this.readTarget.texture;
+    this.warpMaterial.uniforms.currentTex.value = this.readTarget.texture;
+    this.warpMaterial.uniforms.texelSize.value.set(
+      1 / this.readTarget.width,
+      1 / this.readTarget.height,
+    );
   }
 
   setDirectShaderPrograms(
@@ -1046,10 +1055,17 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     const hasDirectWarp = warpGlsl !== null ? 1.0 : 0.0;
 
+    // The raw warp shader body assumes MilkDrop globals (`uv`, `uv_orig`,
+    // `ret`) are in scope. Provide local equivalents so the injected GLSL
+    // compiles in our fullscreen fragment template.
+    const warpGlslWithContext = warpGlsl
+      ? `vec2 uv = vUv;\nvec2 uv_orig = vUv;\nvec3 ret;\n${warpGlsl}`
+      : null;
+
     // Rebuild warp shader with warp GLSL injected (or pass-through when null)
     const injectedWarp = injectDirectShaderGlsl(
       MILKDROP_WARP_FRAGMENT_SHADER,
-      warpGlsl,
+      warpGlslWithContext,
       null,
     );
     this.warpMaterial.fragmentShader = injectedWarp;
@@ -1186,6 +1202,11 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
     wu.previousTex.value = this.readTarget.texture;
+    wu.currentTex.value = this.readTarget.texture;
+    wu.texelSize.value.set(
+      1 / this.readTarget.width,
+      1 / this.readTarget.height,
+    );
     if (warpTextureName) {
       wu[`${warpTextureName}Tex`].value = getSharedMilkdropTexture(
         AUX_TEXTURE_SPECS[warpTextureName].fileName,
