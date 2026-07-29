@@ -1,3 +1,17 @@
+/**
+ * Structural guards for the mobile shell layout.
+ *
+ * These used to pin exact declarations — `padding: 112px 10px 18px`,
+ * `clamp(3rem, 7vw, 5rem)`, `repeat(2, minmax(0, 1fr))` — which broke on any
+ * restyle while never verifying that the layout actually worked. The cosmetic
+ * values are gone; what remains asserts the structural decisions that carry
+ * meaning (a breakpoint exists, a rail collapses, a fallback is present).
+ *
+ * The behaviour itself — no sideways overflow, the stage filling the viewport,
+ * the panel docking as a bottom sheet — is verified against a real browser in
+ * tests/e2e/chrome-visual-contract.test.ts, which catches the layout being
+ * broken rather than merely being written differently.
+ */
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,25 +23,41 @@ function readAppShellCss() {
   );
 }
 
+/** Does `declaration` appear inside a block for `selector` under `query`? */
+function hasRuleInQuery(
+  css: string,
+  query: string,
+  selector: string,
+  declaration: string,
+) {
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(
+    `${escape(query)}[\\s\\S]*?${escape(selector)}[^{]*\\{[^}]*?${escape(declaration)}`,
+    'u',
+  );
+  return re.test(css);
+}
+
 describe('Workspace shell mobile layout regression', () => {
-  test('turns the home state into a stage-first hero on phones', () => {
+  test('lets the home page scroll instead of trapping it at viewport height', () => {
     const css = readAppShellCss();
 
+    // The workspace document must be allowed to grow; a fixed-height body is
+    // what clipped the home content on phones.
     expect(css).toMatch(
-      /\.stims-shell__workspace\[data-mode="home"\]\s*\{[\s\S]*?padding:\s*0;/u,
+      /body\[data-page="workspace"\]\s*\{[\s\S]*?height:\s*auto;/u,
     );
-    expect(css).toMatch(
-      /html:has\(body\[data-page="workspace"\]\),\s*body\[data-page="workspace"\]\s*\{[\s\S]*?height:\s*auto;[\s\S]*?overflow-y:\s*auto;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*auto;[\s\S]*?overflow:\s*visible;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__stage-frame\[data-mode="home"\] \.stims-shell__stage-hero\s*\{[\s\S]*?position:\s*relative;[\s\S]*?inset:\s*auto;[\s\S]*?padding:\s*112px 10px 18px;/u,
-    );
+    expect(
+      hasRuleInQuery(
+        css,
+        '@media (max-width: 720px)',
+        '.stims-shell__stage-frame[data-mode="home"]',
+        'overflow: visible',
+      ),
+    ).toBe(true);
   });
 
-  test('sizes the mounted visualizer canvas to the stage frame instead of the viewport', () => {
+  test('sizes the mounted visualizer canvas to the stage frame, not the viewport', () => {
     const css = readAppShellCss();
 
     expect(css).toMatch(
@@ -38,57 +68,62 @@ describe('Workspace shell mobile layout regression', () => {
     );
   });
 
-  test('keeps supporting cards compact and secondary actions side-by-side on phones', () => {
+  test('collapses the launch layout to a single column on narrow viewports', () => {
     const css = readAppShellCss();
 
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/u,
-    );
-    expect(css).not.toContain('.stims-shell__launch-actions > :first-child');
-    expect(css).toMatch(
-      /@media \(max-width: 480px\)[\s\S]*?\.stims-shell__launch-recommendation\s*\{[\s\S]*?display:\s*none;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__launch-panel\s*\{[\s\S]*?width:\s*min\(100%, calc\(100vw - 20px\)\);/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-layout\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-rail\s*\{[\s\S]*?display:\s*contents;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-copy,[\s\S]*?\.stims-shell__launch-layout > \.stims-shell__launch-source-dock,[\s\S]*?width:\s*100%;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-copy h1\s*\{[\s\S]*?font-size:\s*clamp\(3rem, 7vw, 5rem\);[\s\S]*?line-height:\s*0\.92;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 720px\)[\s\S]*?\.stims-shell__browse-toolbar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto;/u,
-    );
+    expect(
+      hasRuleInQuery(
+        css,
+        '@media (max-width: 1120px)',
+        '.stims-shell__launch-layout',
+        'flex-direction: column',
+      ),
+    ).toBe(true);
+    // The rail dissolves into the parent flow rather than becoming a column.
+    expect(
+      hasRuleInQuery(
+        css,
+        '@media (max-width: 1120px)',
+        '.stims-shell__launch-rail',
+        'display: contents',
+      ),
+    ).toBe(true);
+    expect(
+      hasRuleInQuery(
+        css,
+        '@media (max-width: 1120px)',
+        '.stims-shell__launch-hero',
+        'grid-template-columns: 1fr',
+      ),
+    ).toBe(true);
+    // The recommendation card is optional chrome; it goes on the smallest screens.
+    expect(
+      hasRuleInQuery(
+        css,
+        '@media (max-width: 480px)',
+        '.stims-shell__launch-recommendation',
+        'display: none',
+      ),
+    ).toBe(true);
   });
 
-  test('keeps the launch panel usable on short desktop and landscape viewports', () => {
+  test('keeps the stage usable on short landscape viewports', () => {
     const css = readAppShellCss();
 
-    expect(css).toMatch(
-      /@media \(max-height: 720px\)[\s\S]*?\.stims-shell__stage-frame,\s*\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*calc\(100vh - 28px\);/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-height: 720px\)[\s\S]*?\.stims-shell__stage-hero\s*\{[\s\S]*?overflow-y:\s*auto;[\s\S]*?overscroll-behavior:\s*contain;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-height: 480px\)[\s\S]*?\.stims-shell__stage-frame,\s*\.stims-shell__stage-frame\[data-mode="home"\]\s*\{[\s\S]*?min-height:\s*calc\(100vh - 20px\);/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-hero\s*\{[\s\S]*?grid-template-columns:\s*1fr;/u,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 1120px\)[\s\S]*?\.stims-shell__launch-recommendation\s*\{[\s\S]*?min-height:\s*0;/u,
-    );
+    // Height-based breakpoints exist so landscape phones do not get a stage
+    // taller than the screen with no way to scroll the hero.
+    expect(css).toMatch(/@media \(max-height: 720px\)/u);
+    expect(
+      hasRuleInQuery(
+        css,
+        '@media (max-height: 720px)',
+        '.stims-shell__stage-hero',
+        'overflow-y: auto',
+      ),
+    ).toBe(true);
   });
 
-  test('adds compatibility fallbacks for older mobile browser CSS support', () => {
+  test('keeps a fallback for browsers without color-mix', () => {
     const css = readAppShellCss();
 
     expect(css).toMatch(
