@@ -6,6 +6,7 @@ import {
   OrthographicCamera,
   PlaneGeometry,
   Scene,
+  Vector2,
 } from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
@@ -35,8 +36,6 @@ export {
 
 import { WEBGPU_MILKDROP_BACKEND_BEHAVIOR } from './backend-behavior';
 import {
-  MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
-  MILKDROP_FEEDBACK_BLUR_BLEND_SCALE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
   MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE,
   MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD,
@@ -62,11 +61,11 @@ const {
   clamp,
   cos,
   dot,
+  exp,
   Fn,
   floor,
   float,
   fract,
-  If,
   length,
   mat3,
   max,
@@ -77,6 +76,8 @@ const {
   sin,
   smoothstep,
   step,
+  texture,
+  uniform,
   uv,
   vec2,
   vec3,
@@ -84,6 +85,52 @@ const {
 } = TSL;
 
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
+const GAUSSIAN_BLUR_KERNEL_RADIUS = 4;
+
+function createGaussianBlurUniforms(initialSource: Texture) {
+  return {
+    sourceTex: texture(initialSource),
+    texelSize: uniform(new Vector2(1, 1)),
+    blurDirection: uniform(new Vector2(1, 0)),
+    kernelSigma: uniform(1),
+    blurPixelStep: uniform(1),
+  };
+}
+
+function createGaussianBlurOutputNode(
+  blurUniforms: ReturnType<typeof createGaussianBlurUniforms>,
+) {
+  return Fn(() => {
+    const centerUv = uv();
+    const offset = blurUniforms.blurDirection.mul(
+      blurUniforms.texelSize.mul(blurUniforms.blurPixelStep),
+    );
+    const twoSigmaSq = blurUniforms.kernelSigma
+      .mul(blurUniforms.kernelSigma)
+      .mul(2);
+    let weightedColor = vec4(0, 0, 0, 0);
+    let weightSum = float(0);
+
+    for (
+      let tap = -GAUSSIAN_BLUR_KERNEL_RADIUS;
+      tap <= GAUSSIAN_BLUR_KERNEL_RADIUS;
+      tap += 1
+    ) {
+      const tapFloat = float(tap);
+      const i2 = tapFloat.mul(tapFloat);
+      const exponent = float(0).sub(i2).div(max(twoSigmaSq, 0.0001));
+      const weight = exp(exponent);
+      const sampleUv = centerUv.add(offset.mul(tapFloat));
+      weightedColor = weightedColor.add(
+        blurUniforms.sourceTex.sample(sampleUv).mul(weight),
+      );
+      weightSum = weightSum.add(weight);
+    }
+
+    return weightedColor.div(max(weightSum, 0.0001));
+  })();
+}
+
 type ShaderNodeValue = {
   kind: 'scalar' | 'vec2' | 'vec3' | 'vec4';
   node: any;
@@ -1123,67 +1170,7 @@ function createCompositeOutputNode(
     const previous = uniforms.previousTex.sample(
       sampleUvNode(previousUv, uniforms.textureWrap),
     );
-    const previousColor = previous.rgb.toVar();
-
-    If(
-      uniforms.feedbackSoftness.greaterThan(
-        float(MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD),
-      ),
-      () => {
-        const sampleOffset = uniforms.texelSize.mul(
-          float(MILKDROP_FEEDBACK_BLUR_OFFSET_BASE).add(
-            uniforms.feedbackSoftness.mul(MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE),
-          ),
-        );
-        const softened = previous.rgb
-          .add(
-            uniforms.previousTex.sample(
-              sampleUvNode(
-                previousUv.add(vec2(sampleOffset.x, 0)),
-                uniforms.textureWrap,
-              ),
-            ).rgb,
-          )
-          .add(
-            uniforms.previousTex.sample(
-              sampleUvNode(
-                previousUv.sub(vec2(sampleOffset.x, 0)),
-                uniforms.textureWrap,
-              ),
-            ).rgb,
-          )
-          .add(
-            uniforms.previousTex.sample(
-              sampleUvNode(
-                previousUv.add(vec2(0, sampleOffset.y)),
-                uniforms.textureWrap,
-              ),
-            ).rgb,
-          )
-          .add(
-            uniforms.previousTex.sample(
-              sampleUvNode(
-                previousUv.sub(vec2(0, sampleOffset.y)),
-                uniforms.textureWrap,
-              ),
-            ).rgb,
-          )
-          .div(5);
-        previousColor.assign(
-          mix(
-            previousColor,
-            softened,
-            clamp(
-              uniforms.feedbackSoftness.mul(MILKDROP_FEEDBACK_BLUR_BLEND_SCALE),
-              0,
-              MILKDROP_FEEDBACK_BLUR_BLEND_CAP,
-            ),
-          ),
-        );
-      },
-    );
-
-    previousColor.assign(previousColor.mul(uniforms.decay));
+    const previousColor = previous.rgb.mul(uniforms.decay).toVar();
 
     const color = (
       hasDirectCompProgram
@@ -1365,8 +1352,13 @@ class WebGPUMilkdropFeedbackManager {
   readonly camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
   readonly compositeMaterial: NodeMaterial & { uniforms: CompositeUniformBag };
   readonly presentMaterial: MeshBasicMaterial;
+  readonly blurMaterial: NodeMaterial & {
+    uniforms: ReturnType<typeof createGaussianBlurUniforms>;
+  };
   readonly sceneTarget: RenderTarget;
   readonly targets: [RenderTarget, RenderTarget];
+  readonly blurTarget: RenderTarget;
+  readonly blurScene = new Scene();
   readonly profile = WEBGPU_MILKDROP_BACKEND_BEHAVIOR.feedbackProfile;
   readonly sceneResolutionScale = this.profile.sceneResolutionScale;
   readonly feedbackResolutionScale = this.profile.feedbackResolutionScale;
@@ -1379,7 +1371,6 @@ class WebGPUMilkdropFeedbackManager {
   viewportWidth: number;
   viewportHeight: number;
   private adaptiveResizeFrameId: number | null = null;
-  private index = 0;
 
   constructor(width: number, height: number) {
     this.camera.position.z = 1;
@@ -1405,6 +1396,11 @@ class WebGPUMilkdropFeedbackManager {
       createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
       createFeedbackRenderTarget(width, height, this.feedbackResolutionScale),
     ];
+    this.blurTarget = createFeedbackRenderTarget(
+      width,
+      height,
+      this.feedbackResolutionScale,
+    );
 
     const uniforms = createCompositeUniforms(
       this.sceneTarget.texture,
@@ -1429,6 +1425,12 @@ class WebGPUMilkdropFeedbackManager {
       uniforms,
     });
 
+    const blurUniforms = createGaussianBlurUniforms(this.targets[0].texture);
+    const blurMaterial = new NodeMaterial();
+    blurMaterial.outputNode = createGaussianBlurOutputNode(blurUniforms);
+    blurMaterial.needsUpdate = true;
+    this.blurMaterial = Object.assign(blurMaterial, { uniforms: blurUniforms });
+
     this.presentMaterial = new MeshBasicMaterial({
       map: this.targets[0].texture,
     });
@@ -1441,16 +1443,18 @@ class WebGPUMilkdropFeedbackManager {
       FULLSCREEN_QUAD_GEOMETRY,
       this.presentMaterial,
     );
+    const blurQuad = new Mesh(FULLSCREEN_QUAD_GEOMETRY, this.blurMaterial);
     this.compositeScene.add(compositeQuad);
     this.presentScene.add(presentQuad);
+    this.blurScene.add(blurQuad);
   }
 
   get readTarget() {
-    return this.targets[this.index];
+    return this.targets[0];
   }
 
   get writeTarget() {
-    return this.targets[(this.index + 1) % 2];
+    return this.targets[1];
   }
 
   getShapeTexture() {
@@ -1458,7 +1462,6 @@ class WebGPUMilkdropFeedbackManager {
   }
 
   swap() {
-    this.index = (this.index + 1) % 2;
     this.presentMaterial.map = this.readTarget.texture;
     this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
   }
@@ -1675,11 +1678,46 @@ class WebGPUMilkdropFeedbackManager {
 
   render(renderer: FeedbackRendererLike, scene: Scene, camera: Camera) {
     this.compositeMaterial.uniforms.currentTex.value = this.sceneTarget.texture;
-    this.compositeMaterial.uniforms.previousTex.value = this.readTarget.texture;
+
+    const softness =
+      this.compositeMaterial.uniforms.feedbackSoftness.value ?? 0;
+    const shouldBlur = softness > MILKDROP_FEEDBACK_SOFTNESS_THRESHOLD;
 
     renderer.setRenderTarget(this.sceneTarget);
     renderer.render(scene, camera);
-    renderer.setRenderTarget(this.writeTarget);
+
+    if (shouldBlur) {
+      const blurTexelSize = this.blurMaterial.uniforms.texelSize.value;
+      this.blurMaterial.uniforms.kernelSigma.value = Math.max(
+        0.5,
+        softness * 1.5,
+      );
+      this.blurMaterial.uniforms.blurPixelStep.value =
+        MILKDROP_FEEDBACK_BLUR_OFFSET_BASE +
+        softness * MILKDROP_FEEDBACK_BLUR_OFFSET_SCALE;
+      this.blurMaterial.uniforms.sourceTex.value = this.readTarget.texture;
+      this.blurMaterial.uniforms.blurDirection.value.set(1, 0);
+      renderer.setRenderTarget(this.blurTarget);
+      renderer.render(this.blurScene, this.camera);
+
+      this.blurMaterial.uniforms.sourceTex.value = this.blurTarget.texture;
+      this.blurMaterial.uniforms.blurDirection.value.set(0, 1);
+      renderer.setRenderTarget(this.writeTarget);
+      renderer.render(this.blurScene, this.camera);
+
+      this.compositeMaterial.uniforms.previousTex.value =
+        this.writeTarget.texture;
+      this.compositeMaterial.uniforms.texelSize.value.copy(blurTexelSize);
+    } else {
+      this.compositeMaterial.uniforms.previousTex.value =
+        this.readTarget.texture;
+      this.compositeMaterial.uniforms.texelSize.value.set(
+        1 / Math.max(1, this.readTarget.width),
+        1 / Math.max(1, this.readTarget.height),
+      );
+    }
+
+    renderer.setRenderTarget(this.readTarget);
     renderer.render(this.compositeScene, this.camera);
     this.swap();
     renderer.setRenderTarget(null);
@@ -1710,7 +1748,12 @@ class WebGPUMilkdropFeedbackManager {
     this.targets.forEach((target) =>
       target.setSize(feedbackWidth, feedbackHeight),
     );
+    this.blurTarget.setSize(feedbackWidth, feedbackHeight);
     this.compositeMaterial.uniforms.texelSize.value.set(
+      1 / Math.max(1, feedbackWidth),
+      1 / Math.max(1, feedbackHeight),
+    );
+    this.blurMaterial.uniforms.texelSize.value.set(
       1 / Math.max(1, feedbackWidth),
       1 / Math.max(1, feedbackHeight),
     );
@@ -1732,10 +1775,13 @@ class WebGPUMilkdropFeedbackManager {
     }
     this.sceneTarget.dispose();
     this.targets.forEach((target) => target.dispose());
+    this.blurTarget.dispose();
     disposeMaterial(this.compositeMaterial);
     disposeMaterial(this.presentMaterial);
+    disposeMaterial(this.blurMaterial);
     this.compositeScene.clear();
     this.presentScene.clear();
+    this.blurScene.clear();
   }
 }
 
