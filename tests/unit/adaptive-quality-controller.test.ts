@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { createAdaptiveQualityController } from '../../src/js/core/services/adaptive-quality-controller.ts';
 
 const originalMatchMedia = globalThis.window?.matchMedia;
-const originalMaxTouchPoints = globalThis.navigator?.maxTouchPoints;
+const originalNavigator = globalThis.navigator;
 
 /**
  * The controller reads pointer/reduced-motion media queries and touch points
@@ -29,6 +29,19 @@ beforeEach(() => {
     value: 0,
   });
 
+  // The controller derives its starting step from the device performance
+  // profile, which treats <=3 cores or <=3GB as low power. CI runners report
+  // very different values from developer machines, so these are pinned to a
+  // comfortably unconstrained desktop rather than left to the host.
+  Object.defineProperty(navigator, 'hardwareConcurrency', {
+    configurable: true,
+    value: 8,
+  });
+  Object.defineProperty(navigator, 'deviceMemory', {
+    configurable: true,
+    value: 8,
+  });
+
   // renderer-capabilities stamps this on window at runtime and most suites
   // never clear it; a leaked "high-end" value promotes every device to ultra.
   delete (
@@ -42,9 +55,9 @@ afterEach(() => {
   if (typeof globalThis.window !== 'undefined' && originalMatchMedia) {
     globalThis.window.matchMedia = originalMatchMedia;
   }
-  Object.defineProperty(navigator, 'maxTouchPoints', {
+  Object.defineProperty(globalThis, 'navigator', {
     configurable: true,
-    value: originalMaxTouchPoints ?? 0,
+    value: originalNavigator,
   });
 });
 
