@@ -48,24 +48,28 @@ describe('MilkDrop WebGPU feature routing', () => {
     });
   });
 
-  test('keeps native feedback disabled on the full path until material parity is proven', () => {
+  test('enables native feedback on the full WebGPU path', () => {
     const routing = resolveMilkdropWebGpuFeatureRouting({
       search: '?renderer=webgpu',
     });
 
     expect(routing.directFeedbackShaders).toEqual({
-      enabled: false,
-      reason:
-        'native WebGPU feedback remains disabled until ShaderMaterial and TSL composite parity is stable',
+      enabled: true,
+      reason: null,
     });
   });
 
-  test('enables native feedback only for the explicit certification WebGPU lane', () => {
+  test('enables native feedback for full-path sessions but not the safe path', () => {
     expect(
       shouldEnableNativeMilkdropWebGpuFeedback({
         search: '?renderer=webgpu&corpus=certification',
       }),
     ).toBe(true);
+    expect(
+      shouldEnableNativeMilkdropWebGpuFeedback({ search: '?renderer=webgpu' }),
+    ).toBe(true);
+
+    setWebGpuForceMode('safe');
     expect(
       shouldEnableNativeMilkdropWebGpuFeedback({ search: '?renderer=webgpu' }),
     ).toBe(false);

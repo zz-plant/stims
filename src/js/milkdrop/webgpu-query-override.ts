@@ -11,7 +11,6 @@ import { getDevicePerformanceProfile } from '../core/device-profile.ts';
 import { isCompatibilityModeEnabled } from '../core/render-preferences.ts';
 import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts';
 import {
-  getRequestedCorpus,
   getRequestedRenderer,
   getWebGpuFlagParams,
 } from '../core/url-params.ts';
@@ -191,8 +190,8 @@ export function shouldUseFullMilkdropWebGpuPath(
 }
 
 /**
- * Native TSL feedback is opt-in for the explicit certification lane. Live
- * WebGPU sessions keep the conservative path until their output is measured.
+ * Native TSL feedback is enabled on the full WebGPU path. Safe-path sessions
+ * keep the conservative scalar approximation fallback.
  */
 export function shouldEnableNativeMilkdropWebGpuFeedback(
   location:
@@ -202,11 +201,9 @@ export function shouldEnableNativeMilkdropWebGpuFeedback(
     ? globalThis.location
     : null,
 ): boolean {
-  if (shouldUseSafeMilkdropWebGpuPath(location)) return false;
-  const searchInput = location?.search ?? '';
   return (
-    getRequestedRenderer(searchInput) === 'webgpu' &&
-    getRequestedCorpus(searchInput)?.toLowerCase() === 'certification'
+    !shouldUseSafeMilkdropWebGpuPath(location) &&
+    getRequestedRenderer(location?.search ?? '') === 'webgpu'
   );
 }
 
@@ -233,11 +230,6 @@ export function resolveMilkdropWebGpuFeatureRouting(
     : null;
   const nativeFeedbackEnabled =
     shouldEnableNativeMilkdropWebGpuFeedback(location);
-  const feedbackReason =
-    safeReason ??
-    (nativeFeedbackEnabled
-      ? null
-      : 'native WebGPU feedback remains disabled until ShaderMaterial and TSL composite parity is stable');
 
   return {
     proceduralMainWave: { enabled: !safeMode, reason: safeReason },
@@ -247,7 +239,7 @@ export function resolveMilkdropWebGpuFeatureRouting(
     proceduralMotionVectors: { enabled: !safeMode, reason: safeReason },
     directFeedbackShaders: {
       enabled: nativeFeedbackEnabled,
-      reason: feedbackReason,
+      reason: safeReason,
     },
     gpuComputeVM: { enabled: !safeMode, reason: safeReason },
     renderBundles: {
