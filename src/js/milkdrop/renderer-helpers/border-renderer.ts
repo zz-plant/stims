@@ -36,7 +36,7 @@ function buildBorderAccentLines(border: MilkdropBorderVisual): Float32Array {
   // The accent extends from the corner inward at 45 degrees.
   const outerRadius = border.key === 'outer' ? 1 : 0.88;
   const accentSize = border.size * 0.5;
-  const z = 0.3;
+  const z = 0.285;
 
   // Each accent is a line from the corner going inward at 45 degrees.
   // 4 corners × 2 vertices × 3 coords = 24
@@ -165,7 +165,7 @@ function createBorderGroupObjectRaw(
     border.color,
     border.alpha * alphaMultiplier,
   );
-  fill.position.z = 0.3;
+  fill.position.z = 0.285;
   group.add(fill);
 
   if (border.styled) {
@@ -229,7 +229,7 @@ function createBorderGroupObject(
     border.color,
     border.alpha * alphaMultiplier,
   );
-  fill.position.z = 0.3;
+  fill.position.z = 0.285;
   group.add(fill);
   return group;
 }
@@ -271,7 +271,7 @@ function syncBorderGroupObject(
     border.color,
     border.alpha * alphaMultiplier,
   );
-  fill.position.z = 0.3;
+  fill.position.z = 0.285;
 
   // Sync styled accent line if present (childCount === 2)
   if (childCount === 2) {
@@ -376,7 +376,7 @@ export function updateBorderFill(
     border.color,
     border.alpha * alphaMultiplier,
   );
-  object.position.z = 0.3;
+  object.position.z = 0.285;
 }
 
 export function syncBorderObject(

@@ -229,7 +229,7 @@ describe('milkdrop runtime signals', () => {
     expect(decayTwo.beatPulse).toBeGreaterThan(0.04);
   });
 
-  test('builds MilkDrop spectrum samples from analyser-owned raw data', () => {
+  test('builds MilkDrop spectrum samples from the captured frame data', () => {
     const tracker = createMilkdropSignalTracker();
     const rawSpectrum = pulseData({ bass: 1, mid: 0.18, treble: 0.04 });
     const analyserStub = {
@@ -243,7 +243,7 @@ describe('milkdrop runtime signals', () => {
       time: 0.2,
       deltaMs: 16.7,
       analyser: analyserStub,
-      frequencyData: new Uint8Array(rawSpectrum.length),
+      frequencyData: rawSpectrum,
       waveformData: waveformData(),
     });
 
@@ -251,6 +251,37 @@ describe('milkdrop runtime signals', () => {
     expect(update.frequencyData[0]).toBeGreaterThan(
       update.frequencyData[update.frequencyData.length - 1] ?? 0,
     );
+  });
+
+  test('reuses the frame spectrum snapshot without pulling analyser data again', () => {
+    const tracker = createMilkdropSignalTracker();
+    const frameSpectrum = pulseData({ bass: 0.9, mid: 0.22, treble: 0.08 });
+    const analyserSpectrum = pulseData({ bass: 0.05, mid: 0.2, treble: 1 });
+    let frequencyReads = 0;
+    let energyInput: Uint8Array | undefined;
+    const analyserStub = {
+      getFrequencyData: () => {
+        frequencyReads += 1;
+        return analyserSpectrum;
+      },
+      getMultiBandEnergy: (data?: Uint8Array) => {
+        energyInput = data;
+        return { bass: 0.7, mid: 0.3, treble: 0.1 };
+      },
+      getRmsLevel: () => 0.5,
+      getSampleRate: () => 48_000,
+    } as unknown as FrequencyAnalyser;
+
+    tracker.update({
+      time: 0.2,
+      deltaMs: 16.7,
+      analyser: analyserStub,
+      frequencyData: frameSpectrum,
+      waveformData: waveformData(),
+    });
+
+    expect(frequencyReads).toBe(0);
+    expect(energyInput).toBe(frameSpectrum);
   });
 
   test('normalizes quieter material so weighted energy still stays responsive', () => {

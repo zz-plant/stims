@@ -81,46 +81,12 @@ export function useHelpHints() {
   return { visibleHint, showHint, dismissHint };
 }
 
-export function ContextualHelp({
-  hint,
-  onDismiss,
-}: {
-  hint: HelpHint | null;
-  onDismiss: () => void;
-}) {
-  const [exiting, setExiting] = useState(false);
-  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
-    };
-  }, []);
-
-  const handleDismiss = useCallback(() => {
-    setExiting(true);
-    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
-    dismissTimerRef.current = setTimeout(onDismiss, 200);
-  }, [onDismiss]);
-
+export function ContextualHelp({ hint }: { hint: HelpHint | null }) {
   if (!hint) return null;
 
   return (
-    <div
-      className={styles.toast}
-      data-exiting={String(exiting)}
-      role="status"
-      aria-live="polite"
-    >
+    <div className={styles.toast} role="status" aria-live="polite">
       <span>{hint.message}</span>
-      <button
-        type="button"
-        className={styles.closeButton}
-        onClick={handleDismiss}
-        aria-label="Dismiss hint"
-      >
-        ×
-      </button>
     </div>
   );
 }

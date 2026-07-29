@@ -57,6 +57,9 @@ const BrowseSheetPanel = lazy(() =>
     default: m.BrowseSheetPanel,
   })),
 );
+const CapturePanel = lazy(() =>
+  import('./CapturePanel.tsx').then((m) => ({ default: m.CapturePanel })),
+);
 const EditorPanel = lazy(() =>
   import('./EditorPanel.tsx').then((m) => ({ default: m.EditorPanel })),
 );
@@ -325,7 +328,13 @@ function StimsWorkspaceAppShell() {
     const media = window.matchMedia(
       '(orientation: portrait) and (pointer: coarse) and (max-width: 767px)',
     );
+    let hideTimer: number | null = null;
+
     const update = () => {
+      if (hideTimer !== null) {
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+      }
       if (!liveMode || !media.matches) {
         setShowRotateHint(false);
         return;
@@ -336,11 +345,20 @@ function StimsWorkspaceAppShell() {
           return;
         }
       } catch {}
+      try {
+        localStorage.setItem('stims:rotate-hint-dismissed', 'true');
+      } catch {}
       setShowRotateHint(true);
+      hideTimer = window.setTimeout(() => setShowRotateHint(false), 4200);
     };
     update();
     media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
+    return () => {
+      if (hideTimer !== null) {
+        window.clearTimeout(hideTimer);
+      }
+      media.removeEventListener('change', update);
+    };
   }, [liveMode]);
 
   const updateThumbMode = useCallback((enabled: boolean) => {
@@ -469,6 +487,12 @@ function StimsWorkspaceAppShell() {
   }, [engineSnapshot?.audioActive, engineSnapshot?.audioSource]);
 
   useEffect(() => {
+    if (!audioMatch) return;
+    const timeoutId = window.setTimeout(() => setAudioMatch(null), 6000);
+    return () => window.clearTimeout(timeoutId);
+  }, [audioMatch]);
+
+  useEffect(() => {
     const handleOpenShortcuts = () => setShowShortcuts(true);
     window.addEventListener('stims:shortcuts:open', handleOpenShortcuts);
     return () =>
@@ -527,6 +551,7 @@ function StimsWorkspaceAppShell() {
       >
         <Suspense fallback={null}>
           {ui.routeState.panel === 'editor' ? <EditorPanel /> : null}
+          {ui.routeState.panel === 'capture' ? <CapturePanel /> : null}
           {ui.routeState.panel === 'browse' ? (
             <BrowseSheetPanel
               offline={offline}
@@ -570,43 +595,19 @@ function StimsWorkspaceAppShell() {
         <div className="stims-shell__mobile-notice" role="status">
           Offline party mode: saved presets and cached previews still work.
         </div>
-      ) : installPrompt ? (
-        <div className="stims-shell__mobile-notice" role="status">
-          <span>Install Stims for faster mobile launch.</span>
-          <button type="button" onClick={handleInstallApp}>
-            Install
-          </button>
-          <button type="button" onClick={() => setInstallPrompt(null)}>
-            Not now
-          </button>
-        </div>
       ) : null}
 
       {showRotateHint ? (
         <div className="stims-shell__rotate-hint" role="status">
           <span>Rotate your phone for theater mode.</span>
-          <button
-            type="button"
-            onClick={() => {
-              try {
-                localStorage.setItem('stims:rotate-hint-dismissed', 'true');
-              } catch {}
-              setShowRotateHint(false);
-            }}
-          >
-            Got it
-          </button>
         </div>
       ) : null}
 
-      {ui.routeState.panel ? null : (
-        <ContextualHelp hint={visibleHint} onDismiss={dismissHint} />
-      )}
+      {ui.routeState.panel ? null : <ContextualHelp hint={visibleHint} />}
 
       <AudioMatchToast
         match={audioMatch}
         onSelect={engine.handlePresetSelection}
-        onDismiss={() => setAudioMatch(null)}
       />
       <ShortcutsDialog
         open={showShortcuts}

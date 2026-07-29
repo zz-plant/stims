@@ -1,7 +1,62 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { cloneBlendState } from '../../src/js/milkdrop/runtime/session.ts';
+
+type ServiceWorkerHandler = (event: {
+  request?: { method: string; mode: string; url: string };
+  respondWith?: (response: Promise<Response>) => void;
+  waitUntil?: (work: Promise<unknown>) => void;
+}) => void;
+
+function loadServiceWorker(options: {
+  add?: (asset: string) => Promise<unknown>;
+  fetch?: (request: unknown) => Promise<Response>;
+  put?: (request: unknown, response: Response) => Promise<unknown>;
+}) {
+  const source = readFileSync(
+    join(import.meta.dir, '..', '..', 'public', 'service-worker.js'),
+    'utf8',
+  );
+  const handlers = new Map<string, ServiceWorkerHandler>();
+  const cache = {
+    add: options.add ?? (() => Promise.resolve()),
+    async addAll(assets: string[]) {
+      await Promise.all(assets.map((asset) => this.add(asset)));
+    },
+    put: options.put ?? (() => Promise.resolve()),
+  };
+  let skipWaitingCalls = 0;
+  runInNewContext(source, {
+    URL,
+    Response,
+    caches: {
+      delete: () => Promise.resolve(true),
+      keys: () => Promise.resolve([]),
+      match: () => Promise.resolve(undefined),
+      open: () => Promise.resolve(cache),
+    },
+    clients: { claim: () => Promise.resolve() },
+    fetch:
+      options.fetch ??
+      (() => Promise.resolve(new Response('fresh', { status: 200 }))),
+    self: {
+      addEventListener: (name: string, handler: ServiceWorkerHandler) => {
+        handlers.set(name, handler);
+      },
+      skipWaiting: () => {
+        skipWaitingCalls += 1;
+      },
+    },
+  });
+  return {
+    handlers,
+    get skipWaitingCalls() {
+      return skipWaitingCalls;
+    },
+  };
+}
 
 describe('Workspace performance regressions', () => {
   test('keeps the root shell on the fallback catalog until the runtime is mounted', () => {
@@ -448,13 +503,16 @@ describe('Workspace performance regressions', () => {
     );
 
     const shellAssetsSource = serviceWorkerSource.slice(
-      serviceWorkerSource.indexOf('const SHELL_ASSETS'),
+      serviceWorkerSource.indexOf('const CORE_SHELL_ASSETS'),
       serviceWorkerSource.indexOf("self.addEventListener('install'"),
     );
     expect(shellAssetsSource).not.toContain('/milkdrop-presets/catalog.json');
-    expect(serviceWorkerSource).not.toContain('cache.addAll(SHELL_ASSETS)');
+    expect(serviceWorkerSource).toContain(
+      'await cache.addAll(CORE_SHELL_ASSETS)',
+    );
     expect(viteSource).not.toContain('Date.now()');
     expect(viteSource).not.toContain('buildId');
+    expect(viteSource).toContain("chunkFileNames: 'assets/[name]-[hash].js'");
     expect(indexSource).not.toContain('/vendor/normalize.min.css');
     expect(tokensSource).toContain('@import "./normalize.css";');
   });
@@ -489,5 +547,128 @@ describe('Workspace performance regressions', () => {
     expect(feedbackSource).not.toContain('JSON.stringify({');
     expect(feedbackSource).toContain('currentOverlayTextureName');
     expect(feedbackSource).toContain('currentWarpTextureName');
+  });
+});
+
+describe('Service worker caching behavior', () => {
+  test('does not activate an incomplete core shell', async () => {
+    const worker = loadServiceWorker({
+      add: (asset) =>
+        asset === '/index.html'
+          ? Promise.reject(new Error('missing core shell'))
+          : Promise.resolve(),
+    });
+    const install = worker.handlers.get('install');
+    expect(install).toBeDefined();
+    if (!install) {
+      throw new Error('Expected an install handler.');
+    }
+    let installWork: Promise<unknown> | undefined;
+    install({
+      waitUntil(work) {
+        installWork = work;
+      },
+    });
+
+    await expect(installWork).rejects.toThrow('missing core shell');
+    expect(worker.skipWaitingCalls).toBe(0);
+  });
+
+  test('allows an optional preview miss without blocking activation', async () => {
+    const worker = loadServiceWorker({
+      add: (asset) =>
+        asset.includes('/previews/')
+          ? Promise.reject(new Error('missing optional preview'))
+          : Promise.resolve(),
+    });
+    const install = worker.handlers.get('install');
+    expect(install).toBeDefined();
+    if (!install) {
+      throw new Error('Expected an install handler.');
+    }
+    let installWork: Promise<unknown> | undefined;
+    install({
+      waitUntil(work) {
+        installWork = work;
+      },
+    });
+
+    await expect(installWork).resolves.toBeUndefined();
+    expect(worker.skipWaitingCalls).toBe(1);
+  });
+
+  test('finishes runtime cache writes before resolving a network response', async () => {
+    let finishPut: (() => void) | undefined;
+    const putWork = new Promise<void>((resolve) => {
+      finishPut = resolve;
+    });
+    const worker = loadServiceWorker({
+      fetch: () =>
+        Promise.resolve(
+          new Response('catalog', {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        ),
+      put: () => putWork,
+    });
+    const fetchHandler = worker.handlers.get('fetch');
+    expect(fetchHandler).toBeDefined();
+    if (!fetchHandler) {
+      throw new Error('Expected a fetch handler.');
+    }
+    let responseWork: Promise<Response> | undefined;
+    fetchHandler({
+      request: {
+        method: 'GET',
+        mode: 'cors',
+        url: 'https://toil.fyi/milkdrop-presets/catalog.json',
+      },
+      respondWith(response) {
+        responseWork = response;
+      },
+    });
+
+    let resolved = false;
+    void responseWork?.then(() => {
+      resolved = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(resolved).toBe(false);
+
+    finishPut?.();
+    await expect(responseWork).resolves.toBeInstanceOf(Response);
+  });
+
+  test('returns a successful network response when an optional runtime write fails', async () => {
+    const worker = loadServiceWorker({
+      fetch: () =>
+        Promise.resolve(
+          new Response('catalog', {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        ),
+      put: () => Promise.reject(new Error('cache quota exceeded')),
+    });
+    const fetchHandler = worker.handlers.get('fetch');
+    if (!fetchHandler) {
+      throw new Error('Expected a fetch handler.');
+    }
+    let responseWork: Promise<Response> | undefined;
+    fetchHandler({
+      request: {
+        method: 'GET',
+        mode: 'cors',
+        url: 'https://toil.fyi/milkdrop-presets/catalog.json',
+      },
+      respondWith(response) {
+        responseWork = response;
+      },
+    });
+
+    const response = await responseWork;
+    expect(response?.status).toBe(200);
+    expect(await response?.text()).toBe('catalog');
   });
 });

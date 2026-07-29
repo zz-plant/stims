@@ -72,6 +72,8 @@ export function getToolLabel(tool: Exclude<PanelState, null>) {
       return 'Browse';
     case 'editor':
       return 'Edit';
+    case 'capture':
+      return 'Record video';
     case 'settings':
       return 'Settings';
     default:

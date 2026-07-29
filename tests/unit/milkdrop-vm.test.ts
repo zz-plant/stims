@@ -396,6 +396,28 @@ wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
     expect(frameState.customWaves[0]?.positions.length).toBe(512 * 3);
   });
 
+  test('reserves 2048-sample custom waves for high-detail headroom', () => {
+    const preset = compileMilkdropPresetSource(
+      `
+title=Adaptive High Sample Custom Wave
+wavecode_0_enabled=1
+wavecode_0_samples=2048
+wave_0_per_point1=x = sample * 2 - 1;
+wave_0_per_point2=y = sin(sample * pi * 8) * 0.25;
+      `.trim(),
+      { id: 'adaptive-high-sample-custom-wave' },
+    );
+    const vm = createMilkdropVM(preset);
+
+    const balanced = vm.step(makeSignals({ frame: 1 }));
+    const balancedPositionCount = balanced.customWaves[0]?.positions.length;
+    vm.setDetailScale(2);
+    const highDetail = vm.step(makeSignals({ frame: 2 }));
+
+    expect(balancedPositionCount).toBe(1024 * 3);
+    expect(highDetail.customWaves[0]?.positions).toHaveLength(2048 * 3);
+  });
+
   test('emits custom-wave per-point colors when points override frame color', () => {
     const preset = compileMilkdropPresetSource(
       `

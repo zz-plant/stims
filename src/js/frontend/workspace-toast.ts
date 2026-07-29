@@ -70,7 +70,10 @@ export function useWorkspaceToast({
 
   useEffect(() => {
     const runtimeMessage = statusMessage ?? engineSnapshot?.status;
-    if (!runtimeMessage) {
+    if (
+      !runtimeMessage ||
+      runtimeMessage.startsWith('WebGPU rollout flags active:')
+    ) {
       return;
     }
 

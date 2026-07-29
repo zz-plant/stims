@@ -174,6 +174,12 @@ export function StageControls({
     void ui.handleShowCurrentLink();
   }, [ui, signalActivity]);
 
+  const handleCapture = useCallback(() => {
+    signalActivity();
+    setShowOverflow(false);
+    ui.updatePanel(panel === 'capture' ? null : 'capture');
+  }, [ui, panel, signalActivity]);
+
   const handleMore = useCallback(() => {
     signalActivity();
     setShowOverflow((s) => !s);
@@ -384,6 +390,21 @@ export function StageControls({
                 className="stims-icon-slot stims-icon-slot--sm"
               />
               <span className={styles.btnLabel}>Refine</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.btn}
+              data-active={String(panel === 'capture')}
+              aria-label="Record visualizer video"
+              title="Record video"
+              onClick={handleCapture}
+            >
+              <UiIcon
+                name="image"
+                className="stims-icon-slot stims-icon-slot--sm"
+              />
+              <span className={styles.btnLabel}>Record video</span>
             </button>
             <button
               type="button"

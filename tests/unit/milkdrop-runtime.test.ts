@@ -64,7 +64,7 @@ describe('milkdrop runtime detail scale', () => {
         particleScale: 2,
         particleBudget: 2,
       }),
-    ).toBe(3.5);
+    ).toBe(5.0);
   });
 });
 

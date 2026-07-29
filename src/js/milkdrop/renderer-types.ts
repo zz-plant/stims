@@ -1,4 +1,5 @@
 import type { Camera, Scene, Texture } from 'three';
+import type { MilkdropExpressionNode } from './common-types.ts';
 import type {
   MilkdropCompatibilityReport,
   MilkdropCompiledPreset,
@@ -230,7 +231,11 @@ export type MilkdropPostVisual = {
   /** Per-pixel equation targets and their expression trees for GPU evaluation */
   perPixelPrograms?: Array<{ target: string; exprStrings: string[] }> | null;
   /** Per-pixel equation targets and source expressions for fragment evaluation */
-  perPixelStatements?: Array<{ target: string; source: string }> | null;
+  perPixelStatements?: Array<{
+    target: string;
+    source: string;
+    expression: MilkdropExpressionNode;
+  }> | null;
   brighten: boolean;
   darken: boolean;
   darkenCenter: boolean;
@@ -301,8 +306,13 @@ export type MilkdropFeedbackCompositeState = {
   };
   /** Per-pixel equation programs that modify warp/zoom/rot per fragment */
   perPixelPrograms?: {
-    statements: Array<{ target: string; expression: string }>;
+    statements: Array<{
+      target: string;
+      source: string;
+      expression: MilkdropExpressionNode;
+    }>;
   } | null;
+  perPixelVariables?: Readonly<Record<string, number>>;
   mixAlpha: number;
   videoEchoAlpha: number;
   zoom: number;
@@ -366,8 +376,11 @@ export type MilkdropFeedbackCompositeState = {
   };
   warpTextureVolumeSliceZ: number;
   signalBass: number;
+  signalBassAtt?: number;
   signalMid: number;
+  signalMidAtt?: number;
   signalTreb: number;
+  signalTrebAtt?: number;
   signalBeat: number;
   signalBeatPulse: number;
   signalEnergy: number;
@@ -424,6 +437,7 @@ export interface MilkdropRendererAdapter {
     }>,
   ): void;
   render(payload: MilkdropRenderPayload): boolean;
+  getAudioTexture?(): Texture | null;
   resize(width: number, height: number): void;
   dispose(): void;
 }

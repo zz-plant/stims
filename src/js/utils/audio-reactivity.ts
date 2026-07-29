@@ -40,6 +40,8 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+const bandIndexCache = new Map<string, { start: number; end: number }>();
+
 function resolveBandIndexes(
   dataLength: number,
   sampleRate: number,
@@ -50,24 +52,38 @@ function resolveBandIndexes(
     return { start: 0, end: 0 };
   }
 
+  const cacheKey = `${dataLength}:${sampleRate}:${range.minHz}:${range.maxHz}:${fftSize}`;
+  const cached = bandIndexCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const resolutionHz = sampleRate / fftSize;
   const nyquistHz = sampleRate / 2;
   const minHz = clamp(range.minHz, 0, nyquistHz);
   const maxHz = clamp(Math.max(minHz, range.maxHz), 0, nyquistHz);
   const startCandidate = Math.ceil(minHz / resolutionHz);
   const endCandidate = Math.ceil(maxHz / resolutionHz);
+  let result: { start: number; end: number };
+
   if (endCandidate <= startCandidate) {
     const representative = clamp(
       Math.floor(((minHz + maxHz) * 0.5) / resolutionHz),
       0,
       dataLength - 1,
     );
-    return { start: representative, end: representative + 1 };
+    result = { start: representative, end: representative + 1 };
+  } else {
+    const start = clamp(startCandidate, 0, dataLength - 1);
+    const end = clamp(endCandidate, start + 1, dataLength);
+    result = { start, end };
   }
-  const start = clamp(startCandidate, 0, dataLength - 1);
-  const end = clamp(endCandidate, start + 1, dataLength);
 
-  return { start, end };
+  if (bandIndexCache.size > 128) {
+    bandIndexCache.clear();
+  }
+  bandIndexCache.set(cacheKey, result);
+  return result;
 }
 
 function getBandAverageForRange(
@@ -147,6 +163,90 @@ export function getFrequencyBandLevels(
   return { bass, mid, treble };
 }
 
+export type ExtendedBandLevels = BandLevels & {
+  subBass: number;
+  kick: number;
+};
+
+export function getExtendedFrequencyBandLevels(
+  data: Uint8Array,
+  sampleRate = 44100,
+  bandRanges: FrequencyBandRanges = DEFAULT_FREQUENCY_BAND_RANGES,
+  fftSize = data.length * 2,
+): ExtendedBandLevels {
+  const base = getFrequencyBandLevels(data, sampleRate, bandRanges, fftSize);
+  if (data.length === 0) {
+    return { ...base, subBass: 0, kick: 0 };
+  }
+
+  const resolvedFftSize =
+    Number.isFinite(fftSize) && fftSize > 0 ? fftSize : data.length * 2;
+
+  const subBassRange = { minHz: 24, maxHz: 60 };
+  const kickRange = { minHz: 60, maxHz: 250 };
+
+  const subBass =
+    getBandAverageForRange(
+      data,
+      sampleRate,
+      subBassRange,
+      'bass',
+      resolvedFftSize,
+    ) / 255;
+
+  const kick =
+    getBandAverageForRange(
+      data,
+      sampleRate,
+      kickRange,
+      'bass',
+      resolvedFftSize,
+    ) / 255;
+
+  return {
+    ...base,
+    subBass,
+    kick,
+  };
+}
+
+export type FourBandTransientMetrics = {
+  subBassEnv: number;
+  kickTransient: number;
+  vocalMidEnv: number;
+  snareSnap: number;
+};
+
+export function getFourBandTransientMetrics(
+  data: Uint8Array,
+  previousData?: Uint8Array,
+  sampleRate = 44100,
+): FourBandTransientMetrics {
+  if (data.length === 0) {
+    return { subBassEnv: 0, kickTransient: 0, vocalMidEnv: 0, snareSnap: 0 };
+  }
+
+  const ext = getExtendedFrequencyBandLevels(data, sampleRate);
+  const prevExt = previousData?.length
+    ? getExtendedFrequencyBandLevels(previousData, sampleRate)
+    : { subBass: 0, kick: 0, mid: 0, treble: 0 };
+
+  const subBassEnv = Math.min(1, ext.subBass * 1.35);
+  const kickDelta = Math.max(0, ext.kick - prevExt.kick);
+  const kickTransient = Math.min(1, kickDelta * 3.8 + ext.kick * 0.4);
+
+  const vocalMidEnv = Math.min(1, ext.mid * 1.2);
+  const snareDelta = Math.max(0, ext.treble - prevExt.treble);
+  const snareSnap = Math.min(1, snareDelta * 4.2 + ext.treble * 0.3);
+
+  return {
+    subBassEnv,
+    kickTransient,
+    vocalMidEnv,
+    snareSnap,
+  };
+}
+
 export function getBandLevels({
   analyser,
   data,
@@ -154,13 +254,15 @@ export function getBandLevels({
   ratios = DEFAULT_RATIOS,
   bandRanges = DEFAULT_FREQUENCY_BAND_RANGES,
 }: {
-  analyser?: { getMultiBandEnergy?: () => BandLevels | null } | null;
+  analyser?: {
+    getMultiBandEnergy?: (data?: Uint8Array) => BandLevels | null;
+  } | null;
   data: Uint8Array;
   sampleRate?: number;
   ratios?: BandRatios;
   bandRanges?: FrequencyBandRanges;
 }): BandLevels {
-  const fromAnalyser = analyser?.getMultiBandEnergy?.();
+  const fromAnalyser = analyser?.getMultiBandEnergy?.(data);
   if (fromAnalyser) return fromAnalyser;
 
   if (Number.isFinite(sampleRate) && (sampleRate ?? 0) > 0) {

@@ -12,7 +12,7 @@ export type StoredMetaRecord = {
 };
 
 const DB_VERSION = 2;
-const DB_OPEN_TIMEOUT_MS = 750;
+const DB_OPEN_TIMEOUT_MS = 300;
 
 function requestToPromise<T>(request: IDBRequest<T>) {
   return new Promise<T>((resolve, reject) => {

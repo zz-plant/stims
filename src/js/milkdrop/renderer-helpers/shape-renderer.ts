@@ -31,13 +31,13 @@ type ShapeOutlineLayerObject = Line | LineLoop;
 function shouldUseShapeShaderFill(
   shape: MilkdropShapeVisual,
   behavior: MilkdropBackendBehavior,
-  texture: Texture | null,
+  _texture: Texture | null,
 ) {
   return (
     (behavior.supportsShapeShaderFill &&
       Boolean(shape.secondaryColor) &&
       behavior.supportsShapeGradient) ||
-    (behavior.supportsShapeShaderFill && shape.textured && texture !== null)
+    (behavior.supportsShapeShaderFill && shape.textured)
   );
 }
 

@@ -28,6 +28,7 @@ import {
 } from '../../src/js/milkdrop/renderer-adapter.ts';
 import { createMilkdropRendererAdapter } from '../../src/js/milkdrop/renderer-adapter-factory.ts';
 import { createWebGPUBatchingLayer } from '../../src/js/milkdrop/renderer-adapter-webgpu-batching.ts';
+import { buildFeedbackCompositeState } from '../../src/js/milkdrop/renderer-helpers/feedback-composite.ts';
 import { createMilkdropSegmentBatchingLayer } from '../../src/js/milkdrop/renderer-segment-batching.ts';
 import type {
   MilkdropFeedbackCompositeState,
@@ -272,6 +273,61 @@ function makeSignals(
     ...overrides,
   };
 }
+
+test('updates one safely exposed audio texture on both live renderer paths', async () => {
+  const preset = compileMilkdropPresetSource('title=Audio Texture', {
+    id: 'audio-texture',
+  });
+
+  for (const backend of ['webgl', 'webgpu'] as const) {
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter =
+      backend === 'webgpu'
+        ? await createMilkdropRendererAdapter({
+            scene,
+            camera,
+            backend,
+            preset,
+          })
+        : createMilkdropRendererAdapter({
+            scene,
+            camera,
+            backend,
+            preset,
+          });
+    expect(adapter.getAudioTexture?.()).toBeNull();
+
+    const signals = makeSignals({
+      frequencyData: new Uint8Array([12, 34, 56, 78]),
+      waveformData: new Uint8Array([128, 140, 116, 128]),
+    });
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(signals),
+      blendState: null,
+    });
+
+    const texture = adapter.getAudioTexture?.();
+    expect(texture).toBeInstanceOf(Texture);
+    const textureImage = texture?.image as { data?: Uint8Array } | undefined;
+    expect(textureImage?.data?.[0]).toBe(12);
+    const initialData = textureImage?.data;
+
+    signals.frequencyData = new Uint8Array([90, 80, 70, 60]);
+    adapter.render({
+      frameState: createMilkdropVM(preset).step(signals),
+      blendState: null,
+    });
+    expect(adapter.getAudioTexture?.()).toBe(texture);
+    expect((texture?.image as { data?: Uint8Array } | undefined)?.data).toBe(
+      initialData,
+    );
+    expect(
+      (texture?.image as { data?: Uint8Array } | undefined)?.data?.[0],
+    ).toBe(90);
+    adapter.dispose();
+  }
+});
 
 describe('milkdrop renderer adapter', () => {
   test('uses WebGPU-safe shape fills and thick outlines', async () => {
@@ -3891,6 +3947,38 @@ warp_shader=dx=0.05; dy=-0.02; rot=0.18; zoom=1.12
     );
   });
 
+  test('forwards executable per-pixel warp AST and live registers to WebGPU feedback', () => {
+    const preset = compileMilkdropPresetSource(
+      readFileSync(
+        './public/milkdrop-presets/rovastar-parallel-universe.milk',
+        'utf8',
+      ),
+      { id: 'rovastar-parallel-universe-feedback' },
+    );
+    const frameState = createMilkdropVM(preset).step(
+      makeSignals({ bass: 0.7, bassAtt: 0.6, bass_att: 0.6 }),
+    );
+
+    const state = buildFeedbackCompositeState({
+      frameState,
+      backend: 'webgpu',
+      directFeedbackShaders: true,
+      webgpuFeedbackPlanShaderExecution: 'controls',
+      getShaderTextureSourceId: () => 0,
+      getShaderTextureBlendModeId: () => 0,
+      getShaderSampleDimensionId: () => 0,
+    });
+
+    expect(state.perPixelPrograms?.statements).toHaveLength(8);
+    expect(state.perPixelPrograms?.statements[7]).toMatchObject({
+      target: 'dx',
+      source: 'dx=0.2*q1*q6',
+      expression: { type: 'binary' },
+    });
+    expect(state.perPixelVariables?.q6).toBeCloseTo(0.5, 6);
+    expect(state.signalBassAtt).toBeCloseTo(0.6, 6);
+  });
+
   test('forwards shader color controls into composite uniforms', async () => {
     const preset = compileMilkdropPresetSource(
       `
@@ -4286,5 +4374,43 @@ shapecode_0_a=0.7
     expect(shapeMaterial?.blending).toBe(CustomBlending);
     expect(shapeMaterial?.blendSrc).toBe(DstColorFactor);
     expect(shapeMaterial?.blendDst).toBe(ZeroFactor);
+  });
+
+  test('aligns WebGL border fill depth to 0.285 matching WebGPU depth layers', async () => {
+    const borderPreset = compileMilkdropPresetSource(
+      `
+ob_size=0.05
+ob_r=1.0
+ob_g=0.5
+ob_b=0.2
+ob_a=0.8
+      `.trim(),
+      { id: 'border-depth' },
+    );
+
+    const scene = new Scene();
+    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+    const adapter = await createMilkdropRendererAdapter({
+      scene,
+      camera,
+      backend: 'webgl',
+    });
+
+    adapter.attach();
+    adapter.render({
+      frameState: createMilkdropVM(borderPreset).step(makeSignals()),
+      blendState: null,
+    });
+
+    const root = scene.children[0] as RenderTreeNode;
+    const borderGroup = getRootChildByRenderOrder(root, 60);
+    expect(borderGroup).toBeDefined();
+
+    const outerBorder = borderGroup?.children?.[0] as RenderTreeNode;
+    const borderMesh = outerBorder?.children?.[0] as {
+      position?: { z: number };
+    };
+    expect(borderMesh).toBeDefined();
+    expect(borderMesh?.position?.z).toBe(0.285);
   });
 });

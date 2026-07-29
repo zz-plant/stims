@@ -368,7 +368,11 @@ function createBorderRingGeometry() {
 
 function toRadiusNormalizedScale(radius: number, offset: number) {
   const safeRadius = Math.max(0.0001, radius);
-  return Math.max(0, safeRadius + offset) / safeRadius;
+  const effectiveOffset =
+    offset >= 0
+      ? Math.min(offset, safeRadius * 0.25)
+      : Math.max(offset, -safeRadius * 0.25);
+  return Math.max(0, safeRadius + effectiveOffset) / safeRadius;
 }
 
 function createShapeRingScales(
@@ -1390,7 +1394,7 @@ class InstancedShapeFillBatch {
       fillControl.setXYZW(
         index,
         instance.useGradient,
-        instance.textured,
+        instance.textured && shapeTexture !== null ? 1 : 0,
         instance.textureZoom,
         instance.textureAngle,
       );

@@ -439,7 +439,7 @@ export function createToyRuntime({
         pluginManager.update(frameState);
 
         if (typeof window !== 'undefined' && analyser) {
-          const energy = analyser.getMultiBandEnergy();
+          const energy = analyser.getMultiBandEnergy(frameState.frequencyData);
           smoothedBassLevel = smoothedBassLevel * 0.84 + energy.bass * 0.16;
         }
       },

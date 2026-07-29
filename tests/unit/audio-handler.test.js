@@ -15,6 +15,7 @@ let DEFAULT_MICROPHONE_CONSTRAINTS;
 let getFrequencyData;
 let FrequencyAnalyser;
 let stylizeFrequencyData;
+let resolveAdaptiveFftSize;
 let originalAudioContext;
 let originalAudioWorkletNode;
 let AudioCtor;
@@ -122,6 +123,7 @@ beforeAll(async () => {
     initAudio,
     getFrequencyData,
     stylizeFrequencyData,
+    resolveAdaptiveFftSize,
   } = await import('../../src/js/core/audio-handler.ts'));
 });
 
@@ -343,6 +345,22 @@ describe('audio-handler utilities', () => {
     expect([...waveform.slice(0, 4)]).toEqual([128, 128, 128, 128]);
   });
 
+  test('derives band energy from a captured spectrum without another analyser read', async () => {
+    const context = new FakeAudioContext();
+    context.audioWorklet = undefined;
+    const analyser = await FrequencyAnalyser.create(
+      context,
+      { getTracks: () => [] },
+      256,
+    );
+    const analyserNode = context.createAnalyser.mock.results[0]?.value;
+
+    const snapshot = analyser.getFrequencyData();
+    analyser.getMultiBandEnergy(snapshot);
+
+    expect(analyserNode.getByteFrequencyData).toHaveBeenCalledTimes(1);
+  });
+
   test('stylizeFrequencyData leaves silent buffers untouched', () => {
     const data = new Uint8Array(16);
 
@@ -371,5 +389,28 @@ describe('audio-handler utilities', () => {
     expect(Math.max(...data)).toBeLessThan(11);
     expect(data[0]).toBeLessThan(6);
     expect(data[2]).toBeLessThan(11);
+  });
+
+  test('resolveAdaptiveFftSize auto-scales FFT size based on sample rate', () => {
+    expect(resolveAdaptiveFftSize(44100)).toBe(1024);
+    expect(resolveAdaptiveFftSize(48000)).toBe(1024);
+    expect(resolveAdaptiveFftSize(96000)).toBe(2048);
+    expect(resolveAdaptiveFftSize(192000)).toBe(4096);
+    expect(resolveAdaptiveFftSize(192000, 512)).toBe(512);
+  });
+
+  test('FrequencyAnalyser exposes stereo metrics and getters', async () => {
+    const context = new FakeAudioContext();
+    const analyser = await FrequencyAnalyser.create(
+      context,
+      { getTracks: () => [] },
+      1024,
+    );
+
+    expect(analyser.getStereoWidth()).toBe(0);
+    expect(analyser.getStereoBalance()).toBe(0);
+    expect(analyser.getSpectralCrest()).toBe(1);
+    expect(analyser.getZeroCrossingRate()).toBe(0);
+    expect(analyser.getSpectralFlux()).toBe(0);
   });
 });

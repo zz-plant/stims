@@ -100,7 +100,7 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
   let pmLastBeatTime = 0;
   const pmCoeff = 0.1; // projectM's energy averaging coefficient
 
-  let smoothedBands: AudioBandLevels = { bass: 0, mid: 0, treble: 0 };
+  const smoothedBands: AudioBandLevels = { bass: 0, mid: 0, treble: 0 };
   let beatIntensity = 0;
   let bassBeatIntensity = 0;
   let midBeatIntensity = 0;
@@ -108,7 +108,7 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
   let lastBassBeatTime = 0;
   let lastMidBeatTime = 0;
   let lastTrebleBeatTime = 0;
-  let previousBands: AudioBandLevels = { bass: 0, mid: 0, treble: 0 };
+  const previousBands: AudioBandLevels = { bass: 0, mid: 0, treble: 0 };
   let previousWeightedEnergy = 0;
   let bassBaseline = 0;
   let midBaseline = 0;
@@ -117,6 +117,19 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
   let _previousSpectrum: Float32Array | null = null;
   let spectralFlux = 0;
   let bandFlux = 0;
+  let peakEnergy = 0.1;
+  let noiseFloor = 0.004;
+  const updateResult: BeatTrackerUpdate = {
+    smoothedBands,
+    beatIntensity: 0,
+    isBeat: false,
+    isTransient: false,
+    spectralFlux: 0,
+    bandFlux: 0,
+    beatBass: false,
+    beatMid: false,
+    beatTreble: false,
+  };
 
   const update = (
     {
@@ -130,6 +143,28 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     },
     timeMs: number,
   ): BeatTrackerUpdate => {
+    peakEnergy = Math.max(
+      peakEnergy * Math.exp(-deltaMs / 4000),
+      weightedEnergy,
+      0.04,
+    );
+    const floorDecayAlpha = 1 - Math.exp(-deltaMs / 4000);
+    noiseFloor +=
+      (weightedEnergy - noiseFloor) *
+      (weightedEnergy < noiseFloor
+        ? 1 - Math.exp(-deltaMs / 100)
+        : floorDecayAlpha);
+    noiseFloor = Math.max(0.002, Math.min(noiseFloor, peakEnergy));
+    const effectiveRange = Math.max(peakEnergy - noiseFloor, 0.01);
+    const sensitivityScale = clamp(
+      0.12 / (noiseFloor + effectiveRange * 0.4),
+      0.6,
+      2.2,
+    );
+    const _effectiveThreshold = threshold * sensitivityScale;
+    const _effectiveOnsetThreshold = onsetThreshold * sensitivityScale;
+    const _effectiveMidThreshold = midThreshold * sensitivityScale;
+    const _effectiveTrebleThreshold = trebleThreshold * sensitivityScale;
     // projectM-compatible beat detection: simple energy threshold against running average.
     // This matches projectM's algorithm more closely than the multi-band onset tracker.
     if (mode === 'projectM') {
@@ -146,69 +181,65 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
         pmBeatIntensity *= beatDecay;
       }
 
-      smoothedBands = {
-        bass: applyEnvelope(
-          smoothedBands.bass,
-          bands.bass,
-          deltaMs,
-          attackMs.bass ?? DEFAULT_SMOOTHING.bass,
-          releaseMs.bass ?? DEFAULT_RELEASE.bass,
-        ),
-        mid: applyEnvelope(
-          smoothedBands.mid,
-          bands.mid,
-          deltaMs,
-          attackMs.mid ?? DEFAULT_SMOOTHING.mid,
-          releaseMs.mid ?? DEFAULT_RELEASE.mid,
-        ),
-        treble: applyEnvelope(
-          smoothedBands.treble,
-          bands.treble,
-          deltaMs,
-          attackMs.treble ?? DEFAULT_SMOOTHING.treble,
-          releaseMs.treble ?? DEFAULT_RELEASE.treble,
-        ),
-      };
-
-      previousBands = { ...previousBands, ...bands };
-      previousWeightedEnergy = weightedEnergy;
-
-      return {
-        smoothedBands,
-        beatIntensity: pmBeatIntensity,
-        isBeat: pmIsBeat,
-        isTransient: currentEnergy > pmRunningAvg * 1.8,
-        spectralFlux: 0,
-        bandFlux: 0,
-        beatBass: pmIsBeat,
-        beatMid: false,
-        beatTreble: false,
-      };
-    }
-
-    smoothedBands = {
-      bass: applyEnvelope(
+      smoothedBands.bass = applyEnvelope(
         smoothedBands.bass,
         bands.bass,
         deltaMs,
         attackMs.bass ?? DEFAULT_SMOOTHING.bass,
         releaseMs.bass ?? DEFAULT_RELEASE.bass,
-      ),
-      mid: applyEnvelope(
+      );
+      smoothedBands.mid = applyEnvelope(
         smoothedBands.mid,
         bands.mid,
         deltaMs,
         attackMs.mid ?? DEFAULT_SMOOTHING.mid,
         releaseMs.mid ?? DEFAULT_RELEASE.mid,
-      ),
-      treble: applyEnvelope(
+      );
+      smoothedBands.treble = applyEnvelope(
         smoothedBands.treble,
         bands.treble,
         deltaMs,
         attackMs.treble ?? DEFAULT_SMOOTHING.treble,
         releaseMs.treble ?? DEFAULT_RELEASE.treble,
-      ),
-    };
+      );
+
+      previousBands.bass = bands.bass;
+      previousBands.mid = bands.mid;
+      previousBands.treble = bands.treble;
+      previousWeightedEnergy = weightedEnergy;
+
+      updateResult.beatIntensity = pmBeatIntensity;
+      updateResult.isBeat = pmIsBeat;
+      updateResult.isTransient = currentEnergy > pmRunningAvg * 1.8;
+      updateResult.spectralFlux = 0;
+      updateResult.bandFlux = 0;
+      updateResult.beatBass = pmIsBeat;
+      updateResult.beatMid = false;
+      updateResult.beatTreble = false;
+      return updateResult;
+    }
+
+    smoothedBands.bass = applyEnvelope(
+      smoothedBands.bass,
+      bands.bass,
+      deltaMs,
+      attackMs.bass ?? DEFAULT_SMOOTHING.bass,
+      releaseMs.bass ?? DEFAULT_RELEASE.bass,
+    );
+    smoothedBands.mid = applyEnvelope(
+      smoothedBands.mid,
+      bands.mid,
+      deltaMs,
+      attackMs.mid ?? DEFAULT_SMOOTHING.mid,
+      releaseMs.mid ?? DEFAULT_RELEASE.mid,
+    );
+    smoothedBands.treble = applyEnvelope(
+      smoothedBands.treble,
+      bands.treble,
+      deltaMs,
+      attackMs.treble ?? DEFAULT_SMOOTHING.treble,
+      releaseMs.treble ?? DEFAULT_RELEASE.treble,
+    );
 
     if (!_previousSpectrum) {
       _previousSpectrum = new Float32Array(3);
@@ -217,14 +248,10 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
       _previousSpectrum[2] = bands.treble;
     }
 
-    let fluxSum = 0;
-    const bandValues = [bands.bass, bands.mid, bands.treble];
-    for (let i = 0; i < 3; i += 1) {
-      fluxSum += Math.max(
-        0,
-        (bandValues[i] ?? 0) - (_previousSpectrum[i] ?? 0),
-      );
-    }
+    const fluxSum =
+      Math.max(0, bands.bass - (_previousSpectrum[0] ?? 0)) +
+      Math.max(0, bands.mid - (_previousSpectrum[1] ?? 0)) +
+      Math.max(0, bands.treble - (_previousSpectrum[2] ?? 0));
     spectralFlux = fluxSum / 3;
     _previousSpectrum[0] = bands.bass;
     _previousSpectrum[1] = bands.mid;
@@ -267,21 +294,21 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
 
     const minIntervalFrames = minIntervalMs;
     const beatBass =
-      bassProminence > threshold &&
-      bassRise > onsetThreshold &&
-      beatScore > threshold * 2.2 &&
+      bassProminence > _effectiveThreshold &&
+      bassRise > _effectiveOnsetThreshold &&
+      beatScore > _effectiveThreshold * 2.2 &&
       timeMs - lastBassBeatTime > minIntervalFrames;
 
     const beatMid =
-      midProminence > midThreshold &&
-      midRise > onsetThreshold * 0.7 &&
-      midEnergyWeight > midThreshold * 2.0 &&
+      midProminence > _effectiveMidThreshold &&
+      midRise > _effectiveOnsetThreshold * 0.7 &&
+      midEnergyWeight > _effectiveMidThreshold * 2.0 &&
       timeMs - lastMidBeatTime > minIntervalFrames;
 
     const beatTreble =
-      trebleProminence > trebleThreshold &&
-      trebleRise > onsetThreshold * 0.5 &&
-      trebleEnergyWeight > trebleThreshold * 1.8 &&
+      trebleProminence > _effectiveTrebleThreshold &&
+      trebleRise > _effectiveOnsetThreshold * 0.5 &&
+      trebleEnergyWeight > _effectiveTrebleThreshold * 1.8 &&
       timeMs - lastTrebleBeatTime > minIntervalFrames;
 
     if (beatBass) {
@@ -318,21 +345,21 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     previousWeightedEnergy = weightedEnergy;
     bandFlux = bassRise + energyRise + midRise;
 
-    return {
-      smoothedBands,
-      beatIntensity,
-      isBeat,
-      isTransient,
-      spectralFlux,
-      bandFlux,
-      beatBass,
-      beatMid,
-      beatTreble,
-    };
+    updateResult.beatIntensity = beatIntensity;
+    updateResult.isBeat = isBeat;
+    updateResult.isTransient = isTransient;
+    updateResult.spectralFlux = spectralFlux;
+    updateResult.bandFlux = bandFlux;
+    updateResult.beatBass = beatBass;
+    updateResult.beatMid = beatMid;
+    updateResult.beatTreble = beatTreble;
+    return updateResult;
   };
 
   const reset = () => {
-    smoothedBands = { bass: 0, mid: 0, treble: 0 };
+    smoothedBands.bass = 0;
+    smoothedBands.mid = 0;
+    smoothedBands.treble = 0;
     beatIntensity = 0;
     bassBeatIntensity = 0;
     midBeatIntensity = 0;
@@ -340,7 +367,9 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     lastBassBeatTime = 0;
     lastMidBeatTime = 0;
     lastTrebleBeatTime = 0;
-    previousBands = { bass: 0, mid: 0, treble: 0 };
+    previousBands.bass = 0;
+    previousBands.mid = 0;
+    previousBands.treble = 0;
     previousWeightedEnergy = 0;
     bassBaseline = 0;
     midBaseline = 0;
@@ -349,6 +378,7 @@ export function createBeatTracker(options: BeatTrackerOptions = {}) {
     _previousSpectrum = null;
     spectralFlux = 0;
     bandFlux = 0;
+    noiseFloor = 0.004;
     pmRunningAvg = 0;
     pmBeatIntensity = 0;
     pmLastBeatTime = 0;

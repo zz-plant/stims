@@ -1,7 +1,11 @@
 import Meyda, { type MeydaAudioFeature, type MeydaFeaturesObject } from 'meyda';
 import type { Camera, Object3D } from 'three';
 import { Audio, AudioListener, PositionalAudio } from 'three';
-import { getFrequencyBandLevels } from '../utils/audio-reactivity.ts';
+import {
+  type FourBandTransientMetrics,
+  getFourBandTransientMetrics,
+  getFrequencyBandLevels,
+} from '../utils/audio-reactivity.ts';
 import { isInAppBrowser } from '../utils/device-detect.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
@@ -40,9 +44,22 @@ function toUint8Array(data: ArrayBuffer | Uint8Array): Uint8Array {
   return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
+export function resolveAdaptiveFftSize(
+  sampleRate: number,
+  requestedFftSize?: number,
+): number {
+  if (typeof requestedFftSize === 'number' && requestedFftSize > 0) {
+    return requestedFftSize;
+  }
+  if (sampleRate >= 176_400) return 4096;
+  if (sampleRate >= 88_200) return 2048;
+  return 1024;
+}
+
 export class FrequencyAnalyser {
   frequencyBinCount: number;
   private frequencyData: Uint8Array;
+  private previousFrequencyData: Uint8Array | null = null;
   private waveformData: Uint8Array;
   private frequencyDataL: Uint8Array | null = null;
   private frequencyDataR: Uint8Array | null = null;
@@ -50,6 +67,11 @@ export class FrequencyAnalyser {
   private waveformDataR: Uint8Array | null = null;
   private timeDomainData: Float32Array;
   private rms = 0;
+  private zeroCrossingRate = 0;
+  private spectralFlux = 0;
+  private spectralCrest = 1;
+  private stereoBalance = 0;
+  private stereoWidth = 0;
   private spectralFeatures: SpectralFeatureSnapshot | null = null;
   private readonly historySize = 64;
   private energyHistory: { bass: number[]; mid: number[]; treble: number[] } = {
@@ -112,8 +134,22 @@ export class FrequencyAnalyser {
           waveformDataL,
           waveformDataR,
           rms,
+          zeroCrossingRate,
+          spectralFlux,
+          spectralCrest,
+          stereoBalance,
+          stereoWidth,
           timeDomainData,
         } = event.data ?? {};
+        if (typeof rms === 'number') this.rms = rms;
+        if (typeof zeroCrossingRate === 'number')
+          this.zeroCrossingRate = zeroCrossingRate;
+        if (typeof spectralFlux === 'number') this.spectralFlux = spectralFlux;
+        if (typeof spectralCrest === 'number')
+          this.spectralCrest = spectralCrest;
+        if (typeof stereoBalance === 'number')
+          this.stereoBalance = stereoBalance;
+        if (typeof stereoWidth === 'number') this.stereoWidth = stereoWidth;
         if (frequencyData) {
           const nextFreq =
             frequencyData instanceof Uint8Array
@@ -175,7 +211,7 @@ export class FrequencyAnalyser {
   static async create(
     context: AudioContext,
     stream: MediaStream,
-    fftSize: number,
+    fftSize?: number,
     smoothingTimeConstant?: number,
   ): Promise<FrequencyAnalyser> {
     const sourceNode = context.createMediaStreamSource(stream);
@@ -185,6 +221,7 @@ export class FrequencyAnalyser {
       Number.isFinite(context.sampleRate) && context.sampleRate > 0
         ? context.sampleRate
         : DEFAULT_SAMPLE_RATE;
+    const effectiveFftSize = resolveAdaptiveFftSize(sampleRate, fftSize);
 
     let workletNode: AudioWorkletNode | undefined;
     if (context.audioWorklet?.addModule) {
@@ -201,8 +238,9 @@ export class FrequencyAnalyser {
           numberOfOutputs: 1,
           outputChannelCount: [1],
           processorOptions: {
-            fftSize,
-            messageEvery: fftSize >= 1024 ? 4 : fftSize >= 512 ? 2 : 1,
+            fftSize: effectiveFftSize,
+            messageEvery:
+              effectiveFftSize >= 1024 ? 4 : effectiveFftSize >= 512 ? 2 : 1,
           },
         });
         sourceNode.connect(workletNode);
@@ -225,7 +263,7 @@ export class FrequencyAnalyser {
       ? undefined
       : (() => {
           const node = context.createAnalyser();
-          node.fftSize = fftSize;
+          node.fftSize = effectiveFftSize;
           if (typeof smoothingTimeConstant === 'number') {
             node.smoothingTimeConstant = smoothingTimeConstant;
           }
@@ -235,8 +273,8 @@ export class FrequencyAnalyser {
             const splitter = context.createChannelSplitter(2);
             analyserNodeL = context.createAnalyser();
             analyserNodeR = context.createAnalyser();
-            analyserNodeL.fftSize = fftSize;
-            analyserNodeR.fftSize = fftSize;
+            analyserNodeL.fftSize = effectiveFftSize;
+            analyserNodeR.fftSize = effectiveFftSize;
             if (typeof smoothingTimeConstant === 'number') {
               analyserNodeL.smoothingTimeConstant = smoothingTimeConstant;
               analyserNodeR.smoothingTimeConstant = smoothingTimeConstant;
@@ -272,7 +310,7 @@ export class FrequencyAnalyser {
       analyserNode,
       analyserNodeL,
       analyserNodeR,
-      fftSize,
+      fftSize: effectiveFftSize,
       silentGain,
       sampleRate,
     });
@@ -280,6 +318,15 @@ export class FrequencyAnalyser {
 
   getFrequencyData() {
     this.updateTimeDomainData();
+    if (this.frequencyData.length > 0) {
+      if (
+        !this.previousFrequencyData ||
+        this.previousFrequencyData.length !== this.frequencyData.length
+      ) {
+        this.previousFrequencyData = new Uint8Array(this.frequencyData.length);
+      }
+      this.previousFrequencyData.set(this.frequencyData);
+    }
     if (this.analyserNode) {
       this.analyserNode.getByteFrequencyData(
         this.frequencyData as Uint8Array<ArrayBuffer>,
@@ -289,6 +336,15 @@ export class FrequencyAnalyser {
     }
 
     return this.frequencyData;
+  }
+
+  getTransientMetrics(): FourBandTransientMetrics {
+    const current = this.getFrequencyData();
+    return getFourBandTransientMetrics(
+      current,
+      this.previousFrequencyData ?? undefined,
+      this.sampleRate,
+    );
   }
 
   getWaveformData() {
@@ -303,6 +359,26 @@ export class FrequencyAnalyser {
     }
 
     return this.waveformData;
+  }
+
+  getZeroCrossingRate() {
+    return this.zeroCrossingRate;
+  }
+
+  getSpectralFlux() {
+    return this.spectralFlux;
+  }
+
+  getSpectralCrest() {
+    return this.spectralCrest;
+  }
+
+  getStereoBalance() {
+    return this.stereoBalance;
+  }
+
+  getStereoWidth() {
+    return this.stereoWidth;
   }
 
   getFrequencyDataL() {
@@ -454,10 +530,13 @@ export class FrequencyAnalyser {
     this.historyCount = Math.min(this.historyCount + 1, this.historySize);
   }
 
-  getMultiBandEnergy() {
-    const data = this.getFrequencyData();
+  getMultiBandEnergy(data?: Uint8Array) {
+    if (data && data !== this.frequencyData) {
+      return this.calculateMultiBandEnergy(data);
+    }
+    const resolvedData = data ?? this.getFrequencyData();
     if (this.energyVersion !== this.dataVersion) {
-      this.cachedEnergy = this.calculateMultiBandEnergy(data);
+      this.cachedEnergy = this.calculateMultiBandEnergy(resolvedData);
       this.energyVersion = this.dataVersion;
     }
     return this.cachedEnergy;
@@ -528,6 +607,7 @@ export class AudioAccessError extends Error {
 
 export type AudioInitOptions = {
   fftSize?: number;
+  deviceId?: string;
   smoothingTimeConstant?: number;
   camera?: Camera;
   positional?: boolean;
@@ -997,9 +1077,19 @@ export async function initAudio(options: AudioInitOptions = {}) {
         );
       }
 
-      resolvedStream = await navigator.mediaDevices.getUserMedia(
-        constraints ?? DEFAULT_MICROPHONE_CONSTRAINTS,
-      );
+      const effectiveConstraints: MediaStreamConstraints = constraints ?? {
+        audio: {
+          ...(typeof DEFAULT_MICROPHONE_CONSTRAINTS.audio === 'object'
+            ? DEFAULT_MICROPHONE_CONSTRAINTS.audio
+            : {}),
+          ...(options.deviceId
+            ? { deviceId: { exact: options.deviceId } }
+            : {}),
+        },
+      };
+
+      resolvedStream =
+        await navigator.mediaDevices.getUserMedia(effectiveConstraints);
       ownsStream = true;
       permissionState = permissionState ?? 'granted';
     }

@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   isInAppBrowser,
   isMobileDevice,
@@ -21,8 +21,10 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const disabledDescription = engineStatusId;
   const { ui, engine } = useWorkspace();
   const engineReady = engine.engineReady;
-  const onAudioStart = (source: 'demo' | 'microphone' | 'tab' | 'youtube') =>
-    engine.handleAudioStart(source);
+  const onAudioStart = (
+    source: 'demo' | 'microphone' | 'tab' | 'youtube',
+    deviceId?: string,
+  ) => engine.handleAudioStart(source, deviceId);
   const onLoadRecentYouTubeVideo = (videoId: string) =>
     engine.loadRecentYouTubeVideo(videoId, () => onAudioStart('youtube'));
   const onYoutubeUrlChange = ui.setYoutubeUrl;
@@ -35,6 +37,22 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const youtubePreviewRef = ui.youtubePreviewRef;
   const youtubeReady = ui.youtubeReady;
   const youtubeUrl = ui.youtubeUrl;
+
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const deviceInitRef = useRef(false);
+
+  useEffect(() => {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    navigator.mediaDevices.enumerateDevices().then((devices) => {
+      const inputs = devices.filter((d) => d.kind === 'audioinput');
+      setAudioDevices(inputs);
+      if (!deviceInitRef.current && inputs.length > 0) {
+        deviceInitRef.current = true;
+        setSelectedDeviceId(inputs[0].deviceId);
+      }
+    });
+  }, []);
 
   const canCaptureDisplayAudio =
     typeof navigator !== 'undefined' &&
@@ -198,12 +216,30 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           className="stims-shell__source-card"
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
-          onClick={() => onAudioStart('microphone')}
+          onClick={() =>
+            onAudioStart('microphone', selectedDeviceId || undefined)
+          }
         >
           <span className="stims-shell__source-card-kicker">Live source</span>
           <strong>Microphone</strong>
           <span>Live mic input</span>
         </button>
+        {audioDevices.length > 1 ? (
+          <label className="stims-shell__device-select">
+            <span className="stims-shell__field-label">Microphone</span>
+            <select
+              className="stims-shell__input"
+              value={selectedDeviceId}
+              onChange={(e) => setSelectedDeviceId(e.target.value)}
+            >
+              {audioDevices.map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || `Microphone ${device.deviceId.slice(0, 8)}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         {canCaptureDisplayAudio ? (
           <button
             type="button"

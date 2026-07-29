@@ -97,6 +97,12 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private readonly outputImag: Float32Array;
   private readonly outputRealR: Float32Array;
   private readonly outputImagR: Float32Array;
+  private freqBuf: Uint8Array;
+  private waveBuf: Uint8Array;
+  private freqBufR: Uint8Array;
+  private waveBufR: Uint8Array;
+  private timeDomainBuf: Float32Array;
+  private readonly prevMagnitudes: Float32Array;
   private readonly twiddles: ReturnType<typeof buildTwiddleTable>;
   private readonly messageEvery: number;
   private analyseCount = 0;
@@ -114,6 +120,12 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     this.outputImag = new Float32Array(this.fftSize);
     this.outputRealR = new Float32Array(this.fftSize);
     this.outputImagR = new Float32Array(this.fftSize);
+    this.freqBuf = new Uint8Array(this.frequencyBinCount);
+    this.waveBuf = new Uint8Array(this.fftSize);
+    this.freqBufR = new Uint8Array(this.frequencyBinCount);
+    this.waveBufR = new Uint8Array(this.fftSize);
+    this.timeDomainBuf = new Float32Array(this.fftSize);
+    this.prevMagnitudes = new Float32Array(this.frequencyBinCount);
     this.twiddles = buildTwiddleTable(this.fftSize);
     this.messageEvery = Math.max(
       1,
@@ -130,11 +142,16 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
     }
 
     let sumSquares = 0;
+    let zeroCrossings = 0;
     for (let i = 0; i < this.fftSize; i += 1) {
       const sample = this.buffer[i];
       sumSquares += sample * sample;
+      if (i > 0 && sample >= 0 !== this.buffer[i - 1] >= 0) {
+        zeroCrossings += 1;
+      }
     }
     const rms = Math.sqrt(sumSquares / this.fftSize);
+    const zeroCrossingRate = zeroCrossings / (this.fftSize - 1);
 
     fft(this.outputReal, this.outputImag, this.twiddles);
     if (this.hasStereoInput) {
@@ -143,63 +160,118 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
 
     this.analyseCount += 1;
     if (this.analyseCount % this.messageEvery === 0) {
-      const freqBuf = new Uint8Array(this.frequencyBinCount);
-      const waveBuf = new Uint8Array(this.fftSize);
-      const freqBufR = this.hasStereoInput
-        ? new Uint8Array(this.frequencyBinCount)
-        : null;
-      const waveBufR = this.hasStereoInput
-        ? new Uint8Array(this.fftSize)
-        : null;
+      let maxMag = 0;
+      let sumMag = 0;
+      let spectralFlux = 0;
+
       for (let i = 0; i < this.frequencyBinCount; i += 1) {
         const magnitude =
           Math.sqrt(
             this.outputReal[i] * this.outputReal[i] +
               this.outputImag[i] * this.outputImag[i],
           ) / this.frequencyBinCount;
-        freqBuf[i] = Math.min(255, Math.max(0, Math.round(magnitude * 255)));
-        if (freqBufR) {
+
+        const diff = magnitude - this.prevMagnitudes[i];
+        if (diff > 0) {
+          spectralFlux += diff;
+        }
+        this.prevMagnitudes[i] = magnitude;
+
+        if (magnitude > maxMag) maxMag = magnitude;
+        sumMag += magnitude;
+
+        this.freqBuf[i] = Math.min(
+          255,
+          Math.max(0, Math.round(magnitude * 255)),
+        );
+        if (this.hasStereoInput) {
           const magnitudeR =
             Math.sqrt(
               this.outputRealR[i] * this.outputRealR[i] +
                 this.outputImagR[i] * this.outputImagR[i],
             ) / this.frequencyBinCount;
-          freqBufR[i] = Math.min(
+          this.freqBufR[i] = Math.min(
             255,
             Math.max(0, Math.round(magnitudeR * 255)),
           );
         }
       }
+
+      const meanMag = sumMag / Math.max(1, this.frequencyBinCount);
+      const spectralCrest = maxMag / (meanMag + 1e-6);
+
+      let stereoBalance = 0;
+      let stereoWidth = 0;
+      if (this.hasStereoInput) {
+        let sumL = 0;
+        let sumR = 0;
+        let dotLR = 0;
+        let dotLL = 0;
+        let dotRR = 0;
+        for (let i = 0; i < this.fftSize; i += 1) {
+          const l = this.buffer[i];
+          const r = this.bufferR[i];
+          sumL += Math.abs(l);
+          sumR += Math.abs(r);
+          dotLR += l * r;
+          dotLL += l * l;
+          dotRR += r * r;
+        }
+        stereoBalance = (sumL - sumR) / (sumL + sumR + 1e-6);
+        const norm = Math.sqrt(dotLL * dotRR);
+        const corr = norm > 1e-6 ? dotLR / norm : 1;
+        stereoWidth = Math.max(0, Math.min(1, 1 - corr));
+      }
+
       for (let i = 0; i < this.fftSize; i += 1) {
         const sample = this.buffer[i];
-        waveBuf[i] = Math.min(
+        this.waveBuf[i] = Math.min(
           255,
           Math.max(0, Math.round((sample * 0.5 + 0.5) * 255)),
         );
-        if (waveBufR) {
+        if (this.hasStereoInput) {
           const sampleR = this.bufferR[i];
-          waveBufR[i] = Math.min(
+          this.waveBufR[i] = Math.min(
             255,
             Math.max(0, Math.round((sampleR * 0.5 + 0.5) * 255)),
           );
         }
       }
-      const timeDomainBuf = this.buffer.slice();
+      this.timeDomainBuf.set(this.buffer);
+
+      const freqTransfer = this.freqBuf.buffer as ArrayBuffer;
+      const waveTransfer = this.waveBuf.buffer as ArrayBuffer;
+      const timeDomainTransfer = this.timeDomainBuf.buffer as ArrayBuffer;
+
       const payload: Record<string, ArrayBuffer | number> = {
-        frequencyData: freqBuf.buffer,
-        waveformData: waveBuf.buffer,
-        timeDomainData: timeDomainBuf.buffer,
+        frequencyData: freqTransfer,
+        waveformData: waveTransfer,
+        timeDomainData: timeDomainTransfer,
         rms,
+        zeroCrossingRate,
+        spectralFlux,
+        spectralCrest,
+        stereoBalance,
+        stereoWidth,
       };
-      const transfers = [freqBuf.buffer, waveBuf.buffer, timeDomainBuf.buffer];
-      if (freqBufR && waveBufR) {
-        payload.frequencyDataL = freqBuf.buffer;
-        payload.frequencyDataR = freqBufR.buffer;
-        payload.waveformDataL = waveBuf.buffer;
-        payload.waveformDataR = waveBufR.buffer;
-        transfers.push(freqBufR.buffer, waveBufR.buffer);
+      const transfers = [freqTransfer, waveTransfer, timeDomainTransfer];
+      if (this.hasStereoInput) {
+        const freqRTransfer = this.freqBufR.buffer as ArrayBuffer;
+        const waveRTransfer = this.waveBufR.buffer as ArrayBuffer;
+        payload.frequencyDataL = freqTransfer;
+        payload.frequencyDataR = freqRTransfer;
+        payload.waveformDataL = waveTransfer;
+        payload.waveformDataR = waveRTransfer;
+        transfers.push(freqRTransfer, waveRTransfer);
       }
       this.port.postMessage(payload, transfers);
+      this.freqBuf = new Uint8Array(this.frequencyBinCount);
+      this.waveBuf = new Uint8Array(this.fftSize);
+      this.timeDomainBuf = new Float32Array(this.fftSize);
+      if (this.hasStereoInput) {
+        this.freqBufR = new Uint8Array(this.frequencyBinCount);
+        this.waveBufR = new Uint8Array(this.fftSize);
+      }
     }
   }
 

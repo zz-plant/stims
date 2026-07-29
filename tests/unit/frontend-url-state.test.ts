@@ -51,6 +51,11 @@ describe('frontend url state', () => {
     expect(state.audioSource).toBe('youtube');
   });
 
+  test('preserves the capture workspace in canonical urls', () => {
+    const state = readSessionRouteState('https://toil.fyi/?tool=CAPTURE');
+    expect(state.panel).toBe('capture');
+  });
+
   test('preserves file audio route state in canonical session urls', () => {
     const state = readSessionRouteState('?audio=file');
 

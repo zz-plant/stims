@@ -15,6 +15,10 @@ import type {
   MilkdropRuntimeSignals,
 } from '../types';
 import { applyMilkdropCapturedVideoFrameState } from './captured-video-frame.ts';
+import {
+  type CapturedVideoSignals,
+  updateCapturedVideoReactivityIfReady,
+} from './captured-video-reactivity.ts';
 import { applyMilkdropEnhancedEffectsPolicy } from './enhanced-effects-policy.ts';
 import {
   applyMilkdropInteractionResponse,
@@ -97,7 +101,7 @@ export function createMilkdropExperienceFrameLoop({
   };
   capturedVideoReactivityTracker: {
     update: (args: {
-      signals: MilkdropRuntimeSignals;
+      signals: CapturedVideoSignals;
     }) => MilkdropCapturedVideoReactiveState;
   };
   navigation: {
@@ -116,6 +120,8 @@ export function createMilkdropExperienceFrameLoop({
   getAdaptiveQualityController: () => {
     recordFrame: (args: {
       frameMs: number;
+      cadenceMs?: number;
+      gpuMs?: number;
       phases: {
         simulationMs: number;
         renderMs: number;
@@ -144,6 +150,10 @@ export function createMilkdropExperienceFrameLoop({
     }) => void;
   };
 }) {
+  let blendWorkloadFrameState: MilkdropFrameState | null = null;
+  const getCurrentFrameWorkload = () =>
+    estimateFrameBlendWorkload(blendWorkloadFrameState);
+
   const disposePostprocessingPipeline = () => {
     getPostprocessingPipeline()?.dispose();
     setPostprocessingPipeline(null);
@@ -196,9 +206,12 @@ export function createMilkdropExperienceFrameLoop({
         Object.assign(mergedSignals, options.signalOverrides);
       }
       const signals = mergedSignals as MilkdropRuntimeSignals;
-      const capturedVideoReactivity = capturedVideoReactivityTracker.update({
+      const capturedVideoReady = isMilkdropCapturedVideoReady();
+      const capturedVideoReactivity = updateCapturedVideoReactivityIfReady(
+        capturedVideoReady,
+        capturedVideoReactivityTracker,
         signals,
-      });
+      );
 
       if (
         shouldAutoAdvancePreset({
@@ -221,12 +234,12 @@ export function createMilkdropExperienceFrameLoop({
       if (agentModeEnabled) {
         updateAgentDebugSnapshot();
       }
-      const canBlendCurrentFrame =
-        estimateFrameBlendWorkload(currentFrameState) < 900;
+      blendWorkloadFrameState = currentFrameState;
       const activeBlendState = buildBlendStateForRender({
         transitionMode: getTransitionMode(),
         shaderQuality: frame.performance.shaderQuality,
-        canBlendCurrentFrame,
+        getCurrentFrameWorkload,
+        maxWorkload: 900,
         blendState: getBlendState(),
         now: frameStartAt,
         blendEndAtMs: getBlendEndAtMs(),
@@ -237,7 +250,7 @@ export function createMilkdropExperienceFrameLoop({
         frameState: buildRenderFrameState({
           frameState: applyMilkdropCapturedVideoFrameState({
             frameState: currentFrameState,
-            capturedVideoReady: isMilkdropCapturedVideoReady(),
+            capturedVideoReady,
             reactivity: capturedVideoReactivity,
           }),
           shaderQuality: frame.performance.shaderQuality,
@@ -310,6 +323,7 @@ export function createMilkdropExperienceFrameLoop({
       });
       getAdaptiveQualityController()?.recordFrame({
         frameMs: frameEndAt - frameStartAt,
+        cadenceMs: frame.deltaMs,
         phases: {
           simulationMs: renderStartAt - frameStartAt,
           renderMs: frameEndAt - renderStartAt,

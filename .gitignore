@@ -15,6 +15,7 @@ yarn-error.log*
 
 # OS files
 .DS_Store
+*.bak
 
 # Build directories
 /dist/

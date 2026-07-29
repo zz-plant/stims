@@ -441,15 +441,15 @@ function getShaderEnvValue(
     time: () => shaderFloat(env.uniforms.signalTime),
     aspect: () => shaderFloat(env.uniforms.aspect),
     bass: () => shaderFloat(env.uniforms.signalBass),
-    bass_att: () => shaderFloat(env.uniforms.signalBass),
+    bass_att: () => shaderFloat(env.uniforms.signalBassAtt),
     mid: () => shaderFloat(env.uniforms.signalMid),
     mids: () => shaderFloat(env.uniforms.signalMid),
-    mid_att: () => shaderFloat(env.uniforms.signalMid),
-    mids_att: () => shaderFloat(env.uniforms.signalMid),
+    mid_att: () => shaderFloat(env.uniforms.signalMidAtt),
+    mids_att: () => shaderFloat(env.uniforms.signalMidAtt),
     treb: () => shaderFloat(env.uniforms.signalTreb),
-    treb_att: () => shaderFloat(env.uniforms.signalTreb),
+    treb_att: () => shaderFloat(env.uniforms.signalTrebAtt),
     treble: () => shaderFloat(env.uniforms.signalTreb),
-    treble_att: () => shaderFloat(env.uniforms.signalTreb),
+    treble_att: () => shaderFloat(env.uniforms.signalTrebAtt),
     beat: () => shaderFloat(env.uniforms.signalBeat),
     beat_pulse: () => shaderFloat(env.uniforms.signalBeatPulse),
     progress: () => shaderFloat(env.uniforms.signalTime),
@@ -526,7 +526,18 @@ function getShaderEnvValue(
       ),
   };
 
-  const resolved = uniformMap[normalized]?.() ?? null;
+  const registerMatch = /^(q|t)([1-9]|[12]\d|3[0-2])$/u.exec(normalized);
+  const registerUniforms =
+    registerMatch?.[1] === 'q'
+      ? env.uniforms.perPixelQ
+      : registerMatch?.[1] === 't'
+        ? env.uniforms.perPixelT
+        : null;
+  const registerIndex = Number(registerMatch?.[2] ?? 0) - 1;
+  const resolved =
+    registerUniforms && registerIndex >= 0
+      ? shaderFloat(registerUniforms[registerIndex])
+      : (uniformMap[normalized]?.() ?? null);
   if (resolved) {
     env.values.set(normalized, resolved);
   }
@@ -907,6 +918,20 @@ function runShaderProgram(
   });
 }
 
+function runPerPixelProgram(
+  statements: NonNullable<
+    MilkdropFeedbackCompositeState['perPixelPrograms']
+  >['statements'],
+  env: ShaderNodeEnv,
+) {
+  statements.forEach((statement) => {
+    const value = compileShaderExpressionNode(statement.expression, env);
+    if (value) {
+      setShaderEnvValue(env, statement.target, value);
+    }
+  });
+}
+
 function applyDirectWarpProgram(
   program: MilkdropShaderProgramPayload | null,
   env: ShaderNodeEnv,
@@ -962,7 +987,7 @@ function createCompositeOutputNode(
     warp: null,
     comp: null,
   },
-  _perPixelPrograms?: MilkdropFeedbackCompositeState['perPixelPrograms'],
+  perPixelPrograms?: MilkdropFeedbackCompositeState['perPixelPrograms'],
 ) {
   const sampleUvNode = createSampleUvNode();
   const applyFeedbackWarpNode = createApplyFeedbackWarpNode();
@@ -1016,14 +1041,25 @@ function createCompositeOutputNode(
     const baseUv = uv();
     const centeredUv = baseUv.sub(0.5);
 
-    // CPU-written per-frame warp/zoom/rot values propagate via uniforms.
-    // The TSL path uses direct shader injection when Three.js exposes a
-    // TSL runtime compiler — see compiler/tsl-generator.ts.
-    const activeWarp = uniforms.warpScale;
-    const activeZoom = uniforms.zoomMul;
-    const activeRot = uniforms.rotation;
-    const activeOffsetX = uniforms.offsetX;
-    const activeOffsetY = uniforms.offsetY;
+    const perPixelEnv: ShaderNodeEnv = {
+      ...shaderEnv,
+      values: new Map(shaderEnv.values),
+    };
+    setShaderEnvValue(perPixelEnv, 'x', shaderFloat(baseUv.x));
+    setShaderEnvValue(perPixelEnv, 'y', shaderFloat(baseUv.y));
+    if (perPixelPrograms) {
+      runPerPixelProgram(perPixelPrograms.statements, perPixelEnv);
+    }
+    const activeWarp =
+      getShaderEnvValue(perPixelEnv, 'warp')?.node ?? uniforms.warpScale;
+    const activeZoom =
+      getShaderEnvValue(perPixelEnv, 'zoom')?.node ?? uniforms.zoomMul;
+    const activeRot =
+      getShaderEnvValue(perPixelEnv, 'rot')?.node ?? uniforms.rotation;
+    const activeOffsetX =
+      getShaderEnvValue(perPixelEnv, 'dx')?.node ?? uniforms.offsetX;
+    const activeOffsetY =
+      getShaderEnvValue(perPixelEnv, 'dy')?.node ?? uniforms.offsetY;
 
     const rotationSin = sin(activeRot);
     const rotationCos = cos(activeRot);
@@ -1317,7 +1353,9 @@ function buildCompositeStateKey(state: MilkdropFeedbackCompositeState) {
     state.shaderExecution,
     state.shaderPrograms.warp?.source ?? '',
     state.shaderPrograms.comp?.source ?? '',
-    state.perPixelPrograms?.statements?.length ?? 0,
+    state.perPixelPrograms?.statements
+      .map((statement) => statement.source)
+      .join('\u001e') ?? '',
   ].join('\u001f');
 }
 
@@ -1573,13 +1611,25 @@ class WebGPUMilkdropFeedbackManager {
     this.compositeMaterial.uniforms.warpTextureVolumeSliceZ.value =
       state.warpTextureVolumeSliceZ;
     this.compositeMaterial.uniforms.signalBass.value = state.signalBass;
+    this.compositeMaterial.uniforms.signalBassAtt.value =
+      state.signalBassAtt ?? state.signalBass;
     this.compositeMaterial.uniforms.signalMid.value = state.signalMid;
+    this.compositeMaterial.uniforms.signalMidAtt.value =
+      state.signalMidAtt ?? state.signalMid;
     this.compositeMaterial.uniforms.signalTreb.value = state.signalTreb;
+    this.compositeMaterial.uniforms.signalTrebAtt.value =
+      state.signalTrebAtt ?? state.signalTreb;
     this.compositeMaterial.uniforms.signalBeat.value = state.signalBeat;
     this.compositeMaterial.uniforms.signalBeatPulse.value =
       state.signalBeatPulse;
     this.compositeMaterial.uniforms.signalEnergy.value = state.signalEnergy;
     this.compositeMaterial.uniforms.signalTime.value = state.signalTime;
+    for (let index = 0; index < 32; index += 1) {
+      this.compositeMaterial.uniforms.perPixelQ[index].value =
+        state.perPixelVariables?.[`q${index + 1}`] ?? 0;
+      this.compositeMaterial.uniforms.perPixelT[index].value =
+        state.perPixelVariables?.[`t${index + 1}`] ?? 0;
+    }
     this.compositeMaterial.uniforms.aspect.value = state.aspect;
   }
 

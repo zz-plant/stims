@@ -24,11 +24,13 @@ const SPECS: Record<string, Spec> = {
   favicon: { width: 64, height: 64, minBytes: 500 },
   github: { width: 1280, height: 640, minBytes: 15_000 },
   header: { width: 1920, height: 400, minBytes: 12_000 },
+  hero: { width: 1600, height: 1200, minBytes: 50_000 },
   mastodon: { width: 1200, height: 600, minBytes: 15_000 },
   og: { width: 1200, height: 675, minBytes: 15_000 },
   square: { width: 1080, height: 1080, minBytes: 15_000 },
   touch: { width: 360, height: 360, minBytes: 8_000 },
   unfurl: { width: 1200, height: 628, minBytes: 15_000 },
+  waveform: { width: 1600, height: 1200, minBytes: 10_000 },
 };
 
 const COLOR_TYPE_LABELS: Record<number, string> = {

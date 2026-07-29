@@ -11,13 +11,14 @@ export type PanelState =
   | 'audiomatch'
   | 'visualsearch'
   | 'blend'
+  | 'capture'
   | 'settings'
   | null;
 
 export type LaunchIntent = {
   presetId: string | null;
   collectionTag: string | null;
-  panel: Exclude<PanelState, 'settings'> | null;
+  panel: Exclude<PanelState, 'capture' | 'settings'> | null;
   audioSource: AudioSource | null;
   agentMode: boolean;
   previewMode?: boolean;

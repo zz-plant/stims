@@ -69,10 +69,12 @@ export function buildFeedbackCompositeState({
       ? {
           statements: perPixelStatements.map((s) => ({
             target: s.target,
-            expression: s.source,
+            source: s.source,
+            expression: s.expression,
           })),
         }
       : null,
+    perPixelVariables: frameState.variables,
     mixAlpha: controls.mixAlpha,
     videoEchoAlpha: frameState.post.videoEchoEnabled
       ? frameState.post.videoEchoAlpha
@@ -144,8 +146,11 @@ export function buildFeedbackCompositeState({
     },
     warpTextureVolumeSliceZ: controls.warpTexture.volumeSliceZ ?? 0,
     signalBass: frameState.signals.bass,
+    signalBassAtt: frameState.signals.bassAtt,
     signalMid: frameState.signals.mid,
+    signalMidAtt: frameState.signals.midAtt,
     signalTreb: frameState.signals.treb,
+    signalTrebAtt: frameState.signals.trebleAtt,
     signalBeat: frameState.signals.beat,
     signalBeatPulse: frameState.signals.beatPulse,
     signalEnergy: frameState.signals.weightedEnergy,
