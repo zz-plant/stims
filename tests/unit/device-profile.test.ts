@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import {
   getAdaptiveMaxPixelRatio,
   getDevicePerformanceProfile,
@@ -7,12 +7,38 @@ import {
 import { getRendererBackendMaxPixelRatioCap } from '../../src/js/core/renderer-settings.ts';
 
 const originalNavigator = globalThis.navigator;
+const originalMatchMedia = globalThis.window?.matchMedia;
+
+/**
+ * getDevicePerformanceProfile() folds `prefers-reduced-motion` into lowPower,
+ * so leaving matchMedia to whatever a previously-run test file left behind
+ * makes these assertions depend on file execution order. Several other suites
+ * replace window.matchMedia globally, which is exactly how these tests came to
+ * pass locally and fail on CI.
+ */
+beforeEach(() => {
+  if (typeof globalThis.window === 'undefined') return;
+  globalThis.window.matchMedia = ((query: string) =>
+    ({
+      media: query,
+      matches: false,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList) as typeof window.matchMedia;
+});
 
 afterEach(() => {
   Object.defineProperty(globalThis, 'navigator', {
     configurable: true,
     value: originalNavigator,
   });
+  if (typeof globalThis.window !== 'undefined' && originalMatchMedia) {
+    globalThis.window.matchMedia = originalMatchMedia;
+  }
 });
 
 describe('device-profile flagship mobile optimizations', () => {
