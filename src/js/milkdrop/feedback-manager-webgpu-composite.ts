@@ -1,8 +1,10 @@
 // biome-ignore-all lint/suspicious/noExplicitAny: TSL node graphs are not fully typed under the repo's current moduleResolution.
 import type { Camera, Scene, Texture } from 'three';
 import {
+  ClampToEdgeWrapping,
   Color,
   Data3DTexture,
+  DataTexture,
   HalfFloatType,
   LinearFilter,
   RedFormat,
@@ -207,6 +209,17 @@ const shared3DPlaceholderRGBA = (() => {
   tex.wrapS = RepeatWrapping;
   tex.wrapT = RepeatWrapping;
   tex.wrapR = RepeatWrapping;
+  tex.minFilter = LinearFilter;
+  tex.magFilter = LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
+})();
+
+const shared2DPlaceholderRGBA = (() => {
+  const data = new Uint8Array(4);
+  const tex = new DataTexture(data, 1, 1, RGBAFormat, UnsignedByteType);
+  tex.wrapS = ClampToEdgeWrapping;
+  tex.wrapT = ClampToEdgeWrapping;
   tex.minFilter = LinearFilter;
   tex.magFilter = LinearFilter;
   tex.needsUpdate = true;
@@ -455,6 +468,7 @@ export function createCompositeUniforms(
     patternTex: texture(auxTextures.pattern),
     fractalTex: texture(auxTextures.fractal),
     videoTex: texture(auxTextures.video),
+    audioTex: texture(shared2DPlaceholderRGBA),
     noiseTex3D: texture3D(shared3DPlaceholderRGBA),
     perlinTex3D: texture3D(shared3DPlaceholderRGBA),
     simplexTex3D: texture3D(shared3DPlaceholderRed),

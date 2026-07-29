@@ -13,12 +13,13 @@ export type PanelState =
   | 'blend'
   | 'capture'
   | 'settings'
+  | 'synthesize'
   | null;
 
 export type LaunchIntent = {
   presetId: string | null;
   collectionTag: string | null;
-  panel: Exclude<PanelState, 'capture' | 'settings'> | null;
+  panel: Exclude<PanelState, 'capture' | 'settings' | 'synthesize'> | null;
   audioSource: AudioSource | null;
   agentMode: boolean;
   previewMode?: boolean;
