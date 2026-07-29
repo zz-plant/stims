@@ -182,4 +182,17 @@ describe('frontend url state', () => {
       '?preset=signal-bloom&audio=demo&agent=true&embedded=true',
     );
   });
+
+  test('encodes and decodes preset source code in url hash fragments', () => {
+    const {
+      buildPresetCodeHash,
+      decodePresetCodeFromHash,
+    } = require('../../src/js/frontend/url-state.ts');
+    const milkSource = '[preset00]\nfRating=5.000\nwave_r=0.5';
+    const hash = buildPresetCodeHash(milkSource);
+
+    expect(hash).toContain('#code=');
+    const decoded = decodePresetCodeFromHash(hash);
+    expect(decoded).toBe(milkSource);
+  });
 });

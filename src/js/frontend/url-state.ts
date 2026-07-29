@@ -1,30 +1,11 @@
+import { normalizeCollectionTag, parseURLParams } from '../core/url-params.ts';
 import type {
   AudioSource,
   PanelState,
   SessionRouteState,
 } from './contracts.ts';
 
-const VALID_PANELS = new Set<Exclude<PanelState, null>>([
-  'browse',
-  'editor',
-  'settings',
-]);
-const VALID_AUDIO_SOURCES = new Set<AudioSource>([
-  'demo',
-  'file',
-  'microphone',
-  'tab',
-  'youtube',
-]);
-
-const LEGACY_PANEL_ALIASES: Record<string, Exclude<PanelState, null>> = {
-  looks: 'browse',
-};
-
-const LEGACY_AUDIO_ALIASES: Record<string, AudioSource> = {
-  sample: 'demo',
-  mic: 'microphone',
-};
+export { normalizeCollectionTag };
 
 const SESSION_ROUTE_SEARCH_KEYS = [
   'experience',
@@ -38,103 +19,18 @@ const SESSION_ROUTE_SEARCH_KEYS = [
   'preview',
 ] as const;
 
-function readSearchValue(value: unknown) {
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-
-  if (Array.isArray(value)) {
-    const firstValue = value.find(
-      (entry) =>
-        typeof entry === 'string' ||
-        typeof entry === 'number' ||
-        typeof entry === 'boolean',
-    );
-    if (
-      typeof firstValue === 'string' ||
-      typeof firstValue === 'number' ||
-      typeof firstValue === 'boolean'
-    ) {
-      return String(firstValue);
-    }
-  }
-
-  return null;
-}
-
-function normalizeSearchEnum<T extends string>(
-  value: unknown,
-  validValues: Set<T>,
-  aliases: Record<string, T> = {},
-) {
-  const parsedValue = readSearchValue(value);
-  const normalized = parsedValue?.trim().toLowerCase() ?? '';
-  if (!normalized) {
-    return null;
-  }
-
-  const mappedValue = aliases[normalized] ?? normalized;
-  if (!validValues.has(mappedValue as T)) {
-    return null;
-  }
-
-  return mappedValue as T;
-}
-
-function normalizePanel(value: unknown) {
-  return normalizeSearchEnum(value, VALID_PANELS, LEGACY_PANEL_ALIASES);
-}
-
-function normalizeAudioSource(value: unknown) {
-  return normalizeSearchEnum(value, VALID_AUDIO_SOURCES, LEGACY_AUDIO_ALIASES);
-}
-
-export function normalizeCollectionTag(value: unknown) {
-  const parsedValue = readSearchValue(value);
-  const normalized = parsedValue?.trim().toLowerCase() ?? '';
-  if (!normalized) {
-    return null;
-  }
-
-  return normalized.startsWith('collection:')
-    ? normalized
-    : `collection:${normalized}`;
-}
-
 export function readSessionRouteStateFromSearch(
   search: Record<string, unknown>,
 ): SessionRouteState {
-  const legacyExperience = readSearchValue(search.experience);
-  const isAgent = readSearchValue(search.agent) === 'true';
-
-  if (
-    legacyExperience &&
-    legacyExperience !== 'milkdrop' &&
-    !isAgent &&
-    typeof window !== 'undefined'
-  ) {
-    const clean = new URL(window.location.href);
-    clean.searchParams.delete('experience');
-    window.location.replace(clean.toString());
-  }
-
+  const parsed = parseURLParams(search);
   return {
-    presetId: readSearchValue(search.preset)?.trim() || null,
-    collectionTag: normalizeCollectionTag(search.collection),
-    panel: normalizePanel(search.tool ?? search.panel),
-    audioSource: normalizeAudioSource(search.audio),
-    agentMode: isAgent,
-    previewMode:
-      readSearchValue(search.embedded) === 'true' ||
-      readSearchValue(search.preview) === 'true',
-    invalidExperienceSlug:
-      legacyExperience && legacyExperience !== 'milkdrop'
-        ? legacyExperience
-        : null,
+    presetId: parsed.routing.presetId,
+    collectionTag: parsed.routing.collectionTag,
+    panel: parsed.routing.panel as PanelState,
+    audioSource: parsed.routing.audioSource as AudioSource | null,
+    agentMode: parsed.routing.agentMode,
+    previewMode: parsed.routing.previewMode,
+    invalidExperienceSlug: parsed.routing.invalidExperienceSlug,
   };
 }
 
@@ -251,4 +147,35 @@ export function buildCanonicalUrl(
     buildSessionRouteSearch(state, parsePlainSearch(url.search)),
   );
   return url;
+}
+
+export function decodePresetCodeFromHash(
+  hashInput: string = typeof window !== 'undefined' ? window.location.hash : '',
+): string | null {
+  const hash = hashInput.startsWith('#') ? hashInput.slice(1) : hashInput;
+  if (!hash) return null;
+
+  const params = new URLSearchParams(hash);
+  const codeParam = params.get('code');
+  if (!codeParam) return null;
+
+  try {
+    const raw = atob(decodeURIComponent(codeParam));
+    return raw;
+  } catch (_err) {
+    try {
+      return atob(codeParam);
+    } catch (_err2) {
+      return null;
+    }
+  }
+}
+
+export function buildPresetCodeHash(milkSource: string): string {
+  try {
+    const base64 = btoa(milkSource);
+    return `#code=${encodeURIComponent(base64)}`;
+  } catch (_err) {
+    return '';
+  }
 }

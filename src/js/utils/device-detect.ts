@@ -1,3 +1,5 @@
+import { getSmartTvOverride } from '../core/url-params.ts';
+
 type NavigatorWithUserAgentData = {
   userAgentData?: {
     mobile?: boolean;
@@ -68,10 +70,8 @@ function persistSmartTvOverride(override: SmartTvOverride | null) {
 
 export function getSmartTvModeOverride(): SmartTvOverride | null {
   if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    const queryOverride =
-      parseSmartTvOverride(params.get('tv')) ??
-      parseSmartTvOverride(params.get('tvMode'));
+    const tvParam = getSmartTvOverride();
+    const queryOverride = parseSmartTvOverride(tvParam);
     if (queryOverride) {
       persistSmartTvOverride(queryOverride);
       return queryOverride;

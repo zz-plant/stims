@@ -3,6 +3,8 @@
  * Exposes state and control hooks on window.stimState for MCP tools and automation.
  */
 
+import { isAgentMode as readAgentModeFromURL } from './url-params.ts';
+
 export type StimState = {
   currentToy: string | null;
   audioActive: boolean;
@@ -92,8 +94,7 @@ const waitForStimEvent = <K extends keyof StimEventMap>(eventName: K) =>
 
 // Check for agent mode from URL
 if (typeof window !== 'undefined') {
-  const params = new URLSearchParams(window.location.search);
-  state.isAgentMode = params.get('agent') === 'true';
+  state.isAgentMode = readAgentModeFromURL();
 }
 
 export function initAgentAPI(): StimAPI {
