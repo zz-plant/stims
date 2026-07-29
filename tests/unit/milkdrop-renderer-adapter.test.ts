@@ -36,7 +36,10 @@ import type {
   MilkdropRuntimeSignals,
 } from '../../src/js/milkdrop/types.ts';
 import { createMilkdropVM } from '../../src/js/milkdrop/vm.ts';
-import { DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS } from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
+import {
+  applyNativeWebGpuMaterialCompatibilityFlags,
+  DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+} from '../../src/js/milkdrop/webgpu-optimization-flags.ts';
 import { setWebGpuForceMode } from '../../src/js/milkdrop/webgpu-query-override.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
@@ -3235,8 +3238,8 @@ wave_a=0.8
           >,
           frameState: ReturnType<ReturnType<typeof createMilkdropVM>['step']>,
         ) {
-          expect(previousFrame.gpuGeometry.mainWave).not.toBeNull();
-          expect(frameState.gpuGeometry.mainWave).not.toBeNull();
+          expect(previousFrame.mainWave.positions.length).toBeGreaterThan(0);
+          expect(frameState.mainWave.positions.length).toBeGreaterThan(0);
         },
       },
       {
@@ -3266,8 +3269,8 @@ wavecode_0_a=0.35
           >,
           frameState: ReturnType<ReturnType<typeof createMilkdropVM>['step']>,
         ) {
-          expect(previousFrame.gpuGeometry.customWaves).toHaveLength(1);
-          expect(frameState.gpuGeometry.customWaves).toHaveLength(1);
+          expect(previousFrame.customWaves).toHaveLength(1);
+          expect(frameState.customWaves).toHaveLength(1);
         },
       },
     ] as const;
@@ -3288,8 +3291,18 @@ wavecode_0_a=0.35
 
       const previousVm = createMilkdropVM(previousPreset);
       previousVm.setRenderBackend('webgpu');
+      previousVm.setWebGpuOptimizationFlags(
+        applyNativeWebGpuMaterialCompatibilityFlags(
+          DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+        ),
+      );
       const currentVm = createMilkdropVM(currentPreset);
       currentVm.setRenderBackend('webgpu');
+      currentVm.setWebGpuOptimizationFlags(
+        applyNativeWebGpuMaterialCompatibilityFlags(
+          DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
+        ),
+      );
       const previousFrame = previousVm.step(makeSignals({ time: 0.1 }));
       const frameState = currentVm.step(makeSignals({ time: 0.3 }));
 
@@ -4193,7 +4206,9 @@ wave_a=0.8
     const batchedWave = flattenRenderTree(root).find(
       (child) =>
         child.geometry?.getAttribute?.('instanceLine') !== undefined &&
-        child.renderOrder === 20,
+        child.material instanceof ShaderMaterial &&
+        child.material.blending === CustomBlending &&
+        child.material.blendEquation === ReverseSubtractEquation,
     );
 
     expect(batchedWave).toBeDefined();
