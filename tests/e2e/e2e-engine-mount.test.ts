@@ -10,6 +10,32 @@ const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
 let devServer: DevServerHandle | null = null;
 
+/**
+ * CI runs headed Chromium under xvfb with no real GPU. Without an explicit
+ * software renderer the browser crashes mid-test, and the failure surfaces as
+ * "Target page, context or browser has been closed" from the cleanup block
+ * rather than as the crash it actually is. These are the same flags the
+ * agent-integration suite already uses to stay green on CI.
+ */
+const RENDERER_ARGS = [
+  '--use-angle=swiftshader',
+  '--use-gl=angle',
+  '--enable-webgl',
+  '--enable-unsafe-swiftshader',
+  '--ignore-gpu-blocklist',
+];
+
+/** Never let teardown mask the assertion failure that got us here. */
+async function closeQuietly(
+  ...closeables: Array<{ close: () => Promise<unknown> }>
+) {
+  for (const c of closeables) {
+    try {
+      await c.close();
+    } catch {}
+  }
+}
+
 async function waitForMountedStage(page: import('playwright').Page) {
   await page.waitForFunction(
     () =>
@@ -48,7 +74,10 @@ afterAll(() => stopServer());
 test(
   'mounts engine, loads preset, and renders a silent preview frame',
   async () => {
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({
+      headless: false,
+      args: RENDERER_ARGS,
+    });
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
       deviceScaleFactor: 2,
@@ -97,8 +126,7 @@ test(
       expect(info.height).toBeGreaterThan(0);
       expect(info.hasContent).toBe(true);
     } finally {
-      await ctx.close();
-      await browser.close();
+      await closeQuietly(ctx, browser);
     }
   },
   { timeout: 120000 },
@@ -107,7 +135,10 @@ test(
 test(
   'switches preset and canvas content changes',
   async () => {
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({
+      headless: false,
+      args: RENDERER_ARGS,
+    });
     const ctx = await browser.newContext({
       viewport: { width: 1280, height: 720 },
       deviceScaleFactor: 2,
@@ -162,8 +193,7 @@ test(
       expect(hash1).toBeGreaterThan(1000);
       expect(hash2).toBeGreaterThan(1000);
     } finally {
-      await ctx.close();
-      await browser.close();
+      await closeQuietly(ctx, browser);
     }
   },
   { timeout: 120000 },
@@ -175,6 +205,7 @@ test.skipIf(!!process.env.CI)(
     const browser = await chromium.launch({
       headless: false,
       args: [
+        ...RENDERER_ARGS,
         '--use-fake-device-for-media-stream',
         '--use-fake-ui-for-media-stream',
       ],
@@ -254,8 +285,7 @@ test.skipIf(!!process.env.CI)(
 
       expect(info.route).toContain('audio=microphone');
     } finally {
-      await ctx.close();
-      await browser.close();
+      await closeQuietly(ctx, browser);
     }
   },
   { timeout: 120000 },
