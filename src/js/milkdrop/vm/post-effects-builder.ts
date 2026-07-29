@@ -1,4 +1,7 @@
-import { evaluateMilkdropShaderControlProgram } from '../compiler';
+import {
+  evaluateMilkdropShaderControlExpressions,
+  evaluateMilkdropShaderControlProgram,
+} from '../compiler';
 import type {
   MilkdropCompiledPreset,
   MilkdropPostprocessingProfile,
@@ -103,7 +106,7 @@ export function buildShaderControls({
     extra?: Record<string, number>,
   ) => MutableState;
 }) {
-  const { warp, comp } = preset.ir.shaderText;
+  const { warp, comp, controls, controlExpressions } = preset.ir.shaderText;
   // Runs every frame. Presets without pixel-shader sections (every bundled
   // MilkDrop 1.x preset) would otherwise rebuild ~15 throwaway objects per
   // frame to arrive at a fixed answer, and pay for an env snapshot the null
@@ -111,9 +114,11 @@ export function buildShaderControls({
   if (warp === null && comp === null) {
     return buildNeutralShaderControls();
   }
-  return evaluateMilkdropShaderControlProgram({
-    warp,
-    comp,
+  // Use the cached control expressions instead of re-parsing the shader
+  // text every frame. The AST is built at compile time in ir.ts.
+  return evaluateMilkdropShaderControlExpressions({
+    controls,
+    expressions: controlExpressions,
     env: createEnv(signals),
   });
 }
