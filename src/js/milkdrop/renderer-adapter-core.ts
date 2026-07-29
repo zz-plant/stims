@@ -1259,6 +1259,9 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
       this.feedback.applyCompositeState(
         this.buildFeedbackCompositeState(payload.frameState),
       );
+      this.feedback.applyPostprocessingProfile?.(
+        payload.frameState.post.postprocessingProfile,
+      );
       const audioTex = this.audioTexture.getTexture();
       const compositeMat = (
         this.feedback as {
