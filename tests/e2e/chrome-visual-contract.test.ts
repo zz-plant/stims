@@ -88,19 +88,6 @@ async function settle(page: Page, selector: string) {
   );
 }
 
-/** WCAG relative-luminance contrast between two rendered colours. */
-const CONTRAST_FN = `(fg, bg) => {
-  const parse = (c) => c.match(/[\\d.]+/g).map(Number);
-  const lin = (v) => { v /= 255; return v <= 0.03928 ? v/12.92 : ((v+0.055)/1.055) ** 2.4; };
-  const lum = ([r,g,b]) => 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b);
-  const f = parse(fg), b = parse(bg);
-  const a = f.length > 3 && f[3] < 1
-    ? [0,1,2].map(i => f[3]*f[i] + (1-f[3])*b[i])
-    : f.slice(0,3);
-  const L1 = lum(a), L2 = lum(b.slice(0,3));
-  return (Math.max(L1,L2) + 0.05) / (Math.min(L1,L2) + 0.05);
-}`;
-
 chromeTest(
   'body text does not fall back to the UA serif',
   async () => {
@@ -262,36 +249,51 @@ for (const theme of ['dark', 'light'] as const) {
     async () => {
       const page = await openPanel('browse', theme);
       try {
-        const results = await page.evaluate(
-          ([contrastSrc]) => {
-            const contrast = eval(contrastSrc as string) as (
-              fg: string,
-              bg: string,
-            ) => number;
-            const panel = document.querySelector('[class*="_panel_"]');
-            if (!panel) return [];
-            const bg = getComputedStyle(panel).backgroundColor;
-            const targets = [
-              '.ctl-preset__title',
-              '.ctl-preset__meta',
-              '.ctl-readout',
-              '.ctl-field',
+        const results = await page.evaluate(() => {
+          // Inlined rather than passed in: page.evaluate cannot serialise a
+          // closure, and eval() of a stringified helper is both a lint
+          // violation and needless indirection.
+          const parse = (c: string) => (c.match(/[\d.]+/g) ?? []).map(Number);
+          const lin = (v: number) => {
+            const n = v / 255;
+            return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+          };
+          const lum = (rgb: number[]) =>
+            0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
+          const contrast = (fg: string, bg: string) => {
+            const f = parse(fg);
+            const b = parse(bg);
+            // Flatten a translucent foreground onto its backdrop first.
+            const front =
+              f.length > 3 && f[3] < 1
+                ? [0, 1, 2].map((i) => f[3] * f[i] + (1 - f[3]) * b[i])
+                : f.slice(0, 3);
+            const L1 = lum(front);
+            const L2 = lum(b.slice(0, 3));
+            return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+          };
+          const panel = document.querySelector('[class*="_panel_"]');
+          if (!panel) return [];
+          const bg = getComputedStyle(panel).backgroundColor;
+          const targets = [
+            '.ctl-preset__title',
+            '.ctl-preset__meta',
+            '.ctl-readout',
+            '.ctl-field',
+          ];
+          return targets.flatMap((sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return [];
+            const cs = getComputedStyle(el);
+            return [
+              {
+                sel,
+                px: parseFloat(cs.fontSize),
+                ratio: contrast(cs.color, bg),
+              },
             ];
-            return targets.flatMap((sel) => {
-              const el = document.querySelector(sel);
-              if (!el) return [];
-              const cs = getComputedStyle(el);
-              return [
-                {
-                  sel,
-                  px: parseFloat(cs.fontSize),
-                  ratio: contrast(cs.color, bg),
-                },
-              ];
-            });
-          },
-          [CONTRAST_FN],
-        );
+          });
+        });
 
         expect(results.length).toBeGreaterThan(0);
         for (const r of results) {
