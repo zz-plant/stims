@@ -16,7 +16,7 @@ Use this skill when the request changes how the main visualizer product behaves,
 
 ## Focus areas
 
-- shared runtime and lifecycle under `assets/js/core/`
+- shared runtime and lifecycle under `src/js/core/`
 - loader, route, and launch behavior around the canonical workspace entry
 - renderer selection, performance controls, and capability/preflight flows
 - audio startup, shell controls, and app-level interaction behavior

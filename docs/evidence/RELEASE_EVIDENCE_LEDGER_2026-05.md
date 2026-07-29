@@ -50,7 +50,7 @@ Volume samplers are semantically routed on both backends. WebGPU uses native 3D 
 
 Source artifacts:
 
-- `assets/data/milkdrop-parity/webgpu-certification-report.json`
-- `assets/data/milkdrop-parity/visual-reference-manifest.json`
-- `assets/data/milkdrop-parity/measured-results.json`
+- `src/data/milkdrop-parity/webgpu-certification-report.json`
+- `src/data/milkdrop-parity/visual-reference-manifest.json`
+- `src/data/milkdrop-parity/measured-results.json`
 - `tests/fixtures/milkdrop/projectm-reference/`

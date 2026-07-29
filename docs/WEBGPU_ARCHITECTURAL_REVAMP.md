@@ -25,11 +25,11 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Route `setRenderTarget` calls through the renderer, not hardcoded WebGL assumptions
 
 **Files**:
-- `assets/js/milkdrop/renderer-execution-plan.ts`
-- `assets/js/milkdrop/feedback-render-targets.ts`
-- `assets/js/milkdrop/feedback-manager-shared.ts`
-- `assets/js/milkdrop/feedback-manager-webgpu-tsl.ts`  
-- `assets/js/milkdrop/renderer-adapter-core.ts`
+- `src/js/milkdrop/renderer-execution-plan.ts`
+- `src/js/milkdrop/feedback-render-targets.ts`
+- `src/js/milkdrop/feedback-manager-shared.ts`
+- `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`  
+- `src/js/milkdrop/renderer-adapter-core.ts`
 
 ### 2) Consolidate Composite Shader Source of Truth
 
@@ -41,9 +41,9 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Explore using TSL for both backends (TSL can emit GLSL)
 
 **Files**:
-- New: `assets/js/milkdrop/feedback-composite-ir.ts`
-- `assets/js/milkdrop/feedback-manager-shared.ts`
-- `assets/js/milkdrop/feedback-manager-webgpu-tsl.ts`
+- New: `src/js/milkdrop/feedback-composite-ir.ts`
+- `src/js/milkdrop/feedback-manager-shared.ts`
+- `src/js/milkdrop/feedback-manager-webgpu-tsl.ts`
 
 ### 3) Add WebGL Fallback to Worker Renderer
 
@@ -55,9 +55,9 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Keep worker WebGL path simple (no feedback/batching)
 
 **Files**:
-- `assets/js/core/renderer-worker.ts`
-- `assets/js/core/renderer-worker-protocol.ts`
-- `assets/js/core/renderer-setup.ts`
+- `src/js/core/renderer-worker.ts`
+- `src/js/core/renderer-worker-protocol.ts`
+- `src/js/core/renderer-setup.ts`
 
 ### 4) Vectorize WGSL Code Generation
 
@@ -69,8 +69,8 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Fuse adjacent scalar assignments into vector assignments
 
 **Files**:
-- `assets/js/milkdrop/compiler/wgsl-generator.ts`
-- `assets/js/milkdrop/vm-gpu.ts`
+- `src/js/milkdrop/compiler/wgsl-generator.ts`
+- `src/js/milkdrop/vm-gpu.ts`
 
 ### 5) Implement RenderBundle for Static Draw Calls
 
@@ -82,8 +82,8 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Execute bundles in render pass
 
 **Files**:
-- New: `assets/js/milkdrop/renderer-bundles.ts`
-- `assets/js/milkdrop/renderer-adapter-core.ts`
+- New: `src/js/milkdrop/renderer-bundles.ts`
+- `src/js/milkdrop/renderer-adapter-core.ts`
 
 ### 6) Gradual WebGPU Enablement
 
@@ -94,7 +94,7 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Track engagement/error/fallback rates via telemetry
 
 **Files**:
-- `assets/js/core/renderer-query-override.ts`
+- `src/js/core/renderer-query-override.ts`
 
 ### 7) Split Compiler Execution Contracts
 
@@ -106,9 +106,9 @@ This plan addresses structural issues in the dual-backend rendering pipeline ide
 - Move descriptor-plan assembly inputs into a typed compiler output object so renderer planning does not re-derive compiler intent
 
 **Files**:
-- `assets/js/milkdrop/compiler/ir.ts`
-- `assets/js/milkdrop/compiler/shader-execution-classification.ts`
-- New follow-up: `assets/js/milkdrop/compiler/compatibility-report.ts`
+- `src/js/milkdrop/compiler/ir.ts`
+- `src/js/milkdrop/compiler/shader-execution-classification.ts`
+- New follow-up: `src/js/milkdrop/compiler/compatibility-report.ts`
 
 ## Sequencing
 

@@ -1,11 +1,11 @@
 ---
 name: review-module-loading
-description: "Review changes to module loading, bootstrap, toy manifest, library resolution, or gamepad polling. Use when a PR touches assets/js/bootstrap/, assets/js/loader.ts, assets/js/router.ts, assets/js/toy-view.ts, assets/data/toys.json, or gamepad polling code."
+description: "Review changes to module loading, bootstrap, toy manifest, library resolution, or gamepad polling. Use when a PR touches src/js/bootstrap/, src/js/loader.ts, src/js/router.ts, src/js/toy-view.ts, src/data/toys.json, or gamepad polling code."
 ---
 
 # Review Module Loading and Bootstrap
 
-Use this skill when reviewing or authoring changes to `assets/js/bootstrap/*`, `assets/js/loader.ts`, `assets/js/library-view.js`, `assets/js/toy-view.ts`, `assets/js/milkdrop/catalog-store*.ts`, `assets/data/toys.json`, `index.html`, or gamepad polling code.
+Use this skill when reviewing or authoring changes to `src/js/bootstrap/*`, `src/js/loader.ts`, `src/js/library-view.js`, `src/js/toy-view.ts`, `src/js/milkdrop/catalog-store*.ts`, `src/data/toys.json`, `index.html`, or gamepad polling code.
 
 ## Why this exists
 
@@ -32,7 +32,7 @@ Use this skill when reviewing or authoring changes to `assets/js/bootstrap/*`, `
 
 ### 4. Library/manifest consistency
 
-- [ ] If changing `assets/data/toys.json`, the in-memory manifest matches the file
+- [ ] If changing `src/data/toys.json`, the in-memory manifest matches the file
 - [ ] Library resolution does not depend on file-system paths that differ between dev and production
 
 ### 5. Index.html entry points

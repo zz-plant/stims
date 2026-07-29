@@ -14,7 +14,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
-`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` (root entry point `assets/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
+`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
 
 For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md).
 
@@ -108,7 +108,7 @@ bun scripts/play-toy.ts milkdrop \
 
 This keeps the capture focused on one preset and saves both the screenshot and the runtime debug snapshot for later comparison.
 
-To capture the certification corpus directly from `assets/data/milkdrop-parity/certification-corpus.json` instead of the checked-in visual-reference manifest (note: only 4 of the 23 corpus presets have measured results; the corpus represents certification targets, not completed certifications), use:
+To capture the certification corpus directly from `src/data/milkdrop-parity/certification-corpus.json` instead of the checked-in visual-reference manifest (note: only 4 of the 23 corpus presets have measured results; the corpus represents certification targets, not completed certifications), use:
 
 ```bash
 bun run parity:capture:corpus -- --group bundled-shipped
@@ -149,8 +149,8 @@ bun run parity:promote-reference -- \
   --strata feedback,shader-supported
 ```
 
-This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `assets/data/milkdrop-parity/visual-reference-manifest.json`.
-The checked-in certification target set itself lives in `assets/data/milkdrop-parity/certification-corpus.json`; visual references and measured results should only be added for presets in that bounded corpus.
+This copies the chosen reference artifact into `tests/fixtures/milkdrop/projectm-reference/` and upserts its entry in `src/data/milkdrop-parity/visual-reference-manifest.json`.
+The checked-in certification target set itself lives in `src/data/milkdrop-parity/certification-corpus.json`; visual references and measured results should only be added for presets in that bounded corpus.
 
 To run the parity suite against the checked-in visual reference manifest (currently 4 presets with projectM reference images):
 
@@ -158,7 +158,7 @@ To run the parity suite against the checked-in visual reference manifest (curren
 bun run parity:suite -- --output ./screenshots/parity --write-diff-images
 ```
 
-This reads `assets/data/milkdrop-parity/visual-reference-manifest.json`, resolves the latest Stims captures for each preset in the visual reference manifest, writes per-preset reports under `./screenshots/parity/suite/`, and emits a ranked `summary.json` with worst mismatches first.
+This reads `src/data/milkdrop-parity/visual-reference-manifest.json`, resolves the latest Stims captures for each preset in the visual reference manifest, writes per-preset reports under `./screenshots/parity/suite/`, and emits a ranked `summary.json` with worst mismatches first.
 
 To promote a suite report into the checked-in measured-results manifest:
 
@@ -168,7 +168,7 @@ bun run parity:promote-result -- \
   --preset eos-glowsticks-v2-03-music
 ```
 
-This upserts the preset into `assets/data/milkdrop-parity/measured-results.json`, which is the first repo-tracked source used to override inferred fidelity with measured visual evidence.
+This upserts the preset into `src/data/milkdrop-parity/measured-results.json`, which is the first repo-tracked source used to override inferred fidelity with measured visual evidence.
 
 To sync the shipped bundled catalog metadata with that measured-results manifest:
 
@@ -178,7 +178,7 @@ bun run parity:sync-catalog
 
 This rewrites `public/milkdrop-presets/catalog.json` so presets with measured visual results keep their certified fidelity labels, while unmeasured bundled presets are published as `partial` with `runtime` evidence instead of optimistic `exact`/`visual` metadata.
 
-`bun run check:quick` and `bun run check` now verify that `public/milkdrop-presets/catalog.json` is still synced with `assets/data/milkdrop-parity/measured-results.json`. If that check fails, rerun `bun run parity:sync-catalog`.
+`bun run check:quick` and `bun run check` now verify that `public/milkdrop-presets/catalog.json` is still synced with `src/data/milkdrop-parity/measured-results.json`. If that check fails, rerun `bun run parity:sync-catalog`.
 
 ### Bundled shipped preset lane
 
@@ -213,11 +213,11 @@ Keep the bundled shipped presets in evidence order:
 
 ## Frontend boundaries
 
-- `assets/js/app.ts` and `assets/js/frontend/*` are the active product frontend.
-- `assets/js/milkdrop/*` remains the visual engine behind the adapter seam.
-- `assets/js/frontend/` avoids adding a secondary React renderer for Three.js scenes; decorative visuals use imperative Three.js directly.
-- `assets/js/frontend/workspace-router.tsx` is a thin pass-through that renders `App.tsx` directly — the old `@tanstack/react-router` was removed in favor of the native History API (see `url-state.ts` + `workspace-hooks.ts` for URL sync).
-- `assets/js/loader.ts`, `assets/js/router.ts`, `assets/js/toy-view.ts`, `assets/js/library-view.js`, `assets/js/library-view/*`, and `assets/js/bootstrap/*` are legacy compatibility modules.
+- `src/js/app.ts` and `src/js/frontend/*` are the active product frontend.
+- `src/js/milkdrop/*` remains the visual engine behind the adapter seam.
+- `src/js/frontend/` avoids adding a secondary React renderer for Three.js scenes; decorative visuals use imperative Three.js directly.
+- `src/js/frontend/workspace-router.tsx` is a thin pass-through that renders `App.tsx` directly — the old `@tanstack/react-router` was removed in favor of the native History API (see `url-state.ts` + `workspace-hooks.ts` for URL sync).
+- `src/js/loader.ts`, `src/js/router.ts`, `src/js/toy-view.ts`, `src/js/library-view.js`, `src/js/library-view/*`, and `src/js/bootstrap/*` are legacy compatibility modules.
 - New product work should not add fresh route ownership or UI flows to those legacy modules.
 
 ## Testing layers

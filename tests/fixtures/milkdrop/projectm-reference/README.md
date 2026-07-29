@@ -4,7 +4,7 @@ This directory stores checked-in reference renders captured from `projectM` for 
 
 The source of truth for this fixture set is:
 
-- [`assets/data/milkdrop-parity/visual-reference-manifest.json`](../../../assets/data/milkdrop-parity/visual-reference-manifest.json)
+- [`src/data/milkdrop-parity/visual-reference-manifest.json`](../../../src/data/milkdrop-parity/visual-reference-manifest.json)
 
 Each promoted native projectM preset must include:
 

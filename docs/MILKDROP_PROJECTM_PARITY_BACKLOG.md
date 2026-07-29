@@ -38,7 +38,7 @@ Bundled shipped preset lane:
   - import the matching `projectM` reference,
   - promote the reference into `tests/fixtures/milkdrop/projectm-reference/`,
   - run `bun run parity:suite`,
-  - promote the suite result into `assets/data/milkdrop-parity/measured-results.json`,
+  - promote the suite result into `src/data/milkdrop-parity/measured-results.json`,
   - sync `public/milkdrop-presets/catalog.json`.
   - The current report intentionally classifies one as WebGL-only and three as uncertified because the latest captures do not pass the required native WebGPU lane. They must not be described as WebGPU-certified.
 
@@ -91,7 +91,7 @@ Goal:
 - Replace ad hoc visual inspection with a small, versioned, certified preset/reference corpus.
 
 Files to add or change:
-- `assets/data/milkdrop-parity/visual-reference-manifest.json`
+- `src/data/milkdrop-parity/visual-reference-manifest.json`
 - `tests/fixtures/milkdrop/projectm-reference/`
 - `scripts/visual-reference-manifest.ts`
 - `scripts/promote-projectm-reference.ts`
@@ -159,10 +159,10 @@ Goal:
 - Stop inferring fidelity from compiler optimism and make measured visual results authoritative.
 
 Primary files to change:
-- [`assets/js/milkdrop/compiler/core.ts`](../assets/js/milkdrop/compiler/core.ts)
-- [`assets/js/milkdrop/compiler/ir.ts`](../assets/js/milkdrop/compiler/ir.ts)
-- [`assets/js/milkdrop/compiler/compatibility.ts`](../assets/js/milkdrop/compiler/compatibility.ts)
-- [`assets/js/milkdrop/catalog-store-analysis.ts`](../assets/js/milkdrop/catalog-store-analysis.ts)
+- [`src/js/milkdrop/compiler/core.ts`](../src/js/milkdrop/compiler/core.ts)
+- [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts)
+- [`src/js/milkdrop/compiler/compatibility.ts`](../src/js/milkdrop/compiler/compatibility.ts)
+- [`src/js/milkdrop/catalog-store-analysis.ts`](../src/js/milkdrop/catalog-store-analysis.ts)
 - [`public/milkdrop-presets/catalog.json`](../public/milkdrop-presets/catalog.json)
 
 Implementation tasks:
@@ -185,10 +185,10 @@ Goal:
 - Eliminate the largest visible drift source first.
 
 Primary files to change:
-- [`assets/js/milkdrop/renderer-helpers/feedback-composite.ts`](../assets/js/milkdrop/renderer-helpers/feedback-composite.ts)
-- [`assets/js/milkdrop/feedback-manager-shared.ts`](../assets/js/milkdrop/feedback-manager-shared.ts)
-- [`assets/js/milkdrop/feedback-manager-webgpu.ts`](../assets/js/milkdrop/feedback-manager-webgpu.ts)
-- [`assets/js/milkdrop/compiler/gpu-descriptor-plan.ts`](../assets/js/milkdrop/compiler/gpu-descriptor-plan.ts)
+- [`src/js/milkdrop/renderer-helpers/feedback-composite.ts`](../src/js/milkdrop/renderer-helpers/feedback-composite.ts)
+- [`src/js/milkdrop/feedback-manager-shared.ts`](../src/js/milkdrop/feedback-manager-shared.ts)
+- [`src/js/milkdrop/feedback-manager-webgpu.ts`](../src/js/milkdrop/feedback-manager-webgpu.ts)
+- [`src/js/milkdrop/compiler/gpu-descriptor-plan.ts`](../src/js/milkdrop/compiler/gpu-descriptor-plan.ts)
 - [`tests/milkdrop-renderer-adapter.test.ts`](../tests/milkdrop-renderer-adapter.test.ts)
 
 Implementation tasks:
@@ -216,9 +216,9 @@ Goal:
 - Shrink the gap between translated controls and actual projectM shader behavior.
 
 Primary files to change:
-- [`assets/js/milkdrop/compiler/shader-analysis.ts`](../assets/js/milkdrop/compiler/shader-analysis.ts)
-- [`assets/js/milkdrop/compiler/ir.ts`](../assets/js/milkdrop/compiler/ir.ts)
-- [`assets/js/milkdrop/compiler/parity.ts`](../assets/js/milkdrop/compiler/parity.ts)
+- [`src/js/milkdrop/compiler/shader-analysis.ts`](../src/js/milkdrop/compiler/shader-analysis.ts)
+- [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts)
+- [`src/js/milkdrop/compiler/parity.ts`](../src/js/milkdrop/compiler/parity.ts)
 - [`tests/milkdrop-compiler-shader-analysis.test.ts`](../tests/milkdrop-compiler-shader-analysis.test.ts)
 - [`tests/milkdrop-projectm-compat.test.ts`](../tests/milkdrop-projectm-compat.test.ts)
 
@@ -246,9 +246,9 @@ Goal:
 - Remove known sampler approximations that visibly change output.
 
 Primary files to change:
-- [`assets/js/milkdrop/compiler/shader-analysis.ts`](../assets/js/milkdrop/compiler/shader-analysis.ts)
-- [`assets/js/milkdrop/feedback-manager-shared.ts`](../assets/js/milkdrop/feedback-manager-shared.ts)
-- [`assets/js/milkdrop/feedback-manager-webgpu.ts`](../assets/js/milkdrop/feedback-manager-webgpu.ts)
+- [`src/js/milkdrop/compiler/shader-analysis.ts`](../src/js/milkdrop/compiler/shader-analysis.ts)
+- [`src/js/milkdrop/feedback-manager-shared.ts`](../src/js/milkdrop/feedback-manager-shared.ts)
+- [`src/js/milkdrop/feedback-manager-webgpu.ts`](../src/js/milkdrop/feedback-manager-webgpu.ts)
 - [`tests/milkdrop-shader-sampler-aliases.test.ts`](../tests/milkdrop-shader-sampler-aliases.test.ts)
 
 Implementation tasks:
@@ -274,11 +274,11 @@ Goal:
 - Match what projectM actually draws, not just how many primitives Stims emits.
 
 Primary files to change:
-- [`assets/js/milkdrop/renderer-helpers/wave-renderer.ts`](../assets/js/milkdrop/renderer-helpers/wave-renderer.ts)
-- [`assets/js/milkdrop/renderer-helpers/procedural-wave-renderer.ts`](../assets/js/milkdrop/renderer-helpers/procedural-wave-renderer.ts)
-- [`assets/js/milkdrop/renderer-helpers/shape-renderer.ts`](../assets/js/milkdrop/renderer-helpers/shape-renderer.ts)
-- [`assets/js/milkdrop/renderer-helpers/border-renderer.ts`](../assets/js/milkdrop/renderer-helpers/border-renderer.ts)
-- [`assets/js/milkdrop/renderer-helpers/mesh-renderer.ts`](../assets/js/milkdrop/renderer-helpers/mesh-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/wave-renderer.ts`](../src/js/milkdrop/renderer-helpers/wave-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/procedural-wave-renderer.ts`](../src/js/milkdrop/renderer-helpers/procedural-wave-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/shape-renderer.ts`](../src/js/milkdrop/renderer-helpers/shape-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/border-renderer.ts`](../src/js/milkdrop/renderer-helpers/border-renderer.ts)
+- [`src/js/milkdrop/renderer-helpers/mesh-renderer.ts`](../src/js/milkdrop/renderer-helpers/mesh-renderer.ts)
 - [`tests/milkdrop-renderer-adapter.test.ts`](../tests/milkdrop-renderer-adapter.test.ts)
 
 Implementation tasks:
@@ -315,9 +315,9 @@ Goal:
 - Prevent WebGPU from claiming parity before it has earned it.
 
 Primary files to change:
-- [`assets/js/milkdrop/renderer-adapter-webgpu.ts`](../assets/js/milkdrop/renderer-adapter-webgpu.ts)
-- [`assets/js/milkdrop/renderer-adapter-webgl.ts`](../assets/js/milkdrop/renderer-adapter-webgl.ts)
-- [`assets/js/milkdrop/webgpu-optimization-flags.ts`](../assets/js/milkdrop/webgpu-optimization-flags.ts)
+- [`src/js/milkdrop/renderer-adapter-webgpu.ts`](../src/js/milkdrop/renderer-adapter-webgpu.ts)
+- [`src/js/milkdrop/renderer-adapter-webgl.ts`](../src/js/milkdrop/renderer-adapter-webgl.ts)
+- [`src/js/milkdrop/webgpu-optimization-flags.ts`](../src/js/milkdrop/webgpu-optimization-flags.ts)
 - [`tests/milkdrop-webgpu-rollout.test.ts`](../tests/milkdrop-webgpu-rollout.test.ts)
 
 Implementation tasks:
@@ -345,11 +345,11 @@ Goal:
 - Make the product surface tell the truth about what is measured and what is inferred.
 
 Primary files to change:
-- [`assets/js/milkdrop/overlay.ts`](../assets/js/milkdrop/overlay.ts)
-- [`assets/js/milkdrop/overlay/inspector-panel.ts`](../assets/js/milkdrop/overlay/inspector-panel.ts)
-- [`assets/js/milkdrop/overlay/preset-row.ts`](../assets/js/milkdrop/overlay/preset-row.ts)
-- [`assets/js/milkdrop/catalog-store-analysis.ts`](../assets/js/milkdrop/catalog-store-analysis.ts)
-- [`assets/js/milkdrop/common-types.ts`](../assets/js/milkdrop/common-types.ts)
+- [`src/js/milkdrop/overlay.ts`](../src/js/milkdrop/overlay.ts)
+- [`src/js/milkdrop/overlay/inspector-panel.ts`](../src/js/milkdrop/overlay/inspector-panel.ts)
+- [`src/js/milkdrop/overlay/preset-row.ts`](../src/js/milkdrop/overlay/preset-row.ts)
+- [`src/js/milkdrop/catalog-store-analysis.ts`](../src/js/milkdrop/catalog-store-analysis.ts)
+- [`src/js/milkdrop/common-types.ts`](../src/js/milkdrop/common-types.ts)
 - [`docs/MILKDROP_PRESET_RUNTIME.md`](./MILKDROP_PRESET_RUNTIME.md)
 
 Implementation tasks:

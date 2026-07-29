@@ -248,34 +248,34 @@ The changes below are ordered by dependency; each builds on the previous.
 
 | Order | File | Change |
 |-------|------|--------|
-| 1 | `assets/js/core/renderer-fsm.ts` (NEW) | Define the explicit state machine: `RendererSetupState` enum, `RendererSetupEvent` discriminated union, `transition(state, event): RendererSetupState` pure function. Include all states and transitions from §2.2. |
-| 2 | `assets/js/core/renderer-fsm.test.ts` (NEW) | Test every valid transition and assert every invalid transition throws. |
-| 3 | `assets/js/core/renderer-setup.ts` | Replace the inline fallback branches with calls to the FSM. `initRenderer` becomes a state-machine executor: poll current state, dispatch events, react to next state. |
-| 4 | `assets/js/core/renderer-capabilities.ts` | Extract the `probeRendererCapabilities` 9-return-path cascade into a `probeCapabilityTier()` function that returns an event (`AdapterFound`, `AdapterFallback`, `DeviceTimeout`, etc.) rather than a complex result object. |
+| 1 | `src/js/core/renderer-fsm.ts` (NEW) | Define the explicit state machine: `RendererSetupState` enum, `RendererSetupEvent` discriminated union, `transition(state, event): RendererSetupState` pure function. Include all states and transitions from §2.2. |
+| 2 | `src/js/core/renderer-fsm.test.ts` (NEW) | Test every valid transition and assert every invalid transition throws. |
+| 3 | `src/js/core/renderer-setup.ts` | Replace the inline fallback branches with calls to the FSM. `initRenderer` becomes a state-machine executor: poll current state, dispatch events, react to next state. |
+| 4 | `src/js/core/renderer-capabilities.ts` | Extract the `probeRendererCapabilities` 9-return-path cascade into a `probeCapabilityTier()` function that returns an event (`AdapterFound`, `AdapterFallback`, `DeviceTimeout`, etc.) rather than a complex result object. |
 
 ### Phase 2: renderScale Typing
 
 | Order | File | Change |
 |-------|------|--------|
-| 5 | `assets/js/core/renderer-settings.ts` | Add `RenderScaleUser` (input), `RenderScaleComputed` (after multiplier chain), and `RenderScaleEffective` (final pixel ratio) branded types. Split `resolveRendererSettings` into `resolveUserScale` and `computeEffectiveScale` — separate concerns. |
-| 6 | `assets/js/core/renderer-setup.ts` | Accept typed `RenderScaleUser` in `RendererInitConfig`, produce typed `RenderScaleEffective` in `RendererInitResult`. Remove in-place mutation of `info.renderScale` from `applyRendererSettings`. |
-| 7 | `assets/js/core/services/render-service.ts` | Update `getRenderDefaults()` to use typed scale composition. |
+| 5 | `src/js/core/renderer-settings.ts` | Add `RenderScaleUser` (input), `RenderScaleComputed` (after multiplier chain), and `RenderScaleEffective` (final pixel ratio) branded types. Split `resolveRendererSettings` into `resolveUserScale` and `computeEffectiveScale` — separate concerns. |
+| 6 | `src/js/core/renderer-setup.ts` | Accept typed `RenderScaleUser` in `RendererInitConfig`, produce typed `RenderScaleEffective` in `RendererInitResult`. Remove in-place mutation of `info.renderScale` from `applyRendererSettings`. |
+| 7 | `src/js/core/services/render-service.ts` | Update `getRenderDefaults()` to use typed scale composition. |
 
 ### Phase 3: Timeout & Cleanup Hardening
 
 | Order | File | Change |
 |-------|------|--------|
-| 8 | `assets/js/core/renderer-init-timeout.ts` | Add `AbortController` support. Return a `{ result, didTimeout }` wrapper instead of racing and discarding. |
-| 9 | `assets/js/core/renderer-setup.ts` | Replace fire-and-forget `void initPromise.then(disposeTimedOutRenderer)` with a cancellable cleanup token. Track the init promise's lifecycle through the FSM. |
-| 10 | `assets/js/core/services/render-service.ts` | Add retry backoff with max attempts for `queueWebGpuRecovery`. Track recovery attempts in the FSM state. |
+| 8 | `src/js/core/renderer-init-timeout.ts` | Add `AbortController` support. Return a `{ result, didTimeout }` wrapper instead of racing and discarding. |
+| 9 | `src/js/core/renderer-setup.ts` | Replace fire-and-forget `void initPromise.then(disposeTimedOutRenderer)` with a cancellable cleanup token. Track the init promise's lifecycle through the FSM. |
+| 10 | `src/js/core/services/render-service.ts` | Add retry backoff with max attempts for `queueWebGpuRecovery`. Track recovery attempts in the FSM state. |
 
 ### Phase 4: Audio-Renderer Coupling
 
 | Order | File | Change |
 |-------|------|--------|
-| 11 | `assets/js/core/audio-handler.ts` | Add `AudioPipelineMode` enum (`worklet` | `analyser-node`). Expose on `FrequencyAnalyser`. Add `AudioInitEvent` union for FSM integration. |
-| 12 | `assets/js/core/animation-loop.ts` | Guard `initAudio` call with FSM state check: only proceed if state is `renderer-ready` or `renderer-degraded`. |
-| 13 | `assets/js/core/renderer-fsm.ts` | Expand FSM to include audio states and cross-cutting transitions (audio failure while rendering, device loss during audio playback). |
+| 11 | `src/js/core/audio-handler.ts` | Add `AudioPipelineMode` enum (`worklet` | `analyser-node`). Expose on `FrequencyAnalyser`. Add `AudioInitEvent` union for FSM integration. |
+| 12 | `src/js/core/animation-loop.ts` | Guard `initAudio` call with FSM state check: only proceed if state is `renderer-ready` or `renderer-degraded`. |
+| 13 | `src/js/core/renderer-fsm.ts` | Expand FSM to include audio states and cross-cutting transitions (audio failure while rendering, device loss during audio playback). |
 
 ### Files NOT Changed
 

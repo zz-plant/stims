@@ -106,21 +106,21 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 
 ## Per-change checklists
 
-### Touching `assets/js/milkdrop/feedback-manager-*` or `renderer-adapter*`
+### Touching `src/js/milkdrop/feedback-manager-*` or `renderer-adapter*`
 
 - [ ] `bun run test:compat` passes against the reference preset set
 - [ ] WebGL and WebGPU paths both exercised (check `tests/milkdrop-renderer-adapter.test.ts`)
 - [ ] No hardcoded resolution scales or target sizes without a comment explaining the reason
 - [ ] Blend alpha order verified against projectM baseline
 
-### Touching `assets/js/core/renderer-setup.ts`, `renderer-capabilities.ts`, `render-service.ts`, `backend-fallback.ts`
+### Touching `src/js/core/renderer-setup.ts`, `renderer-capabilities.ts`, `render-service.ts`, `backend-fallback.ts`
 
 - [ ] Fallback chain tested with WebGPU disabled (see `tests/renderer-capabilities.test.js`)
 - [ ] `renderScale` propagation verified end-to-end (capability probe → renderer plan → query override → pooled renderers)
 - [ ] Audio worklet initialization validated on the fallback path
 - [ ] `bun run test:integration` passes locally if the shell or audio bridge was touched
 
-### Touching `assets/js/milkdrop/compiler/**`
+### Touching `src/js/milkdrop/compiler/**`
 
 - [ ] `bun run test:compat` passes
 - [ ] Any new compiler behavior has a focused test in `tests/milkdrop-compiler-seams.test.ts` or `tests/milkdrop-compiler-shader-analysis.test.ts`
@@ -132,7 +132,7 @@ Integration tests run on **every PR** — not just on push to main. This is inte
 - [ ] No new uses of `importFresh()` — prefer factory functions with injected dependencies
 - [ ] Integration harness startup contract in `tests/agent-integration.test.ts` unchanged unless intentionally versioned
 
-### Touching shell or routing (`assets/js/frontend/App.tsx`, `url-state.ts`, `workspace-hooks.ts`)
+### Touching shell or routing (`src/js/frontend/App.tsx`, `url-state.ts`, `workspace-hooks.ts`)
 
 - [ ] `tests/app-shell.test.js` and `tests/frontend-url-state.test.ts` pass
 - [ ] `bun run test:integration` passes (integration harness exercises the full boot sequence)

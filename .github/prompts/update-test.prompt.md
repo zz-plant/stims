@@ -13,7 +13,7 @@ You're adding or fixing tests. Follow this flow.
 - [ ] Find a similar existing test as a template
 
 ```bash
-# For code in assets/js/milkdrop/foo.ts
+# For code in src/js/milkdrop/foo.ts
 # Look for: tests/milkdrop/foo.test.ts
 
 # List tests by type
@@ -40,7 +40,7 @@ bun run test:integration  # Browser-based (slower)
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { functionUnderTest } from "../assets/js/path/to/code";
+import { functionUnderTest } from "../src/js/path/to/code";
 
 describe("functionUnderTest", () => {
   it("should do the right thing", () => {

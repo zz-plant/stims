@@ -13,8 +13,8 @@
 | 3 | `index.html` | 84–91 | LD+JSON schema `"name": "MilkDrop Visualizer"` | Structured-data markup claims "MilkDrop Visualizer" as the application name. Schema consumers (search engines, assistants) will treat this as the canonical product name. | **Critical** |
 | 4 | `index.html` | 99 | `"Loading MilkDrop visualizer"` (loading-screen text) | Same unqualified naming in user-facing loading copy. | **Critical** |
 | 5 | `docs/LINEAGE_AND_CREDITS.md` | 11 | "Compatible with parts of the broader MilkDrop/projectM preset ecosystem." | "Compatible" implies functional equivalence. Only 4 of 23 corpus presets have measured visual evidence against any reference. 19 have no measured comparison — including 7 projectM-upstream fixtures and all 10 parity-corpus presets. "Parts of" softens the claim but does not quantify which parts or how many. | **High** |
-| 6 | `assets/data/milkdrop-parity/certification-corpus.json` | 3,5 | `"parityTarget": "projectm-webgpu-certification-v1"`, `"presetCount": 23` | The file name (`certification-corpus`) and its top-level fields present all 23 presets as part of a "certification" target. Only 4 have certified results in `measured-results.json`. The other 19 are uncertified with no measured visual evidence. | **High** |
-| 7 | `docs/DEVELOPMENT.md` | 111–114 | "To capture the certification corpus directly from `assets/data/milkdrop-parity/certification-corpus.json` … use: `bun run parity:capture:corpus -- --group bundled-shipped`" | Refers to the full 23-preset file as a "certification corpus" without distinguishing which presets are certified (4) from which are targets for future certification (19). The command scopes correctly to `bundled-shipped` but the surrounding prose does not. | **High** |
+| 6 | `src/data/milkdrop-parity/certification-corpus.json` | 3,5 | `"parityTarget": "projectm-webgpu-certification-v1"`, `"presetCount": 23` | The file name (`certification-corpus`) and its top-level fields present all 23 presets as part of a "certification" target. Only 4 have certified results in `measured-results.json`. The other 19 are uncertified with no measured visual evidence. | **High** |
+| 7 | `docs/DEVELOPMENT.md` | 111–114 | "To capture the certification corpus directly from `src/data/milkdrop-parity/certification-corpus.json` … use: `bun run parity:capture:corpus -- --group bundled-shipped`" | Refers to the full 23-preset file as a "certification corpus" without distinguishing which presets are certified (4) from which are targets for future certification (19). The command scopes correctly to `bundled-shipped` but the surrounding prose does not. | **High** |
 | 8 | `docs/DEVELOPMENT.md` | 155,161 | "To run the certified parity suite … each certified preset" | Calls presets in the corpus "certified" when only 4 have certification evidence. A reader scanning this section would assume all suite presets have been through the full measurement pipeline. | **High** |
 | 9 | `docs/MILKDROP_PROJECTM_PARITY_BACKLOG.md` | 1 | `# MilkDrop projectM parity backlog` | Title implies Stims is tracking toward "MilkDrop projectM parity" — a framing that suggests parity is an achievable next step rather than an open research question. The body correctly qualifies this but the title is absolute. | **Medium** |
 | 10 | `docs/MILKDROP_SUCCESSOR_WORKSTREAMS.md` | 1 | `# MilkDrop successor workstreams` | Title uses "successor" without qualification. The body on line 5 adds aspirational language ("to become the strongest credible successor candidate"), but the unqualified title reads as a claim of successor status. | **Medium** |
@@ -88,7 +88,7 @@ Imprecise language that a skeptical reader would challenge, or titles/headings t
 + "Able to load and render presets from the MilkDrop/projectM ecosystem. Visual fidelity varies: 4 of 23 certification-corpus presets have measured near-exact results; the remaining presets are at the compiler/runtime compatibility stage and have not yet been measured against projectM references."
 ```
 
-**Finding #6 — `assets/data/milkdrop-parity/certification-corpus.json:3`**
+**Finding #6 — `src/data/milkdrop-parity/certification-corpus.json:3`**
 This is a data file, not prose. Add a top-level note field:
 ```json
 "parityTarget": "projectm-webgpu-certification-v1",
@@ -98,7 +98,7 @@ This is a data file, not prose. Add a top-level note field:
 
 **Finding #7 — `docs/DEVELOPMENT.md:111–114`**
 ```
-  To capture the certification corpus directly from `assets/data/milkdrop-parity/certification-corpus.json`
+  To capture the certification corpus directly from `src/data/milkdrop-parity/certification-corpus.json`
   instead of the checked-in visual-reference manifest, use:
 + (Note: only 4 of the 23 corpus presets have measured results. The corpus represents certification targets,
 + not completed certifications.)

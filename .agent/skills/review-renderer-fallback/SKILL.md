@@ -1,6 +1,6 @@
 ---
 name: review-renderer-fallback
-description: "Review changes to renderer capability probing, fallback chains, timeout logic, or audio worklet initialization. Use when a PR touches assets/js/core/renderer-*, assets/js/core/audio-handler.ts, or assets/js/milkdrop/runtime/backend-fallback.ts."
+description: "Review changes to renderer capability probing, fallback chains, timeout logic, or audio worklet initialization. Use when a PR touches src/js/core/renderer-*, src/js/core/audio-handler.ts, or src/js/milkdrop/runtime/backend-fallback.ts."
 ---
 
 # Review Renderer Fallback and Capability Lifecycle

@@ -37,7 +37,7 @@ This document is the consolidated source for implementation progress across road
 - [x] **Milestone C:** Broad toy migration with hardened drift checks.
   - [x] Added `bun run check:architecture` and wired it into the full `bun run check` quality gate.
   - [x] Promoted additional runtime-critical helpers (`audio-handler`, `unified-input`, `webgl-check`, `webgl-renderer`, `party-mode`, `shared-initializer`, and library back-navigation) out of `utils/` and into `core/`.
-  - [x] Turned `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` into deterministic generated artifacts from `assets/data/toys.json`.
+  - [x] Turned `docs/TOY_SCRIPT_INDEX.md` and `docs/toys.md` into deterministic generated artifacts from `src/data/toys.json`.
   - [x] Wired `bun run check:toys` and `bun run check:seo` into the main quality gate so metadata/docs and shipped SEO surfaces fail fast when they drift.
 - [x] **Milestone D:** Performance/reliability pass complete.
   - [x] Reduced per-frame signal override allocation churn in the MilkDrop input-response path.
@@ -54,12 +54,12 @@ This document is the consolidated source for implementation progress across road
 - [x] 2) Shared runtime boundary extraction.
   - [x] MilkDrop runtime orchestration now delegates startup selection, backend failover, interaction shaping, and frame lifecycle decisions to dedicated modules.
   - [x] Runtime ownership boundaries are now documented in `docs/ARCHITECTURE.md`.
-  - [x] Runtime-critical boundary helpers now live under `assets/js/core/*` instead of `assets/js/utils/*`.
+  - [x] Runtime-critical boundary helpers now live under `src/js/core/*` instead of `src/js/utils/*`.
 - [x] 3) Toy module normalization.
   - [x] MilkDrop pilot slice now uses `core/` starter/quality helpers instead of `utils/` runtime helpers.
 - [x] 4) Data and metadata consistency hardening.
   - [x] Architecture boundary enforcement now runs in CI-local parity through `bun run check:architecture`.
-  - [x] Toy manifest docs are generated from `assets/data/toys.json` and validated by `bun run check:toys`.
+  - [x] Toy manifest docs are generated from `src/data/toys.json` and validated by `bun run check:toys`.
   - [x] SEO surface validation now runs alongside the main quality gate through `bun run check:seo`.
 - [x] 5) Incremental performance and reliability pass.
   - [x] Catalog refresh scheduling now coalesces to the latest requested overlay state during rapid preset/backend churn.
