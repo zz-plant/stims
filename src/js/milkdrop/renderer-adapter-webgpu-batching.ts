@@ -957,17 +957,25 @@ function sampleProceduralWaveOffset(
 
 class InstancedSegmentBatch {
   readonly group = new Group();
-  private readonly meshes: Record<BlendModeKey, Mesh>;
+  private readonly meshes: Partial<Record<BlendModeKey, Mesh>> = {};
+  private readonly baseRenderOrder: number;
 
   constructor(renderOrder: number) {
     this.group.renderOrder = renderOrder;
-    this.meshes = {} as Record<BlendModeKey, Mesh>;
-    for (let index = 0; index < BLEND_MODE_KEYS.length; index += 1) {
-      const mode = BLEND_MODE_KEYS[index] as BlendModeKey;
-      const mesh = this.createMesh(mode, renderOrder + index);
+    this.baseRenderOrder = renderOrder;
+  }
+
+  private getOrCreateMesh(mode: BlendModeKey): Mesh {
+    let mesh = this.meshes[mode];
+    if (!mesh) {
+      mesh = this.createMesh(
+        mode,
+        this.baseRenderOrder + BLEND_MODE_KEYS.indexOf(mode),
+      );
       this.meshes[mode] = mesh;
       this.group.add(mesh);
     }
+    return mesh;
   }
 
   private createMesh(mode: BlendModeKey, renderOrder: number) {
@@ -1053,7 +1061,15 @@ class InstancedSegmentBatch {
 
   syncSplit(buffers: Record<BlendModeKey, CompactSegmentUploadBuffer>) {
     for (const mode of BLEND_MODE_KEYS) {
-      this.syncMesh(this.meshes[mode], buffers[mode]);
+      const buffer = buffers[mode];
+      if (buffer.count === 0) {
+        const mesh = this.meshes[mode];
+        if (mesh) {
+          mesh.visible = false;
+        }
+        continue;
+      }
+      this.syncMesh(this.getOrCreateMesh(mode), buffer);
     }
   }
 
@@ -1096,9 +1112,12 @@ class InstancedSegmentBatch {
   }
 
   dispose() {
-    for (const mode of BLEND_MODE_KEYS) {
-      disposeGeometry(this.meshes[mode].geometry);
-      disposeMaterial(this.meshes[mode].material);
+    for (const mesh of Object.values(this.meshes)) {
+      if (!mesh) {
+        continue;
+      }
+      disposeGeometry(mesh.geometry);
+      disposeMaterial(mesh.material as ShaderMaterial);
     }
   }
 }
