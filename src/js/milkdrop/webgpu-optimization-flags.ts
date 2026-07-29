@@ -1,6 +1,7 @@
 import {
   getRequestedCorpus,
   getRequestedRenderer,
+  getWebGpuFlagParams,
 } from '../core/url-params.ts';
 import type {
   MilkdropGpuDescriptorRouting,
@@ -104,15 +105,13 @@ function parseOptionalBooleanFlag(value: string | null | undefined) {
 
 function getSearchFlag(
   location: Pick<Location, 'search'> | null | undefined,
-  param: string,
+  flagName: MilkdropWebGpuOptimizationFlagName,
 ) {
   if (!location?.search) {
     return null;
   }
 
-  return parseOptionalBooleanFlag(
-    new URLSearchParams(location.search).get(param),
-  );
+  return getWebGpuFlagParams(location.search)[flagName];
 }
 
 function getStorageFlag(
@@ -138,9 +137,8 @@ export function resolveMilkdropWebGpuOptimizationFlags({
   for (const flagName of Object.keys(
     DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS,
   ) as MilkdropWebGpuOptimizationFlagName[]) {
-    const searchParam = MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS[flagName];
     const storageKey = MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS[flagName];
-    const searchValue = getSearchFlag(location, searchParam);
+    const searchValue = getSearchFlag(location, flagName);
     const storageValue = getStorageFlag(storage, storageKey);
     const overrideValue = overrides[flagName];
 
@@ -155,10 +153,7 @@ export function resolveMilkdropWebGpuOptimizationFlags({
     getRequestedRenderer(searchInput) === 'webgpu' &&
     getRequestedCorpus(searchInput)?.toLowerCase() === 'certification';
   const hasExplicitFallbackOverride =
-    getSearchFlag(
-      location,
-      MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS.descriptorFallbackToWebgl,
-    ) !== null ||
+    getSearchFlag(location, 'descriptorFallbackToWebgl') !== null ||
     getStorageFlag(
       storage,
       MILKDROP_WEBGPU_OPTIMIZATION_STORAGE_KEYS.descriptorFallbackToWebgl,

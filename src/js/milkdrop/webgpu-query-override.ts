@@ -265,3 +265,13 @@ export function getWebGpuPathDescription(
     source: 'default',
   };
 }
+
+export function clearMilkdropWebGpuQueryOverride() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY_FORCE_MODE);
+  } catch (_error) {
+    // Ignore storage failures
+  }
+}

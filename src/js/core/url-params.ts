@@ -38,6 +38,18 @@ export interface HarnessURLParams {
   grid: string | null;
 }
 
+export interface WebGpuFlagURLParams {
+  proceduralMainWave: boolean | null;
+  proceduralTrailWaves: boolean | null;
+  proceduralCustomWaves: boolean | null;
+  proceduralMesh: boolean | null;
+  proceduralMotionVectors: boolean | null;
+  directFeedbackShaders: boolean | null;
+  descriptorFallbackToWebgl: boolean | null;
+  gpuComputeVM: boolean | null;
+  renderBundles: boolean | null;
+}
+
 export interface ParsedURLParams {
   routing: RoutingURLParams;
   renderer: RequestedRenderer;
@@ -48,6 +60,7 @@ export interface ParsedURLParams {
   tvOverride: string | null;
   overlay: OverlayURLParams;
   harness: HarnessURLParams;
+  webgpuFlags: WebGpuFlagURLParams;
 }
 
 const VALID_PANELS = new Set<Exclude<PanelState, null>>([
@@ -178,6 +191,16 @@ function parseNumberParam(val: string | null): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+function parseBoolParam(val: string | null): boolean | null {
+  if (!val) return null;
+  const lower = val.trim().toLowerCase();
+  if (lower === '1' || lower === 'true' || lower === 'yes' || lower === 'on')
+    return true;
+  if (lower === '0' || lower === 'false' || lower === 'no' || lower === 'off')
+    return false;
+  return null;
+}
+
 export function parseURLParams(
   input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
 ): ParsedURLParams {
@@ -249,6 +272,23 @@ export function parseURLParams(
       mockAudioActive: get('mockAudioActive') === 'true',
       grid: get('grid')?.trim() || null,
     },
+    webgpuFlags: {
+      proceduralMainWave: parseBoolParam(get('milkdrop-webgpu-main-wave')),
+      proceduralTrailWaves: parseBoolParam(get('milkdrop-webgpu-trail-waves')),
+      proceduralCustomWaves: parseBoolParam(
+        get('milkdrop-webgpu-custom-waves'),
+      ),
+      proceduralMesh: parseBoolParam(get('milkdrop-webgpu-mesh')),
+      proceduralMotionVectors: parseBoolParam(
+        get('milkdrop-webgpu-motion-vectors'),
+      ),
+      directFeedbackShaders: parseBoolParam(get('milkdrop-webgpu-feedback')),
+      descriptorFallbackToWebgl: parseBoolParam(
+        get('milkdrop-webgpu-fallback'),
+      ),
+      gpuComputeVM: parseBoolParam(get('milkdrop-webgpu-compute-vm')),
+      renderBundles: parseBoolParam(get('milkdrop-webgpu-render-bundles')),
+    },
   };
 }
 
@@ -286,4 +326,10 @@ export function getSmartTvOverride(
   input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
 ): string | null {
   return parseURLParams(input).tvOverride;
+}
+
+export function getWebGpuFlagParams(
+  input?: string | URL | Location | URLSearchParams | Record<string, unknown>,
+): WebGpuFlagURLParams {
+  return parseURLParams(input).webgpuFlags;
 }

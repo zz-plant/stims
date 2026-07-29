@@ -143,3 +143,25 @@ export function getRecommendedQualityPresetId(tier?: DeviceTier): string {
       return 'balanced';
   }
 }
+
+export function getDisplayRefreshRate(): number {
+  if (typeof window === 'undefined') return 60;
+
+  const profile = getDevicePerformanceProfile();
+  const environment = getDeviceEnvironmentProfile();
+  if (environment.isMobile && profile.lowPower) return 60;
+
+  if (typeof screen !== 'undefined' && 'refreshRate' in screen) {
+    const rate = (screen as unknown as { refreshRate: number }).refreshRate;
+    if (rate > 0) return rate;
+  }
+
+  if (!window.matchMedia('(update: fast)').matches) return 60;
+
+  try {
+    const concurrency = navigator.hardwareConcurrency ?? 4;
+    if (concurrency <= 3) return 60;
+  } catch {}
+
+  return 120;
+}

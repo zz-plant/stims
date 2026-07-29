@@ -3,6 +3,7 @@
  * Exposes state and control hooks on window.stimState for MCP tools and automation.
  */
 
+import { resetAllOverrides } from './reset-overrides.ts';
 import { isAgentMode as readAgentModeFromURL } from './url-params.ts';
 
 export type StimState = {
@@ -40,6 +41,7 @@ export type StimAPI = {
     'microphone' | 'demo' | 'tab' | 'youtube' | 'file'
   >;
   activateVibeMode: (durationMs?: number) => Promise<void>;
+  resetOverrides: () => { clearedKeys: string[] };
 };
 
 type StimEventMap = {
@@ -189,6 +191,7 @@ export function initAgentAPI(): StimAPI {
         }, clampedDuration);
       });
     },
+    resetOverrides: () => resetAllOverrides(),
   };
 
   // Expose globally for agents

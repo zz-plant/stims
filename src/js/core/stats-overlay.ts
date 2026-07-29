@@ -1,4 +1,5 @@
 import Stats from 'stats-gl';
+import { getBrowserStorage } from './state/browser-storage.ts';
 import { parseURLParams } from './url-params.ts';
 
 const STATS_STORAGE_KEY = 'stims:debug:stats-gl';
@@ -31,17 +32,10 @@ export function createStatsOverlay({
   let initPromise: Promise<void> | null = null;
 
   const resolveEnabled = () => {
-    try {
-      const storageValue =
-        typeof window !== 'undefined'
-          ? window.localStorage.getItem(storageKey)
-          : null;
-      enabled = shouldEnableStatsOverlay({
-        storageValue,
-      });
-    } catch {
-      enabled = shouldEnableStatsOverlay();
-    }
+    const storageValue = getBrowserStorage()?.getItem(storageKey) ?? null;
+    enabled = shouldEnableStatsOverlay({
+      storageValue,
+    });
     return enabled;
   };
 

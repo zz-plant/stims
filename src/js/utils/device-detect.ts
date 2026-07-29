@@ -1,3 +1,4 @@
+import { getBrowserStorage } from '../core/state/browser-storage.ts';
 import { getSmartTvOverride } from '../core/url-params.ts';
 
 type NavigatorWithUserAgentData = {
@@ -56,16 +57,13 @@ function parseSmartTvOverride(value: string | null): SmartTvOverride | null {
 }
 
 function persistSmartTvOverride(override: SmartTvOverride | null) {
-  if (typeof window === 'undefined') return;
-  try {
-    if (!override || override === 'auto') {
-      window.localStorage.removeItem(SMART_TV_OVERRIDE_STORAGE_KEY);
-      return;
-    }
-    window.localStorage.setItem(SMART_TV_OVERRIDE_STORAGE_KEY, override);
-  } catch (_error) {
-    // Ignore storage failures.
+  const storage = getBrowserStorage();
+  if (!storage) return;
+  if (!override || override === 'auto') {
+    storage.removeItem(SMART_TV_OVERRIDE_STORAGE_KEY);
+    return;
   }
+  storage.setItem(SMART_TV_OVERRIDE_STORAGE_KEY, override);
 }
 
 export function getSmartTvModeOverride(): SmartTvOverride | null {
@@ -78,15 +76,9 @@ export function getSmartTvModeOverride(): SmartTvOverride | null {
     }
   }
 
-  try {
-    const storedOverride =
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem(SMART_TV_OVERRIDE_STORAGE_KEY)
-        : null;
-    return parseSmartTvOverride(storedOverride);
-  } catch (_error) {
-    return null;
-  }
+  const storedOverride =
+    getBrowserStorage()?.getItem(SMART_TV_OVERRIDE_STORAGE_KEY) ?? null;
+  return parseSmartTvOverride(storedOverride);
 }
 
 const hasNoHoverPrimaryPointer = () => {
