@@ -1,4 +1,5 @@
 import {
+  applyQualityPresetWithoutPersisting,
   DEFAULT_QUALITY_PRESETS,
   describeQualityPresetImpact,
   getActiveQualityPreset,
@@ -48,7 +49,6 @@ type ToggleOptions = {
   parent?: HTMLElement;
 };
 
-const DEFAULT_PRESET_ID = 'balanced';
 const DEFAULT_QUALITY_HINT = 'Adjust resolution and particle density.';
 
 export class PersistentSettingsPanel {
@@ -106,7 +106,7 @@ export class PersistentSettingsPanel {
   setQualityPresets(options: QualityOptions = {}) {
     const {
       presets = DEFAULT_QUALITY_PRESETS,
-      defaultPresetId = DEFAULT_PRESET_ID,
+      defaultPresetId,
       onChange,
       storageKey = QUALITY_STORAGE_KEY,
       showScopeHint = true,
@@ -186,7 +186,11 @@ export class PersistentSettingsPanel {
     this.updateQualityHint(initialPreset, this.qualityStorageKey);
 
     if (!hadActivePreset) {
-      this.handleQualityChange(initialPreset.id);
+      // First run: activate the resolved default (device-tier derived) so
+      // subscribers and the renderer pick it up, but do not persist it. Writing
+      // it would make it indistinguishable from an explicit user choice and
+      // pin this browser to whatever tier it happened to detect first.
+      this.applyPresetWithoutPersisting(initialPreset.id);
     }
   }
 
@@ -268,7 +272,7 @@ export class PersistentSettingsPanel {
     return input;
   }
 
-  private getInitialPreset(defaultPresetId: string): QualityPreset {
+  private getInitialPreset(defaultPresetId?: string): QualityPreset {
     return getActiveQualityPreset({
       presets: this.qualityPresets,
       defaultPresetId,
@@ -292,6 +296,17 @@ export class PersistentSettingsPanel {
 
   private handleQualityChange(presetId: string) {
     const preset = setQualityPresetById(presetId, {
+      presets: this.qualityPresets,
+      storageKey: this.qualityStorageKey,
+    });
+    if (!preset) return;
+
+    this.updateQualityHint(preset, this.qualityStorageKey);
+    this.qualityChangeHandler?.(preset);
+  }
+
+  private applyPresetWithoutPersisting(presetId: string) {
+    const preset = applyQualityPresetWithoutPersisting(presetId, {
       presets: this.qualityPresets,
       storageKey: this.qualityStorageKey,
     });

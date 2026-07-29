@@ -75,7 +75,6 @@ export function createMilkdropEngineAdapter() {
 
   const quality = createRendererQualityManager({
     presets: DEFAULT_QUALITY_PRESETS,
-    defaultPresetId: 'balanced',
     storageKey: QUALITY_STORAGE_KEY,
     getRuntime: () => runtime,
   });

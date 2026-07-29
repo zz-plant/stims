@@ -45,7 +45,7 @@ bun run play:toy milkdrop
 bun run test tests/path/to/spec.test.ts
 bun run test:integration
 bun run test:compat
-bun run test:legacy-frontend
+bun run test:unit
 
 # Type safety and full repo gate
 bun run typecheck

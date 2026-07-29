@@ -3885,7 +3885,9 @@ body[data-page="home"] .content {
 
 body,
 html {
-  font-family: var(--display-font);
+  /* No font-family here: --display-font was never defined, which made this
+     declaration invalid at computed-value time and silently dropped the whole
+     app back to the UA serif. The stack set earlier in this file stands. */
   background:
     radial-gradient(
       circle at 12% 0%,

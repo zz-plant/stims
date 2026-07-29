@@ -69,8 +69,8 @@ Use one owner per slice when work is parallelized:
 
 | Slice | Primary files | Typical validation |
 | --- | --- | --- |
-| Runtime and shell | `assets/js/core/`, `assets/js/frontend/`, router/bootstrap entrypoints | targeted test file, `bun run test:integration`, then `bun run check` |
-| Presets and compatibility | `assets/js/milkdrop/`, preset fixtures, catalog assets | targeted test file, `bun run test:compat`, then `bun run check` |
+| Runtime and shell | `src/js/core/`, `src/js/frontend/`, `src/css/`, app entry points | targeted test file, `bun run test:integration`, then `bun run check` |
+| Presets and compatibility | `src/js/milkdrop/`, preset fixtures, catalog assets | targeted test file, `bun run test:compat`, then `bun run check` |
 | Browser verification | tests, Playwright helpers, visual QA docs | `bun run dev`, `http://localhost:5173/?agent=true`, targeted browser checks |
 | Docs and metadata | `docs/`, `AGENTS.md`, `.agent/`, MCP-facing markdown wiring | docs link review, targeted tests if MCP/doc wiring changed |
 

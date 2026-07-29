@@ -1,4 +1,7 @@
-import { getRecommendedQualityPresetId } from '../device-profile.ts';
+import {
+  FALLBACK_QUALITY_PRESET_ID,
+  getRecommendedQualityPresetId,
+} from '../device-profile.ts';
 import { getBrowserStorage } from './browser-storage.ts';
 
 export type QualityPreset = {
@@ -41,7 +44,7 @@ export const DEFAULT_QUALITY_PRESETS: QualityPreset[] = [
   },
   {
     id: 'balanced',
-    label: 'Balanced (default)',
+    label: 'Balanced',
     description: 'Default quality target for most laptops and desktops.',
     maxPixelRatio: 1.5,
     renderScale: 1,
@@ -76,7 +79,7 @@ export const CUSTOM_QUALITY_PRESET: QualityPreset = {
 };
 
 export const QUALITY_STORAGE_KEY = 'stims:quality-preset';
-const DEFAULT_PRESET_ID = 'balanced';
+const DEFAULT_PRESET_ID = FALLBACK_QUALITY_PRESET_ID;
 
 let activeQualityPreset: QualityPreset | null = null;
 let activeQualityPresetStorageKey: string | null = null;
@@ -96,9 +99,21 @@ export type StoredPresetOptions = {
   storageKey?: string;
 };
 
+/**
+ * Resolution order:
+ *   1. the stored preset — an explicit user choice always wins;
+ *   2. an explicitly supplied `defaultPresetId` (a caller that already knows
+ *      which preset it wants, e.g. re-configuring a panel around the active one);
+ *   3. the device-tier recommendation — the first-run default;
+ *   4. `balanced`, then the first preset, as last-resort fallbacks.
+ *
+ * Nothing here writes to storage: resolving a default must stay distinguishable
+ * from the user choosing one, otherwise the mapping could never move with the
+ * device.
+ */
 export function getStoredQualityPreset({
   presets = DEFAULT_QUALITY_PRESETS,
-  defaultPresetId = DEFAULT_PRESET_ID,
+  defaultPresetId,
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
   const storedId = getStoredPresetId(storageKey);
@@ -107,24 +122,26 @@ export function getStoredQualityPreset({
     return fromStorage;
   }
 
-  const requestedDefault = presets.find(
-    (preset) => preset.id === defaultPresetId,
-  );
-  if (requestedDefault) {
-    return requestedDefault;
+  if (defaultPresetId) {
+    const requestedDefault = presets.find(
+      (preset) => preset.id === defaultPresetId,
+    );
+    if (requestedDefault) {
+      return requestedDefault;
+    }
   }
 
   const recommendedId = getRecommendedQualityPresetId();
   return (
     presets.find((preset) => preset.id === recommendedId) ||
-    presets.find((preset) => preset.id === defaultPresetId) ||
+    presets.find((preset) => preset.id === DEFAULT_PRESET_ID) ||
     presets[0]
   );
 }
 
 export function getActiveQualityPreset({
   presets = DEFAULT_QUALITY_PRESETS,
-  defaultPresetId = DEFAULT_PRESET_ID,
+  defaultPresetId,
   storageKey = QUALITY_STORAGE_KEY,
 }: StoredPresetOptions = {}): QualityPreset {
   const storedId = getStoredPresetId(storageKey);
@@ -178,6 +195,32 @@ export function setQualityPresetById(
   }
 
   getBrowserStorage()?.setItem(storageKey, preset.id);
+  activeQualityPreset = preset;
+  activeQualityPresetStorageKey = storageKey;
+  qualitySubscribers.forEach((subscriber) => subscriber(preset));
+  return preset;
+}
+
+/**
+ * Activate a preset for this session without persisting it.
+ *
+ * Used for the first-run device-tier default: subscribers and the renderer need
+ * to see the resolved preset, but writing it to storage would turn a derived
+ * default into an explicit user choice and permanently freeze the device
+ * mapping for that browser.
+ */
+export function applyQualityPresetWithoutPersisting(
+  presetId: string,
+  {
+    presets = DEFAULT_QUALITY_PRESETS,
+    storageKey = QUALITY_STORAGE_KEY,
+  }: SetQualityPresetOptions = {},
+): QualityPreset | null {
+  const preset = presets.find((entry) => entry.id === presetId);
+  if (!preset) {
+    return null;
+  }
+
   activeQualityPreset = preset;
   activeQualityPresetStorageKey = storageKey;
   qualitySubscribers.forEach((subscriber) => subscriber(preset));

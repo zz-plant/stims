@@ -27,9 +27,10 @@ bun run setup:codex             # install + quick-check if not
 
 | Area | Path | Use when changing… |
 |------|------|-------------------|
-| Workspace UI | `assets/js/frontend/` | React UI, URL state, engine adapter |
-| Shared runtime | `assets/js/core/` | Renderer, shell, audio, capabilities |
-| Preset system | `assets/js/milkdrop/` | Presets, editor, catalog, VM |
+| Workspace UI | `src/js/frontend/` | React UI, URL state, engine adapter |
+| Shared runtime | `src/js/core/` | Renderer, shell, audio, capabilities |
+| Preset system | `src/js/milkdrop/` | Presets, editor, catalog, VM |
+| Stylesheets | `src/css/` | `tokens.css` (design tokens), `chrome.css` (panel/dock control system), `app-shell.css` (workspace shell, wrapped in `@scope (.stims-shell)`), `index.css` + `base.css` (older page-level styles), `*.module.css` (component-scoped) |
 | Entry points | `index.html`, `milkdrop/index.html` | Shell loading, redirects |
 | Tests | `tests/` | All automated coverage |
 | Agent skills | `.agent/skills/` | Reusable playbooks |
@@ -65,8 +66,9 @@ Always use `http://localhost:5173/?agent=true` for browser-based QA. It persists
 
 ## Quality gate reminder
 
-- `bun run check:quick` = Biome + types + `@ts-nocheck` guard + catalog sync
-- `bun run check` = everything above + all tests + architecture + SEO + toy manifest
+- `bun run check:quick` = `@ts-nocheck` guard + Biome + catalog fidelity/integrity + toy manifest + SEO + architecture + typecheck, no tests
+- `bun run check` = everything above, preceded by `assets:check`, plus the fast test suite (`unit` + `compat`; skips the slow corpus/e2e tests)
+- `bun run check:all` = the same gate with the full test suite, including corpus and e2e
 - Run `check:quick` often; run `check` before any commit/PR
 
 ## Progressive disclosure

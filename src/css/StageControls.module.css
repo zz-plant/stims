@@ -78,14 +78,24 @@
 /* Main toolbar */
 .toolbar {
   display: inline-flex;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
   padding: 4px;
-  border-radius: 16px;
-  background: rgba(5, 8, 14, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(5, 8, 14, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   pointer-events: auto;
+}
+
+/* Groups the dock into: navigate · find · configure */
+.sep {
+  flex-shrink: 0;
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.11);
 }
 
 .btn {
@@ -119,9 +129,11 @@
   transition-duration: 60ms;
 }
 
+/* The lit edge, matching the active state used inside the panels. */
 .btn[data-active="true"] {
-  color: #f8fbff;
-  background: rgba(119, 201, 255, 0.16);
+  color: #77c9ff;
+  background: rgba(119, 201, 255, 0.14);
+  box-shadow: inset 0 -2px 0 #77c9ff;
 }
 
 .btn:focus-visible {

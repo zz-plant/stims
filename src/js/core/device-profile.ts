@@ -128,19 +128,36 @@ export function getAdaptiveMaxPixelRatio(maxPixelRatio: number) {
   return Math.min(maxPixelRatio, 1.25);
 }
 
+/**
+ * First-run quality preset per device tier.
+ *
+ * Deliberately conservative: a default that melts a handheld is far worse than
+ * one that is slightly too soft, and every tier here is a starting point the
+ * user can raise by hand. `ultra` (2.8x pixel ratio, 1.8x particles) is never
+ * auto-selected — it stays opt-in.
+ */
+export const DEVICE_TIER_QUALITY_PRESET_IDS: Record<DeviceTier, string> = {
+  low: 'performance',
+  mid: 'tv',
+  high: 'balanced',
+  ultra: 'hi-fi',
+};
+
+/** Used whenever tier detection is unavailable or maps to an unknown preset. */
+export const FALLBACK_QUALITY_PRESET_ID = 'balanced';
+
+/**
+ * Never throws: callers run this during module init and in DOM-less test/SSR
+ * environments, where `navigator`/`window`/`matchMedia` may be missing.
+ */
 export function getRecommendedQualityPresetId(tier?: DeviceTier): string {
-  const resolvedTier = tier ?? getDeviceTier();
-  switch (resolvedTier) {
-    case 'low':
-      return 'performance';
-    case 'mid':
-      return 'balanced';
-    case 'high':
-      return 'hi-fi';
-    case 'ultra':
-      return 'ultra';
-    default:
-      return 'balanced';
+  try {
+    const resolvedTier = tier ?? getDeviceTier();
+    return (
+      DEVICE_TIER_QUALITY_PRESET_IDS[resolvedTier] ?? FALLBACK_QUALITY_PRESET_ID
+    );
+  } catch {
+    return FALLBACK_QUALITY_PRESET_ID;
   }
 }
 

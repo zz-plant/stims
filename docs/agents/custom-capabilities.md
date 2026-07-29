@@ -23,8 +23,8 @@ In practice:
 
 When the work may be split across multiple agents, start with [`agent-handoffs.md`](./agent-handoffs.md) before assigning ownership. Use these boundaries:
 
-- runtime and shell work: prefer one owner across `assets/js/core/`, `assets/js/frontend/`, and routing/bootstrap files that must evolve together
-- preset and compatibility work: keep `assets/js/milkdrop/`, preset fixtures, and catalog metadata with one owner
+- runtime and shell work: prefer one owner across `src/js/core/`, `src/js/frontend/`, `src/css/`, and app entry points that must evolve together
+- preset and compatibility work: keep `src/js/milkdrop/`, preset fixtures, and catalog metadata with one owner
 - docs and MCP-facing metadata: keep `docs/`, `AGENTS.md`, `.agent/`, and `scripts/mcp-shared.ts` together when the change is about discoverability or workflow guidance
 - browser QA: keep Playwright helpers, integration tests, and QA docs together when the task is primarily verification
 

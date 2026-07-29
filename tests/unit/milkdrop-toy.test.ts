@@ -51,7 +51,6 @@ describe('milkdrop toy runtime boundary', () => {
 
     expect(createRendererQualityManager).toHaveBeenCalledWith(
       expect.objectContaining({
-        defaultPresetId: 'balanced',
         storageKey: 'stims:milkdrop:quality',
       }),
     );
