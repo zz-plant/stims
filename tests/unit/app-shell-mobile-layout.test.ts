@@ -30,9 +30,9 @@ function hasRuleInQuery(
   selector: string,
   declaration: string,
 ) {
-  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const quote = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp(
-    `${escape(query)}[\\s\\S]*?${escape(selector)}[^{]*\\{[^}]*?${escape(declaration)}`,
+    `${quote(query)}[\\s\\S]*?${quote(selector)}[^{]*\\{[^}]*?${quote(declaration)}`,
     'u',
   );
   return re.test(css);
