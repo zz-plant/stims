@@ -3,6 +3,7 @@ import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
 } from '../utils/device-detect';
+import { getDevicePerformanceProfile } from './device-profile.ts';
 import { DEFAULT_WEBGPU_INIT_TIMEOUT_MS } from './renderer-init-timeout.ts';
 import type {
   RendererInitConfig,
@@ -18,8 +19,6 @@ const appliedRendererDimensions = new WeakMap<
 export function getRendererBackendMaxPixelRatioCap({
   backend,
   isMobile,
-  browserFamily = 'other',
-  platformFamily = 'other',
 }: {
   backend: 'webgl' | 'webgpu';
   isMobile: boolean;
@@ -33,20 +32,11 @@ export function getRendererBackendMaxPixelRatioCap({
   platformFamily?: 'android' | 'ios' | 'linux' | 'macos' | 'windows' | 'other';
 }) {
   if (isMobile) {
-    if (platformFamily === 'ios' && browserFamily === 'safari') {
-      return backend === 'webgpu' ? 1.2 : 1;
+    const isLowPower = getDevicePerformanceProfile().lowPower;
+    if (isLowPower) {
+      return backend === 'webgpu' ? 1.25 : 1.25;
     }
-
-    if (
-      platformFamily === 'android' ||
-      browserFamily === 'chrome' ||
-      browserFamily === 'edge' ||
-      browserFamily === 'samsung-internet'
-    ) {
-      return backend === 'webgpu' ? 1.2 : 1;
-    }
-
-    return backend === 'webgpu' ? 1.2 : 1;
+    return 2.0;
   }
 
   return backend === 'webgpu' ? 4 : 1.75;

@@ -16,14 +16,16 @@ export function getDeviceTier(): DeviceTier {
       : null;
 
   const isUltra =
-    !environment.isMobile &&
-    ((hardwareConcurrency !== null && hardwareConcurrency >= 12) ||
-      (typeof window !== 'undefined' &&
-        (
-          window as unknown as {
-            __stims_webgpu_performance_tier?: string;
-          }
-        ).__stims_webgpu_performance_tier === 'high-end'));
+    (hardwareConcurrency !== null &&
+      (environment.isMobile
+        ? hardwareConcurrency >= 8
+        : hardwareConcurrency >= 12)) ||
+    (typeof window !== 'undefined' &&
+      (
+        window as unknown as {
+          __stims_webgpu_performance_tier?: string;
+        }
+      ).__stims_webgpu_performance_tier === 'high-end');
 
   if (isUltra) return 'ultra';
 
@@ -70,9 +72,9 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
       : false;
 
   const reasons: string[] = [];
-  const limitedDeviceMemory = deviceMemory !== null && deviceMemory <= 4;
+  const limitedDeviceMemory = deviceMemory !== null && deviceMemory <= 3;
   const limitedCpuCores =
-    hardwareConcurrency !== null && hardwareConcurrency <= 4;
+    hardwareConcurrency !== null && hardwareConcurrency <= 3;
   const constrainedHandheld =
     environment.isMobile &&
     ((deviceMemory !== null && deviceMemory <= 3) ||
@@ -83,7 +85,7 @@ export function getDevicePerformanceProfile(): DevicePerformanceProfile {
     deviceMemory === null &&
     environment.isMobile &&
     hardwareConcurrency !== null &&
-    hardwareConcurrency <= 4;
+    hardwareConcurrency <= 3;
 
   if (reducedMotion) {
     reasons.push('reduced motion preference');
