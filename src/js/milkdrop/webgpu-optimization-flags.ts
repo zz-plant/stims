@@ -7,6 +7,11 @@ import type {
   MilkdropGpuDescriptorRouting,
   MilkdropWebGpuDescriptorPlan,
 } from './types';
+import {
+  type MilkdropWebGpuFeatureRouting,
+  resolveMilkdropWebGpuFeatureRouting,
+  shouldUseSafeMilkdropWebGpuPath,
+} from './webgpu-query-override.ts';
 
 export const MILKDROP_WEBGPU_OPTIMIZATION_SEARCH_PARAMS = {
   proceduralMainWave: 'milkdrop-webgpu-main-wave',
@@ -61,18 +66,28 @@ export const DEFAULT_MILKDROP_WEBGPU_OPTIMIZATION_FLAGS = Object.freeze({
 
 export function applyNativeWebGpuMaterialCompatibilityFlags(
   flags: MilkdropWebGpuOptimizationFlags,
+  featureRouting?: MilkdropWebGpuFeatureRouting,
 ): MilkdropWebGpuOptimizationFlags {
+  const routing = featureRouting ?? resolveMilkdropWebGpuFeatureRouting();
+  const safeMode = shouldUseSafeMilkdropWebGpuPath();
   return {
     ...flags,
-    proceduralMainWave: false,
-    proceduralTrailWaves: false,
-    proceduralCustomWaves: false,
-    proceduralMesh: false,
-    proceduralMotionVectors: false,
-    directFeedbackShaders: false,
-    descriptorFallbackToWebgl: false,
-    gpuComputeVM: false,
-    renderBundles: false,
+    proceduralMainWave:
+      routing.proceduralMainWave.enabled && flags.proceduralMainWave,
+    proceduralTrailWaves:
+      routing.proceduralTrailWaves.enabled && flags.proceduralTrailWaves,
+    proceduralCustomWaves:
+      routing.proceduralCustomWaves.enabled && flags.proceduralCustomWaves,
+    proceduralMesh: routing.proceduralMesh.enabled && flags.proceduralMesh,
+    proceduralMotionVectors:
+      routing.proceduralMotionVectors.enabled && flags.proceduralMotionVectors,
+    directFeedbackShaders:
+      routing.directFeedbackShaders.enabled && flags.directFeedbackShaders,
+    gpuComputeVM: routing.gpuComputeVM.enabled && flags.gpuComputeVM,
+    renderBundles: routing.renderBundles.enabled && flags.renderBundles,
+    descriptorFallbackToWebgl: safeMode
+      ? false
+      : flags.descriptorFallbackToWebgl,
   };
 }
 

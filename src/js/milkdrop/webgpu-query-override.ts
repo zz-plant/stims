@@ -13,12 +13,32 @@ import { isWebGPUStableInThisBrowser } from '../core/renderer-query-override.ts'
 import {
   getRequestedCorpus,
   getRequestedRenderer,
+  getWebGpuFlagParams,
 } from '../core/url-params.ts';
 import { isMobileDevice } from '../utils/device-detect.ts';
-import { resolveMilkdropWebGpuOptimizationFlags } from './webgpu-optimization-flags.ts';
 
 const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';
+const RENDER_BUNDLES_STORAGE_KEY =
+  'stims:experiments:milkdrop-webgpu-render-bundles';
+
+const ENABLED_FLAG_VALUES = new Set(['1', 'true', 'on', 'yes', 'enabled']);
+const DISABLED_FLAG_VALUES = new Set(['0', 'false', 'off', 'no', 'disabled']);
+
+function parseOptionalBooleanFlag(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (ENABLED_FLAG_VALUES.has(normalized)) {
+    return true;
+  }
+  if (DISABLED_FLAG_VALUES.has(normalized)) {
+    return false;
+  }
+  return null;
+}
 
 /** Valid modes for the force-mode override. */
 export type WebGpuForceMode = 'auto' | 'safe' | 'full';
@@ -195,7 +215,19 @@ export function resolveMilkdropWebGpuFeatureRouting(
 ): MilkdropWebGpuFeatureRouting {
   const description = getWebGpuPathDescription(location);
   const safeMode = description.mode === 'safe';
-  const rolloutFlags = resolveMilkdropWebGpuOptimizationFlags({ location });
+  const searchInput = location?.search ?? '';
+  const webgpuFlagParams = getWebGpuFlagParams(searchInput);
+  const storageRenderBundles = (() => {
+    try {
+      return parseOptionalBooleanFlag(
+        localStorage.getItem(RENDER_BUNDLES_STORAGE_KEY),
+      );
+    } catch {
+      return null;
+    }
+  })();
+  const renderBundlesRollout =
+    webgpuFlagParams.renderBundles ?? storageRenderBundles ?? false;
   const safeReason = safeMode
     ? `disabled by ${description.source} WebGPU safe path`
     : null;
@@ -219,10 +251,10 @@ export function resolveMilkdropWebGpuFeatureRouting(
     },
     gpuComputeVM: { enabled: !safeMode, reason: safeReason },
     renderBundles: {
-      enabled: !safeMode && rolloutFlags.renderBundles,
+      enabled: !safeMode && renderBundlesRollout,
       reason:
         safeReason ??
-        (!rolloutFlags.renderBundles
+        (!renderBundlesRollout
           ? 'render bundles remain opt-in until parity telemetry is stable'
           : null),
     },
