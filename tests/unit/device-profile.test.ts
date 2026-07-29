@@ -29,6 +29,14 @@ beforeEach(() => {
       removeEventListener: () => {},
       dispatchEvent: () => false,
     }) as MediaQueryList) as typeof window.matchMedia;
+
+  // renderer-capabilities stamps this on window at runtime and most suites
+  // never clear it; a leaked "high-end" value promotes every device to ultra.
+  delete (
+    globalThis.window as unknown as {
+      __stims_webgpu_performance_tier?: string;
+    }
+  ).__stims_webgpu_performance_tier;
 });
 
 afterEach(() => {
