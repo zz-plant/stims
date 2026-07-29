@@ -12,6 +12,12 @@ jobs:
     name: Apply path labels
     if: contains(fromJson('["opened","synchronize","reopened","ready_for_review"]'), github.event.action)
     runs-on: ubuntu-latest
+    # Applying a label is a write. The workflow-level `pull-requests: read`
+    # above keeps validate-pr-body read-only; only this job is granted write.
+    # Safe under pull_request_target because labeler never checks out or
+    # executes PR-authored code.
+    permissions:
+      pull-requests: write
     steps:
       - name: Label pull request by changed files
         uses: actions/labeler@v5

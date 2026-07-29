@@ -4,7 +4,11 @@ import {
   setWebGPUCompatibilityGapOverride,
 } from '../core/renderer-query-override.ts';
 import type { QualityPreset } from '../core/settings-panel.ts';
-import { DEFAULT_PERFORMANCE_SETTINGS } from '../core/state/performance-settings-store.ts';
+import {
+  DEFAULT_PERFORMANCE_SETTINGS,
+  type PerformanceSettings,
+  type ShaderQuality,
+} from '../core/state/performance-settings-store.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
@@ -12,15 +16,75 @@ import {
   getSettingsPresetOptions,
 } from './workspace-helpers.ts';
 
-function describeQuickLook(preset: QualityPreset): string {
+/** The raw render numbers, shown as a secondary instrument readout. */
+function describeQualityNumbers(preset: QualityPreset): string {
   return getQualityImpactSummary(preset).replace(/^What changes:\s*/u, '');
+}
+
+function SwitchRow({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <label className="ctl-row">
+      <span className="ctl-row__text">
+        <span className="ctl-row__label">{label}</span>
+        {hint ? <span className="ctl-row__hint">{hint}</span> : null}
+      </span>
+      <input
+        type="checkbox"
+        className="ctl-switch"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+    </label>
+  );
+}
+
+/** Particle budget steps, kept inside MIN/MAX_PARTICLE_BUDGET. */
+const PARTICLE_DENSITY_STEPS: Array<{ value: number; label: string }> = [
+  { value: 0.4, label: 'Lowest' },
+  { value: 0.7, label: 'Low' },
+  { value: 1, label: 'Standard' },
+  { value: 1.3, label: 'High' },
+  { value: 1.6, label: 'Highest' },
+];
+
+/** Pixel ratio caps, kept inside MIN/MAX_PIXEL_RATIO. */
+const RESOLUTION_LIMIT_STEPS: Array<{ value: number; label: string }> = [
+  { value: 1, label: '1x' },
+  { value: 1.5, label: '1.5x' },
+  { value: 1.75, label: '1.75x' },
+  { value: 2, label: '2x' },
+  { value: 2.5, label: '2.5x' },
+];
+
+/** Snap a stored value onto the nearest offered step so the select stays bound. */
+function nearestStep(
+  steps: Array<{ value: number; label: string }>,
+  value: number,
+) {
+  let closest = steps[0].value;
+  for (const step of steps) {
+    if (Math.abs(step.value - value) < Math.abs(closest - value)) {
+      closest = step.value;
+    }
+  }
+  return closest;
 }
 
 function PerformanceSection() {
   const [perf, setPerf] = useState(() => ({
-    shaderDetail: 1,
-    ecoMode: false,
-    renderScale: 1,
+    shaderQuality: DEFAULT_PERFORMANCE_SETTINGS.shaderQuality,
+    particleBudget: DEFAULT_PERFORMANCE_SETTINGS.particleBudget,
+    maxPixelRatio: DEFAULT_PERFORMANCE_SETTINGS.maxPixelRatio,
     loaded: false,
   }));
   const [autoTune, setAutoTune] = useState(() => {
@@ -37,45 +101,33 @@ function PerformanceSection() {
       ({ getActivePerformanceSettings }) => {
         const s = getActivePerformanceSettings();
         setPerf({
-          shaderDetail: s.shaderDetail,
-          ecoMode: s.ecoMode,
-          renderScale: s.renderScale,
+          shaderQuality: s.shaderQuality,
+          particleBudget: s.particleBudget,
+          maxPixelRatio: s.maxPixelRatio,
           loaded: true,
         });
       },
     );
   }, []);
 
-  const setOption = <K extends keyof typeof perf>(
+  const setOption = <
+    K extends 'shaderQuality' | 'particleBudget' | 'maxPixelRatio',
+  >(
     key: K,
-    value: (typeof perf)[K],
+    value: PerformanceSettings[K],
   ) => {
     setPerf((p) => ({ ...p, [key]: value }));
     import('../core/state/performance-settings-store.ts').then(
       ({ setPerformanceOption }) => {
-        setPerformanceOption(
-          key as 'renderScale' | 'shaderDetail' | 'ecoMode',
-          value as never,
-        );
+        setPerformanceOption(key, value);
       },
     );
   };
 
-  const shaderLabel = ['Low', 'Medium', 'High'][perf.shaderDetail] ?? 'Medium';
-
   const resetPerformance = () => {
     import('../core/state/performance-settings-store.ts').then(
-      ({ resetPerformanceSettingsStore, setPerformanceOption }) => {
-        resetPerformanceSettingsStore();
-        setPerformanceOption(
-          'renderScale',
-          DEFAULT_PERFORMANCE_SETTINGS.renderScale,
-        );
-        setPerformanceOption(
-          'shaderDetail',
-          DEFAULT_PERFORMANCE_SETTINGS.shaderDetail,
-        );
-        setPerformanceOption('ecoMode', DEFAULT_PERFORMANCE_SETTINGS.ecoMode);
+      ({ setPerformanceSettings }) => {
+        setPerformanceSettings(DEFAULT_PERFORMANCE_SETTINGS);
         setPerf({ ...DEFAULT_PERFORMANCE_SETTINGS, loaded: true });
       },
     );
@@ -89,29 +141,27 @@ function PerformanceSection() {
       setRecommendation(null);
       return;
     }
-    if (perf.renderScale > 0.75) {
+    if (perf.maxPixelRatio > 1.5) {
       setRecommendation(
-        'If visuals stutter, auto-tune can lower render resolution to 75%.',
+        'If frames drop, auto-tune can hold the resolution limit at 1.5x.',
       );
-    } else if (!perf.ecoMode) {
-      setRecommendation(
-        'Auto-tune can enable Eco mode during sustained frame drops.',
-      );
+    } else if (perf.shaderQuality === 'high') {
+      setRecommendation('If frames drop, auto-tune can move detail down.');
     } else {
       setRecommendation(
-        'Auto-tune is watching performance and settings are already conservative.',
+        'Auto-tune is watching. These settings already run light.',
       );
     }
-  }, [autoTune, perf.ecoMode, perf.renderScale]);
+  }, [autoTune, perf.maxPixelRatio, perf.shaderQuality]);
 
   return (
-    <div className="stims-shell__settings-section">
-      <div className="stims-shell__settings-section-header">
-        <h3 className="stims-shell__settings-label">Performance</h3>
+    <section className="ctl-section">
+      <div className="ctl-section__head">
+        <h3 className="ctl-section__title">Performance</h3>
         {perf.loaded ? (
           <button
             type="button"
-            className="stims-shell__text-button"
+            className="ctl-btn ctl-btn--quiet"
             onClick={resetPerformance}
           >
             Reset
@@ -119,97 +169,111 @@ function PerformanceSection() {
         ) : null}
       </div>
 
-      <div className="stims-shell__settings-row">
-        <label
-          className="stims-shell__settings-option-label"
-          htmlFor="render-resolution"
-        >
-          Render resolution
-        </label>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="performance-detail">
+            Detail
+          </label>
+          <span className="ctl-row__hint">
+            Higher draws finer shading and asks more of the GPU. Low also skips
+            preset blending.
+          </span>
+        </span>
         <select
-          id="render-resolution"
-          className="stims-shell__select"
-          value={perf.renderScale}
-          onChange={(e) => setOption('renderScale', parseFloat(e.target.value))}
+          id="performance-detail"
+          className="ctl-select ctl-select--auto"
+          value={perf.shaderQuality}
+          onChange={(e) =>
+            setOption('shaderQuality', e.target.value as ShaderQuality)
+          }
         >
-          <option value={1}>Full (100%)</option>
-          <option value={0.75}>High (75%)</option>
-          <option value={0.5}>Medium (50%)</option>
+          <option value="low">Low</option>
+          <option value="balanced">Balanced</option>
+          <option value="high">High</option>
         </select>
       </div>
 
-      <label className="stims-shell__toggle-card">
-        <input
-          type="checkbox"
-          checked={autoTune}
-          onChange={(event) => setAutoTune(event.target.checked)}
-        />
-        <span className="stims-shell__toggle-copy">
-          <strong>Auto-tune performance</strong>
-          <small>
-            Watches for slow frames and recommends safer render settings before
-            applying them.
-          </small>
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="performance-particles">
+            Particle density
+          </label>
+          <span className="ctl-row__hint">
+            How much the visuals draw at once. Lower thins out busy presets.
+          </span>
         </span>
-      </label>
+        <select
+          id="performance-particles"
+          className="ctl-select ctl-select--auto"
+          value={nearestStep(PARTICLE_DENSITY_STEPS, perf.particleBudget)}
+          onChange={(e) =>
+            setOption('particleBudget', parseFloat(e.target.value))
+          }
+        >
+          {PARTICLE_DENSITY_STEPS.map((step) => (
+            <option key={step.value} value={step.value}>
+              {step.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="ctl-row">
+        <span className="ctl-row__text">
+          <label className="ctl-row__label" htmlFor="performance-resolution">
+            Resolution limit
+          </label>
+          <span className="ctl-row__hint">
+            Caps how many pixels are drawn on a high-density screen. Lower is
+            softer but steadier.
+          </span>
+        </span>
+        <select
+          id="performance-resolution"
+          className="ctl-select ctl-select--auto"
+          value={nearestStep(RESOLUTION_LIMIT_STEPS, perf.maxPixelRatio)}
+          onChange={(e) =>
+            setOption('maxPixelRatio', parseFloat(e.target.value))
+          }
+        >
+          {RESOLUTION_LIMIT_STEPS.map((step) => (
+            <option key={step.value} value={step.value}>
+              {step.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <SwitchRow
+        label="Auto-tune"
+        hint="Watches for slow frames and suggests safer settings before applying them."
+        checked={autoTune}
+        onChange={setAutoTune}
+      />
+
       {recommendation ? (
-        <div className="stims-shell__empty-state" role="status">
-          <p>{recommendation}</p>
-          {perf.renderScale > 0.75 ? (
+        <div className="ctl-empty" role="status">
+          <p className="ctl-empty__body">{recommendation}</p>
+          {perf.maxPixelRatio > 1.5 ? (
             <button
               type="button"
-              className="stims-shell__text-button"
-              onClick={() => setOption('renderScale', 0.75)}
+              className="ctl-btn"
+              onClick={() => setOption('maxPixelRatio', 1.5)}
             >
-              Apply 75% resolution
+              Limit to 1.5x
             </button>
-          ) : !perf.ecoMode ? (
+          ) : perf.shaderQuality === 'high' ? (
             <button
               type="button"
-              className="stims-shell__text-button"
-              onClick={() => setOption('ecoMode', true)}
+              className="ctl-btn"
+              onClick={() => setOption('shaderQuality', 'balanced')}
             >
-              Enable Eco mode
+              Use balanced detail
             </button>
           ) : null}
         </div>
       ) : null}
-
-      <div className="stims-shell__settings-row">
-        <span className="stims-shell__settings-option-label">
-          Shader detail
-        </span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="1"
-          className="stims-shell__range"
-          value={perf.shaderDetail}
-          aria-label="Shader detail level"
-          onChange={(e) =>
-            setOption('shaderDetail', parseInt(e.target.value, 10))
-          }
-        />
-        <span className="stims-shell__range-label">{shaderLabel}</span>
-      </div>
-
-      <div className="stims-shell__settings-row">
-        <span className="stims-shell__settings-option-label">Eco mode</span>
-        <button
-          type="button"
-          className={`stims-shell__toggle ${perf.ecoMode ? 'is-active' : ''}`}
-          onClick={() => setOption('ecoMode', !perf.ecoMode)}
-          aria-label="Toggle Eco Mode"
-          aria-pressed={perf.ecoMode}
-        >
-          <span className="stims-shell__toggle-knob" />
-        </button>
-        <span className="stims-shell__settings-hint">
-          30 FPS cap, reduced effects
-        </span>
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -243,216 +307,141 @@ export function SettingsSheetPanel({
   const motionPreference = ui.motionPreference;
   const qualityPreset = ui.qualityPreset;
   const renderPreferences = ui.renderPreferences;
-  const guidedPresets = getSettingsPresetOptions().slice(0, 3);
+  const qualityOptions = getSettingsPresetOptions();
+
+  const backendLabel = engineSnapshot?.backend
+    ? engineSnapshot.backend === 'webgpu'
+      ? 'WebGPU'
+      : 'WebGL'
+    : null;
 
   return (
     <div className="stims-shell__sheet-panel stims-shell__sheet-panel--settings">
-      <section className="stims-shell__sheet-surface">
-        <h3 className="stims-shell__settings-section-heading">
-          Visual quality
-        </h3>
-        <ul className="stims-shell__preset-guides">
-          {guidedPresets.map((preset) => (
-            <li key={preset.id}>
-              <button
-                type="button"
-                className="stims-shell__preset-guide"
-                data-active={String(preset.id === qualityPreset.id)}
-                onClick={() => engine.setQualityPreset(preset.id)}
-              >
-                <strong>{preset.label}</strong>
-                <span className="stims-shell__meta-copy">
-                  {describeQuickLook(preset)}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <label className="stims-shell__field-label" htmlFor="quality-select">
-          Quality profile
-        </label>
-        <select
-          id="quality-select"
-          className="stims-shell__select"
-          value={qualityPreset.id}
-          onChange={(event) => engine.setQualityPreset(event.target.value)}
+      <section className="ctl-section">
+        <div className="ctl-section__head">
+          <h3 className="ctl-section__title">Visual quality</h3>
+        </div>
+        <div
+          className="ctl-options"
+          role="radiogroup"
+          aria-label="Visual quality"
         >
-          {getSettingsPresetOptions().map((preset) => (
-            <option key={preset.id} value={preset.id}>
-              {preset.label}
-            </option>
+          {qualityOptions.map((preset) => (
+            <label
+              key={preset.id}
+              className="ctl-option"
+              title={describeQualityNumbers(preset)}
+            >
+              <input
+                type="radio"
+                name="quality-preset"
+                className="ctl-option__input"
+                value={preset.id}
+                checked={preset.id === qualityPreset.id}
+                onChange={() => engine.setQualityPreset(preset.id)}
+              />
+              <span className="ctl-option__label">{preset.label}</span>
+              <span className="ctl-option__hint">{preset.description}</span>
+            </label>
           ))}
-        </select>
-        <p className="stims-shell__meta-copy">
-          {describeQuickLook(qualityPreset)}
-        </p>
-        {qualityPreset.id !== 'balanced' ? (
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            onClick={() => engine.setQualityPreset('balanced')}
-          >
-            Reset to recommended
-          </button>
-        ) : null}
+        </div>
+        <p className="ctl-readout">{describeQualityNumbers(qualityPreset)}</p>
       </section>
 
-      <section className="stims-shell__sheet-surface">
-        <h3 className="stims-shell__settings-section-heading">
-          Mobile experience
-        </h3>
-        <label className="stims-shell__toggle-card">
-          <input
-            type="checkbox"
-            checked={thumbMode}
-            onChange={(event) => onThumbModeChange?.(event.target.checked)}
-          />
-          <span className="stims-shell__toggle-copy">
-            <strong>Thumb mode</strong>
-            <small>Bottom-first phone controls.</small>
-          </span>
-        </label>
-        <label className="stims-shell__toggle-card">
-          <input
-            type="checkbox"
-            checked={partyRemoteMode}
-            onChange={(event) =>
-              onPartyRemoteModeChange?.(event.target.checked)
-            }
-          />
-          <span className="stims-shell__toggle-copy">
-            <strong>Party remote</strong>
-            <small>Shuffle, save, fullscreen, and audio.</small>
-          </span>
-        </label>
-        <label className="stims-shell__toggle-card">
-          <input
-            type="checkbox"
-            checked={hapticsEnabled}
-            onChange={(event) => onHapticsEnabledChange?.(event.target.checked)}
-          />
-          <span className="stims-shell__toggle-copy">
-            <strong>Touch haptics</strong>
-            <small>Subtle feedback on supported phones.</small>
-          </span>
-        </label>
-        {offline ? (
-          <p className="stims-shell__meta-copy">
-            Offline party mode is active. Community and AI-backed imports are
-            paused.
-          </p>
-        ) : installAvailable ? (
-          <button
-            type="button"
-            className="stims-shell__text-button"
-            onClick={onInstallApp}
-          >
-            Install Stims on this device
-          </button>
-        ) : (
-          <p className="stims-shell__meta-copy">
-            Rotate your phone in a live session for a cleaner theater layout.
-          </p>
-        )}
-      </section>
-
-      <section className="stims-shell__sheet-surface">
+      <section className="ctl-section">
         <AudioSourcePanel />
       </section>
 
       <PerformanceSection />
 
-      <details className="stims-shell__settings-advanced">
-        <summary className="stims-shell__settings-summary">
-          <span>Compatibility & motion</span>
-          <span className="stims-shell__meta-copy">Device fallbacks</span>
-        </summary>
-        <div className="stims-shell__settings-advanced-body">
-          <label className="stims-shell__toggle-card">
-            <input
-              type="checkbox"
-              checked={renderPreferences.compatibilityMode}
-              onChange={(event) =>
-                onCompatibilityModeChange(event.target.checked)
-              }
-            />
-            <span className="stims-shell__toggle-copy">
-              <strong>Stability mode</strong>
-              <small>Safer rendering for older browsers or GPUs.</small>
-            </span>
-          </label>
-
-          <label className="stims-shell__toggle-card">
-            <input
-              type="checkbox"
-              checked={motionPreference.enabled}
-              onChange={(event) =>
-                onMotionPreferenceChange(event.target.checked)
-              }
-            />
-            <span className="stims-shell__toggle-copy">
-              <strong>Motion control</strong>
-              <small>Use supported device movement.</small>
-            </span>
-          </label>
+      <section className="ctl-section">
+        <div className="ctl-section__head">
+          <h3 className="ctl-section__title">On this device</h3>
         </div>
-      </details>
+        <SwitchRow
+          label="Thumb mode"
+          hint="Moves the controls within reach at the bottom of the screen."
+          checked={thumbMode}
+          onChange={(next) => onThumbModeChange?.(next)}
+        />
+        <SwitchRow
+          label="Party remote"
+          hint="A large-target remote for shuffle, save, fullscreen, and audio."
+          checked={partyRemoteMode}
+          onChange={(next) => onPartyRemoteModeChange?.(next)}
+        />
+        <SwitchRow
+          label="Touch haptics"
+          hint="Buzzes on tap where the phone supports it."
+          checked={hapticsEnabled}
+          onChange={(next) => onHapticsEnabledChange?.(next)}
+        />
+        <SwitchRow
+          label="Motion control"
+          hint="Steers the visuals by tilting a supported device."
+          checked={motionPreference.enabled}
+          onChange={onMotionPreferenceChange}
+        />
+        {offline ? (
+          <p className="ctl-section__note">
+            Offline mode is on. Community browsing and AI imports are paused
+            until you reconnect.
+          </p>
+        ) : installAvailable ? (
+          <button type="button" className="ctl-btn" onClick={onInstallApp}>
+            Install Stims on this device
+          </button>
+        ) : null}
+      </section>
 
-      <section className="stims-shell__sheet-surface">
-        <h3 className="stims-shell__settings-section-heading">
-          Graphics backend
-        </h3>
-        <p className="stims-shell__meta-copy stims-shell__margin-bottom-12">
-          {engineSnapshot?.backend
-            ? `Currently running on ${engineSnapshot.backend === 'webgpu' ? 'WebGPU' : 'WebGL'}`
-            : engine.engineReady
-              ? 'Graphics backend ready'
-              : 'Starting graphics\u2026'}
-          {engineSnapshot?.backend === 'webgl'
-            ? ' — WebGPU was unavailable or disabled.'
-            : ''}
-        </p>
+      <section className="ctl-section">
+        <div className="ctl-section__head">
+          <h3 className="ctl-section__title">Graphics</h3>
+          {backendLabel ? (
+            <span className="ctl-readout">running on {backendLabel}</span>
+          ) : null}
+        </div>
 
-        <label
-          className="stims-shell__field-label stims-shell__margin-top-8"
-          htmlFor="backend-select"
-        >
-          Graphics override
-        </label>
-        <select
-          id="backend-select"
-          className="stims-shell__select"
-          value={
-            renderPreferences.compatibilityMode
-              ? 'webgl'
-              : hasWebGPUCompatibilityGapOverride()
-                ? 'webgpu'
-                : 'auto'
-          }
-          onChange={(event) => {
-            const val = event.target.value as 'auto' | 'webgl' | 'webgpu';
-            if (val === 'webgl') {
-              onCompatibilityModeChange(true);
-              setWebGPUCompatibilityGapOverride(false);
-            } else if (val === 'webgpu') {
-              onCompatibilityModeChange(false);
-              setWebGPUCompatibilityGapOverride(true);
-            } else {
-              onCompatibilityModeChange(false);
-              setWebGPUCompatibilityGapOverride(false);
+        <div className="ctl-row ctl-row--stack">
+          <span className="ctl-row__text">
+            <label className="ctl-row__label" htmlFor="backend-select">
+              Renderer
+            </label>
+            <span className="ctl-row__hint">
+              Auto follows the browser's stability rules. WebGL is the safer
+              fallback. Changing this takes effect after a reload.
+            </span>
+          </span>
+          <select
+            id="backend-select"
+            className="ctl-select"
+            value={
+              renderPreferences.compatibilityMode
+                ? 'webgl'
+                : hasWebGPUCompatibilityGapOverride()
+                  ? 'webgpu'
+                  : 'auto'
             }
-            ui.setStatusMessage(
-              'Graphics backend preference changed. Please reload.',
-            );
-          }}
-        >
-          <option value="auto">Auto (Recommended)</option>
-          <option value="webgpu">Force WebGPU</option>
-          <option value="webgl">Force WebGL (Stability mode)</option>
-        </select>
-        <p className="stims-shell__meta-copy stims-shell__margin-top-8">
-          Auto follows browser stability rules. WebGL is the safer fallback.
-        </p>
+            onChange={(event) => {
+              const val = event.target.value as 'auto' | 'webgl' | 'webgpu';
+              if (val === 'webgl') {
+                onCompatibilityModeChange(true);
+                setWebGPUCompatibilityGapOverride(false);
+              } else if (val === 'webgpu') {
+                onCompatibilityModeChange(false);
+                setWebGPUCompatibilityGapOverride(true);
+              } else {
+                onCompatibilityModeChange(false);
+                setWebGPUCompatibilityGapOverride(false);
+              }
+              ui.setStatusMessage('Renderer changed. Reload to apply.');
+            }}
+          >
+            <option value="auto">Auto</option>
+            <option value="webgpu">WebGPU</option>
+            <option value="webgl">WebGL</option>
+          </select>
+        </div>
       </section>
     </div>
   );

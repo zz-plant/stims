@@ -236,6 +236,23 @@ export function StageControls({
               className="stims-icon-slot stims-icon-slot--sm"
             />
           </button>
+
+          <span className={styles.sep} aria-hidden="true" />
+
+          <button
+            type="button"
+            className={styles.btn}
+            data-active={String(panel === 'browse')}
+            aria-expanded={panel === 'browse'}
+            aria-label="Browse presets"
+            title="Browse presets"
+            onClick={handleBrowse}
+          >
+            <UiIcon
+              name="sparkles"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+          </button>
           <button
             type="button"
             className={styles.btn}
@@ -266,6 +283,23 @@ export function StageControls({
               />
             </button>
           ) : null}
+
+          <span className={styles.sep} aria-hidden="true" />
+
+          <button
+            type="button"
+            className={styles.btn}
+            data-active={String(panel === 'settings')}
+            aria-expanded={panel === 'settings'}
+            aria-label="Settings"
+            title="Settings"
+            onClick={handleSettings}
+          >
+            <UiIcon
+              name="sliders"
+              className="stims-icon-slot stims-icon-slot--sm"
+            />
+          </button>
           <button
             type="button"
             className={styles.btn}
@@ -321,36 +355,6 @@ export function StageControls({
                 <span className={styles.btnLabel}>Stop</span>
               </button>
             ) : null}
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.btn}
-              data-active={String(panel === 'browse')}
-              aria-label="Browse presets"
-              title="Browse"
-              onClick={handleBrowse}
-            >
-              <UiIcon
-                name="sparkles"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.btnLabel}>Browse</span>
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className={styles.btn}
-              data-active={String(panel === 'settings')}
-              aria-label="Settings"
-              title="Settings"
-              onClick={handleSettings}
-            >
-              <UiIcon
-                name="sliders"
-                className="stims-icon-slot stims-icon-slot--sm"
-              />
-              <span className={styles.btnLabel}>Settings</span>
-            </button>
             <button
               type="button"
               role="menuitem"

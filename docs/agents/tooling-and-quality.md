@@ -96,7 +96,7 @@ bun run check:quick
 ```
 
 `check:quick` also includes the no-`@ts-nocheck` guard.
-It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `assets/data/milkdrop-parity/measured-results.json`.
+It also verifies that `public/milkdrop-presets/catalog.json` stays synced with `src/data/milkdrop-parity/measured-results.json`.
 Its independent checks run in parallel by default; add `-- --serial` when debugging a specific failing step.
 
 The quality gate now also runs architecture dependency checks via `dependency-cruiser`.

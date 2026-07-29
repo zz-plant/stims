@@ -7,18 +7,12 @@ export type PerformanceSettings = {
   maxPixelRatio: number;
   particleBudget: number;
   shaderQuality: ShaderQuality;
-  renderScale: number;
-  shaderDetail: number;
-  ecoMode: boolean;
 };
 
 export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
   maxPixelRatio: 1.75,
   particleBudget: 1,
   shaderQuality: 'balanced',
-  renderScale: 1,
-  shaderDetail: 1,
-  ecoMode: false,
 };
 
 export const PERFORMANCE_SETTINGS_STORAGE_KEY = 'stims:performance-settings';

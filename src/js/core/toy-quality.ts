@@ -50,7 +50,9 @@ export function createQualityPresetManager(
 ): QualityPresetManager {
   const {
     presets = DEFAULT_QUALITY_PRESETS,
-    defaultPresetId = 'balanced',
+    // Left undefined on purpose: the store resolves the first-run default from
+    // the device tier. Pass an id only to force a specific preset.
+    defaultPresetId,
     storageKey,
     onChange,
     panel,

@@ -122,7 +122,8 @@ describe('Workspace shell UI simplification regression', () => {
     expect(audioSourcePanelSource).toContain('Audio from this browser tab');
     expect(browseSource).toContain('const BATCH_SIZE = 30;');
     expect(browseSource).toContain('visible.map');
-    expect(browseSource).toContain('Show more');
+    // Paging tells you how many more you get, rather than a bare "Show more".
+    expect(browseSource).toContain('Show {Math.min(BATCH_SIZE, hiddenCount)}');
     expect(browseSource).toContain("import { UiIcon } from './UiIcon.tsx';");
     expect(browseSource).toContain('aria-label="Shuffle presets"');
   });
@@ -173,8 +174,9 @@ describe('Workspace shell UI simplification regression', () => {
     expect(shellCss).toMatch(
       /\.stims-shell__stage-frame\[data-mode="live"\]::before,\s*\.stims-shell__stage-frame\[data-mode="live"\]::after\s*\{[\s\S]*?display:\s*none;/u,
     );
+    // Themed via the chrome tokens, falling back to the same opaque dark fill.
     expect(sidePanelCss).toMatch(
-      /\.panel\s*\{[\s\S]*?background:\s*rgba\(10,\s*14,\s*22,\s*0\.97\);/u,
+      /\.panel\s*\{[\s\S]*?background:\s*var\(--ctl-panel-bg,\s*rgba\(10,\s*14,\s*22,\s*0\.97\)\);/u,
     );
     expect(sidePanelCss).toMatch(
       /\.backdrop\s*\{[\s\S]*?background:\s*rgba\(0,\s*0,\s*0,\s*0\.3\);/u,
