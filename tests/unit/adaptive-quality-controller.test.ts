@@ -188,6 +188,67 @@ describe('createAdaptiveQualityController', () => {
     );
   });
 
+  test('degrades when the 5-second rolling frame-time average exceeds budget', () => {
+    const controller = createAdaptiveQualityController({
+      backend: 'webgpu',
+      capabilities: {
+        preferredCanvasFormat: 'bgra8unorm',
+        performanceTier: 'high-end',
+        recommendedQualityPreset: 'hi-fi',
+        workers: {
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+        },
+        optimization: {
+          timestampQuery: true,
+          shaderF16: true,
+          subgroups: true,
+          workers: true,
+          offscreenCanvas: true,
+          transferControlToOffscreen: true,
+          workerOffscreenPipeline: true,
+        },
+        features: {
+          bgra8unormStorage: true,
+          float32Blendable: true,
+          float32Filterable: true,
+          shaderF16: true,
+          subgroups: true,
+          timestampQuery: true,
+        },
+        limits: {
+          maxColorAttachments: 8,
+          maxComputeInvocationsPerWorkgroup: 1_024,
+          maxStorageBufferBindingSize: 1_073_741_824,
+          maxTextureDimension2D: 16_384,
+        },
+      },
+    });
+
+    const budgetMs = controller.getState().frameBudgetMs;
+    const windowSize = controller.getState().rollingWindowSize;
+    const overBudgetFrameMs = budgetMs * 1.5;
+
+    // Fill the rolling window with over-budget frames, plus enough samples to
+    // clear warmup and the rolling-window degrade threshold.
+    for (let index = 0; index < windowSize + 6; index += 1) {
+      controller.recordFrame({
+        frameMs: overBudgetFrameMs,
+        phases: { renderMs: 2 },
+      });
+    }
+
+    const state = controller.getState();
+    expect(state.rollingAverageFrameMs).not.toBeNull();
+    expect(state.rollingAverageFrameMs as number).toBeGreaterThan(budgetMs);
+    expect(state.qualityStep).toBeGreaterThan(0);
+    expect(state.adaptation).toBe('degraded');
+    expect(state.reasons.some((reason) => reason.includes('5-second'))).toBe(
+      true,
+    );
+  });
+
   test('starts conservatively and adapts on webgl backends', () => {
     const controller = createAdaptiveQualityController({
       backend: 'webgl',
