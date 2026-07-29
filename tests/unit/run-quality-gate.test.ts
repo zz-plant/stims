@@ -17,15 +17,20 @@ test('quick gate plan keeps tests out of the concurrent lane', () => {
   const plan = buildGatePlan('quick', 'parallel');
 
   expect(plan.preflight).toHaveLength(1);
-  expect(plan.concurrent.map((step) => step.label)).toEqual([
-    'Biome check',
-    'Bundled catalog fidelity',
-    'Bundled catalog integrity',
-    'Toy manifest and docs drift',
-    'SEO surface check',
-    'Architecture boundary check',
-    'TypeScript typecheck',
-  ]);
+
+  // The invariant is that nothing in the concurrent lane runs tests, not that
+  // the lane holds one particular list. Pinning the list meant every new check
+  // failed this test for no reason.
+  for (const step of plan.concurrent) {
+    expect(step.cmd.some((arg) => /^test(:|$)/.test(arg))).toBe(false);
+  }
+
+  // The lane is still expected to carry the checks the gate exists for.
+  const labels = plan.concurrent.map((step) => step.label);
+  expect(labels).toContain('Biome check');
+  expect(labels).toContain('TypeScript typecheck');
+  expect(plan.concurrent.length).toBeGreaterThanOrEqual(7);
+
   expect(plan.postflight).toHaveLength(0);
 });
 
