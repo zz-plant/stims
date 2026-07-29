@@ -8,7 +8,7 @@ those workflows change.
 
 | Path | Use for | Notes |
 | --- | --- | --- |
-| `Three.js` / imperative MilkDrop runtime | The actual visualizer engine, preset compilation/execution, renderer backends, audio response, and overlay/editor composition. | This is the product-critical path under `assets/js/milkdrop/*` and `assets/js/core/*`. |
+| `Three.js` / imperative MilkDrop runtime | The actual visualizer engine, preset compilation/execution, renderer backends, audio response, and overlay/editor composition. | This is the product-critical path under `src/js/milkdrop/*` and `src/js/core/*`. |
 | Three.js decorative scenes | Small imperative Three.js scene pieces used by the workspace shell for decorative or staging visuals. | Keep this layer small and isolated; it should not become a second visualizer runtime. |
 | WebGL | Baseline rendering path. | Use this as the default compatibility target for visual verification. |
 | WebGPU | Optional enhancement path. | Treat it as an additive path that must not break WebGL behavior. |

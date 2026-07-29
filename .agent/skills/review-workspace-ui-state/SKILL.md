@@ -1,11 +1,11 @@
 ---
 name: review-workspace-ui-state
-description: "Review changes to React workspace UI state, URL routing, toast/panel behavior, or engine adapter interactions. Use when a PR touches assets/js/frontend/*, especially App.tsx, workspace hooks, or url-state.ts."
+description: "Review changes to React workspace UI state, URL routing, toast/panel behavior, or engine adapter interactions. Use when a PR touches src/js/frontend/*, especially App.tsx, workspace hooks, or url-state.ts."
 ---
 
 # Review Workspace UI State and Engine Adapter Boundary
 
-Use this skill when reviewing or authoring changes to the React workspace shell, URL state, tool toggles, toast notifications, or any code that bridges `assets/js/frontend/` and `assets/js/milkdrop/`.
+Use this skill when reviewing or authoring changes to the React workspace shell, URL state, tool toggles, toast notifications, or any code that bridges `src/js/frontend/` and `src/js/milkdrop/`.
 
 ## Why this exists
 
@@ -15,7 +15,7 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
 ### 1. All engine interaction goes through the adapter
 
-- [ ] `App.tsx` and workspace hooks do not import deep `assets/js/milkdrop/*` internals directly.
+- [ ] `App.tsx` and workspace hooks do not import deep `src/js/milkdrop/*` internals directly.
 - [ ] State exchange uses typed events or the adapter's public API, not imperative runtime calls.
 
 ### 2. URL state is canonicalized, not patched
@@ -48,7 +48,7 @@ Use this skill when reviewing or authoring changes to the React workspace shell,
 
 ## What to reject in review
 
-- Direct imports from `assets/js/milkdrop/runtime.ts` or `assets/js/milkdrop/vm.ts` into frontend components
+- Direct imports from `src/js/milkdrop/runtime.ts` or `src/js/milkdrop/vm.ts` into frontend components
 - URL state updates that append rather than replace query params
 - Toast or panel logic that reads `window.milkdropRuntime` or similar global
 - Missing cleanup for `useEffect` subscriptions that touch engine lifecycle

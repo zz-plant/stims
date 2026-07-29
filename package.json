@@ -60,6 +60,8 @@
     "check:architecture": "node --max-old-space-size=4096 ./node_modules/dependency-cruiser/bin/dependency-cruise.mjs --config .dependency-cruiser.mjs src/js scripts tests",
     "check:toys": "bun run scripts/check-toys.ts",
     "check:seo": "bun run scripts/check-seo.ts",
+    "check:css-tokens": "bun run scripts/check-css-tokens.ts",
+    "check:stale-paths": "bun run scripts/check-stale-paths.ts",
     "build": "bun scripts/build.mjs || node scripts/build.mjs",
     "build:reuse": "bun run build -- --reuse",
     "generate:toys": "bun run scripts/generate-toy-manifest.ts",

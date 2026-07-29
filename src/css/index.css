@@ -1515,7 +1515,7 @@ html.light .search-meta__note {
   border: 1px dashed var(--surface-border);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  background: var(--surface-strong);
+  background: var(--panel-solid);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -1535,7 +1535,7 @@ html.light .search-meta__note {
   text-align: left;
   border-radius: var(--radius-md);
   border: 1px solid var(--surface-border);
-  background: color-mix(in srgb, var(--surface-strong) 78%, transparent);
+  background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
   padding: 0.35rem 0.55rem 0.6rem;
 }
 
@@ -2721,7 +2721,7 @@ body.tv-mode .content {
   border-radius: 10px;
   border: 1px solid var(--interactive-border);
   background: color-mix(in srgb, var(--card-bg) 90%, transparent);
-  color: var(--text-primary);
+  color: var(--text-color);
   min-height: 44px;
   padding: 0.5rem 0.65rem;
 }
@@ -2776,7 +2776,7 @@ body.tv-mode .content {
   align-self: start;
   border-radius: var(--radius-pill);
   border: 1px solid var(--interactive-border);
-  color: var(--text-primary);
+  color: var(--text-color);
   text-decoration: none;
   padding: 0.4rem 0.8rem;
   min-height: 40px;

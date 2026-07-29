@@ -82,8 +82,8 @@ bun run parity:promote-reference -- \
   --strata feedback,shader-supported
 ```
 
-That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `assets/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
-The bounded preset universe for that work is tracked separately in `assets/data/milkdrop-parity/certification-corpus.json`, so reference images and measured results stay scoped to an explicit WebGPU certification corpus instead of open-ended imports.
+That flow copies the selected projectM artifact into `tests/fixtures/milkdrop/projectm-reference/` and updates `src/data/milkdrop-parity/visual-reference-manifest.json`, which becomes the source of truth for certified visual references.
+The bounded preset universe for that work is tracked separately in `src/data/milkdrop-parity/certification-corpus.json`, so reference images and measured results stay scoped to an explicit WebGPU certification corpus instead of open-ended imports.
 
 For the bundled shipped presets, repeat the same capture/import/promote sequence one preset at a time and do not move to `measured-results.json` until the corresponding `projectM` reference is checked in for that same preset id.
 
@@ -105,7 +105,7 @@ bun run parity:promote-result -- \
   --preset eos-glowsticks-v2-03-music
 ```
 
-That step writes to `assets/data/milkdrop-parity/measured-results.json`, which is the first manifest used by runtime/catalog analysis to prefer measured visual fidelity over compiler-only inference.
+That step writes to `src/data/milkdrop-parity/measured-results.json`, which is the first manifest used by runtime/catalog analysis to prefer measured visual fidelity over compiler-only inference.
 
 Sync the shipped bundled catalog metadata from that measured-results manifest:
 

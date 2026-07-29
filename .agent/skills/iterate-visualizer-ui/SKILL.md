@@ -23,7 +23,7 @@ bun run dev:ui
 ```
 
 This launches a secondary Vite server at `http://localhost:5174/` with:
-- HMR for `assets/js/frontend/*` and `assets/css/*`
+- HMR for `src/js/frontend/*` and `assets/css/*`
 - Component isolation harness
 - Responsive preview grid
 
@@ -42,7 +42,7 @@ http://localhost:5174/?component=WorkspaceLaunchPanel
 
 ### 3. Edit and observe
 
-1. Open a component file (e.g., `assets/js/frontend/workspace-ui.tsx`)
+1. Open a component file (e.g., `src/js/frontend/workspace-ui.tsx`)
 2. Save → dashboard auto-refreshes the isolated component
 3. Add `&grid=375,768,1024,1920` to see responsive behavior across breakpoints
 
@@ -56,7 +56,7 @@ The harness exposes mock wrappers for these components:
 - `WorkspaceToolSheet` — browse/settings sheet panel
 - `WorkspaceToast` — toast notifications
 
-Add more by editing `assets/js/frontend/ui-harness.tsx` and updating `COMPONENT_REGISTRY`.
+Add more by editing `src/js/frontend/ui-harness.tsx` and updating `COMPONENT_REGISTRY`.
 
 ### Mock data
 
@@ -94,7 +94,7 @@ Open `http://localhost:5173/?agent=true` and verify the same component in contex
 
 1. `bun run dev:ui`
 2. Open `http://localhost:5174/?component=WorkspaceLaunchPanel&grid=375,768,1024,1920`
-3. Edit `assets/js/frontend/workspace-ui.tsx`
+3. Edit `src/js/frontend/workspace-ui.tsx`
 4. See all breakpoints update simultaneously via HMR
 5. Switch to `bun run dev` to verify in the full app
 
@@ -102,7 +102,7 @@ Open `http://localhost:5173/?agent=true` and verify the same component in contex
 
 1. `bun run dev:ui`
 2. Open `http://localhost:5174/?component=WorkspaceStagePanel&grid=375,768`
-3. Edit `assets/js/frontend/workspace-ui.tsx` and `assets/css/app-shell.css`
+3. Edit `src/js/frontend/workspace-ui.tsx` and `assets/css/app-shell.css`
 4. See mobile vs desktop behavior side by side
 5. Commit with confidence
 

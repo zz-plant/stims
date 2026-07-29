@@ -3,12 +3,12 @@
  * Uses headed Chromium for real GPU rendering on macOS.
  */
 import { afterAll, beforeAll, expect, test } from 'bun:test';
-import { type ChildProcess, spawn } from 'node:child_process';
 import { chromium, devices } from 'playwright';
+import { type DevServerHandle, startDevServer } from './dev-server.ts';
 
 const TEST_PORT = 5181;
 const SERVER_URL = `http://127.0.0.1:${TEST_PORT}`;
-let devServer: ChildProcess | null = null;
+let devServer: DevServerHandle | null = null;
 
 async function waitForMountedStage(page: import('playwright').Page) {
   await page.waitForFunction(
@@ -33,27 +33,13 @@ async function waitForActivePreset(
 }
 
 async function startServer() {
-  devServer = spawn('bun', ['run', 'dev', '--port', String(TEST_PORT)], {
-    stdio: 'ignore',
-    env: { ...process.env, BROWSER: 'none' },
-  });
-
-  const deadline = Date.now() + 45000;
-  while (Date.now() < deadline) {
-    try {
-      const res = await fetch(SERVER_URL);
-      if (res.ok) return;
-    } catch {}
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error('Dev server failed to start');
+  devServer = await startDevServer({ port: TEST_PORT });
 }
 
 async function stopServer() {
-  if (devServer) {
-    devServer.kill('SIGTERM');
-    devServer = null;
-  }
+  const server = devServer;
+  devServer = null;
+  await server?.stop();
 }
 
 beforeAll(() => startServer(), { timeout: 60000 });

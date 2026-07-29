@@ -31,27 +31,27 @@ Milestone A baseline evidence is the combination of:
   ```
 
 - The checked-in behavior snapshot sources:
-  - `assets/data/milkdrop-parity/visual-baselines.json` for deterministic VM/frame-shape expectations.
-  - `assets/data/milkdrop-parity/certification-corpus.json` for the representative preset set used during parity-oriented validation.
-  - `assets/data/milkdrop-parity/visual-reference-manifest.json` plus `tests/fixtures/milkdrop/projectm-reference/` for image-level comparison fixtures.
+  - `src/data/milkdrop-parity/visual-baselines.json` for deterministic VM/frame-shape expectations.
+  - `src/data/milkdrop-parity/certification-corpus.json` for the representative preset set used during parity-oriented validation.
+  - `src/data/milkdrop-parity/visual-reference-manifest.json` plus `tests/fixtures/milkdrop/projectm-reference/` for image-level comparison fixtures.
 
 ## When to run this baseline
 
 Run the full baseline when a change touches any of these areas:
 
 - `index.html` or `milkdrop/index.html`
-- `assets/js/app.ts` or `assets/js/frontend/*`
-- `assets/js/frontend/engine/*` or launch/session UI
-- `assets/js/core/*` startup, renderer, or audio wiring
-- `assets/js/milkdrop/runtime.ts`
+- `src/js/app.ts` or `src/js/frontend/*`
+- `src/js/frontend/engine/*` or launch/session UI
+- `src/js/core/*` startup, renderer, or audio wiring
+- `src/js/milkdrop/runtime.ts`
 - preset boot, overlay, or renderer-fallback behavior
 
 Run the compatibility-only legacy suite instead when a change is limited to:
 
-- `assets/js/loader.ts`, `assets/js/router.ts`, or `assets/js/loader/*`
-- `assets/js/toy-view.ts`
-- `assets/js/library-view.js` or `assets/js/library-view/*`
-- `assets/js/bootstrap/*`
+- `src/js/loader.ts`, `src/js/router.ts`, or `src/js/loader/*`
+- `src/js/toy-view.ts`
+- `src/js/library-view.js` or `src/js/library-view/*`
+- `src/js/bootstrap/*`
 
 For narrowly scoped docs-only changes, this baseline is not required.
 

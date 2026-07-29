@@ -46,7 +46,7 @@ If you think you need it, you are wrong. Fix the type error or ask for help.
 
 ### 2. Never import across the engine boundary
 
-`assets/js/frontend/*` must not import from `assets/js/milkdrop/runtime.ts`, `vm.ts`, or `compiler/*`. Only `milkdrop-engine-adapter.ts` is allowed.
+`src/js/frontend/*` must not import from `src/js/milkdrop/runtime.ts`, `vm.ts`, or `compiler/*`. Only `milkdrop-engine-adapter.ts` is allowed.
 
 ### 3. Never leave `console.log` in production code
 

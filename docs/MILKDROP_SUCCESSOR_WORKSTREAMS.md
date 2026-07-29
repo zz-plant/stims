@@ -17,10 +17,10 @@ Primary requirement:
 
 Primary files:
 
-- `assets/js/milkdrop/compiler/*`
-- `assets/js/milkdrop/vm/*`
-- `assets/js/milkdrop/renderer-helpers/*`
-- `assets/data/milkdrop-parity/*`
+- `src/js/milkdrop/compiler/*`
+- `src/js/milkdrop/vm/*`
+- `src/js/milkdrop/renderer-helpers/*`
+- `src/data/milkdrop-parity/*`
 - `tests/milkdrop-parity.test.ts`
 - `tests/milkdrop-projectm-compat.test.ts`
 
@@ -45,11 +45,11 @@ Own the hot path where frame time and GC pressure matter most.
 
 Primary files:
 
-- `assets/js/milkdrop/runtime.ts`
-- `assets/js/milkdrop/vm.ts`
-- `assets/js/milkdrop/vm/frame-generation.ts`
-- `assets/js/milkdrop/vm/wave-builder.ts`
-- `assets/js/milkdrop/renderer-adapter*.ts`
+- `src/js/milkdrop/runtime.ts`
+- `src/js/milkdrop/vm.ts`
+- `src/js/milkdrop/vm/frame-generation.ts`
+- `src/js/milkdrop/vm/wave-builder.ts`
+- `src/js/milkdrop/renderer-adapter*.ts`
 
 Exit signal:
 
@@ -62,8 +62,8 @@ Own the React shell, route state, and overlay UX that make Stims feel better tha
 
 Primary files:
 
-- `assets/js/frontend/*`
-- `assets/js/milkdrop/overlay/*`
+- `src/js/frontend/*`
+- `src/js/milkdrop/overlay/*`
 - `public/milkdrop-presets/catalog.json`
 
 Exit signal:

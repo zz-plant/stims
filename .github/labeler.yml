@@ -12,9 +12,25 @@ github:
 toys:
   - changed-files:
       - any-glob-to-any-file:
-          - 'assets/js/toys/**'
-          - 'assets/data/toys.json'
-          - 'toys/**'
+          - 'src/js/toys/**'
+          - 'src/data/toys.json'
+          - 'public/toys.json'
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/js/frontend/**'
+
+renderer:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/js/milkdrop/**'
+          - 'src/shaders/**'
+
+styles:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/css/**'
 
 tests:
   - changed-files:

@@ -43,7 +43,7 @@ bun run check
 
 - **Commit messages**: Sentence case, no trailing period (e.g., "Add audio frequency detection")
 - **PR title**: Same style, include test/docs summary in description
-- **Imports**: Relative paths within `assets/js/`, absolute paths for sibling packages
+- **Imports**: Relative paths within `src/js/`, absolute paths for sibling packages
 - **No `@ts-nocheck`**: All code must pass strict typecheck
 - **Tests**: Match your code file path (e.g., `foo.ts` → `tests/foo.test.ts`)
 
@@ -51,10 +51,10 @@ bun run check
 
 | Path | Purpose |
 |------|---------|
-| `assets/js/core/` | Shared runtime (loader, shell, renderer, audio) |
-| `assets/js/milkdrop/` | Preset engine (runner, editor, compiler, VM) |
-| `assets/js/bootstrap/` | Page wiring (home, library, visualizer) |
-| `assets/data/toys.json` | Preset manifest |
+| `src/js/core/` | Shared runtime (loader, shell, renderer, audio) |
+| `src/js/milkdrop/` | Preset engine (runner, editor, compiler, VM) |
+| `src/js/bootstrap/` | Page wiring (home, library, visualizer) |
+| `src/data/toys.json` | Preset manifest |
 | `tests/` | Test suite (unit + integration) |
 | `docs/agents/` | Agent guidance (task routing, tools, verification) |
 | `.agent/skills/` | Reusable agent workflows |

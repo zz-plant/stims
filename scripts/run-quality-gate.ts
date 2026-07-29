@@ -81,6 +81,14 @@ export function buildGatePlan(
         cmd: ['bun', 'run', 'check:seo'],
       },
       {
+        label: 'CSS token resolution',
+        cmd: ['bun', 'run', 'check:css-tokens'],
+      },
+      {
+        label: 'Stale assets/ path check',
+        cmd: ['bun', 'run', 'check:stale-paths'],
+      },
+      {
         label: 'Architecture boundary check',
         cmd: ['bun', 'run', 'check:architecture'],
       },
