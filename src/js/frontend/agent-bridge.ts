@@ -1,6 +1,26 @@
 // Agent Bridge & Telemetry System for toil.fyi
 // Handles iframe postMessage communication & quantitative telemetry reporting
 
+/**
+ * Adaptive-quality diagnostics, surfaced so on-device QA can see *why* the
+ * renderer picked a resolution. Without this the only visible symptom of a
+ * quality regression is "it looks soft", which is not actionable from a
+ * remote debugging session.
+ */
+export interface AgentQualityTelemetry {
+  /** Index into the controller's quality ladder; 0 is the sharpest. */
+  step: number;
+  stepCount: number;
+  adaptation: 'steady' | 'degraded' | 'recovering' | 'enhanced';
+  /** CPU work inside a frame, per the controller. */
+  averageFrameMs: number | null;
+  /** Frame-to-frame period, per the controller. */
+  averageCadenceMs: number | null;
+  frameBudgetMs: number;
+  renderScaleMultiplier: number;
+  maxPixelRatioMultiplier: number;
+}
+
 export interface AgentTelemetry {
   fps: number;
   backend: 'webgl' | 'webgpu' | 'unknown';
@@ -8,6 +28,7 @@ export interface AgentTelemetry {
   currentPresetId: string | null;
   agentMode: boolean;
   timestamp: number;
+  quality: AgentQualityTelemetry | null;
 }
 
 export type AgentBridgeCommand =
@@ -27,12 +48,15 @@ declare global {
 }
 
 let activeTelemetry: AgentTelemetry = {
-  fps: 60,
+  // 0 rather than a nominal 60: nothing has been measured yet, and a plausible
+  // default here is what made mobile frame-rate regressions invisible.
+  fps: 0,
   backend: 'webgl',
   audioEnergy: 0,
   currentPresetId: null,
   agentMode: false,
   timestamp: Date.now(),
+  quality: null,
 };
 
 export function updateAgentTelemetry(

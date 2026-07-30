@@ -1,7 +1,10 @@
 import { createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initAgentAPI } from './core/agent-api.ts';
-import { applyDeviceTierToDocument } from './core/device-profile.ts';
+import {
+  applyDeviceTierToDocument,
+  startRefreshRateSampling,
+} from './core/device-profile.ts';
 import { installRendererTelemetryPersistence } from './core/renderer-telemetry.ts';
 import { installCrashTelemetry } from './core/services/crash-telemetry.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
@@ -28,6 +31,9 @@ function ensureRootContainer() {
 
 const startApp = async () => {
   reportLoadStatus('app-module');
+  // Start early: the adaptive quality controller reads the refresh rate when it
+  // is constructed, and an unmeasured rate falls back to a conservative 60.
+  startRefreshRateSampling();
   installCrashTelemetry();
   installRendererTelemetryPersistence();
   initAgentAPI();

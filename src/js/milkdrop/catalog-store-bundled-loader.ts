@@ -188,6 +188,25 @@ function mergeUniqueCatalogEntries(
   return [...entriesById.values()];
 }
 
+/**
+ * Shared across loader instances, keyed by the manifest URLs it reads.
+ *
+ * The bundled catalog is a static asset, but more than one store gets built per
+ * session — the workspace hook makes one and the milkdrop runtime makes another
+ * — and a per-instance cache made each of them fetch and parse the full
+ * catalog.json independently. That is ~1.5MB decoded per store, which is a
+ * visible stall on a phone.
+ */
+const sharedBundledCatalogPromises = new Map<
+  string,
+  Promise<MilkdropBundledCatalogEntry[]>
+>();
+
+/** Test seam: drops the cross-instance cache. */
+export function resetSharedBundledCatalogCache() {
+  sharedBundledCatalogPromises.clear();
+}
+
 export function createBundledCatalogLoader({
   catalogUrl,
   libraryManifestUrls = DEFAULT_LIBRARY_MANIFEST_URLS,
@@ -196,10 +215,10 @@ export function createBundledCatalogLoader({
   libraryManifestUrls?: string[];
 }) {
   const bundledSourceCache = new Map<string, MilkdropPresetSource>();
-  let bundledCatalogPromise: Promise<MilkdropBundledCatalogEntry[]> | null =
-    null;
+  const cacheKey = JSON.stringify([catalogUrl, libraryManifestUrls]);
 
   const getBundledCatalog = async () => {
+    let bundledCatalogPromise = sharedBundledCatalogPromises.get(cacheKey);
     if (!bundledCatalogPromise) {
       bundledCatalogPromise = Promise.all([
         loadOptionalCatalog(catalogUrl),
@@ -223,6 +242,7 @@ export function createBundledCatalogLoader({
           return mergeUniqueCatalogEntries(mergedEntries, certificationEntries);
         })
         .catch(() => [] as MilkdropBundledCatalogEntry[]);
+      sharedBundledCatalogPromises.set(cacheKey, bundledCatalogPromise);
     }
     return bundledCatalogPromise;
   };

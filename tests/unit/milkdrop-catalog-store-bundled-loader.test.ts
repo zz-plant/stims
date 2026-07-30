@@ -1,11 +1,22 @@
-import { afterEach, expect, mock, test } from 'bun:test';
-import { createBundledCatalogLoader } from '../../src/js/milkdrop/catalog-store-bundled-loader.ts';
+import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
+import {
+  createBundledCatalogLoader,
+  resetSharedBundledCatalogCache,
+} from '../../src/js/milkdrop/catalog-store-bundled-loader.ts';
 import { replaceProperty } from '../test-helpers.ts';
 
 const originalFetch = globalThis.fetch;
 let restoreLocation = () => {};
 
+// The bundled catalog is cached across loader instances so that the several
+// stores a session builds do not each refetch it. Tests install a fresh fetch
+// mock per case and must not inherit a previous case's cached catalog.
+beforeEach(() => {
+  resetSharedBundledCatalogCache();
+});
+
 afterEach(() => {
+  resetSharedBundledCatalogCache();
   mock.restore();
   globalThis.fetch = originalFetch;
   restoreLocation();
