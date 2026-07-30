@@ -75,10 +75,12 @@ function isWebGPUStableInThisBrowser(): boolean {
     return edgeVersion >= MIN_EDGE_VERSION_WEBGPU;
   }
 
-  // Chrome: check minimum version, desktop-only for now
+  // Chrome: check minimum version
+  // Chrome for Android ships WebGPU since Chrome 121. The MIN_CHROME_VERSION_WEBGPU
+  // constant is 120+, so the version check covers both desktop and mobile.
   const chromeVersion = parseChromeMajorVersion(ua);
   if (chromeVersion !== null) {
-    return chromeVersion >= MIN_CHROME_VERSION_WEBGPU && isDesktopDevice();
+    return chromeVersion >= MIN_CHROME_VERSION_WEBGPU;
   }
 
   // Unknown browser: conservatively disable WebGPU
