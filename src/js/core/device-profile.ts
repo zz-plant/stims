@@ -15,10 +15,16 @@ export function getDeviceTier(): DeviceTier {
       ? (navigator.hardwareConcurrency ?? null)
       : null;
 
+  // Mobile: 12+ cores. 8-core chips like the Snapdragon 8 Gen 1 (S22)
+  // look capable by core count but have a fraction of the sustained GPU
+  // throughput. Classifying them as "ultra" selects hi-fi quality, which
+  // over-paints the canvas and starves the renderer on frame budget.
+  // The 8-core threshold  originally admitted MacBook Pros  and flagship
+  // phones, but phones thermal-throttle within seconds.
   const isUltra =
     (hardwareConcurrency !== null &&
       (environment.isMobile
-        ? hardwareConcurrency >= 8
+        ? hardwareConcurrency >= 12
         : hardwareConcurrency >= 12)) ||
     (typeof window !== 'undefined' &&
       (

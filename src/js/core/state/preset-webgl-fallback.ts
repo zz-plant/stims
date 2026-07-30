@@ -30,7 +30,9 @@ function readSet(): Set<string> {
     }
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed)
-      ? new Set(parsed.filter((entry): entry is string => typeof entry === 'string'))
+      ? new Set(
+          parsed.filter((entry): entry is string => typeof entry === 'string'),
+        )
       : new Set();
   } catch (_error) {
     return new Set();
@@ -44,10 +46,7 @@ function writeSet(presetIds: Set<string>) {
   }
 
   try {
-    storage.setItem(
-      PRESET_WEBGL_FALLBACK_KEY,
-      JSON.stringify([...presetIds]),
-    );
+    storage.setItem(PRESET_WEBGL_FALLBACK_KEY, JSON.stringify([...presetIds]));
   } catch (_error) {
     // Storage full or blocked: the fallback simply will not survive the reload.
   }
