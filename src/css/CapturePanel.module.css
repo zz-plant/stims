@@ -36,15 +36,29 @@
   align-items: center;
   gap: 12px;
   min-height: 64px;
-  padding: 12px;
+  padding: 12px 16px;
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.12));
   border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.format:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .format:has(input:checked) {
   border-color: var(--stims-accent);
-  background: color-mix(in srgb, var(--stims-accent) 10%, transparent);
+  background: color-mix(in srgb, var(--stims-accent) 14%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--stims-accent) 25%, transparent);
 }
 
 .format input {
@@ -82,17 +96,35 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .startButton {
   background: var(--stims-accent);
   color: var(--stims-on-accent, #071019);
+  box-shadow: 0 4px 14px
+    color-mix(in srgb, var(--stims-accent) 35%, transparent);
+}
+
+.startButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px
+    color-mix(in srgb, var(--stims-accent) 50%, transparent);
 }
 
 .stopButton {
   border-color: var(--stims-danger, #ff8f8f);
-  background: transparent;
+  background: color-mix(in srgb, var(--stims-danger, #ff8f8f) 12%, transparent);
   color: var(--stims-danger, #ff8f8f);
+  box-shadow: 0 0 12px
+    color-mix(in srgb, var(--stims-danger, #ff8f8f) 20%, transparent);
+}
+
+.stopButton:hover {
+  background: color-mix(in srgb, var(--stims-danger, #ff8f8f) 20%, transparent);
 }
 
 .startButton:disabled {

@@ -31,7 +31,9 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(workspacePath('src/js/ui/icon-library.ts')),
     ).toBe('ui');
     expect(
-      classifyArchitectureLayer(workspacePath('src/js/utils/browser/device-detect.ts')),
+      classifyArchitectureLayer(
+        workspacePath('src/js/utils/browser/device-detect.ts'),
+      ),
     ).toBe('utils');
     expect(
       classifyArchitectureLayer(workspacePath('src/js/toys/milkdrop-toy.ts')),

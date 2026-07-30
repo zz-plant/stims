@@ -16,7 +16,8 @@ export function RendererFallbackBadge() {
         onClick={() => ui.updatePanel('settings')}
         aria-label="WebGL fallback active — open settings"
       >
-        <span aria-hidden="true">{'\u26A0'}</span> WebGL
+        <span className="renderer-fallback-badge__dot" aria-hidden="true" />
+        <span className="renderer-fallback-badge__text">WebGL</span>
       </button>
     </div>
   );

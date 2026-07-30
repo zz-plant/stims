@@ -55,6 +55,21 @@ function AudioSpectrumBars() {
 
 export function AudioSpectrumHud() {
   const { ui, engine } = useWorkspace();
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const updateHeaderEnergy = () => {
+      const energy = getAudioEnergy();
+      if (headerRef.current) {
+        headerRef.current.style.setProperty(
+          '--stims-hud-energy',
+          String(energy.toFixed(3)),
+        );
+      }
+    };
+    updateHeaderEnergy();
+    return subscribeAudioEnergy(updateHeaderEnergy);
+  }, []);
 
   const selectedPreset = engine.selectedPreset ?? engine.featuredPreset;
   const activeTitle = selectedPreset?.title ?? 'No Preset Loaded';
@@ -65,7 +80,7 @@ export function AudioSpectrumHud() {
   const activePanel = ui.routeState.panel;
 
   return (
-    <header className="stims-hud-bar">
+    <header ref={headerRef} className="stims-hud-bar">
       <div className="stims-hud-bar__brand">
         <div className="stims-hud-bar__logo-mark" aria-hidden="true">
           <span className="stims-hud-bar__logo-dot" />

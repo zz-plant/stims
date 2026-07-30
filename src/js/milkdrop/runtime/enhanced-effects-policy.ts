@@ -38,23 +38,29 @@ export function applyMilkdropEnhancedEffectsPolicy({
   shaderQuality: 'low' | 'balanced' | 'high';
   qualityPresetId: string;
 }) {
+  const isLowMotion = qualityPresetId === 'low-motion';
+
   if (
     shouldAllowMilkdropEnhancedEffects({
       shaderQuality,
       qualityPresetId,
-    })
+    }) &&
+    !isLowMotion
   ) {
     return frameState;
   }
 
   const particleField = frameState.gpuGeometry.particleField;
   const postprocessingProfile = frameState.post.postprocessingProfile;
-  if (!particleField?.enabled && !postprocessingProfile?.enabled) {
-    return frameState;
-  }
 
   return {
     ...frameState,
+    mainWave: isLowMotion
+      ? {
+          ...frameState.mainWave,
+          thickness: Math.min(frameState.mainWave.thickness, 4),
+        }
+      : frameState.mainWave,
     post: postprocessingProfile
       ? {
           ...frameState.post,

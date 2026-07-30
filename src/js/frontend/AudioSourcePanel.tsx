@@ -4,6 +4,7 @@ import {
   isMobileDevice,
   openExternalBrowserIntent,
 } from '../utils/browser/device-detect.ts';
+import { ShaderIdenticon } from './ShaderIdenticon.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -220,7 +221,14 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             onAudioStart('microphone', selectedDeviceId || undefined)
           }
         >
-          <span className="stims-shell__source-card-kicker">Live source</span>
+          <div className="stims-shell__source-card-header">
+            <span className="stims-shell__source-card-kicker">Live source</span>
+            <ShaderIdenticon
+              seed="audio-mic-source"
+              size={28}
+              mode="3d-polyhedron"
+            />
+          </div>
           <strong>Microphone</strong>
           <span>Live mic input</span>
         </button>
@@ -249,9 +257,16 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
             aria-describedby={!engineReady ? disabledDescription : undefined}
             onClick={() => onAudioStart('tab')}
           >
-            <span className="stims-shell__source-card-kicker">
-              Browser audio
-            </span>
+            <div className="stims-shell__source-card-header">
+              <span className="stims-shell__source-card-kicker">
+                Browser audio
+              </span>
+              <ShaderIdenticon
+                seed="audio-tab-source"
+                size={28}
+                mode="3d-polyhedron"
+              />
+            </div>
             <strong>This tab</strong>
             <span>Audio from this browser tab</span>
           </button>

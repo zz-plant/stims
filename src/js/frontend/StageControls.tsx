@@ -4,6 +4,7 @@ import {
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { pulseHaptic } from './haptics.ts';
 import { useAutoHideActivity } from './hooks/useAutoHideActivity.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
@@ -70,8 +71,17 @@ export function StageControls({
         moreBtnRef.current?.focus();
       }
     };
+    const handleResize = () => setShowOverflow(false);
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('orientationchange', handleResize, {
+      passive: true,
+    });
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
   }, [showOverflow]);
 
   // Re-show controls on any interaction
@@ -139,70 +149,83 @@ export function StageControls({
 
   const handleBrowse = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     ui.updatePanel(panel === 'browse' ? null : 'browse');
   }, [ui, panel, signalActivity]);
 
   const handleSettings = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     ui.updatePanel(panel === 'settings' ? null : 'settings');
   }, [ui, panel, signalActivity]);
 
   const handleShuffle = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     void engine.handleShufflePreset();
   }, [engine, signalActivity]);
 
   const handlePrevious = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     void engine.handlePreviousPreset();
   }, [engine, signalActivity]);
 
   const handleFullscreen = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     onToggleFullscreen();
   }, [onToggleFullscreen, signalActivity]);
 
   const handleEditor = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     setShowOverflow(false);
     ui.updatePanel(panel === 'editor' ? null : 'editor');
   }, [ui, panel, signalActivity]);
 
   const handleShare = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     setShowOverflow(false);
     void ui.handleShowCurrentLink();
   }, [ui, signalActivity]);
 
   const handleCapture = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     setShowOverflow(false);
     ui.updatePanel(panel === 'capture' ? null : 'capture');
   }, [ui, panel, signalActivity]);
 
   const handleSynthesize = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     setShowOverflow(false);
     ui.updatePanel(panel === 'synthesize' ? null : 'synthesize');
   }, [ui, panel, signalActivity]);
 
   const handleMore = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     setShowOverflow((s) => !s);
   }, [signalActivity]);
 
   const handleVisualSearch = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     void engine.handleVisualSearch?.();
   }, [engine, signalActivity]);
 
   const handleAudioMatch = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     ui.updatePanel(panel === 'audiomatch' ? null : 'audiomatch');
   }, [ui, panel, signalActivity]);
 
   const handleRefine = useCallback(() => {
     signalActivity();
+    pulseHaptic(10);
     setShowOverflow(false);
     ui.updatePanel(panel === 'refine' ? null : 'refine');
   }, [ui, panel, signalActivity]);

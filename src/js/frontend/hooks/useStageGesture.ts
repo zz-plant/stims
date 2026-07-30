@@ -24,7 +24,7 @@ function isInteractiveTarget(target: EventTarget | null) {
   );
 }
 
-function supportsTouchShortcutInput() {
+function _supportsTouchShortcutInput() {
   return (
     typeof window !== 'undefined' &&
     (window.matchMedia('(pointer: coarse)').matches ||
@@ -94,7 +94,10 @@ export function useStageGesture({
 
   useEffect(() => {
     const stage = stageRef?.current;
-    if (!enabled || !stage || !supportsTouchShortcutInput()) return;
+    if (!enabled || !stage) return;
+
+    const previousTouchAction = stage.style.touchAction;
+    stage.style.touchAction = 'none';
 
     let startX = 0;
     let startY = 0;
@@ -193,6 +196,7 @@ export function useStageGesture({
 
     return () => {
       clearLongPress();
+      stage.style.touchAction = previousTouchAction;
       stage.removeEventListener('pointerdown', handlePointerDown);
       stage.removeEventListener('pointermove', handlePointerMove);
       stage.removeEventListener('pointerup', handlePointerEnd);
