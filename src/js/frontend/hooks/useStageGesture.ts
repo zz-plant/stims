@@ -40,6 +40,7 @@ export function useStageGesture({
   openBrowse,
   closePanel,
   toggleFavoritePreset,
+  handleToggleFullscreen,
   setStatusMessage,
   hapticsEnabled = true,
 }: {
@@ -50,6 +51,7 @@ export function useStageGesture({
   openBrowse?: () => void;
   closePanel?: () => void;
   toggleFavoritePreset?: () => void;
+  handleToggleFullscreen?: () => void;
   setStatusMessage?: (message: string) => void;
   hapticsEnabled?: boolean;
 }) {
@@ -63,10 +65,14 @@ export function useStageGesture({
   closePanelRef.current = closePanel;
   const toggleFavoriteRef = useRef(toggleFavoritePreset);
   toggleFavoriteRef.current = toggleFavoritePreset;
+  const toggleFullscreenRef = useRef(handleToggleFullscreen);
+  toggleFullscreenRef.current = handleToggleFullscreen;
   const statusRef = useRef(setStatusMessage);
   statusRef.current = setStatusMessage;
   const lastWheelRef = useRef(0);
   const lastSwipeRef = useRef(0);
+  const lastTapTimeRef = useRef(0);
+  const lastTapPosRef = useRef({ x: 0, y: 0 });
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -178,6 +184,24 @@ export function useStageGesture({
           pulseHaptic(10, hapticsEnabled);
           statusRef.current?.('Panel closed.');
         }
+        return;
+      }
+
+      if (absX < 14 && absY < 14) {
+        const timeSinceLastTap = now - lastTapTimeRef.current;
+        const tapDistance = Math.hypot(
+          event.clientX - lastTapPosRef.current.x,
+          event.clientY - lastTapPosRef.current.y,
+        );
+        if (timeSinceLastTap < 320 && tapDistance < 24) {
+          lastTapTimeRef.current = 0;
+          pulseHaptic([10, 20, 10], hapticsEnabled);
+          toggleFullscreenRef.current?.();
+          statusRef.current?.('Fullscreen toggled.');
+          return;
+        }
+        lastTapTimeRef.current = now;
+        lastTapPosRef.current = { x: event.clientX, y: event.clientY };
       }
     };
 
