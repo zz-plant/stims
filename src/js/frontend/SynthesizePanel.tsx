@@ -4,6 +4,7 @@ import {
   type PresetSynthesisOptions,
   synthesizeEELPreset,
 } from '../milkdrop/ai-preset-synthesizer.ts';
+import { ParametricIdenticon } from './ParametricIdenticon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
 function toFileList(milkSource: string) {
@@ -85,14 +86,23 @@ export function SynthesizePanel() {
 
   return (
     <section className={styles.panel} aria-labelledby="synth-heading">
-      <div>
-        <h3 id="synth-heading" className={styles.heading}>
-          Generate visualizer
-        </h3>
-        <p className={styles.intro}>
-          Describe a visual style and the preset will be generated and loaded
-          immediately.
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <ParametricIdenticon
+          seed={prompt.trim() || 'ai-synthesizer'}
+          filterPreset="liquid-warp"
+          size={36}
+          audioPeak={generating ? 0.8 : 0.2}
+          mood={palette === 'auto' ? 'psychedelic' : palette}
+        />
+        <div>
+          <h3 id="synth-heading" className={styles.heading}>
+            Generate visualizer
+          </h3>
+          <p className={styles.intro}>
+            Describe a visual style and the preset will be generated and loaded
+            immediately.
+          </p>
+        </div>
       </div>
 
       <label className={styles.field}>

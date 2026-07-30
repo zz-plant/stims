@@ -31,6 +31,7 @@
     "test:integration": "bun run scripts/run-tests.ts --profile integration",
     "test:e2e": "bun run scripts/run-tests.ts --profile e2e",
     "test:compat": "bun run scripts/run-tests.ts --profile compat",
+    "test:android": "bun run scripts/android-test.ts",
     "check:accessibility": "bun run scripts/accessibility-audit.ts",
     "test:watch": "bun run scripts/run-tests.ts --watch",
     "biome:check": "bash scripts/run-biome.sh check",

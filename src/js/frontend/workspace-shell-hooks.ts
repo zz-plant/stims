@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
-import { formatPresetShareCopy, shareOrCopyLink } from '../utils/media/share-link.ts';
+import {
+  formatPresetShareCopy,
+  shareOrCopyLink,
+} from '../utils/media/share-link.ts';
 import type {
   PanelState,
   PresetCatalogEntry,

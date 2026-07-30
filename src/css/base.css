@@ -6124,3 +6124,12 @@ body {
     padding: 0.68rem 0.88rem;
   }
 }
+
+/* Prevent iOS Safari involuntary auto-zoom on input focus */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

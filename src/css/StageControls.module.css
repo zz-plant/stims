@@ -34,11 +34,14 @@
   padding: 4px 14px;
   min-height: 28px;
   border-radius: 999px;
-  background: rgba(5, 8, 14, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: rgba(229, 241, 255, 0.88);
+  background: rgba(6, 10, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: rgba(229, 241, 255, 0.92);
   font-size: 0.78rem;
   font-weight: 600;
   white-space: nowrap;
@@ -54,7 +57,7 @@
 }
 
 .nowPlayingAuthor {
-  color: rgba(191, 219, 254, 0.55);
+  color: rgba(191, 219, 254, 0.65);
   font-weight: 400;
   font-size: 0.7rem;
   overflow: hidden;
@@ -67,9 +70,9 @@
   width: 4px;
   height: 18px;
   border-radius: 2px;
-  background: rgba(125, 224, 162, 0.9);
-  opacity: calc(0.25 + var(--stims-energy, 0) * 0.75);
-  box-shadow: 0 0 10px rgba(125, 224, 162, calc(var(--stims-energy, 0) * 0.85));
+  background: rgba(125, 224, 162, 0.95);
+  opacity: calc(0.35 + var(--stims-energy, 0) * 0.65);
+  box-shadow: 0 0 12px rgba(125, 224, 162, calc(var(--stims-energy, 0) * 0.95));
   transition:
     opacity 0.1s ease,
     box-shadow 0.1s ease;
@@ -81,11 +84,15 @@
   align-items: center;
   gap: 2px;
   padding: 4px;
-  border-radius: 14px;
-  background: rgba(5, 8, 14, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  border-radius: 16px;
+  background: rgba(6, 10, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 0 20px rgba(119, 201, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   pointer-events: auto;
 }
 
@@ -95,7 +102,7 @@
   width: 1px;
   height: 20px;
   margin: 0 4px;
-  background: rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .btn {
@@ -106,22 +113,26 @@
   min-width: 44px;
   min-height: 44px;
   padding: 0;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
-  color: rgba(229, 241, 255, 0.72);
+  color: rgba(229, 241, 255, 0.76);
   font: inherit;
   cursor: pointer;
   transition:
-    color 0.15s ease,
-    background 0.15s ease,
-    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
   -webkit-tap-highlight-color: transparent;
 }
 
 .btn:hover {
-  color: #f8fbff;
-  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 12px rgba(119, 201, 255, 0.12);
 }
 
 .btn:active {
@@ -132,8 +143,15 @@
 /* The lit edge, matching the active state used inside the panels. */
 .btn[data-active="true"] {
   color: #77c9ff;
-  background: rgba(119, 201, 255, 0.14);
-  box-shadow: inset 0 -2px 0 #77c9ff;
+  background: radial-gradient(
+    circle at center,
+    rgba(119, 201, 255, 0.28) 0%,
+    rgba(119, 201, 255, 0.12) 100%
+  );
+  border-color: rgba(119, 201, 255, 0.45);
+  box-shadow:
+    0 0 20px rgba(119, 201, 255, 0.32),
+    inset 0 -2px 0 #77c9ff;
 }
 
 .btn:focus-visible {
@@ -287,12 +305,27 @@
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .toolbar {
-    gap: 3px;
+    gap: 2px;
     padding: 4px;
+    max-width: calc(100vw - 16px);
   }
 
+  .btn {
+    min-width: 46px;
+    min-height: 46px;
+  }
+
+  .overflow {
+    right: 50%;
+    transform: translateX(50%);
+    width: min(320px, calc(100vw - 24px));
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (pointer: coarse) {
   .btn {
     min-width: 48px;
     min-height: 48px;

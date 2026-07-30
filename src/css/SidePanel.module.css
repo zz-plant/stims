@@ -177,6 +177,12 @@
   overscroll-behavior: contain;
 }
 
+@media (max-width: 767px) {
+  .body {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .panel,
   .panel[data-exiting="true"],

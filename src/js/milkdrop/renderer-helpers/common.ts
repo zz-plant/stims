@@ -1,5 +1,8 @@
 import type { BufferGeometry, Group, Line, Mesh, Points } from 'three';
-import { disposeGeometry, disposeMaterial } from '../../utils/three/three-dispose';
+import {
+  disposeGeometry,
+  disposeMaterial,
+} from '../../utils/three/three-dispose';
 
 export function clearGroup(
   group: Group,
