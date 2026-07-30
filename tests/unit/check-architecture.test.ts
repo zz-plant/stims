@@ -31,7 +31,7 @@ describe('architecture boundary rules', () => {
       classifyArchitectureLayer(workspacePath('src/js/ui/icon-library.ts')),
     ).toBe('ui');
     expect(
-      classifyArchitectureLayer(workspacePath('src/js/utils/device-detect.ts')),
+      classifyArchitectureLayer(workspacePath('src/js/utils/browser/device-detect.ts')),
     ).toBe('utils');
     expect(
       classifyArchitectureLayer(workspacePath('src/js/toys/milkdrop-toy.ts')),
@@ -57,7 +57,7 @@ describe('architecture boundary rules', () => {
         sourceLayer: 'core',
         targetLayer: 'utils',
         sourcePath: workspacePath('src/js/core/web-toy.ts'),
-        targetPath: workspacePath('src/js/utils/device-detect.ts'),
+        targetPath: workspacePath('src/js/utils/browser/device-detect.ts'),
       }),
     ).toBe(true);
     expect(
@@ -65,7 +65,7 @@ describe('architecture boundary rules', () => {
         sourceLayer: 'core',
         targetLayer: 'utils',
         sourcePath: workspacePath('src/js/core/web-toy.ts'),
-        targetPath: workspacePath('src/js/utils/manifest-client.ts'),
+        targetPath: workspacePath('src/js/utils/media/share-link.ts'),
       }),
     ).toBe(false);
   });
@@ -111,7 +111,7 @@ describe('architecture boundary rules', () => {
         sourceLayer: 'frontend',
         targetLayer: 'utils',
         sourcePath: workspacePath('src/js/frontend/App.tsx'),
-        targetPath: workspacePath('src/js/utils/device-detect.ts'),
+        targetPath: workspacePath('src/js/utils/browser/device-detect.ts'),
       }),
     ).toBe(true);
   });
@@ -169,7 +169,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
         targetLayer: 'core',
-        sourcePath: workspacePath('src/js/utils/device-detect.ts'),
+        sourcePath: workspacePath('src/js/utils/browser/device-detect.ts'),
         targetPath: workspacePath('src/js/core/render-preferences.ts'),
       }),
     ).toBe(false);
@@ -177,7 +177,7 @@ describe('architecture boundary rules', () => {
       isArchitectureDependencyAllowed({
         sourceLayer: 'utils',
         targetLayer: 'toy',
-        sourcePath: workspacePath('src/js/utils/device-detect.ts'),
+        sourcePath: workspacePath('src/js/utils/browser/device-detect.ts'),
         targetPath: workspacePath('src/js/toys/milkdrop-toy.ts'),
       }),
     ).toBe(false);

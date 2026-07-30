@@ -19,7 +19,7 @@ import {
   type WebGLRenderTarget,
 } from 'three';
 import { getSharedMilkdropCapturedVideoTexture } from '../core/services/captured-video-texture.ts';
-import { disposeMaterial } from '../utils/three-dispose';
+import { disposeMaterial } from '../utils/three/three-dispose';
 import type {
   FeedbackBackendProfile,
   MilkdropBackendBehavior,

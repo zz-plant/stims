@@ -1,4 +1,4 @@
-import { isInAppBrowser } from '../../utils/device-detect.ts';
+import { isInAppBrowser } from '../../utils/browser/device-detect.ts';
 
 export type MicrophonePermissionState =
   | PermissionState

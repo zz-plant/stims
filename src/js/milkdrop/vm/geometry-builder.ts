@@ -1,5 +1,5 @@
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
-import { isMobileDevice } from '../../utils/device-detect';
+import { isMobileDevice } from '../../utils/browser/device-detect';
 import type {
   MilkdropCompiledPreset,
   MilkdropGpuFieldSignalInputs,

@@ -7,7 +7,7 @@ import {
 import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
-} from '../utils/device-detect';
+} from '../utils/browser/device-detect';
 import { getAdaptiveMaxPixelRatio } from './device-profile.ts';
 import {
   FallbackEvent,

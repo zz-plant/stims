@@ -10,7 +10,7 @@ import {
   Vector2,
 } from 'three';
 import { SharedAudioGpuTextureManager } from '../core/audio-gpu-texture.ts';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import {
   type MilkdropBackendBehavior,
   WEBGL_MILKDROP_BACKEND_BEHAVIOR,

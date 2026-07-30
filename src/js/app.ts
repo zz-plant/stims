@@ -6,8 +6,8 @@ import { installRendererTelemetryPersistence } from './core/renderer-telemetry.t
 import { installCrashTelemetry } from './core/services/crash-telemetry.ts';
 import { reportLoadStatus } from './frontend/load-status.ts';
 import { StimsWorkspaceRouterProvider } from './frontend/workspace-router.tsx';
-import { isSmartTvDevice } from './utils/device-detect.ts';
-import { initGamepadNavigation } from './utils/gamepad-navigation.ts';
+import { isSmartTvDevice } from './utils/browser/device-detect.ts';
+import { initGamepadNavigation } from './utils/browser/gamepad-navigation.ts';
 
 type StimsAppGlobals = typeof globalThis & {
   __stimsAppDispose?: () => void;

@@ -1,4 +1,4 @@
-import { isInAppBrowser, isMobileDevice } from '../../utils/device-detect.ts';
+import { isInAppBrowser, isMobileDevice } from '../../utils/browser/device-detect.ts';
 import { getDisplayRefreshRate } from '../device-profile.ts';
 import type {
   RendererBackend,

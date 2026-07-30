@@ -10,7 +10,7 @@ import {
 } from 'three';
 // @ts-expect-error - 'three/webgpu' requires moduleResolution: "bundler" or "nodenext", but project uses "node".
 import { NodeMaterial, type RenderTarget, TSL } from 'three/webgpu';
-import { disposeMaterial } from '../utils/three-dispose';
+import { disposeMaterial } from '../utils/three/three-dispose';
 import {
   type CompositeUniformBag,
   createApplyFeedbackWarpNode,

@@ -5,8 +5,8 @@ import {
   type FourBandTransientMetrics,
   getFourBandTransientMetrics,
   getFrequencyBandLevels,
-} from '../utils/audio-reactivity.ts';
-import { isInAppBrowser } from '../utils/device-detect.ts';
+} from '../utils/audio/reactivity.ts';
+import { isInAppBrowser } from '../utils/browser/device-detect.ts';
 import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 import { getMockAudioParams } from './url-params.ts';
@@ -16,7 +16,7 @@ const logger = createLogger('AudioHandler');
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
 
 const FREQUENCY_ANALYSER_PROCESSOR = new URL(
-  '../utils/frequency-analyser-processor.ts',
+  '../utils/audio/frequency-analyser-processor.ts',
   import.meta.url,
 );
 const MEYDA_FEATURES = [

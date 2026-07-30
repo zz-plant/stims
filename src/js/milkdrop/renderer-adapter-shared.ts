@@ -25,7 +25,7 @@ import {
   Vector3,
   ZeroFactor,
 } from 'three';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import type { MilkdropBackendBehavior } from './backend-behavior';
 import type {
   MilkdropBorderVisual,

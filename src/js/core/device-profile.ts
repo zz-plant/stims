@@ -1,4 +1,4 @@
-import { getDeviceEnvironmentProfile } from '../utils/device-detect';
+import { getDeviceEnvironmentProfile } from '../utils/browser/device-detect';
 
 export type DevicePerformanceProfile = {
   lowPower: boolean;
