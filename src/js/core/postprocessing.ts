@@ -6,7 +6,7 @@ import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { isMobileDevice } from '../utils/device-detect.ts';
+import { isMobileDevice } from '../utils/browser/device-detect.ts';
 import type { RendererBackend } from './renderer-capabilities';
 
 export type MilkdropPostprocessingProfile = {

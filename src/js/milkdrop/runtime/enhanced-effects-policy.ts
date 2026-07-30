@@ -1,5 +1,5 @@
 import { getDevicePerformanceProfile } from '../../core/device-profile.ts';
-import { isMobileDevice } from '../../utils/device-detect.ts';
+import { isMobileDevice } from '../../utils/browser/device-detect.ts';
 import { shouldUseCertificationCorpus } from '../catalog-query-override.ts';
 import type { MilkdropFrameState } from '../types.ts';
 

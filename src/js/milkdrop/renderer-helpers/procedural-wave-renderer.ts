@@ -9,7 +9,7 @@ import {
   Sphere,
   Vector3,
 } from 'three';
-import { disposeGeometry, disposeMaterial } from '../../utils/three-dispose';
+import { disposeGeometry, disposeMaterial } from '../../utils/three/three-dispose';
 import {
   createProceduralCustomWaveMaterial,
   createProceduralWaveMaterial,

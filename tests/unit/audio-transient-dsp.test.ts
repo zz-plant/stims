@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { getFourBandTransientMetrics } from '../../src/js/utils/audio-reactivity.ts';
+import { getFourBandTransientMetrics } from '../../src/js/utils/audio/reactivity.ts';
 
 describe('FourBandTransientMetrics DSP', () => {
   it('returns zeros for empty frequency buffer', () => {

@@ -2,7 +2,7 @@ import type * as THREE from 'three';
 import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
-} from '../utils/device-detect';
+} from '../utils/browser/device-detect';
 import { getDevicePerformanceProfile } from './device-profile.ts';
 import { DEFAULT_WEBGPU_INIT_TIMEOUT_MS } from './renderer-init-timeout.ts';
 import type {

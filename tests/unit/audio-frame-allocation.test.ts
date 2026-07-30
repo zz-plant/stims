@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createMilkdropAudioSignalProcessor } from '../../src/js/milkdrop/audio-signal-processor.ts';
-import { createBeatTracker } from '../../src/js/utils/audio-beat.ts';
+import { createBeatTracker } from '../../src/js/utils/audio/beat.ts';
 
 describe('audio frame allocation reuse', () => {
   test('reuses beat update and smoothed-band snapshots', () => {

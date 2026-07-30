@@ -40,7 +40,7 @@ class MockAudioWorkletProcessor {
   registeredProcessors.set(name, processorCtor);
 };
 
-await import('../../src/js/utils/frequency-analyser-processor.ts');
+await import('../../src/js/utils/audio/frequency-analyser-processor.ts');
 
 describe('Off-main-thread AudioWorklet DSP processing', () => {
   beforeEach(() => {

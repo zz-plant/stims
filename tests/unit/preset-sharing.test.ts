@@ -7,7 +7,7 @@ import {
 import {
   buildPresetLink,
   formatPresetShareCopy,
-} from '../../src/js/utils/share-link.ts';
+} from '../../src/js/utils/media/share-link.ts';
 
 describe('preset social sharing', () => {
   describe('share link copy formatting', () => {

@@ -5,7 +5,7 @@ import {
   type CanvasVideoExporterSupport,
   EXPORT_PRESETS,
   type ExportPresetTarget,
-} from '../utils/canvas-video-exporter.ts';
+} from '../utils/media/canvas-video-exporter.ts';
 import { useWorkspace } from './workspace-context.tsx';
 
 const CAPTURE_FORMATS = [

@@ -1,4 +1,4 @@
-import { getDeviceEnvironmentProfile } from '../../utils/device-detect.ts';
+import { getDeviceEnvironmentProfile } from '../../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from '../device-profile.ts';
 import { createLogger } from '../logger.ts';
 

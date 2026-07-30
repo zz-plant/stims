@@ -14,7 +14,7 @@ import {
   getRequestedRenderer,
   getWebGpuFlagParams,
 } from '../core/url-params.ts';
-import { isMobileDevice } from '../utils/device-detect.ts';
+import { isMobileDevice } from '../utils/browser/device-detect.ts';
 
 const STORAGE_KEY = 'stims:experiments:milkdrop-webgpu-safe-path';
 const STORAGE_KEY_FORCE_MODE = 'stims:experiments:milkdrop-webgpu-force-mode';

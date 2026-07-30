@@ -225,7 +225,7 @@ describe('audio-handler utilities', () => {
       listenerInstance?.context?.audioWorklet?.addModule?.mock.calls[0]?.[0];
 
     expect(String(addModuleArg)).toContain(
-      '/src/js/utils/frequency-analyser-processor.ts',
+      '/src/js/utils/audio/frequency-analyser-processor.ts',
     );
   });
 

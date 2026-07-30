@@ -4,7 +4,7 @@ import {
   getBandLevels,
   getWeightedEnergy,
   updateEnergyPeak,
-} from '../utils/audio-reactivity';
+} from '../utils/audio/reactivity';
 
 type BandKey = 'bass' | 'mid' | 'treble';
 

@@ -1,5 +1,5 @@
 import type { FrequencyAnalyser } from '../core/audio-handler';
-import { createBeatTracker } from '../utils/audio-beat';
+import { createBeatTracker } from '../utils/audio/beat';
 import { createMilkdropAudioSignalProcessor } from './audio-signal-processor';
 import type { MilkdropRuntimeSignals } from './types';
 

@@ -9,7 +9,7 @@ import {
   Line as ThreeLine,
   Mesh as ThreeMesh,
 } from 'three';
-import { disposeGeometry } from '../../utils/three-dispose';
+import { disposeGeometry } from '../../utils/three/three-dispose';
 import type {
   MilkdropBackendBehavior,
   MilkdropRendererBatcher,

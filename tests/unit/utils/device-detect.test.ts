@@ -6,7 +6,7 @@ import {
   isMobileDevice,
   isSmartTvDevice,
   openExternalBrowserIntent,
-} from '../../src/js/utils/device-detect';
+} from '../../../src/js/utils/browser/device-detect';
 
 type NavigatorWithUserAgentData = Navigator & {
   userAgentData?: unknown;

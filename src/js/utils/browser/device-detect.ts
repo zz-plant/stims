@@ -1,5 +1,5 @@
-import { getBrowserStorage } from '../core/state/browser-storage.ts';
-import { getSmartTvOverride } from '../core/url-params.ts';
+import { getBrowserStorage } from '../../core/state/browser-storage.ts';
+import { getSmartTvOverride } from '../../core/url-params.ts';
 
 type NavigatorWithUserAgentData = {
   userAgentData?: {

@@ -18,7 +18,7 @@ import {
   ShaderMaterial,
   ZeroFactor,
 } from 'three';
-import { disposeGeometry, disposeMaterial } from '../utils/three-dispose';
+import { disposeGeometry, disposeMaterial } from '../utils/three/three-dispose';
 import type { MilkdropRendererBatcher } from './renderer-adapter.ts';
 import {
   getUnitPolygonVertices,

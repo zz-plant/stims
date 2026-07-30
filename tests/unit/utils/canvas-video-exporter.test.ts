@@ -5,7 +5,7 @@ import {
   CanvasVideoExporter,
   type CanvasVideoExporterEnvironment,
   EXPORT_PRESETS,
-} from '../../src/js/utils/canvas-video-exporter.ts';
+} from '../../../src/js/utils/media/canvas-video-exporter.ts';
 
 describe('Canvas Video Exporter Utility', () => {
   it('defines valid export presets with correct dimensions', () => {
@@ -144,6 +144,7 @@ describe('Canvas Video Exporter Utility', () => {
         import.meta.dir,
         '..',
         '..',
+        '..',
         'src',
         'js',
         'frontend',
@@ -154,6 +155,7 @@ describe('Canvas Video Exporter Utility', () => {
     const stageControlsSource = readFileSync(
       join(
         import.meta.dir,
+        '..',
         '..',
         '..',
         'src',

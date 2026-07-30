@@ -3,7 +3,7 @@
 import {
   getDeviceEnvironmentProfile,
   isMobileDevice,
-} from '../utils/device-detect.ts';
+} from '../utils/browser/device-detect.ts';
 import { getDevicePerformanceProfile } from './device-profile.ts';
 import { isCompatibilityModeEnabled } from './render-preferences.ts';
 import {

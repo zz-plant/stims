@@ -3,7 +3,7 @@ import {
   isInAppBrowser,
   isMobileDevice,
   openExternalBrowserIntent,
-} from '../utils/device-detect.ts';
+} from '../utils/browser/device-detect.ts';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 

@@ -20,7 +20,9 @@ yarn-error.log*
 # Build directories
 /dist/
 
-
+# Stale TypeScript compiled outputs
+/src/js/utils/**/*.js
+/tests/unit/**/*.js
 
 # Local Codex session state
 .codex/

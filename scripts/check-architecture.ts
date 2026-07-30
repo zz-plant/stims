@@ -5,8 +5,8 @@ const SOURCE_ROOT = path.resolve('src/js');
 const JS_SOURCE_PATTERN = /\.(?:ts|tsx|js)$/;
 const IGNORED_SEGMENTS = new Set(['lib']);
 const CORE_TO_UTILS_ALLOWLIST = new Set([
-  'src/js/utils/device-detect.ts',
-  'src/js/utils/device-detect.js',
+  'src/js/utils/browser/device-detect.ts',
+  'src/js/utils/browser/device-detect.js',
 ]);
 
 type ArchitectureLayer =

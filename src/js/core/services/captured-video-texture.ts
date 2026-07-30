@@ -6,7 +6,7 @@ import {
   SRGBColorSpace,
   Texture,
 } from 'three';
-import { isMobileDevice } from '../../utils/device-detect.ts';
+import { isMobileDevice } from '../../utils/browser/device-detect.ts';
 
 type CaptureDrawSurface = {
   canvas: HTMLCanvasElement;
