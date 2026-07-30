@@ -3931,10 +3931,12 @@ body[data-page="workspace"][data-live="true"] {
 }
 
 .renderer-fallback-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: var(--z-dropdown);
+  /* Lives inside the flex row `.stims-hud-bar__actions`. Absolute positioning
+     pinned it to the HUD pill's top-right corner instead, which on narrow
+     viewports sits directly on top of the STIMS wordmark — the pill shrinks to
+     its content once the preset info and spectrum are hidden under 640px. */
+  position: relative;
+  flex: none;
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;

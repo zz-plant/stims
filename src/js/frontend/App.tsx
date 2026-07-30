@@ -29,6 +29,7 @@ import {
   getAudioEnergy,
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
+import { useAgentFrameRate } from './hooks/useAgentFrameRate';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useFullscreen } from './hooks/useFullscreen';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -139,6 +140,8 @@ function StimsWorkspaceAppShell() {
 
   const { visibleHint, showHint, dismissHint } = useHelpHints();
 
+  useAgentFrameRate(ui.routeState.agentMode);
+
   useDocumentTitle({
     loadingPreset: engine.loadingRequestedPreset,
     selectedPresetTitle: engine.selectedPreset?.title ?? null,
@@ -187,6 +190,7 @@ function StimsWorkspaceAppShell() {
           : 'Saved preset.',
       );
     },
+    handleToggleFullscreen,
     setStatusMessage: ui.setStatusMessage,
     hapticsEnabled,
   });
@@ -207,20 +211,10 @@ function StimsWorkspaceAppShell() {
   }, [engine, engineSnapshot?.activePresetId]);
 
   useEffect(() => {
-    // Report measured frame pacing rather than a nominal value: the adaptive
-    // quality controller already tracks real frame times, and agent/QA harnesses
-    // read this field to judge performance. A hardcoded 60 made every mobile
-    // regression invisible.
-    const frameMs =
-      engineSnapshot?.adaptiveQuality?.rollingAverageFrameMs ??
-      engineSnapshot?.adaptiveQuality?.averageFrameMs ??
-      null;
-
+    // `fps` is deliberately omitted: useAgentFrameRate owns that field and
+    // publishes a measured value. updateAgentTelemetry merges patches, so
+    // leaving it out preserves the sampled reading instead of overwriting it.
     updateAgentTelemetry({
-      fps:
-        frameMs !== null && frameMs > 0
-          ? Math.round((1000 / frameMs) * 10) / 10
-          : 0,
       backend: engineSnapshot?.backend ?? 'webgl',
       audioEnergy: engineSnapshot?.audioEnergy ?? getAudioEnergy(),
       currentPresetId:
