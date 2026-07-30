@@ -214,8 +214,22 @@ function StimsWorkspaceAppShell() {
     // `fps` is deliberately omitted: useAgentFrameRate owns that field and
     // publishes a measured value. updateAgentTelemetry merges patches, so
     // leaving it out preserves the sampled reading instead of overwriting it.
+    const aq = engineSnapshot?.adaptiveQuality ?? null;
+
     updateAgentTelemetry({
       backend: engineSnapshot?.backend ?? 'webgl',
+      quality: aq
+        ? {
+            step: aq.qualityStep,
+            stepCount: aq.qualityStepCount,
+            adaptation: aq.adaptation,
+            averageFrameMs: aq.averageFrameMs,
+            averageCadenceMs: aq.averageCadenceMs,
+            frameBudgetMs: aq.frameBudgetMs,
+            renderScaleMultiplier: aq.renderScaleMultiplier,
+            maxPixelRatioMultiplier: aq.maxPixelRatioMultiplier,
+          }
+        : null,
       audioEnergy: engineSnapshot?.audioEnergy ?? getAudioEnergy(),
       currentPresetId:
         engineSnapshot?.activePresetId ?? ui.routeState.presetId ?? null,

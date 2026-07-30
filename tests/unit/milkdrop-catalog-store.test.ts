@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createMilkdropCatalogStore } from '../../src/js/milkdrop/catalog-store.ts';
+import { resetSharedBundledCatalogCache } from '../../src/js/milkdrop/catalog-store-bundled-loader.ts';
 
 describe('milkdrop catalog store', () => {
   const originalFetch = globalThis.fetch;
@@ -7,11 +8,15 @@ describe('milkdrop catalog store', () => {
 
   beforeEach(() => {
     (globalThis as { indexedDB?: IDBFactory }).indexedDB = undefined;
+    // Each case installs its own fetch mock; the cross-instance bundled
+    // catalog cache would otherwise serve a previous case's result.
+    resetSharedBundledCatalogCache();
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
     (globalThis as { indexedDB?: IDBFactory }).indexedDB = originalIndexedDb;
+    resetSharedBundledCatalogCache();
     mock.restore();
   });
 

@@ -181,10 +181,77 @@ export function getDisplayRefreshRate(): number {
 
   if (!window.matchMedia('(update: fast)').matches) return 60;
 
-  try {
-    const concurrency = navigator.hardwareConcurrency ?? 4;
-    if (concurrency <= 3) return 60;
-  } catch {}
+  // Prefer an observed cadence. Inferring 120Hz from core count was actively
+  // harmful: a Galaxy S22 reports 8 cores and `(update: fast)`, so it was
+  // budgeted at 8.33ms while Chrome presented it at 16.7ms. Every frame then
+  // read as 2x over budget, which pins the adaptive quality controller under
+  // permanent degradation pressure and makes its headroom test — and so any
+  // recovery to a sharper render scale — unreachable.
+  const observed = getObservedRefreshRate();
+  if (observed !== null) {
+    return observed;
+  }
 
-  return 120;
+  // Unmeasured: assume 60. Guessing high is the dangerous direction, since it
+  // manufactures frame pressure that never clears.
+  return 60;
+}
+
+let observedRefreshRate: number | null = null;
+let refreshRateSamplingStarted = false;
+
+/** Rounded to the nearest common panel rate so jitter cannot land on 73Hz. */
+function quantizeRefreshRate(hz: number): number {
+  const candidates = [60, 90, 120, 144, 165, 240];
+  return candidates.reduce((best, candidate) =>
+    Math.abs(candidate - hz) < Math.abs(best - hz) ? candidate : best,
+  );
+}
+
+export function getObservedRefreshRate(): number | null {
+  return observedRefreshRate;
+}
+
+/**
+ * Samples presentation cadence once, early, so `getDisplayRefreshRate` has a
+ * real number before the adaptive quality controller is constructed. Safe to
+ * call repeatedly; only the first call samples.
+ */
+export function startRefreshRateSampling() {
+  if (
+    refreshRateSamplingStarted ||
+    typeof window === 'undefined' ||
+    typeof window.requestAnimationFrame !== 'function'
+  ) {
+    return;
+  }
+  refreshRateSamplingStarted = true;
+
+  const deltas: number[] = [];
+  let last = 0;
+
+  const sample = (now: number) => {
+    if (last !== 0) {
+      const delta = now - last;
+      // Drop compositor hiccups; they would drag the estimate down.
+      if (delta > 1 && delta < 100) {
+        deltas.push(delta);
+      }
+    }
+    last = now;
+
+    if (deltas.length < 20) {
+      window.requestAnimationFrame(sample);
+      return;
+    }
+
+    // Median is robust to the startup jank that surrounds first paint.
+    const sorted = [...deltas].sort((a, b) => a - b);
+    const medianDelta = sorted[Math.floor(sorted.length / 2)] as number;
+    if (medianDelta > 0) {
+      observedRefreshRate = quantizeRefreshRate(1000 / medianDelta);
+    }
+  };
+
+  window.requestAnimationFrame(sample);
 }

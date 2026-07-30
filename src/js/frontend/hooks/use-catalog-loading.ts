@@ -43,18 +43,39 @@ export function useCatalogLoading() {
     [],
   );
   const catalogStoreRef = useRef<MilkdropCatalogStore | null>(null);
+  const catalogStorePromiseRef = useRef<Promise<MilkdropCatalogStore> | null>(
+    null,
+  );
 
+  // Cache the in-flight promise, not just the resolved store. Three callers
+  // race here (the background load, hydrateFullCatalogNow and
+  // refreshCatalogActivity); checking only `catalogStoreRef.current` let all
+  // of them pass the guard during the `await import(...)` and build a store
+  // each. Every store carries its own bundled-catalog cache, so that meant
+  // three full fetch+parse passes over the 1.5MB catalog.json — measured at
+  // ~4.7MB decoded on a cold mobile load.
   const ensureCatalogStore = useEffectEvent(async () => {
-    if (catalogStoreRef.current) {
-      return catalogStoreRef.current;
+    if (catalogStorePromiseRef.current) {
+      return catalogStorePromiseRef.current;
     }
 
-    const { createMilkdropCatalogStore } = await import(
-      '../../milkdrop/catalog-store.ts'
+    const promise = import('../../milkdrop/catalog-store.ts').then(
+      ({ createMilkdropCatalogStore }) => {
+        const store = createMilkdropCatalogStore();
+        catalogStoreRef.current = store;
+        return store;
+      },
     );
-    const store = createMilkdropCatalogStore();
-    catalogStoreRef.current = store;
-    return store;
+
+    // Do not strand every future caller on a transient import failure.
+    catalogStorePromiseRef.current = promise;
+    promise.catch(() => {
+      if (catalogStorePromiseRef.current === promise) {
+        catalogStorePromiseRef.current = null;
+      }
+    });
+
+    return promise;
   });
 
   const refreshCatalogActivity = useEffectEvent(async () => {
