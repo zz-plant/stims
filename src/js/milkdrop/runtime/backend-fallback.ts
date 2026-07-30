@@ -1,7 +1,5 @@
-import {
-  isCompatibilityModeEnabled,
-  setCompatibilityMode,
-} from '../../core/render-preferences.ts';
+import { isCompatibilityModeEnabled } from '../../core/render-preferences.ts';
+import { markPresetNeedsWebgl } from '../../core/state/preset-webgl-fallback.ts';
 import { shouldFallbackMilkdropPresetToWebgl } from '../renderer-execution-plan.ts';
 import type { MilkdropCompiledPreset } from '../types.ts';
 
@@ -51,7 +49,10 @@ export function createMilkdropBackendFailover({
       }
       fallbackTriggered = true;
       preferences.recordFallback({ presetId, reason });
-      setCompatibilityMode(true);
+      // Scope the fallback to this preset for this session. Flipping the global
+      // compatibility-mode preference here would persist a device-wide WebGL
+      // downgrade for every future preset and session.
+      markPresetNeedsWebgl(presetId);
       reload();
       return true;
     },

@@ -1,4 +1,5 @@
-import { getRequestedRenderer } from './url-params.ts';
+import { presetNeedsWebgl } from './state/preset-webgl-fallback.ts';
+import { getRequestedRenderer, parseURLParams } from './url-params.ts';
 
 const WEBGPU_COMPATIBILITY_OVERRIDE_KEY = 'stims:webgpu-compat-override';
 
@@ -114,8 +115,9 @@ export function hasWebGPUCompatibilityGapOverride() {
  * Priority order:
  * 1. Explicit URL param `?renderer=webgl` or `?renderer=webgpu`
  * 2. Session-level WebGPU override (via `setWebGPUCompatibilityGapOverride`)
- * 3. Default: prefer WebGL only when this browser is not in the stable
- *    desktop Chromium WebGPU set
+ * 3. The active preset previously failed WebGPU descriptor routing this session
+ * 4. Default: prefer WebGL only when this browser is not in the stable
+ *    Chromium WebGPU set
  */
 export function shouldPreferWebGLForKnownCompatibilityGaps() {
   const requestedRenderer = getRequestedRenderer();
@@ -131,6 +133,12 @@ export function shouldPreferWebGLForKnownCompatibilityGaps() {
   // Session-level gap override forces WebGPU
   if (hasWebGPUCompatibilityGapOverride()) {
     return false;
+  }
+
+  // This specific preset already fell back once this session; honour that
+  // without downgrading the renderer for any other preset.
+  if (presetNeedsWebgl(parseURLParams().routing.presetId)) {
+    return true;
   }
 
   // Default: only prefer WebGL in browsers where WebGPU isn't stable
