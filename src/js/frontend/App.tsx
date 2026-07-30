@@ -207,8 +207,20 @@ function StimsWorkspaceAppShell() {
   }, [engine, engineSnapshot?.activePresetId]);
 
   useEffect(() => {
+    // Report measured frame pacing rather than a nominal value: the adaptive
+    // quality controller already tracks real frame times, and agent/QA harnesses
+    // read this field to judge performance. A hardcoded 60 made every mobile
+    // regression invisible.
+    const frameMs =
+      engineSnapshot?.adaptiveQuality?.rollingAverageFrameMs ??
+      engineSnapshot?.adaptiveQuality?.averageFrameMs ??
+      null;
+
     updateAgentTelemetry({
-      fps: 60,
+      fps:
+        frameMs !== null && frameMs > 0
+          ? Math.round((1000 / frameMs) * 10) / 10
+          : 0,
       backend: engineSnapshot?.backend ?? 'webgl',
       audioEnergy: engineSnapshot?.audioEnergy ?? getAudioEnergy(),
       currentPresetId:
