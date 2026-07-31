@@ -278,6 +278,12 @@
   border-color: rgba(255, 255, 255, 0.22);
 }
 
+@media (min-width: 641px) {
+  .nowPlaying {
+    display: none;
+  }
+}
+
 @media (min-width: 768px) and (min-height: 500px) {
   .wrap {
     bottom: auto;
@@ -293,11 +299,6 @@
 
   .wrap[data-visible="true"] {
     transform: translateY(0);
-  }
-
-  .nowPlaying {
-    margin-bottom: 0;
-    margin-bottom: 6px;
   }
 
   .handle {

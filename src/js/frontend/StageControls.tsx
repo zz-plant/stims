@@ -430,7 +430,7 @@ export function StageControls({
               onClick={handleSynthesize}
             >
               <UiIcon
-                name="wand"
+                name="sparkles"
                 className="stims-icon-slot stims-icon-slot--sm"
               />
               <span className={styles.btnLabel}>Generate</span>

@@ -4,7 +4,6 @@ import {
   subscribeAudioEnergy,
 } from './engine-audio-energy-store.ts';
 import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
-import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
 const BARS_CONFIG = [
@@ -54,7 +53,7 @@ function AudioSpectrumBars() {
 }
 
 export function AudioSpectrumHud() {
-  const { ui, engine } = useWorkspace();
+  const { engine } = useWorkspace();
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -76,8 +75,6 @@ export function AudioSpectrumHud() {
   const activeAuthor = selectedPreset?.author
     ? `by ${selectedPreset.author}`
     : '';
-
-  const activePanel = ui.routeState.panel;
 
   return (
     <header ref={headerRef} className="stims-hud-bar">
@@ -101,20 +98,6 @@ export function AudioSpectrumHud() {
 
       <div className="stims-hud-bar__actions">
         <RendererFallbackBadge />
-        <button
-          type="button"
-          className={`stims-hud-bar__quick-btn ${activePanel === 'settings' ? 'is-active' : ''}`}
-          onClick={() =>
-            ui.updatePanel(activePanel === 'settings' ? null : 'settings')
-          }
-          aria-label="Open Settings Panel"
-          title="Settings & Graphics Options"
-        >
-          <UiIcon
-            name="sliders"
-            className="stims-icon-slot stims-icon-slot--sm"
-          />
-        </button>
       </div>
     </header>
   );
