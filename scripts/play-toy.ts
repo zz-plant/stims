@@ -9,6 +9,7 @@ import {
 } from 'playwright';
 import sharp from 'sharp';
 import { appendParityArtifactEntry } from './parity-artifacts.ts';
+import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 
 export type PlayToyResult = {
   slug: string;
@@ -93,8 +94,7 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
 const DEFAULT_OPTIONS = {
   port: 5173,
   duration: 5000,
-  viewportWidth: 1280,
-  viewportHeight: 720,
+  ...DEFAULT_VIEWPORT,
   outputDir: './screenshots',
 };
 const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';

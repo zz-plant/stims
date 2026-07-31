@@ -15,6 +15,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
+import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import sharp from 'sharp';
 
 const DEV_SERVER = 'http://localhost:5173';
@@ -112,7 +113,7 @@ async function main() {
     const preset = presets[i];
     const t0 = Date.now();
     const ctx = await browser.newContext({
-      viewport: { width: 1280, height: 720 },
+      viewport: { ...DEFAULT_VIEWPORT },
       deviceScaleFactor: 2,
     });
     await ctx.addInitScript(() => {
