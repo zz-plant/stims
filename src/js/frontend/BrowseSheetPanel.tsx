@@ -9,6 +9,7 @@ import {
   describePresetMood,
   getFeaturedCollectionTags,
   prettifyCollectionTag,
+  resolveAuthorUrl,
 } from './workspace-helpers.ts';
 
 const BATCH_SIZE = 30;
@@ -375,9 +376,29 @@ export function BrowseSheetPanel({
                   <span className="ctl-preset__copy">
                     <span className="ctl-preset__title">{entry.title}</span>
                     <span className="ctl-preset__meta">
-                      {entry.author
-                        ? `${describePresetMood(entry)} · ${entry.author}`
-                        : describePresetMood(entry)}
+                      {describePresetMood(entry)}
+                      {entry.author ? (
+                        <>
+                          {' · '}
+                          {resolveAuthorUrl(entry.author, entry.authorUrl) ? (
+                            <a
+                              href={resolveAuthorUrl(
+                                entry.author,
+                                entry.authorUrl,
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ctl-preset__author-link"
+                              title={`View ${entry.author}'s profile or resource`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {entry.author}
+                            </a>
+                          ) : (
+                            entry.author
+                          )}
+                        </>
+                      ) : null}
                     </span>
                   </span>
                 </button>

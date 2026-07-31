@@ -1,22 +1,25 @@
 // Cloudflare Pages Function: Dynamic 1200x630 Social Card Generator for Presets
 // Serves GET /api/og-preset?id=<preset-id> or GET /og/preset.svg?id=<preset-id>
-const escapeXml = (value) => value
+const escapeXml = (value) =>
+  value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-export function buildPresetOgSvg({ title, author, tags = [], }) {
-    const safeTitle = escapeXml(title.length > 55 ? `${title.slice(0, 52)}...` : title);
-    const safeAuthor = author ? escapeXml(author.trim()) : null;
-    const collectionTag = tags
-        .find((t) => t.startsWith('collection:'))
-        ?.replace('collection:', '')
-        .replace(/-/g, ' ');
-    const badgeLabel = collectionTag
-        ? collectionTag.toUpperCase()
-        : 'BEAT REACTIVE';
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${safeTitle}">
+export function buildPresetOgSvg({ title, author, tags = [] }) {
+  const safeTitle = escapeXml(
+    title.length > 55 ? `${title.slice(0, 52)}...` : title,
+  );
+  const safeAuthor = author ? escapeXml(author.trim()) : null;
+  const collectionTag = tags
+    .find((t) => t.startsWith('collection:'))
+    ?.replace('collection:', '')
+    .replace(/-/g, ' ');
+  const badgeLabel = collectionTag
+    ? collectionTag.toUpperCase()
+    : 'BEAT REACTIVE';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${safeTitle}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#050b14"/>
@@ -79,31 +82,32 @@ export function buildPresetOgSvg({ title, author, tags = [], }) {
 </svg>`;
 }
 export async function onRequest(context) {
-    const url = new URL(context.request.url);
-    const presetId = url.searchParams.get('id') ||
-        url.searchParams.get('preset') ||
-        'rovastar-parallel-universe';
-    const title = presetId
-        .split('-')
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-    let author;
-    // Split author if title has format Author - Title
-    if (title.includes(' ')) {
-        const parts = title.split(' ');
-        if (parts.length > 2) {
-            author = parts[0];
-        }
+  const url = new URL(context.request.url);
+  const presetId =
+    url.searchParams.get('id') ||
+    url.searchParams.get('preset') ||
+    'rovastar-parallel-universe';
+  const title = presetId
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+  let author;
+  // Split author if title has format Author - Title
+  if (title.includes(' ')) {
+    const parts = title.split(' ');
+    if (parts.length > 2) {
+      author = parts[0];
     }
-    const svg = buildPresetOgSvg({
-        id: presetId,
-        title,
-        author,
-    });
-    return new Response(svg, {
-        headers: {
-            'Content-Type': 'image/svg+xml',
-            'Cache-Control': 'public, max-age=86400, s-maxage=604800',
-        },
-    });
+  }
+  const svg = buildPresetOgSvg({
+    id: presetId,
+    title,
+    author,
+  });
+  return new Response(svg, {
+    headers: {
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=86400, s-maxage=604800',
+    },
+  });
 }

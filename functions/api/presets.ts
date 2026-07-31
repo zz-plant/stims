@@ -109,16 +109,21 @@ export async function onRequest(context: {
           .all<{ count: number }>(),
       ]);
 
-      return json({
-        presets: results.map((r) => ({
-          ...r,
-          tags: r.tags ? r.tags.split(',') : [],
-          id: `community:${r.id}`,
-        })),
-        total: countResult[0]?.count || 0,
-        page,
-        limit,
-      });
+      return json(
+        {
+          presets: results.map((r) => ({
+            ...r,
+            tags: r.tags ? r.tags.split(',') : [],
+            id: `community:${r.id}`,
+          })),
+          total: countResult[0]?.count || 0,
+          page,
+          limit,
+        },
+        200,
+        60,
+      );
+
     }
 
     // POST /api/presets — upload
@@ -230,12 +235,17 @@ export async function onRequest(context: {
       const obj = await env.GALLERY_R2.get(`presets/${id}.milk`);
       const milkSource = obj ? await obj.text() : '';
 
-      return json({
-        ...preset,
-        tags: preset.tags ? preset.tags.split(',') : [],
-        milkSource,
-        id: `community:${id}`,
-      });
+      return json(
+        {
+          ...preset,
+          tags: preset.tags ? preset.tags.split(',') : [],
+          milkSource,
+          id: `community:${id}`,
+        },
+        200,
+        300,
+      );
+
     }
 
     return json({ error: 'Not found' }, 404);
@@ -274,12 +284,21 @@ function cors() {
   });
 }
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, cacheSeconds = 0): Response {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  };
+
+  if (cacheSeconds > 0) {
+    headers['Cache-Control'] = `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds * 5}, stale-while-revalidate=86400`;
+  } else {
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+  }
+
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
+    headers,
   });
 }
+

@@ -125,6 +125,10 @@ export function createMilkdropPresetNavigationController({
         return;
       }
 
+      if (nextState.diagnostics) {
+        trace.recordDiagnostics(nextState.diagnostics);
+      }
+
       const hasErrors =
         nextState.diagnostics?.some?.((d) => d.severity === 'error') ?? false;
       if (hasErrors) {
@@ -137,13 +141,21 @@ export function createMilkdropPresetNavigationController({
       }
 
       if (shouldFallbackToWebgl(nextCompiled)) {
+        const unsupportedItems =
+          nextCompiled.ir?.compatibility?.gpuDescriptorPlans?.webgpu
+            ?.unsupported ?? [];
+        const unsupportedDetail =
+          unsupportedItems.length > 0
+            ? `: ${unsupportedItems.map((u) => u.reason).join('; ')}`
+            : '';
+
         trace.adapter(
           'WebGL fallback',
-          `${nextCompiled.title} uses features unsupported on WebGPU`,
+          `${nextCompiled.title} uses features unsupported on WebGPU${unsupportedDetail}`,
         );
         triggerWebglFallback({
           presetId: id,
-          reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet, so Stims switched to WebGL compatibility mode.`,
+          reason: `${nextCompiled.title} uses preset features the WebGPU runtime does not support yet${unsupportedDetail}, so Stims switched to WebGL compatibility mode.`,
         });
         trace.done('fallback to WebGL');
         return;

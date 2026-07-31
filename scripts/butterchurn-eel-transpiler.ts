@@ -37,7 +37,10 @@ type Node =
   | { type: 'binary'; operator: string; left: Node; right: Node }
   | { type: 'conditional'; test: Node; consequent: Node; alternate: Node }
   | { type: 'call'; name: string; args: Node[] }
-  | { type: 'assign'; operator: string; target: Node; value: Node };
+  | { type: 'assign'; operator: string; target: Node; value: Node }
+  | { type: 'loop'; init?: Node; cond?: Node; step?: Node; body: Node[] }
+  | { type: 'while'; cond: Node; body: Node[] }
+  | { type: 'block'; statements: Node[] };
 
 class TranspileError extends Error {}
 
@@ -188,17 +191,7 @@ const EEL_OPERATORS: Record<string, string> = {
 
 const ASSIGN_OPERATORS = new Set(['=', '+=', '-=', '*=', '/=', '%=']);
 
-const UNSUPPORTED_KEYWORDS = [
-  'var',
-  'let',
-  'const',
-  'for',
-  'while',
-  'do',
-  'if',
-  'function',
-  'return',
-];
+const UNSUPPORTED_KEYWORDS = ['function', 'return'];
 
 const NUMBER_PATTERN =
   /^(?:0[xX][0-9a-fA-F]+|(?:[0-9]*\.)?[0-9]+(?:[eE][+-]?[0-9]+)?)/u;
@@ -300,7 +293,7 @@ class Parser {
     this.position += 1;
   }
 
-  /** Parses the top level as a flat list of statements. */
+  /** Parses the top level as a list of statements. */
   parseProgram(): Node[] {
     const statements: Node[] = [];
     while (this.peek().type !== 'eof') {
@@ -308,24 +301,100 @@ class Parser {
         this.position += 1;
         continue;
       }
-      const token = this.peek();
-      if (
-        token.type === 'identifier' &&
-        UNSUPPORTED_KEYWORDS.includes(token.value)
-      ) {
-        throw new TranspileError(
-          `Unsupported statement keyword "${token.value}"`,
-        );
-      }
-      if (this.isPunct('{')) {
-        throw new TranspileError('Unsupported block statement');
-      }
-      statements.push(this.parseExpression());
+      statements.push(this.parseStatement());
       if (this.isPunct(';')) {
         this.position += 1;
       }
     }
     return statements;
+  }
+
+  private parseStatement(): Node {
+    const token = this.peek();
+    if (token.type === 'identifier') {
+      if (UNSUPPORTED_KEYWORDS.includes(token.value)) {
+        throw new TranspileError(
+          `Unsupported statement keyword "${token.value}"`,
+        );
+      }
+      if (
+        token.value === 'var' ||
+        token.value === 'let' ||
+        token.value === 'const'
+      ) {
+        this.next();
+        return this.parseExpression();
+      }
+      if (token.value === 'for') {
+        return this.parseForLoop();
+      }
+      if (token.value === 'while') {
+        return this.parseWhileLoop();
+      }
+    }
+    if (this.isPunct('{')) {
+      return this.parseBlock();
+    }
+    return this.parseExpression();
+  }
+
+  private parseBlock(): Node {
+    this.expectPunct('{');
+    const statements: Node[] = [];
+    while (!this.isPunct('}') && this.peek().type !== 'eof') {
+      if (this.isPunct(';')) {
+        this.position += 1;
+        continue;
+      }
+      statements.push(this.parseStatement());
+      if (this.isPunct(';')) {
+        this.position += 1;
+      }
+    }
+    this.expectPunct('}');
+    return { type: 'block', statements };
+  }
+
+  private parseForLoop(): Node {
+    this.next(); // consume 'for'
+    this.expectPunct('(');
+    let init: Node | undefined;
+    if (!this.isPunct(';')) {
+      const token = this.peek();
+      if (
+        token.type === 'identifier' &&
+        (token.value === 'var' ||
+          token.value === 'let' ||
+          token.value === 'const')
+      ) {
+        this.next();
+      }
+      init = this.parseExpression();
+    }
+    this.expectPunct(';');
+    let cond: Node | undefined;
+    if (!this.isPunct(';')) {
+      cond = this.parseExpression();
+    }
+    this.expectPunct(';');
+    let step: Node | undefined;
+    if (!this.isPunct(')')) {
+      step = this.parseExpression();
+    }
+    this.expectPunct(')');
+    const bodyNode = this.parseStatement();
+    const body = bodyNode.type === 'block' ? bodyNode.statements : [bodyNode];
+    return { type: 'loop', init, cond, step, body };
+  }
+
+  private parseWhileLoop(): Node {
+    this.next(); // consume 'while'
+    this.expectPunct('(');
+    const cond = this.parseExpression();
+    this.expectPunct(')');
+    const bodyNode = this.parseStatement();
+    const body = bodyNode.type === 'block' ? bodyNode.statements : [bodyNode];
+    return { type: 'while', cond, body };
   }
 
   private parseExpression(): Node {
@@ -399,9 +468,38 @@ class Parser {
       token.type === 'punct' &&
       (token.value === '++' || token.value === '--')
     ) {
-      throw new TranspileError('Unsupported increment operator');
+      this.position += 1;
+      const target = this.parseUnary();
+      const op = token.value === '++' ? '+' : '-';
+      return {
+        type: 'assign',
+        operator: '=',
+        target,
+        value: {
+          type: 'binary',
+          operator: op,
+          left: target,
+          right: { type: 'number', value: 1 },
+        },
+      };
     }
-    return this.parseCallOrMember();
+    let node = this.parseCallOrMember();
+    if (this.isPunct('++') || this.isPunct('--')) {
+      const opToken = this.next();
+      const op = opToken.value === '++' ? '+' : '-';
+      node = {
+        type: 'assign',
+        operator: '=',
+        target: node,
+        value: {
+          type: 'binary',
+          operator: op,
+          left: node,
+          right: { type: 'number', value: 1 },
+        },
+      };
+    }
+    return node;
   }
 
   private parseCallOrMember(): Node {
@@ -548,12 +646,13 @@ function emitExpression(node: Node, minPrecedence = 0): string {
     case 'number':
       return formatNumber(node.value);
     case 'variable': {
-      if (!IDENTIFIER_PATTERN.test(node.name)) {
-        throw new TranspileError(
-          `Unsupported identifier "${node.name.trim()}"`,
-        );
+      const name = node.name.startsWith(CALL_PREFIX)
+        ? node.name.slice(CALL_PREFIX.length)
+        : node.name;
+      if (!IDENTIFIER_PATTERN.test(name)) {
+        throw new TranspileError(`Unsupported identifier "${name.trim()}"`);
       }
-      return node.name;
+      return name;
     }
     case 'megabuf':
       return `${node.buffer}(${emitExpression(node.index)})`;
@@ -572,9 +671,18 @@ function emitExpression(node: Node, minPrecedence = 0): string {
       return `if(${emitExpression(node.test)}, ${emitExpression(node.consequent)}, ${emitExpression(node.alternate)})`;
     case 'call': {
       if (node.name === SEQUENCE_CALL) {
-        throw new TranspileError(
-          'Unsupported comma expression in value position',
-        );
+        if (node.args.length === 0) return '0';
+        const first = node.args[0];
+        if (node.args.length === 1 && first) return emitExpression(first);
+        const last = node.args[node.args.length - 1];
+        let expr = last ? emitExpression(last) : '0';
+        for (let i = node.args.length - 2; i >= 0; i--) {
+          const arg = node.args[i];
+          if (arg) {
+            expr = `exec2(${emitExpression(arg)}, ${expr})`;
+          }
+        }
+        return expr;
       }
       // butterchurn's guarded division helper; EEL division already yields 0
       // for a zero divisor in this runtime.
@@ -589,18 +697,26 @@ function emitExpression(node: Node, minPrecedence = 0): string {
           ? `(${left} / ${right})`
           : `${left} / ${right}`;
       }
-      const mapped = CALL_MAP[node.name];
-      if (!mapped) {
-        throw new TranspileError(`Unsupported function "${node.name}"`);
-      }
+      const mapped = CALL_MAP[node.name] ?? node.name;
       return `${mapped}(${node.args.map((arg) => emitExpression(arg)).join(', ')})`;
     }
-    case 'assign':
-      throw new TranspileError('Unsupported assignment in value position');
+    case 'assign': {
+      const targetText = emitExpression(node.target);
+      const valText = emitExpression(node.value);
+      return `exec2(${targetText} ${node.operator} ${valText}, ${targetText})`;
+    }
   }
+  throw new TranspileError('Unsupported expression node');
 }
 
 function emitStatement(node: Node, out: string[]) {
+  if (node.type === 'block') {
+    for (const stmt of node.statements) {
+      emitStatement(stmt, out);
+    }
+    return;
+  }
+
   if (node.type === 'call' && node.name === SEQUENCE_CALL) {
     for (const entry of node.args) {
       emitStatement(entry, out);
@@ -608,42 +724,82 @@ function emitStatement(node: Node, out: string[]) {
     return;
   }
 
-  if (node.type !== 'assign') {
-    throw new TranspileError('Unsupported expression statement');
+  if (node.type === 'loop') {
+    if (node.init) {
+      emitStatement(node.init, out);
+    }
+    const bodyStatements: string[] = [];
+    for (const stmt of node.body) {
+      emitStatement(stmt, bodyStatements);
+    }
+    if (node.step) {
+      emitStatement(node.step, bodyStatements);
+    }
+    const bodyText = bodyStatements.join(' ');
+    if (
+      node.cond &&
+      node.cond.type === 'binary' &&
+      node.cond.operator === '<' &&
+      node.cond.left.type === 'variable' &&
+      node.cond.right.type === 'number'
+    ) {
+      out.push(`loop(${node.cond.right.value}, ${bodyText});`);
+    } else if (node.cond) {
+      out.push(`while(${emitExpression(node.cond)}, ${bodyText});`);
+    } else {
+      out.push(`loop(10000, ${bodyText});`);
+    }
+    return;
   }
 
-  // Chained assignment (`a.x = a.y = expr`) becomes two statements.
-  if (node.value.type === 'assign') {
-    emitStatement(node.value, out);
-    emitStatement(
-      {
-        type: 'assign',
-        operator: node.operator,
-        target: node.target,
-        value: node.value.target,
-      },
-      out,
+  if (node.type === 'while') {
+    const bodyStatements: string[] = [];
+    for (const stmt of node.body) {
+      emitStatement(stmt, bodyStatements);
+    }
+    out.push(
+      `while(${emitExpression(node.cond)}, ${bodyStatements.join(' ')});`,
     );
     return;
   }
 
-  const target = node.target;
-  if (target.type !== 'variable' && target.type !== 'megabuf') {
-    throw new TranspileError('Unsupported assignment target');
-  }
-  const targetText = emitExpression(target);
-  if (node.operator === '=') {
-    out.push(`${targetText} = ${emitExpression(node.value)};`);
+  if (node.type === 'assign') {
+    // Chained assignment (`a.x = a.y = expr`) becomes two statements.
+    if (node.value.type === 'assign') {
+      emitStatement(node.value, out);
+      emitStatement(
+        {
+          type: 'assign',
+          operator: node.operator,
+          target: node.target,
+          value: node.value.target,
+        },
+        out,
+      );
+      return;
+    }
+
+    const target = node.target;
+    if (target.type !== 'variable' && target.type !== 'megabuf') {
+      throw new TranspileError('Unsupported assignment target');
+    }
+    const targetText = emitExpression(target);
+    if (node.operator === '=') {
+      out.push(`${targetText} = ${emitExpression(node.value)};`);
+      return;
+    }
+
+    // `x += expr` becomes `x = x + expr`, so the right-hand side needs the
+    // precedence of the expanded operator's right operand.
+    const operator = node.operator[0] as string;
+    const precedence = (BINARY_PRECEDENCE[operator] as number) + 1;
+    out.push(
+      `${targetText} = ${targetText} ${operator} ${emitExpression(node.value, precedence)};`,
+    );
     return;
   }
 
-  // `x += expr` becomes `x = x + expr`, so the right-hand side needs the
-  // precedence of the expanded operator's right operand.
-  const operator = node.operator[0] as string;
-  const precedence = (BINARY_PRECEDENCE[operator] as number) + 1;
-  out.push(
-    `${targetText} = ${targetText} ${operator} ${emitExpression(node.value, precedence)};`,
-  );
+  out.push(`${emitExpression(node)};`);
 }
 
 /** Converts one butterchurn equation string into EEL statements. */

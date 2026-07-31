@@ -266,4 +266,86 @@ describe('milkdrop preset navigation controller', () => {
     expect(selected).toEqual(['supported-c']);
     expect(activePresetId).toBe('supported-c');
   });
+
+  test('includes detailed descriptor unsupported reasons when triggering WebGL fallback', async () => {
+    const entries = [
+      createCatalogEntry('fallback-preset', {
+        webgl: 'supported',
+        webgpu: 'partial',
+      }),
+    ];
+    const compiled = createCompiledPreset('fallback-preset');
+    compiled.ir.compatibility.gpuDescriptorPlans.webgpu.unsupported = [
+      {
+        kind: 'unsupported-feature',
+        feature: 'custom-waves',
+        reason: 'Procedural custom waves not supported on WebGPU',
+        recommendedFallback: 'webgl',
+      },
+    ];
+
+    let fallbackReason = '';
+    const controller = createMilkdropPresetNavigationController({
+      catalogStore: {
+        async getPresetSource(id: string) {
+          return {
+            id,
+            title: id,
+            raw: 'title=fallback-preset\n',
+            origin: 'bundled',
+          };
+        },
+        async getDraft() {
+          return null;
+        },
+      } as unknown as MilkdropCatalogStore,
+      catalogCoordinator: {
+        async syncCatalog() {},
+        async scheduleCatalogSync() {},
+        async rememberSelection() {},
+        async consumePreviousSelection() {
+          return null;
+        },
+        getCatalogEntries: () => entries,
+        getActiveCatalogEntry: () => null,
+        dispose() {},
+      } as unknown as MilkdropCatalogCoordinator,
+      session: {
+        async loadPreset() {
+          return {
+            activeCompiled: compiled,
+            diagnostics: [
+              {
+                severity: 'warning',
+                category: 'backend-compat',
+                code: 'unsupported_feature',
+                message: 'Procedural custom waves not supported on WebGPU',
+              },
+            ],
+          };
+        },
+      } as unknown as MilkdropEditorSession,
+      getActivePresetId: () => 'fallback-preset',
+      getActiveBackend: () => 'webgpu' as MilkdropRenderBackend,
+      getCurrentFrameState: () => null,
+      getBlendDuration: () => 1,
+      getTransitionMode: () => 'cut',
+      applyCompiledPreset: () => undefined,
+      applyPresetPerformanceOverride: () => undefined,
+      setOverlayStatus: () => undefined,
+      shouldFallbackToWebgl: () => true,
+      triggerWebglFallback: ({ reason }) => {
+        fallbackReason = reason;
+      },
+      rememberLastPreset: () => undefined,
+      preparePresetTransition: () => undefined,
+      markPresetSwitched: () => undefined,
+    });
+
+    await controller.selectPreset('fallback-preset');
+
+    expect(fallbackReason).toContain(
+      'Procedural custom waves not supported on WebGPU',
+    );
+  });
 });

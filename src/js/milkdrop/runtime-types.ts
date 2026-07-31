@@ -38,7 +38,16 @@ export type MilkdropRuntimeSignals = {
   beatTreble: number;
   beat_bass: number;
   beat_mid: number;
-  beat_treb: number;
+  beat_treb?: number;
+  beat_treble?: number;
+  stemDrums?: number;
+  stemBass?: number;
+  stemVocals?: number;
+  stemOther?: number;
+  stem_drums?: number;
+  stem_bass?: number;
+  stem_vocals?: number;
+  stem_other?: number;
   weightedEnergy: number;
   inputX: number;
   inputY: number;

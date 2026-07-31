@@ -16,6 +16,20 @@ describe('Canvas Video Exporter Utility', () => {
       aspectRatio: '9:16',
     });
 
+    expect(EXPORT_PRESETS['tiktok-shorts']).toEqual({
+      width: 1080,
+      height: 1920,
+      label: 'TikTok Video (9:16 60FPS)',
+      aspectRatio: '9:16',
+    });
+
+    expect(EXPORT_PRESETS['youtube-shorts']).toEqual({
+      width: 1080,
+      height: 1920,
+      label: 'YouTube Shorts (9:16 60FPS)',
+      aspectRatio: '9:16',
+    });
+
     expect(EXPORT_PRESETS['hd-landscape']).toEqual({
       width: 1920,
       height: 1080,

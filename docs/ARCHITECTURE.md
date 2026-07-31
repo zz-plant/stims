@@ -116,6 +116,7 @@ Important boundary rule:
 - [`src/js/core/state/render-preference-store.ts`](../src/js/core/state/render-preference-store.ts) owns renderer preferences.
 - [`src/js/core/motion-preferences.ts`](../src/js/core/motion-preferences.ts) owns motion-state persistence.
 - [`src/js/core/agent-api.ts`](../src/js/core/agent-api.ts) exposes automation-friendly session state and control hooks.
+- For a deep dive into core engine innovations (JIT VM, dual WebGPU/WebGL fallback pipelines, AI preset blending, edge vector search, and CodeMirror 6 live parameter tuning), see [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md).
 - The renderer support rule is: WebGL is the baseline compatibility path, and WebGPU is an additive path that should not regress WebGL behavior. See [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md) for the short verification matrix.
 
 ## Legacy compatibility modules

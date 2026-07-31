@@ -96,7 +96,7 @@ function createDiagnostic(
   code: string,
   message: string,
 ): MilkdropDiagnostic {
-  return { severity: 'error', line, code, message };
+  return { severity: 'error', category: 'eel-compile', line, code, message };
 }
 
 function isIdentifierStart(char: string) {

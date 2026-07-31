@@ -5,6 +5,7 @@ import {
 } from './engine-audio-energy-store.ts';
 import { RendererFallbackBadge } from './RendererFallbackBadge.tsx';
 import { useWorkspace } from './workspace-context.tsx';
+import { resolveAuthorUrl } from './workspace-helpers.ts';
 
 const BARS_CONFIG = [
   { id: 'b1', mult: 1.35 },
@@ -72,9 +73,8 @@ export function AudioSpectrumHud() {
 
   const selectedPreset = engine.selectedPreset ?? engine.featuredPreset;
   const activeTitle = selectedPreset?.title ?? 'No Preset Loaded';
-  const activeAuthor = selectedPreset?.author
-    ? `by ${selectedPreset.author}`
-    : '';
+  const activeAuthor = selectedPreset?.author;
+  const authorUrl = resolveAuthorUrl(activeAuthor, selectedPreset?.authorUrl);
 
   return (
     <header ref={headerRef} className="stims-hud-bar">
@@ -90,7 +90,22 @@ export function AudioSpectrumHud() {
       <div className="stims-hud-bar__preset-info">
         <div className="stims-hud-bar__preset-title">{activeTitle}</div>
         {activeAuthor ? (
-          <div className="stims-hud-bar__preset-author">{activeAuthor}</div>
+          <div className="stims-hud-bar__preset-author">
+            by{' '}
+            {authorUrl ? (
+              <a
+                href={authorUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="stims-hud-bar__author-link"
+                title={`View ${activeAuthor}'s profile or resource`}
+              >
+                {activeAuthor}
+              </a>
+            ) : (
+              activeAuthor
+            )}
+          </div>
         ) : null}
       </div>
 

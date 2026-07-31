@@ -11,7 +11,7 @@ const BUNDLED_TEXTURE_FILES = new Set<string>([
 ]);
 
 const DECLARATION_PATTERN =
-  /\buniform\s+sampler2D\s+(sampler_[A-Za-z_][A-Za-z0-9_]*)\s*;/gu;
+  /\b(?:uniform\s+)?(?:sampler2D|sampler3D|Texture2D|Texture3D)\s+(sampler_[A-Za-z_][A-Za-z0-9_]*)\s*;/gu;
 
 export function resolveCustomSamplerTextureFile(name: string): string | null {
   const rawTextureName = name.startsWith('sampler_')

@@ -141,17 +141,15 @@
   }
 }
 
-/* Preset transition animation — subtle crossfade + scale */
+/* Preset transition animation — sharp crossfade + scale */
 @keyframes preset-transition-in {
   from {
     opacity: 0;
-    transform: scale(0.98);
-    filter: blur(4px);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
     transform: scale(1);
-    filter: blur(0);
   }
 }
 
@@ -159,12 +157,10 @@
   from {
     opacity: 1;
     transform: scale(1);
-    filter: blur(0);
   }
   to {
     opacity: 0;
-    transform: scale(1.02);
-    filter: blur(4px);
+    transform: scale(1.04);
   }
 }
 

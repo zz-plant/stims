@@ -1,7 +1,9 @@
 // POST /api/patch-preset
 // Applies key-value parameter overrides to MilkDrop source code deterministically
 
-export async function onRequest(context: { request: Request }): Promise<Response> {
+export async function onRequest(context: {
+  request: Request;
+}): Promise<Response> {
   const { request } = context;
 
   if (request.method === 'OPTIONS') {
@@ -29,7 +31,9 @@ export async function onRequest(context: { request: Request }): Promise<Response
     return json({ milkSource: patchedSource });
   } catch (error) {
     return json(
-      { error: error instanceof Error ? error.message : 'Invalid request body.' },
+      {
+        error: error instanceof Error ? error.message : 'Invalid request body.',
+      },
       400,
     );
   }
@@ -47,7 +51,11 @@ export function applyPresetPatch(
     const trimmed = line.trim();
     const equalsIndex = trimmed.indexOf('=');
 
-    if (equalsIndex > 0 && !trimmed.startsWith('//') && !trimmed.startsWith('[')) {
+    if (
+      equalsIndex > 0 &&
+      !trimmed.startsWith('//') &&
+      !trimmed.startsWith('[')
+    ) {
       const key = trimmed.slice(0, equalsIndex).trim();
       if (key in remainingPatch) {
         const val = remainingPatch[key];

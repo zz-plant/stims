@@ -44,9 +44,18 @@
                   "properties": {
                     "valid": { "type": "boolean" },
                     "fieldCount": { "type": "integer" },
-                    "sections": { "type": "array", "items": { "type": "string" } },
-                    "errors": { "type": "array", "items": { "type": "object" } },
-                    "warnings": { "type": "array", "items": { "type": "object" } }
+                    "sections": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
                   }
                 }
               }
@@ -111,7 +120,10 @@
                 "required": ["description"],
                 "properties": {
                   "description": { "type": "string" },
-                  "complexity": { "type": "string", "enum": ["simple", "moderate", "complex"] }
+                  "complexity": {
+                    "type": "string",
+                    "enum": ["simple", "moderate", "complex"]
+                  }
                 }
               }
             }

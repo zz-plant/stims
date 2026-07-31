@@ -8,7 +8,9 @@ interface MilkdropDiagnostic {
   message: string;
 }
 
-export async function onRequest(context: { request: Request }): Promise<Response> {
+export async function onRequest(context: {
+  request: Request;
+}): Promise<Response> {
   const { request } = context;
 
   if (request.method === 'OPTIONS') {
@@ -24,14 +26,19 @@ export async function onRequest(context: { request: Request }): Promise<Response
     const milkSource = body.milkSource;
 
     if (typeof milkSource !== 'string') {
-      return json({ error: 'milkSource string is required in request body.' }, 400);
+      return json(
+        { error: 'milkSource string is required in request body.' },
+        400,
+      );
     }
 
     const result = validatePresetSource(milkSource);
     return json(result);
   } catch (error) {
     return json(
-      { error: error instanceof Error ? error.message : 'Invalid request body.' },
+      {
+        error: error instanceof Error ? error.message : 'Invalid request body.',
+      },
       400,
     );
   }
@@ -54,7 +61,11 @@ export function validatePresetSource(source: string) {
     }
 
     // Skip comment lines
-    if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith(';')) {
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith(';')
+    ) {
       return;
     }
 
@@ -87,7 +98,10 @@ export function validatePresetSource(source: string) {
     const equalsIndex = cleanLine.indexOf('=');
 
     if (equalsIndex < 0) {
-      if (currentSection === 'warp_shader' || currentSection === 'comp_shader') {
+      if (
+        currentSection === 'warp_shader' ||
+        currentSection === 'comp_shader'
+      ) {
         fieldCount += 1;
         return;
       }
@@ -121,7 +135,11 @@ export function validatePresetSource(source: string) {
     }
 
     // Unbalanced parentheses check in equation lines
-    if (key.includes('init') || key.includes('per_frame') || key.includes('per_pixel')) {
+    if (
+      key.includes('init') ||
+      key.includes('per_frame') ||
+      key.includes('per_pixel')
+    ) {
       let openParen = 0;
       for (let i = 0; i < rawValue.length; i += 1) {
         if (rawValue[i] === '(') openParen += 1;

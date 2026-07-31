@@ -27,6 +27,7 @@ function createDefaultShapeSlot(index: number): Record<string, number> {
     [`shape_${index}_border_b`]: 1,
     [`shape_${index}_additive`]: 0,
     [`shape_${index}_thickoutline`]: 0,
+    [`shape_${index}_psversion`]: 3,
   };
 }
 
@@ -48,6 +49,7 @@ function createDefaultCustomWaveSlot(index: number): Record<string, number> {
     [`custom_wave_${index}_g`]: 1,
     [`custom_wave_${index}_b`]: 1,
     [`custom_wave_${index}_a`]: 1,
+    [`custom_wave_${index}_psversion`]: 3,
   };
 }
 

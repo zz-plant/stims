@@ -55,6 +55,19 @@ function emitExpression(
         .map((arg) => emitExpression(arg, emitter))
         .filter((value): value is string => value !== null);
       if (args.length !== node.args.length) return null;
+      if (name.includes('.')) {
+        const parts = name.split('.');
+        const method = parts[parts.length - 1].toLowerCase();
+        const obj = parts.slice(0, parts.length - 1).join('.');
+        if (
+          method === 'sample' ||
+          method === 'samplelevel' ||
+          method === 'samplebias'
+        ) {
+          const uv = args[1] ?? args[0] ?? 'vUv';
+          return emitter.emitCall('tex2D', [obj, uv]);
+        }
+      }
       return emitter.emitCall(name, args);
     }
     default:
@@ -203,6 +216,21 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         const b = args[1] ?? '0.0';
         const t = args[2] ?? '0.0';
         return `mix(${a}, ${b}, ${t})`;
+      }
+      if (lower === 'saturate') {
+        return `clamp(${args[0] ?? '0.0'}, 0.0, 1.0)`;
+      }
+      if (lower === 'frac') {
+        return `fract(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'ddx') {
+        return `dFdx(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'ddy') {
+        return `dFdy(${args[0] ?? '0.0'})`;
+      }
+      if (lower === 'mul') {
+        return `(${args[0] ?? '0.0'} * ${args[1] ?? '0.0'})`;
       }
       if (lower === 'if') {
         const cond = args[0] ?? '0.0';

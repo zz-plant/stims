@@ -18,6 +18,7 @@ import { useFocusTrap } from './hooks/use-focus-trap.ts';
 import { PresetArtwork } from './PresetArtwork.tsx';
 import { UiIcon } from './UiIcon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
+import { resolveAuthorUrl } from './workspace-helpers.ts';
 
 type SidePanelProps = {
   open: boolean;
@@ -416,7 +417,29 @@ export function VisualSearchPanel({ onClose }: { onClose: () => void }) {
                       {entry.title}
                     </span>
                     <span className="stims-shell__visualsearch-meta">
-                      {entry.author ? `by ${entry.author}` : 'Unknown author'}
+                      {entry.author ? (
+                        <>
+                          by{' '}
+                          {resolveAuthorUrl(entry.author, entry.authorUrl) ? (
+                            <a
+                              href={resolveAuthorUrl(
+                                entry.author,
+                                entry.authorUrl,
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ctl-preset__author-link"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {entry.author}
+                            </a>
+                          ) : (
+                            entry.author
+                          )}
+                        </>
+                      ) : (
+                        'Unknown author'
+                      )}
                     </span>
                   </div>
                 </button>

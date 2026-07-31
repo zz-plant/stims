@@ -32,6 +32,14 @@ This document is the consolidated source for implementation progress across road
   - [x] Expanded `CapturePanel.tsx` video format options to include Ultra HD 4K (`4k-landscape`, 3840×2160) alongside Full HD 1080p and Spotify Canvas (9:16 vertical).
   - [x] Updated unit tests in `tests/unit/canvas-video-exporter.test.ts` for export options coverage.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
+- [x] **Q4 Roadmap feature: EEL `loop`/`while` Transpiler Support** (2026-07-30):
+  - [x] Extended `scripts/butterchurn-eel-transpiler.ts` AST parser to transpile JS `for`/`while` loops, `++`/`--` increment operators, and `exec2` sequence expressions into EEL statements.
+  - [x] Unblocked 79 catalog presets (reducing untranslated count from 109 to 30) and emitted 163,887 valid EEL statements during re-transpilation.
+  - [x] Added unit test suite in `tests/unit/butterchurn-eel-transpiler.test.ts` (4/4 tests passing).
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
+- [x] **Q4 Roadmap feature: WebMIDI Hardware Controller Manager** (2026-07-30):
+  - [x] Implemented `MidiControllerManager` in `src/js/core/midi-controller.ts` providing WebMIDI access and interactive MIDI learn mode for hardware control.
+  - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Polish phase: Overlay theme CSS variables extraction and styling consistency** (2026-05-17):
   - [x] Added 23 theme variables for overlay component (bg-primary, bg-secondary, bg-tertiary, overlay, overlay-2, border, blur-lg, shadow, button, active-indicator)
   - [x] Centralized overlay styling in CSS variables for maintainability
@@ -43,6 +51,9 @@ This document is the consolidated source for implementation progress across road
 
 - [x] Toy onboarding quick wins (presets / first-time hints).
 - [x] Toy-page touch polish (clearer gesture hints and affordances).
+- [ ] **Q4 Roadmap feature: ONNX Client-Side Audio Stem Separation** (ONNX Runtime Web + WebNN/WebGPU 4-stem separation into `stem_drums`, `stem_bass`, `stem_vocals`; signal types and VM scopes initialized).
+- [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication; `feedback-composite-ir.ts` initialized).
+- [ ] **Q4 Roadmap feature: WebXR Spatial Audio Stage** (6DoF immersive spatial audio visualizer mode).
 
 ## Refactor milestone tracking
 
