@@ -5,6 +5,7 @@ import {
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
+import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import {
   closePlayToyBrowserSession,
   createPlayToyBrowserSession,
@@ -234,8 +235,8 @@ export function buildCertificationCorpusPerfRequests({
       presetId: preset.id,
       port,
       duration: PERF_DURATION_MS,
-      viewportWidth: 1280,
-      viewportHeight: 720,
+      viewportWidth: DEFAULT_VIEWPORT.width,
+      viewportHeight: DEFAULT_VIEWPORT.height,
       headless,
       vibeMode: false,
       rendererProfile: 'webgpu',
