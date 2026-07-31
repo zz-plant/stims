@@ -42,7 +42,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    target: 'es2020',
+    target: 'es2022',
     minify: true,
     cssMinify: true,
     // The WebGPU renderer bundle is intentionally large and loaded on demand.
