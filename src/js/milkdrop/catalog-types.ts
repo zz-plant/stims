@@ -16,6 +16,7 @@ export type MilkdropBundledCatalogEntry = {
   id: string;
   title: string;
   author?: string;
+  authorUrl?: string;
   file: string;
   tags?: string[];
   curatedRank?: number;
@@ -35,6 +36,7 @@ export type MilkdropCatalogEntry = {
   id: string;
   title: string;
   author?: string;
+  authorUrl?: string;
   origin: MilkdropPresetOrigin;
   tags: string[];
   curatedRank?: number;

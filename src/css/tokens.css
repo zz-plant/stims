@@ -51,48 +51,48 @@
   --app-width: 100dvw;
 
   /* ── Semantic Color Palette (dark mode default) ───────────────── */
-  --bg-color: #0e1518;
-  --bg-color-secondary: #162126;
-  --card-bg: #182328;
+  --bg-color: #0b1014;
+  --bg-color-secondary: #12191f;
+  --card-bg: #151e24;
   --text-color: #f7f4eb;
   --text-muted: rgba(247, 244, 235, 0.76);
   --accent-contrast: #fdfdfd;
-  --link-color: #9fd4cb;
-  --link-hover: #e9d49b;
-  --accent-color: #5fc0b5;
-  --accent-purple: #87a9a2;
-  --accent-magenta: #d38954;
-  --glow-color: rgba(95, 192, 181, 0.16);
-  --accent-soft: rgba(95, 192, 181, 0.1);
-  --hover-bg: rgba(95, 192, 181, 0.12);
-  --highlight-glow: rgba(211, 137, 84, 0.18);
+  --link-color: #00f3ff;
+  --link-hover: #ff0055;
+  --accent-color: #00f3ff;
+  --accent-purple: #9d4edd;
+  --accent-magenta: #ff0055;
+  --glow-color: rgba(0, 243, 255, 0.22);
+  --accent-soft: rgba(0, 243, 255, 0.12);
+  --hover-bg: rgba(0, 243, 255, 0.14);
+  --highlight-glow: rgba(255, 0, 85, 0.22);
 
   /* ── App-shell semantic colors ──────────────────────────────── */
 
   /* ── Surface Gradients & Effects ──────────────────────────────── */
   --surface-gradient: linear-gradient(
     180deg,
-    rgba(255, 248, 234, 0.05),
+    rgba(0, 243, 255, 0.06),
     transparent
   );
-  --surface-border: rgba(255, 244, 222, 0.14);
+  --surface-border: rgba(0, 243, 255, 0.25);
   --surface-sheen: none;
   --surface-texture: none;
   --surface-highlight: none;
   --surface-emboss: none;
   --accent-gradient: linear-gradient(
     120deg,
-    rgba(95, 192, 181, 0.95),
-    rgba(233, 212, 155, 0.72),
-    rgba(211, 137, 84, 0.72)
+    rgba(0, 243, 255, 0.95),
+    rgba(157, 78, 221, 0.85),
+    rgba(255, 0, 85, 0.85)
   );
   --panel-gradient: linear-gradient(
     180deg,
     color-mix(in srgb, var(--card-bg) 95%, transparent),
-    color-mix(in srgb, #10181d 82%, var(--card-bg))
+    color-mix(in srgb, #0a0f13 82%, var(--card-bg))
   );
   --panel-glass: color-mix(in srgb, var(--card-bg) 84%, transparent);
-  --panel-highlight: rgba(255, 248, 234, 0.08);
+  --panel-highlight: rgba(0, 243, 255, 0.12);
   --aurora-soft: radial-gradient(
     circle at 20% 10%,
     color-mix(in srgb, var(--accent-color) 34%, transparent),
@@ -100,25 +100,25 @@
   );
   --interactive-border: color-mix(
     in srgb,
-    var(--accent-color) 28%,
+    var(--accent-color) 45%,
     var(--surface-border)
   );
   --interactive-bg: color-mix(in srgb, var(--card-bg) 85%, transparent);
   --interactive-bg-hover: color-mix(
     in srgb,
-    var(--accent-color) 14%,
+    var(--accent-color) 18%,
     var(--card-bg)
   );
-  --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  --interactive-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
 
   /* ── App-shell panel fills ────────────────────────────────── */
-  --stims-surface: rgba(10, 13, 20, 0.85);
-  --stims-panel: rgba(10, 13, 20, 0.74);
-  --stims-panel-strong: rgba(12, 16, 26, 0.92);
+  --stims-surface: rgba(8, 12, 18, 0.88);
+  --stims-panel: rgba(8, 12, 18, 0.82);
+  --stims-panel-strong: rgba(10, 14, 22, 0.95);
   --stims-panel-fill-strong: linear-gradient(
     180deg,
-    rgba(14, 19, 30, 0.98),
-    rgba(6, 9, 16, 0.96)
+    rgba(12, 17, 26, 0.98),
+    rgba(4, 7, 12, 0.96)
   );
   --stims-control-fill: linear-gradient(
     180deg,
@@ -132,39 +132,39 @@
   );
   /* ── Shadows ───────────────────────────────────────────────── */
   --shadow-strong:
-    0 24px 60px rgba(0, 0, 0, 0.34), 0 4px 18px rgba(95, 192, 181, 0.12);
+    0 24px 60px rgba(0, 0, 0, 0.45), 0 4px 18px rgba(0, 243, 255, 0.18);
   --shadow-soft:
-    0 10px 26px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(95, 192, 181, 0.1);
+    0 10px 26px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 243, 255, 0.14);
   --shadow-surface:
-    0 18px 42px rgba(0, 0, 0, 0.28), 0 2px 12px rgba(95, 192, 181, 0.12);
-  --stims-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    0 18px 42px rgba(0, 0, 0, 0.35), 0 2px 12px rgba(0, 243, 255, 0.16);
+  --stims-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
   --stims-shadow-soft: 0 14px 34px var(--stims-shadow-22);
   --stims-shadow-control:
-    0 12px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 var(--stims-white-06);
+    0 12px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 var(--stims-white-06);
 
   /* ── Page-Level Panel Tokens ───────────────────────────────── */
-  --panel-solid: color-mix(in srgb, var(--card-bg) 95%, #091015);
+  --panel-solid: color-mix(in srgb, var(--card-bg) 95%, #05080b);
   --panel-subtle: color-mix(in srgb, var(--card-bg) 91%, transparent);
   --surface-border-strong: color-mix(
     in srgb,
-    var(--accent-color) 22%,
+    var(--accent-color) 35%,
     var(--surface-border)
   );
   --shadow-panel:
-    0 18px 38px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.12);
+    0 18px 38px rgba(0, 0, 0, 0.32), 0 3px 10px rgba(0, 0, 0, 0.18);
   --shadow-panel-hover:
-    0 24px 46px rgba(0, 0, 0, 0.26), 0 6px 16px rgba(0, 0, 0, 0.14);
+    0 24px 46px rgba(0, 0, 0, 0.38), 0 6px 16px rgba(0, 0, 0, 0.22);
 
-  /* ── Radii ─────────────────────────────────────────────────── */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-pill: 9999px;
-  --stims-radius: 12px;
-  --stims-radius-panel: 18px;
-  --stims-radius-card: 14px;
-  --stims-radius-control: 10px;
-  --stims-radius-stage: 18px;
+  /* ── Radii (Kiki: Sharp & Angular Geometry) ───────────────── */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-pill: 2px;
+  --stims-radius: 4px;
+  --stims-radius-panel: 4px;
+  --stims-radius-card: 4px;
+  --stims-radius-control: 2px;
+  --stims-radius-stage: 6px;
 
   /* ── Typography ────────────────────────────────────────────── */
   --font-family-base:
@@ -197,13 +197,13 @@
   --space-3xl: 3rem;
   --space-4xl: 4rem;
 
-  /* ── Transitions & Motion ──────────────────────────────────── */
-  --transition-fast: 0.15s ease;
-  --transition-base: 0.2s ease;
-  --transition-slow: 0.3s ease;
-  --spring-enter: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  --spring-exit: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --spring-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* ── Transitions & Motion (Kiki: Snappy & Precision Physics) ─ */
+  --transition-fast: 0.08s cubic-bezier(0.05, 0.9, 0.1, 1);
+  --transition-base: 0.12s cubic-bezier(0.05, 0.9, 0.1, 1);
+  --transition-slow: 0.18s cubic-bezier(0.05, 0.9, 0.1, 1);
+  --spring-enter: 0.2s cubic-bezier(0.05, 0.9, 0.1, 1);
+  --spring-exit: 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+  --spring-bounce: 0.22s cubic-bezier(0.05, 0.95, 0.1, 1);
 
   /* ── Layout ────────────────────────────────────────────────── */
   --content-width: 1220px;

@@ -84,6 +84,14 @@ const aliasMap: Record<string, string | null> = {
   fmotionvectorsa: 'mv_a',
   nmotionvectorsloop: 'mv_l',
   tex_capture: 'textured',
+  stembass: 'stem_bass',
+  stem_bass: 'stem_bass',
+  stemdrums: 'stem_drums',
+  stem_drums: 'stem_drums',
+  stemvocals: 'stem_vocals',
+  stem_vocals: 'stem_vocals',
+  stemsynths: 'stem_synths',
+  stem_synths: 'stem_synths',
 };
 
 export function normalizeFieldSuffix(value: string) {

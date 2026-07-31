@@ -1030,10 +1030,19 @@ type SectionExcerpt = {
 async function buildDocPointers() {
   const lines = await loadReadmeLines();
 
-  const quickStart = extractSectionWithRange(lines, 'Try it now');
-  const commands = extractSectionWithRange(lines, 'Quick reference');
-  const layout = extractSectionWithRange(lines, 'Project docs');
-  const docs = extractSectionWithRange(lines, 'Project docs');
+  const quickStart =
+    extractSectionWithRange(lines, 'Quickstart') ||
+    extractSectionWithRange(lines, 'Try it now');
+  const commands =
+    extractSectionWithRange(lines, 'Quick Reference Commands') ||
+    extractSectionWithRange(lines, 'Quick reference');
+  const layout =
+    extractSectionWithRange(lines, 'Features at a Glance') ||
+    extractSectionWithRange(lines, 'What it does') ||
+    extractSectionWithRange(lines, 'Install locally');
+  const docs =
+    extractSectionWithRange(lines, 'Serverless Edge API') ||
+    extractSectionWithRange(lines, 'API');
 
   const entries = [
     quickStart && formatPointer('Quickstart', quickStart),
@@ -1055,7 +1064,9 @@ function extractSectionWithRange(
   heading: string,
 ): SectionExcerpt | null {
   const headingIndex = lines.findIndex(
-    (line) => line.trim() === `## ${heading}`,
+    (line) =>
+      line.trim().startsWith('## ') &&
+      line.toLowerCase().includes(heading.toLowerCase()),
   );
 
   if (headingIndex === -1) return null;
@@ -1110,9 +1121,13 @@ async function getReadmeDevCommands(
   scope?: 'setup' | 'dev' | 'build' | 'test' | 'lint',
 ) {
   const readmeContent = await loadReadme();
-  const quickstart = extractSection(readmeContent, 'Try it now');
+  const quickstart =
+    extractSection(readmeContent, 'Quickstart') ||
+    extractSection(readmeContent, 'Try it now');
   const installLocal = extractSection(readmeContent, 'Install locally');
-  const commonCommands = extractSection(readmeContent, 'Quick reference');
+  const commonCommands =
+    extractSection(readmeContent, 'Quick Reference Commands') ||
+    extractSection(readmeContent, 'Quick reference');
   const developmentNotes = extractSection(readmeContent, 'Development notes');
 
   const sections: Record<string, string> = {
@@ -1194,8 +1209,8 @@ function normalizeToys(data: unknown): ToyMetadata[] {
 
 function extractMarkdownSection(markdown: string, heading: string) {
   const pattern = new RegExp(
-    `^(#{1,6}\\s+${escapeForRegex(heading)})\\s*$`,
-    'm',
+    `^(#{1,6}\\s+.*?${escapeForRegex(heading)})\\s*$`,
+    'mi',
   );
   const match = pattern.exec(markdown);
 

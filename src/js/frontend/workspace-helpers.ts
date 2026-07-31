@@ -94,8 +94,67 @@ const COLLECTION_TAG_LABEL_MAP: Record<string, string> = {
   'collection:cream-of-the-crop': 'Cream of the Crop',
   'collection:classic-milkdrop': 'Classic MilkDrop',
   'collection:rovastar-and-collaborators': 'Rovastar & Collaborators',
+  'collection:author-geiss': 'Author: Ryan Geiss',
+  'collection:author-rovastar': 'Author: Rovastar',
+  'collection:author-eos': 'Author: Eo.S.',
+  'collection:author-flexi': 'Author: Flexi',
+  'collection:author-martin': 'Author: Martin',
+  'collection:author-fishbrain': 'Author: Fishbrain',
+  'collection:author-cope': 'Author: Cope',
+  'collection:author-unchained': 'Author: Unchained',
+  'collection:author-suksma': 'Author: Suksma',
+  'collection:author-amandio-c': 'Author: Amandio C',
+  'collection:author-stahlregen': 'Author: Stahlregen',
+  'collection:vj-high-intensity': 'VJ: High Intensity Rave',
+  'collection:vj-ambient-glow': 'VJ: Ambient & Chill Glow',
+  'collection:vj-tunnel-geometry': 'VJ: 3D Tunnel & Geometry',
+  'collection:vj-reaction-diffusion': 'VJ: Reaction-Diffusion',
+  'collection:mood-deep-space': 'Mood: Deep Space',
+  'collection:mood-psychedelic': 'Mood: Psychedelic',
+  'collection:mood-rave': 'Mood: Rave Lightshow',
+  'collection:mood-ambient': 'Mood: Ambient Glow',
   'collection:touch-friendly': 'Touch Friendly',
 };
+
+const AUTHOR_PROFILES: Record<string, string> = {
+  'ryan geiss': 'http://www.geisswerks.com/milkdrop/',
+  geiss: 'http://www.geisswerks.com/milkdrop/',
+  _geiss: 'http://www.geisswerks.com/milkdrop/',
+  rovastar: 'https://sourceforge.net/projects/milkdrop2/',
+  'krash & rovastar': 'https://sourceforge.net/projects/milkdrop2/',
+  'eo.s.': 'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
+  'eo.s. + phat':
+    'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
+  flexi: 'https://github.com/projectM-visualizer/projectm',
+  martin: 'https://github.com/projectM-visualizer/projectm',
+  aderrasi: 'https://github.com/projectM-visualizer/projectm',
+  orb: 'https://github.com/projectM-visualizer/projectm',
+  shifter: 'https://github.com/projectM-visualizer/projectm',
+  fishbrain: 'https://github.com/projectM-visualizer/projectm',
+  cope: 'https://github.com/projectM-visualizer/projectm',
+  unchained: 'https://github.com/projectM-visualizer/projectm',
+  suksma: 'https://github.com/projectM-visualizer/projectm',
+  'amandio c': 'https://github.com/projectM-visualizer/projectm',
+  stahlregen:
+    'https://github.com/projectM-visualizer/presets-cream-of-the-crop',
+  goody: 'https://github.com/projectM-visualizer/projectm',
+  hexcollie: 'https://github.com/projectM-visualizer/projectm',
+  adamfx: 'https://github.com/projectM-visualizer/projectm',
+};
+
+export function resolveAuthorUrl(
+  author?: string,
+  explicitUrl?: string,
+): string | undefined {
+  if (explicitUrl) return explicitUrl;
+  if (!author) return undefined;
+  const key = author.toLowerCase().trim();
+  if (AUTHOR_PROFILES[key]) return AUTHOR_PROFILES[key];
+  for (const [authorName, url] of Object.entries(AUTHOR_PROFILES)) {
+    if (key.includes(authorName)) return url;
+  }
+  return undefined;
+}
 
 export function prettifyCollectionTag(collectionTag: string) {
   if (COLLECTION_TAG_LABEL_MAP[collectionTag]) {
@@ -151,10 +210,25 @@ export function getFeaturedCollectionTags(collectionTags: string[]) {
   const featuredHints = [
     'collection:cream-of-the-crop',
     'collection:classic-milkdrop',
+    'collection:vj-high-intensity',
+    'collection:vj-ambient-glow',
+    'collection:vj-tunnel-geometry',
+    'collection:vj-reaction-diffusion',
+    'collection:author-geiss',
+    'collection:author-rovastar',
+    'collection:author-eos',
+    'collection:author-fishbrain',
+    'collection:author-cope',
+    'collection:author-unchained',
+    'collection:author-suksma',
+    'collection:author-amandio-c',
+    'collection:author-stahlregen',
+    'collection:mood-deep-space',
+    'collection:mood-psychedelic',
+    'collection:mood-rave',
+    'collection:mood-ambient',
     'collection:rovastar-and-collaborators',
     'collection:touch-friendly',
-    'collection:bright',
-    'collection:space',
   ];
   const featured = featuredHints.filter((tag) => collectionTags.includes(tag));
   if (featured.length > 0) {
@@ -446,6 +520,7 @@ export function mapRuntimeCatalogEntry(
     id: entry.id,
     title: entry.title,
     author: entry.author,
+    authorUrl: resolveAuthorUrl(entry.author, entry.authorUrl),
     file: entry.bundledFile,
     tags: entry.tags,
     isFavorite: entry.isFavorite,

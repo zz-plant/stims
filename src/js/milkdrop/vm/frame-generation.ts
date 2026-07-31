@@ -297,6 +297,7 @@ export function defaultSignalEnv(): MilkdropRuntimeSignals {
     beat_bass: 0,
     beat_mid: 0,
     beat_treb: 0,
+    beat_treble: 0,
     bandFlux: 0,
     transient: 0,
     spectralFlux: 0,

@@ -12,6 +12,8 @@ const CAPTURE_FORMATS = [
   'hd-landscape',
   '4k-landscape',
   'spotify-canvas',
+  'tiktok-shorts',
+  'youtube-shorts',
 ] as const;
 
 function getFilename(preset: ExportPresetTarget, mimeType: string) {

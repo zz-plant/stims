@@ -1,3 +1,4 @@
+import { resolveAuthorUrl } from '../../frontend/workspace-helpers.ts';
 import {
   describeMilkdropScenePickResult,
   getMilkdropSceneDragFieldUpdates,
@@ -468,6 +469,19 @@ export class InspectorPanel {
     wrap.setAttribute('for', fieldId);
     const title = document.createElement('span');
     title.textContent = label;
+    if (key === 'author' && typeof value === 'string' && value.trim()) {
+      const authorUrl = resolveAuthorUrl(value);
+      if (authorUrl) {
+        const link = document.createElement('a');
+        link.href = authorUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'stims-hud-bar__author-link';
+        link.textContent = ' (↗ Profile)';
+        link.title = `View ${value}'s artist profile or resource`;
+        title.appendChild(link);
+      }
+    }
     wrap.appendChild(title);
 
     if (typeof value === 'number') {

@@ -257,6 +257,7 @@ export function createBundledCatalogLoader({
       id: entry.id,
       title: entry.title,
       author: entry.author,
+      authorUrl: entry.authorUrl,
       raw,
       origin: 'bundled',
       path: entry.file,

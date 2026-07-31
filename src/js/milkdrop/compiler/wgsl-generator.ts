@@ -177,6 +177,14 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `f32(~i32(${args[0] ?? '0.0f'}))`;
         case 'atan2':
           return `atan2(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'})`;
+        case 'saturate':
+          return `saturate(${args[0] ?? '0.0f'})`;
+        case 'ddx':
+          return `dpdx(${args[0] ?? '0.0f'})`;
+        case 'ddy':
+          return `dpdy(${args[0] ?? '0.0f'})`;
+        case 'mul':
+          return `(${args[0] ?? '0.0f'} * ${args[1] ?? '0.0f'})`;
         case 'frac': {
           const value = args[0] ?? '0.0f';
           return `(${value} - floor(${value}))`;

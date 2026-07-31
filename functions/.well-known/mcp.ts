@@ -1,7 +1,9 @@
 // GET /.well-known/mcp
 // Well-known MCP endpoint discovery for toil.fyi
 
-export async function onRequest(context: { request: Request }): Promise<Response> {
+export async function onRequest(context: {
+  request: Request;
+}): Promise<Response> {
   const { request } = context;
 
   if (request.method === 'OPTIONS') {
@@ -22,7 +24,8 @@ export async function onRequest(context: { request: Request }): Promise<Response
     JSON.stringify({
       schema_version: '1.0',
       name: 'Stims (toil.fyi) MCP Server',
-      description: 'Model Context Protocol server for MilkDrop preset discovery, catalog metadata, and visualization.',
+      description:
+        'Model Context Protocol server for MilkDrop preset discovery, catalog metadata, and visualization.',
       mcp_url: mcpUrl,
       transports: ['http-sse', 'websocket'],
       endpoints: {
