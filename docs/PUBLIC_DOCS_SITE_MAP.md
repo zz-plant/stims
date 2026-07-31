@@ -27,24 +27,26 @@ Stim Webtoys is positioned as an **independent browser-native visualizer in the 
 
 ### Development tab
 
+Repository documentation is hubbed in [`docs/README.md`](./README.md) across 5 core developer tracks:
+
+1. **🚀 Getting Started**: `DEVELOPMENT.md`, `DEPLOYMENT.md`, `TESTING.md`, `COMMIT_CONVENTIONS.md`
+2. **🏛️ Architecture & Engine**: `ARCHITECTURE.md`, `TECHNICAL_ACHIEVEMENTS.md`, `MILKDROP_PRESET_RUNTIME.md`, `WEBGPU_ARCHITECTURAL_REVAMP.md`
+3. **🎨 Preset Authoring**: `MILKDROP_CODING_GUIDE.md`, `MILKDROP_PROJECTM_PARITY_PLAN.md`, `MILKDROP_PROJECTM_PARITY_BACKLOG.md`
+4. **🤖 AI & Infrastructure**: `api.md`, `MCP_SERVER.md`
+5. **📊 Strategy & QA**: `ROADMAP.md`, `IMPLEMENTATION_STATUS.md`, `QA_PLAN.md`, `LINEAGE_AND_CREDITS.md`
+
 - **Contributing**
   - `contributing/getting-started`
   - `contributing/development-setup`
   - `contributing/code-quality`
 - **Architecture**
   - `architecture/overview`
-  - `architecture/toy-lifecycle`
-  - `architecture/audio-system`
+  - `architecture/technical-achievements`
   - `architecture/rendering`
-- **Building Toys**
-  - `development/toy-development`
-  - `development/toy-interface`
-  - `development/testing-toys`
-  - `development/toy-manifest`
+  - `architecture/preset-runtime`
 - **Deployment**
   - `deployment/overview`
   - `deployment/cloudflare-pages`
-  - `deployment/static-hosting`
 
 ## What each public page emphasizes
 

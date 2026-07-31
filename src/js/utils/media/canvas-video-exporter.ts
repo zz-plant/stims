@@ -8,6 +8,8 @@
 
 export type ExportPresetTarget =
   | 'spotify-canvas'
+  | 'tiktok-shorts'
+  | 'youtube-shorts'
   | 'hd-landscape'
   | '4k-landscape'
   | 'custom';
@@ -51,6 +53,18 @@ export const EXPORT_PRESETS: Record<ExportPresetTarget, PresetDimensions> = {
     width: 1080,
     height: 1920,
     label: 'Spotify Canvas (9:16 Vertical)',
+    aspectRatio: '9:16',
+  },
+  'tiktok-shorts': {
+    width: 1080,
+    height: 1920,
+    label: 'TikTok Video (9:16 60FPS)',
+    aspectRatio: '9:16',
+  },
+  'youtube-shorts': {
+    width: 1080,
+    height: 1920,
+    label: 'YouTube Shorts (9:16 60FPS)',
     aspectRatio: '9:16',
   },
   'hd-landscape': {

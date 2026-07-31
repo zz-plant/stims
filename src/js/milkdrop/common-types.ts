@@ -7,6 +7,13 @@ export type MilkdropPresetOrigin =
 
 export type MilkdropDiagnosticSeverity = 'error' | 'warning' | 'info';
 
+export type MilkdropDiagnosticCategory =
+  | 'io'
+  | 'parse'
+  | 'eel-compile'
+  | 'shader-lower'
+  | 'backend-compat';
+
 export type MilkdropCompatibilityIssueCategory =
   | 'unsupported-syntax'
   | 'unsupported-shader'
@@ -20,6 +27,7 @@ export type MilkdropDiagnostic = {
   message: string;
   line?: number;
   field?: string;
+  category?: MilkdropDiagnosticCategory;
 };
 
 export type MilkdropPresetSource = {
@@ -28,6 +36,7 @@ export type MilkdropPresetSource = {
   raw: string;
   origin: MilkdropPresetOrigin;
   author?: string;
+  authorUrl?: string;
   fileName?: string;
   path?: string;
   updatedAt?: number;

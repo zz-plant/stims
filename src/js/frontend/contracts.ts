@@ -49,6 +49,7 @@ export type PresetCatalogEntry = {
   id: string;
   title: string;
   author?: string;
+  authorUrl?: string;
   file?: string;
   tags?: string[];
   preview?: boolean;

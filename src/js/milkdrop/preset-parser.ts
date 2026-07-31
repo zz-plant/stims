@@ -78,6 +78,7 @@ export function parseMilkdropPreset(source: string): {
       }
       diagnostics.push({
         severity: 'warning',
+        category: 'parse',
         code: 'preset_line_ignored',
         line: number,
         message: `Ignored line without an assignment: "${trimmed}".`,
@@ -96,6 +97,7 @@ export function parseMilkdropPreset(source: string): {
     if (!key) {
       diagnostics.push({
         severity: 'warning',
+        category: 'parse',
         code: 'preset_missing_key',
         line: number,
         message: 'Ignored assignment without a key.',
