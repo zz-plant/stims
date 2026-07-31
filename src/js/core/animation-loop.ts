@@ -59,7 +59,7 @@ function fillSyntheticFrequencyData(
       Math.sin(timeOffset2 + phase2) * 0.4;
     const normalized = wave * 0.5 + 0.5;
     const value = base + normalized * amplitude;
-    buffer[i] = Math.min(255, Math.max(0, Math.round(value)));
+    buffer[i] = value > 255 ? 255 : value < 0 ? 0 : (value + 0.5) | 0;
   }
 
   return buffer;
@@ -130,7 +130,7 @@ export function getContextFrequencyData(ctx: AnimationContext): Uint8Array {
   const fallbackWeight = 1 - audioWeight;
 
   for (let i = 0; i < data.length; i += 1) {
-    buffer[i] = Math.round(buffer[i] * fallbackWeight + data[i] * audioWeight);
+    buffer[i] = (buffer[i] * fallbackWeight + data[i] * audioWeight + 0.5) | 0;
   }
 
   return buffer;

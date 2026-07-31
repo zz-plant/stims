@@ -120,73 +120,82 @@ const reusableInterpolatedCustomWaves: {
   current: import('./types').MilkdropProceduralCustomWaveVisual;
 }[] = [];
 
-function lerpColor(
+function lerpColorInto(
+  out: MilkdropColor,
   previousColor: MilkdropColor,
   currentColor: MilkdropColor,
   mix: number,
-  { preservePreviousAlpha = false }: { preservePreviousAlpha?: boolean } = {},
+  preservePreviousAlpha: boolean,
 ): MilkdropColor {
-  return {
-    r: lerpNumber(previousColor.r, currentColor.r, mix),
-    g: lerpNumber(previousColor.g, currentColor.g, mix),
-    b: lerpNumber(previousColor.b, currentColor.b, mix),
-    ...(previousColor.a !== undefined || currentColor.a !== undefined
-      ? {
-          a: preservePreviousAlpha
-            ? (previousColor.a ?? currentColor.a ?? 0)
-            : lerpNumber(previousColor.a ?? 0, currentColor.a ?? 0, mix),
-        }
-      : {}),
-  };
+  out.r = lerpNumber(previousColor.r, currentColor.r, mix);
+  out.g = lerpNumber(previousColor.g, currentColor.g, mix);
+  out.b = lerpNumber(previousColor.b, currentColor.b, mix);
+  if (previousColor.a !== undefined || currentColor.a !== undefined) {
+    out.a = preservePreviousAlpha
+      ? (previousColor.a ?? currentColor.a ?? 0)
+      : lerpNumber(previousColor.a ?? 0, currentColor.a ?? 0, mix);
+  }
+  return out;
 }
 
-function interpolateShapeVisual(
+const reusableColors = {
+  primary: { r: 0, g: 0, b: 0, a: 0 } as MilkdropColor,
+  secondary: { r: 0, g: 0, b: 0, a: 0 } as MilkdropColor,
+  border: { r: 0, g: 0, b: 0, a: 0 } as MilkdropColor,
+};
+
+function interpolateShapeVisualInto(
+  out: MilkdropShapeVisual,
   previousShape: MilkdropShapeVisual,
   currentShape: MilkdropShapeVisual,
   mix: number,
 ): MilkdropShapeVisual {
-  return {
-    ...currentShape,
-    x: lerpNumber(previousShape.x, currentShape.x, mix),
-    y: lerpNumber(previousShape.y, currentShape.y, mix),
-    radius: lerpNumber(previousShape.radius, currentShape.radius, mix),
-    rotation: lerpNumber(previousShape.rotation, currentShape.rotation, mix),
-    textured: previousShape.textured || currentShape.textured,
-    textureZoom: lerpNumber(
-      previousShape.textureZoom,
-      currentShape.textureZoom,
-      mix,
-    ),
-    textureAngle: lerpNumber(
-      previousShape.textureAngle,
-      currentShape.textureAngle,
-      mix,
-    ),
-    color: lerpColor(previousShape.color, currentShape.color, mix, {
-      preservePreviousAlpha: true,
-    }),
-    secondaryColor:
-      previousShape.secondaryColor || currentShape.secondaryColor
-        ? lerpColor(
-            previousShape.secondaryColor ?? previousShape.color,
-            currentShape.secondaryColor ?? currentShape.color,
-            mix,
-            {
-              preservePreviousAlpha: true,
-            },
-          )
-        : null,
-    borderColor: lerpColor(
-      previousShape.borderColor,
-      currentShape.borderColor,
-      mix,
-      {
-        preservePreviousAlpha: true,
-      },
-    ),
-    additive: previousShape.additive || currentShape.additive,
-    thickOutline: previousShape.thickOutline || currentShape.thickOutline,
-  };
+  // Copy non-interpolated properties from currentShape, then override interpolated fields.
+  out.key = currentShape.key;
+  out.sides = currentShape.sides;
+  out.blendMode = currentShape.blendMode;
+  out.x = lerpNumber(previousShape.x, currentShape.x, mix);
+  out.y = lerpNumber(previousShape.y, currentShape.y, mix);
+  out.radius = lerpNumber(previousShape.radius, currentShape.radius, mix);
+  out.rotation = lerpNumber(previousShape.rotation, currentShape.rotation, mix);
+  out.textured = previousShape.textured || currentShape.textured;
+  out.textureZoom = lerpNumber(
+    previousShape.textureZoom,
+    currentShape.textureZoom,
+    mix,
+  );
+  out.textureAngle = lerpNumber(
+    previousShape.textureAngle,
+    currentShape.textureAngle,
+    mix,
+  );
+  out.color = lerpColorInto(
+    out.color ?? reusableColors.primary,
+    previousShape.color,
+    currentShape.color,
+    mix,
+    true,
+  );
+  out.secondaryColor =
+    previousShape.secondaryColor || currentShape.secondaryColor
+      ? lerpColorInto(
+          out.secondaryColor ?? reusableColors.secondary,
+          previousShape.secondaryColor ?? previousShape.color,
+          currentShape.secondaryColor ?? currentShape.color,
+          mix,
+          true,
+        )
+      : null;
+  out.borderColor = lerpColorInto(
+    out.borderColor ?? reusableColors.border,
+    previousShape.borderColor,
+    currentShape.borderColor,
+    mix,
+    true,
+  );
+  out.additive = previousShape.additive || currentShape.additive;
+  out.thickOutline = previousShape.thickOutline || currentShape.thickOutline;
+  return out;
 }
 
 class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
@@ -821,9 +830,20 @@ class ThreeMilkdropAdapter implements MilkdropRendererAdapter {
     for (let i = 0; i < previousShapes.length; i++) {
       const previousShape = previousShapes[i];
       const currentShape = currentShapes[i];
-      interpolatedShapes[i] = currentShape
-        ? interpolateShapeVisual(previousShape, currentShape, mix)
-        : previousShape;
+      if (currentShape) {
+        // Lazily grow the pool with stub entries that interpolateShapeVisualInto fills.
+        if (!interpolatedShapes[i]) {
+          interpolatedShapes[i] = { ...currentShape };
+        }
+        interpolateShapeVisualInto(
+          interpolatedShapes[i],
+          previousShape,
+          currentShape,
+          mix,
+        );
+      } else {
+        interpolatedShapes[i] = previousShape;
+      }
     }
     this.renderShapeGroup(
       'blend-shapes',

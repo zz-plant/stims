@@ -315,45 +315,78 @@ export function getMotionVectorDescriptorContext({
   };
 }
 
+const reusableFieldTransform = {
+  zoom: 1,
+  zoomExponent: 1,
+  rotation: 0,
+  warp: 0,
+  warpAnimSpeed: 1,
+  centerX: 0,
+  centerY: 0,
+  scaleX: 1,
+  scaleY: 1,
+  translateX: 0,
+  translateY: 0,
+};
+
 export function buildProceduralFieldTransform(state: MutableState) {
-  return {
-    zoom: Math.max(state.zoom ?? 1, 0.0001),
-    zoomExponent: Math.max(state.zoomexp ?? 1, 0.0001),
-    rotation: state.rot ?? 0,
-    warp: state.warp ?? 0,
-    warpAnimSpeed: clamp(state.warpanimspeed ?? 1, 0, 4),
-    centerX: normalizeTransformCenter(state.cx ?? 0.5),
-    centerY: normalizeTransformCenter(state.cy ?? 0.5),
-    scaleX: state.sx ?? 1,
-    scaleY: state.sy ?? 1,
-    translateX: state.dx ?? 0,
-    translateY: state.dy ?? 0,
-  };
+  reusableFieldTransform.zoom = Math.max(state.zoom ?? 1, 0.0001);
+  reusableFieldTransform.zoomExponent = Math.max(state.zoomexp ?? 1, 0.0001);
+  reusableFieldTransform.rotation = state.rot ?? 0;
+  reusableFieldTransform.warp = state.warp ?? 0;
+  reusableFieldTransform.warpAnimSpeed = clamp(state.warpanimspeed ?? 1, 0, 4);
+  reusableFieldTransform.centerX = normalizeTransformCenter(state.cx ?? 0.5);
+  reusableFieldTransform.centerY = normalizeTransformCenter(state.cy ?? 0.5);
+  reusableFieldTransform.scaleX = state.sx ?? 1;
+  reusableFieldTransform.scaleY = state.sy ?? 1;
+  reusableFieldTransform.translateX = state.dx ?? 0;
+  reusableFieldTransform.translateY = state.dy ?? 0;
+  return reusableFieldTransform;
 }
+
+const reusableFieldSignals: MilkdropGpuFieldSignalInputs = {
+  time: 0,
+  frame: 0,
+  fps: 60,
+  aspect: 1,
+  bass: 0,
+  mid: 0,
+  mids: 0,
+  treble: 0,
+  bassAtt: 0,
+  midAtt: 0,
+  midsAtt: 0,
+  trebleAtt: 0,
+  beat: 0,
+  beatPulse: 0,
+  rms: 0,
+  vol: 0,
+  music: 0,
+  weightedEnergy: 0,
+};
 
 export function buildProceduralFieldSignals(
   signals: MilkdropRuntimeSignals,
 ): MilkdropGpuFieldSignalInputs {
-  return {
-    time: signals.time,
-    frame: signals.frame,
-    fps: signals.fps,
-    aspect: signals.aspect ?? 1,
-    bass: signals.bass,
-    mid: signals.mid,
-    mids: signals.mids,
-    treble: signals.treble,
-    bassAtt: signals.bassAtt,
-    midAtt: signals.mid_att,
-    midsAtt: signals.midsAtt,
-    trebleAtt: signals.trebleAtt,
-    beat: signals.beat,
-    beatPulse: signals.beatPulse,
-    rms: signals.rms,
-    vol: signals.vol,
-    music: signals.music,
-    weightedEnergy: signals.weightedEnergy,
-  };
+  reusableFieldSignals.time = signals.time;
+  reusableFieldSignals.frame = signals.frame;
+  reusableFieldSignals.fps = signals.fps;
+  reusableFieldSignals.aspect = signals.aspect ?? 1;
+  reusableFieldSignals.bass = signals.bass;
+  reusableFieldSignals.mid = signals.mid;
+  reusableFieldSignals.mids = signals.mids;
+  reusableFieldSignals.treble = signals.treble;
+  reusableFieldSignals.bassAtt = signals.bassAtt;
+  reusableFieldSignals.midAtt = signals.mid_att;
+  reusableFieldSignals.midsAtt = signals.midsAtt;
+  reusableFieldSignals.trebleAtt = signals.trebleAtt;
+  reusableFieldSignals.beat = signals.beat;
+  reusableFieldSignals.beatPulse = signals.beatPulse;
+  reusableFieldSignals.rms = signals.rms;
+  reusableFieldSignals.vol = signals.vol;
+  reusableFieldSignals.music = signals.music;
+  reusableFieldSignals.weightedEnergy = signals.weightedEnergy;
+  return reusableFieldSignals;
 }
 
 export function buildMeshField({
