@@ -42,8 +42,10 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const deviceInitRef = useRef(false);
+  const mobileDevice = isMobileDevice();
 
   useEffect(() => {
+    if (mobileDevice) return;
     if (!navigator.mediaDevices?.enumerateDevices) return;
     navigator.mediaDevices.enumerateDevices().then((devices) => {
       const inputs = devices.filter((d) => d.kind === 'audioinput');
@@ -53,12 +55,12 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
         setSelectedDeviceId(inputs[0].deviceId);
       }
     });
-  }, []);
+  }, [mobileDevice]);
 
   const canCaptureDisplayAudio =
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices?.getDisplayMedia &&
-    !isMobileDevice();
+    !mobileDevice;
 
   const handlePlayYouTube = () => {
     if (youtubeReady) {
@@ -218,7 +220,10 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
           disabled={!engineReady}
           aria-describedby={!engineReady ? disabledDescription : undefined}
           onClick={() =>
-            onAudioStart('microphone', selectedDeviceId || undefined)
+            onAudioStart(
+              'microphone',
+              mobileDevice ? undefined : selectedDeviceId || undefined,
+            )
           }
         >
           <div className="stims-shell__source-card-header">

@@ -218,94 +218,129 @@ browserTest(
   { timeout: 120000 },
 );
 
-(hasChromium ? test.skipIf(!!process.env.CI) : test.skip)(
-  'starts microphone audio on a mobile browser with one permission request',
-  async () => {
-    const browser = await chromium.launch({
-      headless: HEADLESS,
-      args: [
-        ...RENDERER_ARGS,
-        '--use-fake-device-for-media-stream',
-        '--use-fake-ui-for-media-stream',
-      ],
+async function verifySmartphoneMicrophoneAccess({
+  returningUser,
+}: {
+  returningUser: boolean;
+}) {
+  const browser = await chromium.launch({
+    headless: HEADLESS,
+    args: [
+      ...RENDERER_ARGS,
+      '--use-fake-device-for-media-stream',
+      '--use-fake-ui-for-media-stream',
+    ],
+  });
+  const ctx = await browser.newContext({
+    ...devices['iPhone 13'],
+    ...(returningUser ? { permissions: ['microphone'] } : {}),
+  });
+  await ctx.addInitScript(() => {
+    const mediaDevices = navigator.mediaDevices;
+    if (!mediaDevices?.getUserMedia) return;
+    const getUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
+    let calls = 0;
+    Object.defineProperty(mediaDevices, 'getUserMedia', {
+      configurable: true,
+      value: async (constraints: MediaStreamConstraints) => {
+        calls += 1;
+        (
+          window as typeof window & {
+            __stimsMicCalls?: number;
+            __stimsMicConstraints?: MediaStreamConstraints;
+          }
+        ).__stimsMicCalls = calls;
+        (
+          window as typeof window & {
+            __stimsMicCalls?: number;
+            __stimsMicConstraints?: MediaStreamConstraints;
+          }
+        ).__stimsMicConstraints = constraints;
+        return getUserMedia(constraints);
+      },
     });
-    const ctx = await browser.newContext({
-      ...devices['iPhone 13'],
-      permissions: ['microphone'],
-    });
+  });
+  if (returningUser) {
     await ctx.addInitScript(() => {
       const mediaDevices = navigator.mediaDevices;
-      if (!mediaDevices?.getUserMedia) return;
-      const getUserMedia = mediaDevices.getUserMedia.bind(mediaDevices);
-      let calls = 0;
-      Object.defineProperty(mediaDevices, 'getUserMedia', {
+      if (!mediaDevices?.enumerateDevices) return;
+      Object.defineProperty(mediaDevices, 'enumerateDevices', {
         configurable: true,
-        value: async (constraints: MediaStreamConstraints) => {
-          calls += 1;
-          (
-            window as typeof window & {
-              __stimsMicCalls?: number;
-              __stimsMicConstraints?: MediaStreamConstraints;
-            }
-          ).__stimsMicCalls = calls;
-          (
-            window as typeof window & {
-              __stimsMicCalls?: number;
-              __stimsMicConstraints?: MediaStreamConstraints;
-            }
-          ).__stimsMicConstraints = constraints;
-          return getUserMedia(constraints);
-        },
+        value: async () => [
+          {
+            deviceId: 'previously-granted-phone-mic',
+            groupId: 'phone-inputs',
+            kind: 'audioinput',
+            label: 'Phone microphone',
+            toJSON: () => ({}),
+          } satisfies MediaDeviceInfo,
+        ],
       });
     });
-    const page = await ctx.newPage();
+  }
+  const page = await ctx.newPage();
 
-    try {
-      await page.goto(`${SERVER_URL}/?audio=none`, {
-        waitUntil: 'domcontentloaded',
-      });
-      await page.locator('#start-audio-btn').click();
-      await page.waitForFunction(
-        () => document.body.dataset.audioActive === 'true',
-        { timeout: 30000 },
-      );
-      await page.waitForFunction(
-        () => window.location.search.includes('audio=microphone'),
-        { timeout: 30000 },
-      );
+  try {
+    await page.goto(`${SERVER_URL}/?audio=none`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await page.locator('#start-audio-btn').click();
+    await page.waitForFunction(
+      () => document.body.dataset.audioActive === 'true',
+      { timeout: 30000 },
+    );
+    await page.waitForFunction(
+      () => window.location.search.includes('audio=microphone'),
+      { timeout: 30000 },
+    );
 
-      const info = await page.evaluate(() => {
-        const state = window as typeof window & {
-          __stimsMicCalls?: number;
-          __stimsMicConstraints?: MediaStreamConstraints;
-        };
-        return {
-          calls: state.__stimsMicCalls ?? 0,
-          constraints: state.__stimsMicConstraints,
-          route: window.location.search,
-        };
-      });
+    const info = await page.evaluate(() => {
+      const state = window as typeof window & {
+        __stimsMicCalls?: number;
+        __stimsMicConstraints?: MediaStreamConstraints;
+      };
+      return {
+        calls: state.__stimsMicCalls ?? 0,
+        constraints: state.__stimsMicConstraints,
+        route: window.location.search,
+      };
+    });
 
-      expect(info.calls).toBe(1);
+    expect(info.calls).toBe(1);
 
-      // The visualizer reacts to the raw spectrum, so the browser's voice DSP
-      // has to stay off — AGC, echo cancellation and noise suppression all
-      // reshape the signal the shaders read from. Mirrors
-      // DEFAULT_MICROPHONE_CONSTRAINTS in src/js/core/audio-handler.ts.
-      const audioConstraints = info.constraints?.audio as
-        | MediaTrackConstraints
-        | undefined;
-      expect(audioConstraints).toBeTypeOf('object');
-      expect(audioConstraints).toMatchObject({
-        echoCancellation: { ideal: false },
-        noiseSuppression: { ideal: false },
-        autoGainControl: { ideal: false },
-      });
+    // The visualizer reacts to the raw spectrum, so the browser's voice DSP
+    // has to stay off — AGC, echo cancellation and noise suppression all
+    // reshape the signal the shaders read from. Mirrors
+    // DEFAULT_MICROPHONE_CONSTRAINTS in src/js/core/audio-handler.ts.
+    const audioConstraints = info.constraints?.audio as
+      | MediaTrackConstraints
+      | undefined;
+    expect(audioConstraints).toBeTypeOf('object');
+    expect(audioConstraints).toMatchObject({
+      echoCancellation: { ideal: false },
+      noiseSuppression: { ideal: false },
+      autoGainControl: { ideal: false },
+    });
+    expect(audioConstraints).not.toHaveProperty('deviceId');
 
-      expect(info.route).toContain('audio=microphone');
-    } finally {
-      await closeQuietly(ctx, browser);
-    }
-  },
+    expect(info.route).toContain('audio=microphone');
+  } finally {
+    await closeQuietly(ctx, browser);
+  }
+}
+
+const smartphoneMicrophoneTest = hasChromium
+  ? test.skipIf(!!process.env.CI)
+  : test.skip;
+
+smartphoneMicrophoneTest(
+  'requests default microphone access for a first-time smartphone user',
+  () => verifySmartphoneMicrophoneAccess({ returningUser: false }),
+  { timeout: 120000 },
+);
+
+smartphoneMicrophoneTest(
+  'reuses granted microphone access for a returning smartphone user',
+  () => verifySmartphoneMicrophoneAccess({ returningUser: true }),
   { timeout: 120000 },
 );
