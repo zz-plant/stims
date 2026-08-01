@@ -93,6 +93,7 @@
     "parity:suite": "bun run scripts/run-parity-diff-suite.ts",
     "perf:certification-corpus": "bun run scripts/run-certification-corpus-perf-suite.ts",
     "sweep:milkdrop-loops": "bun run scripts/run-milkdrop-loop-visual-sweep.ts",
+    "sweep:butterchurn": "bun run scripts/sweep-butterchurn-support.ts",
     "test:agent": "bun run test:integration",
     "postinstall": "bun scripts/postinstall.mjs || node scripts/postinstall.mjs",
     "dev:webgpu": "bun scripts/dev-webgpu.mjs || node scripts/dev-webgpu.mjs",

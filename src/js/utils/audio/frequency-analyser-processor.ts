@@ -1,4 +1,4 @@
-/* global AudioWorkletProcessor, registerProcessor */
+/* global AudioWorkletProcessor, registerProcessor, currentTime */
 
 const TWO_PI = Math.PI * 2;
 
@@ -164,6 +164,23 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
   private historyCount = 0;
   private prevKick = 0;
   private prevTreble = 0;
+
+  private pmRunningAvg = 0;
+  private pmBeatIntensity = 0;
+  private pmLastBeatTime = 0;
+  private readonly pmCoeff = 0.1;
+  private readonly pmBeatDecay = 0.92;
+  private beatRunningAvgBass = 0;
+  private beatRunningAvgMid = 0;
+  private beatRunningAvgTreble = 0;
+  private beatIntensityBass = 0;
+  private beatIntensityMid = 0;
+  private beatIntensityTreble = 0;
+  private lastBassBeatTime = 0;
+  private lastMidBeatTime = 0;
+  private lastTrebleBeatTime = 0;
+  private readonly beatThreshold = 0.085;
+  private readonly beatMinIntervalMs = 150;
 
   constructor(options?: AudioWorkletNodeOptions) {
     super();
@@ -377,6 +394,72 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         treble: this.historyCount > 0 ? trebleSum / this.historyCount : 0,
       };
 
+      const nowMs = (typeof currentTime === 'number' ? currentTime : 0) * 1000;
+      const weightedEnergy = Math.min(
+        1,
+        bass * 0.55 + mid * 0.3 + treble * 0.15,
+      );
+
+      this.pmRunningAvg += this.pmCoeff * (weightedEnergy - this.pmRunningAvg);
+      const pmThreshold = this.pmRunningAvg * (1 + this.beatThreshold * 3);
+      const pmIsBeat =
+        weightedEnergy > pmThreshold &&
+        nowMs - this.pmLastBeatTime > this.beatMinIntervalMs;
+      if (pmIsBeat) {
+        this.pmBeatIntensity = Math.min(1, this.pmBeatIntensity + 0.5);
+        this.pmLastBeatTime = nowMs;
+      } else {
+        this.pmBeatIntensity *= this.pmBeatDecay;
+      }
+
+      const bassCoeff = 0.08;
+      const midCoeff = 0.06;
+      const trebleCoeff = 0.05;
+      this.beatRunningAvgBass += bassCoeff * (bass - this.beatRunningAvgBass);
+      this.beatRunningAvgMid += midCoeff * (mid - this.beatRunningAvgMid);
+      this.beatRunningAvgTreble +=
+        trebleCoeff * (treble - this.beatRunningAvgTreble);
+
+      const beatBass =
+        bass > this.beatRunningAvgBass * (1 + this.beatThreshold * 2.5) &&
+        nowMs - this.lastBassBeatTime > this.beatMinIntervalMs;
+      const beatMid =
+        mid > this.beatRunningAvgMid * (1 + this.beatThreshold * 2.0) &&
+        nowMs - this.lastMidBeatTime > this.beatMinIntervalMs;
+      const beatTreble =
+        treble > this.beatRunningAvgTreble * (1 + this.beatThreshold * 1.8) &&
+        nowMs - this.lastTrebleBeatTime > this.beatMinIntervalMs;
+
+      if (beatBass) {
+        this.beatIntensityBass = Math.min(1, 0.35 + bass);
+        this.lastBassBeatTime = nowMs;
+      } else {
+        this.beatIntensityBass *= this.pmBeatDecay;
+      }
+      if (beatMid) {
+        this.beatIntensityMid = Math.min(1, 0.28 + mid);
+        this.lastMidBeatTime = nowMs;
+      } else {
+        this.beatIntensityMid *= this.pmBeatDecay;
+      }
+      if (beatTreble) {
+        this.beatIntensityTreble = Math.min(1, 0.22 + treble);
+        this.lastTrebleBeatTime = nowMs;
+      } else {
+        this.beatIntensityTreble *= this.pmBeatDecay;
+      }
+
+      const beatDetection = {
+        isBeat: pmIsBeat,
+        beatIntensity: this.pmBeatIntensity,
+        beatBass,
+        beatMid,
+        beatTreble,
+        bassBeatIntensity: this.beatIntensityBass,
+        midBeatIntensity: this.beatIntensityMid,
+        trebleBeatIntensity: this.beatIntensityTreble,
+      };
+
       const freqTransfer = this.freqBuf.buffer as ArrayBuffer;
       const waveTransfer = this.waveBuf.buffer as ArrayBuffer;
       const timeDomainTransfer = this.timeDomainBuf.buffer as ArrayBuffer;
@@ -393,6 +476,7 @@ class FrequencyAnalyserProcessor extends AudioWorkletProcessor {
         stereoWidth,
         energy: { bass, mid, treble },
         energyAverages,
+        beatDetection,
         transientMetrics: {
           subBassEnv,
           kickTransient,

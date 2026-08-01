@@ -1,6 +1,12 @@
 import { spawn } from 'node:child_process';
+import os from 'node:os';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
+
+const DEFAULT_CONCURRENCY = Math.min(
+  4,
+  Math.max(1, (os.availableParallelism?.() ?? os.cpus()?.length ?? 4) - 1),
+);
 
 export type CaptureVisualReferenceSuiteOptions = {
   repoRoot: string;
@@ -10,6 +16,7 @@ export type CaptureVisualReferenceSuiteOptions = {
   vibeMode: boolean;
   presetIds?: string[];
   rendererProfile?: 'compatibility' | 'webgpu';
+  concurrency?: number;
 };
 
 type VisualReferenceCaptureRequest = Required<
@@ -72,6 +79,7 @@ export function buildVisualReferenceCaptureRequests({
 
 function runPlayToyInChildProcess(
   request: VisualReferenceCaptureRequest,
+  label: string,
 ): Promise<PlayToyResult> {
   return new Promise((resolve, reject) => {
     const args = [
@@ -116,12 +124,16 @@ function runPlayToyInChildProcess(
     proc.stdout?.on('data', (data) => {
       const str = data.toString();
       stdout += str;
-      process.stdout.write(str);
     });
 
     proc.on('close', (code) => {
+      if (stdout) {
+        console.log(`\n[${label}] stdout:\n${stdout}`);
+      }
       if (code !== 0) {
-        reject(new Error(`play-toy process exited with code ${code}`));
+        reject(
+          new Error(`play-toy process for "${label}" exited with code ${code}`),
+        );
         return;
       }
 
@@ -137,7 +149,7 @@ function runPlayToyInChildProcess(
         const errMessage = err instanceof Error ? err.message : String(err);
         reject(
           new Error(
-            `Failed to parse play-toy JSON output: ${errMessage}. Raw output length: ${stdout.length}`,
+            `Failed to parse play-toy JSON output for "${label}": ${errMessage}. Raw output length: ${stdout.length}`,
           ),
         );
       }
@@ -169,14 +181,40 @@ export async function captureVisualReferenceSuite(
   options: CaptureVisualReferenceSuiteOptions,
 ) {
   const requests = buildVisualReferenceCaptureRequests(options);
-  const results = [];
+  const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
+  const results: PlayToyResult[] = new Array(requests.length);
+  const errors: Error[] = [];
 
-  for (const request of requests) {
-    results.push(
-      assertVisualReferenceCaptureSucceeded(
-        await runPlayToyInChildProcess(request),
-      ),
-    );
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < requests.length) {
+      const index = nextIndex++;
+      const request = requests[index];
+      try {
+        const result = await runPlayToyInChildProcess(
+          request,
+          `${request.presetId} (${index + 1}/${requests.length})`,
+        );
+        results[index] = assertVisualReferenceCaptureSucceeded(result);
+      } catch (error) {
+        results[index] = {
+          slug: request.slug,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, requests.length) },
+    () => worker(),
+  );
+  await Promise.all(workers);
+
+  if (errors.length > 0) {
+    throw errors[0];
   }
 
   return {
@@ -187,7 +225,7 @@ export async function captureVisualReferenceSuite(
 
 function usage() {
   console.error(
-    'Usage: bun scripts/capture-visual-reference-suite.ts [--output <dir>] [--port <number>] [--preset <id>]... [--force-webgl|--force-webgpu]',
+    'Usage: bun scripts/capture-visual-reference-suite.ts [--output <dir>] [--port <number>] [--preset <id>]... [--force-webgl|--force-webgpu] [--concurrency <n>]',
   );
 }
 
@@ -222,6 +260,16 @@ export function parseVisualReferenceCaptureArgs(
       : argv.includes('--force-webgpu')
         ? 'webgpu'
         : undefined,
+    concurrency: (() => {
+      const raw = getArg(
+        '--concurrency',
+        String(DEFAULT_CONCURRENCY),
+      ) as string;
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) && parsed >= 1
+        ? parsed
+        : DEFAULT_CONCURRENCY;
+    })(),
   };
 }
 

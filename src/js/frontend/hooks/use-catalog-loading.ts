@@ -124,6 +124,16 @@ export function useCatalogLoading() {
           setFallbackCatalogReady(true);
           setActivityCatalog(mapped);
           reportLoadStatus('full-catalog');
+
+          void ensureCatalogStore().then((store) => {
+            void store
+              .prefetchCompiledPresets()
+              .then(() => {
+                if (cancelled) return;
+                void refreshCatalogActivity();
+              })
+              .catch(() => {});
+          });
         })
         .catch((error) => {
           if (cancelled) return;

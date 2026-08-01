@@ -262,19 +262,39 @@ export function createMilkdropSignalTracker(options?: {
         rawWeightedEnergy * spectralBoost,
       );
 
-      const update = beatTracker.update(
-        {
-          bands: {
+      const workletBeat = analyser?.getWorkletBeatDetection?.() ?? null;
+      let update: import('../utils/audio/beat').BeatTrackerUpdate;
+      if (workletBeat) {
+        update = {
+          smoothedBands: {
             bass: bands.bass,
             mid: bands.mid,
             treble: bands.treble,
           },
-          weightedEnergy:
-            finalRawWeightedEnergy * 0.62 + finalWeightedEnergy * 0.38,
-          deltaMs,
-        },
-        time * 1000,
-      );
+          beatIntensity: workletBeat.beatIntensity,
+          isBeat: workletBeat.isBeat,
+          isTransient: workletBeat.beatIntensity > 0.6,
+          spectralFlux: analyser?.getSpectralFlux?.() ?? 0,
+          bandFlux: 0,
+          beatBass: workletBeat.beatBass,
+          beatMid: workletBeat.beatMid,
+          beatTreble: workletBeat.beatTreble,
+        };
+      } else {
+        update = beatTracker.update(
+          {
+            bands: {
+              bass: bands.bass,
+              mid: bands.mid,
+              treble: bands.treble,
+            },
+            weightedEnergy:
+              finalRawWeightedEnergy * 0.62 + finalWeightedEnergy * 0.38,
+            deltaMs,
+          },
+          time * 1000,
+        );
+      }
 
       rms = smoothLevel(
         rms,

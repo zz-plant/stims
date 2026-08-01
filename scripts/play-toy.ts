@@ -8,8 +8,8 @@ import {
   type Page,
 } from 'playwright';
 import sharp from 'sharp';
-import { appendParityArtifactEntry } from './parity-artifacts.ts';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
+import { appendParityArtifactEntry } from './parity-artifacts.ts';
 
 export type PlayToyResult = {
   slug: string;
