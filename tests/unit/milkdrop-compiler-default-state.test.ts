@@ -6,6 +6,7 @@ import {
   MAX_CUSTOM_SHAPES,
   MAX_CUSTOM_WAVES,
 } from '../../src/js/milkdrop/compiler/default-state.ts';
+import { compileMilkdropPresetSource } from '../../src/js/milkdrop/compiler.ts';
 
 describe('milkdrop compiler default state', () => {
   test('seeds the first custom shape slot with projectM-neutral defaults', () => {
@@ -43,5 +44,26 @@ describe('milkdrop compiler default state', () => {
     ).toBe(0);
     expect(DEFAULT_MILKDROP_STATE.texture_wrap).toBe(1);
     expect(DEFAULT_MILKDROP_STATE.video_echo_alpha).toBe(0);
+  });
+
+  test('preserves legacy MilkDrop blur ranges for direct shader uniforms', () => {
+    const compiled = compileMilkdropPresetSource(`
+[preset00]
+b1n=0.1
+b1x=0.9
+b2n=0.2
+b2x=0.7
+b3n=0.3
+b3x=0.6
+    `);
+
+    expect(compiled.ir.numericFields).toMatchObject({
+      blur1_min: 0.1,
+      blur1_max: 0.9,
+      blur2_min: 0.2,
+      blur2_max: 0.7,
+      blur3_min: 0.3,
+      blur3_max: 0.6,
+    });
   });
 });

@@ -42,6 +42,9 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
       if (name === 'rand') {
         return 'rand()';
       }
+      if (isRegisterIdentifier(name)) {
+        return `reg_${name}`;
+      }
       const signalField = MILKDROP_WGSL_SIGNAL_ALIAS_MAP.get(name);
       if (signalField !== undefined) {
         return `signals.${signalField}`;
@@ -190,7 +193,7 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `(${value} - floor(${value}))`;
         }
         case 'if':
-          return `select(${args[2] ?? '0.0f'}, ${args[1] ?? '0.0f'}, abs(${args[0] ?? '0.0f'}) > 0.000001f)`;
+          return `select(f32(${args[2] ?? '0.0f'}), f32(${args[1] ?? '0.0f'}), abs(${args[0] ?? '0.0f'}) > 0.000001f)`;
         case 'above':
           return `select(0.0f, 1.0f, (${args[0] ?? '0.0f'}) > (${args[1] ?? '0.0f'}))`;
         case 'below':

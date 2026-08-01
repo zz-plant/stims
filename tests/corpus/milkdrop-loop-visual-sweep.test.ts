@@ -31,7 +31,7 @@ describe('MilkDrop loop preset visual sweep', () => {
         ),
       ),
     ).toBe(true);
-  });
+  }, 15_000);
 
   test('classifies runtime failures ahead of visible and performance regressions', () => {
     const runtime = classifyLoopPresetSweepSample({
@@ -46,21 +46,54 @@ describe('MilkDrop loop preset visual sweep', () => {
       loadError: null,
       consoleErrors: [],
       frameRate: 60,
-      firstFrame: { meanLuminance: 0, visiblePixelRatio: 0 },
-      finalFrame: { meanLuminance: 0, visiblePixelRatio: 0 },
+      firstFrame: {
+        meanLuminance: 0,
+        visiblePixelRatio: 0,
+        luminanceStandardDeviation: 0,
+      },
+      finalFrame: {
+        meanLuminance: 0,
+        visiblePixelRatio: 0,
+        luminanceStandardDeviation: 0,
+      },
       frameDifferenceRatio: 0,
+    });
+    const uniform = classifyLoopPresetSweepSample({
+      loadError: null,
+      consoleErrors: [],
+      frameRate: 60,
+      firstFrame: {
+        meanLuminance: 220,
+        visiblePixelRatio: 1,
+        luminanceStandardDeviation: 0.2,
+      },
+      finalFrame: {
+        meanLuminance: 219,
+        visiblePixelRatio: 1,
+        luminanceStandardDeviation: 0.3,
+      },
+      frameDifferenceRatio: 0.1,
     });
     const slow = classifyLoopPresetSweepSample({
       loadError: null,
       consoleErrors: [],
       frameRate: 8,
-      firstFrame: { meanLuminance: 40, visiblePixelRatio: 0.5 },
-      finalFrame: { meanLuminance: 45, visiblePixelRatio: 0.55 },
+      firstFrame: {
+        meanLuminance: 40,
+        visiblePixelRatio: 0.5,
+        luminanceStandardDeviation: 12,
+      },
+      finalFrame: {
+        meanLuminance: 45,
+        visiblePixelRatio: 0.55,
+        luminanceStandardDeviation: 14,
+      },
       frameDifferenceRatio: 0.2,
     });
 
     expect(runtime.status).toBe('runtime-regression');
     expect(blank.status).toBe('visual-regression');
+    expect(uniform.status).toBe('visual-regression');
     expect(slow.status).toBe('performance-regression');
     expect(runtime.severityScore).toBeGreaterThan(blank.severityScore);
     expect(blank.severityScore).toBeGreaterThan(slow.severityScore);
@@ -102,6 +135,12 @@ describe('MilkDrop loop preset visual sweep', () => {
           <div id="overlay" style="position: absolute; inset: 0; background: white"></div>
         </div>
       `);
+      await page.locator('canvas').evaluate((canvas) => {
+        const context = (canvas as HTMLCanvasElement).getContext('2d');
+        if (!context) throw new Error('Missing test canvas context');
+        context.fillStyle = 'black';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+      });
       const capture = await captureIsolatedVisualizerCanvas(page);
       const { data } = await sharp(capture).removeAlpha().raw().toBuffer({
         resolveWithObject: true,

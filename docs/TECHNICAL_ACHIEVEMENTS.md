@@ -1,65 +1,79 @@
-# Technical Achievements
+# Technical foundations and evidence status
 
-This document highlights the core technical achievements and engineering systems built into **Stims**.
+This document maps Stims' implemented engineering systems without turning scaffolding, optional services, or roadmap work into shipped-product claims.
 
----
+## 1. Preset compiler and VM — implemented
 
-## 1. In-Browser JIT Compiler & VM for Legacy MilkDrop DSL
+- [`src/js/milkdrop/expression-jit.ts`](../src/js/milkdrop/expression-jit.ts) compiles preset equations into browser-executable functions.
+- [`src/js/milkdrop/vm.ts`](../src/js/milkdrop/vm.ts) and its focused modules model preset state, registers, custom waves and shapes, `megabuf`, and `gmegabuf` behavior.
+- [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts) provides a shared intermediate representation for runtime execution and backend-specific lowering.
+- Direct `.milk` import and export keep the authoring format visible to users instead of requiring a renderer-specific JSON representation.
 
-- **JIT Compilation Engine**: Implemented in [`src/js/milkdrop/expression-jit.ts`](../src/js/milkdrop/expression-jit.ts), compiling Winamp MilkDrop per-frame, per-vertex, custom wave, custom shape, and warp math equations (EEL2 / HLSL-like DSL) directly into zero-closure, high-throughput JavaScript functions in the browser.
-- **MilkDrop State & Memory Emulation**: Emulates Winamp MilkDrop's memory buffers in [`src/js/milkdrop/vm.ts`](../src/js/milkdrop/vm.ts) and [`src/js/milkdrop/vm-gpu.ts`](../src/js/milkdrop/vm-gpu.ts), including per-preset memory (`megabuf` of 65,536 floats) and persistent inter-preset memory (`gmegabuf` of 1,048,576 floats).
-- **Multi-Target Lowering**: Uses an intermediate AST representation in [`src/js/milkdrop/compiler/ir.ts`](../src/js/milkdrop/compiler/ir.ts) to lower equations into WebGL GLSL ([`src/js/milkdrop/compiler/shader-analysis-glsl.ts`](../src/js/milkdrop/compiler/shader-analysis-glsl.ts)), WebGPU WGSL ([`src/js/milkdrop/compiler/wgsl-generator.ts`](../src/js/milkdrop/compiler/wgsl-generator.ts)), and Three.js Shading Language / TSL ([`src/js/milkdrop/compiler/tsl-generator.ts`](../src/js/milkdrop/compiler/tsl-generator.ts)).
+Compilation and runtime stepping are necessary compatibility evidence. They do not, by themselves, prove visual fidelity.
 
----
+## 2. WebGL2 baseline and guarded WebGPU path — implemented, partially certified
 
-## 2. Dual WebGPU / WebGL2 Rendering Architecture & Resilient Fallback Chains
+- WebGL2 remains the compatibility baseline.
+- [`src/js/core/renderer-capabilities.ts`](../src/js/core/renderer-capabilities.ts) probes browser support and records renderer decisions.
+- [`src/js/milkdrop/compiler/shader-execution-classification.ts`](../src/js/milkdrop/compiler/shader-execution-classification.ts) classifies shader programs before runtime selection.
+- WebGPU batching, descriptors, WGSL generation, and TSL feedback work live behind independent rollout flags and fallback rules.
 
-- **Next-Gen WebGPU Renderer**: Complete WebGPU pipeline featuring segment batching ([`src/js/milkdrop/renderer-adapter-webgpu-batching.ts`](../src/js/milkdrop/renderer-adapter-webgpu-batching.ts)), compute pipelines, and TSL feedback managers ([`src/js/milkdrop/feedback-manager-webgpu-tsl.ts`](../src/js/milkdrop/feedback-manager-webgpu-tsl.ts)).
-- **Granular Optimization Rollout Flags**: Independent flag gating ([`src/js/milkdrop/webgpu-optimization-flags.ts`](../src/js/milkdrop/webgpu-optimization-flags.ts)) for main wave, trail waves, mesh fields, motion vectors, and feedback shaders via URL parameters and `localStorage`.
-- **Zero-Interruption Fallback Chains**: Real-time capability probing ([`src/js/core/renderer-capabilities.ts`](../src/js/core/renderer-capabilities.ts)) and execution classification ([`src/js/milkdrop/compiler/shader-execution-classification.ts`](../src/js/milkdrop/compiler/shader-execution-classification.ts)) categorize shader programs into executable states, automatically falling back to WebGL2 without crashing or dropping frames.
+The WebGPU path is not presented as broadly visually equivalent. Current certification status lives in [`src/data/milkdrop-parity/webgpu-certification-report.json`](../src/data/milkdrop-parity/webgpu-certification-report.json), and measured results require trusted projectM reference captures.
 
----
+## 3. Browser-native workspace — implemented
 
-## 3. Serverless AI Generation, Algorithmic Preset Blending & Vision Processing
+- [`src/js/frontend/App.tsx`](../src/js/frontend/App.tsx) owns the single product workspace.
+- Catalog search, collection filters, rendered previews, favorites, queues, recent history, and session state are integrated around the running visualizer.
+- [`src/js/frontend/url-state.ts`](../src/js/frontend/url-state.ts) retains preset, collection, audio, tool, and automation state in URL query parameters.
+- Progressive catalog loading and bounded preview work keep the large imported library usable on constrained devices.
 
-- **Text-to-MilkDrop AI Compiler**: Cloudflare Worker edge API ([`functions/api/generate-preset.ts`](../functions/api/generate-preset.ts)) that translates natural language prompts (*e.g., "neon waves pulsing through a starfield"*) into syntactically valid MilkDrop equations using models like Qwen 2.5 Coder 32B.
-- **Parallel Batch Generation**: Concurrent job dispatch ([`functions/api/batch-generate.ts`](../functions/api/batch-generate.ts)) producing 5 distinct variations of a prompt simultaneously.
-- **AST Preset Blending Engine**: Algorithmic AST preset blender ([`functions/api/blend-presets.ts`](../functions/api/blend-presets.ts)) that extracts motion vectors from Preset A and color/atmosphere equations from Preset B, unifying them into a coherent new preset.
-- **Multimodal Image-to-Preset**: Image analysis endpoint ([`functions/api/image-to-preset.ts`](../functions/api/image-to-preset.ts)) converting screenshot aesthetics into synthesized MilkDrop equations.
+This product layer—not graphics API branding—is the primary differentiation from engine-only integrations.
 
----
+## 4. Live preset editor — implemented
 
-## 4. Edge Semantic Vector Search & Audio-Reactive Preset Matching
+- [`src/js/milkdrop/overlay/editor-panel.ts`](../src/js/milkdrop/overlay/editor-panel.ts) integrates CodeMirror with MilkDrop-oriented completions, snippets, diagnostics, and line navigation.
+- Live controls patch common values such as `zoom`, `warp`, `rot`, and `decay` in the active authoring session.
+- Import, edit, inspect, and export actions operate around the same running preset.
 
-- **Vector Similarity Search**: Indexes 1,868+ presets using BGE embeddings stored in Cloudflare D1 ([`functions/api/visual-search.ts`](../functions/api/visual-search.ts)). Performs in-memory TTL-cached cosine similarity searches over normalized `Float32Array` vectors at the edge.
-- **Audio-Reactive Matching**: Monitors live audio spectral energy dynamics (bass, mid, treble) in [`src/js/milkdrop/audio-signal-processor.ts`](../src/js/milkdrop/audio-signal-processor.ts) and dynamically recommends presets with matching visual motion profiles.
+Optional edge-assisted fixes and blending are separate from the local editor contract and may require deployed API configuration.
 
----
+## 5. Audio analysis and sources — implemented; stem separation not implemented
 
-## 5. IDE-Grade MilkDrop CodeMirror 6 Editor & Live Variable Patching
+- [`src/js/utils/audio/frequency-analyser-processor.ts`](../src/js/utils/audio/frequency-analyser-processor.ts) calculates waveform, band-energy, transient, and envelope data in an AudioWorklet when available.
+- [`src/js/core/audio-handler.ts`](../src/js/core/audio-handler.ts) coordinates demo, microphone, tab, YouTube, and local-file paths subject to browser support and permissions.
+- [`src/js/core/audio-gpu-texture.ts`](../src/js/core/audio-gpu-texture.ts) packs frequency and waveform data into a shared GPU texture allocation for renderer consumption.
 
-- **Custom Language Environment**: CodeMirror 6 workspace integrated into [`src/js/milkdrop/overlay/editor-panel.ts`](../src/js/milkdrop/overlay/editor-panel.ts) featuring MilkDrop EEL/HLSL syntax highlighting, code folding, bracket matching, 60+ MilkDrop completions, and 14 template snippets.
-- **Live Parameter Tuning**: Real-time slider sidebar (`zoom`, `warp`, `rot`, `decay`, `hue`) directly patches live VM register values without resetting rendering state or interrupting audio playback.
-- **AI Quick Fix & Diagnostics**: Real-time AST compiler diagnostics (`computeAstDiagnostics`) surface line-by-line compiler errors, with one-click AI correction routing shader errors back to edge models for automatic syntax repair.
+Stem-oriented runtime identifiers are reserved for future use. The repository does not currently perform client-side vocal, drum, bass, or instrument separation.
 
----
+## 6. Browser audio-video recording — beta, browser proof pending
 
-## 6. Low-Latency Audio Processing & Zero-Dependency Synthetic Audio Generator
+- [`src/js/frontend/CapturePanel.tsx`](../src/js/frontend/CapturePanel.tsx) exposes landscape and portrait recording targets.
+- [`src/js/utils/media/canvas-video-exporter.ts`](../src/js/utils/media/canvas-video-exporter.ts) records with `MediaRecorder`, can compose a cloned active audio track, and uses a native renderer-resize contract for the 4K target.
+- [`src/js/frontend/engine/video-export-runtime.ts`](../src/js/frontend/engine/video-export-runtime.ts) switches renderer, camera, and MilkDrop targets to the requested native dimensions and restores the session afterward.
 
-- **Off-Main-Thread AudioWorklet DSP**: AudioWorklet processor ([`src/js/utils/frequency-analyser-processor.ts`](../src/js/utils/frequency-analyser-processor.ts)) calculates 4-band transient metrics, energy envelope tracking, and multi-band energy levels (`bass`, `mid`, `treble`, `subBass`, `kick`) off the main thread.
-- **Multi-Source Audio Engine**: Integrated handler ([`src/js/core/audio-handler.ts`](../src/js/core/audio-handler.ts)) managing microphone input, browser tab capture, YouTube routing, audio files, and a built-in zero-dependency Web Audio synthesizer (arpeggiator + kick drum + sub drone).
-- **WebGPU Shared Audio Texture**: Uploads FFT frequency and waveform data directly into a 512x2 RGBA GPU texture ([`src/js/core/audio-gpu-texture.ts`](../src/js/core/audio-gpu-texture.ts)) for zero-copy shader access.
+The implementation still depends on browser codec and allocation support. Unit coverage proves lifecycle and track composition; it does not yet prove encoded resolution, synchronization, frame pacing, or sustained 4K output in supported browsers.
 
----
+## 7. Optional edge services — implemented routes, deployment-dependent product behavior
 
-## 7. Agent Automation API & Headless Verification Harness
+The repository contains Cloudflare Worker routes for preset generation, batch generation, blending, image-guided generation, visual search, and community storage. The local application does not require them for playback, catalog browsing, editing, or import/export.
 
-- **Programmatic Session API**: Exposes runtime state, debug snapshots, audio source selection, and lifecycle event callbacks via `window.stimState` ([`src/js/core/agent-api.ts`](../src/js/core/agent-api.ts)).
-- **Automation & QA Suite**: Supports headless execution via the `?agent=true` URL query parameter for AI agent automation and automated integration testing ([`tests/agent-integration.test.ts`](../tests/agent-integration.test.ts)).
+The bundled Generate panel now calls [`src/js/milkdrop/preset-generator.ts`](../src/js/milkdrop/preset-generator.ts) through either a configured hosted route or a loopback OpenAI-compatible endpoint, and compiles the returned source before loading it. That implementation is model-backed, but hosted deployment availability, local browser configuration, output quality, and the full generated-preset user flow still require end-to-end verification. Blending and the other optional services are not part of that bundled flow.
 
----
+## 8. Automation and visual evidence — implemented
 
-## 8. Zero-Router URL State Architecture
+- [`src/js/core/agent-api.ts`](../src/js/core/agent-api.ts) exposes session state and controls for headless verification.
+- `?agent=true` provides the canonical automation route.
+- Native projectM capture metadata, checked-in references, backend-aware browser captures, image diffs, and promoted measured results form the compatibility evidence chain.
+- [`scripts/check-toys.ts`](../scripts/check-toys.ts) prevents the public README preset count and selected product claims from drifting beyond their implementation evidence.
 
-- **Native History API Synchronization**: High-performance URL state management ([`src/js/frontend/url-state.ts`](../src/js/frontend/url-state.ts)) eliminating client-side router overhead.
-- **Deep-Link State Retention**: Synchronizes active tools, preset collections, audio modes, agent flags, and override parameters directly in URL search params with popstate back/forward support.
+See [`MILKDROP_PROJECTM_PARITY_PLAN.md`](./MILKDROP_PROJECTM_PARITY_PLAN.md) for the complete capture and promotion workflow.
+
+## Foundations that are not shipped workflows
+
+| Foundation | Current status |
+| --- | --- |
+| WebMIDI workflow | Workspace settings connect mapped CC values to live parameters; persistent mappings, recovery behavior, and device-backed verification remain open. |
+| WebXR stage | Workspace settings can attach an immersive session to the active renderer; headset rendering, spatial audio, and recovery lack device-backed proof. |
+| Stem-oriented signals | Runtime fields exist; separation and real signal population do not. |
+| Creator-certified high-resolution export | Native resize and audio-track composition are implemented; encoded output and synchronization still need browser-backed certification. |
+| Model-backed Generate panel | Hosted and loopback provider paths are wired; availability, output quality, and the full browser flow still need end-to-end proof. |

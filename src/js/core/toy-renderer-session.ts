@@ -10,17 +10,20 @@ export function createToyRendererSession({
   canvas,
   options,
   onReady,
+  requestRendererImpl = requestRenderer,
 }: {
   host: HTMLElement | null;
   canvas: HTMLCanvasElement;
   options: Partial<RendererInitConfig>;
   onReady?: (handle: RendererHandle | null) => void;
+  requestRendererImpl?: typeof requestRenderer;
 }) {
   let rendererHandle: RendererHandle | null = null;
   let rendererOptions = options;
   let viewportState: ToyViewportState | null = null;
+  let captureViewport: { width: number; height: number } | null = null;
 
-  const ready = requestRenderer({
+  const ready = requestRendererImpl({
     host,
     options,
     canvas,
@@ -55,7 +58,18 @@ export function createToyRendererSession({
           height: viewportState.height,
         }
       : undefined;
-    rendererHandle.applySettings(rendererOptions, viewport);
+    rendererHandle.applySettings(
+      captureViewport
+        ? {
+            ...rendererOptions,
+            maxPixelRatio: 1,
+            renderScale: 1,
+            adaptiveMaxPixelRatioMultiplier: 1,
+            adaptiveRenderScaleMultiplier: 1,
+          }
+        : rendererOptions,
+      captureViewport ?? viewport,
+    );
   };
 
   return {
@@ -71,7 +85,22 @@ export function createToyRendererSession({
       rendererOptions = { ...rendererOptions, ...nextOptions };
       applySettings();
     },
+    beginNativeCapture: (width: number, height: number) => {
+      if (!rendererHandle || captureViewport) {
+        return null;
+      }
+      captureViewport = { width, height };
+      applySettings();
+      let active = true;
+      return () => {
+        if (!active) return;
+        active = false;
+        captureViewport = null;
+        applySettings();
+      };
+    },
     dispose: () => {
+      captureViewport = null;
       rendererHandle?.renderer.setAnimationLoop?.(null);
       rendererHandle?.release();
       rendererHandle = null;

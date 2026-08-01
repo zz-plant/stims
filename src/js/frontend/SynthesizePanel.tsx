@@ -1,9 +1,6 @@
 import { useCallback, useState } from 'react';
 import styles from '../../css/SynthesizePanel.module.css';
-import {
-  type PresetSynthesisOptions,
-  synthesizeEELPreset,
-} from '../milkdrop/ai-preset-synthesizer.ts';
+import { generatePreset } from '../milkdrop/preset-generator.ts';
 import { ParametricIdenticon } from './ParametricIdenticon.tsx';
 import { useWorkspace } from './workspace-context.tsx';
 
@@ -13,39 +10,6 @@ function toFileList(milkSource: string) {
   return transfer.files;
 }
 
-function buildMilkSource(synthesized: ReturnType<typeof synthesizeEELPreset>) {
-  const lines: string[] = [];
-  lines.push(`title=${synthesized.name}`);
-  lines.push(`author=${synthesized.author}`);
-  lines.push('');
-  lines.push(`decay=${synthesized.decay}`);
-  lines.push(`zoom=${synthesized.zoom}`);
-  lines.push(`rot=${synthesized.rot}`);
-  lines.push(`warp=${synthesized.warp}`);
-  lines.push(`wave_r=${synthesized.wave_r}`);
-  lines.push(`wave_g=${synthesized.wave_g}`);
-  lines.push(`wave_b=${synthesized.wave_b}`);
-  if (synthesized.per_frame) {
-    lines.push('');
-    const statements = synthesized.per_frame.split(';').filter(Boolean);
-    statements.forEach((stmt, i) => {
-      lines.push(`per_frame_${i + 1}=${stmt.trim()};`);
-    });
-  }
-  if (synthesized.per_pixel) {
-    lines.push('');
-    const statements = synthesized.per_pixel.split(';').filter(Boolean);
-    statements.forEach((stmt, i) => {
-      lines.push(`per_pixel_${i + 1}=${stmt.trim()};`);
-    });
-  }
-  if (synthesized.wavecode_0_per_point) {
-    lines.push('');
-    lines.push(`wavecode_0_per_point=${synthesized.wavecode_0_per_point}`);
-  }
-  return `${lines.join('\n')}\n`;
-}
-
 const PALETTES = [
   { value: 'auto' as const, label: 'Auto-detect' },
   { value: 'bioluminescent' as const, label: 'Bioluminescent' },
@@ -53,42 +17,86 @@ const PALETTES = [
   { value: 'cosmic' as const, label: 'Cosmic' },
 ];
 
+type Palette = (typeof PALETTES)[number]['value'];
+type ProviderKind = 'hosted' | 'local';
+
+const viteEnv = (import.meta as unknown as { env?: { DEV?: boolean } }).env;
+const DEFAULT_PROVIDER: ProviderKind = viteEnv?.DEV ? 'local' : 'hosted';
+const DEFAULT_LOCAL_ENDPOINT = 'http://127.0.0.1:11434/v1';
+const DEFAULT_LOCAL_MODEL = 'gemma4:e4b';
+
+function providerStatus(provider: ProviderKind) {
+  return provider === 'local'
+    ? 'Local mode sends this prompt directly to Ollama on your computer.'
+    : 'Hosted mode uses the model service on the deployed Stims site.';
+}
+
 export function SynthesizePanel() {
   const { engine, ui } = useWorkspace();
   const [prompt, setPrompt] = useState('');
-  const [palette, setPalette] =
-    useState<PresetSynthesisOptions['colorPalette']>('auto');
+  const [palette, setPalette] = useState<Palette>('auto');
   const [intensity, setIntensity] = useState(1.0);
   const [reactivity, setReactivity] = useState(1.0);
+  const [provider, setProvider] = useState<ProviderKind>(DEFAULT_PROVIDER);
+  const [localEndpoint, setLocalEndpoint] = useState(DEFAULT_LOCAL_ENDPOINT);
+  const [localModel, setLocalModel] = useState(DEFAULT_LOCAL_MODEL);
   const [generating, setGenerating] = useState(false);
-  const [status, setStatus] = useState('Describe a visualizer to generate.');
+  const [status, setStatus] = useState(() => providerStatus(DEFAULT_PROVIDER));
+
+  const handleProviderChange = useCallback((next: ProviderKind) => {
+    setProvider(next);
+    setStatus(providerStatus(next));
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) return;
     setGenerating(true);
-    setStatus('Generating preset…');
+    setStatus(
+      provider === 'local'
+        ? `Generating with ${localModel.trim() || 'the local model'}…`
+        : 'Generating with the hosted model…',
+    );
     try {
-      const synthesized = synthesizeEELPreset({
-        prompt: prompt.trim(),
-        intensity,
-        beatReactivity: reactivity,
-        colorPalette: palette === 'auto' ? undefined : palette,
+      const description = [
+        prompt.trim(),
+        `Color palette: ${palette === 'auto' ? 'choose from the description' : palette}.`,
+        `Visual intensity: ${intensity.toFixed(1)} on a 0 to 2 scale.`,
+        `Beat reactivity: ${reactivity.toFixed(1)} on a 0 to 2 scale.`,
+      ].join('\n');
+      const compiled = await generatePreset(description, {
+        provider:
+          provider === 'local'
+            ? {
+                kind: 'openai-compatible',
+                endpoint: localEndpoint.trim(),
+                model: localModel.trim(),
+              }
+            : { kind: 'hosted' },
       });
-      const milkSource = buildMilkSource(synthesized);
-      await engine.importPresetFiles(toFileList(milkSource));
+      await engine.importPresetFiles(toFileList(compiled.source.raw));
       ui.updatePanel(null);
     } catch (err) {
       setStatus(`Error: ${(err as Error).message}`);
     } finally {
       setGenerating(false);
     }
-  }, [prompt, intensity, reactivity, palette, engine, ui]);
+  }, [
+    prompt,
+    intensity,
+    reactivity,
+    palette,
+    provider,
+    localEndpoint,
+    localModel,
+    engine,
+    ui,
+  ]);
 
   return (
     <section className={styles.panel} aria-labelledby="synth-heading">
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <ParametricIdenticon
-          seed={prompt.trim() || 'ai-synthesizer'}
+          seed={prompt.trim() || 'model-generator'}
           filterPreset="liquid-warp"
           size={36}
           audioPeak={generating ? 0.8 : 0.2}
@@ -99,8 +107,8 @@ export function SynthesizePanel() {
             Generate visualizer
           </h3>
           <p className={styles.intro}>
-            Describe a visual style and the preset will be generated and loaded
-            immediately.
+            Describe a visual style. A language model will write a MilkDrop
+            preset, which Stims validates before loading.
           </p>
         </div>
       </div>
@@ -116,6 +124,64 @@ export function SynthesizePanel() {
           disabled={generating}
         />
       </label>
+
+      <fieldset className={styles.palettes} disabled={generating}>
+        <legend className={styles.label}>Model provider</legend>
+        <div className={styles.paletteRow}>
+          <label className={styles.palette}>
+            <input
+              type="radio"
+              name="model-provider"
+              value="hosted"
+              checked={provider === 'hosted'}
+              onChange={() => handleProviderChange('hosted')}
+            />
+            <span>Hosted model</span>
+          </label>
+          <label className={styles.palette}>
+            <input
+              type="radio"
+              name="model-provider"
+              value="local"
+              checked={provider === 'local'}
+              onChange={() => handleProviderChange('local')}
+            />
+            <span>Local Ollama</span>
+          </label>
+        </div>
+        <p className={styles.providerNote}>
+          {provider === 'local'
+            ? 'No API key is used. Direct requests are limited to loopback addresses; Ollama must allow this browser origin.'
+            : 'Available on deployments configured with the Cloudflare AI binding. Stims does not substitute a template if the model is unavailable.'}
+        </p>
+      </fieldset>
+
+      {provider === 'local' ? (
+        <div className={styles.localSettings}>
+          <label className={styles.field}>
+            <span className={styles.label}>Local endpoint</span>
+            <input
+              className={styles.input}
+              type="url"
+              value={localEndpoint}
+              onChange={(event) => setLocalEndpoint(event.target.value)}
+              disabled={generating}
+              spellCheck={false}
+            />
+          </label>
+          <label className={styles.field}>
+            <span className={styles.label}>Model</span>
+            <input
+              className={styles.input}
+              type="text"
+              value={localModel}
+              onChange={(event) => setLocalModel(event.target.value)}
+              disabled={generating}
+              spellCheck={false}
+            />
+          </label>
+        </div>
+      ) : null}
 
       <fieldset className={styles.palettes} disabled={generating}>
         <legend className={styles.label}>Color palette</legend>
@@ -172,10 +238,15 @@ export function SynthesizePanel() {
       <button
         type="button"
         className={styles.generateButton}
-        disabled={generating || !prompt.trim()}
+        disabled={
+          generating ||
+          !prompt.trim() ||
+          (provider === 'local' &&
+            (!localEndpoint.trim() || !localModel.trim()))
+        }
         onClick={() => void handleGenerate()}
       >
-        {generating ? 'Generating…' : 'Generate and load'}
+        {generating ? 'Generating…' : 'Generate with model'}
       </button>
     </section>
   );

@@ -10,6 +10,7 @@ import {
   type ShaderQuality,
 } from '../core/state/performance-settings-store.ts';
 import { AudioSourcePanel } from './AudioSourcePanel.tsx';
+import { PerformanceHardwareSection } from './PerformanceHardwareSection.tsx';
 import { useEngineSnapshot, useWorkspace } from './workspace-context.tsx';
 import {
   getQualityImpactSummary,
@@ -353,6 +354,8 @@ export function SettingsSheetPanel({
       </section>
 
       <PerformanceSection />
+
+      <PerformanceHardwareSection />
 
       <section className="ctl-section">
         <div className="ctl-section__head">

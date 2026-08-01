@@ -1,15 +1,7 @@
 import { buildGeneratePrompt } from '../../src/js/milkdrop/preset-prompt.ts';
 
-interface D1Database {
-  prepare(sql: string): D1PreparedStatement;
-}
-interface D1PreparedStatement {
-  bind(...params: unknown[]): D1PreparedStatement;
-  all<T = unknown>(): Promise<{ results: T[] }>;
-}
-
 interface Env {
-  AI: {
+  AI?: {
     run: (
       model: string,
       opts: {
@@ -18,21 +10,6 @@ interface Env {
       },
     ) => Promise<{ response?: string; data?: number[][] }>;
   };
-  DB: D1Database;
-}
-
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
 interface Classification {
@@ -42,7 +19,7 @@ interface Classification {
 
 async function classify(
   description: string,
-  ai: Env['AI'],
+  ai: NonNullable<Env['AI']>,
 ): Promise<Classification> {
   const classification: Classification = {
     complexity: 'simple',
@@ -112,6 +89,18 @@ export async function onRequest(context: { request: Request; env: Env }) {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  if (!env.AI) {
+    return new Response(
+      JSON.stringify({
+        error: 'Model inference is not available on this deployment.',
+      }),
+      {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  }
+
   try {
     const body = (await request.json()) as {
       description: string;
@@ -123,46 +112,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
       return new Response('Description too short', { status: 400 });
     }
 
-    if (env.DB && env.AI) {
-      try {
-        const embResult = await env.AI.run('@cf/baai/bge-base-en-v1.5', {
-          text: [body.description],
-        });
-        const queryEmbedding = embResult.data?.[0];
-        if (queryEmbedding) {
-          const { results } = await env.DB.prepare(
-            'SELECT preset_id, embedding FROM preset_embeddings',
-          ).all<{ preset_id: string; embedding: string }>();
-
-          for (const row of results) {
-            const stored = JSON.parse(row.embedding) as number[];
-            const score = cosineSimilarity(queryEmbedding, stored);
-            if (score > 0.88) {
-              return new Response(
-                JSON.stringify({
-                  milkSource: `/* cached from: ${row.preset_id} */`,
-                  cached: true,
-                }),
-                {
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                  },
-                },
-              );
-            }
-          }
-        }
-      } catch {
-        // Cache miss or DB unavailable — proceed to generation
-      }
-    }
-
     const selectedModel =
       body.model ||
-      (env.AI
-        ? selectModel('generate', await classify(body.description, env.AI))
-        : '@cf/meta/llama-4-scout-17b-16e-instruct');
+      selectModel('generate', await classify(body.description, env.AI));
 
     const systemPrompt = buildGeneratePrompt(
       body.description,
@@ -170,48 +122,57 @@ export async function onRequest(context: { request: Request; env: Env }) {
     );
     const userPrompt = `Generate a MilkDrop preset that: ${body.description}`;
 
-    let milkSource = '';
-
-    if (env.AI) {
-      const result = await env.AI.run(selectedModel, {
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      });
-      const response = result.response || '';
-      const startIdx = response.indexOf('[preset00]');
-      if (startIdx >= 0) {
-        milkSource = `[preset00]\n${response.slice(startIdx + 9).trim()}`;
-      } else {
-        milkSource = `[preset00]\n${response.trim()}`;
-      }
+    const result = await env.AI.run(selectedModel, {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+    });
+    const modelResponse = result.response?.trim();
+    if (!modelResponse) {
+      return new Response(
+        JSON.stringify({ error: 'Model returned no output.' }),
+        {
+          status: 502,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+    const startIdx = modelResponse.indexOf('[preset00]');
+    let milkSource: string;
+    if (startIdx >= 0) {
+      milkSource = `[preset00]\n${modelResponse.slice(startIdx + 10).trim()}`;
     } else {
-      milkSource =
-        '[preset00]\nfRating=4.0\nfDecay=0.96\nnWaveMode=1\nfZoom=1.0\nfWarp=1.0\nfRot=0.0\n';
+      return new Response(
+        JSON.stringify({
+          error: 'Model output did not contain a [preset00] section.',
+        }),
+        {
+          status: 502,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     let title = 'AI Generated';
-    if (env.AI) {
-      try {
-        const nameResult = await env.AI.run(
-          '@cf/ibm-granite/granite-4.0-h-micro',
-          {
-            messages: [
-              {
-                role: 'system',
-                content:
-                  'Generate a short, evocative title (3-6 words) for this MilkDrop visualizer preset. Be creative. Output only the title.',
-              },
-              { role: 'user', content: milkSource.slice(0, 500) },
-            ],
-          },
-        );
-        title = (nameResult.response || '').trim().replace(/["']/g, '');
-        if (title.length > 60) title = title.slice(0, 60);
-      } catch {
-        // Use fallback title
-      }
+    try {
+      const nameResult = await env.AI.run(
+        '@cf/ibm-granite/granite-4.0-h-micro',
+        {
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Generate a short, evocative title (3-6 words) for this MilkDrop visualizer preset. Be creative. Output only the title.',
+            },
+            { role: 'user', content: milkSource.slice(0, 500) },
+          ],
+        },
+      );
+      title = (nameResult.response || '').trim().replace(/["']/g, '');
+      if (title.length > 60) title = title.slice(0, 60);
+    } catch {
+      // Keep the honest generic title when title generation is unavailable.
     }
 
     return new Response(JSON.stringify({ milkSource, title }), {

@@ -1,5 +1,7 @@
 # Public Claim Audit — Sprint 9 Prep
 
+> **Historical snapshot:** This audit records the Sprint 9 baseline and its original line references. Current public positioning and implementation boundaries live in `README.md`, `docs/TECHNICAL_ACHIEVEMENTS.md`, and the parity manifests. `bun run check:toys` now guards the README catalog count and selected overclaim regressions.
+
 > **Evidence baseline (Sprint 1):** 4 of 23 certification-corpus presets have measured visual results (`measured-results.json`). 12 have checksum baselines only (`visual-baselines.json`). 10 have zero evidence artifacts (7 parity-corpus + 2 local-shape + 1 upstream fixture never captured). No preset has been measured against an external `projectM` reference image in the checked-in suite.
 
 ---

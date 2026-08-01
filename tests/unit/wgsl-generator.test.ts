@@ -264,7 +264,7 @@ describe('wgsl expression generation', () => {
       buildWgslExpressionString(
         call('if', [literal(1), literal(10), literal(20)]),
       ),
-    ).toBe('select(20, 10, abs(1) > 0.000001f)');
+    ).toBe('select(f32(20), f32(10), abs(1) > 0.000001f)');
     expect(
       buildWgslExpressionString(call('above', [literal(5), literal(3)])),
     ).toBe('select(0.0f, 1.0f, (5) > (3))');
@@ -277,6 +277,21 @@ describe('wgsl expression generation', () => {
     expect(buildWgslExpressionString(call('rand', []))).toBe('rand()');
     expect(buildWgslExpressionString(call('nonexistent', [literal(1)]))).toBe(
       '0.0f',
+    );
+  });
+
+  test('keeps integer-looking if branches in the MilkDrop f32 domain', () => {
+    const expression = call('if', [
+      call('above', [
+        binary('+', ident('treb'), ident('treb_att')),
+        literal(2.8),
+      ]),
+      literal(1),
+      literal(0),
+    ]);
+
+    expect(buildWgslExpressionString(expression)).toBe(
+      'select(f32(0), f32(1), abs(select(0.0f, 1.0f, ((signals.treb + signals.treb_att)) > (2.8))) > 0.000001f)',
     );
   });
 
@@ -337,6 +352,8 @@ describe('wgsl program compilation', () => {
     expect(result.registerKeys).toContain('t5');
     expect(result.wgslCode).toContain('reg_q1 = (signals.bass + 1)');
     expect(result.wgslCode).toContain('reg_t5 = (signals.mid * 2)');
+    expect(result.wgslCode).toContain('state.result = reg_q1');
+    expect(result.wgslCode).not.toContain('state.q1');
     expect(result.wgslCode).toContain('reg_q1:');
     expect(result.wgslCode).toContain('reg_t5:');
   });

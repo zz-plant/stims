@@ -83,7 +83,7 @@ function getOrCreatePipeline(
       {
         binding: 1,
         visibility: GPUShaderStage.COMPUTE,
-        buffer: { type: 'storage' as const },
+        buffer: { type: 'read-only-storage' as const },
       },
     ],
   });

@@ -1,10 +1,4 @@
-/**
- * Records a live visualizer canvas through a preset-sized mirror canvas.
- *
- * The source canvas is never resized or stopped: each animation frame is
- * copied with a cover crop into the recording surface while the renderer
- * continues its normal frame loop.
- */
+/** Records a live visualizer canvas, including native renderer capture at 4K. */
 
 export type ExportPresetTarget =
   | 'spotify-canvas'
@@ -36,8 +30,21 @@ export interface CanvasVideoExporterEnvironment {
     stream: MediaStream,
     options: MediaRecorderOptions,
   ): MediaRecorder;
+  createMediaStream(tracks: MediaStreamTrack[]): MediaStream;
   requestAnimationFrame(callback: FrameRequestCallback): number;
   cancelAnimationFrame(handle: number): void;
+}
+
+export type NativeCanvasCaptureStartResult =
+  | { ok: true; restore(): void }
+  | { ok: false; reason: string };
+
+export interface CanvasVideoExportRuntime {
+  beginNativeCapture(dimensions: {
+    width: number;
+    height: number;
+  }): NativeCanvasCaptureStartResult;
+  getAudioStream(): MediaStream | null;
 }
 
 export type CanvasVideoExporterSupport =
@@ -103,6 +110,7 @@ function createBrowserEnvironment(): CanvasVideoExporterEnvironment {
     createCanvas: () => document.createElement('canvas'),
     createMediaRecorder: (stream, options) =>
       new MediaRecorder(stream, options),
+    createMediaStream: (tracks) => new MediaStream(tracks),
     requestAnimationFrame: (callback) => requestAnimationFrame(callback),
     cancelAnimationFrame: (handle) => cancelAnimationFrame(handle),
   };
@@ -115,18 +123,22 @@ function stopStream(stream: MediaStream | null) {
 export class CanvasVideoExporter {
   private readonly canvas: HTMLCanvasElement;
   private readonly environment: CanvasVideoExporterEnvironment;
+  private readonly runtime: CanvasVideoExportRuntime | null;
   private mediaRecorder: MediaRecorder | null = null;
   private recordingStream: MediaStream | null = null;
   private recordedChunks: Blob[] = [];
   private recordingFrame: number | null = null;
+  private restoreNativeCapture: (() => void) | null = null;
   private isRecording = false;
 
   constructor(
     canvas: HTMLCanvasElement,
     environment: CanvasVideoExporterEnvironment = createBrowserEnvironment(),
+    runtime: CanvasVideoExportRuntime | null = null,
   ) {
     this.canvas = canvas;
     this.environment = environment;
+    this.runtime = runtime;
   }
 
   static getSupportedMimeTypes(): string[] {
@@ -181,26 +193,70 @@ export class CanvasVideoExporter {
     }
 
     const fps = options.fps ?? 60;
-    const preset = EXPORT_PRESETS[options.preset ?? 'hd-landscape'];
-    const outputCanvas = this.environment.createCanvas();
-    outputCanvas.width = preset.width;
-    outputCanvas.height = preset.height;
-    const context = outputCanvas.getContext('2d', { alpha: false });
-    if (!context || typeof outputCanvas.captureStream !== 'function') {
+    const presetId = options.preset ?? 'hd-landscape';
+    const preset = EXPORT_PRESETS[presetId];
+    const nativeCapture = presetId === '4k-landscape';
+    let outputCanvas: HTMLCanvasElement;
+    let context: CanvasRenderingContext2D | null = null;
+
+    if (nativeCapture) {
+      if (!this.runtime) {
+        return {
+          ok: false,
+          reason:
+            'Native 4K export is unavailable because the visualizer renderer is not ready.',
+        };
+      }
+      const result = this.runtime.beginNativeCapture({
+        width: preset.width,
+        height: preset.height,
+      });
+      if (!result.ok) {
+        return result;
+      }
+      this.restoreNativeCapture = result.restore;
+      outputCanvas = this.canvas;
+    } else {
+      outputCanvas = this.environment.createCanvas();
+      outputCanvas.width = preset.width;
+      outputCanvas.height = preset.height;
+      context = outputCanvas.getContext('2d', { alpha: false });
+    }
+
+    if (
+      (!nativeCapture && !context) ||
+      typeof outputCanvas.captureStream !== 'function'
+    ) {
+      this.restoreNativeRenderer();
       return {
         ok: false,
         reason: 'Canvas recording is not supported by this browser.',
       };
     }
 
+    let unownedAudioTracks: MediaStreamTrack[] = [];
     try {
-      const stream = outputCanvas.captureStream(fps);
+      const videoStream = outputCanvas.captureStream(fps);
+      const audioTracks =
+        this.runtime
+          ?.getAudioStream()
+          ?.getAudioTracks()
+          .map((track) => track.clone()) ?? [];
+      unownedAudioTracks = audioTracks;
+      const stream =
+        audioTracks.length > 0
+          ? this.environment.createMediaStream([
+              ...videoStream.getVideoTracks(),
+              ...audioTracks,
+            ])
+          : videoStream;
+      this.recordingStream = stream;
+      unownedAudioTracks = [];
       const recorder = this.environment.createMediaRecorder(stream, {
         mimeType: support.mimeType,
         videoBitsPerSecond: options.videoBitsPerSecond ?? 12_000_000,
       });
       this.recordedChunks = [];
-      this.recordingStream = stream;
       this.mediaRecorder = recorder;
       recorder.ondataavailable = (event: BlobEvent) => {
         if (event.data?.size > 0) {
@@ -222,7 +278,7 @@ export class CanvasVideoExporter {
         const cropHeight = preset.height / scale;
         const cropX = (sourceWidth - cropWidth) / 2;
         const cropY = (sourceHeight - cropHeight) / 2;
-        context.drawImage(
+        context?.drawImage(
           this.canvas,
           cropX,
           cropY,
@@ -235,13 +291,17 @@ export class CanvasVideoExporter {
         );
         this.recordingFrame = this.environment.requestAnimationFrame(drawFrame);
       };
-      drawFrame();
+      if (!nativeCapture) {
+        drawFrame();
+      }
       return { ok: true, mimeType: support.mimeType };
     } catch (error) {
       this.isRecording = false;
+      unownedAudioTracks.forEach((track) => track.stop());
       stopStream(this.recordingStream);
       this.recordingStream = null;
       this.mediaRecorder = null;
+      this.restoreNativeRenderer();
       return {
         ok: false,
         reason:
@@ -271,10 +331,25 @@ export class CanvasVideoExporter {
         stopStream(this.recordingStream);
         this.recordingStream = null;
         this.mediaRecorder = null;
+        this.restoreNativeRenderer();
         resolve(blob);
       };
-      recorder.stop();
+      try {
+        recorder.stop();
+      } catch {
+        stopStream(this.recordingStream);
+        this.recordingStream = null;
+        this.mediaRecorder = null;
+        this.restoreNativeRenderer();
+        resolve(null);
+      }
     });
+  }
+
+  private restoreNativeRenderer() {
+    const restore = this.restoreNativeCapture;
+    this.restoreNativeCapture = null;
+    restore?.();
   }
 
   downloadVideo(blob: Blob, filename = 'stims-visualizer-export.webm'): void {

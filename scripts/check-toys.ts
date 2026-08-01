@@ -64,6 +64,7 @@ export async function runToyChecks(root = repoRoot) {
     await detectUnregisteredToyFiles(entries, issues, root);
     await validateGeneratedArtifactParity(entries, issues, root);
     await validateCapabilityClaims(entries, issues, root);
+    await validateReadmeProductClaims(issues, root);
   } catch (error) {
     issues.push(error instanceof Error ? error.message : String(error));
   }
@@ -272,6 +273,66 @@ async function validateCapabilityClaims(
     issues.push(
       `README contains stale WebGPU-only wording ("${claim}") but src/data/toys.json currently exposes fallback for all toys. Update README copy or metadata to match.`,
     );
+  }
+}
+
+async function validateReadmeProductClaims(issues: string[], root = repoRoot) {
+  const readme = await fs.readFile(path.join(root, 'README.md'), 'utf8');
+  const catalogPath = path.join(root, 'public/milkdrop-presets/catalog.json');
+  const catalog = JSON.parse(await fs.readFile(catalogPath, 'utf8')) as {
+    presets?: unknown[];
+  };
+  const catalogCount = Array.isArray(catalog.presets)
+    ? catalog.presets.length
+    : 0;
+  const countPatterns = [
+    /\b([\d][\d,]*)-preset catalog\b/giu,
+    /\*\*([\d][\d,]*) presets\*\*/giu,
+    /\b([\d][\d,]*)\+ preset embeddings\b/giu,
+  ];
+
+  for (const pattern of countPatterns) {
+    for (const match of readme.matchAll(pattern)) {
+      const claimedCount = Number((match[1] ?? '').replace(/,/gu, ''));
+      if (claimedCount === catalogCount) continue;
+      issues.push(
+        `README preset count is ${claimedCount}, but public/milkdrop-presets/catalog.json contains ${catalogCount} entries. Update the public claim to match the catalog source of truth.`,
+      );
+    }
+  }
+
+  const unshippedClaims = [
+    {
+      pattern: /Stem-Aware Audio Engine/iu,
+      issue:
+        'README presents stem separation as shipped, but the runtime currently exposes reserved stem signals only.',
+    },
+    {
+      pattern: /WebMIDI & VJ Controls/iu,
+      issue:
+        'README presents MIDI control as fully shipped, but the current integration still lacks device-backed verification and persistent mappings.',
+    },
+    {
+      pattern: /WebXR 6DoF Spatial VR Stage/iu,
+      issue:
+        'README presents an immersive XR stage as fully shipped, but the current integration still lacks device-backed visual and audio verification.',
+    },
+    {
+      pattern: /4K \/ 60FPS Video Export/iu,
+      issue:
+        'README presents creator-ready 4K audio-video export as fully shipped, but the native render and audio path still requires browser-backed output verification.',
+    },
+    {
+      pattern: /AI Generation & Blending/iu,
+      issue:
+        'README presents model generation and blending as one fully shipped feature, but generation requires a configured hosted or local model and blending remains an optional API.',
+    },
+  ];
+
+  for (const claim of unshippedClaims) {
+    if (claim.pattern.test(readme)) {
+      issues.push(claim.issue);
+    }
   }
 }
 

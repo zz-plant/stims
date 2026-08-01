@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
+import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import {
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
-import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 
 export type CaptureCertificationCorpusOptions = {
   repoRoot: string;
@@ -15,7 +15,7 @@ export type CaptureCertificationCorpusOptions = {
   presetIds?: string[];
   corpusGroup?: CertificationCorpusGroup;
   duration: number;
-  viewportWidth: number = DEFAULT_VIEWPORT.width;
+  viewportWidth: number;
   viewportHeight: number;
 };
 
@@ -205,7 +205,10 @@ export function parseCertificationCorpusArgs(
     corpusGroup,
     duration: getArg('--duration', 1500) as number,
     viewportWidth: getArg('--viewport-width', DEFAULT_VIEWPORT.width) as number,
-    viewportHeight: getArg('--viewport-height', DEFAULT_VIEWPORT.height) as number,
+    viewportHeight: getArg(
+      '--viewport-height',
+      DEFAULT_VIEWPORT.height,
+    ) as number,
   };
 }
 

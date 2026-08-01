@@ -195,6 +195,10 @@ export default class WebToy {
     this.rendererSession.updateOptions(options);
   }
 
+  beginNativeRendererCapture(width: number, height: number) {
+    return this.rendererSession.beginNativeCapture(width, height);
+  }
+
   async initAudio(options = {}) {
     const audio = await this.audioSession.initAudio(options);
     this.audioHandle = audio;
