@@ -9,6 +9,7 @@ import {
 } from '../expression.ts';
 import { aliasMap, normalizeFieldSuffix } from '../field-normalization.ts';
 import type {
+  MilkdropCompiledStatement,
   MilkdropDiagnostic,
   MilkdropExpressionNode,
   MilkdropPresetField,
@@ -275,13 +276,32 @@ export function pushProgramStatement(
     const parsed = parseMilkdropStatement(statement, line);
     diagnostics.push(...parsed.diagnostics);
     if (parsed.value) {
-      block.statements.push({
-        ...parsed.value,
-        target: normalizeProgramTarget(parsed.value.target),
-      });
+      if (parsed.value.control) {
+        block.statements.push(parsed.value);
+      } else {
+        block.statements.push({
+          ...parsed.value,
+          target: normalizeProgramTarget(parsed.value.target),
+        });
+      }
       block.sourceLines.push(statement);
     }
   });
+}
+
+/** Yields every statement in a program, descending into `loop`/`while`
+ * control bodies so compatibility and register analysis see the full set. */
+export function flattenProgramStatements(
+  statements: readonly MilkdropCompiledStatement[],
+): MilkdropCompiledStatement[] {
+  const result: MilkdropCompiledStatement[] = [];
+  for (const statement of statements) {
+    result.push(statement);
+    if (statement.control) {
+      result.push(...flattenProgramStatements(statement.control.body));
+    }
+  }
+  return result;
 }
 
 function scanMilkdropProgramExpressionContext(sourceLine: string) {
@@ -550,7 +570,7 @@ export function analyzeProgramRegisters(
   block: MilkdropProgramBlock,
   usage: { q: number; t: number },
 ) {
-  block.statements.forEach((statement) => {
+  flattenProgramStatements(block.statements).forEach((statement) => {
     collectRegisterUsage(statement.target, usage);
     walkMilkdropExpression(statement.expression, (node) => {
       if (node.type === 'identifier') {

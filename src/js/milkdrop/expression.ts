@@ -1,6 +1,7 @@
 import { resolveMilkdropIdentifier } from './field-normalization';
 import type {
   MilkdropCompiledStatement,
+  MilkdropControlFlowStatement,
   MilkdropDiagnostic,
   MilkdropExpressionNode,
 } from './types';
@@ -715,10 +716,152 @@ export function parseMilkdropExpression(
   };
 }
 
+const CONTROL_LOOP_PREFIX = 'loop(';
+const CONTROL_WHILE_PREFIX = 'while(';
+const CONTROL_TARGET_SENTINEL = '__control';
+
+/** True when `source` is a single `loop(...)` or `while(...)` call (possibly
+ * trailing a `;`). These lines have no top-level `=`, so the flat-statement
+ * parser would otherwise drop them. */
+function isControlFlowStatement(source: string) {
+  const trimmed = source.trim().replace(/;+\s*$/u, '');
+  return (
+    trimmed.startsWith(CONTROL_LOOP_PREFIX) ||
+    trimmed.startsWith(CONTROL_WHILE_PREFIX)
+  );
+}
+
+/** Returns the text between the outer `(` and its matching `)`, or null when
+ * the call does not span the whole source. */
+function extractCallInner(source: string): string | null {
+  const open = source.indexOf('(');
+  if (open < 0) {
+    return null;
+  }
+  let depth = 0;
+  for (let i = open; i < source.length; i += 1) {
+    const char = source[i];
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(open + 1, i);
+      }
+    }
+  }
+  return null;
+}
+
+/** Splits `source` on top-level `;` (ignoring those inside parentheses). */
+function splitControlBody(source: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    const char = source[i];
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth = Math.max(0, depth - 1);
+    } else if (char === ';' && depth === 0) {
+      parts.push(source.slice(start, i));
+      start = i + 1;
+    }
+  }
+  const tail = source.slice(start);
+  if (tail.trim()) {
+    parts.push(tail);
+  }
+  return parts;
+}
+
+/** Splits `inner` at the first top-level comma into [head, body]. */
+function splitControlHeadAndBody(inner: string): [string, string] | null {
+  let depth = 0;
+  for (let i = 0; i < inner.length; i += 1) {
+    const char = inner[i];
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth = Math.max(0, depth - 1);
+    } else if (char === ',' && depth === 0) {
+      return [inner.slice(0, i), inner.slice(i + 1)];
+    }
+  }
+  return null;
+}
+
+function parseControlFlowStatement(
+  source: string,
+  line: number,
+): ParseResult<MilkdropCompiledStatement> {
+  const trimmed = source.trim().replace(/;+\s*$/u, '');
+  const isLoop = trimmed.startsWith(CONTROL_LOOP_PREFIX);
+  const inner = extractCallInner(trimmed);
+  if (inner === null) {
+    return { value: null, diagnostics: [] };
+  }
+  const split = splitControlHeadAndBody(inner);
+  if (!split) {
+    return {
+      value: null,
+      diagnostics: [
+        createDiagnostic(
+          line,
+          'statement_invalid_target',
+          `Malformed ${isLoop ? 'loop' : 'while'} control statement.`,
+        ),
+      ],
+    };
+  }
+  const [headSource, bodySource] = split;
+  const headResult = parseMilkdropExpression(headSource.trim(), line);
+  if (!headResult.value) {
+    return {
+      value: null,
+      diagnostics: headResult.diagnostics,
+    };
+  }
+
+  const body: MilkdropCompiledStatement[] = [];
+  const diagnostics: MilkdropDiagnostic[] = [...headResult.diagnostics];
+  for (const part of splitControlBody(bodySource)) {
+    const sub = parseMilkdropStatement(part.trim(), line);
+    diagnostics.push(...sub.diagnostics);
+    if (sub.value) {
+      body.push(sub.value);
+    }
+  }
+
+  if (body.length === 0) {
+    return { value: null, diagnostics };
+  }
+
+  const control: MilkdropControlFlowStatement = isLoop
+    ? { kind: 'loop', count: headResult.value, body }
+    : { kind: 'while', condition: headResult.value, body };
+
+  return {
+    value: {
+      target: CONTROL_TARGET_SENTINEL,
+      expression: headResult.value,
+      line,
+      source,
+      control,
+    },
+    diagnostics,
+  };
+}
+
 export function parseMilkdropStatement(
   source: string,
   line: number,
 ): ParseResult<MilkdropCompiledStatement> {
+  if (isControlFlowStatement(source)) {
+    return parseControlFlowStatement(source, line);
+  }
+
   const index = findAssignmentIndex(source);
 
   // Skip empty or missing assignments — common in .milk preset files with

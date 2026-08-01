@@ -331,6 +331,9 @@ class Parser {
       if (token.value === 'while') {
         return this.parseWhileLoop();
       }
+      if (token.value === 'do') {
+        return this.parseDoWhileLoop();
+      }
     }
     if (this.isPunct('{')) {
       return this.parseBlock();
@@ -395,6 +398,31 @@ class Parser {
     const bodyNode = this.parseStatement();
     const body = bodyNode.type === 'block' ? bodyNode.statements : [bodyNode];
     return { type: 'while', cond, body };
+  }
+
+  private parseDoWhileLoop(): Node {
+    this.next(); // consume 'do'
+    const bodyNode = this.parseStatement();
+    const body = bodyNode.type === 'block' ? bodyNode.statements : [bodyNode];
+    if (this.peek().type !== 'identifier' || this.peek().value !== 'while') {
+      throw new TranspileError('Expected "while" after do-block');
+    }
+    this.next(); // consume 'while'
+    this.expectPunct('(');
+    const cond = this.parseExpression();
+    this.expectPunct(')');
+    if (this.isPunct(';')) {
+      this.position += 1;
+    }
+    // do { body } while(cond) runs the body once, then repeats it while cond
+    // holds. Lowered as the body inline followed by a `while(cond, body)` —
+    // `while` checks its condition before each repetition, so the first
+    // unconditional pass comes from the inline body and later passes from the
+    // while loop.
+    return {
+      type: 'block',
+      statements: [...body, { type: 'while', cond, body }],
+    };
   }
 
   private parseExpression(): Node {
@@ -802,9 +830,23 @@ function emitStatement(node: Node, out: string[]) {
   out.push(`${emitExpression(node)};`);
 }
 
+/**
+ * `a.rkeys` is a butterchurn-internal render-hint: a list of variable names
+ * butterchurn's own renderer draws specially. It is initialised as either an
+ * empty array (`a.rkeys=[]`) or a string split into names
+ * (`a.rkeys="x1 y2 ...".split(" ")`). MilkDrop EEL has no equivalent and the
+ * Stims renderer does not consume it, so strip these two initialiser forms
+ * before parsing. A scalar `a.rkeys=<expr>` is left untouched.
+ */
+function stripButterchurnRenderKeys(source: string): string {
+  return source
+    .replace(/\ba\.rkeys\s*=\s*\[\s*\]\s*;/gu, '')
+    .replace(/\ba\.rkeys\s*=\s*"[^"]*"\s*\.split\([^)]*\)\s*;/gu, '');
+}
+
 /** Converts one butterchurn equation string into EEL statements. */
 export function transpileButterchurnEquations(source: string): TranspileResult {
-  const trimmed = source.trim();
+  const trimmed = stripButterchurnRenderKeys(source.trim());
   if (!trimmed) {
     return { ok: true, statements: [] };
   }

@@ -91,12 +91,27 @@ export type MilkdropExpressionNode =
       args: MilkdropExpressionNode[];
     };
 
+export type MilkdropControlFlowStatement = {
+  kind: 'loop' | 'while';
+  /** Present for `loop(count, body)`. When absent the loop is unbounded and
+   * relies on the `while`-style condition or the runtime iteration cap. */
+  count?: MilkdropExpressionNode;
+  /** Present for `while(cond, body)` and used as the continuing condition for
+   * `loop` forms that were emitted from a C-style `for` with a condition. */
+  condition?: MilkdropExpressionNode;
+  body: MilkdropCompiledStatement[];
+};
+
 export type MilkdropCompiledStatement = {
   target: string;
   targetExpression?: MilkdropExpressionNode;
   expression: MilkdropExpressionNode;
   line: number;
   source: string;
+  /** When present, this statement is an iterative control-flow wrapper
+   * (`loop`/`while`) and `expression` holds the count or condition. The
+   * `target` is a sentinel and is not stored. */
+  control?: MilkdropControlFlowStatement;
 };
 
 export type MilkdropProgramBlock = {
