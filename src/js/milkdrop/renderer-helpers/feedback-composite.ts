@@ -67,11 +67,7 @@ export function buildFeedbackCompositeState({
     shaderPrograms,
     perPixelPrograms: perPixelStatements
       ? {
-          statements: perPixelStatements.map((s) => ({
-            target: s.target,
-            source: s.source,
-            expression: s.expression,
-          })),
+          statements: perPixelStatements,
         }
       : null,
     perPixelVariables: frameState.variables,

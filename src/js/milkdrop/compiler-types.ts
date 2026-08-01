@@ -418,10 +418,20 @@ export type MilkdropPresetIR = {
     perFrame: MilkdropProgramBlock;
     perPixel: MilkdropProgramBlock;
   };
+  /** Pre-mapped per-pixel statements cached at compile time to avoid
+   * per-frame allocation in buildPost and feedback-composite. */
+  perPixelStatements: Array<{
+    target: string;
+    source: string;
+    expression: MilkdropExpressionNode;
+  }> | null;
   globals: Record<string, number>;
   mainWave: Record<string, number>;
   customWaves: MilkdropWaveDefinition[];
   customShapes: MilkdropShapeDefinition[];
+  /** Shape indices from customShapes, cached at compile time to avoid
+   * per-frame Set construction in buildShapes. */
+  customShapeIndices: Set<number>;
   borders: MilkdropBorderDefinition;
   shaderText: {
     warp: string | null;

@@ -105,6 +105,8 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         trebleatt: 'signalTreb',
         beat: 'signalBeat',
         beat_pulse: 'signalBeatPulse',
+        rand_frame:
+          'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
         // progress is frame count in ProjectM; signalTime (seconds) is the best proxy.
         progress: 'signalTime',
         // frame and fps are not available as composite shader uniforms.
@@ -113,6 +115,7 @@ export function createCompositeGlslEmitter(): GlslEmitter {
         fps: '60.0',
         aspect: 'aspect',
         vol: 'signalEnergy',
+        vol_att: 'signalEnergy',
         rms: 'signalEnergy',
         music: 'signalEnergy',
         weighted_energy: 'signalEnergy',

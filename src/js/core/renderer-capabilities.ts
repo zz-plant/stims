@@ -463,6 +463,14 @@ function observeCapabilityDevice(device: GPUDevice) {
   void device.lost
     ?.then((info) => {
       observedCapabilityDevices.delete(device);
+      const reason =
+        info &&
+        typeof info === 'object' &&
+        'reason' in info &&
+        typeof info.reason === 'string'
+          ? info.reason
+          : 'unknown';
+      if (reason === 'destroyed') return;
       const message = describeCapabilityDeviceLoss(info);
       console.warn(message);
       rememberRendererFallback(message, {

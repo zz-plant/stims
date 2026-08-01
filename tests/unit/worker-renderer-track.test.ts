@@ -99,7 +99,7 @@ describe('worker renderer track messaging', () => {
     window.localStorage.clear();
   });
 
-  test('queues outbound messages until the worker reports ready, then flushes them in order', () => {
+  test('queues outbound messages until the worker reports ready, then flushes them in order', async () => {
     const postMessage = mock();
     let messageListener: ((event: MessageEvent<unknown>) => void) | null = null;
     const emitMessage = (event: MessageEvent<unknown>) => {
@@ -129,7 +129,7 @@ describe('worker renderer track messaging', () => {
     } as unknown as OffscreenCanvas;
     canvas.transferControlToOffscreen = mock(() => offscreenCanvas);
 
-    const track = createExperimentalWorkerRendererTrack({
+    const track = await createExperimentalWorkerRendererTrack({
       canvas,
       capabilities: webgpuCapabilities,
       width: 1280,
@@ -237,7 +237,7 @@ describe('worker renderer track messaging', () => {
     expect(terminate).toHaveBeenCalledTimes(1);
   });
 
-  test('forwards worker response messages to the optional callback', () => {
+  test('forwards worker response messages to the optional callback', async () => {
     const postMessage = mock();
     let messageListener: ((event: MessageEvent<unknown>) => void) | null = null;
     const emitMessage = (event: MessageEvent<unknown>) => {
@@ -265,7 +265,7 @@ describe('worker renderer track messaging', () => {
     canvas.transferControlToOffscreen = mock(() => offscreenCanvas);
     const onMessage = mock();
 
-    createExperimentalWorkerRendererTrack({
+    await createExperimentalWorkerRendererTrack({
       canvas,
       capabilities: webgpuCapabilities,
       width: 640,
@@ -289,7 +289,7 @@ describe('worker renderer track messaging', () => {
     });
   });
 
-  test('fails closed when the worker reports an init error before ready', () => {
+  test('fails closed when the worker reports an init error before ready', async () => {
     const postMessage = mock();
     let messageListener: ((event: MessageEvent<unknown>) => void) | null = null;
     const emitMessage = (event: MessageEvent<unknown>) => {
@@ -319,7 +319,7 @@ describe('worker renderer track messaging', () => {
     canvas.transferControlToOffscreen = mock(() => offscreenCanvas);
     const onMessage = mock();
 
-    const track = createExperimentalWorkerRendererTrack({
+    const track = await createExperimentalWorkerRendererTrack({
       canvas,
       capabilities: webgpuCapabilities,
       width: 640,

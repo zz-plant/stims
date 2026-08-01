@@ -6,11 +6,16 @@
     "/vendor/*",
     "/icons/*",
     "/screenshots/*",
+    "/og/*",
     "/textures/*",
     "/milkdrop-presets/*",
     "/robots.txt",
     "/sitemap*.xml",
     "/manifest.json",
-    "/favicon.ico"
+    "/favicon.ico",
+    "/llms.txt",
+    "/llms-full.txt",
+    "/openapi.json",
+    "/toys.json"
   ]
 }

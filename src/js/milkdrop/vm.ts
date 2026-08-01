@@ -25,6 +25,7 @@ import {
   buildMesh,
   buildMeshField,
   buildMotionVectors,
+  resetFrameTransformCache,
 } from './vm/geometry-builder';
 import { buildPost } from './vm/post-effects-builder';
 import { buildBorders, buildShapes } from './vm/shape-border-builder';
@@ -158,6 +159,8 @@ class MilkdropPresetVM implements MilkdropVM {
   private readonly geometryState: GeometryBuilderState = {
     lastMotionVectorField: null,
     frameTransformCache: new Map<number, { x: number; y: number }>(),
+    transformCachePool: [],
+    transformCachePoolIndex: 0,
     pointScratch: {},
     meshPoints: [],
     motionVectorFrameIndex: 0,
@@ -302,7 +305,7 @@ class MilkdropPresetVM implements MilkdropVM {
     this.waveState.buffers.momentumSamples = new Float32Array(0);
     this.waveState.lastWaveSamples = this.waveState.buffers.smoothedSamples;
     this.waveState.lastWaveMomentum = this.waveState.buffers.momentumSamples;
-    this.geometryState.frameTransformCache.clear();
+    resetFrameTransformCache(this.geometryState);
     Object.setPrototypeOf(this.signalEnv, this.registers);
     this.lastPreparedSignalSource = null;
     this.lastPreparedSignalFrame = Number.NaN;
@@ -624,7 +627,7 @@ class MilkdropPresetVM implements MilkdropVM {
   }
 
   step(signals: MilkdropRuntimeSignals): MilkdropFrameState {
-    this.geometryState.frameTransformCache.clear();
+    resetFrameTransformCache(this.geometryState);
     this.runProgram(this.preset.ir.programs.perFrame, this.createEnv(signals));
 
     return this.buildFrame(signals);
@@ -751,7 +754,7 @@ class MilkdropPresetVM implements MilkdropVM {
       gpuGeometry,
     });
     gpuGeometry.customWaves = customWaves.procedural;
-    this.geometryState.frameTransformCache.clear();
+    resetFrameTransformCache(this.geometryState);
 
     return frameState;
   }

@@ -169,6 +169,26 @@ function getTransformCacheKey(x: number, y: number) {
   return quantizedX * 4096 + quantizedY;
 }
 
+export function resetFrameTransformCache(geometryState: GeometryBuilderState) {
+  geometryState.frameTransformCache.clear();
+  geometryState.transformCachePoolIndex = 0;
+}
+
+function getTransformCacheEntry(geometryState: GeometryBuilderState): {
+  x: number;
+  y: number;
+} {
+  const pool = geometryState.transformCachePool;
+  const index = geometryState.transformCachePoolIndex;
+  let entry = pool[index];
+  if (!entry) {
+    entry = { x: 0, y: 0 };
+    pool[index] = entry;
+  }
+  geometryState.transformCachePoolIndex = index + 1;
+  return entry;
+}
+
 function transformMeshPoint({
   signals,
   gridX,
@@ -262,10 +282,9 @@ function transformMeshPoint({
   const tx = wx + translateX;
   const ty = wy + translateY;
 
-  const transformed = {
-    x: (tx - centerX) * scaleX + centerX,
-    y: (ty - centerY) * scaleY + centerY,
-  };
+  const transformed = getTransformCacheEntry(geometryState);
+  transformed.x = (tx - centerX) * scaleX + centerX;
+  transformed.y = (ty - centerY) * scaleY + centerY;
   geometryState.frameTransformCache.set(cacheKey, transformed);
   return transformed;
 }

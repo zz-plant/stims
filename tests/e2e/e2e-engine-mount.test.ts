@@ -125,17 +125,37 @@ browserTest(
       const canvas = await page.waitForSelector('canvas', { timeout: 30000 });
       expect(canvas).not.toBeNull();
 
-      await page.waitForTimeout(3000);
+      // Wait for the GPU to produce non-zero output before asserting.
+      await page.waitForFunction(
+        () => {
+          const canvas = document.querySelector(
+            'canvas',
+          ) as HTMLCanvasElement | null;
+          if (!canvas) return false;
+          const gl = (canvas.getContext('webgl') ||
+            canvas.getContext('webgl2')) as WebGLRenderingContext | null;
+          if (!gl) return false;
+          const pixels = new Uint8Array(4);
+          gl.readPixels(
+            Math.floor(canvas.width / 2),
+            Math.floor(canvas.height / 2),
+            1,
+            1,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            pixels,
+          );
+          return pixels.some((p) => p > 0);
+        },
+        { timeout: 30000 },
+      );
 
       const info = await page.evaluate(() => {
         const c = document.querySelector('canvas') as HTMLCanvasElement | null;
         if (!c) return null;
-        const data = c.toDataURL('image/png');
         return {
           width: c.width,
           height: c.height,
-          dataLen: data.length,
-          hasContent: data.length > 1000,
         };
       });
 
@@ -143,7 +163,6 @@ browserTest(
       if (!info) throw new Error('canvas info is null');
       expect(info.width).toBeGreaterThan(0);
       expect(info.height).toBeGreaterThan(0);
-      expect(info.hasContent).toBe(true);
     } finally {
       await closeQuietly(ctx, browser);
     }
@@ -177,10 +196,33 @@ browserTest(
       await waitForMountedStage(page);
       await waitForActivePreset(page, 'eos-glowsticks-v2-03-music');
       await page.waitForSelector('canvas', { timeout: 30000 });
-      await page.waitForTimeout(500);
+      // Wait for the GPU to produce non-zero output before capturing.
+      await page.waitForFunction(
+        () => {
+          const canvas = document.querySelector(
+            'canvas',
+          ) as HTMLCanvasElement | null;
+          if (!canvas) return false;
+          const gl = (canvas.getContext('webgl') ||
+            canvas.getContext('webgl2')) as WebGLRenderingContext | null;
+          if (!gl) return false;
+          const pixels = new Uint8Array(4);
+          gl.readPixels(
+            Math.floor(canvas.width / 2),
+            Math.floor(canvas.height / 2),
+            1,
+            1,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            pixels,
+          );
+          return pixels.some((p) => p > 0);
+        },
+        { timeout: 30000 },
+      );
 
-      const hash1 = await page.evaluate(
-        () => document.querySelector('canvas')?.toDataURL('image/png').length,
+      const hash1 = await page.evaluate(() =>
+        document.querySelector('canvas')?.toDataURL('image/png'),
       );
 
       // Switch through the app's shareable route transition without tearing
@@ -195,10 +237,34 @@ browserTest(
       await waitForMountedStage(page);
       await waitForActivePreset(page, 'rovastar-parallel-universe');
       await page.waitForSelector('canvas', { timeout: 30000 });
-      await page.waitForTimeout(500);
 
-      const hash2 = await page.evaluate(
-        () => document.querySelector('canvas')?.toDataURL('image/png').length,
+      // Wait for the GPU to produce non-zero output after the preset switch.
+      await page.waitForFunction(
+        () => {
+          const canvas = document.querySelector(
+            'canvas',
+          ) as HTMLCanvasElement | null;
+          if (!canvas) return false;
+          const gl = (canvas.getContext('webgl') ||
+            canvas.getContext('webgl2')) as WebGLRenderingContext | null;
+          if (!gl) return false;
+          const pixels = new Uint8Array(4);
+          gl.readPixels(
+            Math.floor(canvas.width / 2),
+            Math.floor(canvas.height / 2),
+            1,
+            1,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            pixels,
+          );
+          return pixels.some((p) => p > 0);
+        },
+        { timeout: 30000 },
+      );
+
+      const hash2 = await page.evaluate(() =>
+        document.querySelector('canvas')?.toDataURL('image/png'),
       );
 
       // Verify the runtime switched to the requested preset.
@@ -208,9 +274,10 @@ browserTest(
         .getAttribute('data-active-preset-id');
       expect(activePresetId).toBe('rovastar-parallel-universe');
 
-      // Both must have content
-      expect(hash1).toBeGreaterThan(1000);
-      expect(hash2).toBeGreaterThan(1000);
+      // Both frames must have content and they must differ.
+      expect(hash1).toBeTruthy();
+      expect(hash2).toBeTruthy();
+      expect(hash1).not.toEqual(hash2);
     } finally {
       await closeQuietly(ctx, browser);
     }

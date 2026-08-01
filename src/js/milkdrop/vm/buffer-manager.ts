@@ -44,6 +44,9 @@ export function createVmBufferManager() {
     usesRandom: boolean,
     label: string,
   ) {
+    if (layout?.buffer) {
+      layout.buffer.destroy();
+    }
     const newLayout = computeLayout(fieldKeys, usesRandom);
     const buffer = device.createBuffer({
       label,

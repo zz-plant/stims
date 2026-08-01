@@ -119,7 +119,15 @@ function extractNativeShaderBody(shaderText: string) {
     .replace(/\btime\b/giu, 'signalTime')
     .replace(/\bbass_att\b|\bbass\b/giu, 'signalBass')
     .replace(/\bmid_att\b|\bmid\b/giu, 'signalMid')
-    .replace(/\btreb_att\b|\btreb\b/giu, 'signalTreb');
+    .replace(/\btreb_att\b|\btreb\b/giu, 'signalTreb')
+    .replace(/\bvol_att\b|\bvol\b/giu, 'signalEnergy')
+    .replace(/\brms\b/giu, 'signalEnergy')
+    .replace(/\bbeat_pulse\b/giu, 'signalBeatPulse')
+    .replace(/\bbeat\b/giu, 'signalBeat')
+    .replace(
+      /\brand_frame\b/giu,
+      'vec4(fract(sin(signalTime * 12.9898 + 1.0) * 43758.5453), fract(sin(signalTime * 78.233 + 2.0) * 43758.5453), fract(sin(signalTime * 39.346 + 3.0) * 43758.5453), fract(sin(signalTime * 93.989 + 4.0) * 43758.5453))',
+    );
 
   // Collapse whitespace/empty statements introduced when multiple raw
   // shader chunks are concatenated by the parser.
