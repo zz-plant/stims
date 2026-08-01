@@ -14,6 +14,7 @@ const DEFAULT_FRAME_SAMPLE_MS = 900;
 const LOAD_TIMEOUT_MS = 30_000;
 const BLANK_LUMINANCE = 2;
 const BLANK_VISIBLE_PIXEL_RATIO = 0.002;
+const SPATIALLY_UNIFORM_LUMINANCE_DEVIATION = 1;
 const STATIC_FRAME_DIFFERENCE_RATIO = 0.000_01;
 const MIN_HEALTHY_FRAME_RATE = 30;
 
@@ -34,6 +35,7 @@ export type LoopPresetCorpusEntry = CatalogEntry & {
 export type LoopPresetFrameMetrics = {
   meanLuminance: number;
   visiblePixelRatio: number;
+  luminanceStandardDeviation: number;
 };
 
 export type LoopPresetSweepStatus =
@@ -152,6 +154,13 @@ function isBlankFrame(frame: LoopPresetFrameMetrics | null) {
   );
 }
 
+function isSpatiallyUniformFrame(frame: LoopPresetFrameMetrics | null) {
+  return Boolean(
+    frame &&
+      frame.luminanceStandardDeviation <= SPATIALLY_UNIFORM_LUMINANCE_DEVIATION,
+  );
+}
+
 export function classifyLoopPresetSweepSample(
   sample: LoopPresetSweepClassificationInput,
 ): LoopPresetSweepClassification {
@@ -184,6 +193,17 @@ export function classifyLoopPresetSweepSample(
       status: 'visual-regression',
       severityScore: 300,
       reasons: ['Both sampled canvas frames are effectively blank'],
+    };
+  }
+
+  if (
+    isSpatiallyUniformFrame(sample.firstFrame) &&
+    isSpatiallyUniformFrame(sample.finalFrame)
+  ) {
+    return {
+      status: 'visual-regression',
+      severityScore: 290,
+      reasons: ['Both sampled canvas frames are spatially uniform'],
     };
   }
 
@@ -260,6 +280,7 @@ async function inspectPng(buffer: Buffer) {
     .raw()
     .toBuffer({ resolveWithObject: true });
   let luminanceTotal = 0;
+  let luminanceSquareTotal = 0;
   let visiblePixels = 0;
   const pixelCount = info.width * info.height;
 
@@ -269,10 +290,20 @@ async function inspectPng(buffer: Buffer) {
       (data[offset + 1] ?? 0) * 0.7152 +
       (data[offset + 2] ?? 0) * 0.0722;
     luminanceTotal += luminance;
+    luminanceSquareTotal += luminance * luminance;
     if (luminance > 8) {
       visiblePixels += 1;
     }
   }
+
+  const meanLuminance = pixelCount > 0 ? luminanceTotal / pixelCount : 0;
+  const luminanceVariance =
+    pixelCount > 0
+      ? Math.max(
+          0,
+          luminanceSquareTotal / pixelCount - meanLuminance * meanLuminance,
+        )
+      : 0;
 
   return {
     raw: data,
@@ -280,8 +311,9 @@ async function inspectPng(buffer: Buffer) {
     height: info.height,
     channels: info.channels,
     metrics: {
-      meanLuminance: pixelCount > 0 ? luminanceTotal / pixelCount : 0,
+      meanLuminance,
       visiblePixelRatio: pixelCount > 0 ? visiblePixels / pixelCount : 0,
+      luminanceStandardDeviation: Math.sqrt(luminanceVariance),
     },
   };
 }
@@ -613,44 +645,49 @@ export async function runLoopPresetVisualSweep(options: SweepOptions) {
 
   fs.mkdirSync(options.outputDir, { recursive: true });
   const server = await ensureDevServer(options.repoRoot, options.port);
-  const consoleErrors: string[] = [];
   const browser = await chromium.launch({
     headless: options.headless,
     args: resolveLoopSweepChromiumArgs(options.renderer, options.headless),
   });
   const context = await browser.newContext({ viewport: DEFAULT_VIEWPORT });
-  const page = await context.newPage();
-  page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
-  });
-  page.on('pageerror', (error) => consoleErrors.push(error.message));
-  await page.addInitScript(() => {
+  await context.addInitScript(() => {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
 
   const results: LoopPresetSweepResult[] = [];
   try {
-    const initialUrl = new URL(`http://127.0.0.1:${options.port}/`);
-    initialUrl.searchParams.set('agent', 'true');
-    initialUrl.searchParams.set('audio', 'demo');
-    initialUrl.searchParams.set('renderer', options.renderer);
-    initialUrl.searchParams.set('preset', presets[0]?.id ?? '');
-    await page.goto(initialUrl.toString(), { waitUntil: 'domcontentloaded' });
-
     for (const [index, preset] of presets.entries()) {
-      const result = await capturePresetSample({
-        page,
-        preset,
-        outputDir: options.outputDir,
-        settleMs: options.settleMs,
-        frameSampleMs: options.frameSampleMs,
-        consoleErrors,
-        firstPreset: index === 0,
+      const page = await context.newPage();
+      const consoleErrors: string[] = [];
+      page.on('console', (message) => {
+        if (message.type() === 'error') consoleErrors.push(message.text());
       });
-      results.push(result);
-      console.log(
-        `[${index + 1}/${presets.length}] ${preset.id}: ${result.status}`,
-      );
+      page.on('pageerror', (error) => consoleErrors.push(error.message));
+
+      try {
+        const url = new URL(`http://127.0.0.1:${options.port}/`);
+        url.searchParams.set('agent', 'true');
+        url.searchParams.set('audio', 'demo');
+        url.searchParams.set('renderer', options.renderer);
+        url.searchParams.set('preset', preset.id);
+        await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
+
+        const result = await capturePresetSample({
+          page,
+          preset,
+          outputDir: options.outputDir,
+          settleMs: options.settleMs,
+          frameSampleMs: options.frameSampleMs,
+          consoleErrors,
+          firstPreset: true,
+        });
+        results.push(result);
+        console.log(
+          `[${index + 1}/${presets.length}] ${preset.id}: ${result.status}`,
+        );
+      } finally {
+        await page.close().catch(() => {});
+      }
     }
   } finally {
     await context.close().catch(() => {});

@@ -27,9 +27,9 @@
   text-transform: uppercase;
 }
 
-.textarea {
+.textarea,
+.input {
   resize: vertical;
-  min-height: 72px;
   padding: 10px 12px;
   border: 1px solid var(--ctl-line, rgba(255, 255, 255, 0.12));
   border-radius: 10px;
@@ -39,7 +39,16 @@
   line-height: 1.5;
 }
 
-.textarea:focus-visible {
+.textarea {
+  min-height: 72px;
+}
+
+.input {
+  min-width: 0;
+}
+
+.textarea:focus-visible,
+.input:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 2px;
 }
@@ -78,6 +87,19 @@
   accent-color: var(--stims-accent);
 }
 
+.providerNote {
+  margin: 0;
+  color: var(--ctl-ink-2, var(--stims-ink));
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.localSettings {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
 .slider {
   width: 100%;
   accent-color: var(--stims-accent);
@@ -110,4 +132,10 @@
 .generateButton:focus-visible {
   outline: 2px solid var(--stims-accent);
   outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .localSettings {
+    grid-template-columns: 1fr;
+  }
 }

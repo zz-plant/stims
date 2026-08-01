@@ -973,6 +973,10 @@ function buildExperienceController(deps: Record<string, any>) {
     exportPreset() {
       deps.presetFileActions.exportPreset();
     },
+    resizeForVideoExport(width: number, height: number) {
+      deps.disposePostprocessingPipeline();
+      deps.adapter?.resize(width, height);
+    },
     async duplicatePreset() {
       await deps.presetFileActions.duplicatePreset();
       deps.emitChange();

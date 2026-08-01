@@ -14,13 +14,13 @@ flowchart TD
   Start --> GS["🚀 Getting Started"]
   Start --> Arch["🏛️ Architecture & Engine"]
   Start --> Preset["🎨 Preset Authoring"]
-  Start --> AI["🤖 AI & API Services"]
+  Start --> API["🔌 Optional APIs"]
   Start --> Strat["📊 Strategy & QA"]
 
   GS --> Dev["Development & Testing Setup"]
   Arch --> JIT["JIT VM & WebGPU Engine"]
   Preset --> EEL["EEL2/MilkDrop Math & Shader Guide"]
-  AI --> Edge["Cloudflare Workers & LLM Endpoints"]
+  API --> Edge["Cloudflare Worker Endpoints"]
   Strat --> Road["Roadmap & Quality Gates"]
 ```
 
@@ -46,7 +46,7 @@ Deep-dive specifications into the JIT VM, dual WebGPU/WebGL2 rendering pipeline,
 | Document | Description |
 | --- | --- |
 | 📐 [**Architecture Overview**](./ARCHITECTURE.md) | High-level system architecture, SPA URL state, React workspace, and engine seams |
-| 🏆 [**Technical Achievements**](./TECHNICAL_ACHIEVEMENTS.md) | Comprehensive breakdown of the 8 flagship technical achievements and engineering innovations |
+| 🧱 [**Technical Foundations**](./TECHNICAL_ACHIEVEMENTS.md) | Implemented systems, evidence boundaries, beta behavior, optional services, and non-shipped scaffolding |
 | ⚡ [**MilkDrop Preset Runtime**](./MILKDROP_PRESET_RUNTIME.md) | Preset compiler lifecycle, EEL2 expression execution, memory buffers, and signal contracts |
 | 🖥️ [**WebGPU Architectural Revamp**](./WEBGPU_ARCHITECTURAL_REVAMP.md) | WebGPU TSL/WGSL pipeline design, feature rollout flags, and WebGL2 fallback chains |
 
@@ -64,9 +64,9 @@ Guides for writing MilkDrop equations, shader math, and projectM compatibility s
 
 ---
 
-### 🤖 4. AI Infrastructure & APIs
+### 🔌 4. Optional APIs
 
-Edge AI models, vector search endpoints, and Model Context Protocol (MCP) integrations.
+Deployment-dependent generation, search, community, and Model Context Protocol (MCP) integrations. Local playback, browsing, editing, and import/export do not require these services.
 
 | Document | Description |
 | --- | --- |

@@ -182,6 +182,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       handlePlayPreset: shellOrchestration.handlePlayPreset,
       handleShufflePreset: shellOrchestration.handleShufflePreset,
       exportPreset: sessionState.exportPreset,
+      getVideoExportRuntime: sessionState.getVideoExportRuntime,
       importPresetFiles: sessionState.importPresetFiles,
       requestPresetPreviews: sessionState.requestPresetPreviews,
       refreshPresetPreviews: sessionState.refreshPresetPreviews,
@@ -196,6 +197,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setQualityPreset: sessionState.setQualityPreset,
       updateEditorSource: sessionState.updateEditorSource,
       updateInspectorField: sessionState.updateInspectorField,
+      startXrStage: sessionState.startXrStage,
+      endXrStage: sessionState.endXrStage,
       handleVisualSearch: shellOrchestration.handleVisualSearch,
     }),
     [
@@ -221,6 +224,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       shellOrchestration.handlePlayPreset,
       shellOrchestration.handleShufflePreset,
       sessionState.exportPreset,
+      sessionState.getVideoExportRuntime,
       sessionState.importPresetFiles,
       sessionState.requestPresetPreviews,
       sessionState.refreshPresetPreviews,
@@ -235,6 +239,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       sessionState.setQualityPreset,
       sessionState.updateEditorSource,
       sessionState.updateInspectorField,
+      sessionState.startXrStage,
+      sessionState.endXrStage,
       shellOrchestration.handleVisualSearch,
     ],
   );

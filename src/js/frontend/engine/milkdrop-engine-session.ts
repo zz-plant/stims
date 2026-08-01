@@ -1,5 +1,9 @@
 import { setAudioActive, setCurrentToy } from '../../core/agent-api.ts';
 import {
+  type WebXrRendererLike,
+  webXrStageService,
+} from '../../core/services/webxr-stage-session.ts';
+import {
   DEFAULT_QUALITY_PRESETS,
   QUALITY_STORAGE_KEY,
 } from '../../core/settings-panel.ts';
@@ -19,6 +23,7 @@ import {
 } from './engine-snapshot.ts';
 import { toFileList } from './file-list.ts';
 import { waitForRuntime } from './runtime-wait.ts';
+import { createVideoExportRuntime } from './video-export-runtime.ts';
 
 type RuntimeFactories = {
   createMilkdropExperience: typeof import('../../milkdrop/runtime.ts').createMilkdropExperience;
@@ -72,6 +77,12 @@ export function createMilkdropEngineAdapter() {
   let unsubscribeExperience: (() => void) | null = null;
   let lastSnapshot: EngineSnapshot = createEmptyEngineSnapshot();
   const subscribers = new Set<(snapshot: EngineSnapshot) => void>();
+  const videoExportRuntime = createVideoExportRuntime({
+    getToy: () => runtime?.toy ?? null,
+    resizeMilkdrop: (width, height) => {
+      experience?.resizeForVideoExport(width, height);
+    },
+  });
 
   const quality = createRendererQualityManager({
     presets: DEFAULT_QUALITY_PRESETS,
@@ -118,6 +129,10 @@ export function createMilkdropEngineAdapter() {
   return {
     isMounted() {
       return Boolean(runtime && experience && container);
+    },
+
+    getVideoExportRuntime() {
+      return runtime?.toy.renderer ? videoExportRuntime : null;
     },
 
     async mount(nextContainer: HTMLElement, intent: LaunchIntent) {
@@ -361,6 +376,21 @@ export function createMilkdropEngineAdapter() {
 
     updateInspectorField(key: string, value: number) {
       experience?.updateInspectorField?.(key, value);
+    },
+
+    async startXrStage(mode: 'immersive-vr' | 'immersive-ar') {
+      if (!runtime) {
+        throw new Error('Start a visual before entering the immersive stage.');
+      }
+      const session = await webXrStageService.startStage(
+        runtime.toy.renderer as unknown as WebXrRendererLike,
+        mode,
+      );
+      return session !== null;
+    },
+
+    async endXrStage() {
+      await webXrStageService.endSession();
     },
 
     async importPreset(target: FileList | File[] | string) {

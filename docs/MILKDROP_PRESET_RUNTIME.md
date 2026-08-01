@@ -53,7 +53,7 @@ Both camelCase and snake_case aliases are exposed so preset equations can stay r
 - `docs/TOY_SCRIPT_INDEX.md`
 - `docs/toys.md`
 
-`bun run check:toys` fails if the checked-in JSON or generated artifacts drift.
+`bun run check:toys` fails if the checked-in JSON or generated artifacts drift. The same guard also keeps the README's visible preset count aligned with `public/milkdrop-presets/catalog.json` and blocks selected shipped-feature wording that exceeds current implementation evidence.
 
 ## WebGPU descriptor rollout flags
 

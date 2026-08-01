@@ -11,8 +11,8 @@ This document is the consolidated source for implementation progress across road
 - [x] Library discovery improvements are in place.
 - [x] Homepage first-view CTAs are reduced to one primary launch path plus browse.
 - [x] Shared runtime helper foundations are in place.
-- [x] **Q3 Roadmap feature: WebGPU Shared Audio GPU Texture** (2026-07-29):
-  - [x] Enhanced `SharedAudioGpuTextureManager` in `src/js/core/audio-gpu-texture.ts` with zero-copy buffer allocations and WebGPU queue writes (`writeToGpuTexture`, `updateAudioGpuTexture`).
+- [x] **Shared audio GPU texture foundation** (2026-07-29):
+  - [x] Enhanced `SharedAudioGpuTextureManager` in `src/js/core/audio-gpu-texture.ts` with reusable buffer allocations and WebGPU queue writes (`writeToGpuTexture`, `updateAudioGpuTexture`).
   - [x] Packed FFT frequency data into Row 0 (`y = 0`) and waveform data into Row 1 (`y = 1`) of a single `512x2` RGBA texture allocation.
   - [x] Extended `MilkdropFeedbackManager` in `src/js/milkdrop/renderer-types.ts` and wired `setAudioTexture` across WebGL (`feedback-manager-shared.ts`) and WebGPU (`feedback-manager-webgpu-tsl.ts`) renderers.
   - [x] Added unit test coverage in `tests/unit/audio-gpu-texture.test.ts`.
@@ -23,13 +23,15 @@ This document is the consolidated source for implementation progress across road
   - [x] Added live parameter tweak sliders (`zoom`, `warp`, `rot`, `decay`, etc.) with double-click reset and document sync.
   - [x] Added unit tests in `tests/unit/editor-panel.test.ts`.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
-- [x] **Q3 Roadmap feature: Off-Main-Thread AudioWorklet DSP Analysis** (2026-07-29):
+- [x] **Off-main-thread AudioWorklet DSP analysis** (2026-07-29):
   - [x] Enhanced `FrequencyAnalyserProcessor` in `src/js/utils/frequency-analyser-processor.ts` to compute multi-band energy levels (`bass`, `mid`, `treble`, `subBass`, `kick`), energy envelope tracking, and 4-band transient metrics off the main thread.
   - [x] Updated `FrequencyAnalyser` in `src/js/core/audio-handler.ts` to consume worklet energy payloads with fallback to standard `AnalyserNode`.
   - [x] Added unit test suite in `tests/unit/audio-worklet.test.ts`.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
-- [x] **Q3 Roadmap feature: In-Browser 4K 60FPS Canvas Video Export** (2026-07-29):
+- [x] **Browser canvas recording beta** (2026-07-29):
   - [x] Expanded `CapturePanel.tsx` video format options to include Ultra HD 4K (`4k-landscape`, 3840×2160) alongside Full HD 1080p and Spotify Canvas (9:16 vertical).
+  - [x] Added a native renderer-resize path for the 4K target and active-audio track composition.
+  - [ ] Verify encoded resolution, audio synchronization, frame pacing, and sustained recording in supported browsers before describing it as creator-grade export.
   - [x] Updated unit tests in `tests/unit/canvas-video-exporter.test.ts` for export options coverage.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Q4 Roadmap feature: EEL `loop`/`while` Transpiler Support** (2026-07-30):
@@ -37,8 +39,10 @@ This document is the consolidated source for implementation progress across road
   - [x] Unblocked 79 catalog presets (reducing untranslated count from 109 to 30) and emitted 163,887 valid EEL statements during re-transpilation.
   - [x] Added unit test suite in `tests/unit/butterchurn-eel-transpiler.test.ts` (4/4 tests passing).
   - [x] Verified quality gate passes (`bun run check:quick` clean).
-- [x] **Q4 Roadmap feature: WebMIDI Hardware Controller Manager** (2026-07-30):
-  - [x] Implemented `MidiControllerManager` in `src/js/core/midi-controller.ts` providing WebMIDI access and interactive MIDI learn mode for hardware control.
+- [x] **WebMIDI controller-service foundation** (2026-07-30):
+  - [x] Implemented `MidiControllerManager` in `src/js/core/midi-controller.ts` with WebMIDI access, mapping, and learn-mode logic.
+  - [x] Connected the shared controller service to live workspace parameters and Settings UI.
+  - [ ] Add persistent mappings, recovery behavior, and device-backed verification.
   - [x] Verified quality gate passes (`bun run check:quick` clean).
 - [x] **Polish phase: Overlay theme CSS variables extraction and styling consistency** (2026-05-17):
   - [x] Added 23 theme variables for overlay component (bg-primary, bg-secondary, bg-tertiary, overlay, overlay-2, border, blur-lg, shadow, button, active-indicator)
@@ -49,11 +53,13 @@ This document is the consolidated source for implementation progress across road
 
 ## Active priorities
 
-- [x] Toy onboarding quick wins (presets / first-time hints).
-- [x] Toy-page touch polish (clearer gesture hints and affordances).
-- [ ] **Q4 Roadmap feature: ONNX Client-Side Audio Stem Separation** (ONNX Runtime Web + WebNN/WebGPU 4-stem separation into `stem_drums`, `stem_bass`, `stem_vocals`; signal types and VM scopes initialized).
+- [ ] Expand trusted projectM-reference coverage for featured and bundled presets.
+- [ ] Surface visual-evidence, fallback, and performance status clearly in discovery flows.
+- [ ] Complete the browse → edit → compare → save → share remix workflow.
+- [ ] Certify native-resolution, audio-muxed export in supported browsers and add deterministic frame-pacing evidence.
+- [ ] **Client-side audio stem separation research** (runtime identifiers are reserved, but no separation model populates them).
 - [ ] **Q4 Roadmap feature: Unified Composite Shader IR** (Single IR generating both GLSL and TSL node graphs to eliminate feedback shader duplication; `feedback-composite-ir.ts` initialized).
-- [ ] **Q4 Roadmap feature: WebXR Spatial Audio Stage** (6DoF immersive spatial audio visualizer mode).
+- [ ] **WebXR spatial stage experiment** (workspace and renderer session attachment exist; headset rendering, spatial audio, and recovery remain unverified).
 
 ## Refactor milestone tracking
 

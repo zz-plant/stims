@@ -18,6 +18,9 @@ async function createTempRepo() {
   await fs.mkdir(path.join(root, 'src/data'), { recursive: true });
   await fs.mkdir(path.join(root, 'docs'), { recursive: true });
   await fs.mkdir(path.join(root, 'public'), { recursive: true });
+  await fs.mkdir(path.join(root, 'public/milkdrop-presets'), {
+    recursive: true,
+  });
 
   const index = `# Toy Script Index\n\nplaceholder\n`;
   await fs.writeFile(path.join(root, 'docs/TOY_SCRIPT_INDEX.md'), index);
@@ -32,6 +35,10 @@ async function createTempRepo() {
     'export const toyManifest = [];\n',
   );
   await fs.writeFile(path.join(root, 'public/toys.json'), '[]\n');
+  await fs.writeFile(
+    path.join(root, 'public/milkdrop-presets/catalog.json'),
+    '{"presets":[]}\n',
+  );
   await fs.writeFile(path.join(root, 'README.md'), '# temp repo\n');
   return root;
 }
@@ -300,4 +307,100 @@ describe('check-toys script', () => {
       ),
     ).toBe(true);
   });
+
+  test('fails when the README preset count drifts from the public catalog', async () => {
+    const root = await createTempRepo();
+    await fs.writeFile(
+      path.join(root, 'public/milkdrop-presets/catalog.json'),
+      JSON.stringify({ presets: [{ id: 'one' }, { id: 'two' }] }),
+    );
+    await fs.writeFile(
+      path.join(root, 'README.md'),
+      '# temp repo\n\nExplore the **3-preset catalog**.\n',
+    );
+
+    const result = await runToyChecks(root);
+
+    expect(
+      result.issues.some((issue) =>
+        issue.includes(
+          'README preset count is 3, but public/milkdrop-presets/catalog.json contains 2 entries',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  test('checks every README preset-count claim format used by the product copy', async () => {
+    const root = await createTempRepo();
+    await fs.writeFile(
+      path.join(root, 'public/milkdrop-presets/catalog.json'),
+      JSON.stringify({ presets: [{ id: 'one' }, { id: 'two' }] }),
+    );
+    await fs.writeFile(
+      path.join(root, 'README.md'),
+      [
+        '# temp repo',
+        '',
+        '| **3 Presets** | Browse the catalog. |',
+        '',
+        'Search over 3+ preset embeddings.',
+      ].join('\n'),
+    );
+
+    const result = await runToyChecks(root);
+    const countIssues = result.issues.filter((issue) =>
+      issue.includes(
+        'README preset count is 3, but public/milkdrop-presets/catalog.json contains 2 entries',
+      ),
+    );
+
+    expect(countIssues).toHaveLength(2);
+  });
+
+  for (const claim of [
+    {
+      name: 'stem separation',
+      copy: '**Stem-Aware Audio Engine** isolates vocals and drums into live visual uniforms.',
+      expected:
+        'README presents stem separation as shipped, but the runtime currently exposes reserved stem signals only',
+    },
+    {
+      name: 'integrated MIDI control',
+      copy: '**WebMIDI & VJ Controls** map physical controls directly to live visual parameters.',
+      expected:
+        'README presents MIDI control as fully shipped, but the current integration still lacks device-backed verification and persistent mappings',
+    },
+    {
+      name: 'an immersive XR stage',
+      copy: '**WebXR 6DoF Spatial VR Stage** provides an immersive spatial visualizer.',
+      expected:
+        'README presents an immersive XR stage as fully shipped, but the current integration still lacks device-backed visual and audio verification',
+    },
+    {
+      name: 'native 4K audio-video export',
+      copy: '**4K / 60FPS Video Export** produces creator-ready audio and video.',
+      expected:
+        'README presents creator-ready 4K audio-video export as fully shipped, but the native render and audio path still requires browser-backed output verification',
+    },
+    {
+      name: 'model generation bundled with blending',
+      copy: '**AI Generation & Blending** creates every requested visual from a language model.',
+      expected:
+        'README presents model generation and blending as one fully shipped feature, but generation requires a configured hosted or local model and blending remains an optional API',
+    },
+  ]) {
+    test(`fails when the README promotes ${claim.name} as shipped`, async () => {
+      const root = await createTempRepo();
+      await fs.writeFile(
+        path.join(root, 'README.md'),
+        `# temp repo\n\n${claim.copy}\n`,
+      );
+
+      const result = await runToyChecks(root);
+
+      expect(
+        result.issues.some((issue) => issue.includes(claim.expected)),
+      ).toBe(true);
+    });
+  }
 });

@@ -1,5 +1,6 @@
 import { createContext, type ReactNode, useContext } from 'react';
 import type { MilkdropPresetRenderPreview } from '../milkdrop/preset-preview.ts';
+import type { CanvasVideoExportRuntime } from '../utils/media/canvas-video-exporter.ts';
 import type { PresetCatalogEntry, SessionRouteState } from './contracts.ts';
 import type { EngineSnapshot } from './engine/engine-snapshot.ts';
 import type { StarterPreset } from './workspace-helpers.ts';
@@ -40,6 +41,7 @@ export interface EngineContextValue {
   starterPresets: StarterPreset[];
 
   exportPreset: () => void;
+  getVideoExportRuntime: () => CanvasVideoExportRuntime | null;
   importPresetFiles: (files: FileList | null) => Promise<void>;
   requestPresetPreviews: (presetIds: string[]) => Promise<void>;
   pausePreview: () => void;
@@ -72,6 +74,8 @@ export interface EngineContextValue {
   updateEditorSource: (source: string) => void;
   handleVisualSearch: () => Promise<void>;
   updateInspectorField: (key: string, value: number) => void;
+  startXrStage: (mode: 'immersive-vr' | 'immersive-ar') => Promise<boolean>;
+  endXrStage: () => Promise<void>;
 }
 
 export const EngineCtx = createContext<EngineContextValue | null>(null);

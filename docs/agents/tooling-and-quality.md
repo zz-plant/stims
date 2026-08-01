@@ -103,7 +103,7 @@ The quality gate now also runs architecture dependency checks via `dependency-cr
 
 ## Task-specific checks
 
-- Toy registration/docs consistency:
+- Toy registration, generated-doc, and public README claim consistency:
 
   ```bash
   bun run check:toys
@@ -201,7 +201,7 @@ bun run check
 # Architecture boundary violations
 bun run check:architecture
 
-# Toy manifest drift
+# Toy manifest, generated docs, and public README claim drift
 bun run check:toys
 
 # SEO surface issues

@@ -378,6 +378,8 @@ export function useWorkspaceSessionState({
     exportPreset: () => {
       engineRef.current?.exportPreset();
     },
+    getVideoExportRuntime: () =>
+      engineRef.current?.getVideoExportRuntime() ?? null,
     fallbackCatalog,
     fallbackCatalogError,
     fallbackCatalogReady,
@@ -415,6 +417,13 @@ export function useWorkspaceSessionState({
     },
     updateInspectorField: (key: string, value: number) => {
       engineRef.current?.updateInspectorField?.(key, value);
+    },
+    startXrStage: async (mode: 'immersive-vr' | 'immersive-ar') => {
+      const adapter = await ensureEngineMounted();
+      return adapter.startXrStage(mode);
+    },
+    endXrStage: async () => {
+      await engineRef.current?.endXrStage();
     },
     setSearchQuery,
     setShowExtendedSources,
