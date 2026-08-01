@@ -352,14 +352,18 @@ async function createRendererHandle(
       return webGpuRecovery;
     }
 
-    const recovery = recreateRenderer({
-      allowBackendSwitch: false,
-    }).catch((error) => {
-      rememberRendererFallback(reason, {
-        backend: 'webgl',
-        shouldRetryWebGPU: true,
-      });
-      throw error;
+    const recovery = new Promise<void>((resolve, reject) => {
+      setTimeout(() => {
+        recreateRenderer({ allowBackendSwitch: false })
+          .then(resolve)
+          .catch((error) => {
+            rememberRendererFallback(reason, {
+              backend: 'webgl',
+              shouldRetryWebGPU: true,
+            });
+            reject(error);
+          });
+      }, 100);
     });
     webGpuRecovery = recovery.finally(() => {
       if (webGpuRecovery === recovery) {
@@ -532,6 +536,7 @@ export async function requestRenderer({
   handle.release = () => {
     releaseHandle();
     handle.renderer.setAnimationLoop?.(null);
+    handle.renderer.dispose?.();
     poolEntry.inUse = false;
     detachCanvas(handle.canvas);
   };

@@ -92,6 +92,12 @@ export type CustomWaveChannelSample = {
 export type GeometryBuilderState = {
   lastMotionVectorField: MotionVectorFieldHistory | null;
   frameTransformCache: Map<number, { x: number; y: number }>;
+  /** Pool of reusable {x, y} objects for frameTransformCache entries,
+   * sized once to peak capacity and reused across frames to avoid
+   * per-frame allocation. */
+  transformCachePool: { x: number; y: number }[];
+  /** Number of pooled objects currently in use (0 after a reset). */
+  transformCachePoolIndex: number;
   pointScratch: MutableState;
   meshPoints: MeshFieldPoint[];
   motionVectorFrameIndex: 0 | 1;

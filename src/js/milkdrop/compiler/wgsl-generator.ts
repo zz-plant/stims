@@ -135,9 +135,13 @@ function buildWgslExpression(expression: MilkdropExpressionNode): string {
           return `select(0.0f, (${a}) - (${b}) * floor((${a}) / (${b})), abs(${b}) > 0.000001f)`;
         }
         case 'min':
-          return args.length > 0 ? `min(${args.join(', ')})` : '0.0f';
+          return args.length >= 2
+            ? `min(${args[0]}, ${args[1]})`
+            : (args[0] ?? '0.0f');
         case 'max':
-          return args.length > 0 ? `max(${args.join(', ')})` : '0.0f';
+          return args.length >= 2
+            ? `max(${args[0]}, ${args[1]})`
+            : (args[0] ?? '0.0f');
         case 'mix':
         case 'lerp':
           return `mix(${args[0] ?? '0.0f'}, ${args[1] ?? '0.0f'}, ${args[2] ?? '0.0f'})`;
