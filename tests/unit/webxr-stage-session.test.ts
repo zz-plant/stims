@@ -26,10 +26,10 @@ describe('WebXR Spatial Audio Stage Session Service', () => {
   it('attaches an immersive session to the active renderer and restores it on end', async () => {
     const onEnd: Array<() => void> = [];
     const session = {
-      addEventListener: (name: string, listener: () => void) => {
-        if (name === 'end') onEnd.push(listener);
+      addEventListener: (_type: 'end', listener: () => void) => {
+        onEnd.push(listener);
       },
-      end: async () => {},
+      end: () => {},
     };
     const navigatorRef = {
       xr: {

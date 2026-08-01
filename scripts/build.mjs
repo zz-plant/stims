@@ -3,34 +3,7 @@
 /* global process, console */
 
 import { execSync } from 'node:child_process';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-import {
-  existsSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-||||||| Stash base
-import {
-  existsSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-=======
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
->>>>>>> Stashed changes
-||||||| Stash base
-import {
-  existsSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-=======
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
->>>>>>> Stashed changes
 import { join } from 'node:path';
 
 const normalizeBoolean = (value) => value?.toLowerCase?.() ?? '';
