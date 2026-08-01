@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import {
   type CertificationCorpusEntry,
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
-import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import {
   closePlayToyBrowserSession,
   createPlayToyBrowserSession,

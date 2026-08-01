@@ -11,6 +11,17 @@ import { createLogger } from './logger.ts';
 import { queryMicrophonePermissionState as querySharedMicrophonePermissionState } from './services/microphone-permission-service.ts';
 import { getMockAudioParams } from './url-params.ts';
 
+export type WorkletBeatDetection = {
+  isBeat: boolean;
+  beatIntensity: number;
+  beatBass: boolean;
+  beatMid: boolean;
+  beatTreble: boolean;
+  bassBeatIntensity: number;
+  midBeatIntensity: number;
+  trebleBeatIntensity: number;
+};
+
 const logger = createLogger('AudioHandler');
 
 type AudioAccessReason = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
@@ -97,6 +108,7 @@ export class FrequencyAnalyser {
     treble: number;
   } | null = null;
   private cachedTransientMetrics: FourBandTransientMetrics | null = null;
+  private cachedBeatDetection: WorkletBeatDetection | null = null;
 
   private constructor({
     sourceNode,
@@ -148,6 +160,7 @@ export class FrequencyAnalyser {
           timeDomainData,
           energy,
           energyAverages,
+          beatDetection,
           transientMetrics,
         } = event.data ?? {};
         if (typeof rms === 'number') this.rms = rms;
@@ -189,6 +202,9 @@ export class FrequencyAnalyser {
           typeof transientMetrics.subBassEnv === 'number'
         ) {
           this.cachedTransientMetrics = transientMetrics;
+        }
+        if (beatDetection && typeof beatDetection.beatIntensity === 'number') {
+          this.cachedBeatDetection = beatDetection;
         }
         if (waveformData) {
           const nextWave =
@@ -380,6 +396,10 @@ export class FrequencyAnalyser {
       this.previousFrequencyData ?? undefined,
       this.sampleRate,
     );
+  }
+
+  getWorkletBeatDetection(): WorkletBeatDetection | null {
+    return this.workletNode ? this.cachedBeatDetection : null;
   }
 
   getWaveformData() {

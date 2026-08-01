@@ -15,8 +15,8 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import sharp from 'sharp';
+import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 
 const DEV_SERVER = 'http://localhost:5173';
 const OUTPUT_DIR = 'public/thumbnails';

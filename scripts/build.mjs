@@ -4,12 +4,23 @@
 
 import { execSync } from 'node:child_process';
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import {
   existsSync,
   readdirSync,
   readFileSync,
   writeFileSync,
 } from 'node:fs';
+||||||| Stash base
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+=======
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+>>>>>>> Stashed changes
 ||||||| Stash base
 import {
   existsSync,

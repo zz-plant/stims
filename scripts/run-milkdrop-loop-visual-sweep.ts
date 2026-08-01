@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from 'playwright';
@@ -10,6 +11,10 @@ import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 
 const DEFAULT_PORT = 5192;
 const DEFAULT_SETTLE_MS = 900;
+const DEFAULT_CONCURRENCY = Math.min(
+  4,
+  Math.max(1, (os.availableParallelism?.() ?? os.cpus()?.length ?? 4) - 1),
+);
 const DEFAULT_FRAME_SAMPLE_MS = 900;
 const LOAD_TIMEOUT_MS = 30_000;
 const BLANK_LUMINANCE = 2;
@@ -84,6 +89,7 @@ type SweepOptions = {
   settleMs: number;
   frameSampleMs: number;
   presetIds?: string[];
+  concurrency: number;
 };
 
 function collectControlStatements(
@@ -654,40 +660,59 @@ export async function runLoopPresetVisualSweep(options: SweepOptions) {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
 
-  const results: LoopPresetSweepResult[] = [];
+  const results: LoopPresetSweepResult[] = new Array(presets.length);
+  const concurrency = options.concurrency;
+  let nextIndex = 0;
+
   try {
-    for (const [index, preset] of presets.entries()) {
-      const page = await context.newPage();
-      const consoleErrors: string[] = [];
-      page.on('console', (message) => {
-        if (message.type() === 'error') consoleErrors.push(message.text());
-      });
-      page.on('pageerror', (error) => consoleErrors.push(error.message));
-
-      try {
-        const url = new URL(`http://127.0.0.1:${options.port}/`);
-        url.searchParams.set('agent', 'true');
-        url.searchParams.set('audio', 'demo');
-        url.searchParams.set('renderer', options.renderer);
-        url.searchParams.set('preset', preset.id);
-        await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
-
-        const result = await capturePresetSample({
-          page,
-          preset,
-          outputDir: options.outputDir,
-          settleMs: options.settleMs,
-          frameSampleMs: options.frameSampleMs,
-          consoleErrors,
-          firstPreset: true,
+    async function worker() {
+      while (nextIndex < presets.length) {
+        const index = nextIndex++;
+        const preset = presets[index];
+        const page = await context.newPage();
+        const consoleErrors: string[] = [];
+        page.on('console', (message) => {
+          if (message.type() === 'error') consoleErrors.push(message.text());
         });
-        results.push(result);
-        console.log(
-          `[${index + 1}/${presets.length}] ${preset.id}: ${result.status}`,
-        );
-      } finally {
-        await page.close().catch(() => {});
+        page.on('pageerror', (error) => consoleErrors.push(error.message));
+
+        try {
+          const url = new URL(`http://127.0.0.1:${options.port}/`);
+          url.searchParams.set('agent', 'true');
+          url.searchParams.set('audio', 'demo');
+          url.searchParams.set('renderer', options.renderer);
+          url.searchParams.set('preset', preset.id);
+          await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
+
+          const result = await capturePresetSample({
+            page,
+            preset,
+            outputDir: options.outputDir,
+            settleMs: options.settleMs,
+            frameSampleMs: options.frameSampleMs,
+            consoleErrors,
+            firstPreset: true,
+          });
+          results[index] = result;
+          console.log(
+            `[${index + 1}/${presets.length}] ${preset.id}: ${result.status}`,
+          );
+        } finally {
+          await page.close().catch(() => {});
+        }
       }
+    }
+
+    const workerPromises = Array.from(
+      { length: Math.min(concurrency, presets.length) },
+      () => worker(),
+    );
+    const settled = await Promise.allSettled(workerPromises);
+    const firstRejection = settled.find(
+      (r): r is PromiseRejectedResult => r.status === 'rejected',
+    );
+    if (firstRejection) {
+      throw firstRejection.reason;
     }
   } finally {
     await context.close().catch(() => {});
@@ -752,6 +777,13 @@ function parseArgs(argv: string[]): SweepOptions {
     presetIds: argv.flatMap((arg, index) =>
       arg === '--preset' && argv[index + 1] ? [argv[index + 1] as string] : [],
     ),
+    concurrency: (() => {
+      const raw = readArg(argv, '--concurrency', `${DEFAULT_CONCURRENCY}`);
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) && parsed >= 1
+        ? parsed
+        : DEFAULT_CONCURRENCY;
+    })(),
   };
 }
 

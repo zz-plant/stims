@@ -14,3 +14,4 @@ declare function registerProcessor(
 ): void;
 
 declare const sampleRate: number;
+declare const currentTime: number;

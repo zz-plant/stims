@@ -1,10 +1,16 @@
 import { spawn } from 'node:child_process';
+import os from 'node:os';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
 import {
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
+
+const DEFAULT_CONCURRENCY = Math.min(
+  4,
+  Math.max(1, (os.availableParallelism?.() ?? os.cpus()?.length ?? 4) - 1),
+);
 
 export type CaptureCertificationCorpusOptions = {
   repoRoot: string;
@@ -17,6 +23,7 @@ export type CaptureCertificationCorpusOptions = {
   duration: number;
   viewportWidth: number;
   viewportHeight: number;
+  concurrency?: number;
 };
 
 type CertificationCorpusCaptureRequest = Required<
@@ -78,6 +85,7 @@ export function buildCertificationCorpusCaptureRequests({
 
 function runPlayToyInChildProcess(
   request: CertificationCorpusCaptureRequest,
+  label: string,
 ): Promise<PlayToyResult> {
   return new Promise((resolve, reject) => {
     const args = [
@@ -118,14 +126,17 @@ function runPlayToyInChildProcess(
     let stdout = '';
 
     proc.stdout?.on('data', (data) => {
-      const str = data.toString();
-      stdout += str;
-      process.stdout.write(str);
+      stdout += data.toString();
     });
 
     proc.on('close', (code) => {
+      if (stdout) {
+        console.log(`\n[${label}] stdout:\n${stdout}`);
+      }
       if (code !== 0) {
-        reject(new Error(`play-toy process exited with code ${code}`));
+        reject(
+          new Error(`play-toy process for "${label}" exited with code ${code}`),
+        );
         return;
       }
 
@@ -141,7 +152,7 @@ function runPlayToyInChildProcess(
         const errMessage = err instanceof Error ? err.message : String(err);
         reject(
           new Error(
-            `Failed to parse play-toy JSON output: ${errMessage}. Raw output length: ${stdout.length}`,
+            `Failed to parse play-toy JSON output for "${label}": ${errMessage}. Raw output length: ${stdout.length}`,
           ),
         );
       }
@@ -157,10 +168,41 @@ export async function captureCertificationCorpus(
   options: CaptureCertificationCorpusOptions,
 ) {
   const requests = buildCertificationCorpusCaptureRequests(options);
-  const results = [];
+  const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
+  const results: PlayToyResult[] = new Array(requests.length);
+  const errors: Error[] = [];
 
-  for (const request of requests) {
-    results.push(await runPlayToyInChildProcess(request));
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < requests.length) {
+      const index = nextIndex++;
+      const request = requests[index];
+      try {
+        const result = await runPlayToyInChildProcess(
+          request,
+          `${request.presetId} (${index + 1}/${requests.length})`,
+        );
+        results[index] = result;
+      } catch (error) {
+        results[index] = {
+          slug: request.slug,
+          success: false,
+          presetId: request.presetId,
+          error: error instanceof Error ? error.message : String(error),
+        };
+        errors.push(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, requests.length) },
+    () => worker(),
+  );
+  await Promise.all(workers);
+
+  if (errors.length > 0) {
+    throw errors[0];
   }
 
   return {
@@ -171,7 +213,7 @@ export async function captureCertificationCorpus(
 
 function usage() {
   console.error(
-    'Usage: bun scripts/capture-certification-corpus.ts [--output <dir>] [--port <number>] [--group <group>] [--preset <id>]...',
+    'Usage: bun scripts/capture-certification-corpus.ts [--output <dir>] [--port <number>] [--group <group>] [--preset <id>]... [--concurrency <n>]',
   );
 }
 
@@ -209,6 +251,16 @@ export function parseCertificationCorpusArgs(
       '--viewport-height',
       DEFAULT_VIEWPORT.height,
     ) as number,
+    concurrency: (() => {
+      const raw = getArg(
+        '--concurrency',
+        String(DEFAULT_CONCURRENCY),
+      ) as string;
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) && parsed >= 1
+        ? parsed
+        : DEFAULT_CONCURRENCY;
+    })(),
   };
 }
 
