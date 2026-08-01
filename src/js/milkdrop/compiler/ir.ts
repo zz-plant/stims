@@ -23,6 +23,7 @@ import type {
   buildFeatureAnalysis,
   HardUnsupportedFieldSpec,
 } from './parity';
+import { flattenProgramStatements } from './program-assembly';
 import { isMilkdropShaderProgramBackendExecutable } from './shader-execution-classification';
 
 export type PendingHardUnsupportedField = HardUnsupportedFieldSpec & {
@@ -640,7 +641,7 @@ export function createMilkdropIr({
       shape.programs.perFrame,
     ]),
   ]) {
-    for (const statement of block.statements) {
+    for (const statement of flattenProgramStatements(block.statements)) {
       assignedTargets.add(statement.target);
       parsedExpressions.push(statement.expression);
     }

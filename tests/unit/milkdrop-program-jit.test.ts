@@ -33,61 +33,116 @@ function makeRandom() {
  * Mirrors the statement-at-a-time semantics the VM used before program blocks
  * were compiled as a unit, so the compiled output can be diffed against it.
  */
+const INTERPRETER_LOOP_CAP = 2_097_152;
+
+type InterpreterGuard = { value: number };
+
+function executeStatement(
+  statement: MilkdropProgramBlock['statements'][number],
+  scopes: RunResult,
+  helpers: {
+    nextRandom: () => number;
+    megabuf: (index: number) => number;
+    gmegabuf: (index: number) => number;
+  },
+  guard: InterpreterGuard,
+) {
+  if (statement.control) {
+    const { kind, body } = statement.control;
+    if (kind === 'loop') {
+      let count = statement.control.count
+        ? evaluateMilkdropExpression(
+            statement.control.count,
+            scopes.env,
+            helpers,
+          )
+        : INTERPRETER_LOOP_CAP;
+      count = Math.min(
+        INTERPRETER_LOOP_CAP,
+        Math.max(0, Math.trunc(count) || 0),
+      );
+      for (let i = 0; i < count && guard.value < INTERPRETER_LOOP_CAP; i += 1) {
+        guard.value += 1;
+        for (const inner of body) {
+          executeStatement(inner, scopes, helpers, guard);
+        }
+      }
+    } else {
+      while (guard.value < INTERPRETER_LOOP_CAP) {
+        const cond = statement.control.condition
+          ? evaluateMilkdropExpression(
+              statement.control.condition,
+              scopes.env,
+              helpers,
+            )
+          : 1;
+        if (!cond) {
+          break;
+        }
+        guard.value += 1;
+        for (const inner of body) {
+          executeStatement(inner, scopes, helpers, guard);
+        }
+      }
+    }
+    return;
+  }
+
+  const { env, state, registers, locals, megabuf, gmegabuf } = scopes;
+  const value = evaluateMilkdropExpression(statement.expression, env, helpers);
+  const targetIndex = statement.targetExpression
+    ? evaluateMilkdropExpression(statement.targetExpression, env, helpers)
+    : undefined;
+
+  if (statement.target === 'megabuf' || statement.target === 'gmegabuf') {
+    const buffer = statement.target === 'megabuf' ? megabuf : gmegabuf;
+    const size =
+      statement.target === 'megabuf'
+        ? MILKDROP_MEGABUF_SIZE
+        : MILKDROP_GMEGABUF_SIZE;
+    const normalized = Math.trunc(targetIndex ?? 0);
+    if (normalized >= 0 && normalized < size) {
+      buffer[normalized] = value;
+    }
+  } else {
+    const normalizedTarget = statement.target.toLowerCase();
+    const registerMatch = normalizedTarget.match(/^([qt])(\d+)$/u);
+    if (locals && registerMatch?.[1] !== 'q') {
+      locals[statement.target] = value;
+    } else if (registerMatch) {
+      registers[normalizedTarget] = value;
+    } else {
+      state[statement.target] = value;
+    }
+  }
+
+  env[statement.target] = value;
+}
+
 function runInterpreted(
   block: MilkdropProgramBlock,
   scopes: RunResult,
 ): RunResult {
-  const { env, state, registers, locals, megabuf, gmegabuf } = scopes;
   const nextRandom = makeRandom();
   const helpers = {
     nextRandom,
     megabuf: (index: number) => {
       const normalized = Math.trunc(index);
       return normalized >= 0 && normalized < MILKDROP_MEGABUF_SIZE
-        ? (megabuf[normalized] ?? 0)
+        ? (scopes.megabuf[normalized] ?? 0)
         : 0;
     },
     gmegabuf: (index: number) => {
       const normalized = Math.trunc(index);
       return normalized >= 0 && normalized < MILKDROP_GMEGABUF_SIZE
-        ? (gmegabuf[normalized] ?? 0)
+        ? (scopes.gmegabuf[normalized] ?? 0)
         : 0;
     },
   };
 
+  const guard: InterpreterGuard = { value: 0 };
   for (const statement of block.statements) {
-    const value = evaluateMilkdropExpression(
-      statement.expression,
-      env,
-      helpers,
-    );
-    const targetIndex = statement.targetExpression
-      ? evaluateMilkdropExpression(statement.targetExpression, env, helpers)
-      : undefined;
-
-    if (statement.target === 'megabuf' || statement.target === 'gmegabuf') {
-      const buffer = statement.target === 'megabuf' ? megabuf : gmegabuf;
-      const size =
-        statement.target === 'megabuf'
-          ? MILKDROP_MEGABUF_SIZE
-          : MILKDROP_GMEGABUF_SIZE;
-      const normalized = Math.trunc(targetIndex ?? 0);
-      if (normalized >= 0 && normalized < size) {
-        buffer[normalized] = value;
-      }
-    } else {
-      const normalizedTarget = statement.target.toLowerCase();
-      const registerMatch = normalizedTarget.match(/^([qt])(\d+)$/u);
-      if (locals && registerMatch?.[1] !== 'q') {
-        locals[statement.target] = value;
-      } else if (registerMatch) {
-        registers[normalizedTarget] = value;
-      } else {
-        state[statement.target] = value;
-      }
-    }
-
-    env[statement.target] = value;
+    executeStatement(statement, scopes, helpers, guard);
   }
 
   return scopes;
@@ -273,5 +328,110 @@ describe('compiled milkdrop programs', () => {
   test('reuses the compiled function for a given block', () => {
     const block = blockFromSource(['q1 = 1;']);
     expect(compileMilkdropProgram(block)).toBe(compileMilkdropProgram(block));
+  });
+
+  test('loop() runs its body count times and matches the interpreter', () => {
+    const block = blockFromSource([
+      'i = 0;',
+      'loop(8, megabuf(i) = i * 2; i = i + 1;);',
+      'q1 = megabuf(7);',
+      'q2 = i;',
+    ]);
+
+    const compiled = runCompiled(block, makeScopes(false));
+    const interpreted = runInterpreted(block, makeScopes(false));
+
+    expectSameScopes(compiled, interpreted);
+    expect(compiled.registers.q1).toBe(14);
+    expect(compiled.registers.q2).toBe(8);
+    expect(Array.from(compiled.megabuf.subarray(0, 8))).toEqual([
+      0, 2, 4, 6, 8, 10, 12, 14,
+    ]);
+  });
+
+  test('while() terminates on a false condition and matches the interpreter', () => {
+    const block = blockFromSource([
+      'b = 0;',
+      'i = 0;',
+      'while(1048576 > b, gmegabuf(i) = 1; i = i + 1; b = b + 1;);',
+      'q1 = i;',
+      'q2 = gmegabuf(5);',
+    ]);
+
+    // A full gmegabuf clear is ~1M iterations and would dominate the test
+    // budget, so cap the condition via a small constant instead.
+    const blockSmall = blockFromSource([
+      'b = 0;',
+      'i = 0;',
+      'while(16 > b, gmegabuf(i) = 1; i = i + 1; b = b + 1;);',
+      'q1 = i;',
+      'q2 = gmegabuf(5);',
+    ]);
+
+    const compiled = runCompiled(blockSmall, makeScopes(false));
+    const interpreted = runInterpreted(blockSmall, makeScopes(false));
+
+    expectSameScopes(compiled, interpreted);
+    expect(compiled.registers.q1).toBe(16);
+    expect(compiled.registers.q2).toBe(1);
+    expect(Array.from(compiled.gmegabuf.subarray(0, 16))).toEqual(
+      Array.from(interpreted.gmegabuf.subarray(0, 16)),
+    );
+    // The large version must still terminate (guard cap), not hang.
+    expect(() => runCompiled(block, makeScopes(false))).not.toThrow();
+  });
+
+  test('an infinite while(1, ...) is broken by the iteration cap', () => {
+    const block = blockFromSource(['while(1, q1 = q1 + 1;);']);
+
+    expect(() => runCompiled(block, makeScopes(false))).not.toThrow();
+    // The guard stops the loop; q1 stops climbing at the cap rather than
+    // running forever.
+    const compiled = runCompiled(block, makeScopes(false));
+    expect(compiled.registers.q1).toBeLessThanOrEqual(2_097_152);
+    expect(compiled.registers.q1).toBeGreaterThan(0);
+  });
+
+  test('nested loop inside while matches the interpreter', () => {
+    const block = blockFromSource([
+      'total = 0;',
+      'row = 0;',
+      'while(3 > row, col = 0; loop(4, total = total + 1; col = col + 1;); row = row + 1;);',
+      'q1 = total;',
+      'q2 = row;',
+    ]);
+
+    const compiled = runCompiled(block, makeScopes(false));
+    const interpreted = runInterpreted(block, makeScopes(false));
+
+    expectSameScopes(compiled, interpreted);
+    expect(compiled.registers.q1).toBe(12);
+    expect(compiled.registers.q2).toBe(3);
+  });
+
+  test('compiles and runs a butterchurn preset that uses while()', () => {
+    const preset = compileMilkdropPresetSource(
+      readFileSync(
+        join(
+          import.meta.dir,
+          '../../public/milkdrop-presets/butterchurn/flexi-impulse-drive.milk',
+        ),
+        'latin1',
+      ),
+      { id: 'flexi-impulse-drive' },
+    );
+
+    expect(preset.diagnostics.filter((d) => d.severity === 'error')).toEqual(
+      [],
+    );
+
+    const init = preset.ir.programs.init;
+    const hasLoop = init.statements.some((statement) => statement.control);
+    expect(hasLoop).toBe(true);
+
+    // Running the init block (which includes a ~1M-entry gmegabuf clear) must
+    // terminate and not throw. Use a fresh gmegabuf so the run is real work.
+    const scopes = makeScopes(false);
+    expect(() => runCompiled(init, scopes)).not.toThrow();
   });
 });

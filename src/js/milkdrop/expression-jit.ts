@@ -252,6 +252,58 @@ function compileStore(
   return `if (l !== null) { l[${rawKey}] = _v; } else { s[${rawKey}] = _v; }`;
 }
 
+const MILKDROP_LOOP_ITERATION_CAP = 2_097_152;
+
+/** True when a block contains any `loop`/`while` control statement. Any nested
+ * loop is reachable only through an outer control statement, so a top-level
+ * scan is sufficient and the guard counter is only declared when needed. */
+function blockUsesControlFlow(block: MilkdropProgramBlock): boolean {
+  return block.statements.some((statement) => Boolean(statement.control));
+}
+
+function compileStatementSource(
+  statement: MilkdropCompiledStatement,
+  context: CompileContext,
+  body: string[],
+) {
+  if (statement.control) {
+    const { kind, body: innerBody } = statement.control;
+
+    if (kind === 'loop') {
+      const count = statement.control.count
+        ? compileNode(statement.control.count, context)
+        : `${MILKDROP_LOOP_ITERATION_CAP}`;
+      const countVar = nextTemporary(context);
+      const indexVar = nextTemporary(context);
+      body.push(
+        `${countVar} = Math.min(${MILKDROP_LOOP_ITERATION_CAP}, Math.max(0, Math.trunc(${count}) || 0));`,
+      );
+      body.push(
+        `for (${indexVar} = 0; ${indexVar} < ${countVar} && _g < ${MILKDROP_LOOP_ITERATION_CAP}; ${indexVar} += 1, _g += 1) {`,
+      );
+    } else {
+      const cond = statement.control.condition
+        ? compileNode(statement.control.condition, context)
+        : '1';
+      body.push(
+        `while ((${cond}) !== 0 && _g < ${MILKDROP_LOOP_ITERATION_CAP}) { _g += 1;`,
+      );
+    }
+
+    for (const inner of innerBody) {
+      compileStatementSource(inner, context, body);
+    }
+    body.push('}');
+    return;
+  }
+
+  // The value is evaluated before the target index, matching the order the
+  // interpreter used.
+  body.push(`_v = ${compileNode(statement.expression, context)};`);
+  body.push(compileStore(statement, context));
+  body.push(`e[${JSON.stringify(statement.target)}] = _v;`);
+}
+
 function compileProgramSource(block: MilkdropProgramBlock) {
   const context: CompileContext = { temporaries: [] };
   const body: string[] = [];
@@ -260,15 +312,14 @@ function compileProgramSource(block: MilkdropProgramBlock) {
     if (!statement) {
       continue;
     }
-    // The value is evaluated before the target index, matching the order the
-    // interpreter used.
-    body.push(`_v = ${compileNode(statement.expression, context)};`);
-    body.push(compileStore(statement, context));
-    body.push(`e[${JSON.stringify(statement.target)}] = _v;`);
+    compileStatementSource(statement, context, body);
   }
 
-  const declarations = ['_v', ...context.temporaries].join(', ');
-  return `"use strict"; var ${declarations}; ${body.join('\n')}`;
+  const declarations = ['_v', ...context.temporaries];
+  if (blockUsesControlFlow(block)) {
+    declarations.push('_g = 0');
+  }
+  return `"use strict"; var ${declarations.join(', ')}; ${body.join('\n')}`;
 }
 
 const compiledPrograms = new WeakMap<MilkdropProgramBlock, MilkdropProgramFn>();
