@@ -126,7 +126,7 @@ export function buildShapes({
   disableEnhancements?: boolean;
 }): MilkdropShapeVisual[] {
   const built: MilkdropShapeVisual[] = [];
-  const customShapeIndices = new Set<number>();
+  const customShapeIndices = preset.ir.customShapeIndices;
 
   for (let index = 0; index < preset.ir.customShapes.length; index += 1) {
     const shape = preset.ir.customShapes[index];
@@ -134,7 +134,6 @@ export function buildShapes({
       continue;
     }
 
-    customShapeIndices.add(shape.index);
     const locals =
       shapeState.customShapeLocals[index] ?? seedCustomShapeState(shape);
     shapeState.customShapeLocals[index] = locals;

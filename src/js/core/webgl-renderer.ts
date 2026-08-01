@@ -19,7 +19,7 @@ export function createWebGLRenderer({
   stencil = true,
   preserveDrawingBuffer = false,
 }: WebGLRendererConfig = {}) {
-  return new WebGLRenderer({
+  const renderer = new WebGLRenderer({
     canvas,
     antialias,
     alpha,
@@ -28,4 +28,15 @@ export function createWebGLRenderer({
     stencil,
     preserveDrawingBuffer,
   });
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    const vsLog = gl.getShaderInfoLog(vs);
+    const fsLog = gl.getShaderInfoLog(fs);
+    const programLog = gl.getProgramInfoLog(program);
+    console.error('[stims] Shader compile error', {
+      vertexShader: vsLog,
+      fragmentShader: fsLog,
+      program: programLog,
+    });
+  };
+  return renderer;
 }

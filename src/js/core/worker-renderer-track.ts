@@ -42,7 +42,7 @@ export type ExperimentalWorkerRendererTrackOptions = {
   devicePixelRatio?: number;
   options?: Partial<RendererInitConfig>;
   enabled?: boolean;
-  workerFactory?: () => Worker;
+  workerFactory?: () => Worker | Promise<Worker>;
   onMessage?: (message: RendererWorkerResponseMessage) => void;
 };
 
@@ -99,13 +99,14 @@ export function canUseExperimentalWorkerRenderer({
   );
 }
 
-function createDefaultWorker() {
-  return new Worker(new URL('./renderer-worker.ts', import.meta.url), {
-    type: 'module',
-  });
+async function createDefaultWorker() {
+  const { default: RendererWorkerCtor } = await import(
+    './renderer-worker.ts?worker'
+  );
+  return new RendererWorkerCtor();
 }
 
-export function createExperimentalWorkerRendererTrack({
+export async function createExperimentalWorkerRendererTrack({
   canvas,
   capabilities,
   width,
@@ -115,7 +116,7 @@ export function createExperimentalWorkerRendererTrack({
   enabled = isRendererWorkerExperimentEnabled(),
   workerFactory = createDefaultWorker,
   onMessage,
-}: ExperimentalWorkerRendererTrackOptions): ExperimentalWorkerRendererTrack | null {
+}: ExperimentalWorkerRendererTrackOptions): Promise<ExperimentalWorkerRendererTrack | null> {
   if (
     !canUseExperimentalWorkerRenderer({
       canvas,
@@ -126,7 +127,7 @@ export function createExperimentalWorkerRendererTrack({
     return null;
   }
 
-  const worker = workerFactory();
+  const worker = await workerFactory();
   const offscreenCanvas = canvas.transferControlToOffscreen();
   const queuedMessages: RendererWorkerRequestMessage[] = [];
   let isReady = false;

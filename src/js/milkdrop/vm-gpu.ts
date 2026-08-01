@@ -217,9 +217,11 @@ export function createGpuVmRunner() {
     initialRandomState: number,
   ) {
     device = gpuDevice;
+    clearGpuVmCaches();
     const compilation = getOrCompileProgram(block);
     activeCompilation = compilation;
 
+    bufferManager.dispose();
     const layout = bufferManager.allocateBuffer(
       gpuDevice,
       compilation.fieldKeys,

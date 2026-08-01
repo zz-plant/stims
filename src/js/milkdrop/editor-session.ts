@@ -61,32 +61,33 @@ export function createMilkdropEditorSession({
     listeners.forEach((listener) => listener(state));
   };
 
-  const ensureCompiler = (useWorker = true) => {
+  const ensureCompiler = async (useWorker = true) => {
     if (!useWorker) return null;
     if (compiler || typeof Worker === 'undefined') {
       return compiler;
     }
-    worker = new Worker(new URL('./editor-worker.ts', import.meta.url), {
-      type: 'module',
-    });
+    const { default: EditorWorkerCtor } = await import(
+      './editor-worker.ts?worker'
+    );
+    worker = new EditorWorkerCtor();
     compiler = wrap<MilkdropEditorCompiler>(worker);
     return compiler;
   };
 
-  const compile = ({
+  const compile = async ({
     source,
     useWorker = true,
   }: {
     source: string;
     useWorker?: boolean;
   }) => {
-    const activeCompiler = ensureCompiler(useWorker);
+    const activeCompiler = await ensureCompiler(useWorker);
     if (!activeCompiler) {
       editorLog(
         sourceMeta.id,
         'compile on main thread (worker unavailable or disabled)',
       );
-      return Promise.resolve(compileMilkdropPresetSource(source, sourceMeta));
+      return compileMilkdropPresetSource(source, sourceMeta);
     }
 
     editorLog(sourceMeta.id, 'compile via worker');

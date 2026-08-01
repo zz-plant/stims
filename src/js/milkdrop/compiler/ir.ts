@@ -990,6 +990,16 @@ export function createMilkdropIr({
     compShaderProgram !== null ||
     hasNonNeutralShaderControls(mergedShaderControls.controls);
 
+  const perPixelStatements =
+    programs.perPixel.statements.length > 0
+      ? programs.perPixel.statements.map((s) => ({
+          target: s.target,
+          source: s.source,
+          expression: s.expression,
+        }))
+      : null;
+  const customShapeIndices = new Set(customShapes.map((shape) => shape.index));
+
   return {
     title,
     author,
@@ -997,10 +1007,12 @@ export function createMilkdropIr({
     numericFields,
     stringFields,
     programs,
+    perPixelStatements,
     globals,
     mainWave,
     customWaves,
     customShapes,
+    customShapeIndices,
     shaderText: {
       warp: warpShaderText,
       comp: compShaderText,

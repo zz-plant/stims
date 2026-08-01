@@ -7,8 +7,6 @@ import {
   existsSync,
   readdirSync,
   readFileSync,
-  rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
@@ -72,64 +70,6 @@ if (!existsSync(vitePackagePath)) {
 
 console.log(`[build] Running Vite build with "${viteCommand}"...`);
 execSync(viteCommand, { stdio: 'inherit' });
-
-// Rolldown (Vite 8) preserves .ts extension in new URL() output chunks
-// and does not strip TypeScript annotations. Fix both: rename to .js and
-// strip types with esbuild so the browser can parse the result.
-const tsAssets = readdirSync(join(distDir, 'assets'), {
-  recursive: false,
-}).filter((f) => f.endsWith('.ts') && existsSync(join(distDir, 'assets', f)));
-if (tsAssets.length > 0) {
-  for (const file of tsAssets) {
-    const oldPath = join(distDir, 'assets', file);
-    const newPath = oldPath.replace(/\.ts$/, '.js');
-    const oldContent = readFileSync(oldPath, 'utf8');
-    let jsContent = oldContent;
-    try {
-      jsContent = execSync(`bunx esbuild --loader=ts --target=es2020`, {
-        input: oldContent,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        encoding: 'utf8',
-      });
-    } catch {
-      // esbuild unavailable — emit raw content (broken, but better than 404)
-    }
-    const strippedContent = oldContent !== jsContent ? jsContent : oldContent;
-    writeFileSync(newPath, strippedContent);
-    rmSync(oldPath);
-    console.log(`[build] Renamed ${file} -> ${file.replace(/\.ts$/, '.js')}`);
-  }
-  const tsRefPattern = new RegExp(
-    tsAssets.map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-    'g',
-  );
-  for (const dir of ['assets', '.vite']) {
-    const targetDir = join(distDir, dir);
-    if (!existsSync(targetDir)) continue;
-    for (const entry of readdirSync(targetDir, { recursive: true })) {
-      const file = join(targetDir, entry);
-      if (!existsSync(file) || statSync(file).isDirectory()) continue;
-      const content = readFileSync(file, 'utf8');
-      const updated = content.replaceAll(tsRefPattern, (match) =>
-        match.replace(/\.ts$/, '.js'),
-      );
-      if (updated !== content) {
-        writeFileSync(file, updated);
-      }
-    }
-  }
-  for (const entry of readdirSync(distDir, { recursive: false })) {
-    const file = join(distDir, entry);
-    if (!existsSync(file) || statSync(file).isDirectory()) continue;
-    const content = readFileSync(file, 'utf8');
-    const updated = content.replaceAll(tsRefPattern, (match) =>
-      match.replace(/\.ts$/, '.js'),
-    );
-    if (updated !== content) {
-      writeFileSync(file, updated);
-    }
-  }
-}
 
 // Vite/Rolldown in this project does not minify CSS comments and whitespace.
 // Post-process CSS assets with esbuild for smaller transfer and parse cost.

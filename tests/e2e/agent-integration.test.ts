@@ -1,22 +1,15 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
-import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { playToy } from '../../scripts/play-toy.ts';
+import { type DevServerHandle, startDevServer } from './dev-server.ts';
 
 const chromiumPath = chromium.executablePath();
 const hasChromium = fs.existsSync(chromiumPath);
 const integrationTest = hasChromium ? test : test.skip;
-const flakyIntegrationTest = hasChromium
-  ? (
-      name: string,
-      fn: () => Promise<void>,
-      options?: { timeout?: number; retry?: number },
-    ) => test(name, fn, { retry: 2, ...options })
-  : test.skip;
 const TEST_PORT = 5180;
 const PLAYWRIGHT_RENDERER_ARGS = [
   '--use-angle=swiftshader',
@@ -26,73 +19,30 @@ const PLAYWRIGHT_RENDERER_ARGS = [
   '--ignore-gpu-blocklist',
 ];
 const INTEGRATION_TIMEOUT_MS = 90000;
-const SERVER_START_TIMEOUT_MS = 45000;
-let devServer: ChildProcess | null = null;
+let devServer: DevServerHandle | null = null;
 
-function isDevServerRunning() {
-  return (
-    devServer !== null &&
-    devServer.exitCode === null &&
-    devServer.signalCode === null
-  );
+async function startDevServerInstance() {
+  devServer = await startDevServer({ port: TEST_PORT });
 }
 
-async function stopDevServer() {
-  if (!devServer) {
-    return;
-  }
-
+async function stopDevServerInstance() {
   const server = devServer;
   devServer = null;
-  server.kill('SIGTERM');
-  await new Promise((resolve) => server.once('exit', resolve));
-}
-
-async function startDevServer() {
-  devServer = spawn(
-    process.execPath,
-    ['run', 'vite', '--host', '127.0.0.1', '--port', String(TEST_PORT)],
-    {
-      stdio: 'ignore',
-      cwd: process.cwd(),
-    },
-  );
-
-  await waitForServer(`http://127.0.0.1:${TEST_PORT}/`);
+  await server?.stop();
 }
 
 async function ensureDevServer() {
-  if (!isDevServerRunning()) {
-    await stopDevServer();
-    await startDevServer();
+  if (!devServer) {
+    await startDevServerInstance();
     return;
   }
-
   try {
-    await waitForServer(`http://127.0.0.1:${TEST_PORT}/`, 3000);
-  } catch (_error) {
-    await stopDevServer();
-    await startDevServer();
+    const response = await fetch(`http://127.0.0.1:${TEST_PORT}/`);
+    if (!response.ok) throw new Error('server not ready');
+  } catch {
+    await stopDevServerInstance();
+    await startDevServerInstance();
   }
-}
-
-async function waitForServer(url: string, timeoutMs = SERVER_START_TIMEOUT_MS) {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < timeoutMs) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) {
-        return;
-      }
-    } catch (_error) {
-      // Server is still starting.
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-
-  throw new Error(`Timed out waiting for dev server at ${url}`);
 }
 
 async function createMobilePage() {
@@ -109,26 +59,9 @@ async function createMobilePage() {
     window.localStorage.setItem('stims:onboarding-complete', 'true');
   });
 
-  const forceCloseChromium = () => {
-    spawnSync('pkill', ['-f', 'playwright_chromiumdev_profile'], {
-      stdio: 'ignore',
-    });
-  };
-
   const closeBrowser = async () => {
     await context.close().catch(() => {});
-    const closeResult = await Promise.race([
-      browser
-        .close()
-        .then(() => 'closed' as const)
-        .catch(() => 'closed' as const),
-      new Promise<'timeout'>((resolve) => {
-        setTimeout(() => resolve('timeout'), 1500);
-      }),
-    ]);
-    if (closeResult === 'timeout') {
-      forceCloseChromium();
-    }
+    await browser.close().catch(() => {});
   };
 
   return {
@@ -142,11 +75,11 @@ async function createMobilePage() {
 beforeAll(async () => {
   if (!hasChromium) return;
 
-  await startDevServer();
+  await startDevServerInstance();
 }, 60000);
 
 afterAll(async () => {
-  await stopDevServer();
+  await stopDevServerInstance();
 });
 
 integrationTest(
@@ -175,7 +108,7 @@ integrationTest(
   { timeout: 45000 },
 );
 
-flakyIntegrationTest(
+integrationTest(
   'agents can launch and capture milkdrop',
   async () => {
     await ensureDevServer();
@@ -203,7 +136,7 @@ flakyIntegrationTest(
   { timeout: INTEGRATION_TIMEOUT_MS },
 );
 
-flakyIntegrationTest(
+integrationTest(
   'agents can detect failing toy',
   async () => {
     await ensureDevServer();
