@@ -51,7 +51,7 @@ export default defineConfig({
     // Emit the standard .vite/manifest.json so docs and tooling resolve assets
     // without custom paths.
     manifest: true,
-    rollupOptions: {
+    rolldownOptions: {
       // Keep the visualizer entry exports intact so dynamic imports from the homepage
       // can find the `start` functions even when they look unused at build time.
       preserveEntrySignatures: 'strict',
@@ -64,12 +64,16 @@ export default defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('three/webgpu') || id.includes('three.webgpu'))
+          if (id.includes('/node_modules/')) {
+            if (
+              id.includes('/three/webgpu') ||
+              id.includes('/three/tsl') ||
+              id.includes('three.webgpu')
+            )
               return 'vendor-three-webgpu';
-            if (id.includes('three')) return 'vendor-three';
-            if (id.includes('@codemirror/')) return 'vendor-codemirror';
-            if (id.includes('react') || id.includes('react-dom'))
+            if (id.includes('/three/')) return 'vendor-three';
+            if (id.includes('/@codemirror/')) return 'vendor-codemirror';
+            if (id.includes('/react-dom/') || id.includes('/react/'))
               return 'vendor-react';
             return 'vendor-other';
           }
