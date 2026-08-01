@@ -99,6 +99,20 @@ export function checkCatalogIntegrity(): boolean {
       errorsCount += 1;
     }
 
+    const supports = preset.supports as
+      | { webgl?: unknown; webgpu?: unknown }
+      | undefined;
+    if (
+      !supports ||
+      typeof supports.webgl !== 'boolean' ||
+      typeof supports.webgpu !== 'boolean'
+    ) {
+      logError(
+        `${presetDesc} is missing a "supports" object with boolean "webgl" and "webgpu" fields.`,
+      );
+      errorsCount += 1;
+    }
+
     if (
       preset.expectedFidelityClass &&
       !validFidelityClasses.has(preset.expectedFidelityClass)
