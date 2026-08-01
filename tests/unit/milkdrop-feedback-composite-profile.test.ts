@@ -128,6 +128,41 @@ test('keeps the shared legacy echo path projectM-like by avoiding extra frame-mi
   }
 });
 
+test('provides MilkDrop blur scale and bias inputs to direct WebGL shaders', () => {
+  const manager = createSharedMilkdropFeedbackManager(
+    320,
+    180,
+    WEBGL_MILKDROP_BACKEND_BEHAVIOR,
+  ) as {
+    compositeMaterial: {
+      fragmentShader: string;
+      uniforms: Record<string, { value: number }>;
+    };
+    dispose: () => void;
+    warpMaterial: {
+      fragmentShader: string;
+      uniforms: Record<string, { value: number }>;
+    };
+  };
+
+  try {
+    for (const material of [manager.warpMaterial, manager.compositeMaterial]) {
+      for (const blurLevel of [1, 2, 3]) {
+        expect(material.fragmentShader).toContain(
+          `uniform float scale${blurLevel};`,
+        );
+        expect(material.fragmentShader).toContain(
+          `uniform float bias${blurLevel};`,
+        );
+        expect(material.uniforms[`scale${blurLevel}`]?.value).toBe(1);
+        expect(material.uniforms[`bias${blurLevel}`]?.value).toBe(0);
+      }
+    }
+  } finally {
+    manager.dispose();
+  }
+});
+
 test('applies comp-stage color controls and overlay work before legacy post effects in the shared shader', () => {
   const manager = createSharedMilkdropFeedbackManager(
     320,

@@ -246,6 +246,12 @@ const MILKDROP_BASE_COMPOSITE_FRAGMENT_SHADER = `
         uniform sampler2D blur1Tex;
         uniform sampler2D blur2Tex;
         uniform sampler2D blur3Tex;
+        uniform float scale1;
+        uniform float bias1;
+        uniform float scale2;
+        uniform float bias2;
+        uniform float scale3;
+        uniform float bias3;
         uniform float videoEchoAlpha;
         uniform float brighten;
         uniform float darken;
@@ -590,6 +596,12 @@ const MILKDROP_WARP_FRAGMENT_SHADER = `
         uniform sampler2D videoTex;
         uniform sampler2D perlinTex;
         uniform sampler2D audioTex;
+        uniform float scale1;
+        uniform float bias1;
+        uniform float scale2;
+        uniform float bias2;
+        uniform float scale3;
+        uniform float bias3;
         uniform float warpScale;
         uniform float zoom;
         uniform float zoomMul;
@@ -863,6 +875,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         videoTex: { value: this.auxTextures.video },
         perlinTex: { value: this.auxTextures.perlin },
         audioTex: { value: null },
+        scale1: { value: 1 },
+        bias1: { value: 0 },
+        scale2: { value: 1 },
+        bias2: { value: 0 },
+        scale3: { value: 1 },
+        bias3: { value: 0 },
         warpScale: { value: 1 },
         zoom: { value: 1.02 },
         zoomMul: { value: 1 },
@@ -935,6 +953,12 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
         blur1Tex: { value: this.blurTargets[0].texture },
         blur2Tex: { value: this.blurTargets[1].texture },
         blur3Tex: { value: this.blurTargets[2].texture },
+        scale1: { value: 1 },
+        bias1: { value: 0 },
+        scale2: { value: 1 },
+        bias2: { value: 0 },
+        scale3: { value: 1 },
+        bias3: { value: 0 },
         videoEchoAlpha: { value: 0 },
         brighten: { value: 0 },
         darken: { value: 0 },
