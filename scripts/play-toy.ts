@@ -94,7 +94,8 @@ type NormalizedPlayToyOptions = PlayToyOptions & {
 const DEFAULT_OPTIONS = {
   port: 5173,
   duration: 5000,
-  ...DEFAULT_VIEWPORT,
+  viewportWidth: DEFAULT_VIEWPORT.width,
+  viewportHeight: DEFAULT_VIEWPORT.height,
   outputDir: './screenshots',
 };
 const SHELL_DEMO_SELECTOR = '[data-demo-audio-btn]';

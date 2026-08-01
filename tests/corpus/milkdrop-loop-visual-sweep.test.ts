@@ -136,10 +136,11 @@ describe('MilkDrop loop preset visual sweep', () => {
         </div>
       `);
       await page.locator('canvas').evaluate((canvas) => {
-        const context = (canvas as HTMLCanvasElement).getContext('2d');
+        const el = canvas as HTMLCanvasElement;
+        const context = el.getContext('2d');
         if (!context) throw new Error('Missing test canvas context');
         context.fillStyle = 'black';
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillRect(0, 0, el.width, el.height);
       });
       const capture = await captureIsolatedVisualizerCanvas(page);
       const { data } = await sharp(capture).removeAlpha().raw().toBuffer({
