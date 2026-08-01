@@ -14,7 +14,7 @@ For a concise parallel execution map across parity, runtime performance, browser
 4. Run `bun run check:quick` while iterating.
 5. Run `bun run check` before finalizing changes.
 
-`bun run check` includes the toy/docs drift guard, SEO surface validation, and the architecture boundary guard, so it now verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
+`bun run check` includes the toy/docs/public-claim drift guard, SEO surface validation, and the architecture boundary guard. The public-claim check keeps the README preset count aligned with the shipped catalog and rejects wording that promotes known experimental foundations as shipped features. The architecture check verifies the documented `app` (root entry point `src/js/app.ts`) / `frontend` / `core` / `ui` / `utils` / `milkdrop` dependency directions while treating the old `loader` / `bootstrap` / `toy-view` / `library-view` stack as explicit legacy compatibility code.
 
 For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFICATION_MATRIX.md).
 
@@ -32,7 +32,7 @@ For the short rendering and test matrix, see [`VERIFICATION_MATRIX.md`](./VERIFI
 | WebGPU-focused local session | `bun run dev:webgpu` |
 | Full quality gate | `bun run check` |
 | Faster local quality gate | `bun run check:quick` |
-| Toy manifest + generated doc drift check | `bun run check:toys` |
+| Toy manifest, generated docs, and public-claim drift check | `bun run check:toys` |
 | SEO surface check | `bun run check:seo` |
 | Architecture boundary check | `bun run check:architecture` |
 | Run tests | `bun run test` |

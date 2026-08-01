@@ -56,6 +56,42 @@ export type MilkdropCompositeShaderConfig = {
   enhancedFeedbackBlur?: boolean;
 };
 
+export function resolveMilkdropBlurShaderRanges(
+  variables: Readonly<Record<string, number>> | undefined,
+) {
+  const minimums = [1, 2, 3].map((level) => {
+    const value = variables?.[`blur${level}_min`];
+    return Number.isFinite(value) ? (value as number) : 0;
+  });
+  const maximums = [1, 2, 3].map((level) => {
+    const value = variables?.[`blur${level}_max`];
+    return Number.isFinite(value) ? (value as number) : 1;
+  });
+
+  for (let index = 0; index < 3; index += 1) {
+    if (index > 0) {
+      minimums[index] = Math.max(
+        minimums[index] ?? 0,
+        minimums[index - 1] ?? 0,
+      );
+      maximums[index] = Math.min(
+        maximums[index] ?? 1,
+        maximums[index - 1] ?? 1,
+      );
+    }
+    if ((maximums[index] ?? 1) - (minimums[index] ?? 0) < 0.1) {
+      const midpoint = ((minimums[index] ?? 0) + (maximums[index] ?? 1)) * 0.5;
+      minimums[index] = midpoint - 0.05;
+      maximums[index] = midpoint + 0.05;
+    }
+  }
+
+  return [0, 1, 2].map((index) => ({
+    scale: (maximums[index] ?? 1) - (minimums[index] ?? 0),
+    bias: minimums[index] ?? 0,
+  }));
+}
+
 const FULLSCREEN_QUAD_GEOMETRY = new PlaneGeometry(2, 2);
 const MILKDROP_TEXTURE_FILES = {
   noise: 'seamless_perlin_noise.png',
@@ -1145,6 +1181,13 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
     );
 
     const uniforms = this.compositeMaterial.uniforms;
+    const blurShaderRanges = resolveMilkdropBlurShaderRanges(
+      state.perPixelVariables,
+    );
+    for (const [index, range] of blurShaderRanges.entries()) {
+      uniforms[`scale${index + 1}`].value = range.scale;
+      uniforms[`bias${index + 1}`].value = range.bias;
+    }
     const overlayTextureName = resolveAuxTextureName(
       state.overlayTextureSource,
     );
@@ -1238,6 +1281,10 @@ class SharedMilkdropFeedbackManager implements MilkdropFeedbackManager {
 
     // Sync warp shader uniforms (subset of composite state)
     const wu = this.warpMaterial.uniforms;
+    for (const [index, range] of blurShaderRanges.entries()) {
+      wu[`scale${index + 1}`].value = range.scale;
+      wu[`bias${index + 1}`].value = range.bias;
+    }
     wu.previousTex.value = this.readTarget.texture;
     wu.currentTex.value = this.readTarget.texture;
     wu.texelSize.value.set(

@@ -1,45 +1,48 @@
-# Competitor battlecard (Stims)
+# Competitor battlecard
 
-> Updated 2026-07 with modern WebGPU, stem-aware audio analysis, and creator export competitive research.
+> Updated 2026-08. Internal strategy document; public copy should use the evidence-safe angle bank below.
 
-This doc separates **internal strategy content** from **external-safe messaging** so teams can reuse the same research without leaking direct competitor framing into public copy.
+Stims should not compete on a checklist of speculative technology. Its credible wedge is a browser-native product around preset discovery, authoring, and measurable compatibility.
 
-## Internal use: competitor battlecard table
+## Competitive frame
 
-Use this table for positioning, GTM planning, and product alignment.
+| Competitor | Strongest position | Stims opportunity | Current constraint |
+| --- | --- | --- | --- |
+| **Butterchurn and Webamp integrations** | Mature embeddable WebGL2 MilkDrop renderer with established preset behavior and integrations. | Provide a complete discover → inspect → edit → verify → record workflow while keeping direct `.milk` authoring visible. | Stims does not yet match Butterchurn or projectM broadly on measured visual fidelity, and it does not offer an equally stable embedding package. |
+| **projectM** | Long-running native implementation and the strongest external reference target available to this repo. | Make reference-based compatibility evidence understandable inside a browser product. | projectM references are proof inputs, not a shipped Stims runtime dependency; most catalog presets remain unmeasured. |
+| **ShaderToy** | Large creative-coding community and direct shader experimentation. | Offer lower-friction audio reactivity, preset browsing, and live controls for people who do not want to begin from a fragment shader. | Stims' custom modern-shader lane is not yet a mature open authoring ecosystem. |
+| **Cables.gl and node-based visual tools** | Deep visual programming for professionals. | Make immediate playback and constrained preset remixing much easier. | Stims is not a general node-based graphics environment. |
+| **AI video visualizer tools** | Polished offline generation and creator-oriented deliverables. | Generate editable MilkDrop source through a configured hosted or local model, then keep playback and inspection in the browser. | Model availability, generated-result quality, native resize, and audio composition still lack end-to-end browser proof. |
 
-| Competitor | Segment | Primary buyer/user | Strongest claim | Weakest point vs Stims |
-| --- | --- | --- | --- | --- |
-| **WaveScope / IKANDY** | Modern WebGPU / Butterchurn desktop & web visualizer hybrid apps | Music enthusiasts, VJs, tech-savvy audiophiles | Dual engine running legacy Butterchurn MilkDrop presets alongside native WebGPU shaders | Desktop Electron footprint or heavy web load; lack guided sensory webtoy discovery and instant browser launch |
-| **Neural Frames / Beatsee** | AI & 3D Web visualizer tools | Music artists, video creators, social media managers | AI stem-aware video animation and high-end 3D mesh reactivity | Subscription paywalls, cloud render queues, lack of real-time zero-latency interactive browser play |
-| **ShaderToy** | Browser shader playground / creative coding community | Creative coders, shader artists, graphics engineers | Massive global repository of real-time GLSL fragment shaders | High technical barrier; not an audio-reactive guided visualizer or webtoy library with preset browsing |
-| **Silk (Weavesilk)** | Casual calming visual toy | General consumers seeking quick, soothing interaction | Ultra-low-friction, beautiful immediate touch interaction | Single-mode drawing experience with limited depth, preset library, or audio reactivity |
-| **Cables.gl** | Node-based real-time visual tooling | Motion designers, VJs, interactive studios | Powerful visual node graph programming for WebGL/WebGPU | Authoring tool rather than an instant, zero-setup visualizer destination for general users |
-| **Butterchurn / Winamp web visualizers** | WebGL MilkDrop port | Music listeners wanting classic visualizer visuals | Excellent classic MilkDrop preset fidelity in browser | WebGL 1.0/2.0 architecture; lacks WebGPU compute shader pipeline, mobile optimizations, and multi-toy discovery |
+## Defensible differentiators
 
----
+1. **Browser-native preset library** — previews, collections, search, favorites, queues, history, and deep links around one running visualizer.
+2. **Direct authoring workflow** — `.milk` import/export, live editing, diagnostics, inspection, and parameter controls in the same session.
+3. **Evidence layer** — backend-aware capture provenance, trusted projectM references, image diffs, and measured fidelity labels.
+4. **Guarded modern renderer** — an additive WebGPU path with explicit fallback rather than an unsupported claim that every legacy preset is equivalent.
+5. **Local-first playback** — demo, microphone, tab, YouTube, and file inputs without requiring a hosted rendering queue.
 
-## 🎯 2026 Key Stims Differentiators & Strategic Moat
+## Not current differentiators
 
-1. **Hybrid WebGPU + EEL Transpilation Engine**: Full zero-copy audio texture sharing between classic MilkDrop EEL presets and modern WGSL compute shaders.
-2. **Instant Zero-Install Browser Play**: Launches immediately with zero-config audio reactivity on desktop and mobile browsers.
-3. **Integrated Creator Toolkit**: In-browser 4K 60FPS video recording for Spotify Canvas, TikTok, and YouTube Shorts.
-4. **Sensory Webtoy Library**: Combines flagship MilkDrop visualizer experience with a rich collection of interactive webtoys (`aurora-painter`, `defrag`, `lights`, etc.).
+Do not position these as shipped advantages until the integration and verification work exists:
 
----
+- client-side stem separation;
+- supported MIDI/VJ hardware control;
+- an immersive WebXR stage;
+- creator-certified 4K audio-video export;
+- universally available or quality-certified model generation and blending; or
+- broad Butterchurn/projectM visual parity.
 
-## External use: homepage copy angle bank
+## External-safe angle bank
 
-Use these lines in public-facing pages (README/site/docs) without naming competitors directly.
+- **Product:** "A browser-native studio for discovering, editing, and recording audio-reactive visuals."
+- **Lineage:** "An independent visualizer built in the lineage of Ryan Geiss's MilkDrop, Butterchurn, and projectM."
+- **Authoring:** "Import, inspect, edit, and export `.milk` presets without leaving the running session."
+- **Evidence:** "Compatibility labels are tied to backend-aware captures and measured reference comparisons."
+- **Rendering:** "WebGL2 provides the compatibility baseline while WebGPU capabilities roll out behind explicit guards and fallback rules."
 
-- **MilkDrop lineage framing:** "Stims brings an independent browser-native visualizer in the lineage of Ryan Geiss's MilkDrop to the web."
-- **Next-gen performance:** "Powered by WebGPU compute shaders and JIT expression compilation for ultra-fluid 60 FPS visuals."
-- **Instant launch:** "Open the MilkDrop Visualizer in one click with instant audio reactivity."
-- **Creator ready:** "Explore curated presets, live edit EEL expressions, and export high-resolution canvas video."
+## Placement guidance
 
----
-
-## Placement guidance (internal vs external)
-
-- Keep direct competitor names and comparative weaknesses in this file only.
-- Reuse the external angle bank in user-facing docs and homepage copy.
+- Keep direct competitor comparisons in this internal document.
+- Keep public copy centered on user outcomes and present evidence.
+- Treat preset count, graphics API, and roadmap breadth as supporting details rather than the product promise.

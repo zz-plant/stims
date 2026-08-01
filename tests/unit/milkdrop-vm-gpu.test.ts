@@ -7,6 +7,10 @@ describe('GPU VM Runner', () => {
     let bufferCreations = 0;
     let bindGroupCreations = 0;
     let destroyedBuffers = 0;
+    let pipelineBindGroupEntries: Array<{
+      binding: number;
+      buffer?: { type?: string };
+    }> = [];
 
     const mockDevice = {
       createBuffer(desc: { label?: string; size: number }) {
@@ -26,7 +30,10 @@ describe('GPU VM Runner', () => {
       createShaderModule() {
         return {};
       },
-      createBindGroupLayout() {
+      createBindGroupLayout(desc: {
+        entries: Array<{ binding: number; buffer?: { type?: string } }>;
+      }) {
+        pipelineBindGroupEntries = desc.entries;
         return {};
       },
       createPipelineLayout() {
@@ -86,6 +93,10 @@ describe('GPU VM Runner', () => {
 
     runner.init(mockDevice as unknown as GPUDevice, block, { q1: 0 }, 12345);
     expect(runner.isInitialized()).toBe(true);
+    expect(
+      pipelineBindGroupEntries.find((entry) => entry.binding === 1)?.buffer
+        ?.type,
+    ).toBe('read-only-storage');
 
     const initialBufferCount = bufferCreations;
     const initialBindGroupCount = bindGroupCreations;

@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-01T15:40:04.808Z",
+  "canonicalRoute": "/?agent=true",
+  "renderer": "webgl",
+  "presetCount": 1,
+  "counts": {
+    "runtime-regression": 0,
+    "visual-regression": 1,
+    "performance-regression": 0,
+    "pass": 0
+  },
+  "results": [
+    {
+      "id": "martin-qbikal-surface-turbulence",
+      "title": "Martin - QBikal - Surface Turbulence",
+      "author": "Martin",
+      "order": 730,
+      "file": "/milkdrop-presets/butterchurn/martin-qbikal-surface-turbulence.milk",
+      "preview": true,
+      "tags": [
+        "collection:butterchurn",
+        "preset"
+      ],
+      "expectedFidelityClass": "partial",
+      "visualEvidenceTier": "runtime",
+      "supports": {
+        "webgl": true,
+        "webgpu": true
+      },
+      "visualCertification": {
+        "status": "uncertified",
+        "measured": false,
+        "source": "inferred",
+        "fidelityClass": "partial",
+        "visualEvidenceTier": "runtime",
+        "requiredBackend": "webgpu",
+        "actualBackend": null,
+        "reasons": [
+          "No measured WebGPU reference capture is recorded yet."
+        ]
+      },
+      "controlKinds": [
+        "while"
+      ],
+      "controlStatementCount": 12,
+      "presetId": "martin-qbikal-surface-turbulence",
+      "status": "visual-regression",
+      "severityScore": 290,
+      "reasons": [
+        "Both sampled canvas frames are spatially uniform"
+      ],
+      "loadDurationMs": 418.7234589999998,
+      "frameRate": 43.179805137859546,
+      "maxFrameGapMs": 42,
+      "audioEnergy": 0.9158906475376931,
+      "backend": "webgl",
+      "firstFrame": {
+        "meanLuminance": 219.0130066611749,
+        "visiblePixelRatio": 1,
+        "luminanceStandardDeviation": 0.22427817647844228
+      },
+      "finalFrame": {
+        "meanLuminance": 219.0118863269633,
+        "visiblePixelRatio": 1,
+        "luminanceStandardDeviation": 0.1963807076562873
+      },
+      "frameDifferenceRatio": 0.001284584980237154,
+      "consoleErrors": [],
+      "loadError": null,
+      "screenshot": "/Users/kanav/Dev/stims/screenshots/loop-preset-sweep-after-target-isolated/martin-qbikal-surface-turbulence.png"
+    }
+  ]
+}

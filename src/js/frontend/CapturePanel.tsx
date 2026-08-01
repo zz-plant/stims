@@ -22,7 +22,7 @@ function getFilename(preset: ExportPresetTarget, mimeType: string) {
 }
 
 export function CapturePanel() {
-  const { ui } = useWorkspace();
+  const { engine, ui } = useWorkspace();
   const exporterRef = useRef<CanvasVideoExporter | null>(null);
   const [preset, setPreset] =
     useState<(typeof CAPTURE_FORMATS)[number]>('hd-landscape');
@@ -45,7 +45,11 @@ export function CapturePanel() {
       });
       return;
     }
-    const exporter = new CanvasVideoExporter(canvas);
+    const exporter = new CanvasVideoExporter(
+      canvas,
+      undefined,
+      engine.getVideoExportRuntime(),
+    );
     exporterRef.current = exporter;
     setSupport(exporter.getSupport());
     return () => {
@@ -54,7 +58,7 @@ export function CapturePanel() {
       }
       exporterRef.current = null;
     };
-  }, [ui.stageRef]);
+  }, [engine, ui.stageRef]);
 
   useEffect(() => {
     if (!recording) return;
@@ -82,9 +86,9 @@ export function CapturePanel() {
     setElapsedSeconds(0);
     setRecording(true);
     setStatus(
-      `Recording ${EXPORT_PRESETS[preset].label}. The visualizer remains live.`,
+      `Recording ${EXPORT_PRESETS[preset].label}${engine.audioActive ? ' with audio' : ' without audio'}. The visualizer remains live.`,
     );
-  }, [preset]);
+  }, [engine.audioActive, preset]);
 
   const stopRecording = useCallback(async () => {
     const exporter = exporterRef.current;
@@ -107,8 +111,8 @@ export function CapturePanel() {
           Record this visualizer
         </h3>
         <p className={styles.intro}>
-          Capture the live canvas without pausing playback. Portrait output is
-          center-cropped to fill the frame.
+          Capture the live canvas and active audio without pausing playback. 4K
+          renders natively; portrait output is center-cropped to fill the frame.
         </p>
       </div>
 

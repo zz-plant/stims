@@ -9,22 +9,53 @@ export interface WebXrStageCapabilities {
   arSupported: boolean;
 }
 
+type WebXrSessionLike = {
+  addEventListener: (type: 'end', listener: () => void) => void;
+  end: () => Promise<void> | void;
+};
+
+type WebXrSystemLike = {
+  isSessionSupported: (
+    mode: 'immersive-vr' | 'immersive-ar',
+  ) => Promise<boolean>;
+  requestSession: (
+    mode: 'immersive-vr' | 'immersive-ar',
+    options?: { optionalFeatures?: string[] },
+  ) => Promise<WebXrSessionLike>;
+};
+
+type WebXrNavigatorLike = {
+  xr?: WebXrSystemLike;
+};
+
+export type WebXrRendererLike = {
+  xr?: {
+    enabled: boolean;
+    setSession: (session: WebXrSessionLike | null) => Promise<void> | void;
+  };
+};
+
 export class WebXrStageSessionService {
-  private activeSession: XRSession | null = null;
+  private activeSession: WebXrSessionLike | null = null;
   private listeners: Set<(active: boolean) => void> = new Set();
 
+  constructor(
+    private readonly navigatorRef:
+      | WebXrNavigatorLike
+      | undefined = typeof navigator === 'undefined'
+      ? undefined
+      : (navigator as unknown as WebXrNavigatorLike),
+  ) {}
+
   public async checkCapabilities(): Promise<WebXrStageCapabilities> {
-    if (
-      typeof navigator === 'undefined' ||
-      !('xr' in navigator) ||
-      !navigator.xr
-    ) {
+    if (!this.navigatorRef?.xr) {
       return { supported: false, vrSupported: false, arSupported: false };
     }
 
     try {
-      const vrSupported = await navigator.xr.isSessionSupported('immersive-vr');
-      const arSupported = await navigator.xr
+      const vrSupported =
+        await this.navigatorRef.xr.isSessionSupported('immersive-vr');
+      const arSupported = await this.navigatorRef.xr
         .isSessionSupported('immersive-ar')
         .catch(() => false);
 
@@ -40,17 +71,13 @@ export class WebXrStageSessionService {
 
   public async requestSession(
     mode: 'immersive-vr' | 'immersive-ar' = 'immersive-vr',
-  ): Promise<XRSession | null> {
-    if (
-      typeof navigator === 'undefined' ||
-      !('xr' in navigator) ||
-      !navigator.xr
-    ) {
+  ): Promise<WebXrSessionLike | null> {
+    if (!this.navigatorRef?.xr) {
       return null;
     }
 
     try {
-      const session = await navigator.xr.requestSession(mode, {
+      const session = await this.navigatorRef.xr.requestSession(mode, {
         optionalFeatures: ['local-floor', 'bounded-floor'],
       });
 
@@ -64,6 +91,33 @@ export class WebXrStageSessionService {
 
       return session;
     } catch {
+      return null;
+    }
+  }
+
+  public async startStage(
+    renderer: WebXrRendererLike,
+    mode: 'immersive-vr' | 'immersive-ar' = 'immersive-vr',
+  ): Promise<WebXrSessionLike | null> {
+    const xr = renderer.xr;
+    if (!xr) return null;
+
+    const session = await this.requestSession(mode);
+    if (!session) return null;
+
+    try {
+      xr.enabled = true;
+      await xr.setSession(session);
+      session.addEventListener('end', () => {
+        xr.enabled = false;
+        void Promise.resolve(xr.setSession(null)).catch(() => {});
+      });
+      return session;
+    } catch {
+      xr.enabled = false;
+      this.activeSession = null;
+      await Promise.resolve(session.end()).catch(() => {});
+      this.notifyListeners(false);
       return null;
     }
   }

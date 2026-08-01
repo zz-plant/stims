@@ -4928,6 +4928,94 @@
         "audioMode": "demo",
         "vibeMode": false
       }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260801155719",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-08-01T15:57:19.620Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1785599831663.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1785599831663.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5173/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260801160144",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-08-01T16:01:44.073Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1785600103796.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1785600103796.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5174/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260801160229",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-08-01T16:02:29.792Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1785600149550.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1785600149550.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5174/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
+    },
+    {
+      "id": "stims-capture--milkdrop--preset--rovastar-parallel-universe--20260801160307",
+      "kind": "stims-capture",
+      "slug": "milkdrop",
+      "presetId": "rovastar-parallel-universe",
+      "title": null,
+      "createdAt": "2026-08-01T16:03:07.486Z",
+      "files": {
+        "image": "milkdrop--preset-rovastar-parallel-universe-1785600187208.png",
+        "debugSnapshot": "milkdrop--preset-rovastar-parallel-universe-1785600187208.debug.json",
+        "metadata": null
+      },
+      "capture": {
+        "backend": "webgpu",
+        "url": "http://127.0.0.1:5174/?agent=true&audio=demo&preset=rovastar-parallel-universe&renderer=webgpu&corpus=certification",
+        "durationMs": 1500,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "audioMode": "demo",
+        "vibeMode": false
+      }
     }
   ]
 }

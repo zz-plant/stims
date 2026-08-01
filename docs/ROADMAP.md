@@ -1,101 +1,98 @@
-# Stims Strategic Product & Engineering Roadmap
+# Stims product and engineering roadmap
 
-This document outlines the product vision, market positioning, competitive research insights, and engineering milestone roadmap for **Stims**.
+Stims is building a browser-native studio around audio-reactive, MilkDrop-inspired presets. The roadmap prioritizes user-visible workflow improvements and measurable compatibility before speculative rendering or hardware breadth.
 
----
+## Product principles
 
-## 🔍 2026 Market & Competitive Intelligence Summary
+1. **Fidelity before parity claims.** Loading and compiling a preset is not proof that it looks correct.
+2. **Workflow before technology badges.** WebGPU matters when it improves a measured user outcome; it is not a product promise by itself.
+3. **One coherent studio.** Discovery, playback, editing, inspection, and recording should share one session.
+4. **Foundations are not features.** A service class, reserved signal, or API route is not shipped until it is connected, usable, and verified.
+5. **Direct formats and portable state.** Preserve `.milk` authoring and shareable session URLs rather than hiding the source format.
 
-Our 2026 competitive research across web visualizer tools (*IKANDY*, *WaveScope*, *ShaderToy*, *Butterchurn*, *Neural Frames*, *Beatsee*) reveals five dominant technology and product trends:
+## Current baseline
 
-1. **Hybrid WebGPU / Legacy Engine Architecture**: Leading 2026 visualizers process audio data (FFT, waveforms, frequency bands) into shared GPU textures once. This enables legacy MilkDrop/Butterchurn EEL presets and modern WGSL compute shaders to read identical zero-copy audio textures.
-2. **Stem-Aware Audio Reactivity**: Client-side ML stem separation (isolating kick/snare transients, sub-bass, synths, and vocal stems using ONNX Runtime Web and WebNN/WebGPU) drives distinct visual layers with "hand-timed" precision.
-3. **In-Browser Content Export Pipeline**: Short-form video platforms (TikTok, Spotify Canvas, YouTube Shorts) drive demand for direct 1080p/4K 60FPS WebCodecs/MP4 canvas recording directly inside the browser without requiring external software like OBS.
-4. **WebXR Spatial Audio Visualizers**: Apple Vision Pro and Meta Quest web browsers enable immersive 6DoF spatial 3D audio reactive visual stages.
-5. **AI-Assisted Preset Generation**: Creative coders and VJs benefit from natural language prompt-to-preset synthesis engines that generate valid shader math and parameters on demand.
-6. **Pro VJ Hardware & Networked Projection Integration**: Physical VJ hardware control (WebMIDI learn, OSC), low-latency NDI/Syphon canvas video streaming, and DMX stage lighting sync.
-7. **Neural Real-Time Audio-to-Visual Generation**: Next-generation web visualizers leveraging WebNN and WebGPU for on-device 3D Gaussian Splatting and audio-driven neural latent synthesis.
+- Searchable imported preset catalog with previews, collections, favorites, queues, history, and deep links.
+- Direct `.milk` import/export and a live CodeMirror authoring environment.
+- WebGL2 compatibility baseline plus a guarded WebGPU execution path.
+- Multi-source browser audio with off-main-thread analysis.
+- Browser canvas recording beta.
+- Native projectM reference capture, provenance, image-diff, and result-promotion tooling.
 
----
+See [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) for file-level status and [`TECHNICAL_ACHIEVEMENTS.md`](./TECHNICAL_ACHIEVEMENTS.md) for evidence boundaries.
 
-## 🎯 Strategic Vision
+## Now: trustworthy library and proof loop
 
-Stims aims to be the premier open-web platform for real-time, ultra-high-performance audio-reactive visualizers, MilkDrop legacy preset execution, and WebGPU-accelerated interactive webtoys.
+### Expand measured preset coverage
 
----
+- Complete the checked-in reference and diff loop for the four bundled proof presets.
+- Fix renderer behavior by subsystem: feedback orientation, shader sampling, color presentation, shapes, waves, and motion vectors.
+- Promote results only after the requested backend and reference provenance are verified.
+- Surface clear visual-evidence and fallback labels in the browsing and inspector workflows.
 
-## 📅 Roadmap Overview
+Exit criteria:
 
-```mermaid
-timeline
-    title Stims Engineering Roadmap (2026 - 2028)
-    section Q3 2026 (Completed)
-        WebGPU Shared Audio Texture  : Single-pass FFT & waveform GPU texture packing [SHIPPED]
-        In-Browser WebCodecs Export : 4K 60FPS MP4/WebM canvas recorder [SHIPPED]
-        AudioWorklet DSP Engine     : Off-thread FFT + 4-band energy tracking [SHIPPED]
-        Live EEL Preset Studio      : AST diagnostics, error gutters & sliders [SHIPPED]
-    section Q4 2026 (Active Execution)
-        EEL Loop / While Support    : Full AST transpiler unblocking 79 catalog presets [SHIPPED]
-        WebMIDI & Hardware Control  : WebMIDI learn & physical controller binding [SHIPPED]
-        ONNX Stem Separation        : WebNN/WebGPU 4-stem separation (Drums/Bass/Vocals/Melody) [IN PROGRESS]
-        Unified Composite Shader IR : Single IR generating both GLSL & TSL node graphs [IN PROGRESS]
-        Custom WGSL / GLSL Import   : Native WebGPU compute shader pipeline
-        WebXR / Spatial Audio Stage : 6DoF immersive spatial audio visualizer mode
-    section Q1-Q2 2027
-        Cloudflare D1 Preset Hub    : Community catalog, tagging, playlists, and zero-latency sync
-        AI Preset Synthesizer       : Natural language prompt to EEL math generator
-    section Q3-Q4 2027
-        NDI / Syphon Video Stream   : WebCodecs/WebRTC low-latency stream for live venues
-        DMX / Art-Net Lighting Sync : Audio energy translation to stage lighting protocols
-    section Q1-Q2 2028
-        Neural Audio Latent Engine  : Real-time WebGPU 3D Gaussian Splatting & WebNN latent generation
-        Modular Plugin Hub          : Open ecosystem for custom audio DSP & WGSL shader packages
-```
+- every featured preset has current measured evidence;
+- public compatibility wording is generated or guarded against tracked sources of truth; and
+- unsupported or fallback behavior is visible rather than silent.
 
----
+### Make the large catalog useful
 
-## 🚀 Detailed Workstreams
+- Improve preview reliability and cold-load behavior.
+- Rank by visual quality, evidence, performance, author, mood, and session relevance instead of relying on preset count.
+- Make queue, favorites, recent history, and shareable filtered views coherent on desktop and mobile.
+- Treat semantic and audio-profile matching as optional enhancements, never as blockers for local search.
 
-### Q3 2026 — WebGPU Architecture & Creator Tools (Completed / Shipped)
+Exit criteria:
 
-| Initiative | Description | Status & Impact |
-| :--- | :--- | :--- |
-| **Shared Audio GPU Texture** | Write audio FFT, waveform, and energy envelopes directly into a single WebGPU 2D/1D texture pass. | **Shipped.** Zero-copy audio state shared across MilkDrop VM & WGSL shaders. |
-| **In-Browser Canvas Video Export** | Integrated `WebCodecs` / `MediaRecorder` exporter allowing 1080p/4K 60FPS video capture. | **Shipped.** Direct 4K 60FPS export for Spotify Canvas, TikTok, and YouTube Shorts. |
-| **AudioWorklet DSP Migration** | Move Web Audio API FFT analysis off the main thread into a dedicated `AudioWorkletNode`. | **Shipped.** Zero main-thread audio hitches or frame drops during heavy UI activity. |
-| **Live EEL Preset Studio** | Interactive live editor with real-time AST syntax diagnostics, console log navigation, and parameter sliders. | **Shipped.** Empower VJs and preset authors to craft and tweak MilkDrop presets in-browser. |
+- a first-time user can find a strong preset without understanding MilkDrop naming conventions; and
+- low-confidence or expensive presets do not dominate default recommendations.
 
-### Q4 2026 — Parity Engine Revamp, Stem Separation & Spatial XR (Near-Term)
+## Next: authoring and creator workflow
 
-| Initiative | Description | Status & Target Impact |
-| :--- | :--- | :--- |
-| **EEL `loop`/`while` Transpiler** | Extend EEL AST transpilation to handle control flow constructs (`loop`, `while`), `++`/`--` increment, and `exec2` sequence expressions. | **Shipped.** Unblocked 79 catalog presets (reducing untranslated count from 109 to 30) and emitted 163,887 EEL statements. |
-| **WebMIDI Learn & Hardware Control** | WebMIDI API manager (`MidiControllerManager`) and interactive MIDI learn UI mapping physical faders/knobs to preset parameters (`zoom`, `warp`, `rot`, `decay`). | **Shipped.** Hardware fader & launchpad control for live VJ performances. |
-| **ONNX Stem Separation Engine** | Client-side ML audio separation via ONNX Runtime Web & WebNN/WebGPU into 4 stems (*Drums*, *Bass*, *Vocals*, *Other*). | **In Progress.** `stem_drums`, `stem_bass`, `stem_vocals`, `stem_other` signals wired into runtime types and VM scope. |
-| **Unified Composite Shader IR** | Replace dual GLSL/TSL feedback shaders with a single declarative IR (`CompositePassIR`) emitting both GLSL and TSL node graphs. | **In Progress.** Eliminates 1400 lines of TSL duplication and unifies WebGL/WebGPU composite rendering. |
-| **Custom WGSL / GLSL Import** | Direct import pipeline for raw WebGPU compute shaders and ShaderToy GLSL fragments. | Expand Stims beyond MilkDrop into modern WebGPU shader art. |
-| **WebXR Spatial Audio Stage** | Immersive WebXR VR/AR stage with spatial audio reactivity for Apple Vision Pro & Meta Quest. | Native spatial 3D listening & visual experience in VR web browsers. |
-| **Automated Telemetry Benchmarks** | CI Playwright performance harness tracking frame-times, memory footprint, and GPU load. | Guarantee zero performance regressions in PRs. |
+### Remix studio
 
-### Q1 - Q2 2027 — Cloud Ecosystem & AI Synthesis
+- Add dependable undo/redo and named snapshots.
+- Provide side-by-side or rapid A/B comparison against the source preset.
+- Record remix provenance and retain source in exported `.milk` files or companion metadata.
+- Make generated or assisted edits inspectable as source diffs before application.
+- Add a share format that preserves the preset or a stable community identifier without requiring an account for local work.
 
-| Initiative | Description | Target Impact |
-| :--- | :--- | :--- |
-| **Cloudflare D1 Preset Hub & Sync** | Cloud-backed community catalog with search, tagging, favorites, playlists, and Cloudflare D1/Workers sync. | Thriving user-generated content and preset sharing ecosystem. |
-| **AI Preset Generator** | Generative AI pipeline translating text prompts into valid MilkDrop EEL code and shader uniforms. | Instant custom preset creation from natural language descriptions. |
+Exit criteria:
 
-### Q3 - Q4 2027 — Pro VJ Performance & Stage Network Production
+- browse → edit → compare → save → share works without leaving the running session.
 
-| Initiative | Description | Target Impact |
-| :--- | :--- | :--- |
-| **Multi-Display Stage Sync** | WebSockets/WebRTC multi-window frame synchronization across master control and display nodes. | Multi-screen projection mapping and synchronized venue displays. |
-| **NDI / Syphon Video Streaming** | WebCodecs/WebRTC low-latency canvas stream output into broadcast and video mixing tools. | Direct integration with OBS, Resolume, and venue media servers. |
-| **DMX / Art-Net Lighting Bridge** | WebSockets bridge translating visual energy levels into DMX512 lighting control protocols. | Unified audio-visual-lighting control for live stages. |
+### Creator-grade export
 
-### Q1 - Q2 2028 — Neural Generative Visuals & Open Plugin Hub
+- Harden the native renderer-resize and active-audio composition paths now implemented for recording.
+- Add deterministic frame pacing and loop-duration controls.
+- Verify codec, aspect-ratio, duration, and frame-count output in browser-backed tests.
+- Keep the existing `MediaRecorder` path as a clearly labeled compatibility fallback.
 
-| Initiative | Description | Target Impact |
-| :--- | :--- | :--- |
-| **Neural Audio-to-Latent Generator** | Real-time WebGPU/WebNN 3D Gaussian Splatting and latent rendering driven by audio features. | Next-gen generative neural visualizers beyond procedural shader math. |
-| **Modular Plugin & Shader Registry** | Package ecosystem for custom audio DSP processors, shader filters, and visualizer modules. | Open developer ecosystem for custom Stims extension packages. |
-| **Desktop App & Native Audio Loopback** | Cross-platform Tauri/Electron desktop wrapper with system audio loopback and hardware acceleration. | Zero-setup system audio capture and desktop performance mode. |
+Exit criteria:
+
+- “1080p” and “4K” describe measured render output rather than canvas container dimensions; and
+- exported audio-video files remain synchronized over a documented test duration.
+
+## Later: platform expansion
+
+These workstreams begin only after their prerequisite user flows and proof contracts are stable.
+
+| Workstream | Prerequisite |
+| --- | --- |
+| Stims-native WebGPU preset lane | Stable backend contract, performance telemetry, and a format that produces visuals unavailable to the classic compatibility lane. |
+| Embeddable package or Web Component | Lifecycle, audio, preset, resize, and cleanup APIs proven inside the product and integration tests. |
+| MIDI/VJ hardware workflow | The current beta wiring gains persistent mappings, device QA, and recovery behavior. |
+| Real stem-aware reactivity | On-device separation with measured latency, resource budgets, privacy posture, and populated runtime signals. |
+| Community catalog and sync | Stable preset identity, provenance, moderation, versioning, and local-first failure behavior. |
+| Multi-display or venue output | Deterministic timing, remote recovery, and a supported transport contract. |
+
+## Research, not roadmap commitments
+
+- WebXR immersive stages;
+- neural audio-to-visual generation;
+- Gaussian-splat or latent rendering;
+- DMX, Art-Net, NDI, or Syphon bridges; and
+- a general plugin marketplace.
+
+Research code may exist for these areas, but it should remain labeled as scaffolding until an end-to-end product workflow and verification plan exist.

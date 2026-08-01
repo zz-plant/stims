@@ -7,7 +7,10 @@ import {
   MILKDROP_FEEDBACK_BLUR_OFFSET_BASE,
   MILKDROP_FEEDBACK_CURRENT_FRAME_BOOST_CAP,
 } from '../../src/js/milkdrop/feedback-composite-profile.ts';
-import { createSharedMilkdropFeedbackManager } from '../../src/js/milkdrop/feedback-manager-shared.ts';
+import {
+  createSharedMilkdropFeedbackManager,
+  resolveMilkdropBlurShaderRanges,
+} from '../../src/js/milkdrop/feedback-manager-shared.ts';
 import { WEBGL_MILKDROP_BACKEND_BEHAVIOR } from '../../src/js/milkdrop/renderer-adapter.ts';
 
 test('uses the shared milkdrop feedback blur profile across backends', () => {
@@ -161,6 +164,22 @@ test('provides MilkDrop blur scale and bias inputs to direct WebGL shaders', () 
   } finally {
     manager.dispose();
   }
+});
+
+test('maps nested MilkDrop blur ranges to direct shader scale and bias values', () => {
+  const ranges = resolveMilkdropBlurShaderRanges({
+    blur1_min: 0.1,
+    blur1_max: 0.9,
+    blur2_min: 0.2,
+    blur2_max: 0.7,
+    blur3_min: 0.3,
+    blur3_max: 0.6,
+  });
+
+  expect(ranges.map((range) => range.bias)).toEqual([0.1, 0.2, 0.3]);
+  expect(ranges[0]?.scale).toBeCloseTo(0.8, 6);
+  expect(ranges[1]?.scale).toBeCloseTo(0.5, 6);
+  expect(ranges[2]?.scale).toBeCloseTo(0.3, 6);
 });
 
 test('applies comp-stage color controls and overlay work before legacy post effects in the shared shader', () => {
