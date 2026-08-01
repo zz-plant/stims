@@ -302,7 +302,7 @@
     }
 
     .stims-shell__launch-actions > * {
-      min-height: 42px;
+      min-height: 44px;
     }
 
     .stims-shell__launch-source-dock {
@@ -350,6 +350,12 @@
 
     .stims-shell__sheet-panel--browse .stims-shell__sheet-surface--sticky {
       gap: 8px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stims-shell__launch-recommendation {
+      display: none;
     }
   }
 
