@@ -385,6 +385,7 @@ describe('render-service pooling', () => {
       expect(initRendererImpl).toHaveBeenCalledTimes(1);
       const triggerLost = resolveLost;
       triggerLost?.({ message: 'mock device loss' });
+      await new Promise((resolve) => setTimeout(resolve, 150));
       await flushTasks(4);
 
       handle.renderer.render({} as never, {} as never);
