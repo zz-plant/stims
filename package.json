@@ -120,7 +120,7 @@
     "happy-dom": "20.11.1",
     "husky": "^9.1.7",
     "playwright": "1.62.1",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "typescript": "^6.0.3",
     "vite": "8.0.13",
     "wrangler": "4.118.0"
