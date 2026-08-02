@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { AudioContext as ThreeAudioContext } from 'three';
 import { DEFAULT_MICROPHONE_CONSTRAINTS } from '../core/audio-constants.ts';
 import { resolvePresetCatalogEntry } from '../milkdrop/preset-id-resolution.ts';
 import { isInAppBrowser } from '../utils/browser/device-detect.ts';
@@ -369,6 +370,23 @@ export function useWorkspaceShellOrchestration({
   ) => {
     if (audioStartInProgressRef.current) return;
     audioStartInProgressRef.current = true;
+
+    // Pre-warm the shared Three.js AudioContext while we're still inside
+    // the user gesture (click/tap). On iOS Safari, AudioContext.resume()
+    // called outside a user gesture stays suspended — the context is
+    // created deep inside the engine after getUserMedia + engine mount,
+    // which breaks the gesture chain. Three.js uses a singleton context
+    // (AudioContext.getContext()), so resuming it here ensures the
+    // AudioListener created later reuses an already-running context.
+    try {
+      const ctx = ThreeAudioContext.getContext() as unknown as AudioContext;
+      if (ctx.state === 'suspended') {
+        void ctx.resume();
+      }
+    } catch {
+      // AudioContext not available — engine will handle the error.
+    }
+
     try {
       setStatusMessage(null);
       const healedPresetId = shellState.missingRequestedPreset
