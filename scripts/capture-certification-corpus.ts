@@ -5,6 +5,7 @@ import {
   type CertificationCorpusGroup,
   loadCertificationCorpusManifest,
 } from './certification-corpus.ts';
+import { ensureDevServer } from './dev-server.ts';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
 
 const DEFAULT_CONCURRENCY = Math.min(
@@ -167,6 +168,7 @@ function runPlayToyInChildProcess(
 export async function captureCertificationCorpus(
   options: CaptureCertificationCorpusOptions,
 ) {
+  const server = await ensureDevServer(options.port, options.repoRoot);
   const requests = buildCertificationCorpusCaptureRequests(options);
   const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
   const results: PlayToyResult[] = new Array(requests.length);
@@ -200,6 +202,8 @@ export async function captureCertificationCorpus(
     () => worker(),
   );
   await Promise.all(workers);
+
+  server.close();
 
   if (errors.length > 0) {
     throw errors[0];

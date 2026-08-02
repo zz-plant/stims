@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -8,6 +7,7 @@ import sharp from 'sharp';
 import type { MilkdropControlFlowStatement } from '../src/js/milkdrop/common-types.ts';
 import { compileMilkdropPresetSource } from '../src/js/milkdrop/compiler.ts';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
+import { ensureDevServer } from './dev-server.ts';
 
 const DEFAULT_PORT = 5192;
 const DEFAULT_SETTLE_MS = 900;
@@ -466,62 +466,6 @@ async function requestPreset(page: Page, presetId: string) {
   }, presetId);
 }
 
-async function isServerListening(port: number) {
-  try {
-    const response = await fetch(`http://127.0.0.1:${port}/`, {
-      signal: AbortSignal.timeout(1500),
-    });
-    return response.status < 500;
-  } catch {
-    return false;
-  }
-}
-
-async function ensureDevServer(repoRoot: string, port: number) {
-  if (await isServerListening(port)) {
-    return { stop: async () => {} };
-  }
-
-  const child = spawn(
-    process.execPath,
-    [
-      'run',
-      'vite',
-      '--host',
-      '127.0.0.1',
-      '--port',
-      String(port),
-      '--strictPort',
-    ],
-    {
-      cwd: repoRoot,
-      detached: true,
-      stdio: 'ignore',
-      env: { ...process.env, BROWSER: 'none' },
-    },
-  );
-  const deadline = Date.now() + LOAD_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    if (child.exitCode !== null || child.signalCode !== null) {
-      throw new Error('Vite exited before the visual sweep could start.');
-    }
-    if (await isServerListening(port)) {
-      return {
-        stop: async () => {
-          if (child.pid === undefined) return;
-          try {
-            process.kill(-child.pid, 'SIGTERM');
-          } catch {
-            child.kill('SIGTERM');
-          }
-        },
-      };
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`Timed out waiting for Vite on port ${port}.`);
-}
-
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -650,7 +594,7 @@ export async function runLoopPresetVisualSweep(options: SweepOptions) {
   }
 
   fs.mkdirSync(options.outputDir, { recursive: true });
-  const server = await ensureDevServer(options.repoRoot, options.port);
+  const server = await ensureDevServer(options.port, options.repoRoot);
   const browser = await chromium.launch({
     headless: options.headless,
     args: resolveLoopSweepChromiumArgs(options.renderer, options.headless),
@@ -717,7 +661,7 @@ export async function runLoopPresetVisualSweep(options: SweepOptions) {
   } finally {
     await context.close().catch(() => {});
     await browser.close().catch(() => {});
-    await server.stop();
+    await server.close();
   }
 
   const ranked = rankLoopPresetSweepSamples(results);

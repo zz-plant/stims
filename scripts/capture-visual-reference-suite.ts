@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import os from 'node:os';
+import { ensureDevServer } from './dev-server.ts';
 import type { PlayToyOptions, PlayToyResult } from './play-toy.ts';
 import { loadVisualReferenceManifest } from './visual-reference-manifest.ts';
 
@@ -180,6 +181,7 @@ export function assertVisualReferenceCaptureSucceeded(
 export async function captureVisualReferenceSuite(
   options: CaptureVisualReferenceSuiteOptions,
 ) {
+  const server = await ensureDevServer(options.port, options.repoRoot);
   const requests = buildVisualReferenceCaptureRequests(options);
   const concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
   const results: PlayToyResult[] = new Array(requests.length);
@@ -212,6 +214,8 @@ export async function captureVisualReferenceSuite(
     () => worker(),
   );
   await Promise.all(workers);
+
+  server.close();
 
   if (errors.length > 0) {
     throw errors[0];

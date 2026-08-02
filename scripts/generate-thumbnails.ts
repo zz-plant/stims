@@ -8,7 +8,7 @@
  *   bun run scripts/generate-thumbnails.ts --ids=geiss-casino,flexi-dawn
  *   bun run scripts/generate-thumbnails.ts --all         # all 1,791 presets
  *
- * Requires: dev server running (bun run dev) and Playwright Chromium installed.
+ * Requires: Playwright Chromium installed. Dev server is started automatically.
  * Outputs: thumbnails/{presetId}.png + thumbnails/{presetId}.thumb.png (480×270)
  */
 
@@ -17,6 +17,7 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
+import { ensureDevServer } from './dev-server.ts';
 
 const DEV_SERVER = 'http://localhost:5173';
 const OUTPUT_DIR = 'public/thumbnails';
@@ -97,12 +98,7 @@ async function main() {
   console.log(`${presets.length} presets to render`);
   if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  try {
-    await fetch(DEV_SERVER);
-  } catch {
-    console.error('Dev server not running. Start: bun run dev');
-    process.exit(1);
-  }
+  const server = await ensureDevServer();
 
   const browser = await chromium.launch({ headless: args.headless });
   const startTime = Date.now();
@@ -182,6 +178,7 @@ async function main() {
     console.log(`Avg: ${(totalTime / success).toFixed(1)}s/preset`);
 
   await browser.close();
+  server.close();
 }
 
 main().catch((err) => {
