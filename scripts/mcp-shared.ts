@@ -1031,16 +1031,20 @@ async function buildDocPointers() {
   const lines = await loadReadmeLines();
 
   const quickStart =
+    extractSectionWithRange(lines, 'Quick start') ||
     extractSectionWithRange(lines, 'Quickstart') ||
     extractSectionWithRange(lines, 'Try it now');
   const commands =
+    extractSectionWithRange(lines, 'Verification commands') ||
     extractSectionWithRange(lines, 'Quick Reference Commands') ||
     extractSectionWithRange(lines, 'Quick reference');
   const layout =
+    extractSectionWithRange(lines, 'Technical foundations') ||
     extractSectionWithRange(lines, 'Features at a Glance') ||
     extractSectionWithRange(lines, 'What it does') ||
     extractSectionWithRange(lines, 'Install locally');
   const docs =
+    extractSectionWithRange(lines, 'Optional edge APIs') ||
     extractSectionWithRange(lines, 'Serverless Edge API') ||
     extractSectionWithRange(lines, 'API');
 
@@ -1122,10 +1126,12 @@ async function getReadmeDevCommands(
 ) {
   const readmeContent = await loadReadme();
   const quickstart =
+    extractSection(readmeContent, 'Quick start') ||
     extractSection(readmeContent, 'Quickstart') ||
     extractSection(readmeContent, 'Try it now');
   const installLocal = extractSection(readmeContent, 'Install locally');
   const commonCommands =
+    extractSection(readmeContent, 'Verification commands') ||
     extractSection(readmeContent, 'Quick Reference Commands') ||
     extractSection(readmeContent, 'Quick reference');
   const developmentNotes = extractSection(readmeContent, 'Development notes');
@@ -1134,7 +1140,7 @@ async function getReadmeDevCommands(
     setup:
       [installLocal, quickstart].filter(Boolean).join('\n\n') ||
       'README.md does not currently expose setup guidance.',
-    dev: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
+    dev: [quickstart, commonCommands].filter(Boolean).join('\n\n'),
     build: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
     test: [commonCommands, developmentNotes].filter(Boolean).join('\n\n'),
     lint: 'README.md does not currently list lint-only commands. Use `bun run check` or see docs/agents/tooling-and-quality.md.',

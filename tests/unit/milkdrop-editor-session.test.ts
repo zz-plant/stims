@@ -219,6 +219,9 @@ describe('milkdrop editor session', () => {
     const pendingDraft = session.applySource(
       'title=Stale Commit A\nwave_r=0.75\n',
     );
+    for (let tick = 0; tick < 20 && postedMessages.length === 0; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
     expect(postedMessages).toHaveLength(1);
 
     const loaded = await session.loadPreset({
