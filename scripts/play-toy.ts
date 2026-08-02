@@ -9,6 +9,7 @@ import {
 } from 'playwright';
 import sharp from 'sharp';
 import { DEFAULT_VIEWPORT } from '../src/viewport-config.ts';
+import { ensureDevServer } from './dev-server.ts';
 import { appendParityArtifactEntry } from './parity-artifacts.ts';
 
 export type PlayToyResult = {
@@ -1705,22 +1706,29 @@ if (import.meta.main) {
 
   console.log(`Launching ${slug} on port ${port}...`);
 
-  playToy({
-    slug,
-    audioMode,
-    presetId: presetId.trim() || undefined,
-    port,
-    screenshot: true,
-    debugSnapshot,
-    video: false,
-    duration,
-    viewportWidth,
-    viewportHeight,
-    outputDir,
-    headless,
-    vibeMode,
-    rendererProfile,
-    catalogMode,
-    screenshotSurface,
-  }).then((res) => console.log(JSON.stringify(res, null, 2)));
+  const server = await ensureDevServer(port);
+
+  try {
+    const result = await playToy({
+      slug,
+      audioMode,
+      presetId: presetId.trim() || undefined,
+      port,
+      screenshot: true,
+      debugSnapshot,
+      video: false,
+      duration,
+      viewportWidth,
+      viewportHeight,
+      outputDir,
+      headless,
+      vibeMode,
+      rendererProfile,
+      catalogMode,
+      screenshotSurface,
+    });
+    console.log(JSON.stringify(result, null, 2));
+  } finally {
+    server.close();
+  }
 }

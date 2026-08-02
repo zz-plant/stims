@@ -1,45 +1,9 @@
-import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, type Page } from 'playwright';
+import { ensureDevServer } from './dev-server.ts';
 
 const OUTPUT_DIR = './screenshots/aesthetic-audit';
-
-async function isPortOpen(port: number): Promise<boolean> {
-  try {
-    const res = await fetch(`http://127.0.0.1:${port}/?agent=true`);
-    return res.ok || res.status < 500;
-  } catch {
-    return false;
-  }
-}
-
-async function ensureDevServer(port = 5173): Promise<{ close: () => void }> {
-  if (await isPortOpen(port)) {
-    console.log(`Dev server already running on port ${port}`);
-    return { close: () => {} };
-  }
-
-  console.log(`Starting Vite dev server on port ${port}...`);
-  const proc = spawn('bun', ['run', 'dev', '--port', String(port)], {
-    stdio: 'ignore',
-  });
-
-  // Wait for server to start
-  for (let i = 0; i < 30; i++) {
-    await new Promise((r) => setTimeout(r, 1000));
-    if (await isPortOpen(port)) {
-      console.log(`Dev server started on port ${port}`);
-      break;
-    }
-  }
-
-  return {
-    close: () => {
-      proc.kill();
-    },
-  };
-}
 
 async function captureScreen(
   page: Page,

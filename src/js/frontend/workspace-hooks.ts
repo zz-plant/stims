@@ -47,6 +47,7 @@ export function useWorkspaceRouteState() {
   );
 
   useEffect(() => {
+    console.debug('[route-sync] effect routeState.presetId=', routeState.presetId, 'location=', window.location.search);
     const currentSearch = parsePlainSearch(window.location.search);
     const nextSearch = buildSessionRouteSearch(routeState, currentSearch);
     const serialized = stringifyPlainSearch(nextSearch);
@@ -62,9 +63,9 @@ export function useWorkspaceRouteState() {
 
   useEffect(() => {
     const onPopState = () => {
-      startTransition(() => {
-        setRouteState(readSessionRouteState());
-      });
+      const nextState = readSessionRouteState();
+      console.debug('[route-sync] popstate nextState.presetId=', nextState.presetId, 'location=', window.location.search);
+      setRouteState(nextState);
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
