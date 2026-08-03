@@ -136,6 +136,76 @@ integrationTest(
   { timeout: INTEGRATION_TIMEOUT_MS },
 );
 
+// These two assert the product's headline objective as *behavior*: audio has
+// to actually start. The suite's source-text assertions cannot catch a demo
+// button being removed from the shell, which is exactly how one-click demo
+// audio regressed out of the UI while every test stayed green.
+integrationTest(
+  'one click on the demo source card starts demo audio',
+  async () => {
+    await ensureDevServer();
+    const mobile = await createMobilePage();
+
+    try {
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`);
+      await mobile.page.waitForSelector('#use-demo-audio');
+      await mobile.page.click('#use-demo-audio');
+
+      await mobile.page.waitForFunction(
+        () => window.stimState?.getState().audioActive === true,
+        undefined,
+        { timeout: 45000 },
+      );
+
+      const state = await mobile.page.evaluate(() =>
+        window.stimState?.getState(),
+      );
+      expect(state?.audioActive).toBe(true);
+      expect(state?.audioSource).toBe('demo');
+    } finally {
+      await mobile.close();
+    }
+  },
+  { timeout: INTEGRATION_TIMEOUT_MS },
+);
+
+integrationTest(
+  'window.stimState.enableDemoAudio() activates audio for direct callers',
+  async () => {
+    await ensureDevServer();
+    const mobile = await createMobilePage();
+
+    try {
+      await mobile.page.goto(`http://127.0.0.1:${TEST_PORT}/?agent=true`);
+      await mobile.page.waitForSelector('#use-demo-audio');
+
+      const result = await mobile.page.evaluate(async () => {
+        try {
+          await window.stimState?.enableDemoAudio();
+          return { ok: true, error: null };
+        } catch (error) {
+          return {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      });
+
+      expect(result.error).toBeNull();
+      expect(result.ok).toBe(true);
+
+      const state = await mobile.page.evaluate(() =>
+        window.stimState?.getState(),
+      );
+      expect(state?.audioActive).toBe(true);
+      expect(state?.audioSource).toBe('demo');
+    } finally {
+      await mobile.close();
+    }
+  },
+  { timeout: INTEGRATION_TIMEOUT_MS },
+);
+
 integrationTest(
   'agents can detect failing toy',
   async () => {

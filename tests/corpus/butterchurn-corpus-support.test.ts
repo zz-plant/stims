@@ -27,17 +27,24 @@ function loadButterchurnCorpus() {
 }
 
 describe('butterchurn preset corpus support', () => {
-  test('all butterchurn presets are supported on both backends', () => {
-    const corpus = loadButterchurnCorpus();
+  // Reading and compiling the full 1,700+ preset corpus takes 6-8s on a warm
+  // laptop, so bun's 5s default made this fail as a matter of course rather
+  // than because anything regressed.
+  test(
+    'all butterchurn presets are supported on both backends',
+    () => {
+      const corpus = loadButterchurnCorpus();
 
-    expect(corpus.length).toBeGreaterThan(1700);
+      expect(corpus.length).toBeGreaterThan(1700);
 
-    const unsupported = corpus.filter(
-      ({ compiled }) =>
-        compiled.ir.compatibility.backends.webgl.status !== 'supported' ||
-        compiled.ir.compatibility.backends.webgpu.status !== 'supported',
-    );
+      const unsupported = corpus.filter(
+        ({ compiled }) =>
+          compiled.ir.compatibility.backends.webgl.status !== 'supported' ||
+          compiled.ir.compatibility.backends.webgpu.status !== 'supported',
+      );
 
-    expect(unsupported.map(({ file }) => file)).toEqual([]);
-  });
+      expect(unsupported.map(({ file }) => file)).toEqual([]);
+    },
+    { timeout: 30000 },
+  );
 });

@@ -214,6 +214,26 @@ export function AudioSourcePanel({ showHelp = true }: AudioSourcePanelProps) {
       ) : null}
       <div className="stims-shell__source-grid">
         <button
+          id="use-demo-audio"
+          data-demo-audio-btn="true"
+          type="button"
+          className="stims-shell__source-card"
+          disabled={!engineReady}
+          aria-describedby={!engineReady ? disabledDescription : undefined}
+          onClick={() => onAudioStart('demo')}
+        >
+          <div className="stims-shell__source-card-header">
+            <span className="stims-shell__source-card-kicker">No setup</span>
+            <ShaderIdenticon
+              seed="audio-demo-source"
+              size={28}
+              mode="3d-polyhedron"
+            />
+          </div>
+          <strong>Demo audio</strong>
+          <span>Start with demo audio — no permission needed</span>
+        </button>
+        <button
           id="start-audio-btn"
           type="button"
           className="stims-shell__source-card"

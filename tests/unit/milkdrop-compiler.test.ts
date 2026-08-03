@@ -1874,81 +1874,92 @@ video_echo=0
     string,
     string,
     MilkdropVideoEchoOrientation,
-  ][])('retains %s when video echo is enabled', (_label, orientationLine, expectedOrientation) => {
-    const compiled = compileMilkdropPresetSource(
-      `
+  ][])(
+    'retains %s when video echo is enabled',
+    (_label, orientationLine, expectedOrientation) => {
+      const compiled = compileMilkdropPresetSource(
+        `
 title=Echo Orientation Support
 video_echo=1
 ${orientationLine}
         `.trim(),
-      { id: `echo-orientation-${expectedOrientation}`, origin: 'imported' },
-    );
+        { id: `echo-orientation-${expectedOrientation}`, origin: 'imported' },
+      );
 
-    expect(compiled.ir.numericFields.video_echo_enabled).toBe(1);
-    expect(compiled.ir.numericFields.video_echo_orientation).toBe(
-      expectedOrientation,
-    );
-    expect(compiled.ir.post.videoEchoEnabled).toBe(true);
-    expect(compiled.ir.post.videoEchoOrientation).toBe(expectedOrientation);
-    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
-    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
-    expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
-    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
-      'video-echo',
-    );
-    expect(
-      compiled.diagnostics.some(
-        (entry) => entry.field === 'video_echo_orientation',
-      ),
-    ).toBe(false);
-  });
+      expect(compiled.ir.numericFields.video_echo_enabled).toBe(1);
+      expect(compiled.ir.numericFields.video_echo_orientation).toBe(
+        expectedOrientation,
+      );
+      expect(compiled.ir.post.videoEchoEnabled).toBe(true);
+      expect(compiled.ir.post.videoEchoOrientation).toBe(expectedOrientation);
+      expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+      expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+      expect(compiled.ir.compatibility.unsupportedKeys).toEqual([]);
+      expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+        'video-echo',
+      );
+      expect(
+        compiled.diagnostics.some(
+          (entry) => entry.field === 'video_echo_orientation',
+        ),
+      ).toBe(false);
+    },
+  );
 
   test.each([
     ['init', 'init_1=video_echo_enabled=1;'],
     ['per-frame', 'per_frame_1=video_echo_enabled=1;'],
-  ])('keeps video echo orientation available when %s programs enable echo', (_label, programLine) => {
-    const compiled = compileMilkdropPresetSource(
-      `
+  ])(
+    'keeps video echo orientation available when %s programs enable echo',
+    (_label, programLine) => {
+      const compiled = compileMilkdropPresetSource(
+        `
 title=Program Echo Orientation
 video_echo_orientation=2
 ${programLine}
       `.trim(),
-      { id: 'program-echo-orientation', origin: 'imported' },
-    );
+        { id: 'program-echo-orientation', origin: 'imported' },
+      );
 
-    expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
-    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
-    expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
-      'video-echo',
-    );
-    expect(compiled.ir.numericFields.video_echo_orientation).toBe(2);
-    expect(compiled.ir.post.videoEchoOrientation).toBe(2);
-    expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
-    expect(compiled.ir.compatibility.backends.webgpu.status).toBe('supported');
-  });
+      expect(compiled.ir.compatibility.parity.ignoredFields).toEqual([]);
+      expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+      expect(compiled.ir.compatibility.featureAnalysis.featuresUsed).toContain(
+        'video-echo',
+      );
+      expect(compiled.ir.numericFields.video_echo_orientation).toBe(2);
+      expect(compiled.ir.post.videoEchoOrientation).toBe(2);
+      expect(compiled.ir.compatibility.backends.webgl.status).toBe('supported');
+      expect(compiled.ir.compatibility.backends.webgpu.status).toBe(
+        'supported',
+      );
+    },
+  );
 
   test.each([
     ['init', 'init_1=echo_orient=3;', 'init'],
     ['per-frame', 'per_frame_1=echo_orient=3;', 'perFrame'],
-  ] as const)('normalizes echo_orient assignment targets in %s programs', (_label, programLine, blockKey) => {
-    const compiled = compileMilkdropPresetSource(
-      `
+  ] as const)(
+    'normalizes echo_orient assignment targets in %s programs',
+    (_label, programLine, blockKey) => {
+      const compiled = compileMilkdropPresetSource(
+        `
 title=Echo Orientation Program Alias
 video_echo=1
 ${programLine}
         `.trim(),
-      { id: 'echo-orientation-program-alias', origin: 'imported' },
-    );
+        { id: 'echo-orientation-program-alias', origin: 'imported' },
+      );
 
-    expect(compiled.ir.programs[blockKey].statements).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          target: 'video_echo_orientation',
-        }),
-      ]),
-    );
-    expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
-  });
+      expect(compiled.ir.programs[blockKey].statements).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            target: 'video_echo_orientation',
+          }),
+        ]),
+      );
+      expect(compiled.ir.compatibility.hardUnsupportedKeys).toEqual([]);
+    },
+  );
 
   test('classifies echo orientation as supported backend input after implementation', () => {
     const compiled = compileMilkdropPresetSource(
@@ -2106,26 +2117,29 @@ motion_vectors_y=5
     ['solarize', 'solarize=1'],
     ['invert', 'invert=1'],
     ['gamma adjustment', 'fGammaAdj=1.75'],
-  ])('marks WebGPU descriptor plans with %s post effects for WebGL compatibility fallback', (_label, fieldSource) => {
-    const compiled = compileMilkdropPresetSource(
-      `
+  ])(
+    'marks WebGPU descriptor plans with %s post effects for WebGL compatibility fallback',
+    (_label, fieldSource) => {
+      const compiled = compileMilkdropPresetSource(
+        `
 title=Descriptor Plan Post Effect Fallback
 ${fieldSource}
         `.trim(),
-      { id: `descriptor-plan-post-effect-${fieldSource}` },
-    );
+        { id: `descriptor-plan-post-effect-${fieldSource}` },
+      );
 
-    expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
-      expect.objectContaining({
-        routing: 'fallback-webgl',
-        feedback: expect.objectContaining({
-          kind: 'feedback-post-effect',
-          usesPostEffects: true,
-          fallbackToLegacyFeedback: true,
+      expect(compiled.ir.compatibility.gpuDescriptorPlans.webgpu).toEqual(
+        expect.objectContaining({
+          routing: 'fallback-webgl',
+          feedback: expect.objectContaining({
+            kind: 'feedback-post-effect',
+            usesPostEffects: true,
+            fallbackToLegacyFeedback: true,
+          }),
         }),
-      }),
-    );
-  });
+      );
+    },
+  );
 
   test('lowers a supported per-pixel subset into the WebGPU descriptor plan', () => {
     const compiled = compileMilkdropPresetSource(

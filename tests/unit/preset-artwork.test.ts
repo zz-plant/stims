@@ -15,36 +15,36 @@ const entry: PresetCatalogEntry = {
 };
 
 describe('PresetArtwork', () => {
-  test.each([
-    'queued',
-    'capturing',
-  ] as const)('keeps the %s preview state free of fallback copy while loading', (status) => {
-    const { container, dispose } = createToyContainer(
-      `preset-artwork-${status}`,
-    );
-    const root = createRoot(container);
-    const preview: MilkdropPresetRenderPreview = {
-      presetId: entry.id,
-      status,
-      imageUrl: null,
-      actualBackend: null,
-      updatedAt: Date.now(),
-      error: null,
-      source: 'runtime-snapshot',
-    };
+  test.each(['queued', 'capturing'] as const)(
+    'keeps the %s preview state free of fallback copy while loading',
+    (status) => {
+      const { container, dispose } = createToyContainer(
+        `preset-artwork-${status}`,
+      );
+      const root = createRoot(container);
+      const preview: MilkdropPresetRenderPreview = {
+        presetId: entry.id,
+        status,
+        imageUrl: null,
+        actualBackend: null,
+        updatedAt: Date.now(),
+        error: null,
+        source: 'runtime-snapshot',
+      };
 
-    flushSync(() => {
-      root.render(createElement(PresetArtwork, { entry, preview }));
-    });
+      flushSync(() => {
+        root.render(createElement(PresetArtwork, { entry, preview }));
+      });
 
-    expect(container.textContent).toBe('');
-    expect(
-      container.querySelector('.stims-shell__preset-art-fallback'),
-    ).toBeNull();
+      expect(container.textContent).toBe('');
+      expect(
+        container.querySelector('.stims-shell__preset-art-fallback'),
+      ).toBeNull();
 
-    root.unmount();
-    dispose();
-  });
+      root.unmount();
+      dispose();
+    },
+  );
 
   test('renders the loading ghost while no preview result exists', () => {
     const { container, dispose } = createToyContainer('preset-artwork-loading');
